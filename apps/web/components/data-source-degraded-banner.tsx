@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "./ui";
 
 import type { DataSourceHealthView } from "../lib/reference-health";
 import "./data-source-degraded-banner.css";
@@ -25,9 +26,9 @@ export function DataSourceDegradedBanner({ health, compact = false }: Props) {
           <small className="data-source-cache-note">Showing the last saved rankings and schedule. Strategy still works.</small>
         ) : null}
       </div>
-      <a className="app-button secondary" href={health.teamDataHref}>
+      <Button as="a" variant="secondary" href={health.teamDataHref}>
         Team → Data
-      </a>
+      </Button>
     </aside>
   );
 }

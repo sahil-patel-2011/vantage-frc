@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { OfflineBanner } from "../../components/offline-banner";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { TeamOpsNav } from "../../components/team-ops-nav";
@@ -214,14 +214,14 @@ export default function TasksClient() {
           return (
             <EmptyState title={copy.title} description={copy.description}>
               {copy.primary ? (
-                <a className="app-button" href={copy.primary.href}>
+                <Button as="a" variant="primary" href={copy.primary.href}>
                   {copy.primary.label}
-                </a>
+                </Button>
               ) : null}
               {copy.showRetry ? (
-                <button type="button" className="app-button secondary" onClick={() => load()}>
+                <Button variant="secondary" type="button" onClick={() => load()}>
                   Retry
-                </button>
+                </Button>
               ) : null}
             </EmptyState>
           );
@@ -258,7 +258,7 @@ export default function TasksClient() {
 }
 
 function MeetingOutput({view}:{view:LiveView}){const o=view.meetingOutput;return <Panel><h2 style={{marginTop:0}}>Meeting time vs. output</h2><p className="app-muted">Planning visibility—not a student score. Week of {o.weekStart}.</p><div style={{display:"flex",gap:24,flexWrap:"wrap"}}><span><strong>{o.loggedHours}</strong> hours</span><span><strong>{o.tasksCompleted}</strong> tasks completed</span><span><strong>{o.hoursPerCompletedTask??"—"}</strong> hours/completion</span></div></Panel>}
-function NormsBenchmark({view,busy,mutate}:{view:LiveView;busy:boolean;mutate:Mutate}){const b=view.benchmark;return <Panel><h2 style={{marginTop:0}}>Anonymous team norms</h2><p className="app-muted">{b.optedIn?(b.medianWeeklyHours==null?"Opted in; the median appears after five teams contribute.":`${b.medianWeeklyHours} hours/week median across ${b.teamCount} teams.`):"Disabled by default; no data contributes until an owner opts in."}</p>{view.canManage?<button type="button" className="app-button secondary" disabled={busy} onClick={()=>mutate({action:"set-benchmark-opt-in",optedIn:!b.optedIn})}>{b.optedIn?"Leave benchmark":"Opt in anonymously"}</button>:null}</Panel>}
+function NormsBenchmark({view,busy,mutate}:{view:LiveView;busy:boolean;mutate:Mutate}){const b=view.benchmark;return <Panel><h2 style={{marginTop:0}}>Anonymous team norms</h2><p className="app-muted">{b.optedIn?(b.medianWeeklyHours==null?"Opted in; the median appears after five teams contribute.":`${b.medianWeeklyHours} hours/week median across ${b.teamCount} teams.`):"Disabled by default; no data contributes until an owner opts in."}</p>{view.canManage?<Button variant="secondary" type="button" disabled={busy} onClick={()=>mutate({action:"set-benchmark-opt-in",optedIn:!b.optedIn})}>{b.optedIn?"Leave benchmark":"Opt in anonymously"}</Button>:null}</Panel>}
 function AvailableNow({view}:{view:LiveView}){const available=view.memberWorkload.filter((member)=>member.availableNow);return <Panel><h2 style={{marginTop:0}}>Who has nothing to do right now?</h2><p className="app-muted">Based on open collaborative assignments.</p><div style={{display:"flex",gap:8,flexWrap:"wrap"}}>{available.length?available.map((member)=><span key={member.userId} className="app-badge demo">{member.name} · available</span>):<span className="app-muted">Everyone has open work.</span>}</div></Panel>}
 
 function MetricsTiles({ view }: { view: LiveView }) {
@@ -381,9 +381,9 @@ function CreateTaskForm({ busy, mutate }: { view: LiveView; busy: boolean; mutat
         </FormRow>
       </FormGrid>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !form.title.trim()}>
+        <Button variant="primary" type="submit" disabled={busy || !form.title.trim()}>
           Add task
-        </button>
+        </Button>
       </div>
     </Panel>
   );

@@ -20,7 +20,7 @@ import {
 } from "@vantage/scouting/trust";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
-import { EmptyState, FormRow, PageHeader, Panel, ToolStrip } from "../../components/ui";
+import { EmptyState, FormRow, PageHeader, Panel, ToolStrip, Button } from "../../components/ui";
 import { ExportButton, type CsvColumn } from "../../components/ui/export-button";
 import { CopyShareLink } from "../../components/copy-share-link";
 import { useVenueShortcuts, VenueShortcutCheatsheet } from "../../hooks/use-venue-shortcuts";
@@ -176,9 +176,9 @@ function ScoutingRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related scout-related" aria-label="Related competition tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -202,9 +202,9 @@ function ScoutingNextActionsPanel({ actions }: { actions: ScoutingNextAction[] }
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -284,20 +284,20 @@ function ScoutingShell({
         aria-busy={shell === "loading"}
       >
         {failure?.primary ? (
-          <a className="app-button" href={failure.primary.href}>
+          <Button as="a" variant="primary" href={failure.primary.href}>
             {failure.primary.label}
-          </a>
+          </Button>
         ) : null}
         {failure?.showRetry && onRetry ? (
-          <button type="button" className="app-button secondary" onClick={onRetry}>
+          <Button variant="secondary" type="button" onClick={onRetry}>
             Retry
-          </button>
+          </Button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button is-primary" href={orgId ? commandHref : workspaceHref}>{orgId ? "Set active event" : "Choose your team"}</a>
+          <Button as="a" variant="primary" href={orgId ? commandHref : workspaceHref}>{orgId ? "Set active event" : "Choose your team"}</Button>
         ) : null}
         {shell === "empty" ? (
-          <a className="app-button is-primary" href={formsHref}>Open Form builder</a>
+          <Button as="a" variant="primary" href={formsHref}>Open Form builder</Button>
         ) : null}
         {!embedded && shell === "setup" && steps.length > 0 ? (
           <ol className="scout-setup-steps">
@@ -918,9 +918,9 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
           <span className={`scout-sync-pill ${online ? "online" : "offline"}`}>
             {online ? "Online" : "Offline"} · {formatScoutingMetric(counts.entries, true)} queued
           </span>
-          <button type="button" className="app-button secondary" onClick={() => void sync()}>
+          <Button variant="secondary" type="button" onClick={() => void sync()}>
             Sync now
-          </button>
+          </Button>
         </div>
       ) : (
       <PageHeader
@@ -931,16 +931,16 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
         <div className="scout-header-meta">
           <ScoutingRelatedStrip orgId={orgId} />
           <CopyShareLink orgId={orgId} />
-          <button type="button" className="app-button secondary" onClick={() => window.print()}>
+          <Button variant="secondary" type="button" onClick={() => window.print()}>
             Print
-          </button>
+          </Button>
           <span className={`scout-sync-pill ${online ? "online" : "offline"}`}>
             {online ? "Online" : "Offline"} · {formatScoutingMetric(counts.entries, true)} entries ·{" "}
             {formatScoutingMetric(counts.media, true)} media
           </span>
-          <button type="button" className="app-button secondary" onClick={() => void sync()}>
+          <Button variant="secondary" type="button" onClick={() => void sync()}>
             Sync now
-          </button>
+          </Button>
         </div>
       </PageHeader>
       )}
@@ -976,17 +976,17 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
           >
             {data?.canManageSchemas ? (
               <div className="scout-empty-actions">
-                <button className="app-button is-primary" type="button" onClick={() => void createStarterForms()}>
+                <Button variant="primary" type="button" onClick={() => void createStarterForms()}>
                   Create starter forms
-                </button>
-                <a className="app-button secondary" href={hubHref("/competition", "forms", orgId)}>
+                </Button>
+                <Button as="a" variant="secondary" href={hubHref("/competition", "forms", orgId)}>
                   Custom form builder
-                </a>
+                </Button>
               </div>
             ) : (
-              <a className="app-button is-primary" href={hubHref("/competition", "forms", orgId)}>
+              <Button as="a" variant="primary" href={hubHref("/competition", "forms", orgId)}>
                 Open Form builder
-              </a>
+              </Button>
             )}
           </EmptyState>
           <ScoutingNextActionsPanel actions={formEmptyActions} />
@@ -1036,9 +1036,9 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
                 Pick the winning entry for each field conflict. Coaches resolve; every decision is audited.
               </p>
             </div>
-            <button type="button" className="app-button secondary" onClick={() => void loadConflicts()}>
+            <Button variant="secondary" type="button" onClick={() => void loadConflicts()}>
               Refresh
-            </button>
+            </Button>
           </header>
           {conflicts.length === 0 ? (
             <p className="app-muted">
@@ -1103,23 +1103,14 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
                           <p className="app-muted">Entry candidates load after refresh.</p>
                         ) : null}
                         <div className="scout-conflict-actions">
-                          <button
-                            type="button"
-                            className="app-button"
-                            disabled={!selected}
-                            onClick={() => void reviewConflict(id, "resolved")}
-                          >
+                          <Button variant="primary" type="button" disabled={!selected} onClick={() => void reviewConflict(id, "resolved")}>
                             {selectedCandidate
                               ? `${selectedCandidate.scoutName ?? "Scout"} was right`
                               : "Pick a scout"}
-                          </button>
-                          <button
-                            type="button"
-                            className="app-button secondary"
-                            onClick={() => void reviewConflict(id, "dismissed")}
-                          >
+                          </Button>
+                          <Button variant="secondary" type="button" onClick={() => void reviewConflict(id, "dismissed")}>
                             Dismiss
-                          </button>
+                          </Button>
                         </div>
                       </>
                     ) : (
@@ -1328,9 +1319,9 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
               </label>
             ) : null}
 
-            <button type="button" className="app-button" onClick={() => void submit()}>
+            <Button variant="primary" type="button" onClick={() => void submit()}>
               Save {online ? "& sync" : "offline"}
-            </button>
+            </Button>
             {message ? (
               <p className="form-message" role="status">
                 {message}
@@ -1357,9 +1348,9 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
                     entryType: saveReceipt.entryType,
                   }).map((step) => (
                     <li key={step.id}>
-                      <a className="app-button secondary" href={step.href}>
+                      <Button as="a" variant="secondary" href={step.href}>
                         {step.label}
-                      </a>
+                      </Button>
                       <small className="app-muted">{step.detail}</small>
                     </li>
                   ))}
@@ -1483,9 +1474,9 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
                         />
                       </FormRow>
                     ))}
-                  <button type="button" className="app-button secondary" onClick={() => void saveFormula()}>
+                  <Button variant="secondary" type="button" onClick={() => void saveFormula()}>
                     Save formula
-                  </button>
+                  </Button>
                 </div>
               ) : null}
             </Panel>
@@ -1643,13 +1634,9 @@ function ScoutQuarantinePanel({
               <small className="app-muted">{new Date(item.quarantinedAt).toLocaleString()}</small>
             </div>
             <div style={{ display: "flex", gap: 8 }}>
-              <button
-                type="button"
-                className="app-button secondary"
-                onClick={() => onRetry(item.clientId)}
-              >
+              <Button variant="secondary" type="button" onClick={() => onRetry(item.clientId)}>
                 Retry
-              </button>
+              </Button>
               <button type="button" className="text-button" onClick={() => onDiscard(item.clientId)}>
                 Discard
               </button>

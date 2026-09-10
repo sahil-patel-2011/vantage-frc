@@ -87,6 +87,10 @@ See `docs/COMPETITIVE_NOTES.md`. That document is the brief for Tasks 2–4.
 | `/team/data` | "Workspace inventory" | this commit |
 | Home widgets / related strips / intel nav | Student copy still said Workspace on Home empty cards, related strips, Event Day setup, and `Workspace →` crumbs | this commit |
 | `/workspace` document title | Browser tab said Workspace | this commit |
+| `/video` review detail | Re-scout / Notes used a TabBar under the page header | this commit |
+| `/my-day` `/schedule` | Last snapshot dropped when venue Wi-Fi died | this commit |
+| Native product buttons | leftover `<button className="app-button">` on submit/in-page actions | this commit |
+| `/command` | Event Day not on the service-worker shell list | this commit |
 
 ---
 
@@ -95,20 +99,20 @@ See `docs/COMPETITIVE_NOTES.md`. That document is the brief for Tasks 2–4.
 | # | Task | Status | Verification |
 |---|---|---|---|
 | 1 | Land / baseline / competitive notes | done | this file + `COMPETITIVE_NOTES.md`; latest full suite **879 files, 8,322 passed, 10 skipped** (52.46s) |
-| 2 | One design system | in progress | tokens in `system.css`; Button emits `.app-button`. Hub related-strips, ErrorState, ProductHub, hub-access gates, Home chrome, and Claim now use `<Button>`. Leftover `className="app-button"` still open on many feature clients. |
-| 3 | Full UI pass | in progress | Student copy says team, not workspace, on Home widgets, related strips, Event Day setup, intel crumbs, and `/workspace`. copy-lint now bans "connect/set/finish workspace", "join workspace", and `Workspace →`. Empty/setup cards keep one primary. FEATURE_MAP walk unfinished. |
-| 4 | Home widgets | in progress | Live cards in `widgets/home-cards.tsx`. Canvas helpers in `dashboard-canvas.ts`. Widget chrome/empty copy in `widgets/widget-shell.tsx` (~395 lines). Competition/ops widgets in `widgets/ops-cards.tsx` (~577 lines). `widgets.tsx` is the dispatcher (~214 lines). `dashboard-client.tsx` is still the drag/save shell. |
-| 5 | Offline shell | in progress | Season calendar now restores the last snapshot and queues add/tick/edit/delete (`calendar_action`). Seed-season still needs a connection. Packing/batteries/pit/season-tasks already queued. Playwright spec also opens `/calendar` and `/packing`. No signed-in `next start` walk. |
+| 2 | One design system | in progress | tokens in `system.css`; Button emits `.app-button`. Product `<a className="app-button">` and leftover native `<button className="app-button">` now use `<Button>` (this session: 1130 anchors + 881 native buttons). Remaining `app-button` classes are disabled `<span>` chrome, not clickable controls. CSS token alias cleanup still open. |
+| 3 | Full UI pass | in progress | Student copy says team, not workspace, on Home widgets, related strips, Event Day setup, intel crumbs, and `/workspace`. Empty/setup cards keep one primary (`<Button variant="primary">` counts). Video re-scout review tools are a ToolStrip. FEATURE_MAP walk unfinished. No signed-in student/mentor browser walk. |
+| 4 | Home widgets | in progress | Live cards in `widgets/home-cards.tsx`. Canvas helpers in `dashboard-canvas.ts`. Widget chrome/empty copy in `widgets/widget-shell.tsx`. Competition/ops widgets in `widgets/ops-cards.tsx`. Board types in `dashboard-board-types.ts`. First-run banner, board switcher, widget palette, library sheet, boards modal, and edit/preview docks are sibling modules. `dashboard-client.tsx` is still the drag/save shell. |
+| 5 | Offline shell | in progress | Season calendar, packing, batteries, pit, season-tasks already queued. **My Day**, **Schedule**, and **Event Day** (`/command`) restore the last IndexedDB snapshot when the fetch fails. `/my-day` and `/command` are on the service-worker shell list. Playwright spec covers `/my-day`, `/schedule`, and `/command` offline reloads. No signed-in `next start` walk. |
 | 6 | Desktop installers + auto-update | in progress | `/api/desktop/release`, NSIS+MSI+DMG workflow, unsigned license. macOS artifacts cannot be built in this image. |
 | 7 | freebuff Pi fleet | in progress | `docs/FREEBUFF.md`, pairing API, `/team/relays` node list, compact+prompt. TTFT unmeasured (no Pi). |
-| 8 | Match prediction ±3 | in progress | Next match widget shows calibrated score + ±band when year EPA exists. **Not a season ±3 claim.** |
+| 8 | Match prediction ±3 | in progress | Next match widget shows calibrated score + ±band when year EPA exists. Fixture (2 matches, 4 alliance scores): MAE **89.7**, RMSE **89.88**, within ±3 **0%**, within ±5 **0%**. UI band is `DEFAULT_ERROR_BAND = 8` (placeholder). **Not a season ±3 claim.** |
 | 9 | Video analysis | in progress | schema + queue UI + confirm-as-evidence. Confirmed events now appear on the match-notes timeline as **From video**. Worker skips without a vision model. No live Pi. |
 | 10 | Connectors | audit (already on main) | Account `?tab=integrations` redirects to `/connectors`. TBA next-action from Account goes there too. |
 | 11 | Copy sweep | in progress | copy-lint bans allowlist, PAYG / kill switch / BYOK, and leftover workspace-as-team-picker phrases. `/workspace` page title is Your team. Onshape/Slack "workspace" kept. |
 | 12 | Bugbot / agents | in progress | quotes required (existing); prompt now forbids push/PR; compact wired in HTTP adapter. Scan time unprinted. |
 | 13 | CAD / assembly manual | in progress | Ask AI plans `cad.vault` for heavy-part / fastener questions; session facts list vault titles and Onshape links (no fabricated kg). Prompt pins "Cite vault documents by title". Assembly manual on a real Onshape document still unverified. |
 | 14 | Business funding models | in progress | `funding_model` column, onboarding radios, Business default tab + sponsor hide |
-| 15 | Modular monolith | in progress | ESLint `no-restricted-imports` on dashboard/offline/drive/workspace/account/invite vs scouting/messages/pit/hours. `FEATURE_DIRS` now includes workspace, account, invite, help, season-calendar, and packing. |
+| 15 | Modular monolith | in progress | ESLint `no-restricted-imports` on dashboard/offline/drive/workspace/account/invite/connectors/onboarding/help/bugbot/business/cad-vault/packing/season-calendar vs scouting/messages/pit/hours. `FEATURE_DIRS` now also includes bugbot, business, and cad-vault. File-path matching covers `packing.ts` / `season-calendar.ts` (rel === dir). `funding-profile.ts` is shared onboarding types, not a feature folder. |
 | 16 | Supabase readiness | in progress | preflight dual URLs + rehearsal script. **Not connected.** |
 | 17 | Performance / cost | in progress | Home, Event day, Pit, Display, assembly-manual, exports, storage, hours kiosk, and the outbox badge skip while the tab is hidden. Production `next build` this session: compiled 15.5s, TypeScript 45s, 695 pages, no warnings in the log. Shared runtime (rootMain + polyfill) **540.3 KB**. Unique client-reference JS: Home `/dashboard` 391 KB, Scouting 391 KB, Strategy 325 KB, Pit 284 KB, `/workspace` 248 KB. Next 16 Turbopack does not print a First Load JS column in the route table. |
 | 18 | Final verification | pending | |

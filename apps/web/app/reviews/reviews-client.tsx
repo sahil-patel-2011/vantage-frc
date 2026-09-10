@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "../../components/ui";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ITEM_VERDICTS, REVIEW_STAGES, REVIEW_STATUSES, gateLabel, reviewStageLabel, reviewStatusLabel } from "../../lib/reviews";
@@ -148,14 +149,14 @@ export default function ReviewsClient() {
               <h2>{copy.title}</h2>
               <p className="app-muted">{copy.description}</p>
               {copy.primary ? (
-                <a className="app-button" href={copy.primary.href}>
+                <Button as="a" variant="primary" href={copy.primary.href}>
                   {copy.primary.label}
-                </a>
+                </Button>
               ) : null}
               {copy.showRetry ? (
-                <button type="button" className="app-button secondary" onClick={() => load()}>
+                <Button variant="secondary" type="button" onClick={() => load()}>
                   Retry
-                </button>
+                </Button>
               ) : null}
             </section>
           );
@@ -302,9 +303,9 @@ function AddReviewForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
         <span className="app-muted">Start from the standard {reviewStageLabel(form.stage).toLowerCase()} checklist</span>
       </label>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !form.title.trim()}>
+        <Button variant="primary" type="submit" disabled={busy || !form.title.trim()}>
           Create review
-        </button>
+        </Button>
       </div>
     </form>
   );
@@ -418,9 +419,9 @@ function ReviewCard({ evaluation, busy, mutate }: { evaluation: ReviewEvaluation
           <input type="checkbox" checked={blocking} onChange={(e) => setBlocking(e.target.checked)} />
           <span className="app-muted">Blocker</span>
         </label>
-        <button type="submit" className="app-button secondary" disabled={busy || !criterion.trim()}>
+        <Button variant="secondary" type="submit" disabled={busy || !criterion.trim()}>
           Add
-        </button>
+        </Button>
       </form>
 
       <footer style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginTop: 12 }}>

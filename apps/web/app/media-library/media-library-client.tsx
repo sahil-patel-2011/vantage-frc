@@ -6,8 +6,7 @@ import {
   ErrorState,
   PageHeader,
   Panel,
-  SoftBlockSkeleton,
-} from "../../components/ui";
+  SoftBlockSkeleton, Button } from "../../components/ui";
 import {
   albumItemCounts,
   collectFilterOptions,
@@ -428,9 +427,9 @@ export default function MediaLibraryClient() {
         <PageHeader title="Media Library" description="Team photos and videos, in one place." />
         <EmptyState title="Workspace needed" description={view.message}>
           {view.steps.map((step) => (
-            <a key={step.id} className="app-button" href={step.href}>
+            <Button as="a" variant="primary" key={step.id} href={step.href}>
               {step.label}
-            </a>
+            </Button>
           ))}
         </EmptyState>
       </div>
@@ -456,15 +455,15 @@ export default function MediaLibraryClient() {
       </Panel>
 
       <div className="ml-toolbar" role="toolbar" aria-label="Media actions">
-        <button type="button" className="app-button" onClick={() => fileInputRef.current?.click()}>
+        <Button variant="primary" type="button" onClick={() => fileInputRef.current?.click()}>
           Add photos or videos
-        </button>
-        <button type="button" className="app-button secondary" onClick={() => cameraInputRef.current?.click()}>
+        </Button>
+        <Button variant="secondary" type="button" onClick={() => cameraInputRef.current?.click()}>
           Take a photo
-        </button>
-        <button type="button" className="app-button secondary" onClick={() => setAlbumFormOpen((open) => !open)}>
+        </Button>
+        <Button variant="secondary" type="button" onClick={() => setAlbumFormOpen((open) => !open)}>
           New album
-        </button>
+        </Button>
         <input
           ref={fileInputRef}
           className="ml-hidden-input"
@@ -511,9 +510,9 @@ export default function MediaLibraryClient() {
               placeholder="2026onosh"
             />
           </label>
-          <button type="button" className="app-button" disabled={!albumName.trim()} onClick={() => void createAlbum()}>
+          <Button variant="primary" type="button" disabled={!albumName.trim()} onClick={() => void createAlbum()}>
             Create album
-          </button>
+          </Button>
         </Panel>
       ) : null}
 
@@ -535,9 +534,9 @@ export default function MediaLibraryClient() {
               </li>
             ))}
           </ul>
-          <button type="button" className="app-button secondary" onClick={() => setUploads([])}>
+          <Button variant="secondary" type="button" onClick={() => setUploads([])}>
             Clear
-          </button>
+          </Button>
         </Panel>
       ) : null}
 
@@ -708,9 +707,9 @@ function DetailOverlay({
       <div className="ml-detail app-card">
         <header className="ml-detail-head">
           <h2>{item.title}</h2>
-          <button type="button" className="app-button secondary" onClick={onClose}>
+          <Button variant="secondary" type="button" onClick={onClose}>
             Close
-          </button>
+          </Button>
         </header>
 
         <div className="ml-detail-media">
@@ -760,34 +759,23 @@ function DetailOverlay({
               </label>
             </div>
             <div className="ml-detail-actions">
-              <button
-                type="button"
-                className="app-button"
-                onClick={() =>
-                  onSave({
-                    caption: caption.trim() || null,
-                    subteam: subteam.trim() || null,
-                    eventKey: eventKey.trim() || null,
-                    albumId: albumId || null,
-                  })
-                }
-              >
+              <Button variant="primary" type="button" onClick={() => onSave({ caption: caption.trim() || null, subteam: subteam.trim() || null, eventKey: eventKey.trim() || null, albumId: albumId || null, }) }>
                 Save details
-              </button>
-              <a className="app-button secondary" href={item.src} download={item.title}>
+              </Button>
+              <Button as="a" variant="secondary" href={item.src} download={item.title}>
                 Download
-              </a>
-              <button type="button" className="app-button danger" onClick={onDelete}>
+              </Button>
+              <Button variant="danger" type="button" onClick={onDelete}>
                 Delete
-              </button>
+              </Button>
             </div>
           </div>
         ) : (
           <div className="ml-detail-actions">
             {item.caption ? <p>{item.caption}</p> : null}
-            <a className="app-button secondary" href={item.src} download={item.title}>
+            <Button as="a" variant="secondary" href={item.src} download={item.title}>
               Download
-            </a>
+            </Button>
             {item.origin !== "library" ? (
               <span className="app-muted">
                 Managed in {item.origin === "pit_scouting" ? "Scouting" : "Business"} — shown here read-only.

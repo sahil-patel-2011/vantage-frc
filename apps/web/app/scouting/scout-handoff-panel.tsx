@@ -2,7 +2,7 @@
 
 import { needsShortCodeHandoff, type ScoutQrRecord } from "@vantage/scouting/qr-handoff";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { EmptyState, FormRow, Panel } from "../../components/ui";
+import { EmptyState, FormRow, Panel, Button } from "../../components/ui";
 import {
   encodePendingQrPayload,
   listPendingEntries,
@@ -48,9 +48,9 @@ function QrHandoffRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related scout-qr-related" aria-label="Related scouting tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -71,9 +71,9 @@ function QrHandoffNextActionsPanel({ actions }: { actions: QrHandoffNextAction[]
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -131,23 +131,23 @@ function QrHandoffShell({
         aria-busy={shell === "loading"}
       >
         {shell === "error" && onRetry ? (
-          <button type="button" className="app-button secondary" onClick={onRetry}>
+          <Button variant="secondary" type="button" onClick={onRetry}>
             Retry
-          </button>
+          </Button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button" href={orgId ? scoutingHref : "/workspace"}>
+          <Button as="a" variant="primary" href={orgId ? scoutingHref : "/workspace"}>
             {orgId ? "Open Scouting" : "Choose your team"}
-          </a>
+          </Button>
         ) : null}
         {shell === "empty" ? (
           <>
-            <a className="app-button" href={scoutingHref}>
+            <Button as="a" variant="primary" href={scoutingHref}>
               Save a scout entry
-            </a>
-            <a className="app-button secondary" href={offlineHref}>
+            </Button>
+            <Button as="a" variant="secondary" href={offlineHref}>
               Open Offline
-            </a>
+            </Button>
           </>
         ) : null}
       </EmptyState>
@@ -164,9 +164,9 @@ function QrHandoffShell({
                   <strong>{step.label}</strong>
                   <p className="app-muted">{step.detail}</p>
                 </div>
-                <a className="app-button secondary" href={step.href}>
+                <Button as="a" variant="secondary" href={step.href}>
                   Open
-                </a>
+                </Button>
               </li>
             ))}
           </ul>
@@ -407,31 +407,21 @@ export default function ScoutHandoffPanel({
         </p>
 
         <div className="scout-qr-actions">
-          <button
-            type="button"
-            className="app-button"
-            disabled={busy || !pendingCount}
-            onClick={() => void buildShareQr(false)}
-          >
+          <Button variant="primary" type="button" disabled={busy || !pendingCount} onClick={() => void buildShareQr(false)}>
             Show handoff QR
-          </button>
-          <button
-            type="button"
-            className="app-button secondary"
-            disabled={busy || !pendingCount || !navigator.onLine}
-            onClick={() => void buildShareQr(true)}
-          >
+          </Button>
+          <Button variant="secondary" type="button" disabled={busy || !pendingCount || !navigator.onLine} onClick={() => void buildShareQr(true)}>
             Short code (large batch)
-          </button>
-          <a className="app-button secondary" href={scoutingHref}>
+          </Button>
+          <Button as="a" variant="secondary" href={scoutingHref}>
             Scouting
-          </a>
-          <a className="app-button secondary" href={offlineHref}>
+          </Button>
+          <Button as="a" variant="secondary" href={offlineHref}>
             Offline
-          </a>
-          <a className="app-button secondary" href={coverageHref}>
+          </Button>
+          <Button as="a" variant="secondary" href={coverageHref}>
             Coverage
-          </a>
+          </Button>
         </div>
 
         {shortCode ? (
@@ -461,12 +451,12 @@ export default function ScoutHandoffPanel({
             title={queueCopy.title}
             description={queueCopy.description}
           >
-            <a className="app-button" href={scoutingHref}>
+            <Button as="a" variant="primary" href={scoutingHref}>
               Open Scouting
-            </a>
-            <a className="app-button secondary" href={offlineHref}>
+            </Button>
+            <Button as="a" variant="secondary" href={offlineHref}>
               Open Offline
-            </a>
+            </Button>
           </EmptyState>
         ) : null}
       </Panel>
@@ -479,13 +469,13 @@ export default function ScoutHandoffPanel({
 
         <div className="scout-qr-actions">
           {scanning ? (
-            <button type="button" className="app-button secondary" onClick={stopScan}>
+            <Button variant="secondary" type="button" onClick={stopScan}>
               Stop camera
-            </button>
+            </Button>
           ) : (
-            <button type="button" className="app-button" disabled={busy} onClick={() => void startScan()}>
+            <Button variant="primary" type="button" disabled={busy} onClick={() => void startScan()}>
               Scan with camera
-            </button>
+            </Button>
           )}
         </div>
 
@@ -514,14 +504,9 @@ export default function ScoutHandoffPanel({
             rows={3}
           />
         </label>
-        <button
-          type="button"
-          className="app-button secondary"
-          disabled={busy || !paste.trim()}
-          onClick={() => void ingestContent(paste)}
-        >
+        <Button variant="secondary" type="button" disabled={busy || !paste.trim()} onClick={() => void ingestContent(paste)}>
           Merge into outbox
-        </button>
+        </Button>
       </Panel>
 
       <QrHandoffNextActionsPanel actions={readyActions} />

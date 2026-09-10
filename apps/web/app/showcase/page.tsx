@@ -1,4 +1,4 @@
-import { EmptyState, PageHeader } from "../../components/ui";
+import { EmptyState, PageHeader, Button } from "../../components/ui";
 import ShowcaseClient from "./showcase-client";
 
 export const metadata = {
@@ -32,9 +32,9 @@ export default async function ShowcasePage({
           title="Choose a team"
           description="Showcase renders one team's real season. Select the team and come back."
         >
-          <a className="app-button" href="/workspace">
+          <Button as="a" variant="primary" href="/workspace">
             Choose team
-          </a>
+          </Button>
         </EmptyState>
       </main>
     );

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { STANDARD_BREAKER_AMPS, WIRE_GAUGES, diagnosticSeverityLabel } from "../../lib/wiring-diagnoser";
 import type { WiringDiagnoserView } from "../../lib/wiring-diagnoser/compute-wiring-diagnoser";
@@ -183,14 +183,14 @@ export default function WiringDiagnoserClient() {
       {failure ? (
         <EmptyState title={failure.title} description={failure.description}>
           {failure.primary ? (
-            <a className="app-button" href={failure.primary.href}>
+            <Button as="a" variant="primary" href={failure.primary.href}>
               {failure.primary.label}
-            </a>
+            </Button>
           ) : null}
           {failure.showRetry ? (
-            <button type="button" className="app-button secondary" onClick={() => load()}>
+            <Button variant="secondary" type="button" onClick={() => load()}>
               Retry
-            </button>
+            </Button>
           ) : null}
         </EmptyState>
       ) : view == null ? (
@@ -440,14 +440,9 @@ function NewCheckForm({
             </div>
           ))}
         </div>
-        <button
-          type="button"
-          className="app-button secondary"
-          style={{ marginTop: 8 }}
-          onClick={() => setExpected((prev) => [...prev, emptyExpectedRow()])}
-        >
+        <Button variant="secondary" type="button" style={{ marginTop: 8 }} onClick={() => setExpected((prev) => [...prev, emptyExpectedRow()])}>
           Add expected circuit
-        </button>
+        </Button>
       </div>
 
       <div>
@@ -515,20 +510,15 @@ function NewCheckForm({
             </div>
           ))}
         </div>
-        <button
-          type="button"
-          className="app-button secondary"
-          style={{ marginTop: 8 }}
-          onClick={() => setObserved((prev) => [...prev, emptyObservedRow()])}
-        >
+        <Button variant="secondary" type="button" style={{ marginTop: 8 }} onClick={() => setObserved((prev) => [...prev, emptyObservedRow()])}>
           Add observed circuit
-        </button>
+        </Button>
       </div>
 
       <div>
-        <button type="submit" className="app-button" disabled={busy || !canSubmit}>
+        <Button variant="primary" type="submit" disabled={busy || !canSubmit}>
           Diagnose wiring
-        </button>
+        </Button>
       </div>
     </Panel>
   );

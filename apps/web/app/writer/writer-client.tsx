@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AiHubRelated } from "../../components/ai-hub-related";
 import { UsageCutoffBanner, resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
-import { ModelProvenance } from "../../components/ui";
+import { ModelProvenance, Button } from "../../components/ui";
 import {
   composeGrantAnswer,
   composeSponsorEmail,
@@ -62,9 +62,9 @@ function WriterNextActions({
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -218,9 +218,9 @@ export default function WriterClient({ orgId: orgIdProp }: { orgId?: string | nu
           {errorCopy.badge ? <span className="app-badge setup">{errorCopy.badge}</span> : null}
           <h2>{errorCopy.title}</h2>
           <p className="app-muted">{errorCopy.description}</p>
-          <button type="button" className="app-button secondary" onClick={() => load()}>
+          <Button variant="secondary" type="button" onClick={() => load()}>
             Retry
-          </button>
+          </Button>
           <WriterNextActions orgId={orgId} draftCount={0} hasMission={false} hasAchievements={false} />
         </section>
       ) : view == null ? (
@@ -437,26 +437,9 @@ function ProfilePanel({
         <input value={profile.fundingNeed} onChange={set("fundingNeed")} placeholder="registration, materials, and travel" />
       </label>
       <div>
-        <button
-          type="button"
-          className="app-button secondary"
-          disabled={busy}
-          onClick={() =>
-            mutate({
-              action: "set-profile",
-              teamName: profile.teamName || undefined,
-              teamNumber: profile.teamNumber || undefined,
-              region: profile.region || undefined,
-              mission: profile.mission || undefined,
-              achievements: profile.achievements || undefined,
-              fundingNeed: profile.fundingNeed || undefined,
-              fundingAskUsd: profile.fundingAskUsd || undefined,
-              tone: profile.tone,
-            })
-          }
-        >
+        <Button variant="secondary" type="button" disabled={busy} onClick={() => mutate({ action: "set-profile", teamName: profile.teamName || undefined, teamNumber: profile.teamNumber || undefined, region: profile.region || undefined, mission: profile.mission || undefined, achievements: profile.achievements || undefined, fundingNeed: profile.fundingNeed || undefined, fundingAskUsd: profile.fundingAskUsd || undefined, tone: profile.tone, }) }>
           Save profile
-        </button>
+        </Button>
       </div>
     </section>
   );
@@ -779,12 +762,12 @@ function Composer({
       )}
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-        <button type="button" className="app-button secondary" onClick={generate} disabled={busy}>
+        <Button variant="secondary" type="button" onClick={generate} disabled={busy}>
           Compose from template
-        </button>
-        <button type="button" className="app-button" onClick={generateWithAssistant} disabled={busy}>
+        </Button>
+        <Button variant="primary" type="button" onClick={generateWithAssistant} disabled={busy}>
           {busy ? "Drafting…" : "Draft with FRC Assistant"}
-        </button>
+        </Button>
         <small className="app-muted">Uses this org&apos;s profile + business data only · metered usage ledger</small>
       </div>
 
@@ -810,27 +793,12 @@ function Composer({
             <textarea value={draftBody} onChange={(e) => setDraftBody(e.target.value)} rows={12} style={{ fontFamily: "inherit", lineHeight: 1.5 }} />
           </label>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button type="button" className="app-button secondary" onClick={copy}>
+            <Button variant="secondary" type="button" onClick={copy}>
               {copied ? "Copied!" : "Copy"}
-            </button>
-            <button
-              type="button"
-              className="app-button"
-              disabled={busy || !draftBody.trim()}
-              onClick={() =>
-                mutate({
-                  action: "save-draft",
-                  kind,
-                  title: `${kindLabel(kind)}${targetName && !isGrant ? ` — ${targetName}` : ""}`,
-                  targetName: targetName || undefined,
-                  subject: subject || undefined,
-                  body: draftBody,
-                  source: draftSource ?? "template",
-                })
-              }
-            >
+            </Button>
+            <Button variant="primary" type="button" disabled={busy || !draftBody.trim()} onClick={() => mutate({ action: "save-draft", kind, title: `${kindLabel(kind)}${targetName && !isGrant ? ` — ${targetName}` : ""}`, targetName: targetName || undefined, subject: subject || undefined, body: draftBody, source: draftSource ?? "template", }) }>
               Save draft
-            </button>
+            </Button>
             <small className="app-muted" style={{ alignSelf: "center" }}>
               Read this through before you send it.
             </small>

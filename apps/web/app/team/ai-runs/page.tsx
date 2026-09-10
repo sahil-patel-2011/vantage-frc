@@ -1,4 +1,4 @@
-import { EmptyState, PageHeader } from "../../../components/ui";
+import { EmptyState, PageHeader, Button } from "../../../components/ui";
 import AiRunsClient from "./ai-runs-client";
 
 export const metadata = {
@@ -26,9 +26,9 @@ export default async function TeamAiRunsPage({
           title="Choose a team"
           description="Runs come from that team’s real usage ledger. Select one and come back."
         >
-          <a className="app-button" href="/workspace">
+          <Button as="a" variant="primary" href="/workspace">
             Choose team
-          </a>
+          </Button>
         </EmptyState>
       </main>
     );

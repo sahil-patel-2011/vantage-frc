@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "../../../components/ui";
 
 import { useEffect, useMemo, useState } from "react";
 import { AiHubRelated } from "../../../components/ai-hub-related";
@@ -146,13 +147,13 @@ function UsageRelatedStrip({ orgId }: { orgId: string }) {
   const links = aiBudgetsRelatedLinks(orgId, { include: [...AI_USAGE_RELATED_INCLUDE] });
   return (
     <nav className="product-hub-related ai-budgets-related" aria-label="Related AI usage tools">
-      <a className="app-button secondary" href={budgetsHref}>
+      <Button as="a" variant="secondary" href={budgetsHref}>
         Budgets
-      </a>
+      </Button>
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -177,9 +178,9 @@ function NextActions({ orgId, shell }: { orgId: string; shell: AiBudgetsShellKin
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -372,9 +373,9 @@ export default function UsageClient({ orgId }: { orgId: string }) {
           <p className="app-muted">{shellCopy.description}</p>
           <NextActions orgId={orgId} shell={shell} />
           {shell === "error" ? (
-            <button type="button" className="app-button secondary" onClick={() => retry()}>
+            <Button variant="secondary" type="button" onClick={() => retry()}>
               Retry
-            </button>
+            </Button>
           ) : null}
         </section>
       ) : null}

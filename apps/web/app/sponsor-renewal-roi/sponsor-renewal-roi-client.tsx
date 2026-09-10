@@ -10,8 +10,7 @@ import {
   Panel,
   ProgressMeter,
   SoftBlockSkeleton,
-  StatTile,
-} from "../../components/ui";
+  StatTile, Button } from "../../components/ui";
 import { UsageCutoffBanner, resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 import type { SponsorRenewalRoiView } from "../../lib/sponsor-renewal-roi/compute-sponsor-renewal-roi";
 import type { SponsorRenewalRiskTier } from "../../lib/sponsor-renewal-roi/types";
@@ -61,9 +60,9 @@ function RelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related srr-related" aria-label="Related business tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -84,9 +83,9 @@ function NextActionsPanel({ actions }: { actions: SponsorRenewalRoiNextAction[] 
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -144,10 +143,10 @@ function RoiShell({
           description={error ?? copy.description}
         >
           {shell === "setup" ? (
-            <a className="app-button is-primary" href={orgId ? hubHref("/business", "sponsors", orgId) : "/workspace"}>{orgId ? "Open Sponsor CRM" : "Choose your team"}</a>
+            <Button as="a" variant="primary" href={orgId ? hubHref("/business", "sponsors", orgId) : "/workspace"}>{orgId ? "Open Sponsor CRM" : "Choose your team"}</Button>
           ) : null}
           {shell === "empty" ? (
-            <a className="app-button is-primary" href={hubHref("/business", "sponsors", orgId)}>Add a sponsor</a>
+            <Button as="a" variant="primary" href={hubHref("/business", "sponsors", orgId)}>Add a sponsor</Button>
           ) : null}
         </EmptyState>
       )}
@@ -164,9 +163,9 @@ function RoiShell({
                   <strong>{step.label}</strong>
                   <p className="app-muted srr-tip">{step.detail}</p>
                 </div>
-                <a className="app-button secondary" href={step.href}>
+                <Button as="a" variant="secondary" href={step.href}>
                   Open
-                </a>
+                </Button>
               </li>
             ))}
           </ul>
@@ -349,9 +348,9 @@ export default function SponsorRenewalRoiClient() {
             </label>
           ) : null}
           {relatedLinks.map((link) => (
-            <a key={link.id} className="app-button secondary" href={link.href}>
+            <Button as="a" variant="secondary" key={link.id} href={link.href}>
               {link.label}
-            </a>
+            </Button>
           ))}
         </div>
       </PageHeader>
@@ -439,14 +438,9 @@ function SponsorRiskCard({
       )}
 
       <div>
-        <button
-          type="button"
-          className="app-button"
-          disabled={busy !== null}
-          onClick={() => mutate({ action: "generate-report", sponsorId: sponsor.sponsorId }, busyKey)}
-        >
+        <Button variant="primary" type="button" disabled={busy !== null} onClick={() => mutate({ action: "generate-report", sponsorId: sponsor.sponsorId }, busyKey)}>
           {busy === busyKey ? "Generating…" : sponsor.latestReport ? "Regenerate ROI report" : "Generate ROI report"}
-        </button>
+        </Button>
       </div>
 
       {sponsor.latestReport ? (

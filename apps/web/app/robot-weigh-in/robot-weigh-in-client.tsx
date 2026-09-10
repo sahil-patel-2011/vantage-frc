@@ -9,8 +9,7 @@ import {
   PageHeader,
   Panel,
   SoftBlockSkeleton,
-  StatTile,
-} from "../../components/ui";
+  StatTile, Button } from "../../components/ui";
 import { robotWeighInStationLabel, suggestedWeightLimitLbs, weighIn2026LimitCue } from "../../lib/robot-weigh-in";
 import {
   ROBOT_WEIGH_IN_STATIONS,
@@ -56,9 +55,9 @@ function RelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related rwi-related" aria-label="Related build tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -79,9 +78,9 @@ function NextActionsPanel({ actions }: { actions: RobotWeighInNextAction[] }) {
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -136,10 +135,10 @@ function WeighShell({
           description={error ?? copy.description}
         >
           {shell === "setup" ? (
-            <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
+            <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
           ) : null}
           {shell === "empty" ? (
-            <a className="app-button is-primary" href={hubHref("/build", "readiness-score", orgId)}>Open Readiness</a>
+            <Button as="a" variant="primary" href={hubHref("/build", "readiness-score", orgId)}>Open Readiness</Button>
           ) : null}
         </EmptyState>
       )}
@@ -156,9 +155,9 @@ function WeighShell({
                   <strong>{step.label}</strong>
                   <p className="app-muted rwi-tip">{step.detail}</p>
                 </div>
-                <a className="app-button secondary" href={step.href}>
+                <Button as="a" variant="secondary" href={step.href}>
                   Open
-                </a>
+                </Button>
               </li>
             ))}
           </ul>
@@ -575,9 +574,9 @@ function LogWeighInForm({
         <textarea value={form.notes} onChange={set("notes")} rows={2} />
       </FormRow>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !form.weighedOn || !form.weightLbs}>
+        <Button variant="primary" type="submit" disabled={busy || !form.weighedOn || !form.weightLbs}>
           Log weigh-in
-        </button>
+        </Button>
       </div>
     </Panel>
   );

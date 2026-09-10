@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { decisionCategoryLabel, decisionStatusLabel } from "../../lib/decisions";
 import {
   DECISION_CATEGORIES,
@@ -39,9 +39,9 @@ function DecisionsRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related decision-log-related" aria-label="Related decision tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -65,9 +65,9 @@ function DecisionsNextActionsPanel({ actions }: { actions: DecisionsNextAction[]
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -135,12 +135,12 @@ function DecisionsShell({
         aria-busy={shell === "loading" || undefined}
       >
         {shell === "error" && onRetry ? (
-          <button type="button" className="app-button secondary" onClick={onRetry}>
+          <Button variant="secondary" type="button" onClick={onRetry}>
             Retry
-          </button>
+          </Button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button is-primary" href={workspaceHref}>Choose your team</a>
+          <Button as="a" variant="primary" href={workspaceHref}>Choose your team</Button>
         ) : null}
       </EmptyState>
       {error ? (
@@ -320,9 +320,9 @@ export default function DecisionsClient() {
   const headerActions = (
     <div className="decision-log-header-actions">
       {relatedLinks.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
       {view.seasons.length > 0 ? (
         <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
@@ -381,9 +381,9 @@ export default function DecisionsClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <a className="app-button" href="#decision-log-form">
+          <Button as="a" variant="primary" href="#decision-log-form">
             Record first decision
-          </a>
+          </Button>
         </EmptyState>
       ) : null}
 
@@ -555,9 +555,9 @@ function AddDecisionForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
         </FormRow>
       </FormGrid>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !form.title.trim()}>
+        <Button variant="primary" type="submit" disabled={busy || !form.title.trim()}>
           Record decision
-        </button>
+        </Button>
       </div>
     </form>
   );

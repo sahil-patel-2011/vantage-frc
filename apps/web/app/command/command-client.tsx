@@ -85,9 +85,9 @@ function EventDayRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related edc-related" aria-label="Related live ops tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -155,13 +155,13 @@ function EventDayShell({
 
   const primarySetupCta =
     canSetEvent && onSelectEvent ? (
-      <button type="button" className="app-button" onClick={onSelectEvent}>
+      <Button variant="primary" type="button" onClick={onSelectEvent}>
         Set active event
-      </button>
+      </Button>
     ) : (
-      <a className="app-button" href={orgId ? teamDataHref : workspaceHref}>
+      <Button as="a" variant="primary" href={orgId ? teamDataHref : workspaceHref}>
         {orgId ? "Connect TBA" : "Choose your team"}
-      </a>
+      </Button>
     );
 
   return (
@@ -189,7 +189,7 @@ function EventDayShell({
       >
         {shell === "setup" ? primarySetupCta : null}
         {shell === "empty" ? (
-          <a className="app-button is-primary" href={withOrgHref("/schedule", orgId)}>Check schedule sync</a>
+          <Button as="a" variant="primary" href={withOrgHref("/schedule", orgId)}>Check schedule sync</Button>
         ) : null}
       </EmptyState>
     </main>
@@ -433,14 +433,9 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
           )}
         </ul>
         {snap?.eventKey ? (
-          <button
-            className="app-button secondary"
-            type="button"
-            disabled={eventBusy}
-            onClick={() => void setActiveEvent(null)}
-          >
+          <Button variant="secondary" type="button" disabled={eventBusy} onClick={() => void setActiveEvent(null)}>
             Clear active event
-          </button>
+          </Button>
         ) : null}
       </div>
     </div>
@@ -524,13 +519,13 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
           </span>
           <CopyShareLink orgId={orgId || null} />
           {snap?.canSetEvent ? (
-            <button className="app-button secondary" type="button" onClick={() => setEventOpen(true)}>
+            <Button variant="secondary" type="button" onClick={() => setEventOpen(true)}>
               {snap.eventKey ? "Change event" : "Select event"}
-            </button>
+            </Button>
           ) : null}
-          <button className="app-button secondary" type="button" onClick={() => void load(orgId)} disabled={!orgId}>
+          <Button variant="secondary" type="button" onClick={() => void load(orgId)} disabled={!orgId}>
             Refresh
-          </button>
+          </Button>
         </div>
   );
 

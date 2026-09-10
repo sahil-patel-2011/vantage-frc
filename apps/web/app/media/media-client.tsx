@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { SoftAccessDenied } from "../../components/hub-access-gate";
 import { UsageCutoffBanner, resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
-import { AIAttribution, EmptyState, PageHeader, Panel, TabBar, ToolStrip } from "../../components/ui";
+import { AIAttribution, EmptyState, PageHeader, Panel, TabBar, ToolStrip, Button } from "../../components/ui";
 import {
   formatMediaMetric,
   isMediaReminderOverdue,
@@ -112,9 +112,9 @@ function MediaRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related media-related" aria-label="Related media tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -138,9 +138,9 @@ function MediaNextActionsPanel({ actions }: { actions: MediaNextAction[] }) {
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -212,20 +212,20 @@ function MediaShell({
         aria-busy={shell === "loading"}
       >
         {failure?.primary ? (
-          <a className="app-button" href={failure.primary.href}>
+          <Button as="a" variant="primary" href={failure.primary.href}>
             {failure.primary.label}
-          </a>
+          </Button>
         ) : null}
         {shell === "error" && onRetry && (failure?.showRetry ?? true) ? (
-          <button type="button" className="app-button secondary" onClick={onRetry}>
+          <Button variant="secondary" type="button" onClick={onRetry}>
             Retry
-          </button>
+          </Button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
+          <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
         ) : null}
         {shell === "empty" ? (
-          <a className="app-button is-primary" href={orgId ? withOrgHref("/media-kit", orgId) : "/media-kit"}>Build Media Kit</a>
+          <Button as="a" variant="primary" href={orgId ? withOrgHref("/media-kit", orgId) : "/media-kit"}>Build Media Kit</Button>
         ) : null}
       </EmptyState>
       {shell === "setup" && steps.length > 0 ? (
@@ -321,14 +321,9 @@ function CalendarPanel({
                 item={item}
                 actions={
                   item.status !== "posted" ? (
-                    <button
-                      type="button"
-                      className="app-button secondary"
-                      disabled={busy}
-                      onClick={() => void onMarkPosted(item.id)}
-                    >
+                    <Button variant="secondary" type="button" disabled={busy} onClick={() => void onMarkPosted(item.id)}>
                       Mark posted
-                    </button>
+                    </Button>
                   ) : null
                 }
               />
@@ -391,9 +386,9 @@ function CalendarPanel({
               onChange={(event) => setRemindAt(event.target.value)}
             />
           </label>
-          <button type="submit" className="app-button" disabled={busy || !title.trim()}>
+          <Button variant="primary" type="submit" disabled={busy || !title.trim()}>
             Schedule
-          </button>
+          </Button>
         </form>
       </Panel>
     </div>
@@ -461,31 +456,12 @@ function DraftsPanel({
                 item={item}
                 actions={
                   <>
-                    <button
-                      type="button"
-                      className="app-button secondary"
-                      disabled={busy}
-                      onClick={() =>
-                        void onAiDraft({
-                          action: "ai-draft",
-                          tab: "drafts",
-                          itemId: item.id,
-                          title: item.title,
-                          platform: item.platform,
-                          notes: item.caption,
-                        })
-                      }
-                    >
+                    <Button variant="secondary" type="button" disabled={busy} onClick={() => void onAiDraft({ action: "ai-draft", tab: "drafts", itemId: item.id, title: item.title, platform: item.platform, notes: item.caption, }) }>
                       Suggest caption
-                    </button>
-                    <button
-                      type="button"
-                      className="app-button secondary"
-                      disabled={busy}
-                      onClick={() => void onMarkPosted(item.id)}
-                    >
+                    </Button>
+                    <Button variant="secondary" type="button" disabled={busy} onClick={() => void onMarkPosted(item.id)}>
                       Mark posted
-                    </button>
+                    </Button>
                   </>
                 }
               />
@@ -552,25 +528,12 @@ function DraftsPanel({
             />
           </label>
           <div className="media-form-actions">
-            <button type="submit" className="app-button" disabled={busy || !title.trim()}>
+            <Button variant="primary" type="submit" disabled={busy || !title.trim()}>
               Save draft
-            </button>
-            <button
-              type="button"
-              className="app-button secondary"
-              disabled={busy || (!title.trim() && !notes.trim())}
-              onClick={() =>
-                void onAiDraft({
-                  action: "ai-draft",
-                  tab: "drafts",
-                  title,
-                  platform,
-                  notes,
-                }).then(() => undefined)
-              }
-            >
+            </Button>
+            <Button variant="secondary" type="button" disabled={busy || (!title.trim() && !notes.trim())} onClick={() => void onAiDraft({ action: "ai-draft", tab: "drafts", title, platform, notes, }).then(() => undefined) }>
               Suggest caption
-            </button>
+            </Button>
           </div>
         </form>
       </Panel>
@@ -609,14 +572,9 @@ function RemindersPanel({
                   <span className={isMediaReminderOverdue(item, now) ? "media-overdue" : "app-muted"}>
                     {isMediaReminderOverdue(item, now) ? "Overdue" : "Upcoming"}
                   </span>
-                  <button
-                    type="button"
-                    className="app-button secondary"
-                    disabled={busy}
-                    onClick={() => void onDismiss(item.id)}
-                  >
+                  <Button variant="secondary" type="button" disabled={busy} onClick={() => void onDismiss(item.id)}>
                     Dismiss
-                  </button>
+                  </Button>
                 </>
               }
             />
@@ -675,9 +633,9 @@ function KitPanel({ view }: { view: LiveView }) {
                 <strong>{asset.title}</strong>
                 <span className="app-muted">{asset.kind}</span>
               </div>
-              <a className="app-button secondary" href={asset.url} target="_blank" rel="noreferrer">
+              <Button as="a" variant="secondary" href={asset.url} target="_blank" rel="noreferrer">
                 Open
-              </a>
+              </Button>
             </li>
           ))}
         </ul>
@@ -688,9 +646,9 @@ function KitPanel({ view }: { view: LiveView }) {
           this workbench, so it belongs in the tool strip above — it was listed
           in both places. */}
       <div className="media-kit-actions">
-        <a className="app-button" href={kitHref}>
+        <Button as="a" variant="primary" href={kitHref}>
           Open Media Kit
-        </a>
+        </Button>
       </div>
     </Panel>
   );
@@ -735,9 +693,9 @@ function ImpactPanel({ view }: { view: LiveView }) {
           description="People reached stays blank until you log real activities."
         />
       )}
-      <a className="app-button" href={withOrgHref("/impact", view.orgId)}>
+      <Button as="a" variant="primary" href={withOrgHref("/impact", view.orgId)}>
         Open Community Impact
-      </a>
+      </Button>
     </Panel>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { BuildHubRelated } from "../../components/build-hub-related";
 import { TeamHubRelated } from "../../components/team-hub-related";
@@ -42,9 +42,9 @@ function FmeaRelated({ orgId }: { orgId: string }) {
     <div className="fmea-related">
       <nav className="product-hub-related fmea-hub-related" aria-label="Related reliability tools">
         {primary.map((link) => (
-          <a key={link.id} className="app-button secondary" href={link.href}>
+          <Button as="a" variant="secondary" key={link.id} href={link.href}>
             {link.label}
-          </a>
+          </Button>
         ))}
       </nav>
       <TeamHubRelated orgId={orgId} active="fmea" include={[...FMEA_TEAM_RELATED_INCLUDE]} />
@@ -89,9 +89,9 @@ function NextActions({
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -201,14 +201,14 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
           aria-busy={!fetchFailed}
         >
           {failure?.primary ? (
-            <a className="app-button" href={failure.primary.href}>
+            <Button as="a" variant="primary" href={failure.primary.href}>
               {failure.primary.label}
-            </a>
+            </Button>
           ) : null}
           {failure?.showRetry ? (
-            <button type="button" className="app-button secondary" onClick={() => load()}>
+            <Button variant="secondary" type="button" onClick={() => load()}>
               Retry
-            </button>
+            </Button>
           ) : null}
         </EmptyState>
       </main>
@@ -231,9 +231,9 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
                   <strong>{step.label}</strong>
                   <span>{step.detail}</span>
                 </div>
-                <a className="app-button secondary" href={step.href}>
+                <Button as="a" variant="secondary" href={step.href}>
                   Open
-                </a>
+                </Button>
               </li>
             ))}
           </ol>
@@ -284,18 +284,18 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
               </select>
             </label>
           ) : null}
-          <a className="app-button secondary" href={hubHref("/team", "knowledge", orgId)}>
+          <Button as="a" variant="secondary" href={hubHref("/team", "knowledge", orgId)}>
             Knowledge
-          </a>
-          <a className="app-button secondary" href={hubHref("/build", "cad", orgId)}>
+          </Button>
+          <Button as="a" variant="secondary" href={hubHref("/build", "cad", orgId)}>
             CAD
-          </a>
-          <a className="app-button secondary" href={hubHref("/build", "prototype", orgId)}>
+          </Button>
+          <Button as="a" variant="secondary" href={hubHref("/build", "prototype", orgId)}>
             Prototypes
-          </a>
-          <a className="app-button secondary" href={withOrgHref("/inspection", orgId)}>
+          </Button>
+          <Button as="a" variant="secondary" href={withOrgHref("/inspection", orgId)}>
             Inspection
-          </a>
+          </Button>
         </div>
       </PageHeader>
 
@@ -667,9 +667,9 @@ function AddFailureForm({ view, busy, mutate }: { view: LiveView; busy: boolean;
           ) : null}
         </FormGrid>
         <div className="fmea-form-actions">
-          <button type="submit" className="app-button" disabled={busy}>
+          <Button variant="primary" type="submit" disabled={busy}>
             {busy ? "Saving…" : "Add failure"}
-          </button>
+          </Button>
           <span className="fmea-preview">
             Preview RPN: <strong>{previewRpn}</strong>{" "}
             <span className="app-muted">({formatOsdFactors({
@@ -791,18 +791,9 @@ function FailureCard({
             ))}
           </select>
         </label>
-        <button
-          type="button"
-          className="app-button secondary"
-          disabled={busy}
-          onClick={() => {
-            if (window.confirm("Delete this failure entry?")) {
-              mutate({ action: "delete-failure", failureId: f.id });
-            }
-          }}
-        >
+        <Button variant="secondary" type="button" disabled={busy} onClick={() => { if (window.confirm("Delete this failure entry?")) { mutate({ action: "delete-failure", failureId: f.id }); } }}>
           Delete
-        </button>
+        </Button>
         {f.recordedByName ? <small className="app-muted">Logged by {f.recordedByName}</small> : null}
       </div>
 

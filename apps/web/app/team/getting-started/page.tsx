@@ -1,4 +1,4 @@
-import { EmptyState, PageHeader } from "../../../components/ui";
+import { EmptyState, PageHeader, Button } from "../../../components/ui";
 import GettingStartedClient from "./getting-started-client";
 import "../../start/start.css";
 
@@ -27,9 +27,9 @@ export default async function TeamGettingStartedPage({
           title="Choose a team"
           description="Each step is ticked from that team’s own data, so it needs a team before it can say anything true."
         >
-          <a className="app-button" href="/workspace">
+          <Button as="a" variant="primary" href="/workspace">
             Choose team
-          </a>
+          </Button>
         </EmptyState>
       </main>
     );

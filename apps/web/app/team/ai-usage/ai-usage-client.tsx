@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { PageHeader, SoftBlockSkeleton } from "../../../components/ui";
+import { PageHeader, SoftBlockSkeleton, Button } from "../../../components/ui";
 import { hubHref } from "../../../lib/nav/hubs";
 import { withOrgHref } from "../../../lib/nav/product-nav";
 import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
@@ -109,24 +109,24 @@ export default function AiUsageClient({ orgId }: { orgId: string | null }) {
       />
 
       <nav className="product-hub-related" aria-label="Related">
-        <a className="app-button secondary" href={orgId ? withOrgHref("/team/ai-keys", orgId) : "/team/ai-keys"}>
+        <Button as="a" variant="secondary" href={orgId ? withOrgHref("/team/ai-keys", orgId) : "/team/ai-keys"}>
           AI API keys
-        </a>
-        <a className="app-button secondary" href={orgId ? withOrgHref("/team/usage", orgId) : "/team/usage"}>
+        </Button>
+        <Button as="a" variant="secondary" href={orgId ? withOrgHref("/team/usage", orgId) : "/team/usage"}>
           All AI usage
-        </a>
-        <a className="app-button secondary" href={orgId ? withOrgHref("/account", orgId) : "/account"}>
+        </Button>
+        <Button as="a" variant="secondary" href={orgId ? withOrgHref("/account", orgId) : "/account"}>
           Account
-        </a>
+        </Button>
       </nav>
 
       {!orgId ? (
         <section className="app-card soft-panel" role="status">
           <h2>Choose a team</h2>
           <p className="app-muted">Choose your team, then return here.</p>
-          <a className="app-button primary" href="/workspace">
+          <Button as="a" variant="primary" href="/workspace">
             Choose your team
-          </a>
+          </Button>
         </section>
       ) : null}
 
@@ -157,18 +157,14 @@ export default function AiUsageClient({ orgId }: { orgId: string | null }) {
                 <h2>{copy.title}</h2>
                 <p className="app-muted">{copy.description}</p>
                 {copy.primary ? (
-                  <a className="app-button" href={copy.primary.href}>
+                  <Button as="a" variant="primary" href={copy.primary.href}>
                     {copy.primary.label}
-                  </a>
+                  </Button>
                 ) : null}
                 {copy.showRetry ? (
-                  <button
-                    type="button"
-                    className="app-button secondary"
-                    onClick={() => window.location.reload()}
-                  >
+                  <Button variant="secondary" type="button" onClick={() => window.location.reload()}>
                     Retry
-                  </button>
+                  </Button>
                 ) : null}
               </section>
             );
@@ -189,9 +185,9 @@ export default function AiUsageClient({ orgId }: { orgId: string | null }) {
                 Nothing to show until your own API key or a local connector is used. Add a key under AI API keys,
                 then try Chat, Writer, or CAD.
               </p>
-              <a className="app-button primary" href={withOrgHref("/team/ai-keys", orgId)}>
+              <Button as="a" variant="primary" href={withOrgHref("/team/ai-keys", orgId)}>
                 Open AI API keys
-              </a>
+              </Button>
             </section>
           ) : (
             <>

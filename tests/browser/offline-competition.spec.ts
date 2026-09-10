@@ -25,4 +25,24 @@ test.describe("offline Competition hub", () => {
     await expect(page.locator("body")).not.toContainText(/something went wrong/i);
     await context.setOffline(false);
   });
+
+  test("My Day still renders after the tab goes offline", async ({ page, context }) => {
+    await page.goto("/my-day");
+    await page.waitForLoadState("domcontentloaded");
+    await context.setOffline(true);
+    await page.reload({ waitUntil: "domcontentloaded" }).catch(() => undefined);
+    await expect(page.locator("body")).toBeVisible();
+    await expect(page.locator("body")).not.toContainText(/something went wrong/i);
+    await context.setOffline(false);
+  });
+
+  test("Event Day still renders after the tab goes offline", async ({ page, context }) => {
+    await page.goto("/command");
+    await page.waitForLoadState("domcontentloaded");
+    await context.setOffline(true);
+    await page.reload({ waitUntil: "domcontentloaded" }).catch(() => undefined);
+    await expect(page.locator("body")).toBeVisible();
+    await expect(page.locator("body")).not.toContainText(/something went wrong/i);
+    await context.setOffline(false);
+  });
 });

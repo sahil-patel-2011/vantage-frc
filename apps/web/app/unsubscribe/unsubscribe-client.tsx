@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { EmptyState, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
 
 type Status = "loading" | "ok" | "error";
 
@@ -63,12 +63,12 @@ export default function UnsubscribeClient({
             description={message}
           >
             <div className="settings-inline-links">
-              <a className="app-button secondary" href="/notifications/preferences">
+              <Button as="a" variant="secondary" href="/notifications/preferences">
                 Manage email opt-ins
-              </a>
-              <a className="app-button secondary" href="/account?tab=notifications">
+              </Button>
+              <Button as="a" variant="secondary" href="/account?tab=notifications">
                 Account alerts
-              </a>
+              </Button>
             </div>
           </EmptyState>
         )}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { batteryStatusLabel, irTrendLabel } from "../../lib/battery-rotation";
 import {
   BATTERY_STATUSES,
@@ -42,9 +42,9 @@ function BatteryRotationRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related battery-rotation-related" aria-label="Related battery tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -68,9 +68,9 @@ function BatteryRotationNextActionsPanel({ actions }: { actions: BatteryRotation
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -130,15 +130,15 @@ function BatteryRotationShell({
         aria-busy={shell === "loading"}
       >
         {shell === "error" && onRetry ? (
-          <button type="button" className="app-button secondary" onClick={onRetry}>
+          <Button variant="secondary" type="button" onClick={onRetry}>
             Retry
-          </button>
+          </Button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
+          <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
         ) : null}
         {shell === "empty" ? (
-          <a className="app-button is-primary" href={batteriesHref}>Open Batteries</a>
+          <Button as="a" variant="primary" href={batteriesHref}>Open Batteries</Button>
         ) : null}
       </EmptyState>
       <BatteryRotationNextActionsPanel actions={actions} />
@@ -286,9 +286,9 @@ export default function BatteryRotationClient() {
       >
         <div className="battery-rotation-header-actions">
           {relatedLinks.map((link) => (
-            <a key={link.id} className="app-button secondary" href={link.href}>
+            <Button as="a" variant="secondary" key={link.id} href={link.href}>
               {link.label}
-            </a>
+            </Button>
           ))}
         </div>
       </PageHeader>
@@ -311,9 +311,9 @@ export default function BatteryRotationClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <a className="app-button is-primary" href={batteriesHref}>
+          <Button as="a" variant="primary" href={batteriesHref}>
             Open Batteries
-          </a>
+          </Button>
         </EmptyState>
       ) : null}
 
@@ -497,9 +497,9 @@ function AddBatteryForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
         <textarea value={form.notes} onChange={set("notes")} rows={2} />
       </FormRow>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !form.label.trim()}>
+        <Button variant="primary" type="submit" disabled={busy || !form.label.trim()}>
           Add battery
-        </button>
+        </Button>
       </div>
     </Panel>
   );
@@ -585,13 +585,9 @@ function LogReadingForm({
         <textarea value={form.notes} onChange={set("notes")} rows={2} />
       </FormRow>
       <div>
-        <button
-          type="submit"
-          className="app-button"
-          disabled={busy || !form.batteryId || !form.internalResistanceMohm}
-        >
+        <Button variant="primary" type="submit" disabled={busy || !form.batteryId || !form.internalResistanceMohm}>
           Log reading
-        </button>
+        </Button>
       </div>
     </Panel>
   );
@@ -663,13 +659,9 @@ function ScheduleAssignmentForm({
         </FormRow>
       </FormGrid>
       <div>
-        <button
-          type="submit"
-          className="app-button"
-          disabled={busy || !form.batteryId || !form.matchLabel.trim() || !form.scheduledAt}
-        >
+        <Button variant="primary" type="submit" disabled={busy || !form.batteryId || !form.matchLabel.trim() || !form.scheduledAt}>
           Schedule
-        </button>
+        </Button>
       </div>
     </Panel>
   );

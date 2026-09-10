@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { BuildHubRelated } from "../../components/build-hub-related";
 import { TEST_OUTCOMES, decisionRecommendationLabel, testOutcomeLabel } from "../../lib/prototype-tracker";
 import type { PrototypeTrackerView } from "../../lib/prototype-tracker/compute-prototype-tracker";
@@ -77,9 +77,9 @@ function NextActionsPanel({
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -216,14 +216,14 @@ export default function PrototypeTrackerClient(_props: { embedded?: boolean } = 
           aria-busy={!fetchFailed}
         >
           {copy?.primary ? (
-            <a className="app-button" href={copy.primary.href}>
+            <Button as="a" variant="primary" href={copy.primary.href}>
               {copy.primary.label}
-            </a>
+            </Button>
           ) : null}
           {copy?.showRetry ? (
-            <button type="button" className="app-button secondary" onClick={() => load()}>
+            <Button variant="secondary" type="button" onClick={() => load()}>
               Retry
-            </button>
+            </Button>
           ) : null}
         </EmptyState>
       </main>
@@ -246,9 +246,9 @@ export default function PrototypeTrackerClient(_props: { embedded?: boolean } = 
                   <strong>{step.label}</strong>
                   <span>{step.detail}</span>
                 </div>
-                <a className="app-button secondary" href={step.href}>
+                <Button as="a" variant="secondary" href={step.href}>
                   Open
-                </a>
+                </Button>
               </li>
             ))}
           </ol>
@@ -297,15 +297,15 @@ export default function PrototypeTrackerClient(_props: { embedded?: boolean } = 
               </select>
             </label>
           ) : null}
-          <a className="app-button secondary" href={hubHref("/build", "fmea", orgId)}>
+          <Button as="a" variant="secondary" href={hubHref("/build", "fmea", orgId)}>
             FMEA
-          </a>
-          <a className="app-button secondary" href={hubHref("/build", "cad", orgId)}>
+          </Button>
+          <Button as="a" variant="secondary" href={hubHref("/build", "cad", orgId)}>
             CAD
-          </a>
-          <a className="app-button secondary" href={hubHref("/build", "kickoff", orgId)}>
+          </Button>
+          <Button as="a" variant="secondary" href={hubHref("/build", "kickoff", orgId)}>
             Kickoff
-          </a>
+          </Button>
         </div>
       </PageHeader>
 
@@ -446,9 +446,9 @@ function DraftDecisionForm({
         onChange={(event) => setDecisionTitle(event.target.value)}
         placeholder="Decision title"
       />
-      <button type="submit" className="app-button secondary" disabled={busy || !decisionTitle.trim()}>
+      <Button variant="secondary" type="submit" disabled={busy || !decisionTitle.trim()}>
         Draft decision
-      </button>
+      </Button>
     </form>
   );
 }
@@ -528,20 +528,9 @@ function DecisionsList({
               </details>
               {status === "draft" ? (
                 <div>
-                  <button
-                    type="button"
-                    className="app-button secondary"
-                    disabled={busy}
-                    onClick={() =>
-                      void mutate({
-                        action: "update-decision-status",
-                        decisionId: decision.id,
-                        status: "finalized",
-                      })
-                    }
-                  >
+                  <Button variant="secondary" type="button" disabled={busy} onClick={() => void mutate({ action: "update-decision-status", decisionId: decision.id, status: "finalized", }) }>
                     Finalize
-                  </button>
+                  </Button>
                 </div>
               ) : null}
             </li>
@@ -639,13 +628,9 @@ function LogTestForm({
         <textarea value={form.resultSummary} onChange={set("resultSummary")} rows={2} />
       </FormRow>
       <div>
-        <button
-          type="submit"
-          className="app-button"
-          disabled={busy || !form.subsystemName.trim() || !form.title.trim() || !form.testDate}
-        >
+        <Button variant="primary" type="submit" disabled={busy || !form.subsystemName.trim() || !form.title.trim() || !form.testDate}>
           Log test
-        </button>
+        </Button>
       </div>
     </Panel>
   );

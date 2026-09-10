@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { BusinessRelated } from "../../components/business-related";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { COSTS_RELATED_INCLUDE } from "../../lib/business/business-related";
 import { costsNextActions } from "../../lib/business/costs-next-actions";
 import { costCategoryLabel, subscriptionCadenceLabel, usd } from "../../lib/costs";
@@ -89,9 +89,9 @@ function NextActions({
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -199,14 +199,14 @@ export default function CostsClient() {
           aria-busy={!fetchFailed}
         >
           {failure?.primary ? (
-            <a className="app-button" href={failure.primary.href}>
+            <Button as="a" variant="primary" href={failure.primary.href}>
               {failure.primary.label}
-            </a>
+            </Button>
           ) : null}
           {failure?.showRetry ? (
-            <button type="button" className="app-button secondary" onClick={() => load()}>
+            <Button variant="secondary" type="button" onClick={() => load()}>
               Retry
-            </button>
+            </Button>
           ) : null}
         </EmptyState>
       </main>
@@ -238,9 +238,9 @@ export default function CostsClient() {
                   <strong>{step.label}</strong>
                   <span>{step.detail}</span>
                 </div>
-                <a className="app-button secondary" href={step.href}>
+                <Button as="a" variant="secondary" href={step.href}>
                   Open
-                </a>
+                </Button>
               </li>
             ))}
           </ol>
@@ -283,15 +283,15 @@ export default function CostsClient() {
               </select>
             </label>
           ) : null}
-          <a className="app-button secondary" href={hubHref("/business", "budget", orgId)}>
+          <Button as="a" variant="secondary" href={hubHref("/business", "budget", orgId)}>
             Business budget
-          </a>
-          <a className="app-button secondary" href={hubHref("/business", "orders", orgId)}>
+          </Button>
+          <Button as="a" variant="secondary" href={hubHref("/business", "orders", orgId)}>
             Orders
-          </a>
-          <a className="app-button secondary" href={withOrgHref("/fundraisers", orgId)}>
+          </Button>
+          <Button as="a" variant="secondary" href={withOrgHref("/fundraisers", orgId)}>
             Fundraisers
-          </a>
+          </Button>
         </div>
       </PageHeader>
 
@@ -498,9 +498,9 @@ function BudgetPanel({ view, busy, mutate }: { view: LiveView; busy: boolean; mu
             placeholder="e.g. 25000"
           />
         </label>
-        <button type="submit" className="app-button" disabled={busy}>
+        <Button variant="primary" type="submit" disabled={busy}>
           Save budget
-        </button>
+        </Button>
         <label
           className="costs-ai-toggle"
           title="Automated, rule-based analysis of your budget. Your data stays within your team; no external AI is called."
@@ -661,9 +661,9 @@ function AddSubscriptionForm({ busy, mutate }: { busy: boolean; mutate: Mutate }
           ))}
         </select>
       </label>
-      <button type="submit" className="app-button secondary" disabled={busy || !form.name.trim()}>
+      <Button variant="secondary" type="submit" disabled={busy || !form.name.trim()}>
         Add subscription
-      </button>
+      </Button>
     </form>
   );
 }
@@ -738,9 +738,9 @@ function AddCostForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
         </FormRow>
       </FormGrid>
       <div className="costs-form-actions">
-        <button type="submit" className="app-button" disabled={busy || !form.label.trim() || !form.incurredOn}>
+        <Button variant="primary" type="submit" disabled={busy || !form.label.trim() || !form.incurredOn}>
           Add cost
-        </button>
+        </Button>
       </div>
     </Panel>
   );

@@ -27,6 +27,7 @@ const SHELL_ROUTES = [
   "/scouting",
   "/schedule",
   "/competition",
+  "/command",
   "/calendar",
   "/team/calendar",
   "/team",
@@ -47,6 +48,7 @@ const SHELL_ROUTES = [
   "/assembly-manual",
   "/packing",
   "/batteries",
+  "/my-day",
 ];
 
 function isShellPath(pathname) {

@@ -6,7 +6,7 @@
 // different days, and the calendar has to load without the writing view's AI machinery.
 
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
-import { Badge, EmptyState, PageHeader, Panel } from "../../../../components/ui";
+import { Badge, EmptyState, PageHeader, Panel, Button } from "../../../../components/ui";
 import type {
   GrantCalendarEntry,
   GrantCalendarView,
@@ -170,9 +170,9 @@ export default function GrantCalendarClient({ orgId: orgIdProp }: { orgId?: stri
           title="Grant calendar unavailable"
           description="Deadlines come from recorded calendar rows only — nothing is estimated while the calendar is offline."
         >
-          <button type="button" className="app-button" onClick={() => void load()}>
+          <Button variant="primary" type="button" onClick={() => void load()}>
             Try again
-          </button>
+          </Button>
         </EmptyState>
       </main>
     );
@@ -197,9 +197,9 @@ export default function GrantCalendarClient({ orgId: orgIdProp }: { orgId?: stri
         />
         <EmptyState soft badge="Setup required" badgeTone="setup" title="Select a team">
           {view.steps.map((step) => (
-            <a key={step.id} className="app-button" href={step.href}>
+            <Button as="a" variant="primary" key={step.id} href={step.href}>
               {step.label}
-            </a>
+            </Button>
           ))}
         </EmptyState>
       </main>
@@ -215,9 +215,9 @@ export default function GrantCalendarClient({ orgId: orgIdProp }: { orgId?: stri
           live!.platformCount === 1 ? "grant" : "grants"
         }${live!.teamCount > 0 ? ` plus ${live!.teamCount} your team added` : ""}. Watch one and we email you 30, 14, and 3 days before it closes.`}
       >
-        <a className="app-button ghost" href={`/team/grants?orgId=${encodeURIComponent(live!.orgId)}`}>
+        <Button as="a" variant="ghost" href={`/team/grants?orgId=${encodeURIComponent(live!.orgId)}`}>
           Grant writing
-        </a>
+        </Button>
       </PageHeader>
 
       {error ? (
@@ -309,14 +309,9 @@ export default function GrantCalendarClient({ orgId: orgIdProp }: { orgId?: stri
 
       {live!.canManage ? (
         <Panel className="grant-cal-add">
-          <button
-            type="button"
-            className="app-button ghost"
-            aria-expanded={showAdd}
-            onClick={() => setShowAdd((open) => !open)}
-          >
+          <Button variant="ghost" type="button" aria-expanded={showAdd} onClick={() => setShowAdd((open) => !open)}>
             {showAdd ? "Cancel" : "Add a grant your team found"}
-          </button>
+          </Button>
           {showAdd ? (
             <AddOpportunityForm
               busy={busyId === "add"}
@@ -436,9 +431,9 @@ function GrantRow({
           {busy ? "Saving…" : entry.watching ? "Watching — alerts on" : "Watch this grant"}
         </button>
         {canManage && entry.teamAdded ? (
-          <button type="button" className="app-button ghost" onClick={onRemove} disabled={busy}>
+          <Button variant="ghost" type="button" onClick={onRemove} disabled={busy}>
             Remove
-          </button>
+          </Button>
         ) : null}
       </div>
     </li>
@@ -484,9 +479,9 @@ function EligibilityFactsForm({
           <option value="false">No</option>
         </select>
       </label>
-      <button type="submit" className="app-button" disabled={busy}>
+      <Button variant="primary" type="submit" disabled={busy}>
         {busy ? "Saving…" : "Save eligibility facts"}
-      </button>
+      </Button>
     </form>
   );
 }
@@ -561,9 +556,9 @@ function AddOpportunityForm({
         <span>Notes</span>
         <textarea value={fields.notes} onChange={set("notes")} rows={3} maxLength={4000} />
       </label>
-      <button type="submit" className="app-button" disabled={busy}>
+      <Button variant="primary" type="submit" disabled={busy}>
         {busy ? "Adding…" : "Add to calendar"}
-      </button>
+      </Button>
     </form>
   );
 }

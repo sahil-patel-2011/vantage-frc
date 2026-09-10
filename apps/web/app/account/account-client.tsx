@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { EmptyState, PageHeader, Panel, TabBar } from "../../components/ui";
+import { EmptyState, PageHeader, Panel, TabBar, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   ACCOUNT_RELATED_INCLUDE,
@@ -245,17 +245,17 @@ function PushDevicePanel({ orgId }: { orgId: string | null }) {
       ) : null}
       {push?.state === "available" ? (
         <div className="account-actions">
-          <button className="app-button" type="button" disabled={pushBusy} onClick={() => void enable()}>
+          <Button variant="primary" type="button" disabled={pushBusy} onClick={() => void enable()}>
             Turn on push for this device
-          </button>
+          </Button>
         </div>
       ) : null}
       {push?.state === "subscribed" ? (
         <div className="account-actions">
           <p style={{ margin: 0 }}>Push is on for this device.</p>
-          <button className="app-button secondary" type="button" disabled={pushBusy} onClick={() => void disable()}>
+          <Button variant="secondary" type="button" disabled={pushBusy} onClick={() => void disable()}>
             Turn off
-          </button>
+          </Button>
         </div>
       ) : null}
       {pushError ? (
@@ -272,9 +272,9 @@ function AccountRelated({ orgId }: { orgId: string | null }) {
   return (
     <nav className="product-hub-related account-related" aria-label="Related account tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -313,9 +313,9 @@ function NextActions({
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -341,12 +341,12 @@ function OrgContextCard({ org }: { org: OrgContext }) {
         }
       >
         <div className="account-empty-actions">
-          <a className="app-button" href="/workspace">
+          <Button as="a" variant="primary" href="/workspace">
             Choose your team
-          </a>
-          <a className="app-button secondary" href="/support">
+          </Button>
+          <Button as="a" variant="secondary" href="/support">
             Help & Support
-          </a>
+          </Button>
         </div>
       </EmptyState>
     );
@@ -653,9 +653,9 @@ export default function AccountClient() {
             names for one destination on one screen reads as two destinations.
             What's new stays: the strip does not carry it. */}
         <div className="account-header-actions">
-          <a className="app-button secondary" href="/whats-new">
+          <Button as="a" variant="secondary" href="/whats-new">
             What’s new
-          </a>
+          </Button>
         </div>
       </PageHeader>
 
@@ -710,18 +710,18 @@ export default function AccountClient() {
               >
                 <div className="account-empty-actions">
                   {copy.primary ? (
-                    <a className="app-button" href={copy.primary.href}>
+                    <Button as="a" variant="primary" href={copy.primary.href}>
                       {copy.primary.label}
-                    </a>
+                    </Button>
                   ) : null}
                   {copy.showRetry ? (
-                    <button type="button" className="app-button" onClick={() => void load()}>
+                    <Button variant="primary" type="button" onClick={() => void load()}>
                       Retry
-                    </button>
+                    </Button>
                   ) : null}
-                  <a className="app-button secondary" href="/support">
+                  <Button as="a" variant="secondary" href="/support">
                     Help & Support
-                  </a>
+                  </Button>
                 </div>
               </EmptyState>
             );
@@ -760,9 +760,9 @@ export default function AccountClient() {
                 </p>
               </header>
               <div className="account-ai-keys-actions">
-                <a className="app-button primary" href={withOrgHref("/team/ai-keys", orgId)}>
+                <Button as="a" variant="primary" href={withOrgHref("/team/ai-keys", orgId)}>
                   Open AI keys
-                </a>
+                </Button>
               </div>
             </section>
           ) : null}
@@ -916,9 +916,9 @@ export default function AccountClient() {
                       : account.phoneOtp?.message ?? "SMS OTP is setup-required until Twilio env is set."}
                 </p>
                 <div className="account-actions">
-                  <button className="app-button secondary" type="button" disabled={busy} onClick={() => void sendPhoneOtp()}>
+                  <Button variant="secondary" type="button" disabled={busy} onClick={() => void sendPhoneOtp()}>
                     Send phone code
-                  </button>
+                  </Button>
                   <input
                     value={otpCode}
                     onChange={(event) => setOtpCode(event.target.value)}
@@ -927,9 +927,9 @@ export default function AccountClient() {
                     placeholder="6-digit code"
                     aria-label="Phone OTP code"
                   />
-                  <button className="app-button secondary" type="button" disabled={busy || otpCode.length !== 6} onClick={() => void verifyPhoneOtp()}>
+                  <Button variant="secondary" type="button" disabled={busy || otpCode.length !== 6} onClick={() => void verifyPhoneOtp()}>
                     Verify phone
-                  </button>
+                  </Button>
                 </div>
                 <div className="account-actions">
                   <button className="primary-action" type="submit" disabled={busy}>

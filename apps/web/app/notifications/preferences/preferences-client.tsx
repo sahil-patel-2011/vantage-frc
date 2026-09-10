@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { EmptyState, PageHeader, Panel } from "../../../components/ui";
+import { EmptyState, PageHeader, Panel, Button } from "../../../components/ui";
 import {
   NOTIFICATION_RELATED_INCLUDE,
   notificationRelatedLinks,
@@ -167,9 +167,9 @@ function PrefsRelated() {
   return (
     <nav className="product-hub-related notif-related" aria-label="Related account tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -249,18 +249,18 @@ export default function NotificationPreferencesClient() {
         description="Choose which coach→member events land in your inbox, plus optional email opt-ins."
       >
         <div className="notif-header-actions">
-          <a className="app-button secondary" href="/notifications">
+          <Button as="a" variant="secondary" href="/notifications">
             Open inbox
-          </a>
-          <a className="app-button secondary" href="/whats-new">
+          </Button>
+          <Button as="a" variant="secondary" href="/whats-new">
             What’s new
-          </a>
-          <a className="app-button secondary" href="/support">
+          </Button>
+          <Button as="a" variant="secondary" href="/support">
             Help & Support
-          </a>
-          <a className="app-button secondary" href="/account?tab=notifications">
+          </Button>
+          <Button as="a" variant="secondary" href="/account?tab=notifications">
             Account
-          </a>
+          </Button>
         </div>
       </PageHeader>
 

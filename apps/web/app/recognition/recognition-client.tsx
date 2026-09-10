@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { EmptyState, PageHeader } from "../../components/ui";
+import { EmptyState, PageHeader, Button } from "../../components/ui";
 import { RECOGNITION_STAGE_LABEL, SUGGESTED_AWARDS, type RecognitionStage } from "../../lib/recognition";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
@@ -116,14 +116,14 @@ export default function RecognitionClient({ orgId }: { orgId: string | null }) {
         {copy ? (
           <EmptyState soft badge="Unavailable" badgeTone="setup" title={copy.title} description={copy.description}>
             {copy.primary ? (
-              <a className="app-button" href={copy.primary.href}>
+              <Button as="a" variant="primary" href={copy.primary.href}>
                 {copy.primary.label}
-              </a>
+              </Button>
             ) : null}
             {copy.showRetry ? (
-              <button type="button" className="app-button secondary" onClick={() => void load()}>
+              <Button variant="secondary" type="button" onClick={() => void load()}>
                 Retry
-              </button>
+              </Button>
             ) : null}
           </EmptyState>
         ) : null}
@@ -146,9 +146,9 @@ export default function RecognitionClient({ orgId }: { orgId: string | null }) {
           title={view.message}
           description="Choose a team, then return here to open nominations. Empty shells stay empty."
         >
-          <a className="app-button" href="/workspace">
+          <Button as="a" variant="primary" href="/workspace">
             Choose your team
-          </a>
+          </Button>
         </EmptyState>
       </main>
     );
@@ -164,12 +164,12 @@ export default function RecognitionClient({ orgId }: { orgId: string | null }) {
         description={`Nominate teammates, then vote — one ballot each · ${seasonYear}. These are your team's own end-of-season awards, separate from the FIRST competition awards.`}
       >
         <nav className="visit-inline-actions" aria-label="Related">
-          <a className="app-button secondary" href={`/team/awards${orgId ? `?orgId=${orgId}` : ""}`}>
+          <Button as="a" variant="secondary" href={`/team/awards${orgId ? `?orgId=${orgId}` : ""}`}>
             FIRST awards
-          </a>
-          <a className="app-button secondary" href="/workspace">
+          </Button>
+          <Button as="a" variant="secondary" href="/workspace">
             Your team
-          </a>
+          </Button>
         </nav>
       </PageHeader>
       {message ? <p className="telemetry-status" role="status">{message}</p> : null}
@@ -187,9 +187,9 @@ export default function RecognitionClient({ orgId }: { orgId: string | null }) {
                 placeholder="Most Valuable Player"
               />
             </label>
-            <button type="button" className="app-button" onClick={() => void createAward(awardName)}>
+            <Button variant="primary" type="button" onClick={() => void createAward(awardName)}>
               Create
-            </button>
+            </Button>
           </div>
           <p>
             <small>
@@ -245,16 +245,9 @@ export default function RecognitionClient({ orgId }: { orgId: string | null }) {
                 </div>
               </div>
               {award.stage === "voting" ? (
-                <button
-                  type="button"
-                  className="app-button secondary"
-                  onClick={() =>
-                    void post({ action: "cast_vote", awardId: award.id, nominationId: nom.id }, "Vote recorded.")
-                  }
-                  disabled={award.myVote === nom.id}
-                >
+                <Button variant="secondary" type="button" onClick={() => void post({ action: "cast_vote", awardId: award.id, nominationId: nom.id }, "Vote recorded.") } disabled={award.myVote === nom.id}>
                   {award.myVote === nom.id ? "Your vote" : "Vote"}
-                </button>
+                </Button>
               ) : null}
             </article>
           ))}
@@ -269,35 +262,22 @@ export default function RecognitionClient({ orgId }: { orgId: string | null }) {
                   placeholder="Teammate name"
                 />
               </label>
-              <button type="button" className="app-button" onClick={() => void nominate(award.id)}>
+              <Button variant="primary" type="button" onClick={() => void nominate(award.id)}>
                 Nominate
-              </button>
+              </Button>
             </div>
           ) : null}
 
           {canManage ? (
             <p style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
               {NEXT_STAGE[award.stage] ? (
-                <button
-                  type="button"
-                  className="app-button secondary"
-                  onClick={() =>
-                    void post(
-                      { action: "set_stage", id: award.id, stage: NEXT_STAGE[award.stage] },
-                      `Moved to ${NEXT_STAGE[award.stage]}.`,
-                    )
-                  }
-                >
+                <Button variant="secondary" type="button" onClick={() => void post( { action: "set_stage", id: award.id, stage: NEXT_STAGE[award.stage] }, `Moved to ${NEXT_STAGE[award.stage]}.`, ) }>
                   Advance to {RECOGNITION_STAGE_LABEL[NEXT_STAGE[award.stage]!]}
-                </button>
+                </Button>
               ) : null}
-              <button
-                type="button"
-                className="app-button secondary"
-                onClick={() => void post({ action: "delete_award", id: award.id }, "Award deleted.")}
-              >
+              <Button variant="secondary" type="button" onClick={() => void post({ action: "delete_award", id: award.id }, "Award deleted.")}>
                 Delete
-              </button>
+              </Button>
             </p>
           ) : null}
         </section>

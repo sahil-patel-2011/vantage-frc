@@ -1,4 +1,4 @@
-import { EmptyState, Panel } from "../../components/ui";
+import { EmptyState, Panel, Button } from "../../components/ui";
 import {
   intelSetupSteps,
   intelShellCopy,
@@ -29,18 +29,18 @@ export default async function IntelPage({
           title={copy.title}
           description={copy.description}
         >
-          <a className="app-button" href="/workspace">
+          <Button as="a" variant="primary" href="/workspace">
             Choose your team
-          </a>
-          <a className="app-button secondary" href={hubHref("/competition", "strategy", null)}>
+          </Button>
+          <Button as="a" variant="secondary" href={hubHref("/competition", "strategy", null)}>
             Open Strategy
-          </a>
-          <a className="app-button secondary" href="/dossier">
+          </Button>
+          <Button as="a" variant="secondary" href="/dossier">
             Open Team Dossier
-          </a>
-          <a className="app-button secondary" href={hubHref("/competition", "scouting", null)}>
+          </Button>
+          <Button as="a" variant="secondary" href={hubHref("/competition", "scouting", null)}>
             Open Scouting
-          </a>
+          </Button>
         </EmptyState>
         {steps.length > 0 ? (
           <Panel className="intel-panel" aria-label="Setup steps">
@@ -55,9 +55,9 @@ export default async function IntelPage({
                     <strong>{step.label}</strong>
                     <p className="app-muted">{step.detail}</p>
                   </div>
-                  <a className="app-button secondary" href={step.href}>
+                  <Button as="a" variant="secondary" href={step.href}>
                     Open
-                  </a>
+                  </Button>
                 </li>
               ))}
             </ul>

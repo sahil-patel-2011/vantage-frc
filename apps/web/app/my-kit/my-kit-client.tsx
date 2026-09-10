@@ -10,8 +10,7 @@ import {
   Shell,
   SoftBlockSkeleton,
   StatTile,
-  type ShellState,
-} from "../../components/ui";
+  type ShellState, Button } from "../../components/ui";
 import { formatHours } from "../../lib/my-kit/compose";
 import type { MyKitSection, MyKitSectionId, MyKitTone, MyKitView } from "../../lib/my-kit/types";
 import { hubWorkbenchHref } from "../../lib/nav/hubs";
@@ -80,9 +79,9 @@ function SectionCard({ section }: { section: MyKitSection }) {
       )}
 
       <div className="mk-section-footer">
-        <a className="app-button secondary" href={section.href}>
+        <Button as="a" variant="secondary" href={section.href}>
           {OPEN_LABEL[section.id]}
-        </a>
+        </Button>
       </div>
     </Panel>
   );
@@ -143,15 +142,15 @@ export default function MyKitClient() {
         description="What you need tonight — assignments and packing that belong to you. Read-only, never a template kit."
       >
         <nav className="product-hub-related mk-related" aria-label="Related personal views">
-          <a className="app-button secondary" href={withOrgHref("/my-day", orgId)}>
+          <Button as="a" variant="secondary" href={withOrgHref("/my-day", orgId)}>
             My Day
-          </a>
-          <a className="app-button secondary" href={withOrgHref("/hours-self-view", orgId)}>
+          </Button>
+          <Button as="a" variant="secondary" href={withOrgHref("/hours-self-view", orgId)}>
             My Hours
-          </a>
-          <a className="app-button secondary" href={withOrgHref("/start", orgId)}>
+          </Button>
+          <Button as="a" variant="secondary" href={withOrgHref("/start", orgId)}>
             Getting started
-          </a>
+          </Button>
         </nav>
       </PageHeader>
 
@@ -233,12 +232,12 @@ export default function MyKitClient() {
                 />
               )}
               <div className="mk-section-footer">
-                <a className="app-button secondary" href={withOrgHref("/todos", orgId)}>
+                <Button as="a" variant="secondary" href={withOrgHref("/todos", orgId)}>
                   Open Work
-                </a>
-                <a className="app-button secondary" href={withOrgHref("/packing", orgId)}>
+                </Button>
+                <Button as="a" variant="secondary" href={withOrgHref("/packing", orgId)}>
                   Open Packing
-                </a>
+                </Button>
               </div>
             </Panel>
 
@@ -309,9 +308,9 @@ export default function MyKitClient() {
                 </div>
                 <nav className="mk-quick-links" aria-label="Subteam tools">
                   {live.quickLinks.map((link) => (
-                    <a key={link.id} className="app-button secondary" href={link.href}>
+                    <Button as="a" variant="secondary" key={link.id} href={link.href}>
                       {link.label}
-                    </a>
+                    </Button>
                   ))}
                 </nav>
               </Panel>

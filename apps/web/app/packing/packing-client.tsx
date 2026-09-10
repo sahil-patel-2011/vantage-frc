@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "../../components/ui";
 
 import { useCallback, useEffect, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
@@ -181,9 +182,9 @@ function ListDetail({
             placeholder="Optional note"
             onChange={(event) => setRequestNote(event.target.value)}
           />
-          <button type="submit" className="app-button secondary" disabled={busy || !requestLabel.trim()}>
+          <Button variant="secondary" type="submit" disabled={busy || !requestLabel.trim()}>
             Request pack
-          </button>
+          </Button>
         </form>
       </section>
 
@@ -272,9 +273,9 @@ function ListDetail({
           disabled={busy}
           onChange={(e) => setQuantity(e.target.value)}
         />
-        <button type="submit" className="app-button secondary" disabled={busy || !label.trim()}>
+        <Button variant="secondary" type="submit" disabled={busy || !label.trim()}>
           Add to master list
-        </button>
+        </Button>
       </form>
       ) : (
         <p className="app-muted">Need something packed? Submit a request above — only the packing lead edits the master list.</p>
@@ -419,14 +420,14 @@ export default function PackingClient() {
                   <strong>{copy.title}</strong>
                   <p className="app-muted">{copy.description}</p>
                   {copy.primary ? (
-                    <a className="app-button" href={copy.primary.href}>
+                    <Button as="a" variant="primary" href={copy.primary.href}>
                       {copy.primary.label}
-                    </a>
+                    </Button>
                   ) : null}
                   {copy.showRetry ? (
-                    <button type="button" className="app-button secondary" onClick={() => void load()}>
+                    <Button variant="secondary" type="button" onClick={() => void load()}>
                       Retry
-                    </button>
+                    </Button>
                   ) : null}
                 </>
               );
@@ -453,9 +454,9 @@ export default function PackingClient() {
         <div className="app-card pack-empty">
           <strong>Select a team</strong>
           <p className="app-muted">{view.message}</p>
-          <a className="app-button" href="/workspace">
+          <Button as="a" variant="primary" href="/workspace">
             Choose your team
-          </a>
+          </Button>
         </div>
       </main>
     );
@@ -488,12 +489,12 @@ export default function PackingClient() {
               into. Both were a hamburger away from a page you work standing up
               in the shop. */}
           <nav className="product-hub-related" aria-label="Related packing tools">
-            <a className="app-button secondary" href={withOrgHref("/spares", view.context.orgId)}>
+            <Button as="a" variant="secondary" href={withOrgHref("/spares", view.context.orgId)}>
               Consumables
-            </a>
-            <a className="app-button secondary" href={withOrgHref("/logistics", view.context.orgId)}>
+            </Button>
+            <Button as="a" variant="secondary" href={withOrgHref("/logistics", view.context.orgId)}>
               Logistics
-            </a>
+            </Button>
           </nav>
         </div>
         <div className="pack-header-actions">
@@ -506,9 +507,9 @@ export default function PackingClient() {
               if (event.key === "Enter") createList();
             }}
           />
-          <button type="button" className="app-button" disabled={busyKey === "create"} onClick={createList}>
+          <Button variant="primary" type="button" disabled={busyKey === "create"} onClick={createList}>
             New list
-          </button>
+          </Button>
         </div>
       </header>
       <OfflineBanner feature="Packing" fromCache={fromCache} cachedAt={cachedAt} />
@@ -523,9 +524,9 @@ export default function PackingClient() {
         <div className="app-card pack-empty">
           <strong>No packing lists yet</strong>
           <p className="app-muted">Create one — it seeds the standard competition load-out (batteries, tools, spares, drive station, safety).</p>
-          <button type="button" className="app-button" disabled={busyKey === "create"} onClick={createList}>
+          <Button variant="primary" type="button" disabled={busyKey === "create"} onClick={createList}>
             Create competition load-out
-          </button>
+          </Button>
         </div>
       ) : (
         <div className="pack-layout">

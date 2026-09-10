@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { CHANGE_TYPES, SUBSYSTEMS, changeTypeLabel, subsystemLabel, verdictLabel } from "../../lib/code-perf";
 import type { CodePerfView } from "../../lib/code-perf/compute-code-perf";
@@ -143,14 +143,14 @@ export default function CodePerfClient() {
           return (
             <EmptyState title={copy.title} description={copy.description}>
               {copy.primary ? (
-                <a className="app-button" href={copy.primary.href}>
+                <Button as="a" variant="primary" href={copy.primary.href}>
                   {copy.primary.label}
-                </a>
+                </Button>
               ) : null}
               {copy.showRetry ? (
-                <button type="button" className="app-button secondary" onClick={() => load()}>
+                <Button variant="secondary" type="button" onClick={() => load()}>
                   Retry
-                </button>
+                </Button>
               ) : null}
             </EmptyState>
           );
@@ -265,14 +265,9 @@ function ChangesList({
               )}
             </div>
             <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-              <button
-                type="button"
-                className="app-button secondary"
-                disabled={busy}
-                onClick={() => mutate({ action: "analyze-change", changeId: item.id })}
-              >
+              <Button variant="secondary" type="button" disabled={busy} onClick={() => mutate({ action: "analyze-change", changeId: item.id })}>
                 Analyze
-              </button>
+              </Button>
               <button
                 type="button"
                 className="text-button"
@@ -425,9 +420,9 @@ function LogChangeForm({
         <textarea value={form.description} onChange={set("description")} rows={2} />
       </FormRow>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !form.title.trim() || !form.occurredOn}>
+        <Button variant="primary" type="submit" disabled={busy || !form.title.trim() || !form.occurredOn}>
           Log change
-        </button>
+        </Button>
       </div>
     </Panel>
   );
@@ -501,9 +496,9 @@ function LogMatchResultForm({
         <textarea value={form.notes} onChange={set("notes")} rows={2} />
       </FormRow>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !form.matchKey.trim() || !form.occurredOn}>
+        <Button variant="primary" type="submit" disabled={busy || !form.matchKey.trim() || !form.occurredOn}>
           Log match result
-        </button>
+        </Button>
       </div>
     </Panel>
   );

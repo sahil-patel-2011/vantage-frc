@@ -137,9 +137,9 @@ function FarmShell({
           title="Select a team"
           description={description}
         >
-          <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
+          <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
             Choose your team
-          </a>
+          </Button>
         </EmptyState>
       )}
       <NonGoalsNote />

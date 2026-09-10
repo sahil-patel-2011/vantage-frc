@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "../../components/ui";
 import { useCallback, useEffect, useState } from "react";
 import {
   CERT_TYPE_LABEL,
@@ -105,14 +106,14 @@ export default function SafetyClient({ orgId }: { orgId: string | null }) {
           <strong>{copy.title}</strong> — {copy.description}
         </p>
         {copy.primary ? (
-          <a className="app-button" href={copy.primary.href}>
+          <Button as="a" variant="primary" href={copy.primary.href}>
             {copy.primary.label}
-          </a>
+          </Button>
         ) : null}
         {copy.showRetry ? (
-          <button type="button" className="app-button secondary" onClick={() => void load()}>
+          <Button variant="secondary" type="button" onClick={() => void load()}>
             Retry
-          </button>
+          </Button>
         ) : null}
       </main>
     );

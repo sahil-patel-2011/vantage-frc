@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { EmptyState, Panel } from "../../components/ui";
+import { EmptyState, Panel, Button } from "../../components/ui";
 import ScoutingReconciliationPanel from "./scouting-reconciliation-panel";
 
 type InfluenceRow = {
@@ -226,27 +226,12 @@ export default function ScoutingTrustPanel({
             </div>
             {view.canManage ? (
               <div>
-                <button
-                  type="button"
-                  disabled={busy}
-                  className="app-button secondary"
-                  onClick={() => void mutate({ action: "auto-assign", maximumConsecutiveMatches: 3 })}
-                >
+                <Button variant="secondary" type="button" disabled={busy} onClick={() => void mutate({ action: "auto-assign", maximumConsecutiveMatches: 3 })}>
                   Balance shifts
-                </button>
-                <button
-                  type="button"
-                  disabled={busy || !gaps.length}
-                  className="app-button secondary"
-                  onClick={() =>
-                    void mutate({
-                      action: "nudge-gaps",
-                      message: `${gaps.length} scouting rows are uncovered at ${view.eventKey}.`,
-                    })
-                  }
-                >
+                </Button>
+                <Button variant="secondary" type="button" disabled={busy || !gaps.length} onClick={() => void mutate({ action: "nudge-gaps", message: `${gaps.length} scouting rows are uncovered at ${view.eventKey}.`, }) }>
                   Nudge coordinator
-                </button>
+                </Button>
               </div>
             ) : null}
           </header>
@@ -295,9 +280,9 @@ export default function ScoutingTrustPanel({
                 exact reason they were picked.
               </p>
             )}
-            <a className="app-button secondary" href={`/strategy?orgId=${encodeURIComponent(orgId)}&tab=picks`}>
+            <Button as="a" variant="secondary" href={`/strategy?orgId=${encodeURIComponent(orgId)}&tab=picks`}>
               Open pick desk
-            </a>
+            </Button>
           </Panel>
 
           <Panel>
@@ -327,14 +312,9 @@ export default function ScoutingTrustPanel({
               <p className="app-muted">No seats assigned for this event yet.</p>
             )}
             {view.canManage ? (
-              <button
-                type="button"
-                disabled={busy}
-                className="app-button"
-                onClick={() => void mutate({ action: "seat-top-accurate", seatCount: 3 })}
-              >
+              <Button variant="primary" type="button" disabled={busy} onClick={() => void mutate({ action: "seat-top-accurate", seatCount: 3 })}>
                 Seat top accurate scouts
-              </button>
+              </Button>
             ) : null}
           </Panel>
         </aside>
@@ -446,26 +426,12 @@ export default function ScoutingTrustPanel({
             </article>
           ))}
           <div className="scout-inline-actions">
-            <button
-              type="button"
-              disabled={busy}
-              className="app-button secondary"
-              onClick={() =>
-                void mutate({ action: "clone-previous", type: "match", targetYear: new Date().getFullYear() })
-              }
-            >
+            <Button variant="secondary" type="button" disabled={busy} onClick={() => void mutate({ action: "clone-previous", type: "match", targetYear: new Date().getFullYear() }) }>
               Clone last match form
-            </button>
-            <button
-              type="button"
-              disabled={busy}
-              className="app-button secondary"
-              onClick={() =>
-                void mutate({ action: "clone-previous", type: "pit", targetYear: new Date().getFullYear() })
-              }
-            >
+            </Button>
+            <Button variant="secondary" type="button" disabled={busy} onClick={() => void mutate({ action: "clone-previous", type: "pit", targetYear: new Date().getFullYear() }) }>
               Clone last pit form
-            </button>
+            </Button>
           </div>
         </Panel>
       ) : null}

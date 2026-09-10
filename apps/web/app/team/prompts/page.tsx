@@ -1,4 +1,4 @@
-import { EmptyState, PageHeader } from "../../../components/ui";
+import { EmptyState, PageHeader, Button } from "../../../components/ui";
 import PromptsClient from "./prompts-client";
 
 export const metadata = {
@@ -26,9 +26,9 @@ export default async function TeamPromptsPage({
           title="Choose a team"
           description="Prompts are written and reused inside one team and never leak between teams. Select one and come back."
         >
-          <a className="app-button" href="/workspace">
+          <Button as="a" variant="primary" href="/workspace">
             Choose team
-          </a>
+          </Button>
         </EmptyState>
       </main>
     );

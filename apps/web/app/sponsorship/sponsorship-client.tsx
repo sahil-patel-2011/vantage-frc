@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { EmptyState, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   buildOnePagerLines,
@@ -263,9 +263,9 @@ export default function SponsorshipClient({ embedded = false }: { embedded?: boo
               <strong>{copy.title}</strong> — {copy.description}
             </p>
             {copy.primary ? (
-              <a className="app-button" href={copy.primary.href}>
+              <Button as="a" variant="primary" href={copy.primary.href}>
                 {copy.primary.label}
-              </a>
+              </Button>
             ) : null}
           </>
         ) : null}
@@ -284,9 +284,9 @@ export default function SponsorshipClient({ embedded = false }: { embedded?: boo
           />
         ) : null}
         <EmptyState title="Select a team" description={view.message}>
-          <a className="app-button" href="/workspace">
+          <Button as="a" variant="primary" href="/workspace">
             Choose your team
-          </a>
+          </Button>
         </EmptyState>
       </main>
     );
@@ -324,38 +324,22 @@ export default function SponsorshipClient({ embedded = false }: { embedded?: boo
           </label>
           {context.orgId ? (
             <>
-              <a
-                className="app-button secondary"
+              <Button as="a" variant="secondary"
                 href={`/business?orgId=${encodeURIComponent(context.orgId)}&tab=sponsors`}
               >
                 Sponsor pipeline
-              </a>
-              <a className="app-button secondary" href={`/sponsor-suite?orgId=${encodeURIComponent(context.orgId)}`}>
+              </Button>
+              <Button as="a" variant="secondary" href={`/sponsor-suite?orgId=${encodeURIComponent(context.orgId)}`}>
                 Sponsor Suite
-              </a>
-              <a className="app-button secondary" href={`/media-kit?orgId=${encodeURIComponent(context.orgId)}`}>
+              </Button>
+              <Button as="a" variant="secondary" href={`/media-kit?orgId=${encodeURIComponent(context.orgId)}`}>
                 Media kit
-              </a>
+              </Button>
             </>
           ) : null}
-          <button
-            type="button"
-            className="app-button"
-            disabled={busy}
-            onClick={() =>
-              void mutate(
-                {
-                  action: "create",
-                  title: defaultTitle(context.teamNumber, season ?? seasonYear),
-                  whoWeAre: context.seedWhoWeAre ?? "",
-                  whatWeDo: context.seedFundingNeed ?? "",
-                },
-                "One-pager created.",
-              )
-            }
-          >
+          <Button variant="primary" type="button" disabled={busy} onClick={() => void mutate( { action: "create", title: defaultTitle(context.teamNumber, season ?? seasonYear), whoWeAre: context.seedWhoWeAre ?? "", whatWeDo: context.seedFundingNeed ?? "", }, "One-pager created.", ) }>
             New one-pager
-          </button>
+          </Button>
         </div>
       </PageHeader>
       ) : (
@@ -379,24 +363,9 @@ export default function SponsorshipClient({ embedded = false }: { embedded?: boo
               ))}
             </select>
           </label>
-          <button
-            type="button"
-            className="app-button"
-            disabled={busy}
-            onClick={() =>
-              void mutate(
-                {
-                  action: "create",
-                  title: defaultTitle(context.teamNumber, season ?? seasonYear),
-                  whoWeAre: context.seedWhoWeAre ?? "",
-                  whatWeDo: context.seedFundingNeed ?? "",
-                },
-                "One-pager created.",
-              )
-            }
-          >
+          <Button variant="primary" type="button" disabled={busy} onClick={() => void mutate( { action: "create", title: defaultTitle(context.teamNumber, season ?? seasonYear), whoWeAre: context.seedWhoWeAre ?? "", whatWeDo: context.seedFundingNeed ?? "", }, "One-pager created.", ) }>
             New one-pager
-          </button>
+          </Button>
         </div>
       )}
 
@@ -444,24 +413,9 @@ export default function SponsorshipClient({ embedded = false }: { embedded?: boo
                 description="Compose who you are, what you do, what you ask, and what sponsors get — then export PDF. Only this team's story is used."
               >
                 {!onePagers.length ? (
-                  <button
-                    type="button"
-                    className="app-button"
-                    disabled={busy}
-                    onClick={() =>
-                      void mutate(
-                        {
-                          action: "create",
-                          title: defaultTitle(context.teamNumber, season ?? seasonYear),
-                          whoWeAre: context.seedWhoWeAre ?? "",
-                          whatWeDo: context.seedFundingNeed ?? "",
-                        },
-                        "One-pager created.",
-                      )
-                    }
-                  >
+                  <Button variant="primary" type="button" disabled={busy} onClick={() => void mutate( { action: "create", title: defaultTitle(context.teamNumber, season ?? seasonYear), whoWeAre: context.seedWhoWeAre ?? "", whatWeDo: context.seedFundingNeed ?? "", }, "One-pager created.", ) }>
                     New one-pager
-                  </button>
+                  </Button>
                 ) : null}
               </EmptyState>
             </Panel>
@@ -594,56 +548,22 @@ export default function SponsorshipClient({ embedded = false }: { embedded?: boo
                   ) : null}
 
                   <div className="svp-actions">
-                    <button type="submit" className="app-button" disabled={busy || !selected}>
+                    <Button variant="primary" type="submit" disabled={busy || !selected}>
                       Save
-                    </button>
-                    <button
-                      type="button"
-                      className="app-button secondary"
-                      disabled={busy || !selected || !completeness?.complete}
-                      onClick={() =>
-                        selected &&
-                        void mutate(
-                          {
-                            action: "update",
-                            id: selected.id,
-                            title: draft.title,
-                            whoWeAre: draft.whoWeAre,
-                            whatWeDo: draft.whatWeDo,
-                            askCashUsd: draft.askCashUsd === "" ? null : Number(draft.askCashUsd),
-                            askParts: draft.askParts,
-                            askMentorship: draft.askMentorship,
-                            sponsorGets: draft.sponsorGets,
-                            inviteEnabled: draft.inviteEnabled,
-                            inviteDetails: draft.inviteDetails,
-                            status: "ready",
-                          },
-                          "Marked ready to share.",
-                        )
-                      }
-                    >
+                    </Button>
+                    <Button variant="secondary" type="button" disabled={busy || !selected || !completeness?.complete} onClick={() => selected && void mutate( { action: "update", id: selected.id, title: draft.title, whoWeAre: draft.whoWeAre, whatWeDo: draft.whatWeDo, askCashUsd: draft.askCashUsd === "" ? null : Number(draft.askCashUsd), askParts: draft.askParts, askMentorship: draft.askMentorship, sponsorGets: draft.sponsorGets, inviteEnabled: draft.inviteEnabled, inviteDetails: draft.inviteDetails, status: "ready", }, "Marked ready to share.", ) }>
                       Mark ready
-                    </button>
-                    <button
-                      type="button"
-                      className="app-button secondary"
-                      disabled={busy || !selected}
-                      onClick={() => selected && void mutate({ action: "pdf", id: selected.id })}
-                    >
+                    </Button>
+                    <Button variant="secondary" type="button" disabled={busy || !selected} onClick={() => selected && void mutate({ action: "pdf", id: selected.id })}>
                       Export PDF
-                    </button>
-                    <button type="button" className="app-button secondary" disabled={!previewPage} onClick={() => void copyText()}>
+                    </Button>
+                    <Button variant="secondary" type="button" disabled={!previewPage} onClick={() => void copyText()}>
                       Copy text
-                    </button>
+                    </Button>
                     {selected ? (
-                      <button
-                        type="button"
-                        className="app-button secondary"
-                        disabled={busy}
-                        onClick={() => void mutate({ action: "delete", id: selected.id }, "Deleted.")}
-                      >
+                      <Button variant="secondary" type="button" disabled={busy} onClick={() => void mutate({ action: "delete", id: selected.id }, "Deleted.")}>
                         Delete
-                      </button>
+                      </Button>
                     ) : null}
                   </div>
                 </form>

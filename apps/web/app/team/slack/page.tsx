@@ -1,4 +1,4 @@
-import { EmptyState, PageHeader } from "../../../components/ui";
+import { EmptyState, PageHeader, Button } from "../../../components/ui";
 import { TeamOpsNav } from "../../../components/team-ops-nav";
 import TeamSlackClient from "./slack-client";
 
@@ -28,9 +28,9 @@ export default async function TeamSlackPage({
           badge="Setup required"
           badgeTone="setup"
         >
-          <a className="app-button" href="/workspace">
+          <Button as="a" variant="primary" href="/workspace">
             Choose your team
-          </a>
+          </Button>
         </EmptyState>
       </main>
     );

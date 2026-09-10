@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { EmptyState, PageHeader } from "../../components/ui";
+import { EmptyState, PageHeader, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   WHATS_NEW_RELATED_INCLUDE,
@@ -30,9 +30,9 @@ function WhatsNewRelated() {
   return (
     <nav className="product-hub-related whats-new-related" aria-label="Related account tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -115,17 +115,17 @@ function BetaProgramCard() {
             Checking…
           </span>
         ) : state.kind === "error" ? (
-          <button type="button" className="app-button secondary" onClick={() => void loadBeta()}>
+          <Button variant="secondary" type="button" onClick={() => void loadBeta()}>
             Retry
-          </button>
+          </Button>
         ) : state.enrolled ? (
-          <button type="button" className="app-button secondary" disabled={busy} onClick={() => void toggle(false)}>
+          <Button variant="secondary" type="button" disabled={busy} onClick={() => void toggle(false)}>
             {busy ? "Leaving…" : "Leave the beta"}
-          </button>
+          </Button>
         ) : (
-          <button type="button" className="app-button" disabled={busy} onClick={() => void toggle(true)}>
+          <Button variant="primary" type="button" disabled={busy} onClick={() => void toggle(true)}>
             {busy ? "Joining…" : "Join the beta"}
-          </button>
+          </Button>
         )}
       </div>
     </section>
@@ -147,9 +147,9 @@ function NextActions({ releaseCount, unreadCount }: { releaseCount: number; unre
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -181,9 +181,9 @@ function ReleaseCard({
           <h2>{release.title}</h2>
         </div>
         {!release.seenAt ? (
-          <button type="button" className="app-button secondary" onClick={() => onMarkSeen(release.id)}>
+          <Button variant="secondary" type="button" onClick={() => onMarkSeen(release.id)}>
             Mark as read
-          </button>
+          </Button>
         ) : (
           <span className="whats-new-seen">Seen</span>
         )}
@@ -276,9 +276,9 @@ export default function WhatsNewClient() {
             Prefs stays because the strip does not carry it — and it is labelled
             the same here as everywhere else, so one name means one place. */}
         <div className="whats-new-header-actions">
-          <a className="app-button secondary" href="/notifications/preferences">
+          <Button as="a" variant="secondary" href="/notifications/preferences">
             Notification prefs
-          </a>
+          </Button>
         </div>
       </PageHeader>
 
@@ -300,14 +300,14 @@ export default function WhatsNewClient() {
           >
             <div className="whats-new-empty-actions">
               {failure.primary ? (
-                <a className="app-button" href={failure.primary.href}>
+                <Button as="a" variant="primary" href={failure.primary.href}>
                   {failure.primary.label}
-                </a>
+                </Button>
               ) : null}
               {failure.showRetry ? (
-                <button type="button" className="app-button" onClick={() => void load()}>
+                <Button variant="primary" type="button" onClick={() => void load()}>
                   Retry
-                </button>
+                </Button>
               ) : null}
             </div>
           </EmptyState>

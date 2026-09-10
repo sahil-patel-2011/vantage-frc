@@ -2,7 +2,7 @@
 
 import { syncEntriesToQrRecords, type ScoutQrRecord } from "@vantage/scouting/qr-handoff";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { FormRow } from "../../components/ui";
+import { FormRow, Button } from "../../components/ui";
 import { listPendingEntries, mergeRecordsIntoOutbox, syncOutbox } from "../../lib/scout-offline";
 import { relayDeviceRoleLabel } from "../../lib/scout-p2p-relay";
 import {
@@ -182,42 +182,12 @@ export function PitMeshPanel({
             <option value="captain">{relayDeviceRoleLabel("captain")}</option>
           </select>
         </FormRow>
-        <button
-          type="button"
-          className="app-button secondary"
-          disabled={!identity.deviceLabel.trim()}
-          onClick={() => {
-            writeIdentity(identity);
-            setJoined(true);
-            void broadcast();
-          }}
-        >
+        <Button variant="secondary" type="button" disabled={!identity.deviceLabel.trim()} onClick={() => { writeIdentity(identity); setJoined(true); void broadcast(); }}>
           {joined ? "Broadcast now" : "Join pit mesh"}
-        </button>
-        <button
-          type="button"
-          className="app-button"
-          disabled={busy || !identity.deviceLabel.trim()}
-          onClick={() => {
-            void (async () => {
-              const envelope = await buildEnvelope();
-              const contributed = envelope?.records.length ?? 0;
-              mutate({
-                action: "log-entry",
-                sessionId: session.id,
-                deviceLabel: identity.deviceLabel,
-                deviceRole: identity.deviceRole,
-                entriesContributed: contributed,
-                conflictsResolved: 0,
-                uplinked: true,
-              });
-              await syncOutbox(orgId);
-              setStatus(`Uplinked ${contributed} local outbox row(s) to Vantage.`);
-            })();
-          }}
-        >
+        </Button>
+        <Button variant="primary" type="button" disabled={busy || !identity.deviceLabel.trim()} onClick={() => { void (async () => { const envelope = await buildEnvelope(); const contributed = envelope?.records.length ?? 0; mutate({ action: "log-entry", sessionId: session.id, deviceLabel: identity.deviceLabel, deviceRole: identity.deviceRole, entriesContributed: contributed, conflictsResolved: 0, uplinked: true, }); await syncOutbox(orgId); setStatus(`Uplinked ${contributed} local outbox row(s) to Vantage.`); })(); }}>
           Uplink this device
-        </button>
+        </Button>
       </div>
       <p role="status" className="app-muted">
         {status}
@@ -240,18 +210,9 @@ export function PitMeshPanel({
         <textarea rows={3} value={paste} onChange={(event) => setPaste(event.target.value)} />
       </FormRow>
       <div>
-        <button
-          type="button"
-          className="app-button secondary"
-          disabled={!acceptPaste}
-          onClick={() => {
-            if (!acceptPaste) return;
-            void applyEnvelope(acceptPaste);
-            setPaste("");
-          }}
-        >
+        <Button variant="secondary" type="button" disabled={!acceptPaste} onClick={() => { if (!acceptPaste) return; void applyEnvelope(acceptPaste); setPaste(""); }}>
           Merge pasted envelope
-        </button>
+        </Button>
       </div>
     </div>
   );

@@ -11,8 +11,7 @@ import {
   StatRowSkeleton,
   StatTile,
   TableSkeleton,
-  type BadgeTone,
-} from "../../components/ui";
+  type BadgeTone, Button } from "../../components/ui";
 import { UsageCutoffBanner, resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 import {
   codeVersionStatusLabel,
@@ -78,9 +77,9 @@ function ReadinessRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related readiness-score-related" aria-label="Related build tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -104,9 +103,9 @@ function ReadinessNextActionsPanel({ actions }: { actions: ReadinessScoreNextAct
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -162,10 +161,10 @@ function ReadinessShell({
           description={error ?? copy.description}
         >
           {shell === "setup" ? (
-            <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
+            <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
           ) : null}
           {shell === "empty" ? (
-            <a className="app-button is-primary" href={hubHref("/build", "subsystems", orgId)}>Open Subsystems</a>
+            <Button as="a" variant="primary" href={hubHref("/build", "subsystems", orgId)}>Open Subsystems</Button>
           ) : null}
         </EmptyState>
       )}
@@ -182,9 +181,9 @@ function ReadinessShell({
                   <strong>{step.label}</strong>
                   <p className="app-muted readiness-score-tip">{step.detail}</p>
                 </div>
-                <a className="app-button secondary" href={step.href}>
+                <Button as="a" variant="secondary" href={step.href}>
                   Open
-                </a>
+                </Button>
               </li>
             ))}
           </ul>
@@ -350,9 +349,9 @@ export default function ReadinessScoreClient() {
             </label>
           ) : null}
           {relatedLinks.map((link) => (
-            <a key={link.id} className="app-button secondary" href={link.href}>
+            <Button as="a" variant="secondary" key={link.id} href={link.href}>
               {link.label}
-            </a>
+            </Button>
           ))}
         </div>
       </PageHeader>
@@ -399,9 +398,9 @@ export default function ReadinessScoreClient() {
           description={shellCopy.description}
           className="product-hub-setup"
         >
-          <a className="app-button is-primary" href={hubHref("/build", "subsystems", orgId)}>
+          <Button as="a" variant="primary" href={hubHref("/build", "subsystems", orgId)}>
             Open Subsystems
-          </a>
+          </Button>
         </EmptyState>
       ) : null}
 
@@ -605,9 +604,9 @@ function ChecklistPanel({
         <FormRow label="Subsystem (optional)">
           <input value={subsystemName} onChange={(event) => setSubsystemName(event.target.value)} />
         </FormRow>
-        <button type="submit" className="app-button secondary" disabled={busy || !label.trim()}>
+        <Button variant="secondary" type="submit" disabled={busy || !label.trim()}>
           Add item
-        </button>
+        </Button>
       </form>
     </Panel>
   );

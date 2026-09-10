@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "../../components/ui";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { applyBranding, broadcastAppearance } from "./appearance-runtime";
@@ -236,14 +237,9 @@ export function TeamBrandingPanel({ orgId }: { orgId: string }) {
                   value={accentDraft}
                   onChange={(event) => setAccentDraft(event.target.value)}
                 />
-                <button
-                  type="button"
-                  className="app-button secondary"
-                  disabled={!view.canEdit || busy || accentDraft.trim() === ""}
-                  onClick={() => setAccentDraft("")}
-                >
+                <Button variant="secondary" type="button" disabled={!view.canEdit || busy || accentDraft.trim() === ""} onClick={() => setAccentDraft("")}>
                   Use default
-                </button>
+                </Button>
               </div>
               <small id="brand-accent-help" className="app-muted">
                 {draftHexValid
@@ -343,9 +339,9 @@ export function TeamBrandingPanel({ orgId }: { orgId: string }) {
                   }}
                 />
                 {view.logo.present ? (
-                  <button type="button" className="app-button secondary" disabled={busy} onClick={() => void removeLogo()}>
+                  <Button variant="secondary" type="button" disabled={busy} onClick={() => void removeLogo()}>
                     Remove logo
-                  </button>
+                  </Button>
                 ) : null}
               </div>
             ) : null}
@@ -353,18 +349,13 @@ export function TeamBrandingPanel({ orgId }: { orgId: string }) {
 
           {view.canEdit ? (
             <div className="brand-actions">
-              <button type="button" className="app-button" disabled={busy || !dirty || !draftHexValid} onClick={() => void save()}>
+              <Button variant="primary" type="button" disabled={busy || !dirty || !draftHexValid} onClick={() => void save()}>
                 {busy ? "Saving…" : "Save branding"}
-              </button>
+              </Button>
               {dirty ? (
-                <button
-                  type="button"
-                  className="app-button secondary"
-                  disabled={busy}
-                  onClick={() => adopt(view)}
-                >
+                <Button variant="secondary" type="button" disabled={busy} onClick={() => adopt(view)}>
                   Discard changes
-                </button>
+                </Button>
               ) : null}
             </div>
           ) : null}

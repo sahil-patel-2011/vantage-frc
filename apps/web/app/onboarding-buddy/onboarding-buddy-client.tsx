@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { EmptyState, PageHeader, Panel, SelectField } from "../../components/ui";
+import { EmptyState, PageHeader, Panel, SelectField, Button } from "../../components/ui";
 import { eligibleBuddyCandidates, pairingStatusLabel } from "../../lib/onboarding-buddy";
 import type { OnboardingBuddyView } from "../../lib/onboarding-buddy/compute-onboarding-buddy";
 import {
@@ -32,9 +32,9 @@ function BuddyRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related onboarding-buddy-related" aria-label="Related team tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -58,9 +58,9 @@ function BuddyNextActionsPanel({ actions }: { actions: OnboardingBuddyNextAction
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -120,15 +120,15 @@ function BuddyShell({
         aria-busy={shell === "loading"}
       >
         {shell === "error" && onRetry ? (
-          <button type="button" className="app-button secondary" onClick={onRetry}>
+          <Button variant="secondary" type="button" onClick={onRetry}>
             Retry
-          </button>
+          </Button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
+          <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
         ) : null}
         {shell === "empty" ? (
-          <a className="app-button is-primary" href="#onboarding-buddy-unpaired">Pair a member</a>
+          <Button as="a" variant="primary" href="#onboarding-buddy-unpaired">Pair a member</Button>
         ) : null}
       </EmptyState>
       {steps.length > 0 ? (
@@ -144,9 +144,9 @@ function BuddyShell({
                   <strong>{step.label}</strong>
                   <p className="app-muted onboarding-buddy-tip">{step.detail}</p>
                 </div>
-                <a className="app-button secondary" href={step.href}>
+                <Button as="a" variant="secondary" href={step.href}>
                   Open
-                </a>
+                </Button>
               </li>
             ))}
           </ul>
@@ -286,9 +286,9 @@ export default function OnboardingBuddyClient() {
       >
         <div className="onboarding-buddy-header-actions">
           {relatedLinks.map((link) => (
-            <a key={link.id} className="app-button secondary" href={link.href}>
+            <Button as="a" variant="secondary" key={link.id} href={link.href}>
               {link.label}
-            </a>
+            </Button>
           ))}
         </div>
       </PageHeader>
@@ -337,9 +337,9 @@ export default function OnboardingBuddyClient() {
           description={shellCopy.description}
           className="product-hub-setup"
         >
-          <a className="app-button is-primary" href="#onboarding-buddy-unpaired">
+          <Button as="a" variant="primary" href="#onboarding-buddy-unpaired">
             Pair a member
-          </a>
+          </Button>
         </EmptyState>
       ) : null}
 
@@ -433,17 +433,9 @@ function UnpairedMemberRow({
             label: candidate.name,
           }))}
         />
-        <button
-          type="button"
-          className="app-button"
-          disabled={busy || !selected}
-          onClick={() =>
-            selected &&
-            mutate({ action: "create-pairing", newMemberId: member.userId, buddyId: selected.userId })
-          }
-        >
+        <Button variant="primary" type="button" disabled={busy || !selected} onClick={() => selected && mutate({ action: "create-pairing", newMemberId: member.userId, buddyId: selected.userId }) }>
           Pair with {selected ? selected.name : "—"}
-        </button>
+        </Button>
       </div>
     </li>
   );
@@ -507,14 +499,9 @@ function PairingCard({
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           {pairing.status === "active" ? (
-            <button
-              type="button"
-              className="app-button secondary"
-              disabled={busy}
-              onClick={() => mutate({ action: "set-status", pairingId: pairing.id, status: "completed" })}
-            >
+            <Button variant="secondary" type="button" disabled={busy} onClick={() => mutate({ action: "set-status", pairingId: pairing.id, status: "completed" })}>
               Mark complete
-            </button>
+            </Button>
           ) : null}
           <button
             type="button"

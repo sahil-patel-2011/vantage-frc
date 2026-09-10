@@ -1,4 +1,4 @@
-import { EmptyState } from "../../components/ui";
+import { EmptyState, Button } from "../../components/ui";
 import {
   SCOUTING_RELATED_INCLUDE,
   scoutingNextActions,
@@ -34,14 +34,14 @@ export default async function ScoutingPage({
           title={copy.title}
           description={copy.description}
         >
-          <a className="app-button" href="/workspace">
+          <Button as="a" variant="primary" href="/workspace">
             Choose your team
-          </a>
+          </Button>
           <nav className="product-hub-related scout-related" aria-label="Related competition tools">
             {links.map((link) => (
-              <a key={link.id} className="app-button secondary" href={link.href}>
+              <Button as="a" variant="secondary" key={link.id} href={link.href}>
                 {link.label}
-              </a>
+              </Button>
             ))}
           </nav>
           <ol className="scout-setup-steps">
@@ -71,9 +71,9 @@ export default async function ScoutingPage({
                   <strong>{action.label}</strong>
                   <span>{action.detail}</span>
                 </div>
-                <a className="app-button secondary" href={action.href}>
+                <Button as="a" variant="secondary" href={action.href}>
                   Open
-                </a>
+                </Button>
               </li>
             ))}
           </ol>

@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { EmptyState, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
 import {
   ADMIN_RELATED_INCLUDE,
   adminEmptyCopy,
@@ -61,9 +61,9 @@ function AdminNextActions({ kind }: { kind: AdminShellKind }) {
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -178,9 +178,9 @@ function AdminClientInner() {
         </PageHeader>
         <EmptyState soft title={copy.title} description={copy.description}>
           {shell === "setup_required" ? (
-            <button type="button" className="app-button secondary" onClick={() => void load()}>
+            <Button variant="secondary" type="button" onClick={() => void load()}>
               Retry
-            </button>
+            </Button>
           ) : null}
         </EmptyState>
         <AdminNextActions kind={shell} />
@@ -230,22 +230,18 @@ function AdminClientInner() {
                 One-time owner invite link (shown once — it is not stored)
                 <input readOnly value={confirmation.owner.inviteUrl} onFocus={(event) => event.target.select()} />
               </label>
-              <button
-                type="button"
-                className="app-button secondary"
-                onClick={() => void copyInviteLink(confirmation.owner.inviteUrl!)}
-              >
+              <Button variant="secondary" type="button" onClick={() => void copyInviteLink(confirmation.owner.inviteUrl!)}>
                 {copied ? "Copied" : "Copy link"}
-              </button>
+              </Button>
             </div>
           ) : null}
           <div className="admin-confirmation-actions">
-            <button type="button" className="app-button" onClick={() => setConfirmation(null)}>
+            <Button variant="primary" type="button" onClick={() => setConfirmation(null)}>
               Provision another team
-            </button>
-            <a className="app-button secondary" href="/admin/analytics">
+            </Button>
+            <Button as="a" variant="secondary" href="/admin/analytics">
               Open platform analytics
-            </a>
+            </Button>
           </div>
         </Panel>
       ) : null}
@@ -295,9 +291,9 @@ function AdminClientInner() {
           <span className="eyebrow">Provisioned teams</span>
           {shell === "empty" ? (
             <EmptyState soft title={copy.title} description={copy.description}>
-              <a className="app-button secondary" href="/admin/waitlist">
+              <Button as="a" variant="secondary" href="/admin/waitlist">
                 Open waitlist
-              </a>
+              </Button>
             </EmptyState>
           ) : (
             organizations.map((org) => (

@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "../../components/ui";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -294,14 +295,14 @@ export default function WhiteboardClient() {
                   <strong>{copy.title}</strong>
                   <p className="app-muted">{copy.description}</p>
                   {copy.primary ? (
-                    <a className="app-button" href={copy.primary.href}>
+                    <Button as="a" variant="primary" href={copy.primary.href}>
                       {copy.primary.label}
-                    </a>
+                    </Button>
                   ) : null}
                   {copy.showRetry ? (
-                    <button type="button" className="app-button secondary" onClick={() => void load()}>
+                    <Button variant="secondary" type="button" onClick={() => void load()}>
                       Retry
-                    </button>
+                    </Button>
                   ) : null}
                 </>
               );
@@ -327,9 +328,9 @@ export default function WhiteboardClient() {
         <div className="app-card wb-empty">
           <strong>Select a team</strong>
           <p className="app-muted">{view.message}</p>
-          <a className="app-button" href="/workspace">
+          <Button as="a" variant="primary" href="/workspace">
             Choose your team
-          </a>
+          </Button>
         </div>
       </main>
     );
@@ -386,9 +387,9 @@ export default function WhiteboardClient() {
               if (event.key === "Enter") void createPlay();
             }}
           />
-          <button type="button" className="app-button" disabled={busy} onClick={() => void createPlay()}>
+          <Button variant="primary" type="button" disabled={busy} onClick={() => void createPlay()}>
             New play
-          </button>
+          </Button>
         </div>
       </header>
 
@@ -402,9 +403,9 @@ export default function WhiteboardClient() {
         <div className="app-card wb-empty">
           <strong>No plays yet</strong>
           <p className="app-muted">Create your first play — draw routes with the pen, mark pushes with arrows, drag robots into position.</p>
-          <button type="button" className="app-button" disabled={busy} onClick={() => void createPlay()}>
+          <Button variant="primary" type="button" disabled={busy} onClick={() => void createPlay()}>
             Create first play
-          </button>
+          </Button>
         </div>
       ) : (
         <div className="wb-layout">
@@ -474,9 +475,9 @@ export default function WhiteboardClient() {
                   >
                     Clear
                   </button>
-                  <button type="button" className="app-button sm" disabled={busy || !dirty} onClick={() => void savePlay()}>
+                  <Button variant="primary" size="sm" type="button" disabled={busy || !dirty} onClick={() => void savePlay()}>
                     {dirty ? "Save play" : "Saved"}
-                  </button>
+                  </Button>
                 </div>
               </div>
 

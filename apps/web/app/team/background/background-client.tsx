@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import { useEffect, useState } from "react";
-import { EmptyState, PageHeader, Panel } from "../../../components/ui";
+import { EmptyState, PageHeader, Panel, Button } from "../../../components/ui";
 import { TeamOpsNav } from "../../../components/team-ops-nav";
 import FundingProfileClient from "./funding-profile-client";
 import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
@@ -177,14 +177,14 @@ export default function TeamBackgroundClient({ orgId }: { orgId: string }) {
       ) : failure ? (
         <EmptyState soft title={failure.title} description={failure.description}>
           {failure.primary ? (
-            <a className="app-button" href={failure.primary.href}>
+            <Button as="a" variant="primary" href={failure.primary.href}>
               {failure.primary.label}
-            </a>
+            </Button>
           ) : null}
           {failure.showRetry ? (
-            <button type="button" className="app-button secondary" onClick={() => void load()}>
+            <Button variant="secondary" type="button" onClick={() => void load()}>
               Retry
-            </button>
+            </Button>
           ) : null}
         </EmptyState>
       ) : (
@@ -322,9 +322,9 @@ export default function TeamBackgroundClient({ orgId }: { orgId: string }) {
 
           <div className="team-background-actions">
             {canEdit ? (
-              <button type="submit" className="app-button" disabled={saving}>
+              <Button variant="primary" type="submit" disabled={saving}>
                 {saving ? "Saving…" : "Save team background"}
-              </button>
+              </Button>
             ) : (
               <p className="app-muted">View only — ask an owner or admin to edit this profile.</p>
             )}

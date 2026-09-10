@@ -72,9 +72,9 @@ function ManufacturingShell({
           title="Select a team"
           description={message ?? "Select a team to track parts through manufacturing."}
         >
-          <a className="app-button" href="/workspace">
+          <Button as="a" variant="primary" href="/workspace">
             Choose your team
-          </a>
+          </Button>
         </EmptyState>
       )}
     </main>
@@ -495,9 +495,9 @@ function SeedFromBomPanel({
           tap per batch, never automatic.
         </p>
         <div>
-          <a className="app-button secondary" href="/inventory">
+          <Button as="a" variant="secondary" href="/inventory">
             Open Inventory &amp; BOM
-          </a>
+          </Button>
         </div>
       </Panel>
     );

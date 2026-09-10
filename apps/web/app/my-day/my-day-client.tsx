@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { EmptyState, PageHeader, Panel } from "../../components/ui";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
+import { Button, EmptyState, PageHeader, Panel } from "../../components/ui";
 import type { MyDayMatch, MyDayView } from "../../lib/my-day";
 import {
   MY_DAY_RELATED_INCLUDE,
@@ -19,6 +20,7 @@ import { withOrgHref } from "../../lib/nav/product-nav";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { useCockpitPrefs } from "../../lib/cockpit/use-cockpit-prefs";
 import { MY_DAY_POLL_MS, mergeMyDayView, shouldPollMyDay } from "../../lib/my-day/poll";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 
 function MyDayRelatedStrip({ orgId }: { orgId?: string | null }) {
   const links = myDayRelatedLinks(orgId, {
@@ -28,9 +30,9 @@ function MyDayRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related myday-related" aria-label="Related live ops tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button key={link.id} as="a" variant="secondary" href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -51,9 +53,9 @@ function MyDayNextActionsPanel({ actions }: { actions: MyDayNextAction[] }) {
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -146,6 +148,8 @@ function MyDayShell({
   errorStatus,
   onRetry,
   embedded = false,
+  fromCache = false,
+  cachedAt = null,
   children,
 }: {
   orgId?: string | null;
@@ -156,6 +160,8 @@ function MyDayShell({
   errorStatus?: number | null;
   onRetry?: () => void;
   embedded?: boolean;
+  fromCache?: boolean;
+  cachedAt?: string | null;
   children?: ReactNode;
 }) {
   const actions = myDayNextActions({
@@ -200,6 +206,7 @@ function MyDayShell({
         <MyDayRelatedStrip orgId={orgId} />
       </PageHeader>
       )}
+      <OfflineBanner feature="My Day" fromCache={fromCache} cachedAt={cachedAt} />
       {children}
       <EmptyState
         soft
@@ -219,22 +226,24 @@ function MyDayShell({
         aria-busy={shell === "loading"}
       >
         {failure?.primary ? (
-          <a className="app-button" href={failure.primary.href}>
+          <Button as="a" variant="primary" href={failure.primary.href}>
             {failure.primary.label}
-          </a>
+          </Button>
         ) : null}
         {shell === "error" && onRetry && (failure?.showRetry ?? true) ? (
-          <button type="button" className="app-button secondary" onClick={onRetry}>
+          <Button type="button" variant="secondary" onClick={onRetry}>
             Retry
-          </button>
+          </Button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button is-primary" href={orgId ? teamDataHref : workspaceHref}>{orgId ? "Sync Team Data" : "Choose your team"}</a>
+          <Button as="a" variant="primary" href={orgId ? teamDataHref : workspaceHref}>
+            {orgId ? "Sync Team Data" : "Choose your team"}
+          </Button>
         ) : null}
         {shell === "empty" ? (
-          <a className="app-button is-primary" href={emptyReason === "no_upcoming" ? scheduleHref : commandHref}>
+          <Button as="a" variant="primary" href={emptyReason === "no_upcoming" ? scheduleHref : commandHref}>
             {emptyReason === "no_upcoming" ? "Open Schedule" : "Open Event Day"}
-          </a>
+          </Button>
         ) : null}
         {!embedded && shell === "setup" && steps.length > 0 ? (
           <ol className="strategy-setup-steps">
@@ -263,10 +272,21 @@ export default function MyDayClient({ embedded = false }: { embedded?: boolean }
   // Kept so an expired session offers sign-in instead of a Retry that cannot work.
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<MyDayView | null>(null);
+  viewRef.current = view;
 
   const load = useCallback(async () => {
     const params = new URLSearchParams(window.location.search);
-    const orgId = params.get("orgId");
+    const orgId = params.get("orgId") ?? "";
+    const cached = orgId ? await getFeatureSnapshot<MyDayView>("my-day", orgId) : null;
+    if (!viewRef.current && cached?.data) {
+      setView(cached.data);
+      setFromCache(true);
+      setCachedAt(cached.cachedAt);
+      setLoading(false);
+    }
     const qs = orgId ? `?orgId=${encodeURIComponent(orgId)}` : "";
     try {
       const response = await fetch(`/api/my-day${qs}`, { cache: "no-store" });
@@ -274,17 +294,25 @@ export default function MyDayClient({ embedded = false }: { embedded?: boolean }
       if (!response.ok || !("status" in data)) {
         setError("error" in data && data.error ? data.error : "Could not load My Day.");
         setErrorStatus(response.status);
-        setFetchFailed(true);
+        if (!viewRef.current && !cached) setFetchFailed(true);
         return;
       }
       setError("");
       setErrorStatus(null);
       setFetchFailed(false);
       setView((current) => mergeMyDayView(current, data));
+      setFromCache(false);
+      setCachedAt(null);
+      const cacheOrg = data.context.orgId || orgId;
+      if (cacheOrg) await putFeatureSnapshot("my-day", cacheOrg, data);
     } catch {
-      setError("Could not load My Day.");
-      setErrorStatus(null);
-      setFetchFailed(true);
+      if (!viewRef.current && !cached) {
+        setError("Could not load My Day.");
+        setErrorStatus(null);
+        setFetchFailed(true);
+      } else {
+        setError("Could not refresh My Day.");
+      }
     } finally {
       setLoading(false);
     }
@@ -311,6 +339,8 @@ export default function MyDayClient({ embedded = false }: { embedded?: boolean }
         shell={classifyMyDayShell({ loading: true })}
         error={undefined}
         embedded={embedded}
+        fromCache={fromCache}
+        cachedAt={cachedAt}
       />
     );
   }
@@ -322,6 +352,8 @@ export default function MyDayClient({ embedded = false }: { embedded?: boolean }
         error={error || undefined}
         errorStatus={errorStatus}
         embedded={embedded}
+        fromCache={fromCache}
+        cachedAt={cachedAt}
         onRetry={() => {
           setLoading(true);
           setFetchFailed(false);
@@ -341,6 +373,8 @@ export default function MyDayClient({ embedded = false }: { embedded?: boolean }
         hasActiveEvent={Boolean(view?.context.eventKey)}
         error={view?.status === "setup_required" ? view.message : undefined}
         embedded={embedded}
+        fromCache={fromCache}
+        cachedAt={cachedAt}
       />
     );
   }
@@ -360,6 +394,8 @@ export default function MyDayClient({ embedded = false }: { embedded?: boolean }
         emptyReason={view.emptyReason}
         hasActiveEvent={Boolean(view.context.eventKey)}
         embedded={embedded}
+        fromCache={fromCache}
+        cachedAt={cachedAt}
       >
         <p className="myday-freshness" role="status">
           {view.freshness.label}
@@ -390,6 +426,8 @@ export default function MyDayClient({ embedded = false }: { embedded?: boolean }
         <MyDayRelatedStrip orgId={orgId} />
       </PageHeader>
       )}
+
+      <OfflineBanner feature="My Day" fromCache={fromCache} cachedAt={cachedAt} />
 
       <p className="myday-freshness" role="status">
         {view.freshness.label}

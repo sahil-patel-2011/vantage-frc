@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { EmptyState, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   PICK_CLOCK_RELATED_INCLUDE,
@@ -91,9 +91,9 @@ function PickClockRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related pck-related" aria-label="Related competition tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -117,9 +117,9 @@ function PickClockNextActionsPanel({ actions }: { actions: PickClockNextAction[]
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -195,20 +195,20 @@ function PickClockShell({
         aria-busy={shell === "loading"}
       >
         {failure?.primary ? (
-          <a className="app-button" href={failure.primary.href}>
+          <Button as="a" variant="primary" href={failure.primary.href}>
             {failure.primary.label}
-          </a>
+          </Button>
         ) : null}
         {shell === "error" && onRetry && failure?.showRetry ? (
-          <button type="button" className="app-button secondary" onClick={onRetry}>
+          <Button variant="secondary" type="button" onClick={onRetry}>
             Retry
-          </button>
+          </Button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button is-primary" href={orgId ? commandHref : "/workspace"}>{orgId ? "Set active event" : "Choose your team"}</a>
+          <Button as="a" variant="primary" href={orgId ? commandHref : "/workspace"}>{orgId ? "Set active event" : "Choose your team"}</Button>
         ) : null}
         {shell === "empty" ? (
-          <a className="app-button is-primary" href={teamDataHref}>Sync event metrics</a>
+          <Button as="a" variant="primary" href={teamDataHref}>Sync event metrics</Button>
         ) : null}
       </EmptyState>
       {steps.length > 0 ? (
@@ -224,9 +224,9 @@ function PickClockShell({
                   <strong>{step.label}</strong>
                   <p className="app-muted">{step.detail}</p>
                 </div>
-                <a className="app-button secondary" href={step.href}>
+                <Button as="a" variant="secondary" href={step.href}>
                   Open
-                </a>
+                </Button>
               </li>
             ))}
           </ul>
@@ -467,24 +467,18 @@ export default function PickClockClient(_props: { embedded?: boolean } = {}) {
         <div className="pck-heading">
           <PickClockRelatedStrip orgId={resolvedOrgId} />
           <div className="pck-header-actions">
-            <button
-              type="button"
-              className="app-button secondary"
-              onClick={() => {
-                if (resolvedOrgId) void load(resolvedOrgId);
-              }}
-            >
+            <Button variant="secondary" type="button" onClick={() => { if (resolvedOrgId) void load(resolvedOrgId); }}>
               Refresh
-            </button>
-            <a className="app-button secondary" href={strategyHref}>
+            </Button>
+            <Button as="a" variant="secondary" href={strategyHref}>
               Strategy
-            </a>
-            <a className="app-button secondary" href={pickDeskHref}>
+            </Button>
+            <Button as="a" variant="secondary" href={pickDeskHref}>
               Pick desk
-            </a>
-            <a className="app-button secondary" href={chemistryHref}>
+            </Button>
+            <Button as="a" variant="secondary" href={chemistryHref}>
               Chemistry
-            </a>
+            </Button>
           </div>
         </div>
       </PageHeader>
@@ -498,23 +492,9 @@ export default function PickClockClient(_props: { embedded?: boolean } = {}) {
       {conflict ? (
         <p className="edc-banner error" role="alert">
           {conflict.message}{" "}
-          <button
-            type="button"
-            className="app-button secondary"
-            disabled={writing || !active}
-            onClick={() => {
-              if (!active) return;
-              void writePick({
-                action: "record-pick",
-                teamKey: active.teamKey,
-                rationale: active.headline,
-                ...(readyView.nextSlot ?? {}),
-                force: true,
-              });
-            }}
-          >
+          <Button variant="secondary" type="button" disabled={writing || !active} onClick={() => { if (!active) return; void writePick({ action: "record-pick", teamKey: active.teamKey, rationale: active.headline, ...(readyView.nextSlot ?? {}), force: true, }); }}>
             Record over it
-          </button>
+          </Button>
         </p>
       ) : null}
 
@@ -550,27 +530,13 @@ export default function PickClockClient(_props: { embedded?: boolean } = {}) {
         <strong className="pck-clock-value">{remaining == null ? PICK_CLOCK_SECONDS : remaining}</strong>
         <div className="pck-clock-actions">
           {startedAt == null ? (
-            <button
-              type="button"
-              className="app-button"
-              onClick={() => {
-                setStartedAt(Date.now());
-                setNow(Date.now());
-              }}
-            >
+            <Button variant="primary" type="button" onClick={() => { setStartedAt(Date.now()); setNow(Date.now()); }}>
               Start {PICK_CLOCK_SECONDS}s
-            </button>
+            </Button>
           ) : (
-            <button
-              type="button"
-              className="app-button secondary"
-              onClick={() => {
-                setStartedAt(Date.now());
-                setNow(Date.now());
-              }}
-            >
+            <Button variant="secondary" type="button" onClick={() => { setStartedAt(Date.now()); setNow(Date.now()); }}>
               Reset clock
-            </button>
+            </Button>
           )}
         </div>
       </div>
@@ -589,25 +555,20 @@ export default function PickClockClient(_props: { embedded?: boolean } = {}) {
           badgeTone="setup"
         >
           <div className="pck-setup-links">
-            <button
-              type="button"
-              className="app-button secondary"
-              disabled={writing || !readyView.lastPick}
-              onClick={() => void writePick({ action: "undo-pick" })}
-            >
+            <Button variant="secondary" type="button" disabled={writing || !readyView.lastPick} onClick={() => void writePick({ action: "undo-pick" })}>
               {readyView.lastPick
                 ? `Undo ${readyView.lastPick.teamNumber ?? readyView.lastPick.teamKey?.replace(/^frc/i, "")}`
                 : "Nothing to undo"}
-            </button>
-            <a className="app-button" href={pickDeskHref}>
+            </Button>
+            <Button as="a" variant="primary" href={pickDeskHref}>
               Open Pick desk
-            </a>
-            <a className="app-button secondary" href={strategyHref}>
+            </Button>
+            <Button as="a" variant="secondary" href={strategyHref}>
               Open Strategy
-            </a>
-            <a className="app-button secondary" href={chemistryHref}>
+            </Button>
+            <Button as="a" variant="secondary" href={chemistryHref}>
               Open Chemistry
-            </a>
+            </Button>
           </div>
         </EmptyState>
       ) : (
@@ -631,45 +592,22 @@ export default function PickClockClient(_props: { embedded?: boolean } = {}) {
           <ReasonList reasons={active.reasons} />
 
           <div className="pck-tools">
-            <button
-              type="button"
-              className="app-button"
-              disabled={writing || !readyView.nextSlot}
-              onClick={() =>
-                void writePick({
-                  action: "record-pick",
-                  teamKey: active.teamKey,
-                  rationale: active.headline,
-                  ...(readyView.nextSlot ?? {}),
-                })
-              }
-            >
+            <Button variant="primary" type="button" disabled={writing || !readyView.nextSlot} onClick={() => void writePick({ action: "record-pick", teamKey: active.teamKey, rationale: active.headline, ...(readyView.nextSlot ?? {}), }) }>
               {writing
                 ? "Recording…"
                 : readyView.nextSlot
                   ? `Record at alliance ${readyView.nextSlot.allianceSeed} ${readyView.nextSlot.pickSlot}`
                   : "Board is full"}
-            </button>
-            <button
-              type="button"
-              className="app-button secondary"
-              disabled={writing || !readyView.lastPick}
-              onClick={() => void writePick({ action: "undo-pick" })}
-            >
+            </Button>
+            <Button variant="secondary" type="button" disabled={writing || !readyView.lastPick} onClick={() => void writePick({ action: "undo-pick" })}>
               {readyView.lastPick
                 ? `Undo ${readyView.lastPick.teamNumber ?? readyView.lastPick.teamKey?.replace(/^frc/i, "")}`
                 : "Nothing to undo"}
-            </button>
-            <button
-              type="button"
-              className="app-button secondary"
-              disabled={queue.length < 2}
-              onClick={() => setSkipOffset((n) => (n + 1) % queue.length)}
-            >
+            </Button>
+            <Button variant="secondary" type="button" disabled={queue.length < 2} onClick={() => setSkipOffset((n) => (n + 1) % queue.length)}>
               Show alternate
-            </button>
-            <a
-              className="app-button secondary"
+            </Button>
+            <Button as="a" variant="secondary"
               href={withOrgHref(
                 `/dossier?team=${encodeURIComponent(
                   active.teamNumber != null
@@ -680,16 +618,15 @@ export default function PickClockClient(_props: { embedded?: boolean } = {}) {
               )}
             >
               Dossier
-            </a>
-            <a
-              className="app-button secondary"
+            </Button>
+            <Button as="a" variant="secondary"
               href={withOrgHref(
                 `/chemistry?teams=${encodeURIComponent(teamDisplay(active))}`,
                 resolvedOrgId,
               )}
             >
               Chemistry
-            </a>
+            </Button>
           </div>
         </section>
       )}

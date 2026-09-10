@@ -255,3 +255,17 @@ export function dashboardSetupBlurb(shell: DashboardShellKind): string {
       return "";
   }
 }
+
+/** First-run banner CTA — student words, not the internal step id. */
+export function dashboardSetupBannerLabel(primary: DashboardNextAction | DashboardSetupStep): string {
+  switch (primary.id) {
+    case "invite":
+      return "Open invite";
+    case "tba":
+      return "Connect TBA";
+    case "event":
+      return "Set event";
+    default:
+      return primary.label;
+  }
+}

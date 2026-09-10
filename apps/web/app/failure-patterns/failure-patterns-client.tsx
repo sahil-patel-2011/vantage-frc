@@ -11,8 +11,7 @@ import {
   PageHeader,
   Panel,
   SoftBlockSkeleton,
-  StatTile,
-} from "../../components/ui";
+  StatTile, Button } from "../../components/ui";
 import { failurePatternNoteStatusLabel, failurePatternTierLabel } from "../../lib/failure-patterns";
 import {
   FAILURE_PATTERN_NOTE_STATUSES,
@@ -49,9 +48,9 @@ function RelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related fp-related" aria-label="Related build tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -72,9 +71,9 @@ function NextActionsPanel({ actions }: { actions: FailurePatternsNextAction[] })
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -132,10 +131,10 @@ function PatternsShell({
           description={error ?? copy.description}
         >
           {shell === "setup" ? (
-            <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
+            <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
           ) : null}
           {shell === "empty" ? (
-            <a className="app-button is-primary" href={hubHref("/build", "fmea", orgId)}>Open FMEA</a>
+            <Button as="a" variant="primary" href={hubHref("/build", "fmea", orgId)}>Open FMEA</Button>
           ) : null}
         </EmptyState>
       )}
@@ -152,9 +151,9 @@ function PatternsShell({
                   <strong>{step.label}</strong>
                   <p className="app-muted fp-tip">{step.detail}</p>
                 </div>
-                <a className="app-button secondary" href={step.href}>
+                <Button as="a" variant="secondary" href={step.href}>
                   Open
-                </a>
+                </Button>
               </li>
             ))}
           </ul>
@@ -339,9 +338,9 @@ export default function FailurePatternsClient() {
           title="No FMEA or incident records yet this season"
           description="Log failures in FMEA or equipment incidents."
         >
-          <a className="app-button is-primary" href={hubHref("/build", "fmea", orgId)}>
+          <Button as="a" variant="primary" href={hubHref("/build", "fmea", orgId)}>
             Open FMEA
-          </a>
+          </Button>
         </EmptyState>
       ) : (
         <div id="failure-patterns-clusters" className="fp-clusters">
@@ -422,22 +421,9 @@ function ClusterCard({
         </FormRow>
       </FormGrid>
       <div>
-        <button
-          type="button"
-          className="app-button secondary"
-          disabled={busy}
-          onClick={() => {
-            mutate({
-              action: "log-note",
-              subsystemName: cluster.subsystemName,
-              status,
-              note: note || undefined,
-            });
-            setNote("");
-          }}
-        >
+        <Button variant="secondary" type="button" disabled={busy} onClick={() => { mutate({ action: "log-note", subsystemName: cluster.subsystemName, status, note: note || undefined, }); setNote(""); }}>
           Log update
-        </button>
+        </Button>
       </div>
     </Panel>
   );

@@ -9,8 +9,7 @@ import {
   PageHeader,
   Panel,
   StatRowSkeleton,
-  StatTile,
-} from "../../components/ui";
+  StatTile, Button } from "../../components/ui";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import {
   VISIT_RELATED_INCLUDE,
@@ -72,9 +71,9 @@ function VisitNextActionsPanel({ actions }: { actions: VisitNextAction[] }) {
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -165,12 +164,12 @@ function VisitShell({
       >
         <div className="visit-inline-actions">
           {shell === "setup" ? (
-            <a className="app-button is-primary" href={workspaceHref}>Choose your team</a>
+            <Button as="a" variant="primary" href={workspaceHref}>Choose your team</Button>
           ) : null}
           {shell === "empty" && canManage ? (
-            <a className="app-button" href={visitInvitesShareHref(orgId) + "#visit-create"}>
+            <Button as="a" variant="primary" href={visitInvitesShareHref(orgId) + "#visit-create"}>
               Create the first visit
-            </a>
+            </Button>
           ) : null}
           {/* Related links stay in the header — repeating them here showed the
               same three or four buttons twice on one screen. */}
@@ -339,9 +338,9 @@ export default function VisitInvitesClient() {
       >
         <div className="visit-header-actions">
           <VisitRelated orgId={orgId} include={[...VISIT_RELATED_INCLUDE]} />
-          <button type="button" className="app-button secondary" disabled={busy} onClick={() => void shareBoard()}>
+          <Button variant="secondary" type="button" disabled={busy} onClick={() => void shareBoard()}>
             Copy board link
-          </button>
+          </Button>
         </div>
       </PageHeader>
 
@@ -471,9 +470,9 @@ export default function VisitInvitesClient() {
             Sync to Team Calendar (outreach) when sharing
           </label>
           <div className="visit-form-actions">
-            <button type="submit" className="app-button" disabled={busy || !title.trim() || !startsAt}>
+            <Button variant="primary" type="submit" disabled={busy || !title.trim() || !startsAt}>
               {status === "draft" ? "Save draft" : "Save and share-ready"}
-            </button>
+            </Button>
             <span className="visit-form-hint">
               {status === "draft"
                 ? "Draft: mentors only — switch to Scheduled before copying guest links."
@@ -499,9 +498,9 @@ export default function VisitInvitesClient() {
             {/* One action out of an empty state. The related links live in the
                 header for every state of this page. */}
             {canManage ? (
-              <a className="app-button" href="#visit-create">
+              <Button as="a" variant="primary" href="#visit-create">
                 Jump to create
-              </a>
+              </Button>
             ) : null}
           </EmptyState>
           <VisitNextActionsPanel actions={nextActions} />
@@ -616,20 +615,15 @@ function VisitCard({
         <p className="visit-warn">Demo day still needs at least one student demo.</p>
       ) : null}
       <div className="visit-rsvp-actions">
-        <button
-          type="button"
-          className="app-button secondary"
-          disabled={busy}
-          onClick={() => setSelfRsvp("going")}
-        >
+        <Button variant="secondary" type="button" disabled={busy} onClick={() => setSelfRsvp("going")}>
           {visit.myRsvp === "going" ? "You're going" : "I'm going"}
-        </button>
-        <button type="button" className="app-button secondary" disabled={busy} onClick={() => setSelfRsvp("maybe")}>
+        </Button>
+        <Button variant="secondary" type="button" disabled={busy} onClick={() => setSelfRsvp("maybe")}>
           Maybe
-        </button>
-        <button type="button" className="app-button secondary" disabled={busy} onClick={() => setSelfRsvp("no")}>
+        </Button>
+        <Button variant="secondary" type="button" disabled={busy} onClick={() => setSelfRsvp("no")}>
           Can&apos;t make it
-        </button>
+        </Button>
       </div>
       {canManage ? (
         <>
@@ -672,9 +666,9 @@ function VisitCard({
                 <span>Host name</span>
                 <input value={hostName} disabled={busy} onChange={(e) => setHostName(e.target.value)} />
               </label>
-              <button type="submit" className="app-button secondary" disabled={busy || !hostName.trim()}>
+              <Button variant="secondary" type="submit" disabled={busy || !hostName.trim()}>
                 Add host
-              </button>
+              </Button>
             </form>
           </div>
           {visit.kind === "demo_day" ? (
@@ -729,9 +723,9 @@ function VisitCard({
                   <span>Student</span>
                   <input value={studentName} disabled={busy} onChange={(e) => setStudentName(e.target.value)} />
                 </label>
-                <button type="submit" className="app-button secondary" disabled={busy || !demoTitle.trim()}>
+                <Button variant="secondary" type="submit" disabled={busy || !demoTitle.trim()}>
                   Add demo
-                </button>
+                </Button>
               </form>
             </div>
           ) : null}
@@ -786,9 +780,9 @@ function VisitCard({
                   onChange={(e) => setPartySize(e.target.value)}
                 />
               </label>
-              <button type="submit" className="app-button secondary" disabled={busy || !guestName.trim()}>
+              <Button variant="secondary" type="submit" disabled={busy || !guestName.trim()}>
                 Add guest
-              </button>
+              </Button>
             </form>
             <ul className="visit-rows">
               {visit.rsvps.map((rsvp) => (

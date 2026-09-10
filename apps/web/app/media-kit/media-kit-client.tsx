@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { mediaKitAssetKindLabel } from "../../lib/media-kit";
 import type { MediaKitView } from "../../lib/media-kit/compute-media-kit";
 import {
@@ -43,9 +43,9 @@ function MediaKitRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related media-kit-related" aria-label="Related business tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -69,9 +69,9 @@ function MediaKitNextActionsPanel({ actions }: { actions: MediaKitNextAction[] }
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -130,15 +130,15 @@ function MediaKitShell({
         aria-busy={shell === "loading"}
       >
         {shell === "error" && onRetry ? (
-          <button type="button" className="app-button secondary" onClick={onRetry}>
+          <Button variant="secondary" type="button" onClick={onRetry}>
             Retry
-          </button>
+          </Button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
+          <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
         ) : null}
         {shell === "empty" ? (
-          <a className="app-button is-primary" href="#media-kit-profile">Save team profile</a>
+          <Button as="a" variant="primary" href="#media-kit-profile">Save team profile</Button>
         ) : null}
       </EmptyState>
       {shell === "setup" && steps.length > 0 ? (
@@ -308,9 +308,9 @@ export default function MediaKitClient() {
             </label>
           ) : null}
           {relatedLinks.map((link) => (
-            <a key={link.id} className="app-button secondary" href={link.href}>
+            <Button as="a" variant="secondary" key={link.id} href={link.href}>
               {link.label}
-            </a>
+            </Button>
           ))}
         </div>
       </PageHeader>
@@ -354,9 +354,9 @@ export default function MediaKitClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <a className="app-button is-primary" href="#media-kit-profile">
+          <Button as="a" variant="primary" href="#media-kit-profile">
             Save team profile
-          </a>
+          </Button>
         </EmptyState>
       ) : null}
 
@@ -463,9 +463,9 @@ function ProfileForm({
         <textarea value={form.achievements} onChange={set("achievements")} rows={3} />
       </FormRow>
       <div>
-        <button type="submit" className="app-button" disabled={busy}>
+        <Button variant="primary" type="submit" disabled={busy}>
           Save profile
-        </button>
+        </Button>
       </div>
     </Panel>
   );
@@ -648,13 +648,9 @@ function AssetsPanel({
           <input value={form.description} onChange={set("description")} />
         </FormRow>
         <div>
-          <button
-            type="submit"
-            className="app-button secondary"
-            disabled={busy || !form.title.trim() || !form.url.trim()}
-          >
+          <Button variant="secondary" type="submit" disabled={busy || !form.title.trim() || !form.url.trim()}>
             Add asset
-          </button>
+          </Button>
         </div>
       </form>
     </Panel>
@@ -674,14 +670,9 @@ function DocumentsPanel({
     <Panel id="media-kit-documents" style={{ display: "grid", gap: 10 }}>
       <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <h2 style={{ margin: 0 }}>One-pagers</h2>
-        <button
-          type="button"
-          className="app-button"
-          disabled={busy}
-          onClick={() => mutate({ action: "generate-one-pager" })}
-        >
+        <Button variant="primary" type="button" disabled={busy} onClick={() => mutate({ action: "generate-one-pager" })}>
           Generate one-pager
-        </button>
+        </Button>
       </header>
       {view.documents.length === 0 ? (
         <EmptyState

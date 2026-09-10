@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Badge, EmptyState, PageHeader, Panel, type BadgeTone } from "../../components/ui";
+import { Badge, EmptyState, PageHeader, Panel, type BadgeTone, Button } from "../../components/ui";
 import { PURPOSE_LABELS, type FormPurpose, type FormSummary } from "../../lib/forms/types";
 
 /**
@@ -122,7 +122,7 @@ export default function FormsClient() {
       <main className="module-page forms-page">
         <PageHeader breadcrumbs="Team / Forms" title="Forms" description="Ask your team something, and read what the answers mean." />
         <EmptyState soft badge="Not available" badgeTone="setup" title="Forms need a team" description={error}>
-          <a className="app-button" href="/workspace">Choose team</a>
+          <Button as="a" variant="primary" href="/workspace">Choose team</Button>
         </EmptyState>
       </main>
     );

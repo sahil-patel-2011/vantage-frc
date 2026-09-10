@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { EmptyState, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
 import type { MatchCopilotView } from "../../lib/match-copilot/compute-match-copilot";
 import {
   MATCH_COPILOT_RELATED_INCLUDE,
@@ -46,9 +46,9 @@ function CopilotRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related match-copilot-related" aria-label="Related competition tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -72,9 +72,9 @@ function CopilotNextActionsPanel({ actions }: { actions: MatchCopilotNextAction[
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -134,15 +134,15 @@ function CopilotShell({
         aria-busy={shell === "loading"}
       >
         {shell === "error" && onRetry ? (
-          <button type="button" className="app-button secondary" onClick={onRetry}>
+          <Button variant="secondary" type="button" onClick={onRetry}>
             Retry
-          </button>
+          </Button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
+          <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
         ) : null}
         {shell === "empty" ? (
-          <a className="app-button is-primary" href={strategyHref}>Open Strategy</a>
+          <Button as="a" variant="primary" href={strategyHref}>Open Strategy</Button>
         ) : null}
       </EmptyState>
       <CopilotNextActionsPanel actions={actions} />
@@ -289,9 +289,9 @@ export default function MatchCopilotClient() {
       >
         <div className="match-copilot-header-actions">
           {relatedLinks.map((link) => (
-            <a key={link.id} className="app-button secondary" href={link.href}>
+            <Button as="a" variant="secondary" key={link.id} href={link.href}>
               {link.label}
-            </a>
+            </Button>
           ))}
         </div>
       </PageHeader>
@@ -322,9 +322,9 @@ export default function MatchCopilotClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <a className="app-button is-primary" href={strategyHref}>
+          <Button as="a" variant="primary" href={strategyHref}>
             Open Strategy
-          </a>
+          </Button>
         </EmptyState>
       ) : null}
 
@@ -403,9 +403,9 @@ function MatchHeaderPanel({
             {epaLabel(view.ourEpaTotal)}
           </small>
         </div>
-        <button type="button" className="app-button" disabled={busy} onClick={onGenerate}>
+        <Button variant="primary" type="button" disabled={busy} onClick={onGenerate}>
           {busy ? "Generating…" : view.generatedBy === "ai" ? "Regenerate brief" : "Generate brief"}
-        </button>
+        </Button>
       </header>
     </Panel>
   );

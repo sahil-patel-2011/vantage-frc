@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { EmptyState, PageHeader, Panel } from "../../../components/ui";
+import { EmptyState, PageHeader, Panel, Button } from "../../../components/ui";
 import { adminRelatedLinks } from "../../../lib/admin";
 import {
   BILLING_DISPLAY_STATUSES,
@@ -165,9 +165,9 @@ export default function AdminPlansClient() {
             ))}
           </select>
         </label>
-        <button type="button" className="app-button secondary" onClick={() => void load()} disabled={loading}>
+        <Button variant="secondary" type="button" onClick={() => void load()} disabled={loading}>
           Refresh
-        </button>
+        </Button>
       </form>
 
       {message ? <p className="admin-plans-message">{message}</p> : null}

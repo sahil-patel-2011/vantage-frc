@@ -12,8 +12,7 @@ import {
   StatRowSkeleton,
   StatTile,
   TableSkeleton,
-  type BadgeTone,
-} from "../../components/ui";
+  type BadgeTone, Button } from "../../components/ui";
 import { busFactorAreaLabel } from "../../lib/bus-factor";
 import { BUS_FACTOR_AREAS, DEFAULT_WINDOW_WEEKS, type BusFactorView } from "../../lib/bus-factor/compute-bus-factor";
 import {
@@ -54,9 +53,9 @@ function BusFactorRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related bus-factor-related" aria-label="Related team tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -80,9 +79,9 @@ function BusFactorNextActionsPanel({ actions }: { actions: BusFactorNextAction[]
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -138,10 +137,10 @@ function BusFactorShell({
           description={error ?? copy.description}
         >
           {shell === "setup" ? (
-            <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
+            <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
           ) : null}
           {shell === "empty" ? (
-            <a className="app-button is-primary" href="#bus-factor-log">Log a workload entry</a>
+            <Button as="a" variant="primary" href="#bus-factor-log">Log a workload entry</Button>
           ) : null}
         </EmptyState>
       )}
@@ -158,9 +157,9 @@ function BusFactorShell({
                   <strong>{step.label}</strong>
                   <p className="app-muted bus-factor-tip">{step.detail}</p>
                 </div>
-                <a className="app-button secondary" href={step.href}>
+                <Button as="a" variant="secondary" href={step.href}>
                   Open
-                </a>
+                </Button>
               </li>
             ))}
           </ul>
@@ -316,9 +315,9 @@ export default function BusFactorClient() {
             </select>
           </label>
           {relatedLinks.map((link) => (
-            <a key={link.id} className="app-button secondary" href={link.href}>
+            <Button as="a" variant="secondary" key={link.id} href={link.href}>
               {link.label}
-            </a>
+            </Button>
           ))}
         </div>
       </PageHeader>
@@ -342,9 +341,9 @@ export default function BusFactorClient() {
           description={shellCopy.description}
           className="product-hub-setup"
         >
-          <a className="app-button is-primary" href="#bus-factor-log">
+          <Button as="a" variant="primary" href="#bus-factor-log">
             Log a workload entry
-          </a>
+          </Button>
         </EmptyState>
       ) : null}
 
@@ -544,9 +543,9 @@ function LogEntryForm({
         title="Invite teammates before logging workload"
         description="Bus-Factor needs org members to attribute hours."
       >
-        <a className="app-button" href={withOrgHref("/workspace", view.orgId)}>
+        <Button as="a" variant="primary" href={withOrgHref("/workspace", view.orgId)}>
           Choose your team
-        </a>
+        </Button>
       </EmptyState>
     );
   }
@@ -606,9 +605,9 @@ function LogEntryForm({
         </FormRow>
       </FormGrid>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !form.memberUserId || !form.weekStart}>
+        <Button variant="primary" type="submit" disabled={busy || !form.memberUserId || !form.weekStart}>
           Log entry
-        </button>
+        </Button>
       </div>
     </Panel>
   );

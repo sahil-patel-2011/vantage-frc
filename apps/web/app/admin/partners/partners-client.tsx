@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { EmptyState, PageHeader, Panel } from "../../../components/ui";
+import { EmptyState, PageHeader, Panel, Button } from "../../../components/ui";
 import { adminRelatedLinks } from "../../../lib/admin";
 import "../admin-flow.css";
 import "./partners.css";
@@ -156,13 +156,13 @@ export default function AdminPartnersClient() {
       >
         <nav className="admin-related" aria-label="Related admin">
           {related.map((link) => (
-            <a key={link.id} className="app-button secondary" href={link.href}>
+            <Button as="a" variant="secondary" key={link.id} href={link.href}>
               {link.label}
-            </a>
+            </Button>
           ))}
-          <a className="app-button secondary" href="/admin/outreach">
+          <Button as="a" variant="secondary" href="/admin/outreach">
             Org outreach
-          </a>
+          </Button>
         </nav>
       </PageHeader>
 
@@ -174,18 +174,18 @@ export default function AdminPartnersClient() {
           </p>
         </header>
         <div className="admin-ai-smoke-links">
-          <a className="app-button" href="/admin/models">
+          <Button as="a" variant="primary" href="/admin/models">
             Models &amp; keys
-          </a>
-          <a className="app-button secondary" href="/admin/sponsored">
+          </Button>
+          <Button as="a" variant="secondary" href="/admin/sponsored">
             Sponsored AI policy
-          </a>
-          <a className="app-button secondary" href="/ai">
+          </Button>
+          <Button as="a" variant="secondary" href="/ai">
             Open AI hub
-          </a>
-          <a className="app-button secondary" href="/ai?tab=chat">
+          </Button>
+          <Button as="a" variant="secondary" href="/ai?tab=chat">
             Test AI chat
-          </a>
+          </Button>
         </div>
       </section>
 
@@ -311,16 +311,9 @@ export default function AdminPartnersClient() {
               {editId ? "Update partner" : "Add partner"}
             </button>
             {editId ? (
-              <button
-                type="button"
-                className="app-button secondary"
-                onClick={() => {
-                  setEditId(null);
-                  setForm(emptyForm);
-                }}
-              >
+              <Button variant="secondary" type="button" onClick={() => { setEditId(null); setForm(emptyForm); }}>
                 Cancel edit
-              </button>
+              </Button>
             ) : null}
           </div>
         </form>

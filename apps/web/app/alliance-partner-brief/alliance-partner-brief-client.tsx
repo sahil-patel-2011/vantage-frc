@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { EmptyState, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
 import type { AlliancePartnerBriefView } from "../../lib/alliance-partner-brief/compute-alliance-partner-brief";
 import {
   ALLIANCE_PARTNER_BRIEF_RELATED_INCLUDE,
@@ -43,9 +43,9 @@ function BriefRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related alliance-partner-brief-related" aria-label="Related competition tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -69,9 +69,9 @@ function BriefNextActionsPanel({ actions }: { actions: AlliancePartnerBriefNextA
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -131,15 +131,15 @@ function BriefShell({
         aria-busy={shell === "loading"}
       >
         {shell === "error" && onRetry ? (
-          <button type="button" className="app-button secondary" onClick={onRetry}>
+          <Button variant="secondary" type="button" onClick={onRetry}>
             Retry
-          </button>
+          </Button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
+          <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
         ) : null}
         {shell === "empty" ? (
-          <a className="app-button is-primary" href={allianceBoardHref}>Open Alliance board</a>
+          <Button as="a" variant="primary" href={allianceBoardHref}>Open Alliance board</Button>
         ) : null}
       </EmptyState>
       <BriefNextActionsPanel actions={actions} />
@@ -276,9 +276,9 @@ export default function AlliancePartnerBriefClient() {
       >
         <div className="alliance-partner-brief-header-actions">
           {relatedLinks.map((link) => (
-            <a key={link.id} className="app-button secondary" href={link.href}>
+            <Button as="a" variant="secondary" key={link.id} href={link.href}>
               {link.label}
-            </a>
+            </Button>
           ))}
         </div>
       </PageHeader>
@@ -308,9 +308,9 @@ export default function AlliancePartnerBriefClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <a className="app-button is-primary" href={allianceBoardHref}>
+          <Button as="a" variant="primary" href={allianceBoardHref}>
             Open Alliance board
-          </a>
+          </Button>
         </EmptyState>
       ) : null}
 
@@ -432,14 +432,9 @@ function BriefPanel({
     <Panel id="alliance-partner-brief-panel" className="alliance-partner-brief-panel">
       <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
         <h2 style={{ margin: 0 }}>Partner brief — seed {seed}</h2>
-        <button
-          type="button"
-          className="app-button"
-          disabled={busy}
-          onClick={() => onGenerate(seed, view.eventKey)}
-        >
+        <Button variant="primary" type="button" disabled={busy} onClick={() => onGenerate(seed, view.eventKey)}>
           {brief ? "Regenerate" : "Generate brief"}
-        </button>
+        </Button>
       </header>
 
       {!brief ? (

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { MeteredAiCutoffBanner } from "../../components/metered-ai-cutoff-banner";
 import { resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
-import { AIAttribution, EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { AIAttribution, EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import {
   AI_EXPAND_IDLE,
   expandedDisplay,
@@ -48,9 +48,9 @@ function SeasonReportRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related season-report-related" aria-label="Related season tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -74,9 +74,9 @@ function SeasonReportNextActionsPanel({ actions }: { actions: SeasonReportNextAc
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -148,12 +148,12 @@ function SeasonReportShell({
         aria-busy={shell === "loading" || undefined}
       >
         {shell === "error" && onRetry ? (
-          <button type="button" className="app-button secondary" onClick={onRetry}>
+          <Button variant="secondary" type="button" onClick={onRetry}>
             Retry
-          </button>
+          </Button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button is-primary" href={workspaceHref}>Choose your team</a>
+          <Button as="a" variant="primary" href={workspaceHref}>Choose your team</Button>
         ) : null}
       </EmptyState>
       {error ? (
@@ -349,9 +349,9 @@ export default function SeasonReportClient() {
       >
         <div className="season-report-header-actions">
           {relatedLinks.map((link) => (
-            <a key={link.id} className="app-button secondary" href={link.href}>
+            <Button as="a" variant="secondary" key={link.id} href={link.href}>
               {link.label}
-            </a>
+            </Button>
           ))}
           {view.seasons.length > 0 ? (
             <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
@@ -400,9 +400,9 @@ export default function SeasonReportClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <a className="app-button" href="#season-report-log">
+          <Button as="a" variant="primary" href="#season-report-log">
             Log first entry
-          </a>
+          </Button>
         </EmptyState>
       ) : null}
 
@@ -527,14 +527,9 @@ function SnapshotsPanel({
     <Panel id="season-report-snapshots">
       <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
         <h2 style={{ margin: 0 }}>Generated snapshots</h2>
-        <button
-          type="button"
-          className="app-button"
-          disabled={busy || view.summary.totalEntries === 0}
-          onClick={() => mutate({ action: "generate-snapshot" })}
-        >
+        <Button variant="primary" type="button" disabled={busy || view.summary.totalEntries === 0} onClick={() => mutate({ action: "generate-snapshot" })}>
           Generate retrospective
-        </button>
+        </Button>
       </header>
       <p className="app-muted">
         Snapshots are computed deterministically from your logged entries.
@@ -603,15 +598,9 @@ function SnapshotsPanel({
             </article>
           ) : (
             <div style={{ display: "grid", gap: 6, justifyItems: "start" }}>
-              <button
-                type="button"
-                className="app-button secondary"
-                style={{ minHeight: 44 }}
-                disabled={busy || expand.status === "loading"}
-                onClick={() => void expandWithAi()}
-              >
+              <Button variant="secondary" type="button" style={{ minHeight: 44 }} disabled={busy || expand.status === "loading"} onClick={() => void expandWithAi()}>
                 {expand.status === "loading" ? "Expanding…" : "Expand with AI"}
-              </button>
+              </Button>
               {aiDisplay.note ? <p className="app-muted" style={{ margin: 0 }}>{aiDisplay.note}</p> : null}
             </div>
           )}
@@ -760,9 +749,9 @@ function LogEntryForm({
         <textarea value={form.detail} onChange={set("detail")} rows={2} />
       </FormRow>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !form.title.trim()}>
+        <Button variant="primary" type="submit" disabled={busy || !form.title.trim()}>
           Log entry
-        </button>
+        </Button>
       </div>
     </Panel>
   );

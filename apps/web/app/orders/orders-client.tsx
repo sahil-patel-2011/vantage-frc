@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "../../components/ui";
 
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { BusinessRelated } from "../../components/business-related";
@@ -91,9 +92,9 @@ function OrdersNextActions({
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -261,14 +262,14 @@ export default function OrdersClient({ embedded = false, seasonYear, orgId: orgI
             return (
               <EmptyState soft title={copy.title} description={copy.description}>
                 {copy.primary ? (
-                  <a className="app-button" href={copy.primary.href}>
+                  <Button as="a" variant="primary" href={copy.primary.href}>
                     {copy.primary.label}
-                  </a>
+                  </Button>
                 ) : null}
                 {copy.showRetry ? (
-                  <button type="button" className="app-button secondary" onClick={() => load()}>
+                  <Button variant="secondary" type="button" onClick={() => load()}>
                     Retry
-                  </button>
+                  </Button>
                 ) : null}
               </EmptyState>
             );

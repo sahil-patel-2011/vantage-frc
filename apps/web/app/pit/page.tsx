@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { EmptyState, PageHeader } from "../../components/ui";
+import { EmptyState, PageHeader, Button } from "../../components/ui";
 import {
   PIT_RELATED_INCLUDE,
   pitNextActions,
@@ -42,9 +42,9 @@ export default async function PitCommandPage({
           {related.length ? (
             <nav className="product-hub-related pit-related" aria-label="Related pit tools">
               {related.map((link) => (
-                <a key={link.id} className="app-button secondary" href={link.href}>
+                <Button as="a" variant="secondary" key={link.id} href={link.href}>
                   {link.label}
-                </a>
+                </Button>
               ))}
             </nav>
           ) : null}
@@ -67,12 +67,12 @@ export default async function PitCommandPage({
           title={copy.title}
           description={copy.description}
         >
-          <a className="app-button" href="/workspace">
+          <Button as="a" variant="primary" href="/workspace">
             Choose your team
-          </a>
-          <a className="app-button secondary" href="/dashboard">
+          </Button>
+          <Button as="a" variant="secondary" href="/dashboard">
             Back to dashboard
-          </a>
+          </Button>
         </EmptyState>
         <section className="app-card soft-panel edc-next-actions pit-next-actions" aria-label="Next actions">
           <header>
@@ -86,9 +86,9 @@ export default async function PitCommandPage({
                   <strong>{action.label}</strong>
                   <span>{action.detail}</span>
                 </div>
-                <a className="app-button secondary" href={action.href}>
+                <Button as="a" variant="secondary" href={action.href}>
                   Open
-                </a>
+                </Button>
               </li>
             ))}
           </ol>

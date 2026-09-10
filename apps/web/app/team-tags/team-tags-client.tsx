@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
-import { EmptyState, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
 import type { TeamTagsView } from "../../lib/team-tags/compute-team-tags";
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
@@ -104,15 +104,15 @@ export default function TeamTagsClient() {
       />
 
       <nav className="product-hub-related" aria-label="Related qualitative tools">
-        <a className="app-button secondary" href={orgId ? withOrgHref("/pairwise", orgId) : "/pairwise"}>
+        <Button as="a" variant="secondary" href={orgId ? withOrgHref("/pairwise", orgId) : "/pairwise"}>
           Pairwise ranking
-        </a>
-        <a className="app-button secondary" href={orgId ? hubHref("/competition", "scouting", orgId) : "/scouting"}>
+        </Button>
+        <Button as="a" variant="secondary" href={orgId ? hubHref("/competition", "scouting", orgId) : "/scouting"}>
           Scouting
-        </a>
-        <a className="app-button secondary" href={orgId ? hubHref("/competition", "pick-clock", orgId) : "/pick-clock"}>
+        </Button>
+        <Button as="a" variant="secondary" href={orgId ? hubHref("/competition", "pick-clock", orgId) : "/pick-clock"}>
           Pick clock
-        </a>
+        </Button>
       </nav>
 
       {error && view ? <p className="app-muted" role="alert">{error}</p> : null}
@@ -138,9 +138,9 @@ export default function TeamTagsClient() {
                   <strong>{copy.title}</strong> — {copy.description}
                 </p>
                 {copy.primary ? (
-                  <a className="app-button" href={copy.primary.href}>
+                  <Button as="a" variant="primary" href={copy.primary.href}>
                     {copy.primary.label}
-                  </a>
+                  </Button>
                 ) : null}
               </>
             );
@@ -151,9 +151,9 @@ export default function TeamTagsClient() {
       {view?.status === "setup_required" ? (
         <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
           {view.steps.map((step) => (
-            <a key={step.id} className="app-button secondary" href={step.href}>
+            <Button as="a" variant="secondary" key={step.id} href={step.href}>
               {step.label}
-            </a>
+            </Button>
           ))}
         </EmptyState>
       ) : null}
@@ -220,9 +220,9 @@ function LiveTags({
             Note
             <input name="notes" placeholder="Optional — bumper lock, late auto…" />
           </label>
-          <button className="app-button" disabled={busy || !view.defs.length}>
+          <Button variant="primary" disabled={busy || !view.defs.length}>
             Tag robot
-          </button>
+          </Button>
         </form>
         <datalist id="team-tags-teams">
           {view.eventTeams.map((team) => (

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { EmptyState, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { acknowledgmentAgeMinutes, degradedModeReasonLabel, degradedModeSourceLabel } from "../../lib/degraded-mode";
 import type { DegradedModeView } from "../../lib/degraded-mode/compute-degraded-mode";
@@ -109,9 +109,9 @@ export default function DegradedModeClient() {
         description="Live TBA / Statbotics / reference-database health, with the read-only fallbacks the rest of the app uses while a source is degraded."
       >
         {orgId ? (
-          <a className="app-button secondary" href={`/team/data?orgId=${encodeURIComponent(orgId)}`}>
+          <Button as="a" variant="secondary" href={`/team/data?orgId=${encodeURIComponent(orgId)}`}>
             Team · Data
-          </a>
+          </Button>
         ) : null}
       </PageHeader>
 
@@ -124,14 +124,14 @@ export default function DegradedModeClient() {
       {failure ? (
         <EmptyState title={failure.title} description={failure.description}>
           {failure.primary ? (
-            <a className="app-button" href={failure.primary.href}>
+            <Button as="a" variant="primary" href={failure.primary.href}>
               {failure.primary.label}
-            </a>
+            </Button>
           ) : null}
           {failure.showRetry ? (
-            <button type="button" className="app-button secondary" onClick={() => load()}>
+            <Button variant="secondary" type="button" onClick={() => load()}>
               Retry
-            </button>
+            </Button>
           ) : null}
         </EmptyState>
       ) : view == null ? (
@@ -181,21 +181,9 @@ function BannerPanel({
           <small className="app-muted">{health.bannerDetail}</small>
         </div>
         {view.showBanner ? (
-          <button
-            type="button"
-            className="app-button secondary"
-            disabled={busy || Boolean(view.activeAcknowledgment)}
-            onClick={() =>
-              mutate({
-                action: "acknowledge",
-                source: "tba",
-                mode: health.mode,
-                note: "Acknowledged from Data-source degraded mode",
-              })
-            }
-          >
+          <Button variant="secondary" type="button" disabled={busy || Boolean(view.activeAcknowledgment)} onClick={() => mutate({ action: "acknowledge", source: "tba", mode: health.mode, note: "Acknowledged from Data-source degraded mode", }) }>
             {view.activeAcknowledgment ? "Acknowledged" : "Acknowledge"}
-          </button>
+          </Button>
         ) : null}
       </header>
       {view.activeAcknowledgment ? (
@@ -266,9 +254,9 @@ function FallbacksPanel({ view }: { view: LiveView }) {
                 {fallback.detail}
               </small>
             </div>
-            <a className="app-button secondary" href={fallback.href}>
+            <Button as="a" variant="secondary" href={fallback.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ul>

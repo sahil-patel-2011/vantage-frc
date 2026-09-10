@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, type ReactNode } from "react";
-import { EmptyState, FormRow, PageHeader, Panel } from "../../../components/ui";
+import { EmptyState, FormRow, PageHeader, Panel, Button } from "../../../components/ui";
 import {
   PAIR_RELATED_INCLUDE,
   classifyPairShell,
@@ -38,9 +38,9 @@ function PairRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related pair-related" aria-label="Related code tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -61,9 +61,9 @@ function PairNextActionsPanel({ actions }: { actions: PairNextAction[] }) {
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -118,7 +118,7 @@ function PairShell({
         description={copy.description}
       >
         {shell === "setup" ? (
-          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
+          <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
         ) : null}
       </EmptyState>
       {steps.length > 0 ? (
@@ -134,9 +134,9 @@ function PairShell({
                   <strong>{step.label}</strong>
                   <p className="app-muted pair-tip">{step.detail}</p>
                 </div>
-                <a className="app-button secondary" href={step.href}>
+                <Button as="a" variant="secondary" href={step.href}>
                   Open
-                </a>
+                </Button>
               </li>
             ))}
           </ul>
@@ -270,9 +270,9 @@ export default function PairClient({
       >
         <div className="pair-header-actions">
           {relatedLinks.map((link) => (
-            <a key={link.id} className="app-button secondary" href={link.href}>
+            <Button as="a" variant="secondary" key={link.id} href={link.href}>
               {link.label}
-            </a>
+            </Button>
           ))}
         </div>
       </PageHeader>
@@ -295,9 +295,9 @@ export default function PairClient({
           description={shellCopy.description}
           className="product-hub-setup"
         >
-          <a className="app-button is-primary" href="#pair-approve">
+          <Button as="a" variant="primary" href="#pair-approve">
             Enter pairing code
-          </a>
+          </Button>
         </EmptyState>
       ) : null}
 
@@ -330,9 +330,9 @@ export default function PairClient({
                 ))}
               </select>
             </FormRow>
-            <button type="submit" className="app-button" disabled={busy || !organizations.length}>
+            <Button variant="primary" type="submit" disabled={busy || !organizations.length}>
               {busy ? "Approving…" : "Approve pairing"}
-            </button>
+            </Button>
             {message ? (
               <p role="status" className="pair-message">
                 {message}
@@ -354,9 +354,9 @@ export default function PairClient({
               title="No paired devices yet"
               description="Device rows appear only after a real approval."
             >
-              <a className="app-button secondary" href={hubHref("/ai", "chat", orgId)}>
+              <Button as="a" variant="secondary" href={hubHref("/ai", "chat", orgId)}>
                 Open AI chat
-              </a>
+              </Button>
             </EmptyState>
           ) : (
             <ul className="pair-device-list">

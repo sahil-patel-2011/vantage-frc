@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { SEASON_ROLLOVER_CATEGORIES, seasonRolloverCategoryLabel } from "../../lib/season-rollover";
 import type { SeasonRolloverView } from "../../lib/season-rollover/compute-season-rollover";
@@ -117,14 +117,14 @@ export default function SeasonRolloverClient() {
           return (
             <EmptyState title={copy.title} description={copy.description}>
               {copy.primary ? (
-                <a className="app-button" href={copy.primary.href}>
+                <Button as="a" variant="primary" href={copy.primary.href}>
                   {copy.primary.label}
-                </a>
+                </Button>
               ) : null}
               {copy.showRetry ? (
-                <button type="button" className="app-button secondary" onClick={() => load()}>
+                <Button variant="secondary" type="button" onClick={() => load()}>
                   Retry
-                </button>
+                </Button>
               ) : null}
             </EmptyState>
           );
@@ -218,26 +218,12 @@ function PlanPanel({
 
       {view.activePlan && view.activePlan.status !== "completed" ? (
         <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <button
-            type="button"
-            className="app-button"
-            disabled={busy}
-            onClick={() => mutate({ action: "complete-plan", planId: view.activePlan!.id })}
-          >
+          <Button variant="primary" type="button" disabled={busy} onClick={() => mutate({ action: "complete-plan", planId: view.activePlan!.id })}>
             Mark rollover complete
-          </button>
-          <button
-            type="button"
-            className="app-button secondary"
-            disabled={busy}
-            onClick={() => {
-              if (window.confirm("Delete this rollover plan and its items?")) {
-                mutate({ action: "delete-plan", planId: view.activePlan!.id });
-              }
-            }}
-          >
+          </Button>
+          <Button variant="secondary" type="button" disabled={busy} onClick={() => { if (window.confirm("Delete this rollover plan and its items?")) { mutate({ action: "delete-plan", planId: view.activePlan!.id }); } }}>
             Delete plan
-          </button>
+          </Button>
         </div>
       ) : null}
 
@@ -265,9 +251,9 @@ function PlanPanel({
           <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
         </FormRow>
         <div>
-          <button type="submit" className="app-button secondary" disabled={busy}>
+          <Button variant="secondary" type="submit" disabled={busy}>
             Create plan
-          </button>
+          </Button>
         </div>
       </form>
     </Panel>
@@ -424,9 +410,9 @@ function AddItemForm({
         <textarea value={form.notes} onChange={set("notes")} rows={2} />
       </FormRow>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !form.label.trim()}>
+        <Button variant="primary" type="submit" disabled={busy || !form.label.trim()}>
           Add item
-        </button>
+        </Button>
       </div>
     </Panel>
   );

@@ -20,9 +20,11 @@ const FEATURE_DIRS = [
   "account",
   "invite",
   "help",
-  "funding-profile.ts",
   "season-calendar.ts",
   "packing.ts",
+  "bugbot",
+  "business",
+  "cad-vault",
 ] as const;
 
 const SHARED_PREFIXES = [
@@ -82,7 +84,7 @@ describe("module boundaries", () => {
           const other = FEATURE_DIRS.find((candidate) => {
             if (candidate === feature) return false;
             const dir = candidate.replace(/\.ts$/, "");
-            return rel === candidate || rel.startsWith(`${dir}/`);
+            return rel === candidate || rel === dir || rel.startsWith(`${dir}/`);
           });
           if (other && !isShared(spec)) {
             offenders.push(`${relative(LIB, file)} → ${spec} (${other})`);

@@ -6,7 +6,7 @@ import { WhyPanel } from "../../components/why-panel";
 import { narrateAgentRun, narrationCoverage } from "../../lib/agent-narration/narration";
 import { MeteredAiCutoffBanner } from "../../components/metered-ai-cutoff-banner";
 import { SponsoredPromoBanner } from "../../components/sponsored-promo-banner";
-import { AIAttribution, ModelProvenance } from "../../components/ui";
+import { AIAttribution, ModelProvenance, Button } from "../../components/ui";
 import { resolveCutoffErrorCode, UsageCutoffBanner } from "../../components/usage-cutoff-banner";
 import { hubHref } from "../../lib/nav/hubs";
 import "./autonomous-agent.css";
@@ -258,12 +258,12 @@ export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
           </p>
         </div>
         <div className="aa-header-actions">
-          <a className="app-button secondary" href={hubHref("/ai", "chat", orgId)}>
+          <Button as="a" variant="secondary" href={hubHref("/ai", "chat", orgId)}>
             Chat
-          </a>
-          <a className="app-button secondary" href={hubHref("/ai", "budgets", orgId)}>
+          </Button>
+          <Button as="a" variant="secondary" href={hubHref("/ai", "budgets", orgId)}>
             Budgets
-          </a>
+          </Button>
         </div>
       </header>
 
@@ -294,9 +294,9 @@ export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
             {error ??
               "Add your own key, a team key, or a sponsored key under AI API keys, or ask an admin to set up web search."}
           </p>
-            <a className="app-button" href={hubHref("/ai", "ai-keys", orgId)}>
+            <Button as="a" variant="primary" href={hubHref("/ai", "ai-keys", orgId)}>
             Open AI keys
-          </a>
+          </Button>
         </section>
       ) : null}
 
@@ -319,12 +319,12 @@ export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
           maxLength={4000}
         />
         <div className="aa-compose-actions">
-          <button type="button" className="app-button" onClick={() => void onRun()} disabled={busy || !goal.trim()}>
+          <Button variant="primary" type="button" onClick={() => void onRun()} disabled={busy || !goal.trim()}>
             {busy ? "Running…" : "Run this goal"}
-          </button>
-          <button type="button" className="app-button secondary" onClick={() => void loadRuns()} disabled={busy}>
+          </Button>
+          <Button variant="secondary" type="button" onClick={() => void loadRuns()} disabled={busy}>
             Refresh history
-          </button>
+          </Button>
         </div>
       </section>
 

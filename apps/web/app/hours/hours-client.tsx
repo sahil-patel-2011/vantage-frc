@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "../../components/ui";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AiInsightPanel } from "../../components/ai-insight-panel";
@@ -148,9 +149,9 @@ function ManualEntryForm({
           <input value={note} disabled={busy} placeholder="Optional" onChange={(e) => setNote(e.target.value)} />
         </label>
       </div>
-      <button type="submit" className="app-button secondary" disabled={busy || !clockIn || !clockOut}>
+      <Button variant="secondary" type="submit" disabled={busy || !clockIn || !clockOut}>
         Add entry
-      </button>
+      </Button>
     </form>
   );
 }
@@ -241,9 +242,9 @@ function EnrollScanForm({
           />
         </label>
       </div>
-      <button type="submit" className="app-button secondary" disabled={busy || !userId || !code.trim()}>
+      <Button variant="secondary" type="submit" disabled={busy || !userId || !code.trim()}>
         Enroll card
-      </button>
+      </Button>
     </form>
   );
 }
@@ -289,9 +290,9 @@ function PolicyForm({
           <input type="date" value={start} disabled={busy} onChange={(e) => setStart(e.target.value)} />
         </label>
       </div>
-      <button type="submit" className="app-button secondary" disabled={busy}>
+      <Button variant="secondary" type="submit" disabled={busy}>
         Save settings
-      </button>
+      </Button>
     </form>
   );
 }
@@ -636,14 +637,14 @@ export default function HoursClient() {
                   <strong>{copy.title}</strong>
                   <p className="app-muted">{copy.description}</p>
                   {copy.primary ? (
-                    <a className="app-button" href={copy.primary.href}>
+                    <Button as="a" variant="primary" href={copy.primary.href}>
                       {copy.primary.label}
-                    </a>
+                    </Button>
                   ) : null}
                   {copy.showRetry ? (
-                    <button type="button" className="app-button secondary" onClick={() => void load()}>
+                    <Button variant="secondary" type="button" onClick={() => void load()}>
                       Retry
-                    </button>
+                    </Button>
                   ) : null}
                 </>
               );
@@ -669,9 +670,9 @@ export default function HoursClient() {
         <div className="app-card hours-empty">
           <strong>Select a team</strong>
           <p className="app-muted">{view.message}</p>
-          <a className="app-button" href="/workspace">
+          <Button as="a" variant="primary" href="/workspace">
             Choose your team
-          </a>
+          </Button>
         </div>
       </main>
     );
@@ -731,41 +732,28 @@ export default function HoursClient() {
           </p>
         </div>
         <div className="hours-header-actions">
-          <a className="app-button secondary" href={orgId ? `/hours/kiosk?orgId=${encodeURIComponent(orgId)}` : "/hours/kiosk"}>
+          <Button as="a" variant="secondary" href={orgId ? `/hours/kiosk?orgId=${encodeURIComponent(orgId)}` : "/hours/kiosk"}>
             Shop kiosk
-          </a>
+          </Button>
           {pending > 0 ? (
-            <button type="button" className="app-button secondary" disabled={busy || !online} onClick={() => void drain()}>
+            <Button variant="secondary" type="button" disabled={busy || !online} onClick={() => void drain()}>
               Sync {pending} queued scan{pending === 1 ? "" : "s"}
-            </button>
+            </Button>
           ) : null}
           {orgId ? (
-            <a
-              className="app-button secondary"
+            <Button
+              as="a"
+              variant="secondary"
               href={`/api/hours/export?orgId=${encodeURIComponent(orgId)}`}
-              // Mentors get the team's log; a member gets their own. The server decides.
               title={canAdmin ? "Download the team's hours as CSV" : "Download your hours as CSV"}
             >
               Export CSV
-            </a>
+            </Button>
           ) : null}
           {canAdmin && summary.hereNow > 0 ? (
-            <button
-              type="button"
-              className="app-button secondary"
-              disabled={busy}
-              onClick={() => {
-                if (
-                  confirm(
-                    `Sign out all ${summary.hereNow} clocked-in member(s)? Sessions left open from an earlier day are capped at your team's auto-close credit instead of being signed out now.`,
-                  )
-                ) {
-                  void run({ action: "close_all_open", orgId }, "close-all");
-                }
-              }}
-            >
+            <Button variant="secondary" type="button" disabled={busy} onClick={() => { if ( confirm( `Sign out all ${summary.hereNow} clocked-in member(s)? Sessions left open from an earlier day are capped at your team's auto-close credit instead of being signed out now.`, ) ) { void run({ action: "close_all_open", orgId }, "close-all"); } }}>
               End meeting (sign all out)
-            </button>
+            </Button>
           ) : null}
         </div>
       </header>

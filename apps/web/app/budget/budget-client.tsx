@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Badge, EmptyState, PageHeader, Panel, StatTile } from "../../components/ui";
+import { Badge, EmptyState, PageHeader, Panel, StatTile, Button } from "../../components/ui";
 import {
   describeBudget,
   type BudgetView,
@@ -143,9 +143,9 @@ export default function BudgetClient() {
           <p className="app-muted">
             You can still ask for a part — a request does not need budget access.
           </p>
-          <a className="app-button" href="/part-requests">
+          <Button as="a" variant="primary" href="/part-requests">
             Request a part
-          </a>
+          </Button>
         </EmptyState>
       </main>
     );
@@ -280,17 +280,17 @@ export default function BudgetClient() {
               {budgetInput.trim() === ""
                 ? "Clear the season budget?"
                 : `Set the ${view.seasonYear} budget to ${money(Number(budgetInput) || 0)}?`}{" "}
-              <button className="app-button" type="submit" disabled={busy}>
+              <Button variant="primary" type="submit" disabled={busy}>
                 Yes, save it
-              </button>{" "}
-              <button className="app-button ghost" type="button" onClick={() => setConfirmBudget(false)}>
+              </Button>{" "}
+              <Button variant="ghost" type="button" onClick={() => setConfirmBudget(false)}>
                 Cancel
-              </button>
+              </Button>
             </p>
           ) : (
-            <button className="app-button" type="submit" disabled={busy}>
+            <Button variant="primary" type="submit" disabled={busy}>
               Save budget
-            </button>
+            </Button>
           )}
         </form>
       </Panel>
@@ -455,17 +455,17 @@ export default function BudgetClient() {
             <p className="budget-confirm">
               Record {money(Number(feeAmount) || 0)} for &ldquo;{feeLabel}&rdquo;
               {feePaid ? " as money already spent" : " as a planned fee"}?{" "}
-              <button className="app-button" type="submit" disabled={busy}>
+              <Button variant="primary" type="submit" disabled={busy}>
                 Yes, record it
-              </button>{" "}
-              <button className="app-button ghost" type="button" onClick={() => setConfirmFee(false)}>
+              </Button>{" "}
+              <Button variant="ghost" type="button" onClick={() => setConfirmFee(false)}>
                 Cancel
-              </button>
+              </Button>
             </p>
           ) : (
-            <button className="app-button" type="submit" disabled={busy}>
+            <Button variant="primary" type="submit" disabled={busy}>
               Record fee
-            </button>
+            </Button>
           )}
         </form>
       </Panel>
@@ -516,19 +516,9 @@ export default function BudgetClient() {
                       {grant.grantedByName ? ` by ${grant.grantedByName}` : ""}
                     </span>
                   </span>
-                  <button
-                    className="app-button ghost"
-                    type="button"
-                    disabled={busy}
-                    onClick={() => {
-                      void act(
-                        { action: "revoke-budget-access", userId: grant.userId },
-                        `Budget access removed from ${grant.name || grant.email}.`,
-                      );
-                    }}
-                  >
+                  <Button variant="ghost" type="button" disabled={busy} onClick={() => { void act( { action: "revoke-budget-access", userId: grant.userId }, `Budget access removed from ${grant.name || grant.email}.`, ); }}>
                     Remove access
-                  </button>
+                  </Button>
                 </li>
               ))}
             </ul>
@@ -558,9 +548,9 @@ export default function BudgetClient() {
                   ))}
                 </select>
               </label>
-              <button className="app-button" type="submit" disabled={busy || !grantUserId}>
+              <Button variant="primary" type="submit" disabled={busy || !grantUserId}>
                 Grant budget access
-              </button>
+              </Button>
             </form>
           ) : null}
         </Panel>

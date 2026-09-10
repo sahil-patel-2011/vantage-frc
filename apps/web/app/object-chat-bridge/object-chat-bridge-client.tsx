@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   OBJECT_CHAT_BRIDGE_OBJECT_TYPES,
@@ -154,14 +154,14 @@ export default function ObjectChatBridgeClient() {
           return (
             <EmptyState title={copy.title} description={copy.description}>
               {copy.primary ? (
-                <a className="app-button" href={copy.primary.href}>
+                <Button as="a" variant="primary" href={copy.primary.href}>
                   {copy.primary.label}
-                </a>
+                </Button>
               ) : null}
               {copy.showRetry ? (
-                <button type="button" className="app-button secondary" onClick={() => load()}>
+                <Button variant="secondary" type="button" onClick={() => load()}>
                   Retry
-                </button>
+                </Button>
               ) : null}
             </EmptyState>
           );
@@ -275,15 +275,9 @@ function LinkRowItem({
         </div>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "flex-start" }}>
           {OBJECT_CHAT_BRIDGE_STATUSES.filter((status) => status !== link.status).map((status) => (
-            <button
-              key={status}
-              type="button"
-              className="app-button secondary"
-              disabled={busy}
-              onClick={() => mutate({ action: "update-status", linkId: link.id, status })}
-            >
+            <Button variant="secondary" key={status} type="button" disabled={busy} onClick={() => mutate({ action: "update-status", linkId: link.id, status })}>
               Mark {statusLabel(status)}
-            </button>
+            </Button>
           ))}
           <button
             type="button"
@@ -315,14 +309,9 @@ function LinkRowItem({
                 <p style={{ margin: 0 }}>{notification.message}</p>
               </div>
               {!notification.acknowledged ? (
-                <button
-                  type="button"
-                  className="app-button secondary"
-                  disabled={busy}
-                  onClick={() => mutate({ action: "acknowledge-notification", notificationId: notification.id })}
-                >
+                <Button variant="secondary" type="button" disabled={busy} onClick={() => mutate({ action: "acknowledge-notification", notificationId: notification.id })}>
                   Acknowledge
-                </button>
+                </Button>
               ) : null}
             </li>
           ))}
@@ -351,9 +340,9 @@ function LinkRowItem({
           placeholder="Notify with context…"
           style={{ flex: 1, minWidth: 200 }}
         />
-        <button type="submit" className="app-button" disabled={busy || !message.trim()}>
+        <Button variant="primary" type="submit" disabled={busy || !message.trim()}>
           Notify
-        </button>
+        </Button>
       </form>
     </li>
   );
@@ -434,9 +423,9 @@ function CreateLinkForm({
         <textarea value={form.context} onChange={set("context")} rows={2} />
       </FormRow>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !form.objectRef.trim() || !form.threadRef.trim()}>
+        <Button variant="primary" type="submit" disabled={busy || !form.objectRef.trim() || !form.threadRef.trim()}>
           Create link
-        </button>
+        </Button>
       </div>
     </Panel>
   );

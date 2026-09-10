@@ -11,8 +11,7 @@ import {
   PageHeader,
   Panel,
   SoftBlockSkeleton,
-  StatTile,
-} from "../../components/ui";
+  StatTile, Button } from "../../components/ui";
 import { fieldBudgetPhaseLabel } from "../../lib/scout-field-budget";
 import type { ScoutFieldBudgetView } from "../../lib/scout-field-budget/compute-scout-field-budget";
 import type { FieldBudgetLintResult, FieldBudgetSeverity } from "../../lib/scout-field-budget/types";
@@ -48,9 +47,9 @@ function RelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related sfb-related" aria-label="Related competition tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -71,9 +70,9 @@ function NextActionsPanel({ actions }: { actions: ScoutFieldBudgetNextAction[] }
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -131,10 +130,10 @@ function BudgetShell({
           description={error ?? copy.description}
         >
           {shell === "setup" ? (
-            <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
+            <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
           ) : null}
           {shell === "empty" ? (
-            <a className="app-button is-primary" href="#scout-field-budget-lint">Lint a schema</a>
+            <Button as="a" variant="primary" href="#scout-field-budget-lint">Lint a schema</Button>
           ) : null}
         </EmptyState>
       )}
@@ -151,9 +150,9 @@ function BudgetShell({
                   <strong>{step.label}</strong>
                   <p className="app-muted sfb-tip">{step.detail}</p>
                 </div>
-                <a className="app-button secondary" href={step.href}>
+                <Button as="a" variant="secondary" href={step.href}>
                   Open
-                </a>
+                </Button>
               </li>
             ))}
           </ul>
@@ -474,9 +473,9 @@ function SnapshotForm({
         <textarea value={form.notes} onChange={set("notes")} rows={2} />
       </FormRow>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !form.schemaName.trim()}>
+        <Button variant="primary" type="submit" disabled={busy || !form.schemaName.trim()}>
           Lint schema
-        </button>
+        </Button>
       </div>
     </Panel>
   );

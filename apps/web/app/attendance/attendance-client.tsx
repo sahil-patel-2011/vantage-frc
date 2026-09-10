@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { EmptyState, PageHeader } from "../../components/ui";
+import { EmptyState, PageHeader, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { TeamHubRelated } from "../../components/team-hub-related";
 import { TeamOpsNav } from "../../components/team-ops-nav";
@@ -78,9 +78,9 @@ function NextActions({
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -157,9 +157,9 @@ function CreateEventForm({
           />
         </label>
       </div>
-      <button type="submit" className="app-button" disabled={busy || !title.trim() || !occurredOn}>
+      <Button variant="primary" type="submit" disabled={busy || !title.trim() || !occurredOn}>
         Create event
-      </button>
+      </Button>
     </form>
   );
 }
@@ -401,9 +401,9 @@ function SessionDetail({
                 />
               </label>
             </div>
-            <button type="submit" className="app-button secondary" disabled={busy || !personName.trim()}>
+            <Button variant="secondary" type="submit" disabled={busy || !personName.trim()}>
               Add attendee
-            </button>
+            </Button>
           </form>
           <button
             type="button"
@@ -427,12 +427,12 @@ function SessionDetail({
           description="Add people who showed up — totals stay empty until you mark them."
         >
           <div className="att-empty-actions">
-            <a className="app-button secondary" href={attendancePracticeHref(orgId)}>
+            <Button as="a" variant="secondary" href={attendancePracticeHref(orgId)}>
               Practice
-            </a>
-            <a className="app-button secondary" href={attendanceCalendarHref(orgId)}>
+            </Button>
+            <Button as="a" variant="secondary" href={attendanceCalendarHref(orgId)}>
               Calendar
-            </a>
+            </Button>
           </div>
         </EmptyState>
       ) : (
@@ -588,18 +588,18 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
           {failure ? (
             <div className="att-empty-actions">
               {failure.primary ? (
-                <a className="app-button" href={failure.primary.href}>
+                <Button as="a" variant="primary" href={failure.primary.href}>
                   {failure.primary.label}
-                </a>
+                </Button>
               ) : null}
               {failure.showRetry ? (
-                <button type="button" className="app-button secondary" onClick={() => void load()}>
+                <Button variant="secondary" type="button" onClick={() => void load()}>
                   Retry
-                </button>
+                </Button>
               ) : null}
-              <a className="app-button secondary" href="/workspace">
+              <Button as="a" variant="secondary" href="/workspace">
                 Choose your team
-              </a>
+              </Button>
             </div>
           ) : null}
           {fetchFailed ? (
@@ -624,9 +624,9 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
           </>
         ) : null}
         <EmptyState soft title="Select a team" description={view.message} badge="Setup" badgeTone="setup">
-          <a className="app-button" href="/workspace">
+          <Button as="a" variant="primary" href="/workspace">
             Choose your team
-          </a>
+          </Button>
         </EmptyState>
         <NextActions orgId={null} eventCount={0} emptyRollCount={0} canManage={false} />
       </main>
@@ -670,18 +670,18 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
       </label>
       {!embedded ? (
         <>
-          <a className="app-button secondary" href={attendancePracticeHref(orgId)}>
+          <Button as="a" variant="secondary" href={attendancePracticeHref(orgId)}>
             Practice
-          </a>
-          <a className="app-button secondary" href={attendanceCalendarHref(orgId)}>
+          </Button>
+          <Button as="a" variant="secondary" href={attendanceCalendarHref(orgId)}>
             Calendar
-          </a>
+          </Button>
         </>
       ) : null}
       {canManage ? (
-        <button type="button" className="app-button" onClick={() => setShowCreate((v) => !v)}>
+        <Button variant="primary" type="button" onClick={() => setShowCreate((v) => !v)}>
           {showCreate ? "Cancel" : "New"}
-        </button>
+        </Button>
       ) : null}
     </div>
   );
@@ -768,20 +768,20 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
         >
           <div className="att-empty-actions">
             {canManage ? (
-              <button type="button" className="app-button" onClick={() => setShowCreate(true)}>
+              <Button variant="primary" type="button" onClick={() => setShowCreate(true)}>
                 New
-              </button>
+              </Button>
             ) : (
-              <a className="app-button secondary" href={`/team?tab=messages&orgId=${encodeURIComponent(orgId)}`}>
+              <Button as="a" variant="secondary" href={`/team?tab=messages&orgId=${encodeURIComponent(orgId)}`}>
                 Ask in Messages
-              </a>
+              </Button>
             )}
-            <a className="app-button secondary" href={attendanceCalendarHref(orgId)}>
+            <Button as="a" variant="secondary" href={attendanceCalendarHref(orgId)}>
               Schedule on Calendar
-            </a>
-            <a className="app-button secondary" href={attendancePracticeHref(orgId)}>
+            </Button>
+            <Button as="a" variant="secondary" href={attendancePracticeHref(orgId)}>
               Open Practice
-            </a>
+            </Button>
           </div>
         </EmptyState>
       ) : (
@@ -821,9 +821,9 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
               </header>
               {filtered.length === 0 ? (
                 <EmptyState soft title="No sessions match" description="Clear the filters or try a different search.">
-                  <button type="button" className="app-button secondary" onClick={() => { setListFilter("all"); setQuery(""); }}>
+                  <Button variant="secondary" type="button" onClick={() => { setListFilter("all"); setQuery(""); }}>
                     Reset filters
-                  </button>
+                  </Button>
                 </EmptyState>
               ) : (
                 <ul className="att-sessions">

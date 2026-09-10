@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { UsageCutoffBanner, resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { reminderKindLabel, tierLabel } from "../../lib/sponsor-suite";
 import type { SponsorSuiteView } from "../../lib/sponsor-suite/compute-sponsor-suite";
 import {
@@ -39,9 +39,9 @@ function SponsorSuiteRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related sponsor-suite-related" aria-label="Related business tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -65,9 +65,9 @@ function SponsorSuiteNextActionsPanel({ actions }: { actions: SponsorSuiteNextAc
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -127,15 +127,15 @@ function SponsorSuiteShell({
         aria-busy={shell === "loading"}
       >
         {shell === "error" && onRetry ? (
-          <button type="button" className="app-button secondary" onClick={onRetry}>
+          <Button variant="secondary" type="button" onClick={onRetry}>
             Retry
-          </button>
+          </Button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
+          <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
         ) : null}
         {shell === "empty" ? (
-          <a className="app-button is-primary" href={hubHref("/business", "sponsors", orgId)}>Open Sponsor CRM</a>
+          <Button as="a" variant="primary" href={hubHref("/business", "sponsors", orgId)}>Open Sponsor CRM</Button>
         ) : null}
       </EmptyState>
       {shell === "setup" && steps.length > 0 ? (
@@ -318,9 +318,9 @@ export default function SponsorSuiteClient() {
             </label>
           ) : null}
           {relatedLinks.map((link) => (
-            <a key={link.id} className="app-button secondary" href={link.href}>
+            <Button as="a" variant="secondary" key={link.id} href={link.href}>
               {link.label}
-            </a>
+            </Button>
           ))}
         </div>
       </PageHeader>
@@ -379,9 +379,9 @@ export default function SponsorSuiteClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <a className="app-button is-primary" href={hubHref("/business", "sponsors", orgId)}>
+          <Button as="a" variant="primary" href={hubHref("/business", "sponsors", orgId)}>
             Open Sponsor CRM
-          </a>
+          </Button>
         </EmptyState>
       ) : null}
 
@@ -480,9 +480,9 @@ function GoalPanel({
             placeholder={goal.goalUsd != null ? String(goal.goalUsd) : "5000"}
           />
         </FormRow>
-        <button type="submit" className="app-button secondary" disabled={busy || !draftGoal}>
+        <Button variant="secondary" type="submit" disabled={busy || !draftGoal}>
           Save goal
-        </button>
+        </Button>
       </form>
     </Panel>
   );
@@ -604,14 +604,9 @@ function RemindersPanel({
               <input type="date" value={dueOn} onChange={(event) => setDueOn(event.target.value)} />
             </FormRow>
           </FormGrid>
-          <button
-            type="submit"
-            className="app-button secondary"
-            disabled={busy || !sponsorId || !dueOn}
-            style={{ marginTop: 8 }}
-          >
+          <Button variant="secondary" type="submit" disabled={busy || !sponsorId || !dueOn} style={{ marginTop: 8 }}>
             Add reminder
-          </button>
+          </Button>
         </form>
       )}
     </Panel>
@@ -671,9 +666,9 @@ function DeckPanel({
             ))}
           </select>
         </FormRow>
-        <button type="submit" className="app-button" disabled={busy}>
+        <Button variant="primary" type="submit" disabled={busy}>
           Generate deck
-        </button>
+        </Button>
       </form>
 
       {view.decks.length === 0 ? (
@@ -751,14 +746,9 @@ function RoiPanel({
         }}
       >
         <h2 style={{ margin: 0 }}>End-of-season ROI report — {view.seasonYear}</h2>
-        <button
-          type="button"
-          className="app-button secondary"
-          disabled={busy}
-          onClick={() => mutate({ action: "generate-roi-report" })}
-        >
+        <Button variant="secondary" type="button" disabled={busy} onClick={() => mutate({ action: "generate-roi-report" })}>
           Generate report
-        </button>
+        </Button>
       </header>
       <p className="app-muted">
         A sponsor ROI write-up built from the contributions your team has recorded.

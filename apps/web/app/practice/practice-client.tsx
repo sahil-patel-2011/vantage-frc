@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "../../components/ui";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { TeamHubRelated } from "../../components/team-hub-related";
@@ -61,9 +62,9 @@ function PracticeNextActions({ actions }: { actions: ReturnType<typeof practiceN
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -102,9 +103,9 @@ function Stopwatch({ onStop, disabled }: { onStop: (seconds: number) => void; di
     <div className={running ? "practice-stopwatch running" : "practice-stopwatch"}>
       <b>{elapsed.toFixed(1)}s</b>
       {running ? (
-        <button type="button" className="app-button sm" onClick={stop}>Stop</button>
+        <Button variant="primary" size="sm" type="button" onClick={stop}>Stop</Button>
       ) : (
-        <button type="button" className="app-button secondary sm" disabled={disabled} onClick={start}>Time it</button>
+        <Button variant="secondary" size="sm" type="button" disabled={disabled} onClick={start}>Time it</Button>
       )}
     </div>
   );
@@ -147,7 +148,7 @@ function CycleLogger({
         {success ? "Made" : "Miss"}
       </button>
       <input placeholder="Note" value={note} disabled={busy} onChange={(e) => setNote(e.target.value)} />
-      <button type="submit" className="app-button" disabled={busy || !cycleAction.trim()}>Log rep</button>
+      <Button variant="primary" type="submit" disabled={busy || !cycleAction.trim()}>Log rep</Button>
     </form>
   );
 }
@@ -388,7 +389,7 @@ function NewSessionForm({
           </label>
         ) : null}
       </div>
-      <button type="submit" className="app-button" disabled={busy || !title.trim()}>{busy ? "Creating…" : "Start session"}</button>
+      <Button variant="primary" type="submit" disabled={busy || !title.trim()}>{busy ? "Creating…" : "Start session"}</Button>
     </form>
   );
 }
@@ -483,14 +484,14 @@ export default function PracticeClient({ embedded = false }: { embedded?: boolea
                   <strong>{copy.title}</strong>
                   <p className="practice-muted">{copy.description}</p>
                   {copy.primary ? (
-                    <a className="app-button" href={copy.primary.href}>
+                    <Button as="a" variant="primary" href={copy.primary.href}>
                       {copy.primary.label}
-                    </a>
+                    </Button>
                   ) : null}
                   {copy.showRetry ? (
-                    <button type="button" className="app-button" onClick={() => void load()}>
+                    <Button variant="primary" type="button" onClick={() => void load()}>
                       Retry
-                    </button>
+                    </Button>
                   ) : null}
                 </>
               );
@@ -518,7 +519,7 @@ export default function PracticeClient({ embedded = false }: { embedded?: boolea
         <div className="practice-panel practice-empty">
           <strong>Select a team</strong>
           <p className="practice-muted">{view.message}</p>
-          <a className="app-button" href="/workspace">Choose your team</a>
+          <Button as="a" variant="primary" href="/workspace">Choose your team</Button>
         </div>
         <PracticeNextActions actions={setupActions} />
       </main>
@@ -611,10 +612,10 @@ export default function PracticeClient({ embedded = false }: { embedded?: boolea
             scoring rep with the stopwatch. Totals stay empty until you log real work.
           </p>
           <div className="practice-empty-actions">
-            <button type="button" className="app-button" onClick={() => setShowNew(true)}>Start your first session</button>
-            <a className="app-button secondary" href={teamTab("calendar", orgId)}>Open Calendar</a>
-            <a className="app-button secondary" href={teamTab("attendance", orgId)}>Open Attendance</a>
-            <a className="app-button secondary" href={teamTab("batteries", orgId)}>Open Batteries</a>
+            <Button variant="primary" type="button" onClick={() => setShowNew(true)}>Start your first session</Button>
+            <Button as="a" variant="secondary" href={teamTab("calendar", orgId)}>Open Calendar</Button>
+            <Button as="a" variant="secondary" href={teamTab("attendance", orgId)}>Open Attendance</Button>
+            <Button as="a" variant="secondary" href={teamTab("batteries", orgId)}>Open Batteries</Button>
           </div>
         </div>
       ) : (

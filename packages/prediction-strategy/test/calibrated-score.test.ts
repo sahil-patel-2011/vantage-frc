@@ -38,10 +38,11 @@ describe("calibrated alliance score predictor", () => {
 
   it("reports honest metrics on the fixture (not a live TBA claim)", () => {
     const metrics = scorePredictionMetrics(fixtureSeasonRows());
-    expect(metrics.n).toBeGreaterThan(0);
-    expect(metrics.mae).toBeGreaterThan(0);
-    expect(metrics.within3).toBeGreaterThanOrEqual(0);
-    expect(metrics.within3).toBeLessThanOrEqual(1);
+    expect(metrics.n).toBe(4);
+    expect(metrics.mae).toBe(89.7);
+    expect(metrics.rmse).toBe(89.88);
+    expect(metrics.within3).toBe(0);
+    expect(metrics.within5).toBe(0);
     expect(metrics.modelVersion).toBe("calibrated-linear-v1");
   });
 });

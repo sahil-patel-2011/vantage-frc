@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { TeamHubRelated } from "../../components/team-hub-related";
 import { TeamOpsNav } from "../../components/team-ops-nav";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, StatTile } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, StatTile, Button } from "../../components/ui";
 import { useOnline } from "../../lib/offline";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
@@ -63,9 +63,9 @@ function NextActions({
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -89,9 +89,9 @@ function UnifiedWorkSummary({ view }: { view: LiveWorkView | null }) {
             One read across the team&apos;s trackers. Open an item in its owning board to update it.
           </p>
         </div>
-        <a className="app-button secondary" href={withOrgHref("/tasks", view.orgId)}>
+        <Button as="a" variant="secondary" href={withOrgHref("/tasks", view.orgId)}>
           Open build board
-        </a>
+        </Button>
       </header>
       <div className="todos-unified-metrics">
         <StatTile label="Open" value={view.summary.open} />
@@ -112,9 +112,9 @@ function UnifiedWorkSummary({ view }: { view: LiveWorkView | null }) {
                   {item.owners.length ? ` · ${item.owners.map((owner) => owner.name).join(", ")}` : " · unowned"}
                 </small>
               </div>
-              <a className="app-button secondary" href={withOrgHref(item.href, view.orgId)}>
+              <Button as="a" variant="secondary" href={withOrgHref(item.href, view.orgId)}>
                 Open
-              </a>
+              </Button>
             </li>
           ))}
         </ul>
@@ -301,9 +301,9 @@ export default function TodosClient({ embedded = false }: { embedded?: boolean }
             }
           >
             {view?.status === "live" ? (
-              <a className="app-button secondary" href={withOrgHref("/tasks", orgId)}>
+              <Button as="a" variant="secondary" href={withOrgHref("/tasks", orgId)}>
                 Build-season board
-              </a>
+              </Button>
             ) : null}
           </PageHeader>
           <TeamOpsNav orgId={orgId} active="todos" />
@@ -333,18 +333,18 @@ export default function TodosClient({ embedded = false }: { embedded?: boolean }
         >
           <div className="soft-btn-row">
             {failure.primary ? (
-              <a className="app-button" href={failure.primary.href}>
+              <Button as="a" variant="primary" href={failure.primary.href}>
                 {failure.primary.label}
-              </a>
+              </Button>
             ) : null}
             {failure.showRetry ? (
-              <button type="button" className="app-button secondary" onClick={() => load()}>
+              <Button variant="secondary" type="button" onClick={() => load()}>
                 Retry
-              </button>
+              </Button>
             ) : null}
-            <a className="app-button secondary" href="/workspace">
+            <Button as="a" variant="secondary" href="/workspace">
               Choose your team
-            </a>
+            </Button>
           </div>
           <NextActions orgId={orgId} todoCount={0} mineOpen={0} overdue={0} />
         </EmptyState>
@@ -514,9 +514,9 @@ function CreateTodoForm({ view, busy, mutate }: { view: LiveView; busy: boolean;
         </FormGrid>
       </details>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !form.title.trim()}>
+        <Button variant="primary" type="submit" disabled={busy || !form.title.trim()}>
           Add
-        </button>
+        </Button>
       </div>
     </Panel>
   );
@@ -547,15 +547,15 @@ function Board({
         description="Add the first shared action item when your team has real work to track."
       >
         <div className="soft-btn-row">
-          <a className="app-button secondary" href={withOrgHref("/team?tab=calendar", view.orgId)}>
+          <Button as="a" variant="secondary" href={withOrgHref("/team?tab=calendar", view.orgId)}>
             Calendar
-          </a>
-          <a className="app-button secondary" href={withOrgHref("/team?tab=messages", view.orgId)}>
+          </Button>
+          <Button as="a" variant="secondary" href={withOrgHref("/team?tab=messages", view.orgId)}>
             Messages
-          </a>
-          <a className="app-button secondary" href={withOrgHref("/team?tab=practice", view.orgId)}>
+          </Button>
+          <Button as="a" variant="secondary" href={withOrgHref("/team?tab=practice", view.orgId)}>
             Practice
-          </a>
+          </Button>
         </div>
       </EmptyState>
     );
@@ -568,9 +568,9 @@ function Board({
         title="Nothing in this filter"
         description="Show all, or add a todo that matches this view."
       >
-        <button type="button" className="app-button secondary" onClick={() => setFilter("all")}>
+        <Button variant="secondary" type="button" onClick={() => setFilter("all")}>
           Show all
-        </button>
+        </Button>
       </EmptyState>
     );
   }
@@ -711,46 +711,22 @@ function TodoCard({
 
       <div className="todos-card-actions">
         {todo.status !== "doing" && todo.status !== "done" ? (
-          <button
-            type="button"
-            className="app-button secondary"
-            disabled={busy}
-            onClick={() => mutate({ action: "update-todo", todoId: todo.id, status: "doing" })}
-          >
+          <Button variant="secondary" type="button" disabled={busy} onClick={() => mutate({ action: "update-todo", todoId: todo.id, status: "doing" })}>
             Start
-          </button>
+          </Button>
         ) : null}
         {todo.status !== "done" ? (
-          <button
-            type="button"
-            className="app-button"
-            disabled={busy}
-            onClick={() => mutate({ action: "update-todo", todoId: todo.id, status: "done" })}
-          >
+          <Button variant="primary" type="button" disabled={busy} onClick={() => mutate({ action: "update-todo", todoId: todo.id, status: "done" })}>
             Mark done
-          </button>
+          </Button>
         ) : (
-          <button
-            type="button"
-            className="app-button secondary"
-            disabled={busy}
-            onClick={() => mutate({ action: "update-todo", todoId: todo.id, status: "todo" })}
-          >
+          <Button variant="secondary" type="button" disabled={busy} onClick={() => mutate({ action: "update-todo", todoId: todo.id, status: "todo" })}>
             Reopen
-          </button>
+          </Button>
         )}
-        <button
-          type="button"
-          className="app-button secondary"
-          disabled={busy}
-          onClick={() => {
-            if (window.confirm(`Delete “${todo.title}”?`)) {
-              mutate({ action: "delete-todo", todoId: todo.id });
-            }
-          }}
-        >
+        <Button variant="secondary" type="button" disabled={busy} onClick={() => { if (window.confirm(`Delete “${todo.title}”?`)) { mutate({ action: "delete-todo", todoId: todo.id }); } }}>
           Delete
-        </button>
+        </Button>
       </div>
     </article>
   );

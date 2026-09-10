@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "../../components/ui";
 import { useCallback, useEffect, useState } from "react";
 import { MOTORS, SUBSYSTEM_CATEGORIES, computeFreeSpeedFps, motorFreeRpm, motorLabel, type SubsystemCategory } from "../../lib/subsystems";
 
@@ -64,7 +65,7 @@ export default function SubsystemsClient({ orgId }: { orgId: string | null }) {
     return (
       <main className="intel-app">
         <p className="telemetry-status"><strong>{copy.title}</strong> — {copy.description}</p>
-        {copy.primary ? <a className="app-button" href={copy.primary.href}>{copy.primary.label}</a> : null}
+        {copy.primary ? <Button as="a" variant="primary" href={copy.primary.href}>{copy.primary.label}</Button> : null}
       </main>
     );
   }

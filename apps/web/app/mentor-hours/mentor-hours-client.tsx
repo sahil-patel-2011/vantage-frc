@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { mentorHoursCategoryLabel, mentorHoursRoleLabel } from "../../lib/mentor-hours";
 import {
@@ -154,14 +154,14 @@ export default function MentorHoursClient() {
           return (
             <EmptyState title={copy.title} description={copy.description}>
               {copy.primary ? (
-                <a className="app-button" href={copy.primary.href}>
+                <Button as="a" variant="primary" href={copy.primary.href}>
                   {copy.primary.label}
-                </a>
+                </Button>
               ) : null}
               {copy.showRetry ? (
-                <button type="button" className="app-button secondary" onClick={() => load()}>
+                <Button variant="secondary" type="button" onClick={() => load()}>
                   Retry
-                </button>
+                </Button>
               ) : null}
             </EmptyState>
           );
@@ -451,13 +451,9 @@ function LogEntryForm({
         <textarea value={form.notes} onChange={set("notes")} rows={2} />
       </FormRow>
       <div>
-        <button
-          type="submit"
-          className="app-button"
-          disabled={busy || !form.mentorName.trim() || !form.occurredOn || Number(form.durationMinutes) <= 0}
-        >
+        <Button variant="primary" type="submit" disabled={busy || !form.mentorName.trim() || !form.occurredOn || Number(form.durationMinutes) <= 0}>
           Log hours
-        </button>
+        </Button>
       </div>
     </Panel>
   );

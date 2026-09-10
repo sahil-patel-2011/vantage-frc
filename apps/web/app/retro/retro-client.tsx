@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { RETRO_ITEM_KINDS, retroItemKindLabel } from "../../lib/retro";
 import type { RetroView } from "../../lib/retro/compute-retro";
 import {
@@ -46,9 +46,9 @@ function RetroRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related retro-related" aria-label="Related team tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -69,9 +69,9 @@ function RetroNextActionsPanel({ actions }: { actions: RetroNextAction[] }) {
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -131,15 +131,15 @@ function RetroShell({
         aria-busy={shell === "loading"}
       >
         {shell === "error" && onRetry ? (
-          <button type="button" className="app-button secondary" onClick={onRetry}>
+          <Button variant="secondary" type="button" onClick={onRetry}>
             Retry
-          </button>
+          </Button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
+          <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
         ) : null}
         {shell === "empty" ? (
-          <a className="app-button is-primary" href="#retro-new-session">Start a session</a>
+          <Button as="a" variant="primary" href="#retro-new-session">Start a session</Button>
         ) : null}
       </EmptyState>
       {steps.length > 0 ? (
@@ -155,9 +155,9 @@ function RetroShell({
                   <strong>{step.label}</strong>
                   <p className="app-muted retro-tip">{step.detail}</p>
                 </div>
-                <a className="app-button secondary" href={step.href}>
+                <Button as="a" variant="secondary" href={step.href}>
                   Open
-                </a>
+                </Button>
               </li>
             ))}
           </ul>
@@ -336,9 +336,9 @@ export default function RetroClient() {
             </label>
           ) : null}
           {relatedLinks.map((link) => (
-            <a key={link.id} className="app-button secondary" href={link.href}>
+            <Button as="a" variant="secondary" key={link.id} href={link.href}>
               {link.label}
-            </a>
+            </Button>
           ))}
         </div>
       </PageHeader>
@@ -383,9 +383,9 @@ export default function RetroClient() {
           description={shellCopy.description}
           className="product-hub-setup"
         >
-          <a className="app-button is-primary" href="#retro-new-session">
+          <Button as="a" variant="primary" href="#retro-new-session">
             Start a session
-          </a>
+          </Button>
         </EmptyState>
       ) : null}
 
@@ -445,9 +445,9 @@ function NewSessionForm({
         </FormRow>
       </FormGrid>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !title.trim()}>
+        <Button variant="primary" type="submit" disabled={busy || !title.trim()}>
           Start session
-        </button>
+        </Button>
       </div>
     </Panel>
   );
@@ -505,9 +505,9 @@ function ItemColumn({
           placeholder={`Add a ${retroItemKindLabel(kind).toLowerCase()} item`}
           style={{ flex: 1 }}
         />
-        <button type="submit" className="app-button secondary" disabled={busy || !content.trim()}>
+        <Button variant="secondary" type="submit" disabled={busy || !content.trim()}>
           Add
-        </button>
+        </Button>
       </form>
       {items.length === 0 ? (
         <p className="app-muted">No items yet.</p>
@@ -586,9 +586,9 @@ function ActionItems({
           </FormRow>
         </FormGrid>
         <div>
-          <button type="submit" className="app-button secondary" disabled={busy || !title.trim()}>
+          <Button variant="secondary" type="submit" disabled={busy || !title.trim()}>
             Add action item
-          </button>
+          </Button>
         </div>
       </form>
       {view.actionItems.length === 0 ? (
@@ -657,9 +657,9 @@ function LearnedItems({
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           {handoffLinks.map((link) => (
-            <a key={link.id} className="app-button secondary" href={link.href}>
+            <Button as="a" variant="secondary" key={link.id} href={link.href}>
               {link.label}
-            </a>
+            </Button>
           ))}
         </div>
       </header>
@@ -691,39 +691,24 @@ function LearnedItems({
         </ul>
       )}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        <button
-          type="button"
-          className="app-button"
-          disabled={busy || items.length === 0}
-          onClick={() => send("season-report")}
-        >
+        <Button variant="primary" type="button" disabled={busy || items.length === 0} onClick={() => send("season-report")}>
           Send to Season report
-        </button>
-        <button
-          type="button"
-          className="app-button secondary"
-          disabled={busy || items.length === 0}
-          onClick={() => send("playbook")}
-        >
+        </Button>
+        <Button variant="secondary" type="button" disabled={busy || items.length === 0} onClick={() => send("playbook")}>
           Send to Playbook
-        </button>
-        <button
-          type="button"
-          className="app-button secondary"
-          disabled={busy || items.length === 0}
-          onClick={() => send("both")}
-        >
+        </Button>
+        <Button variant="secondary" type="button" disabled={busy || items.length === 0} onClick={() => send("both")}>
           Send to both
-        </button>
+        </Button>
         {view.handoff.playbookHref ? (
-          <a className="app-button secondary" href={view.handoff.playbookHref}>
+          <Button as="a" variant="secondary" href={view.handoff.playbookHref}>
             Open playbook page
-          </a>
+          </Button>
         ) : null}
         {view.handoff.seasonReportCount > 0 ? (
-          <a className="app-button secondary" href={withOrgHref("/season-report", view.orgId)}>
+          <Button as="a" variant="secondary" href={withOrgHref("/season-report", view.orgId)}>
             {formatRetroMetric(view.handoff.seasonReportCount, true)} in Season report
-          </a>
+          </Button>
         ) : null}
       </div>
     </Panel>
@@ -744,14 +729,9 @@ function Postmortems({
     <Panel className="retro-panel">
       <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <h2 style={{ margin: 0 }}>Season postmortem</h2>
-        <button
-          type="button"
-          className="app-button secondary"
-          disabled={busy}
-          onClick={() => mutate({ action: "generate-postmortem" })}
-        >
+        <Button variant="secondary" type="button" disabled={busy} onClick={() => mutate({ action: "generate-postmortem" })}>
           Compile postmortem
-        </button>
+        </Button>
       </header>
       {latest ? (
         <div style={{ marginTop: 12 }}>

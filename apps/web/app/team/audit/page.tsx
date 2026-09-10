@@ -1,4 +1,4 @@
-import { EmptyState, PageHeader } from "../../../components/ui";
+import { EmptyState, PageHeader, Button } from "../../../components/ui";
 import AuditLogClient from "./audit-client";
 
 export const metadata = {
@@ -26,9 +26,9 @@ export default async function TeamAuditPage({
           title="Choose a team"
           description="Audit rows stay on this team. Select the team whose trail you want to read."
         >
-          <a className="app-button" href="/workspace">
+          <Button as="a" variant="primary" href="/workspace">
             Choose team
-          </a>
+          </Button>
         </EmptyState>
       </main>
     );

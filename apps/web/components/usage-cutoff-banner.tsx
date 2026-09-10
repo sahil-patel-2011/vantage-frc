@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "./ui";
 
 import { useState } from "react";
 import {
@@ -110,9 +111,9 @@ function BannerShell({
               {busy === cta.id ? "Opening…" : cta.label}
             </button>
           ) : (
-            <a key={cta.id} className="app-button secondary" href={cta.href ?? cutoffPricingHref(orgId)}>
+            <Button as="a" variant="secondary" key={cta.id} href={cta.href ?? cutoffPricingHref(orgId)}>
               {cta.label}
-            </a>
+            </Button>
           ),
         )}
       </div>

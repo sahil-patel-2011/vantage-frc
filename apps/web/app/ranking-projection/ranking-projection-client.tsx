@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { EmptyState, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
 import {
   bestPath,
   describeBestPath,
@@ -153,34 +153,23 @@ function BestPathPlanner({
         </ul>
 
         <div className="bp-actions">
-          <button type="button" className="app-button" onClick={runBestPath}>
+          <Button variant="primary" type="button" onClick={runBestPath}>
             Show best path
-          </button>
+          </Button>
           {plan?.flips.length ? (
-            <button type="button" className="app-button secondary" onClick={applyPlan}>
+            <Button variant="secondary" type="button" onClick={applyPlan}>
               Apply these results
-            </button>
+            </Button>
           ) : null}
           {forcedCount ? (
-            <button
-              type="button"
-              className="app-button secondary"
-              onClick={() => {
-                setOverrides({});
-                setPlan(null);
-              }}
-            >
+            <Button variant="secondary" type="button" onClick={() => { setOverrides({}); setPlan(null); }}>
               Clear {forcedCount} forced
-            </button>
+            </Button>
           ) : null}
           {ourMatches.length ? (
-            <button
-              type="button"
-              className="app-button secondary"
-              onClick={() => setOnlyOurMatches((value) => !value)}
-            >
+            <Button variant="secondary" type="button" onClick={() => setOnlyOurMatches((value) => !value)}>
               {onlyOurMatches ? `Show all ${whatIf.remaining.length}` : `Only our ${ourMatches.length}`}
-            </button>
+            </Button>
           ) : null}
         </div>
 
@@ -375,14 +364,14 @@ export default function RankingProjectionClient() {
             return (
               <EmptyState title={copy.title} description={copy.description}>
                 {copy.primary ? (
-                  <a className="app-button" href={copy.primary.href}>
+                  <Button as="a" variant="primary" href={copy.primary.href}>
                     {copy.primary.label}
-                  </a>
+                  </Button>
                 ) : null}
                 {copy.showRetry ? (
-                  <button type="button" className="app-button secondary" onClick={() => load()}>
+                  <Button variant="secondary" type="button" onClick={() => load()}>
                     Retry
-                  </button>
+                  </Button>
                 ) : null}
               </EmptyState>
             );
@@ -403,9 +392,9 @@ export default function RankingProjectionClient() {
               {view.epaTotal != null ? ` · EPA ${view.epaTotal}` : ""}
             </p>
             <p>
-              <a className="app-button secondary" href={withOrgHref("/rankings", view.orgId)}>
+              <Button as="a" variant="secondary" href={withOrgHref("/rankings", view.orgId)}>
                 Open Rankings
-              </a>
+              </Button>
             </p>
           </Panel>
           {view.whatIf ? (

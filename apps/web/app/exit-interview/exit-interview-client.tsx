@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { exitInterviewRoleLabel, exitInterviewStatusLabel, exitInterviewWikiHref } from "../../lib/exit-interview";
 import {
@@ -142,14 +142,14 @@ export default function ExitInterviewClient() {
       {failure ? (
         <EmptyState title={failure.title} description={failure.description}>
           {failure.primary ? (
-            <a className="app-button" href={failure.primary.href}>
+            <Button as="a" variant="primary" href={failure.primary.href}>
               {failure.primary.label}
-            </a>
+            </Button>
           ) : null}
           {failure.showRetry ? (
-            <button type="button" className="app-button secondary" onClick={() => load()}>
+            <Button variant="secondary" type="button" onClick={() => load()}>
               Retry
-            </button>
+            </Button>
           ) : null}
         </EmptyState>
       ) : view == null ? (
@@ -288,22 +288,9 @@ function RecentResponses({
             </div>
             <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
               {item.status === "draft" ? (
-                <button
-                  type="button"
-                  className="app-button secondary"
-                  disabled={busy}
-                  onClick={() => {
-                    if (
-                      window.confirm(
-                        `Submit "${item.memberName}"'s exit interview? This publishes the handoff page to the team wiki and cannot be moved back to a draft.`,
-                      )
-                    ) {
-                      mutate({ action: "submit-response", recordId: item.id });
-                    }
-                  }}
-                >
+                <Button variant="secondary" type="button" disabled={busy} onClick={() => { if ( window.confirm( `Submit "${item.memberName}"'s exit interview? This publishes the handoff page to the team wiki and cannot be moved back to a draft.`, ) ) { mutate({ action: "submit-response", recordId: item.id }); } }}>
                   Submit &amp; publish
-                </button>
+                </Button>
               ) : null}
               {view.canManage ? (
                 <button
@@ -435,13 +422,9 @@ function LogResponseForm({
         Willing to mentor future members
       </label>
       <div>
-        <button
-          type="submit"
-          className="app-button"
-          disabled={busy || !form.memberName.trim() || !form.graduationYear}
-        >
+        <Button variant="primary" type="submit" disabled={busy || !form.memberName.trim() || !form.graduationYear}>
           Save exit interview
-        </button>
+        </Button>
       </div>
     </Panel>
   );

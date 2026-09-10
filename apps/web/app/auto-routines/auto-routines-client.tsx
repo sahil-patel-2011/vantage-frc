@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "../../components/ui";
 import { useCallback, useEffect, useState } from "react";
 import { AUTO_PRIORITIES, AUTO_STATUS_LABEL, AUTO_STATUSES, START_POSITIONS, type AutoPriority, type AutoStatus, type StartPosition } from "../../lib/auto-routines";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
@@ -71,8 +72,8 @@ export default function AutoRoutinesClient({ orgId }: { orgId: string | null }) 
           {copy.description}
         </p>
         <nav className="intel-actions">
-          {copy.primary ? <a className="app-button" href={copy.primary.href}>{copy.primary.label}</a> : null}
-          {copy.showRetry ? <button type="button" className="app-button secondary" onClick={() => void load()}>Retry</button> : null}
+          {copy.primary ? <Button as="a" variant="primary" href={copy.primary.href}>{copy.primary.label}</Button> : null}
+          {copy.showRetry ? <Button variant="secondary" type="button" onClick={() => void load()}>Retry</Button> : null}
         </nav>
       </main>
     );

@@ -62,9 +62,7 @@ import type { WidgetPayload } from "../../lib/dashboard/snapshot";
 import {
   classifyDashboardShell,
   dashboardNextActions,
-  dashboardSetupBlurb,
   dashboardSetupSteps,
-  dashboardSetupTitle,
   type DashboardShellKind,
 } from "../../lib/dashboard/dashboard-related";
 import { hubHref } from "../../lib/nav/hubs";
@@ -84,7 +82,23 @@ import {
   widgetLockReason,
 } from "./dashboard-canvas";
 import { prioritizeHomeStrip, type HomeStripItem } from "../../lib/home-workflows";
-import { Badge, Button, Modal } from "../../components/ui";
+import { Button } from "../../components/ui";
+import {
+  type BoardMeta,
+  type BoardState,
+  type DragActivation,
+  type DragSession,
+  type DragView,
+  type Me,
+  type PaletteRow,
+  type SnapFeedback,
+} from "./dashboard-board-types";
+import { DashboardBoardBar } from "./dashboard-board-bar";
+import { DashboardBoardsModal } from "./dashboard-boards-modal";
+import { DashboardEditDock, DashboardPreviewDock } from "./dashboard-edit-dock";
+import { DashboardSetupBanner } from "./dashboard-setup-banner";
+import { DashboardWidgetLibrary } from "./dashboard-widget-library";
+import { DashboardWidgetPalette } from "./dashboard-widget-palette";
 import { CopyShareLink } from "../../components/copy-share-link";
 import { useVenueShortcuts, VenueShortcutCheatsheet } from "../../hooks/use-venue-shortcuts";
 import {
@@ -95,78 +109,6 @@ import {
 import { fetchProductSession } from "../../lib/nav/product-session";
 import { persistOrgIdInUrl, readOrgIdFromSearch } from "../../lib/nav/resolve-org";
 import "./dashboard-dnd.css";
-
-type Me = {
-  userId?: string;
-  name?: string;
-  orgId?: string | null;
-  orgName?: string | null;
-  teamNumber?: number | null;
-  role?: string | null;
-  teamRole?: string | null;
-  tbaConfigured?: boolean;
-};
-
-type BoardMeta = {
-  id: string;
-  name: string;
-  scope: "personal" | "org";
-  isActive: boolean;
-  updatedAt?: string | null;
-  ownerUserId?: string | null;
-};
-
-type BoardState = {
-  id: string | null;
-  name: string;
-  scope: "personal" | "org";
-  layout: DashboardWidgetLayout[];
-  isDefault?: boolean;
-};
-
-type SnapFeedback = {
-  mode: "Moving" | "Placing";
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-};
-
-type DragKind = "move" | "add";
-/** immediate = dedicated handle; longpress = card body / touch; intent = mouse on the palette. */
-type DragActivation = "immediate" | "longpress" | "intent";
-
-type DragSession = {
-  kind: DragKind;
-  id: string;
-  type: DashboardWidgetType;
-  label: string;
-  pointerId: number;
-  captureTarget: Element | null;
-  activation: DragActivation;
-  active: boolean;
-  origin: PointerPoint;
-  point: PointerPoint;
-  grab: PointerPoint;
-  size: { width: number; height: number };
-  span: { w: number; h: number };
-  cell: GridCell;
-  cols: number;
-  rowHeight: number;
-  gap: number;
-  baseLayout: DashboardWidgetLayout[];
-  baseDisplay: DashboardWidgetLayout[];
-};
-
-type DragView = {
-  kind: DragKind;
-  id: string;
-  type: DashboardWidgetType;
-  label: string;
-  cell: GridCell;
-  span: { w: number; h: number };
-  size: { width: number; height: number };
-};
 
 export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: string }) {
   const { setNode: setCanvasNode, node: canvasNode, width, mounted, measured } = useMeasuredCanvas();
@@ -360,16 +302,16 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
   }, []);
 
   /** Every catalog entry with a reason it cannot be added, so nothing fails silently. */
-  const paletteEntries = useMemo(
+  const paletteEntries = useMemo<PaletteRow[]>(
     () =>
       WIDGET_CATALOG.map((entry) => {
         if (layout.some((item) => item.type === entry.type)) {
-          return { entry, status: "placed" as const, reason: null as string | null };
+          return { entry, status: "placed", reason: null };
         }
         if (!canAccessWidget(entry.type, role)) {
-          return { entry, status: "locked" as const, reason: widgetLockReason(entry) };
+          return { entry, status: "locked", reason: widgetLockReason(entry) };
         }
-        return { entry, status: "add" as const, reason: null as string | null };
+        return { entry, status: "add", reason: null };
       }),
     [layout, role],
   );
@@ -1510,79 +1452,24 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
         </p>
       ) : null}
 
-      {orgId && meLoaded && !editing && switcherBoards.length > 1 ? (
-        <div className="dash-board-bar" role="navigation" aria-label="Dashboard boards">
-          <div className="dash-board-switcher" data-testid="dash-board-switcher">
-            {switcherBoards.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                aria-pressed={board?.id === item.id}
-                disabled={saving || editing}
-                onClick={() => void switchBoard(item.id)}
-                title={item.scope === "org" ? "Team board" : "Personal board"}
-              >
-                {item.name}
-              </button>
-            ))}
-            <button
-              type="button"
-              className="dash-board-add"
-              disabled={saving || editing}
-              aria-label="Create personal board"
-              title="New personal board"
-              onClick={() => void createBoard("personal")}
-            >
-              +
-            </button>
-          </div>
-          <button
-            type="button"
-            className="dash-board-manage"
-            data-testid="dash-manage-boards"
-            disabled={saving}
-            aria-expanded={boardsOpen}
-            onClick={() => {
-              setBoardsOpen(true);
-              setRenameId(null);
-            }}
-          >
-            Manage boards
-          </button>
-        </div>
+      {orgId && meLoaded && !editing ? (
+        <DashboardBoardBar
+          boards={switcherBoards}
+          activeId={board?.id}
+          saving={saving}
+          editing={editing}
+          managing={boardsOpen}
+          onSwitch={(id) => void switchBoard(id)}
+          onCreatePersonal={() => void createBoard("personal")}
+          onManage={() => {
+            setBoardsOpen(true);
+            setRenameId(null);
+          }}
+        />
       ) : null}
 
       {meLoaded && dashShell !== "ready" ? (
-        <section className="dash-setup-banner" aria-label="First-run setup">
-          <div>
-            <Badge tone="setup">Setup</Badge>
-            <h2>{dashboardSetupTitle(dashShell)}</h2>
-            <p>{dashboardSetupBlurb(dashShell)}</p>
-          </div>
-          {(() => {
-            const primary =
-              nextActions.find((a) => a.primary) ??
-              setupSteps.find((s) => s.state === "current") ??
-              null;
-            if (!primary) return null;
-            const href = "href" in primary ? primary.href : "#";
-            const label =
-              "label" in primary
-                ? primary.id === "invite"
-                  ? "Open invite"
-                  : primary.id === "tba"
-                    ? "Connect TBA"
-                    : primary.id === "event"
-                      ? "Set event"
-                      : primary.label
-                : "Continue";
-            return (
-              <Button as="a" variant="primary" href={href}>
-                {label}
-              </Button>
-            );
-          })()}
-        </section>
+        <DashboardSetupBanner shell={dashShell} nextActions={nextActions} setupSteps={setupSteps} />
       ) : null}
 
       {meLoaded && dashShell === "ready" && nextActions.length > 0 && !editing ? (
@@ -1591,7 +1478,11 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
             <strong>{nextActions[0]?.label}</strong>
             {nextActions[0]?.detail ? ` — ${nextActions[0].detail}` : ""}
           </span>
-          <a href={nextActions[0]?.href}>{nextActions[0]?.label}</a>
+          {nextActions[0]?.href ? (
+            <Button as="a" variant="secondary" href={nextActions[0].href}>
+              {nextActions[0].label}
+            </Button>
+          ) : null}
         </p>
       ) : null}
 
@@ -1600,107 +1491,42 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
       ) : null}
 
       {editing ? (
-        <section className="dash-editor-bar" role="region" aria-label="Widget catalog">
-          <div className="dash-edit-strip" role="toolbar" aria-label="Edit Home toolbar">
-            <span className="dash-edit-flag">
-              <i aria-hidden="true" />
-              Edit mode
-            </span>
-            <span className="dash-edit-meta">
-              {cols === 1 ? "Single column" : `${cols}-column grid`} · {grid.label} · {layout.length} widget
-              {layout.length === 1 ? "" : "s"}
-            </span>
-            <div className="dash-edit-strip-actions">
-              <button type="button" disabled={saving} onClick={tidyLayout}>
-                Snap &amp; tidy
-              </button>
-              <button
-                type="button"
-                aria-pressed={libraryOpen}
-                onClick={() => setLibraryOpen((open) => !open)}
-              >
-                Widget library
-              </button>
-              <button className="is-primary" type="button" disabled={saving} onClick={() => void save("personal")}>
-                {saving ? "Saving…" : "Done"}
-              </button>
-            </div>
-          </div>
-          <div className="dash-editor-copy">
-            <strong>Customize Home</strong>
-            <span>
-              Press and hold a card — or use its grip — to move it. Keyboard: focus a grip, press space, then
-              use the arrow keys.
-              {orgId
-                ? canShareOrg
-                  ? " Done saves your personal Home. Save for team is optional and does not overwrite teammates' layouts."
-                  : " Done saves your personal Home — teammates keep their own layouts."
-                : " Select a team to save this layout."}
-            </span>
-          </div>
-          <div className="dash-palette-heading">
-            <span>Add widgets</span>
-            <small>
-              {layout.length} on board · {addableEntries.length} available
-            </small>
-          </div>
-          <div className="dash-widget-palette" data-testid="dash-catalog-inline">
-            {paletteEntries.map(({ entry, status, reason }) => {
-              const icon = WIDGET_PICKER_ICON[entry.type] ?? "grid";
-              const isDragging = drag?.kind === "add" && drag.type === entry.type;
-              return (
-                <button
-                  className={`${status === "add" ? "" : "is-unavailable "}${isDragging ? "dragging" : ""}`.trim()}
-                  key={entry.type}
-                  type="button"
-                  data-status={status}
-                  disabled={status !== "add"}
-                  title={
-                    status === "placed"
-                      ? `${entry.label} is already on the board.`
-                      : status === "locked"
-                        ? `${entry.label} — ${reason}`
-                        : `${entry.description}. Drag onto the board or tap to add.`
-                  }
-                  onPointerDown={(event) => {
-                    if (status !== "add") return;
-                    beginPaletteDrag(event, entry);
-                  }}
-                  onPointerMove={onDragPointerMove}
-                  onPointerUp={onDragPointerUp}
-                  onPointerCancel={onDragPointerCancel}
-                  onClick={(event) => {
-                    if (suppressClickRef.current) {
-                      suppressClickRef.current = false;
-                      return;
-                    }
-                    if (status !== "add") return;
-                    if (prefersTapToPlace({
-                      pointerType: "pointerType" in event.nativeEvent ? String(event.nativeEvent.pointerType) : "",
-                      coarse: window.matchMedia("(pointer: coarse)").matches,
-                    })) {
-                      setPendingPlaceType(entry.type);
-                      setMessageKind("success");
-                      setMessage(`Tap a slot on the board to place ${entry.label}.`);
-                      setAnnounce(`Tap a slot on the board to place ${entry.label}.`);
-                      return;
-                    }
-                    addWidget(entry.type);
-                  }}
-                >
-                  <i>
-                    <Icon name={icon} />
-                  </i>
-                  <span>
-                    <strong>{entry.label}</strong>
-                    <small>{status === "locked" ? reason : entry.description}</small>
-                  </span>
-                  <em>{status === "placed" ? "On board" : status === "locked" ? "Locked" : "Add"}</em>
-                </button>
-              );
-            })}
-          </div>
-        </section>
+        <DashboardWidgetPalette
+          cols={cols}
+          gridLabel={grid.label}
+          layoutCount={layout.length}
+          addableCount={addableEntries.length}
+          paletteEntries={paletteEntries}
+          draggingType={drag?.kind === "add" ? drag.type : null}
+          saving={saving}
+          libraryOpen={libraryOpen}
+          orgId={orgId}
+          canShareOrg={canShareOrg}
+          onTidy={tidyLayout}
+          onToggleLibrary={() => setLibraryOpen((open) => !open)}
+          onSave={() => void save("personal")}
+          onBeginPaletteDrag={beginPaletteDrag}
+          onDragPointerMove={onDragPointerMove}
+          onDragPointerUp={onDragPointerUp}
+          onDragPointerCancel={onDragPointerCancel}
+          onPaletteClick={(entry, event) => {
+            if (suppressClickRef.current) {
+              suppressClickRef.current = false;
+              return;
+            }
+            if (prefersTapToPlace({
+              pointerType: "pointerType" in event.nativeEvent ? String(event.nativeEvent.pointerType) : "",
+              coarse: window.matchMedia("(pointer: coarse)").matches,
+            })) {
+              setPendingPlaceType(entry.type);
+              setMessageKind("success");
+              setMessage(`Tap a slot on the board to place ${entry.label}.`);
+              setAnnounce(`Tap a slot on the board to place ${entry.label}.`);
+              return;
+            }
+            addWidget(entry.type);
+          }}
+        />
       ) : null}
 
       {dashShell === "ready" || editing ? (
@@ -1870,322 +1696,83 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
       ) : null}
 
       {editing ? (
-        <div className="dash-edit-dock" role="toolbar" aria-label="Home Screen edit actions">
-          <button className="dash-dock-ghost" type="button" disabled={saving} onClick={cancelEditing}>
-            Cancel
-          </button>
-          <button className="dash-dock-ghost" type="button" disabled={saving} onClick={() => void resetDefault()}>
-            Reset
-          </button>
-          <button className="dash-dock-ghost dash-dock-tidy" type="button" disabled={saving} onClick={tidyLayout}>
-            <span aria-hidden="true">⌗</span> Snap &amp; tidy
-          </button>
-          <button
-            className="dash-dock-add"
-            type="button"
-            data-testid="dash-open-library"
-            aria-pressed={libraryOpen}
-            onClick={() => setLibraryOpen((open) => !open)}
-          >
-            <span aria-hidden="true">+</span>
-            Widgets
-          </button>
-          <button
-            className="dash-dock-ghost"
-            type="button"
-            data-testid="dash-preview"
-            onClick={() => {
-              setEditing(false);
-              setPreviewing(true);
-              setLibraryOpen(false);
-            }}
-          >
-            Preview
-          </button>
-          <button className="dash-dock-done" type="button" disabled={saving} onClick={() => void save("personal")}>
-            {saving ? "Saving…" : "Done"}
-          </button>
-          {canShareOrg ? (
-            <button className="dash-dock-team" type="button" disabled={saving} onClick={() => void save("org")}>
-              Save for team
-            </button>
-          ) : null}
-        </div>
+        <DashboardEditDock
+          saving={saving}
+          libraryOpen={libraryOpen}
+          canShareOrg={canShareOrg}
+          onCancel={cancelEditing}
+          onReset={() => void resetDefault()}
+          onTidy={tidyLayout}
+          onToggleLibrary={() => setLibraryOpen((open) => !open)}
+          onPreview={() => {
+            setEditing(false);
+            setPreviewing(true);
+            setLibraryOpen(false);
+          }}
+          onSavePersonal={() => void save("personal")}
+          onSaveOrg={() => void save("org")}
+        />
       ) : null}
 
       {previewing ? (
-        <div className="dash-edit-dock dash-preview-dock" role="status" aria-label="Previewing unsaved home changes">
-          <span>Previewing unsaved changes</span>
-          <button
-            className="dash-dock-ghost"
-            type="button"
-            data-testid="dash-preview-back"
-            onClick={enterEditMode}
-          >
-            Back to edit
-          </button>
-          <button
-            className="dash-dock-done"
-            type="button"
-            disabled={saving}
-            data-testid="dash-preview-save"
-            onClick={() => void save("personal")}
-          >
-            {saving ? "Saving…" : "Save"}
-          </button>
-        </div>
+        <DashboardPreviewDock
+          saving={saving}
+          onBack={enterEditMode}
+          onSave={() => void save("personal")}
+        />
       ) : null}
 
       {!editing && !previewing && orgId ? <PartnerPlacement orgId={orgId} surface="dashboard_footer" title="Partners powering this season" /> : null}
 
-      <Modal
+      <DashboardWidgetLibrary
         open={editing && libraryOpen}
         onClose={() => setLibraryOpen(false)}
-        title="Widget library"
-        description="One of each type per board. Tap to add, then drag the card into place."
-        variant="sheet"
-      >
-        {addableEntries.length === 0 ? (
-          <p className="dash-library-empty">Every widget you can use is already on your Home Screen.</p>
-        ) : (
-          <ul className="dash-library-grid">
-            {addableEntries.map(({ entry }) => {
-              const icon = WIDGET_PICKER_ICON[entry.type] ?? "grid";
-              return (
-                <li key={entry.type}>
-                  <button
-                    type="button"
-                    data-testid={`dash-library-${entry.type}`}
-                    onClick={() => {
-                      if (
-                        prefersTapToPlace({
-                          coarse: window.matchMedia("(pointer: coarse)").matches,
-                        })
-                      ) {
-                        setPendingPlaceType(entry.type);
-                        setLibraryOpen(false);
-                        setMessageKind("success");
-                        setMessage(`Tap a slot on the board to place ${entry.label}.`);
-                        setAnnounce(`Tap a slot on the board to place ${entry.label}.`);
-                        return;
-                      }
-                      addWidget(entry.type);
-                    }}
-                    title={entry.description}
-                  >
-                    <i>
-                      <Icon name={icon} />
-                    </i>
-                    <strong>{entry.label}</strong>
-                    <span>{entry.description}</span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-        <div className="dash-library-onboard">
-          <p>Not addable right now</p>
-          <div className="dash-catalog">
-            {paletteEntries
-              .filter((row) => row.status !== "add")
-              .map(({ entry, status, reason }) => (
-                <button key={entry.type} type="button" disabled title={reason ?? undefined}>
-                  {status === "placed" ? `On board · ${entry.label}` : `${entry.label} · ${reason}`}
-                </button>
-              ))}
-            {paletteEntries.every((row) => row.status === "add") ? (
-              <p className="dash-library-empty">Nothing is held back — every widget is available.</p>
-            ) : null}
-          </div>
-        </div>
-      </Modal>
+        addableEntries={addableEntries}
+        paletteEntries={paletteEntries}
+        onPick={(entry) => {
+          if (
+            prefersTapToPlace({
+              coarse: window.matchMedia("(pointer: coarse)").matches,
+            })
+          ) {
+            setPendingPlaceType(entry.type);
+            setLibraryOpen(false);
+            setMessageKind("success");
+            setMessage(`Tap a slot on the board to place ${entry.label}.`);
+            setAnnounce(`Tap a slot on the board to place ${entry.label}.`);
+            return;
+          }
+          addWidget(entry.type);
+        }}
+      />
 
-      <Modal
+      <DashboardBoardsModal
         open={boardsOpen}
         onClose={() => {
           setBoardsOpen(false);
           setRenameId(null);
         }}
-        title="Home Screens"
-        description="Personal boards are yours. Team boards are shared — owner/admin can create and edit them."
-        variant="sheet"
-      >
-            <section className="dash-boards-group">
-              <p>Personal</p>
-              {personalBoards.length === 0 ? (
-                <p className="dash-library-empty">No saved personal boards yet — create one to keep a custom layout.</p>
-              ) : (
-                <ul className="dash-boards-list">
-                  {personalBoards.map((item) => (
-                    <li key={item.id} data-active={board?.id === item.id ? "true" : "false"}>
-                      {renameId === item.id ? (
-                        <form
-                          onSubmit={(event) => {
-                            event.preventDefault();
-                            void renameBoard(item.id, renameDraft);
-                          }}
-                        >
-                          <input
-                            value={renameDraft}
-                            onChange={(event) => setRenameDraft(event.target.value)}
-                            maxLength={80}
-                            autoFocus
-                            aria-label="Board name"
-                          />
-                        </form>
-                      ) : (
-                        <button type="button" className="dash-board-pick" disabled={saving || editing} onClick={() => void switchBoard(item.id)}>
-                          <strong>{item.name}</strong>
-                          <span>{board?.id === item.id ? "Current" : "Personal"} · tap to open</span>
-                        </button>
-                      )}
-                      <div className="dash-boards-actions">
-                        {renameId === item.id ? (
-                          <>
-                            <button type="button" disabled={saving} onClick={() => void renameBoard(item.id, renameDraft)}>
-                              Save
-                            </button>
-                            <button type="button" disabled={saving} onClick={() => setRenameId(null)}>
-                              Cancel
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            <button
-                              type="button"
-                              disabled={saving}
-                              onClick={() => {
-                                setRenameId(item.id);
-                                setRenameDraft(item.name);
-                              }}
-                            >
-                              Rename
-                            </button>
-                            <button
-                              type="button"
-                              data-testid="dash-duplicate-board"
-                              disabled={saving || editing}
-                              onClick={() => void duplicateBoard(item.id)}
-                            >
-                              Duplicate
-                            </button>
-                            <button type="button" className="danger" disabled={saving} onClick={() => void deleteBoard(item.id)}>
-                              Delete
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-              <div className="dash-boards-create">
-                <button type="button" disabled={saving || editing} onClick={() => void createBoard("personal")}>
-                  + New personal board
-                </button>
-              </div>
-            </section>
-
-            <section className="dash-boards-group">
-              <p>Team</p>
-              {orgBoards.length === 0 ? (
-                <p className="dash-library-empty">
-                  {canShareOrg
-                    ? "No team boards yet — create a shared Home Screen for the whole org."
-                    : "No team boards published yet."}
-                </p>
-              ) : (
-                <ul className="dash-boards-list">
-                  {orgBoards.map((item) => (
-                    <li key={item.id} data-active={board?.id === item.id ? "true" : "false"}>
-                      {renameId === item.id ? (
-                        <form
-                          onSubmit={(event) => {
-                            event.preventDefault();
-                            void renameBoard(item.id, renameDraft);
-                          }}
-                        >
-                          <input
-                            value={renameDraft}
-                            onChange={(event) => setRenameDraft(event.target.value)}
-                            maxLength={80}
-                            autoFocus
-                            aria-label="Board name"
-                          />
-                        </form>
-                      ) : (
-                        <button type="button" className="dash-board-pick" disabled={saving || editing} onClick={() => void switchBoard(item.id)}>
-                          <strong>{item.name}</strong>
-                          <span>{board?.id === item.id ? "Current" : "Shared"} · tap to open</span>
-                        </button>
-                      )}
-                      <div className="dash-boards-actions">
-                        {canShareOrg ? (
-                          renameId === item.id ? (
-                            <>
-                              <button type="button" disabled={saving} onClick={() => void renameBoard(item.id, renameDraft)}>
-                                Save
-                              </button>
-                              <button type="button" disabled={saving} onClick={() => setRenameId(null)}>
-                                Cancel
-                              </button>
-                            </>
-                          ) : (
-                            <>
-                              <button
-                                type="button"
-                                disabled={saving}
-                                onClick={() => {
-                                  setRenameId(item.id);
-                                  setRenameDraft(item.name);
-                                }}
-                              >
-                                Rename
-                              </button>
-                              <button
-                                type="button"
-                                data-testid="dash-duplicate-board"
-                                disabled={saving || editing}
-                                onClick={() => void duplicateBoard(item.id)}
-                              >
-                                Copy to mine
-                              </button>
-                              <button type="button" className="danger" disabled={saving} onClick={() => void deleteBoard(item.id)}>
-                                Delete
-                              </button>
-                            </>
-                          )
-                        ) : (
-                          <>
-                            <button type="button" disabled={saving || editing} onClick={() => void switchBoard(item.id)}>
-                              Open
-                            </button>
-                            {/* Members cannot edit a shared board — but they can fork it. */}
-                            <button
-                              type="button"
-                              data-testid="dash-duplicate-board"
-                              disabled={saving || editing}
-                              onClick={() => void duplicateBoard(item.id)}
-                            >
-                              Copy to mine
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-              {canShareOrg ? (
-                <div className="dash-boards-create">
-                  <button type="button" disabled={saving || editing} onClick={() => void createBoard("org")}>
-                    + New team board
-                  </button>
-                </div>
-              ) : null}
-            </section>
-      </Modal>
+        board={board}
+        personalBoards={personalBoards}
+        orgBoards={orgBoards}
+        saving={saving}
+        editing={editing}
+        canShareOrg={canShareOrg}
+        renameId={renameId}
+        renameDraft={renameDraft}
+        onRenameDraft={setRenameDraft}
+        onSwitch={(id) => void switchBoard(id)}
+        onRename={(id, name) => void renameBoard(id, name)}
+        onDuplicate={(id) => void duplicateBoard(id)}
+        onDelete={(id) => void deleteBoard(id)}
+        onStartRename={(id, name) => {
+          setRenameId(id);
+          setRenameDraft(name);
+        }}
+        onCancelRename={() => setRenameId(null)}
+        onCreatePersonal={() => void createBoard("personal")}
+        onCreateOrg={() => void createBoard("org")}
+      />
     </main>
   );
 }

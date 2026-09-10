@@ -20,7 +20,7 @@ import {
   type DragEvent,
   type ReactNode,
 } from "react";
-import { EmptyState, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
 import { OfflineBanner } from "../../components/offline-banner";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { fetchActiveOrgId, readOrgIdFromSearch } from "../../lib/nav/resolve-org";
@@ -407,9 +407,9 @@ export default function FilesClient() {
           </button>
         </div>
         {canUpload ? (
-          <button type="button" className="app-button" onClick={() => fileInput.current?.click()}>
+          <Button variant="primary" type="button" onClick={() => fileInput.current?.click()}>
             Upload files
-          </button>
+          </Button>
         ) : null}
       </div>
     </PageHeader>
@@ -461,9 +461,9 @@ export default function FilesClient() {
       {notice ? (
         <Panel className="drive-notice" role="status">
           <p>{notice}</p>
-          <button type="button" className="app-button secondary" onClick={() => setNotice(null)}>
+          <Button variant="secondary" type="button" onClick={() => setNotice(null)}>
             Dismiss
-          </button>
+          </Button>
         </Panel>
       ) : null}
 
@@ -590,9 +590,9 @@ function UploadList({ uploads, onClear }: { uploads: UploadItem[]; onClear: () =
           Uploads {active > 0 ? <span className="app-muted">({active} in progress)</span> : null}
         </h2>
         {active === 0 ? (
-          <button type="button" className="app-button secondary" onClick={onClear}>
+          <Button variant="secondary" type="button" onClick={onClear}>
             Clear
-          </button>
+          </Button>
         ) : null}
       </header>
       <ul>
@@ -690,8 +690,7 @@ function Body(props: BodyProps) {
                 </span>
                 {share.note ? <p className="drive-share-note">{share.note}</p> : null}
               </div>
-              <a
-                className="app-button secondary"
+              <Button as="a" variant="secondary"
                 href={`/api/drive/shared-with-me/${share.shareId}${
                   share.target.kind === "file"
                     ? `?fileId=${share.target.id}${share.canDownload ? "&download=1" : ""}`
@@ -699,7 +698,7 @@ function Body(props: BodyProps) {
                 }`}
               >
                 {share.target.kind === "file" ? (share.canDownload ? "Download" : "Open") : "See files"}
-              </a>
+              </Button>
             </li>
           ))}
         </ul>
@@ -779,9 +778,9 @@ function Body(props: BodyProps) {
         <Panel key={folder.id} className="drive-virtual">
           <header>
             <h2>{folder.name}</h2>
-            <a className="app-button secondary" href={folder.href}>
+            <Button as="a" variant="secondary" href={folder.href}>
               Open {folder.name}
-            </a>
+            </Button>
           </header>
           <p className="app-muted">{folder.description}</p>
           {folder.itemCount === 0 ? (
@@ -881,9 +880,9 @@ function NewFolderButton({ onCreate }: { onCreate: (name: string) => Promise<voi
   const [name, setName] = useState("");
   if (!open) {
     return (
-      <button type="button" className="app-button secondary" onClick={() => setOpen(true)}>
+      <Button variant="secondary" type="button" onClick={() => setOpen(true)}>
         New folder
-      </button>
+      </Button>
     );
   }
   return (
@@ -906,12 +905,12 @@ function NewFolderButton({ onCreate }: { onCreate: (name: string) => Promise<voi
         aria-label="Folder name"
         maxLength={200}
       />
-      <button type="submit" className="app-button">
+      <Button variant="primary" type="submit">
         Create
-      </button>
-      <button type="button" className="app-button secondary" onClick={() => setOpen(false)}>
+      </Button>
+      <Button variant="secondary" type="button" onClick={() => setOpen(false)}>
         Cancel
-      </button>
+      </Button>
     </form>
   );
 }
@@ -1060,12 +1059,12 @@ function RenameButton({
         aria-label="File name"
         maxLength={255}
       />
-      <button type="submit" className="app-button">
+      <Button variant="primary" type="submit">
         Save
-      </button>
-      <button type="button" className="app-button secondary" onClick={() => setOpen(false)}>
+      </Button>
+      <Button variant="secondary" type="button" onClick={() => setOpen(false)}>
         Cancel
-      </button>
+      </Button>
     </form>
   );
 }
@@ -1137,12 +1136,12 @@ function PreviewPane({
             </span>
           </div>
           <div>
-            <a className="app-button secondary" href={`${src}&download=1`}>
+            <Button as="a" variant="secondary" href={`${src}&download=1`}>
               Download
-            </a>
-            <button type="button" className="app-button" onClick={onClose}>
+            </Button>
+            <Button variant="primary" type="button" onClick={onClose}>
               Close
-            </button>
+            </Button>
           </div>
         </header>
         <div className="drive-preview-body">{body}</div>
@@ -1201,9 +1200,9 @@ function ShareDialog({
               Anyone holding the link can open this, account or not, until it expires or you revoke it.
             </span>
           </div>
-          <button type="button" className="app-button" onClick={onClose}>
+          <Button variant="primary" type="button" onClick={onClose}>
             Close
-          </button>
+          </Button>
         </header>
 
         <div className="drive-preview-body">
@@ -1305,9 +1304,9 @@ function ShareDialog({
               </label>
             </div>
 
-            <button type="submit" className="app-button" disabled={busy}>
+            <Button variant="primary" type="submit" disabled={busy}>
               {busy ? "Creating…" : emails.trim() ? "Create and send" : "Create link"}
-            </button>
+            </Button>
           </form>
 
           {message ? <p className="drive-share-message">{message}</p> : null}
@@ -1324,13 +1323,9 @@ function ShareDialog({
                   <li key={entry.id}>
                     {entry.email ? <span className="app-muted">{entry.email}</span> : null}
                     <input readOnly value={entry.url} onFocus={(event) => event.target.select()} />
-                    <button
-                      type="button"
-                      className="app-button secondary"
-                      onClick={() => void navigator.clipboard?.writeText(entry.url)}
-                    >
+                    <Button variant="secondary" type="button" onClick={() => void navigator.clipboard?.writeText(entry.url)}>
                       Copy
-                    </button>
+                    </Button>
                   </li>
                 ))}
               </ul>
@@ -1359,18 +1354,9 @@ function ShareDialog({
                           : "never opened"}
                       </span>
                     </div>
-                    <button
-                      type="button"
-                      className="app-button secondary"
-                      onClick={() =>
-                        void fetch(
-                          `/api/drive/shares?orgId=${encodeURIComponent(orgId)}&shareId=${share.id}`,
-                          { method: "DELETE" },
-                        ).then(() => reload())
-                      }
-                    >
+                    <Button variant="secondary" type="button" onClick={() => void fetch( `/api/drive/shares?orgId=${encodeURIComponent(orgId)}&shareId=${share.id}`, { method: "DELETE" }, ).then(() => reload()) }>
                       Revoke
-                    </button>
+                    </Button>
                   </li>
                 ))}
               </ul>

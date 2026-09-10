@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
+import { Button } from "../../components/ui";
 import { getLastOrgId, pendingCounts } from "../../lib/scout-offline";
 import {
   OFFLINE_BOOT_RELATED_INCLUDE,
@@ -81,9 +81,9 @@ export default function OfflineClient() {
                 <strong>{action.label}</strong>
                 <span>{action.detail}</span>
               </div>
-              <Link className="app-button secondary" href={action.href}>
+              <Button as="a" variant="secondary" href={action.href}>
                 Open
-              </Link>
+              </Button>
             </li>
           ))}
         </ol>
@@ -91,9 +91,9 @@ export default function OfflineClient() {
 
       <nav className="offline-shell-related" aria-label="Related offline tools">
         {related.map((link) => (
-          <Link key={link.id} className="app-button secondary" href={link.href}>
+          <Button key={link.id} as="a" variant="secondary" href={link.href}>
             {link.label}
-          </Link>
+          </Button>
         ))}
       </nav>
 

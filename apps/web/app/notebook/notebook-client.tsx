@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "../../components/ui";
 import { useCallback, useEffect, useState } from "react";
 import { BUILD_PHASE_LABEL, BUILD_PHASES, type BuildPhase } from "../../lib/notebook";
 import type { NotebookImageAttachment } from "../../lib/notebook/attachments";
@@ -180,7 +181,7 @@ export default function NotebookClient({ orgId }: { orgId: string | null }) {
       <main className="intel-app">
         <p className="telemetry-status"><strong>{copy.title}</strong></p>
         <p className="telemetry-status">{copy.description}</p>
-        {copy.primary ? <a className="app-button" href={copy.primary.href}>{copy.primary.label}</a> : null}
+        {copy.primary ? <Button as="a" variant="primary" href={copy.primary.href}>{copy.primary.label}</Button> : null}
         {copy.showRetry ? <button type="button" className="primary-action" onClick={() => void load()}>Retry</button> : null}
       </main>
     );

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { EmptyState, PageHeader, Panel } from "../../../components/ui";
+import { EmptyState, PageHeader, Panel, Button } from "../../../components/ui";
 import { adminRelatedLinks } from "../../../lib/admin";
 import "../admin-flow.css";
 
@@ -310,9 +310,9 @@ export default function AdminReleasesClient() {
             />
             In-app inbox notification
           </label>
-          <button type="submit" className="app-button" disabled={busy}>
+          <Button variant="primary" type="submit" disabled={busy}>
             {busy ? "Saving…" : "Create release"}
-          </button>
+          </Button>
         </form>
       </Panel>
 
@@ -371,14 +371,9 @@ export default function AdminReleasesClient() {
                     </td>
                     <td>
                       {release.status !== "published" && release.status !== "cancelled" ? (
-                        <button
-                          type="button"
-                          className="app-button secondary"
-                          disabled={busy}
-                          onClick={() => void publishRelease(release.id)}
-                        >
+                        <Button variant="secondary" type="button" disabled={busy} onClick={() => void publishRelease(release.id)}>
                           Publish
-                        </button>
+                        </Button>
                       ) : null}
                     </td>
                   </tr>

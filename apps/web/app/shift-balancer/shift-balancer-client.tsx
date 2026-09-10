@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { DEFAULT_STATIONS, planToCsv, tabletSheetsByScout } from "../../lib/shift-balancer";
 import type { ShiftBalancerView } from "../../lib/shift-balancer/compute-shift-balancer";
@@ -110,14 +110,14 @@ export default function ShiftBalancerClient() {
           return (
             <EmptyState title={copy.title} description={copy.description}>
               {copy.primary ? (
-                <a className="app-button" href={copy.primary.href}>
+                <Button as="a" variant="primary" href={copy.primary.href}>
                   {copy.primary.label}
-                </a>
+                </Button>
               ) : null}
               {copy.showRetry ? (
-                <button type="button" className="app-button secondary" onClick={() => load()}>
+                <Button variant="secondary" type="button" onClick={() => load()}>
                   Retry
-                </button>
+                </Button>
               ) : null}
             </EmptyState>
           );
@@ -217,9 +217,9 @@ function RosterPanel({
         style={{ display: "flex", gap: 8, marginTop: 12 }}
       >
         <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Scout name" />
-        <button type="submit" className="app-button" disabled={busy || !name.trim()}>
+        <Button variant="primary" type="submit" disabled={busy || !name.trim()}>
           Add scout
-        </button>
+        </Button>
       </form>
     </Panel>
   );
@@ -302,17 +302,12 @@ function GeneratePlanForm({
         <input value={form.stations} onChange={set("stations")} />
       </FormRow>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-        <button type="submit" className="app-button" disabled={busy || !Number(form.matchCount)}>
+        <Button variant="primary" type="submit" disabled={busy || !Number(form.matchCount)}>
           Generate plan
-        </button>
-        <button
-          type="button"
-          className="app-button secondary"
-          disabled={busy || view.qualMatchCount <= 0}
-          onClick={() => submit(true)}
-        >
+        </Button>
+        <Button variant="secondary" type="button" disabled={busy || view.qualMatchCount <= 0} onClick={() => submit(true)}>
           Use event schedule
-        </button>
+        </Button>
       </div>
     </Panel>
   );
@@ -410,25 +405,12 @@ function PlansPanel({
       ) : null}
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
-        <button
-          type="button"
-          className="app-button secondary"
-          onClick={() => {
-            const csv = planToCsv({ label: latest.label, assignments: latest.assignments });
-            const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement("a");
-            link.href = url;
-            link.download = `${latest.label.replace(/[^\w.-]+/g, "-").replace(/^-|-$/g, "") || "scout-shifts"}.csv`;
-            link.click();
-            URL.revokeObjectURL(url);
-          }}
-        >
+        <Button variant="secondary" type="button" onClick={() => { const csv = planToCsv({ label: latest.label, assignments: latest.assignments }); const blob = new Blob([csv], { type: "text/csv;charset=utf-8" }); const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url; link.download = `${latest.label.replace(/[^\w.-]+/g, "-").replace(/^-|-$/g, "") || "scout-shifts"}.csv`; link.click(); URL.revokeObjectURL(url); }}>
           Download CSV
-        </button>
-        <button type="button" className="app-button secondary" onClick={() => window.print()}>
+        </Button>
+        <Button variant="secondary" type="button" onClick={() => window.print()}>
           Print tablet sheets
-        </button>
+        </Button>
       </div>
 
       {sheets.length > 0 ? (

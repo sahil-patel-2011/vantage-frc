@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { EmptyState, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { REUSE_ASSESSMENT_STATUSES, reuseRecommendationLabel, subsystemCategoryLabel } from "../../lib/reuse-advisor";
 import type { ReuseAdvisorView } from "../../lib/reuse-advisor/compute-reuse-advisor";
@@ -152,14 +152,14 @@ export default function ReuseAdvisorClient() {
           return (
             <EmptyState title={copy.title} description={copy.description}>
               {copy.primary ? (
-                <a className="app-button" href={copy.primary.href}>
+                <Button as="a" variant="primary" href={copy.primary.href}>
                   {copy.primary.label}
-                </a>
+                </Button>
               ) : null}
               {copy.showRetry ? (
-                <button type="button" className="app-button secondary" onClick={() => load()}>
+                <Button variant="secondary" type="button" onClick={() => load()}>
                   Retry
-                </button>
+                </Button>
               ) : null}
             </EmptyState>
           );
@@ -248,22 +248,9 @@ function CandidateRow({
           </small>
         </div>
         {!candidate.alreadyAssessed ? (
-          <button
-            type="button"
-            className="app-button secondary"
-            disabled={busy}
-            onClick={() =>
-              mutate({
-                action: "assess",
-                subsystemId: candidate.subsystemId,
-                subsystemName: candidate.subsystemName,
-                category: candidate.category,
-                sourceSeasonYear: candidate.sourceSeasonYear,
-              })
-            }
-          >
+          <Button variant="secondary" type="button" disabled={busy} onClick={() => mutate({ action: "assess", subsystemId: candidate.subsystemId, subsystemName: candidate.subsystemName, category: candidate.category, sourceSeasonYear: candidate.sourceSeasonYear, }) }>
             Record assessment
-          </button>
+          </Button>
         ) : (
           <small className="app-muted">Assessed</small>
         )}
@@ -320,15 +307,9 @@ function AssessmentsPanel({
             {assessment.status === "open" ? (
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 {REUSE_ASSESSMENT_STATUSES.filter((status) => status !== assessment.status).map((status) => (
-                  <button
-                    key={status}
-                    type="button"
-                    className="app-button secondary"
-                    disabled={busy}
-                    onClick={() => mutate({ action: "update-status", assessmentId: assessment.id, status })}
-                  >
+                  <Button variant="secondary" key={status} type="button" disabled={busy} onClick={() => mutate({ action: "update-status", assessmentId: assessment.id, status })}>
                     Mark {STATUS_LABEL[status].toLowerCase()}
-                  </button>
+                  </Button>
                 ))}
               </div>
             ) : null}

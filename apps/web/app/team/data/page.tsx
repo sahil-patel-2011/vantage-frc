@@ -1,3 +1,4 @@
+import { Button } from "../../../components/ui";
 import { withOrgHref } from "../../../lib/nav/product-nav";
 import {
   TEAM_DATA_RELATED_INCLUDE,
@@ -30,9 +31,9 @@ export default async function TeamDataPage({ searchParams }: { searchParams: Pro
           </div>
           <nav className="product-hub-related team-data-related" aria-label="Related team data tools">
             {related.map((link) => (
-              <a key={link.id} className="app-button secondary" href={link.href}>
+              <Button as="a" variant="secondary" key={link.id} href={link.href}>
                 {link.label}
-              </a>
+              </Button>
             ))}
           </nav>
         </header>
@@ -48,17 +49,17 @@ export default async function TeamDataPage({ searchParams }: { searchParams: Pro
                   <strong>{action.label}</strong>
                   <span>{action.detail}</span>
                 </div>
-                <a className="app-button secondary" href={action.href}>
+                <Button as="a" variant="secondary" href={action.href}>
                   Open
-                </a>
+                </Button>
               </li>
             ))}
           </ol>
         </section>
         <p>
-          <a className="app-button is-primary" href={withOrgHref("/workspace", null)}>
+          <Button as="a" variant="primary" href={withOrgHref("/workspace", null)}>
             Choose your team
-          </a>
+          </Button>
         </p>
       </main>
     );

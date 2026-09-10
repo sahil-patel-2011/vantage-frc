@@ -61,9 +61,9 @@ function RelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related em-related" aria-label="Related team tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -84,9 +84,9 @@ function NextActionsPanel({ actions }: { actions: EquipmentMaintenanceNextAction
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -141,10 +141,10 @@ function MaintenanceShell({
           description={error ?? copy.description}
         >
           {shell === "setup" ? (
-            <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
+            <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
           ) : null}
           {shell === "empty" ? (
-            <a className="app-button is-primary" href={hubHref("/team", "tool-checkout", orgId)}>Open Tool Checkout</a>
+            <Button as="a" variant="primary" href={hubHref("/team", "tool-checkout", orgId)}>Open Tool Checkout</Button>
           ) : null}
         </EmptyState>
       )}
@@ -161,9 +161,9 @@ function MaintenanceShell({
                   <strong>{step.label}</strong>
                   <p className="app-muted em-tip">{step.detail}</p>
                 </div>
-                <a className="app-button secondary" href={step.href}>
+                <Button as="a" variant="secondary" href={step.href}>
                   Open
-                </a>
+                </Button>
               </li>
             ))}
           </ul>

@@ -9,8 +9,7 @@ import {
   PageHeader,
   Panel,
   TextBlockSkeleton,
-  CardGridSkeleton,
-} from "../../components/ui";
+  CardGridSkeleton, Button } from "../../components/ui";
 import { TeamOpsNav } from "../../components/team-ops-nav";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { getFeatureSnapshot, putFeatureSnapshot, useOnline } from "../../lib/offline";
@@ -165,12 +164,12 @@ function LogisticsShell({
         description={error ?? copy.description}
       >
         {shell === "setup" ? (
-          <a className="app-button is-primary" href={workspaceHref}>Choose your team</a>
+          <Button as="a" variant="primary" href={workspaceHref}>Choose your team</Button>
         ) : null}
         {shell === "empty" && canManage ? (
-          <a className="app-button" href={withOrgHref("/logistics", orgId) + "#logistics-create-trip"}>
+          <Button as="a" variant="primary" href={withOrgHref("/logistics", orgId) + "#logistics-create-trip"}>
             Add a trip
-          </a>
+          </Button>
         ) : null}
         {/* The same four cross-links are already in the page header, a few
             hundred pixels up and always visible. Rendering them again inside the
@@ -575,14 +574,9 @@ export default function LogisticsClient() {
           <h2>Checklist planning</h2>
           <p className="app-muted">Seed default student and mentor lists, then customize items per trip.</p>
           <div className="log-inline-actions">
-            <button
-              type="button"
-              className="app-button secondary"
-              disabled={!act || busy}
-              onClick={() => void run({ action: "seed_checklist", orgId, tripId: trip?.id ?? null }, "seed-chk")}
-            >
+            <Button variant="secondary" type="button" disabled={!act || busy} onClick={() => void run({ action: "seed_checklist", orgId, tripId: trip?.id ?? null }, "seed-chk")}>
               Seed default checklist
-            </button>
+            </Button>
           </div>
           <form
             className="log-grid-form"

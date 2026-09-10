@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "../../components/ui";
 
 import { useMemo, useState } from "react";
 import {
@@ -108,14 +109,9 @@ export function CadVariableTable({
                           }}
                         />
                       </label>
-                      <button
-                        type="button"
-                        className="app-button"
-                        disabled={disabled || busy}
-                        onClick={() => void submit(row)}
-                      >
+                      <Button variant="primary" type="button" disabled={disabled || busy} onClick={() => void submit(row)}>
                         {busy ? "Updating…" : "Update variable"}
-                      </button>
+                      </Button>
                     </div>
                   </li>
                 );

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { DataSourceDegradedBanner } from "../../../components/data-source-degraded-banner";
 import { TeamDataRelated } from "../../../components/team-data-related";
-import { EmptyState, Panel } from "../../../components/ui";
+import { EmptyState, Panel, Button } from "../../../components/ui";
 import { withOrgHref } from "../../../lib/nav/product-nav";
 import type { DataSourceHealthView } from "../../../lib/reference-health";
 import {
@@ -40,9 +40,9 @@ function TeamDataNextActionsPanel({ actions }: { actions: TeamDataNextAction[] }
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -118,12 +118,12 @@ function TeamDataShell({
       >
         <div className="team-data-inline-actions">
           {shell === "error" && onRetry ? (
-            <button type="button" className="app-button secondary" onClick={onRetry}>
+            <Button variant="secondary" type="button" onClick={onRetry}>
               Retry
-            </button>
+            </Button>
           ) : null}
           {shell === "setup" ? (
-            <a className="app-button is-primary" href={workspaceHref}>Choose your team</a>
+            <Button as="a" variant="primary" href={workspaceHref}>Choose your team</Button>
           ) : null}
           <TeamDataRelated
             orgId={orgId}
@@ -365,9 +365,9 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
                   required
                 />
               </label>
-              <button type="submit" className="app-button secondary" disabled={busy || !key.trim()}>
+              <Button variant="secondary" type="submit" disabled={busy || !key.trim()}>
                 Encrypt and save
-              </button>
+              </Button>
             </form>
             {message ? (
               <p className={`telemetry-status${ok ? " success" : ""}`} role="status">
@@ -393,12 +393,12 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
         </div>
         <div className="team-data-header-actions">
           <TeamDataRelated orgId={orgId} include={[...TEAM_DATA_RELATED_INCLUDE]} />
-          <a className="app-button secondary" href={exportHref}>
+          <Button as="a" variant="secondary" href={exportHref}>
             Export Center
-          </a>
-          <a className="app-button secondary" href={exportPdfHref}>
+          </Button>
+          <Button as="a" variant="secondary" href={exportPdfHref}>
             PDF inventory
-          </a>
+          </Button>
         </div>
       </header>
 
@@ -420,9 +420,9 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
             description={`Event ${activeEventKey} is selected, but there are no match or ranking rows yet. Sync pulls real The Blue Alliance data.`}
           >
             <div className="team-data-inline-actions">
-              <button type="button" className="app-button" disabled={busy} onClick={() => void syncActiveEvent()}>
+              <Button variant="primary" type="button" disabled={busy} onClick={() => void syncActiveEvent()}>
                 {busy ? "Working…" : "Sync active event"}
-              </button>
+              </Button>
               <TeamDataRelated orgId={orgId} include={[...TEAM_DATA_RELATED_INCLUDE]} />
             </div>
           </EmptyState>
@@ -470,9 +470,9 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
               Refreshes match and team data for the event selected on Event Day. Uses the platform key with
               your fallback credential when configured.
             </p>
-            <button type="button" className="app-button" disabled={busy || !hasActiveEvent} onClick={() => void syncActiveEvent()}>
+            <Button variant="primary" type="button" disabled={busy || !hasActiveEvent} onClick={() => void syncActiveEvent()}>
               {busy ? "Working…" : "Sync active event"}
-            </button>
+            </Button>
           </section>
 
           <section className="app-card soft-panel team-data-panel">
@@ -493,9 +493,9 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
                   required
                 />
               </label>
-              <button type="submit" className="app-button secondary" disabled={busy || !key.trim()}>
+              <Button variant="secondary" type="submit" disabled={busy || !key.trim()}>
                 Encrypt and save
-              </button>
+              </Button>
             </form>
             {credentials.length ? (
               <ul className="team-data-credentials">
@@ -505,14 +505,9 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
                       <strong>{item.opaqueKeyId}</strong>
                       <small>{item.status}</small>
                     </div>
-                    <button
-                      type="button"
-                      className="app-button secondary sm"
-                      disabled={busy}
-                      onClick={() => void testCredential(item.id)}
-                    >
+                    <Button variant="secondary" size="sm" type="button" disabled={busy} onClick={() => void testCredential(item.id)}>
                       Test
-                    </button>
+                    </Button>
                   </li>
                 ))}
               </ul>

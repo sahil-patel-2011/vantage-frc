@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { SPONSOR_WALL_TIERS, sponsorWallTierLabel } from "../../lib/sponsor-wall";
 import type { SponsorWallView } from "../../lib/sponsor-wall/compute-sponsor-wall";
 import {
@@ -37,9 +37,9 @@ function SponsorWallRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related sponsor-wall-related" aria-label="Related business tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -63,9 +63,9 @@ function SponsorWallNextActionsPanel({ actions }: { actions: SponsorWallNextActi
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -125,15 +125,15 @@ function SponsorWallShell({
         aria-busy={shell === "loading"}
       >
         {shell === "error" && onRetry ? (
-          <button type="button" className="app-button secondary" onClick={onRetry}>
+          <Button variant="secondary" type="button" onClick={onRetry}>
             Retry
-          </button>
+          </Button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
+          <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
         ) : null}
         {shell === "empty" ? (
-          <a className="app-button is-primary" href={hubHref("/business", "sponsors", orgId)}>Open Sponsor CRM</a>
+          <Button as="a" variant="primary" href={hubHref("/business", "sponsors", orgId)}>Open Sponsor CRM</Button>
         ) : null}
       </EmptyState>
       {shell === "setup" && steps.length > 0 ? (
@@ -281,9 +281,9 @@ export default function SponsorWallClient() {
       >
         <div className="sponsor-wall-header-actions">
           {relatedLinks.map((link) => (
-            <a key={link.id} className="app-button secondary" href={link.href}>
+            <Button as="a" variant="secondary" key={link.id} href={link.href}>
               {link.label}
-            </a>
+            </Button>
           ))}
         </div>
       </PageHeader>
@@ -333,9 +333,9 @@ export default function SponsorWallClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <a className="app-button is-primary" href="#sponsor-wall-add">
+          <Button as="a" variant="primary" href="#sponsor-wall-add">
             Add a sponsor
-          </a>
+          </Button>
         </EmptyState>
       ) : null}
 
@@ -403,9 +403,9 @@ function SettingsForm({
         </FormRow>
       </FormGrid>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !headline.trim()}>
+        <Button variant="primary" type="submit" disabled={busy || !headline.trim()}>
           Save settings
-        </button>
+        </Button>
       </div>
       {view.publicId ? (
         view.settings.published ? (
@@ -498,9 +498,9 @@ function AddEntryForm({
         <textarea value={form.message} onChange={set("message")} rows={2} />
       </FormRow>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !form.sponsorName.trim()}>
+        <Button variant="primary" type="submit" disabled={busy || !form.sponsorName.trim()}>
           Add to wall
-        </button>
+        </Button>
       </div>
     </Panel>
   );

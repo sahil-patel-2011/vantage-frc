@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Badge, EmptyState, PageHeader, Panel } from "../../components/ui";
+import { Badge, EmptyState, PageHeader, Panel, Button } from "../../components/ui";
 import type { DocRolesView } from "../../lib/doc-roles/compute-doc-roles";
 
 export default function DocRolesClient() {
@@ -62,9 +62,9 @@ export default function DocRolesClient() {
       <main className="module-page doc-roles-page">
         <PageHeader breadcrumbs="Team / Playbook" title="Document roles" />
         <EmptyState soft badge="Not available" badgeTone="setup" title="Document roles need a team" description={error}>
-          <a className="app-button" href="/workspace">
+          <Button as="a" variant="primary" href="/workspace">
             Choose team
-          </a>
+          </Button>
         </EmptyState>
       </main>
     );
@@ -159,19 +159,9 @@ export default function DocRolesClient() {
                   </span>
                 </span>
                 {view.canGrant ? (
-                  <button
-                    className="app-button ghost"
-                    type="button"
-                    disabled={busy}
-                    onClick={() => {
-                      void act(
-                        { action: "revoke", userId: grant.userId },
-                        `${grant.name || grant.email} can no longer edit docs.`,
-                      );
-                    }}
-                  >
+                  <Button variant="ghost" type="button" disabled={busy} onClick={() => { void act( { action: "revoke", userId: grant.userId }, `${grant.name || grant.email} can no longer edit docs.`, ); }}>
                     Remove
-                  </button>
+                  </Button>
                 ) : null}
               </li>
             ))}
@@ -228,17 +218,17 @@ export default function DocRolesClient() {
                     view.candidates.find((c) => c.userId === grantUserId)?.email ||
                     "this member"}{" "}
                   create and edit the team&rsquo;s docs?{" "}
-                  <button className="app-button" type="submit" disabled={busy}>
+                  <Button variant="primary" type="submit" disabled={busy}>
                     Yes, grant it
-                  </button>{" "}
-                  <button className="app-button ghost" type="button" onClick={() => setConfirmGrant(false)}>
+                  </Button>{" "}
+                  <Button variant="ghost" type="button" onClick={() => setConfirmGrant(false)}>
                     Cancel
-                  </button>
+                  </Button>
                 </p>
               ) : (
-                <button className="app-button" type="submit" disabled={busy || !grantUserId}>
+                <Button variant="primary" type="submit" disabled={busy || !grantUserId}>
                   Grant doc editing
-                </button>
+                </Button>
               )}
             </form>
           )

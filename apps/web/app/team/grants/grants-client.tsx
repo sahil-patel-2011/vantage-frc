@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { BusinessRelated } from "../../../components/business-related";
 import { MeteredAiCutoffBanner } from "../../../components/metered-ai-cutoff-banner";
 import { resolveCutoffErrorCode } from "../../../components/usage-cutoff-banner";
-import { EmptyState } from "../../../components/ui";
+import { EmptyState, Button } from "../../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 import { GRANTS_WRITING_RELATED_INCLUDE } from "../../../lib/business/business-related";
 import { grantsWritingNextActions } from "../../../lib/business/grants-writing-next-actions";
@@ -244,14 +244,14 @@ export default function GrantsClient({ orgId: orgIdProp }: { orgId?: string }) {
           description={copy.description}
         >
           {copy.primary ? (
-            <a className="app-button" href={copy.primary.href}>
+            <Button as="a" variant="primary" href={copy.primary.href}>
               {copy.primary.label}
-            </a>
+            </Button>
           ) : null}
           {copy.showRetry ? (
-            <button type="button" className="app-button secondary" onClick={() => load()}>
+            <Button variant="secondary" type="button" onClick={() => load()}>
               Retry
-            </button>
+            </Button>
           ) : null}
         </EmptyState>
       </main>
@@ -314,9 +314,9 @@ export default function GrantsClient({ orgId: orgIdProp }: { orgId?: string }) {
                     <strong>{action.label}</strong>
                     <span>{action.detail}</span>
                   </div>
-                  <a className="app-button secondary" href={action.href}>
+                  <Button as="a" variant="secondary" href={action.href}>
                     Open
-                  </a>
+                  </Button>
                 </li>
               ))}
             </ol>
@@ -491,9 +491,9 @@ function GrantWritingWorkspace({
                   <strong>{action.label}</strong>
                   <span>{action.detail}</span>
                 </div>
-                <a className="app-button secondary" href={action.href}>
+                <Button as="a" variant="secondary" href={action.href}>
                   Open
-                </a>
+                </Button>
               </li>
             ))}
           </ol>
@@ -599,50 +599,12 @@ function GrantWritingWorkspace({
           ))}
 
           <div className="gwe-actions">
-            <button
-              type="button"
-              className="app-button"
-              disabled={busy}
-              onClick={() =>
-                void onMutate(
-                  {
-                    action: "compose",
-                    templateKey,
-                    funderName: funderName || undefined,
-                    askAmountUsd: askAmountUsd || undefined,
-                    need: fields.need,
-                    impact: fields.impact,
-                    budget: fields.budget,
-                    timeline: fields.timeline,
-                  },
-                  "Narrative composed and saved.",
-                )
-              }
-            >
+            <Button variant="primary" type="button" disabled={busy} onClick={() => void onMutate( { action: "compose", templateKey, funderName: funderName || undefined, askAmountUsd: askAmountUsd || undefined, need: fields.need, impact: fields.impact, budget: fields.budget, timeline: fields.timeline, }, "Narrative composed and saved.", ) }>
               {busy ? "Composing…" : "Compose & save"}
-            </button>
-            <button
-              type="button"
-              className="app-button secondary"
-              disabled={busy}
-              onClick={() =>
-                void onMutate(
-                  {
-                    action: "ai_assist",
-                    templateKey,
-                    funderName: funderName || undefined,
-                    askAmountUsd: askAmountUsd || undefined,
-                    need: fields.need,
-                    impact: fields.impact,
-                    budget: fields.budget,
-                    timeline: fields.timeline,
-                  },
-                  "Metered AI assist draft saved (this org only).",
-                )
-              }
-            >
+            </Button>
+            <Button variant="secondary" type="button" disabled={busy} onClick={() => void onMutate( { action: "ai_assist", templateKey, funderName: funderName || undefined, askAmountUsd: askAmountUsd || undefined, need: fields.need, impact: fields.impact, budget: fields.budget, timeline: fields.timeline, }, "Metered AI assist draft saved (this org only).", ) }>
               {busy ? "Assisting…" : "AI assist (metered)"}
-            </button>
+            </Button>
             {selectedDraft ? (
               <>
                 <select
@@ -666,16 +628,9 @@ function GrantWritingWorkspace({
                     </option>
                   ))}
                 </select>
-                <button
-                  type="button"
-                  className="app-button secondary"
-                  disabled={busy}
-                  onClick={() =>
-                    void onMutate({ action: "delete", draftId: selectedDraft.id }, "Draft deleted.")
-                  }
-                >
+                <Button variant="secondary" type="button" disabled={busy} onClick={() => void onMutate({ action: "delete", draftId: selectedDraft.id }, "Draft deleted.") }>
                   Delete draft
-                </button>
+                </Button>
               </>
             ) : null}
           </div>
@@ -724,15 +679,15 @@ function GrantWritingWorkspace({
                 description="Compose from the editor or open Writer for a metered grant answer. Amounts stay empty until you type them."
               >
                 <div className="gwe-links">
-                  <a className="app-button secondary" href={businessGrantsHref(view.orgId)}>
+                  <Button as="a" variant="secondary" href={businessGrantsHref(view.orgId)}>
                     Business · Grants
-                  </a>
-                  <a className="app-button secondary" href={`/writer${orgQuery(view.orgId)}`}>
+                  </Button>
+                  <Button as="a" variant="secondary" href={`/writer${orgQuery(view.orgId)}`}>
                     Writer
-                  </a>
-                  <a className="app-button secondary" href={`/fundraisers${orgQuery(view.orgId)}`}>
+                  </Button>
+                  <Button as="a" variant="secondary" href={`/fundraisers${orgQuery(view.orgId)}`}>
                     Fundraisers
-                  </a>
+                  </Button>
                 </div>
               </EmptyState>
             ) : (

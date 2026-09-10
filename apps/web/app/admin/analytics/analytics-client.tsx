@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { EmptyState, PageHeader, Panel } from "../../../components/ui";
+import { EmptyState, PageHeader, Panel, Button } from "../../../components/ui";
 import { formatCount, formatUsd } from "../../../lib/admin-analytics/compute";
 import type {
   PlatformAnalytics,
@@ -162,9 +162,9 @@ function OrgDrilldownPanel({
             {org.daysActive} active day{org.daysActive === 1 ? "" : "s"}
           </p>
         </div>
-        <button type="button" className="app-button secondary" onClick={onClose}>
+        <Button variant="secondary" type="button" onClick={onClose}>
           Close
-        </button>
+        </Button>
       </div>
       <BarChart series={drilldown.activity.perDay} ariaLabel="Team activity per day" />
       <div className="admin-analytics-columns">
@@ -424,14 +424,9 @@ export default function AdminAnalyticsClient() {
                     <td>{org.aiCalls}</td>
                     <td>{formatUsd(org.aiCostUsd)}</td>
                     <td>
-                      <button
-                        type="button"
-                        className="app-button secondary"
-                        onClick={() => void openDrilldown(org)}
-                        disabled={drillBusy === org.id}
-                      >
+                      <Button variant="secondary" type="button" onClick={() => void openDrilldown(org)} disabled={drillBusy === org.id}>
                         {drillBusy === org.id ? "Loading…" : "Details"}
-                      </button>
+                      </Button>
                     </td>
                   </tr>
                 ))}

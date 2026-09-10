@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "../../components/ui";
 
 import { useMemo, useState } from "react";
 import {
@@ -222,23 +223,13 @@ export function CadFeatureTree({ features, disabled = false, onUpdate, onDelete 
                           onChange={(event) => setField(row.featureId, "thicknessMm", event.target.value)}
                         />
                       </label>
-                      <button
-                        type="button"
-                        className="app-button"
-                        disabled={disabled || busy}
-                        onClick={() => void submit(row.featureId)}
-                      >
+                      <Button variant="primary" type="button" disabled={disabled || busy} onClick={() => void submit(row.featureId)}>
                         {busy ? "Updating…" : "Update feature"}
-                      </button>
+                      </Button>
                       {onDelete ? (
-                        <button
-                          type="button"
-                          className="app-button"
-                          disabled={disabled || busy}
-                          onClick={() => void remove(row.featureId)}
-                        >
+                        <Button variant="primary" type="button" disabled={disabled || busy} onClick={() => void remove(row.featureId)}>
                           Delete feature
-                        </button>
+                        </Button>
                       ) : null}
                     </div>
                   </li>

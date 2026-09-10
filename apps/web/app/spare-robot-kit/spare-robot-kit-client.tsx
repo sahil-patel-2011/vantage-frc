@@ -9,8 +9,7 @@ import {
   PageHeader,
   Panel,
   SoftBlockSkeleton,
-  StatTile,
-} from "../../components/ui";
+  StatTile, Button } from "../../components/ui";
 import { CHECKLIST_STATUSES, priorityLabel } from "../../lib/spare-robot-kit";
 import type { SpareRobotKitView } from "../../lib/spare-robot-kit/compute-spare-robot-kit";
 import type { ChecklistStatus, KitPriority } from "../../lib/spare-robot-kit/types";
@@ -51,9 +50,9 @@ function RelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related srk-related" aria-label="Related build tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -74,9 +73,9 @@ function NextActionsPanel({ actions }: { actions: SpareRobotKitNextAction[] }) {
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -134,10 +133,10 @@ function KitShell({
           description={error ?? copy.description}
         >
           {shell === "setup" ? (
-            <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
+            <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
           ) : null}
           {shell === "empty" ? (
-            <a className="app-button is-primary" href={hubHref("/build", "fmea", orgId)}>Open FMEA</a>
+            <Button as="a" variant="primary" href={hubHref("/build", "fmea", orgId)}>Open FMEA</Button>
           ) : null}
         </EmptyState>
       )}
@@ -154,9 +153,9 @@ function KitShell({
                   <strong>{step.label}</strong>
                   <p className="app-muted srk-tip">{step.detail}</p>
                 </div>
-                <a className="app-button secondary" href={step.href}>
+                <Button as="a" variant="secondary" href={step.href}>
                   Open
-                </a>
+                </Button>
               </li>
             ))}
           </ul>
@@ -365,17 +364,9 @@ function CandidatesPanel({
             onChange={(event) => setTitle(event.target.value)}
             placeholder={`Spare robot kit — ${view.seasonYear}`}
           />
-          <button
-            type="button"
-            className="app-button"
-            disabled={busy}
-            onClick={() => {
-              mutate({ action: "generate-checklist", title: title.trim() || undefined });
-              setTitle("");
-            }}
-          >
+          <Button variant="primary" type="button" disabled={busy} onClick={() => { mutate({ action: "generate-checklist", title: title.trim() || undefined }); setTitle(""); }}>
             Generate checklist
-          </button>
+          </Button>
         </div>
       </header>
       <ul className="srk-candidate-list">
@@ -458,15 +449,9 @@ function ChecklistsList({
               {checklist.status !== "finalized" ? (
                 <div className="srk-status-actions">
                   {CHECKLIST_STATUSES.filter((status) => status !== checklist.status).map((status) => (
-                    <button
-                      key={status}
-                      type="button"
-                      className="app-button secondary"
-                      disabled={busy}
-                      onClick={() => mutate({ action: "update-status", checklistId: checklist.id, status })}
-                    >
+                    <Button variant="secondary" key={status} type="button" disabled={busy} onClick={() => mutate({ action: "update-status", checklistId: checklist.id, status })}>
                       Mark {STATUS_LABEL[status].toLowerCase()}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               ) : null}

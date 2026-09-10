@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Badge, EmptyState, PageHeader, Panel, type BadgeTone } from "../../components/ui";
+import { Badge, EmptyState, PageHeader, Panel, type BadgeTone, Button } from "../../components/ui";
 import {
   describeApprovalImpact,
   type PartRequest,
@@ -141,9 +141,9 @@ export default function PartRequestsClient() {
       <main className="module-page part-requests-page">
         <PageHeader breadcrumbs="Business / Money" title="Part requests" />
         <EmptyState soft badge="Not available" badgeTone="setup" title="Part requests need a team" description={error}>
-          <a className="app-button" href="/workspace">
+          <Button as="a" variant="primary" href="/workspace">
             Choose team
-          </a>
+          </Button>
         </EmptyState>
       </main>
     );
@@ -306,17 +306,17 @@ export default function PartRequestsClient() {
           {confirmSubmit ? (
             <p className="pr-confirm">
               Send this request for about {money(totalPreview)}?{" "}
-              <button className="app-button" type="submit" disabled={busy}>
+              <Button variant="primary" type="submit" disabled={busy}>
                 Yes, send it
-              </button>{" "}
-              <button className="app-button ghost" type="button" onClick={() => setConfirmSubmit(false)}>
+              </Button>{" "}
+              <Button variant="ghost" type="button" onClick={() => setConfirmSubmit(false)}>
                 Cancel
-              </button>
+              </Button>
             </p>
           ) : (
-            <button className="app-button" type="submit" disabled={busy}>
+            <Button variant="primary" type="submit" disabled={busy}>
               Send request
-            </button>
+            </Button>
           )}
         </form>
       </Panel>
@@ -358,58 +358,22 @@ export default function PartRequestsClient() {
                           {decide?.kind === "approve"
                             ? `Approve ${money(request.totalCostUsd)}? This records the money as spent against the season budget straight away.`
                             : "Reject this request? Nothing is charged."}{" "}
-                          <button
-                            className="app-button"
-                            type="button"
-                            disabled={busy}
-                            onClick={() => {
-                              void act(
-                                {
-                                  action: decide?.kind === "approve" ? "approve" : "reject",
-                                  requestId: request.id,
-                                  reviewNotes,
-                                },
-                                decide?.kind === "approve"
-                                  ? "Approved. The cost now counts against the budget."
-                                  : "Rejected. Nothing was charged.",
-                              ).then(() => {
-                                setDecide(null);
-                                setReviewNotes("");
-                              });
-                            }}
-                          >
+                          <Button variant="primary" type="button" disabled={busy} onClick={() => { void act( { action: decide?.kind === "approve" ? "approve" : "reject", requestId: request.id, reviewNotes, }, decide?.kind === "approve" ? "Approved. The cost now counts against the budget." : "Rejected. Nothing was charged.", ).then(() => { setDecide(null); setReviewNotes(""); }); }}>
                             Yes, {decide?.kind === "approve" ? "approve" : "reject"}
-                          </button>{" "}
-                          <button
-                            className="app-button ghost"
-                            type="button"
-                            onClick={() => {
-                              setDecide(null);
-                              setReviewNotes("");
-                            }}
-                          >
+                          </Button>{" "}
+                          <Button variant="ghost" type="button" onClick={() => { setDecide(null); setReviewNotes(""); }}>
                             Cancel
-                          </button>
+                          </Button>
                         </p>
                       </div>
                     ) : (
                       <div className="pr-actions">
-                        <button
-                          className="app-button"
-                          type="button"
-                          disabled={busy}
-                          onClick={() => setDecide({ id: request.id, kind: "approve" })}
-                        >
+                        <Button variant="primary" type="button" disabled={busy} onClick={() => setDecide({ id: request.id, kind: "approve" })}>
                           Approve
-                        </button>
-                        <button
-                          className="app-button ghost"
-                          type="button"
-                          disabled={busy}
-                          onClick={() => setDecide({ id: request.id, kind: "reject" })}
-                        >
+                        </Button>
+                        <Button variant="ghost" type="button" disabled={busy} onClick={() => setDecide({ id: request.id, kind: "reject" })}>
                           Reject
-                        </button>
+                        </Button>
                       </div>
                     )}
                   </RequestCard>
@@ -430,19 +394,9 @@ export default function PartRequestsClient() {
               <RequestCard key={request.id} request={request}>
                 {request.status === "approved" ? (
                   <div className="pr-actions">
-                    <button
-                      className="app-button ghost"
-                      type="button"
-                      disabled={busy}
-                      onClick={() => {
-                        void act(
-                          { action: "mark-ordered", requestId: request.id },
-                          "Marked as ordered.",
-                        );
-                      }}
-                    >
+                    <Button variant="ghost" type="button" disabled={busy} onClick={() => { void act( { action: "mark-ordered", requestId: request.id }, "Marked as ordered.", ); }}>
                       Mark as ordered
-                    </button>
+                    </Button>
                   </div>
                 ) : null}
               </RequestCard>

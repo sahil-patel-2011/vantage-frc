@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "../../components/ui";
 
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -447,12 +448,12 @@ export default function AppearancePanel() {
           >
             {cockpitBusy ? "Saving…" : "Save cockpit"}
           </button>
-          <a className="app-button secondary" href="/team/ai-keys">
+          <Button as="a" variant="secondary" href="/team/ai-keys">
             Your AI keys
-          </a>
-          <a className="app-button secondary" href="/cad/setup">
+          </Button>
+          <Button as="a" variant="secondary" href="/cad/setup">
             Onshape CAD
-          </a>
+          </Button>
         </div>
         {cockpitNote ? (
           <p className={`brand-notice ${cockpitNote.tone === "ok" ? "ok" : "error"}`} role="status">

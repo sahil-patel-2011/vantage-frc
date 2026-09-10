@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Badge, EmptyState, PageHeader, Panel } from "../../components/ui";
+import { Badge, EmptyState, PageHeader, Panel, Button } from "../../components/ui";
 import {
   SUBTEAM_LABELS,
   TEAM_ROLE_LABELS,
@@ -71,14 +71,14 @@ function GroupActions({ members }: { members: SubteamMember[] }) {
   return (
     <div className="st-actions">
       {notices ? (
-        <a className="app-button secondary" href="/announcements">
+        <Button as="a" variant="secondary" href="/announcements">
           Open announcements
-        </a>
+        </Button>
       ) : null}
       {forms ? (
-        <a className="app-button secondary" href="/forms">
+        <Button as="a" variant="secondary" href="/forms">
           Open forms
-        </a>
+        </Button>
       ) : null}
     </div>
   );
@@ -112,7 +112,7 @@ export default function SubteamsClient() {
       <main className="module-page subteams-page">
         <PageHeader breadcrumbs="Team / Subteam progress" title="Subteam progress" />
         <EmptyState soft badge="Not available" badgeTone="setup" title="Subteam progress needs a team" description={error}>
-          <a className="app-button" href="/workspace">Choose team</a>
+          <Button as="a" variant="primary" href="/workspace">Choose team</Button>
         </EmptyState>
       </main>
     );
@@ -138,7 +138,7 @@ export default function SubteamsClient() {
           title="This view is for mentors and coaches"
           description="It shows who on each subteam still owes a form or has not confirmed a required notice, so it is limited to owners and admins."
         >
-          <a className="app-button" href="/team">Open Team</a>
+          <Button as="a" variant="primary" href="/team">Open Team</Button>
         </EmptyState>
       </main>
     );
@@ -182,7 +182,7 @@ export default function SubteamsClient() {
           title="Nobody has joined yet"
           description="Invite your team, and everyone who finishes onboarding will appear here under the subteam they picked."
         >
-          <a className="app-button" href="/team/admin">Invite people</a>
+          <Button as="a" variant="primary" href="/team/admin">Invite people</Button>
         </EmptyState>
       ) : null}
 

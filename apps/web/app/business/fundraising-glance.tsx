@@ -1,7 +1,7 @@
 "use client";
 
 import { BusinessRelated } from "../../components/business-related";
-import { EmptyState } from "../../components/ui";
+import { EmptyState, Button } from "../../components/ui";
 import type { BusinessView } from "../../lib/business-portal";
 import { PIPELINE_STAGE_LABELS } from "../../lib/sponsor-pipeline";
 
@@ -114,9 +114,9 @@ export function FundraisingGlance({
       <div className="biz-stage-pipeline" aria-label="Sponsor stage pipeline">
         <header>
           <span className="biz-overline">Stage pipeline</span>
-          <button className="app-button secondary" type="button" onClick={onOpenSponsors}>
+          <Button variant="secondary" type="button" onClick={onOpenSponsors}>
             Open CRM
-          </button>
+          </Button>
         </header>
         {partnerCount === 0 ? (
           <EmptyState

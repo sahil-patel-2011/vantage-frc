@@ -1,4 +1,5 @@
-﻿import { assertOrgAuthentication, auth } from "@vantage/core";
+﻿import { Button } from "../../components/ui";
+import { assertOrgAuthentication, auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -64,9 +65,9 @@ export default async function WorkspacePage({ searchParams }: { searchParams: Pr
             </header>
             {primary ? (
               <p className="invite-primary-cta">
-                <a className="app-button" href={primary.href}>
+                <Button as="a" variant="primary" href={primary.href}>
                   {primary.label}
-                </a>
+                </Button>
               </p>
             ) : null}
             <ul className="workspace-quiet-links">

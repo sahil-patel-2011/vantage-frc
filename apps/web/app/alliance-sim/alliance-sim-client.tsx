@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { ALLIANCE_SIM_ROLE_DEFS, allianceSimRoleLabel } from "../../lib/alliance-sim";
 import type { AllianceSimView } from "../../lib/alliance-sim/compute-alliance-sim";
@@ -135,14 +135,14 @@ export default function AllianceSimClient() {
           return (
             <EmptyState title={copy.title} description={copy.description}>
               {copy.primary ? (
-                <a className="app-button" href={copy.primary.href}>
+                <Button as="a" variant="primary" href={copy.primary.href}>
                   {copy.primary.label}
-                </a>
+                </Button>
               ) : null}
               {copy.showRetry ? (
-                <button type="button" className="app-button secondary" onClick={() => load()}>
+                <Button variant="secondary" type="button" onClick={() => load()}>
                   Retry
-                </button>
+                </Button>
               ) : null}
             </EmptyState>
           );
@@ -264,9 +264,9 @@ function ScenarioPanel({
           </FormRow>
         </FormGrid>
         <div>
-          <button type="submit" className="app-button" disabled={busy || !form.name.trim()}>
+          <Button variant="primary" type="submit" disabled={busy || !form.name.trim()}>
             New scenario
-          </button>
+          </Button>
         </div>
       </form>
     </Panel>
@@ -357,9 +357,9 @@ function RobotForm({
         </div>
       </div>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !form.teamNumber}>
+        <Button variant="primary" type="submit" disabled={busy || !form.teamNumber}>
           Add robot
-        </button>
+        </Button>
       </div>
     </Panel>
   );

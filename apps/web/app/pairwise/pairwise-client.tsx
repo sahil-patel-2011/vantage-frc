@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { EmptyState, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
 import type { PairwiseView } from "../../lib/pairwise/compute-pairwise";
 import type { PairwisePromoteResult } from "../../lib/pairwise/promote-to-pick-list";
 import { pairwiseRelatedLinks } from "../../lib/pairwise/pairwise-related";
@@ -146,9 +146,9 @@ export default function PairwiseClient() {
 
       <nav className="product-hub-related" aria-label="Related qualitative tools">
         {related.map((link) => (
-          <a key={link.id} className="app-button secondary" href={link.href}>
+          <Button as="a" variant="secondary" key={link.id} href={link.href}>
             {link.label}
-          </a>
+          </Button>
         ))}
       </nav>
 
@@ -172,14 +172,14 @@ export default function PairwiseClient() {
             return (
               <EmptyState title={copy.title} description={copy.description}>
                 {copy.primary ? (
-                  <a className="app-button" href={copy.primary.href}>
+                  <Button as="a" variant="primary" href={copy.primary.href}>
                     {copy.primary.label}
-                  </a>
+                  </Button>
                 ) : null}
                 {copy.showRetry ? (
-                  <button type="button" className="app-button secondary" onClick={() => void load()}>
+                  <Button variant="secondary" type="button" onClick={() => void load()}>
                     Retry
-                  </button>
+                  </Button>
                 ) : null}
               </EmptyState>
             );
@@ -190,9 +190,9 @@ export default function PairwiseClient() {
       {view?.status === "setup_required" ? (
         <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
           {view.steps.map((step) => (
-            <a key={step.id} className="app-button secondary" href={step.href}>
+            <Button as="a" variant="secondary" key={step.id} href={step.href}>
               {step.label}
-            </a>
+            </Button>
           ))}
         </EmptyState>
       ) : null}
@@ -294,12 +294,12 @@ function LivePairwise({
             />
           </label>
           <div className="pairwise-bout-actions">
-            <button type="button" className="app-button" disabled={busy} onClick={() => onCompare("left")}>
+            <Button variant="primary" type="button" disabled={busy} onClick={() => onCompare("left")}>
               A looked better
-            </button>
-            <button type="button" className="app-button" disabled={busy} onClick={() => onCompare("right")}>
+            </Button>
+            <Button variant="primary" type="button" disabled={busy} onClick={() => onCompare("right")}>
               B looked better
-            </button>
+            </Button>
           </div>
           <label>
             Team B
@@ -325,14 +325,9 @@ function LivePairwise({
           <p className="app-muted">{view.ranks.length ? `${view.ranks.length} robots` : "Empty until someone compares two teams."}</p>
         </header>
         <div className="pairwise-promote">
-          <button
-            type="button"
-            className="app-button"
-            disabled={busy || !view.ranks.length || !view.eventKey}
-            onClick={onPromote}
-          >
+          <Button variant="primary" type="button" disabled={busy || !view.ranks.length || !view.eventKey} onClick={onPromote}>
             Save order to pick list
-          </button>
+          </Button>
           {!view.ranks.length ? (
             <p className="app-muted">Nothing to promote until a scout records a real A-beats-B tap.</p>
           ) : !view.eventKey ? (

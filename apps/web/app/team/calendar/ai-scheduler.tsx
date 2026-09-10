@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "../../../components/ui";
 
 import { useState } from "react";
 
@@ -80,9 +81,9 @@ export function AiScheduler({ onUse }: { onUse: (pick: SchedulerPick) => void })
 
   if (!open) {
     return (
-      <button type="button" className="app-button secondary tc-ai-open" onClick={() => setOpen(true)}>
+      <Button variant="secondary" type="button" className="tc-ai-open" onClick={() => setOpen(true)}>
         Find a time
-      </button>
+      </Button>
     );
   }
 
@@ -109,9 +110,9 @@ export function AiScheduler({ onUse }: { onUse: (pick: SchedulerPick) => void })
             if (event.key === "Enter" && ask.trim() && !busy) void run();
           }}
         />
-        <button type="button" className="app-button" disabled={busy || !ask.trim()} onClick={() => void run()}>
+        <Button variant="primary" type="button" disabled={busy || !ask.trim()} onClick={() => void run()}>
           {busy ? "Looking…" : "Suggest"}
-        </button>
+        </Button>
       </div>
 
       {error ? (
@@ -147,21 +148,9 @@ export function AiScheduler({ onUse }: { onUse: (pick: SchedulerPick) => void })
                       <small className="tc-ai-clash">Clashes with {p.conflictTitle ?? "another event"}</small>
                     ) : null}
                   </div>
-                  <button
-                    type="button"
-                    className="app-button secondary"
-                    onClick={() =>
-                      onUse({
-                        startsAt: p.startsAt,
-                        endsAt: p.endsAt,
-                        title: result.title,
-                        kind: result.kind,
-                        subteamId: result.subteamId,
-                      })
-                    }
-                  >
+                  <Button variant="secondary" type="button" onClick={() => onUse({ startsAt: p.startsAt, endsAt: p.endsAt, title: result.title, kind: result.kind, subteamId: result.subteamId, }) }>
                     Use this
-                  </button>
+                  </Button>
                 </li>
               ))}
             </ul>

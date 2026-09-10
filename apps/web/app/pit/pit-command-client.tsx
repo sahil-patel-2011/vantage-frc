@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import PartnerPlacement from "../../components/partner-placement";
-import { EmptyState, PageHeader } from "../../components/ui";
+import { EmptyState, PageHeader, Button } from "../../components/ui";
 import { OfflineBanner } from "../../components/offline-banner";
 import { visibilityPollDelay } from "../../lib/perf/visibility-poll";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
@@ -152,9 +152,9 @@ function PitRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related pit-related" aria-label="Related pit tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -175,9 +175,9 @@ function PitNextActionsPanel({ actions }: { actions: PitNextAction[] }) {
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -257,20 +257,20 @@ function PitShell({
         aria-busy={shell === "loading"}
       >
         {failure?.primary ? (
-          <a className="app-button" href={failure.primary.href}>
+          <Button as="a" variant="primary" href={failure.primary.href}>
             {failure.primary.label}
-          </a>
+          </Button>
         ) : null}
         {shell === "error" && onRetry && failure?.showRetry ? (
-          <button type="button" className="app-button secondary" onClick={onRetry}>
+          <Button variant="secondary" type="button" onClick={onRetry}>
             Retry
-          </button>
+          </Button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
+          <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
         ) : null}
         {shell === "empty" ? (
-          <a className="app-button is-primary" href="#pit-actions">Log first evidence</a>
+          <Button as="a" variant="primary" href="#pit-actions">Log first evidence</Button>
         ) : null}
       </EmptyState>
       <PitNextActionsPanel actions={actions} />
@@ -531,9 +531,9 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
             title={shellCopy.title}
             description={shellCopy.description}
           >
-            <a className="app-button is-primary" href="#pit-actions">
+            <Button as="a" variant="primary" href="#pit-actions">
               Log first evidence
-            </a>
+            </Button>
           </EmptyState>
           <ol className="strategy-setup-steps">
             {setupSteps.map((step) => (
@@ -762,12 +762,12 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
               </label>
             ) : null}
             <footer>
-              <button type="button" className="app-button secondary" onClick={() => setForm(null)}>
+              <Button variant="secondary" type="button" onClick={() => setForm(null)}>
                 Cancel
-              </button>
-              <button className="app-button" disabled={busy === "form"}>
+              </Button>
+              <Button variant="primary" disabled={busy === "form"}>
                 {busy === "form" ? "Saving…" : "Save to pit board"}
-              </button>
+              </Button>
             </footer>
           </form>
         </section>
@@ -925,9 +925,9 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
       {relatedLinks.length ? (
         <nav className="product-hub-related pit-related pit-related-footer" aria-label="More pit tools">
           {relatedLinks.map((link) => (
-            <a key={link.id} className="app-button secondary" href={link.href}>
+            <Button as="a" variant="secondary" key={link.id} href={link.href}>
               {link.label}
-            </a>
+            </Button>
           ))}
         </nav>
       ) : null}

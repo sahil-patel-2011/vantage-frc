@@ -10,8 +10,7 @@ import {
   Panel,
   ProgressMeter,
   SoftBlockSkeleton,
-  StatTile,
-} from "../../components/ui";
+  StatTile, Button } from "../../components/ui";
 import { knowledgeGapSubjectLabel } from "../../lib/knowledge-gap";
 import type { KnowledgeGapView } from "../../lib/knowledge-gap/compute-knowledge-gap";
 import type { KnowledgeGapItem, KnowledgeGapStatus, KnowledgeGapSubjectKind } from "../../lib/knowledge-gap/types";
@@ -59,9 +58,9 @@ function RelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related kg-related" aria-label="Related team tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -82,9 +81,9 @@ function NextActionsPanel({ actions }: { actions: KnowledgeGapNextAction[] }) {
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -142,10 +141,10 @@ function GapShell({
           description={error ?? copy.description}
         >
           {shell === "setup" ? (
-            <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
+            <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
           ) : null}
           {shell === "empty" ? (
-            <a className="app-button is-primary" href="#knowledge-gap-scan">Run scan</a>
+            <Button as="a" variant="primary" href="#knowledge-gap-scan">Run scan</Button>
           ) : null}
         </EmptyState>
       )}
@@ -162,9 +161,9 @@ function GapShell({
                   <strong>{step.label}</strong>
                   <p className="app-muted kg-tip">{step.detail}</p>
                 </div>
-                <a className="app-button secondary" href={step.href}>
+                <Button as="a" variant="secondary" href={step.href}>
                   Open
-                </a>
+                </Button>
               </li>
             ))}
           </ul>
@@ -317,9 +316,9 @@ export default function KnowledgeGapClient() {
               </select>
             </label>
           ) : null}
-          <a className="app-button secondary" href={hubHref("/team", "knowledge", orgId)}>
+          <Button as="a" variant="secondary" href={hubHref("/team", "knowledge", orgId)}>
             Open wiki
-          </a>
+          </Button>
         </div>
       </PageHeader>
 
@@ -427,9 +426,9 @@ function ScanPanel({
               />
             </div>
           ) : null}
-          <button type="button" className="app-button" disabled={busy} onClick={() => mutate({ action: "run-scan" })}>
+          <Button variant="primary" type="button" disabled={busy} onClick={() => mutate({ action: "run-scan" })}>
             {scan ? "Re-scan" : "Run scan"}
-          </button>
+          </Button>
         </div>
       </header>
       {scan ? <p className="app-muted kg-tip">{scan.summary}</p> : null}
@@ -462,18 +461,13 @@ function GapList({
               {item.status === "open" ? (
                 <div className="kg-item-actions">
                   {item.href ? (
-                    <a className="app-button secondary" href={item.href}>
+                    <Button as="a" variant="secondary" href={item.href}>
                       Open work
-                    </a>
+                    </Button>
                   ) : null}
-                  <button
-                    type="button"
-                    className="app-button secondary"
-                    disabled={busy}
-                    onClick={() => mutate({ action: "draft-stub-page", itemId: item.id })}
-                  >
+                  <Button variant="secondary" type="button" disabled={busy} onClick={() => mutate({ action: "draft-stub-page", itemId: item.id })}>
                     Draft stub page
-                  </button>
+                  </Button>
                   <button
                     type="button"
                     className="text-button"
@@ -484,12 +478,11 @@ function GapList({
                   </button>
                 </div>
               ) : item.status === "drafted" && item.draftPageId ? (
-                <a
-                  className="app-button secondary"
+                <Button as="a" variant="secondary"
                   href={`/knowledge?pageId=${encodeURIComponent(item.draftPageId)}`}
                 >
                   Open stub
-                </a>
+                </Button>
               ) : null}
             </header>
             <p className="app-muted kg-tip">{item.reason}</p>

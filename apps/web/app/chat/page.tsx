@@ -1,4 +1,4 @@
-import { EmptyState } from "../../components/ui";
+import { EmptyState, Button } from "../../components/ui";
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import ChatClient from "./chat-client";
@@ -25,21 +25,21 @@ export default async function ChatPage({
           title="Select a team"
           description="Each team has its own channels and memory. Choose your team or Account, then return from the AI hub."
         >
-          <a className="app-button secondary" href="/workspace">
+          <Button as="a" variant="secondary" href="/workspace">
             Choose your team
-          </a>
-          <a className="app-button secondary" href={withOrgHref("/account", null)}>
+          </Button>
+          <Button as="a" variant="secondary" href={withOrgHref("/account", null)}>
             Account
-          </a>
-          <a className="app-button secondary" href={hubHref("/ai", "budgets", null)}>
+          </Button>
+          <Button as="a" variant="secondary" href={hubHref("/ai", "budgets", null)}>
             Budgets
-          </a>
-          <a className="app-button secondary" href={hubHref("/ai", "memory", null)}>
+          </Button>
+          <Button as="a" variant="secondary" href={hubHref("/ai", "memory", null)}>
             Memory
-          </a>
-          <a className="app-button secondary" href={hubHref("/competition", "strategy", null)}>
+          </Button>
+          <Button as="a" variant="secondary" href={hubHref("/competition", "strategy", null)}>
             Strategy
-          </a>
+          </Button>
         </EmptyState>
       </main>
     );

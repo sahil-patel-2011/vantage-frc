@@ -4,6 +4,7 @@ import {
   dashboardHubHref,
   dashboardHubLinks,
   dashboardNextActions,
+  dashboardSetupBannerLabel,
   dashboardSetupSteps,
 } from "./dashboard-related";
 
@@ -98,5 +99,20 @@ describe("dashboard Soft-UI related", () => {
       hasAiProvider: true,
     });
     expect(actions).toEqual([]);
+  });
+
+  it("uses student words for the first-run banner CTA", () => {
+    expect(
+      dashboardSetupBannerLabel({ id: "invite", label: "Invite", detail: "", href: "/invite", state: "current" }),
+    ).toBe("Open invite");
+    expect(
+      dashboardSetupBannerLabel({ id: "tba", label: "TBA", detail: "", href: "/team/data", state: "current" }),
+    ).toBe("Connect TBA");
+    expect(
+      dashboardSetupBannerLabel({ id: "event", label: "Event", detail: "", href: "/command", state: "current" }),
+    ).toBe("Set event");
+    expect(
+      dashboardSetupBannerLabel({ id: "other", label: "Choose your team", detail: "", href: "/workspace", primary: true }),
+    ).toBe("Choose your team");
   });
 });

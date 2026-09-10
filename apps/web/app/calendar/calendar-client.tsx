@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { AiInsightPanel } from "../../components/ai-insight-panel";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import {
   QUEUED_ON_DEVICE,
   getFeatureSnapshot,
@@ -120,12 +120,12 @@ function MilestoneEditor({
         />
       </FormRow>
       <div className="cal-edit-actions">
-        <button type="submit" className="app-button" disabled={busy || !title.trim() || !startsOn}>
+        <Button variant="primary" type="submit" disabled={busy || !title.trim() || !startsOn}>
           Save milestone
-        </button>
-        <button type="button" className="app-button secondary" disabled={busy} onClick={onCancel}>
+        </Button>
+        <Button variant="secondary" type="button" disabled={busy} onClick={onCancel}>
           Cancel
-        </button>
+        </Button>
       </div>
     </form>
   );
@@ -403,14 +403,14 @@ export default function CalendarClient() {
             return (
               <EmptyState soft title={copy.title} description={copy.description}>
                 {copy.primary ? (
-                  <a className="app-button" href={copy.primary.href}>
+                  <Button as="a" variant="primary" href={copy.primary.href}>
                     {copy.primary.label}
-                  </a>
+                  </Button>
                 ) : null}
                 {copy.showRetry ? (
-                  <button type="button" className="app-button secondary" onClick={() => void load()}>
+                  <Button variant="secondary" type="button" onClick={() => void load()}>
                     Retry
-                  </button>
+                  </Button>
                 ) : null}
               </EmptyState>
             );
@@ -430,9 +430,9 @@ export default function CalendarClient() {
         <PageHeader breadcrumbs="Team / Calendar" title="Season calendar" />
         <OfflineBanner feature="Calendar" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState soft title="Choose a team" description={view.message}>
-          <a className="app-button" href="/workspace">
+          <Button as="a" variant="primary" href="/workspace">
             Choose your team
-          </a>
+          </Button>
         </EmptyState>
       </main>
     );
@@ -626,16 +626,9 @@ function ReadyCalendar({
               aria-label="Kickoff date"
               onChange={(event) => setKickoff(event.target.value)}
             />
-            <button
-              type="button"
-              className="app-button"
-              disabled={busy || !kickoff}
-              onClick={() =>
-                void run({ action: "seed_season", orgId, kickoffDate: kickoff, templateId }, "seed")
-              }
-            >
+            <Button variant="primary" type="button" disabled={busy || !kickoff} onClick={() => void run({ action: "seed_season", orgId, kickoffDate: kickoff, templateId }, "seed") }>
               Seed template
-            </button>
+            </Button>
           </div>
         </div>
       </Panel>
@@ -719,9 +712,9 @@ function ReadyCalendar({
             onChange={(event) => setMeetingUrl(event.target.value)}
           />
         </FormRow>
-        <button type="submit" className="app-button" disabled={busy || !title.trim() || !startsOn}>
+        <Button variant="primary" type="submit" disabled={busy || !title.trim() || !startsOn}>
           Add milestone
-        </button>
+        </Button>
       </Panel>
 
       <AiInsightPanel

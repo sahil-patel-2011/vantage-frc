@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "../../components/ui";
 import { useCallback, useEffect, useState } from "react";
 import { TUNING_CATEGORIES, TUNING_CATEGORY_LABEL, currentLimitTuningCue, type TuningCategory } from "../../lib/tuning";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
@@ -65,8 +66,8 @@ export default function TuningClient({ orgId }: { orgId: string | null }) {
       <main className="intel-app">
         <p className="telemetry-status" role="alert"><strong>{failure.title}</strong></p>
         <p className="telemetry-status">{failure.description}</p>
-        {failure.primary ? <a className="app-button" href={failure.primary.href}>{failure.primary.label}</a> : null}
-        {failure.showRetry ? <button type="button" className="app-button secondary" onClick={() => void load()}>Retry</button> : null}
+        {failure.primary ? <Button as="a" variant="primary" href={failure.primary.href}>{failure.primary.label}</Button> : null}
+        {failure.showRetry ? <Button variant="secondary" type="button" onClick={() => void load()}>Retry</Button> : null}
       </main>
     );
   }

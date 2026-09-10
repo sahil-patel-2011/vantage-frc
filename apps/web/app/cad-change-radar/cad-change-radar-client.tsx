@@ -48,9 +48,9 @@ function RelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related ccr-related" aria-label="Related build tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -71,9 +71,9 @@ function NextActionsPanel({ actions }: { actions: CadChangeRadarNextAction[] }) 
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -131,10 +131,10 @@ function RadarShell({
           description={error ?? copy.description}
         >
           {shell === "setup" ? (
-            <a className="app-button is-primary" href={orgId ? hubHref("/build", "cad", orgId) : "/workspace"}>{orgId ? "Open CAD" : "Choose your team"}</a>
+            <Button as="a" variant="primary" href={orgId ? hubHref("/build", "cad", orgId) : "/workspace"}>{orgId ? "Open CAD" : "Choose your team"}</Button>
           ) : null}
           {shell === "empty" ? (
-            <a className="app-button is-primary" href="#cad-change-radar-snapshot">Record the first snapshot</a>
+            <Button as="a" variant="primary" href="#cad-change-radar-snapshot">Record the first snapshot</Button>
           ) : null}
         </EmptyState>
       )}
@@ -151,9 +151,9 @@ function RadarShell({
                   <strong>{step.label}</strong>
                   <p className="app-muted ccr-tip">{step.detail}</p>
                 </div>
-                <a className="app-button secondary" href={step.href}>
+                <Button as="a" variant="secondary" href={step.href}>
                   Open
-                </a>
+                </Button>
               </li>
             ))}
           </ul>
@@ -305,9 +305,9 @@ export default function CadChangeRadarClient() {
       >
         <div className="ccr-header-actions">
           {relatedLinks.map((link) => (
-            <a key={link.id} className="app-button secondary" href={link.href}>
+            <Button as="a" variant="secondary" key={link.id} href={link.href}>
               {link.label}
-            </a>
+            </Button>
           ))}
         </div>
       </PageHeader>
@@ -431,9 +431,9 @@ function DiffsPanel({
         title="Record a revision snapshot below to start diffing releases"
         description="Diffs appear once a second snapshot of the same part is recorded — empty means nothing tracked yet."
       >
-        <a className="app-button" href="#cad-change-radar-snapshot">
+        <Button as="a" variant="primary" href="#cad-change-radar-snapshot">
           Record snapshot
-        </a>
+        </Button>
       </EmptyState>
     );
   }

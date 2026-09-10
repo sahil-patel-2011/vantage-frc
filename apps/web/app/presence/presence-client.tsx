@@ -224,9 +224,9 @@ export default function PresenceClient() {
                     <strong>{step.label}</strong>
                     <p className="app-muted prs-tip">{step.detail}</p>
                   </div>
-                  <a className="app-button secondary" href={withOrgHref(step.href, orgId)}>
+                  <Button as="a" variant="secondary" href={withOrgHref(step.href, orgId)}>
                     Open
-                  </a>
+                  </Button>
                 </li>
               ))}
             </ul>
@@ -351,9 +351,9 @@ function Live({
           title={`Nothing on the calendar for ${formatDay(view.presenceDate)}`}
           description="Presence hangs off a calendar occurrence, so there is nothing to reconcile on a day with no meeting. Pick another date, or add the meeting to the team calendar first."
         >
-          <a className="app-button secondary prs-empty-action" href={withOrgHref("/team/calendar", view.orgId)}>
+          <Button as="a" variant="secondary" className="prs-empty-action" href={withOrgHref("/team/calendar", view.orgId)}>
             Open the calendar
-          </a>
+          </Button>
         </EmptyState>
       ) : (
         <>
@@ -491,9 +491,9 @@ function Live({
                   ))}
                 </ul>
               )}
-              <a className="app-button secondary" href={withOrgHref("/attendance", view.orgId)}>
+              <Button as="a" variant="secondary" href={withOrgHref("/attendance", view.orgId)}>
                 Take the roll in People
-              </a>
+              </Button>
             </Panel>
           </div>
 

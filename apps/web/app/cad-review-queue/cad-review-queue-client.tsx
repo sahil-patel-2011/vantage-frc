@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import type { CadReviewQueueView } from "../../lib/cad-review-queue/compute-cad-review-queue";
 import {
@@ -149,14 +149,14 @@ export default function CadReviewQueueClient() {
           return (
             <EmptyState title={copy.title} description={copy.description}>
               {copy.primary ? (
-                <a className="app-button" href={copy.primary.href}>
+                <Button as="a" variant="primary" href={copy.primary.href}>
                   {copy.primary.label}
-                </a>
+                </Button>
               ) : null}
               {copy.showRetry ? (
-                <button type="button" className="app-button secondary" onClick={() => load()}>
+                <Button variant="secondary" type="button" onClick={() => load()}>
                   Retry
-                </button>
+                </Button>
               ) : null}
             </EmptyState>
           );
@@ -306,31 +306,16 @@ function ItemCard({
       )}
 
       <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
-        <button
-          type="button"
-          className="app-button"
-          disabled={busy}
-          onClick={() => mutate({ action: "add-signoff", itemId: item.id, decision: "approved" })}
-        >
+        <Button variant="primary" type="button" disabled={busy} onClick={() => mutate({ action: "add-signoff", itemId: item.id, decision: "approved" })}>
           Approve
-        </button>
-        <button
-          type="button"
-          className="app-button secondary"
-          disabled={busy}
-          onClick={() => mutate({ action: "add-signoff", itemId: item.id, decision: "changes_requested" })}
-        >
+        </Button>
+        <Button variant="secondary" type="button" disabled={busy} onClick={() => mutate({ action: "add-signoff", itemId: item.id, decision: "changes_requested" })}>
           Request changes
-        </button>
+        </Button>
         {item.status === "approved" ? (
-          <button
-            type="button"
-            className="app-button secondary"
-            disabled={busy}
-            onClick={() => mutate({ action: "update-status", itemId: item.id, status: "released" })}
-          >
+          <Button variant="secondary" type="button" disabled={busy} onClick={() => mutate({ action: "update-status", itemId: item.id, status: "released" })}>
             Release to manufacture
-          </button>
+          </Button>
         ) : null}
       </div>
     </li>
@@ -414,9 +399,9 @@ function SubmitItemForm({
         <textarea value={form.description} onChange={set("description")} rows={2} />
       </FormRow>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !form.partName.trim()}>
+        <Button variant="primary" type="submit" disabled={busy || !form.partName.trim()}>
           Submit part
-        </button>
+        </Button>
       </div>
     </Panel>
   );

@@ -9,7 +9,7 @@
 // student cannot see about themselves.
 
 import { useCallback, useEffect, useState } from "react";
-import { EmptyState, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
 import { learningSurfaceLabel, LEARNING_SURFACES } from "../../lib/learning/learning-mode";
 import type { MemberRollup, SurfaceRollup } from "../../lib/learning/mentor-view";
 import type { LearningFeedRow, LearningOverview } from "../api/learning/mentor/route";
@@ -84,9 +84,9 @@ export default function LearningClient() {
           title="Could not load learning activity"
           description="A network or server issue prevented loading. Try again."
         >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
+          <Button variant="secondary" type="button" onClick={() => load()}>
             Retry
-          </button>
+          </Button>
         </EmptyState>
       ) : view == null ? (
         <EmptyState title="Loading…" description="Checking your team." aria-busy />
@@ -132,9 +132,9 @@ function MySection({ view }: { view: ReadyView }) {
         >
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {LEARNING_SURFACES.map((surface) => (
-              <a key={surface} className="app-button secondary" href={SURFACE_ROUTES[surface]}>
+              <Button as="a" variant="secondary" key={surface} href={SURFACE_ROUTES[surface]}>
                 {learningSurfaceLabel(surface)}
-              </a>
+              </Button>
             ))}
           </div>
         </EmptyState>

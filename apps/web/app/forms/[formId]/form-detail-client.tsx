@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Badge, EmptyState, PageHeader, Panel } from "../../../components/ui";
+import { Badge, EmptyState, PageHeader, Panel, Button } from "../../../components/ui";
 import type { FormInsight, QuestionSummary } from "../../../lib/forms/results";
 import {
   optionsFor,
@@ -229,14 +229,9 @@ function DuesReminderPanel({
         {plan.noResponse.length === 1 ? "person who has" : "who have"} not returned the form
       </label>
 
-      <button
-        type="button"
-        className="app-button"
-        disabled={busy || willEmail === 0}
-        onClick={() => onSend(includeNoResponse)}
-      >
+      <Button variant="primary" type="button" disabled={busy || willEmail === 0} onClick={() => onSend(includeNoResponse)}>
         {willEmail === 0 ? "Nobody to remind" : `Send ${willEmail} reminder${willEmail === 1 ? "" : "s"}`}
-      </button>
+      </Button>
       {result ? (
         <p role="status" className="app-muted forms-dues-result">
           {result}
@@ -272,9 +267,9 @@ function OffPlatformRespondents({ count }: { count: number }) {
         preferences page, an unsubscribe link, and the short onboarding sequence — all of which start
         from a decision they made.
       </p>
-      <a className="app-button secondary" href="/team/admin">
+      <Button as="a" variant="secondary" href="/team/admin">
         Invite someone to the team
-      </a>
+      </Button>
     </Panel>
   );
 }
@@ -360,7 +355,7 @@ export default function FormDetailClient({ formId }: { formId: string }) {
       <main className="module-page forms-page">
         <PageHeader breadcrumbs="Team / Forms" title="Form" />
         <EmptyState soft badge="Not available" badgeTone="setup" title="This form could not be opened" description={error}>
-          <a className="app-button" href={`/forms${orgParam().replace("&", "?")}`}>Back to forms</a>
+          <Button as="a" variant="primary" href={`/forms${orgParam().replace("&", "?")}`}>Back to forms</Button>
         </EmptyState>
       </main>
     );
@@ -464,39 +459,17 @@ export default function FormDetailClient({ formId }: { formId: string }) {
                 {form.status}
               </Badge>
               {form.status !== "open" ? (
-                <button
-                  type="button"
-                  className="app-button"
-                  disabled={busy || form.questions.length === 0}
-                  onClick={() => void act({ action: "set_status", formId: form.id, status: "open", audience: form.audience })}
-                >
+                <Button variant="primary" type="button" disabled={busy || form.questions.length === 0} onClick={() => void act({ action: "set_status", formId: form.id, status: "open", audience: form.audience })}>
                   Open for answers
-                </button>
+                </Button>
               ) : (
-                <button
-                  type="button"
-                  className="app-button secondary"
-                  disabled={busy}
-                  onClick={() => void act({ action: "set_status", formId: form.id, status: "closed", audience: form.audience })}
-                >
+                <Button variant="secondary" type="button" disabled={busy} onClick={() => void act({ action: "set_status", formId: form.id, status: "closed", audience: form.audience })}>
                   Close
-                </button>
+                </Button>
               )}
-              <button
-                type="button"
-                className="app-button secondary"
-                disabled={busy}
-                onClick={() =>
-                  void act({
-                    action: "set_status",
-                    formId: form.id,
-                    status: form.status,
-                    audience: form.audience === "link" ? "members" : "link",
-                  })
-                }
-              >
+              <Button variant="secondary" type="button" disabled={busy} onClick={() => void act({ action: "set_status", formId: form.id, status: form.status, audience: form.audience === "link" ? "members" : "link", }) }>
                 {form.audience === "link" ? "Restrict to members" : "Allow anyone with the link"}
-              </button>
+              </Button>
             </div>
           </div>
           {form.questions.length === 0 ? (
@@ -618,7 +591,7 @@ export default function FormDetailClient({ formId }: { formId: string }) {
                 ))}
               </select>
             </label>
-            <button type="submit" className="app-button" disabled={busy || !newLabel.trim()}>Add question</button>
+            <Button variant="primary" type="submit" disabled={busy || !newLabel.trim()}>Add question</Button>
           </form>
           {error ? <p role="alert" className="forms-error">{error}</p> : null}
         </Panel>
@@ -718,9 +691,9 @@ export default function FormDetailClient({ formId }: { formId: string }) {
                 </div>
               );
             })}
-            <button type="submit" className="app-button" disabled={busy || form.status !== "open" || form.questions.length === 0}>
+            <Button variant="primary" type="submit" disabled={busy || form.status !== "open" || form.questions.length === 0}>
               Submit
-            </button>
+            </Button>
             {error ? <p role="alert" className="forms-error">{error}</p> : null}
           </form>
         </Panel>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { TeamHubRelated } from "../../components/team-hub-related";
 import { riskCategoryLabel, riskLevelLabel, riskStatusLabel } from "../../lib/risks";
 import { RISK_CATEGORIES, RISK_STATUSES, type RisksView } from "../../lib/risks/compute-risks";
@@ -29,9 +29,9 @@ function RisksRelated({ orgId }: { orgId: string }) {
     <div className="risks-related">
       <nav className="product-hub-related risks-hub-related" aria-label="Related reliability tools">
         {primary.map((link) => (
-          <a key={link.id} className="app-button secondary" href={link.href}>
+          <Button as="a" variant="secondary" key={link.id} href={link.href}>
             {link.label}
-          </a>
+          </Button>
         ))}
       </nav>
       <TeamHubRelated orgId={orgId} include={[...RISKS_TEAM_RELATED_INCLUDE]} />
@@ -75,9 +75,9 @@ function NextActions({
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -183,14 +183,14 @@ export default function RisksClient() {
           aria-busy={!fetchFailed}
         >
           {copy?.primary ? (
-            <a className="app-button" href={copy.primary.href}>
+            <Button as="a" variant="primary" href={copy.primary.href}>
               {copy.primary.label}
-            </a>
+            </Button>
           ) : null}
           {copy?.showRetry ? (
-            <button type="button" className="app-button secondary" onClick={() => load()}>
+            <Button variant="secondary" type="button" onClick={() => load()}>
               Retry
-            </button>
+            </Button>
           ) : null}
         </EmptyState>
       </main>
@@ -213,9 +213,9 @@ export default function RisksClient() {
                   <strong>{step.label}</strong>
                   <span>{step.detail}</span>
                 </div>
-                <a className="app-button secondary" href={step.href}>
+                <Button as="a" variant="secondary" href={step.href}>
                   Open
-                </a>
+                </Button>
               </li>
             ))}
           </ol>
@@ -266,15 +266,15 @@ export default function RisksClient() {
               </select>
             </label>
           ) : null}
-          <a className="app-button secondary" href={hubHref("/team", "fmea", orgId)}>
+          <Button as="a" variant="secondary" href={hubHref("/team", "fmea", orgId)}>
             FMEA
-          </a>
-          <a className="app-button secondary" href={hubHref("/team", "knowledge", orgId)}>
+          </Button>
+          <Button as="a" variant="secondary" href={hubHref("/team", "knowledge", orgId)}>
             Knowledge
-          </a>
-          <a className="app-button secondary" href={withOrgHref("/subsystems", orgId)}>
+          </Button>
+          <Button as="a" variant="secondary" href={withOrgHref("/subsystems", orgId)}>
             Subsystems
-          </a>
+          </Button>
         </div>
       </PageHeader>
 
@@ -512,9 +512,9 @@ function AddRiskForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
         </FormRow>
       </FormGrid>
       <div className="risks-form-actions">
-        <button type="submit" className="app-button" disabled={busy || !form.title.trim()}>
+        <Button variant="primary" type="submit" disabled={busy || !form.title.trim()}>
           Add risk
-        </button>
+        </Button>
         {form.title.trim() ? (
           <span className="risks-preview">
             Preview score <strong>{previewScore}</strong> ({formatLikelihoodImpact({ likelihood: Number(form.likelihood), impact: Number(form.impact) })})

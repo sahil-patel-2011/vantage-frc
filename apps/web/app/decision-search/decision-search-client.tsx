@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { MeteredAiCutoffBanner } from "../../components/metered-ai-cutoff-banner";
 import { resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { DECISION_SEARCH_SOURCE_KINDS, decisionSearchSourceLabel } from "../../lib/decision-search";
 import type { DecisionSearchView } from "../../lib/decision-search/compute-decision-search";
 import {
@@ -30,9 +30,9 @@ function DecisionSearchRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related decision-search-related" aria-label="Related decision tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -56,9 +56,9 @@ function DecisionSearchNextActionsPanel({ actions }: { actions: DecisionSearchNe
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -130,12 +130,12 @@ function DecisionSearchShell({
         aria-busy={shell === "loading" || undefined}
       >
         {shell === "error" && onRetry ? (
-          <button type="button" className="app-button secondary" onClick={onRetry}>
+          <Button variant="secondary" type="button" onClick={onRetry}>
             Retry
-          </button>
+          </Button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button is-primary" href={workspaceHref}>Choose your team</a>
+          <Button as="a" variant="primary" href={workspaceHref}>Choose your team</Button>
         ) : null}
       </EmptyState>
       {error ? (
@@ -331,9 +331,9 @@ export default function DecisionSearchClient() {
       >
         <div className="decision-search-header-actions">
           {relatedLinks.map((link) => (
-            <a key={link.id} className="app-button secondary" href={link.href}>
+            <Button as="a" variant="secondary" key={link.id} href={link.href}>
               {link.label}
-            </a>
+            </Button>
           ))}
           {view.seasons.length > 0 ? (
             <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
@@ -382,9 +382,9 @@ export default function DecisionSearchClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <a className="app-button" href="#decision-search-index">
+          <Button as="a" variant="primary" href="#decision-search-index">
             Index first record
-          </a>
+          </Button>
         </EmptyState>
       ) : null}
 
@@ -473,9 +473,9 @@ function SearchForm({
         Tip: use concrete nouns from your decisions (subsystem, failure mode, tradeoff). Vague words rarely match.
       </p>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !queryText.trim()}>
+        <Button variant="primary" type="submit" disabled={busy || !queryText.trim()}>
           Search
-        </button>
+        </Button>
       </div>
     </Panel>
   );
@@ -496,9 +496,9 @@ function ResultsPanel({ view, loaded }: { view: LiveView; loaded: boolean }) {
             : "Ask about a tradeoff or reliability note. Results appear only when query terms overlap indexed text."
         }
       >
-        <a className="app-button secondary" href="#decision-search-query">
+        <Button as="a" variant="secondary" href="#decision-search-query">
           Focus search
-        </a>
+        </Button>
       </EmptyState>
     );
   }
@@ -651,18 +651,12 @@ function IndexDocumentForm({
       <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
         <h2 style={{ margin: 0 }}>Index a record</h2>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <a className="app-button secondary" href={decisionsHref}>
+          <Button as="a" variant="secondary" href={decisionsHref}>
             Open Decision Log
-          </a>
-          <button
-            type="button"
-            className="app-button secondary"
-            disabled={busy}
-            onClick={() => mutate({ action: "import-decisions" })}
-            title="Pull this season's Decision Log entries into the search index"
-          >
+          </Button>
+          <Button variant="secondary" type="button" disabled={busy} onClick={() => mutate({ action: "import-decisions" })} title="Pull this season's Decision Log entries into the search index">
             Import from Decision Log
-          </button>
+          </Button>
         </div>
       </div>
       <p className="app-muted" style={{ margin: 0 }}>
@@ -692,13 +686,9 @@ function IndexDocumentForm({
         <textarea value={form.body} onChange={set("body")} rows={3} required />
       </FormRow>
       <div>
-        <button
-          type="submit"
-          className="app-button"
-          disabled={busy || !form.title.trim() || !form.body.trim() || !form.sourceId.trim()}
-        >
+        <Button variant="primary" type="submit" disabled={busy || !form.title.trim() || !form.body.trim() || !form.sourceId.trim()}>
           Index
-        </button>
+        </Button>
       </div>
     </Panel>
   );

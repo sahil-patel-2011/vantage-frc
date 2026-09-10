@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "../../components/ui";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { incidentCategoryLabel, incidentSeverityLabel, incidentStatusLabel } from "../../lib/incidents";
@@ -101,12 +102,12 @@ export default function IncidentsClient() {
               out. The two places the corrective action actually lands: the daily
               safety log, and the FMEA row for the mechanism that hurt someone. */}
           <nav className="product-hub-related" aria-label="Related safety tools">
-            <a className="app-button secondary" href={withOrgHref("/safety", orgId)}>
+            <Button as="a" variant="secondary" href={withOrgHref("/safety", orgId)}>
               Safety log
-            </a>
-            <a className="app-button secondary" href={hubHref("/build", "fmea", orgId)}>
+            </Button>
+            <Button as="a" variant="secondary" href={hubHref("/build", "fmea", orgId)}>
               FMEA
-            </a>
+            </Button>
           </nav>
         </div>
         {view?.status === "live" && view.seasons.length > 0 ? (
@@ -155,14 +156,14 @@ export default function IncidentsClient() {
               <h2>{copy.title}</h2>
               <p className="app-muted">{copy.description}</p>
               {copy.primary ? (
-                <a className="app-button" href={copy.primary.href}>
+                <Button as="a" variant="primary" href={copy.primary.href}>
                   {copy.primary.label}
-                </a>
+                </Button>
               ) : null}
               {copy.showRetry ? (
-                <button type="button" className="app-button secondary" onClick={() => load()}>
+                <Button variant="secondary" type="button" onClick={() => load()}>
                   Retry
-                </button>
+                </Button>
               ) : null}
             </section>
           );
@@ -355,9 +356,9 @@ function AddIncidentForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
         <textarea value={form.correctiveAction} onChange={set("correctiveAction")} rows={2} placeholder="Add a fixed guard; brief team on vise procedure" />
       </label>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !form.title.trim()}>
+        <Button variant="primary" type="submit" disabled={busy || !form.title.trim()}>
           Log incident
-        </button>
+        </Button>
       </div>
     </form>
   );

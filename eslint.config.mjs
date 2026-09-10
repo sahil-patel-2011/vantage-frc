@@ -98,6 +98,14 @@ export default tseslint.config(
       "apps/web/lib/workspace/**/*.{ts,tsx}",
       "apps/web/lib/account/**/*.{ts,tsx}",
       "apps/web/lib/invite/**/*.{ts,tsx}",
+      "apps/web/lib/connectors/**/*.{ts,tsx}",
+      "apps/web/lib/onboarding/**/*.{ts,tsx}",
+      "apps/web/lib/help/**/*.{ts,tsx}",
+      "apps/web/lib/bugbot/**/*.{ts,tsx}",
+      "apps/web/lib/business/**/*.{ts,tsx}",
+      "apps/web/lib/cad-vault/**/*.{ts,tsx}",
+      "apps/web/lib/packing.ts",
+      "apps/web/lib/season-calendar.ts",
     ],
     rules: {
       "no-restricted-imports": [

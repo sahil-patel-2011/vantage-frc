@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { EmptyState, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
 import { outreachKindLabel } from "../../lib/grant-report";
 import type { GrantReportView } from "../../lib/grant-report/compute-grant-report";
 import {
@@ -30,9 +30,9 @@ function GrantReportRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related grant-report-related" aria-label="Related business tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -56,9 +56,9 @@ function GrantReportNextActionsPanel({ actions }: { actions: GrantReportNextActi
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -118,15 +118,15 @@ function GrantReportShell({
         aria-busy={shell === "loading"}
       >
         {shell === "error" && onRetry ? (
-          <button type="button" className="app-button secondary" onClick={onRetry}>
+          <Button variant="secondary" type="button" onClick={onRetry}>
             Retry
-          </button>
+          </Button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
+          <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
         ) : null}
         {shell === "empty" ? (
-          <a className="app-button is-primary" href={hubHref("/business", "grants", orgId)}>Open Grants</a>
+          <Button as="a" variant="primary" href={hubHref("/business", "grants", orgId)}>Open Grants</Button>
         ) : null}
       </EmptyState>
       {shell === "setup" && steps.length > 0 ? (
@@ -297,9 +297,9 @@ export default function GrantReportClient() {
             </label>
           ) : null}
           {relatedLinks.map((link) => (
-            <a key={link.id} className="app-button secondary" href={link.href}>
+            <Button as="a" variant="secondary" key={link.id} href={link.href}>
               {link.label}
-            </a>
+            </Button>
           ))}
         </div>
       </PageHeader>
@@ -337,9 +337,9 @@ export default function GrantReportClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <a className="app-button is-primary" href={grantsHref}>
+          <Button as="a" variant="primary" href={grantsHref}>
             Open Grants
-          </a>
+          </Button>
         </EmptyState>
       ) : null}
 
@@ -396,14 +396,9 @@ function EligibleGrants({
                 {grant.decisionAt ? ` · decided ${new Date(grant.decisionAt).toLocaleDateString()}` : ""}
               </small>
             </div>
-            <button
-              type="button"
-              className="app-button"
-              disabled={busy}
-              onClick={() => mutate({ action: "generate-report", grantApplicationId: grant.id })}
-            >
+            <Button variant="primary" type="button" disabled={busy} onClick={() => mutate({ action: "generate-report", grantApplicationId: grant.id })}>
               {grant.hasReport ? "Regenerate report" : "Generate report"}
-            </button>
+            </Button>
           </li>
         ))}
       </ul>

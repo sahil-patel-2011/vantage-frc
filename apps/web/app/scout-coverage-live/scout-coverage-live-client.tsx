@@ -10,8 +10,7 @@ import {
   PageHeader,
   Panel,
   SoftBlockSkeleton,
-  StatTile,
-} from "../../components/ui";
+  StatTile, Button } from "../../components/ui";
 import type { CoverageStatus } from "../../lib/scout-coverage-live/types";
 import type { ScoutCoverageLiveView } from "../../lib/scout-coverage-live/compute-scout-coverage-live";
 import {
@@ -57,9 +56,9 @@ function ScoutCoverageLiveRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related scout-coverage-live-related" aria-label="Related competition tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -83,9 +82,9 @@ function ScoutCoverageLiveNextActionsPanel({ actions }: { actions: ScoutCoverage
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -150,10 +149,10 @@ function ScoutCoverageLiveShell({
           description={error ?? copy.description}
         >
           {shell === "setup" ? (
-            <a className="app-button is-primary" href={orgId ? commandHref : "/workspace"}>{orgId ? "Set active event" : "Choose your team"}</a>
+            <Button as="a" variant="primary" href={orgId ? commandHref : "/workspace"}>{orgId ? "Set active event" : "Choose your team"}</Button>
           ) : null}
           {shell === "empty" ? (
-            <a className="app-button is-primary" href={commandHref}>Sync event schedule</a>
+            <Button as="a" variant="primary" href={commandHref}>Sync event schedule</Button>
           ) : null}
         </EmptyState>
       )}
@@ -170,9 +169,9 @@ function ScoutCoverageLiveShell({
                   <strong>{step.label}</strong>
                   <p className="app-muted scout-coverage-live-tip">{step.detail}</p>
                 </div>
-                <a className="app-button secondary" href={step.href}>
+                <Button as="a" variant="secondary" href={step.href}>
                   Open
-                </a>
+                </Button>
               </li>
             ))}
           </ul>
@@ -347,9 +346,9 @@ export default function ScoutCoverageLiveClient({ orgId: initialOrgId }: { orgId
               onChange={(event) => setThresholdInput(event.target.value)}
             />
           </FormRow>
-          <button type="submit" className="app-button secondary" disabled={busy}>
+          <Button variant="secondary" type="submit" disabled={busy}>
             Save threshold
-          </button>
+          </Button>
         </form>
       </section>
 
@@ -437,21 +436,9 @@ function CoverageGaps({
                   {cell.entryCount === 1 ? "y" : "ies"}
                 </small>
               </div>
-              <button
-                type="button"
-                className="app-button secondary"
-                disabled={busy}
-                onClick={() =>
-                  void mutate({
-                    action: "send-nudge",
-                    matchKey: cell.matchKey,
-                    teamKey: cell.teamKey,
-                    message: `${cell.matchLabel}: Team ${cell.teamNumber} has ${cell.entryCount} scouting entr${cell.entryCount === 1 ? "y" : "ies"} — send a scout.`,
-                  })
-                }
-              >
+              <Button variant="secondary" type="button" disabled={busy} onClick={() => void mutate({ action: "send-nudge", matchKey: cell.matchKey, teamKey: cell.teamKey, message: `${cell.matchLabel}: Team ${cell.teamNumber} has ${cell.entryCount} scouting entr${cell.entryCount === 1 ? "y" : "ies"} — send a scout.`, }) }>
                 Nudge coordinator
-              </button>
+              </Button>
             </li>
           ))}
         </ul>
@@ -492,14 +479,9 @@ function NudgeLog({
                 </small>
               </div>
               {!nudge.acknowledged ? (
-                <button
-                  type="button"
-                  className="app-button secondary"
-                  disabled={busy}
-                  onClick={() => void mutate({ action: "acknowledge-nudge", nudgeId: nudge.id })}
-                >
+                <Button variant="secondary" type="button" disabled={busy} onClick={() => void mutate({ action: "acknowledge-nudge", nudgeId: nudge.id })}>
                   Acknowledge
-                </button>
+                </Button>
               ) : null}
             </li>
           ))}

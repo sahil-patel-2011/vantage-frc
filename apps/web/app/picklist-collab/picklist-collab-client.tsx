@@ -42,9 +42,9 @@ function RelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related picklist-collab-related" aria-label="Related competition tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -68,9 +68,9 @@ function NextActionsPanel({ actions }: { actions: PicklistCollabNextAction[] }) 
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -128,7 +128,7 @@ function CollabShell({
           description={error ?? copy.description}
         >
           {shell === "setup" ? (
-            <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
+            <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
           ) : null}
         </EmptyState>
       )}
@@ -145,9 +145,9 @@ function CollabShell({
                   <strong>{step.label}</strong>
                   <p className="app-muted picklist-collab-tip">{step.detail}</p>
                 </div>
-                <a className="app-button secondary" href={step.href}>
+                <Button as="a" variant="secondary" href={step.href}>
                   Open
-                </a>
+                </Button>
               </li>
             ))}
           </ul>
@@ -318,27 +318,14 @@ export default function PicklistCollabClient() {
             </label>
           ) : null}
           {view?.status === "live" && view.activeList && view.entries.length > 0 ? (
-            <button
-              type="button"
-              className="app-button secondary"
-              onClick={() => {
-                const csv = picklistToCsv({ listName: view.activeList!.name, entries: view.entries });
-                const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement("a");
-                link.href = url;
-                link.download = `${view.activeList!.name.replace(/[^\w.-]+/g, "-").replace(/^-|-$/g, "") || "picklist"}.csv`;
-                link.click();
-                URL.revokeObjectURL(url);
-              }}
-            >
+            <Button variant="secondary" type="button" onClick={() => { const csv = picklistToCsv({ listName: view.activeList!.name, entries: view.entries }); const blob = new Blob([csv], { type: "text/csv;charset=utf-8" }); const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url; link.download = `${view.activeList!.name.replace(/[^\w.-]+/g, "-").replace(/^-|-$/g, "") || "picklist"}.csv`; link.click(); URL.revokeObjectURL(url); }}>
               Download CSV
-            </button>
+            </Button>
           ) : null}
           {relatedLinks.map((link) => (
-            <a key={link.id} className="app-button secondary" href={link.href}>
+            <Button as="a" variant="secondary" key={link.id} href={link.href}>
               {link.label}
-            </a>
+            </Button>
           ))}
         </div>
       </PageHeader>

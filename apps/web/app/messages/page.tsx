@@ -1,4 +1,4 @@
-import { EmptyState, PageHeader } from "../../components/ui";
+import { EmptyState, PageHeader, Button } from "../../components/ui";
 import { parseComposerLinkFromSearch } from "../../lib/messages/object-links";
 import MessagesClient from "./messages-client";
 
@@ -32,9 +32,9 @@ export default async function MessagesPage({
           badge="Setup"
           badgeTone="setup"
         >
-          <a className="app-button" href="/workspace">
+          <Button as="a" variant="primary" href="/workspace">
             Choose team
-          </a>
+          </Button>
         </EmptyState>
       </main>
     );

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   CHECKLIST_LIBRARY_CATEGORIES,
@@ -119,14 +119,14 @@ export default function ChecklistLibraryClient() {
           return (
             <EmptyState title={copy.title} description={copy.description}>
               {copy.primary ? (
-                <a className="app-button" href={copy.primary.href}>
+                <Button as="a" variant="primary" href={copy.primary.href}>
                   {copy.primary.label}
-                </a>
+                </Button>
               ) : null}
               {copy.showRetry ? (
-                <button type="button" className="app-button secondary" onClick={() => load()}>
+                <Button variant="secondary" type="button" onClick={() => load()}>
                   Retry
-                </button>
+                </Button>
               ) : null}
             </EmptyState>
           );
@@ -190,9 +190,9 @@ function PitChecklistPanel({ view }: { view: LiveView }) {
             library does not store a second pit ledger.
           </p>
         </div>
-        <a className="app-button secondary" href={pitChecklist.href}>
+        <Button as="a" variant="secondary" href={pitChecklist.href}>
           Open pit checklist
-        </a>
+        </Button>
       </div>
       {pitChecklist.runs.length === 0 ? (
         <p className="app-muted" style={{ marginBottom: 0 }}>
@@ -326,13 +326,9 @@ function TemplatesPanel({
                   value={pitLabels[template.id] ?? ""}
                   onChange={(event) => setPitLabels((prev) => ({ ...prev, [template.id]: event.target.value }))}
                 />
-                <button
-                  type="submit"
-                  className="app-button"
-                  disabled={busy || !template.active || !(pitLabels[template.id] ?? "").trim()}
-                >
+                <Button variant="primary" type="submit" disabled={busy || !template.active || !(pitLabels[template.id] ?? "").trim()}>
                   Open on pit checklist
-                </button>
+                </Button>
                 {pitPreview.unmapped.length > 0 ? (
                   <small className="app-muted">
                     {pitPreview.unmapped.length} SOP step(s) stay here — not pit cues.
@@ -360,9 +356,9 @@ function TemplatesPanel({
                 value={runLabels[template.id] ?? ""}
                 onChange={(event) => setRunLabels((prev) => ({ ...prev, [template.id]: event.target.value }))}
               />
-              <button type="submit" className="app-button secondary" disabled={busy || !(runLabels[template.id] ?? "").trim()}>
+              <Button variant="secondary" type="submit" disabled={busy || !(runLabels[template.id] ?? "").trim()}>
                 Start SOP run
-              </button>
+              </Button>
             </form>
           </li>
           );
@@ -526,9 +522,9 @@ function NewTemplateForm({
         />
       </FormRow>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !form.name.trim() || items.length === 0}>
+        <Button variant="primary" type="submit" disabled={busy || !form.name.trim() || items.length === 0}>
           Create template
-        </button>
+        </Button>
       </div>
     </Panel>
   );

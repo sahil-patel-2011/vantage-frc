@@ -26,6 +26,7 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/offline-shell")).toBe(true);
     expect(pathnameIsOfflineShell("/offline")).toBe(true);
     expect(pathnameIsOfflineShell("/competition")).toBe(true);
+    expect(pathnameIsOfflineShell("/command")).toBe(true);
     expect(pathnameIsOfflineShell("/team")).toBe(true);
     expect(pathnameIsOfflineShell("/dashboard")).toBe(true);
     expect(pathnameIsOfflineShell("/build")).toBe(true);
@@ -42,6 +43,7 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/assembly-manual")).toBe(true);
     expect(pathnameIsOfflineShell("/packing")).toBe(true);
     expect(pathnameIsOfflineShell("/batteries")).toBe(true);
+    expect(pathnameIsOfflineShell("/my-day")).toBe(true);
     expect(pathnameIsOfflineShell("/api/todos")).toBe(false);
   });
 
@@ -58,6 +60,9 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/assembly-manual")).toBe("Assembly manual");
     expect(offlineCapableLabel("/packing")).toBe("Packing");
     expect(offlineCapableLabel("/batteries")).toBe("Batteries");
+    expect(offlineCapableLabel("/my-day")).toBe("My Day");
+    expect(offlineCapableLabel("/schedule")).toBe("Schedule");
+    expect(offlineCapableLabel("/command")).toBe("Event Day");
   });
 
   it("keeps public/sw.js SHELL_ROUTES aligned with OFFLINE_SHELL_ROUTES", () => {
@@ -77,6 +82,8 @@ describe("offline shell routes", () => {
     expect(featureCacheKey("pit", "org-1")).toBe("pit:org-1");
     expect(featureCacheKey("season-tasks", "org-1", "2026")).toBe("season-tasks:org-1:2026");
     expect(featureCacheKey("calendar", "org-1")).toBe("calendar:org-1");
+    expect(featureCacheKey("my-day", "org-1")).toBe("my-day:org-1");
+    expect(featureCacheKey("schedule", "org-1")).toBe("schedule:org-1");
   });
 
   it("falls failed navigations back to the precached shell", () => {

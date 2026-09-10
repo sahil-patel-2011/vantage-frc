@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Badge, EmptyState, PageHeader, Panel, type BadgeTone } from "../../components/ui";
+import { Badge, EmptyState, PageHeader, Panel, type BadgeTone, Button } from "../../components/ui";
 import {
   ANNOUNCEMENT_PRIORITIES,
   type Announcement,
@@ -114,7 +114,7 @@ export default function AnnouncementsClient() {
       <main className="module-page announcements-page">
         <PageHeader breadcrumbs="Team / Announcements" title="Announcements" />
         <EmptyState soft badge="Not available" badgeTone="setup" title="Announcements need a team" description={error}>
-          <a className="app-button" href="/workspace">Choose team</a>
+          <Button as="a" variant="primary" href="/workspace">Choose team</Button>
         </EmptyState>
       </main>
     );
@@ -191,9 +191,9 @@ export default function AnnouncementsClient() {
                 ? "Everyone gets this in their inbox, and it is also emailed to members who have urgent announcements switched on."
                 : "Everyone gets this in their inbox. Mark it urgent, or require confirmation, to email it as well."}
             </p>
-            <button type="submit" className="app-button" disabled={busy || !title.trim()}>
+            <Button variant="primary" type="submit" disabled={busy || !title.trim()}>
               Post to {view.orgName}
-            </button>
+            </Button>
             {error ? <p role="alert" className="ann-error">{error}</p> : null}
             {notice ? <p role="status" className="app-muted ann-delivery-note">{notice}</p> : null}
           </form>
@@ -241,14 +241,9 @@ export default function AnnouncementsClient() {
                       {item.acknowledged ? (
                         <span className="ann-ack-done">You confirmed this</span>
                       ) : (
-                        <button
-                          type="button"
-                          className="app-button"
-                          disabled={busy}
-                          onClick={() => void act({ action: "acknowledge", announcementId: item.id })}
-                        >
+                        <Button variant="primary" type="button" disabled={busy} onClick={() => void act({ action: "acknowledge", announcementId: item.id })}>
                           I have read this
-                        </button>
+                        </Button>
                       )}
                       {view.canPost && item.ackCount < item.memberCount ? (
                         <button

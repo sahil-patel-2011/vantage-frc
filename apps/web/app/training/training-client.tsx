@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { trainingCategoryLabel } from "../../lib/training";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
@@ -132,14 +132,14 @@ export default function TrainingClient() {
       {failure ? (
         <EmptyState title={failure.title} description={failure.description}>
           {failure.primary ? (
-            <a className="app-button" href={failure.primary.href}>
+            <Button as="a" variant="primary" href={failure.primary.href}>
               {failure.primary.label}
-            </a>
+            </Button>
           ) : null}
           {failure.showRetry ? (
-            <button type="button" className="app-button secondary" onClick={() => load()}>
+            <Button variant="secondary" type="button" onClick={() => load()}>
               Retry
-            </button>
+            </Button>
           ) : null}
         </EmptyState>
       ) : view == null ? (
@@ -275,9 +275,9 @@ function AddSkillForm({
         <textarea value={form.description} onChange={set("description")} rows={2} />
       </FormRow>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !form.name.trim()}>
+        <Button variant="primary" type="submit" disabled={busy || !form.name.trim()}>
           Add skill
-        </button>
+        </Button>
       </div>
     </Panel>
   );
@@ -355,13 +355,9 @@ function CertifyForm({
         <textarea value={form.notes} onChange={set("notes")} rows={2} />
       </FormRow>
       <div>
-        <button
-          type="submit"
-          className="app-button"
-          disabled={busy || !form.skillId || !form.memberUserId || !form.certifiedAt}
-        >
+        <Button variant="primary" type="submit" disabled={busy || !form.skillId || !form.memberUserId || !form.certifiedAt}>
           Sign off
-        </button>
+        </Button>
       </div>
     </Panel>
   );

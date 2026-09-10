@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ConfirmDialog, EmptyState, PageHeader, Panel } from "../../components/ui";
+import { ConfirmDialog, EmptyState, PageHeader, Panel, Button } from "../../components/ui";
 import { TeamOpsNav } from "../../components/team-ops-nav";
 import {
   classifyGitHubShell,
@@ -109,9 +109,9 @@ function MembershipNextActionsPanel({ actions }: { actions: TeamAdminNextAction[
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -555,9 +555,9 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
       >
         <nav className="product-hub-related team-admin-related" aria-label="Related account tools">
           {membershipRelated.map((link) => (
-            <a key={link.id} className="app-button secondary" href={link.href}>
+            <Button as="a" variant="secondary" key={link.id} href={link.href}>
               {link.label}
-            </a>
+            </Button>
           ))}
         </nav>
       </PageHeader>
@@ -645,9 +645,9 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         <p className="app-muted">{membershipCopy.description}</p>
         <nav className="product-hub-related team-admin-related" aria-label="Related membership tools">
           {membershipRelated.map((link) => (
-            <a key={link.id} className="app-button secondary" href={link.href}>
+            <Button as="a" variant="secondary" key={link.id} href={link.href}>
               {link.label}
-            </a>
+            </Button>
           ))}
         </nav>
 
@@ -663,14 +663,14 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
             aria-busy={membershipShell === "loading"}
           >
             {membershipFailure?.primary ? (
-              <a className="app-button" href={membershipFailure.primary.href}>
+              <Button as="a" variant="primary" href={membershipFailure.primary.href}>
                 {membershipFailure.primary.label}
-              </a>
+              </Button>
             ) : null}
             {membershipFailure?.showRetry ? (
-              <button type="button" className="app-button secondary" onClick={() => void load()}>
+              <Button variant="secondary" type="button" onClick={() => void load()}>
                 Retry
-              </button>
+              </Button>
             ) : null}
           </EmptyState>
         ) : null}
@@ -683,9 +683,9 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
             title={membershipCopy.title}
             description={membershipCopy.description}
           >
-            <a className="app-button" href="#invite-form">
+            <Button as="a" variant="primary" href="#invite-form">
               Invite an exact email
-            </a>
+            </Button>
           </EmptyState>
         ) : null}
 
@@ -702,9 +702,9 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
                     <strong>{step.label}</strong>
                     <p className="app-muted team-admin-tip">{step.detail}</p>
                   </div>
-                  <a className="app-button secondary" href={step.href}>
+                  <Button as="a" variant="secondary" href={step.href}>
                     Open
-                  </a>
+                  </Button>
                 </li>
               ))}
             </ul>
@@ -745,17 +745,12 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
                   </small>
                 </div>
                 <div className="team-member-actions">
-                  <a className="app-button secondary" href={withOrgHref("/team/security", orgId)}>
+                  <Button as="a" variant="secondary" href={withOrgHref("/team/security", orgId)}>
                     Capabilities
-                  </a>
-                  <button
-                    type="button"
-                    className="app-button secondary"
-                    disabled={resetBusyUserId === member.userId}
-                    onClick={() => setResetTarget(member)}
-                  >
+                  </Button>
+                  <Button variant="secondary" type="button" disabled={resetBusyUserId === member.userId} onClick={() => setResetTarget(member)}>
                     {resetBusyUserId === member.userId ? "Sending…" : "Send password reset"}
-                  </button>
+                  </Button>
                 </div>
               </article>
             ))}
@@ -944,14 +939,14 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
             aria-busy={githubShell === "loading"}
           >
             {githubFailure?.primary ? (
-              <a className="app-button" href={githubFailure.primary.href}>
+              <Button as="a" variant="primary" href={githubFailure.primary.href}>
                 {githubFailure.primary.label}
-              </a>
+              </Button>
             ) : null}
             {githubFailure?.showRetry ? (
-              <button type="button" className="app-button secondary" onClick={() => void load()}>
+              <Button variant="secondary" type="button" onClick={() => void load()}>
                 Retry
-              </button>
+              </Button>
             ) : null}
           </EmptyState>
         ) : null}

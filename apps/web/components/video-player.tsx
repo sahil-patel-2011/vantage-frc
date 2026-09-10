@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "./ui";
 
 import {
   forwardRef,
@@ -228,18 +229,18 @@ function VideoPlayerInner(
         <div ref={mountRef} className="vid-player-mount" />
       </div>
       <div className="vid-transport" aria-label="Video transport controls">
-        <button type="button" className="app-button secondary" disabled={!ready} onClick={rewind}>
+        <Button variant="secondary" type="button" disabled={!ready} onClick={rewind}>
           −{REWIND_SECONDS}s
-        </button>
-        <button type="button" className="app-button" disabled={!ready} onClick={togglePlay}>
+        </Button>
+        <Button variant="primary" type="button" disabled={!ready} onClick={togglePlay}>
           {playing ? "Pause" : "Play"}
-        </button>
-        <button type="button" className="app-button secondary" disabled={!ready} onClick={forward}>
+        </Button>
+        <Button variant="secondary" type="button" disabled={!ready} onClick={forward}>
           +{FORWARD_SECONDS}s
-        </button>
-        <button type="button" className="app-button secondary" disabled={!ready} onClick={cycleRate}>
+        </Button>
+        <Button variant="secondary" type="button" disabled={!ready} onClick={cycleRate}>
           {rate}x
-        </button>
+        </Button>
         <span className="vid-clock" aria-live="polite">
           {fmtTimestamp(currentSeconds)}
           {durationSeconds > 0 ? ` / ${fmtTimestamp(durationSeconds)}` : ""}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { EmptyState, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { budgetStatusLabel } from "../../lib/budget-reconciler";
 import type { BudgetReconcilerView } from "../../lib/budget-reconciler/compute-budget-reconciler";
@@ -146,14 +146,14 @@ export default function BudgetReconcilerClient() {
           return (
             <EmptyState title={copy.title} description={copy.description}>
               {copy.primary ? (
-                <a className="app-button" href={copy.primary.href}>
+                <Button as="a" variant="primary" href={copy.primary.href}>
                   {copy.primary.label}
-                </a>
+                </Button>
               ) : null}
               {copy.showRetry ? (
-                <button type="button" className="app-button secondary" onClick={() => load()}>
+                <Button variant="secondary" type="button" onClick={() => load()}>
                   Retry
-                </button>
+                </Button>
               ) : null}
             </EmptyState>
           );
@@ -244,9 +244,9 @@ function RunPanel({
           <h2 style={{ margin: 0 }}>Trim proposal</h2>
           <small className="app-muted">Computed from as-designed weight_components and power_loads.</small>
         </div>
-        <button type="button" className="app-button" disabled={busy} onClick={() => mutate({ action: "run-reconciliation" })}>
+        <Button variant="primary" type="button" disabled={busy} onClick={() => mutate({ action: "run-reconciliation" })}>
           Run reconciliation
-        </button>
+        </Button>
       </header>
       {view.trimProposal ? (
         <div style={{ marginTop: 12 }}>

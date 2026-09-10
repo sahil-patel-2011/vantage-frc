@@ -1,3 +1,4 @@
+import { Button } from "../../../components/ui";
 import AwardsClient from "./awards-client";
 import "./awards.css";
 
@@ -35,18 +36,18 @@ export default async function AwardsPage({
                 <strong>Choose your team</strong>
                 <span>Choose your team before drafting FIRST award essays.</span>
               </div>
-              <a className="app-button secondary" href="/workspace">
+              <Button as="a" variant="secondary" href="/workspace">
                 Open
-              </a>
+              </Button>
             </li>
             <li>
               <div>
                 <strong>Business hub</strong>
                 <span>Sponsors, Grants, and Awards &amp; evidence live under Business.</span>
               </div>
-              <a className="app-button secondary" href="/business">
+              <Button as="a" variant="secondary" href="/business">
                 Open
-              </a>
+              </Button>
             </li>
           </ol>
         </section>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import { EmptyState, PageHeader, Panel } from "../../../components/ui";
+import { EmptyState, PageHeader, Panel, Button } from "../../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 import { CopyShareLink } from "../../../components/copy-share-link";
 import type { CoverageGapSlot, CoverageGapSummary } from "@vantage/scouting/coverage";
@@ -83,9 +83,9 @@ function LineupRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related lineup-related" aria-label="Related competition tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -109,9 +109,9 @@ function LineupNextActionsPanel({ actions }: { actions: LineupNextAction[] }) {
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -192,20 +192,20 @@ function LineupShell({
         aria-busy={shell === "loading"}
       >
         {failure?.primary ? (
-          <a className="app-button" href={failure.primary.href}>
+          <Button as="a" variant="primary" href={failure.primary.href}>
             {failure.primary.label}
-          </a>
+          </Button>
         ) : null}
         {failure?.showRetry && onRetry ? (
-          <button type="button" className="app-button secondary" onClick={onRetry}>
+          <Button variant="secondary" type="button" onClick={onRetry}>
             Retry
-          </button>
+          </Button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button is-primary" href={orgId ? commandHref : "/workspace"}>{orgId ? "Set active event" : "Choose your team"}</a>
+          <Button as="a" variant="primary" href={orgId ? commandHref : "/workspace"}>{orgId ? "Set active event" : "Choose your team"}</Button>
         ) : null}
         {shell === "empty" ? (
-          <a className="app-button is-primary" href={commandHref}>Sync event schedule</a>
+          <Button as="a" variant="primary" href={commandHref}>Sync event schedule</Button>
         ) : null}
       </EmptyState>
       {steps.length > 0 ? (
@@ -221,9 +221,9 @@ function LineupShell({
                   <strong>{step.label}</strong>
                   <p className="app-muted lineup-tip">{step.detail}</p>
                 </div>
-                <a className="app-button secondary" href={step.href}>
+                <Button as="a" variant="secondary" href={step.href}>
                   Open
-                </a>
+                </Button>
               </li>
             ))}
           </ul>
@@ -425,12 +425,12 @@ export default function LineupClient({ orgId }: { orgId: string }) {
           </span>
           <LineupRelatedStrip orgId={orgId} />
           <CopyShareLink orgId={orgId} />
-          <button type="button" className="app-button secondary" onClick={() => window.print()}>
+          <Button variant="secondary" type="button" onClick={() => window.print()}>
             Print
-          </button>
-          <a className="app-button secondary" href={scoutingHref}>
+          </Button>
+          <Button as="a" variant="secondary" href={scoutingHref}>
             Scout forms
-          </a>
+          </Button>
         </div>
       </PageHeader>
 
@@ -460,14 +460,9 @@ export default function LineupClient({ orgId }: { orgId: string }) {
           Quals only
         </label>
         {view.canAssign ? (
-          <button
-            type="button"
-            className="app-button secondary"
-            disabled={busy || !view.live.gapSlots.length}
-            onClick={() => void mutate({ action: "auto-assign" })}
-          >
+          <Button variant="secondary" type="button" disabled={busy || !view.live.gapSlots.length} onClick={() => void mutate({ action: "auto-assign" })}>
             {busy ? "Assigning…" : "Auto-assign open gaps"}
-          </button>
+          </Button>
         ) : null}
         <span className="app-muted">{view.eventKey}</span>
       </section>
@@ -490,9 +485,9 @@ export default function LineupClient({ orgId }: { orgId: string }) {
                   </strong>
                   <p className="app-muted lineup-tip">{warning.message}</p>
                 </div>
-                <a className="app-button secondary" href={hubHref("/competition", "forms", orgId)}>
+                <Button as="a" variant="secondary" href={hubHref("/competition", "forms", orgId)}>
                   Open Form builder
-                </a>
+                </Button>
               </li>
             ))}
           </ul>

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { PickCandidate, PickTier } from "@vantage/prediction-strategy";
 import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
-import { EmptyState, Panel } from "../../components/ui";
+import { EmptyState, Panel, Button } from "../../components/ui";
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import {
@@ -108,9 +108,9 @@ function PickDeskRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related pick-desk-related" aria-label="Related competition tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -134,9 +134,9 @@ function PickDeskNextActionsPanel({ actions }: { actions: PickDeskNextAction[] }
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -201,29 +201,29 @@ function PickDeskShell({
         aria-busy={shell === "loading"}
       >
         {shell === "error" && onRetry ? (
-          <button type="button" className="app-button secondary" onClick={onRetry}>
+          <Button variant="secondary" type="button" onClick={onRetry}>
             Retry
-          </button>
+          </Button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button" href={orgId ? commandHref : "/workspace"}>
+          <Button as="a" variant="primary" href={orgId ? commandHref : "/workspace"}>
             {orgId ? "Set active event" : "Choose your team"}
-          </a>
+          </Button>
         ) : null}
         {shell === "empty" ? (
           <>
-            <a className="app-button" href={teamDataHref}>
+            <Button as="a" variant="primary" href={teamDataHref}>
               Sync event metrics
-            </a>
-            <a className="app-button secondary" href={strategyHref}>
+            </Button>
+            <Button as="a" variant="secondary" href={strategyHref}>
               Open Strategy
-            </a>
-            <a className="app-button secondary" href={scoutingHref}>
+            </Button>
+            <Button as="a" variant="secondary" href={scoutingHref}>
               Open Scouting
-            </a>
-            <a className="app-button secondary" href={coverageHref}>
+            </Button>
+            <Button as="a" variant="secondary" href={coverageHref}>
               Open Coverage
-            </a>
+            </Button>
           </>
         ) : null}
       </EmptyState>
@@ -240,9 +240,9 @@ function PickDeskShell({
                   <strong>{step.label}</strong>
                   <p className="app-muted">{step.detail}</p>
                 </div>
-                <a className="app-button secondary" href={step.href}>
+                <Button as="a" variant="secondary" href={step.href}>
                   Open
-                </a>
+                </Button>
               </li>
             ))}
           </ul>
@@ -556,25 +556,20 @@ export function PickListWorkbench({
         </div>
         <div className="strategy-pick-actions">
           <PickDeskRelatedStrip orgId={desk.orgId} />
-          <a className="app-button secondary" href={pickClockHref}>
+          <Button as="a" variant="secondary" href={pickClockHref}>
             Pick clock
-          </a>
-          <a className="app-button secondary" href={draftHref}>
+          </Button>
+          <Button as="a" variant="secondary" href={draftHref}>
             Open draft day
-          </a>
+          </Button>
           {desk.canEdit ? (
-            <button
-              type="button"
-              className="app-button secondary"
-              onClick={() => void seatTopScouts()}
-              disabled={seating}
-            >
+            <Button variant="secondary" type="button" onClick={() => void seatTopScouts()} disabled={seating}>
               {seating ? "Seating…" : "Seat top scouts"}
-            </button>
+            </Button>
           ) : null}
-          <button type="button" className="app-button secondary" onClick={saveList} disabled={saving}>
+          <Button variant="secondary" type="button" onClick={saveList} disabled={saving}>
             {saving ? "Saving…" : "Save pick list"}
-          </button>
+          </Button>
         </div>
       </header>
 

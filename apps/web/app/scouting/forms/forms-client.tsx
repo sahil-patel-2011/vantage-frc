@@ -14,7 +14,7 @@ import {
 } from "@vantage/scouting";
 import { StudioField } from "../studio-fields";
 import "../scouting.css";
-import { EmptyState, FormRow, PageHeader, Panel, ToolStrip } from "../../../components/ui";
+import { EmptyState, FormRow, PageHeader, Panel, ToolStrip, Button } from "../../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 import {
   ANSWER_KIND_OPTIONS,
@@ -171,14 +171,9 @@ function OptionEditor({
           </li>
         ))}
       </ul>
-      <button
-        type="button"
-        className="app-button secondary"
-        disabled={disabled}
-        onClick={() => commit(addOption(options.length ? options : ["", ""], ""))}
-      >
+      <Button variant="secondary" type="button" disabled={disabled} onClick={() => commit(addOption(options.length ? options : ["", ""], ""))}>
         Add option
-      </button>
+      </Button>
     </div>
   );
 }
@@ -191,9 +186,9 @@ function FormBuilderRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related sfb-related" aria-label="Related competition tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -217,9 +212,9 @@ function FormBuilderNextActionsPanel({ actions }: { actions: FormBuilderNextActi
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -295,20 +290,20 @@ function FormBuilderShell({
         aria-busy={shell === "loading"}
       >
         {failure?.primary ? (
-          <a className="app-button" href={failure.primary.href}>
+          <Button as="a" variant="primary" href={failure.primary.href}>
             {failure.primary.label}
-          </a>
+          </Button>
         ) : null}
         {failure?.showRetry && onRetry ? (
-          <button type="button" className="app-button secondary" onClick={onRetry}>
+          <Button variant="secondary" type="button" onClick={onRetry}>
             Retry
-          </button>
+          </Button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button is-primary" href={orgId ? commandHref : workspaceHref}>{orgId ? "Set active event" : "Choose your team"}</a>
+          <Button as="a" variant="primary" href={orgId ? commandHref : workspaceHref}>{orgId ? "Set active event" : "Choose your team"}</Button>
         ) : null}
         {shell === "empty" ? (
-          <a className="app-button is-primary" href={scoutingHref}>Open Scouting</a>
+          <Button as="a" variant="primary" href={scoutingHref}>Open Scouting</Button>
         ) : null}
         {shell === "setup" && steps.length > 0 ? (
           <ol className="sfb-setup-steps">
@@ -884,15 +879,9 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
       >
         <div className="sfb-toolbar">
           <FormBuilderRelatedStrip orgId={orgId} />
-          <button
-            type="button"
-            className="app-button"
-            disabled={busy || Boolean(publishBlocked)}
-            title={publishBlocked ?? publishStatus.detail}
-            onClick={() => void publish()}
-          >
+          <Button variant="primary" type="button" disabled={busy || Boolean(publishBlocked)} title={publishBlocked ?? publishStatus.detail} onClick={() => void publish()}>
             {publishLabel}
-          </button>
+          </Button>
         </div>
       </PageHeader>
 
@@ -905,9 +894,9 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
           title={formBuilderShellCopy("empty", { entryType: type }).title}
           description={formBuilderShellCopy("empty", { entryType: type }).description}
         >
-          <a className="app-button is-primary" href={scoutingHref}>
+          <Button as="a" variant="primary" href={scoutingHref}>
             Open Scouting
-          </a>
+          </Button>
         </EmptyState>
       ) : null}
 
@@ -1222,52 +1211,18 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
                 ))}
               </div>
               <div className="sfb-add-row">
-                <button
-                  type="button"
-                  className="app-button secondary"
-                  disabled={!payload.canManageSchemas}
-                  onClick={() => setQuestions((prev) => [...prev, newDraftQuestion()])}
-                >
+                <Button variant="secondary" type="button" disabled={!payload.canManageSchemas} onClick={() => setQuestions((prev) => [...prev, newDraftQuestion()])}>
                   Add question
-                </button>
-                <button
-                  type="button"
-                  className="app-button secondary"
-                  disabled={!payload.canManageSchemas}
-                  onClick={() =>
-                    setQuestions((prev) => [
-                      ...prev,
-                      newDraftQuestion({
-                        label: "Drivetrain",
-                        kind: "drivetrain",
-                        optionsText: DRIVETRAIN_OPTIONS_TEXT,
-                      }),
-                    ])
-                  }
-                >
+                </Button>
+                <Button variant="secondary" type="button" disabled={!payload.canManageSchemas} onClick={() => setQuestions((prev) => [ ...prev, newDraftQuestion({ label: "Drivetrain", kind: "drivetrain", optionsText: DRIVETRAIN_OPTIONS_TEXT, }), ]) }>
                   Add drivetrain
-                </button>
-                <button
-                  type="button"
-                  className="app-button secondary"
-                  disabled={!payload.canManageSchemas}
-                  onClick={() =>
-                    setQuestions((prev) => [
-                      ...prev,
-                      newDraftQuestion({ label: "Robot images", kind: "robot_image" }),
-                    ])
-                  }
-                >
+                </Button>
+                <Button variant="secondary" type="button" disabled={!payload.canManageSchemas} onClick={() => setQuestions((prev) => [ ...prev, newDraftQuestion({ label: "Robot images", kind: "robot_image" }), ]) }>
                   Add robot images
-                </button>
-                <button
-                  type="button"
-                  className="app-button secondary"
-                  disabled={!payload.canManageSchemas}
-                  onClick={() => setMode("preview")}
-                >
+                </Button>
+                <Button variant="secondary" type="button" disabled={!payload.canManageSchemas} onClick={() => setMode("preview")}>
                   Preview
-                </button>
+                </Button>
               </div>
             </>
           )}
@@ -1298,13 +1253,9 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
                       {currentSchema.definition.fields.length} fields
                     </span>
                   </span>
-                  <button
-                    type="button"
-                    className="app-button secondary"
-                    onClick={() => loadSchemaIntoDraft(currentSchema, type)}
-                  >
+                  <Button variant="secondary" type="button" onClick={() => loadSchemaIntoDraft(currentSchema, type)}>
                     Load
-                  </button>
+                  </Button>
                 </li>
               </ul>
             ) : (
@@ -1316,18 +1267,12 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
               </p>
             ) : null}
             <div className="sfb-publish-actions">
-              <button
-                type="button"
-                className="app-button is-primary"
-                disabled={busy || Boolean(publishBlocked)}
-                title={publishBlocked ?? publishStatus.detail}
-                onClick={() => void publish()}
-              >
+              <Button variant="primary" type="button" disabled={busy || Boolean(publishBlocked)} title={publishBlocked ?? publishStatus.detail} onClick={() => void publish()}>
                 {publishLabel}
-              </button>
-              <a className="app-button secondary" href={scoutingHref}>
+              </Button>
+              <Button as="a" variant="secondary" href={scoutingHref}>
                 Open Scouting
-              </a>
+              </Button>
             </div>
           </Panel>
           <Panel>

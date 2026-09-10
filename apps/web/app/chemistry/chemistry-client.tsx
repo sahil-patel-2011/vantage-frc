@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { Icon } from "../../components/app-shell";
-import { EmptyState, FormRow, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import type { ChemistryView } from "../../lib/chemistry/load-chemistry";
 import {
@@ -31,9 +31,9 @@ function ChemistryRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related chem-related" aria-label="Related competition tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -57,9 +57,9 @@ function ChemistryNextActionsPanel({ actions }: { actions: ChemistryNextAction[]
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -134,20 +134,20 @@ function ChemistryShell({
         aria-busy={shell === "loading"}
       >
         {failure?.primary ? (
-          <a className="app-button" href={failure.primary.href}>
+          <Button as="a" variant="primary" href={failure.primary.href}>
             {failure.primary.label}
-          </a>
+          </Button>
         ) : null}
         {failure?.showRetry && onRetry ? (
-          <button type="button" className="app-button secondary" onClick={onRetry}>
+          <Button variant="secondary" type="button" onClick={onRetry}>
             Retry
-          </button>
+          </Button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button is-primary" href={orgId ? commandHref : "/workspace"}>{orgId ? "Set active event" : "Choose your team"}</a>
+          <Button as="a" variant="primary" href={orgId ? commandHref : "/workspace"}>{orgId ? "Set active event" : "Choose your team"}</Button>
         ) : null}
         {shell === "empty" ? (
-          <a className="app-button is-primary" href={teamDataHref}>Sync event metrics</a>
+          <Button as="a" variant="primary" href={teamDataHref}>Sync event metrics</Button>
         ) : null}
       </EmptyState>
       {steps.length > 0 ? (
@@ -163,9 +163,9 @@ function ChemistryShell({
                   <strong>{step.label}</strong>
                   <p className="app-muted">{step.detail}</p>
                 </div>
-                <a className="app-button secondary" href={step.href}>
+                <Button as="a" variant="secondary" href={step.href}>
                   Open
-                </a>
+                </Button>
               </li>
             ))}
           </ul>
@@ -377,15 +377,15 @@ export default function ChemistryClient(_props: { embedded?: boolean } = {}) {
         <div className="chem-heading">
           <ChemistryRelatedStrip orgId={orgId} />
           <div className="edc-header-actions">
-            <a className="app-button secondary" href={strategyHref}>
+            <Button as="a" variant="secondary" href={strategyHref}>
               Strategy
-            </a>
-            <a className="app-button secondary" href={pickDeskHref}>
+            </Button>
+            <Button as="a" variant="secondary" href={pickDeskHref}>
               Pick desk
-            </a>
-            <a className="app-button secondary" href={draftHref}>
+            </Button>
+            <Button as="a" variant="secondary" href={draftHref}>
               Draft
-            </a>
+            </Button>
           </div>
         </div>
       </PageHeader>
@@ -459,9 +459,9 @@ export default function ChemistryClient(_props: { embedded?: boolean } = {}) {
               aria-label="Alliance team numbers"
             />
           </FormRow>
-          <button className="app-button" type="submit" disabled={loading || !orgId}>
+          <Button variant="primary" type="submit" disabled={loading || !orgId}>
             Score chemistry
-          </button>
+          </Button>
         </div>
       </Panel>
 
@@ -510,19 +510,14 @@ export default function ChemistryClient(_props: { embedded?: boolean } = {}) {
               Draft board read.
             </p>
             <div className="edc-header-actions">
-              <button
-                type="button"
-                className="app-button"
-                disabled={Boolean(saving) || !view?.teamKeys.length}
-                onClick={() => void saveToPickList(view?.teamKeys ?? [], "first_pick")}
-              >
+              <Button variant="primary" type="button" disabled={Boolean(saving) || !view?.teamKeys.length} onClick={() => void saveToPickList(view?.teamKeys ?? [], "first_pick")}>
                 {saving === (view?.teamKeys ?? []).join(",")
                   ? "Promoting…"
                   : "Promote partner fit"}
-              </button>
-              <a className="app-button secondary" href={pickDeskHref}>
+              </Button>
+              <Button as="a" variant="secondary" href={pickDeskHref}>
                 Open Pick desk
-              </a>
+              </Button>
             </div>
           </article>
 
@@ -606,9 +601,9 @@ export default function ChemistryClient(_props: { embedded?: boolean } = {}) {
               : emptyCopy.description
           }
         >
-          <a className="app-button secondary" href={strategyHref}>
+          <Button as="a" variant="secondary" href={strategyHref}>
             Open Strategy
-          </a>
+          </Button>
         </EmptyState>
       )}
 

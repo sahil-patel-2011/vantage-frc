@@ -5,7 +5,7 @@ import { AiHubRelated } from "../../components/ai-hub-related";
 import { MeteredAiCutoffBanner } from "../../components/metered-ai-cutoff-banner";
 import { SponsoredPromoBanner } from "../../components/sponsored-promo-banner";
 import { resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
-import { ModelProvenance } from "../../components/ui";
+import { ModelProvenance, Button } from "../../components/ui";
 import {
   AI_CHAT_RELATED_INCLUDE,
   AI_CHAT_SCOPE_CARDS,
@@ -72,9 +72,9 @@ function ChatRelatedStrip({ orgId }: { orgId: string }) {
   return (
     <nav className="product-hub-related ch-related" aria-label="Related AI and competition tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -96,9 +96,9 @@ function NextActions({ orgId, shell }: { orgId: string; shell: AiChatShellKind }
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -392,14 +392,9 @@ export default function ChatClient({
           <span className={`app-badge ${thread?.scope === "team" ? "setup" : "good"}`}>
             {thread?.scope === "team" ? "Team shared" : thread ? "Private" : "No channel"}
           </span>
-          <button
-            type="button"
-            className="app-button secondary ch-context-toggle"
-            aria-expanded={contextOpen}
-            onClick={() => setContextOpen((v) => !v)}
-          >
+          <Button variant="secondary" type="button" className="ch-context-toggle" aria-expanded={contextOpen} onClick={() => setContextOpen((v) => !v)}>
             {contextOpen ? "Hide context" : "Context controls"}
-          </button>
+          </Button>
         </div>
       </header>
 
@@ -449,9 +444,9 @@ export default function ChatClient({
             </ol>
           ) : null}
           {shell === "error" ? (
-            <button type="button" className="app-button secondary" onClick={() => void load()}>
+            <Button variant="secondary" type="button" onClick={() => void load()}>
               Retry
-            </button>
+            </Button>
           ) : null}
           {shell !== "loading" ? <NextActions orgId={orgId} shell={shell} /> : null}
         </section>
@@ -520,21 +515,21 @@ export default function ChatClient({
                 <button type="button" className="primary-action" onClick={() => void newThread("private")}>
                   New private chat
                 </button>
-                <a className="app-button secondary" href={budgetsHref}>
+                <Button as="a" variant="secondary" href={budgetsHref}>
                   Budgets
-                </a>
-                <a className="app-button secondary" href={memoryHref}>
+                </Button>
+                <Button as="a" variant="secondary" href={memoryHref}>
                   Memory
-                </a>
-                <a className="app-button secondary" href={strategyHref}>
+                </Button>
+                <Button as="a" variant="secondary" href={strategyHref}>
                   Strategy
-                </a>
+                </Button>
                 {relatedExtra
                   .filter((link) => link.id === "scouting" || link.id === "knowledge")
                   .map((link) => (
-                    <a key={link.id} className="app-button secondary" href={link.href}>
+                    <Button as="a" variant="secondary" key={link.id} href={link.href}>
                       {link.label}
-                    </a>
+                    </Button>
                   ))}
               </div>
             </div>
@@ -706,9 +701,9 @@ export default function ChatClient({
                   onChange={(e) => setPrivateBudget(Number(e.target.value))}
                 />
               </label>
-              <button type="submit" className="app-button secondary">
+              <Button variant="secondary" type="submit">
                 Save budget
-              </button>
+              </Button>
             </form>
           </div>
 
@@ -738,9 +733,9 @@ export default function ChatClient({
                   onChange={(e) => setTeamBudget(Number(e.target.value))}
                 />
               </label>
-              <button type="submit" className="app-button secondary">
+              <Button variant="secondary" type="submit">
                 Save team budget
-              </button>
+              </Button>
             </form>
             <a href={memoryHref} style={{ fontSize: 12, fontWeight: 700, color: "var(--app-accent)" }}>
               Open AI memory governance →
@@ -756,9 +751,9 @@ export default function ChatClient({
                 placeholder="Add a durable preference or fact"
                 rows={3}
               />
-              <button type="submit" className="app-button secondary">
+              <Button variant="secondary" type="submit">
                 Save private memory
-              </button>
+              </Button>
             </form>
             <ul className="ch-memories">
               {memories.map((item) => (

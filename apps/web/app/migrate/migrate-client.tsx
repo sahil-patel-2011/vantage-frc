@@ -10,7 +10,7 @@ import {
   type ConnectorId,
 } from "@vantage/import/connectors";
 import type { ColumnSuggestion } from "@vantage/import/presets";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import type { MigrateView } from "../../lib/migrate/compute-migrate";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { IMPORTED_FORM_DRAFT_KEY } from "../../lib/scouting/form-builder";
@@ -308,14 +308,14 @@ export default function MigrateClient() {
           return (
             <EmptyState title={copy.title} description={copy.description}>
               {copy.primary ? (
-                <a className="app-button" href={copy.primary.href}>
+                <Button as="a" variant="primary" href={copy.primary.href}>
                   {copy.primary.label}
-                </a>
+                </Button>
               ) : null}
               {copy.showRetry ? (
-                <button type="button" className="app-button secondary" onClick={() => load()}>
+                <Button variant="secondary" type="button" onClick={() => load()}>
                   Retry
-                </button>
+                </Button>
               ) : null}
             </EmptyState>
           );
@@ -395,9 +395,9 @@ export default function MigrateClient() {
                     <p className="app-muted migrate-how">{selected.howToExport}</p>
                   ) : null}
                 </div>
-                <button type="button" className="app-button secondary" onClick={() => setConnector(null)}>
+                <Button variant="secondary" type="button" onClick={() => setConnector(null)}>
                   Change source
-                </button>
+                </Button>
               </header>
 
               {connector === "ics" ? (
@@ -412,43 +412,23 @@ export default function MigrateClient() {
                     </FormRow>
                   </FormGrid>
                   <div className="migrate-actions">
-                    <button
-                      type="button"
-                      className="app-button"
-                      disabled={busy || !icsUrl.trim()}
-                      onClick={() => void post({ action: "connect-ics", icsUrl })}
-                    >
+                    <Button variant="primary" type="button" disabled={busy || !icsUrl.trim()} onClick={() => void post({ action: "connect-ics", icsUrl })}>
                       Save feed
-                    </button>
-                    <button
-                      type="button"
-                      className="app-button secondary"
-                      disabled={busy || !icsUrl.trim()}
-                      onClick={() => void post({ action: "sync-ics", icsUrl })}
-                    >
+                    </Button>
+                    <Button variant="secondary" type="button" disabled={busy || !icsUrl.trim()} onClick={() => void post({ action: "sync-ics", icsUrl })}>
                       Pull now
-                    </button>
+                    </Button>
                   </div>
                   <FormRow label="Or paste .ics">
                     <textarea value={icsPaste} onChange={(event) => setIcsPaste(event.target.value)} rows={8} />
                   </FormRow>
                   <div className="migrate-actions">
-                    <button
-                      type="button"
-                      className="app-button"
-                      disabled={busy || !icsPaste.trim()}
-                      onClick={() => void post({ action: "commit-ics", content: icsPaste })}
-                    >
+                    <Button variant="primary" type="button" disabled={busy || !icsPaste.trim()} onClick={() => void post({ action: "commit-ics", content: icsPaste })}>
                       Import into calendar
-                    </button>
-                    <button
-                      type="button"
-                      className="app-button secondary"
-                      disabled={busy || !icsPaste.trim()}
-                      onClick={() => void post({ action: "preview-ics", content: icsPaste })}
-                    >
+                    </Button>
+                    <Button variant="secondary" type="button" disabled={busy || !icsPaste.trim()} onClick={() => void post({ action: "preview-ics", content: icsPaste })}>
                       Preview
-                    </button>
+                    </Button>
                   </div>
                   {view.inboundFeeds.length ? (
                     <ul className="migrate-feeds">
@@ -521,21 +501,9 @@ export default function MigrateClient() {
                         />
                       </FormRow>
                       <div className="migrate-actions">
-                        <button
-                          type="button"
-                          className="app-button secondary"
-                          disabled={busy || !presetName.trim()}
-                          onClick={() =>
-                            void post({
-                              action: "save-preset",
-                              connector: "scout",
-                              name: presetName,
-                              columns: columnMap,
-                            })
-                          }
-                        >
+                        <Button variant="secondary" type="button" disabled={busy || !presetName.trim()} onClick={() => void post({ action: "save-preset", connector: "scout", name: presetName, columns: columnMap, }) }>
                           Save preset
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   ) : null}
@@ -545,53 +513,24 @@ export default function MigrateClient() {
                       <ul>
                         {result.mapping.presets.map((item) => (
                           <li key={item.id}>
-                            <button
-                              type="button"
-                              className="app-button secondary"
-                              disabled={busy || !csvPaste.trim()}
-                              onClick={() =>
-                                void post({
-                                  action: "preview-csv-mapping",
-                                  connector: "scout",
-                                  content: csvPaste,
-                                  presetId: item.id,
-                                })
-                              }
-                            >
+                            <Button variant="secondary" type="button" disabled={busy || !csvPaste.trim()} onClick={() => void post({ action: "preview-csv-mapping", connector: "scout", content: csvPaste, presetId: item.id, }) }>
                               Apply “{item.name}”
-                            </button>
-                            <button
-                              type="button"
-                              className="app-button secondary"
-                              disabled={busy}
-                              onClick={() => void post({ action: "delete-preset", presetId: item.id })}
-                            >
+                            </Button>
+                            <Button variant="secondary" type="button" disabled={busy} onClick={() => void post({ action: "delete-preset", presetId: item.id })}>
                               Delete
-                            </button>
+                            </Button>
                           </li>
                         ))}
                       </ul>
                     </div>
                   ) : null}
                   <div className="migrate-actions">
-                    <button
-                      type="button"
-                      className="app-button"
-                      disabled={busy || !csvPaste.trim()}
-                      onClick={() => void post({ action: "commit-scout-csv", content: csvPaste })}
-                    >
+                    <Button variant="primary" type="button" disabled={busy || !csvPaste.trim()} onClick={() => void post({ action: "commit-scout-csv", content: csvPaste })}>
                       Import scouting rows
-                    </button>
-                    <button
-                      type="button"
-                      className="app-button secondary"
-                      disabled={busy || !csvPaste.trim()}
-                      onClick={() =>
-                        void post({ action: "preview-csv-mapping", connector: "scout", content: csvPaste })
-                      }
-                    >
+                    </Button>
+                    <Button variant="secondary" type="button" disabled={busy || !csvPaste.trim()} onClick={() => void post({ action: "preview-csv-mapping", connector: "scout", content: csvPaste }) }>
                       Detect columns
-                    </button>
+                    </Button>
                   </div>
                 </>
               ) : null}
@@ -602,14 +541,9 @@ export default function MigrateClient() {
                     <textarea value={hoursPaste} onChange={(event) => setHoursPaste(event.target.value)} rows={8} />
                   </FormRow>
                   <div className="migrate-actions">
-                    <button
-                      type="button"
-                      className="app-button"
-                      disabled={busy || !hoursPaste.trim()}
-                      onClick={() => void post({ action: "commit-hours-csv", content: hoursPaste })}
-                    >
+                    <Button variant="primary" type="button" disabled={busy || !hoursPaste.trim()} onClick={() => void post({ action: "commit-hours-csv", content: hoursPaste })}>
                       Import attendance hours
-                    </button>
+                    </Button>
                   </div>
                   <p>
                     <a href={withOrgHref("/attendance", view.orgId)}>Open Attendance</a>
@@ -634,26 +568,12 @@ export default function MigrateClient() {
                     <textarea value={filePaste} onChange={(event) => setFilePaste(event.target.value)} rows={10} />
                   </FormRow>
                   <div className="migrate-actions">
-                    <button
-                      type="button"
-                      className="app-button"
-                      disabled={busy || !filePaste.trim()}
-                      onClick={() =>
-                        void post({ action: "commit-purple-standard", content: filePaste, eventKey })
-                      }
-                    >
+                    <Button variant="primary" type="button" disabled={busy || !filePaste.trim()} onClick={() => void post({ action: "commit-purple-standard", content: filePaste, eventKey }) }>
                       Import scouting entries
-                    </button>
-                    <button
-                      type="button"
-                      className="app-button secondary"
-                      disabled={busy || !filePaste.trim()}
-                      onClick={() =>
-                        void post({ action: "preview-purple-standard", content: filePaste, eventKey })
-                      }
-                    >
+                    </Button>
+                    <Button variant="secondary" type="button" disabled={busy || !filePaste.trim()} onClick={() => void post({ action: "preview-purple-standard", content: filePaste, eventKey }) }>
                       Preview
-                    </button>
+                    </Button>
                   </div>
                 </>
               ) : null}
@@ -664,14 +584,9 @@ export default function MigrateClient() {
                     <textarea value={configPaste} onChange={(event) => setConfigPaste(event.target.value)} rows={10} />
                   </FormRow>
                   <div className="migrate-actions">
-                    <button
-                      type="button"
-                      className="app-button"
-                      disabled={busy || !configPaste.trim()}
-                      onClick={() => void post({ action: "preview-qrscout-form", content: configPaste })}
-                    >
+                    <Button variant="primary" type="button" disabled={busy || !configPaste.trim()} onClick={() => void post({ action: "preview-qrscout-form", content: configPaste })}>
                       Build form draft
-                    </button>
+                    </Button>
                   </div>
                   {result?.definition ? (
                     <div className="migrate-form-draft">
@@ -692,9 +607,9 @@ export default function MigrateClient() {
                         <textarea readOnly rows={8} value={JSON.stringify(result.definition, null, 2)} />
                       </FormRow>
                       <p>
-                        <button
+                        <Button
+                          variant="primary"
                           type="button"
-                          className="app-button"
                           onClick={() => {
                             try {
                               window.sessionStorage.setItem(
@@ -708,7 +623,7 @@ export default function MigrateClient() {
                           }}
                         >
                           Open in the form builder
-                        </button>
+                        </Button>
                       </p>
                     </div>
                   ) : null}
@@ -733,36 +648,12 @@ export default function MigrateClient() {
                     <textarea value={filePaste} onChange={(event) => setFilePaste(event.target.value)} rows={8} />
                   </FormRow>
                   <div className="migrate-actions">
-                    <button
-                      type="button"
-                      className="app-button"
-                      disabled={busy || !filePaste.trim() || !configPaste.trim() || !eventKey.trim()}
-                      onClick={() =>
-                        void post({
-                          action: "commit-qrscout-entries",
-                          configContent: configPaste,
-                          payloadContent: filePaste,
-                          eventKey,
-                        })
-                      }
-                    >
+                    <Button variant="primary" type="button" disabled={busy || !filePaste.trim() || !configPaste.trim() || !eventKey.trim()} onClick={() => void post({ action: "commit-qrscout-entries", configContent: configPaste, payloadContent: filePaste, eventKey, }) }>
                       Import scans
-                    </button>
-                    <button
-                      type="button"
-                      className="app-button secondary"
-                      disabled={busy || !filePaste.trim() || !configPaste.trim()}
-                      onClick={() =>
-                        void post({
-                          action: "preview-qrscout-entries",
-                          configContent: configPaste,
-                          payloadContent: filePaste,
-                          eventKey,
-                        })
-                      }
-                    >
+                    </Button>
+                    <Button variant="secondary" type="button" disabled={busy || !filePaste.trim() || !configPaste.trim()} onClick={() => void post({ action: "preview-qrscout-entries", configContent: configPaste, payloadContent: filePaste, eventKey, }) }>
                       Preview
-                    </button>
+                    </Button>
                   </div>
                 </>
               ) : null}
@@ -782,22 +673,12 @@ export default function MigrateClient() {
                     <textarea value={filePaste} onChange={(event) => setFilePaste(event.target.value)} rows={10} />
                   </FormRow>
                   <div className="migrate-actions">
-                    <button
-                      type="button"
-                      className="app-button"
-                      disabled={busy || !filePaste.trim()}
-                      onClick={() => void post({ action: "commit-scoutradioz", content: filePaste, eventKey })}
-                    >
+                    <Button variant="primary" type="button" disabled={busy || !filePaste.trim()} onClick={() => void post({ action: "commit-scoutradioz", content: filePaste, eventKey })}>
                       Import scouting entries
-                    </button>
-                    <button
-                      type="button"
-                      className="app-button secondary"
-                      disabled={busy || !filePaste.trim()}
-                      onClick={() => void post({ action: "preview-scoutradioz", content: filePaste, eventKey })}
-                    >
+                    </Button>
+                    <Button variant="secondary" type="button" disabled={busy || !filePaste.trim()} onClick={() => void post({ action: "preview-scoutradioz", content: filePaste, eventKey })}>
                       Preview
-                    </button>
+                    </Button>
                   </div>
                 </>
               ) : null}
@@ -808,14 +689,9 @@ export default function MigrateClient() {
                     <textarea value={filePaste} onChange={(event) => setFilePaste(event.target.value)} rows={8} />
                   </FormRow>
                   <div className="migrate-actions">
-                    <button
-                      type="button"
-                      className="app-button secondary"
-                      disabled={busy || !filePaste.trim()}
-                      onClick={() => void post({ action: "preview-trello-lists", content: filePaste })}
-                    >
+                    <Button variant="secondary" type="button" disabled={busy || !filePaste.trim()} onClick={() => void post({ action: "preview-trello-lists", content: filePaste })}>
                       Read lists
-                    </button>
+                    </Button>
                   </div>
                   {result?.lists?.length ? (
                     <div className="migrate-mapping">
@@ -847,26 +723,12 @@ export default function MigrateClient() {
                         kept.
                       </p>
                       <div className="migrate-actions">
-                        <button
-                          type="button"
-                          className="app-button"
-                          disabled={busy}
-                          onClick={() =>
-                            void post({ action: "commit-trello", content: filePaste, listStatus })
-                          }
-                        >
+                        <Button variant="primary" type="button" disabled={busy} onClick={() => void post({ action: "commit-trello", content: filePaste, listStatus }) }>
                           Import tasks
-                        </button>
-                        <button
-                          type="button"
-                          className="app-button secondary"
-                          disabled={busy}
-                          onClick={() =>
-                            void post({ action: "preview-trello-cards", content: filePaste, listStatus })
-                          }
-                        >
+                        </Button>
+                        <Button variant="secondary" type="button" disabled={busy} onClick={() => void post({ action: "preview-trello-cards", content: filePaste, listStatus }) }>
                           Preview cards
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   ) : null}
@@ -882,14 +744,9 @@ export default function MigrateClient() {
                     <textarea value={filePaste} onChange={(event) => setFilePaste(event.target.value)} rows={8} />
                   </FormRow>
                   <div className="migrate-actions">
-                    <button
-                      type="button"
-                      className="app-button secondary"
-                      disabled={busy || !filePaste.trim()}
-                      onClick={() => void post({ action: "preview-stims", content: filePaste })}
-                    >
+                    <Button variant="secondary" type="button" disabled={busy || !filePaste.trim()} onClick={() => void post({ action: "preview-stims", content: filePaste })}>
                       Read roster
-                    </button>
+                    </Button>
                   </div>
                   {inviteDrafts.length ? (
                     <div className="migrate-mapping">
@@ -936,21 +793,9 @@ export default function MigrateClient() {
                         <span>Email each invite link now</span>
                       </label>
                       <div className="migrate-actions">
-                        <button
-                          type="button"
-                          className="app-button"
-                          disabled={busy || !checkedEmails.length}
-                          onClick={() =>
-                            void post({
-                              action: "commit-invites",
-                              emails: checkedEmails,
-                              role: inviteRole,
-                              sendEmail: sendInviteEmail,
-                            })
-                          }
-                        >
+                        <Button variant="primary" type="button" disabled={busy || !checkedEmails.length} onClick={() => void post({ action: "commit-invites", emails: checkedEmails, role: inviteRole, sendEmail: sendInviteEmail, }) }>
                           Create {checkedEmails.length} invite{checkedEmails.length === 1 ? "" : "s"}
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   ) : null}
@@ -990,22 +835,12 @@ export default function MigrateClient() {
                     <textarea value={notionPaste} onChange={(event) => setNotionPaste(event.target.value)} rows={8} />
                   </FormRow>
                   <div className="migrate-actions">
-                    <button
-                      type="button"
-                      className="app-button"
-                      disabled={busy || !notionPaste.trim()}
-                      onClick={() => void post({ action: "commit-notion", content: notionPaste })}
-                    >
+                    <Button variant="primary" type="button" disabled={busy || !notionPaste.trim()} onClick={() => void post({ action: "commit-notion", content: notionPaste })}>
                       Import calendar / knowledge / tasks
-                    </button>
-                    <button
-                      type="button"
-                      className="app-button secondary"
-                      disabled={busy || !notionPaste.trim()}
-                      onClick={() => void post({ action: "preview-notion", content: notionPaste })}
-                    >
+                    </Button>
+                    <Button variant="secondary" type="button" disabled={busy || !notionPaste.trim()} onClick={() => void post({ action: "preview-notion", content: notionPaste })}>
                       Preview
-                    </button>
+                    </Button>
                   </div>
                   <p>
                     <a href={withOrgHref("/team/knowledge", view.orgId)}>Open Knowledge</a>

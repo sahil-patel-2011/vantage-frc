@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "../../../components/ui";
 
 import { useEffect, useState } from "react";
 import {
@@ -154,22 +155,22 @@ export default function CadConnections({ orgId }: { orgId: string }) {
           <p>Pair in the browser. Never type your Vantage password in a terminal. Fusion stays local — never hosted on Vercel.</p>
         </div>
         <nav className="cad-header-actions">
-          <a className="app-button secondary" href={withOrgHref("/cad", orgId)}>
+          <Button as="a" variant="secondary" href={withOrgHref("/cad", orgId)}>
             ← CAD Builder
-          </a>
-          <a className="app-button secondary" href={withOrgHref("/cad/setup", orgId)}>
+          </Button>
+          <Button as="a" variant="secondary" href={withOrgHref("/cad/setup", orgId)}>
             Setup wizard
-          </a>
-          <a className="app-button secondary" href={withOrgHref("/cad/pair", orgId)}>
+          </Button>
+          <Button as="a" variant="secondary" href={withOrgHref("/cad/pair", orgId)}>
             Pair desktop
-          </a>
+          </Button>
         </nav>
       </header>
       <nav className="product-hub-related" aria-label="Related connection tools">
         {related.map((link) => (
-          <a key={link.id} className="app-button secondary" href={link.href}>
+          <Button as="a" variant="secondary" key={link.id} href={link.href}>
             {link.label}
-          </a>
+          </Button>
         ))}
       </nav>
       <nav className="intel-actions" aria-label="Connect paths" style={{ marginBottom: 12 }}>
@@ -211,14 +212,9 @@ export default function CadConnections({ orgId }: { orgId: string }) {
                   {onshapeConnected ? ONSHAPE_OAUTH_CTA.reconnect : ONSHAPE_OAUTH_CTA.connect}
                 </button>
                 {onshapeConnected ? (
-                  <button
-                    type="button"
-                    className="app-button secondary"
-                    disabled={busy}
-                    onClick={() => void disconnectOnshape()}
-                  >
+                  <Button variant="secondary" type="button" disabled={busy} onClick={() => void disconnectOnshape()}>
                     Disconnect
-                  </button>
+                  </Button>
                 ) : null}
               </div>
               <small className="app-muted">
@@ -270,9 +266,9 @@ export default function CadConnections({ orgId }: { orgId: string }) {
             </ol>
             <small className="app-muted">Linux: Fusion is unavailable — use Onshape or VANTAGE_CAD_MOCK=1 for protocol tests.</small>
           </div>
-          <a className="app-button secondary" href={withOrgHref("/cad/pair", orgId)}>
+          <Button as="a" variant="secondary" href={withOrgHref("/cad/pair", orgId)}>
             Pair desktop
-          </a>
+          </Button>
         </article>
       </section>
 
@@ -308,20 +304,9 @@ export default function CadConnections({ orgId }: { orgId: string }) {
             <span className="eyebrow">LOCAL PACKAGE · NOT PUBLISHED TO NPM</span>
             <h2>Install the Vantage CAD CLI</h2>
           </div>
-          <button
-            type="button"
-            className="app-button secondary"
-            onClick={async () => {
-              try {
-                await navigator.clipboard.writeText(install);
-                setMessage("Install commands copied.");
-              } catch {
-                setMessage("Couldn't copy — copy it manually.");
-              }
-            }}
-          >
+          <Button variant="secondary" type="button" onClick={async () => { try { await navigator.clipboard.writeText(install); setMessage("Install commands copied."); } catch { setMessage("Couldn't copy — copy it manually."); } }}>
             Copy commands
-          </button>
+          </Button>
         </div>
         <pre className="install-command">{install}</pre>
       </section>
@@ -342,9 +327,9 @@ export default function CadConnections({ orgId }: { orgId: string }) {
                 </small>
               </div>
               {!device.revokedAt && (
-                <button type="button" className="app-button secondary" onClick={() => void revoke(device.id)}>
+                <Button variant="secondary" type="button" onClick={() => void revoke(device.id)}>
                   Revoke
-                </button>
+                </Button>
               )}
             </article>
           ))

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { PageHeader, TabBar } from "../../components/ui";
+import { PageHeader, TabBar, Button } from "../../components/ui";
 import {
   HELP_ARTICLES,
   filterHelpArticles,
@@ -83,13 +83,13 @@ export default function HelpClient({ sectionGuide }: HelpClientProps = {}) {
       >
         <div className="help-header-actions">
           {!hasGuide ? (
-            <a className="app-button secondary" href="/docs?view=sections">
+            <Button as="a" variant="secondary" href="/docs?view=sections">
               Section-by-section guide
-            </a>
+            </Button>
           ) : null}
-          <a className="app-button secondary" href="/support">
+          <Button as="a" variant="secondary" href="/support">
             Support tickets
-          </a>
+          </Button>
         </div>
       </PageHeader>
 
@@ -198,12 +198,11 @@ export default function HelpClient({ sectionGuide }: HelpClientProps = {}) {
                     : "The section-by-section guide walks every workbench — what it is, why, when in the season, and the steps."}
                 </p>
               </div>
-              <a
-                className="app-button secondary"
+              <Button as="a" variant="secondary"
                 href={hasGuide ? "/help" : "/docs?view=sections"}
               >
                 {hasGuide ? "Open Help centre" : "Open the guide"}
-              </a>
+              </Button>
             </div>
           ) : null}
 

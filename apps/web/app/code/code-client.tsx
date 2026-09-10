@@ -5,7 +5,7 @@ import { BUGBOT_ULTRA_PRICES_USD, isBugbotScanPath } from "@vantage/agent/bugbot
 import { buildDiffProposal, reviewFrcCode } from "@vantage/agent/coding-assistant";
 import { AiHubRelated } from "../../components/ai-hub-related";
 import { BuildHubRelated } from "../../components/build-hub-related";
-import { EmptyState } from "../../components/ui";
+import { EmptyState, Button } from "../../components/ui";
 import { WhyPanel } from "../../components/why-panel";
 import { CODE_RULE_LESSONS, narrateCodeFindings } from "../../lib/agent-narration/narration";
 import { MeteredAiCutoffBanner } from "../../components/metered-ai-cutoff-banner";
@@ -959,9 +959,9 @@ export function CodeClient({
         <div className="cdc-header-actions">
           <span className="app-badge good">Local · proposal-only</span>
           {orgId ? (
-            <a className="app-button secondary" href={withOrgHref("/editor/pair", orgId)}>
+            <Button as="a" variant="secondary" href={withOrgHref("/editor/pair", orgId)}>
               Pair VS Code
-            </a>
+            </Button>
           ) : null}
         </div>
       </header>
@@ -984,9 +984,9 @@ export function CodeClient({
           description="Local pattern review works without a model key. Pairing VS Code, GitHub context, CAD, and AI chat need a team."
           className="product-hub-setup"
         >
-          <a className="app-button" href="/workspace">
+          <Button as="a" variant="primary" href="/workspace">
             Choose your team
-          </a>
+          </Button>
         </EmptyState>
       ) : (
         <nav className="cdc-gov" aria-label="CAD, GitHub, and AI chat">
@@ -1017,12 +1017,12 @@ export function CodeClient({
             quote the source. Distinct from CAD briefs and chat.
           </p>
           <div className="cdc-billing-actions">
-            <a className="app-button secondary" href="#bugbot">
+            <Button as="a" variant="secondary" href="#bugbot">
               AI Bugbot
-            </a>
-            <a className="app-button secondary" href={keysHref}>
+            </Button>
+            <Button as="a" variant="secondary" href={keysHref}>
               AI keys
-            </a>
+            </Button>
           </div>
         </article>
         <article className="cdc-billing-ultra">
@@ -1034,12 +1034,12 @@ export function CodeClient({
             recheck. Fixes stay diffs — never pushed to GitHub.
           </p>
           <div className="cdc-billing-actions">
-            <a className="app-button secondary" href="#bugbot">
+            <Button as="a" variant="secondary" href="#bugbot">
               Ultra prices
-            </a>
-            <a className="app-button secondary" href={githubHref}>
+            </Button>
+            <Button as="a" variant="secondary" href={githubHref}>
               Connect GitHub
-            </a>
+            </Button>
           </div>
         </article>
       </section>
@@ -1061,9 +1061,9 @@ export function CodeClient({
                 <strong>{action.label}</strong>
                 <span>{action.detail}</span>
               </div>
-              <a className="app-button secondary" href={action.href}>
+              <Button as="a" variant="secondary" href={action.href}>
                 Open
-              </a>
+              </Button>
             </li>
           ))}
         </ol>
@@ -1110,18 +1110,9 @@ export function CodeClient({
                 title="No source yet"
                 description="Paste subsystem code, or load the teaching sample. Findings stay empty until a review matches real rules."
               >
-                <button
-                  type="button"
-                  className="app-button"
-                  onClick={() => {
-                    setContent(CODE_COACH_SAMPLE);
-                    setReview(null);
-                    setProposal(null);
-                    setMessage(null);
-                  }}
-                >
+                <Button variant="primary" type="button" onClick={() => { setContent(CODE_COACH_SAMPLE); setReview(null); setProposal(null); setMessage(null); }}>
                   Load teaching sample
-                </button>
+                </Button>
               </EmptyState>
             ) : null}
             <label>
@@ -1145,35 +1136,15 @@ export function CodeClient({
               <button type="button" className="primary-action" disabled={busy || !hasSource} onClick={runReview}>
                 Run risk review
               </button>
-              <button
-                type="button"
-                className="app-button secondary"
-                disabled={busy || !hasSource}
-                onClick={runPropose}
-              >
+              <Button variant="secondary" type="button" disabled={busy || !hasSource} onClick={runPropose}>
                 Build proposal (diff)
-              </button>
-              <button
-                type="button"
-                className="app-button secondary"
-                disabled={busy || !hasSource || !orgId}
-                onClick={() => void runBugbot()}
-              >
+              </Button>
+              <Button variant="secondary" type="button" disabled={busy || !hasSource || !orgId} onClick={() => void runBugbot()}>
                 Run AI Bugbot
-              </button>
-              <button
-                type="button"
-                className="app-button secondary"
-                disabled={busy}
-                onClick={() => {
-                  setContent(CODE_COACH_SAMPLE);
-                  setReview(null);
-                  setProposal(null);
-                  setMessage(null);
-                }}
-              >
+              </Button>
+              <Button variant="secondary" type="button" disabled={busy} onClick={() => { setContent(CODE_COACH_SAMPLE); setReview(null); setProposal(null); setMessage(null); }}>
                 Reset sample
-              </button>
+              </Button>
             </footer>
           </article>
         </div>
@@ -1375,9 +1346,9 @@ export function CodeClient({
               title="Choose a team for Bugbot"
               description="Local pattern review is free. GitHub scans and both Bugbot modes need a team."
             >
-              <a className="app-button" href="/workspace">
+              <Button as="a" variant="primary" href="/workspace">
                 Choose your team
-              </a>
+              </Button>
             </EmptyState>
           ) : !githubConnected ? (
             <EmptyState
@@ -1387,9 +1358,9 @@ export function CodeClient({
               title="Connect a GitHub repo to scan"
               description="Owners and admins link a PAT or OAuth app under Team admin. You can still paste a file below without GitHub."
             >
-              <a className="app-button" href={githubHref}>
+              <Button as="a" variant="primary" href={githubHref}>
                 Connect GitHub
-              </a>
+              </Button>
             </EmptyState>
           ) : (
             <div className="cdc-github-scan">
@@ -1488,14 +1459,9 @@ export function CodeClient({
                       ))}
                     </ul>
                   ) : null}
-                  <button
-                    type="button"
-                    className="app-button ghost cdc-coverage-toggle"
-                    aria-expanded={showCoverage}
-                    onClick={() => setShowCoverage((prev) => !prev)}
-                  >
+                  <Button variant="ghost" type="button" className="cdc-coverage-toggle" aria-expanded={showCoverage} onClick={() => setShowCoverage((prev) => !prev)}>
                     {showCoverage ? "Hide the file list" : "Show exactly which files"}
-                  </button>
+                  </Button>
                   {showCoverage ? (
                     <div className="cdc-coverage-detail">
                       <div>
@@ -1547,34 +1513,19 @@ export function CodeClient({
             >
               {bugbotMode === "ultra" ? `Scan file · $${BUGBOT_ULTRA_PRICES_USD.scan.toFixed(2)}` : "Scan this file"}
             </button>
-            <button
-              type="button"
-              className="app-button secondary"
-              disabled={busy || !orgId || !githubConnected || !selectedRepo}
-              onClick={() => void runBugbot({ mode: bugbotMode, phase: "scan", scanRepo: true })}
-            >
+            <Button variant="secondary" type="button" disabled={busy || !orgId || !githubConnected || !selectedRepo} onClick={() => void runBugbot({ mode: bugbotMode, phase: "scan", scanRepo: true })}>
               {bugbotMode === "ultra"
                 ? `Scan repo · $${(scanPlan?.cost.totalUsd ?? BUGBOT_ULTRA_PRICES_USD.scan).toFixed(2)}`
                 : scanPlan
                   ? `Scan connected repo · ${scanPlan.chunkCount} chunk${scanPlan.chunkCount === 1 ? "" : "s"}`
                   : "Scan connected repo"}
-            </button>
-            <button
-              type="button"
-              className="app-button secondary"
-              disabled={busy || !orgId || (!hasSource && !lastScan?.scanRepo)}
-              onClick={() => void runBugbot({ mode: bugbotMode, phase: "fix", scanRepo: false })}
-            >
+            </Button>
+            <Button variant="secondary" type="button" disabled={busy || !orgId || (!hasSource && !lastScan?.scanRepo)} onClick={() => void runBugbot({ mode: bugbotMode, phase: "fix", scanRepo: false })}>
               {bugbotMode === "ultra" ? `Propose fix · $${BUGBOT_ULTRA_PRICES_USD.fix.toFixed(2)}` : "Propose fix"}
-            </button>
-            <button
-              type="button"
-              className="app-button secondary"
-              disabled={busy || !orgId || (!hasSource && !lastScan?.scanRepo)}
-              onClick={() => void runBugbot({ mode: bugbotMode, phase: "recheck", scanRepo: false })}
-            >
+            </Button>
+            <Button variant="secondary" type="button" disabled={busy || !orgId || (!hasSource && !lastScan?.scanRepo)} onClick={() => void runBugbot({ mode: bugbotMode, phase: "recheck", scanRepo: false })}>
               {bugbotMode === "ultra" ? `Recheck · $${BUGBOT_ULTRA_PRICES_USD.recheck.toFixed(2)}` : "Recheck"}
-            </button>
+            </Button>
           </footer>
           {lastScan?.scanRepo ? (
             <p className="app-muted" style={{ margin: 0, fontSize: 12 }}>
@@ -1700,14 +1651,9 @@ export function CodeClient({
               ) : null}
               <pre aria-label="Bugbot unified diff">{bugbotMeta.proposedDiff}</pre>
               {lastScan?.scanRepo ? (
-                <button
-                  type="button"
-                  className="app-button secondary"
-                  disabled={busy || !orgId}
-                  onClick={() => void requestWritePr()}
-                >
+                <Button variant="secondary" type="button" disabled={busy || !orgId} onClick={() => void requestWritePr()}>
                   {writePrConfirming ? "Confirm open pull request" : "Approve and open pull request"}
-                </button>
+                </Button>
               ) : (
                 <p className="app-muted" style={{ margin: 0, fontSize: 12 }}>
                   Open pull request is only available after a repo scan (repo + sha), not the editor sample.
@@ -1756,17 +1702,9 @@ export function CodeClient({
                         </td>
                         <td>
                           {item.fingerprint ? (
-                            <button
-                              type="button"
-                              className="app-button ghost"
-                              disabled={busy}
-                              onClick={() => {
-                                setDismissTarget(item);
-                                setDismissReason("");
-                              }}
-                            >
+                            <Button variant="ghost" type="button" disabled={busy} onClick={() => { setDismissTarget(item); setDismissReason(""); }}>
                               Dismiss
-                            </button>
+                            </Button>
                           ) : null}
                         </td>
                       </tr>
@@ -1798,16 +1736,9 @@ export function CodeClient({
                       <button type="submit" className="primary-action" disabled={busy || dismissReason.trim().length < 3}>
                         Dismiss this finding
                       </button>
-                      <button
-                        type="button"
-                        className="app-button ghost"
-                        onClick={() => {
-                          setDismissTarget(null);
-                          setDismissReason("");
-                        }}
-                      >
+                      <Button variant="ghost" type="button" onClick={() => { setDismissTarget(null); setDismissReason(""); }}>
                         Cancel
-                      </button>
+                      </Button>
                     </div>
                     <p className="app-muted" style={{ margin: 0, fontSize: 12 }}>
                       Kept against this finding&apos;s fingerprint, so it stays dismissed across commits even when
@@ -1831,9 +1762,9 @@ export function CodeClient({
               title="No Bugbot pass yet"
               description="Scan a connected repo or this file. Subscription uses your key. Ultra is the published hosted SKU. Findings stay empty until evidence is in the source."
             >
-              <a className="app-button secondary" href={githubHref}>
+              <Button as="a" variant="secondary" href={githubHref}>
                 GitHub connection
-              </a>
+              </Button>
             </EmptyState>
           ) : null}
           {bugbotNarrations.length ? (
@@ -1854,14 +1785,9 @@ export function CodeClient({
                       <code>{item.filePath ?? "—"}</code>
                       <span className="app-muted"> — {item.reason}</span>
                     </div>
-                    <button
-                      type="button"
-                      className="app-button ghost"
-                      disabled={busy}
-                      onClick={() => void restoreDismissal(item.fingerprint)}
-                    >
+                    <Button variant="ghost" type="button" disabled={busy} onClick={() => void restoreDismissal(item.fingerprint)}>
                       Restore
-                    </button>
+                    </Button>
                   </li>
                 ))}
               </ul>

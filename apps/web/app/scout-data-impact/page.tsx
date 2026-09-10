@@ -1,4 +1,4 @@
-import { EmptyState, PageHeader } from "../../components/ui";
+import { EmptyState, PageHeader, Button } from "../../components/ui";
 import {
   SCOUT_DATA_IMPACT_RELATED_INCLUDE,
   scoutDataImpactRelatedLinks,
@@ -37,9 +37,9 @@ export default async function ScoutDataImpactPage({
             aria-label="Related competition tools"
           >
             {related.map((link) => (
-              <a key={link.id} className="app-button secondary" href={link.href}>
+              <Button as="a" variant="secondary" key={link.id} href={link.href}>
                 {link.label}
-              </a>
+              </Button>
             ))}
           </nav>
         </PageHeader>
@@ -50,9 +50,9 @@ export default async function ScoutDataImpactPage({
           title={copy.title}
           description={copy.description}
         >
-          <a className="app-button" href="/workspace">
+          <Button as="a" variant="primary" href="/workspace">
             Choose your team
-          </a>
+          </Button>
         </EmptyState>
         <section className="app-card soft-panel scout-data-impact-panel" aria-label="Setup steps">
           <header>
@@ -66,9 +66,9 @@ export default async function ScoutDataImpactPage({
                   <strong>{step.label}</strong>
                   <p className="app-muted scout-data-impact-tip">{step.detail}</p>
                 </div>
-                <a className="app-button secondary" href={step.href}>
+                <Button as="a" variant="secondary" href={step.href}>
                   Open
-                </a>
+                </Button>
               </li>
             ))}
           </ul>

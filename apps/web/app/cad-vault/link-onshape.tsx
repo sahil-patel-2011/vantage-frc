@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { parseOnshapeDocumentUrl } from "@vantage/cad/onshape-url-parse";
-import { FormGrid, FormRow, Panel } from "../../components/ui";
+import { FormGrid, FormRow, Panel, Button } from "../../components/ui";
 import { CAD_DOCUMENT_KINDS, cadKindLabel, type CadDocumentKind } from "../../lib/cad-vault/view";
 
 /**
@@ -137,9 +137,9 @@ export function LinkOnshapePanel({
           </FormGrid>
           {error ? <p className="app-muted" role="alert">{error}</p> : null}
           <div>
-            <button type="button" className="app-button" disabled={busy || saving || !title.trim()} onClick={() => void save()}>
+            <Button variant="primary" type="button" disabled={busy || saving || !title.trim()} onClick={() => void save()}>
               {saving ? "Saving…" : "Keep this link"}
-            </button>
+            </Button>
           </div>
           <small className="app-muted">
             Whether the link opens for someone is Onshape&rsquo;s sharing setting, not Vantage&rsquo;s. Share the document

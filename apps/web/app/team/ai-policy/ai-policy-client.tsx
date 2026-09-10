@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "../../../components/ui";
 
 import { useEffect, useState } from "react";
 import { AiHubRelated } from "../../../components/ai-hub-related";
@@ -87,9 +88,9 @@ function GovernanceRelatedStrip({ orgId }: { orgId: string }) {
   return (
     <nav className="product-hub-related ai-governance-related" aria-label="Related AI tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -114,9 +115,9 @@ function NextActions({ orgId, shell }: { orgId: string; shell: AiGovernanceShell
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -371,9 +372,9 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
           <p className="app-muted">{shellCopy.description}</p>
           <NextActions orgId={orgId} shell={shell} />
           {shell === "error" ? (
-            <button type="button" className="app-button secondary" onClick={() => void load()}>
+            <Button variant="secondary" type="button" onClick={() => void load()}>
               Retry
-            </button>
+            </Button>
           ) : null}
         </section>
       ) : null}
@@ -395,24 +396,24 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
                 <h2>{card.title}</h2>
                 <p className="app-muted">{card.body}</p>
                 {card.id === "policy" ? (
-                  <a className="app-button secondary" href="#ai-governance-policy">
+                  <Button as="a" variant="secondary" href="#ai-governance-policy">
                     Edit policy
-                  </a>
+                  </Button>
                 ) : null}
                 {card.id === "budgets" ? (
-                  <a className="app-button secondary" href={budgetsHref}>
+                  <Button as="a" variant="secondary" href={budgetsHref}>
                     Open Budgets
-                  </a>
+                  </Button>
                 ) : null}
                 {card.id === "memory" ? (
-                  <a className="app-button secondary" href={memoryHref}>
+                  <Button as="a" variant="secondary" href={memoryHref}>
                     Open Memory
-                  </a>
+                  </Button>
                 ) : null}
                 {card.id === "chat" ? (
-                  <a className="app-button secondary" href={chatHref}>
+                  <Button as="a" variant="secondary" href={chatHref}>
                     Open Chat
-                  </a>
+                  </Button>
                 ) : null}
               </article>
             ))}
@@ -660,15 +661,15 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
               <button className="primary-action" disabled={saving} type="submit">
                 {saving ? "Saving…" : "Save AI governance policy"}
               </button>
-              <a className="app-button secondary" href={chatHref}>
+              <Button as="a" variant="secondary" href={chatHref}>
                 Open Chat
-              </a>
-              <a className="app-button secondary" href={budgetsHref}>
+              </Button>
+              <Button as="a" variant="secondary" href={budgetsHref}>
                 Open Budgets
-              </a>
-              <a className="app-button secondary" href={memoryHref}>
+              </Button>
+              <Button as="a" variant="secondary" href={memoryHref}>
                 Open Memory
-              </a>
+              </Button>
             </div>
           </form>
 

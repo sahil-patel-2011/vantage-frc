@@ -6,8 +6,7 @@ import {
   ErrorState,
   PageHeader,
   Panel,
-  SoftBlockSkeleton,
-} from "../../components/ui";
+  SoftBlockSkeleton, Button } from "../../components/ui";
 import {
   buildFolderTree,
   flattenFolderTree,
@@ -309,9 +308,9 @@ export default function LibraryClient() {
         {header}
         <EmptyState title="Workspace needed" description={view.message}>
           {view.steps.map((step) => (
-            <a key={step.id} className="app-button" href={step.href}>
+            <Button as="a" variant="primary" key={step.id} href={step.href}>
               {step.label}
-            </a>
+            </Button>
           ))}
         </EmptyState>
       </div>
@@ -326,15 +325,15 @@ export default function LibraryClient() {
       {header}
 
       <div className="tl-toolbar" role="toolbar" aria-label="Library actions">
-        <button type="button" className="app-button" onClick={() => fileInputRef.current?.click()}>
+        <Button variant="primary" type="button" onClick={() => fileInputRef.current?.click()}>
           Upload files
-        </button>
-        <button type="button" className="app-button secondary" onClick={() => setLinkFormOpen((open) => !open)}>
+        </Button>
+        <Button variant="secondary" type="button" onClick={() => setLinkFormOpen((open) => !open)}>
           Add a link
-        </button>
-        <button type="button" className="app-button secondary" onClick={() => setFolderFormOpen((open) => !open)}>
+        </Button>
+        <Button variant="secondary" type="button" onClick={() => setFolderFormOpen((open) => !open)}>
           New folder
-        </button>
+        </Button>
         <label className="tl-upload-visibility">
           Uploads visible to
           <select
@@ -376,9 +375,9 @@ export default function LibraryClient() {
               </li>
             ))}
           </ul>
-          <button type="button" className="app-button secondary" onClick={() => setUploads([])}>
+          <Button variant="secondary" type="button" onClick={() => setUploads([])}>
             Clear list
-          </button>
+          </Button>
         </Panel>
       ) : null}
 
@@ -628,8 +627,8 @@ function FolderCreateForm({
         }}
       />
       <div className="tl-form-actions">
-        <button type="submit" className="app-button">Create folder</button>
-        <button type="button" className="app-button secondary" onClick={onCancel}>Cancel</button>
+        <Button variant="primary" type="submit">Create folder</Button>
+        <Button variant="secondary" type="button" onClick={onCancel}>Cancel</Button>
       </div>
     </Panel>
   );
@@ -711,8 +710,8 @@ function LinkCreateForm({
         }}
       />
       <div className="tl-form-actions">
-        <button type="submit" className="app-button">Add link</button>
-        <button type="button" className="app-button secondary" onClick={onCancel}>Cancel</button>
+        <Button variant="primary" type="submit">Add link</Button>
+        <Button variant="secondary" type="button" onClick={onCancel}>Cancel</Button>
       </div>
     </Panel>
   );
@@ -795,7 +794,7 @@ function ResourceDetail({
       <Panel className="tl-detail" onClick={(event) => event.stopPropagation()}>
         <div className="tl-detail-head">
           <h2>{resource.title}</h2>
-          <button type="button" className="app-button secondary" onClick={onClose}>Close</button>
+          <Button variant="secondary" type="button" onClick={onClose}>Close</Button>
         </div>
 
         {resource.kind === "link" ? (
@@ -803,16 +802,16 @@ function ResourceDetail({
             <span className="tl-thumb-fallback">LINK</span>
             <div>
               <p className="tl-download-name">{resource.url}</p>
-              <a className="app-button" href={resource.url ?? "#"} target="_blank" rel="noreferrer noopener">
+              <Button as="a" variant="primary" href={resource.url ?? "#"} target="_blank" rel="noreferrer noopener">
                 Open link
-              </a>
+              </Button>
             </div>
           </div>
         ) : resource.previewSrc ? (
           <div className="tl-detail-media">
             { }
             <img src={resource.previewSrc} alt={resource.title} />
-            <a className="app-button" href={resource.src ?? "#"}>Download</a>
+            <Button as="a" variant="primary" href={resource.src ?? "#"}>Download</Button>
           </div>
         ) : (
           <div className="tl-download-card">
@@ -823,7 +822,7 @@ function ResourceDetail({
                 {resource.byteSize ? ` · ${formatLibraryBytes(resource.byteSize)}` : ""}
               </p>
               {resource.status === "ready" && resource.src ? (
-                <a className="app-button" href={resource.src}>Download</a>
+                <Button as="a" variant="primary" href={resource.src}>Download</Button>
               ) : (
                 <p className="app-muted">Upload has not finished yet.</p>
               )}
@@ -883,9 +882,9 @@ function ResourceDetail({
               aria-label="Related link title"
               maxLength={200}
             />
-            <button type="button" className="app-button secondary" onClick={() => void attachLink()}>
+            <Button variant="secondary" type="button" onClick={() => void attachLink()}>
               Attach link
-            </button>
+            </Button>
           </div>
         </section>
 
@@ -928,8 +927,8 @@ function ResourceDetail({
               }}
             />
             <div className="tl-detail-actions">
-              <button type="button" className="app-button" onClick={() => void save()}>Save</button>
-              <button type="button" className="app-button danger" onClick={() => void remove()}>Delete</button>
+              <Button variant="primary" type="button" onClick={() => void save()}>Save</Button>
+              <Button variant="danger" type="button" onClick={() => void remove()}>Delete</Button>
             </div>
           </section>
         ) : null}
@@ -1005,7 +1004,7 @@ function FolderDetail({
       <Panel className="tl-detail" onClick={(event) => event.stopPropagation()}>
         <div className="tl-detail-head">
           <h2>Manage folder</h2>
-          <button type="button" className="app-button secondary" onClick={onClose}>Close</button>
+          <Button variant="secondary" type="button" onClick={onClose}>Close</Button>
         </div>
         <section className="tl-detail-form">
           <label>
@@ -1034,8 +1033,8 @@ function FolderDetail({
             }}
           />
           <div className="tl-detail-actions">
-            <button type="button" className="app-button" onClick={() => void save()}>Save</button>
-            <button type="button" className="app-button danger" onClick={() => void remove()}>Delete folder</button>
+            <Button variant="primary" type="button" onClick={() => void save()}>Save</Button>
+            <Button variant="danger" type="button" onClick={() => void remove()}>Delete folder</Button>
           </div>
         </section>
       </Panel>

@@ -1,4 +1,4 @@
-import { EmptyState } from "../../../components/ui";
+import { EmptyState, Button } from "../../../components/ui";
 import { alumniShellCopy } from "../../../lib/alumni";
 import AlumniClient from "./alumni-client";
 
@@ -17,9 +17,9 @@ export default async function TeamAlumniPage({
     return (
       <main className="content">
         <EmptyState badge={copy.badge} badgeTone="setup" title={copy.title} description={copy.description}>
-          <a className="app-button" href="/workspace">
+          <Button as="a" variant="primary" href="/workspace">
             Choose your team
-          </a>
+          </Button>
         </EmptyState>
       </main>
     );

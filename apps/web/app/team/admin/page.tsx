@@ -1,4 +1,4 @@
-import { EmptyState, PageHeader, Panel } from "../../../components/ui";
+import { EmptyState, PageHeader, Panel, Button } from "../../../components/ui";
 import { TeamOpsNav } from "../../../components/team-ops-nav";
 import {
   TEAM_ADMIN_RELATED_INCLUDE,
@@ -39,9 +39,9 @@ export default async function TeamAdminPage({
         >
           <nav className="product-hub-related team-admin-related" aria-label="Related account tools">
             {related.map((link) => (
-              <a key={link.id} className="app-button secondary" href={link.href}>
+              <Button as="a" variant="secondary" key={link.id} href={link.href}>
                 {link.label}
-              </a>
+              </Button>
             ))}
           </nav>
         </PageHeader>
@@ -53,9 +53,9 @@ export default async function TeamAdminPage({
           badge="Setup required"
           badgeTone="setup"
         >
-          <a className="app-button" href="/workspace">
+          <Button as="a" variant="primary" href="/workspace">
             Choose your team
-          </a>
+          </Button>
         </EmptyState>
         <Panel className="team-admin-membership" aria-label="Setup steps">
           <header>
@@ -69,9 +69,9 @@ export default async function TeamAdminPage({
                   <strong>{step.label}</strong>
                   <p className="app-muted team-admin-tip">{step.detail}</p>
                 </div>
-                <a className="app-button secondary" href={step.href}>
+                <Button as="a" variant="secondary" href={step.href}>
                   Open
-                </a>
+                </Button>
               </li>
             ))}
           </ul>
@@ -88,9 +88,9 @@ export default async function TeamAdminPage({
                   <strong>{action.label}</strong>
                   <span>{action.detail}</span>
                 </div>
-                <a className="app-button secondary" href={action.href}>
+                <Button as="a" variant="secondary" href={action.href}>
                   Open
-                </a>
+                </Button>
               </li>
             ))}
           </ol>

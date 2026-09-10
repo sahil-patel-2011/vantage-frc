@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "../../components/ui";
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import {
@@ -272,14 +273,14 @@ export default function BriefingClient() {
                   <strong>{copy.title}</strong>
                   <p className="app-muted">{copy.description}</p>
                   {copy.primary ? (
-                    <a className="app-button" href={copy.primary.href}>
+                    <Button as="a" variant="primary" href={copy.primary.href}>
                       {copy.primary.label}
-                    </a>
+                    </Button>
                   ) : null}
                   {copy.showRetry ? (
-                    <button type="button" className="app-button secondary" onClick={() => void load(selectedRef.current)}>
+                    <Button variant="secondary" type="button" onClick={() => void load(selectedRef.current)}>
                       Retry
-                    </button>
+                    </Button>
                   ) : null}
                 </>
               );
@@ -305,9 +306,9 @@ export default function BriefingClient() {
         <div className="app-card brief-empty">
           <strong>Almost there</strong>
           <p className="app-muted">{view.message}</p>
-          <a className="app-button" href="/workspace">
+          <Button as="a" variant="primary" href="/workspace">
             Choose your team
-          </a>
+          </Button>
         </div>
       </main>
     );
@@ -382,15 +383,15 @@ export default function BriefingClient() {
               ))}
             </select>
           </label>
-          <button type="button" className="app-button secondary" onClick={() => void load(selectedRef.current)}>
+          <Button variant="secondary" type="button" onClick={() => void load(selectedRef.current)}>
             Refresh
-          </button>
-          <button type="button" className="app-button secondary" onClick={() => void load(selectedRef.current, { refresh: true })}>
+          </Button>
+          <Button variant="secondary" type="button" onClick={() => void load(selectedRef.current, { refresh: true })}>
             Recompute prediction
-          </button>
-          <button type="button" className="app-button secondary" onClick={() => window.print()}>
+          </Button>
+          <Button variant="secondary" type="button" onClick={() => window.print()}>
             Print
-          </button>
+          </Button>
         </div>
       </header>
 
@@ -432,9 +433,9 @@ export default function BriefingClient() {
           <div className="brief-prob none">
             <span className="brief-prob-label">No grounded prediction yet</span>
             <a href={withOrg("/strategy", orgId)}>Run Strategy</a>
-            <button type="button" className="app-button secondary" onClick={() => void load(selectedRef.current, { refresh: true })}>
+            <Button variant="secondary" type="button" onClick={() => void load(selectedRef.current, { refresh: true })}>
               Recompute prediction
-            </button>
+            </Button>
           </div>
         )}
       </section>

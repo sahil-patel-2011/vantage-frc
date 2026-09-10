@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { EmptyState, Panel } from "../../../components/ui";
+import { EmptyState, Panel, Button } from "../../../components/ui";
 
 type OrgCapability =
   | "manage_api_keys"
@@ -178,9 +178,9 @@ export default function CapabilitiesClient({ orgId }: { orgId: string }) {
               title="No scouts or viewers to delegate"
               description="Invite members from Team admin, then grant API keys, budgets, or settings powers here."
             >
-              <a className="app-button secondary" href={`/team?orgId=${orgId}`}>
+              <Button as="a" variant="secondary" href={`/team?orgId=${orgId}`}>
                 Open Team admin
-              </a>
+              </Button>
             </EmptyState>
           ) : null}
           {editable.map((member) => (

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { BusinessRelated } from "../../components/business-related";
 import PartnerPlacement from "../../components/partner-placement";
-import { EmptyState } from "../../components/ui";
+import { EmptyState, Button } from "../../components/ui";
 import { PLACEMENTS_RELATED_INCLUDE } from "../../lib/business/business-related";
 import { sponsorCrmNextActions } from "../../lib/business/sponsor-crm-next-actions";
 
@@ -123,9 +123,9 @@ function PlacementsNextActions({
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -258,9 +258,9 @@ export function PartnerPlacementsPanel({
           title="Partner placements unavailable"
           description={error || "Apply the partner storefront migration, then try again."}
         >
-          <button className="app-button" type="button" onClick={() => void load()}>
+          <Button variant="primary" type="button" onClick={() => void load()}>
             Try again
-          </button>
+          </Button>
           <BusinessRelated orgId={orgId} include={["sponsors", "fundraisers", "finance-ai"]} ariaLabel="Setup related links" />
         </EmptyState>
       </div>
@@ -309,9 +309,9 @@ export function PartnerPlacementsPanel({
           </p>
         </div>
         {program.settings?.publicId ? (
-          <a className="app-button" href={`/support/${program.settings.publicId}`} target="_blank" rel="noreferrer">
+          <Button as="a" variant="primary" href={`/support/${program.settings.publicId}`} target="_blank" rel="noreferrer">
             Open storefront →
-          </a>
+          </Button>
         ) : null}
       </section>
 
@@ -334,9 +334,9 @@ export function PartnerPlacementsPanel({
           title="Add sponsors in CRM before attaching packages"
           description="Campaigns bind org sponsors to org packages. Start in Sponsor CRM, then return here."
         >
-          <a className="app-button" href={`/business?tab=sponsors&orgId=${encodeURIComponent(orgId)}`}>
+          <Button as="a" variant="primary" href={`/business?tab=sponsors&orgId=${encodeURIComponent(orgId)}`}>
             Open Sponsor CRM
-          </a>
+          </Button>
         </EmptyState>
       ) : null}
 
@@ -371,9 +371,9 @@ export function PartnerPlacementsPanel({
                 <input name="storefrontEnabled" type="checkbox" defaultChecked={program.settings?.storefrontEnabled ?? false} />{" "}
                 Allow public sponsor inquiries
               </label>
-              <button className="app-button" disabled={busy}>
+              <Button variant="primary" disabled={busy}>
                 Save storefront
-              </button>
+              </Button>
             </form>
             {program.settings?.publicId ? (
               <div className="placement-link">
@@ -412,9 +412,9 @@ export function PartnerPlacementsPanel({
                 <textarea name="benefits" rows={2} placeholder="Thank-you post, logo placement, season recap…" />
               </label>
               <SurfaceChecks />
-              <button className="app-button" disabled={busy}>
+              <Button variant="primary" disabled={busy}>
                 Add package
-              </button>
+              </Button>
             </form>
             <ul className="placement-package-list">
               {program.packages.map((item) => (
@@ -556,9 +556,9 @@ export function PartnerPlacementsPanel({
                 <input name="linkUrl" type="url" placeholder="https://sponsor.example" />
               </label>
               <SurfaceChecks />
-              <button className="app-button" disabled={busy}>
+              <Button variant="primary" disabled={busy}>
                 Create draft placement
-              </button>
+              </Button>
             </form>
           </article>
         </section>

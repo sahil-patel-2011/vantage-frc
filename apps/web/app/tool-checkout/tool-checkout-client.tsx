@@ -11,8 +11,7 @@ import {
   PageHeader,
   Panel,
   SoftBlockSkeleton,
-  StatTile,
-} from "../../components/ui";
+  StatTile, Button } from "../../components/ui";
 import { toolCategoryLabel } from "../../lib/tool-checkout";
 import { TOOL_CATEGORIES } from "../../lib/tool-checkout/compute-tool-checkout";
 import type { ToolCheckoutView } from "../../lib/tool-checkout/compute-tool-checkout";
@@ -60,9 +59,9 @@ function RelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related tc-related" aria-label="Related team tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -83,9 +82,9 @@ function NextActionsPanel({ actions }: { actions: ToolCheckoutNextAction[] }) {
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -140,10 +139,10 @@ function CheckoutShell({
           description={error ?? copy.description}
         >
           {shell === "setup" ? (
-            <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
+            <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
           ) : null}
           {shell === "empty" ? (
-            <a className="app-button is-primary" href={hubHref("/team", "equipment-maintenance", orgId)}>Open Equipment</a>
+            <Button as="a" variant="primary" href={hubHref("/team", "equipment-maintenance", orgId)}>Open Equipment</Button>
           ) : null}
         </EmptyState>
       )}
@@ -160,9 +159,9 @@ function CheckoutShell({
                   <strong>{step.label}</strong>
                   <p className="app-muted tc-tip">{step.detail}</p>
                 </div>
-                <a className="app-button secondary" href={step.href}>
+                <Button as="a" variant="secondary" href={step.href}>
                   Open
-                </a>
+                </Button>
               </li>
             ))}
           </ul>
@@ -371,14 +370,9 @@ function ToolsPanel({
             </div>
             <div className="tc-actions">
               {tool.currentLoan ? (
-                <button
-                  type="button"
-                  className="app-button secondary"
-                  disabled={busy}
-                  onClick={() => mutate({ action: "return-tool", loanId: tool.currentLoan!.id })}
-                >
+                <Button variant="secondary" type="button" disabled={busy} onClick={() => mutate({ action: "return-tool", loanId: tool.currentLoan!.id })}>
                   Return
-                </button>
+                </Button>
               ) : (
                 <CheckoutButton
                   toolId={tool.id}
@@ -424,9 +418,9 @@ function CheckoutButton({
 
   if (!open) {
     return (
-      <button type="button" className="app-button" disabled={busy} onClick={() => setOpen(true)}>
+      <Button variant="primary" type="button" disabled={busy} onClick={() => setOpen(true)}>
         Check out
-      </button>
+      </Button>
     );
   }
 
@@ -476,9 +470,9 @@ function CheckoutButton({
         />
       )}
       <input type="date" value={dueAt} onChange={(event) => setDueAt(event.target.value)} />
-      <button type="submit" className="app-button" disabled={busy || !canConfirm}>
+      <Button variant="primary" type="submit" disabled={busy || !canConfirm}>
         Confirm
-      </button>
+      </Button>
       <button type="button" className="text-button" onClick={() => setOpen(false)}>
         Cancel
       </button>
@@ -546,9 +540,9 @@ function AddToolForm({
         </FormRow>
       </FormGrid>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !form.name.trim()}>
+        <Button variant="primary" type="submit" disabled={busy || !form.name.trim()}>
           Add tool
-        </button>
+        </Button>
       </div>
     </Panel>
   );

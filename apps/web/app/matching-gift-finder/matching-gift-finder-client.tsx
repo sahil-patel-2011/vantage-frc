@@ -9,8 +9,7 @@ import {
   PageHeader,
   Panel,
   SoftBlockSkeleton,
-  StatTile,
-} from "../../components/ui";
+  StatTile, Button } from "../../components/ui";
 import { UsageCutoffBanner, resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 import {
   MATCHING_GIFT_PLEDGE_STATUSES,
@@ -46,9 +45,9 @@ function RelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related mgf-related" aria-label="Related business tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -69,9 +68,9 @@ function NextActionsPanel({ actions }: { actions: MatchingGiftFinderNextAction[]
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -129,10 +128,10 @@ function GiftShell({
           description={error ?? copy.description}
         >
           {shell === "setup" ? (
-            <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
+            <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
           ) : null}
           {shell === "empty" ? (
-            <a className="app-button is-primary" href="#matching-gift-contacts">Add a household contact</a>
+            <Button as="a" variant="primary" href="#matching-gift-contacts">Add a household contact</Button>
           ) : null}
         </EmptyState>
       )}
@@ -149,9 +148,9 @@ function GiftShell({
                   <strong>{step.label}</strong>
                   <p className="app-muted mgf-tip">{step.detail}</p>
                 </div>
-                <a className="app-button secondary" href={step.href}>
+                <Button as="a" variant="secondary" href={step.href}>
                   Open
-                </a>
+                </Button>
               </li>
             ))}
           </ul>
@@ -315,9 +314,9 @@ export default function MatchingGiftFinderClient() {
       >
         <div className="mgf-header-actions">
           {relatedLinks.map((link) => (
-            <a key={link.id} className="app-button secondary" href={link.href}>
+            <Button as="a" variant="secondary" key={link.id} href={link.href}>
               {link.label}
-            </a>
+            </Button>
           ))}
         </div>
       </PageHeader>
@@ -493,9 +492,9 @@ function ContactForm({
         <textarea value={form.notes} onChange={set("notes")} rows={2} />
       </FormRow>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !form.fullName.trim()}>
+        <Button variant="primary" type="submit" disabled={busy || !form.fullName.trim()}>
           Add contact
-        </button>
+        </Button>
       </div>
     </Panel>
   );
@@ -642,9 +641,9 @@ function ProgramsPanel({
             <input value={form.submissionUrl} onChange={set("submissionUrl")} placeholder="https://…" />
           </FormRow>
         </FormGrid>
-        <button type="submit" className="app-button secondary" disabled={busy || !form.employerName.trim()}>
+        <Button variant="secondary" type="submit" disabled={busy || !form.employerName.trim()}>
           Save program
-        </button>
+        </Button>
       </form>
     </Panel>
   );

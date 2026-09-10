@@ -2,7 +2,7 @@
 
 import type React from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { SAFETY_CATEGORIES, safetyCategoryLabel } from "../../lib/safety-training";
 import type { SafetyTrainingView } from "../../lib/safety-training/compute-safety-training";
@@ -129,14 +129,14 @@ export default function SafetyTrainingClient() {
           return (
             <EmptyState title={copy.title} description={copy.description}>
               {copy.primary ? (
-                <a className="app-button" href={copy.primary.href}>
+                <Button as="a" variant="primary" href={copy.primary.href}>
                   {copy.primary.label}
-                </a>
+                </Button>
               ) : null}
               {copy.showRetry ? (
-                <button type="button" className="app-button secondary" onClick={() => load()}>
+                <Button variant="secondary" type="button" onClick={() => load()}>
                   Retry
-                </button>
+                </Button>
               ) : null}
             </EmptyState>
           );
@@ -283,9 +283,9 @@ function CreateModuleForm({
         />
       </FormRow>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !form.title.trim()}>
+        <Button variant="primary" type="submit" disabled={busy || !form.title.trim()}>
           Add module
-        </button>
+        </Button>
       </div>
     </Panel>
   );
@@ -424,9 +424,9 @@ function RecordCompletionForm({
         <textarea value={form.notes} onChange={(e) => setForm((prev) => ({ ...prev, notes: e.target.value }))} rows={2} />
       </FormRow>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !form.moduleId || !form.memberId || !form.completedOn}>
+        <Button variant="primary" type="submit" disabled={busy || !form.moduleId || !form.memberId || !form.completedOn}>
           Record completion
-        </button>
+        </Button>
       </div>
     </Panel>
   );

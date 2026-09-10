@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { BusinessRelated } from "../../components/business-related";
-import { EmptyState } from "../../components/ui";
+import { EmptyState, Button } from "../../components/ui";
 import { FUNDRAISERS_RELATED_INCLUDE } from "../../lib/business/business-related";
 import { fundraisersNextActions } from "../../lib/business/fundraisers-next-actions";
 import {
@@ -86,9 +86,9 @@ function FundraisersNextActions({
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -200,14 +200,14 @@ export default function FundraisersClient({ orgId }: { orgId: string | null }) {
           aria-busy={failure ? undefined : true}
         >
           {failure?.primary ? (
-            <a className="app-button" href={failure.primary.href}>
+            <Button as="a" variant="primary" href={failure.primary.href}>
               {failure.primary.label}
-            </a>
+            </Button>
           ) : null}
           {failure?.showRetry ? (
-            <button type="button" className="app-button secondary" onClick={() => void load()}>
+            <Button variant="secondary" type="button" onClick={() => void load()}>
               Retry
-            </button>
+            </Button>
           ) : null}
         </EmptyState>
       </main>
@@ -419,9 +419,9 @@ export default function FundraisersClient({ orgId }: { orgId: string | null }) {
               onChange={(e) => setForm({ ...form, notes: e.target.value })}
             />
           </label>
-          <button className="app-button" type="submit" disabled={busy}>
+          <Button variant="primary" type="submit" disabled={busy}>
             Add fundraiser
-          </button>
+          </Button>
         </form>
 
         <section className="app-card soft-panel fr-connect">
@@ -479,41 +479,19 @@ export default function FundraisersClient({ orgId }: { orgId: string | null }) {
                   </div>
                   <div className="fr-event-actions">
                     {STATUS_FLOW[e.status] ? (
-                      <button
-                        type="button"
-                        className="app-button secondary sm"
-                        disabled={busy}
-                        onClick={() =>
-                          void post(
-                            { action: "set_status", id: e.id, status: STATUS_FLOW[e.status] },
-                            "Status updated.",
-                          )
-                        }
-                      >
+                      <Button variant="secondary" size="sm" type="button" disabled={busy} onClick={() => void post( { action: "set_status", id: e.id, status: STATUS_FLOW[e.status] }, "Status updated.", ) }>
                         Mark {STATUS_FLOW[e.status]}
-                      </button>
+                      </Button>
                     ) : null}
                     {canManageMoney && e.status !== "cancelled" ? (
-                      <button
-                        type="button"
-                        className="app-button secondary sm"
-                        disabled={busy}
-                        onClick={() => void recordProceeds(e.id)}
-                      >
+                      <Button variant="secondary" size="sm" type="button" disabled={busy} onClick={() => void recordProceeds(e.id)}>
                         Record $
-                      </button>
+                      </Button>
                     ) : null}
                     {e.status !== "completed" && e.status !== "cancelled" ? (
-                      <button
-                        type="button"
-                        className="app-button secondary sm"
-                        disabled={busy}
-                        onClick={() =>
-                          void post({ action: "set_status", id: e.id, status: "cancelled" }, "Cancelled.")
-                        }
-                      >
+                      <Button variant="secondary" size="sm" type="button" disabled={busy} onClick={() => void post({ action: "set_status", id: e.id, status: "cancelled" }, "Cancelled.") }>
                         Cancel
-                      </button>
+                      </Button>
                     ) : null}
                   </div>
                 </li>

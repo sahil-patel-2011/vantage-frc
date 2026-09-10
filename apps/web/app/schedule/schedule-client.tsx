@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { AiInsightPanel } from "../../components/ai-insight-panel";
 import { OfflineBanner } from "../../components/offline-banner";
 import { ScheduleRelated } from "../../components/schedule-related";
-import { EmptyState, Panel } from "../../components/ui";
+import { Button, EmptyState, Panel } from "../../components/ui";
 import { ExportButton, type CsvColumn } from "../../components/ui/export-button";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
@@ -34,6 +34,7 @@ import {
   type ScheduleMatch,
   type ScheduleView,
 } from "../../lib/schedule-board";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 
 /**
  * CSV shape of the match board. One row per match with the alliances flattened into
@@ -164,9 +165,9 @@ function ScheduleNextActionsPanel({ actions }: { actions: ScheduleNextAction[] }
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -185,6 +186,8 @@ function ScheduleShell({
   error,
   errorStatus,
   onRetry,
+  fromCache = false,
+  cachedAt = null,
   children,
 }: {
   title: string;
@@ -198,6 +201,8 @@ function ScheduleShell({
   /** HTTP status of the failed load, so an expired session can offer sign-in. */
   errorStatus?: number | null;
   onRetry?: () => void;
+  fromCache?: boolean;
+  cachedAt?: string | null;
   children?: ReactNode;
 }) {
   const actions = scheduleNextActions({
@@ -239,10 +244,11 @@ function ScheduleShell({
       </header>
       <OfflineBanner
         feature="Schedule"
-        fromCache={false}
+        fromCache={fromCache}
+        cachedAt={cachedAt}
         detail={
-          fetchFailed
-            ? "Open Schedule once online so the shell can cache for venue Wi-Fi drops."
+          fetchFailed && !fromCache
+            ? "Open Schedule once online so this phone can keep the last match board."
             : undefined
         }
       />
@@ -257,17 +263,19 @@ function ScheduleShell({
       >
         <div className="sched-inline-actions">
           {failure?.primary ? (
-            <a className="app-button" href={failure.primary.href}>
+            <Button as="a" variant="primary" href={failure.primary.href}>
               {failure.primary.label}
-            </a>
+            </Button>
           ) : null}
           {failure?.showRetry && onRetry ? (
-            <button type="button" className="app-button secondary" onClick={onRetry}>
+            <Button type="button" variant="secondary" onClick={onRetry}>
               Retry
-            </button>
+            </Button>
           ) : null}
           {shell === "setup" ? (
-            <a className="app-button is-primary" href={workspaceHref}>Choose your team</a>
+            <Button as="a" variant="primary" href={workspaceHref}>
+              Choose your team
+            </Button>
           ) : null}
           <ScheduleRelated
             orgId={orgId}
@@ -289,28 +297,42 @@ export default function ScheduleClient() {
   const [failureStatus, setFailureStatus] = useState<number | null>(null);
   const [scope, setScope] = useState<"all" | "ours">("all");
   const [hidePlayed, setHidePlayed] = useState(false);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
   const inFlightRef = useRef(false);
+  const viewRef = useRef<ScheduleView | null>(null);
+  viewRef.current = view;
 
   const load = useCallback(async () => {
     if (inFlightRef.current) return;
     inFlightRef.current = true;
     const params = new URLSearchParams(window.location.search);
-    const orgId = params.get("orgId");
+    const orgId = params.get("orgId") ?? "";
+    const cached = orgId ? await getFeatureSnapshot<ScheduleView>("schedule", orgId) : null;
+    if (!viewRef.current && cached?.data) {
+      setView(cached.data);
+      setFromCache(true);
+      setCachedAt(cached.cachedAt);
+    }
     try {
       const response = await fetch(`/api/schedule${orgId ? `?orgId=${encodeURIComponent(orgId)}` : ""}`);
       const data = (await response.json()) as ScheduleView | { error?: string };
       if (!response.ok || !("status" in data)) {
         setError("error" in data && data.error ? data.error : "Could not load the match schedule.");
         setFailureStatus(response.status);
-        setFetchFailed(true);
+        if (!viewRef.current && !cached) setFetchFailed(true);
         return;
       }
       setError("");
       setFailureStatus(null);
       setFetchFailed(false);
       setView(data);
+      setFromCache(false);
+      setCachedAt(null);
+      const cacheOrg = data.context.orgId || orgId;
+      if (cacheOrg) await putFeatureSnapshot("schedule", cacheOrg, data);
     } catch {
-      setFetchFailed(true);
+      if (!viewRef.current && !cached) setFetchFailed(true);
     } finally {
       inFlightRef.current = false;
     }
@@ -371,6 +393,8 @@ export default function ScheduleClient() {
         error={error}
         errorStatus={failureStatus}
         onRetry={() => void load()}
+        fromCache={fromCache}
+        cachedAt={cachedAt}
       />
     );
   }
@@ -384,6 +408,8 @@ export default function ScheduleClient() {
         orgId={orgId}
         shell="setup"
         hasActiveEvent={Boolean(view.context.eventKey)}
+        fromCache={fromCache}
+        cachedAt={cachedAt}
       />
     );
   }
@@ -425,18 +451,19 @@ export default function ScheduleClient() {
         </div>
         <div className="sched-header-actions">
           <ScheduleRelated orgId={orgId} include={[...SCHEDULE_RELATED_INCLUDE]} />
-          <button type="button" className="app-button secondary" onClick={() => void load()}>
+          <Button type="button" variant="secondary" onClick={() => void load()}>
             Refresh
-          </button>
+          </Button>
         </div>
       </header>
 
       <OfflineBanner
         feature="Schedule"
-        fromCache={Boolean(view.matches.length) && fetchFailed}
+        fromCache={fromCache}
+        cachedAt={cachedAt}
         detail={
           fetchFailed
-            ? "Showing the last loaded schedule from this session when available."
+            ? "Showing the last loaded schedule from this phone when the live board could not refresh."
             : undefined
         }
       />

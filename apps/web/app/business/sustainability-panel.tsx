@@ -12,7 +12,7 @@
 // numbers of its own.
 
 import { useEffect, useState } from "react";
-import { Badge } from "../../components/ui";
+import { Badge, Button } from "../../components/ui";
 import type { BadgeTone } from "../../components/ui";
 import { levelLabel, topFactors } from "../../lib/sustainability/risk";
 import type { SustainabilityView } from "../../lib/sustainability/compute-sustainability";
@@ -93,12 +93,11 @@ export default function SustainabilityPanel({
               <li key={input}>{input}</li>
             ))}
           </ul>
-          <a
-            className="app-button ghost"
+          <Button as="a" variant="ghost"
             href={`/business?orgId=${encodeURIComponent(view.orgId)}&tab=finance`}
           >
             Open the finance desk
-          </a>
+          </Button>
         </>
       ) : (
         <>

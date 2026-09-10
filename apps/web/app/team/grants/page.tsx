@@ -1,5 +1,5 @@
 import GrantsClient from "./grants-client";
-import { EmptyState } from "../../../components/ui";
+import { EmptyState, Button } from "../../../components/ui";
 
 export const metadata = {
   title: "Grants",
@@ -27,9 +27,9 @@ export default async function GrantsPage({
           title="Select a team"
           description="Grant narratives belong to one team. Choose a team to open the writing workbench — award amounts stay blank until you record them."
         >
-          <a className="app-button" href="/workspace">
+          <Button as="a" variant="primary" href="/workspace">
             Choose your team
-          </a>
+          </Button>
         </EmptyState>
       </main>
     );

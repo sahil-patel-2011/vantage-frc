@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { PageHeader, SoftBlockSkeleton } from "../../../components/ui";
+import { PageHeader, SoftBlockSkeleton, Button } from "../../../components/ui";
 import { SponsoredPromoBanner } from "../../../components/sponsored-promo-banner";
 import { hubHref } from "../../../lib/nav/hubs";
 import {
@@ -108,9 +108,9 @@ function RelatedStrip({ orgId }: { orgId: string }) {
   return (
     <nav className="product-hub-related ai-keys-related" aria-label="Related AI settings">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -133,20 +133,19 @@ function ShellPanel({
       <h2>{copy.title}</h2>
       <p className="app-muted">{copy.description}</p>
       {shell === "empty" ? (
-        <a className="app-button primary is-primary" href="/workspace">Choose your team</a>
+        <Button as="a" variant="primary" href="/workspace">Choose your team</Button>
       ) : null}
       {shell === "auth_required" ? (
-        <a
-          className="app-button primary"
+        <Button as="a" variant="primary"
           href={`/signin?next=${encodeURIComponent("/team/ai-keys")}`}
         >
           Sign in
-        </a>
+        </Button>
       ) : null}
       {shell === "setup" && orgId ? (
-        <a className="app-button secondary" href={withOrgHref("/team/admin", orgId)}>
+        <Button as="a" variant="secondary" href={withOrgHref("/team/admin", orgId)}>
           Team admin
-        </a>
+        </Button>
       ) : null}
     </section>
   );
@@ -190,14 +189,14 @@ function LoadFailurePanel({
       <h2>{copy.title}</h2>
       <p className="app-muted">{copy.description}</p>
       {copy.primary ? (
-        <a className="app-button primary" href={copy.primary.href}>
+        <Button as="a" variant="primary" href={copy.primary.href}>
           {copy.primary.label}
-        </a>
+        </Button>
       ) : null}
       {copy.showRetry ? (
-        <button type="button" className="app-button secondary" onClick={onRetry}>
+        <Button variant="secondary" type="button" onClick={onRetry}>
           Retry
-        </button>
+        </Button>
       ) : null}
     </section>
   );
@@ -761,14 +760,9 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
                           : " · not used yet"}
                       </small>
                     </div>
-                    <button
-                      type="button"
-                      className="app-button secondary"
-                      disabled={mineBusy}
-                      onClick={() => void removeMemberKey(row.provider)}
-                    >
+                    <Button variant="secondary" type="button" disabled={mineBusy} onClick={() => void removeMemberKey(row.provider)}>
                       Remove
-                    </button>
+                    </Button>
                   </li>
                 ))}
               </ul>
@@ -841,9 +835,9 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
                   <small className="app-muted">{MEMBER_KEY_MODEL_HINT}</small>
                 </label>
               ) : null}
-              <button className="app-button" type="submit" disabled={mineBusy || !mineDraft.apiKey.trim()}>
+              <Button variant="primary" type="submit" disabled={mineBusy || !mineDraft.apiKey.trim()}>
                 {mineBusy ? "Saving…" : "Save my key"}
-              </button>
+              </Button>
             </form>
           </section>
 

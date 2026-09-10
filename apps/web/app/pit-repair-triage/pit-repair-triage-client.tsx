@@ -11,8 +11,7 @@ import {
   PageHeader,
   Panel,
   SoftBlockSkeleton,
-  StatTile,
-} from "../../components/ui";
+  StatTile, Button } from "../../components/ui";
 import {
   TRIAGE_STATUSES,
   mainBreakerTripCue,
@@ -65,9 +64,9 @@ function RelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related prt-related" aria-label="Related competition tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -88,9 +87,9 @@ function NextActionsPanel({ actions }: { actions: PitRepairTriageNextAction[] })
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -148,10 +147,10 @@ function TriageShell({
           description={error ?? copy.description}
         >
           {shell === "setup" ? (
-            <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
+            <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
           ) : null}
           {shell === "empty" ? (
-            <a className="app-button is-primary" href="#pit-repair-triage-log">Log a pit failure</a>
+            <Button as="a" variant="primary" href="#pit-repair-triage-log">Log a pit failure</Button>
           ) : null}
         </EmptyState>
       )}
@@ -168,9 +167,9 @@ function TriageShell({
                   <strong>{step.label}</strong>
                   <p className="app-muted prt-tip">{step.detail}</p>
                 </div>
-                <a className="app-button secondary" href={step.href}>
+                <Button as="a" variant="secondary" href={step.href}>
                   Open
-                </a>
+                </Button>
               </li>
             ))}
           </ul>
@@ -455,20 +454,20 @@ function ResolveWithPartsForm({
             onChange={(event) => setPickQty(event.target.value)}
             aria-label="Quantity used"
           />
-          <button type="button" className="app-button secondary" disabled={busy || !pickItemId} onClick={addPart}>
+          <Button variant="secondary" type="button" disabled={busy || !pickItemId} onClick={addPart}>
             Add
-          </button>
+          </Button>
         </div>
       ) : (
         <p className="app-muted prt-tip">No parts currently in stock — resolve without decrementing.</p>
       )}
       <div className="prt-status-actions">
-        <button type="button" className="app-button" disabled={busy} onClick={() => onResolve(chosen)}>
+        <Button variant="primary" type="button" disabled={busy} onClick={() => onResolve(chosen)}>
           {chosen.length > 0 ? `Resolve & log ${chosen.length} part(s)` : "Resolve without parts"}
-        </button>
-        <button type="button" className="app-button secondary" disabled={busy} onClick={onCancel}>
+        </Button>
+        <Button variant="secondary" type="button" disabled={busy} onClick={onCancel}>
           Cancel
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -545,21 +544,9 @@ function ReportsList({
             {report.status !== "resolved" && resolvingId !== report.id ? (
               <div className="prt-status-actions">
                 {TRIAGE_STATUSES.filter((status) => status !== report.status).map((status) => (
-                  <button
-                    key={status}
-                    type="button"
-                    className="app-button secondary"
-                    disabled={busy}
-                    onClick={() => {
-                      if (status === "resolved") {
-                        setResolvingId(report.id);
-                      } else {
-                        mutate({ action: "update-status", reportId: report.id, status });
-                      }
-                    }}
-                  >
+                  <Button variant="secondary" key={status} type="button" disabled={busy} onClick={() => { if (status === "resolved") { setResolvingId(report.id); } else { mutate({ action: "update-status", reportId: report.id, status }); } }}>
                     Mark {STATUS_LABEL[status].toLowerCase()}
-                  </button>
+                  </Button>
                 ))}
               </div>
             ) : null}
@@ -717,13 +704,9 @@ function LogFailureForm({
         <textarea value={form.symptomNote} onChange={set("symptomNote")} rows={2} />
       </FormRow>
       <div>
-        <button
-          type="submit"
-          className="app-button"
-          disabled={busy || !form.subsystemName.trim() || !form.title.trim()}
-        >
+        <Button variant="primary" type="submit" disabled={busy || !form.subsystemName.trim() || !form.title.trim()}>
           Triage failure
-        </button>
+        </Button>
       </div>
     </Panel>
   );

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { EmptyState, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
 import type { PicklistJustifierView } from "../../lib/picklist-justifier/compute-picklist-justifier";
 import { picklistTierLabel } from "../../lib/picklist-justifier";
 import {
@@ -29,9 +29,9 @@ function JustifierRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related picklist-justifier-related" aria-label="Related competition tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -55,9 +55,9 @@ function JustifierNextActionsPanel({ actions }: { actions: PicklistJustifierNext
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -117,15 +117,15 @@ function JustifierShell({
         aria-busy={shell === "loading"}
       >
         {shell === "error" && onRetry ? (
-          <button type="button" className="app-button secondary" onClick={onRetry}>
+          <Button variant="secondary" type="button" onClick={onRetry}>
             Retry
-          </button>
+          </Button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
+          <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
         ) : null}
         {shell === "empty" ? (
-          <a className="app-button is-primary" href={strategyHref}>Open Strategy</a>
+          <Button as="a" variant="primary" href={strategyHref}>Open Strategy</Button>
         ) : null}
       </EmptyState>
       <JustifierNextActionsPanel actions={actions} />
@@ -290,9 +290,9 @@ export default function PicklistJustifierClient() {
             </label>
           ) : null}
           {relatedLinks.map((link) => (
-            <a key={link.id} className="app-button secondary" href={link.href}>
+            <Button as="a" variant="secondary" key={link.id} href={link.href}>
               {link.label}
-            </a>
+            </Button>
           ))}
         </div>
       </PageHeader>
@@ -338,9 +338,9 @@ export default function PicklistJustifierClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <a className="app-button is-primary" href={strategyHref}>
+          <Button as="a" variant="primary" href={strategyHref}>
             Open Strategy
-          </a>
+          </Button>
         </EmptyState>
       ) : (
         <div className="picklist-justifier-layout">
@@ -383,14 +383,9 @@ function SummaryPanel({
             ) : null}
           </small>
         </div>
-        <button
-          type="button"
-          className="app-button"
-          disabled={busy || !view.selectedPickListId}
-          onClick={() => view.selectedPickListId && mutate({ action: "generate", pickListId: view.selectedPickListId })}
-        >
+        <Button variant="primary" type="button" disabled={busy || !view.selectedPickListId} onClick={() => view.selectedPickListId && mutate({ action: "generate", pickListId: view.selectedPickListId })}>
           {busy ? "Generating…" : "Generate justifications"}
-        </button>
+        </Button>
       </header>
     </Panel>
   );

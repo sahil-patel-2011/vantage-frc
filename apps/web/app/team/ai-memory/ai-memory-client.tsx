@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "../../../components/ui";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AiHubRelated } from "../../../components/ai-hub-related";
@@ -33,9 +34,9 @@ function MemoryRelatedStrip({ orgId }: { orgId: string }) {
   return (
     <nav className="product-hub-related ai-memory-related" aria-label="Related AI tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -67,9 +68,9 @@ function NextActions({
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -341,9 +342,9 @@ export default function AiMemoryClient({ orgId }: { orgId: string }) {
             activeCount={Number.isFinite(activeCount) ? activeCount : 0}
           />
           {shell === "error" ? (
-            <button type="button" className="app-button secondary" onClick={() => void load()}>
+            <Button variant="secondary" type="button" onClick={() => void load()}>
               Retry
-            </button>
+            </Button>
           ) : null}
         </section>
       ) : null}
@@ -357,13 +358,13 @@ export default function AiMemoryClient({ orgId }: { orgId: string }) {
                 <h2>{card.title}</h2>
                 <p className="app-muted">{card.body}</p>
                 {card.id === "private" ? (
-                  <a className="app-button secondary" href={chatHref}>
+                  <Button as="a" variant="secondary" href={chatHref}>
                     Open Chat context
-                  </a>
+                  </Button>
                 ) : (
-                  <a className="app-button secondary" href="#team-memory-policy">
+                  <Button as="a" variant="secondary" href="#team-memory-policy">
                     Admin policy
-                  </a>
+                  </Button>
                 )}
               </article>
             ))}
@@ -414,14 +415,9 @@ export default function AiMemoryClient({ orgId }: { orgId: string }) {
                 </p>
               </div>
               {journalMeta?.canRunNow ? (
-                <button
-                  type="button"
-                  className="app-button secondary dream-run-now"
-                  onClick={() => void runDreamNow()}
-                  disabled={running}
-                >
+                <Button variant="secondary" type="button" className="dream-run-now" onClick={() => void runDreamNow()} disabled={running}>
                   {running ? "Running…" : "Run now for today"}
-                </button>
+                </Button>
               ) : null}
             </header>
 
@@ -458,9 +454,9 @@ export default function AiMemoryClient({ orgId }: { orgId: string }) {
             ) : journalError ? (
               <div className="dream-journal-error" role="status">
                 <p className="app-muted">{journalError}</p>
-                <button type="button" className="app-button secondary" onClick={() => void loadJournal()}>
+                <Button variant="secondary" type="button" onClick={() => void loadJournal()}>
                   Retry
-                </button>
+                </Button>
               </div>
             ) : journal.length === 0 ? (
               <p className="app-muted dream-status">
@@ -475,14 +471,9 @@ export default function AiMemoryClient({ orgId }: { orgId: string }) {
                   ))}
                 </div>
                 {journalMeta?.nextCursor ? (
-                  <button
-                    type="button"
-                    className="app-button secondary dream-more"
-                    disabled={journalMore}
-                    onClick={() => void loadJournal(journalMeta.nextCursor)}
-                  >
+                  <Button variant="secondary" type="button" className="dream-more" disabled={journalMore} onClick={() => void loadJournal(journalMeta.nextCursor)}>
                     {journalMore ? "Loading…" : "Load earlier entries"}
-                  </button>
+                  </Button>
                 ) : null}
               </>
             )}
@@ -539,12 +530,12 @@ export default function AiMemoryClient({ orgId }: { orgId: string }) {
               <button className="primary-action" disabled={saving} type="submit">
                 {saving ? "Saving…" : "Save team memory policy"}
               </button>
-              <a className="app-button secondary" href={chatHref}>
+              <Button as="a" variant="secondary" href={chatHref}>
                 Open Chat
-              </a>
-              <a className="app-button secondary" href={budgetsHref}>
+              </Button>
+              <Button as="a" variant="secondary" href={budgetsHref}>
                 Open Budgets
-              </a>
+              </Button>
             </div>
           </form>
         </>

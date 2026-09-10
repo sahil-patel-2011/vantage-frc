@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { EmptyState, Panel } from "../../../components/ui";
+import { EmptyState, Panel, Button } from "../../../components/ui";
 import { CLIENT_HUB_IDS, type ClientHubId } from "../../../lib/nav/hub-access-filter";
 import { PRODUCT_HUBS } from "../../../lib/nav/hubs";
 
@@ -193,9 +193,9 @@ export default function HubAccessClient({ orgId }: { orgId: string }) {
               title="No scouts or viewers to restrict"
               description="Invite members from Team admin, then limit Competition, Team, Business, Build, AI, or Media here."
             >
-              <a className="app-button secondary" href={`/team/admin?orgId=${encodeURIComponent(orgId)}`}>
+              <Button as="a" variant="secondary" href={`/team/admin?orgId=${encodeURIComponent(orgId)}`}>
                 Open Team admin
-              </a>
+              </Button>
             </EmptyState>
           ) : null}
           {editable.map((member) => {

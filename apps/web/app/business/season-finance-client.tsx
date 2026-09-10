@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { BusinessRelated } from "../../components/business-related";
-import { Badge, EmptyState, StatTile } from "../../components/ui";
+import { Badge, EmptyState, StatTile, Button } from "../../components/ui";
 import { ExportButton, type CsvColumn } from "../../components/ui/export-button";
 import {
   MONEY_SOURCE_LABELS,
@@ -228,14 +228,14 @@ export default function SeasonFinanceClient({
               <EmptyState title={copy.title} description={copy.description}>
                 <div className="season-finance-next">
                   {copy.primary ? (
-                    <a className="app-button" href={copy.primary.href}>
+                    <Button as="a" variant="primary" href={copy.primary.href}>
                       {copy.primary.label}
-                    </a>
+                    </Button>
                   ) : null}
                   {copy.showRetry ? (
-                    <button type="button" className="app-button secondary" onClick={() => void load()}>
+                    <Button variant="secondary" type="button" onClick={() => void load()}>
                       Retry
-                    </button>
+                    </Button>
                   ) : null}
                 </div>
               </EmptyState>
@@ -247,9 +247,9 @@ export default function SeasonFinanceClient({
         <EmptyState badge="Setup required" badgeTone="setup" title={view.message} description="Funding, purchases, and sponsorships stay empty until this team can read the finance tables.">
           <div className="season-finance-next">
             {view.steps.map((step) => (
-              <a key={step.id} className="app-button secondary" href={step.href}>
+              <Button as="a" variant="secondary" key={step.id} href={step.href}>
                 {step.label}
-              </a>
+              </Button>
             ))}
           </div>
         </EmptyState>
@@ -442,9 +442,9 @@ function LiveDesk({
                 <span>Notes</span>
                 <input name="notes" placeholder="Check #, board vote, restrictions…" />
               </label>
-              <button className="app-button" disabled={busy}>
+              <Button variant="primary" disabled={busy}>
                 Add funding source
-              </button>
+              </Button>
             </form>
           ) : (
             <p className="app-muted">Finance leads add school funds and other income. Members can still log receipts.</p>
@@ -555,9 +555,9 @@ function LiveDesk({
             <span>Notes</span>
             <input name="notes" placeholder="Who paid, PO number, restriction…" />
           </label>
-          <button className="app-button" disabled={busy}>
+          <Button variant="primary" disabled={busy}>
             Log purchase
-          </button>
+          </Button>
         </form>
         <div className="biz-table-wrap">
           <table className="biz-table">

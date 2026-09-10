@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "./ui";
 
 import { useEffect, useState } from "react";
 
@@ -98,9 +99,9 @@ export function SponsoredPromoBanner({
       ) : null}
       {expired ? (
         <div style={{ marginTop: "0.45rem" }}>
-          <a className="app-button secondary" href={`/team/ai-keys?orgId=${encodeURIComponent(orgId)}`}>
+          <Button as="a" variant="secondary" href={`/team/ai-keys?orgId=${encodeURIComponent(orgId)}`}>
             Add AI keys
-          </a>
+          </Button>
         </div>
       ) : null}
     </aside>

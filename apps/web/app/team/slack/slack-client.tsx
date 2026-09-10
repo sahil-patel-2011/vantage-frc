@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { EmptyState, PageHeader } from "../../../components/ui";
+import { EmptyState, PageHeader, Button } from "../../../components/ui";
 import { TeamOpsNav } from "../../../components/team-ops-nav";
 import { slackNextActions, slackRelatedLinks } from "../../../lib/slack-related";
 import { withOrgHref } from "../../../lib/nav/product-nav";
@@ -162,9 +162,9 @@ export default function TeamSlackClient({ orgId }: { orgId: string }) {
       <TeamOpsNav active="admin" />
       <nav className="product-hub-related team-discord-related" aria-label="Related team tools">
         {related.map((link) => (
-          <a key={link.id} className="app-button secondary" href={link.href}>
+          <Button as="a" variant="secondary" key={link.id} href={link.href}>
             {link.label}
-          </a>
+          </Button>
         ))}
       </nav>
 
@@ -184,14 +184,14 @@ export default function TeamSlackClient({ orgId }: { orgId: string }) {
           badgeTone="setup"
         >
           {failure.primary ? (
-            <a className="app-button" href={failure.primary.href}>
+            <Button as="a" variant="primary" href={failure.primary.href}>
               {failure.primary.label}
-            </a>
+            </Button>
           ) : null}
           {failure.showRetry ? (
-            <button type="button" className="app-button secondary" onClick={() => void load()}>
+            <Button variant="secondary" type="button" onClick={() => void load()}>
               Retry
-            </button>
+            </Button>
           ) : null}
         </EmptyState>
       ) : null}
@@ -205,9 +205,9 @@ export default function TeamSlackClient({ orgId }: { orgId: string }) {
           badge="Not connected"
           badgeTone="setup"
         >
-          <a className="app-button" href={withOrgHref("/team?tab=messages", orgId)}>
+          <Button as="a" variant="primary" href={withOrgHref("/team?tab=messages", orgId)}>
             Open team chat
-          </a>
+          </Button>
         </EmptyState>
       ) : null}
 
@@ -266,15 +266,15 @@ export default function TeamSlackClient({ orgId }: { orgId: string }) {
           Sync team chat both ways
         </label>
         <div className="team-discord-actions">
-          <button className="app-button" type="submit" disabled={busy}>
+          <Button variant="primary" type="submit" disabled={busy}>
             Save Slack
-          </button>
-          <button className="app-button secondary" type="button" disabled={busy || !view?.hasWebhook} onClick={() => void run("test")}>
+          </Button>
+          <Button variant="secondary" type="button" disabled={busy || !view?.hasWebhook} onClick={() => void run("test")}>
             Send test
-          </button>
-          <button className="app-button secondary" type="button" disabled={busy || !view?.configured} onClick={() => void run("disconnect")}>
+          </Button>
+          <Button variant="secondary" type="button" disabled={busy || !view?.configured} onClick={() => void run("disconnect")}>
             Disconnect
-          </button>
+          </Button>
         </div>
         {view?.bridgePostLabel ? <p className="app-muted">Bridge: {view.bridgePostLabel}</p> : null}
         {status ? <p className={ok ? "team-discord-status ok" : "team-discord-status err"}>{status}</p> : null}
@@ -304,9 +304,9 @@ export default function TeamSlackClient({ orgId }: { orgId: string }) {
                 <strong>{action.label}</strong>
                 <span>{action.detail}</span>
               </div>
-              <a className="app-button secondary" href={action.href}>
+              <Button as="a" variant="secondary" href={action.href}>
                 Open
-              </a>
+              </Button>
             </li>
           ))}
         </ol>

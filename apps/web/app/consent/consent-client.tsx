@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "../../components/ui";
 import { useCallback, useEffect, useState } from "react";
 import { FORM_TYPE_LABEL, FORM_TYPES, missingFormsFor, type FormType, type RecordStatus } from "../../lib/consent";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
@@ -94,16 +95,16 @@ export default function ConsentClient({ orgId }: { orgId: string | null }) {
         </p>
         {failure?.primary ? (
           <p>
-            <a className="app-button" href={failure.primary.href}>
+            <Button as="a" variant="primary" href={failure.primary.href}>
               {failure.primary.label}
-            </a>
+            </Button>
           </p>
         ) : null}
         {failure?.showRetry ? (
           <p>
-            <button type="button" className="app-button secondary" onClick={() => void load()}>
+            <Button variant="secondary" type="button" onClick={() => void load()}>
               Retry
-            </button>
+            </Button>
           </p>
         ) : null}
       </main>

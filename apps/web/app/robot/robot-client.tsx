@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AiInsightPanel } from "../../components/ai-insight-panel";
-import { EmptyState } from "../../components/ui";
+import { EmptyState, Button } from "../../components/ui";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
@@ -52,9 +52,9 @@ function LinkEditor({
       }}
     >
       <input value={draft} placeholder={placeholder} disabled={busy} onChange={(event) => setDraft(event.target.value)} />
-      <button type="submit" className="app-button secondary sm" disabled={busy}>
+      <Button variant="secondary" size="sm" type="submit" disabled={busy}>
         Save
-      </button>
+      </Button>
       <button type="button" className="robot-link" disabled={busy} onClick={() => setEditing(false)}>
         Cancel
       </button>
@@ -322,14 +322,14 @@ export default function RobotClient() {
                   <strong>{copy.title}</strong>
                   <p className="app-muted">{copy.description}</p>
                   {copy.primary ? (
-                    <a className="app-button" href={copy.primary.href}>
+                    <Button as="a" variant="primary" href={copy.primary.href}>
                       {copy.primary.label}
-                    </a>
+                    </Button>
                   ) : null}
                   {copy.showRetry ? (
-                    <button type="button" className="app-button secondary" onClick={() => void load()}>
+                    <Button variant="secondary" type="button" onClick={() => void load()}>
                       Retry
-                    </button>
+                    </Button>
                   ) : null}
                 </>
               );
@@ -353,9 +353,9 @@ export default function RobotClient() {
           </div>
         </header>
         <EmptyState className="robot-empty" title="Select a team" description={view.message}>
-          <a className="app-button" href="/workspace">
+          <Button as="a" variant="primary" href="/workspace">
             Choose your team
-          </a>
+          </Button>
         </EmptyState>
       </main>
     );
@@ -418,14 +418,9 @@ export default function RobotClient() {
           title={`No subsystems yet for “${robotLabel}”`}
           description="Seed the standard FRC set (drivetrain, intake, scorer…) and then link each to its CAD, code, and strategy."
         >
-          <button
-            type="button"
-            className="app-button"
-            disabled={busy}
-            onClick={() => void run({ action: "seed_subsystems", orgId, robotLabel }, "seed")}
-          >
+          <Button variant="primary" type="button" disabled={busy} onClick={() => void run({ action: "seed_subsystems", orgId, robotLabel }, "seed")}>
             Seed standard subsystems
-          </button>
+          </Button>
         </EmptyState>
       ) : (
         <div className="robot-grid">
@@ -451,9 +446,9 @@ export default function RobotClient() {
         }}
       >
         <input value={newName} disabled={busy} placeholder="Add a subsystem (e.g. Turret)" onChange={(event) => setNewName(event.target.value)} />
-        <button type="submit" className="app-button secondary" disabled={busy || !newName.trim()}>
+        <Button variant="secondary" type="submit" disabled={busy || !newName.trim()}>
           Add subsystem
-        </button>
+        </Button>
         {robotSubsystems.length > 0 ? (
           <button type="button" className="robot-link" disabled={busy} onClick={() => void run({ action: "seed_subsystems", orgId, robotLabel }, "seed")}>
             Re-sync standard set

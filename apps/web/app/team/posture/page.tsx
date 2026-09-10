@@ -1,4 +1,4 @@
-import { EmptyState, PageHeader } from "../../../components/ui";
+import { EmptyState, PageHeader, Button } from "../../../components/ui";
 import PostureClient from "./posture-client";
 
 export const metadata = {
@@ -26,9 +26,9 @@ export default async function TeamPosturePage({
           title="Choose a team"
           description="Every check reads that team’s own configuration, so it needs a team before it can score anything."
         >
-          <a className="app-button" href="/workspace">
+          <Button as="a" variant="primary" href="/workspace">
             Choose team
-          </a>
+          </Button>
         </EmptyState>
       </main>
     );

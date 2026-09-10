@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { reorderStatusLabel, reorderUrgencyLabel } from "../../lib/vendor-lead-times";
 import type { VendorLeadTimesView } from "../../lib/vendor-lead-times/compute-vendor-lead-times";
 import {
@@ -37,9 +37,9 @@ function VendorLeadTimesRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related vendor-lead-times-related" aria-label="Related procurement tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -63,9 +63,9 @@ function VendorLeadTimesNextActionsPanel({ actions }: { actions: VendorLeadTimes
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -125,15 +125,15 @@ function VendorLeadTimesShell({
         aria-busy={shell === "loading"}
       >
         {shell === "error" && onRetry ? (
-          <button type="button" className="app-button secondary" onClick={onRetry}>
+          <Button variant="secondary" type="button" onClick={onRetry}>
             Retry
-          </button>
+          </Button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
+          <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
         ) : null}
         {shell === "empty" ? (
-          <a className="app-button is-primary" href={ordersHref}>Open Orders</a>
+          <Button as="a" variant="primary" href={ordersHref}>Open Orders</Button>
         ) : null}
       </EmptyState>
       <VendorLeadTimesNextActionsPanel actions={actions} />
@@ -284,9 +284,9 @@ export default function VendorLeadTimesClient() {
       >
         <div className="vendor-lead-times-header-actions">
           {relatedLinks.map((link) => (
-            <a key={link.id} className="app-button secondary" href={link.href}>
+            <Button as="a" variant="secondary" key={link.id} href={link.href}>
               {link.label}
-            </a>
+            </Button>
           ))}
         </div>
       </PageHeader>
@@ -311,9 +311,9 @@ export default function VendorLeadTimesClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <a className="app-button is-primary" href={ordersHref}>
+          <Button as="a" variant="primary" href={ordersHref}>
             Open Orders
-          </a>
+          </Button>
         </EmptyState>
       ) : null}
 
@@ -411,9 +411,9 @@ function AddVendorForm({
         </FormRow>
       </FormGrid>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !form.name.trim()}>
+        <Button variant="primary" type="submit" disabled={busy || !form.name.trim()}>
           Add vendor
-        </button>
+        </Button>
       </div>
     </Panel>
   );
@@ -483,13 +483,9 @@ function AddReorderForm({
         </FormRow>
       </FormGrid>
       <div>
-        <button
-          type="submit"
-          className="app-button"
-          disabled={busy || !form.vendorId || !form.itemName.trim() || !form.neededBy}
-        >
+        <Button variant="primary" type="submit" disabled={busy || !form.vendorId || !form.itemName.trim() || !form.neededBy}>
           Log reorder
-        </button>
+        </Button>
       </div>
     </Panel>
   );

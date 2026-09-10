@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { EmptyState, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
 import { PURCHASE_REQUEST_STATUSES, forecastUrgencyLabel } from "../../lib/spare-forecast";
 import type { SpareForecastView } from "../../lib/spare-forecast/compute-spare-forecast";
 import {
@@ -41,9 +41,9 @@ function SpareForecastRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related spare-forecast-related" aria-label="Related spare tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -67,9 +67,9 @@ function SpareForecastNextActionsPanel({ actions }: { actions: SpareForecastNext
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -136,27 +136,27 @@ function SpareForecastShell({
         aria-busy={shell === "loading"}
       >
         {shell === "error" && onRetry ? (
-          <button type="button" className="app-button secondary" onClick={onRetry}>
+          <Button variant="secondary" type="button" onClick={onRetry}>
             Retry
-          </button>
+          </Button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
+          <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
         ) : null}
         {shell === "empty" ? (
-          <a className="app-button is-primary" href={inventoryHref}>Open Inventory</a>
+          <Button as="a" variant="primary" href={inventoryHref}>Open Inventory</Button>
         ) : null}
         {shell === "no_risk" ? (
           <>
-            <a className="app-button" href={hubHref("/build", "fmea", orgId)}>
+            <Button as="a" variant="primary" href={hubHref("/build", "fmea", orgId)}>
               Open FMEA
-            </a>
-            <a className="app-button secondary" href={subsystemsHref}>
+            </Button>
+            <Button as="a" variant="secondary" href={subsystemsHref}>
               Open Subsystems
-            </a>
-            <a className="app-button secondary" href={ordersHref}>
+            </Button>
+            <Button as="a" variant="secondary" href={ordersHref}>
               Open Orders
-            </a>
+            </Button>
           </>
         ) : null}
       </EmptyState>
@@ -350,9 +350,9 @@ export default function SpareForecastClient() {
             </label>
           ) : null}
           {relatedLinks.map((link) => (
-            <a key={link.id} className="app-button secondary" href={link.href}>
+            <Button as="a" variant="secondary" key={link.id} href={link.href}>
               {link.label}
-            </a>
+            </Button>
           ))}
         </div>
       </PageHeader>
@@ -535,17 +535,9 @@ function ForecastPanel({
               placeholder={`Spare-parts restock — ${view.seasonYear}`}
               aria-label="Purchase request title"
             />
-            <button
-              type="button"
-              className="app-button"
-              disabled={busy}
-              onClick={() => {
-                mutate({ action: "draft-purchase-request", title: title.trim() || undefined });
-                setTitle("");
-              }}
-            >
+            <Button variant="primary" type="button" disabled={busy} onClick={() => { mutate({ action: "draft-purchase-request", title: title.trim() || undefined }); setTitle(""); }}>
               Draft purchase request
-            </button>
+            </Button>
             <p className="app-muted">
               This draft is a restock reminder. Enter what / why / when / cost on the{" "}
               <a href={withOrgHref("/team/finance", view.orgId)}>Team Finance buy sheet</a>.
@@ -641,15 +633,9 @@ function PurchaseRequestsList({
             {request.status !== "dismissed" ? (
               <div className="spare-forecast-status-actions">
                 {PURCHASE_REQUEST_STATUSES.filter((status) => status !== request.status).map((status) => (
-                  <button
-                    key={status}
-                    type="button"
-                    className="app-button secondary"
-                    disabled={busy}
-                    onClick={() => mutate({ action: "update-status", requestId: request.id, status })}
-                  >
+                  <Button variant="secondary" key={status} type="button" disabled={busy} onClick={() => mutate({ action: "update-status", requestId: request.id, status })}>
                     Mark {STATUS_LABEL[status].toLowerCase()}
-                  </button>
+                  </Button>
                 ))}
               </div>
             ) : null}

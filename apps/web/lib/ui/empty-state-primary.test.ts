@@ -67,7 +67,7 @@ function matchingParen(src: string, openIdx: number): number | null {
   return null;
 }
 
-const CONTROL = /<(a|button)\b[\s\S]*?<\/\1>/g;
+const CONTROL = /<(a|button|Button)\b[\s\S]*?<\/\1>/g;
 
 function topLevelControls(inner: string): string[] | null {
   const tags: string[] = [];
@@ -91,6 +91,11 @@ function topLevelControls(inner: string): string[] | null {
 function classNameOf(tag: string): string {
   const m = /className="([^"]*)"/.exec(tag);
   return m?.[1] ?? "";
+}
+
+function isPrimaryTag(tag: string): boolean {
+  if (/\bvariant=["']primary["']/.test(tag)) return true;
+  return isPrimaryControl(classNameOf(tag));
 }
 
 function parenBlocks(src: string, marker: string): string[] {
@@ -126,9 +131,9 @@ describe("empty-state R4 (one primary on the empty card)", () => {
           problems.push(`${file} empty card has ${tags.length} sibling controls`);
           continue;
         }
-        const cls = classNameOf(tags[0] ?? "");
-        if (!isPrimaryControl(cls)) {
-          problems.push(`${file} empty card control is not primary: className="${cls}"`);
+        const tag = tags[0] ?? "";
+        if (!isPrimaryTag(tag)) {
+          problems.push(`${file} empty card control is not primary: ${tag.slice(0, 120)}`);
         }
       }
     }
@@ -142,10 +147,9 @@ describe("empty-state R4 (one primary on the empty card)", () => {
       for (const inner of parenBlocks(src, SETUP_OPEN)) {
         const tags = topLevelControls(inner);
         if (!tags || tags.length !== 1) continue;
-        if (!tags[0]?.startsWith("<a")) continue;
-        const cls = classNameOf(tags[0]);
-        if (!isPrimaryControl(cls)) {
-          problems.push(`${file} setup CTA is not primary: className="${cls}"`);
+        if (!tags[0]?.startsWith("<a") && !tags[0]?.startsWith("<Button")) continue;
+        if (!isPrimaryTag(tags[0])) {
+          problems.push(`${file} setup CTA is not primary: ${tags[0].slice(0, 120)}`);
         }
       }
     }

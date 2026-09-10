@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { EmptyState, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
 import { UsageCutoffBanner, resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 import { AWARD_LABEL, IMPACT_ESSAY_AWARDS, awardLabel } from "../../lib/impact-essay";
 import type { ImpactEssayView } from "../../lib/impact-essay/compute-impact-essay";
@@ -32,9 +32,9 @@ function ImpactEssayRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related impact-essay-related" aria-label="Related business tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -58,9 +58,9 @@ function ImpactEssayNextActionsPanel({ actions }: { actions: ImpactEssayNextActi
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -120,15 +120,15 @@ function ImpactEssayShell({
         aria-busy={shell === "loading"}
       >
         {shell === "error" && onRetry ? (
-          <button type="button" className="app-button secondary" onClick={onRetry}>
+          <Button variant="secondary" type="button" onClick={onRetry}>
             Retry
-          </button>
+          </Button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
+          <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
         ) : null}
         {shell === "empty" ? (
-          <a className="app-button is-primary" href={impactHref}>Open Community Impact</a>
+          <Button as="a" variant="primary" href={impactHref}>Open Community Impact</Button>
         ) : null}
       </EmptyState>
       <ImpactEssayNextActionsPanel actions={actions} />
@@ -315,9 +315,9 @@ export default function ImpactEssayClient() {
             </label>
           ) : null}
           {relatedLinks.map((link) => (
-            <a key={link.id} className="app-button secondary" href={link.href}>
+            <Button as="a" variant="secondary" key={link.id} href={link.href}>
               {link.label}
-            </a>
+            </Button>
           ))}
         </div>
       </PageHeader>
@@ -380,9 +380,9 @@ export default function ImpactEssayClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <a className="app-button is-primary" href={impactHref}>
+          <Button as="a" variant="primary" href={impactHref}>
             Open Community Impact
-          </a>
+          </Button>
         </EmptyState>
       ) : null}
 
@@ -439,9 +439,9 @@ function GenerateForm({
         </select>
       </label>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !hasData}>
+        <Button variant="primary" type="submit" disabled={busy || !hasData}>
           Generate essay draft
-        </button>
+        </Button>
         {!hasData ? (
           <span className="app-muted" style={{ marginLeft: 10 }}>
             Log at least one real record to enable generation.

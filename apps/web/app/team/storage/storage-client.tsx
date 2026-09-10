@@ -94,9 +94,9 @@ function StorageShell({
           title="Select a team"
           description={message ?? "Select a team to manage self-hosted storage."}
         >
-          <a className="app-button" href="/workspace">
+          <Button as="a" variant="primary" href="/workspace">
             Choose your team
-          </a>
+          </Button>
         </EmptyState>
       )}
     </main>

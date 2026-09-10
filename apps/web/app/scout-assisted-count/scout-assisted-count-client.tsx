@@ -10,8 +10,7 @@ import {
   PageHeader,
   Panel,
   SoftBlockSkeleton,
-  StatTile,
-} from "../../components/ui";
+  StatTile, Button } from "../../components/ui";
 import { countMetricLabel } from "../../lib/scout-assisted-count";
 import {
   COUNT_METRIC_KEYS,
@@ -44,9 +43,9 @@ function RelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related sac-related" aria-label="Related competition tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -67,9 +66,9 @@ function NextActionsPanel({ actions }: { actions: ScoutAssistedCountNextAction[]
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -127,10 +126,10 @@ function CountShell({
           description={error ?? copy.description}
         >
           {shell === "setup" ? (
-            <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
+            <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
           ) : null}
           {shell === "empty" ? (
-            <a className="app-button is-primary" href="#scout-assisted-count-start">Start a session</a>
+            <Button as="a" variant="primary" href="#scout-assisted-count-start">Start a session</Button>
           ) : null}
         </EmptyState>
       )}
@@ -147,9 +146,9 @@ function CountShell({
                   <strong>{step.label}</strong>
                   <p className="app-muted sac-tip">{step.detail}</p>
                 </div>
-                <a className="app-button secondary" href={step.href}>
+                <Button as="a" variant="secondary" href={step.href}>
                   Open
-                </a>
+                </Button>
               </li>
             ))}
           </ul>
@@ -365,9 +364,9 @@ function StartSessionForm({
         </FormRow>
       </FormGrid>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !label.trim()}>
+        <Button variant="primary" type="submit" disabled={busy || !label.trim()}>
           Start session
-        </button>
+        </Button>
       </div>
     </Panel>
   );
@@ -414,24 +413,12 @@ function Sessions({
               <strong className="sac-tap-count">{s.tapCount}</strong>
               {s.status === "open" ? (
                 <>
-                  <button
-                    type="button"
-                    className="app-button"
-                    disabled={busy}
-                    aria-label={`Add tap to ${s.label}`}
-                    onClick={() => mutate({ action: "tap", sessionId: s.id, delta: 1 })}
-                  >
+                  <Button variant="primary" type="button" disabled={busy} aria-label={`Add tap to ${s.label}`} onClick={() => mutate({ action: "tap", sessionId: s.id, delta: 1 })}>
                     + Tap
-                  </button>
-                  <button
-                    type="button"
-                    className="app-button secondary"
-                    disabled={busy || s.tapCount === 0}
-                    aria-label={`Undo last tap on ${s.label}`}
-                    onClick={() => mutate({ action: "tap", sessionId: s.id, delta: -1 })}
-                  >
+                  </Button>
+                  <Button variant="secondary" type="button" disabled={busy || s.tapCount === 0} aria-label={`Undo last tap on ${s.label}`} onClick={() => mutate({ action: "tap", sessionId: s.id, delta: -1 })}>
                     − Undo tap
-                  </button>
+                  </Button>
                   <button
                     type="button"
                     className="text-button"

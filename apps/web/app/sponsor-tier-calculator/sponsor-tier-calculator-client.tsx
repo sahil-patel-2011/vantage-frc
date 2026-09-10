@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { assignedTierLabel } from "../../lib/sponsor-tier-calculator";
 import type { SponsorTierCalculatorView } from "../../lib/sponsor-tier-calculator/compute-sponsor-tier-calculator";
@@ -118,9 +118,9 @@ export default function SponsorTierCalculatorClient() {
             </label>
           ) : null}
           {orgId ? (
-            <a className="app-button secondary" href={`/business?orgId=${encodeURIComponent(orgId)}&tab=sponsors`}>
+            <Button as="a" variant="secondary" href={`/business?orgId=${encodeURIComponent(orgId)}&tab=sponsors`}>
               Business · Sponsors
-            </a>
+            </Button>
           ) : null}
         </div>
       </PageHeader>
@@ -150,14 +150,14 @@ export default function SponsorTierCalculatorClient() {
           return (
             <EmptyState title={copy.title} description={copy.description}>
               {copy.primary ? (
-                <a className="app-button" href={copy.primary.href}>
+                <Button as="a" variant="primary" href={copy.primary.href}>
                   {copy.primary.label}
-                </a>
+                </Button>
               ) : null}
               {copy.showRetry ? (
-                <button type="button" className="app-button secondary" onClick={() => load()}>
+                <Button variant="secondary" type="button" onClick={() => load()}>
                   Retry
-                </button>
+                </Button>
               ) : null}
             </EmptyState>
           );
@@ -313,9 +313,9 @@ function TierDefinitionsPanel({
           />
         </FormRow>
         <div>
-          <button type="submit" className="app-button" disabled={busy || !form.name.trim()}>
+          <Button variant="primary" type="submit" disabled={busy || !form.name.trim()}>
             Save tier
-          </button>
+          </Button>
         </div>
       </form>
     </Panel>

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react
 import { runWhatIf } from "@vantage/prediction-strategy";
 import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, PageHeader, Panel, ToolStrip } from "../../components/ui";
+import { EmptyState, PageHeader, Panel, ToolStrip, Button } from "../../components/ui";
 import { CopyShareLink } from "../../components/copy-share-link";
 import { useVenueShortcuts, VenueShortcutCheatsheet } from "../../hooks/use-venue-shortcuts";
 import { hubHref } from "../../lib/nav/hubs";
@@ -34,9 +34,9 @@ function StrategyRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related strategy-related" aria-label="Related strategy tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -57,9 +57,9 @@ function StrategyNextActionsPanel({ actions }: { actions: StrategyShellNextActio
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -313,16 +313,16 @@ function LivePanel({ view }: { view: Extract<StrategyView, { status: "live" }> }
     <section className="strategy-workbench strategy-live-grid">
       <nav className="strategy-coverage-links product-hub-related" aria-label="Pick desk, Scouting, Event Day">
         {relatedLinks.map((link) => (
-          <a key={link.id} className="app-button secondary" href={link.href}>
+          <Button as="a" variant="secondary" key={link.id} href={link.href}>
             {link.label}
-          </a>
+          </Button>
         ))}
       </nav>
       <nav className="strategy-coverage-links product-hub-related" aria-label="Explainability and coverage">
         {coverageLinks.map((link) => (
-          <a key={link.id} className="app-button secondary" href={link.href}>
+          <Button as="a" variant="secondary" key={link.id} href={link.href}>
             {link.label}
-          </a>
+          </Button>
         ))}
       </nav>
       <Panel className="strategy-primary">
@@ -553,7 +553,7 @@ function LivePanel({ view }: { view: Extract<StrategyView, { status: "live" }> }
             <span className="eyebrow">STRATEGY ↔ CAD</span>
             <h2>Engineering reality</h2>
           </div>
-          <a className="app-button secondary" href={cadHref}>Send match to CAD</a>
+          <Button as="a" variant="secondary" href={cadHref}>Send match to CAD</Button>
         </header>
         {view.engineeringContext.length ? (
           <ul className="strategy-engineering-list">
@@ -590,9 +590,9 @@ function LivePanel({ view }: { view: Extract<StrategyView, { status: "live" }> }
             <span className="eyebrow">THIS SEASON ONLY · {view.gameRules.seasonYear}</span>
             <h2>Game rules</h2>
           </div>
-          <a className="app-button secondary" href={view.gameRules.kickoffHref}>
+          <Button as="a" variant="secondary" href={view.gameRules.kickoffHref}>
             Open kickoff
-          </a>
+          </Button>
         </header>
         {view.gameRules.status === "ready" ? (
           <>
@@ -640,9 +640,9 @@ function LivePanel({ view }: { view: Extract<StrategyView, { status: "live" }> }
             title={`No ${view.gameRules.seasonYear} game rules yet`}
             description={view.gameRules.message}
           >
-            <a className="app-button" href={view.gameRules.kickoffHref}>
+            <Button as="a" variant="primary" href={view.gameRules.kickoffHref}>
               Capture {view.gameRules.seasonYear} rules on Kickoff
-            </a>
+            </Button>
           </EmptyState>
         )}
       </Panel>
@@ -655,9 +655,9 @@ function LivePanel({ view }: { view: Extract<StrategyView, { status: "live" }> }
         {!whatIfOn ? (
           <div className="strategy-empty-block">
             <p className="app-muted">Layer assumption deltas on the live prediction — not scouting observations.</p>
-            <button type="button" className="app-button secondary" onClick={() => setWhatIfOn(true)}>
+            <Button variant="secondary" type="button" onClick={() => setWhatIfOn(true)}>
               Run assumption scenario
-            </button>
+            </Button>
           </div>
         ) : scenario ? (
           <>
@@ -781,15 +781,15 @@ function StrategyShell({
         aria-busy={shell === "loading"}
       >
         {shell === "error" && onRetry ? (
-          <button type="button" className="app-button secondary" onClick={onRetry}>
+          <Button variant="secondary" type="button" onClick={onRetry}>
             Retry
-          </button>
+          </Button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button is-primary" href={orgId ? commandHref : workspaceHref}>{orgId ? "Set active event" : "Choose your team"}</a>
+          <Button as="a" variant="primary" href={orgId ? commandHref : workspaceHref}>{orgId ? "Set active event" : "Choose your team"}</Button>
         ) : null}
         {shell === "empty" ? (
-          <a className="app-button is-primary" href={teamDataHref}>Sync Team Data</a>
+          <Button as="a" variant="primary" href={teamDataHref}>Sync Team Data</Button>
         ) : null}
         {!embedded && shell === "setup" && steps.length > 0 ? (
           <ol className="strategy-setup-steps">
@@ -978,31 +978,25 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
         <div className="strategy-header-actions">
           <StrategyRelatedStrip orgId={orgId} />
           <CopyShareLink orgId={orgId} />
-          <button type="button" className="app-button secondary" onClick={() => window.print()}>
+          <Button variant="secondary" type="button" onClick={() => window.print()}>
             Print
-          </button>
-          <button
-            type="button"
-            className="app-button"
-            disabled={recomputing || loading}
-            onClick={() => void recomputePrediction()}
-          >
+          </Button>
+          <Button variant="primary" type="button" disabled={recomputing || loading} onClick={() => void recomputePrediction()}>
             {recomputing ? "Recomputing…" : "Recompute prediction"}
-          </button>
+          </Button>
           {orgId ? (
             <>
-              <a className="app-button secondary" href={withOrgHref("/strategy/draft", orgId)}>
+              <Button as="a" variant="secondary" href={withOrgHref("/strategy/draft", orgId)}>
                 Draft board
-              </a>
-              <a
-                className="app-button secondary"
+              </Button>
+              <Button as="a" variant="secondary"
                 href={withOrgHref("/exports?domains=pick-lists,reference-metrics,research", orgId)}
               >
                 Export
-              </a>
-              <a className="app-button secondary" href={withOrgHref("/team/data", orgId)}>
+              </Button>
+              <Button as="a" variant="secondary" href={withOrgHref("/team/data", orgId)}>
                 Team data
-              </a>
+              </Button>
             </>
           ) : null}
           {view?.status === "live" ? (

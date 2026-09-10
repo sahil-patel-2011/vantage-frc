@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { ExportButton, type CsvColumn } from "../../components/ui/export-button";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { bomCategoryLabel, bomSourceLabel, bomStatusLabel } from "../../lib/bom-cost-rollup";
@@ -159,14 +159,14 @@ export default function BomCostRollupClient() {
           return (
             <EmptyState title={copy.title} description={copy.description}>
               {copy.primary ? (
-                <a className="app-button" href={copy.primary.href}>
+                <Button as="a" variant="primary" href={copy.primary.href}>
                   {copy.primary.label}
-                </a>
+                </Button>
               ) : null}
               {copy.showRetry ? (
-                <button type="button" className="app-button secondary" onClick={() => load()}>
+                <Button variant="secondary" type="button" onClick={() => load()}>
                   Retry
-                </button>
+                </Button>
               ) : null}
             </EmptyState>
           );
@@ -241,9 +241,9 @@ function SummaryTiles({
               style={{ width: 120 }}
             />
           </label>
-          <button type="submit" className="app-button secondary" disabled={busy}>
+          <Button variant="secondary" type="submit" disabled={busy}>
             Save budget
-          </button>
+          </Button>
         </form>
       </div>
       <div
@@ -347,9 +347,9 @@ function AddItemForm({
           </FormRow>
         </FormGrid>
         <div style={{ marginTop: 12 }}>
-          <button type="submit" className="app-button" disabled={busy || !partName.trim()}>
+          <Button variant="primary" type="submit" disabled={busy || !partName.trim()}>
             Add item
-          </button>
+          </Button>
         </div>
       </form>
     </Panel>
@@ -416,15 +416,9 @@ function ItemsTable({
                 <td style={{ textAlign: "right" }}>{usd(item.lineTotalUsd)}</td>
                 <td>{bomSourceLabel(item.source)}</td>
                 <td style={{ textAlign: "right" }}>
-                  <button
-                    type="button"
-                    className="app-button secondary"
-                    disabled={busy}
-                    aria-label={`Remove ${item.partName}`}
-                    onClick={() => mutate({ action: "delete-item", itemId: item.id })}
-                  >
+                  <Button variant="secondary" type="button" disabled={busy} aria-label={`Remove ${item.partName}`} onClick={() => mutate({ action: "delete-item", itemId: item.id })}>
                     Remove
-                  </button>
+                  </Button>
                 </td>
               </tr>
             ))}

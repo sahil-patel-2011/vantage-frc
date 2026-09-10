@@ -211,9 +211,9 @@ export default function EventReadinessClient() {
                     <p className="app-muted evr-tip">{step.detail}</p>
                   </div>
                   {step.href !== "/event-readiness" ? (
-                    <a className="app-button secondary" href={withOrgHref(step.href, orgId)}>
+                    <Button as="a" variant="secondary" href={withOrgHref(step.href, orgId)}>
                       Open
-                    </a>
+                    </Button>
                   ) : null}
                 </li>
               ))}
@@ -375,9 +375,9 @@ function RemainingBlockers({ view }: { view: LiveView }) {
               ) : (
                 <Badge tone="demo">{source.remaining} remaining</Badge>
               )}
-              <a className="app-button secondary" href={withOrgHref(source.href, view.orgId)}>
+              <Button as="a" variant="secondary" href={withOrgHref(source.href, view.orgId)}>
                 {source.state === "not_set_up" ? `Set up in ${source.label}` : `Open ${source.label}`}
-              </a>
+              </Button>
             </div>
           </li>
         ))}
@@ -533,9 +533,9 @@ function ItemRow({
       </div>
       <div className="evr-item-actions">
         {link ? (
-          <a className="app-button secondary" href={link}>
+          <Button as="a" variant="secondary" href={link}>
             Open {readinessCategoryLabel(item.category)}
-          </a>
+          </Button>
         ) : null}
         {!closed ? (
           <Button

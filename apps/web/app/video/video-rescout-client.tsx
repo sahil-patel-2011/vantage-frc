@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { VideoPlayer, type VideoPlayerHandle } from "../../components/video-player";
-import { EmptyState, FormRow, PageHeader, Panel, TabBar } from "../../components/ui";
+import { EmptyState, FormRow, PageHeader, Panel, ToolStrip, Button } from "../../components/ui";
 import {
   classifyLoadFailure,
   loadFailureCopy,
@@ -58,9 +58,9 @@ function VideoRescoutRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related vid-related" aria-label="Related competition tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -81,9 +81,9 @@ function VideoRescoutNextActionsPanel({ actions }: { actions: VideoRescoutNextAc
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -147,20 +147,20 @@ function VideoRescoutShell({
         aria-busy={shell === "loading"}
       >
         {failure?.primary ? (
-          <a className="app-button" href={failure.primary.href}>
+          <Button as="a" variant="primary" href={failure.primary.href}>
             {failure.primary.label}
-          </a>
+          </Button>
         ) : null}
         {shell === "error" && onRetry && (!failure || failure.showRetry) ? (
-          <button type="button" className="app-button secondary" onClick={onRetry}>
+          <Button variant="secondary" type="button" onClick={onRetry}>
             Retry
-          </button>
+          </Button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button is-primary" href={orgId ? scoutingHref : "/workspace"}>{orgId ? "Open Scouting" : "Choose your team"}</a>
+          <Button as="a" variant="primary" href={orgId ? scoutingHref : "/workspace"}>{orgId ? "Open Scouting" : "Choose your team"}</Button>
         ) : null}
         {shell === "empty" ? (
-          <a className="app-button is-primary" href="#video-new-review">Add a match review</a>
+          <Button as="a" variant="primary" href="#video-new-review">Add a match review</Button>
         ) : null}
       </EmptyState>
       {steps.length > 0 ? (
@@ -176,9 +176,9 @@ function VideoRescoutShell({
                   <strong>{step.label}</strong>
                   <p className="app-muted vid-tip">{step.detail}</p>
                 </div>
-                <a className="app-button secondary" href={step.href}>
+                <Button as="a" variant="secondary" href={step.href}>
                   Open
-                </a>
+                </Button>
               </li>
             ))}
           </ul>
@@ -241,14 +241,9 @@ function NewReviewPanel({
           onChange={(event) => setNewMatchKey(event.target.value)}
         />
       </FormRow>
-      <button
-        type="button"
-        className="app-button"
-        disabled={busyKey === "create" || !newTitle.trim() || !newUrl.trim() || !orgId}
-        onClick={onCreate}
-      >
+      <Button variant="primary" type="button" disabled={busyKey === "create" || !newTitle.trim() || !newUrl.trim() || !orgId} onClick={onCreate}>
         New review
-      </button>
+      </Button>
     </Panel>
   );
 }
@@ -648,9 +643,9 @@ export default function VideoRescoutClient() {
             disabled={busyKey != null}
             onChange={(event) => setNoteBody(event.target.value)}
           />
-          <button type="submit" className="app-button secondary" disabled={busyKey != null || !noteBody.trim()}>
+          <Button variant="secondary" type="submit" disabled={busyKey != null || !noteBody.trim()}>
             Add note
-          </button>
+          </Button>
         </form>
       </div>
     );
@@ -684,9 +679,9 @@ export default function VideoRescoutClient() {
             </button>
           ))}
         </div>
-        <button type="button" className="app-button secondary" disabled={busyKey === "assign"} onClick={saveAssignments}>
+        <Button variant="secondary" type="button" disabled={busyKey === "assign"} onClick={saveAssignments}>
           Save assignment
-        </button>
+        </Button>
       </Panel>
 
       {!readyView.matchSchema ? (
@@ -697,9 +692,9 @@ export default function VideoRescoutClient() {
           title="Match schema required"
           description="Configure a real match scouting schema before timeline scoring."
         >
-          <a className="app-button" href={hubHref("/competition", "scouting", orgId)}>
+          <Button as="a" variant="primary" href={hubHref("/competition", "scouting", orgId)}>
             Open Scouting
-          </a>
+          </Button>
         </EmptyState>
       ) : !activeTeamKey ? (
         <EmptyState soft title="Assign teams" description="Add up to four alliance teams, then tap score buttons at the playhead." />
@@ -783,14 +778,9 @@ export default function VideoRescoutClient() {
       </Panel>
 
       <div className="vid-commit">
-        <button
-          type="button"
-          className="app-button"
-          disabled={busyKey === "commit" || !readyView.matchSchema || assignedTeams.length === 0 || !review.matchKey}
-          onClick={commitRescout}
-        >
+        <Button variant="primary" type="button" disabled={busyKey === "commit" || !readyView.matchSchema || assignedTeams.length === 0 || !review.matchKey} onClick={commitRescout}>
           Commit re-scout to scouting
-        </button>
+        </Button>
         {!review.matchKey ? <span className="app-muted">Link this review to a match key before commit.</span> : null}
       </div>
     </div>
@@ -882,11 +872,11 @@ export default function VideoRescoutClient() {
 
             <VideoPlayer ref={playerRef} videoId={selected.videoId} title={selected.title} onTimeUpdate={setCurrentSeconds} />
 
-            <TabBar
-              aria-label="Review detail tabs"
+            <ToolStrip
+              aria-label="Review tools"
               value={detailTab}
               onChange={(id) => setDetailTab(id as DetailTab)}
-              tabs={[
+              items={[
                 { id: "rescout", label: "Re-scout" },
                 { id: "notes", label: "Notes" },
               ]}

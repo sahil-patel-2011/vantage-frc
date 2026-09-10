@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "../../components/ui";
 
 import { useMemo, useState } from "react";
 import {
@@ -170,16 +171,9 @@ export function CadOperationComposer({
         </p>
         <div role="group" aria-label="Native operations">
           {operations.map((item) => (
-            <button
-              key={item}
-              type="button"
-              className="app-button"
-              aria-pressed={operation === item}
-              disabled={disabled}
-              onClick={() => choose(item)}
-            >
+            <Button variant="primary" key={item} type="button" aria-pressed={operation === item} disabled={disabled} onClick={() => choose(item)}>
               {describeComposerOp(item)}
-            </button>
+            </Button>
           ))}
         </div>
         <CadComposerFields
@@ -210,13 +204,13 @@ export function CadOperationComposer({
           </p>
         ) : null}
         <div className="cad-operation-grid">
-          <button type="button" className="app-button" disabled={disabled} onClick={() => void saveStep()}>
+          <Button variant="primary" type="button" disabled={disabled} onClick={() => void saveStep()}>
             {editingId ? "Save planned step" : "Add to plan"}
-          </button>
+          </Button>
           {editingId ? (
-            <button type="button" className="app-button" disabled={disabled} onClick={clearEditor}>
+            <Button variant="primary" type="button" disabled={disabled} onClick={clearEditor}>
               Cancel edit
-            </button>
+            </Button>
           ) : null}
         </div>
         <section aria-label="Planned operations">
@@ -230,12 +224,12 @@ export function CadOperationComposer({
                     {step.reason ? <p className="app-muted">{step.reason}</p> : null}
                   </div>
                   <div className="cad-operation-grid">
-                    <button type="button" className="app-button" disabled={disabled} onClick={() => loadStep(step)}>
+                    <Button variant="primary" type="button" disabled={disabled} onClick={() => loadStep(step)}>
                       Edit step
-                    </button>
-                    <button type="button" className="app-button" disabled={disabled} onClick={() => deleteStep(step.id)}>
+                    </Button>
+                    <Button variant="primary" type="button" disabled={disabled} onClick={() => deleteStep(step.id)}>
                       Delete step
-                    </button>
+                    </Button>
                   </div>
                 </li>
               ))}
@@ -244,14 +238,9 @@ export function CadOperationComposer({
             <p className="app-muted">No planned steps yet. Empty plan stays empty until you add a native operation.</p>
           )}
           {onRunPlan ? (
-            <button
-              type="button"
-              className="app-button"
-              disabled={disabled || runningPlan}
-              onClick={() => void runPlannedSteps()}
-            >
+            <Button variant="primary" type="button" disabled={disabled || runningPlan} onClick={() => void runPlannedSteps()}>
               {runningPlan ? "Running planned steps…" : "Run planned steps"}
-            </button>
+            </Button>
           ) : null}
         </section>
       </div>

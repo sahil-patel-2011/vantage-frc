@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "../../components/ui";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { UsageCutoffBanner, resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
@@ -270,14 +271,9 @@ function CadActivityPanel({ orgId }: { orgId: string }) {
               </button>
             ))}
           </div>
-          <button
-            type="button"
-            className="app-button secondary"
-            disabled={refreshing}
-            onClick={() => void loadActivity()}
-          >
+          <Button variant="secondary" type="button" disabled={refreshing} onClick={() => void loadActivity()}>
             {refreshing ? "Refreshing…" : "Refresh"}
-          </button>
+          </Button>
         </div>
       </div>
       {failed ? (
@@ -431,9 +427,9 @@ function CadToolsPanel({ tools }: { tools: CadToolRow[] }) {
     <section className="cad-activity cad-tools" aria-label="CAD tools">
       <div className="cad-activity-head">
         <span>Tools — {tools.length} operations</span>
-        <button type="button" className="app-button secondary" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
+        <Button variant="secondary" type="button" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
           {open ? "Hide tools" : "Show tools"}
-        </button>
+        </Button>
       </div>
       {open ? (
         <div className="cad-tools-body">
@@ -1229,9 +1225,9 @@ export default function CadWorkspace({
             }}
           />
         </label>
-        <button className="app-button" type="button" disabled={!url.trim() || busy !== null} onClick={() => void bind()}>
+        <Button variant="primary" type="button" disabled={!url.trim() || busy !== null} onClick={() => void bind()}>
           {busy === "bind" ? "Binding…" : "Bind"}
-        </button>
+        </Button>
         {listedElements.elements.length ? (
           <label className="cad-agent-doc">
             <span>Onshape tab</span>
@@ -1299,22 +1295,14 @@ export default function CadWorkspace({
             <p className="cad-agent-error" role="alert">
               <strong>{copy.title}</strong> {copy.description}{" "}
               {copy.primary ? (
-                <a className="app-button" href={copy.primary.href}>
+                <Button as="a" variant="primary" href={copy.primary.href}>
                   {copy.primary.label}
-                </a>
+                </Button>
               ) : null}
               {copy.showRetry ? (
-                <button
-                  type="button"
-                  className="app-button secondary"
-                  disabled={busy !== null}
-                  onClick={() => {
-                    setLoadFailure(null);
-                    void runLoad();
-                  }}
-                >
+                <Button variant="secondary" type="button" disabled={busy !== null} onClick={() => { setLoadFailure(null); void runLoad(); }}>
                   Retry
-                </button>
+                </Button>
               ) : null}
             </p>
           );
@@ -1345,9 +1333,9 @@ export default function CadWorkspace({
           {state && !state.onshapeConnected ? (
             <div className="cad-agent-setup">
               <p>Connect Onshape, bind a disposable Part Studio, then specify the part in millimetres.</p>
-              <a className="app-button" href={connectionsHref}>
+              <Button as="a" variant="primary" href={connectionsHref}>
                 Connect Onshape
-              </a>
+              </Button>
               {!state?.onshapeConfigured ? (
                 <p className="cad-agent-hint">
                   Connect Onshape is not set up on this deployment. Until then paste a document link or upload a STEP/STL.
@@ -1387,17 +1375,12 @@ export default function CadWorkspace({
                   Continuing in {MODE_LABELS[mode]} mode in {countdown}s unless you choose.
                 </p>
                 <div className="cad-proposal-actions">
-                  <button className="app-button" type="button" disabled={busy !== null} onClick={() => void respondProposal(true)}>
+                  <Button variant="primary" type="button" disabled={busy !== null} onClick={() => void respondProposal(true)}>
                     Yes, switch
-                  </button>
-                  <button
-                    className="app-button secondary"
-                    type="button"
-                    disabled={busy !== null}
-                    onClick={() => void respondProposal(false)}
-                  >
+                  </Button>
+                  <Button variant="secondary" type="button" disabled={busy !== null} onClick={() => void respondProposal(false)}>
                     No, stay in {MODE_LABELS[mode]}
-                  </button>
+                  </Button>
                 </div>
               </div>
             ) : null}
@@ -1439,9 +1422,9 @@ export default function CadWorkspace({
                   </div>
                 ) : null}
                 <div className="cad-plan-actions">
-                  <button className="app-button" type="button" disabled={busy !== null} onClick={() => void approvePlan()}>
+                  <Button variant="primary" type="button" disabled={busy !== null} onClick={() => void approvePlan()}>
                     Approve &amp; build
-                  </button>
+                  </Button>
                   <span className="cad-agent-hint">Or send a message below to revise the plan.</span>
                 </div>
               </div>
@@ -1486,14 +1469,9 @@ export default function CadWorkspace({
             />
             <div className="cad-agent-composer-bar">
               <span>{pendingProposal ? "Answer the mode question above first" : composerHint}</span>
-              <button
-                className="app-button"
-                type="button"
-                disabled={!prompt.trim() || busy !== null || pendingProposal !== null}
-                onClick={() => void send()}
-              >
+              <Button variant="primary" type="button" disabled={!prompt.trim() || busy !== null || pendingProposal !== null} onClick={() => void send()}>
                 {busy === "chat" ? "Sending…" : "Send"}
-              </button>
+              </Button>
             </div>
           </div>
         </aside>
@@ -1510,9 +1488,9 @@ export default function CadWorkspace({
           {geometryError}
         </p>
       ) : null}
-      <button type="button" className="app-button" onClick={() => void refreshBoundGeometry()}>
+      <Button variant="primary" type="button" onClick={() => void refreshBoundGeometry()}>
         Refresh geometry
-      </button>
+      </Button>
       <CadCheckpointNote checkpointId={lastCheckpointId} />
       <CadOperationComposer
         platform="onshape"

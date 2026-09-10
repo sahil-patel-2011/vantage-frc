@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { TeamHubRelated } from "../../components/team-hub-related";
 import { formatGoalValue, goalCategoryLabel, goalStatusLabel } from "../../lib/goals";
@@ -38,9 +38,9 @@ function GoalsRelated({ orgId }: { orgId: string }) {
     <div className="goals-related">
       <nav className="product-hub-related goals-hub-related" aria-label="Related team tools">
         {primary.map((link) => (
-          <a key={link.id} className="app-button secondary" href={link.href}>
+          <Button as="a" variant="secondary" key={link.id} href={link.href}>
             {link.label}
-          </a>
+          </Button>
         ))}
       </nav>
       <TeamHubRelated orgId={orgId} include={[...GOALS_TEAM_RELATED_INCLUDE]} />
@@ -81,9 +81,9 @@ function NextActions({
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -190,14 +190,14 @@ export default function GoalsClient() {
           aria-busy={!fetchFailed}
         >
           {failure?.primary ? (
-            <a className="app-button" href={failure.primary.href}>
+            <Button as="a" variant="primary" href={failure.primary.href}>
               {failure.primary.label}
-            </a>
+            </Button>
           ) : null}
           {failure?.showRetry ? (
-            <button type="button" className="app-button secondary" onClick={() => load()}>
+            <Button variant="secondary" type="button" onClick={() => load()}>
               Retry
-            </button>
+            </Button>
           ) : null}
         </EmptyState>
       </main>
@@ -220,9 +220,9 @@ export default function GoalsClient() {
                   <strong>{step.label}</strong>
                   <span>{step.detail}</span>
                 </div>
-                <a className="app-button secondary" href={step.href}>
+                <Button as="a" variant="secondary" href={step.href}>
                   Open
-                </a>
+                </Button>
               </li>
             ))}
           </ol>
@@ -267,15 +267,15 @@ export default function GoalsClient() {
               </select>
             </label>
           ) : null}
-          <a className="app-button secondary" href={withOrgHref("/todos", orgId)}>
+          <Button as="a" variant="secondary" href={withOrgHref("/todos", orgId)}>
             Todos
-          </a>
-          <a className="app-button secondary" href={withOrgHref("/practice", orgId)}>
+          </Button>
+          <Button as="a" variant="secondary" href={withOrgHref("/practice", orgId)}>
             Practice
-          </a>
-          <a className="app-button secondary" href={withOrgHref("/team", orgId)}>
+          </Button>
+          <Button as="a" variant="secondary" href={withOrgHref("/team", orgId)}>
             Team hub
-          </a>
+          </Button>
         </div>
       </PageHeader>
 
@@ -490,9 +490,9 @@ function AddGoalForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
         </FormRow>
       </FormGrid>
       <div className="goals-form-actions">
-        <button type="submit" className="app-button" disabled={busy || !form.title.trim()}>
+        <Button variant="primary" type="submit" disabled={busy || !form.title.trim()}>
           Add goal
-        </button>
+        </Button>
       </div>
     </Panel>
   );
@@ -542,16 +542,9 @@ function GoalCard({ evaluation, busy, mutate }: { evaluation: GoalEvaluation; bu
 
       <footer className="goals-row-actions">
         {goal.metricType === "binary" ? (
-          <button
-            type="button"
-            className="app-button secondary"
-            disabled={busy}
-            onClick={() =>
-              mutate({ action: "update-goal", goalId: goal.id, currentValue: goal.currentValue >= 1 ? 0 : 1 })
-            }
-          >
+          <Button variant="secondary" type="button" disabled={busy} onClick={() => mutate({ action: "update-goal", goalId: goal.id, currentValue: goal.currentValue>= 1 ? 0 : 1 }) }>
             {goal.currentValue >= 1 ? "Mark not done" : "Mark done"}
-          </button>
+          </Button>
         ) : (
           <label>
             Progress

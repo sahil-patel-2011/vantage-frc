@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
-import { EmptyState, PageHeader } from "../../components/ui";
+import { EmptyState, PageHeader, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   SUPPORT_RELATED_INCLUDE,
@@ -21,9 +21,9 @@ function SupportRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related support-tickets-related" aria-label="Related account tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -52,9 +52,9 @@ function NextActions({
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -160,14 +160,14 @@ export default function SupportTicketsClient() {
           aria-busy={!fetchFailed}
         >
           {failure?.primary ? (
-            <a className="app-button" href={failure.primary.href}>
+            <Button as="a" variant="primary" href={failure.primary.href}>
               {failure.primary.label}
-            </a>
+            </Button>
           ) : null}
           {failure?.showRetry ? (
-            <button type="button" className="app-button secondary" onClick={() => load()}>
+            <Button variant="secondary" type="button" onClick={() => load()}>
               Retry
-            </button>
+            </Button>
           ) : null}
         </EmptyState>
       </main>
@@ -192,12 +192,12 @@ export default function SupportTicketsClient() {
           description="Choose the organization you need help for, then return here to submit a real ticket."
         >
           <div className="support-tickets-header-actions">
-            <a className="app-button" href="/workspace">
+            <Button as="a" variant="primary" href="/workspace">
               Choose your team
-            </a>
-            <a className="app-button secondary" href="/account">
+            </Button>
+            <Button as="a" variant="secondary" href="/account">
               Account
-            </a>
+            </Button>
           </div>
         </EmptyState>
       </main>
@@ -220,12 +220,12 @@ export default function SupportTicketsClient() {
         description="Tell the Vantage platform owner when something breaks. You’ll see your tickets and any reply here. Legacy /help redirects here."
       >
         <div className="support-tickets-header-actions">
-          <a className="app-button secondary" href="/account">
+          <Button as="a" variant="secondary" href="/account">
             Account
-          </a>
-          <a className="app-button secondary" href="/account?tab=notifications">
+          </Button>
+          <Button as="a" variant="secondary" href="/account?tab=notifications">
             Notification prefs
-          </a>
+          </Button>
         </div>
       </PageHeader>
 

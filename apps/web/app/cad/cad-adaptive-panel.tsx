@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "../../components/ui";
 
 import { useEffect, useState } from "react";
 
@@ -93,7 +94,7 @@ export function CadAdaptivePanel({
             <label>Preferred path<select value={mine.preferredPlatform ?? "team"} onChange={(e) => setMine({ ...mine, preferredPlatform: e.target.value === "team" ? null : e.target.value as NonNullable<typeof mine.preferredPlatform> })}><option value="team">Use team default</option><option value="onshape">Onshape hosted</option><option value="fusion360">Fusion local</option><option value="mock">Mock/demo</option></select></label>
           </div>
           <label>How should the copilot respond to you?<textarea rows={3} maxLength={2000} value={mine.customInstructions} onChange={(e) => setMine({ ...mine, customInstructions: e.target.value })} placeholder="Example: explain mechanisms with FRC examples and put the next approval first." /></label>
-          <button className="app-button" disabled={busy}>Save my private preferences</button>
+          <Button variant="primary" disabled={busy}>Save my private preferences</Button>
         </form>
 
         <form
@@ -117,7 +118,7 @@ export function CadAdaptivePanel({
             <label>Standard components<textarea disabled={!value.canManageTeamProfile} rows={3} value={team.standardComponents} onChange={(e) => setTeam({ ...team, standardComponents: e.target.value })} placeholder="REV MAXTube\n1/2 in hex shaft" /></label>
             <label>Design rules<textarea disabled={!value.canManageTeamProfile} rows={3} value={team.designRules} onChange={(e) => setTeam({ ...team, designRules: e.target.value })} placeholder="Tool access on every fastener\nNo unsupported prints in load paths" /></label>
           </div>
-          {value.canManageTeamProfile ? <button className="app-button" disabled={busy}>Save team standards</button> : <small className="app-muted">Owner or admin manages shared standards.</small>}
+          {value.canManageTeamProfile ? <Button variant="primary" disabled={busy}>Save team standards</Button> : <small className="app-muted">Owner or admin manages shared standards.</small>}
         </form>
       </div>
     </details>

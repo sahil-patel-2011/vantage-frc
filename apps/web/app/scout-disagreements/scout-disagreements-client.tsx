@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { distinctValues, scoutDisagreementStatusLabel } from "../../lib/scout-disagreements";
 import { type ScoutDisagreementsView } from "../../lib/scout-disagreements/compute-scout-disagreements";
@@ -41,9 +41,9 @@ function ScoutDisagreementsRelatedStrip({ orgId }: { orgId?: string | null }) {
       aria-label="Related competition tools"
     >
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -67,9 +67,9 @@ function ScoutDisagreementsNextActionsPanel({ actions }: { actions: ScoutDisagre
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -150,20 +150,20 @@ function ScoutDisagreementsShell({
         aria-busy={shell === "loading"}
       >
         {failure?.primary ? (
-          <a className="app-button" href={failure.primary.href}>
+          <Button as="a" variant="primary" href={failure.primary.href}>
             {failure.primary.label}
-          </a>
+          </Button>
         ) : null}
         {failure?.showRetry && onRetry ? (
-          <button type="button" className="app-button secondary" onClick={onRetry}>
+          <Button variant="secondary" type="button" onClick={onRetry}>
             Retry
-          </button>
+          </Button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button is-primary" href={orgId ? scoutingHref : "/workspace"}>{orgId ? "Open Scouting" : "Choose your team"}</a>
+          <Button as="a" variant="primary" href={orgId ? scoutingHref : "/workspace"}>{orgId ? "Open Scouting" : "Choose your team"}</Button>
         ) : null}
         {shell === "empty" ? (
-          <a className="app-button is-primary" href={scoutingHref}>Log scout entries</a>
+          <Button as="a" variant="primary" href={scoutingHref}>Log scout entries</Button>
         ) : null}
       </EmptyState>
       {steps.length > 0 ? (
@@ -179,9 +179,9 @@ function ScoutDisagreementsShell({
                   <strong>{step.label}</strong>
                   <p className="app-muted scout-disagreements-tip">{step.detail}</p>
                 </div>
-                <a className="app-button secondary" href={step.href}>
+                <Button as="a" variant="secondary" href={step.href}>
                   Open
-                </a>
+                </Button>
               </li>
             ))}
           </ul>
@@ -446,9 +446,9 @@ function Queue({
         title="Log your first conflicting field"
         description="When two scouts report different values for the same match/team/field, log it here."
       >
-        <a className="app-button is-primary" href={hubHref("/competition", "scouting", view.orgId)}>
+        <Button as="a" variant="primary" href={hubHref("/competition", "scouting", view.orgId)}>
           Open Scouting
-        </a>
+        </Button>
       </EmptyState>
     );
   }
@@ -522,23 +522,9 @@ function QueueRow({
             value={note}
             onChange={(event) => setNote(event.target.value)}
           />
-          <button
-            type="button"
-            className="app-button"
-            disabled={busy || !choice}
-            onClick={() => {
-              mutate({
-                action: "resolve",
-                disagreementId: item.id,
-                resolvedValue: choice,
-                note: note || undefined,
-              });
-              setChoice("");
-              setNote("");
-            }}
-          >
+          <Button variant="primary" type="button" disabled={busy || !choice} onClick={() => { mutate({ action: "resolve", disagreementId: item.id, resolvedValue: choice, note: note || undefined, }); setChoice(""); setNote(""); }}>
             Resolve
-          </button>
+          </Button>
           <button
             type="button"
             className="text-button"
@@ -682,9 +668,9 @@ function LogDisagreementForm({
         </FormRow>
       </FormGrid>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !canSubmit}>
+        <Button variant="primary" type="submit" disabled={busy || !canSubmit}>
           Log disagreement
-        </button>
+        </Button>
       </div>
     </Panel>
   );

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AiHubRelated } from "../../../components/ai-hub-related";
-import { PageHeader } from "../../../components/ui";
+import { PageHeader, Button } from "../../../components/ui";
 import { UsageCutoffBanner } from "../../../components/usage-cutoff-banner";
 import {
   AI_BUDGETS_RELATED_INCLUDE,
@@ -53,9 +53,9 @@ function BudgetsRelatedStrip({ orgId }: { orgId: string }) {
   return (
     <nav className="product-hub-related ai-budgets-related" aria-label="Related AI budget tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -80,9 +80,9 @@ function NextActions({ orgId, shell }: { orgId: string; shell: AiBudgetsShellKin
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -279,9 +279,9 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
           <p className="app-muted">{shellCopy.description}</p>
           <NextActions orgId={orgId} shell={shell} />
           {shell === "error" ? (
-            <button type="button" className="app-button secondary" onClick={() => void load()}>
+            <Button variant="secondary" type="button" onClick={() => void load()}>
               Retry
-            </button>
+            </Button>
           ) : null}
         </section>
       ) : null}
@@ -303,24 +303,24 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
                 <h2>{card.title}</h2>
                 <p className="app-muted">{card.body}</p>
                 {card.id === "limits" ? (
-                  <a className="app-button secondary" href="#org-hard-limits">
+                  <Button as="a" variant="secondary" href="#org-hard-limits">
                     Edit hard limits
-                  </a>
+                  </Button>
                 ) : null}
                 {card.id === "usage" ? (
-                  <a className="app-button secondary" href={usageHref}>
+                  <Button as="a" variant="secondary" href={usageHref}>
                     Open AI usage
-                  </a>
+                  </Button>
                 ) : null}
                 {card.id === "chat" ? (
-                  <a className="app-button secondary" href={chatHref}>
+                  <Button as="a" variant="secondary" href={chatHref}>
                     Open Chat
-                  </a>
+                  </Button>
                 ) : null}
                 {card.id === "pricing" ? (
-                  <a className="app-button secondary" href={pricingHref}>
+                  <Button as="a" variant="secondary" href={pricingHref}>
                     View pricing
-                  </a>
+                  </Button>
                 ) : null}
               </article>
             ))}
@@ -413,9 +413,9 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
               >
                 Save caching preference
               </button>
-              <a className="app-button secondary" href={chatHref}>
+              <Button as="a" variant="secondary" href={chatHref}>
                 Open Chat
-              </a>
+              </Button>
             </div>
           </section>
 
@@ -628,28 +628,18 @@ function UsageCutoffQuickActions({
       >
         {busy === "credits" ? "Opening…" : "Buy AI credits"}
       </button>
-      <button
-        type="button"
-        className="app-button secondary"
-        disabled={busy != null || paygEnabled}
-        onClick={() => void checkout("payg")}
-      >
+      <Button variant="secondary" type="button" disabled={busy != null || paygEnabled} onClick={() => void checkout("payg")}>
         {paygEnabled ? "Pay-as-you-go is on" : busy === "payg" ? "Opening…" : "Turn on pay-as-you-go"}
-      </button>
-      <button
-        type="button"
-        className="app-button secondary"
-        disabled={busy != null}
-        onClick={() => void checkout("subscription", { planCode: "pro" })}
-      >
+      </Button>
+      <Button variant="secondary" type="button" disabled={busy != null} onClick={() => void checkout("subscription", { planCode: "pro" })}>
         {busy === "subscription" ? "Opening…" : "Upgrade plan"}
-      </button>
-      <a className="app-button secondary" href={pricingHref}>
+      </Button>
+      <Button as="a" variant="secondary" href={pricingHref}>
         View pricing
-      </a>
-      <a className="app-button secondary" href={accountHref}>
+      </Button>
+      <Button as="a" variant="secondary" href={accountHref}>
         Account
-      </a>
+      </Button>
       {hint ? <p className="usage-cutoff-hint">{hint}</p> : null}
     </>
   );

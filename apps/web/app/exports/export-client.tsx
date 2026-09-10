@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "../../components/ui";
 
 import { useEffect, useMemo, useState } from "react";
 
@@ -237,12 +238,12 @@ export default function ExportCenter({ orgId }: { orgId: string }) {
           </p>
         </div>
         <div className="export-header-actions">
-          <button type="button" className="app-button secondary" disabled={busy} onClick={() => void downloadPdf()}>
+          <Button variant="secondary" type="button" disabled={busy} onClick={() => void downloadPdf()}>
             PDF inventory
-          </button>
-          <a className="app-button secondary" href={`/team/data?orgId=${encodeURIComponent(orgId)}`}>
+          </Button>
+          <Button as="a" variant="secondary" href={`/team/data?orgId=${encodeURIComponent(orgId)}`}>
             Data analytics
-          </a>
+          </Button>
         </div>
       </header>
 
@@ -335,89 +336,27 @@ export default function ExportCenter({ orgId }: { orgId: string }) {
                     <small>{domain.description}</small>
                     <span className="prov">{domain.provenance}</span>
                   </span>
-                  <button
-                    type="button"
-                    className="app-button secondary sm"
-                    disabled={busy}
-                    onClick={() => {
-                      setSelected([domain.id]);
-                      void (async () => {
-                        setBusy(true);
-                        const response = await fetch("/api/exports", {
-                          method: "POST",
-                          headers: { "content-type": "application/json" },
-                          body: JSON.stringify({
-                            action: "csv",
-                            orgId,
-                            scope,
-                            domain: domain.id,
-                            domains: [domain.id],
-                            filters: { eventKey: eventKey || undefined, excelBom },
-                          }),
-                        });
-                        if (!response.ok) {
-                          const data = await response.json();
-                          setOk(false);
-                          setMessage(data.error ?? "CSV export failed");
-                        } else {
-                          await downloadBlob(response, domain.fileName);
-                          setOk(true);
-                          setMessage(`Downloaded ${domain.fileName}`);
-                        }
-                        setBusy(false);
-                      })();
-                    }}
-                  >
+                  <Button variant="secondary" size="sm" type="button" disabled={busy} onClick={() => { setSelected([domain.id]); void (async () => { setBusy(true); const response = await fetch("/api/exports", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "csv", orgId, scope, domain: domain.id, domains: [domain.id], filters: { eventKey: eventKey || undefined, excelBom }, }), }); if (!response.ok) { const data = await response.json(); setOk(false); setMessage(data.error ?? "CSV export failed"); } else { await downloadBlob(response, domain.fileName); setOk(true); setMessage(`Downloaded ${domain.fileName}`); } setBusy(false); })(); }}>
                     CSV
-                  </button>
+                  </Button>
                 </label>
               ))}
             </div>
           ))}
 
           <div className="export-actions">
-            <button
-              type="button"
-              className="app-button"
-              disabled={busy || !selected.length}
-              onClick={() => void createZip()}
-            >
+            <Button variant="primary" type="button" disabled={busy || !selected.length} onClick={() => void createZip()}>
               ZIP selected
-            </button>
-            <button
-              type="button"
-              className="app-button secondary"
-              disabled={busy || selected.length !== 1}
-              onClick={() => void downloadCsv()}
-            >
+            </Button>
+            <Button variant="secondary" type="button" disabled={busy || selected.length !== 1} onClick={() => void downloadCsv()}>
               Instant CSV
-            </button>
-            <button type="button" className="app-button secondary" disabled={busy} onClick={() => void createZip(true)}>
+            </Button>
+            <Button variant="secondary" type="button" disabled={busy} onClick={() => void createZip(true)}>
               ZIP all {scope === "team" ? "team" : "private"} data
-            </button>
-            <button
-              type="button"
-              className="app-button secondary"
-              disabled={busy}
-              onClick={() => {
-                const ids = available
-                  .filter((item) =>
-                    scope === "private"
-                      ? item.id === "ai-private-conversations" || item.id === "ai-private-memory"
-                      : item.category === "ai" || item.id === "usage",
-                  )
-                  .map((item) => item.id);
-                setSelected(ids);
-                setMessage(
-                  scope === "private"
-                    ? "Selected your private AI chats and memory only."
-                    : "Selected this team's AI chats, memory, and artifacts — not other workspaces.",
-                );
-                setOk(true);
-              }}
-            >
+            </Button>
+            <Button variant="secondary" type="button" disabled={busy} onClick={() => { const ids = available .filter((item) => scope === "private" ? item.id === "ai-private-conversations" || item.id === "ai-private-memory" : item.category === "ai" || item.id === "usage", ) .map((item) => item.id); setSelected(ids); setMessage( scope === "private" ? "Selected your private AI chats and memory only." : "Selected this team's AI chats, memory, and artifacts — not other workspaces.", ); setOk(true); }}>
               {scope === "private" ? "Select my AI takeout" : "Select this team's AI takeout"}
-            </button>
+            </Button>
           </div>
         </section>
 
@@ -458,14 +397,14 @@ export default function ExportCenter({ orgId }: { orgId: string }) {
                       {job.sizeBytes ? ` · ${(job.sizeBytes / 1024).toFixed(1)} KB` : ""}
                     </span>
                     {job.status === "completed" ? (
-                      <button type="button" className="app-button secondary sm" onClick={() => void downloadZip(job.id)}>
+                      <Button variant="secondary" size="sm" type="button" onClick={() => void downloadZip(job.id)}>
                         Download ZIP
-                      </button>
+                      </Button>
                     ) : null}
                     {["queued", "running"].includes(job.status) ? (
-                      <button type="button" className="app-button secondary sm" onClick={() => void cancel(job.id)}>
+                      <Button variant="secondary" size="sm" type="button" onClick={() => void cancel(job.id)}>
                         Cancel
-                      </button>
+                      </Button>
                     ) : null}
                   </div>
                   {job.error ? <small className="app-muted">{job.error}</small> : null}

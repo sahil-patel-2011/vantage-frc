@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, KeyboardEvent, useCallback, useEffect, useRef, useState } from "react";
-import { EmptyState, PageHeader } from "../../components/ui";
+import { EmptyState, PageHeader, Button } from "../../components/ui";
 import {
   applyMention,
   filterMembersForMention,
@@ -883,14 +883,14 @@ export default function MessagesClient({
               badgeTone="setup"
             >
               {copy.primary ? (
-                <a className="app-button" href={copy.primary.href}>
+                <Button as="a" variant="primary" href={copy.primary.href}>
                   {copy.primary.label}
-                </a>
+                </Button>
               ) : null}
               {copy.showRetry ? (
-                <button type="button" className="app-button secondary" onClick={() => void reloadMessages()}>
+                <Button variant="secondary" type="button" onClick={() => void reloadMessages()}>
                   Retry
-                </button>
+                </Button>
               ) : null}
             </EmptyState>
           );
@@ -1039,9 +1039,9 @@ export default function MessagesClient({
                 title="Team messages"
                 description="The team channel, or a private message."
               >
-                <button type="button" className="app-button" onClick={() => void openMemberPicker()}>
+                <Button variant="primary" type="button" onClick={() => void openMemberPicker()}>
                   Message a teammate
-                </button>
+                </Button>
               </EmptyState>
             ) : (
               <>
@@ -1160,14 +1160,9 @@ export default function MessagesClient({
                   }}
                 >
                   {hasEarlier && messages.length > 0 ? (
-                    <button
-                      type="button"
-                      className="app-button secondary messages-load-earlier"
-                      onClick={() => void loadEarlier()}
-                      disabled={loadingEarlier}
-                    >
+                    <Button variant="secondary" type="button" className="messages-load-earlier" onClick={() => void loadEarlier()} disabled={loadingEarlier}>
                       {loadingEarlier ? "Loading earlier messages…" : "Show earlier messages"}
-                    </button>
+                    </Button>
                   ) : null}
                   {messages.length === 0 ? (
                     <EmptyState
@@ -1357,9 +1352,9 @@ export default function MessagesClient({
                           </p>
                           <small>Esc to dismiss · mentions stay inside this team</small>
                           {members.length === 0 ? (
-                            <a className="app-button secondary" href={withOrgHref("/team/admin", orgId)}>
+                            <Button as="a" variant="secondary" href={withOrgHref("/team/admin", orgId)}>
                               Team admin
-                            </a>
+                            </Button>
                           ) : null}
                         </div>
                       )
@@ -1434,9 +1429,9 @@ export default function MessagesClient({
               title="No teammates yet"
               description="Invite people under Team admin."
             >
-              <a className="app-button secondary" href={withOrgHref("/team/admin", orgId)}>
+              <Button as="a" variant="secondary" href={withOrgHref("/team/admin", orgId)}>
                 Team admin
-              </a>
+              </Button>
             </EmptyState>
           ) : (
             members.map((member) => (

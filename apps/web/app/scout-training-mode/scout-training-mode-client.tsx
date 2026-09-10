@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { trainingWinnerLabel } from "../../lib/scout-training-mode";
 import type { ScoutTrainingView } from "../../lib/scout-training-mode/compute-scout-training-mode";
@@ -98,9 +98,9 @@ export default function ScoutTrainingModeClient() {
         description="Practice scouting on real, already-completed matches and see how close your call was — the fast way to onboard new scouts before they scout live."
       >
         {orgId ? (
-          <a className="app-button secondary" href={`/competition?orgId=${encodeURIComponent(orgId)}`}>
+          <Button as="a" variant="secondary" href={`/competition?orgId=${encodeURIComponent(orgId)}`}>
             Back to Competition
-          </a>
+          </Button>
         ) : null}
       </PageHeader>
 
@@ -130,14 +130,14 @@ export default function ScoutTrainingModeClient() {
           return (
             <EmptyState title={copy.title} description={copy.description}>
               {copy.primary ? (
-                <a className="app-button" href={copy.primary.href}>
+                <Button as="a" variant="primary" href={copy.primary.href}>
                   {copy.primary.label}
-                </a>
+                </Button>
               ) : null}
               {copy.showRetry ? (
-                <button type="button" className="app-button secondary" onClick={() => load()}>
+                <Button variant="secondary" type="button" onClick={() => load()}>
                   Retry
-                </button>
+                </Button>
               ) : null}
             </EmptyState>
           );
@@ -295,9 +295,9 @@ function PracticeForm({
         <textarea value={form.notes} onChange={set("notes")} rows={2} />
       </FormRow>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !form.matchKey}>
+        <Button variant="primary" type="submit" disabled={busy || !form.matchKey}>
           Submit prediction
-        </button>
+        </Button>
       </div>
     </Panel>
   );

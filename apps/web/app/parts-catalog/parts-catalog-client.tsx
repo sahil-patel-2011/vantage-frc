@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { PageHeader } from "../../components/ui";
+import { PageHeader, Button } from "../../components/ui";
 import {
   CATALOG_CATEGORY_LABELS,
   inventoryCategoryFor,
@@ -170,15 +170,9 @@ export default function PartsCatalogClient() {
                   <a className="pc-link" href={requestHref(p)}>
                     Request it
                   </a>
-                  <button
-                    type="button"
-                    className="app-button secondary"
-                    disabled={!orgId || busy === p.id || inStock(p)}
-                    title={!orgId ? "Sign in to a team to add parts to its inventory" : undefined}
-                    onClick={() => void addToInventory(p)}
-                  >
+                  <Button variant="secondary" type="button" disabled={!orgId || busy === p.id || inStock(p)} title={!orgId ? "Sign in to a team to add parts to its inventory" : undefined} onClick={() => void addToInventory(p)}>
                     {busy === p.id ? "Adding…" : inStock(p) ? "In inventory" : "Add to inventory"}
-                  </button>
+                  </Button>
                 </div>
               </li>
             ))}

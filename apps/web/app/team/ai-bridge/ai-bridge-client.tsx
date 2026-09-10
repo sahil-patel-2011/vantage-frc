@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "../../../components/ui";
 
 import { useCallback, useEffect, useState } from "react";
 
@@ -263,13 +264,9 @@ export default function AiBridgeClient({
                               </p>
                             ) : null}
                           </fieldset>
-                          <button
-                            type="button"
-                            className="app-button secondary"
-                            onClick={() => void patchDevice(device.id, { revoke: true })}
-                          >
+                          <Button variant="secondary" type="button" onClick={() => void patchDevice(device.id, { revoke: true })}>
                             Revoke
-                          </button>
+                          </Button>
                         </div>
                       ) : (
                         <p className="app-muted ai-bridge-meta">Managed by the member who paired it (or an owner/admin).</p>

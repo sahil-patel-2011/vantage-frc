@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "../../components/ui";
 
 import { useCallback, useEffect, useState } from "react";
 import { FINANCE_IN_AI_ACK_VERSION } from "@vantage/billing/ai-policy";
@@ -173,9 +174,9 @@ export function FinanceInAiPanel({ orgId }: { orgId: string }) {
       <AiHubRelated orgId={orgId} active="finance" />
       <nav className="product-hub-related" aria-label="Related AI tools" style={{ marginBottom: 16 }}>
         {stripLinks.map((link) => (
-          <a key={link.id} className="app-button secondary" href={link.href}>
+          <Button as="a" variant="secondary" key={link.id} href={link.href}>
             {link.label}
-          </a>
+          </Button>
         ))}
       </nav>
 
@@ -192,19 +193,19 @@ export function FinanceInAiPanel({ orgId }: { orgId: string }) {
           <h2>{copy.title}</h2>
           <p className="app-muted">{copy.description}</p>
           {shell === "error" ? (
-            <button type="button" className="app-button secondary" onClick={() => void load()}>
+            <Button variant="secondary" type="button" onClick={() => void load()}>
               Retry
-            </button>
+            </Button>
           ) : null}
           {shell === "auth_required" ? (
-            <a className="app-button secondary" href="/signin">
+            <Button as="a" variant="secondary" href="/signin">
               Sign in
-            </a>
+            </Button>
           ) : null}
           {shell === "forbidden" ? (
-            <a className="app-button secondary" href={chatHref}>
+            <Button as="a" variant="secondary" href={chatHref}>
               Open Chat
-            </a>
+            </Button>
           ) : null}
         </div>
       ) : null}
@@ -271,21 +272,21 @@ export function FinanceInAiPanel({ orgId }: { orgId: string }) {
           ) : null}
 
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-            <button type="button" className="app-button" disabled={busy} onClick={() => void save()}>
+            <Button variant="primary" type="button" disabled={busy} onClick={() => void save()}>
               {busy ? "Saving…" : "Save finance toggle"}
-            </button>
-            <a className="app-button secondary" href={governanceHref}>
+            </Button>
+            <Button as="a" variant="secondary" href={governanceHref}>
               Full governance
-            </a>
-            <a className="app-button secondary" href={chatHref}>
+            </Button>
+            <Button as="a" variant="secondary" href={chatHref}>
               Open Chat
-            </a>
-            <a className="app-button secondary" href={budgetsHref}>
+            </Button>
+            <Button as="a" variant="secondary" href={budgetsHref}>
               Open Budgets
-            </a>
-            <a className="app-button secondary" href={memoryHref}>
+            </Button>
+            <Button as="a" variant="secondary" href={memoryHref}>
               Open Memory
-            </a>
+            </Button>
           </div>
         </>
       ) : null}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { EmptyState, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { knowledgeHitHref } from "../../lib/knowledge/helpers";
 import { MAX_BODY, MAX_TITLE } from "../../lib/knowledge/types";
@@ -129,14 +129,14 @@ export default function KnowledgeDraftsClient() {
       {failure ? (
         <EmptyState title={failure.title} description={failure.description}>
           {failure.primary ? (
-            <a className="app-button" href={failure.primary.href}>
+            <Button as="a" variant="primary" href={failure.primary.href}>
               {failure.primary.label}
-            </a>
+            </Button>
           ) : null}
           {failure.showRetry ? (
-            <button type="button" className="app-button secondary" onClick={() => load()}>
+            <Button variant="secondary" type="button" onClick={() => load()}>
               Retry
-            </button>
+            </Button>
           ) : null}
         </EmptyState>
       ) : view == null ? (
@@ -240,9 +240,9 @@ function CandidateSection({ view, busy, mutate }: { view: LiveView; busy: boolea
         title="No finished work has enough written down to draft from"
         description="Drafts come from accepted decisions, closed-out safety incidents, and resolved pit repairs that recorded some prose. A record with only a title has nothing to say, so nothing is invented for it."
       >
-        <a className="app-button" href="/decisions">
+        <Button as="a" variant="primary" href="/decisions">
           Open the decision log
-        </a>
+        </Button>
       </EmptyState>
     );
   }
@@ -256,20 +256,9 @@ function CandidateSection({ view, busy, mutate }: { view: LiveView; busy: boolea
             {candidates.length} record{candidates.length === 1 ? "" : "s"} could propose a page.
           </p>
         </div>
-        <button
-          type="button"
-          className="app-button"
-          style={{ minHeight: 44 }}
-          disabled={busy}
-          onClick={() => {
-            void mutate(
-              { action: "generate" },
-              "Drafts written. Nothing was published — review each one below.",
-            );
-          }}
-        >
+        <Button variant="primary" type="button" style={{ minHeight: 44 }} disabled={busy} onClick={() => { void mutate( { action: "generate" }, "Drafts written. Nothing was published — review each one below.", ); }}>
           {busy ? "Drafting…" : `Draft ${candidates.length} page${candidates.length === 1 ? "" : "s"}`}
-        </button>
+        </Button>
       </div>
       <ul className="kd-list">
         {candidates.slice(0, 12).map((candidate) => (
@@ -401,90 +390,34 @@ function DraftCard({
       <div className="kd-actions">
         {mode === "edit" ? (
           <>
-            <button
-              type="button"
-              className="app-button"
-              disabled={busy || !title.trim()}
-              onClick={() => {
-                void mutate(
-                  { action: "edit-draft", draftId: draft.id, title: title.trim(), body },
-                  "Draft saved. It is still a draft until you approve it.",
-                ).then((ok) => {
-                  if (ok) setMode("view");
-                });
-              }}
-            >
+            <Button variant="primary" type="button" disabled={busy || !title.trim()} onClick={() => { void mutate( { action: "edit-draft", draftId: draft.id, title: title.trim(), body }, "Draft saved. It is still a draft until you approve it.", ).then((ok) => { if (ok) setMode("view"); }); }}>
               Save draft
-            </button>
-            <button
-              type="button"
-              className="app-button secondary"
-              disabled={busy}
-              onClick={() => {
-                setTitle(draft.proposedTitle);
-                setBody(draft.proposedBody);
-                setMode("view");
-              }}
-            >
+            </Button>
+            <Button variant="secondary" type="button" disabled={busy} onClick={() => { setTitle(draft.proposedTitle); setBody(draft.proposedBody); setMode("view"); }}>
               Cancel
-            </button>
+            </Button>
           </>
         ) : mode === "dismiss" ? (
           <>
-            <button
-              type="button"
-              className="app-button"
-              disabled={busy || !reason.trim()}
-              onClick={() => {
-                void mutate(
-                  { action: "dismiss", draftId: draft.id, reason: reason.trim() },
-                  "Dismissed. No page was created.",
-                );
-              }}
-            >
+            <Button variant="primary" type="button" disabled={busy || !reason.trim()} onClick={() => { void mutate( { action: "dismiss", draftId: draft.id, reason: reason.trim() }, "Dismissed. No page was created.", ); }}>
               Confirm dismiss
-            </button>
-            <button
-              type="button"
-              className="app-button secondary"
-              disabled={busy}
-              onClick={() => setMode("view")}
-            >
+            </Button>
+            <Button variant="secondary" type="button" disabled={busy} onClick={() => setMode("view")}>
               Cancel
-            </button>
+            </Button>
           </>
         ) : (
           <>
             {/* Exactly one primary action on the card: publishing is the decision. */}
-            <button
-              type="button"
-              className="app-button"
-              disabled={busy}
-              onClick={() => {
-                void mutate(
-                  { action: "approve", draftId: draft.id },
-                  "Approved — the page is now in the Playbook.",
-                );
-              }}
-            >
+            <Button variant="primary" type="button" disabled={busy} onClick={() => { void mutate( { action: "approve", draftId: draft.id }, "Approved — the page is now in the Playbook.", ); }}>
               Approve as a page
-            </button>
-            <button
-              type="button"
-              className="app-button secondary"
-              disabled={busy}
-              onClick={() => setMode("edit")}
-            >
+            </Button>
+            <Button variant="secondary" type="button" disabled={busy} onClick={() => setMode("edit")}>
               Edit
-            </button>
-            <button
-              type="button"
-              className="app-button secondary"
-              disabled={busy}
-              onClick={() => setMode("dismiss")}
-            >
+            </Button>
+            <Button variant="secondary" type="button" disabled={busy} onClick={() => setMode("dismiss")}>
               Dismiss
-            </button>
+            </Button>
           </>
         )}
       </div>

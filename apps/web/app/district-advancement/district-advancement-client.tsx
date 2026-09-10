@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { EmptyState, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
 import type { TrajectoryView } from "../../lib/district-trajectory-sim/compute-district-trajectory-sim";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
@@ -70,14 +70,14 @@ export default function DistrictAdvancementClient() {
       {failure ? (
         <EmptyState title={failure.title} description={failure.description}>
           {failure.primary ? (
-            <a className="app-button" href={failure.primary.href}>
+            <Button as="a" variant="primary" href={failure.primary.href}>
               {failure.primary.label}
-            </a>
+            </Button>
           ) : null}
           {failure.showRetry ? (
-            <button type="button" className="app-button secondary" onClick={() => load()}>
+            <Button variant="secondary" type="button" onClick={() => load()}>
               Retry
-            </button>
+            </Button>
           ) : null}
         </EmptyState>
       ) : null}
@@ -117,9 +117,9 @@ export default function DistrictAdvancementClient() {
             <p className="app-muted">No saved run yet — live projection uses the current cache only.</p>
           )}
           <p>
-            <a className="app-button secondary" href={withOrgHref("/strategy", view.orgId)}>
+            <Button as="a" variant="secondary" href={withOrgHref("/strategy", view.orgId)}>
               Open Strategy
-            </a>
+            </Button>
           </p>
         </Panel>
       ) : null}

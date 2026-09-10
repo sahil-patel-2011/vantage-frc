@@ -24,7 +24,8 @@ export type OfflineFeature =
   | "packing"
   | "batteries"
   | "pit"
-  | "season-tasks";
+  | "season-tasks"
+  | "schedule";
 
 const DB_NAME = "vantage-feature-cache";
 const DB_VERSION = 1;

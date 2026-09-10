@@ -9,7 +9,7 @@ import {
   expandSuccessState,
   type AiExpandState,
 } from "../lib/ai-expand";
-import { AIAttribution, ModelProvenance } from "./ui";
+import { AIAttribution, ModelProvenance, Button } from "./ui";
 import "./ai-insight-panel.css";
 
 type InsightResponse = {
@@ -123,9 +123,9 @@ export function AiInsightPanel({
           <h2>{title}</h2>
           <p className="app-muted">{description}</p>
         </div>
-        <button type="button" className="app-button secondary" disabled={busy || !orgId} onClick={() => void generate()}>
+        <Button variant="secondary" type="button" disabled={busy || !orgId} onClick={() => void generate()}>
           {busy && expand.status !== "loading" ? "Analyzing…" : result ? "Re-run" : "Analyze"}
-        </button>
+        </Button>
       </header>
       {error ? (
         <p className="aii-error" role="alert">
@@ -158,14 +158,9 @@ export function AiInsightPanel({
               />
             </>
           ) : (
-            <button
-              type="button"
-              className="app-button secondary"
-              disabled={busy || !orgId}
-              onClick={() => void expandWithAi()}
-            >
+            <Button variant="secondary" type="button" disabled={busy || !orgId} onClick={() => void expandWithAi()}>
               {expand.status === "loading" ? "Expanding…" : "Expand with AI"}
-            </button>
+            </Button>
           )}
           {display.note ? <p className="aii-note">{display.note}</p> : null}
           <small className="aii-meta">

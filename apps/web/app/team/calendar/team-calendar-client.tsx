@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "../../../components/ui";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
@@ -399,14 +400,9 @@ function OccurrenceEditor({
         />
       ) : (
         <div className="tc-occurrence-actions">
-          <button
-            type="button"
-            className="app-button secondary"
-            disabled={busy || !title.trim() || !startsAt}
-            onClick={() => submit("this")}
-          >
+          <Button variant="secondary" type="button" disabled={busy || !title.trim() || !startsAt} onClick={() => submit("this")}>
             Save
-          </button>
+          </Button>
           <button type="button" className="tc-text-btn" disabled={busy} onClick={onCancel}>
             Cancel
           </button>
@@ -715,15 +711,9 @@ function QuickAddForm({
           <a href="/todos">Tasks</a>.
         </p>
       )}
-      <button
-        type="submit"
-        className="app-button"
-        disabled={
-          busy || savingTask || !title.trim() || (entry === "task" ? !dueOn : !startsAt)
-        }
-      >
+      <Button variant="primary" type="submit" disabled={ busy || savingTask || !title.trim() || (entry === "task" ? !dueOn : !startsAt) }>
         {savingTask ? "Adding…" : entry === "task" ? "Add task" : "Add event"}
-      </button>
+      </Button>
     </form>
   );
 }
@@ -933,9 +923,9 @@ function CreateEventForm({
           <span>Also create an attendance roll-call for this date</span>
         </label>
       ) : null}
-      <button type="submit" className="app-button secondary" disabled={busy || !title.trim() || !startsAt}>
+      <Button variant="secondary" type="submit" disabled={busy || !title.trim() || !startsAt}>
         {repeat.preset === "none" ? "Add detailed event" : "Add repeating event"}
-      </button>
+      </Button>
     </form>
   );
 }
@@ -1007,9 +997,9 @@ function SubteamsPanel({
             <span>Description</span>
             <input value={description} disabled={busy} placeholder="Optional" onChange={(e) => setDescription(e.target.value)} />
           </label>
-          <button type="submit" className="app-button" disabled={busy || !name.trim()}>
+          <Button variant="primary" type="submit" disabled={busy || !name.trim()}>
             Create subteam
-          </button>
+          </Button>
         </form>
 
         {subteams.length > 0 ? (
@@ -1243,9 +1233,9 @@ function AssignDutyForm({
         Notes
         <textarea value={notes} onChange={(event) => setNotes(event.target.value)} rows={2} maxLength={2000} />
       </label>
-      <button type="submit" className="app-button" disabled={busy}>
+      <Button variant="primary" type="submit" disabled={busy}>
         Assign to calendar
-      </button>
+      </Button>
     </form>
   );
 }
@@ -1279,9 +1269,9 @@ function TripPanel({
           <div className="app-card tc-empty tc-guide">
             <strong>No trip times yet</strong>
             <p className="app-muted">Mentors add leave / hotel / venue / return in Event Logistics.</p>
-            <a className="app-button" href={withOrg("/logistics", orgId)}>
+            <Button as="a" variant="primary" href={withOrg("/logistics", orgId)}>
               Open logistics
-            </a>
+            </Button>
           </div>
         ) : (
           byTrip.map(([tripId, bucket]) => (
@@ -1506,21 +1496,21 @@ function CalendarSyncPanel({
             Subscribe URL
             <div className="tc-sync-url-row">
               <input readOnly value={httpsUrl} onFocus={(e) => e.currentTarget.select()} aria-label="Calendar feed URL" />
-              <button type="button" className="app-button secondary" disabled={busy} onClick={() => void copy()}>
+              <Button variant="secondary" type="button" disabled={busy} onClick={() => void copy()}>
                 {copied ? "Copied" : "Copy link"}
-              </button>
+              </Button>
             </div>
           </label>
           <div className="tc-sync-actions">
-            <a className="app-button" href={webcalUrl}>
+            <Button as="a" variant="primary" href={webcalUrl}>
               Add to Apple Calendar
-            </a>
-            <a className="app-button secondary" href={googleUrl} target="_blank" rel="noreferrer">
+            </Button>
+            <Button as="a" variant="secondary" href={googleUrl} target="_blank" rel="noreferrer">
               Add to Google Calendar
-            </a>
-            <a className="app-button secondary" href={downloadHref}>
+            </Button>
+            <Button as="a" variant="secondary" href={downloadHref}>
               Download .ics
-            </a>
+            </Button>
           </div>
           <div className="tc-sync-actions">
             <button
@@ -1555,17 +1545,12 @@ function CalendarSyncPanel({
         </>
       ) : (
         <div className="tc-sync-actions">
-          <button
-            type="button"
-            className="app-button"
-            disabled={busy || (scope === "subteam" && !subteamId)}
-            onClick={() => void run({ action: "ensure_calendar_feed", ...feedBody() }, "cal-feed")}
-          >
+          <Button variant="primary" type="button" disabled={busy || (scope === "subteam" && !subteamId)} onClick={() => void run({ action: "ensure_calendar_feed", ...feedBody() }, "cal-feed")}>
             Create my subscribe link
-          </button>
-          <a className="app-button secondary" href={downloadHref}>
+          </Button>
+          <Button as="a" variant="secondary" href={downloadHref}>
             Download .ics once
-          </a>
+          </Button>
         </div>
       )}
 
@@ -1802,14 +1787,14 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
                   <p className="app-muted">{copy.description}</p>
                   <div className="tc-guide-actions">
                     {copy.primary ? (
-                      <a className="app-button" href={copy.primary.href}>
+                      <Button as="a" variant="primary" href={copy.primary.href}>
                         {copy.primary.label}
-                      </a>
+                      </Button>
                     ) : null}
                     {copy.showRetry ? (
-                      <button type="button" className="app-button secondary" onClick={() => void load()}>
+                      <Button variant="secondary" type="button" onClick={() => void load()}>
                         Retry
-                      </button>
+                      </Button>
                     ) : null}
                   </div>
                 </>
@@ -1839,9 +1824,9 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
           <strong>Choose a team</strong>
           <p className="app-muted">{view.message}</p>
           <div className="tc-guide-actions">
-            <a className="app-button" href="/workspace">
+            <Button as="a" variant="primary" href="/workspace">
               Choose team
-            </a>
+            </Button>
           </div>
         </div>
       </main>
@@ -2099,15 +2084,9 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
                     <strong>Nothing scheduled</strong>
                     <p className="tc-muted">Click a time on the week grid to add one.</p>
                     <div className="tc-guide-actions">
-                      <button
-                        type="button"
-                        className="app-button"
-                        onClick={() =>
-                          document.getElementById("tc-quick-add")?.scrollIntoView({ behavior: "smooth", block: "start" })
-                        }
-                      >
+                      <Button variant="primary" type="button" onClick={() => document.getElementById("tc-quick-add")?.scrollIntoView({ behavior: "smooth", block: "start" }) }>
                         Add event
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 ) : (

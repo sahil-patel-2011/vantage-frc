@@ -1,4 +1,4 @@
-import { EmptyState } from "../../../components/ui";
+import { EmptyState, Button } from "../../../components/ui";
 import { withOrgHref } from "../../../lib/nav/product-nav";
 import BudgetClient from "./budget-client";
 
@@ -18,15 +18,15 @@ export default async function BudgetPage({ searchParams }: { searchParams: Promi
           title="Select a team"
           description="Each team sets its own Chat limits. Open Teams or Account, then come back from Ask AI."
         >
-          <a className="app-button secondary" href="/workspace">
+          <Button as="a" variant="secondary" href="/workspace">
             Open Teams
-          </a>
-          <a className="app-button secondary" href={withOrgHref("/account", null)}>
+          </Button>
+          <Button as="a" variant="secondary" href={withOrgHref("/account", null)}>
             Account
-          </a>
-          <a className="app-button secondary" href={withOrgHref("/pricing", null)}>
+          </Button>
+          <Button as="a" variant="secondary" href={withOrgHref("/pricing", null)}>
             Pricing
-          </a>
+          </Button>
         </EmptyState>
       </main>
     );

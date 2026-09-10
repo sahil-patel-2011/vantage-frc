@@ -12,8 +12,7 @@ import {
   StatRowSkeleton,
   StatTile,
   TableSkeleton,
-  type BadgeTone,
-} from "../../components/ui";
+  type BadgeTone, Button } from "../../components/ui";
 import { UsageCutoffBanner, resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 import {
   DRIVETRAIN_TYPES,
@@ -58,9 +57,9 @@ function DefenseRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related defense-planner-related" aria-label="Related competition tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -84,9 +83,9 @@ function DefenseNextActionsPanel({ actions }: { actions: DefensePlannerNextActio
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -145,10 +144,10 @@ function DefenseShell({
           description={error ?? copy.description}
         >
           {shell === "setup" ? (
-            <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
+            <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
           ) : null}
           {shell === "empty" ? (
-            <a className="app-button is-primary" href="#defense-planner-matchup">Log a matchup</a>
+            <Button as="a" variant="primary" href="#defense-planner-matchup">Log a matchup</Button>
           ) : null}
         </EmptyState>
       )}
@@ -165,9 +164,9 @@ function DefenseShell({
                   <strong>{step.label}</strong>
                   <p className="app-muted defense-planner-tip">{step.detail}</p>
                 </div>
-                <a className="app-button secondary" href={step.href}>
+                <Button as="a" variant="secondary" href={step.href}>
                   Open
-                </a>
+                </Button>
               </li>
             ))}
           </ul>
@@ -333,9 +332,9 @@ export default function DefensePlannerClient() {
             </label>
           ) : null}
           {relatedLinks.map((link) => (
-            <a key={link.id} className="app-button secondary" href={link.href}>
+            <Button as="a" variant="secondary" key={link.id} href={link.href}>
               {link.label}
-            </a>
+            </Button>
           ))}
         </div>
       </PageHeader>
@@ -369,9 +368,9 @@ export default function DefensePlannerClient() {
           description={shellCopy.description}
           className="product-hub-setup"
         >
-          <a className="app-button is-primary" href={hasProfile ? "#defense-planner-matchup" : "#defense-planner-profile"}>
+          <Button as="a" variant="primary" href={hasProfile ? "#defense-planner-matchup" : "#defense-planner-profile"}>
             {hasProfile ? "Log a matchup" : "Save robot profile"}
-          </a>
+          </Button>
         </EmptyState>
       ) : null}
 
@@ -452,9 +451,9 @@ function RobotProfileForm({
         <textarea value={notes} onChange={(event) => setNotes(event.target.value)} rows={2} />
       </FormRow>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !massLbs}>
+        <Button variant="primary" type="submit" disabled={busy || !massLbs}>
           Save profile
-        </button>
+        </Button>
       </div>
     </Panel>
   );
@@ -573,19 +572,9 @@ function LogMatchupForm({
         <textarea value={form.notes} onChange={set("notes")} rows={2} />
       </FormRow>
       <div>
-        <button
-          type="submit"
-          className="app-button"
-          disabled={
-            busy ||
-            !form.opponentTeamNumber ||
-            !form.opponentMassLbs ||
-            !form.opponentCycleTimeSec ||
-            !form.opponentAvgPointsPerCycle
-          }
-        >
+        <Button variant="primary" type="submit" disabled={ busy || !form.opponentTeamNumber || !form.opponentMassLbs || !form.opponentCycleTimeSec || !form.opponentAvgPointsPerCycle }>
           Compute recommendation
-        </button>
+        </Button>
       </div>
     </Panel>
   );

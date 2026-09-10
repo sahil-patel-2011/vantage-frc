@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "../../../../components/ui";
 
 import { useEffect, useState } from "react";
 import "../knowledge.css";
@@ -54,9 +55,9 @@ export default function KnowledgeHistoryClient({ orgId }: { orgId: string }) {
           <p>Every save of the AI context document is snapshotted here. Copy an older version to roll back.</p>
         </div>
         <div className="kb-hero-actions">
-          <a className="app-button secondary" href={`/team/knowledge?orgId=${orgId}`}>
+          <Button as="a" variant="secondary" href={`/team/knowledge?orgId=${orgId}`}>
             ← Back to knowledge
-          </a>
+          </Button>
         </div>
       </header>
 
@@ -80,12 +81,12 @@ export default function KnowledgeHistoryClient({ orgId }: { orgId: string }) {
                     {new Date(rev.createdAt).toLocaleString()}
                   </strong>
                   <div className="kb-hero-actions">
-                    <button type="button" className="app-button secondary" onClick={() => setOpenId(openId === rev.id ? null : rev.id)}>
+                    <Button variant="secondary" type="button" onClick={() => setOpenId(openId === rev.id ? null : rev.id)}>
                       {openId === rev.id ? "Hide" : "View"}
-                    </button>
-                    <button type="button" className="app-button secondary" onClick={() => void copy(rev.content)}>
+                    </Button>
+                    <Button variant="secondary" type="button" onClick={() => void copy(rev.content)}>
                       Copy
-                    </button>
+                    </Button>
                   </div>
                 </div>
                 <small className="app-muted">

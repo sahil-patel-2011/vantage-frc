@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "../../components/ui";
 
 import { useCallback, useEffect, useState } from "react";
 import { AiInsightPanel } from "../../components/ai-insight-panel";
@@ -180,9 +181,9 @@ function ReviewDetail({
           disabled={busy}
           onChange={(event) => setNoteBody(event.target.value)}
         />
-        <button type="submit" className="app-button secondary" disabled={busy || !noteBody.trim() || !timestamp.trim()}>
+        <Button variant="secondary" type="submit" disabled={busy || !noteBody.trim() || !timestamp.trim()}>
           Add
-        </button>
+        </Button>
       </form>
 
       <label className="vid-summary">
@@ -298,14 +299,14 @@ export default function VideoClient() {
                   <strong>{copy.title}</strong>
                   <p className="app-muted">{copy.description}</p>
                   {copy.primary ? (
-                    <a className="app-button" href={copy.primary.href}>
+                    <Button as="a" variant="primary" href={copy.primary.href}>
                       {copy.primary.label}
-                    </a>
+                    </Button>
                   ) : null}
                   {copy.showRetry ? (
-                    <button type="button" className="app-button secondary" onClick={() => void load()}>
+                    <Button variant="secondary" type="button" onClick={() => void load()}>
                       Retry
-                    </button>
+                    </Button>
                   ) : null}
                 </>
               );
@@ -331,9 +332,9 @@ export default function VideoClient() {
         <div className="app-card vid-empty">
           <strong>Select a team</strong>
           <p className="app-muted">{view.message}</p>
-          <a className="app-button" href="/workspace">
+          <Button as="a" variant="primary" href="/workspace">
             Choose your team
-          </a>
+          </Button>
         </div>
       </main>
     );
@@ -419,13 +420,9 @@ export default function VideoClient() {
               disabled={busyKey === "create"}
               onChange={(event) => setNewTeamNumber(event.target.value)}
             />
-            <button
-              type="submit"
-              className="app-button"
-              disabled={busyKey === "create" || !newTitle.trim() || !newUrl.trim()}
-            >
+            <Button variant="primary" type="submit" disabled={busyKey === "create" || !newTitle.trim() || !newUrl.trim()}>
               New review
-            </button>
+            </Button>
           </form>
 
           <nav className="vid-nav" aria-label="Saved reviews">

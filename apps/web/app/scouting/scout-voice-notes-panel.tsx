@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "../../components/ui";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { UsageCutoffBanner, isCutoffError } from "../../components/usage-cutoff-banner";
@@ -404,28 +405,14 @@ export default function ScoutVoiceNotesPanel({
         </label>
         <div className="scout-voice-actions">
           {view.canManageOrg && !view.orgSettings.enabled ? (
-            <button
-              type="button"
-              className="app-button"
-              disabled={busy || !consentChecked}
-              onClick={() =>
-                void mutate({ action: "set-org-opt-in", enabled: true, acceptConsent: consentChecked })
-              }
-            >
+            <Button variant="primary" type="button" disabled={busy || !consentChecked} onClick={() => void mutate({ action: "set-org-opt-in", enabled: true, acceptConsent: consentChecked }) }>
               Enable for team
-            </button>
+            </Button>
           ) : null}
           {view.orgSettings.enabled ? (
-            <button
-              type="button"
-              className="app-button"
-              disabled={busy || !consentChecked}
-              onClick={() =>
-                void mutate({ action: "set-user-opt-in", enabled: true, acceptConsent: consentChecked })
-              }
-            >
+            <Button variant="primary" type="button" disabled={busy || !consentChecked} onClick={() => void mutate({ action: "set-user-opt-in", enabled: true, acceptConsent: consentChecked }) }>
               Enable for me
-            </button>
+            </Button>
           ) : null}
         </div>
         {error ? (
@@ -449,14 +436,9 @@ export default function ScoutVoiceNotesPanel({
             {view.providers.cloudConfigured ? " Cloud STT available (metered)." : " Cloud STT not configured."}
           </small>
         </div>
-        <button
-          type="button"
-          className="app-button secondary"
-          disabled={busy}
-          onClick={() => void mutate({ action: "set-user-opt-in", enabled: false, acceptConsent: false })}
-        >
+        <Button variant="secondary" type="button" disabled={busy} onClick={() => void mutate({ action: "set-user-opt-in", enabled: false, acceptConsent: false })}>
           Turn off
-        </button>
+        </Button>
       </div>
 
       {cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} compact /> : null}
@@ -481,39 +463,21 @@ export default function ScoutVoiceNotesPanel({
 
       <div className="scout-voice-actions">
         {!recording ? (
-          <button
-            type="button"
-            className="app-button secondary"
-            disabled={busy || !eventKey || !teamKey}
-            onClick={() => void startRecording()}
-          >
+          <Button variant="secondary" type="button" disabled={busy || !eventKey || !teamKey} onClick={() => void startRecording()}>
             Record
-          </button>
+          </Button>
         ) : (
-          <button type="button" className="app-button" disabled={busy} onClick={() => void stopRecording()}>
+          <Button variant="primary" type="button" disabled={busy} onClick={() => void stopRecording()}>
             Stop & attach
-          </button>
+          </Button>
         )}
-        <button
-          type="button"
-          className="app-button secondary"
-          disabled={busy || !draft.trim() || !eventKey || !teamKey}
-          onClick={() => void saveManualNote()}
-        >
+        <Button variant="secondary" type="button" disabled={busy || !draft.trim() || !eventKey || !teamKey} onClick={() => void saveManualNote()}>
           Attach typed note
-        </button>
+        </Button>
         {onApplyToForm ? (
-          <button
-            type="button"
-            className="app-button secondary"
-            disabled={busy || !draft.trim()}
-            onClick={() => {
-              onApplyToForm(draft.trim(), formFieldKey || null);
-              onStatus?.("Transcript applied to the custom form — review before saving");
-            }}
-          >
+          <Button variant="secondary" type="button" disabled={busy || !draft.trim()} onClick={() => { onApplyToForm(draft.trim(), formFieldKey || null); onStatus?.("Transcript applied to the custom form — review before saving"); }}>
             Apply to form
-          </button>
+          </Button>
         ) : null}
       </div>
 
@@ -535,26 +499,13 @@ export default function ScoutVoiceNotesPanel({
               <p>{note.transcript}</p>
               <div className="scout-voice-actions">
                 {onApplyToForm ? (
-                  <button
-                    type="button"
-                    className="app-button secondary"
-                    disabled={busy}
-                    onClick={() => {
-                      onApplyToForm(note.transcript, formFieldKey || null);
-                      onStatus?.("Voice note applied to the custom form");
-                    }}
-                  >
+                  <Button variant="secondary" type="button" disabled={busy} onClick={() => { onApplyToForm(note.transcript, formFieldKey || null); onStatus?.("Voice note applied to the custom form"); }}>
                     Apply to form
-                  </button>
+                  </Button>
                 ) : null}
-                <button
-                  type="button"
-                  className="app-button secondary"
-                  disabled={busy}
-                  onClick={() => void mutate({ action: "delete-note", noteId: note.id })}
-                >
+                <Button variant="secondary" type="button" disabled={busy} onClick={() => void mutate({ action: "delete-note", noteId: note.id })}>
                   Delete
-                </button>
+                </Button>
               </div>
             </li>
           ))}

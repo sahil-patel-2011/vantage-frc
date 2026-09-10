@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { BusinessRelated } from "../../../components/business-related";
-import { EmptyState, PageHeader } from "../../../components/ui";
+import { EmptyState, PageHeader, Button } from "../../../components/ui";
 import {
   AWARD_CATALOG,
   AWARD_ITEM_KINDS,
@@ -72,9 +72,9 @@ function AwardsNextActions({
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -395,9 +395,9 @@ export default function AwardsClient({ orgId }: { orgId: string }) {
                   />
                 </label>
               </div>
-              <button className="app-button" type="submit">
+              <Button variant="primary" type="submit">
                 Start submission
-              </button>
+              </Button>
             </form>
 
             <section className="app-card soft-panel awards-list" aria-label="Award submissions">
@@ -455,18 +455,18 @@ export default function AwardsClient({ orgId }: { orgId: string }) {
                 that feeds Business evidence for grant writing.
               </p>
               <div className="awards-export-bar">
-                <button type="button" className="app-button secondary" disabled={realItemCount === 0} onClick={() => void copyAll()}>
+                <Button variant="secondary" type="button" disabled={realItemCount === 0} onClick={() => void copyAll()}>
                   Copy all
-                </button>
-                <button type="button" className="app-button secondary" disabled={realItemCount === 0} onClick={printExport}>
+                </Button>
+                <Button variant="secondary" type="button" disabled={realItemCount === 0} onClick={printExport}>
                   Print / Save PDF
-                </button>
-                <button type="button" className="app-button secondary" disabled={realItemCount === 0} onClick={() => downloadExport("txt")}>
+                </Button>
+                <Button variant="secondary" type="button" disabled={realItemCount === 0} onClick={() => downloadExport("txt")}>
                   Download text
-                </button>
-                <button type="button" className="app-button secondary" disabled={realItemCount === 0} onClick={() => downloadExport("html")}>
+                </Button>
+                <Button variant="secondary" type="button" disabled={realItemCount === 0} onClick={() => downloadExport("html")}>
                   Download HTML
-                </button>
+                </Button>
               </div>
               <p className="awards-export-note">
                 {realItemCount === 0
@@ -543,9 +543,9 @@ export default function AwardsClient({ orgId }: { orgId: string }) {
                     />
                   </label>
                 </div>
-                <button className="app-button secondary" type="submit">
+                <Button variant="secondary" type="submit">
                   Add item
-                </button>
+                </Button>
               </form>
             </section>
           ) : null}

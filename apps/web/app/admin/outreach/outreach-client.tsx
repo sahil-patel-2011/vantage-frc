@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { EmptyState, PageHeader, Panel } from "../../../components/ui";
+import { EmptyState, PageHeader, Panel, Button } from "../../../components/ui";
 import { adminRelatedLinks } from "../../../lib/admin";
 import "../admin-flow.css";
 import "../partners/partners.css";
@@ -137,13 +137,13 @@ export default function AdminOutreachClient() {
       >
         <nav className="admin-related" aria-label="Related admin">
           {related.map((link) => (
-            <a key={link.id} className="app-button secondary" href={link.href}>
+            <Button as="a" variant="secondary" key={link.id} href={link.href}>
               {link.label}
-            </a>
+            </Button>
           ))}
-          <a className="app-button secondary" href="/admin/partners">
+          <Button as="a" variant="secondary" href="/admin/partners">
             App partners
-          </a>
+          </Button>
         </nav>
       </PageHeader>
 
@@ -220,16 +220,9 @@ export default function AdminOutreachClient() {
               {editId ? "Update" : "Add outreach"}
             </button>
             {editId ? (
-              <button
-                type="button"
-                className="app-button secondary"
-                onClick={() => {
-                  setEditId(null);
-                  setForm(emptyForm);
-                }}
-              >
+              <Button variant="secondary" type="button" onClick={() => { setEditId(null); setForm(emptyForm); }}>
                 Cancel
-              </button>
+              </Button>
             ) : null}
           </div>
         </form>

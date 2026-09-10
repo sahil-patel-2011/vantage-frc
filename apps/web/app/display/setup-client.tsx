@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DisplayRelated } from "../../components/display-related";
-import { EmptyState, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
 import {
   DISPLAY_WIDGET_TYPES,
   PRESET_META,
@@ -284,14 +284,14 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
       {failure ? (
         <EmptyState soft title={failure.title} description={failure.description}>
           {failure.primary ? (
-            <a className="app-button" href={failure.primary.href}>
+            <Button as="a" variant="primary" href={failure.primary.href}>
               {failure.primary.label}
-            </a>
+            </Button>
           ) : null}
           {failure.showRetry ? (
-            <button type="button" className="app-button secondary" onClick={() => void load()}>
+            <Button variant="secondary" type="button" onClick={() => void load()}>
               Retry
-            </button>
+            </Button>
           ) : null}
         </EmptyState>
       ) : (
@@ -324,9 +324,9 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
               title="No active event yet"
               description="Set an Event Day event so next-match and coverage can read The Blue Alliance. Boards stay blank until then."
             >
-              <a className="app-button is-primary" href={hubHref("/competition", "command", orgId)}>
+              <Button as="a" variant="primary" href={hubHref("/competition", "command", orgId)}>
                 Open Event Day
-              </a>
+              </Button>
             </EmptyState>
           ) : null}
 
@@ -396,12 +396,12 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
               ) : null}
 
               <div className="display-actions">
-                <button type="submit" className="app-button">
+                <Button variant="primary" type="submit">
                   Save board
-                </button>
-                <button type="button" className="app-button secondary" onClick={resetToPreset}>
+                </Button>
+                <Button variant="secondary" type="button" onClick={resetToPreset}>
                   Reset to preset
-                </button>
+                </Button>
               </div>
             </form>
 
@@ -493,15 +493,15 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
                   <code>{displayKioskHref(location.origin, minted.token, "stage")}</code>
                 </p>
                 <div className="display-actions">
-                  <button type="button" className="app-button" onClick={() => copyMintedLink("pit")}>
+                  <Button variant="primary" type="button" onClick={() => copyMintedLink("pit")}>
                     Copy pit / Pi link
-                  </button>
-                  <button type="button" className="app-button secondary" onClick={() => copyMintedLink("stage")}>
+                  </Button>
+                  <Button variant="secondary" type="button" onClick={() => copyMintedLink("stage")}>
                     Copy event display link
-                  </button>
-                  <button type="button" className="app-button secondary" onClick={() => copyMintedLink("kiosk")}>
+                  </Button>
+                  <Button variant="secondary" type="button" onClick={() => copyMintedLink("kiosk")}>
                     Copy standard kiosk link
-                  </button>
+                  </Button>
                 </div>
               </div>
             ) : null}
@@ -522,13 +522,9 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
                     ))}
                   </select>
                 </label>
-                <button
-                  type="button"
-                  className="app-button"
-                  onClick={() => pairBoardId && void mintToken(pairBoardId)}
-                >
+                <Button variant="primary" type="button" onClick={() => pairBoardId && void mintToken(pairBoardId)}>
                   Mint token
-                </button>
+                </Button>
               </div>
             ) : null}
 
@@ -585,9 +581,9 @@ function NextActionsPanel({
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>

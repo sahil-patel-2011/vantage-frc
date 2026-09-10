@@ -186,9 +186,9 @@ function ItemRow({
             ))}
           </select>
           <input placeholder="Note (optional)" value={note} disabled={busy} onChange={(event) => setNote(event.target.value)} />
-          <button type="submit" className="app-button secondary sm" disabled={busy || !delta}>
+          <Button variant="secondary" size="sm" type="submit" disabled={busy || !delta}>
             Apply
-          </button>
+          </Button>
         </form>
       ) : null}
 
@@ -270,9 +270,9 @@ function ItemEditForm({
       {/* Archive + Delete moved into this item's overflow menu (see ItemRow) so the edit
           form has exactly one action: save what you just typed. */}
       <div className="inventory-edit-actions">
-        <button type="submit" className="app-button secondary sm" disabled={busy}>
+        <Button variant="secondary" size="sm" type="submit" disabled={busy}>
           Save
-        </button>
+        </Button>
         <button type="button" className="inventory-link" disabled={busy} onClick={onDone}>
           Cancel
         </button>
@@ -391,9 +391,9 @@ function AddItemForm({
           <span>Held as a spare</span>
         </label>
       </div>
-      <button type="submit" className="app-button" disabled={busy || !name.trim()}>
+      <Button variant="primary" type="submit" disabled={busy || !name.trim()}>
         {busy ? "Adding…" : "Add item"}
-      </button>
+      </Button>
     </form>
   );
 }
@@ -450,9 +450,9 @@ function LocationsPanel({ view, orgId, busyKey, run }: { view: ReadyView; orgId:
             </option>
           ))}
         </select>
-        <button type="submit" className="app-button secondary" disabled={busy || !name.trim()}>
+        <Button variant="secondary" type="submit" disabled={busy || !name.trim()}>
           Add location
-        </button>
+        </Button>
       </form>
     </div>
   );
@@ -523,9 +523,9 @@ function BomPanel({ view, orgId, busyKey, run }: { view: ReadyView; orgId: strin
           ))}
         </select>
         <input type="number" step="any" min={0} placeholder="Qty needed" value={qty} disabled={busy} onChange={(e) => setQty(e.target.value)} />
-        <button type="submit" className="app-button secondary" disabled={busy || !subsystem.trim() || !itemId || !qty}>
+        <Button variant="secondary" type="submit" disabled={busy || !subsystem.trim() || !itemId || !qty}>
           Add to BOM
-        </button>
+        </Button>
       </form>
     </div>
   );
@@ -550,9 +550,9 @@ function InventoryRelatedStrip({ orgId, skip }: { orgId?: string | null; skip?: 
   return (
     <nav className="product-hub-related inventory-related" aria-label="Related inventory tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -573,9 +573,9 @@ function InventoryNextActionsPanel({ actions }: { actions: InventoryNextAction[]
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -657,17 +657,17 @@ function InventoryShell({
         aria-busy={shell === "loading"}
       >
         {failure?.primary ? (
-          <a className="app-button" href={failure.primary.href}>
+          <Button as="a" variant="primary" href={failure.primary.href}>
             {failure.primary.label}
-          </a>
+          </Button>
         ) : null}
         {shell === "error" && onRetry && (failure?.showRetry ?? true) ? (
-          <button type="button" className="app-button secondary" onClick={onRetry}>
+          <Button variant="secondary" type="button" onClick={onRetry}>
             Retry
-          </button>
+          </Button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
+          <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
         ) : null}
         {shell === "empty"
           ? [

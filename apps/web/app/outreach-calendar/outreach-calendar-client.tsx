@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import {
   outreachAudienceLabel,
   outreachCategoryLabel,
@@ -71,9 +71,9 @@ function OutreachRelatedStrip({ orgId }: { orgId?: string | null }) {
       aria-label="Related business tools"
     >
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -97,9 +97,9 @@ function OutreachNextActionsPanel({ actions }: { actions: OutreachCalendarNextAc
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -158,15 +158,15 @@ function OutreachShell({
         aria-busy={shell === "loading"}
       >
         {shell === "error" && onRetry ? (
-          <button type="button" className="app-button secondary" onClick={onRetry}>
+          <Button variant="secondary" type="button" onClick={onRetry}>
             Retry
-          </button>
+          </Button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
+          <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
         ) : null}
         {shell === "empty" ? (
-          <a className="app-button is-primary" href="#outreach-calendar-schedule">Schedule an event</a>
+          <Button as="a" variant="primary" href="#outreach-calendar-schedule">Schedule an event</Button>
         ) : null}
       </EmptyState>
       {shell === "setup" && steps.length > 0 ? (
@@ -327,9 +327,9 @@ export default function OutreachCalendarClient() {
             </label>
           ) : null}
           {relatedLinks.map((link) => (
-            <a key={link.id} className="app-button secondary" href={link.href}>
+            <Button as="a" variant="secondary" key={link.id} href={link.href}>
               {link.label}
-            </a>
+            </Button>
           ))}
         </div>
       </PageHeader>
@@ -381,9 +381,9 @@ export default function OutreachCalendarClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <a className="app-button is-primary" href="#outreach-calendar-schedule">
+          <Button as="a" variant="primary" href="#outreach-calendar-schedule">
             Schedule an event
-          </a>
+          </Button>
         </EmptyState>
       ) : null}
 
@@ -515,14 +515,9 @@ function AllEvents({
             </div>
             <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
               {item.status !== "completed" && item.status !== "canceled" ? (
-                <button
-                  type="button"
-                  className="app-button secondary"
-                  disabled={busy}
-                  onClick={() => mutate({ action: "complete", eventId: item.id })}
-                >
+                <Button variant="secondary" type="button" disabled={busy} onClick={() => mutate({ action: "complete", eventId: item.id })}>
                   Complete
-                </button>
+                </Button>
               ) : null}
               <select
                 value={item.status}
@@ -670,13 +665,9 @@ function ScheduleEventForm({
         <textarea value={form.notes} onChange={set("notes")} rows={2} />
       </FormRow>
       <div>
-        <button
-          type="submit"
-          className="app-button"
-          disabled={busy || !form.title.trim() || !form.scheduledOn}
-        >
+        <Button variant="primary" type="submit" disabled={busy || !form.title.trim() || !form.scheduledOn}>
           Schedule event
-        </button>
+        </Button>
       </div>
     </Panel>
   );

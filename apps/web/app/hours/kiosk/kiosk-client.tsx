@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "../../../components/ui";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -344,9 +345,9 @@ export default function KioskClient() {
             <>
               <strong>Select a team</strong>
               <p className="app-muted">{view.message}</p>
-              <a className="app-button" href="/workspace">
+              <Button as="a" variant="primary" href="/workspace">
                 Choose your team
-              </a>
+              </Button>
             </>
           ) : fetchFailed ? (
             (() => {
@@ -368,14 +369,14 @@ export default function KioskClient() {
                   <p className="app-muted">{copy.description}</p>
                   {errorStatus === 503 && error ? <p className="app-muted">{error}</p> : null}
                   {copy.primary ? (
-                    <a className="app-button" href={copy.primary.href}>
+                    <Button as="a" variant="primary" href={copy.primary.href}>
                       {copy.primary.label}
-                    </a>
+                    </Button>
                   ) : null}
                   {copy.showRetry ? (
-                    <button type="button" className="app-button secondary" onClick={() => void load()}>
+                    <Button variant="secondary" type="button" onClick={() => void load()}>
                       Retry
-                    </button>
+                    </Button>
                   ) : null}
                 </>
               );
@@ -404,12 +405,11 @@ export default function KioskClient() {
           </p>
         </div>
         <div className="kiosk-header-actions">
-          <a
-            className="app-button secondary"
+          <Button as="a" variant="secondary"
             href={orgId ? `/hours?orgId=${encodeURIComponent(orgId)}` : "/hours"}
           >
             Full hours view
-          </a>
+          </Button>
         </div>
       </header>
 
@@ -526,9 +526,9 @@ export default function KioskClient() {
           )}
           {canAdmin ? (
             <>
-              <button type="button" className="app-button secondary" onClick={() => void runSweep()} disabled={busy}>
+              <Button variant="secondary" type="button" onClick={() => void runSweep()} disabled={busy}>
                 Run forgot-to-sign-out sweep
-              </button>
+              </Button>
               <p className="app-muted kiosk-help">
                 Closes sessions open longer than {policy.afterHours}h, credits at most {policy.creditHours}h,
                 and flags each row for you to correct. It never credits the full overnight time.
@@ -745,14 +745,9 @@ function CardsPanel(props: {
           />
         </label>
       </div>
-      <button
-        type="button"
-        className="app-button"
-        onClick={() => void enroll()}
-        disabled={busy || !userId || !code.trim()}
-      >
+      <Button variant="primary" type="button" onClick={() => void enroll()} disabled={busy || !userId || !code.trim()}>
         Enroll card
-      </button>
+      </Button>
       {message ? <p className="kiosk-sweep-result">{message}</p> : null}
 
       {props.codes.length ? (
@@ -856,9 +851,9 @@ function PolicyPanel(props: {
         Leave the threshold blank if your team does not gate travel on hours. Blank means the kiosk says
         &ldquo;no threshold set&rdquo; instead of inventing one.
       </p>
-      <button type="button" className="app-button" onClick={() => void save()} disabled={busy}>
+      <Button variant="primary" type="button" onClick={() => void save()} disabled={busy}>
         Save kiosk policy
-      </button>
+      </Button>
       {message ? <p className="kiosk-sweep-result">{message}</p> : null}
     </div>
   );

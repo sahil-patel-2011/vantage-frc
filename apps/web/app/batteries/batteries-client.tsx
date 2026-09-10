@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { EmptyState, PageHeader } from "../../components/ui";
+import { EmptyState, PageHeader, Button } from "../../components/ui";
 import { OfflineBanner } from "../../components/offline-banner";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { BuildHubRelated } from "../../components/build-hub-related";
@@ -160,9 +160,9 @@ function AssignRow({
           onChange={(event) => setValue(event.target.value)}
         />
       </label>
-      <button type="submit" className="app-button secondary" disabled={busy}>
+      <Button variant="secondary" type="submit" disabled={busy}>
         Save
-      </button>
+      </Button>
     </form>
   );
 }
@@ -342,14 +342,14 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
           aria-busy={!fetchFailed}
         >
           {failure?.primary ? (
-            <a className="app-button" href={failure.primary.href}>
+            <Button as="a" variant="primary" href={failure.primary.href}>
               {failure.primary.label}
-            </a>
+            </Button>
           ) : null}
           {failure?.showRetry ? (
-            <button type="button" className="app-button secondary" onClick={() => void load()}>
+            <Button variant="secondary" type="button" onClick={() => void load()}>
               Retry
-            </button>
+            </Button>
           ) : null}
         </EmptyState>
       </main>
@@ -368,9 +368,9 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
         {!embed ? <TeamOpsNav active="batteries" /> : null}
         <OfflineBanner feature="Batteries" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState title="Select a team" description={view.message} badge="Setup" badgeTone="setup" soft>
-          <a className="app-button" href="/workspace">
+          <Button as="a" variant="primary" href="/workspace">
             Choose your team
-          </a>
+          </Button>
         </EmptyState>
         <section className="batt-next-actions app-card soft-panel" aria-label="Next actions">
           <h2>Next actions</h2>
@@ -381,9 +381,9 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
                   <strong>{action.label}</strong>
                   <span>{action.detail}</span>
                 </div>
-                <a className="app-button secondary" href={action.href}>
+                <Button as="a" variant="secondary" href={action.href}>
                   Open
-                </a>
+                </Button>
               </li>
             ))}
           </ol>
@@ -424,18 +424,18 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
         }
       >
         <div className="batt-header-actions">
-          <a className="app-button secondary" href={withOrgHref("/pit", orgId)}>
+          <Button as="a" variant="secondary" href={withOrgHref("/pit", orgId)}>
             Pit Command
-          </a>
-          <a className="app-button secondary" href={withOrgHref("/battery-rotation", orgId)}>
+          </Button>
+          <Button as="a" variant="secondary" href={withOrgHref("/battery-rotation", orgId)}>
             Rotation
-          </a>
-          <a className="app-button secondary" href={withOrgHref("/battery-health-forecast", orgId)}>
+          </Button>
+          <Button as="a" variant="secondary" href={withOrgHref("/battery-health-forecast", orgId)}>
             Health forecast
-          </a>
-          <a className="app-button secondary" href={withOrgHref("/inventory", orgId)}>
+          </Button>
+          <Button as="a" variant="secondary" href={withOrgHref("/inventory", orgId)}>
             Inventory
-          </a>
+          </Button>
         </div>
       </PageHeader>
       <OfflineBanner feature="Batteries" fromCache={fromCache} cachedAt={cachedAt} />
@@ -465,9 +465,9 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
                 <strong>{action.label}</strong>
                 <span>{action.detail}</span>
               </div>
-              <a className="app-button secondary" href={action.href}>
+              <Button as="a" variant="secondary" href={action.href}>
                 Open
-              </a>
+              </Button>
             </li>
           ))}
         </ol>
@@ -790,15 +790,9 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
                 description="Charge, match, practice, and resistance tests show up here. The feed stays empty until someone logs a real event."
               >
                 {view.packs.length > 0 ? (
-                  <button
-                    type="button"
-                    className="app-button secondary"
-                    onClick={() =>
-                      document.getElementById("batt-log-form")?.scrollIntoView({ behavior: "smooth", block: "start" })
-                    }
-                  >
+                  <Button variant="secondary" type="button" onClick={() => document.getElementById("batt-log-form")?.scrollIntoView({ behavior: "smooth", block: "start" }) }>
                     Log an event
-                  </button>
+                  </Button>
                 ) : null}
               </EmptyState>
             ) : (
@@ -933,9 +927,9 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
                 />
               </label>
             </div>
-            <button type="submit" className="app-button" disabled={busy || !packForm.label.trim()}>
+            <Button variant="primary" type="submit" disabled={busy || !packForm.label.trim()}>
               Add battery
-            </button>
+            </Button>
           </form>
 
           <form
@@ -1049,9 +1043,9 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
                     />
                   </label>
                 </div>
-                <button type="submit" className="app-button secondary" disabled={busy || !logForm.batteryId}>
+                <Button variant="secondary" type="submit" disabled={busy || !logForm.batteryId}>
                   Log event
-                </button>
+                </Button>
               </>
             )}
           </form>

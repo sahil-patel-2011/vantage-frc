@@ -4,7 +4,7 @@ import { packForYear } from "@vantage/game-year";
 import { useCallback, useEffect, useState } from "react";
 import { BuildHubRelated } from "../../components/build-hub-related";
 import { MeteredAiCutoffBanner } from "../../components/metered-ai-cutoff-banner";
-import { EmptyState, PageHeader } from "../../components/ui";
+import { EmptyState, PageHeader, Button } from "../../components/ui";
 import { resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 import {
   kickoffSummary,
@@ -82,9 +82,9 @@ function NextActionsPanel({
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -265,9 +265,9 @@ function IntelligenceSection({
         </div>
         <nav className="kick-pipeline-links" aria-label="Kickoff pipeline">
           {pipeline.map((link) => (
-            <a key={link.id} className="app-button secondary" href={link.href}>
+            <Button as="a" variant="secondary" key={link.id} href={link.href}>
               {link.label}
-            </a>
+            </Button>
           ))}
         </nav>
       </header>
@@ -295,9 +295,9 @@ function IntelligenceSection({
               ))}
             </ol>
           ) : (
-            <a className="app-button secondary" href="/team/admin">
+            <Button as="a" variant="secondary" href="/team/admin">
               Open Team Admin
-            </a>
+            </Button>
           )}
         </EmptyState>
       ) : null}
@@ -366,9 +366,9 @@ function IntelligenceSection({
           />
         </label>
         <div className="kick-intel-submit">
-          <button type="submit" className="app-button" disabled={busy || !canGenerate}>
+          <Button variant="primary" type="submit" disabled={busy || !canGenerate}>
             {busyKey === "intel-analyze" ? "Generating…" : "Generate summary → Strategy seeds → CAD"}
-          </button>
+          </Button>
           <span className="app-muted">
             Seeds priorities + opens a CAD brief when generation succeeds. Hard usage cutoffs apply.
           </span>
@@ -411,12 +411,12 @@ function IntelligenceSection({
                 </label>
               ) : null}
               <nav className="kick-pipeline-links" aria-label="Open strategy and CAD">
-                <a className="app-button secondary" href={hubHref("/competition", "strategy", orgId)}>
+                <Button as="a" variant="secondary" href={hubHref("/competition", "strategy", orgId)}>
                   Strategy seeds
-                </a>
-                <a className="app-button secondary" href={hubHref("/build", "cad", orgId)}>
+                </Button>
+                <Button as="a" variant="secondary" href={hubHref("/build", "cad", orgId)}>
                   {selected.cadJobId ? "Open CAD brief" : "CAD briefs"}
-                </a>
+                </Button>
               </nav>
             </div>
           </header>
@@ -510,28 +510,18 @@ function IntelligenceSection({
           <p className="app-muted kick-intel-disclaimer">{selected.summary.provenance.disclaimer}</p>
 
           <div className="kick-add">
-            <button
-              type="button"
-              className="app-button secondary"
-              disabled={busy}
-              onClick={() => void runIntel({ action: "apply", orgId, id: selected.id }, "intel-apply")}
-            >
+            <Button variant="secondary" type="button" disabled={busy} onClick={() => void runIntel({ action: "apply", orgId, id: selected.id }, "intel-apply")}>
               Re-seed Strategy priorities
-            </button>
-            <button
-              type="button"
-              className="app-button secondary"
-              disabled={busy}
-              onClick={() => void runIntel({ action: "create_cad_brief", orgId, id: selected.id }, "intel-cad")}
-            >
+            </Button>
+            <Button variant="secondary" type="button" disabled={busy} onClick={() => void runIntel({ action: "create_cad_brief", orgId, id: selected.id }, "intel-cad")}>
               {selected.cadJobId ? "Create another CAD brief" : "Create CAD brief"}
-            </button>
-            <a className="app-button secondary" href={hubHref("/competition", "strategy", orgId)}>
+            </Button>
+            <Button as="a" variant="secondary" href={hubHref("/competition", "strategy", orgId)}>
               Open Strategy
-            </a>
-            <a className="app-button secondary" href={hubHref("/build", "cad", orgId)}>
+            </Button>
+            <Button as="a" variant="secondary" href={hubHref("/build", "cad", orgId)}>
               Open CAD
-            </a>
+            </Button>
             <button
               type="button"
               className="kick-link danger"
@@ -713,9 +703,9 @@ function ScoringSection({
           placeholder="Est. sec"
           onChange={(event) => setSecondsText(event.target.value)}
         />
-        <button type="submit" className="app-button secondary" disabled={busy || !label.trim() || pointsText.trim() === ""}>
+        <Button variant="secondary" type="submit" disabled={busy || !label.trim() || pointsText.trim() === ""}>
           Add action
-        </button>
+        </Button>
       </form>
     </section>
   );
@@ -757,9 +747,9 @@ function PrioritySection({
           title="No priorities yet"
           description="Generate a release summary above to seed Strategy priorities, or add capabilities manually."
         >
-          <a className="app-button is-primary" href={hubHref("/competition", "strategy", orgId)}>
+          <Button as="a" variant="primary" href={hubHref("/competition", "strategy", orgId)}>
             Open Strategy
-          </a>
+          </Button>
         </EmptyState>
       ) : (
         <ul className="kick-list">
@@ -880,9 +870,9 @@ function PrioritySection({
             </option>
           ))}
         </select>
-        <button type="submit" className="app-button secondary" disabled={busy || !capability.trim()}>
+        <Button variant="secondary" type="submit" disabled={busy || !capability.trim()}>
           Add priority
-        </button>
+        </Button>
       </form>
     </section>
   );
@@ -1008,9 +998,9 @@ function RulesSection({
           className="kick-ref-input"
           onChange={(event) => setRuleRef(event.target.value)}
         />
-        <button type="submit" className="app-button secondary" disabled={busy || !question.trim()}>
+        <Button variant="secondary" type="submit" disabled={busy || !question.trim()}>
           Add question
-        </button>
+        </Button>
       </form>
     </section>
   );
@@ -1113,14 +1103,14 @@ export default function KickoffClient(_props: { embedded?: boolean } = {}) {
           aria-busy={!fetchFailed}
         >
           {failure?.primary ? (
-            <a className="app-button" href={failure.primary.href}>
+            <Button as="a" variant="primary" href={failure.primary.href}>
               {failure.primary.label}
-            </a>
+            </Button>
           ) : null}
           {failure?.showRetry ? (
-            <button type="button" className="app-button secondary" onClick={() => void load()}>
+            <Button variant="secondary" type="button" onClick={() => void load()}>
               Retry
-            </button>
+            </Button>
           ) : null}
         </EmptyState>
       </main>
@@ -1137,9 +1127,9 @@ export default function KickoffClient(_props: { embedded?: boolean } = {}) {
         />
         <BuildHubRelated active="kickoff" include={[...KICKOFF_BUILD_RELATED_INCLUDE]} />
         <EmptyState badge="Setup required" badgeTone="setup" soft title="Select a team" description={view.message}>
-          <a className="app-button" href="/workspace">
+          <Button as="a" variant="primary" href="/workspace">
             Choose your team
-          </a>
+          </Button>
         </EmptyState>
         <NextActionsPanel
           seasonYear={new Date().getUTCFullYear()}

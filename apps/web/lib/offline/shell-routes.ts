@@ -9,6 +9,7 @@ export const OFFLINE_SHELL_ROUTES = [
   "/scouting",
   "/schedule",
   "/competition",
+  "/command",
   "/calendar",
   "/team/calendar",
   "/team",
@@ -29,6 +30,7 @@ export const OFFLINE_SHELL_ROUTES = [
   "/assembly-manual",
   "/packing",
   "/batteries",
+  "/my-day",
 ] as const;
 
 export type OfflineShellRoute = (typeof OFFLINE_SHELL_ROUTES)[number];
@@ -50,6 +52,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/schedule")) return "Schedule";
   if (bare.startsWith("/offline-shell")) return "This phone";
   if (bare === "/competition") return "Competition";
+  if (bare.startsWith("/command")) return "Event Day";
   if (
     bare.startsWith("/team/calendar") ||
     bare === "/calendar" ||
@@ -74,6 +77,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/assembly-manual")) return "Assembly manual";
   if (bare.startsWith("/packing")) return "Packing";
   if (bare.startsWith("/batteries")) return "Batteries";
+  if (bare.startsWith("/my-day")) return "My Day";
   return null;
 }
 

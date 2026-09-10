@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "../../components/ui";
 import { useCallback, useEffect, useState } from "react";
 import { CallYourShot } from "../../lib/learning/call-your-shot";
 import { buildPowerBudgetCall } from "../../lib/learning/surfaces";
@@ -74,10 +75,10 @@ export default function PowerBudgetClient({ orgId }: { orgId: string | null }) {
             <p className="telemetry-status">{copy.description}</p>
             <p className="telemetry-status">
               {copy.primary ? (
-                <a className="app-button" href={copy.primary.href}>{copy.primary.label}</a>
+                <Button as="a" variant="primary" href={copy.primary.href}>{copy.primary.label}</Button>
               ) : null}
               {copy.showRetry ? (
-                <button type="button" className="app-button secondary" onClick={() => void load()}>Retry</button>
+                <Button variant="secondary" type="button" onClick={() => void load()}>Retry</Button>
               ) : null}
             </p>
           </>

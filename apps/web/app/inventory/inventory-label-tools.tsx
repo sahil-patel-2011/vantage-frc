@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "../../components/ui";
 
 import { useEffect, useRef, useState } from "react";
 import type { InventoryLocation } from "../../lib/inventory";
@@ -74,13 +75,13 @@ export default function InventoryLabelTools({
   return <section className="app-card inventory-label-tools">
     <header><div><h2>Find a bin instantly</h2><p className="app-muted">Scan a Vantage bin label to show everything stored there, or print durable labels for the shop.</p></div><button type="button" className="inventory-link" onClick={onClose}>Close</button></header>
     <div className="inventory-scan-actions">
-      {scanning?<button type="button" className="app-button secondary" onClick={stopScan}>Stop camera</button>:<button type="button" className="app-button" onClick={()=>void startScan()}>Scan bin label</button>}
-      <button type="button" className="app-button secondary" disabled={!locations.length} onClick={()=>void ensureLabels()}>Build printable labels</button>
-      {Object.keys(images).length?<button type="button" className="app-button secondary" onClick={()=>window.print()}>Print labels</button>:null}
+      {scanning?<Button variant="secondary" type="button" onClick={stopScan}>Stop camera</Button>:<Button variant="primary" type="button" onClick={()=>void startScan()}>Scan bin label</Button>}
+      <Button variant="secondary" type="button" disabled={!locations.length} onClick={()=>void ensureLabels()}>Build printable labels</Button>
+      {Object.keys(images).length?<Button variant="secondary" type="button" onClick={()=>window.print()}>Print labels</Button>:null}
     </div>
     <video ref={videoRef} className={scanning?"inventory-scan-video":"inventory-scan-video hidden"} muted playsInline />
     <canvas ref={canvasRef} hidden />
-    <form className="inventory-add-row" onSubmit={(event)=>{event.preventDefault();resolve(manual)}}><input value={manual} onChange={(event)=>setManual(event.target.value)} placeholder="Paste inventory label URL"/><button type="submit" className="app-button secondary" disabled={!manual.trim()}>Open label</button></form>
+    <form className="inventory-add-row" onSubmit={(event)=>{event.preventDefault();resolve(manual)}}><input value={manual} onChange={(event)=>setManual(event.target.value)} placeholder="Paste inventory label URL"/><Button variant="secondary" type="submit" disabled={!manual.trim()}>Open label</Button></form>
     {message?<p className="telemetry-status" role="status">{message}</p>:null}
     {Object.keys(images).length?<div className="inventory-label-sheet">{locations.map((location)=><article key={location.id} className="inventory-print-label"><strong>{location.name}</strong><span>{location.kind} · {location.itemCount} items</span>{images[location.id]?<img src={images[location.id]} alt={`QR label for ${location.name}`} width={180} height={180}/>:null}<small>Scan in Vantage Inventory</small></article>)}</div>:null}
   </section>;

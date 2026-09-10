@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "../../components/ui";
 import { useCallback, useEffect, useState } from "react";
 import { stale125WeightLimitCue } from "../../lib/weight-budget";
 import {
@@ -89,8 +90,8 @@ export default function WeightBudgetClient({ orgId }: { orgId: string | null }) 
       <main className="intel-app">
         <p className="telemetry-status" role="alert"><strong>{failure.title}</strong></p>
         <p className="telemetry-status">{failure.description}</p>
-        {failure.primary ? <a className="app-button" href={failure.primary.href}>{failure.primary.label}</a> : null}
-        {failure.showRetry ? <button type="button" className="app-button secondary" onClick={() => void load()}>Retry</button> : null}
+        {failure.primary ? <Button as="a" variant="primary" href={failure.primary.href}>{failure.primary.label}</Button> : null}
+        {failure.showRetry ? <Button variant="secondary" type="button" onClick={() => void load()}>Retry</Button> : null}
       </main>
     );
   }
@@ -137,7 +138,7 @@ export default function WeightBudgetClient({ orgId }: { orgId: string | null }) 
               <strong>Planned {close.plannedLbs} lb</strong>
               <small>{NO_WEIGH_IN_CLOSE_CUE}</small>
             </div>
-            <a className="app-button secondary" href={weighInHref}>Log a weigh-in</a>
+            <Button as="a" variant="secondary" href={weighInHref}>Log a weigh-in</Button>
           </article>
         ) : (
           <article>
@@ -151,7 +152,7 @@ export default function WeightBudgetClient({ orgId }: { orgId: string | null }) 
                     : `${close.deltaLbs > 0 ? "+" : ""}${close.deltaLbs} lb vs plan as of ${close.loggedOn}.`}
               </small>
             </div>
-            <a className="app-button secondary" href={weighInHref}>Open weigh-in</a>
+            <Button as="a" variant="secondary" href={weighInHref}>Open weigh-in</Button>
           </article>
         )}
       </section>

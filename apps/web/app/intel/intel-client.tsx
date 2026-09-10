@@ -5,7 +5,7 @@ import {
   UsageCutoffBanner,
   resolveCutoffErrorCode,
 } from "../../components/usage-cutoff-banner";
-import { EmptyState, FormRow, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import {
   INTEL_RELATED_INCLUDE,
   classifyIntelShell,
@@ -94,9 +94,9 @@ function IntelRelatedStrip({
   return (
     <nav className="product-hub-related intel-related" aria-label="Related competition tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -120,9 +120,9 @@ function IntelNextActionsPanel({ actions }: { actions: IntelNextAction[] }) {
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -196,20 +196,20 @@ function IntelShell({
         aria-busy={shell === "loading"}
       >
         {failure?.primary ? (
-          <a className="app-button" href={failure.primary.href}>
+          <Button as="a" variant="primary" href={failure.primary.href}>
             {failure.primary.label}
-          </a>
+          </Button>
         ) : null}
         {shell === "error" && onRetry && (failure?.showRetry ?? true) ? (
-          <button type="button" className="app-button secondary" onClick={onRetry}>
+          <Button variant="secondary" type="button" onClick={onRetry}>
             Retry
-          </button>
+          </Button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button is-primary" href={orgId ? teamDataHref : "/workspace"}>{orgId ? "Sync Team Data" : "Choose your team"}</a>
+          <Button as="a" variant="primary" href={orgId ? teamDataHref : "/workspace"}>{orgId ? "Sync Team Data" : "Choose your team"}</Button>
         ) : null}
         {shell === "empty" ? (
-          <a className="app-button is-primary" href={teamDataHref}>Sync season metrics</a>
+          <Button as="a" variant="primary" href={teamDataHref}>Sync season metrics</Button>
         ) : null}
       </EmptyState>
       {steps.length > 0 ? (
@@ -225,9 +225,9 @@ function IntelShell({
                   <strong>{step.label}</strong>
                   <p className="app-muted">{step.detail}</p>
                 </div>
-                <a className="app-button secondary" href={step.href}>
+                <Button as="a" variant="secondary" href={step.href}>
                   Open
-                </a>
+                </Button>
               </li>
             ))}
           </ul>
@@ -501,9 +501,9 @@ export default function IntelClient({ orgId }: { orgId: string }) {
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Team number, nickname, or name"
             />
-            <button type="submit" className="app-button">
+            <Button variant="primary" type="submit">
               Search
-            </button>
+            </Button>
           </div>
         </FormRow>
       </Panel>
@@ -539,9 +539,9 @@ export default function IntelClient({ orgId }: { orgId: string }) {
             {/* One action: the thing that fills this page. Strategy, Dossier,
                 and Scouting are in the strip at the top and again in Next
                 actions right below, each with the reason you would go. */}
-            <a className="app-button" href={withOrgHref("/team/data", orgId)}>
+            <Button as="a" variant="primary" href={withOrgHref("/team/data", orgId)}>
               Sync season metrics
-            </a>
+            </Button>
           </EmptyState>
           <IntelNextActionsPanel actions={readyActions} />
         </>
@@ -560,23 +560,15 @@ export default function IntelClient({ orgId }: { orgId: string }) {
                 </p>
               </div>
               <div className="intel-primary-actions">
-                <a className="app-button secondary" href={dossierHref}>
+                <Button as="a" variant="secondary" href={dossierHref}>
                   Season dossier
-                </a>
-                <button
-                  type="button"
-                  className="app-button"
-                  onClick={() => void action("/api/intel/summary", "Generating metered brief…")}
-                >
+                </Button>
+                <Button variant="primary" type="button" onClick={() => void action("/api/intel/summary", "Generating metered brief…")}>
                   Plain-English brief
-                </button>
-                <button
-                  type="button"
-                  className="app-button secondary"
-                  onClick={() => void action("/api/research", "Running metered research…")}
-                >
+                </Button>
+                <Button variant="secondary" type="button" onClick={() => void action("/api/research", "Running metered research…")}>
                   Research
-                </button>
+                </Button>
               </div>
             </header>
           </Panel>
@@ -711,9 +703,9 @@ export default function IntelClient({ orgId }: { orgId: string }) {
                         placeholder="e.g. 1678, 118"
                         aria-label="Team numbers to compare"
                       />
-                      <button type="submit" className="app-button secondary" disabled={submitting}>
+                      <Button variant="secondary" type="submit" disabled={submitting}>
                         Compare
-                      </button>
+                      </Button>
                     </div>
                   </FormRow>
                 </form>
@@ -771,14 +763,9 @@ export default function IntelClient({ orgId }: { orgId: string }) {
                       aria-label="Pick list name"
                     />
                   </FormRow>
-                  <button
-                    type="button"
-                    className="app-button secondary"
-                    onClick={() => void savePick()}
-                    disabled={submitting}
-                  >
+                  <Button variant="secondary" type="button" onClick={() => void savePick()} disabled={submitting}>
                     Save as #1 pick
-                  </button>
+                  </Button>
                 </div>
               </div>
             ) : null}

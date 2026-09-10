@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "../../components/ui";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ExportButton, type CsvColumn } from "../../components/ui/export-button";
@@ -223,14 +224,14 @@ export default function RankingsClient() {
                   <strong>{copy.title}</strong>
                   <p className="app-muted">{copy.description}</p>
                   {copy.primary ? (
-                    <a className="app-button" href={copy.primary.href}>
+                    <Button as="a" variant="primary" href={copy.primary.href}>
                       {copy.primary.label}
-                    </a>
+                    </Button>
                   ) : null}
                   {copy.showRetry ? (
-                    <button type="button" className="app-button secondary" onClick={() => void load()}>
+                    <Button variant="secondary" type="button" onClick={() => void load()}>
                       Retry
-                    </button>
+                    </Button>
                   ) : null}
                 </>
               );
@@ -256,9 +257,9 @@ export default function RankingsClient() {
         <div className="app-card rank-empty">
           <strong>Almost there</strong>
           <p className="app-muted">{view.message}</p>
-          <a className="app-button" href="/workspace">
+          <Button as="a" variant="primary" href="/workspace">
             Choose your team
-          </a>
+          </Button>
         </div>
       </main>
     );
@@ -291,9 +292,9 @@ export default function RankingsClient() {
               #{standing.rank} of {standing.of} · top {standing.percentile}%
             </span>
           ) : null}
-          <button type="button" className="app-button secondary" onClick={() => void load()}>
+          <Button variant="secondary" type="button" onClick={() => void load()}>
             Refresh
-          </button>
+          </Button>
         </div>
       </header>
 
@@ -317,9 +318,9 @@ export default function RankingsClient() {
           <div className="app-card rank-empty">
             <strong>{rankingsCacheRequiredCopy().title}</strong>
             <p className="app-muted">{rankingsCacheRequiredCopy().description}</p>
-            <a className="app-button" href="/team/data">
+            <Button as="a" variant="primary" href="/team/data">
               Open Team → Data
-            </a>
+            </Button>
           </div>
         ) : (
           <>

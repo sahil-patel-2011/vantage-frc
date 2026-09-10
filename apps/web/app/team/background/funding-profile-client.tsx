@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { EmptyState, Panel } from "../../../components/ui";
+import { EmptyState, Panel, Button } from "../../../components/ui";
 import {
   FUNDING_AFFILIATION_LABELS,
   FUNDING_AFFILIATION_OPTIONS,
@@ -141,14 +141,14 @@ export default function FundingProfileClient({ orgId }: { orgId: string }) {
       ) : failure ? (
         <EmptyState soft title={failure.title} description={failure.description}>
           {failure.primary ? (
-            <a className="app-button" href={failure.primary.href}>
+            <Button as="a" variant="primary" href={failure.primary.href}>
               {failure.primary.label}
-            </a>
+            </Button>
           ) : null}
           {failure.showRetry ? (
-            <button type="button" className="app-button secondary" onClick={() => void load()}>
+            <Button variant="secondary" type="button" onClick={() => void load()}>
               Retry
-            </button>
+            </Button>
           ) : null}
         </EmptyState>
       ) : (
@@ -198,9 +198,9 @@ export default function FundingProfileClient({ orgId }: { orgId: string }) {
             ))}
           </fieldset>
           {canEdit ? (
-            <button type="submit" className="app-button" disabled={saving}>
+            <Button variant="primary" type="submit" disabled={saving}>
               {saving ? "Saving…" : "Save funding profile"}
-            </button>
+            </Button>
           ) : (
             <p className="app-muted">View only — ask an owner or admin to change funding paths.</p>
           )}

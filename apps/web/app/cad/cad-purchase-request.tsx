@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "../../components/ui";
 
 import { useState } from "react";
 
@@ -64,24 +65,12 @@ export function CadPurchaseRequestPanel({
   return (
     <div style={{ marginBottom: 16 }}>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: open ? 12 : 0 }}>
-        <button
-          type="button"
-          className="app-button secondary"
-          aria-pressed={open}
-          onClick={() => {
-            setOpen((v) => !v);
-            setForm((prev) => ({
-              ...prev,
-              title: prev.title || defaultTitle,
-              justification: prev.justification || defaultWhy,
-            }));
-          }}
-        >
+        <Button variant="secondary" type="button" aria-pressed={open} onClick={() => { setOpen((v) => !v); setForm((prev) => ({ ...prev, title: prev.title || defaultTitle, justification: prev.justification || defaultWhy, })); }}>
           {open ? "Hide purchase request" : "Need part → order"}
-        </button>
-        <a className="app-button secondary" href={`/orders?orgId=${encodeURIComponent(orgId)}`}>
+        </Button>
+        <Button as="a" variant="secondary" href={`/orders?orgId=${encodeURIComponent(orgId)}`}>
           Open orders
-        </a>
+        </Button>
       </div>
 
       {open ? (
@@ -142,9 +131,9 @@ export function CadPurchaseRequestPanel({
               </label>
             </div>
             {notice ? <p className="telemetry-status">{notice}</p> : null}
-            <button type="submit" className="app-button" disabled={busy}>
+            <Button variant="primary" type="submit" disabled={busy}>
               Submit purchase request
-            </button>
+            </Button>
           </form>
         </section>
       ) : null}

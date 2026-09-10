@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import type { SchemaAbView } from "../../lib/scouting-schema-ab/compute-scouting-schema-ab";
 
@@ -122,14 +122,14 @@ export default function ScoutingSchemaAbClient() {
           return (
             <EmptyState title={copy.title} description={copy.description}>
               {copy.primary ? (
-                <a className="app-button" href={copy.primary.href}>
+                <Button as="a" variant="primary" href={copy.primary.href}>
                   {copy.primary.label}
-                </a>
+                </Button>
               ) : null}
               {copy.showRetry ? (
-                <button type="button" className="app-button secondary" onClick={() => load()}>
+                <Button variant="secondary" type="button" onClick={() => load()}>
                   Retry
-                </button>
+                </Button>
               ) : null}
             </EmptyState>
           );
@@ -273,14 +273,9 @@ function ComparisonPicker({
             ))}
           </select>
         </FormRow>
-        <button
-          type="button"
-          className="app-button secondary"
-          disabled={!compareA || !compareB || compareA === compareB}
-          onClick={onCompare}
-        >
+        <Button variant="secondary" type="button" disabled={!compareA || !compareB || compareA === compareB} onClick={onCompare}>
           Compare
-        </button>
+        </Button>
       </div>
     </Panel>
   );
@@ -412,9 +407,9 @@ function NewCandidateForm({
         </FormRow>
       </FormGrid>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !form.label.trim()}>
+        <Button variant="primary" type="submit" disabled={busy || !form.label.trim()}>
           Add candidate
-        </button>
+        </Button>
       </div>
     </Panel>
   );
@@ -502,13 +497,9 @@ function LogSampleForm({
         This entry had an error / confusion
       </label>
       <div>
-        <button
-          type="submit"
-          className="app-button"
-          disabled={busy || !form.candidateId || !form.fieldsTotal}
-        >
+        <Button variant="primary" type="submit" disabled={busy || !form.candidateId || !form.fieldsTotal}>
           Log sample
-        </button>
+        </Button>
       </div>
     </Panel>
   );

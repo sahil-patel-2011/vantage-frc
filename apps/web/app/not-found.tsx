@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { EmptyState } from "../components/ui";
+import { EmptyState, Button } from "../components/ui";
 
 export const metadata: Metadata = {
   title: "Page not found — Vantage",
@@ -26,12 +26,12 @@ export default function NotFound() {
         description="The link may be out of date, or the page may need access your account does not have. Everything else is still where you left it."
       >
         <div>
-          <a className="app-button" href="/dashboard">
+          <Button as="a" variant="primary" href="/dashboard">
             Go to Home
-          </a>
-          <a className="app-button secondary" href="/docs">
+          </Button>
+          <Button as="a" variant="secondary" href="/docs">
             App manual
-          </a>
+          </Button>
         </div>
       </EmptyState>
     </main>

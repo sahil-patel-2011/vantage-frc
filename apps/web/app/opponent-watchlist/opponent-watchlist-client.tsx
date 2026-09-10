@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import type { OpponentWatchlistView } from "../../lib/opponent-watchlist/compute-opponent-watchlist";
 import {
   OPPONENT_WATCHLIST_RELATED_INCLUDE,
@@ -43,9 +43,9 @@ function WatchlistRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related opponent-watchlist-related" aria-label="Related competition tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -69,9 +69,9 @@ function WatchlistNextActionsPanel({ actions }: { actions: OpponentWatchlistNext
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -130,15 +130,15 @@ function WatchlistShell({
         aria-busy={shell === "loading"}
       >
         {shell === "error" && onRetry ? (
-          <button type="button" className="app-button secondary" onClick={onRetry}>
+          <Button variant="secondary" type="button" onClick={onRetry}>
             Retry
-          </button>
+          </Button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
+          <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
         ) : null}
         {shell === "empty" ? (
-          <a className="app-button is-primary" href="#opponent-watchlist-watch">Watch a team</a>
+          <Button as="a" variant="primary" href="#opponent-watchlist-watch">Watch a team</Button>
         ) : null}
       </EmptyState>
       <WatchlistNextActionsPanel actions={actions} />
@@ -273,9 +273,9 @@ export default function OpponentWatchlistClient() {
       >
         <div className="opponent-watchlist-header-actions">
           {relatedLinks.map((link) => (
-            <a key={link.id} className="app-button secondary" href={link.href}>
+            <Button as="a" variant="secondary" key={link.id} href={link.href}>
               {link.label}
-            </a>
+            </Button>
           ))}
         </div>
       </PageHeader>
@@ -300,9 +300,9 @@ export default function OpponentWatchlistClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <a className="app-button is-primary" href="#opponent-watchlist-watch">
+          <Button as="a" variant="primary" href="#opponent-watchlist-watch">
             Watch a team
-          </a>
+          </Button>
         </EmptyState>
       ) : null}
 
@@ -466,9 +466,9 @@ function CoveragePriorityPanel({ view, lineupHref }: { view: LiveView; lineupHre
           );
         })}
       </ol>
-      <a className="app-button secondary" href={lineupHref}>
+      <Button as="a" variant="secondary" href={lineupHref}>
         Open lineup coverage
-      </a>
+      </Button>
     </Panel>
   );
 }
@@ -510,9 +510,9 @@ function AddEntryForm({
         </FormRow>
       </FormGrid>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !/^frc\d+$/.test(teamKey.trim().toLowerCase())}>
+        <Button variant="primary" type="submit" disabled={busy || !/^frc\d+$/.test(teamKey.trim().toLowerCase())}>
           Add to watchlist
-        </button>
+        </Button>
       </div>
     </Panel>
   );

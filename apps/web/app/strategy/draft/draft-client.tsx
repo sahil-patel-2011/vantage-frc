@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import { EmptyState, PageHeader, Panel } from "../../../components/ui";
+import { EmptyState, PageHeader, Panel, Button } from "../../../components/ui";
 import { hubHref } from "../../../lib/nav/hubs";
 import { withOrgHref } from "../../../lib/nav/product-nav";
 import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
@@ -105,9 +105,9 @@ function DraftRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related draft-related" aria-label="Related competition tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -131,9 +131,9 @@ function DraftNextActionsPanel({ actions }: { actions: DraftNextAction[] }) {
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -194,20 +194,20 @@ function DraftShell({
         aria-busy={shell === "loading"}
       >
         {primary ? (
-          <a className="app-button" href={primary.href}>
+          <Button as="a" variant="primary" href={primary.href}>
             {primary.label}
-          </a>
+          </Button>
         ) : null}
         {shell === "error" && onRetry ? (
-          <button type="button" className="app-button secondary" onClick={onRetry}>
+          <Button variant="secondary" type="button" onClick={onRetry}>
             Retry
-          </button>
+          </Button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button is-primary" href={orgId ? commandHref : "/workspace"}>{orgId ? "Set active event" : "Choose your team"}</a>
+          <Button as="a" variant="primary" href={orgId ? commandHref : "/workspace"}>{orgId ? "Set active event" : "Choose your team"}</Button>
         ) : null}
         {shell === "empty" ? (
-          <a className="app-button is-primary" href={teamDataHref}>Sync event metrics</a>
+          <Button as="a" variant="primary" href={teamDataHref}>Sync event metrics</Button>
         ) : null}
       </EmptyState>
       {steps.length > 0 ? (
@@ -223,9 +223,9 @@ function DraftShell({
                   <strong>{step.label}</strong>
                   <p className="app-muted">{step.detail}</p>
                 </div>
-                <a className="app-button secondary" href={step.href}>
+                <Button as="a" variant="secondary" href={step.href}>
                   Open
-                </a>
+                </Button>
               </li>
             ))}
           </ul>
@@ -490,18 +490,18 @@ export default function DraftClient() {
       >
         <div className="strategy-pick-actions">
           <DraftRelatedStrip orgId={data.orgId} />
-          <a className="app-button secondary" href={strategyHref}>
+          <Button as="a" variant="secondary" href={strategyHref}>
             Strategy
-          </a>
-          <a className="app-button secondary" href={pickDeskHref}>
+          </Button>
+          <Button as="a" variant="secondary" href={pickDeskHref}>
             Pick desk
-          </a>
-          <a className="app-button secondary" href={scoutingHref}>
+          </Button>
+          <Button as="a" variant="secondary" href={scoutingHref}>
             Scouting
-          </a>
-          <a className="app-button secondary" href={pickClockHref}>
+          </Button>
+          <Button as="a" variant="secondary" href={pickClockHref}>
             Pick clock
-          </a>
+          </Button>
         </div>
       </PageHeader>
 
@@ -537,9 +537,9 @@ export default function DraftClient() {
                   `${formatDraftMetric(data.pickAssist.scoutedTeams, true)}/${formatDraftMetric(data.pickAssist.teamCount, true)} teams with scout depth · linked to pick desk`}
               </p>
             </div>
-            <a className="app-button secondary" href={pickClockHref}>
+            <Button as="a" variant="secondary" href={pickClockHref}>
               Open 45s clock
-            </a>
+            </Button>
           </header>
           {data.pickAssist.recommendation ? (
             <div className="strategy-draft-next">
@@ -554,13 +554,9 @@ export default function DraftClient() {
                 <p className="strategy-draft-drift">{data.pickAssist.recommendation.epaDrift.label}</p>
               ) : null}
               {data.canEdit ? (
-                <button
-                  type="button"
-                  className="app-button"
-                  onClick={() => assignTeam(data.pickAssist!.recommendation!.teamKey)}
-                >
+                <Button variant="primary" type="button" onClick={() => assignTeam(data.pickAssist!.recommendation!.teamKey)}>
                   Draft this pick
-                </button>
+                </Button>
               ) : null}
             </div>
           ) : (
@@ -627,22 +623,12 @@ export default function DraftClient() {
           </select>
         </label>
         <div className="strategy-pick-actions">
-          <button
-            type="button"
-            className="app-button secondary"
-            disabled={!data.canEdit || saving}
-            onClick={() => void persist(state, "reset")}
-          >
+          <Button variant="secondary" type="button" disabled={!data.canEdit || saving} onClick={() => void persist(state, "reset")}>
             Reset board
-          </button>
-          <button
-            type="button"
-            className="app-button secondary"
-            disabled={!data.canEdit || saving}
-            onClick={() => void createShare()}
-          >
+          </Button>
+          <Button variant="secondary" type="button" disabled={!data.canEdit || saving} onClick={() => void createShare()}>
             Share mentor link
-          </button>
+          </Button>
         </div>
         {shareUrl ? (
           <p className="strategy-share-url">
@@ -717,14 +703,9 @@ export default function DraftClient() {
                 <li key={teamKey} title={drift?.label}>
                   <strong>{teamNumber(teamKey)}</strong>
                   {drift ? <span className="strategy-draft-pool-drift">EPA lag</span> : null}
-                  <button
-                    type="button"
-                    className="app-button secondary"
-                    disabled={!data.canEdit}
-                    onClick={() => assignTeam(teamKey)}
-                  >
+                  <Button variant="secondary" type="button" disabled={!data.canEdit} onClick={() => assignTeam(teamKey)}>
                     Draft
-                  </button>
+                  </Button>
                 </li>
               );
             })}

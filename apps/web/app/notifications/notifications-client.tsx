@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { EmptyState, PageHeader, TabBar } from "../../components/ui";
+import { EmptyState, PageHeader, TabBar, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   NOTIFICATION_RELATED_INCLUDE,
@@ -29,9 +29,9 @@ function InboxRelated() {
   return (
     <nav className="product-hub-related notif-related" aria-label="Related account tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -65,9 +65,9 @@ function NextActions({
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -216,18 +216,18 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
             >
               <div className="notif-empty-actions">
                 {copy.primary ? (
-                  <a className="app-button" href={copy.primary.href}>
+                  <Button as="a" variant="primary" href={copy.primary.href}>
                     {copy.primary.label}
-                  </a>
+                  </Button>
                 ) : null}
                 {copy.showRetry ? (
-                  <button type="button" className="app-button" onClick={() => void load()}>
+                  <Button variant="primary" type="button" onClick={() => void load()}>
                     Retry
-                  </button>
+                  </Button>
                 ) : null}
-                <a className="app-button secondary" href="/support">
+                <Button as="a" variant="secondary" href="/support">
                   Help & Support
-                </a>
+                </Button>
               </div>
             </EmptyState>
             <NextActions itemCount={0} unreadCount={0} filter={filter} />
@@ -247,14 +247,9 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
             ]}
           >
             <div className="notif-toolbar-actions">
-              <button
-                type="button"
-                className="app-button secondary"
-                disabled={busy || unreadCount < 1}
-                onClick={() => void patch("read_all")}
-              >
+              <Button variant="secondary" type="button" disabled={busy || unreadCount < 1} onClick={() => void patch("read_all")}>
                 Mark all as read
-              </button>
+              </Button>
             </div>
           </TabBar>
 
@@ -299,28 +294,18 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
                     {item.body ? <p>{item.body}</p> : null}
                     <footer>
                       {item.href ? (
-                        <a className="app-button" href={item.href}>
+                        <Button as="a" variant="primary" href={item.href}>
                           Open
-                        </a>
+                        </Button>
                       ) : null}
                       {unread ? (
-                        <button
-                          type="button"
-                          className="app-button secondary"
-                          disabled={busy}
-                          onClick={() => void patch("read", item.id)}
-                        >
+                        <Button variant="secondary" type="button" disabled={busy} onClick={() => void patch("read", item.id)}>
                           Mark as read
-                        </button>
+                        </Button>
                       ) : (
-                        <button
-                          type="button"
-                          className="app-button secondary"
-                          disabled={busy}
-                          onClick={() => void patch("unread", item.id)}
-                        >
+                        <Button variant="secondary" type="button" disabled={busy} onClick={() => void patch("unread", item.id)}>
                           Mark as unread
-                        </button>
+                        </Button>
                       )}
                     </footer>
                   </li>

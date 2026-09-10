@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { EmptyState, FormRow, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { agendaItemKindLabel } from "../../lib/meeting-autopilot";
 import type { MeetingAutopilotView } from "../../lib/meeting-autopilot/compute-meeting-autopilot";
 import type { AgendaItem, CalendarMeeting, MeetingAgenda } from "../../lib/meeting-autopilot/types";
@@ -131,14 +131,14 @@ export default function MeetingAutopilotClient() {
           return (
             <EmptyState title={copy.title} description={copy.description}>
               {copy.primary ? (
-                <a className="app-button" href={copy.primary.href}>
+                <Button as="a" variant="primary" href={copy.primary.href}>
                   {copy.primary.label}
-                </a>
+                </Button>
               ) : null}
               {copy.showRetry ? (
-                <button type="button" className="app-button secondary" onClick={() => load()}>
+                <Button variant="secondary" type="button" onClick={() => load()}>
                   Retry
-                </button>
+                </Button>
               ) : null}
             </EmptyState>
           );
@@ -288,23 +288,13 @@ function MeetingCard({
           </small>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <button
-            type="button"
-            className="app-button"
-            disabled={busy}
-            onClick={() => mutate({ action: "generate-agenda", calendarEventId: meeting.id })}
-          >
+          <Button variant="primary" type="button" disabled={busy} onClick={() => mutate({ action: "generate-agenda", calendarEventId: meeting.id })}>
             {agenda ? "Refresh agenda" : "Generate agenda"}
-          </button>
+          </Button>
           {agenda?.status === "draft" ? (
-            <button
-              type="button"
-              className="app-button secondary"
-              disabled={busy}
-              onClick={() => mutate({ action: "update-agenda-status", agendaId: agenda.id, status: "finalized" })}
-            >
+            <Button variant="secondary" type="button" disabled={busy} onClick={() => mutate({ action: "update-agenda-status", agendaId: agenda.id, status: "finalized" })}>
               Finalize
-            </button>
+            </Button>
           ) : null}
           {agenda ? (
             <button
@@ -363,24 +353,12 @@ function MeetingCard({
           <small className="app-muted">Minutes stay empty until you write them.</small>
         )}
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <button
-            type="button"
-            className="app-button secondary"
-            disabled={busy || !minutes.trim()}
-            onClick={() =>
-              mutate({
-                action: "save-minutes",
-                calendarEventId: meeting.id,
-                agendaId: agenda?.id,
-                minutesText: minutes.trim(),
-              })
-            }
-          >
+          <Button variant="secondary" type="button" disabled={busy || !minutes.trim()} onClick={() => mutate({ action: "save-minutes", calendarEventId: meeting.id, agendaId: agenda?.id, minutesText: minutes.trim(), }) }>
             Save minutes
-          </button>
-          <button type="submit" className="app-button secondary" disabled={busy || !minutes.trim()}>
+          </Button>
+          <Button variant="secondary" type="submit" disabled={busy || !minutes.trim()}>
             Save and draft action items
-          </button>
+          </Button>
         </div>
       </form>
     </li>
@@ -421,20 +399,9 @@ function ActionItemsPanel({
               {item.sourceExcerpt ? <small className="app-muted">“{item.sourceExcerpt}”</small> : null}
             </div>
             <div style={{ display: "flex", gap: 8 }}>
-              <button
-                type="button"
-                className="app-button secondary"
-                disabled={busy}
-                onClick={() =>
-                  mutate({
-                    action: "update-action-item",
-                    actionItemId: item.id,
-                    status: item.status === "done" ? "open" : "done",
-                  })
-                }
-              >
+              <Button variant="secondary" type="button" disabled={busy} onClick={() => mutate({ action: "update-action-item", actionItemId: item.id, status: item.status === "done" ? "open" : "done", }) }>
                 {item.status === "done" ? "Reopen" : "Mark done"}
-              </button>
+              </Button>
               <button
                 type="button"
                 className="text-button"

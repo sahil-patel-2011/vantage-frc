@@ -8,8 +8,7 @@ import {
   Panel,
   SelectField,
   TextareaField,
-  TextField,
-} from "../../components/ui";
+  TextField, Button } from "../../components/ui";
 import {
   ROSTER_KIND_LABELS,
   WATCH_KIND_LABELS,
@@ -117,13 +116,13 @@ export default function DutiesClient() {
         >
           <div className="soft-btn-row">
             {failure.primary ? (
-              <a className="app-button" href={failure.primary.href}>
+              <Button as="a" variant="primary" href={failure.primary.href}>
                 {failure.primary.label}
-              </a>
+              </Button>
             ) : null}
-            <a className="app-button secondary" href="/workspace">
+            <Button as="a" variant="secondary" href="/workspace">
               Choose your team
-            </a>
+            </Button>
           </div>
         </EmptyState>
       </main>
@@ -151,12 +150,12 @@ export default function DutiesClient() {
           description="Pick a team, then post who is on duty. My Day stays empty until someone is assigned."
         >
           <div className="soft-btn-row">
-            <a className="app-button" href="/workspace">
+            <Button as="a" variant="primary" href="/workspace">
               Choose your team
-            </a>
-            <a className="app-button secondary" href={withOrgHref("/my-day", view.orgId)}>
+            </Button>
+            <Button as="a" variant="secondary" href={withOrgHref("/my-day", view.orgId)}>
               My Day
-            </a>
+            </Button>
           </div>
         </EmptyState>
       </main>
@@ -189,15 +188,15 @@ function ReadyDuties({
         description="Who is on duty or chaperoning. My Day reads the assigned adult — nothing is shown there until you post someone."
       >
         <div className="duties-links">
-          <a className="app-button secondary" href={`/my-day${orgQ}`}>
+          <Button as="a" variant="secondary" href={`/my-day${orgQ}`}>
             My Day
-          </a>
-          <a className="app-button secondary" href={`/logistics${orgQ}`}>
+          </Button>
+          <Button as="a" variant="secondary" href={`/logistics${orgQ}`}>
             Logistics
-          </a>
-          <a className="app-button secondary" href={`/team/calendar${orgQ}&tab=duties`}>
+          </Button>
+          <Button as="a" variant="secondary" href={`/team/calendar${orgQ}&tab=duties`}>
             Shift roster
-          </a>
+          </Button>
         </div>
       </PageHeader>
 
@@ -376,9 +375,9 @@ function AssignWatchForm({
           value={notes}
           onChange={(event) => setNotes(event.target.value)}
         />
-        <button type="submit" className="app-button" disabled={busy || !assignedUserId || !startsAt}>
+        <Button variant="primary" type="submit" disabled={busy || !assignedUserId || !startsAt}>
           {busy ? "Saving…" : "Post assignment"}
-        </button>
+        </Button>
       </form>
     </Panel>
   );
@@ -420,13 +419,13 @@ function WatchRow({
       {canManage ? (
         <div className="duties-row-actions">
           {watch.assignedUserId ? (
-            <button type="button" className="app-button secondary" disabled={busy} onClick={onUnassign}>
+            <Button variant="secondary" type="button" disabled={busy} onClick={onUnassign}>
               Clear assignment
-            </button>
+            </Button>
           ) : null}
-          <button type="button" className="app-button secondary" disabled={busy} onClick={onDelete}>
+          <Button variant="secondary" type="button" disabled={busy} onClick={onDelete}>
             Remove
-          </button>
+          </Button>
         </div>
       ) : null}
     </li>

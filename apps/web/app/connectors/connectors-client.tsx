@@ -31,21 +31,9 @@ function CopyableUrl({ label, url }: { label: string; url: string }) {
     <div className="connector-callback">
       <span className="connector-callback-label">{label}</span>
       <code className="connector-callback-url">{url}</code>
-      <button
-        type="button"
-        className="app-button secondary connector-copy"
-        onClick={() => {
-          void navigator.clipboard?.writeText(url).then(
-            () => {
-              setCopied(true);
-              window.setTimeout(() => setCopied(false), 2000);
-            },
-            () => setCopied(false),
-          );
-        }}
-      >
+      <Button variant="secondary" type="button" className="connector-copy" onClick={() => { void navigator.clipboard?.writeText(url).then( () => { setCopied(true); window.setTimeout(() => setCopied(false), 2000); }, () => setCopied(false), ); }}>
         {copied ? "Copied" : "Copy"}
-      </button>
+      </Button>
     </div>
   );
 }
@@ -163,9 +151,9 @@ export default function ConnectorsClient() {
           title="Could not load connector status"
           description={message || "A network or server issue prevented loading. Retry, or open Support if this keeps failing."}
         >
-          <button type="button" className="app-button" onClick={() => { setLoading(true); void load(); }}>
+          <Button variant="primary" type="button" onClick={() => { setLoading(true); void load(); }}>
             Retry
-          </button>
+          </Button>
         </EmptyState>
       </main>
     );
@@ -240,33 +228,15 @@ export default function ConnectorsClient() {
 
               <div className="connector-actions">
                 {connector.canConnect && connectorConnectEndpoint(connector.id) ? (
-                  <button
-                    type="button"
-                    className="app-button"
-                    disabled={busy || !orgId || managedByOthers}
-                    title={
-                      !orgId
-                        ? "Select a team first — this link is saved per team."
-                        : managedByOthers
-                          ? "Only an owner or admin can change this team's link."
-                          : undefined
-                    }
-                    onClick={() => void connect(connector, orgId)}
-                  >
+                  <Button variant="primary" type="button" disabled={busy || !orgId || managedByOthers} title={ !orgId ? "Select a team first — this link is saved per team." : managedByOthers ? "Only an owner or admin can change this team's link." : undefined } onClick={() => void connect(connector, orgId)}>
                     {connector.state === "token_expired" ? "Reconnect" : "Connect"}
-                  </button>
+                  </Button>
                 ) : null}
 
                 {connector.canDisconnect && connectorDisconnectEndpoint(connector.id) ? (
-                  <button
-                    type="button"
-                    className="app-button secondary"
-                    disabled={busy || !orgId || managedByOthers}
-                    title={managedByOthers ? "Only an owner or admin can change this team's link." : undefined}
-                    onClick={() => void disconnect(connector, orgId)}
-                  >
+                  <Button variant="secondary" type="button" disabled={busy || !orgId || managedByOthers} title={managedByOthers ? "Only an owner or admin can change this team's link." : undefined} onClick={() => void disconnect(connector, orgId)}>
                     Disconnect
-                  </button>
+                  </Button>
                 ) : null}
 
                 <Button as="a" href={orgId ? withOrg(connector.managePath, orgId) : connector.managePath} variant="ghost" size="sm">

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   DRIVER_TRYOUTS_CRITERIA,
@@ -156,14 +156,14 @@ export default function DriverTryoutsClient() {
       {failure ? (
         <EmptyState title={failure.title} description={failure.description}>
           {failure.primary ? (
-            <a className="app-button" href={failure.primary.href}>
+            <Button as="a" variant="primary" href={failure.primary.href}>
               {failure.primary.label}
-            </a>
+            </Button>
           ) : null}
           {failure.showRetry ? (
-            <button type="button" className="app-button secondary" onClick={() => load()}>
+            <Button variant="secondary" type="button" onClick={() => load()}>
               Retry
-            </button>
+            </Button>
           ) : null}
         </EmptyState>
       ) : view == null ? (
@@ -389,9 +389,9 @@ function EvaluationForm({
         <input value={form.notes} onChange={set("notes")} />
       </FormRow>
       <div>
-        <button type="submit" className="app-button secondary" disabled={busy || !scoresReady}>
+        <Button variant="secondary" type="submit" disabled={busy || !scoresReady}>
           Log evaluation
-        </button>
+        </Button>
       </div>
     </form>
   );
@@ -456,9 +456,9 @@ function AddCandidateForm({
         <textarea value={form.notes} onChange={set("notes")} rows={2} />
       </FormRow>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !form.name.trim()}>
+        <Button variant="primary" type="submit" disabled={busy || !form.name.trim()}>
           Add candidate
-        </button>
+        </Button>
       </div>
     </Panel>
   );

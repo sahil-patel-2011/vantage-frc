@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { EmptyState, Panel } from "../../components/ui";
+import { EmptyState, Panel, Button } from "../../components/ui";
 import type {
   DistributeByShareResult,
   ReconcileAlliance,
@@ -153,9 +153,9 @@ export default function ScoutingReconciliationPanel({
         <span className="eyebrow">RECONCILIATION</span>
         <h2>Scouted vs official</h2>
         <p className="app-muted">{error}</p>
-        <button type="button" className="app-button secondary" onClick={() => void load()}>
+        <Button variant="secondary" type="button" onClick={() => void load()}>
           Retry
-        </button>
+        </Button>
       </Panel>
     );
   }
@@ -224,19 +224,14 @@ export default function ScoutingReconciliationPanel({
         ) : null}
 
         <div className="recon-actions">
-          <button
-            type="button"
-            className="app-button secondary"
-            onClick={() => setOnlyFlagged((value) => !value)}
-            disabled={!view.summary.flaggedMatches}
-          >
+          <Button variant="secondary" type="button" onClick={() => setOnlyFlagged((value) => !value)} disabled={!view.summary.flaggedMatches}>
             {onlyFlagged && view.summary.flaggedMatches
               ? `Show all ${view.matches.length}`
               : `Only ${view.summary.flaggedMatches} flagged`}
-          </button>
-          <button type="button" className="app-button secondary" onClick={() => void load()}>
+          </Button>
+          <Button variant="secondary" type="button" onClick={() => void load()}>
             Refresh
-          </button>
+          </Button>
         </div>
 
         <div className="recon-list">

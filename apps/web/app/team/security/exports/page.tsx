@@ -1,4 +1,4 @@
-import { EmptyState, PageHeader } from "../../../../components/ui";
+import { EmptyState, PageHeader, Button } from "../../../../components/ui";
 import ExportAuditClient from "./export-audit-client";
 
 export const metadata = {
@@ -26,9 +26,9 @@ export default async function TeamExportAuditPage({
           title="Choose a team"
           description="Export records are written per team so one team can never read another’s. Select one and come back."
         >
-          <a className="app-button" href="/workspace">
+          <Button as="a" variant="primary" href="/workspace">
             Choose team
-          </a>
+          </Button>
         </EmptyState>
       </main>
     );

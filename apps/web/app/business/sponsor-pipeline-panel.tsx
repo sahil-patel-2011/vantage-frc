@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { BusinessRelated } from "../../components/business-related";
-import { EmptyState } from "../../components/ui";
+import { EmptyState, Button } from "../../components/ui";
 import { SPONSOR_CRM_RELATED_INCLUDE } from "../../lib/business/business-related";
 import { sponsorCrmNextActions } from "../../lib/business/sponsor-crm-next-actions";
 import {
@@ -102,9 +102,9 @@ function NextActions({ view }: { view: BusinessView }) {
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -387,9 +387,9 @@ export function SponsorPipelinePanel({
                 disabled={!view.canManageFinance}
               />
             </Field>
-            <button className="app-button" disabled={busy || !view.canManageFinance}>
+            <Button variant="primary" disabled={busy || !view.canManageFinance}>
               Add to pipeline
-            </button>
+            </Button>
           </form>
         </article>
         <article className="app-card biz-research-card">
@@ -399,9 +399,9 @@ export function SponsorPipelinePanel({
             The research agent uses the team number, prior sponsor industries, and robotics/STEM fit. It stores the source and
             reasoning—never auto-contacts anyone.
           </p>
-          <button className="app-button" type="button" disabled={busy} onClick={() => void research()}>
+          <Button variant="primary" type="button" disabled={busy} onClick={() => void research()}>
             {busy ? "Researching…" : "Research sponsor prospects"}
-          </button>
+          </Button>
           <div className="biz-prospect-list">
             {view.prospects.map((prospect) => (
               <article key={prospect.id}>
@@ -470,9 +470,9 @@ export function SponsorPipelinePanel({
               <Field label="Next step" wide>
                 <input name="nextStep" placeholder="Send impact update and invite to shop tour" />
               </Field>
-              <button className="app-button" disabled={busy}>
+              <Button variant="primary" disabled={busy}>
                 Log interaction
-              </button>
+              </Button>
             </form>
           </article>
           <article className="app-card">
@@ -503,9 +503,9 @@ export function SponsorPipelinePanel({
               <Field label="Description" wide>
                 <input name="description" placeholder="Check, machining time, materials…" disabled={!view.canManageFinance} />
               </Field>
-              <button className="app-button" disabled={busy || !view.canManageFinance}>
+              <Button variant="primary" disabled={busy || !view.canManageFinance}>
                 Record contribution
-              </button>
+              </Button>
             </form>
           </article>
         </section>

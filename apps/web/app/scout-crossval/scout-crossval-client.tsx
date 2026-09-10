@@ -9,8 +9,7 @@ import {
   PageHeader,
   Panel,
   SoftBlockSkeleton,
-  StatTile,
-} from "../../components/ui";
+  StatTile, Button } from "../../components/ui";
 import { crossvalStatusLabel } from "../../lib/scout-crossval";
 import type { ScoutCrossvalView } from "../../lib/scout-crossval/compute-scout-crossval";
 import type { CrossvalEntry, CrossvalStatus } from "../../lib/scout-crossval/types";
@@ -51,9 +50,9 @@ function ScoutCrossvalRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related scout-crossval-related" aria-label="Related competition tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -77,9 +76,9 @@ function ScoutCrossvalNextActionsPanel({ actions }: { actions: ScoutCrossvalNext
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -144,10 +143,10 @@ function ScoutCrossvalShell({
           description={error ?? copy.description}
         >
           {shell === "setup" ? (
-            <a className="app-button is-primary" href={orgId ? scoutingHref : "/workspace"}>{orgId ? "Open Scouting" : "Choose your team"}</a>
+            <Button as="a" variant="primary" href={orgId ? scoutingHref : "/workspace"}>{orgId ? "Open Scouting" : "Choose your team"}</Button>
           ) : null}
           {shell === "empty" ? (
-            <a className="app-button is-primary" href={scoutingHref}>Log scout entries</a>
+            <Button as="a" variant="primary" href={scoutingHref}>Log scout entries</Button>
           ) : null}
         </EmptyState>
       )}
@@ -164,9 +163,9 @@ function ScoutCrossvalShell({
                   <strong>{step.label}</strong>
                   <p className="app-muted scout-crossval-tip">{step.detail}</p>
                 </div>
-                <a className="app-button secondary" href={step.href}>
+                <Button as="a" variant="secondary" href={step.href}>
                   Open
-                </a>
+                </Button>
               </li>
             ))}
           </ul>
@@ -416,9 +415,9 @@ function EntriesList({
           title="No match-scout entries to cross-validate"
           description="Once scouts log match entries for this event, they appear here compared against cached official results."
         >
-          <a className="app-button" href={hubHref("/competition", "scouting", view.orgId)}>
+          <Button as="a" variant="primary" href={hubHref("/competition", "scouting", view.orgId)}>
             Open Scouting
-          </a>
+          </Button>
         </EmptyState>
       ) : (
         <ul className="scout-crossval-list">
@@ -453,14 +452,9 @@ function EntryRow({
         </div>
         <div className="scout-crossval-actions">
           <Badge tone={statusTone(entry.overallStatus)}>{crossvalStatusLabel(entry.overallStatus)}</Badge>
-          <button
-            type="button"
-            className="app-button secondary"
-            disabled={busy}
-            onClick={() => void mutate({ action: "run-crossval", matchScoutEntryId: entry.matchScoutEntryId })}
-          >
+          <Button variant="secondary" type="button" disabled={busy} onClick={() => void mutate({ action: "run-crossval", matchScoutEntryId: entry.matchScoutEntryId })}>
             Re-check
-          </button>
+          </Button>
         </div>
       </div>
       <ul className="scout-crossval-fields">

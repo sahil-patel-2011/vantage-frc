@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { PROFICIENCY_LEVELS, SKILL_CATEGORIES, skillCategoryLabel, proficiencyLabel } from "../../lib/skills-graph";
 import type { SkillsGraphView } from "../../lib/skills-graph/compute-skills-graph";
@@ -115,14 +115,14 @@ export default function SkillsGraphClient() {
           return (
             <EmptyState title={copy.title} description={copy.description}>
               {copy.primary ? (
-                <a className="app-button" href={copy.primary.href}>
+                <Button as="a" variant="primary" href={copy.primary.href}>
                   {copy.primary.label}
-                </a>
+                </Button>
               ) : null}
               {copy.showRetry ? (
-                <button type="button" className="app-button secondary" onClick={() => load()}>
+                <Button variant="secondary" type="button" onClick={() => load()}>
                   Retry
-                </button>
+                </Button>
               ) : null}
             </EmptyState>
           );
@@ -222,22 +222,9 @@ function CalibrationEvidence({
               <small className="app-muted">{signal.note}</small>
             </div>
             {signal.proposal && view.viewerCanCountersign ? (
-              <button
-                type="button"
-                className="app-button secondary"
-                disabled={busy}
-                onClick={() =>
-                  mutate({
-                    action: "add-skill",
-                    targetUserId: signal.userId,
-                    skillCategory: signal.proposal!.skillCategory,
-                    proficiency: signal.proposal!.proficiency,
-                    evidenceNote: signal.proposal!.evidenceNote,
-                  })
-                }
-              >
+              <Button variant="secondary" type="button" disabled={busy} onClick={() => mutate({ action: "add-skill", targetUserId: signal.userId, skillCategory: signal.proposal!.skillCategory, proficiency: signal.proposal!.proficiency, evidenceNote: signal.proposal!.evidenceNote, }) }>
                 Countersign as {proficiencyLabel(signal.proposal.proficiency)}
-              </button>
+              </Button>
             ) : null}
           </li>
         ))}
@@ -324,9 +311,9 @@ function AddSkillForm({
         <textarea value={form.evidenceNote} onChange={set("evidenceNote")} rows={2} />
       </FormRow>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !form.targetUserId}>
+        <Button variant="primary" type="submit" disabled={busy || !form.targetUserId}>
           Add skill
-        </button>
+        </Button>
       </div>
     </Panel>
   );
@@ -370,9 +357,9 @@ function RequestMentorForm({
         </FormRow>
       </FormGrid>
       <div>
-        <button type="submit" className="app-button" disabled={busy}>
+        <Button variant="primary" type="submit" disabled={busy}>
           Request mentor
-        </button>
+        </Button>
       </div>
     </Panel>
   );

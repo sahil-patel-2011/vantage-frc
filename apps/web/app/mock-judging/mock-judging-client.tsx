@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   MOCK_JUDGING_AWARD_CATEGORIES,
@@ -147,14 +147,14 @@ export default function MockJudgingClient() {
           return (
             <EmptyState title={copy.title} description={copy.description}>
               {copy.primary ? (
-                <a className="app-button" href={copy.primary.href}>
+                <Button as="a" variant="primary" href={copy.primary.href}>
                   {copy.primary.label}
-                </a>
+                </Button>
               ) : null}
               {copy.showRetry ? (
-                <button type="button" className="app-button secondary" onClick={() => load()}>
+                <Button variant="secondary" type="button" onClick={() => load()}>
                   Retry
-                </button>
+                </Button>
               ) : null}
             </EmptyState>
           );
@@ -282,9 +282,9 @@ function RunSessionForm({
         />
       </FormRow>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !answerText.trim()}>
+        <Button variant="primary" type="submit" disabled={busy || !answerText.trim()}>
           Score answer
-        </button>
+        </Button>
       </div>
     </Panel>
   );
@@ -434,9 +434,9 @@ function PrepNoteForm({
         />
       </FormRow>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !form.title.trim() || !form.note.trim()}>
+        <Button variant="primary" type="submit" disabled={busy || !form.title.trim() || !form.note.trim()}>
           Log note
-        </button>
+        </Button>
       </div>
     </Panel>
   );

@@ -1,4 +1,4 @@
-import { EmptyState, PageHeader } from "../../../components/ui";
+import { EmptyState, PageHeader, Button } from "../../../components/ui";
 import { TeamOpsNav } from "../../../components/team-ops-nav";
 import TeamDiscordClient from "./discord-client";
 
@@ -28,16 +28,16 @@ export default async function TeamDiscordPage({
           badge="Setup required"
           badgeTone="setup"
         >
-          <a className="app-button" href="/workspace">
+          <Button as="a" variant="primary" href="/workspace">
             Choose your team
-          </a>
+          </Button>
           <nav className="product-hub-related" aria-label="Related team tools" style={{ marginTop: 12 }}>
-            <a className="app-button secondary" href="/team?tab=messages">
+            <Button as="a" variant="secondary" href="/team?tab=messages">
               Messages
-            </a>
-            <a className="app-button secondary" href="/team">
+            </Button>
+            <Button as="a" variant="secondary" href="/team">
               Team
-            </a>
+            </Button>
           </nav>
         </EmptyState>
       </main>

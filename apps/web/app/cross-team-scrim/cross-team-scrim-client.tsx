@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { scrimDataShareLabel, scrimStatusLabel } from "../../lib/cross-team-scrim";
 import {
   SCRIM_DATA_SHARE_SCOPES,
@@ -41,9 +41,9 @@ function ScrimRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related cross-team-scrim-related" aria-label="Related team tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -67,9 +67,9 @@ function ScrimNextActionsPanel({ actions }: { actions: CrossTeamScrimNextAction[
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -129,15 +129,15 @@ function ScrimShell({
         aria-busy={shell === "loading"}
       >
         {shell === "error" && onRetry ? (
-          <button type="button" className="app-button secondary" onClick={onRetry}>
+          <Button variant="secondary" type="button" onClick={onRetry}>
             Retry
-          </button>
+          </Button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
+          <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
         ) : null}
         {shell === "empty" ? (
-          <a className="app-button is-primary" href="#cross-team-scrim-propose">Propose a scrim</a>
+          <Button as="a" variant="primary" href="#cross-team-scrim-propose">Propose a scrim</Button>
         ) : null}
       </EmptyState>
       {steps.length > 0 ? (
@@ -153,9 +153,9 @@ function ScrimShell({
                   <strong>{step.label}</strong>
                   <p className="app-muted cross-team-scrim-tip">{step.detail}</p>
                 </div>
-                <a className="app-button secondary" href={step.href}>
+                <Button as="a" variant="secondary" href={step.href}>
                   Open
-                </a>
+                </Button>
               </li>
             ))}
           </ul>
@@ -313,9 +313,9 @@ export default function CrossTeamScrimClient() {
             </label>
           ) : null}
           {relatedLinks.map((link) => (
-            <a key={link.id} className="app-button secondary" href={link.href}>
+            <Button as="a" variant="secondary" key={link.id} href={link.href}>
               {link.label}
-            </a>
+            </Button>
           ))}
         </div>
       </PageHeader>
@@ -339,9 +339,9 @@ export default function CrossTeamScrimClient() {
           description={shellCopy.description}
           className="product-hub-setup"
         >
-          <a className="app-button is-primary" href="#cross-team-scrim-propose">
+          <Button as="a" variant="primary" href="#cross-team-scrim-propose">
             Propose a scrim
-          </a>
+          </Button>
         </EmptyState>
       ) : null}
 
@@ -607,9 +607,9 @@ function CreateInviteForm({
         <textarea value={form.notes} onChange={set("notes")} rows={2} />
       </FormRow>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !form.partnerTeamNumber}>
+        <Button variant="primary" type="submit" disabled={busy || !form.partnerTeamNumber}>
           Propose scrim
-        </button>
+        </Button>
       </div>
     </Panel>
   );

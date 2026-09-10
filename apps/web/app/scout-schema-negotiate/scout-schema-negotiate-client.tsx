@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { submissionStatusLabel } from "../../lib/scout-schema-negotiate";
 import type { ScoutSchemaNegotiateView } from "../../lib/scout-schema-negotiate/compute-scout-schema-negotiate";
@@ -115,14 +115,14 @@ export default function ScoutSchemaNegotiateClient() {
           return (
             <EmptyState title={copy.title} description={copy.description}>
               {copy.primary ? (
-                <a className="app-button" href={copy.primary.href}>
+                <Button as="a" variant="primary" href={copy.primary.href}>
                   {copy.primary.label}
-                </a>
+                </Button>
               ) : null}
               {copy.showRetry ? (
-                <button type="button" className="app-button secondary" onClick={() => load()}>
+                <Button variant="secondary" type="button" onClick={() => load()}>
                   Retry
-                </button>
+                </Button>
               ) : null}
             </EmptyState>
           );
@@ -257,14 +257,9 @@ function SubmissionsPanel({
             </div>
             {item.status === "pending" ? (
               <div style={{ display: "flex", gap: 8 }}>
-                <button
-                  type="button"
-                  className="app-button secondary"
-                  disabled={busy}
-                  onClick={() => mutate({ action: "reconcile-submission", submissionId: item.id })}
-                >
+                <Button variant="secondary" type="button" disabled={busy} onClick={() => mutate({ action: "reconcile-submission", submissionId: item.id })}>
                   Reconcile
-                </button>
+                </Button>
                 <button
                   type="button"
                   className="text-button"
@@ -332,9 +327,9 @@ function RegisterVersionForm({
         Make this the active schema
       </label>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !form.versionTag.trim()}>
+        <Button variant="primary" type="submit" disabled={busy || !form.versionTag.trim()}>
           Register version
-        </button>
+        </Button>
       </div>
     </Panel>
   );

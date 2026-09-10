@@ -6,7 +6,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { EmptyState } from "../../../components/ui";
+import { EmptyState, Button } from "../../../components/ui";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -304,9 +304,9 @@ export function AllocateSpend({ orgId, seasonYear }: { orgId: string; seasonYear
           title="No grant applications yet"
           description="Add an application on the Business grants board first. Award and spend amounts stay blank until you record them."
         >
-          <a className="app-button secondary" href={businessGrantsHref(orgId)}>
+          <Button as="a" variant="secondary" href={businessGrantsHref(orgId)}>
             Open Business · Grants
-          </a>
+          </Button>
         </EmptyState>
       ) : !expenses.length ? (
         <EmptyState
@@ -316,9 +316,9 @@ export function AllocateSpend({ orgId, seasonYear }: { orgId: string; seasonYear
           title="No named expenses yet"
           description="Log a purchase or other spend first. There is nothing to allocate yet."
         >
-          <a className="app-button secondary" href={seasonFinanceHref(orgId)}>
+          <Button as="a" variant="secondary" href={seasonFinanceHref(orgId)}>
             Open Season Finance
-          </a>
+          </Button>
         </EmptyState>
       ) : (
         <form
@@ -373,9 +373,9 @@ export function AllocateSpend({ orgId, seasonYear }: { orgId: string; seasonYear
             <small>Must be greater than 0. Leave blank rather than inventing a season total.</small>
           </label>
           <div className="gwe-actions">
-            <button type="submit" className="app-button" disabled={busy}>
+            <Button variant="primary" type="submit" disabled={busy}>
               {busy ? "Linking…" : "Link spend"}
-            </button>
+            </Button>
           </div>
         </form>
       )}

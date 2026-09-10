@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import { EmptyState, FormRow, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
 import type { DossierView } from "../../lib/dossier/compute-dossier";
 import {
@@ -39,9 +39,9 @@ function DossierRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related dossier-related" aria-label="Related competition tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -65,9 +65,9 @@ function DossierNextActionsPanel({ actions }: { actions: DossierNextAction[] }) 
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -145,20 +145,20 @@ function DossierShell({
         aria-busy={shell === "loading"}
       >
         {failure?.primary ? (
-          <a className="app-button" href={failure.primary.href}>
+          <Button as="a" variant="primary" href={failure.primary.href}>
             {failure.primary.label}
-          </a>
+          </Button>
         ) : null}
         {shell === "error" && onRetry && failure?.showRetry !== false ? (
-          <button type="button" className="app-button secondary" onClick={onRetry}>
+          <Button variant="secondary" type="button" onClick={onRetry}>
             Retry
-          </button>
+          </Button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button is-primary" href={orgId ? teamDataHref : "/workspace"}>{orgId ? "Sync Team Data" : "Choose your team"}</a>
+          <Button as="a" variant="primary" href={orgId ? teamDataHref : "/workspace"}>{orgId ? "Sync Team Data" : "Choose your team"}</Button>
         ) : null}
         {shell === "empty" ? (
-          <a className="app-button is-primary" href={teamDataHref}>Sync season metrics</a>
+          <Button as="a" variant="primary" href={teamDataHref}>Sync season metrics</Button>
         ) : null}
       </EmptyState>
       {steps.length > 0 ? (
@@ -174,9 +174,9 @@ function DossierShell({
                   <strong>{step.label}</strong>
                   <p className="app-muted">{step.detail}</p>
                 </div>
-                <a className="app-button secondary" href={step.href}>
+                <Button as="a" variant="secondary" href={step.href}>
                   Open
-                </a>
+                </Button>
               </li>
             ))}
           </ul>
@@ -357,9 +357,9 @@ export default function DossierClient() {
               }
               inputMode="numeric"
             />
-            <button type="submit" className="app-button">
+            <Button variant="primary" type="submit">
               Load dossier
-            </button>
+            </Button>
           </div>
         </FormRow>
       </Panel>
@@ -388,9 +388,9 @@ export default function DossierClient() {
                 Scouting, and Pick desk are in the strip at the top and again in
                 Setup steps and Next actions directly below, each with the
                 reason you would go there. */}
-            <a className="app-button" href={withOrgHref("/team/data", resolvedOrgId)}>
+            <Button as="a" variant="primary" href={withOrgHref("/team/data", resolvedOrgId)}>
               Sync season metrics
-            </a>
+            </Button>
           </EmptyState>
           {view?.status === "empty" || view?.status === "setup_required" ? (
             <Panel className="dossier-panel" aria-label="Setup steps">
@@ -408,9 +408,9 @@ export default function DossierClient() {
                     {step.done ? (
                       <em className="app-muted">Done</em>
                     ) : (
-                      <a className="app-button secondary" href={step.href}>
+                      <Button as="a" variant="secondary" href={step.href}>
                         Open
-                      </a>
+                      </Button>
                     )}
                   </li>
                 ))}

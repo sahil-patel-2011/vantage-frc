@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import { EmptyState, FormRow, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { mechanismCategoryLabel } from "../../lib/sketch-to-brief";
 import type { SketchToBriefView } from "../../lib/sketch-to-brief/compute-sketch-to-brief";
 import {
@@ -35,9 +35,9 @@ function SketchRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related sketch-to-brief-related" aria-label="Related build tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -61,9 +61,9 @@ function SketchNextActionsPanel({ actions }: { actions: SketchToBriefNextAction[
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -122,15 +122,15 @@ function SketchShell({
         aria-busy={shell === "loading"}
       >
         {shell === "error" && onRetry ? (
-          <button type="button" className="app-button secondary" onClick={onRetry}>
+          <Button variant="secondary" type="button" onClick={onRetry}>
             Retry
-          </button>
+          </Button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
+          <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
         ) : null}
         {shell === "empty" ? (
-          <a className="app-button is-primary" href="#sketch-to-brief-log-sketch">Log a sketch</a>
+          <Button as="a" variant="primary" href="#sketch-to-brief-log-sketch">Log a sketch</Button>
         ) : null}
       </EmptyState>
       <SketchNextActionsPanel actions={actions} />
@@ -294,9 +294,9 @@ export default function SketchToBriefClient() {
             </label>
           ) : null}
           {relatedLinks.map((link) => (
-            <a key={link.id} className="app-button secondary" href={link.href}>
+            <Button as="a" variant="secondary" key={link.id} href={link.href}>
               {link.label}
-            </a>
+            </Button>
           ))}
         </div>
       </PageHeader>
@@ -325,9 +325,9 @@ export default function SketchToBriefClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <a className="app-button is-primary" href="#sketch-to-brief-log-sketch">
+          <Button as="a" variant="primary" href="#sketch-to-brief-log-sketch">
             Log a sketch
-          </a>
+          </Button>
         </EmptyState>
       ) : null}
 
@@ -426,9 +426,9 @@ function LogSketchForm({
         />
       </FormRow>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !form.title.trim() || !form.notes.trim()}>
+        <Button variant="primary" type="submit" disabled={busy || !form.title.trim() || !form.notes.trim()}>
           Log sketch
-        </button>
+        </Button>
       </div>
     </Panel>
   );
@@ -457,9 +457,9 @@ function SketchList({
           title="Log your first kickoff sketch"
           description="Once logged, generate a grounded first-pass CAD brief from it."
         >
-          <a className="app-button is-primary" href="#sketch-to-brief-log-sketch">
+          <Button as="a" variant="primary" href="#sketch-to-brief-log-sketch">
             Log a sketch
-          </a>
+          </Button>
         </EmptyState>
       </div>
     );
@@ -484,14 +484,9 @@ function SketchList({
               </small>
             </div>
             <div className="sketch-to-brief-card-actions">
-              <button
-                type="button"
-                className="app-button secondary"
-                disabled={busy}
-                onClick={() => mutate({ action: "generate-brief", sketchId: sketch.id })}
-              >
+              <Button variant="secondary" type="button" disabled={busy} onClick={() => mutate({ action: "generate-brief", sketchId: sketch.id })}>
                 Generate brief
-              </button>
+              </Button>
               <button
                 type="button"
                 className="text-button"
@@ -532,9 +527,9 @@ function BriefList({
           title="Generate a CAD brief from a logged sketch"
           description="Briefs stay blank until you generate one from a real sketch."
         >
-          <a className="app-button is-primary" href="#sketch-to-brief-sketches">
+          <Button as="a" variant="primary" href="#sketch-to-brief-sketches">
             View sketches
-          </a>
+          </Button>
         </EmptyState>
       </div>
     );

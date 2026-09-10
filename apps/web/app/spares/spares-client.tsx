@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "../../components/ui";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ExportButton, type CsvColumn } from "../../components/ui/export-button";
@@ -114,12 +115,12 @@ export default function SparesClient() {
               request, and the competition load-out that will run this bin dry.
               Neither was reachable from here. */}
           <nav className="product-hub-related" aria-label="Related consumables tools">
-            <a className="app-button secondary" href={withOrgHref("/orders", orgId)}>
+            <Button as="a" variant="secondary" href={withOrgHref("/orders", orgId)}>
               Orders
-            </a>
-            <a className="app-button secondary" href={withOrgHref("/packing", orgId)}>
+            </Button>
+            <Button as="a" variant="secondary" href={withOrgHref("/packing", orgId)}>
               Packing list
-            </a>
+            </Button>
           </nav>
         </div>
       </header>
@@ -151,14 +152,14 @@ export default function SparesClient() {
               <h2>{copy.title}</h2>
               <p className="app-muted">{copy.description}</p>
               {copy.primary ? (
-                <a className="app-button" href={copy.primary.href}>
+                <Button as="a" variant="primary" href={copy.primary.href}>
                   {copy.primary.label}
-                </a>
+                </Button>
               ) : null}
               {copy.showRetry ? (
-                <button type="button" className="app-button secondary" onClick={load}>
+                <Button variant="secondary" type="button" onClick={load}>
                   Retry
-                </button>
+                </Button>
               ) : null}
             </section>
           );
@@ -322,9 +323,9 @@ function AddItemForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
         </label>
       </div>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !form.name.trim()}>
+        <Button variant="primary" type="submit" disabled={busy || !form.name.trim()}>
           Add consumable
-        </button>
+        </Button>
       </div>
     </form>
   );

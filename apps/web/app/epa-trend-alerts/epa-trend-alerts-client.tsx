@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { directionLabel, severityLabel } from "../../lib/epa-trend-alerts";
 import type { EpaTrendAlertsView } from "../../lib/epa-trend-alerts/compute-epa-trend-alerts";
 import {
@@ -38,9 +38,9 @@ function EpaRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related epa-trend-alerts-related" aria-label="Related competition tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -64,9 +64,9 @@ function EpaNextActionsPanel({ actions }: { actions: EpaTrendAlertsNextAction[] 
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -125,15 +125,15 @@ function EpaShell({
         aria-busy={shell === "loading"}
       >
         {shell === "error" && onRetry ? (
-          <button type="button" className="app-button secondary" onClick={onRetry}>
+          <Button variant="secondary" type="button" onClick={onRetry}>
             Retry
-          </button>
+          </Button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
+          <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
         ) : null}
         {shell === "empty" ? (
-          <a className="app-button is-primary" href="#epa-trend-alerts-watch">Watch a team</a>
+          <Button as="a" variant="primary" href="#epa-trend-alerts-watch">Watch a team</Button>
         ) : null}
       </EmptyState>
       <EpaNextActionsPanel actions={actions} />
@@ -268,9 +268,9 @@ export default function EpaTrendAlertsClient() {
       >
         <div className="epa-trend-alerts-header-actions">
           {relatedLinks.map((link) => (
-            <a key={link.id} className="app-button secondary" href={link.href}>
+            <Button as="a" variant="secondary" key={link.id} href={link.href}>
               {link.label}
-            </a>
+            </Button>
           ))}
         </div>
       </PageHeader>
@@ -295,9 +295,9 @@ export default function EpaTrendAlertsClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <a className="app-button is-primary" href="#epa-trend-alerts-watch">
+          <Button as="a" variant="primary" href="#epa-trend-alerts-watch">
             Watch a team
-          </a>
+          </Button>
         </EmptyState>
       ) : null}
 
@@ -406,9 +406,9 @@ function WatchTeamForm({
         </FormRow>
       </FormGrid>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !teamNumber.trim()}>
+        <Button variant="primary" type="submit" disabled={busy || !teamNumber.trim()}>
           Add to watchlist
-        </button>
+        </Button>
       </div>
     </Panel>
   );

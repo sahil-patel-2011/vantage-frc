@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { EmptyState, PageHeader } from "../../../components/ui";
+import { EmptyState, PageHeader, Button } from "../../../components/ui";
 import { TeamOpsNav } from "../../../components/team-ops-nav";
 import {
   CONNECTIONS_RELATED_INCLUDE,
@@ -59,16 +59,16 @@ function DiscordRelated({ orgId }: { orgId: string }) {
     <>
       <nav className="product-hub-related team-discord-related" aria-label="Related team tools">
         {links.map((link) => (
-          <a key={link.id} className="app-button secondary" href={link.href}>
+          <Button as="a" variant="secondary" key={link.id} href={link.href}>
             {link.label}
-          </a>
+          </Button>
         ))}
       </nav>
       <nav className="product-hub-related team-discord-connections" aria-label="Related connection tools">
         {connectionLinks.map((link) => (
-          <a key={link.id} className="app-button secondary" href={link.href}>
+          <Button as="a" variant="secondary" key={link.id} href={link.href}>
             {link.label}
-          </a>
+          </Button>
         ))}
       </nav>
     </>
@@ -112,9 +112,9 @@ function NextActions({
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -242,14 +242,14 @@ export default function TeamDiscordClient({ orgId }: { orgId: string }) {
           aria-busy={!fetchFailed}
         >
           {failure?.primary ? (
-            <a className="app-button" href={failure.primary.href}>
+            <Button as="a" variant="primary" href={failure.primary.href}>
               {failure.primary.label}
-            </a>
+            </Button>
           ) : null}
           {failure?.showRetry ? (
-            <button type="button" className="app-button secondary" onClick={() => void load()}>
+            <Button variant="secondary" type="button" onClick={() => void load()}>
               Retry
-            </button>
+            </Button>
           ) : null}
         </EmptyState>
       </main>
@@ -269,12 +269,12 @@ export default function TeamDiscordClient({ orgId }: { orgId: string }) {
         description="Link a server and channel, post announcements, and optionally mirror Team Messages into Discord."
       >
         <div className="team-discord-header-actions">
-          <a className="app-button secondary" href={withOrgHref("/team?tab=messages", orgId)}>
+          <Button as="a" variant="secondary" href={withOrgHref("/team?tab=messages", orgId)}>
             Messages
-          </a>
-          <a className="app-button secondary" href={withOrgHref("/team", orgId)}>
+          </Button>
+          <Button as="a" variant="secondary" href={withOrgHref("/team", orgId)}>
             Team
-          </a>
+          </Button>
         </div>
       </PageHeader>
       <TeamOpsNav orgId={orgId} active="admin" />
@@ -319,9 +319,9 @@ export default function TeamDiscordClient({ orgId }: { orgId: string }) {
                 </span>
               </div>
               {view.inviteUrl ? (
-                <a className="app-button secondary" href={view.inviteUrl} target="_blank" rel="noreferrer">
+                <Button as="a" variant="secondary" href={view.inviteUrl} target="_blank" rel="noreferrer">
                   Open bot invite
-                </a>
+                </Button>
               ) : null}
             </li>
             <li>
@@ -329,9 +329,9 @@ export default function TeamDiscordClient({ orgId }: { orgId: string }) {
                 <strong>Mirror object-linked Messages</strong>
                 <span>Enable the chat bridge after posting works — only linked objects post.</span>
               </div>
-              <a className="app-button secondary" href={withOrgHref("/team?tab=messages", orgId)}>
+              <Button as="a" variant="secondary" href={withOrgHref("/team?tab=messages", orgId)}>
                 Messages
-              </a>
+              </Button>
             </li>
           </ol>
         </EmptyState>
@@ -346,9 +346,9 @@ export default function TeamDiscordClient({ orgId }: { orgId: string }) {
             <code>DISCORD_CLIENT_ID</code>) if you want bot posts by channel id.
           </p>
           {view.inviteUrl ? (
-            <a className="app-button secondary" href={view.inviteUrl} target="_blank" rel="noreferrer">
+            <Button as="a" variant="secondary" href={view.inviteUrl} target="_blank" rel="noreferrer">
               Open bot invite
-            </a>
+            </Button>
           ) : null}
         </section>
       ) : null}
@@ -481,14 +481,9 @@ export default function TeamDiscordClient({ orgId }: { orgId: string }) {
             </li>
           </ul>
           {view.configured ? (
-            <button
-              type="button"
-              className="app-button secondary"
-              disabled={busy || !view.canPost}
-              onClick={() => void run("set-bridge", { chatBridgeEnabled: !view.chatBridgeEnabled })}
-            >
+            <Button variant="secondary" type="button" disabled={busy || !view.canPost} onClick={() => void run("set-bridge", { chatBridgeEnabled: !view.chatBridgeEnabled })}>
               {view.chatBridgeEnabled ? "Disable chat bridge" : "Enable chat bridge"}
-            </button>
+            </Button>
           ) : null}
 
           <div className="team-discord-announce">

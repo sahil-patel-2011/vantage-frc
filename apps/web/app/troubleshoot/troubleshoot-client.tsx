@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
-import { EmptyState, ModelProvenance, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, ModelProvenance, PageHeader, Panel, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import type {
   PriorSession,
@@ -189,9 +189,9 @@ export default function TroubleshootClient() {
         description="Check-by-check troubleshooting for the control-system failures that stop teams. Every step says what it rules out, and every fix cites the doc it came from."
       >
         {session ? (
-          <button type="button" className="app-button secondary" style={TAP} onClick={restart}>
+          <Button variant="secondary" type="button" style={TAP} onClick={restart}>
             Start over
-          </button>
+          </Button>
         ) : null}
       </PageHeader>
 
@@ -204,14 +204,14 @@ export default function TroubleshootClient() {
       {failure ? (
         <EmptyState title={failure.title} description={failure.description}>
           {failure.primary ? (
-            <a className="app-button" style={TAP} href={failure.primary.href}>
+            <Button as="a" variant="primary" style={TAP} href={failure.primary.href}>
               {failure.primary.label}
-            </a>
+            </Button>
           ) : null}
           {failure.showRetry ? (
-            <button type="button" className="app-button secondary" style={TAP} onClick={() => load()}>
+            <Button variant="secondary" type="button" style={TAP} onClick={() => load()}>
               Retry
-            </button>
+            </Button>
           ) : null}
         </EmptyState>
       ) : view == null ? (
@@ -292,24 +292,12 @@ function PickScreen({
           style={{ width: "100%", minHeight: 88, padding: 12 }}
         />
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
-          <button
-            type="button"
-            className="app-button"
-            style={TAP}
-            disabled={busy || !text.trim()}
-            onClick={() => onDescribe(true)}
-          >
+          <Button variant="primary" type="button" style={TAP} disabled={busy || !text.trim()} onClick={() => onDescribe(true)}>
             Find my starting point
-          </button>
-          <button
-            type="button"
-            className="app-button secondary"
-            style={TAP}
-            disabled={busy || !text.trim()}
-            onClick={() => onDescribe(false)}
-          >
+          </Button>
+          <Button variant="secondary" type="button" style={TAP} disabled={busy || !text.trim()} onClick={() => onDescribe(false)}>
             Match without AI
-          </button>
+          </Button>
         </div>
       </Panel>
 
@@ -454,16 +442,9 @@ function WalkScreen({
             {session.alternatives
               .filter((entry) => entry.symptomId !== session.symptomId)
               .map((entry) => (
-                <button
-                  key={entry.symptomId}
-                  type="button"
-                  className="app-button secondary"
-                  style={TAP}
-                  disabled={busy}
-                  onClick={() => onPickSymptom(entry.symptomId)}
-                >
+                <Button variant="secondary" key={entry.symptomId} type="button" style={TAP} disabled={busy} onClick={() => onPickSymptom(entry.symptomId)}>
                   {entry.label}
-                </button>
+                </Button>
               ))}
           </div>
         ) : null}
@@ -586,20 +567,18 @@ function WalkScreen({
                 Saved as still open, with the checks you already ruled out. Take it to a person now:
               </p>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                <a
-                  className="app-button"
+                <Button as="a" variant="primary"
                   style={TAP}
                   href={`/team?tab=messages&orgId=${encodeURIComponent(orgId)}`}
                 >
                   Ask in team chat
-                </a>
-                <a
-                  className="app-button secondary"
+                </Button>
+                <Button as="a" variant="secondary"
                   style={TAP}
                   href={`/team?tab=knowledge&orgId=${encodeURIComponent(orgId)}`}
                 >
                   Write it into the playbook
-                </a>
+                </Button>
               </div>
             </div>
           ) : (
@@ -616,24 +595,12 @@ function WalkScreen({
                 style={{ width: "100%", minHeight: 80, padding: 12 }}
               />
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                <button
-                  type="button"
-                  className="app-button"
-                  style={TAP}
-                  disabled={busy}
-                  onClick={() => onClose(true)}
-                >
+                <Button variant="primary" type="button" style={TAP} disabled={busy} onClick={() => onClose(true)}>
                   This fixed it
-                </button>
-                <button
-                  type="button"
-                  className="app-button secondary"
-                  style={TAP}
-                  disabled={busy}
-                  onClick={() => onClose(false)}
-                >
+                </Button>
+                <Button variant="secondary" type="button" style={TAP} disabled={busy} onClick={() => onClose(false)}>
                   Still stuck
-                </button>
+                </Button>
               </div>
             </div>
           )}
@@ -669,15 +636,9 @@ function NextCheck({
       <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 8 }}>
         {check.outcomes.map((outcome) => (
           <li key={outcome.id}>
-            <button
-              type="button"
-              className="app-button secondary"
-              style={{ ...TAP, width: "100%", textAlign: "left" }}
-              disabled={busy}
-              onClick={() => onAnswer(check.id, outcome.id)}
-            >
+            <Button variant="secondary" type="button" style={{ ...TAP, width: "100%", textAlign: "left" }} disabled={busy} onClick={() => onAnswer(check.id, outcome.id)}>
               {outcome.label}
-            </button>
+            </Button>
           </li>
         ))}
       </ul>

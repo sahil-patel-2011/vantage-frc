@@ -10,7 +10,7 @@ import {
   type KnowledgeTemplateKind,
   type KnowledgeWikiView,
 } from "../../../lib/knowledge";
-import { EmptyState } from "../../../components/ui";
+import { EmptyState, Button } from "../../../components/ui";
 import { ActionMenu, type ActionSpec } from "../../../components/ui/action-menu";
 import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 import "./knowledge.css";
@@ -373,14 +373,14 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
         ) : null}
         <EmptyState soft title={copy.title} description={copy.description}>
           {copy.primary ? (
-            <a className="app-button" href={copy.primary.href}>
+            <Button as="a" variant="primary" href={copy.primary.href}>
               {copy.primary.label}
-            </a>
+            </Button>
           ) : null}
           {copy.showRetry ? (
-            <button type="button" className="app-button secondary" onClick={() => void load()}>
+            <Button variant="secondary" type="button" onClick={() => void load()}>
               Retry
-            </button>
+            </Button>
           ) : null}
         </EmptyState>
       </main>

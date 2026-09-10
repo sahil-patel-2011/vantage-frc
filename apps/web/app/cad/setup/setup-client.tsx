@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "../../../components/ui";
 
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -87,15 +88,15 @@ export default function CadSetupWizard({ orgId }: { orgId: string }) {
           </p>
         </div>
         <nav className="cad-header-actions">
-          <a className="app-button secondary" href={`/cad${q}`}>
+          <Button as="a" variant="secondary" href={`/cad${q}`}>
             ← CAD Builder
-          </a>
-          <a className="app-button secondary" href={`/cad/connections${q}`}>
+          </Button>
+          <Button as="a" variant="secondary" href={`/cad/connections${q}`}>
             Connections
-          </a>
-          <a className="app-button secondary" href={`/cad/pair${q}`}>
+          </Button>
+          <Button as="a" variant="secondary" href={`/cad/pair${q}`}>
             Pair desktop
-          </a>
+          </Button>
         </nav>
       </header>
 
@@ -172,9 +173,9 @@ export default function CadSetupWizard({ orgId }: { orgId: string }) {
             <button className="primary-action" type="button" onClick={() => setStep(2)}>
               Continue
             </button>
-            <a className="app-button secondary" href={`/cad/connections${q}`}>
+            <Button as="a" variant="secondary" href={`/cad/connections${q}`}>
               Open Connections
-            </a>
+            </Button>
           </div>
         </section>
       ) : null}
@@ -224,16 +225,16 @@ export default function CadSetupWizard({ orgId }: { orgId: string }) {
             </span>
           </label>
           <div className="cad-setup-actions">
-            <button type="button" className="app-button secondary" onClick={() => setStep(1)}>
+            <Button variant="secondary" type="button" onClick={() => setStep(1)}>
               Back
-            </button>
+            </Button>
             <button className="primary-action" type="button" onClick={() => setStep(3)}>
               Continue
             </button>
             {brain === "managed_api" ? (
-              <a className="app-button secondary" href={`/team/budgets${q}#prompt-caching`}>
+              <Button as="a" variant="secondary" href={`/team/budgets${q}#prompt-caching`}>
                 Prompt caching
-              </a>
+              </Button>
             ) : null}
           </div>
         </section>
@@ -250,20 +251,9 @@ export default function CadSetupWizard({ orgId }: { orgId: string }) {
               <span className="eyebrow">Windows / macOS / Linux</span>
               <h3 style={{ margin: "4px 0 0", fontSize: 15 }}>vantage-cad CLI</h3>
             </div>
-            <button
-              type="button"
-              className="app-button secondary"
-              onClick={async () => {
-                try {
-                  await navigator.clipboard.writeText(install);
-                  setMessage("Install commands copied.");
-                } catch {
-                  setMessage("Couldn't copy — select the block manually.");
-                }
-              }}
-            >
+            <Button variant="secondary" type="button" onClick={async () => { try { await navigator.clipboard.writeText(install); setMessage("Install commands copied."); } catch { setMessage("Couldn't copy — select the block manually."); } }}>
               Copy commands
-            </button>
+            </Button>
           </div>
           <pre className="install-command">{install}</pre>
           <ol style={{ margin: 0, paddingLeft: 18, color: "var(--app-muted)", fontSize: 13 }}>
@@ -280,15 +270,15 @@ export default function CadSetupWizard({ orgId }: { orgId: string }) {
             </li>
           </ol>
           <div className="cad-setup-actions">
-            <button type="button" className="app-button secondary" onClick={() => setStep(2)}>
+            <Button variant="secondary" type="button" onClick={() => setStep(2)}>
               Back
-            </button>
+            </Button>
             <button className="primary-action" type="button" onClick={() => setStep(4)}>
               Continue to verify
             </button>
-            <a className="app-button secondary" href={`/cad/pair${q}`}>
+            <Button as="a" variant="secondary" href={`/cad/pair${q}`}>
               Pair desktop
-            </a>
+            </Button>
           </div>
         </section>
       ) : null}
@@ -320,15 +310,15 @@ export default function CadSetupWizard({ orgId }: { orgId: string }) {
             ))}
           </ul>
           <div className="cad-setup-actions">
-            <button type="button" className="app-button secondary" onClick={() => setStep(3)}>
+            <Button variant="secondary" type="button" onClick={() => setStep(3)}>
               Back
-            </button>
+            </Button>
             <a className="primary-action" href={`/cad${q}`}>
               Open CAD Builder
             </a>
-            <a className="app-button secondary" href={`/cad/connections${q}`}>
+            <Button as="a" variant="secondary" href={`/cad/connections${q}`}>
               Connections
-            </a>
+            </Button>
           </div>
         </section>
       ) : null}

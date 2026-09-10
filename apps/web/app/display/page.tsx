@@ -1,3 +1,4 @@
+import { Button } from "../../components/ui";
 import DisplaySetup from "./setup-client";
 import "./display.css";
 
@@ -22,15 +23,15 @@ export default async function DisplayPage({
           Pit TV boards are saved per team. Select a team before creating a display layout.
         </p>
         <div className="disp-gate-actions">
-          <a className="app-button" href="/workspace">
+          <Button as="a" variant="primary" href="/workspace">
             Choose your team
-          </a>
-          <a className="app-button secondary" href="/competition?tab=command">
+          </Button>
+          <Button as="a" variant="secondary" href="/competition?tab=command">
             Event Day
-          </a>
-          <a className="app-button secondary" href="/competition?tab=strategy">
+          </Button>
+          <Button as="a" variant="secondary" href="/competition?tab=strategy">
             Strategy
-          </a>
+          </Button>
         </div>
       </main>
     );

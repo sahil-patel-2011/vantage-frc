@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import {
   OFFLINE_SHELL_RELATED_INCLUDE,
   classifyOfflineShell,
@@ -45,9 +45,9 @@ function RelatedStrip({ orgId }: { orgId: string | null }) {
   return (
     <nav className="product-hub-related offline-shell-related" aria-label="Related offline tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -77,9 +77,9 @@ function NextActions({
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -181,9 +181,9 @@ export default function OfflineShellClient() {
       {fetchFailed ? (
         <EmptyState soft title={shellCopy.title} description={shellCopy.description}>
           <NextActions orgId={orgId} shell="error" />
-          <button type="button" className="app-button secondary" onClick={() => load()}>
+          <Button variant="secondary" type="button" onClick={() => load()}>
             Retry
-          </button>
+          </Button>
         </EmptyState>
       ) : view == null ? (
         <EmptyState soft title={shellCopy.title} description={shellCopy.description} aria-busy />
@@ -405,9 +405,9 @@ function LogCacheEventForm({
         <textarea value={form.notes} onChange={set("notes")} rows={2} placeholder="Verified cold launch with airplane mode" />
       </FormRow>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !form.deviceLabel.trim()}>
+        <Button variant="primary" type="submit" disabled={busy || !form.deviceLabel.trim()}>
           Log sync event
-        </button>
+        </Button>
       </div>
     </Panel>
   );

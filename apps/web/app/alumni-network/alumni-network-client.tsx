@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { alumniShellCopy } from "../../lib/alumni";
 import { alumniStatusLabel, mentorSlotStatusLabel } from "../../lib/alumni-network";
@@ -121,14 +121,14 @@ export default function AlumniNetworkClient() {
           return (
             <EmptyState title={copy.title} description={copy.description}>
               {copy.primary ? (
-                <a className="app-button" href={copy.primary.href}>
+                <Button as="a" variant="primary" href={copy.primary.href}>
                   {copy.primary.label}
-                </a>
+                </Button>
               ) : null}
               {copy.showRetry ? (
-                <button type="button" className="app-button secondary" onClick={() => load()}>
+                <Button variant="secondary" type="button" onClick={() => load()}>
                   Retry
-                </button>
+                </Button>
               ) : null}
             </EmptyState>
           );
@@ -493,9 +493,9 @@ function AddProfileForm({
         Available to mentor
       </label>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !form.fullName.trim()}>
+        <Button variant="primary" type="submit" disabled={busy || !form.fullName.trim()}>
           Add profile
-        </button>
+        </Button>
       </div>
     </Panel>
   );
@@ -567,9 +567,9 @@ function MentorSlotForm({
         <textarea value={form.notes} onChange={set("notes")} rows={2} />
       </FormRow>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !form.topic.trim() || !form.availableFrom}>
+        <Button variant="primary" type="submit" disabled={busy || !form.topic.trim() || !form.availableFrom}>
           Log availability
-        </button>
+        </Button>
       </div>
     </Panel>
   );

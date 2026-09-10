@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { inspectionFlagSeverityLabel, stale120PerimeterCue, stale16ExtensionCue, staleBumperThicknessCue, staleBumperZoneCue } from "../../lib/inspection-copilot";
 import type { InspectionCopilotView } from "../../lib/inspection-copilot/compute-inspection-copilot";
 import {
@@ -40,9 +40,9 @@ function InspectionRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related inspection-copilot-related" aria-label="Related build tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -66,9 +66,9 @@ function InspectionNextActionsPanel({ actions }: { actions: InspectionCopilotNex
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -127,15 +127,15 @@ function InspectionShell({
         aria-busy={shell === "loading"}
       >
         {shell === "error" && onRetry ? (
-          <button type="button" className="app-button secondary" onClick={onRetry}>
+          <Button variant="secondary" type="button" onClick={onRetry}>
             Retry
-          </button>
+          </Button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
+          <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
         ) : null}
         {shell === "empty" ? (
-          <a className="app-button is-primary" href="#inspection-copilot-form">Run a check</a>
+          <Button as="a" variant="primary" href="#inspection-copilot-form">Run a check</Button>
         ) : null}
       </EmptyState>
       <InspectionNextActionsPanel actions={actions} />
@@ -307,9 +307,9 @@ export default function InspectionCopilotClient() {
             </label>
           ) : null}
           {relatedLinks.map((link) => (
-            <a key={link.id} className="app-button secondary" href={link.href}>
+            <Button as="a" variant="secondary" key={link.id} href={link.href}>
               {link.label}
-            </a>
+            </Button>
           ))}
         </div>
       </PageHeader>
@@ -338,9 +338,9 @@ export default function InspectionCopilotClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <a className="app-button is-primary" href="#inspection-copilot-form">
+          <Button as="a" variant="primary" href="#inspection-copilot-form">
             Run a check
-          </a>
+          </Button>
         </EmptyState>
       ) : null}
 
@@ -780,14 +780,9 @@ function NewCheckForm({
             </div>
           ))}
         </div>
-        <button
-          type="button"
-          className="app-button secondary"
-          style={{ marginTop: 8 }}
-          onClick={() => setWeightItems((prev) => [...prev, emptyWeightRow()])}
-        >
+        <Button variant="secondary" type="button" style={{ marginTop: 8 }} onClick={() => setWeightItems((prev) => [...prev, emptyWeightRow()])}>
           Add weight item
-        </button>
+        </Button>
       </div>
 
       <div>
@@ -1497,9 +1492,9 @@ function NewCheckForm({
       </div>
 
       <div>
-        <button type="submit" className="app-button" disabled={busy || !canSubmit}>
+        <Button variant="primary" type="submit" disabled={busy || !canSubmit}>
           Predict inspection failures
-        </button>
+        </Button>
       </div>
     </Panel>
   );

@@ -1,4 +1,4 @@
-import { EmptyState, PageHeader } from "../../../components/ui";
+import { EmptyState, PageHeader, Button } from "../../../components/ui";
 import {
   FORM_BUILDER_RELATED_INCLUDE,
   formBuilderNextActions,
@@ -37,9 +37,9 @@ export default async function ScoutingFormsPage({
         >
           <nav className="product-hub-related sfb-related" aria-label="Related competition tools">
             {links.map((link) => (
-              <a key={link.id} className="app-button secondary" href={link.href}>
+              <Button as="a" variant="secondary" key={link.id} href={link.href}>
                 {link.label}
-              </a>
+              </Button>
             ))}
           </nav>
         </PageHeader>
@@ -51,9 +51,9 @@ export default async function ScoutingFormsPage({
           title={copy.title}
           description={copy.description}
         >
-          <a className="app-button" href="/workspace">
+          <Button as="a" variant="primary" href="/workspace">
             Choose your team
-          </a>
+          </Button>
           <ol className="sfb-setup-steps">
             {steps.map((step) => (
               <li key={step.id}>
@@ -81,9 +81,9 @@ export default async function ScoutingFormsPage({
                   <strong>{action.label}</strong>
                   <span>{action.detail}</span>
                 </div>
-                <a className="app-button secondary" href={action.href}>
+                <Button as="a" variant="secondary" href={action.href}>
                   Open
-                </a>
+                </Button>
               </li>
             ))}
           </ol>

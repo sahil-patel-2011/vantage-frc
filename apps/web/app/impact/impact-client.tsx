@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { BusinessRelated } from "../../components/business-related";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { IMPACT_RELATED_INCLUDE } from "../../lib/business/business-related";
 import { impactNextActions } from "../../lib/business/impact-next-actions";
@@ -63,9 +63,9 @@ function ImpactNextActions({
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -225,14 +225,14 @@ export default function ImpactClient() {
             <EmptyState
           soft title={copy.title} description={copy.description}>
               {copy.primary ? (
-                <a className="app-button" href={copy.primary.href}>
+                <Button as="a" variant="primary" href={copy.primary.href}>
                   {copy.primary.label}
-                </a>
+                </Button>
               ) : null}
               {copy.showRetry ? (
-                <button type="button" className="app-button secondary" onClick={() => load()}>
+                <Button variant="secondary" type="button" onClick={() => load()}>
                   Retry
-                </button>
+                </Button>
               ) : null}
             </EmptyState>
           );
@@ -550,9 +550,9 @@ function EditPeople({
         onChange={setDrafts}
       />
       <div className="impact-edit-people-actions">
-        <button
+        <Button
+          variant="primary"
           type="button"
-          className="app-button"
           disabled={busy}
           onClick={() => {
             // Unticking someone who was already named is a removal, and the
@@ -562,7 +562,7 @@ function EditPeople({
           }}
         >
           Save people
-        </button>
+        </Button>
         <button type="button" className="text-button" disabled={busy} onClick={onCancel}>
           Cancel
         </button>
@@ -693,9 +693,9 @@ function LogActivityForm({
         ))}
       </fieldset>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !form.title.trim() || !form.occurredOn}>
+        <Button variant="primary" type="submit" disabled={busy || !form.title.trim() || !form.occurredOn}>
           Log activity
-        </button>
+        </Button>
       </div>
     </Panel>
   );

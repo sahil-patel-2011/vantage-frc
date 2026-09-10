@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { GOAL_CATEGORIES, GOAL_STATUSES, goalCategoryLabel, goalStatusLabel } from "../../lib/goals-tracker";
 import type { GoalsTrackerView } from "../../lib/goals-tracker/compute-goals-tracker";
@@ -148,14 +148,14 @@ export default function GoalsTrackerClient() {
       {failure ? (
         <EmptyState title={failure.title} description={failure.description}>
           {failure.primary ? (
-            <a className="app-button" href={failure.primary.href}>
+            <Button as="a" variant="primary" href={failure.primary.href}>
               {failure.primary.label}
-            </a>
+            </Button>
           ) : null}
           {failure.showRetry ? (
-            <button type="button" className="app-button secondary" onClick={() => load()}>
+            <Button variant="secondary" type="button" onClick={() => load()}>
               Retry
-            </button>
+            </Button>
           ) : null}
         </EmptyState>
       ) : view == null ? (
@@ -278,15 +278,9 @@ function GoalsList({
 
             <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
               {GOAL_STATUSES.filter((s) => s !== row.goal.status).map((status) => (
-                <button
-                  key={status}
-                  type="button"
-                  className="app-button secondary"
-                  disabled={busy}
-                  onClick={() => mutate({ action: "update-status", goalId: row.goal.id, status })}
-                >
+                <Button variant="secondary" key={status} type="button" disabled={busy} onClick={() => mutate({ action: "update-status", goalId: row.goal.id, status })}>
                   Mark {goalStatusLabel(status).toLowerCase()}
-                </button>
+                </Button>
               ))}
               <button
                 type="button"
@@ -342,9 +336,9 @@ function CheckinForm({
       <FormRow label="Note (optional)">
         <input value={note} onChange={(e) => setNote(e.target.value)} />
       </FormRow>
-      <button type="submit" className="app-button secondary" disabled={busy || value === "" || !occurredOn}>
+      <Button variant="secondary" type="submit" disabled={busy || value === "" || !occurredOn}>
         Check in
-      </button>
+      </Button>
     </form>
   );
 }
@@ -423,9 +417,9 @@ function CreateGoalForm({
         <textarea value={form.description} onChange={set("description")} rows={2} />
       </FormRow>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !form.title.trim()}>
+        <Button variant="primary" type="submit" disabled={busy || !form.title.trim()}>
           Add goal
-        </button>
+        </Button>
       </div>
     </Panel>
   );

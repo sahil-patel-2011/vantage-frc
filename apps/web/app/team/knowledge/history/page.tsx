@@ -1,4 +1,4 @@
-import { EmptyState, PageHeader } from "../../../../components/ui";
+import { EmptyState, PageHeader, Button } from "../../../../components/ui";
 import KnowledgeHistoryClient from "./history-client";
 
 export const metadata = {
@@ -26,9 +26,9 @@ export default async function TeamKnowledgeHistoryPage({
           title="Choose a team"
           description="History replays the edits a single team actually made. Select one and come back."
         >
-          <a className="app-button" href="/workspace">
+          <Button as="a" variant="primary" href="/workspace">
             Choose team
-          </a>
+          </Button>
         </EmptyState>
       </main>
     );

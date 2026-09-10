@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
-import { EmptyState, PageHeader, Panel, ProgressMeter } from "../../components/ui";
+import { EmptyState, PageHeader, Panel, ProgressMeter, Button } from "../../components/ui";
 import type { RoadmapView } from "../../lib/roadmap/load-roadmap";
 import {
   URGENCY_LABELS,
@@ -164,14 +164,14 @@ export default function RoadmapClient() {
       {failure ? (
         <EmptyState title={failure.title} description={failure.description}>
           {failure.primary ? (
-            <a className="app-button" style={TAP} href={failure.primary.href}>
+            <Button as="a" variant="primary" style={TAP} href={failure.primary.href}>
               {failure.primary.label}
-            </a>
+            </Button>
           ) : null}
           {failure.showRetry ? (
-            <button type="button" className="app-button secondary" style={TAP} onClick={() => load()}>
+            <Button variant="secondary" type="button" style={TAP} onClick={() => load()}>
               Retry
-            </button>
+            </Button>
           ) : null}
         </EmptyState>
       ) : view == null ? (
@@ -288,19 +288,13 @@ function KickoffPanel({
             minWidth: 160,
           }}
         />
-        <button type="button" className="app-button" style={TAP} onClick={onSave} disabled={busy}>
+        <Button variant="primary" type="button" style={TAP} onClick={onSave} disabled={busy}>
           {hasKickoff ? "Update dates" : "Set dates"}
-        </button>
+        </Button>
         {hasKickoff ? (
-          <button
-            type="button"
-            className="app-button secondary"
-            style={TAP}
-            onClick={onClear}
-            disabled={busy}
-          >
+          <Button variant="secondary" type="button" style={TAP} onClick={onClear} disabled={busy}>
             Clear
-          </button>
+          </Button>
         ) : null}
       </div>
 
@@ -559,35 +553,17 @@ function TaskRow({
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
         {task.status === "todo" ? (
           <>
-            <button
-              type="button"
-              className="app-button"
-              style={TAP}
-              onClick={() => onSetTask(task.id, "done")}
-              disabled={busy}
-            >
+            <Button variant="primary" type="button" style={TAP} onClick={() => onSetTask(task.id, "done")} disabled={busy}>
               Mark done
-            </button>
-            <button
-              type="button"
-              className="app-button secondary"
-              style={TAP}
-              onClick={() => onSetTask(task.id, "skipped")}
-              disabled={busy}
-            >
+            </Button>
+            <Button variant="secondary" type="button" style={TAP} onClick={() => onSetTask(task.id, "skipped")} disabled={busy}>
               Not for us
-            </button>
+            </Button>
           </>
         ) : (
-          <button
-            type="button"
-            className="app-button secondary"
-            style={TAP}
-            onClick={() => onSetTask(task.id, "todo")}
-            disabled={busy}
-          >
+          <Button variant="secondary" type="button" style={TAP} onClick={() => onSetTask(task.id, "todo")} disabled={busy}>
             Reopen
-          </button>
+          </Button>
         )}
       </div>
     </li>

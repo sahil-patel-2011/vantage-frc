@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import {
   RULE_CHANGE_CATEGORIES,
   RULE_CHANGE_SEVERITIES,
@@ -55,9 +55,9 @@ function RuleImpactRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related rule-impact-related" aria-label="Related build tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -81,9 +81,9 @@ function RuleImpactNextActionsPanel({ actions }: { actions: RuleImpactNextAction
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -142,15 +142,15 @@ function RuleImpactShell({
         aria-busy={shell === "loading"}
       >
         {shell === "error" && onRetry ? (
-          <button type="button" className="app-button secondary" onClick={onRetry}>
+          <Button variant="secondary" type="button" onClick={onRetry}>
             Retry
-          </button>
+          </Button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
+          <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
         ) : null}
         {shell === "empty" ? (
-          <a className="app-button is-primary" href="#rule-impact-log-change">Log a rule change</a>
+          <Button as="a" variant="primary" href="#rule-impact-log-change">Log a rule change</Button>
         ) : null}
       </EmptyState>
       <RuleImpactNextActionsPanel actions={actions} />
@@ -317,9 +317,9 @@ export default function RuleImpactClient() {
             </label>
           ) : null}
           {relatedLinks.map((link) => (
-            <a key={link.id} className="app-button secondary" href={link.href}>
+            <Button as="a" variant="secondary" key={link.id} href={link.href}>
               {link.label}
-            </a>
+            </Button>
           ))}
         </div>
       </PageHeader>
@@ -340,9 +340,9 @@ export default function RuleImpactClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <a className="app-button is-primary" href="#rule-impact-log-change">
+          <Button as="a" variant="primary" href="#rule-impact-log-change">
             Log a rule change
-          </a>
+          </Button>
         </EmptyState>
       ) : null}
 
@@ -361,9 +361,9 @@ export default function RuleImpactClient() {
             title="No prior-season subsystems on file"
             description="Log robot subsystems so Rule Impact can diff them against logged rule changes — empty means nothing on file."
           >
-            <a className="app-button is-primary" href={subsystemsHref}>
+            <Button as="a" variant="primary" href={subsystemsHref}>
               Open Subsystems
-            </a>
+            </Button>
           </EmptyState>
         )}
         <AssessmentList view={view} busy={busy} mutate={mutate} />
@@ -509,9 +509,9 @@ function RuleChangeForm({
         <textarea value={form.summary} onChange={set("summary")} rows={2} />
       </FormRow>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !form.ruleCode.trim() || !form.title.trim()}>
+        <Button variant="primary" type="submit" disabled={busy || !form.ruleCode.trim() || !form.title.trim()}>
           Log rule change
-        </button>
+        </Button>
       </div>
     </Panel>
   );
@@ -614,22 +614,9 @@ function CandidateList({
                 </small>
               ) : null}
             </div>
-            <button
-              type="button"
-              className="app-button secondary"
-              disabled={busy}
-              onClick={() =>
-                mutate({
-                  action: "assess",
-                  subsystemId: candidate.subsystemId,
-                  subsystemName: candidate.subsystemName,
-                  category: candidate.category,
-                  sourceSeasonYear: candidate.sourceSeasonYear,
-                })
-              }
-            >
+            <Button variant="secondary" type="button" disabled={busy} onClick={() => mutate({ action: "assess", subsystemId: candidate.subsystemId, subsystemName: candidate.subsystemName, category: candidate.category, sourceSeasonYear: candidate.sourceSeasonYear, }) }>
               {candidate.alreadyAssessed ? "Reassess" : "Assess"}
-            </button>
+            </Button>
           </li>
         ))}
       </ul>

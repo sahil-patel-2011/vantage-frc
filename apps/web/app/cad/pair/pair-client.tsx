@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "../../../components/ui";
 
 import { useState } from "react";
 
@@ -107,14 +108,14 @@ export default function PairClient({
             Approve pairing
           </button>
           {orgId ? (
-            <a className="app-button secondary" href={`/cad/setup?orgId=${encodeURIComponent(orgId)}`}>
+            <Button as="a" variant="secondary" href={`/cad/setup?orgId=${encodeURIComponent(orgId)}`}>
               Setup wizard
-            </a>
+            </Button>
           ) : null}
           {orgId ? (
-            <a className="app-button secondary" href={`/cad?orgId=${encodeURIComponent(orgId)}`}>
+            <Button as="a" variant="secondary" href={`/cad?orgId=${encodeURIComponent(orgId)}`}>
               CAD Builder
-            </a>
+            </Button>
           ) : null}
         </div>
 

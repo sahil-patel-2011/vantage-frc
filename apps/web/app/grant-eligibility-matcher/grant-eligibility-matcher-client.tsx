@@ -8,8 +8,7 @@ import {
   PageHeader,
   Panel,
   SoftBlockSkeleton,
-  StatTile,
-} from "../../components/ui";
+  StatTile, Button } from "../../components/ui";
 import type { GrantEligibilityView } from "../../lib/grant-eligibility-matcher/compute-grant-eligibility-matcher";
 import type { GrantMatch } from "../../lib/grant-eligibility-matcher/types";
 import {
@@ -56,9 +55,9 @@ function RelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related gem-related" aria-label="Related business tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -79,9 +78,9 @@ function NextActionsPanel({ actions }: { actions: GrantEligibilityMatcherNextAct
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -139,10 +138,10 @@ function MatcherShell({
           description={error ?? copy.description}
         >
           {shell === "setup" ? (
-            <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
+            <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
           ) : null}
           {shell === "empty" ? (
-            <a className="app-button is-primary" href="#grant-eligibility-profile">Complete team profile</a>
+            <Button as="a" variant="primary" href="#grant-eligibility-profile">Complete team profile</Button>
           ) : null}
         </EmptyState>
       )}
@@ -159,9 +158,9 @@ function MatcherShell({
                   <strong>{step.label}</strong>
                   <p className="app-muted gem-tip">{step.detail}</p>
                 </div>
-                <a className="app-button secondary" href={step.href}>
+                <Button as="a" variant="secondary" href={step.href}>
                   Open
-                </a>
+                </Button>
               </li>
             ))}
           </ul>
@@ -312,9 +311,9 @@ export default function GrantEligibilityMatcherClient() {
       >
         <div className="gem-header-actions">
           {relatedLinks.map((link) => (
-            <a key={link.id} className="app-button secondary" href={link.href}>
+            <Button as="a" variant="secondary" key={link.id} href={link.href}>
               {link.label}
-            </a>
+            </Button>
           ))}
         </div>
       </PageHeader>
@@ -409,9 +408,9 @@ function ProfilePanel({
           />
         </FormRow>
         <div>
-          <button type="submit" className="app-button secondary" disabled={busy}>
+          <Button variant="secondary" type="submit" disabled={busy}>
             Save mentor employers
-          </button>
+          </Button>
         </div>
       </Panel>
     </section>
@@ -438,9 +437,9 @@ function DeadlineRadar({ view }: { view: LiveView }) {
               <small>{deadlineLabel(match)}</small>
             </div>
             {match.grant.applicationUrl ? (
-              <a className="app-button secondary" href={match.grant.applicationUrl} target="_blank" rel="noreferrer">
+              <Button as="a" variant="secondary" href={match.grant.applicationUrl} target="_blank" rel="noreferrer">
                 Apply
-              </a>
+              </Button>
             ) : null}
           </li>
         ))}
@@ -467,9 +466,9 @@ function EligibleGrants({
         title="No grants match your recorded team profile"
         description="Complete your team profile (rookie year, region, mentor employers, demographics) to surface grants you qualify for."
       >
-        <a className="app-button" href="#grant-eligibility-profile">
+        <Button as="a" variant="primary" href="#grant-eligibility-profile">
           Complete profile
-        </a>
+        </Button>
       </EmptyState>
     );
   }
@@ -491,9 +490,9 @@ function EligibleGrants({
             </div>
             <div className="gem-row-actions">
               {match.grant.applicationUrl ? (
-                <a className="app-button secondary" href={match.grant.applicationUrl} target="_blank" rel="noreferrer">
+                <Button as="a" variant="secondary" href={match.grant.applicationUrl} target="_blank" rel="noreferrer">
                   Apply
-                </a>
+                </Button>
               ) : null}
               <button
                 type="button"
@@ -531,9 +530,9 @@ function IneligibleGrants({
             {formatGrantEligibilityMatcherMetric(grants.length, true)} grant(s) your profile doesn&apos;t yet match
           </h2>
         </div>
-        <button type="button" className="app-button secondary" onClick={() => setShow(!show)}>
+        <Button variant="secondary" type="button" onClick={() => setShow(!show)}>
           {show ? "Hide" : "Show"}
-        </button>
+        </Button>
       </header>
       {show ? (
         <ul className="impact-activity-list">

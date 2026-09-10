@@ -48,9 +48,9 @@ function RelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related bsl-related" aria-label="Related build tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -71,9 +71,9 @@ function NextActionsPanel({ actions }: { actions: BinShelfLocatorNextAction[] })
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -131,10 +131,10 @@ function LocatorShell({
           description={error ?? copy.description}
         >
           {shell === "setup" ? (
-            <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
+            <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
           ) : null}
           {shell === "empty" ? (
-            <a className="app-button is-primary" href="#bin-shelf-locations">Map the first location</a>
+            <Button as="a" variant="primary" href="#bin-shelf-locations">Map the first location</Button>
           ) : null}
         </EmptyState>
       )}
@@ -151,9 +151,9 @@ function LocatorShell({
                   <strong>{step.label}</strong>
                   <p className="app-muted bsl-tip">{step.detail}</p>
                 </div>
-                <a className="app-button secondary" href={step.href}>
+                <Button as="a" variant="secondary" href={step.href}>
                   Open
-                </a>
+                </Button>
               </li>
             ))}
           </ul>
@@ -313,9 +313,9 @@ export default function BinShelfLocatorClient() {
       >
         <div className="bsl-header-actions">
           {relatedLinks.map((link) => (
-            <a key={link.id} className="app-button secondary" href={link.href}>
+            <Button as="a" variant="secondary" key={link.id} href={link.href}>
               {link.label}
-            </a>
+            </Button>
           ))}
         </div>
       </PageHeader>
@@ -398,9 +398,9 @@ function CreateLocationForm({
         <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
       </FormRow>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !code.trim()}>
+        <Button variant="primary" type="submit" disabled={busy || !code.trim()}>
           Add location
-        </button>
+        </Button>
       </div>
     </Panel>
   );
@@ -552,9 +552,9 @@ function PutAwayForm({
         <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Restocked from order #..." />
       </FormRow>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !itemId || (!toLocationId && !fromLocationId)}>
+        <Button variant="primary" type="submit" disabled={busy || !itemId || (!toLocationId && !fromLocationId)}>
           Record move
-        </button>
+        </Button>
       </div>
     </Panel>
   );
@@ -628,9 +628,9 @@ function LabelPrinter({ view }: { view: LiveView }) {
             <img src={dataUrl} alt={`QR label for ${target?.label ?? ""}`} width={160} height={160} />
             <div style={{ textAlign: "center", fontWeight: 600, marginTop: 4 }}>{target?.label}</div>
           </div>
-          <button type="button" className="app-button secondary" onClick={() => window.print()}>
+          <Button variant="secondary" type="button" onClick={() => window.print()}>
             Print label
-          </button>
+          </Button>
         </div>
       ) : null}
     </Panel>
@@ -714,13 +714,13 @@ function ScanToFind({ orgId }: { orgId: string }) {
         <canvas ref={canvasRef} style={{ display: "none" }} />
         <div>
           {scanning ? (
-            <button type="button" className="app-button secondary" onClick={stopScan}>
+            <Button variant="secondary" type="button" onClick={stopScan}>
               Stop scanning
-            </button>
+            </Button>
           ) : (
-            <button type="button" className="app-button" onClick={() => void startScan()}>
+            <Button variant="primary" type="button" onClick={() => void startScan()}>
               Start camera scan
-            </button>
+            </Button>
           )}
         </div>
         {scanError ? <p role="alert" className="app-muted">{scanError}</p> : null}

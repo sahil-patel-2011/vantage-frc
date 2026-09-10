@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import {
   COMMON_INPUTS,
   CONTROLLER_LABEL,
@@ -61,9 +61,9 @@ function ControlMapRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related control-map-related" aria-label="Related build tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -87,9 +87,9 @@ function ControlMapNextActionsPanel({ actions }: { actions: ControlMapNextAction
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -172,17 +172,17 @@ function ControlMapShell({
         aria-busy={shell === "loading"}
       >
         {failure?.primary ? (
-          <a className="app-button" href={failure.primary.href}>
+          <Button as="a" variant="primary" href={failure.primary.href}>
             {failure.primary.label}
-          </a>
+          </Button>
         ) : null}
         {shell === "error" && onRetry && failure?.showRetry !== false ? (
-          <button type="button" className="app-button secondary" onClick={onRetry}>
+          <Button variant="secondary" type="button" onClick={onRetry}>
             Retry
-          </button>
+          </Button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
+          <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
         ) : null}
       </EmptyState>
       <ControlMapNextActionsPanel actions={actions} />
@@ -338,9 +338,9 @@ export default function ControlMapClient({ orgId: orgIdProp }: { orgId: string |
       >
         <div className="control-map-header-actions">
           {relatedLinks.map((link) => (
-            <a key={link.id} className="app-button secondary" href={link.href}>
+            <Button as="a" variant="secondary" key={link.id} href={link.href}>
               {link.label}
-            </a>
+            </Button>
           ))}
         </div>
       </PageHeader>
@@ -361,9 +361,9 @@ export default function ControlMapClient({ orgId: orgIdProp }: { orgId: string |
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <a className="app-button is-primary" href="#control-map-form">
+          <Button as="a" variant="primary" href="#control-map-form">
             Add first binding
-          </a>
+          </Button>
         </EmptyState>
       ) : null}
 
@@ -500,9 +500,9 @@ function AddBindingForm({
         </FormRow>
       </FormGrid>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !form.inputLabel.trim() || !form.command.trim()}>
+        <Button variant="primary" type="submit" disabled={busy || !form.inputLabel.trim() || !form.command.trim()}>
           Save binding
-        </button>
+        </Button>
       </div>
     </form>
   );
@@ -547,14 +547,9 @@ function BindingLists({
                     </div>
                     {view.context.role !== "viewer" ? (
                       <div className="control-map-card-foot">
-                        <button
-                          type="button"
-                          className="app-button secondary"
-                          disabled={busy}
-                          onClick={() => onDelete(b.id)}
-                        >
+                        <Button variant="secondary" type="button" disabled={busy} onClick={() => onDelete(b.id)}>
                           Delete
-                        </button>
+                        </Button>
                       </div>
                     ) : null}
                   </div>

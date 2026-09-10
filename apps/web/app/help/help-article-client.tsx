@@ -1,6 +1,6 @@
 "use client";
 
-import { PageHeader } from "../../components/ui";
+import { PageHeader, Button } from "../../components/ui";
 import { helpArticleHref, helpCategoryLabel, type HelpArticle } from "../../lib/help";
 import "./help.css";
 
@@ -19,12 +19,12 @@ export default function HelpArticleClient({ article }: { article: HelpArticle })
         description={article.summary}
       >
         <div className="help-article-actions">
-          <a className="app-button" href={article.relatedHref}>
+          <Button as="a" variant="primary" href={article.relatedHref}>
             Open in app
-          </a>
-          <a className="app-button secondary" href="/help">
+          </Button>
+          <Button as="a" variant="secondary" href="/help">
             All topics
-          </a>
+          </Button>
         </div>
       </PageHeader>
 

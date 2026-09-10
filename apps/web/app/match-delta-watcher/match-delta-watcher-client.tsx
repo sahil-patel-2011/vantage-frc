@@ -9,8 +9,7 @@ import {
   PageHeader,
   Panel,
   SoftBlockSkeleton,
-  StatTile,
-} from "../../components/ui";
+  StatTile, Button } from "../../components/ui";
 import { matchDeltaAlertTypeLabel, matchDeltaSeverityLabel } from "../../lib/match-delta-watcher";
 import type { MatchDeltaWatcherView } from "../../lib/match-delta-watcher/compute-match-delta-watcher";
 import {
@@ -46,9 +45,9 @@ function RelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related mdw-related" aria-label="Related competition tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -69,9 +68,9 @@ function NextActionsPanel({ actions }: { actions: MatchDeltaWatcherNextAction[] 
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -129,10 +128,10 @@ function WatcherShell({
           description={error ?? copy.description}
         >
           {shell === "setup" ? (
-            <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
+            <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
           ) : null}
           {shell === "empty" ? (
-            <a className="app-button is-primary" href={hubHref("/competition", "strategy", orgId)}>Open Strategy</a>
+            <Button as="a" variant="primary" href={hubHref("/competition", "strategy", orgId)}>Open Strategy</Button>
           ) : null}
         </EmptyState>
       )}
@@ -149,9 +148,9 @@ function WatcherShell({
                   <strong>{step.label}</strong>
                   <p className="app-muted mdw-tip">{step.detail}</p>
                 </div>
-                <a className="app-button secondary" href={step.href}>
+                <Button as="a" variant="secondary" href={step.href}>
                   Open
-                </a>
+                </Button>
               </li>
             ))}
           </ul>
@@ -307,15 +306,9 @@ export default function MatchDeltaWatcherClient() {
               </select>
             </label>
           ) : null}
-          <button
-            id="match-delta-scan"
-            type="button"
-            className="app-button secondary"
-            disabled={busy}
-            onClick={() => mutate({ action: "scan-event" })}
-          >
+          <Button variant="secondary" id="match-delta-scan" type="button" disabled={busy} onClick={() => mutate({ action: "scan-event" })}>
             Scan for deltas
-          </button>
+          </Button>
         </div>
       </PageHeader>
 

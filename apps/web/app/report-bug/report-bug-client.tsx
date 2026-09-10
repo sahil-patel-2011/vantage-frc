@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
-import { PageHeader } from "../../components/ui";
+import { PageHeader, Button } from "../../components/ui";
 import {
   BUG_DESCRIPTION_MAX,
   BUG_SEVERITIES,
@@ -110,20 +110,12 @@ export default function ReportBugClient() {
             <a href="/support">Support</a> so we can reply to you directly.
           </p>
           <div className="report-bug-thanks-actions">
-            <button
-              type="button"
-              className="app-button secondary"
-              onClick={() => {
-                setSent(false);
-                setDescription("");
-                setSeverity(null);
-              }}
-            >
+            <Button variant="secondary" type="button" onClick={() => { setSent(false); setDescription(""); setSeverity(null); }}>
               Report another
-            </button>
-            <a className="app-button" href={details?.route ?? "/dashboard"}>
+            </Button>
+            <Button as="a" variant="primary" href={details?.route ?? "/dashboard"}>
               Back to what you were doing
-            </a>
+            </Button>
           </div>
         </section>
       </main>
@@ -210,9 +202,9 @@ export default function ReportBugClient() {
           </p>
         ) : null}
 
-        <button className="app-button report-bug-submit" type="submit" disabled={busy || !description.trim()}>
+        <Button variant="primary" className="report-bug-submit" type="submit" disabled={busy || !description.trim()}>
           {busy ? "Sending…" : "Send report"}
-        </button>
+        </Button>
       </form>
     </main>
   );

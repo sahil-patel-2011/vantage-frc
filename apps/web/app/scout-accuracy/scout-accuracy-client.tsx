@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { EmptyState, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { scoutAccuracyTierLabel } from "../../lib/scout-accuracy";
 import type { ScoutAccuracyView } from "../../lib/scout-accuracy/compute-scout-accuracy";
@@ -40,9 +40,9 @@ function ScoutAccuracyRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related scout-accuracy-related" aria-label="Related competition tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -66,9 +66,9 @@ function ScoutAccuracyNextActionsPanel({ actions }: { actions: ScoutAccuracyNext
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -149,20 +149,20 @@ function ScoutAccuracyShell({
         aria-busy={shell === "loading"}
       >
         {failure?.primary ? (
-          <a className="app-button" href={failure.primary.href}>
+          <Button as="a" variant="primary" href={failure.primary.href}>
             {failure.primary.label}
-          </a>
+          </Button>
         ) : null}
         {failure?.showRetry && onRetry ? (
-          <button type="button" className="app-button secondary" onClick={onRetry}>
+          <Button variant="secondary" type="button" onClick={onRetry}>
             Retry
-          </button>
+          </Button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button is-primary" href={orgId ? scoutingHref : "/workspace"}>{orgId ? "Open Scouting" : "Choose your team"}</a>
+          <Button as="a" variant="primary" href={orgId ? scoutingHref : "/workspace"}>{orgId ? "Open Scouting" : "Choose your team"}</Button>
         ) : null}
         {shell === "empty" ? (
-          <a className="app-button is-primary" href={scoutingHref}>Log scout entries</a>
+          <Button as="a" variant="primary" href={scoutingHref}>Log scout entries</Button>
         ) : null}
       </EmptyState>
       {steps.length > 0 ? (
@@ -178,9 +178,9 @@ function ScoutAccuracyShell({
                   <strong>{step.label}</strong>
                   <p className="app-muted scout-accuracy-tip">{step.detail}</p>
                 </div>
-                <a className="app-button secondary" href={step.href}>
+                <Button as="a" variant="secondary" href={step.href}>
                   Open
-                </a>
+                </Button>
               </li>
             ))}
           </ul>
@@ -335,14 +335,9 @@ export default function ScoutAccuracyClient({ orgId: initialOrgId }: { orgId?: s
         <div className="scout-accuracy-header-meta">
           <ScoutAccuracyRelatedStrip orgId={orgId} />
           {view.eventKey ? (
-            <button
-              type="button"
-              className="app-button secondary"
-              disabled={busy}
-              onClick={() => void mutate({ action: "record-snapshot", eventKey: view.eventKey })}
-            >
+            <Button variant="secondary" type="button" disabled={busy} onClick={() => void mutate({ action: "record-snapshot", eventKey: view.eventKey })}>
               Record snapshot
-            </button>
+            </Button>
           ) : null}
         </div>
       </PageHeader>
@@ -457,9 +452,9 @@ function Leaderboard({
         title="No scout accuracy data yet"
         description="Scouted totals will be scored once matches have cached official TBA results."
       >
-        <a className="app-button is-primary" href={hubHref("/competition", "scouting", view.orgId)}>
+        <Button as="a" variant="primary" href={hubHref("/competition", "scouting", view.orgId)}>
           Open Scouting
-        </a>
+        </Button>
       </EmptyState>
     );
   }
@@ -528,21 +523,9 @@ function LeaderboardRow({
         </small>
       </div>
       {eventKey ? (
-        <button
-          type="button"
-          className="app-button secondary"
-          disabled={busy}
-          onClick={() =>
-            void mutate({
-              action: "set-promotion",
-              eventKey,
-              scoutUserId: stat.scoutUserId,
-              promoted: !stat.promoted,
-            })
-          }
-        >
+        <Button variant="secondary" type="button" disabled={busy} onClick={() => void mutate({ action: "set-promotion", eventKey, scoutUserId: stat.scoutUserId, promoted: !stat.promoted, }) }>
           {stat.promoted ? "Remove from rotation" : "Promote to rotation"}
-        </button>
+        </Button>
       ) : null}
     </li>
   );

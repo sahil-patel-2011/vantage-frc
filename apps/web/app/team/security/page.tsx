@@ -1,4 +1,4 @@
-import { EmptyState, PageHeader } from "../../../components/ui";
+import { EmptyState, PageHeader, Button } from "../../../components/ui";
 import CapabilitiesClient from "./capabilities-client";
 import HubAccessClient from "./hub-access-client";
 import AuthPolicyClient from "./policy-client";
@@ -28,9 +28,9 @@ export default async function TeamSecurityPage({
           title="Choose a team"
           description="These controls change who can do what inside one team, so they need a team before they mean anything."
         >
-          <a className="app-button" href="/workspace">
+          <Button as="a" variant="primary" href="/workspace">
             Choose team
-          </a>
+          </Button>
         </EmptyState>
       </main>
     );

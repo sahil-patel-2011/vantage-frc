@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { EmptyState, PageHeader, Panel } from "../../../components/ui";
+import { EmptyState, PageHeader, Panel, Button } from "../../../components/ui";
 import type { TeamDossierView } from "../../../lib/team-dossier/store";
 import "./team-profile.css";
 
@@ -103,13 +103,13 @@ export default function TeamProfileClient() {
           }
         >
           {view.canBuild && view.orgId && view.status === "none" ? (
-            <button type="button" className="app-button" disabled={building} onClick={() => void build(view.orgId!)}>
+            <Button variant="primary" type="button" disabled={building} onClick={() => void build(view.orgId!)}>
               {building ? "Building…" : "Build it now"}
-            </button>
+            </Button>
           ) : view.status !== "none" ? (
-            <button type="button" className="app-button secondary" onClick={() => void load()}>
+            <Button variant="secondary" type="button" onClick={() => void load()}>
               Refresh
-            </button>
+            </Button>
           ) : (
             <p className="app-muted">An owner or admin needs to open this page once to build it.</p>
           )}
@@ -285,9 +285,9 @@ export default function TeamProfileClient() {
           {view.computedAt ? ` · built ${view.computedAt.slice(0, 10)}` : ""} · refreshes weekly
         </span>
         {view.canBuild && view.orgId ? (
-          <button type="button" className="app-button secondary" disabled={building} onClick={() => void build(view.orgId!)}>
+          <Button variant="secondary" type="button" disabled={building} onClick={() => void build(view.orgId!)}>
             {building ? "Rebuilding…" : "Rebuild now"}
-          </button>
+          </Button>
         ) : null}
       </footer>
     </main>

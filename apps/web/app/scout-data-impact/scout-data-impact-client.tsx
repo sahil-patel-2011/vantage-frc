@@ -7,8 +7,7 @@ import {
   FormRow,
   PageHeader,
   Panel,
-  StatTile,
-} from "../../components/ui";
+  StatTile, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import type { ScoutDataImpactView } from "../../lib/scout-data-impact/compute-scout-data-impact";
 import {
@@ -38,9 +37,9 @@ function ScoutDataImpactRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related scout-data-impact-related" aria-label="Related competition tools">
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
@@ -64,9 +63,9 @@ function ScoutDataImpactNextActionsPanel({ actions }: { actions: ScoutDataImpact
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
+            <Button as="a" variant="secondary" href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -149,20 +148,20 @@ function ScoutDataImpactShell({
         aria-busy={shell === "loading"}
       >
         {failure?.primary ? (
-          <a className="app-button" href={failure.primary.href}>
+          <Button as="a" variant="primary" href={failure.primary.href}>
             {failure.primary.label}
-          </a>
+          </Button>
         ) : null}
         {failure?.showRetry && onRetry ? (
-          <button type="button" className="app-button secondary" onClick={onRetry}>
+          <Button variant="secondary" type="button" onClick={onRetry}>
             Retry
-          </button>
+          </Button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button is-primary" href={orgId ? strategyHref : "/workspace"}>{orgId ? "Open Strategy" : "Choose your team"}</a>
+          <Button as="a" variant="primary" href={orgId ? strategyHref : "/workspace"}>{orgId ? "Open Strategy" : "Choose your team"}</Button>
         ) : null}
         {shell === "empty" ? (
-          <a className="app-button is-primary" href="#log-alliance-pick">Log an alliance pick</a>
+          <Button as="a" variant="primary" href="#log-alliance-pick">Log an alliance pick</Button>
         ) : null}
       </EmptyState>
       {shell === "empty" || shell === "setup" ? logPick : null}
@@ -179,9 +178,9 @@ function ScoutDataImpactShell({
                   <strong>{step.label}</strong>
                   <p className="app-muted scout-data-impact-tip">{step.detail}</p>
                 </div>
-                <a className="app-button secondary" href={step.href}>
+                <Button as="a" variant="secondary" href={step.href}>
                   Open
-                </a>
+                </Button>
               </li>
             ))}
           </ul>
@@ -494,22 +493,9 @@ function PicksList({
                     {item.pick.notes ? ` · ${item.pick.notes}` : ""}
                   </small>
                 </div>
-                <button
-                  type="button"
-                  className="app-button secondary"
-                  disabled={busy}
-                  onClick={() => {
-                    if (
-                      window.confirm(
-                        `Remove pick for Team ${item.pick.teamNumber ?? item.pick.teamKey}?`,
-                      )
-                    ) {
-                      void mutate({ action: "delete-pick", pickId: item.pick.id });
-                    }
-                  }}
-                >
+                <Button variant="secondary" type="button" disabled={busy} onClick={() => { if ( window.confirm( `Remove pick for Team ${item.pick.teamNumber ?? item.pick.teamKey}?`, ) ) { void mutate({ action: "delete-pick", pickId: item.pick.id }); } }}>
                   Delete
-                </button>
+                </Button>
               </div>
               {item.contributions.length > 0 ? (
                 <ul className="scout-data-impact-contrib">
@@ -598,13 +584,9 @@ function LogPickForm({
         <textarea value={form.notes} onChange={set("notes")} rows={2} />
       </FormRow>
       <div>
-        <button
-          type="submit"
-          className="app-button"
-          disabled={busy || !form.eventKey.trim() || !form.teamKey.trim()}
-        >
+        <Button variant="primary" type="submit" disabled={busy || !form.eventKey.trim() || !form.teamKey.trim()}>
           Log pick
-        </button>
+        </Button>
       </div>
     </Panel>
   );

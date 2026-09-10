@@ -10,7 +10,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { EmptyState } from "../../components/ui";
+import { EmptyState, Button } from "../../components/ui";
 import { DM_MODES, type DmMode } from "../../lib/messages/youth-protection";
 
 type ModeCopy = { label: string; detail: string };
@@ -194,9 +194,9 @@ export default function ChatSafetyPanel({ orgId }: { orgId: string }) {
           badge="Setup"
           badgeTone="setup"
         >
-          <button type="button" className="app-button secondary" onClick={() => void load()}>
+          <Button variant="secondary" type="button" onClick={() => void load()}>
             Retry
-          </button>
+          </Button>
         </EmptyState>
       </div>
     );
@@ -281,14 +281,9 @@ export default function ChatSafetyPanel({ orgId }: { orgId: string }) {
 
       {policy.canManage ? (
         <div className="chat-export-actions">
-          <button
-            type="button"
-            className="app-button"
-            onClick={() => void saveMode()}
-            disabled={saving || selected === policy.dmMode}
-          >
+          <Button variant="primary" type="button" onClick={() => void saveMode()} disabled={saving || selected === policy.dmMode}>
             {saving ? "Saving…" : "Save policy"}
-          </button>
+          </Button>
           {status ? (
             <p className="chat-safety-note" role="status">
               {status}
@@ -344,14 +339,9 @@ export default function ChatSafetyPanel({ orgId }: { orgId: string }) {
             </select>
           </label>
           <div className="chat-export-actions">
-            <button
-              type="button"
-              className="app-button secondary"
-              onClick={() => void runExport()}
-              disabled={exporting}
-            >
+            <Button variant="secondary" type="button" onClick={() => void runExport()} disabled={exporting}>
               {exporting ? "Exporting…" : "Export message history"}
-            </button>
+            </Button>
           </div>
           {exportStatus ? (
             <p className="chat-safety-note" role="status">

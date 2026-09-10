@@ -9,7 +9,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState, type DragEvent } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, ProgressMeter } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, ProgressMeter, Button } from "../../components/ui";
 import { titleFromFilename } from "../../lib/cad-vault/filenames";
 import { detectCadFormat, type CadFormat } from "../../lib/cad-vault/format-detect";
 import { parseStl } from "../../lib/cad-vault/stl-geometry";
@@ -146,24 +146,9 @@ function StoredVersionPreview({ version }: { version: CadVersionSummary }) {
 
   if (state === "idle" || state === "loading") {
     return (
-      <button
-        type="button"
-        className="app-button secondary"
-        disabled={state === "loading"}
-        onClick={() => {
-          setState("loading");
-          void fetch(`/api/cad-vault/file/${version.publicId}`)
-            .then(async (response) => {
-              if (!response.ok) throw new Error("download failed");
-              const buffer = await response.arrayBuffer();
-              setBytes(new Uint8Array(buffer));
-              setState("shown");
-            })
-            .catch(() => setState("failed"));
-        }}
-      >
+      <Button variant="secondary" type="button" disabled={state === "loading"} onClick={() => { setState("loading"); void fetch(`/api/cad-vault/file/${version.publicId}`) .then(async (response) => { if (!response.ok) throw new Error("download failed"); const buffer = await response.arrayBuffer(); setBytes(new Uint8Array(buffer)); setState("shown"); }) .catch(() => setState("failed")); }}>
         {state === "loading" ? "Loading model…" : "Preview 3D"}
-      </button>
+      </Button>
     );
   }
   if (state === "failed") return <p className="app-muted">Could not load the model for preview.</p>;
@@ -414,9 +399,9 @@ export default function CadVaultClient() {
       <main className="module-page cad-vault-page">
         <PageHeader breadcrumbs={<><a href="/build">Build</a>{" / CAD Vault"}</>} title="CAD Vault" description={description} />
         <EmptyState soft badge="Unavailable" badgeTone="setup" title="Could not load the CAD vault" description="Check your connection and try again.">
-          <button type="button" className="app-button secondary" onClick={() => load(seasonYear)}>
+          <Button variant="secondary" type="button" onClick={() => load(seasonYear)}>
             Retry
-          </button>
+          </Button>
         </EmptyState>
       </main>
     );
@@ -428,9 +413,9 @@ export default function CadVaultClient() {
         <PageHeader breadcrumbs={<><a href="/build">Build</a>{" / CAD Vault"}</>} title="CAD Vault" description={description} />
         <EmptyState soft badge="Setup required" badgeTone="setup" title="Pick a team first" description={view.message}>
           {view.steps.map((step) => (
-            <a key={step.id} className="app-button" href={step.href}>
+            <Button as="a" variant="primary" key={step.id} href={step.href}>
               {step.label}
-            </a>
+            </Button>
           ))}
         </EmptyState>
       </main>
@@ -529,14 +514,14 @@ export default function CadVaultClient() {
                 {pending.format === "stl" && pending.file.size <= MAX_INLINE_PREVIEW_BYTES ? (
                   <StlCanvas data={pending.bytes} label={`Preview of ${pending.file.name}`} />
                 ) : null}
-                <button type="button" className="app-button secondary" onClick={resetUploadPanel} disabled={busy}>
+                <Button variant="secondary" type="button" onClick={resetUploadPanel} disabled={busy}>
                   Choose a different file
-                </button>
+                </Button>
               </>
             ) : (
               <>
                 <span className="app-muted">Drag a CAD file here, or</span>
-                <label className="app-button secondary" style={{ cursor: "pointer" }}>
+                <Button as="label" variant="secondary" style={{ cursor: "pointer" }}>
                   Browse files
                   <input
                     ref={fileInputRef}
@@ -545,7 +530,7 @@ export default function CadVaultClient() {
                     style={{ position: "absolute", width: 1, height: 1, opacity: 0, overflow: "hidden" }}
                     onChange={(event) => acceptFile(event.target.files?.[0])}
                   />
-                </label>
+                </Button>
                 <span className="app-muted">
                   <small>STL · STEP · IGES · 3MF · OBJ · DXF · PDF · SolidWorks · Inventor · Fusion · ZIP — up to 50 MB. The bytes are verified, not the extension.</small>
                 </span>
@@ -621,14 +606,9 @@ export default function CadVaultClient() {
                 <ProgressMeter value={uploadPct} label="Uploading" status={uploadPct >= 100 ? "Processing on the server…" : undefined} />
               ) : null}
               <div>
-                <button
-                  type="button"
-                  className="app-button"
-                  disabled={busy || (targetDocumentId === "" && !uploadTitle.trim())}
-                  onClick={() => void submitUpload()}
-                >
+                <Button variant="primary" type="button" disabled={busy || (targetDocumentId === "" && !uploadTitle.trim())} onClick={() => void submitUpload()}>
                   {targetDocumentId === "" ? "Create document & upload v1" : "Upload new version"}
-                </button>
+                </Button>
               </div>
             </>
           ) : null}
@@ -731,13 +711,13 @@ function DocumentCard({
         </div>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           {latest ? (
-            <a className="app-button secondary" href={`/api/cad-vault/file/${latest.publicId}`}>
+            <Button as="a" variant="secondary" href={`/api/cad-vault/file/${latest.publicId}`}>
               Download v{latest.version}
-            </a>
+            </Button>
           ) : null}
-          <button type="button" className="app-button secondary" disabled={busy} onClick={() => onUploadVersion(doc.id)}>
+          <Button variant="secondary" type="button" disabled={busy} onClick={() => onUploadVersion(doc.id)}>
             New version
-          </button>
+          </Button>
         </div>
       </header>
 
@@ -822,13 +802,13 @@ function DocumentCard({
                 ) : null}
               </div>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                <a className="app-button secondary" href={`/api/cad-vault/file/${version.publicId}`}>
+                <Button as="a" variant="secondary" href={`/api/cad-vault/file/${version.publicId}`}>
                   Download
-                </a>
+                </Button>
                 {version.version !== doc.currentVersion ? (
-                  <button type="button" className="app-button secondary" disabled={busy} onClick={() => onRestore(doc.id, version.version)}>
+                  <Button variant="secondary" type="button" disabled={busy} onClick={() => onRestore(doc.id, version.version)}>
                     Restore as new version
-                  </button>
+                  </Button>
                 ) : null}
               </div>
             </li>

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AiInsightPanel } from "../../components/ai-insight-panel";
-import { EmptyState } from "../../components/ui";
+import { EmptyState, Button } from "../../components/ui";
 import {
   groupByCategory,
   inspectionProgress,
@@ -84,9 +84,9 @@ function ItemRow({
           }}
         >
           <input value={note} disabled={busy} placeholder="e.g. Need to re-torque main breaker mount" onChange={(e) => setNote(e.target.value)} />
-          <button type="submit" className="app-button secondary sm" disabled={busy}>
+          <Button variant="secondary" size="sm" type="submit" disabled={busy}>
             Save note
-          </button>
+          </Button>
         </form>
       ) : null}
     </li>
@@ -199,14 +199,14 @@ export default function InspectionClient() {
                   <strong>{copy.title}</strong>
                   <p className="app-muted">{copy.description}</p>
                   {copy.primary ? (
-                    <a className="app-button" href={copy.primary.href}>
+                    <Button as="a" variant="primary" href={copy.primary.href}>
                       {copy.primary.label}
-                    </a>
+                    </Button>
                   ) : null}
                   {copy.showRetry ? (
-                    <button type="button" className="app-button secondary" onClick={() => void load()}>
+                    <Button variant="secondary" type="button" onClick={() => void load()}>
                       Retry
-                    </button>
+                    </Button>
                   ) : null}
                 </>
               );
@@ -230,9 +230,9 @@ export default function InspectionClient() {
           </div>
         </header>
         <EmptyState className="insp-empty" title="Select a team" description={view.message}>
-          <a className="app-button" href="/workspace">
+          <Button as="a" variant="primary" href="/workspace">
             Choose your team
-          </a>
+          </Button>
         </EmptyState>
       </main>
     );
@@ -271,12 +271,12 @@ export default function InspectionClient() {
               weigh it, then work the copilot's flags. It used to end here with
               no way forward. */}
           <nav className="product-hub-related" aria-label="Related inspection tools">
-            <a className="app-button secondary" href={withOrgHref("/robot-weigh-in", orgId || null)}>
+            <Button as="a" variant="secondary" href={withOrgHref("/robot-weigh-in", orgId || null)}>
               Weigh-in
-            </a>
-            <a className="app-button secondary" href={withOrgHref("/inspection-copilot", orgId || null)}>
+            </Button>
+            <Button as="a" variant="secondary" href={withOrgHref("/inspection-copilot", orgId || null)}>
               Inspection copilot
-            </a>
+            </Button>
           </nav>
         </div>
       </header>
@@ -314,14 +314,9 @@ export default function InspectionClient() {
               title={`No checklist yet for “${robotLabel}”`}
               description="Load the standard FRC self-inspection checklist, then add game-specific items."
             >
-              <button
-                type="button"
-                className="app-button"
-                disabled={busy}
-                onClick={() => void run({ action: "seed_checklist", orgId, robotLabel }, "seed")}
-              >
+              <Button variant="primary" type="button" disabled={busy} onClick={() => void run({ action: "seed_checklist", orgId, robotLabel }, "seed")}>
                 Load standard checklist
-              </button>
+              </Button>
             </EmptyState>
           ) : (
             <>
@@ -366,9 +361,9 @@ export default function InspectionClient() {
                     placeholder="Requirement (e.g. Extension within this year's limit)"
                     onChange={(e) => setCustomReq(e.target.value)}
                   />
-                  <button type="submit" className="app-button secondary" disabled={busy || !customReq.trim()}>
+                  <Button variant="secondary" type="submit" disabled={busy || !customReq.trim()}>
                     Add
-                  </button>
+                  </Button>
                 </div>
                 <div className="insp-tools">
                   <button type="button" className="insp-link" disabled={busy} onClick={() => void run({ action: "seed_checklist", orgId, robotLabel }, "seed")}>
@@ -417,9 +412,9 @@ export default function InspectionClient() {
                 onChange={(e) => setWeightInput(e.target.value)}
               />
               <input value={weightConfig} disabled={busy} placeholder="Configuration" onChange={(e) => setWeightConfig(e.target.value)} />
-              <button type="submit" className="app-button" disabled={busy || !weightInput}>
+              <Button variant="primary" type="submit" disabled={busy || !weightInput}>
                 Log weight
-              </button>
+              </Button>
             </form>
             {canAdmin ? (
               <form
@@ -440,9 +435,9 @@ export default function InspectionClient() {
                   disabled={busy}
                   onChange={(e) => setLimitInput(e.target.value)}
                 />
-                <button type="submit" className="app-button secondary sm" disabled={busy || !limitInput}>
+                <Button variant="secondary" size="sm" type="submit" disabled={busy || !limitInput}>
                   Set season limit
-                </button>
+                </Button>
               </form>
             ) : null}
             <ul className="insp-weights">
