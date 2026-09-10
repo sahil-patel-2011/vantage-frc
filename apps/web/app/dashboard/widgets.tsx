@@ -1,37 +1,36 @@
 "use client";
 
 import { memo } from "react";
+import dynamic from "next/dynamic";
 import type { WidgetPayload } from "../../lib/dashboard/snapshot";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { AskAiWidget } from "./widgets/ask-ai";
 import { NextMatchLive } from "./widgets/next-match";
-import { renderOpsWidget } from "./widgets/ops-cards";
 import { emptyHintFor, WidgetShell as Shell } from "./widgets/widget-shell";
 import {
-  AllianceDeskLive,
-  AnnouncementsLive,
-  AssemblyManualLive,
-  AttendanceLive,
-  BatteriesLive,
-  BudgetPartsLive,
-  CadResourcesLive,
-  CalendarTodayLive,
-  CodingResourcesLive,
-  DutiesLive,
-  EventCountdownLive,
-  EventReadinessLive,
   FilesRecentLive,
-  HoursLive,
   LearnProgressLive,
-  MatchScheduleLive,
   MyDayLive,
-  SponsorFollowupsLive,
   TeamChatLive,
-  TeamProfileLive,
-  WeatherVenueLive,
 } from "./widgets/home-cards";
 
 export { LiveCountdown, countdownLabel, useCountdownTick } from "./widgets/live-countdown";
+
+const ExtraWidgetView = dynamic(
+  () => import("./widgets/extra-widget-view").then((mod) => mod.ExtraWidgetView),
+  { ssr: false },
+);
+
+const STUDENT_WIDGET_TYPES = new Set([
+  "next_match",
+  "ask_ai",
+  "my_day",
+  "learn_progress",
+  "files_recent",
+  "team_chat",
+  "team_todos",
+  "onboarding_checklist",
+]);
 
 export const DashboardWidgetView = memo(function DashboardWidgetView({
   type,
@@ -47,8 +46,10 @@ export const DashboardWidgetView = memo(function DashboardWidgetView({
   const data = payload?.data ?? {};
   const withOrg = (href: string) => withOrgHref(href, orgId || null);
   const hint = emptyHintFor(type);
-  const ops = renderOpsWidget({ type, payload, orgId, tbaConfigured });
-  if (ops) return ops;
+
+  if (!STUDENT_WIDGET_TYPES.has(type)) {
+    return <ExtraWidgetView type={type} payload={payload} orgId={orgId} tbaConfigured={tbaConfigured} />;
+  }
 
   switch (type) {
     case "next_match": {
@@ -100,115 +101,86 @@ export const DashboardWidgetView = memo(function DashboardWidgetView({
           {payload?.status === "live" ? <TeamChatLive data={data} /> : null}
         </Shell>
       );
-    case "duties":
+    case "team_todos": {
+      const items =
+        (data.items as Array<{
+          id: string;
+          title: string;
+          status: string;
+          dueOn: string | null;
+          assigneeName: string | null;
+        }> | undefined) ?? [];
       return (
-        <Shell type={type} title="Duties" payload={payload} href={withOrg("/duties")} emptyHint={hint} orgId={orgId}>
-          {payload?.status === "live" ? <DutiesLive data={data} /> : null}
+        <Shell type={type} title="Team todos" payload={payload} href={withOrg("/todos")} emptyHint={hint} orgId={orgId} preferChildren>
+          {payload?.status === "live" ? (
+            <div className="dash-metric-grid" style={{ marginBottom: items.length ? 10 : 0 }}>
+              <div>
+                <strong>{String(data.open ?? 0)}</strong>
+                <span>open</span>
+              </div>
+              <div>
+                <strong>{String(data.mineOpen ?? 0)}</strong>
+                <span>mine</span>
+              </div>
+              <div>
+                <strong>{String(data.overdue ?? 0)}</strong>
+                <span>overdue</span>
+              </div>
+            </div>
+          ) : null}
+          {payload?.status === "live" && items.length > 0 ? (
+            <ul className="dash-checklist">
+              {items.map((item) => (
+                <li key={item.id}>
+                  <a href={withOrg(`/todos?todoId=${encodeURIComponent(item.id)}`)}>
+                    <span>{item.title}</span>
+                    <small className="dash-notif-preview">
+                      {item.status}
+                      {item.assigneeName ? ` · ${item.assigneeName}` : ""}
+                      {item.dueOn ? ` · ${item.dueOn}` : ""}
+                    </small>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          ) : null}
         </Shell>
       );
-    case "budget_parts":
+    }
+    case "onboarding_checklist": {
+      const steps =
+        (data.steps as Array<{
+          key: string;
+          label: string;
+          detail: string;
+          done: boolean;
+          href: string;
+        }> | undefined) ?? [];
       return (
-        <Shell type={type} title="Budget & parts" payload={payload} href={withOrg("/business?tab=finance")} emptyHint={hint} orgId={orgId}>
-          {payload?.status === "live" ? <BudgetPartsLive data={data} /> : null}
+        <Shell
+          type={type}
+          title="Setup checklist"
+          payload={payload}
+          emptyHint={emptyHintFor("onboarding_checklist")}
+          orgId={orgId}
+          preferChildren
+        >
+          <ol className="dash-setup-steps compact">
+            {steps.map((step, index) => (
+              <li key={step.key} className={step.done ? "done" : index === steps.findIndex((item) => !item.done) ? "current" : undefined}>
+                <b>{index + 1}</b>
+                <div>
+                  <strong>{step.label}</strong>
+                  <span>{step.detail}</span>
+                </div>
+                {!step.done ? <a href={withOrg(step.href)}>Open</a> : <em>Done</em>}
+              </li>
+            ))}
+          </ol>
         </Shell>
       );
-    case "attendance":
-      return (
-        <Shell type={type} title="Attendance tonight" payload={payload} href={withOrg("/team?tab=attendance")} emptyHint={hint} orgId={orgId}>
-          {payload?.status === "live" ? <AttendanceLive data={data} /> : null}
-        </Shell>
-      );
-    case "outreach_hours":
-      return (
-        <Shell type={type} title="Outreach hours" payload={payload} href={withOrg("/business?tab=evidence")} emptyHint={hint} orgId={orgId}>
-          {payload?.status === "live" ? <HoursLive data={data} label="this month" /> : null}
-        </Shell>
-      );
-    case "announcements_ack":
-      return (
-        <Shell type={type} title="Announcements" payload={payload} href={withOrg("/announcements")} emptyHint={hint} orgId={orgId}>
-          {payload?.status === "live" ? <AnnouncementsLive data={data} /> : null}
-        </Shell>
-      );
-    case "event_countdown":
-      return (
-        <Shell type={type} title="Next event" payload={payload} href={withOrg("/command")} emptyHint={hint} orgId={orgId}>
-          {payload?.status === "live" ? <EventCountdownLive data={data} /> : null}
-        </Shell>
-      );
-    case "hours_month":
-      return (
-        <Shell type={type} title="Hours this month" payload={payload} href={withOrg("/hours")} emptyHint={hint} orgId={orgId}>
-          {payload?.status === "live" ? <HoursLive data={data} label="your hours" /> : null}
-        </Shell>
-      );
-    case "calendar_today":
-      return (
-        <Shell type={type} title="Today" payload={payload} href={withOrg("/team/calendar")} emptyHint={hint} orgId={orgId}>
-          {payload?.status === "live" ? <CalendarTodayLive data={data} /> : null}
-        </Shell>
-      );
-    case "cad_resources":
-      return (
-        <Shell type={type} title="CAD resources" payload={payload} href={withOrg("/cad")} emptyHint={hint} orgId={orgId}>
-          {payload?.status === "live" ? <CadResourcesLive data={data} /> : null}
-        </Shell>
-      );
-    case "coding_resources":
-      return (
-        <Shell type={type} title="Coding resources" payload={payload} href={withOrg("/code")} emptyHint={hint} orgId={orgId}>
-          {payload?.status === "live" ? <CodingResourcesLive data={data} /> : null}
-        </Shell>
-      );
-    case "team_profile":
-      return (
-        <Shell type={type} title="Team profile" payload={payload} href={withOrg("/team/profile")} emptyHint={hint} orgId={orgId}>
-          {payload?.status === "live" ? <TeamProfileLive data={data} /> : null}
-        </Shell>
-      );
-    case "alliance_desk":
-      return (
-        <Shell type={type} title="Alliance desk" payload={payload} href={withOrg("/alliance-selection-desk")} emptyHint={hint} orgId={orgId}>
-          {payload?.status === "live" ? <AllianceDeskLive data={data} /> : null}
-        </Shell>
-      );
-    case "match_schedule":
-      return (
-        <Shell type={type} title="Match schedule" payload={payload} href={withOrg("/schedule")} emptyHint={hint} orgId={orgId}>
-          {payload?.status === "live" ? <MatchScheduleLive data={data} /> : null}
-        </Shell>
-      );
-    case "batteries":
-      return (
-        <Shell type={type} title="Batteries" payload={payload} href={withOrg("/batteries")} emptyHint={hint} orgId={orgId}>
-          {payload?.status === "live" ? <BatteriesLive data={data} /> : null}
-        </Shell>
-      );
-    case "assembly_manual":
-      return (
-        <Shell type={type} title="Assembly manual" payload={payload} href={withOrg("/assembly-manual")} emptyHint={hint} orgId={orgId}>
-          {payload?.status === "live" ? <AssemblyManualLive data={data} /> : null}
-        </Shell>
-      );
-    case "sponsor_followups":
-      return (
-        <Shell type={type} title="Sponsor follow-ups" payload={payload} href={withOrg("/business?tab=sponsors")} emptyHint={hint} orgId={orgId}>
-          {payload?.status === "live" ? <SponsorFollowupsLive data={data} /> : null}
-        </Shell>
-      );
-    case "event_readiness":
-      return (
-        <Shell type={type} title="Event readiness" payload={payload} href={withOrg("/packing")} emptyHint={hint} orgId={orgId}>
-          {payload?.status === "live" ? <EventReadinessLive data={data} /> : null}
-        </Shell>
-      );
-    case "weather_venue":
-      return (
-        <Shell type={type} title="Venue weather" payload={payload} href={withOrg("/command")} emptyHint={hint} orgId={orgId}>
-          {payload?.status === "live" ? <WeatherVenueLive data={data} /> : null}
-        </Shell>
-      );
+    }
     default:
-      return <Shell type={type} title={hint.title} payload={payload} emptyHint={hint} orgId={orgId} />;
+      return <ExtraWidgetView type={type} payload={payload} orgId={orgId} tbaConfigured={tbaConfigured} />;
   }
 });

@@ -117,7 +117,7 @@ export async function computeMatchStrategyCardsView(
     },
     {
       id: "event",
-      label: "Select event",
+      label: "Set active event",
       detail: "Set the active competition context",
       href: "/workspace",
       done: Boolean(context?.eventKey),

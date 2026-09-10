@@ -441,7 +441,7 @@ export async function computeStrategyView(
     },
     {
       id: "event",
-      label: "Select event / location",
+            label: "Set active event",
       detail: "Set the active competition context",
       href: "/workspace",
       done: Boolean(row?.eventKey),

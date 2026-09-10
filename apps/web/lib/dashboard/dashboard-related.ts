@@ -192,7 +192,7 @@ export function dashboardSetupSteps(input: {
     },
     {
       id: "event",
-      label: "Select event",
+      label: "Set active event",
       detail: "Set the active competition",
       href: hubHref("/competition", "command", orgId),
       state: !hasOrg ? "pending" : eventDone ? "done" : "current",

@@ -203,7 +203,7 @@ export default async function WorkspacePage({ searchParams }: { searchParams: Pr
         </div>
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
           {!data.context.eventKey && isOwnerAdmin ? (
-            <a href={`/command?orgId=${encodeURIComponent(orgId)}`}>Select event</a>
+            <a href={`/command?orgId=${encodeURIComponent(orgId)}`}>Set active event</a>
           ) : null}
           {isOwnerAdmin ? (
             <>

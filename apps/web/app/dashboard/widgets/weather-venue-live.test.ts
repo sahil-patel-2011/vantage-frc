@@ -1,7 +1,7 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { WeatherVenueLive } from "./home-cards";
+import { WeatherVenueLive } from "./extra-cards";
 
 describe("WeatherVenueLive markup", () => {
   it("shows the off-day copy and never a temperature when today is not event day", () => {

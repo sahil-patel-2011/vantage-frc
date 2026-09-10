@@ -7,7 +7,7 @@ import type {
   PointerEvent as ReactPointerEvent,
   Ref,
 } from "react";
-import PartnerPlacement from "../../components/partner-placement";
+import dynamic from "next/dynamic";
 import { prefersTapToPlace } from "../../lib/dashboard/tap-to-place";
 import {
   catalogEntry,
@@ -43,14 +43,34 @@ import type {
   SnapFeedback,
 } from "./dashboard-board-types";
 import { DashboardBoardBar } from "./dashboard-board-bar";
-import { DashboardBoardsModal } from "./dashboard-boards-modal";
-import { DashboardEditDock, DashboardPreviewDock } from "./dashboard-edit-dock";
 import { DashboardSetupBanner } from "./dashboard-setup-banner";
-import { DashboardWidgetLibrary } from "./dashboard-widget-library";
-import { DashboardWidgetPalette } from "./dashboard-widget-palette";
 import { CopyShareLink } from "../../components/copy-share-link";
 import { VenueShortcutCheatsheet, type VenueShortcut } from "../../hooks/use-venue-shortcuts";
 import { homeHeaderDetail } from "./dashboard-home-model";
+
+const DashboardBoardsModal = dynamic(
+  () => import("./dashboard-boards-modal").then((mod) => mod.DashboardBoardsModal),
+  { ssr: false },
+);
+const DashboardEditDock = dynamic(
+  () => import("./dashboard-edit-dock").then((mod) => mod.DashboardEditDock),
+  { ssr: false },
+);
+const DashboardPreviewDock = dynamic(
+  () => import("./dashboard-edit-dock").then((mod) => mod.DashboardPreviewDock),
+  { ssr: false },
+);
+const DashboardWidgetLibrary = dynamic(
+  () => import("./dashboard-widget-library").then((mod) => mod.DashboardWidgetLibrary),
+  { ssr: false },
+);
+const DashboardWidgetPalette = dynamic(
+  () => import("./dashboard-widget-palette").then((mod) => mod.DashboardWidgetPalette),
+  { ssr: false },
+);
+const PartnerPlacement = dynamic(() => import("../../components/partner-placement"), {
+  ssr: false,
+});
 
 type GridSpec = {
   label: string;
@@ -301,7 +321,7 @@ export function DashboardHomeView(props: {
                   : hubHref("/competition", "command", orgId)
               }
             >
-              {tbaConfigured === false ? "Connect TBA" : "Select event"}
+              {tbaConfigured === false ? "Connect TBA" : "Set active event"}
             </Button>
           ) : null}
           {!editing && !previewing ? (
@@ -706,49 +726,53 @@ export function DashboardHomeView(props: {
 
       {!editing && !previewing && orgId ? <PartnerPlacement orgId={orgId} surface="dashboard_footer" title="Partners powering this season" /> : null}
 
-      <DashboardWidgetLibrary
-        open={editing && libraryOpen}
-        onClose={() => setLibraryOpen(false)}
-        addableEntries={addableEntries}
-        paletteEntries={paletteEntries}
-        onPick={(entry) => {
-          requestPlaceWidget(
-            entry,
-            prefersTapToPlace({
-              coarse: window.matchMedia("(pointer: coarse)").matches,
-            }),
-            true,
-          );
-        }}
-      />
+      {editing && libraryOpen ? (
+        <DashboardWidgetLibrary
+          open
+          onClose={() => setLibraryOpen(false)}
+          addableEntries={addableEntries}
+          paletteEntries={paletteEntries}
+          onPick={(entry) => {
+            requestPlaceWidget(
+              entry,
+              prefersTapToPlace({
+                coarse: window.matchMedia("(pointer: coarse)").matches,
+              }),
+              true,
+            );
+          }}
+        />
+      ) : null}
 
-      <DashboardBoardsModal
-        open={boardsOpen}
-        onClose={() => {
-          setBoardsOpen(false);
-          setRenameId(null);
-        }}
-        board={board}
-        personalBoards={personalBoards}
-        orgBoards={orgBoards}
-        saving={saving}
-        editing={editing}
-        canShareOrg={canShareOrg}
-        renameId={renameId}
-        renameDraft={renameDraft}
-        onRenameDraft={setRenameDraft}
-        onSwitch={(id) => void switchBoard(id)}
-        onRename={(id, name) => void renameBoard(id, name)}
-        onDuplicate={(id) => void duplicateBoard(id)}
-        onDelete={(id) => void deleteBoard(id)}
-        onStartRename={(id, name) => {
-          setRenameId(id);
-          setRenameDraft(name);
-        }}
-        onCancelRename={() => setRenameId(null)}
-        onCreatePersonal={() => void createBoard("personal")}
-        onCreateOrg={() => void createBoard("org")}
-      />
+      {boardsOpen ? (
+        <DashboardBoardsModal
+          open
+          onClose={() => {
+            setBoardsOpen(false);
+            setRenameId(null);
+          }}
+          board={board}
+          personalBoards={personalBoards}
+          orgBoards={orgBoards}
+          saving={saving}
+          editing={editing}
+          canShareOrg={canShareOrg}
+          renameId={renameId}
+          renameDraft={renameDraft}
+          onRenameDraft={setRenameDraft}
+          onSwitch={(id) => void switchBoard(id)}
+          onRename={(id, name) => void renameBoard(id, name)}
+          onDuplicate={(id) => void duplicateBoard(id)}
+          onDelete={(id) => void deleteBoard(id)}
+          onStartRename={(id, name) => {
+            setRenameId(id);
+            setRenameDraft(name);
+          }}
+          onCancelRename={() => setRenameId(null)}
+          onCreatePersonal={() => void createBoard("personal")}
+          onCreateOrg={() => void createBoard("org")}
+        />
+      ) : null}
     </main>
   );
 }

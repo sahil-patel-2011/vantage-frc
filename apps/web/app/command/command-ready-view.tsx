@@ -292,7 +292,7 @@ export function CommandReadyView({
               <p>
                 {snap?.eventKey
                   ? "Upcoming alliance partners and opponents already have coverage, or no matches are queued."
-                  : "Select an event to build the scout queue from schedule gaps."}
+                  : "Set your active event to build the scout queue from schedule gaps."}
               </p>
               <a className="dash-empty-cta" href={scoutingHref}>
                 Open Scouting

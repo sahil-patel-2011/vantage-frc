@@ -193,7 +193,7 @@ export function CommandReadyHeader({
       <CopyShareLink orgId={orgId} />
       {canSetEvent ? (
         <Button variant="secondary" type="button" onClick={onSelectEvent}>
-          {eventKey ? "Change event" : "Select event"}
+          {eventKey ? "Change event" : "Set active event"}
         </Button>
       ) : null}
       <Button variant="secondary" type="button" onClick={onRefresh} disabled={!orgId}>

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { expectPlainCopy } from "../ui/copy-assertions";
 import { scoutMediaUnlinkedMessage } from "./prepare-scout-media";
 import {
   buildAttachMediaWire,
@@ -54,6 +55,7 @@ describe("buildAttachMediaWire", () => {
       byteSize: 128,
     });
     expect(noEvent.ok).toBe(false);
+    if (!noEvent.ok) expectPlainCopy(noEvent.reason);
     const noTeam = buildAttachMediaWire({
       eventKey: "2026mndu",
       entryClientId: "entry-local-1",
@@ -62,6 +64,7 @@ describe("buildAttachMediaWire", () => {
       byteSize: 128,
     });
     expect(noTeam.ok).toBe(false);
+    if (!noTeam.ok) expectPlainCopy(noTeam.reason);
   });
 
   it("builds metadata that always carries the entry link and entry_client tag", () => {

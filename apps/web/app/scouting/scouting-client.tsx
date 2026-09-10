@@ -340,7 +340,7 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
 
   async function submit() {
     if (!data?.eventKey || !schema || !teamKey || (type === "match" && !matchKey)) {
-      setMessage("Select an event assignment, team, and form");
+      setMessage("Choose the event assignment, team, and form");
       return;
     }
     const entry: SyncEntry = {

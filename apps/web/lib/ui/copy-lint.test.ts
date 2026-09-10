@@ -126,6 +126,16 @@ const RULES: readonly Rule[] = [
     why: 'say "Set active event" as the title/button, or "Set your active event" in a sentence',
   },
   {
+    label: "Select event",
+    pattern: /\bSelect event\b/i,
+    why: 'say "Set active event" — two-word leftover of the old picker label',
+  },
+  {
+    label: "Select an event",
+    pattern: /\bSelect an event\b/i,
+    why: 'say "Set your active event" in a sentence, or "Set active event" as the title/button',
+  },
+  {
     // "Set the real build-season window — no sample timelines." The em-dash
     // clause is the tell: everything before it is the instruction, everything
     // after it is the product promising it did not make the data up. Lower-case
@@ -212,8 +222,10 @@ function collectSource(dir: string, acc: string[] = []): string[] {
   return acc;
 }
 
-const SELECT_RULES = RULES.filter(
-  (rule) => rule.label === "Select a team" || rule.label === "Select an active event",
+const SELECT_RULES = RULES.filter((rule) =>
+  ["Select a team", "Select an active event", "Select event", "Select an event"].includes(
+    rule.label,
+  ),
 );
 
 /** Replace a span with same-length blanks so byte offsets stay line-accurate. */
@@ -364,7 +376,7 @@ describe("user-facing copy", () => {
   );
 
   it(
-    "never tells the reader to Select a team or Select an active event",
+    "never tells the reader to Select a team or Select an event",
     () => {
       const all = ROOTS.flatMap((root) => collectSource(root));
       const findings = all.flatMap((file) => scan(file, SELECT_RULES));

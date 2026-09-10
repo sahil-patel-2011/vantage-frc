@@ -290,7 +290,7 @@ export default function ScoutVoiceNotesPanel({
         return;
       }
       if (!eventKey || !teamKey) {
-        setError("Select an event team before attaching a voice note.");
+        setError("Set your active event and pick a team before attaching a voice note.");
         return;
       }
 

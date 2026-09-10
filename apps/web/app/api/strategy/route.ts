@@ -67,7 +67,7 @@ export async function GET(request: Request) {
           },
           {
             id: "event",
-            label: "Select event / location",
+            label: "Set active event",
             detail: "Set the active competition context",
             href: "/workspace",
           },

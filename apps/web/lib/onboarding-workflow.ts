@@ -92,7 +92,7 @@ export function buildOnboardingChecklistSteps(signals: OnboardingSignals): Onboa
     },
     {
       key: "event",
-      label: "Select event",
+      label: "Set active event",
       detail: "Set the active competition context",
       done: signals.hasEventContext,
       href: `/command${q}`,

@@ -36,6 +36,8 @@ const BANNED: ReadonlyArray<readonly [RegExp, string]> = [
   ],
   [/\bSelect a team\b/, 'say "Choose your team"'],
   [/\bSelect an active event\b/i, 'say "Set active event"'],
+  [/\bSelect event\b/i, 'say "Set active event"'],
+  [/\bSelect an event\b/i, 'say "Set your active event"'],
 ];
 
 /** Returns a human-readable problem with this copy, or null when it is fine. */

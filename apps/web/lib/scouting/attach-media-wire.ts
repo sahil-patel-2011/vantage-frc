@@ -121,7 +121,7 @@ export function buildAttachMediaWire(input: AttachMediaWireInput): AttachMediaWi
   if (!eventKey || !teamKey) {
     return {
       ok: false,
-      reason: "Select an event and team before attaching media.",
+      reason: "Set your active event and pick a team before attaching media.",
       permanent: true,
     };
   }
