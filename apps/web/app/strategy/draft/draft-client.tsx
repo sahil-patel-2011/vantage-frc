@@ -1,10 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { OfflineBanner } from "../../../components/offline-banner";
 import { EmptyState, PageHeader, Button } from "../../../components/ui";
 import { hubHref } from "../../../lib/nav/hubs";
 import { withOrgHref } from "../../../lib/nav/product-nav";
 import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 import {
   DRAFT_RELATED_INCLUDE,
@@ -66,6 +68,48 @@ type DraftPayload = {
   pickAssist?: DraftPickAssist | null;
   message?: string;
 };
+
+type DraftSetupCache = {
+  status: "setup_required";
+  message: string;
+  orgId?: string;
+};
+
+type DraftCacheView = DraftPayload | DraftSetupCache;
+
+function isDraftCacheView(value: unknown): value is DraftCacheView {
+  if (!value || typeof value !== "object") return false;
+  const rec = value as Record<string, unknown>;
+  if (rec.status === "setup_required") return true;
+  return (
+    typeof rec.orgId === "string" &&
+    typeof rec.eventKey === "string" &&
+    Array.isArray(rec.teamKeys)
+  );
+}
+
+function isDraftSetupCache(value: DraftCacheView): value is DraftSetupCache {
+  return "status" in value && value.status === "setup_required";
+}
+
+async function persistDraftSnapshot(orgHint: string, data: DraftCacheView): Promise<void> {
+  const cacheOrg =
+    "orgId" in data && typeof data.orgId === "string" && data.orgId.trim()
+      ? data.orgId
+      : orgHint;
+  if (!cacheOrg) return;
+  const key = isDraftSetupCache(data) ? "" : data.eventKey;
+  try {
+    await putFeatureSnapshot("draft", cacheOrg, data, key);
+    await putFeatureSnapshot("draft", cacheOrg, data);
+    if (!orgHint) {
+      await putFeatureSnapshot("draft", "_", data, key);
+      await putFeatureSnapshot("draft", "_", data);
+    }
+  } catch {
+    // Live board already painted; IndexedDB is best-effort.
+  }
+}
 
 function teamNumber(teamKey: string | null) {
   if (!teamKey) return "—";
@@ -234,57 +278,123 @@ export default function DraftClient() {
   const [setupOrgId, setSetupOrgId] = useState<string | null>(null);
   const [setupEventKey, setSetupEventKey] = useState<string | null>(null);
   const [orgId, setOrgId] = useState<string | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const paintedRef = useRef(false);
 
   useEffect(() => {
     setOrgId(new URLSearchParams(window.location.search).get("orgId"));
   }, []);
 
+  const applyDraftView = useCallback(
+    (payload: DraftCacheView) => {
+      paintedRef.current = true;
+      if (isDraftSetupCache(payload)) {
+        setData(null);
+        setState(null);
+        setSetupMessage(payload.message ?? "Setup required");
+        setSetupOrgId(typeof payload.orgId === "string" ? payload.orgId : orgId);
+        setSetupEventKey(null);
+        return;
+      }
+      setSetupMessage("");
+      setSetupOrgId(payload.orgId);
+      setSetupEventKey(payload.eventKey);
+      setData(payload);
+      setState(payload.board?.state ?? null);
+    },
+    [orgId],
+  );
+
   const load = useCallback(() => {
-    const qs = orgId ? `?orgId=${encodeURIComponent(orgId)}` : "";
-    setLoading(true);
-    setFetchFailed(false);
-    setErrorStatus(null);
-    setErrorMessage(null);
-    void fetch(`/api/strategy/draft${qs}`, {
-      cache: "no-store",
-      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
-    })
-      .then(async (response) => {
+    void (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const urlOrg = orgId ?? params.get("orgId")?.trim() ?? "";
+      let hadCache = paintedRef.current;
+      try {
+        const cached = await getFeatureSnapshot<DraftCacheView>("draft", urlOrg || "_");
+        if (!paintedRef.current && cached?.data && isDraftCacheView(cached.data)) {
+          applyDraftView(cached.data);
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          setLoading(false);
+          hadCache = true;
+        }
+      } catch {
+        // IndexedDB missing or blocked; live fetch still runs.
+      }
+      if (!hadCache && !paintedRef.current) setLoading(true);
+      setFetchFailed(false);
+      setErrorStatus(null);
+      setErrorMessage(null);
+      const qs = urlOrg ? `?orgId=${encodeURIComponent(urlOrg)}` : "";
+      try {
+        const response = await fetch(`/api/strategy/draft${qs}`, {
+          cache: "no-store",
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+        });
         const payload = await response.json();
-        // A rejected request (expired session, no access) used to fall through as
-        // an empty board; keep the status so the shell can say what happened.
         if (!response.ok) {
-          setData(null);
-          setState(null);
-          setSetupMessage("");
-          setErrorStatus(response.status);
-          setErrorMessage(typeof payload?.error === "string" ? payload.error : null);
-          setFetchFailed(true);
+          if (hadCache || paintedRef.current) {
+            setFromCache(true);
+            setErrorMessage("Could not refresh Alliance board. Showing the last copy on this device.");
+            setFetchFailed(false);
+            setLoading(false);
+          } else {
+            setData(null);
+            setState(null);
+            setSetupMessage("");
+            setErrorStatus(response.status);
+            setErrorMessage(typeof payload?.error === "string" ? payload.error : null);
+            setFetchFailed(true);
+          }
           return;
         }
         if (payload.status === "setup_required") {
-          setData(null);
-          setState(null);
-          setSetupMessage(payload.message ?? "Setup required");
-          setSetupOrgId(typeof payload.orgId === "string" ? payload.orgId : orgId);
-          setSetupEventKey(null);
+          const setup: DraftSetupCache = {
+            status: "setup_required",
+            message: payload.message ?? "Setup required",
+            orgId: typeof payload.orgId === "string" ? payload.orgId : urlOrg || undefined,
+          };
+          applyDraftView(setup);
+          setFromCache(false);
+          setCachedAt(null);
+          await persistDraftSnapshot(urlOrg, setup);
           return;
         }
-        const view = payload as DraftPayload;
-        setSetupMessage("");
-        setSetupOrgId(view.orgId);
-        setSetupEventKey(view.eventKey);
-        setData(view);
-        setState(view.board?.state ?? null);
-      })
-      .catch(() => {
-        setData(null);
-        setState(null);
-        setSetupMessage("");
-        setFetchFailed(true);
-      })
-      .finally(() => setLoading(false));
-  }, [orgId]);
+        if (!isDraftCacheView(payload) || isDraftSetupCache(payload)) {
+          if (hadCache || paintedRef.current) {
+            setFromCache(true);
+            setErrorMessage("Could not refresh Alliance board. Showing the last copy on this device.");
+            setFetchFailed(false);
+          } else {
+            setData(null);
+            setState(null);
+            setSetupMessage("");
+            setFetchFailed(true);
+          }
+          return;
+        }
+        applyDraftView(payload);
+        setFromCache(false);
+        setCachedAt(null);
+        await persistDraftSnapshot(urlOrg, payload);
+      } catch {
+        if (hadCache || paintedRef.current) {
+          setFromCache(true);
+          setErrorMessage("Could not refresh Alliance board. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setData(null);
+          setState(null);
+          setSetupMessage("");
+          setFetchFailed(true);
+        }
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [orgId, applyDraftView]);
 
   useEffect(() => {
     load();
@@ -343,7 +453,13 @@ export default function DraftClient() {
     setStatus(response.ok ? "Board saved." : body.error ?? "Save failed");
     setSaving(false);
     if (response.ok && body.state) setState(body.state);
-    if (response.ok) load();
+    if (response.ok) {
+      void persistDraftSnapshot(data.orgId, {
+        ...data,
+        board: { ...data.board, state: body.state ?? next, updatedAt: data.board.updatedAt },
+      });
+      load();
+    }
   }
 
   function assignTeam(teamKey: string) {
@@ -446,12 +562,18 @@ export default function DraftClient() {
                 : undefined
         }
         onRetry={failure?.showRetry ? () => load() : undefined}
-      />
+      >
+        <OfflineBanner feature="Alliance board" fromCache={fromCache} cachedAt={cachedAt} />
+      </DraftShell>
     );
   }
 
   if (!data || !state || !data.board) {
-    return <DraftShell orgId={setupOrgId ?? orgId} shell="loading" />;
+    return (
+      <DraftShell orgId={setupOrgId ?? orgId} shell="loading">
+        <OfflineBanner feature="Alliance board" fromCache={fromCache} cachedAt={cachedAt} />
+      </DraftShell>
+    );
   }
 
   const filledSlots = countFilledSlots(state);
@@ -492,6 +614,14 @@ export default function DraftClient() {
           </Button>
         </div>
       </PageHeader>
+
+      <OfflineBanner feature="Alliance board" fromCache={fromCache} cachedAt={cachedAt} />
+
+      {fromCache && errorMessage ? (
+        <p className="telemetry-status" role="status">
+          {errorMessage}
+        </p>
+      ) : null}
 
       {showTiles ? (
         <div className="draft-kpis" aria-label="Draft board counts">

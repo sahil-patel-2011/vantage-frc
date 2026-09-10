@@ -41,7 +41,9 @@ export type OfflineFeature =
   | "drive-signals"
   | "weigh-in"
   | "match-delta"
-  | "match-video-index";
+  | "match-video-index"
+  | "draft"
+  | "lineup";
 
 const DB_NAME = "vantage-feature-cache";
 const DB_VERSION = 1;

@@ -46,6 +46,8 @@ export const OFFLINE_SHELL_ROUTES = [
   "/robot-weigh-in",
   "/match-delta-watcher",
   "/match-video-index",
+  "/strategy/draft",
+  "/scouting/lineup",
 ] as const;
 
 export type OfflineShellRoute = (typeof OFFLINE_SHELL_ROUTES)[number];
@@ -63,6 +65,7 @@ export function pathnameIsOfflineShell(pathname: string): boolean {
 
 export function offlineCapableLabel(pathname: string): string | null {
   const bare = pathname.split("?")[0] ?? pathname;
+  if (bare.startsWith("/scouting/lineup")) return "Lineup & coverage";
   if (bare.startsWith("/scouting")) return "Scouting";
   if (bare.startsWith("/schedule")) return "Schedule";
   if (bare.startsWith("/offline-shell")) return "This phone";
@@ -82,6 +85,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/files")) return "Files";
   if (bare.startsWith("/docs") || bare.startsWith("/help")) return "Docs";
   if (bare.startsWith("/dashboard")) return "Home";
+  if (bare.startsWith("/strategy/draft")) return "Alliance board";
   if (bare.startsWith("/strategy")) return "Strategy";
   if (bare.startsWith("/hours")) return "Hours";
   if (bare.startsWith("/messages")) return "Chat";

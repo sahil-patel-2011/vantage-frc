@@ -59,6 +59,8 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/robot-weigh-in")).toBe(true);
     expect(pathnameIsOfflineShell("/match-delta-watcher")).toBe(true);
     expect(pathnameIsOfflineShell("/match-video-index")).toBe(true);
+    expect(pathnameIsOfflineShell("/strategy/draft")).toBe(true);
+    expect(pathnameIsOfflineShell("/scouting/lineup")).toBe(true);
     expect(pathnameIsOfflineShell("/api/todos")).toBe(false);
   });
 
@@ -94,6 +96,8 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/robot-weigh-in")).toBe("Robot weigh-in");
     expect(offlineCapableLabel("/match-delta-watcher")).toBe("Match-delta watcher");
     expect(offlineCapableLabel("/match-video-index")).toBe("Match video index");
+    expect(offlineCapableLabel("/strategy/draft")).toBe("Alliance board");
+    expect(offlineCapableLabel("/scouting/lineup")).toBe("Lineup & coverage");
   });
 
   it("keeps public/sw.js SHELL_ROUTES aligned with OFFLINE_SHELL_ROUTES", () => {
@@ -131,6 +135,8 @@ describe("offline shell routes", () => {
     expect(featureCacheKey("weigh-in", "org-1", "2026")).toBe("weigh-in:org-1:2026");
     expect(featureCacheKey("match-delta", "org-1", "2026onto")).toBe("match-delta:org-1:2026onto");
     expect(featureCacheKey("match-video-index", "org-1")).toBe("match-video-index:org-1");
+    expect(featureCacheKey("draft", "org-1", "2026onto")).toBe("draft:org-1:2026onto");
+    expect(featureCacheKey("lineup", "org-1", "2026onto")).toBe("lineup:org-1:2026onto");
     expect(featureCacheKey("schedule", "org-1")).toBe("schedule:org-1");
   });
 

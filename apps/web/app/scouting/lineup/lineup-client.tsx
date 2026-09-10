@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { OfflineBanner } from "../../../components/offline-banner";
 import { EmptyState, PageHeader, Button } from "../../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 import { CopyShareLink } from "../../../components/copy-share-link";
@@ -24,6 +25,7 @@ import {
 import { hubHref } from "../../../lib/nav/hubs";
 import { withOrgHref } from "../../../lib/nav/product-nav";
 import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
 import "./lineup.css";
 
 type CoverageScout = {
@@ -63,7 +65,25 @@ type CoverageView =
       slots: CoverageGapSlot[];
       scouts: CoverageScout[];
       schemaRoles: { status: string; warnings: SchemaRoleWarning[] };
-    };
+      };
+
+function isCoverageView(value: unknown): value is CoverageView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+async function persistLineupSnapshot(orgHint: string, data: CoverageView): Promise<void> {
+  const cacheOrg = orgHint.trim();
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("lineup", cacheOrg, data);
+    if (!orgHint.trim() || cacheOrg === "_") return;
+    await putFeatureSnapshot("lineup", "_", data);
+  } catch {
+    // Live coverage already painted; IndexedDB is best-effort.
+  }
+}
 
 function teamLabel(slot: CoverageGapSlot): string {
   return slot.teamNumber != null ? String(slot.teamNumber) : slot.teamKey.replace(/^frc/i, "");
@@ -228,21 +248,49 @@ export default function LineupClient({ orgId }: { orgId: string }) {
   const [focusMatch, setFocusMatch] = useState("");
   const [updatedAt, setUpdatedAt] = useState("");
   const [busy, setBusy] = useState(false);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<CoverageView | null>(null);
+  viewRef.current = view;
 
   const load = useCallback(async () => {
     const params = new URLSearchParams({ orgId, window: "4" });
     if (!qualsOnly) params.set("qualsOnly", "0");
     if (focusMatch) params.set("matchKey", focusMatch);
+    let hadCache = Boolean(viewRef.current);
+    if (!viewRef.current) {
+      try {
+        const cached = await getFeatureSnapshot<CoverageView>("lineup", orgId || "_");
+        if (!viewRef.current && cached?.data && isCoverageView(cached.data)) {
+          setView(cached.data);
+          setUpdatedAt(cached.data.generatedAt);
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          hadCache = true;
+          if (cached.data.status === "live" && cached.data.live.focusMatchKeys[0] && !focusMatch) {
+            setFocusMatch(cached.data.live.focusMatchKeys[0]!);
+          }
+        }
+      } catch {
+        // IndexedDB missing or blocked; live fetch still runs.
+      }
+    }
     try {
       const response = await fetch(`/api/scouting/coverage?${params}`, {
         cache: "no-store",
         signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
       const data = (await response.json()) as CoverageView & { error?: string };
-      if (!response.ok) {
-        setFetchFailed(true);
-        setFailureStatus(response.status);
-        setError(data.error ?? "Could not load coverage.");
+      if (!response.ok || !isCoverageView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Lineup. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setFetchFailed(true);
+          setFailureStatus(response.status);
+          setError(data.error ?? "Could not load coverage.");
+        }
         return;
       }
       setView(data);
@@ -250,12 +298,21 @@ export default function LineupClient({ orgId }: { orgId: string }) {
       setError("");
       setFailureStatus(null);
       setFetchFailed(false);
+      setFromCache(false);
+      setCachedAt(null);
       if (data.status === "live" && data.live.focusMatchKeys[0] && !focusMatch) {
         setFocusMatch(data.live.focusMatchKeys[0]!);
       }
+      await persistLineupSnapshot(orgId, data);
     } catch {
-      setFetchFailed(true);
-      setError("Network error — coverage will retry.");
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Lineup. Showing the last copy on this device.");
+        setFetchFailed(false);
+      } else {
+        setFetchFailed(true);
+        setError("Network error — coverage will retry.");
+      }
     }
   }, [focusMatch, orgId, qualsOnly]);
 
@@ -281,6 +338,7 @@ export default function LineupClient({ orgId }: { orgId: string }) {
         setView(data);
         setUpdatedAt(data.generatedAt);
         setError("");
+        void persistLineupSnapshot(orgId, data);
       } catch {
         setError("Network error — the assignment was not saved.");
       } finally {
@@ -360,7 +418,11 @@ export default function LineupClient({ orgId }: { orgId: string }) {
   const loaded = view?.status === "live";
 
   if (shell === "loading") {
-    return <LineupShell description={shellCopy.description} orgId={orgId} shell="loading" />;
+    return (
+      <LineupShell description={shellCopy.description} orgId={orgId} shell="loading">
+        <OfflineBanner feature="Lineup & coverage" fromCache={fromCache} cachedAt={cachedAt} />
+      </LineupShell>
+    );
   }
 
   if (shell === "error") {
@@ -372,7 +434,9 @@ export default function LineupClient({ orgId }: { orgId: string }) {
         error={error || shellCopy.description}
         errorStatus={failureStatus}
         onRetry={() => void load()}
-      />
+      >
+        <OfflineBanner feature="Lineup & coverage" fromCache={fromCache} cachedAt={cachedAt} />
+      </LineupShell>
     );
   }
 
@@ -384,13 +448,17 @@ export default function LineupClient({ orgId }: { orgId: string }) {
         }
         orgId={orgId}
         shell="setup"
-      />
+      >
+        <OfflineBanner feature="Lineup & coverage" fromCache={fromCache} cachedAt={cachedAt} />
+      </LineupShell>
     );
   }
 
   if (shell === "empty" || view?.status !== "live") {
     return (
-      <LineupShell description={shellCopy.description} orgId={orgId} shell="empty" />
+      <LineupShell description={shellCopy.description} orgId={orgId} shell="empty">
+        <OfflineBanner feature="Lineup & coverage" fromCache={fromCache} cachedAt={cachedAt} />
+      </LineupShell>
     );
   }
 
@@ -421,6 +489,8 @@ export default function LineupClient({ orgId }: { orgId: string }) {
           </Button>
         </div>
       </PageHeader>
+
+      <OfflineBanner feature="Lineup & coverage" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="form-message" role="status">

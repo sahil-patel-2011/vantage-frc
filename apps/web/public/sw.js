@@ -64,6 +64,8 @@ const SHELL_ROUTES = [
   "/robot-weigh-in",
   "/match-delta-watcher",
   "/match-video-index",
+  "/strategy/draft",
+  "/scouting/lineup",
 ];
 
 function isShellPath(pathname) {
