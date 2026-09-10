@@ -8,6 +8,7 @@ import {
   useState,
   type CSSProperties,
   type KeyboardEvent as ReactKeyboardEvent,
+  type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import PartnerPlacement from "../../components/partner-placement";
@@ -18,6 +19,8 @@ import {
   readStoredBoardId,
   writeStoredBoardId,
 } from "../../lib/dashboard/boards";
+import { dashboardPollDelay } from "../../lib/dashboard/refresh";
+import { prefersTapToPlace } from "../../lib/dashboard/tap-to-place";
 import {
   DASHBOARD_COLUMNS,
   DEFAULT_DASHBOARD_LAYOUT,
@@ -31,6 +34,7 @@ import {
   inferWidgetSize,
   packDashboardLayout,
   scaleLayoutToCols,
+  defaultDashboardLayoutForAudience,
   type DashboardWidgetLayout,
   type DashboardWidgetType,
   type OrgRole,
@@ -121,11 +125,11 @@ type SnapFeedback = {
   h: number;
 };
 
-const POLL_MS = 30_000;
 const CONTEXT_REFRESH_MS = 5 * 60_000;
 
 /** Below this container width the board becomes a single scrollable column. */
-const SINGLE_COLUMN_MAX = 720;
+const SINGLE_COLUMN_MAX = 400;
+const TWO_COLUMN_MAX = 720;
 
 const ARROW_DIRECTION: Record<string, NudgeDirection | undefined> = {
   ArrowLeft: "left",
@@ -150,6 +154,29 @@ const WIDGET_PICKER_ICON: Partial<Record<DashboardWidgetType, "swords" | "cube" 
   onboarding_checklist: "pin",
   team_todos: "clipboard",
   subteam_upcoming: "calendar",
+  my_day: "calendar",
+  learn_progress: "target",
+  files_recent: "clipboard",
+  team_chat: "chat",
+  duties: "clipboard",
+  budget_parts: "stats",
+  attendance: "pin",
+  outreach_hours: "clipboard",
+  announcements_ack: "bell",
+  ask_ai: "chat",
+  event_countdown: "calendar",
+  hours_month: "clipboard",
+  calendar_today: "calendar",
+  cad_resources: "cube",
+  coding_resources: "gear",
+  team_profile: "target",
+  alliance_desk: "swords",
+  match_schedule: "calendar",
+  batteries: "bolt",
+  assembly_manual: "cube",
+  sponsor_followups: "bell",
+  event_readiness: "pin",
+  weather_venue: "display",
 };
 
 const ROLE_LABEL: Record<OrgRole, string> = {
@@ -180,11 +207,13 @@ function resolveGrid(width: number) {
   if (width <= 0) {
     return { ...dashboardGridForWidth(390), cols: 1, rowHeight: 78, margin: [12, 12] as [number, number] };
   }
-  const base = dashboardGridForWidth(width);
   if (width < SINGLE_COLUMN_MAX) {
-    return { ...base, cols: 1, rowHeight: 78, margin: [12, 12] as [number, number] };
+    return { ...dashboardGridForWidth(width), cols: 1, rowHeight: 78, margin: [12, 12] as [number, number] };
   }
-  return base;
+  if (width < TWO_COLUMN_MAX) {
+    return { ...dashboardGridForWidth(width), cols: 2, rowHeight: 86, margin: [10, 10] as [number, number] };
+  }
+  return dashboardGridForWidth(width);
 }
 
 /** ResizeObserver on the grid canvas — the drag maths needs its exact box. */
@@ -271,6 +300,7 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
   const [editing, setEditing] = useState(false);
   const [previewing, setPreviewing] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
+  const [pendingPlaceType, setPendingPlaceType] = useState<DashboardWidgetType | null>(null);
   const [scope, setScope] = useState<"personal" | "org">("personal");
   const [canShareOrg, setCanShareOrg] = useState(false);
   const [role, setRole] = useState<string | null>(null);
@@ -410,7 +440,7 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
         void poll().finally(() => {
           if (!cancelled) schedule();
         });
-      }, POLL_MS);
+      }, dashboardPollDelay(document.visibilityState === "hidden"));
     };
     schedule();
 
@@ -500,7 +530,26 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
     setMessage(`${entry?.label ?? type} added to the board.`);
     setAnnounce(`${entry?.label ?? type} added to the board.`);
     setLibraryOpen(false);
+    setPendingPlaceType(null);
     if (orgId) void loadSnapshot(orgId, result.layout.map((item) => item.type));
+  }
+
+  function placePendingAtPoint(event: ReactPointerEvent<HTMLElement> | ReactMouseEvent<HTMLElement>) {
+    if (!pendingPlaceType || !canvasNode) return;
+    const target = event.target as HTMLElement | null;
+    if (target?.closest("a, input, select, textarea, .dash-widget-card, [data-dash-widget]")) return;
+    const spec = resolveGrid(width);
+    const localCols = spec.cols;
+    const localGap = spec.margin[0];
+    const rect = canvasNode.getBoundingClientRect();
+    const cell = pointToCell(
+      { x: event.clientX, y: event.clientY },
+      rect,
+      localCols,
+      spec.rowHeight,
+      localGap,
+    );
+    addWidget(pendingPlaceType, { col: cell.col, row: cell.row }, localCols);
   }
 
   function tidyLayout() {
@@ -826,7 +875,13 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
 
   async function resetDefault() {
     if (!orgId) {
-      setLayout(DEFAULT_DASHBOARD_LAYOUT);
+      setLayout(
+        defaultDashboardLayoutForAudience(
+          (context.homeStrip as { audience?: string } | undefined)?.audience === "mentor"
+            ? "mentor"
+            : "student",
+        ),
+      );
       setEditing(false);
       setLibraryOpen(false);
       setMessageKind("success");
@@ -1735,12 +1790,22 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
                   onPointerMove={onDragPointerMove}
                   onPointerUp={onDragPointerUp}
                   onPointerCancel={onDragPointerCancel}
-                  onClick={() => {
+                  onClick={(event) => {
                     if (suppressClickRef.current) {
                       suppressClickRef.current = false;
                       return;
                     }
                     if (status !== "add") return;
+                    if (prefersTapToPlace({
+                      pointerType: "pointerType" in event.nativeEvent ? String(event.nativeEvent.pointerType) : "",
+                      coarse: window.matchMedia("(pointer: coarse)").matches,
+                    })) {
+                      setPendingPlaceType(entry.type);
+                      setMessageKind("success");
+                      setMessage(`Tap a slot on the board to place ${entry.label}.`);
+                      setAnnounce(`Tap a slot on the board to place ${entry.label}.`);
+                      return;
+                    }
                     addWidget(entry.type);
                   }}
                 >
@@ -1773,7 +1838,11 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
               <span>
                 {cols === 1 ? "Single column" : `${cols}-column snap`} · {grid.label}
               </span>
-              <small>Hold to drag · S/M/L/XL resize · space + arrows from the keyboard</small>
+              <small>
+                {pendingPlaceType
+                  ? `Tap a slot to place ${catalogEntry(pendingPlaceType)?.label ?? pendingPlaceType}`
+                  : "Hold to drag · S/M/L/XL resize · space + arrows from the keyboard"}
+              </small>
             </div>
           ) : null}
           {snapFeedback ? (
@@ -1796,7 +1865,13 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
               type="button"
               className="dash-empty-board"
               data-testid="dash-empty-board"
-              onClick={() => setLibraryOpen(true)}
+              onClick={() => {
+                if (pendingPlaceType) {
+                  addWidget(pendingPlaceType);
+                  return;
+                }
+                setLibraryOpen(true);
+              }}
             >
               <span className="dash-empty-board-plus" aria-hidden="true">
                 +
@@ -1819,7 +1894,12 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
               ref={setCanvasNode}
               className="dash-grid dash-pgrid"
               data-editing={editing ? "true" : "false"}
+              data-pending-place={pendingPlaceType ?? ""}
+              data-testid="dash-place-canvas"
               data-measured={measured && width > 0 ? "true" : "false"}
+              onClick={(event) => {
+                if (editing && pendingPlaceType) placePendingAtPoint(event);
+              }}
               style={
                 {
                   height: `${Math.max(width > 0 ? gridHeight : 240, grid.rowHeight)}px`,
@@ -1994,7 +2074,26 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
               const icon = WIDGET_PICKER_ICON[entry.type] ?? "grid";
               return (
                 <li key={entry.type}>
-                  <button type="button" onClick={() => addWidget(entry.type)} title={entry.description}>
+                  <button
+                    type="button"
+                    data-testid={`dash-library-${entry.type}`}
+                    onClick={() => {
+                      if (
+                        prefersTapToPlace({
+                          coarse: window.matchMedia("(pointer: coarse)").matches,
+                        })
+                      ) {
+                        setPendingPlaceType(entry.type);
+                        setLibraryOpen(false);
+                        setMessageKind("success");
+                        setMessage(`Tap a slot on the board to place ${entry.label}.`);
+                        setAnnounce(`Tap a slot on the board to place ${entry.label}.`);
+                        return;
+                      }
+                      addWidget(entry.type);
+                    }}
+                    title={entry.description}
+                  >
                     <i>
                       <Icon name={icon} />
                     </i>

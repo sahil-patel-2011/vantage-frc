@@ -8,7 +8,8 @@ const widgets = readFileSync(join(__dirname, "../../app/dashboard/widgets.tsx"),
 describe("Dashboard prediction honesty", () => {
   it("refuses DEMO stored rows and links to Strategy recompute", () => {
     expect(snapshot).toContain("isDemoPrediction");
-    expect(snapshot).toContain("Last stored row is a DEMO prediction");
+    expect(snapshot).not.toMatch(/DEMO prediction/);
+    expect(snapshot).toContain("Open Strategy and compute one from your event");
     expect(snapshot).toContain("teamKeys");
     expect(snapshot).toContain("ourAlliance");
     expect(widgets).toContain("predictionWinDisplay");

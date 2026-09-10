@@ -2,6 +2,14 @@ import type { DashboardWidgetType } from "./catalog";
 import type { WidgetPayload } from "./snapshot";
 import type { DashboardShellKind } from "./dashboard-related";
 
+export const DASHBOARD_POLL_MS = 30_000;
+export const DASHBOARD_HIDDEN_POLL_MS = 120_000;
+
+/** Visibility-aware Home poll. Hidden tabs should not burn Vercel credits. */
+export function dashboardPollDelay(hidden: boolean): number {
+  return hidden ? DASHBOARD_HIDDEN_POLL_MS : DASHBOARD_POLL_MS;
+}
+
 const POLL_SKIP_WHEN_READY = new Set<DashboardWidgetType>(["onboarding_checklist", "quick_actions"]);
 
 /** Home-strip + data-source health belong on bootstrap / slow refresh, not every poll. */

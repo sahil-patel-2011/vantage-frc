@@ -39,6 +39,29 @@ const WIDGET_ICON: Record<string, { icon: IconName; tone: string }> = {
   onboarding_checklist: { icon: "pin", tone: "var(--tone-blue)" },
   team_todos: { icon: "clipboard", tone: "var(--tone-blue)" },
   subteam_upcoming: { icon: "calendar", tone: "var(--tone-teal)" },
+  my_day: { icon: "calendar", tone: "var(--tone-blue)" },
+  learn_progress: { icon: "pin", tone: "var(--tone-teal)" },
+  files_recent: { icon: "clipboard", tone: "var(--tone-blue)" },
+  team_chat: { icon: "chat", tone: "var(--tone-blue)" },
+  duties: { icon: "clipboard", tone: "var(--tone-teal)" },
+  budget_parts: { icon: "stats", tone: "var(--tone-green)" },
+  attendance: { icon: "users", tone: "var(--tone-teal)" },
+  outreach_hours: { icon: "users", tone: "var(--tone-green)" },
+  announcements_ack: { icon: "bell", tone: "var(--tone-blue)" },
+  ask_ai: { icon: "bolt", tone: "var(--tone-blue)" },
+  event_countdown: { icon: "calendar", tone: "var(--tone-blue)" },
+  hours_month: { icon: "clipboard", tone: "var(--tone-teal)" },
+  calendar_today: { icon: "calendar", tone: "var(--tone-blue)" },
+  cad_resources: { icon: "cube", tone: "var(--tone-teal)" },
+  coding_resources: { icon: "code", tone: "var(--tone-blue)" },
+  team_profile: { icon: "users", tone: "var(--tone-blue)" },
+  alliance_desk: { icon: "swords", tone: "var(--tone-blue)" },
+  match_schedule: { icon: "calendar", tone: "var(--tone-blue)" },
+  batteries: { icon: "bolt", tone: "var(--tone-teal)" },
+  assembly_manual: { icon: "clipboard", tone: "var(--tone-teal)" },
+  sponsor_followups: { icon: "users", tone: "var(--tone-green)" },
+  event_readiness: { icon: "target", tone: "var(--tone-blue)" },
+  weather_venue: { icon: "display", tone: "var(--tone-teal)" },
 };
 
 const EMPTY_COPY: Record<string, EmptyHint> = {
@@ -120,6 +143,48 @@ const EMPTY_COPY: Record<string, EmptyHint> = {
     ctaHref: "/team/calendar",
     ctaLabel: "Open calendar",
   },
+  my_day: {
+    title: "Nothing on your day yet",
+    body: "Your next match and leave time show up after TBA sync.",
+    ctaHref: "/my-day",
+    ctaLabel: "Open My Day",
+  },
+  learn_progress: {
+    title: "No learning track started",
+    body: "Open Learn CAD or programming setup.",
+    ctaHref: "/cad-learn",
+    ctaLabel: "Learn CAD",
+  },
+  files_recent: {
+    title: "No files yet",
+    body: "Open Files to add one.",
+    ctaHref: "/files",
+    ctaLabel: "Open Files",
+  },
+  team_chat: {
+    title: "No unread chats",
+    body: "Team messages show up here.",
+    ctaHref: "/messages",
+    ctaLabel: "Open chat",
+  },
+  duties: {
+    title: "Nothing to assign",
+    body: "Duties appear when a session needs people.",
+    ctaHref: "/logistics",
+    ctaLabel: "Open logistics",
+  },
+  budget_parts: {
+    title: "No budget or part requests",
+    body: "Open Money to add a budget or review requests.",
+    ctaHref: "/business?tab=finance",
+    ctaLabel: "Open Money",
+  },
+  ask_ai: {
+    title: "Ask AI",
+    body: "Type a question. It uses your team's facts and says when it does not know.",
+    ctaHref: "/ai?tab=chat",
+    ctaLabel: "Ask AI",
+  },
   quick_actions: {
     title: "Get set up",
     body: "Connect workspace, event, and TBA.",
@@ -127,6 +192,102 @@ const EMPTY_COPY: Record<string, EmptyHint> = {
   onboarding_checklist: {
     title: "Finish setup",
     body: "Set workspace, event, and TBA.",
+    ctaHref: "/command",
+    ctaLabel: "Set event",
+  },
+  attendance: {
+    title: "No session tonight",
+    body: "Attendance shows up after a practice or meeting is on the calendar.",
+    ctaHref: "/team/calendar",
+    ctaLabel: "Open calendar",
+  },
+  outreach_hours: {
+    title: "No outreach hours",
+    body: "Log outreach hours after an event.",
+    ctaHref: "/business?tab=evidence",
+    ctaLabel: "Open outreach",
+  },
+  announcements_ack: {
+    title: "Nothing to acknowledge",
+    body: "Announcements that need a read-receipt show up here.",
+    ctaHref: "/announcements",
+    ctaLabel: "Open announcements",
+  },
+  event_countdown: {
+    title: "No upcoming event",
+    body: "Set an active event to see the countdown.",
+    ctaHref: "/command",
+    ctaLabel: "Set event",
+  },
+  hours_month: {
+    title: "No hours this month",
+    body: "Clock in from Hours after a session.",
+    ctaHref: "/hours",
+    ctaLabel: "Open hours",
+  },
+  calendar_today: {
+    title: "Nothing on the calendar",
+    body: "Add a practice or meeting to see today.",
+    ctaHref: "/team/calendar",
+    ctaLabel: "Open calendar",
+  },
+  cad_resources: {
+    title: "No CAD files yet",
+    body: "Paste an Onshape link or open the vault.",
+    ctaHref: "/cad",
+    ctaLabel: "Open CAD",
+  },
+  coding_resources: {
+    title: "No robot-code repo",
+    body: "Connect GitHub from Connectors to see the repo and Bugbot findings.",
+    ctaHref: "/code",
+    ctaLabel: "Open code",
+  },
+  team_profile: {
+    title: "Team profile not built",
+    body: "Open Team profile to load TBA and Statbotics facts.",
+    ctaHref: "/team/profile",
+    ctaLabel: "Open profile",
+  },
+  alliance_desk: {
+    title: "Alliance desk idle",
+    body: "Alliance selection opens at the event.",
+    ctaHref: "/alliance-selection-desk",
+    ctaLabel: "Open alliance desk",
+  },
+  match_schedule: {
+    title: "No match schedule",
+    body: "Connect TBA or paste a schedule.",
+    ctaHref: "/schedule",
+    ctaLabel: "Open schedule",
+  },
+  batteries: {
+    title: "No batteries logged",
+    body: "Add a battery from pit tools.",
+    ctaHref: "/pit",
+    ctaLabel: "Open pit",
+  },
+  assembly_manual: {
+    title: "No assembly manual",
+    body: "Start one from an Onshape assembly.",
+    ctaHref: "/assembly-manual",
+    ctaLabel: "Open assembly manual",
+  },
+  sponsor_followups: {
+    title: "No sponsor follow-ups",
+    body: "Open Sponsors to log the next step.",
+    ctaHref: "/business?tab=sponsors",
+    ctaLabel: "Open sponsors",
+  },
+  event_readiness: {
+    title: "No event on the calendar",
+    body: "Set an active event to see packing and travel.",
+    ctaHref: "/command",
+    ctaLabel: "Set event",
+  },
+  weather_venue: {
+    title: "No venue weather",
+    body: "Weather appears when an event with a location is active.",
     ctaHref: "/command",
     ctaLabel: "Set event",
   },
@@ -188,7 +349,7 @@ function Shell({
   type: string;
   title: string;
   payload?: WidgetPayload;
-  children: React.ReactNode;
+  children?: React.ReactNode;
   href?: string;
   emptyHint: EmptyHint;
   orgId: string;
@@ -351,6 +512,15 @@ export const DashboardWidgetView = memo(function DashboardWidgetView({
       const alliance = data.ourAlliance === "red" || data.ourAlliance === "blue" ? data.ourAlliance : null;
       const myDayHref =
         typeof data.href === "string" && data.href ? data.href : withOrg("/my-day");
+      const win = predictionWinDisplay({
+        pRed: typeof data.pRed === "number" ? data.pRed : Number(data.pRed),
+        pBlue: typeof data.pBlue === "number" ? data.pBlue : Number(data.pBlue),
+        alliance,
+        modelVersion: typeof data.modelVersion === "string" ? data.modelVersion : null,
+      });
+      const low = typeof data.confidenceLow === "number" ? data.confidenceLow : Number(data.confidenceLow);
+      const high = typeof data.confidenceHigh === "number" ? data.confidenceHigh : Number(data.confidenceHigh);
+      const factors = (data.keyFactors as Array<{ name?: string; impact?: string }> | undefined)?.slice(0, 3) ?? [];
       return (
         <Shell
           type={type}
@@ -389,6 +559,26 @@ export const DashboardWidgetView = memo(function DashboardWidgetView({
                       : "—"}
                   </em>
                 </p>
+              ) : null}
+              {win ? (
+                <p className="app-muted">
+                  {win.label} chance we win
+                  {Number.isFinite(low) && Number.isFinite(high)
+                    ? ` · typical range ${Math.round(low * 100)}–${Math.round(high * 100)}%`
+                    : ""}
+                </p>
+              ) : (
+                <p className="app-muted">No stored prediction for this match yet. Open Strategy after TBA sync.</p>
+              )}
+              {factors.length ? (
+                <ul className="dash-checklist">
+                  {factors.map((factor, index) => (
+                    <li key={`${factor.name}-${index}`}>
+                      <span>{factor.name ?? "Why"}</span>
+                      <b>{factor.impact ?? ""}</b>
+                    </li>
+                  ))}
+                </ul>
               ) : null}
               <footer>
                 <div>
@@ -913,11 +1103,34 @@ export const DashboardWidgetView = memo(function DashboardWidgetView({
         </Shell>
       );
     }
-    default:
+    case "ask_ai": {
+      const href = typeof data.href === "string" && data.href ? data.href : "/ai?tab=chat";
+      const askHref = withOrg(href);
       return (
-        <Shell type={type} title={type.replaceAll("_", " ")} payload={payload} emptyHint={hint} orgId={orgId}>
-          <p className="app-muted">Unknown widget.</p>
+        <Shell type={type} title="Ask AI" payload={payload} href={askHref} emptyHint={hint} orgId={orgId} preferChildren>
+          <form
+            className="dash-ask-ai"
+            onSubmit={(event) => {
+              event.preventDefault();
+              const q = String(new FormData(event.currentTarget).get("q") ?? "").trim();
+              const next = q
+                ? `${askHref}${askHref.includes("?") ? "&" : "?"}q=${encodeURIComponent(q)}`
+                : askHref;
+              window.location.href = next;
+            }}
+          >
+            <label>
+              Ask your team helper
+              <input name="q" placeholder="Why is this bracket heavy?" />
+            </label>
+            <button className="is-primary" type="submit">
+              Ask
+            </button>
+          </form>
         </Shell>
       );
+    }
+    default:
+      return <Shell type={type} title={hint.title} payload={payload} emptyHint={hint} orgId={orgId} />;
   }
 });

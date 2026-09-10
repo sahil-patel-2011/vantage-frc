@@ -6,6 +6,7 @@ import {
   canWriteOrgDashboard,
   catalogEntry,
   DEFAULT_DASHBOARD_LAYOUT,
+  defaultDashboardLayoutForAudience,
   filterLayoutForRole,
   isDashboardWidgetType,
   validateDashboardLayout,
@@ -14,6 +15,7 @@ import {
 } from "../../../lib/dashboard/catalog";
 import { snapshotWantsFullContext } from "../../../lib/dashboard/refresh";
 import { loadDashboardSnapshot } from "../../../lib/dashboard/snapshot";
+import { homeAudienceFromTeamRole } from "../../../lib/home-workflows";
 import { hydrateOrgActiveEvent } from "../../../lib/reference/hydrate-active-event";
 
 const MAX_BOARDS_PER_SCOPE = 12;
@@ -60,6 +62,19 @@ function ensureOnboardingChecklist(layout: DashboardWidgetLayout[]): DashboardWi
     },
     ...layout.map((item) => ({ ...item, y: item.y + offset })),
   ];
+}
+
+async function defaultLayoutForMember(
+  client: import("@neondatabase/serverless").PoolClient,
+  userId: string,
+  role: string,
+): Promise<DashboardWidgetLayout[]> {
+  const row = await client.query<{ teamRole: string | null }>(
+    `SELECT team_role AS "teamRole" FROM profiles WHERE user_id = $1 LIMIT 1`,
+    [userId],
+  );
+  const audience = homeAudienceFromTeamRole(row.rows[0]?.teamRole);
+  return filterLayoutForRole(ensureOnboardingChecklist(defaultDashboardLayoutForAudience(audience)), role);
 }
 
 type BoardRow = {
@@ -173,7 +188,11 @@ export async function GET(request: Request) {
       });
 
       const layout = filterLayoutForRole(
-        ensureOnboardingChecklist(active?.layout?.length ? active.layout : DEFAULT_DASHBOARD_LAYOUT),
+        ensureOnboardingChecklist(
+          active?.layout?.length
+            ? active.layout
+            : await defaultLayoutForMember(client, session.user.id, role),
+        ),
         role,
       );
 
@@ -242,6 +261,7 @@ export async function POST(request: Request) {
       const scope = body.scope === "org" ? "org" : "personal";
 
       if (action === "reset") {
+        const layout = await defaultLayoutForMember(client, session.user.id, role);
         if (body.id) {
           await client.query(
             `UPDATE dashboards SET layout = $3::jsonb, updated_at = now()
@@ -253,7 +273,7 @@ export async function POST(request: Request) {
             [
               body.id,
               orgId,
-              JSON.stringify(DEFAULT_DASHBOARD_LAYOUT),
+              JSON.stringify(layout),
               session.user.id,
               canWriteOrgDashboard(role),
             ],
@@ -261,7 +281,7 @@ export async function POST(request: Request) {
         }
         return {
           id: body.id ?? null,
-          layout: filterLayoutForRole(DEFAULT_DASHBOARD_LAYOUT, role),
+          layout,
           reset: true,
         };
       }
@@ -404,7 +424,10 @@ export async function POST(request: Request) {
         if (existingCount >= MAX_BOARDS_PER_SCOPE) {
           throw new Error(`At most ${MAX_BOARDS_PER_SCOPE} ${scope === "org" ? "team" : "personal"} boards`);
         }
-        const validated = validateDashboardLayout(body.layout ?? DEFAULT_DASHBOARD_LAYOUT, role);
+        const validated = validateDashboardLayout(
+          body.layout ?? (await defaultLayoutForMember(client, session.user.id, role)),
+          role,
+        );
         if (!validated.ok) throw new Error(validated.error);
         const name =
           String(body.name ?? (scope === "org" ? "Team board" : "My board")).trim().slice(0, 80) ||
@@ -441,7 +464,10 @@ export async function POST(request: Request) {
         throw new Error("Owner/admin access required to manage org dashboards");
       }
 
-      const validated = validateDashboardLayout(body.layout ?? DEFAULT_DASHBOARD_LAYOUT, role);
+      const validated = validateDashboardLayout(
+        body.layout ?? (await defaultLayoutForMember(client, session.user.id, role)),
+        role,
+      );
       if (!validated.ok) throw new Error(validated.error);
       const name =
         String(body.name ?? (scope === "org" ? "Team dashboard" : "My dashboard")).trim().slice(0, 80) ||

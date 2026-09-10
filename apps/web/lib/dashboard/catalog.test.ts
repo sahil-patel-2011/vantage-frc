@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
+  DASHBOARD_WIDGET_TYPES,
   DEFAULT_DASHBOARD_LAYOUT,
+  WIDGET_CATALOG,
   applyWidgetSize,
   canAccessWidget,
   canWriteOrgDashboard,
   dashboardGridForWidth,
   dashboardRectsOverlap,
+  defaultDashboardLayoutForAudience,
   findDashboardSlot,
   filterLayoutForRole,
   homeViewLayout,
@@ -13,6 +16,7 @@ import {
   packDashboardLayout,
   scaleLayoutToCols,
   validateDashboardLayout,
+  widgetRegistryMeta,
 } from "./catalog";
 
 describe("dashboard catalog persistence helpers", () => {
@@ -132,9 +136,11 @@ describe("dashboard tenant and role isolation rules", () => {
     expect(duplicate.ok).toBe(false);
   });
 
-  it("picks phone / tablet / laptop / TV grids without collapsing to a 1-column stack", () => {
-    expect(dashboardGridForWidth(390).cols).toBe(4);
-    expect(dashboardGridForWidth(800).cols).toBe(8);
+  it("picks phone 1/2-col, tablet 4-col, and laptop 12-col grids", () => {
+    expect(dashboardGridForWidth(320).cols).toBe(1);
+    expect(dashboardGridForWidth(390).cols).toBe(1);
+    expect(dashboardGridForWidth(480).cols).toBe(2);
+    expect(dashboardGridForWidth(800).cols).toBe(4);
     expect(dashboardGridForWidth(1280).cols).toBe(12);
     expect(dashboardGridForWidth(1920).cols).toBe(12);
     expect(dashboardGridForWidth(1920).rowHeight).toBeGreaterThan(dashboardGridForWidth(1280).rowHeight);
@@ -159,7 +165,7 @@ describe("dashboard tenant and role isolation rules", () => {
 });
 
 describe("home view layout", () => {
-  it("keeps pinned widgets visible when empty and hides only setup-only cards", () => {
+  it("hides empty cards in view mode and keeps next match as the hero", () => {
     const viewed = homeViewLayout(
       [
         ...DEFAULT_DASHBOARD_LAYOUT,
@@ -173,17 +179,12 @@ describe("home view layout", () => {
           competition_snapshot: { status: "setup_required" },
           robot_readiness: { status: "empty" },
           alerts: { status: "live" },
+          recent_result: { status: "empty" },
+          scouting_coverage: { status: "empty" },
         },
       },
     );
-    expect(viewed.map((item) => item.type)).toEqual([
-      "next_match",
-      "competition_snapshot",
-      "robot_readiness",
-      "alerts",
-      "recent_result",
-      "scouting_coverage",
-    ]);
+    expect(viewed.map((item) => item.type)).toEqual(["next_match", "alerts"]);
     expect(viewed.find((item) => item.type === "next_match")?.w).toBe(12);
     expect(viewed.some((item) => item.type === "onboarding_checklist")).toBe(false);
   });
@@ -195,5 +196,45 @@ describe("home view layout", () => {
       widgets: {},
     });
     expect(viewed.map((item) => item.type)).toEqual(DEFAULT_DASHBOARD_LAYOUT.map((item) => item.type));
+  });
+});
+
+describe("widget registry", () => {
+  it("lists every widget type exactly once with sizes, empty condition, and a help article", () => {
+    const types = WIDGET_CATALOG.map((entry) => entry.type);
+    expect(new Set(types).size).toBe(DASHBOARD_WIDGET_TYPES.length);
+    expect(types.sort()).toEqual([...DASHBOARD_WIDGET_TYPES].sort());
+    for (const entry of WIDGET_CATALOG) {
+      const meta = widgetRegistryMeta(entry);
+      expect(meta.sizes.length, entry.type).toBeGreaterThan(0);
+      expect(meta.emptyWhen.length, entry.type).toBeGreaterThan(3);
+      expect(meta.helpArticle.length, entry.type).toBeGreaterThan(2);
+      expect(meta.audience.length, entry.type).toBeGreaterThan(0);
+    }
+  });
+
+  it("ships student vs mentor defaults that a new member can actually open", () => {
+    const student = defaultDashboardLayoutForAudience("student");
+    const mentor = defaultDashboardLayoutForAudience("mentor");
+    expect(student.map((item) => item.type)).toEqual([
+      "next_match",
+      "my_day",
+      "learn_progress",
+      "team_todos",
+      "files_recent",
+      "team_chat",
+      "ask_ai",
+    ]);
+    expect(mentor.map((item) => item.type)).toEqual([
+      "next_match",
+      "duties",
+      "budget_parts",
+      "attendance",
+      "outreach_hours",
+      "announcements_ack",
+    ]);
+    expect(validateDashboardLayout(student, "scout").ok).toBe(true);
+    expect(validateDashboardLayout(mentor, "admin").ok).toBe(true);
+    expect(validateDashboardLayout(mentor, "scout").ok).toBe(false);
   });
 });

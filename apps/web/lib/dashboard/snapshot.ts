@@ -170,6 +170,24 @@ export async function loadDashboardSnapshot(
     );
     const opponentKeys = ourAlliance === "red" ? blueKeys : ourAlliance === "blue" ? redKeys : [];
     const strip = (key: string) => key.replace(/^frc/i, "");
+    const pred = await client.query<{
+      pRed: number;
+      pBlue: number;
+      confidenceLow: number;
+      confidenceHigh: number;
+      keyFactors: unknown;
+      modelVersion: string;
+    }>(
+      `SELECT p_red AS "pRed", p_blue AS "pBlue",
+              confidence_low AS "confidenceLow", confidence_high AS "confidenceHigh",
+              key_factors AS "keyFactors", model_version AS "modelVersion"
+       FROM predictions
+       WHERE org_id = $1::uuid AND match_key = $2
+       ORDER BY scored_at DESC
+       LIMIT 1`,
+      [input.orgId, row.matchKey],
+    );
+    const stored = pred.rows[0];
     widgets.next_match = stamp("live", "next_match", {
       ...row,
       ourAlliance,
@@ -183,6 +201,12 @@ export async function loadDashboardSnapshot(
             : "Alliance TBD — confirm bumpers",
       bumperColor: ourAlliance ? ourAlliance.toUpperCase() : null,
       href: `/my-day?orgId=${encodeURIComponent(input.orgId)}`,
+      pRed: stored?.pRed ?? null,
+      pBlue: stored?.pBlue ?? null,
+      confidenceLow: stored?.confidenceLow ?? null,
+      confidenceHigh: stored?.confidenceHigh ?? null,
+      keyFactors: stored?.keyFactors ?? null,
+      modelVersion: stored?.modelVersion ?? null,
     } as unknown as Record<string, unknown>);
   }
 
@@ -398,7 +422,7 @@ export async function loadDashboardSnapshot(
         "empty",
         "prediction_summary",
         undefined,
-        "Last stored row is a DEMO prediction. Recompute on Strategy.",
+        "Last stored prediction is not from a real match. Open Strategy and compute one from your event.",
       );
       return;
     }
@@ -1039,6 +1063,47 @@ export async function loadDashboardSnapshot(
   ];
   for (const [type, load] of widgetLoaders) {
     if (wants(type)) jobs.push(load());
+  }
+
+  const honestEmpty: Array<[DashboardWidgetType, string]> = [
+    ["my_day", "No matches on your day yet. Open My Day after TBA sync."],
+    ["learn_progress", "Start Learn CAD or programming setup to see progress here."],
+    ["files_recent", "No files opened yet. Open Files to add one."],
+    ["team_chat", "No unread team chats."],
+    ["duties", "Nothing needs assignment tonight."],
+    ["budget_parts", "No budget row or open part requests."],
+    ["attendance", "No session scheduled tonight."],
+    ["outreach_hours", "No outreach hours logged this month."],
+    ["announcements_ack", "Nothing waiting on you."],
+    ["event_countdown", "No upcoming event on the calendar."],
+    ["hours_month", "No hours logged this month."],
+    ["calendar_today", "Nothing on the calendar today."],
+    ["cad_resources", "No CAD files or Onshape links yet."],
+    ["coding_resources", "No robot-code repo bound yet."],
+    ["team_profile", "Team profile has not been built yet. Open Team profile."],
+    ["alliance_desk", "Alliance selection is not running."],
+    ["match_schedule", "No match schedule synced for this event."],
+    ["batteries", "No batteries logged."],
+    ["assembly_manual", "No assembly manual yet. Open Assembly manual to start one."],
+    ["sponsor_followups", "No open sponsor follow-ups."],
+    ["event_readiness", "No event on the calendar."],
+    ["weather_venue", "No event with a location — weather stays off until there is one."],
+  ];
+  for (const [type, message] of honestEmpty) {
+    if (wants(type)) {
+      jobs.push(
+        (async () => {
+          widgets[type] = stamp("empty", type, undefined, message);
+        })(),
+      );
+    }
+  }
+  if (wants("ask_ai")) {
+    jobs.push(
+      (async () => {
+        widgets.ask_ai = stamp("live", "ask_ai", { href: "/ai?tab=chat" }, "Ask a question.");
+      })(),
+    );
   }
 
   await Promise.all(jobs);

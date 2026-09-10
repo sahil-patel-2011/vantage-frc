@@ -14,6 +14,29 @@ export const DASHBOARD_WIDGET_TYPES = [
   "alerts",
   "team_todos",
   "subteam_upcoming",
+  "my_day",
+  "learn_progress",
+  "files_recent",
+  "team_chat",
+  "duties",
+  "budget_parts",
+  "attendance",
+  "outreach_hours",
+  "announcements_ack",
+  "ask_ai",
+  "event_countdown",
+  "hours_month",
+  "calendar_today",
+  "cad_resources",
+  "coding_resources",
+  "team_profile",
+  "alliance_desk",
+  "match_schedule",
+  "batteries",
+  "assembly_manual",
+  "sponsor_followups",
+  "event_readiness",
+  "weather_venue",
 ] as const;
 
 export type DashboardWidgetType = (typeof DASHBOARD_WIDGET_TYPES)[number];
@@ -32,6 +55,8 @@ export type DashboardWidgetLayout = {
   config?: Record<string, unknown>;
 };
 
+export type HomeAudienceKind = "student" | "mentor";
+
 export type WidgetCatalogEntry = {
   type: DashboardWidgetType;
   label: string;
@@ -42,7 +67,35 @@ export type WidgetCatalogEntry = {
   minH: number;
   /** Roles allowed to add/view this widget. Empty = all members. */
   roles?: OrgRole[];
+  /** Apple-style sizes this widget may be resized to. Default S/M/L. */
+  sizes?: WidgetSizeKey[];
+  /** Who the widget is for. Omit = both. */
+  audience?: HomeAudienceKind[];
+  /** Plain-language condition under which the widget hides in view mode. */
+  emptyWhen?: string;
+  /** In-app help slug (docs/FEATURE_MAP + /help/<slug>). */
+  helpArticle?: string;
 };
+
+/** Widgets that stay on Home even with no live row — they are the empty-state CTA. */
+export const HOME_ALWAYS_VISIBLE: ReadonlySet<DashboardWidgetType> = new Set([
+  "next_match",
+  "ask_ai",
+]);
+
+export function widgetRegistryMeta(entry: WidgetCatalogEntry): {
+  sizes: WidgetSizeKey[];
+  audience: HomeAudienceKind[];
+  emptyWhen: string;
+  helpArticle: string;
+} {
+  return {
+    sizes: entry.sizes ?? ["s", "m", "l"],
+    audience: entry.audience ?? ["student", "mentor"],
+    emptyWhen: entry.emptyWhen ?? "No real data yet",
+    helpArticle: entry.helpArticle ?? "edit-home",
+  };
+}
 
 export const DASHBOARD_COLUMNS = 12;
 
@@ -72,10 +125,11 @@ export type DashboardGrid = {
   label: "phone" | "tablet" | "laptop" | "tv";
 };
 
-/** Phone 4-col, tablet 8-col, laptop 12-col, pit TV larger tiles. */
+/** Phone 1/2-col, tablet 4-col, laptop/TV 12-col saved board. */
 export function dashboardGridForWidth(width: number): DashboardGrid {
-  if (width < 640) return { cols: 4, rowHeight: 86, margin: [10, 10], label: "phone" };
-  if (width < 1024) return { cols: 8, rowHeight: 72, margin: [12, 12], label: "tablet" };
+  if (width < 400) return { cols: 1, rowHeight: 96, margin: [8, 10], label: "phone" };
+  if (width < 640) return { cols: 2, rowHeight: 90, margin: [10, 10], label: "phone" };
+  if (width < 1024) return { cols: 4, rowHeight: 80, margin: [12, 12], label: "tablet" };
   if (width >= 1600) return { cols: 12, rowHeight: 92, margin: [16, 16], label: "tv" };
   return { cols: 12, rowHeight: 72, margin: [12, 12], label: "laptop" };
 }
@@ -178,7 +232,15 @@ export function homeViewLayout(
 ): DashboardWidgetLayout[] {
   if (input.editing) return layout.map((item) => ({ ...item }));
   const ready = input.shell === "ready";
-  const visible = layout.filter((item) => !(ready && SETUP_ONLY_WIDGETS.has(item.type)));
+  const snapshot = input.widgets;
+  const visible = layout.filter((item) => {
+    if (ready && SETUP_ONLY_WIDGETS.has(item.type)) return false;
+    if (HOME_ALWAYS_VISIBLE.has(item.type)) return true;
+    if (!snapshot) return true;
+    const status = snapshot[item.type]?.status;
+    if (status === "empty" || status === "setup_required") return false;
+    return true;
+  });
   return packDashboardLayout(
     visible.map((item) =>
       item.type === "next_match" ? { ...item, x: 0, w: DASHBOARD_COLUMNS } : item,
@@ -323,6 +385,270 @@ export const WIDGET_CATALOG: WidgetCatalogEntry[] = [
     minH: 2,
     roles: ["owner", "admin"],
   },
+  {
+    type: "my_day",
+    label: "My day",
+    description: "Your next match, leave time, and what to do now",
+    defaultW: 4,
+    defaultH: 3,
+    minW: 3,
+    minH: 2,
+    audience: ["student"],
+    emptyWhen: "No event day schedule yet",
+    helpArticle: "edit-home",
+  },
+  {
+    type: "learn_progress",
+    label: "Learn",
+    description: "CAD and programming track progress",
+    defaultW: 4,
+    defaultH: 3,
+    minW: 3,
+    minH: 2,
+    audience: ["student"],
+    emptyWhen: "No learning track started",
+    helpArticle: "edit-home",
+  },
+  {
+    type: "files_recent",
+    label: "Recent files",
+    description: "Files you opened or that were shared with you",
+    defaultW: 4,
+    defaultH: 3,
+    minW: 3,
+    minH: 2,
+    emptyWhen: "No files yet",
+    helpArticle: "edit-home",
+  },
+  {
+    type: "team_chat",
+    label: "Team chat",
+    description: "Unread team messages",
+    defaultW: 4,
+    defaultH: 3,
+    minW: 3,
+    minH: 2,
+    emptyWhen: "No unread chats",
+    helpArticle: "edit-home",
+  },
+  {
+    type: "duties",
+    label: "Duties",
+    description: "Needs assignment tonight",
+    defaultW: 4,
+    defaultH: 3,
+    minW: 3,
+    minH: 2,
+    audience: ["mentor"],
+    emptyWhen: "Nothing needs assignment",
+    helpArticle: "edit-home",
+  },
+  {
+    type: "budget_parts",
+    label: "Budget & parts",
+    description: "Budget remaining and part requests waiting",
+    defaultW: 4,
+    defaultH: 3,
+    minW: 3,
+    minH: 2,
+    roles: ["owner", "admin"],
+    audience: ["mentor"],
+    emptyWhen: "No budget row or open requests",
+    helpArticle: "edit-home",
+  },
+  {
+    type: "attendance",
+    label: "Attendance tonight",
+    description: "Who is expected at the next session",
+    defaultW: 4,
+    defaultH: 3,
+    minW: 3,
+    minH: 2,
+    audience: ["mentor"],
+    emptyWhen: "No session scheduled",
+    helpArticle: "edit-home",
+  },
+  {
+    type: "outreach_hours",
+    label: "Outreach hours",
+    description: "Hours logged this month",
+    defaultW: 4,
+    defaultH: 3,
+    minW: 3,
+    minH: 2,
+    emptyWhen: "No outreach logged this month",
+    helpArticle: "edit-home",
+  },
+  {
+    type: "announcements_ack",
+    label: "Announcements",
+    description: "Team notes that still need an acknowledgement",
+    defaultW: 4,
+    defaultH: 3,
+    minW: 3,
+    minH: 2,
+    emptyWhen: "Nothing waiting on you",
+    helpArticle: "edit-home",
+  },
+  {
+    type: "ask_ai",
+    label: "Ask AI",
+    description: "Ask a question — opens chat with your team's facts",
+    defaultW: 6,
+    defaultH: 2,
+    minW: 3,
+    minH: 2,
+    emptyWhen: "Always available",
+    helpArticle: "edit-home",
+  },
+  {
+    type: "event_countdown",
+    label: "Next event",
+    description: "Countdown to the next event on the calendar",
+    defaultW: 4,
+    defaultH: 3,
+    minW: 3,
+    minH: 2,
+    emptyWhen: "No upcoming event",
+    helpArticle: "edit-home",
+  },
+  {
+    type: "hours_month",
+    label: "Hours this month",
+    description: "Your logged shop hours",
+    defaultW: 3,
+    defaultH: 2,
+    minW: 3,
+    minH: 2,
+    sizes: ["s", "m"],
+    emptyWhen: "No hours logged this month",
+    helpArticle: "edit-home",
+  },
+  {
+    type: "calendar_today",
+    label: "Today",
+    description: "Today and this week's calendar",
+    defaultW: 4,
+    defaultH: 3,
+    minW: 3,
+    minH: 2,
+    emptyWhen: "Nothing on the calendar",
+    helpArticle: "edit-home",
+  },
+  {
+    type: "cad_resources",
+    label: "CAD resources",
+    description: "Vault recents and Onshape links",
+    defaultW: 4,
+    defaultH: 3,
+    minW: 3,
+    minH: 2,
+    audience: ["student"],
+    emptyWhen: "No CAD files or links yet",
+    helpArticle: "edit-home",
+  },
+  {
+    type: "coding_resources",
+    label: "Coding resources",
+    description: "Bound repo, deploy log, Bugbot findings",
+    defaultW: 4,
+    defaultH: 3,
+    minW: 3,
+    minH: 2,
+    emptyWhen: "No repo bound",
+    helpArticle: "edit-home",
+  },
+  {
+    type: "team_profile",
+    label: "Team profile",
+    description: "What TBA and Statbotics have on record for this team",
+    defaultW: 4,
+    defaultH: 3,
+    minW: 3,
+    minH: 2,
+    emptyWhen: "Team profile not built yet",
+    helpArticle: "edit-home",
+  },
+  {
+    type: "alliance_desk",
+    label: "Alliance desk",
+    description: "Alliance selection status at this event",
+    defaultW: 4,
+    defaultH: 3,
+    minW: 3,
+    minH: 2,
+    emptyWhen: "Not in alliance selection",
+    helpArticle: "edit-home",
+  },
+  {
+    type: "match_schedule",
+    label: "Match schedule",
+    description: "Upcoming matches at the active event",
+    defaultW: 6,
+    defaultH: 4,
+    minW: 3,
+    minH: 2,
+    emptyWhen: "No schedule synced",
+    helpArticle: "edit-home",
+  },
+  {
+    type: "batteries",
+    label: "Batteries",
+    description: "Battery cycle and charge state",
+    defaultW: 4,
+    defaultH: 3,
+    minW: 3,
+    minH: 2,
+    emptyWhen: "No batteries logged",
+    helpArticle: "edit-home",
+  },
+  {
+    type: "assembly_manual",
+    label: "Assembly manual",
+    description: "Latest build-book runs",
+    defaultW: 4,
+    defaultH: 3,
+    minW: 3,
+    minH: 2,
+    emptyWhen: "No assembly manual yet",
+    helpArticle: "edit-home",
+  },
+  {
+    type: "sponsor_followups",
+    label: "Sponsor follow-ups",
+    description: "Partners waiting on a reply",
+    defaultW: 4,
+    defaultH: 3,
+    minW: 3,
+    minH: 2,
+    roles: ["owner", "admin"],
+    audience: ["mentor"],
+    emptyWhen: "No open follow-ups, or this team does not use sponsors",
+    helpArticle: "edit-home",
+  },
+  {
+    type: "event_readiness",
+    label: "Event readiness",
+    description: "Travel, packing, and inspection still open",
+    defaultW: 4,
+    defaultH: 3,
+    minW: 3,
+    minH: 2,
+    emptyWhen: "No event on the calendar",
+    helpArticle: "edit-home",
+  },
+  {
+    type: "weather_venue",
+    label: "Venue weather",
+    description: "Public forecast on event day, only when the event has a location",
+    defaultW: 3,
+    defaultH: 2,
+    minW: 3,
+    minH: 2,
+    sizes: ["s", "m"],
+    emptyWhen: "No event with a location",
+    helpArticle: "edit-home",
+  },
 ];
 
 export const DEFAULT_DASHBOARD_LAYOUT: DashboardWidgetLayout[] = [
@@ -363,6 +689,33 @@ const FOCUS_DASHBOARD_LAYOUTS: Record<DashboardPrimaryFocus, DashboardWidgetLayo
 export function defaultDashboardLayoutForFocus(focus: string | null | undefined): DashboardWidgetLayout[] {
   const key = (focus && focus in FOCUS_DASHBOARD_LAYOUTS ? focus : "competition") as DashboardPrimaryFocus;
   return FOCUS_DASHBOARD_LAYOUTS[key].map((item) => ({ ...item }));
+}
+
+const STUDENT_HOME_LAYOUT: DashboardWidgetLayout[] = [
+  { i: "w-next_match", type: "next_match", x: 0, y: 0, w: 12, h: 4, minW: 3, minH: 3 },
+  { i: "w-my_day", type: "my_day", x: 0, y: 4, w: 4, h: 3, minW: 3, minH: 2 },
+  { i: "w-learn_progress", type: "learn_progress", x: 4, y: 4, w: 4, h: 3, minW: 3, minH: 2 },
+  { i: "w-team_todos", type: "team_todos", x: 8, y: 4, w: 4, h: 3, minW: 3, minH: 2 },
+  { i: "w-files_recent", type: "files_recent", x: 0, y: 7, w: 4, h: 3, minW: 3, minH: 2 },
+  { i: "w-team_chat", type: "team_chat", x: 4, y: 7, w: 4, h: 3, minW: 3, minH: 2 },
+  { i: "w-ask_ai", type: "ask_ai", x: 8, y: 7, w: 4, h: 3, minW: 3, minH: 2 },
+];
+
+const MENTOR_HOME_LAYOUT: DashboardWidgetLayout[] = [
+  { i: "w-next_match", type: "next_match", x: 0, y: 0, w: 12, h: 4, minW: 3, minH: 3 },
+  { i: "w-duties", type: "duties", x: 0, y: 4, w: 4, h: 3, minW: 3, minH: 2 },
+  { i: "w-budget_parts", type: "budget_parts", x: 4, y: 4, w: 4, h: 3, minW: 3, minH: 2 },
+  { i: "w-attendance", type: "attendance", x: 8, y: 4, w: 4, h: 3, minW: 3, minH: 2 },
+  { i: "w-outreach_hours", type: "outreach_hours", x: 0, y: 7, w: 4, h: 3, minW: 3, minH: 2 },
+  { i: "w-announcements_ack", type: "announcements_ack", x: 4, y: 7, w: 4, h: 3, minW: 3, minH: 2 },
+];
+
+/** Personal Home for a new student vs a mentor — not the competition-focus board. */
+export function defaultDashboardLayoutForAudience(
+  audience: HomeAudienceKind | null | undefined,
+): DashboardWidgetLayout[] {
+  const layout = audience === "mentor" ? MENTOR_HOME_LAYOUT : STUDENT_HOME_LAYOUT;
+  return layout.map((item) => ({ ...item }));
 }
 
 export const SECONDARY_WIDGET_TYPES: DashboardWidgetType[] = [
