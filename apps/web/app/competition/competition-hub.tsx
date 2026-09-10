@@ -33,7 +33,13 @@ export default function CompetitionHub() {
           );
         }
         if (tab === "my-day") return <MyDayClient embedded />;
-        if (tab === "strategy") return <StrategyClient embedded />;
+        if (tab === "strategy") {
+          return (
+            <HubOrgGate orgId={orgId} label="Strategy">
+              {() => <StrategyClient embedded />}
+            </HubOrgGate>
+          );
+        }
         if (tab === "pick-clock") return <PickClockClient embedded />;
         if (tab === "chemistry") return <ChemistryClient embedded />;
         if (tab === "match-checklist") return <MatchChecklistClient embedded />;

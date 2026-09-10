@@ -2,7 +2,12 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-const source = readFileSync(join(__dirname, "strategy-client.tsx"), "utf8");
+const dir = __dirname;
+const source = [
+  "strategy-client.tsx",
+  "strategy-chrome.tsx",
+  "strategy-live-panel.tsx",
+].map((name) => readFileSync(join(dir, name), "utf8")).join("\n");
 
 describe("Strategy on-demand prediction", () => {
   it("POSTs recompute to /api/strategy instead of showing only a cached load", () => {
