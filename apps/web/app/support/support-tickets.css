@@ -21,7 +21,7 @@
 .support-tickets-page .soft-panel h2,
 .support-tickets-next-actions h2 {
   margin: 0;
-  font:700 var(--soft-title-2) var(--font-source-sans), ui-sans-serif;
+  font:700 var(--title-2) var(--font-source-sans), ui-sans-serif;
 }
 
 .support-tickets-next-actions {

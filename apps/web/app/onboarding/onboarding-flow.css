@@ -107,7 +107,7 @@
  * Pending — what you can do while a team decides.
  * ------------------------------------------------------------------ */
 .onboarding-meanwhile{display:grid;gap:10px}
-.onboarding-meanwhile h2{margin:0;font-size:var(--soft-title-4);letter-spacing:-.01em}
+.onboarding-meanwhile h2{margin:0;font-size:var(--title-4);letter-spacing:-.01em}
 .onboarding-meanwhile ul{display:grid;gap:7px;margin:0;padding:0;list-style:none}
 .onboarding-meanwhile a{display:grid;gap:3px;min-height:56px;align-content:center;padding:11px 13px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface);text-decoration:none;color:inherit;transition:border-color .16s ease}
 .onboarding-meanwhile a:hover{border-color:var(--accent)}
@@ -140,7 +140,7 @@
 @media(max-width:420px){
   .onboarding-flow-page{padding:12px 8px}
   .onboarding-flow-card{padding:20px 14px}
-  .onboarding-flow-header h1{font-size:var(--soft-title-1)}
+  .onboarding-flow-header h1{font-size:var(--title-1)}
   .onboarding-row{grid-template-columns:1fr}
   .onboarding-cards-role,.onboarding-cards-crew{grid-template-columns:1fr}
   .onboarding-review-card{grid-template-columns:1fr}

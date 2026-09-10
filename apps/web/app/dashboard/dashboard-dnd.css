@@ -86,14 +86,14 @@
 
 .dash-boards-sheet{
   position:fixed;z-index:96;left:50%;bottom:0;transform:translateX(-50%);
-  width:min(520px,100vw);max-height:min(78vh,640px);padding:18px 18px calc(20px + var(--soft-safe-bottom));
+  width:min(520px,100vw);max-height:min(78vh,640px);padding:18px 18px calc(20px + var(--safe-bottom));
   border-radius:22px 22px 0 0;background:var(--surface);border:1px solid var(--line);border-bottom:0;
   /* Bottom sheet: the shadow must throw UPWARD, so this one stays directional
      rather than taking --soft-shadow-pop. Depth matched to the pop token. */
   box-shadow:0 -16px 40px rgba(12,17,24,.26);overflow:auto;animation:dash-sheet-up .28s ease;
 }
 .dash-boards-sheet header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
-.dash-boards-sheet h2{margin:0;font-size:var(--soft-title-2);letter-spacing:var(--soft-tracking-tight)}
+.dash-boards-sheet h2{margin:0;font-size:var(--title-2);letter-spacing:var(--tracking-tight)}
 .dash-boards-sheet header p{margin:4px 0 0;color:var(--muted);font-size:13px}
 .dash-boards-group{margin:0 0 16px}
 .dash-boards-group>p{
@@ -393,7 +393,7 @@ html[data-theme="dark"] .dash-snap-hud{background:rgba(8,12,18,.92)}
   .dash-editor-bar .dash-palette-heading,
   .dash-editor-bar .dash-widget-palette{display:none}
   .dash-edit-dock{
-    position:sticky;left:auto;bottom:calc(12px + var(--soft-safe-bottom));transform:none;
+    position:sticky;left:auto;bottom:calc(12px + var(--safe-bottom));transform:none;
     width:100%;max-width:none;margin:16px 0 0;
   }
 }

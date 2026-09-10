@@ -79,7 +79,7 @@
 }
 .todos-cross-tracker-list li .app-button {
   flex: none;
-  min-height: var(--soft-control-h-sm);
+  min-height: var(--control-h-sm);
 }
 .todos-unified-empty {
   margin: 0;
@@ -113,7 +113,7 @@
 }
 .todos-next-actions > header h2 {
   margin: 0 0 4px;
-  font-size:var(--soft-title-3);
+  font-size:var(--title-3);
 }
 .todos-next-actions > header p {
   margin: 0;

@@ -12,7 +12,7 @@
 
 .ptk-next-actions{display:grid;gap:10px;margin:0 0 16px;padding:16px 18px}
 .ptk-next-actions>header{display:grid;gap:4px}
-.ptk-next-actions h2{margin:0;font-size:var(--soft-title-3);letter-spacing:var(--soft-tracking-tight)}
+.ptk-next-actions h2{margin:0;font-size:var(--title-3);letter-spacing:var(--tracking-tight)}
 .ptk-next-actions>header p{margin:0;color:var(--app-muted);font-size:12px;line-height:1.4}
 .ptk-next-actions ol{margin:0;padding:0;list-style:none;display:grid;gap:8px}
 .ptk-next-actions li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-radius:var(--radius-sm);border:1px solid var(--app-line);background:var(--app-bg)}
@@ -35,7 +35,7 @@
 .ptk-empty-links a:hover{text-decoration:underline}
 
 .ptk-stack{display:grid;gap:16px}
-.ptk-panel h2{margin:0;font-size:var(--soft-title-3);letter-spacing:var(--soft-tracking-tight)}
+.ptk-panel h2{margin:0;font-size:var(--title-3);letter-spacing:var(--tracking-tight)}
 .ptk-panel>p.lead{margin:0;color:var(--app-muted);font-size:13px;line-height:1.4}
 
 .ptk-list{list-style:none;margin:0;padding:0;display:grid;gap:10px}

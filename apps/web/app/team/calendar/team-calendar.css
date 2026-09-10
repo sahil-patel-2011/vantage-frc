@@ -46,8 +46,8 @@
 }
 .tc-next-actions h2 {
   margin: 0;
-  font-size:var(--soft-title-3);
-  letter-spacing:var(--soft-tracking-tight);
+  font-size:var(--title-3);
+  letter-spacing:var(--tracking-tight);
 }
 .tc-next-actions > header p {
   margin: 0;
@@ -171,7 +171,7 @@
 
 .tc-panel h2 {
   margin: 0;
-  font-size:var(--soft-title-3);
+  font-size:var(--title-3);
 }
 
 .tc-muted {
@@ -193,7 +193,7 @@
 }
 .tc-day h3 {
   margin: 8px 0 0;
-  font-size:var(--soft-text-xs);
+  font-size:var(--text-xs);
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--app-muted);
@@ -592,7 +592,7 @@
 }
 .tc-quick-head h2 {
   margin: 0;
-  font-size:var(--soft-title-3);
+  font-size:var(--title-3);
 }
 .tc-quick-grid {
   display: grid;
@@ -819,7 +819,7 @@
 }
 .tc-sync-head h2 {
   margin: 0 0 6px;
-  font-size:var(--soft-title-2);
+  font-size:var(--title-2);
 }
 .tc-sync-head p {
   margin: 0;

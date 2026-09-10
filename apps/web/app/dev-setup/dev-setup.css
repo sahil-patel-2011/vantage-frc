@@ -256,7 +256,7 @@
   margin: 0;
   padding: 12px 76px 12px 14px;
   overflow-x: auto;
-  font-family: var(--soft-font-mono, ui-monospace, "SF Mono", Menlo, Consolas, monospace);
+  font-family: var(--font-mono, ui-monospace, "SF Mono", Menlo, Consolas, monospace);
   font-size: 13px;
   line-height: 1.6;
 }
@@ -311,13 +311,13 @@
 /* A warning here means "painful to undo" — signing up with a school email, or
    re-submitting a student application. Distinct from a tip, not alarming. */
 .ds-warn {
-  border: 1px solid var(--soft-warning-line, #e4d9c5);
-  background: var(--soft-warning-bg, #faf6ef);
-  color: var(--soft-warning-ink, #6b5a3a);
+  border: 1px solid var(--warning, #e4d9c5);
+  background: var(--warning-soft, #faf6ef);
+  color: var(--warning, #6b5a3a);
 }
 
 .ds-warn strong {
-  color: var(--soft-warning-ink, #6b5a3a);
+  color: var(--warning, #6b5a3a);
 }
 
 html[data-theme="dark"] .ds-warn {
@@ -363,11 +363,11 @@ html[data-theme="dark"] .ds-warn strong {
 .ds-link-primary {
   border-color: var(--accent);
   background: var(--accent);
-  color: var(--soft-brand-ink, #fff);
+  color: var(--accent-ink, #fff);
 }
 
 .ds-link-primary:hover {
-  color: var(--soft-brand-ink, #fff);
+  color: var(--accent-ink, #fff);
   filter: brightness(0.96);
 }
 
@@ -568,7 +568,7 @@ html[data-theme="dark"] .ds-warn strong {
 }
 
 .ds-ref-table code {
-  font-family: var(--soft-font-mono, ui-monospace, Menlo, Consolas, monospace);
+  font-family: var(--font-mono, ui-monospace, Menlo, Consolas, monospace);
   font-size: 12.5px;
   overflow-wrap: anywhere;
 }

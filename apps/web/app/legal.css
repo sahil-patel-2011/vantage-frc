@@ -90,7 +90,7 @@
 .legal-toc h2 {
   margin: 0 0 12px;
   color: var(--m-muted);
-  font:600 var(--soft-text-xs)/1.4 var(--m-mono) !important;
+  font:600 var(--text-xs)/1.4 var(--m-mono) !important;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }

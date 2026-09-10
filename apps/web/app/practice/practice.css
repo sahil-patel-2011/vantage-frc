@@ -42,7 +42,7 @@
 .practice-alert.error{color:var(--app-critical);background:color-mix(in srgb,var(--app-critical) 10%,var(--app-surface));border-color:color-mix(in srgb,var(--app-critical) 38%,var(--app-line))}
 .practice-next-actions{display:grid;gap:10px;margin:16px 0 0;padding:16px 18px;background:var(--app-surface);border:1px solid var(--app-line);border-radius:var(--radius-sm);box-shadow:var(--app-shadow)}
 .practice-next-actions>header{display:grid;gap:4px}
-.practice-next-actions h2{margin:0;font-size:var(--soft-title-3);letter-spacing:var(--soft-tracking-tight)}
+.practice-next-actions h2{margin:0;font-size:var(--title-3);letter-spacing:var(--tracking-tight)}
 .practice-next-actions>header p{margin:0;color:var(--app-muted);font-size:12px;line-height:1.4}
 .practice-next-actions ol{margin:0;padding:0;list-style:none;display:grid;gap:8px}
 .practice-next-actions li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-radius:var(--radius-sm);border:1px solid var(--app-line);background:var(--app-soft)}
@@ -57,11 +57,11 @@
 .practice-kpis strong{align-self:end;font-size:28px;line-height:1;font-variant-numeric:tabular-nums}
 .practice-layout{display:grid;grid-template-columns:minmax(240px,300px) 1fr;gap:16px;align-items:start}
 .practice-panel{padding:clamp(16px,2vw,22px);background:var(--app-surface);border:1px solid var(--app-line);border-radius:var(--radius-sm);box-shadow:var(--app-shadow)}
-.practice-panel h2{margin:0 0 4px;font-size:var(--soft-title-2);letter-spacing:var(--soft-tracking-tight)}
+.practice-panel h2{margin:0 0 4px;font-size:var(--title-2);letter-spacing:var(--tracking-tight)}
 .practice-muted{margin:0;color:var(--app-muted);font-size:12px;line-height:1.5}
 .practice-list{display:grid;gap:8px;align-content:start}
 .practice-list-head{display:grid;gap:2px;padding:0 2px 4px}
-.practice-list-head h2{margin:0;font-size:var(--soft-title-4);letter-spacing:-.01em}
+.practice-list-head h2{margin:0;font-size:var(--title-4);letter-spacing:-.01em}
 .practice-list-item{display:grid;gap:6px;min-height:44px;padding:12px 14px;text-align:left;color:var(--app-ink);background:var(--app-surface);border:1px solid var(--app-line);border-radius:var(--radius-sm);cursor:pointer;box-shadow:var(--app-shadow)}
 .practice-list-item:hover{border-color:color-mix(in srgb,var(--prac-mid) 55%,var(--app-line))}
 .practice-list-item.active{border-color:var(--prac-mid);box-shadow:0 0 0 1px var(--prac-mid),var(--app-shadow)}
@@ -74,7 +74,7 @@
 .practice-chip{padding:2px 7px;color:var(--app-accent);background:color-mix(in srgb,var(--app-accent) 12%,var(--app-soft));border-radius:var(--radius-pill);font-size:9px;font-weight:800}
 .practice-detail{display:grid;gap:16px;align-content:start;min-width:0}
 .practice-detail-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
-.practice-detail-head h2{margin:0 0 4px;font-size:var(--soft-title-2)}
+.practice-detail-head h2{margin:0 0 4px;font-size:var(--title-2)}
 .practice-detail-head p{margin:0;font-size:12px;color:var(--app-muted)}
 .practice-goal{margin:8px 0 0;padding:10px 12px;color:var(--app-ink);background:color-mix(in srgb,var(--app-accent) 8%,var(--app-soft));border-left:3px solid var(--prac-mid);border-radius:var(--radius-xs);font-size:13px;line-height:1.45}
 .practice-links-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -103,7 +103,7 @@
 .practice-logger .app-button.secondary,.practice-stopwatch .app-button.secondary{color:var(--app-ink);background:var(--app-surface);border:1px solid var(--app-line)}
 /* Scoped: page density, not a redefinition of the shared `.sm` size. */
 .practice-page .app-button.sm{min-height:44px;padding:5px 12px;font-size:11px}
-.practice-breakdown h3{margin:0 0 8px;font-size:var(--soft-title-4)}
+.practice-breakdown h3{margin:0 0 8px;font-size:var(--title-4)}
 .practice-breakdown ul{margin:0;padding:0;list-style:none;display:grid;gap:2px}
 .practice-breakdown li{display:grid;grid-template-columns:1fr auto auto auto;gap:12px;padding:8px 0;border-top:1px solid var(--app-line);font-size:12px}
 .practice-breakdown li b{font-variant-numeric:tabular-nums;color:var(--app-muted);font-weight:700;min-width:56px;text-align:right}
@@ -117,7 +117,7 @@
 .practice-text-btn.danger{color:var(--prac-bad)}
 .practice-new{display:grid;gap:14px;margin-bottom:16px}
 .practice-new>header{display:flex;align-items:center;justify-content:space-between}
-.practice-new>header h2{margin:0;font-size:var(--soft-title-3)}
+.practice-new>header h2{margin:0;font-size:var(--title-3)}
 .practice-new-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
 .practice-field{display:grid;gap:5px;min-width:0;color:var(--app-muted)}
 .practice-field.grow{grid-column:1/-1}

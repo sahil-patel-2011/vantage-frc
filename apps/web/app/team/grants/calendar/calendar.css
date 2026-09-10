@@ -30,7 +30,7 @@
 }
 .grant-cal-gaps h2 {
   margin: 0;
-  font-size:var(--soft-title-3);
+  font-size:var(--title-3);
 }
 .grant-cal-gaps ul {
   margin: 0;
@@ -120,7 +120,7 @@
 }
 .grant-cal-row-head h3 {
   margin: 0;
-  font-size:var(--soft-title-3);
+  font-size:var(--title-3);
 }
 .grant-cal-row-head h3 a {
   color: inherit;

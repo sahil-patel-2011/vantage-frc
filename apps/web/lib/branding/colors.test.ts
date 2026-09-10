@@ -152,8 +152,12 @@ describe("accent plan", () => {
     const dark = accentCssVariables(plan, "dark");
     expect(light["--soft-brand"]).toBe("#1457d9");
     expect(dark["--soft-brand"]).toBe("#1457d9");
+    expect(light["--accent"]).toBe(light["--soft-accent"]);
+    expect(light["--accent-soft"]).toBe(light["--soft-accent-soft"]);
+    expect(light["--accent-ink"]).toMatch(/^#[0-9a-f]{6}$/);
     // Text accent differs by theme because the card underneath differs.
     expect(light["--soft-accent"]).not.toBe(dark["--soft-accent"]);
+    expect(light["--accent"]).not.toBe(dark["--accent"]);
     expect(contrastRatio(light["--soft-accent"]!, SOFT_CARD_SURFACE.light)).toBeGreaterThanOrEqual(
       ACCENT_CONTRAST_TARGET,
     );

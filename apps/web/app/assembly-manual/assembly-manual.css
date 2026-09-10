@@ -48,7 +48,7 @@
   padding: 18px 20px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: var(--soft-surface);
+  background: var(--surface);
 }
 
 .am-card h2,
@@ -104,10 +104,10 @@
 .am-page .am-primary-link {
   display: inline-block;
   padding: 9px 16px;
-  border: 1px solid var(--soft-line-strong, var(--line));
+  border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--ink);
-  color: var(--soft-surface);
+  color: var(--surface);
   font: inherit;
   font-weight: 650;
   text-decoration: none;

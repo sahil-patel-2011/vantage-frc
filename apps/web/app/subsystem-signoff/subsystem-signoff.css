@@ -14,7 +14,7 @@
 
 .signoff-next-actions{display:grid;gap:10px;margin:0 0 16px;padding:16px 18px}
 .signoff-next-actions>header{display:grid;gap:4px}
-.signoff-next-actions h2{margin:0;font-size:var(--soft-title-3);letter-spacing:var(--soft-tracking-tight)}
+.signoff-next-actions h2{margin:0;font-size:var(--title-3);letter-spacing:var(--tracking-tight)}
 .signoff-next-actions>header p,.signoff-next-actions>p{margin:0;color:var(--app-muted);font-size:12px;line-height:1.4}
 .signoff-next-actions ol{margin:0;padding:0;list-style:none;display:grid;gap:8px}
 .signoff-next-actions li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-radius:var(--radius-sm);border:1px solid var(--app-line);background:var(--app-bg)}
@@ -26,7 +26,7 @@
 
 .signoff-readiness{display:grid;gap:12px;margin:0 0 16px;padding:16px 18px}
 .signoff-readiness>header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
-.signoff-readiness h2{margin:6px 0 0;font-size:var(--soft-title-3);letter-spacing:var(--soft-tracking-tight)}
+.signoff-readiness h2{margin:6px 0 0;font-size:var(--title-3);letter-spacing:var(--tracking-tight)}
 .signoff-readiness .score{
   display:inline-flex;align-items:baseline;gap:6px;padding:8px 12px;border-radius:var(--radius-sm);
   background:var(--app-soft);border:1px solid var(--app-line);font-variant-numeric:tabular-nums;
@@ -55,7 +55,7 @@
 
 .signoff-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .signoff-card-title{display:grid;gap:4px;min-width:0}
-.signoff-card-title h2{margin:0;font-size:var(--soft-title-3);letter-spacing:var(--soft-tracking-tight)}
+.signoff-card-title h2{margin:0;font-size:var(--title-3);letter-spacing:var(--tracking-tight)}
 .signoff-card-meta{color:var(--app-muted);font-size:12px}
 .signoff-card-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .signoff-card-actions label{display:flex;gap:6px;align-items:center;color:var(--app-muted);font-size:12px}
@@ -79,7 +79,7 @@
 .signoff-gates .gate-detail{color:var(--app-muted);font-size:11px}
 
 .signoff-panel{display:grid;gap:12px;align-content:start;min-width:0;margin-bottom:4px}
-.signoff-panel h2{margin:0;font-size:var(--soft-title-3);letter-spacing:var(--soft-tracking-tight)}
+.signoff-panel h2{margin:0;font-size:var(--title-3);letter-spacing:var(--tracking-tight)}
 .signoff-panel>p{margin:0;color:var(--app-muted);font-size:13px;line-height:1.4}
 .signoff-form-actions{display:flex;gap:12px;align-items:center;margin-top:4px;flex-wrap:wrap}
 .signoff-alert{margin:0 0 12px;padding:10px 12px;border-radius:var(--radius-xs);background:#fff1ef;color:#8c322e;font-size:12px;font-weight:600}

@@ -231,7 +231,7 @@
 
 .invite-next-actions > header h2 {
   margin: 0 0 4px;
-  font-size:var(--soft-title-3);
+  font-size:var(--title-3);
 }
 
 .invite-next-actions > header p {

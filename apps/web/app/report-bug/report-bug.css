@@ -27,7 +27,7 @@
 .report-bug-submit{justify-self:start;min-height:44px}
 
 .report-bug-thanks{display:grid;gap:10px;padding:20px}
-.report-bug-thanks h2{margin:0;font-size:var(--soft-title-2);letter-spacing:var(--soft-tracking-tight)}
+.report-bug-thanks h2{margin:0;font-size:var(--title-2);letter-spacing:var(--tracking-tight)}
 .report-bug-thanks p{margin:0;color:var(--app-muted);line-height:1.5}
 .report-bug-thanks-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px}
 

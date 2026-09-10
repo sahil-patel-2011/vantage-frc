@@ -72,7 +72,7 @@
 }
 .scout-disagreements-panel header{margin-bottom:12px}
 .scout-disagreements-panel h2{
-  margin:0 0 4px;font-size:var(--soft-title-2);letter-spacing:var(--soft-tracking-tight);color:var(--ink);
+  margin:0 0 4px;font-size:var(--title-2);letter-spacing:var(--tracking-tight);color:var(--ink);
 }
 .scout-disagreements-list{list-style:none;margin:0;padding:0;display:grid;gap:10px}
 .scout-disagreements-list li{

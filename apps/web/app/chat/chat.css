@@ -26,7 +26,7 @@
 }
 .ch-scope-card h2 {
   margin: 0;
-  font-size:var(--soft-title-4);
+  font-size:var(--title-4);
 }
 .ch-scope-card p {
   margin: 0;
@@ -93,7 +93,7 @@
 .ch-main h2,
 .ch-context h2 {
   margin: 0;
-  font-size:var(--soft-title-3);
+  font-size:var(--title-3);
 }
 .ch-thread-actions {
   display: grid;
@@ -153,7 +153,7 @@
 }
 .ch-empty h1 {
   margin: 0;
-  font-size:var(--soft-title-1);
+  font-size:var(--title-1);
   line-height: 1.2;
 }
 .ch-empty p {
@@ -177,7 +177,7 @@
 }
 .ch-thread-head h1 {
   margin: 4px 0 0;
-  font-size:var(--soft-title-2);
+  font-size:var(--title-2);
 }
 .ch-shared-banner {
   padding: 8px 12px;

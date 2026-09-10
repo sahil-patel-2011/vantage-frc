@@ -25,7 +25,7 @@
 .hours-summary-tile.live strong{color:var(--app-positive)}
 .hours-layout{display:grid;grid-template-columns:1.15fr .85fr;gap:16px;align-items:start}
 .hours-panel{display:grid;gap:12px;align-content:start;min-width:0}
-.hours-panel h2{margin:0;font-size:var(--soft-title-3)}
+.hours-panel h2{margin:0;font-size:var(--title-3)}
 .hours-here{display:grid;gap:8px;margin:0;padding:0;list-style:none}
 .hours-here li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:var(--app-surface);border:1px solid var(--app-positive);border-radius:var(--radius-xs);font-size:13px}
 .hours-here li b{color:var(--app-positive);font-variant-numeric:tabular-nums}
@@ -50,7 +50,7 @@
 .hours-kind{padding:2px 7px;background:var(--app-soft);border:1px solid var(--app-line);border-radius:var(--radius-pill);font-size:10px;font-weight:700;color:var(--app-muted);white-space:nowrap}
 .hours-forms{display:grid;gap:12px}
 .hours-manual,.hours-policy{display:grid;gap:10px;padding:14px;background:var(--app-bg);border:1px solid var(--app-line);border-radius:var(--app-radius)}
-.hours-manual h3,.hours-policy h3{margin:0;font-size:var(--soft-title-4)}
+.hours-manual h3,.hours-policy h3{margin:0;font-size:var(--title-4)}
 .hours-form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
 .hours-field{display:grid;gap:4px;min-width:0;color:var(--app-muted)}
 .hours-field>span{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
@@ -72,7 +72,7 @@
 /* AI insight panel (shared .aii-* contract used by components/ai-insight-panel) */
 .aii-panel{display:grid;gap:10px;margin-top:16px}
 .aii-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.aii-head h2{margin:0 0 4px;font-size:var(--soft-title-3)}
+.aii-head h2{margin:0 0 4px;font-size:var(--title-3)}
 .aii-head h2 span{color:var(--app-accent)}
 .aii-head p{margin:0;font-size:12px;max-width:520px}
 .aii-error{margin:0;color:var(--app-critical);font-size:12px;font-weight:600}

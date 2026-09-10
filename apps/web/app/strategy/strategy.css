@@ -18,7 +18,7 @@
 
 .strategy-next-actions-panel header h2 {
   margin: 0;
-  font:800 var(--soft-title-3)/1.25 var(--font-source-sans), ui-sans-serif, system-ui, sans-serif;
+  font:800 var(--title-3)/1.25 var(--font-source-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
 .strategy-next-actions-panel header p {

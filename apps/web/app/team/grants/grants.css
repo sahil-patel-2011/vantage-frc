@@ -26,7 +26,7 @@
 .gwe-cutoff{margin:0}
 .gwe-next-actions-panel{display:grid;gap:10px;margin-bottom:14px}
 .gwe-next-actions-panel header{display:grid;gap:4px}
-.gwe-next-actions-panel h2{margin:0;font-size:var(--soft-title-3)}
+.gwe-next-actions-panel h2{margin:0;font-size:var(--title-3)}
 .gwe-next-actions{margin:0;padding:0;list-style:none;display:grid;gap:8px}
 .gwe-next-actions li{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:10px 12px;border:1px solid var(--app-line);border-radius:var(--radius-xs);background:var(--app-bg)}
 .gwe-next-actions li.primary{border-color:var(--app-accent)}

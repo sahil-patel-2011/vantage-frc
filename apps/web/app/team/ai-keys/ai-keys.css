@@ -21,8 +21,8 @@
 
 .ai-keys-page .ai-keys-shell h2 {
   margin: 0;
-  font-size:var(--soft-title-2);
-  letter-spacing:var(--soft-tracking-tight);
+  font-size:var(--title-2);
+  letter-spacing:var(--tracking-tight);
 }
 
 .ai-keys-page .ai-keys-billing p {
@@ -137,8 +137,8 @@
 .ai-keys-page .ai-keys-local h2,
 .ai-keys-page .ai-keys-routing h2 {
   margin: 0;
-  font-size:var(--soft-title-2);
-  letter-spacing:var(--soft-tracking-tight);
+  font-size:var(--title-2);
+  letter-spacing:var(--tracking-tight);
 }
 
 .ai-keys-page .ai-keys-warn {
@@ -200,8 +200,8 @@
 
 .ai-keys-page .ai-keys-any h2 {
   margin: 0;
-  font-size:var(--soft-title-2);
-  letter-spacing:var(--soft-tracking-tight);
+  font-size:var(--title-2);
+  letter-spacing:var(--tracking-tight);
 }
 
 .ai-keys-page .ai-keys-any p {

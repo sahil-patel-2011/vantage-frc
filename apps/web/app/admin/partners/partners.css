@@ -15,8 +15,8 @@
 
 .admin-partners-page .admin-ai-smoke header h2 {
   margin: 0 0 0.25rem;
-  font-size:var(--soft-title-3);
-  letter-spacing:var(--soft-tracking-tight);
+  font-size:var(--title-3);
+  letter-spacing:var(--tracking-tight);
 }
 
 .admin-partners-page .admin-ai-smoke-links {

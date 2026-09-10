@@ -28,7 +28,7 @@
 .inventory-check input{width:17px;height:17px;min-height:auto}
 .inventory-new{display:grid;gap:14px;margin-bottom:18px}
 .inventory-new>header{display:flex;align-items:center;justify-content:space-between}
-.inventory-new>header h2{margin:0;font-size:var(--soft-title-3)}
+.inventory-new>header h2{margin:0;font-size:var(--title-3)}
 .inventory-new-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
 .inventory-field{display:grid;gap:5px;min-width:0;color:var(--app-muted)}
 .inventory-field.grow{grid-column:1/-1}
@@ -66,7 +66,7 @@
 .inventory-locations strong{font-size:14px}
 .inventory-label-tools{display:grid;gap:12px;margin-bottom:18px}
 .inventory-label-tools>header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
-.inventory-label-tools h2{margin:0 0 4px;font-size:var(--soft-title-3)}
+.inventory-label-tools h2{margin:0 0 4px;font-size:var(--title-3)}
 .inventory-label-tools p{margin:0}
 .inventory-scan-actions{display:flex;flex-wrap:wrap;gap:8px}
 .inventory-scan-video{width:min(100%,560px);max-height:360px;object-fit:cover;border:1px solid var(--app-line);border-radius:var(--radius-sm);background:#101418}
@@ -107,7 +107,7 @@
 /* AI insight panel (shared .aii-* contract used by components/ai-insight-panel) */
 .aii-panel{display:grid;gap:10px;margin-top:16px}
 .aii-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.aii-head h2{margin:0 0 4px;font-size:var(--soft-title-3)}
+.aii-head h2{margin:0 0 4px;font-size:var(--title-3)}
 .aii-head h2 span{color:var(--app-accent)}
 .aii-head p{margin:0;font-size:12px;max-width:520px}
 .aii-error{margin:0;color:var(--app-critical);font-size:12px;font-weight:600}

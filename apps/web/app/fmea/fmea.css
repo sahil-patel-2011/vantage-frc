@@ -14,7 +14,7 @@
 
 .fmea-next-actions{display:grid;gap:10px;margin:0 0 16px;padding:16px 18px}
 .fmea-next-actions>header{display:grid;gap:4px}
-.fmea-next-actions h2{margin:0;font-size:var(--soft-title-3);letter-spacing:var(--soft-tracking-tight)}
+.fmea-next-actions h2{margin:0;font-size:var(--title-3);letter-spacing:var(--tracking-tight)}
 .fmea-next-actions>header p,.fmea-next-actions>p{margin:0;color:var(--app-muted);font-size:12px;line-height:1.4}
 .fmea-next-actions ol{margin:0;padding:0;list-style:none;display:grid;gap:8px}
 .fmea-next-actions li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-radius:var(--radius-sm);border:1px solid var(--app-line);background:var(--app-bg)}
@@ -34,7 +34,7 @@
 
 .fmea-layout{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;align-items:start;margin-bottom:4px}
 .fmea-panel{display:grid;gap:12px;align-content:start;min-width:0}
-.fmea-panel h2{margin:0;font-size:var(--soft-title-3);letter-spacing:var(--soft-tracking-tight)}
+.fmea-panel h2{margin:0;font-size:var(--title-3);letter-spacing:var(--tracking-tight)}
 .fmea-panel>p{margin:0;color:var(--app-muted);font-size:13px;line-height:1.4}
 
 .fmea-hotspots,.fmea-top-list{margin:0;padding:0;list-style:none;display:grid;gap:8px}

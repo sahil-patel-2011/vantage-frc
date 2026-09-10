@@ -15,7 +15,7 @@
 .mcl-stack{display:grid;gap:16px}
 .mcl-next-actions{display:grid;gap:10px;margin:0;padding:16px 18px}
 .mcl-next-actions>header{display:grid;gap:4px}
-.mcl-next-actions h2{margin:0;font-size:var(--soft-title-3);letter-spacing:var(--soft-tracking-tight)}
+.mcl-next-actions h2{margin:0;font-size:var(--title-3);letter-spacing:var(--tracking-tight)}
 .mcl-next-actions>header p{margin:0;color:var(--app-muted);font-size:12px;line-height:1.4}
 .mcl-next-actions ol{margin:0;padding:0;list-style:none;display:grid;gap:8px}
 .mcl-next-actions li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-radius:var(--radius-sm);border:1px solid var(--app-line);background:var(--app-bg)}
@@ -31,19 +31,19 @@
 .mcl-summary-tile.open strong{color:var(--app-warning)}
 .mcl-summary-tile.ready strong{color:var(--app-positive)}
 .mcl-start{display:grid;gap:12px}
-.mcl-start h2{margin:0;font-size:var(--soft-title-3)}
+.mcl-start h2{margin:0;font-size:var(--title-3)}
 .mcl-start-hint{margin:0;color:var(--app-muted);font-size:12px;line-height:1.4}
 .mcl-start-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .mcl-runs{display:grid;gap:12px}
 .mcl-runs-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.mcl-runs-head h2{margin:0;font-size:var(--soft-title-3)}
+.mcl-runs-head h2{margin:0;font-size:var(--title-3)}
 .mcl-runs-head p{margin:0;color:var(--app-muted);font-size:12px}
 .mcl-run{display:grid;gap:14px;padding:16px;background:var(--app-surface);border:1px solid var(--app-line);border-radius:var(--app-radius)}
 .mcl-run.is-ready{border-color:color-mix(in srgb,var(--app-positive) 40%,var(--app-line))}
 .mcl-run.is-open{border-color:color-mix(in srgb,var(--app-warning) 45%,var(--app-line))}
 .mcl-run-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .mcl-run-who{display:grid;gap:4px;min-width:0}
-.mcl-run-who h3{margin:0;font-size:var(--soft-title-3);letter-spacing:var(--soft-tracking-tight)}
+.mcl-run-who h3{margin:0;font-size:var(--title-3);letter-spacing:var(--tracking-tight)}
 .mcl-run-meta{color:var(--app-muted);font-size:12px}
 .mcl-badges{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .mcl-badge{display:inline-flex;align-items:center;min-height:22px;padding:2px 8px;border:1px solid var(--app-line);border-radius:var(--radius-pill);background:var(--app-soft);color:var(--app-muted);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}

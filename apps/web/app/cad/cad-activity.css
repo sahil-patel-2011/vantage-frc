@@ -238,7 +238,7 @@
 }
 .cad-tools-group h3 {
   margin: 0 0 6px 0;
-  font:700 var(--soft-text-xs)/1 var(--font-source-sans), ui-sans-serif;
+  font:700 var(--text-xs)/1 var(--font-source-sans), ui-sans-serif;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--app-muted);

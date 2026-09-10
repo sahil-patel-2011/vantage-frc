@@ -19,8 +19,8 @@
 
 .ai-governance-scope-card h2 {
   margin: 0;
-  font-size:var(--soft-title-3);
-  letter-spacing:var(--soft-tracking-tight);
+  font-size:var(--title-3);
+  letter-spacing:var(--tracking-tight);
 }
 
 .ai-governance-scope-card .app-button {

@@ -14,7 +14,7 @@
 
 .goals-next-actions{display:grid;gap:10px;margin:0 0 16px;padding:16px 18px}
 .goals-next-actions>header{display:grid;gap:4px}
-.goals-next-actions h2{margin:0;font-size:var(--soft-title-3);letter-spacing:var(--soft-tracking-tight)}
+.goals-next-actions h2{margin:0;font-size:var(--title-3);letter-spacing:var(--tracking-tight)}
 .goals-next-actions>header p,.goals-next-actions>p{margin:0;color:var(--app-muted);font-size:12px;line-height:1.4}
 .goals-next-actions ol{margin:0;padding:0;list-style:none;display:grid;gap:8px}
 .goals-next-actions li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-radius:var(--radius-sm);border:1px solid var(--app-line);background:var(--app-bg)}
@@ -38,13 +38,13 @@
 .goals-category-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 
 .goals-attention{display:grid;gap:10px;margin:0 0 16px;padding:16px 18px;border-left:3px solid #b26a00}
-.goals-attention h2{margin:0;font-size:var(--soft-title-3)}
+.goals-attention h2{margin:0;font-size:var(--title-3)}
 .goals-attention ul{margin:0;padding:0;list-style:none;display:grid;gap:8px}
 .goals-attention li{display:grid;gap:2px;padding:10px 12px;border-radius:var(--radius-xs);border:1px solid var(--app-line);background:var(--app-bg)}
 .goals-attention .meta{color:var(--app-muted);font-size:12px}
 
 .goals-panel{display:grid;gap:12px;align-content:start;min-width:0}
-.goals-panel h2{margin:0;font-size:var(--soft-title-3);letter-spacing:var(--soft-tracking-tight)}
+.goals-panel h2{margin:0;font-size:var(--title-3);letter-spacing:var(--tracking-tight)}
 .goals-panel>p{margin:0;color:var(--app-muted);font-size:13px;line-height:1.4}
 
 .goals-list{display:grid;gap:12px}

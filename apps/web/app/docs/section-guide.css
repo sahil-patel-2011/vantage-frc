@@ -9,7 +9,7 @@
 
 .section-guide-head h2 {
   margin: 0 0 6px;
-  font-size:var(--soft-title-2);
+  font-size:var(--title-2);
 }
 
 .section-guide-head p {
@@ -78,7 +78,7 @@
 
 .section-guide-hub h3 {
   margin: 0;
-  font-size:var(--soft-title-3);
+  font-size:var(--title-3);
 }
 
 .section-guide-hub-link {
@@ -194,7 +194,7 @@
 .section-guide-detail h4 {
   margin: 4px 0 0;
   color: var(--app-muted);
-  font-size:var(--soft-text-xs);
+  font-size:var(--text-xs);
   font-weight: 800;
   letter-spacing: 0.07em;
   text-transform: uppercase;

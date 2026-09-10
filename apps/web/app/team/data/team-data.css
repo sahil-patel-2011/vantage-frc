@@ -6,8 +6,8 @@
 .team-data-next-actions{margin:0}
 .team-data-layout{display:grid;grid-template-columns:1.2fr .8fr;gap:16px;align-items:start}
 .team-data-panel{display:grid;gap:12px;padding:16px}
-.team-data-panel h2,.team-data-panel h3{margin:0;font-size:var(--soft-title-3)}
-.team-data-panel h3{font-size:var(--soft-title-4);color:var(--app-muted)}
+.team-data-panel h2,.team-data-panel h3{margin:0;font-size:var(--title-3)}
+.team-data-panel h3{font-size:var(--title-4);color:var(--app-muted)}
 .team-data-inventory{margin:0;padding:0;list-style:none;display:grid;gap:8px}
 .team-data-inventory li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border:1px solid var(--app-line);border-radius:var(--radius-xs);background:var(--app-bg)}
 .team-data-inventory li span{font-size:13px;color:var(--app-muted);text-transform:capitalize}

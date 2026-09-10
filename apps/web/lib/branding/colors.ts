@@ -6,11 +6,10 @@
  * jobs (coloured *text* like links and active tabs, versus *fills* like the
  * primary button and the island indicator).
  *
- * Rule we enforce: `--soft-accent` — which hundreds of existing rules already use
- * for accent text — is always the contrast-guarded derivative, so no team can pick
- * a colour that makes their own UI unreadable. The team's literal hex is published
- * separately as `--soft-brand` and used only for non-text accents. When the two
- * differ we say so in the admin UI instead of silently changing their colour.
+ * `--accent` (and the `--soft-accent` alias) is contrast-guarded against the
+ * card so no team can pick a colour that makes their own UI unreadable. The
+ * team's literal hex is `--soft-brand` and is used only for non-text accents.
+ * When the two diverge, Team admin is told why.
  */
 
 export const ACCENT_CONTRAST_TARGET = 4.5;
@@ -241,6 +240,9 @@ export function accentCssVariables(plan: AccentPlan, theme: ThemeKey): Record<st
   // Hover moves away from the card, matching the stock --app-accent-hover pair.
   const hover = mixHex(side.accent, theme === "dark" ? "#ffffff" : "#000000", 0.16);
   return {
+    "--accent": side.accent,
+    "--accent-soft": side.accentSoft,
+    "--accent-ink": readableInkOn(side.accent),
     "--soft-accent": side.accent,
     "--soft-accent-soft": side.accentSoft,
     "--soft-brand": side.brand,
@@ -252,6 +254,9 @@ export function accentCssVariables(plan: AccentPlan, theme: ThemeKey): Record<st
 
 /** The variable names `accentCssVariables` owns — used to clear the override. */
 export const ACCENT_VARIABLE_NAMES = [
+  "--accent",
+  "--accent-soft",
+  "--accent-ink",
   "--soft-accent",
   "--soft-accent-soft",
   "--soft-brand",

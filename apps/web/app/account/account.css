@@ -32,8 +32,8 @@
 
 .account-org-context h2 {
   margin: 0;
-  font-size:var(--soft-title-3);
-  letter-spacing:var(--soft-tracking-tight);
+  font-size:var(--title-3);
+  letter-spacing:var(--tracking-tight);
 }
 
 .account-org-context p {
@@ -69,8 +69,8 @@
 
 .account-next-actions h2 {
   margin: 0;
-  font-size:var(--soft-title-3);
-  letter-spacing:var(--soft-tracking-tight);
+  font-size:var(--title-3);
+  letter-spacing:var(--tracking-tight);
 }
 
 .account-next-actions > header p {
@@ -138,8 +138,8 @@
 
 .account-ai-keys h2 {
   margin: 0;
-  font-size:var(--soft-title-3);
-  letter-spacing:var(--soft-tracking-tight);
+  font-size:var(--title-3);
+  letter-spacing:var(--tracking-tight);
 }
 
 .account-ai-keys p {
@@ -206,8 +206,8 @@
 
 .settings-connection-card-top h2 {
   margin: 0;
-  font-size:var(--soft-title-3);
-  letter-spacing:var(--soft-tracking-tight);
+  font-size:var(--title-3);
+  letter-spacing:var(--tracking-tight);
 }
 
 .settings-connection-card .app-badge {
@@ -236,7 +236,7 @@
 
 .settings-connection-footer h2 {
   margin: 0;
-  font-size:var(--soft-title-3);
+  font-size:var(--title-3);
 }
 
 .settings-connection-footer p {

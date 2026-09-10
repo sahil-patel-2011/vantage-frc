@@ -78,7 +78,7 @@ html[data-theme="dark"] {
 }
 .recon-match h3 {
   margin: 0;
-  font-size:var(--soft-title-3);
+  font-size:var(--title-3);
   color: var(--ink);
 }
 

@@ -154,8 +154,8 @@ describe("stylesheet integrity", () => {
     // Three competing palettes is how two secondary buttons on the same
     // screen ended up different colours. Canonical names live in system.css.
     // Leaf sheets must not redeclare --soft-*/--app-*/--m-* tokens. Color,
-    // radius, and shadow consumption is locked to the canonical names;
-    // leftover --soft-* vars are type, space, and chrome.
+    // type, space, radius, and shadow consumption is locked to the canonical
+    // names; --soft-* remains only as alias declarations in system.css.
     const tokenDecl = /--(?:soft|app|m)-[A-Za-z0-9-]+\s*:/;
     const offenders: string[] = [];
     for (const file of files) {
@@ -218,7 +218,7 @@ describe("stylesheet integrity", () => {
     // Competing palettes is how two secondary buttons on the same screen ended
     // up different colours. Leaf sheets must use --bg/--surface/--ink/--accent
     // (and the other canonical names). --soft-* aliases remain declared in
-    // system.css for leftover type/space tokens only.
+    // system.css for back-compat only; product CSS must not consume them.
     const colorAlias =
       /var\(--soft-(?:bg|card|ink|muted|line(?:-soft)?|accent(?:-soft|-ink)?|warning(?:-soft)?|danger(?:-soft)?|success(?:-soft)?|surface-2|panel|border|brand|ring|radius(?:-xs|-sm|-lg|-pill)?|shadow(?:-lift|-pop)?)(?=[,)])/;
     const offenders: string[] = [];
@@ -234,5 +234,22 @@ describe("stylesheet integrity", () => {
       offenders,
       `CSS still consumes --soft-* color/radius aliases:\n  ${offenders.join("\n  ")}`,
     ).toEqual([]);
+  });
+
+  it("never consumes --soft-* tokens in product CSS", () => {
+    // Type, space, island, and control tokens now have canonical names
+    // (--title-*, --text-*, --space-*, --control-h, --island). Aliases stay
+    // declared in system.css so an old sheet would still resolve, but new
+    // consumption must not reintroduce a second name for the same value.
+    const offenders: string[] = [];
+    for (const file of files) {
+      const text = scrub(readFileSync(file, "utf8"));
+      text.split("\n").forEach((line, index) => {
+        if (/var\(--soft-/.test(line)) {
+          offenders.push(`${file}:${index + 1}: ${line.trim().slice(0, 80)}`);
+        }
+      });
+    }
+    expect(offenders, `CSS still consumes --soft-*:\n  ${offenders.join("\n  ")}`).toEqual([]);
   });
 });

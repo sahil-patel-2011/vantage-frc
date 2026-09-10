@@ -5,7 +5,7 @@
  */
 .mk-page {
   display: grid;
-  gap: var(--soft-space-4, 16px);
+  gap: var(--space-4, 16px);
 
   --mk-tone-overdue: #b42318;
   --mk-tone-due: #b54708;
@@ -23,13 +23,13 @@ html[data-theme="dark"] .mk-page {
 .mk-related {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--soft-space-2, 8px);
+  gap: var(--space-2, 8px);
 }
 
 .mk-tonight,
 .mk-identity {
   display: grid;
-  gap: var(--soft-space-2, 8px);
+  gap: var(--space-2, 8px);
 }
 
 .mk-tonight {
@@ -40,7 +40,7 @@ html[data-theme="dark"] .mk-page {
 .mk-identity-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--soft-space-2, 8px);
+  gap: var(--space-2, 8px);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -49,19 +49,19 @@ html[data-theme="dark"] .mk-page {
 .mk-stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: var(--soft-space-3, 12px);
+  gap: var(--space-3, 12px);
 }
 
 .mk-quick-links {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--soft-space-2, 8px);
+  gap: var(--space-2, 8px);
 }
 
 /* Two columns only when there is genuinely room; one column everywhere else. */
 .mk-sections {
   display: grid;
-  gap: var(--soft-space-4, 16px);
+  gap: var(--space-4, 16px);
   grid-template-columns: 1fr;
 }
 
@@ -76,7 +76,7 @@ html[data-theme="dark"] .mk-page {
 
 .mk-section {
   display: grid;
-  gap: var(--soft-space-3, 12px);
+  gap: var(--space-3, 12px);
   align-content: start;
 }
 
@@ -90,12 +90,12 @@ html[data-theme="dark"] .mk-page {
   flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
-  gap: var(--soft-space-2, 8px);
+  gap: var(--space-2, 8px);
 }
 
 .mk-section-head h2 {
   margin: 0;
-  font-size:var(--soft-title-3);
+  font-size:var(--title-3);
 }
 
 .mk-reason {
@@ -109,12 +109,12 @@ html[data-theme="dark"] .mk-page {
   margin: 0;
   padding: 0;
   display: grid;
-  gap: var(--soft-space-2, 8px);
+  gap: var(--space-2, 8px);
 }
 
 .mk-row {
   display: flex;
-  gap: var(--soft-space-3, 12px);
+  gap: var(--space-3, 12px);
   align-items: flex-start;
   justify-content: space-between;
   /* Comfortable touch target on a phone in a pit. */
@@ -191,7 +191,7 @@ html[data-theme="dark"] .mk-page {
 .mk-section-footer {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--soft-space-2, 8px);
+  gap: var(--space-2, 8px);
 }
 
 /* One column, stacked rows, nothing clipped at 360px. */

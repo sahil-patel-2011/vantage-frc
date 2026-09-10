@@ -192,7 +192,7 @@
 
 .myday-list-section h2 {
   margin: 0;
-  font:700 var(--soft-title-3)/1.2 var(--font-source-sans), ui-sans-serif, system-ui, sans-serif;
+  font:700 var(--title-3)/1.2 var(--font-source-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
 .myday-list {
@@ -265,8 +265,8 @@
 
 .myday-next-actions h2 {
   margin: 0;
-  font-size:var(--soft-title-3);
-  letter-spacing:var(--soft-tracking-tight);
+  font-size:var(--title-3);
+  letter-spacing:var(--tracking-tight);
 }
 
 .myday-next-actions > header p {

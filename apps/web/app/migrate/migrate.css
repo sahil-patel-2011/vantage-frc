@@ -141,7 +141,7 @@
 
 .migrate-panel-head h2 {
   margin: 0 0 4px;
-  font-size:var(--soft-title-2);
+  font-size:var(--title-2);
 }
 
 .migrate-panel-head p {
@@ -197,7 +197,7 @@
 
 .migrate-group h3 {
   margin: 0;
-  font-size:var(--soft-text-xs);
+  font-size:var(--text-xs);
   font-weight:700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -301,7 +301,7 @@
 .migrate-presets h3,
 .migrate-form-draft h3 {
   margin: 0;
-  font-size:var(--soft-title-3);
+  font-size:var(--title-3);
 }
 
 .migrate-columns {

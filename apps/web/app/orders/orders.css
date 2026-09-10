@@ -46,8 +46,8 @@
 .orders-page .soft-panel > h2,
 .orders-embedded .soft-panel > h2 {
   margin: 4px 0 0;
-  font-size:var(--soft-title-3);
-  letter-spacing:var(--soft-tracking-tight);
+  font-size:var(--title-3);
+  letter-spacing:var(--tracking-tight);
 }
 
 .orders-flow-steps {
@@ -340,7 +340,7 @@
 .orders-buy-panel h3,
 .orders-approve-panel h3 {
   margin: 0;
-  font-size:var(--soft-title-4);
+  font-size:var(--title-4);
   color: var(--orders-accent);
 }
 

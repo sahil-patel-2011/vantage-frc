@@ -3,10 +3,10 @@
 .team-discord-header-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .team-discord-related{margin:0 0 4px}
 .team-discord-banner{display:grid;gap:10px;padding:18px;border-color:color-mix(in srgb,var(--app-accent) 35%,var(--app-line))}
-.team-discord-banner h2{margin:0;font-size:var(--soft-title-2)}
+.team-discord-banner h2{margin:0;font-size:var(--title-2)}
 .team-discord-layout{display:grid;grid-template-columns:1.1fr .9fr;gap:16px;align-items:start}
 .team-discord-panel{display:grid;gap:12px;padding:18px}
-.team-discord-panel h2{margin:0;font-size:var(--soft-title-3)}
+.team-discord-panel h2{margin:0;font-size:var(--title-3)}
 .team-discord-panel textarea{width:100%;min-height:96px;padding:10px 12px;border:1px solid var(--app-line);border-radius:var(--radius-sm);background:var(--app-bg);color:var(--app-ink);font:inherit;resize:vertical}
 .team-discord-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 .team-discord-meta{margin:0;padding:0;list-style:none;display:grid;gap:8px}
@@ -19,7 +19,7 @@
 
 .team-discord-next-actions{display:grid;gap:10px;margin:0;padding:16px 18px}
 .team-discord-next-actions>header{display:grid;gap:4px}
-.team-discord-next-actions h2{margin:0;font-size:var(--soft-title-3);letter-spacing:var(--soft-tracking-tight)}
+.team-discord-next-actions h2{margin:0;font-size:var(--title-3);letter-spacing:var(--tracking-tight)}
 .team-discord-next-actions>header p{margin:0;color:var(--app-muted);font-size:12px;line-height:1.4}
 .team-discord-next-actions ol{margin:0;padding:0;list-style:none;display:grid;gap:8px}
 .team-discord-next-actions li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-radius:var(--radius-sm);border:1px solid var(--app-line);background:var(--app-bg)}

@@ -18,7 +18,7 @@
 .insp-track i.warn{background:var(--app-warning)}
 .insp-layout{display:grid;grid-template-columns:1.25fr .75fr;gap:16px;align-items:start}
 .insp-panel{display:grid;gap:12px;align-content:start;min-width:0}
-.insp-group h2{margin:0 0 10px;font-size:var(--soft-title-3)}
+.insp-group h2{margin:0 0 10px;font-size:var(--title-3)}
 .insp-group ul{margin:0;padding:0;list-style:none;display:grid;gap:4px}
 .insp-item{display:grid;gap:5px;padding:9px 0;border-top:1px solid var(--app-line)}
 .insp-item-main{display:flex;align-items:center;justify-content:space-between;gap:12px}
@@ -35,12 +35,12 @@
 .insp-meta{color:var(--app-muted);font-size:10px}
 .insp-note-form{display:flex;gap:8px}
 .insp-note-form input{flex:1}
-.insp-add h2{margin:0 0 10px;font-size:var(--soft-title-3)}
+.insp-add h2{margin:0 0 10px;font-size:var(--title-3)}
 .insp-add-row{display:flex;gap:8px;flex-wrap:wrap}
 .insp-add-row input:first-child{width:170px}
 .insp-add-row input:nth-child(2){flex:1;min-width:200px}
 .insp-tools{display:flex;gap:16px;margin-top:12px}
-.insp-weigh h2{margin:0 0 10px;font-size:var(--soft-title-3)}
+.insp-weigh h2{margin:0 0 10px;font-size:var(--title-3)}
 .insp-weigh-form,.insp-limit-form{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
 .insp-weigh-form input[type=number],.insp-limit-form input{width:120px}
 .insp-weigh-form input:not([type=number]){flex:1;min-width:130px}
@@ -54,7 +54,7 @@
 /* AI insight panel (shared .aii-* contract used by components/ai-insight-panel) */
 .aii-panel{display:grid;gap:10px;margin-top:16px}
 .aii-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.aii-head h2{margin:0 0 4px;font-size:var(--soft-title-3)}
+.aii-head h2{margin:0 0 4px;font-size:var(--title-3)}
 .aii-head h2 span{color:var(--app-accent)}
 .aii-head p{margin:0;font-size:12px;max-width:520px}
 .aii-error{margin:0;color:var(--app-critical);font-size:12px;font-weight:600}

@@ -44,7 +44,7 @@
 }
 .cdc-billing h2 {
   margin: 0;
-  font-size:var(--soft-title-3);
+  font-size:var(--title-3);
 }
 .cdc-billing p {
   margin: 0;
@@ -114,7 +114,7 @@
 }
 .cdc-next-actions header h2 {
   margin: 0;
-  font-size:var(--soft-title-3);
+  font-size:var(--title-3);
 }
 .cdc-next-actions header p {
   margin: 4px 0 0;
@@ -172,7 +172,7 @@
 }
 .cdc-flow h2 {
   margin: 0;
-  font-size:var(--soft-title-3);
+  font-size:var(--title-3);
 }
 .cdc-flow p {
   margin: 0;
@@ -207,7 +207,7 @@
 }
 .cdc-panel h2 {
   margin: 4px 0 0;
-  font-size:var(--soft-title-3);
+  font-size:var(--title-3);
 }
 .cdc-panel label {
   display: grid;
@@ -446,7 +446,7 @@
 }
 .cdc-coverage-detail h4 {
   margin: 0 0 6px;
-  font-size:var(--soft-text-xs);
+  font-size:var(--text-xs);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--app-muted);

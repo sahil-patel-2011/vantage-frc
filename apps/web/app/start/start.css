@@ -59,7 +59,7 @@
 
 .start-launch-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
 .start-launch-head span { color: var(--start-accent); font: 700 10px/1 var(--font-ibm-mono), monospace; letter-spacing: .11em; }
-.start-launch-head h2 { margin: 5px 0 0; font:700 var(--soft-title-2)/1.25 var(--font-source-sans), ui-sans-serif, system-ui, sans-serif; }
+.start-launch-head h2 { margin: 5px 0 0; font:700 var(--title-2)/1.25 var(--font-source-sans), ui-sans-serif, system-ui, sans-serif; }
 .start-launch-head > strong { flex: none; padding: 6px 9px; border-radius:var(--radius-pill); color: var(--start-accent); background: color-mix(in srgb, var(--start-accent) 10%, #fff); font-size: 12px; }
 .start-launch-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
 .start-launch-grid article { display: grid; grid-template-columns: 28px 1fr; gap: 10px; min-height: 112px; padding: 13px; border: 1px solid var(--start-line); border-radius:var(--radius-sm); background: var(--start-card); }
@@ -125,7 +125,7 @@
 
 .start-track-head h2 {
   margin: 0;
-  font:700 var(--soft-title-3)/1.25 var(--font-source-sans), ui-sans-serif, system-ui, sans-serif;
+  font:700 var(--title-3)/1.25 var(--font-source-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
 .start-track-head p {

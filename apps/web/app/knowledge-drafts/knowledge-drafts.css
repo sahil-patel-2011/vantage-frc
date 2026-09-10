@@ -53,7 +53,7 @@
 
 .kd-card-head h3 {
   margin: 0;
-  font-size:var(--soft-title-3);
+  font-size:var(--title-3);
   color: var(--app-ink);
 }
 
@@ -94,7 +94,7 @@
 
 .kd-pane > h4 {
   margin: 0 0 8px;
-  font-size:var(--soft-title-4);
+  font-size:var(--title-4);
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--app-muted);

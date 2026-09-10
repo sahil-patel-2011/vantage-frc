@@ -310,13 +310,13 @@
 }
 
 .cl-warn {
-  border: 1px solid var(--soft-warning-line, #e4d9c5);
-  background: var(--soft-warning-bg, #faf6ef);
-  color: var(--soft-warning-ink, #6b5a3a);
+  border: 1px solid var(--warning, #e4d9c5);
+  background: var(--warning-soft, #faf6ef);
+  color: var(--warning, #6b5a3a);
 }
 
 .cl-warn strong {
-  color: var(--soft-warning-ink, #6b5a3a);
+  color: var(--warning, #6b5a3a);
 }
 
 html[data-theme="dark"] .cl-warn {
@@ -361,11 +361,11 @@ html[data-theme="dark"] .cl-warn strong {
 .cl-link-primary {
   border-color: var(--accent);
   background: var(--accent);
-  color: var(--soft-brand-ink, #fff);
+  color: var(--accent-ink, #fff);
 }
 
 .cl-link-primary:hover {
-  color: var(--soft-brand-ink, #fff);
+  color: var(--accent-ink, #fff);
   filter: brightness(0.96);
 }
 
@@ -439,7 +439,7 @@ html[data-theme="dark"] .cl-warn strong {
   border: 1px solid var(--accent);
   border-radius: var(--radius-sm, 12px);
   background: var(--accent);
-  color: var(--soft-brand-ink, #fff);
+  color: var(--accent-ink, #fff);
   font: inherit;
   font-size: 14px;
   font-weight: 650;
@@ -493,7 +493,7 @@ html[data-theme="dark"] .cl-warn strong {
 
 .cl-band-close {
   background: color-mix(in srgb, var(--warning, #c8922a) 18%, transparent);
-  color: var(--soft-warning-ink, #8a6a20);
+  color: var(--warning, #8a6a20);
 }
 
 .cl-band-off {
@@ -636,9 +636,9 @@ html[data-theme="dark"] .cl-band-close {
 }
 
 .cl-notice-fail {
-  border: 1px solid var(--soft-warning-line, #e4d9c5);
-  background: var(--soft-warning-bg, #faf6ef);
-  color: var(--soft-warning-ink, #6b5a3a);
+  border: 1px solid var(--warning, #e4d9c5);
+  background: var(--warning-soft, #faf6ef);
+  color: var(--warning, #6b5a3a);
 }
 
 html[data-theme="dark"] .cl-notice-fail {
@@ -728,7 +728,7 @@ html[data-theme="dark"] .cl-notice-fail {
 }
 
 .cl-ref-table code {
-  font-family: var(--soft-font-mono, ui-monospace, Menlo, Consolas, monospace);
+  font-family: var(--font-mono, ui-monospace, Menlo, Consolas, monospace);
   font-size: 12.5px;
   overflow-wrap: anywhere;
 }

@@ -67,7 +67,7 @@
 
 .chat-safety-panel h2 {
   margin: 0;
-  font-size:var(--soft-title-3);
+  font-size:var(--title-3);
 }
 
 .chat-safety-panel p {

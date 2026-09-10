@@ -196,7 +196,7 @@
   display: none !important;
 }
 .product-hub-setup { display: grid; gap: 12px; justify-items: start; padding: 20px; }
-.product-hub-setup h2 { margin: 0; font-size:var(--soft-title-2); }
+.product-hub-setup h2 { margin: 0; font-size:var(--title-2); }
 .product-hub-finance { display: grid; gap: 14px; max-width: 52rem; }
 .product-hub-finance .state-control {
   display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px;
@@ -215,10 +215,10 @@
   margin: 0 0 16px;
 }
 .product-hub-related .app-button {
-  min-height: var(--soft-control-h-sm);
+  min-height: var(--control-h-sm);
   padding: 0 14px;
   border-radius: var(--radius-pill);
-  font-size: var(--soft-text-sm);
+  font-size: var(--text-sm);
   font-weight: 600;
   color: var(--muted);
 }

@@ -61,8 +61,8 @@
 
 .team-background-page .soft-panel h2 {
   margin: 0;
-  font:700 var(--soft-title-3) var(--font-source-sans), ui-sans-serif;
-  letter-spacing:var(--soft-tracking-tight);
+  font:700 var(--title-3) var(--font-source-sans), ui-sans-serif;
+  letter-spacing:var(--tracking-tight);
 }
 
 .team-background-page .soft-panel textarea {

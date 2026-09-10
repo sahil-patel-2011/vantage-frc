@@ -112,7 +112,7 @@
 .biz-card-head h2,
 .business-page .app-card > h2 {
   margin: 4px 0 0;
-  font-size:var(--soft-title-2);
+  font-size:var(--title-2);
   line-height: 1.25;
 }
 
@@ -983,7 +983,7 @@
 .biz-award-years h3 {
   margin: 0;
   color: var(--app-accent);
-  font-size:var(--soft-title-1);
+  font-size:var(--title-1);
 }
 
 .biz-award-years > section > div {
@@ -1221,7 +1221,7 @@
 .biz-workbench .biz-panel h2,
 .biz-workbench .biz-panel h3 {
   margin: 0;
-  font-size:var(--soft-title-3);
+  font-size:var(--title-3);
 }
 
 .biz-workbench .biz-list {
@@ -1491,7 +1491,7 @@
 }
 .finance-balance-activity h3 {
   margin: 0 0 8px;
-  font-size:var(--soft-text-xs);
+  font-size:var(--text-xs);
   font-weight:700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -1562,7 +1562,7 @@
 }
 .biz-sustain h3 {
   margin: 0;
-  font-size:var(--soft-title-3);
+  font-size:var(--title-3);
 }
 .biz-sustain p {
   margin: 0;

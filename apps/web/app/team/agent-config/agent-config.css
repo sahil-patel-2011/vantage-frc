@@ -17,11 +17,11 @@
 }
 .agent-config-panel h2 {
   margin: 0 0 10px;
-  font-size:var(--soft-title-3);
+  font-size:var(--title-3);
 }
 .agent-config-panel h3 {
   margin: 16px 0 6px;
-  font-size:var(--soft-text-xs);
+  font-size:var(--text-xs);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--app-muted);

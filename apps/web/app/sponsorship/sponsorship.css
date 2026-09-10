@@ -196,7 +196,7 @@
 
 .svp-preview h3 {
   margin: 0;
-  font:800 var(--soft-text-xs) var(--font-source-sans), ui-sans-serif;
+  font:800 var(--text-xs) var(--font-source-sans), ui-sans-serif;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--accent);

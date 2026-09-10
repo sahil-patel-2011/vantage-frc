@@ -16,11 +16,11 @@
 .pack-nav-track i.done,.pack-track i.done{background:var(--app-positive)}
 .pack-detail{display:grid;gap:14px;min-width:0}
 .pack-detail-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.pack-detail-head h2{margin:0 0 4px;font-size:var(--soft-title-2)}
+.pack-detail-head h2{margin:0 0 4px;font-size:var(--title-2)}
 .pack-detail-head p{margin:0;font-size:12px}
 .pack-head-actions{display:flex;align-items:center;gap:14px}
 .pack-track{height:8px;background:var(--app-soft);border-radius:var(--radius-pill);overflow:hidden}
-.pack-group h3{display:flex;align-items:center;justify-content:space-between;margin:4px 0 8px;font-size:var(--soft-title-4);text-transform:uppercase;letter-spacing:.04em;color:var(--app-muted)}
+.pack-group h3{display:flex;align-items:center;justify-content:space-between;margin:4px 0 8px;font-size:var(--title-4);text-transform:uppercase;letter-spacing:.04em;color:var(--app-muted)}
 .pack-group h3 span{font-variant-numeric:tabular-nums;font-size:11px}
 .pack-group ul{margin:0;padding:0;list-style:none;display:grid;gap:4px}
 .pack-group li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;background:var(--app-bg);border:1px solid var(--app-line);border-radius:var(--radius-xs)}
@@ -34,7 +34,7 @@
 .pack-add input:nth-child(2){flex:1;min-width:200px}
 .pack-qty-input{width:70px}
 .pack-inbox{display:grid;gap:8px;padding:12px;border:1px dashed var(--app-line);border-radius:var(--app-radius);background:var(--app-soft)}
-.pack-inbox h3{display:flex;align-items:center;justify-content:space-between;margin:0;font-size:var(--soft-title-4);text-transform:uppercase;letter-spacing:.04em;color:var(--app-muted)}
+.pack-inbox h3{display:flex;align-items:center;justify-content:space-between;margin:0;font-size:var(--title-4);text-transform:uppercase;letter-spacing:.04em;color:var(--app-muted)}
 .pack-inbox h3 span{font-variant-numeric:tabular-nums;font-size:11px}
 .pack-inbox-empty{margin:0;font-size:13px}
 .pack-inbox ul{margin:0;padding:0;list-style:none;display:grid;gap:6px}

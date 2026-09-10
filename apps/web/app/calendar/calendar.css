@@ -46,7 +46,7 @@
 .cal-workflow-links a:hover{text-decoration:underline}
 
 /* Business / purchase dates (read-only). */
-.cal-linked h2{margin:0 0 6px;font-size:var(--soft-title-3)}
+.cal-linked h2{margin:0 0 6px;font-size:var(--title-3)}
 .cal-linked>p{margin:0 0 10px;font-size:12px}
 .cal-linked ul{margin:0;padding:0;list-style:none;display:grid;gap:6px}
 .cal-linked li{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:8px 10px;background:var(--app-bg);border:1px solid var(--app-line);border-radius:var(--radius-xs)}
@@ -55,7 +55,7 @@
 
 /* Month timeline. */
 .cal-month{display:grid;gap:8px}
-.cal-month h2{display:flex;align-items:center;justify-content:space-between;margin:10px 0 0;font-size:var(--soft-title-4);text-transform:uppercase;letter-spacing:.04em;color:var(--app-muted)}
+.cal-month h2{display:flex;align-items:center;justify-content:space-between;margin:10px 0 0;font-size:var(--title-4);text-transform:uppercase;letter-spacing:.04em;color:var(--app-muted)}
 .cal-month h2 span{font-variant-numeric:tabular-nums;font-size:11px}
 .cal-month ul{margin:0;padding:0;list-style:none;display:grid;gap:6px}
 .cal-item{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:var(--app-surface);border:1px solid var(--app-line);border-radius:var(--app-radius)}
@@ -71,7 +71,7 @@
 
 /* Add-milestone form. */
 .cal-add{display:grid;gap:10px}
-.cal-add h2{margin:0;font-size:var(--soft-title-3)}
+.cal-add h2{margin:0;font-size:var(--title-3)}
 .cal-add-grid{display:grid;grid-template-columns:minmax(200px,1fr) 140px 150px 150px;gap:8px}
 .cal-add button[type="submit"]{justify-self:start}
 
@@ -93,7 +93,7 @@
 /* AI insight panel (shared .aii-* contract used by components/ai-insight-panel) */
 .aii-panel{display:grid;gap:10px;margin-top:16px}
 .aii-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.aii-head h2{margin:0 0 4px;font-size:var(--soft-title-3)}
+.aii-head h2{margin:0 0 4px;font-size:var(--title-3)}
 .aii-head h2 span{color:var(--app-accent)}
 .aii-head p{margin:0;font-size:12px;max-width:520px}
 .aii-error{margin:0;color:var(--app-critical);font-size:12px;font-weight:600}

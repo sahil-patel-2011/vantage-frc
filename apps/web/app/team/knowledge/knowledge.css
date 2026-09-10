@@ -48,7 +48,7 @@
 .kb-list-item small{color:var(--muted);font-size:11px}
 .kb-list-empty{padding:8px 4px;color:var(--muted);font-size:13px}
 
-.kb-templates h2,.kb-editor h2,.kb-ai h2{margin:0 0 10px;font-size:var(--soft-title-3)}
+.kb-templates h2,.kb-editor h2,.kb-ai h2{margin:0 0 10px;font-size:var(--title-3)}
 .kb-template-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .kb-template{
   display:grid;gap:6px;padding:14px;text-align:left;border-radius:var(--radius-sm);border:1px solid var(--line);
@@ -96,7 +96,7 @@
 .kb-document{min-height:280px;padding:20px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--bg);color:var(--ink);line-height:1.65}
 .kb-document h1,.kb-document h2,.kb-document h3{margin:1.2em 0 .45em;line-height:1.25;letter-spacing:-.015em}
 .kb-document h1:first-child,.kb-document h2:first-child,.kb-document h3:first-child{margin-top:0}
-.kb-document h1{font-size:var(--soft-title-1)}.kb-document h2{font-size:var(--soft-title-2)}.kb-document h3{font-size:var(--soft-title-3)}
+.kb-document h1{font-size:var(--title-1)}.kb-document h2{font-size:var(--title-2)}.kb-document h3{font-size:var(--title-3)}
 .kb-document p,.kb-document ul,.kb-document ol,.kb-document blockquote,.kb-document pre{margin:.7em 0}
 .kb-document ul,.kb-document ol{padding-left:24px}
 .kb-document blockquote{padding:8px 12px;border-left:3px solid var(--accent);color:var(--muted);background:color-mix(in srgb,var(--accent) 6%,transparent)}
@@ -109,7 +109,7 @@
 .kb-cross-hint a{color:var(--accent);font-weight:700;text-decoration:none}
 .kb-cross-hint a:hover{text-decoration:underline}
 .kb-empty{display:grid;gap:10px;justify-items:start;padding:28px 8px}
-.kb-empty h2{margin:0;font-size:var(--soft-title-2)}
+.kb-empty h2{margin:0;font-size:var(--title-2)}
 .kb-empty p{margin:0;color:var(--muted);max-width:42ch;line-height:1.45}
 .kb-empty-actions{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 8px}
 
@@ -118,7 +118,7 @@
 .kb-ai-links{display:grid;gap:10px;margin-top:4px}
 
 .kb-page .soft-empty{padding:18px 8px}
-.kb-page .soft-empty h2{margin:0 0 6px;font-size:var(--soft-title-3)}
+.kb-page .soft-empty h2{margin:0 0 6px;font-size:var(--title-3)}
 .kb-side .soft-empty{padding:12px 4px}
 .kb-side .product-hub-related{margin-bottom:0}
 

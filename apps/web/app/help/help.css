@@ -131,7 +131,7 @@
 
 .help-group h2 {
   margin: 0;
-  font-size:var(--soft-title-3);
+  font-size:var(--title-3);
 }
 
 .help-group header p {
@@ -179,7 +179,7 @@
 
 .help-section h2 {
   margin: 0 0 0.4rem;
-  font-size:var(--soft-title-3);
+  font-size:var(--title-3);
 }
 
 .help-section ul {

@@ -115,7 +115,7 @@
 
 .team-invite-form h2 {
   margin: 0.15rem 0 0.45rem;
-  font-size:var(--soft-title-2);
+  font-size:var(--title-2);
 }
 
 .team-invite-form > p {

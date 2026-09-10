@@ -32,8 +32,8 @@ export const DEFAULT_APPEARANCE_PREFS: AppearancePrefs = {
 export const APPEARANCE_CACHE_KEY = "vantage.appearance";
 
 /**
- * Scale applied to the `--soft-space-*` ramp. Kept here (and asserted by tests)
- * so the TypeScript view and the CSS in app/soft-ui.css cannot drift apart.
+ * Scale applied to the `--space-*` ramp. Kept here (and asserted by tests)
+ * so the TypeScript view and the CSS in app/system.css cannot drift apart.
  */
 export const DENSITY_SCALE: Record<DensityPreference, number> = {
   comfortable: 1,
@@ -44,13 +44,21 @@ export const DENSITY_SCALE: Record<DensityPreference, number> = {
 export const SPACE_RAMP = [4, 8, 12, 16, 20, 24] as const;
 
 /**
- * Resolved spacing ramp for a density. `--soft-space-1` … `--soft-space-6`.
+ * Resolved spacing ramp for a density. `--space-1` … `--space-6`.
  * The CSS computes the same values with calc(); this is the testable mirror.
+ * `--soft-space-*` aliases stay so an old inline style still resolves.
  */
 export function densityTokens(density: DensityPreference): Record<string, number> {
   const scale = DENSITY_SCALE[density];
   return Object.fromEntries(
-    SPACE_RAMP.map((base, index) => [`--soft-space-${index + 1}`, base * scale]),
+    SPACE_RAMP.flatMap((base, index) => {
+      const px = base * scale;
+      const n = index + 1;
+      return [
+        [`--space-${n}`, px],
+        [`--soft-space-${n}`, px],
+      ];
+    }),
   );
 }
 

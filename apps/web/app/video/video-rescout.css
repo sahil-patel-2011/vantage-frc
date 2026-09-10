@@ -36,8 +36,8 @@
 }
 .vid-soft-panel h2 {
   margin: 0 0 4px;
-  font-size:var(--soft-title-2);
-  letter-spacing:var(--soft-tracking-tight);
+  font-size:var(--title-2);
+  letter-spacing:var(--tracking-tight);
   color: var(--ink);
 }
 .vid-setup-steps {
@@ -172,7 +172,7 @@
 }
 .vid-detail-head h2 {
   margin: 0 0 4px;
-  font-size:var(--soft-title-2);
+  font-size:var(--title-2);
 }
 .vid-detail-head p {
   margin: 0;

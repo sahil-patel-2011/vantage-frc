@@ -3,7 +3,7 @@
   min-height: 100vh;
   background: var(--bg);
   color: var(--ink);
-  padding: 32px 16px calc(48px + var(--soft-safe-bottom, 0px));
+  padding: 32px 16px calc(48px + var(--safe-bottom, 0px));
   display: flex;
   justify-content: center;
   font-family: var(--font-source-sans, system-ui, sans-serif);
@@ -31,7 +31,7 @@
 
 .parent-view-header h1 {
   margin: 0;
-  font-size:var(--soft-title-1);
+  font-size:var(--title-1);
   line-height: 1.2;
 }
 
@@ -108,7 +108,7 @@
 
 .parent-view-state h2 {
   margin: 0;
-  font-size:var(--soft-title-2);
+  font-size:var(--title-2);
 }
 
 .parent-view-state p {

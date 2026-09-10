@@ -274,7 +274,7 @@
 .sfb-preview h2,
 .sfb-side h2 {
   margin: 0 0 6px;
-  font-size:var(--soft-title-3);
+  font-size:var(--title-3);
 }
 
 .sfb-preview-fields {

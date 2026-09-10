@@ -11,9 +11,9 @@
 .visit-tile span{color:var(--muted);font-size:12px}
 .visit-share-panel,.visit-form,.visit-card,.visit-subform{display:grid;gap:12px;padding:16px;border-radius:var(--radius);border:1px solid var(--line);background:color-mix(in srgb,var(--surface) 96%,#fff)}
 .visit-share-panel>header,.visit-form>h2,.visit-card h3,.visit-subform h4{margin:0;color:var(--ink)}
-.visit-share-panel h2,.visit-form h2{font-size:var(--soft-title-3)}.visit-card h3{font-size:var(--soft-title-2)}
+.visit-share-panel h2,.visit-form h2{font-size:var(--title-3)}.visit-card h3{font-size:var(--title-2)}
 .visit-share-panel>header p,.visit-form-lead{margin:0;color:var(--muted);font-size:13px;line-height:1.45}
-.visit-subform h4{font-size:var(--soft-title-4);color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.visit-subform h4{font-size:var(--title-4);color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
 .visit-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
 .visit-field{display:grid;gap:4px;min-width:0;color:var(--muted)}
 .visit-field>span{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}

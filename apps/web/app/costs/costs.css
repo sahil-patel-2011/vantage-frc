@@ -14,7 +14,7 @@
 
 .costs-next-actions{display:grid;gap:10px;margin:0 0 16px;padding:16px 18px}
 .costs-next-actions>header{display:grid;gap:4px}
-.costs-next-actions h2{margin:0;font-size:var(--soft-title-3);letter-spacing:var(--soft-tracking-tight)}
+.costs-next-actions h2{margin:0;font-size:var(--title-3);letter-spacing:var(--tracking-tight)}
 .costs-next-actions>header p{margin:0;color:var(--app-muted);font-size:12px;line-height:1.4}
 .costs-next-actions ol{margin:0;padding:0;list-style:none;display:grid;gap:8px}
 .costs-next-actions li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-radius:var(--radius-sm);border:1px solid var(--app-line);background:var(--app-bg)}
@@ -43,7 +43,7 @@
 .costs-breakdown .mini-probability{min-width:0}
 
 .costs-panel{display:grid;gap:12px;align-content:start;min-width:0}
-.costs-panel h2{margin:0;font-size:var(--soft-title-3);letter-spacing:var(--soft-tracking-tight)}
+.costs-panel h2{margin:0;font-size:var(--title-3);letter-spacing:var(--tracking-tight)}
 .costs-panel>p{margin:0;color:var(--app-muted);font-size:13px;line-height:1.4}
 
 .costs-allin-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
@@ -58,7 +58,7 @@
 
 .costs-assistant{display:grid;gap:8px;margin:0 0 16px;padding:16px 18px}
 .costs-assistant header{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.costs-assistant h2{margin:0;font-size:var(--soft-title-3)}
+.costs-assistant h2{margin:0;font-size:var(--title-3)}
 .costs-assistant p{margin:0;font-weight:600}
 .costs-assistant ul{margin:0;padding-left:18px;display:grid;gap:6px}
 
