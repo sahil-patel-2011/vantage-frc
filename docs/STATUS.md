@@ -106,7 +106,7 @@ See `docs/COMPETITIVE_NOTES.md`. That document is the brief for Tasks 2–4.
 | Signed-in venue weather | Seeded Houston event-day card on `next start`; Open-Meteo live (not mocked) | this commit |
 | Signed-in offline shells | Playwright packing / batteries / pit / competition / Event Day survive `setOffline` on `next start` | this commit |
 | `/docs` `/help` `/account` `/notifications` | Non-hub TabBars (manual views, season moments, account sections, inbox filters) became ToolStrip chips | this commit |
-| `/business` school-funded no sponsors | Overview still offered Open CRM / Open sponsors after the hub hid those tabs | this commit |
+| `/business` school-funded no sponsors | Overview still offered Open CRM / Open sponsors after the hub hid those tabs; funding default no longer steals a bounced `?tab=sponsors` | this commit |
 
 ---
 
