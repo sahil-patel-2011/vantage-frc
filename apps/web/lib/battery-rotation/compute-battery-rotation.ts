@@ -131,30 +131,30 @@ export async function computeBatteryRotationView(
     return {
       status: "setup_required",
       message:
-        "Select a team workspace to plan battery rotation and charge scheduling — never DEMO IR or charge metrics.",
+        "Select a team workspace to plan battery rotation and charge scheduling.",
       steps: [
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Choose your team organization — Battery Rotation is org-scoped.",
+          detail: "Choose your team organization to open Battery Rotation.",
           href: "/workspace",
         },
         {
           id: "batteries",
           label: "Open Batteries",
-          detail: "IR and cycles stay blank until logged — never DEMO health scores.",
+          detail: "IR and cycles stay blank until logged.",
           href: hubHref("/team", "batteries", null),
         },
         {
           id: "battery-health-forecast",
           label: "Open Health Forecast",
-          detail: "Retirement projections stay blank until IR history exists — never DEMO EOL dates.",
+          detail: "Retirement projections stay blank until IR history exists.",
           href: hubHref("/build", "battery-health-forecast", null),
         },
         {
           id: "pit",
           label: "Open Pit Command",
-          detail: "Event-day rack status stays empty until packs are tracked — never DEMO volts.",
+          detail: "Event-day rack status stays empty until packs are tracked.",
           href: withOrgHref("/pit", null),
         },
       ],

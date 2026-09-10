@@ -69,7 +69,7 @@ export function fieldResetTimerSetupSteps(orgId?: string | null): FieldResetTime
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — reset drills are org-scoped.",
+      detail: "Choose your team organization to open reset drills.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -134,7 +134,7 @@ export function fieldResetTimerShellCopy(kind: FieldResetTimerShellKind): FieldR
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Field Reset Timer is org-scoped. Pick a workspace before logging real practice cycles — nothing is pre-seeded.",
+          "Pick a workspace before logging real practice cycles.",
       };
     case "empty":
       return {

@@ -72,7 +72,7 @@ export function scoutFieldBudgetSetupSteps(orgId?: string | null): ScoutFieldBud
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — field budgets are org-scoped.",
+      detail: "Choose your team organization to open field budgets.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -147,7 +147,7 @@ export function scoutFieldBudgetShellCopy(kind: ScoutFieldBudgetShellKind): Scou
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Field-Count Budget is org-scoped. Pick a workspace before linting schema phases — nothing is pre-seeded.",
+          "Pick a workspace before linting schema phases.",
       };
     case "empty":
       return {
@@ -186,7 +186,7 @@ export function scoutFieldBudgetNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Field budgets are org-scoped — pick a team before linting schemas.",
+          detail: "Pick a team before linting schemas.",
           href: "/workspace",
           primary: true,
         },

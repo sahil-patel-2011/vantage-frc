@@ -75,7 +75,7 @@ export function picklistCollabSetupSteps(orgId?: string | null): PicklistCollabS
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — pick lists are org-scoped.",
+      detail: "Choose your team organization to open pick lists.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -147,7 +147,7 @@ export function picklistCollabShellCopy(kind: PicklistCollabShellKind): Picklist
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Collaborative Pick List is org-scoped. Pick a workspace before ranking teams.",
+          "Pick a workspace before ranking teams.",
       };
     case "empty":
       return {

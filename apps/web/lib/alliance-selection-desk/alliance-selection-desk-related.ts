@@ -80,7 +80,7 @@ export function allianceSelectionDeskSetupSteps(
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — the desk is org-scoped.",
+      detail: "Choose your team organization to open the desk.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -162,7 +162,7 @@ export function allianceSelectionDeskShellCopy(
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Alliance Selection Desk is org-scoped. Pick a workspace before creating a live board.",
+          "Pick a workspace before creating a live board.",
       };
     case "empty":
       return {
@@ -202,7 +202,7 @@ export function allianceSelectionDeskNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "The desk is org-scoped — pick a team before opening a board.",
+          detail: "Pick a team before opening a board.",
           href: "/workspace",
           primary: true,
         },
@@ -341,7 +341,7 @@ export function allianceSelectionDeskNextActions(input: {
     {
       id: "export",
       label: "Export drive-team pack",
-      detail: "Print Soft-UI pack from assigned slots only.",
+      detail: "Print pack from assigned slots only.",
       href: "#alliance-desk-export",
     },
   ];

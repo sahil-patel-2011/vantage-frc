@@ -84,13 +84,13 @@ export function mediaKitSetupSteps(orgId?: string | null): MediaKitSetupStep[] {
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — media kits are org-scoped.",
+      detail: "Choose your team organization to open media kits.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
       id: "profile",
       label: "Record team profile",
-      detail: "Mission, bio, and contact stay blank until you enter them — nothing is pre-seeded.",
+      detail: "Mission, bio, and contact stay blank until you enter them.",
       href: orgId ? withOrgHref("/media-kit", orgId) : "/media-kit",
     },
     {
@@ -183,7 +183,7 @@ export function mediaKitShellCopy(kind: MediaKitShellKind): MediaKitEmptyCopy {
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Media Kit is org-scoped. Pick a workspace and record real profile fields before generating one-pagers — nothing is pre-seeded.",
+          "Pick a workspace and record real profile fields before generating one-pagers.",
       };
     case "empty":
       return {

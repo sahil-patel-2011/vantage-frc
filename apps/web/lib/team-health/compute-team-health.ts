@@ -16,19 +16,19 @@ function setupSteps(orgId: string | null): TeamHealthSetupStep[] {
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — Team Health is org-scoped.",
+      detail: "Choose your team organization to open Team Health.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
       id: "attendance",
       label: "Open Attendance",
-      detail: "Engagement stays blank until real roll-call entries exist — never DEMO morale.",
+      detail: "Engagement stays blank until real roll-call entries exist.",
       href: hubHref("/team", "attendance", orgId),
     },
     {
       id: "hours-self-view",
       label: "Open My Hours",
-      detail: "Shop-time engagement stays blank until members clock in — never DEMO hours.",
+      detail: "Shop-time engagement stays blank until members clock in.",
       href: hubHref("/team", "hours-self-view", orgId),
     },
   ];

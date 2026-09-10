@@ -79,25 +79,25 @@ export function grantReportSetupSteps(orgId?: string | null): GrantReportSetupSt
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — grant reports are org-scoped.",
+      detail: "Choose your team organization to open grant reports.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
       id: "grants",
       label: "Open Grants",
-      detail: "Awarded amounts stay blank until real grants land — nothing is pre-seeded.",
+      detail: "Awarded amounts stay blank until real grants land.",
       href: hubHref("/business", "grants", orgId),
     },
     {
       id: "grant-workbench",
       label: "Open Grants workbench",
-      detail: "Track applications and mark awards before generating reports — nothing is pre-seeded.",
+      detail: "Track applications and mark awards before generating reports.",
       href: withOrgHref("/team/grants", orgId),
     },
     {
       id: "impact",
       label: "Open Community Impact",
-      detail: "Outreach stays blank until your team logs it — nothing is pre-seeded.",
+      detail: "Outreach stays blank until your team logs it.",
       href: hubHref("/business", "impact", orgId),
     },
   ];
@@ -184,7 +184,7 @@ export function grantReportShellCopy(kind: GrantReportShellKind): GrantReportEmp
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Grant Report is org-scoped. Pick a workspace and mark real awards before generating — nothing is pre-seeded.",
+          "Pick a workspace and mark real awards before generating.",
       };
     case "empty":
       return {

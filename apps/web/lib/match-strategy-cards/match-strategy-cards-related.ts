@@ -82,7 +82,7 @@ export function matchStrategyCardsSetupSteps(
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — strategy cards are org-scoped.",
+      detail: "Choose your team organization to open strategy cards.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -160,7 +160,7 @@ export function matchStrategyCardsShellCopy(
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Match Strategy Cards are org-scoped. Pick a workspace and active event before drafting plans.",
+          "Pick a workspace and active event before drafting plans.",
       };
     case "empty":
       return {
@@ -206,7 +206,7 @@ export function matchStrategyCardsNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Strategy cards are org-scoped — pick a team before drafting plans.",
+          detail: "Pick a team before drafting plans.",
           href: "/workspace",
           primary: true,
         },
@@ -310,7 +310,7 @@ export function matchStrategyCardsNextActions(input: {
         label: savedCount > 0 ? "Update a strategy card" : "Draft the first card",
         detail:
           savedCount > 0
-            ? `${savedCount} of ${cardCount} card${cardCount === 1 ? "" : "s"} saved — print Soft-UI packs for drive team.`
+            ? `${savedCount} of ${cardCount} card${cardCount === 1 ? "": "s"} saved — print packs for drive team.`
             : `${cardCount} scheduled match${cardCount === 1 ? "" : "es"} — plans stay blank until you write them.`,
         href: "#match-strategy-cards-list",
       },
@@ -379,7 +379,7 @@ export function matchStrategyCardsNextActions(input: {
       label: savedCount > 0 ? "Update a strategy card" : "Draft the first card",
       detail:
         savedCount > 0
-          ? `${savedCount} of ${cardCount} card${cardCount === 1 ? "" : "s"} saved — print Soft-UI packs for drive team.`
+          ? `${savedCount} of ${cardCount} card${cardCount === 1 ? "": "s"} saved — print packs for drive team.`
           : `${cardCount} scheduled match${cardCount === 1 ? "" : "es"} — plans stay blank until you write them.`,
       href: "#match-strategy-cards-list",
       primary: true,

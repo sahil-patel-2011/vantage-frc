@@ -71,7 +71,7 @@ export function pitRepairTriageSetupSteps(orgId?: string | null): PitRepairTriag
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — triage reports are org-scoped.",
+      detail: "Choose your team organization to open triage reports.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -146,7 +146,7 @@ export function pitRepairTriageShellCopy(kind: PitRepairTriageShellKind): PitRep
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Pit Repair Triage is org-scoped. Pick a workspace before logging failures — nothing is pre-seeded.",
+          "Pick a workspace before logging failures.",
       };
     case "empty":
       return {
@@ -182,7 +182,7 @@ export function pitRepairTriageNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Triage reports are org-scoped — pick a team before logging failures.",
+          detail: "Pick a team before logging failures.",
           href: "/workspace",
           primary: true,
         },

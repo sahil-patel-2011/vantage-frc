@@ -73,7 +73,7 @@ export function lineupSetupSteps(orgId?: string | null): LineupSetupStep[] {
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — coverage is org-scoped.",
+      detail: "Choose your team organization to open coverage.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -300,7 +300,7 @@ export function lineupShellCopy(kind: LineupShellKind): LineupEmptyCopy {
         badge: "Setup required",
         title: "Select a team workspace and event",
         description:
-          "Lineup & coverage is org- and event-scoped. Pick a workspace and active TBA event before gaps appear — nothing is pre-seeded.",
+          "Lineup & coverage is org- and event-scoped. Pick a workspace and active TBA event before gaps appear.",
       };
     case "empty":
       return {
@@ -342,7 +342,7 @@ export function lineupNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Coverage is org-scoped — pick a team before watching live gaps.",
+          detail: "Pick a team before watching live gaps.",
           href: "/workspace",
           primary: true,
         },
@@ -400,7 +400,7 @@ export function lineupNextActions(input: {
       {
         id: "retry",
         label: "Retry lineup coverage",
-        detail: "Reload real match slots and entries — nothing is pre-seeded while this fails.",
+        detail: "Reload real match slots and entries.",
         href: withOrgHref("/scouting/lineup", orgId),
         primary: true,
       },

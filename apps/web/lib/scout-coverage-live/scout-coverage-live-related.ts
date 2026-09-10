@@ -71,7 +71,7 @@ export function scoutCoverageLiveSetupSteps(orgId?: string | null): ScoutCoverag
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — coverage is org-scoped.",
+      detail: "Choose your team organization to open coverage.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -177,7 +177,7 @@ export function scoutCoverageLiveShellCopy(kind: ScoutCoverageLiveShellKind): Sc
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Live coverage is org-scoped. Pick a workspace and active event before zero/thin cells appear — nothing is pre-seeded.",
+          "Pick a workspace and active event before zero/thin cells appear.",
       };
     case "empty":
       return {
@@ -217,7 +217,7 @@ export function scoutCoverageLiveNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Coverage is org-scoped — pick a team before watching live gaps.",
+          detail: "Pick a team before watching live gaps.",
           href: "/workspace",
           primary: true,
         },
@@ -275,7 +275,7 @@ export function scoutCoverageLiveNextActions(input: {
       {
         id: "retry",
         label: "Retry scout coverage",
-        detail: "Reload real schedule gaps — nothing is pre-seeded while this fails.",
+        detail: "Reload real schedule gaps.",
         href: withOrgHref("/scout-coverage-live", orgId),
         primary: true,
       },

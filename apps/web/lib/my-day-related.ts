@@ -73,7 +73,7 @@ export function myDaySetupSteps(orgId?: string | null): MyDaySetupStep[] {
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — next-match timing is org-scoped.",
+      detail: "Choose your team organization to open next-match timing.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -208,7 +208,7 @@ export function myDayNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Next-match timing is org-scoped — pick a team before loading TBA rows.",
+          detail: "Pick a team before loading TBA rows.",
           href: "/workspace",
           primary: true,
         },
@@ -289,7 +289,7 @@ export function myDayNextActions(input: {
       {
         id: "retry",
         label: "Retry My Day",
-        detail: "Reload real TBA next-match rows — nothing is pre-seeded while this fails.",
+        detail: "Reload real TBA next-match rows.",
         href: withOrgHref("/my-day", orgId),
         primary: true,
       },

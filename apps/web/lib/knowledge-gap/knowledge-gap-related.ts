@@ -67,13 +67,13 @@ export function knowledgeGapSetupSteps(orgId?: string | null): KnowledgeGapSetup
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — gap scans are org-scoped.",
+      detail: "Choose your team organization to open gap scans.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
       id: "knowledge",
       label: "Open Knowledge wiki",
-      detail: "Pages you write here are the coverage source — never invented stubs.",
+      detail: "Pages you write here are the coverage source.",
       href: hubHref("/team", "knowledge", orgId),
     },
     {
@@ -133,7 +133,7 @@ export function knowledgeGapShellCopy(kind: KnowledgeGapShellKind): KnowledgeGap
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Knowledge-gap detective is org-scoped. Pick a workspace before scanning — nothing is pre-seeded.",
+          "Pick a workspace before scanning.",
       };
     case "empty":
       return {
@@ -168,7 +168,7 @@ export function knowledgeGapNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Gap scans are org-scoped — pick a team before running a scan.",
+          detail: "Pick a team before running a scan.",
           href: "/workspace",
           primary: true,
         },

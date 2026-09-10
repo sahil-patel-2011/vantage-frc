@@ -118,7 +118,7 @@ export function vendorsShellCopy(kind: VendorsShellKind): VendorsEmptyCopy {
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Vendor Directory is org-scoped. Pick a workspace before adding real suppliers — nothing is pre-seeded.",
+          "Pick a workspace before adding real suppliers.",
       };
     case "empty":
       return {
@@ -160,7 +160,7 @@ export function vendorsNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Vendor Directory is org-scoped — pick a team before adding suppliers.",
+          detail: "Pick a team before adding suppliers.",
           href: "/workspace",
           primary: true,
         },

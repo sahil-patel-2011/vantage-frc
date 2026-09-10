@@ -115,7 +115,7 @@ export function picklistJustifierShellCopy(kind: PicklistJustifierShellKind): Pi
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Pick-list Justifier is org-scoped. Pick a workspace before justifying slots — nothing is pre-seeded.",
+          "Pick a workspace before justifying slots.",
       };
     case "empty":
       return {
@@ -157,7 +157,7 @@ export function picklistJustifierNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Justifications are org-scoped — pick a team before generating rationales.",
+          detail: "Pick a team before generating rationales.",
           href: "/workspace",
           primary: true,
         },

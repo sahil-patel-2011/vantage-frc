@@ -79,7 +79,7 @@ export function prototypeNextActions(input: {
     actions.push({
       id: "draft-decision",
       label: `Draft ${input.testsWithoutDecision} decision${input.testsWithoutDecision === 1 ? "" : "s"}`,
-      detail: "Recommendation and confidence come only from each test’s recorded outcome and metric — never invented.",
+      detail: "Recommendation and confidence come only from each test’s recorded outcome and metric.",
       href: prototypeHref,
       primary: true,
     });

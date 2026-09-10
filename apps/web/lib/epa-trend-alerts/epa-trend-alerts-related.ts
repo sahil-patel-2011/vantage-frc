@@ -112,7 +112,7 @@ export function epaTrendAlertsShellCopy(kind: EpaTrendAlertsShellKind): EpaTrend
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "EPA Trend Alerts is org-scoped. Pick a workspace before watching teams — nothing is pre-seeded.",
+          "Pick a workspace before watching teams.",
       };
     case "empty":
       return {
@@ -152,7 +152,7 @@ export function epaTrendAlertsNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Watchlists are org-scoped — pick a team before tracking EPA swings.",
+          detail: "Pick a team before tracking EPA swings.",
           href: "/workspace",
           primary: true,
         },

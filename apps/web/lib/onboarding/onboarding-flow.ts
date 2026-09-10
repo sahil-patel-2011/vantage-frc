@@ -164,7 +164,7 @@ export function onboardingLoadCopy(kind: OnboardingLoadKind, detail?: string | n
     title: "Could not load onboarding",
     description:
       detail?.trim() ||
-      "A network or server issue prevented loading. Nothing was filled with DEMO access — retry when ready.",
+      "A network or server issue prevented loading.",
     badge: "Retry",
   };
 }

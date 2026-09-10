@@ -71,7 +71,7 @@ export function toolCheckoutSetupSteps(orgId?: string | null): ToolCheckoutSetup
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — tool loans are org-scoped.",
+      detail: "Choose your team organization to open tool loans.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -136,7 +136,7 @@ export function toolCheckoutShellCopy(kind: ToolCheckoutShellKind): ToolCheckout
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Tool Checkout is org-scoped. Pick a workspace before registering real shop tools — nothing is pre-seeded.",
+          "Pick a workspace before registering real shop tools.",
       };
     case "empty":
       return {

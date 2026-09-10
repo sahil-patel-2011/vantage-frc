@@ -122,7 +122,7 @@ export function impactEssayShellCopy(kind: ImpactEssayShellKind): ImpactEssayEmp
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Impact Essay is org-scoped. Pick a workspace and log real outreach before drafting — nothing is pre-seeded.",
+          "Pick a workspace and log real outreach before drafting.",
       };
     case "empty":
       return {
@@ -164,7 +164,7 @@ export function impactEssayNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Essay drafts are org-scoped — pick a team before logging outreach.",
+          detail: "Pick a team before logging outreach.",
           href: "/workspace",
           primary: true,
         },
@@ -199,19 +199,19 @@ export function impactEssayNextActions(input: {
       {
         id: "impact",
         label: "Open Community Impact",
-        detail: "Ground essay claims in real logged activities — nothing is pre-seeded.",
+        detail: "Ground essay claims in real logged activities.",
         href: hubHref("/business", "impact", orgId),
       },
       {
         id: "evidence",
         label: "Open Awards",
-        detail: "Keep award packets grounded in uploaded evidence — nothing is pre-seeded.",
+        detail: "Keep award packets grounded in uploaded evidence.",
         href: hubHref("/business", "evidence", orgId),
       },
       {
         id: "writer",
         label: "Open Writer",
-        detail: "Pair essay drafts with grant/sponsor language — nothing is pre-seeded.",
+        detail: "Pair essay drafts with grant/sponsor language.",
         href: hubHref("/ai", "writer", orgId),
       },
     ];

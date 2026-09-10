@@ -75,7 +75,7 @@ export function readinessScoreSetupSteps(orgId?: string | null): ReadinessScoreS
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — Readiness Score is org-scoped.",
+      detail: "Choose your team organization to open Readiness Score.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -164,7 +164,7 @@ export function readinessScoreShellCopy(kind: ReadinessScoreShellKind): Readines
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Readiness Score is org-scoped. Pick a workspace before logging subsystems — nothing is pre-seeded.",
+          "Pick a workspace before logging subsystems.",
       };
     case "empty":
       return {

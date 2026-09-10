@@ -111,7 +111,7 @@ export function riskBurndownShellCopy(kind: RiskBurndownShellKind): RiskBurndown
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Risk-Register Burndown is org-scoped. Pick a workspace before logging real season risks — nothing is pre-seeded.",
+          "Pick a workspace before logging real season risks.",
       };
     case "empty":
       return {
@@ -153,7 +153,7 @@ export function riskBurndownNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Burndown is org-scoped — pick a team before logging season risks.",
+          detail: "Pick a team before logging season risks.",
           href: "/workspace",
           primary: true,
         },

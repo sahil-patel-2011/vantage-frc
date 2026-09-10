@@ -71,7 +71,7 @@ export function failurePatternsSetupSteps(orgId?: string | null): FailurePattern
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — failure clusters are org-scoped.",
+      detail: "Choose your team organization to open failure clusters.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -136,7 +136,7 @@ export function failurePatternsShellCopy(kind: FailurePatternsShellKind): Failur
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Repeat Failure Patterns is org-scoped. Pick a workspace before clustering — nothing is pre-seeded.",
+          "Pick a workspace before clustering.",
       };
     case "empty":
       return {
@@ -170,7 +170,7 @@ export function failurePatternsNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Failure clusters are org-scoped — pick a team before logging failures.",
+          detail: "Pick a team before logging failures.",
           href: "/workspace",
           primary: true,
         },

@@ -122,7 +122,7 @@ export function risksNextActions(input: {
     actions.push({
       id: "review-top",
       label: input.topTitle ? `Review “${input.topTitle}”` : "Review open risks",
-      detail: `${input.activeCount} active · top score ${input.highestScore} from real L×I — not demo data.`,
+      detail: `${input.activeCount} active · top score ${input.highestScore} from real L×I.`,
       href: risksHref,
       primary: true,
     });

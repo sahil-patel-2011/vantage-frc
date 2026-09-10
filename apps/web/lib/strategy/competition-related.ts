@@ -132,7 +132,7 @@ export function strategySetupNextActions(ctx: StrategySetupContext): StrategyNex
     {
       id: "forms",
       label: "Publish form schema",
-      detail: "Custom fields flow into strategy tools after publish — never invented placeholders.",
+      detail: "Custom fields flow into strategy tools after publish.",
       href: hubHref("/competition", "forms", orgId),
     },
     {

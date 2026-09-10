@@ -126,7 +126,7 @@ export function spareForecastShellCopy(kind: SpareForecastShellKind): SpareForec
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Spare Forecast is org-scoped. Pick a workspace before projecting exhaustion from real bins — nothing is pre-seeded.",
+          "Pick a workspace before projecting exhaustion from real bins.",
       };
     case "empty":
       return {
@@ -142,7 +142,7 @@ export function spareForecastShellCopy(kind: SpareForecastShellKind): SpareForec
         badge: "No exhaustion risk",
         title: "No spares are projected to run out",
         description:
-          "Spare bins exist, but none have matched FMEA repeat-failure history yet. Log failures and keep inventory subsystem names aligned — never invent a consumption rate.",
+          "Spare bins exist, but none have matched FMEA repeat-failure history yet. Log failures and keep inventory subsystem names aligned.",
       };
     default:
       return {
@@ -179,7 +179,7 @@ export function spareForecastNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Forecasts are org-scoped — pick a team before projecting spare exhaustion.",
+          detail: "Pick a team before projecting spare exhaustion.",
           href: "/workspace",
           primary: true,
         },
@@ -297,7 +297,7 @@ export function spareForecastNextActions(input: {
       {
         id: "fmea",
         label: "Log FMEA failures",
-        detail: "Repeat failures on a subsystem unlock consumption cadence — never invent rates.",
+        detail: "Repeat failures on a subsystem unlock consumption cadence.",
         href: hubHref("/build", "fmea", orgId),
         primary: true,
       },

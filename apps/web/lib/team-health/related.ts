@@ -68,7 +68,7 @@ export function teamHealthSetupSteps(orgId?: string | null): TeamHealthSetupStep
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — Team Health is org-scoped.",
+      detail: "Choose your team organization to open Team Health.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -152,7 +152,7 @@ export function teamHealthShellCopy(kind: TeamHealthShellKind): TeamHealthEmptyC
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Team Health is org-scoped. Pick a workspace before reading attendance and hour logs — nothing is pre-seeded.",
+          "Pick a workspace before reading attendance and hour logs.",
       };
     case "empty":
       return {

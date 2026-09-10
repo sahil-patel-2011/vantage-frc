@@ -122,7 +122,7 @@ export function ruleImpactShellCopy(kind: RuleImpactShellKind): RuleImpactEmptyC
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Rule Impact is org-scoped. Pick a workspace before logging game-manual deltas — nothing is pre-seeded.",
+          "Pick a workspace before logging game-manual deltas.",
       };
     case "empty":
       return {
@@ -166,7 +166,7 @@ export function ruleImpactNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Rule impact is org-scoped — pick a team before logging game-manual deltas.",
+          detail: "Pick a team before logging game-manual deltas.",
           href: "/workspace",
           primary: true,
         },

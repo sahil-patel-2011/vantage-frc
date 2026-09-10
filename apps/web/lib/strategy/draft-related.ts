@@ -73,7 +73,7 @@ export function draftSetupSteps(orgId?: string | null): DraftSetupStep[] {
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — draft boards are org-scoped.",
+      detail: "Choose your team organization to open draft boards.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -175,7 +175,7 @@ export function draftShellCopy(kind: DraftShellKind): DraftEmptyCopy {
         badge: "Setup required",
         title: "Select a team workspace and event",
         description:
-          "Draft day is org- and event-scoped. Pick a workspace and active TBA event before alliance slots appear — nothing is pre-seeded.",
+          "Draft day is org- and event-scoped. Pick a workspace and active TBA event before alliance slots appear.",
       };
     case "empty":
       return {
@@ -217,7 +217,7 @@ export function draftNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Draft boards are org-scoped — choose a team before alliance selection.",
+          detail: "Choose a team before alliance selection.",
           href: "/workspace",
           primary: true,
         },
@@ -275,7 +275,7 @@ export function draftNextActions(input: {
       {
         id: "retry",
         label: "Retry draft board",
-        detail: "Reload the real org-scoped alliance board — nothing is invented while this fails.",
+        detail: "Reload the real your team's alliance board.",
         href: withOrgHref("/strategy/draft", orgId),
         primary: true,
       },

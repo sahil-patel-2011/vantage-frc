@@ -122,7 +122,7 @@ export async function computeTeamDossier(
       label: "Sync TBA identity + schedule",
       detail: access.tbaConfigured
         ? "TBA credential or cache available"
-        : "Set TBA_AUTH_KEY or save a TBA credential, then sync — never invent DEMO identity.",
+        : "Set TBA_AUTH_KEY or save a TBA credential, then sync.",
       href: withOrgHref("/team/data", orgId),
       done: access.tbaConfigured,
     },
@@ -131,7 +131,7 @@ export async function computeTeamDossier(
       label: "Cache Statbotics season EPA",
       detail: access.statbotics.cacheHasMetrics
         ? `Neon has ${access.statbotics.yearMetricRows} year + ${access.statbotics.eventMetricRows} event Statbotics rows`
-        : "No Statbotics EPA cached yet — run reference sync (public API). Never invent DEMO EPA.",
+        : "No Statbotics EPA cached yet — run reference sync (public API).",
       href: withOrgHref("/team/data", orgId),
       done: access.statbotics.cacheHasMetrics,
     },

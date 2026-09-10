@@ -168,7 +168,7 @@ export function adminEmptyCopy(kind: AdminShellKind, detail?: string | null): Ad
       title: "Platform admin data is unavailable",
       description:
         detail?.trim() ||
-        "Organization provisioning could not load. Confirm database connectivity — never invent DEMO team metrics while setup is incomplete.",
+        "Organization provisioning could not load. Confirm database connectivity.",
       badge: "setup_required",
     };
   }
@@ -239,7 +239,7 @@ export function adminNextActions(kind: AdminShellKind): AdminNextAction[] {
       {
         id: "audit",
         label: "Audit log",
-        detail: "When admin APIs are healthy, privileged actions land here — never DEMO audit rows.",
+        detail: "When admin APIs are healthy, privileged actions land here.",
         href: "/admin/audit",
       },
     ];
@@ -269,13 +269,13 @@ export function adminNextActions(kind: AdminShellKind): AdminNextAction[] {
     {
       id: "plans",
       label: "Org plans",
-      detail: "Entitlement status and Stripe IDs from the live ledger — never DEMO plan metrics.",
+      detail: "Entitlement status and Stripe IDs from the live ledger.",
       href: "/admin/plans",
     },
     {
       id: "support",
       label: "Support triage",
-      detail: "Member-reported tickets only. Replies show on the submitter’s Soft-UI Support page.",
+      detail: "Member-reported tickets only. Replies show on the submitter’s Support page.",
       href: "/admin/support",
     },
     {

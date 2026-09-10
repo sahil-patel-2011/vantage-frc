@@ -356,7 +356,7 @@ export function assembleDreamPrompt(digest: DreamDigest): string {
     "4. What tomorrow-you should know",
     "",
     "Grounding rules (mandatory):",
-    "- Use ONLY the facts listed below. Never invent names, numbers, matches, scores, tasks, or outcomes.",
+    "Use ONLY the facts listed below.",
     "- If a fact is not listed below, it did not happen — do not speculate about it.",
     '- If a section has no supporting facts, write exactly "Nothing recorded."',
     "- Plain text only, no markdown headings, under 300 words total.",

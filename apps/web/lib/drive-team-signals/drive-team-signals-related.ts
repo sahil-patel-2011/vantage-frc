@@ -70,7 +70,7 @@ export function driveTeamSignalsSetupSteps(orgId?: string | null): DriveTeamSign
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — signal sheets are org-scoped.",
+      detail: "Choose your team organization to open signal sheets.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -135,7 +135,7 @@ export function driveTeamSignalsShellCopy(kind: DriveTeamSignalsShellKind): Driv
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Drive-Team Signals is org-scoped. Pick a workspace before defining real callouts — nothing is pre-seeded.",
+          "Pick a workspace before defining real callouts.",
       };
     case "empty":
       return {

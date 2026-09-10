@@ -91,7 +91,7 @@ export function githubSetupSteps(orgId?: string | null): GitHubSetupStep[] {
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — GitHub context is org-scoped.",
+      detail: "Choose your team organization to open GitHub context.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -175,7 +175,7 @@ export function githubShellCopy(kind: GitHubShellKind): GitHubEmptyCopy {
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "GitHub robot-code context is org-scoped. Join or pick a workspace before linking OAuth or a PAT — nothing is pre-seeded.",
+          "Join or pick a workspace before linking OAuth or a PAT.",
       };
     case "empty":
       return {
@@ -217,7 +217,7 @@ export function githubNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "GitHub context is org-scoped — pick a team before linking a PAT or OAuth.",
+          detail: "Pick a team before linking a PAT or OAuth.",
           href: "/workspace",
           primary: true,
         },

@@ -112,7 +112,7 @@ export function controlMapShellCopy(kind: ControlMapShellKind): ControlMapEmptyC
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Control Map is org-scoped. Pick a workspace before mapping driver and operator inputs — nothing is pre-seeded.",
+          "Pick a workspace before mapping driver and operator inputs.",
       };
     case "empty":
       return {
@@ -154,7 +154,7 @@ export function controlMapNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Bindings are org-scoped — pick a team before mapping controls.",
+          detail: "Pick a team before mapping controls.",
           href: "/workspace",
           primary: true,
         },

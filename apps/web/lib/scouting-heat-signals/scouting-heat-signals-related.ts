@@ -72,7 +72,7 @@ export function scoutingHeatSignalsSetupSteps(orgId?: string | null): ScoutingHe
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — heat signals are org-scoped.",
+      detail: "Choose your team organization to open heat signals.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -147,7 +147,7 @@ export function scoutingHeatSignalsShellCopy(kind: ScoutingHeatSignalsShellKind)
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Heat Signals is org-scoped. Pick a workspace before logging rising/falling teams — nothing is pre-seeded.",
+          "Pick a workspace before logging rising/falling teams.",
       };
     case "empty":
       return {
@@ -186,7 +186,7 @@ export function scoutingHeatSignalsNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Heat signals are org-scoped — pick a team before logging trends.",
+          detail: "Pick a team before logging trends.",
           href: "/workspace",
           primary: true,
         },

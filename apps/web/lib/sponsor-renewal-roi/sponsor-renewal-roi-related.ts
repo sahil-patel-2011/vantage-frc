@@ -73,13 +73,13 @@ export function sponsorRenewalRoiSetupSteps(orgId?: string | null): SponsorRenew
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — renewal scores are org-scoped.",
+      detail: "Choose your team organization to open renewal scores.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
       id: "sponsors",
       label: "Open Sponsor CRM",
-      detail: "Sponsor rows stay blank until your team logs them — nothing is pre-seeded.",
+      detail: "Sponsor rows stay blank until your team logs them.",
       href: hubHref("/business", "sponsors", orgId),
     },
     {
@@ -148,7 +148,7 @@ export function sponsorRenewalRoiShellCopy(kind: SponsorRenewalRoiShellKind): Sp
         badge: "Setup required",
         title: "Add sponsors before scoring renewal risk",
         description:
-          "Renewal ROI needs an org and at least one CRM sponsor. Scores stay blank until interactions, contributions, or impact mentions exist — nothing is pre-seeded.",
+          "Renewal ROI needs an org and at least one CRM sponsor. Scores stay blank until interactions, contributions, or impact mentions exist.",
       };
     case "empty":
       return {
@@ -188,7 +188,7 @@ export function sponsorRenewalRoiNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Renewal scores are org-scoped — pick a team before scoring sponsors.",
+          detail: "Pick a team before scoring sponsors.",
           href: "/workspace",
           primary: true,
         },

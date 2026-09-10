@@ -121,7 +121,7 @@ export function inspectionCopilotShellCopy(kind: InspectionCopilotShellKind): In
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Inspection Copilot is org-scoped. Pick a workspace before comparing limits to measured robot values — nothing is pre-seeded.",
+          "Pick a workspace before comparing limits to measured robot values.",
       };
     case "empty":
       return {
@@ -163,7 +163,7 @@ export function inspectionCopilotNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Readiness checks are org-scoped — pick a team before predicting inspection failures.",
+          detail: "Pick a team before predicting inspection failures.",
           href: "/workspace",
           primary: true,
         },

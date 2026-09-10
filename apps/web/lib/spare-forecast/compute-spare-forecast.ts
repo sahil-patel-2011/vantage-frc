@@ -255,7 +255,7 @@ export async function computeSpareForecastView(
         {
           id: "inventory",
           label: "Stock spare parts",
-          detail: "Add spare-category items in Inventory so they can be forecast — never DEMO bins",
+          detail: "Add spare-category items in Inventory so they can be forecast",
           href: "/inventory",
         },
         {

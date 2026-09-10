@@ -71,7 +71,7 @@ export function scoutCrossvalSetupSteps(orgId?: string | null): ScoutCrossvalSet
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — TBA cross-validation is org-scoped.",
+      detail: "Choose your team organization to open TBA cross-validation.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -177,7 +177,7 @@ export function scoutCrossvalShellCopy(kind: ScoutCrossvalShellKind): ScoutCross
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "TBA cross-validation is org-scoped. Pick a workspace before agree/conflict badges appear — nothing is pre-seeded.",
+          "Pick a workspace before agree/conflict badges appear.",
       };
     case "empty":
       return {
@@ -216,7 +216,7 @@ export function scoutCrossvalNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Cross-validation is org-scoped — pick a team before TBA checks run.",
+          detail: "Pick a team before TBA checks run.",
           href: "/workspace",
           primary: true,
         },
@@ -274,7 +274,7 @@ export function scoutCrossvalNextActions(input: {
       {
         id: "retry",
         label: "Retry cross-validation",
-        detail: "Reload real TBA field checks — nothing is pre-seeded while this fails.",
+        detail: "Reload real TBA field checks.",
         href: withOrgHref("/scout-crossval", orgId),
         primary: true,
       },

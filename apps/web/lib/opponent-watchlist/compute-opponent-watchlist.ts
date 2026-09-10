@@ -36,25 +36,25 @@ function setupSteps(orgId: string | null): WatchlistSetupStep[] {
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — Opponent Watchlist is org-scoped.",
+      detail: "Choose your team organization to open Opponent Watchlist.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
       id: "strategy",
       label: "Open Strategy",
-      detail: "Pick lists stay empty until real metrics exist — never DEMO rankings.",
+      detail: "Pick lists stay empty until real metrics exist.",
       href: hubHref("/competition", "strategy", orgId),
     },
     {
       id: "epa-trend-alerts",
       label: "Open EPA Trend Alerts",
-      detail: "EPA swings stay blank until you watch real teams — never DEMO forecasts.",
+      detail: "EPA swings stay blank until you watch real teams.",
       href: hubHref("/competition", "epa-trend-alerts", orgId),
     },
     {
       id: "scouting",
       label: "Open Scouting",
-      detail: "Scout rows stay blank until your team enters them — never DEMO scores.",
+      detail: "Scout rows stay blank until your team enters them.",
       href: hubHref("/competition", "scouting", orgId),
     },
   ];

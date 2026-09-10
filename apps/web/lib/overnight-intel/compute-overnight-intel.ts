@@ -45,19 +45,19 @@ function workspaceSetupSteps(orgId: string | null): OvernightIntelSetupStep[] {
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — Overnight Intel is org-scoped.",
+      detail: "Choose your team organization to open Overnight Intel.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
       id: "command",
       label: "Open Command",
-      detail: "Event Day stays blank until real schedule data exists — never DEMO matches.",
+      detail: "Event Day stays blank until real schedule data exists.",
       href: hubHref("/competition", "command", orgId),
     },
     {
       id: "strategy",
       label: "Open Strategy",
-      detail: "Pick lists stay empty until real metrics exist — never DEMO rankings.",
+      detail: "Pick lists stay empty until real metrics exist.",
       href: hubHref("/competition", "strategy", orgId),
     },
   ];
@@ -68,7 +68,7 @@ function activeEventSetupSteps(orgId: string): OvernightIntelSetupStep[] {
     {
       id: "active-event",
       label: "Set active event",
-      detail: "Choose the event your team is competing at — never invent DEMO events.",
+      detail: "Choose the event your team is competing at.",
       href: withOrgHref("/team/data", orgId),
     },
     {

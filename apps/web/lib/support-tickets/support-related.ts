@@ -121,7 +121,7 @@ export function supportNextActions(input: {
       {
         id: "help",
         label: "Open app manual",
-        detail: "Soft-UI topics (island, Home, scouting, BYOK) — separate from tickets.",
+        detail: "topics (island, Home, scouting, BYOK) — separate from tickets.",
         href: "/docs",
       },
     ];
@@ -161,7 +161,7 @@ export function supportNextActions(input: {
     {
       id: "help",
       label: "App manual",
-      detail: "Soft-UI topics — island, Edit Home, scouting, BYOK, Event Day, credits.",
+      detail: "topics — island, Edit Home, scouting, BYOK, Event Day, credits.",
       href: "/docs",
       primary: false,
     },

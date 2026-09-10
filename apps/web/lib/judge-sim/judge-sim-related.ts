@@ -119,7 +119,7 @@ export function judgeSimShellCopy(kind: JudgeSimShellKind): JudgeSimEmptyCopy {
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Judge-Pitch Simulator is org-scoped. Pick a workspace and log real evidence before grading answers — nothing is pre-seeded.",
+          "Pick a workspace and log real evidence before grading answers.",
       };
     case "empty":
       return {
@@ -159,7 +159,7 @@ export function judgeSimNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Judge Q&A is org-scoped — pick a team before logging evidence.",
+          detail: "Pick a team before logging evidence.",
           href: "/workspace",
           primary: true,
         },
@@ -194,19 +194,19 @@ export function judgeSimNextActions(input: {
       {
         id: "impact",
         label: "Open Community Impact",
-        detail: "Ground outreach claims in real logged activities — nothing is pre-seeded.",
+        detail: "Ground outreach claims in real logged activities.",
         href: hubHref("/business", "impact", orgId),
       },
       {
         id: "impact-essay",
         label: "Open Impact Essay",
-        detail: "Draft award language from real impact rows — nothing is pre-seeded.",
+        detail: "Draft award language from real impact rows.",
         href: hubHref("/business", "impact-essay", orgId),
       },
       {
         id: "evidence",
         label: "Open Awards",
-        detail: "Keep award packets grounded in uploaded evidence — nothing is pre-seeded.",
+        detail: "Keep award packets grounded in uploaded evidence.",
         href: hubHref("/business", "evidence", orgId),
       },
     ];

@@ -68,7 +68,7 @@ export function notificationNextActions(input: {
       id: "empty",
       label: "Inbox stays empty until something real arrives",
       detail:
-        "Coach todos, duties, calendar events, releases, and teammate messages land here with real timestamps — nothing is pre-seeded.",
+        "Coach todos, duties, calendar events, releases, and teammate messages land here with real timestamps.",
       href: "/notifications/preferences",
       primary: true,
     });

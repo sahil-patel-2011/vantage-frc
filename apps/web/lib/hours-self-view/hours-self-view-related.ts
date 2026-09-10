@@ -72,7 +72,7 @@ export function hoursSelfViewSetupSteps(orgId?: string | null): HoursSelfViewSet
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — hour logs are org-scoped.",
+      detail: "Choose your team organization to open hour logs.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -155,7 +155,7 @@ export function hoursSelfViewShellCopy(kind: HoursSelfViewShellKind): HoursSelfV
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "My Hours is org-scoped. Pick a workspace before reading your logged sessions — nothing is pre-seeded.",
+          "Pick a workspace before reading your logged sessions.",
       };
     case "empty":
       return {
@@ -194,7 +194,7 @@ export function hoursSelfViewNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Hour logs are org-scoped — pick a team before reading your sessions.",
+          detail: "Pick a team before reading your sessions.",
           href: "/workspace",
           primary: true,
         },

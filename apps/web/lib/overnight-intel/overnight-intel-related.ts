@@ -127,7 +127,7 @@ export function overnightIntelShellCopy(kind: OvernightIntelShellKind): Overnigh
         badge: "Setup required",
         title: "Finish workspace and event setup",
         description:
-          "Overnight Intel needs an org and active event. Pick a workspace and set your event — nothing is pre-seeded.",
+          "Overnight Intel needs an org and active event. Pick a workspace and set your event.",
       };
     case "empty":
       return {
@@ -168,7 +168,7 @@ export function overnightIntelNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Overnight briefs are org-scoped — pick a team before compiling digests.",
+          detail: "Pick a team before compiling digests.",
           href: "/workspace",
           primary: true,
         },

@@ -83,13 +83,13 @@ export function mediaSetupSteps(orgId?: string | null): MediaSetupStep[] {
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — media tools are org-scoped.",
+      detail: "Choose your team organization to open media tools.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
       id: "media-kit",
       label: "Build Media Kit",
-      detail: "Mission, bio, and logos stay blank until you record them — nothing is pre-seeded.",
+      detail: "Mission, bio, and logos stay blank until you record them.",
       href: orgId ? withOrgHref("/media-kit", orgId) : "/media-kit",
     },
     {
@@ -170,7 +170,7 @@ export function mediaShellCopy(kind: MediaShellKind): MediaEmptyCopy {
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Media is org-scoped for business and press workflows. Pick a workspace before recording assets or outreach — nothing is pre-seeded.",
+          "Media is your team's for business and press workflows. Pick a workspace before recording assets or outreach.",
       };
     case "empty":
       return {

@@ -88,7 +88,7 @@ export function pitSetupSteps(orgId?: string | null): PitSetupStep[] {
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — Pit Command is org-scoped.",
+      detail: "Choose your team organization to open Pit Command.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -204,7 +204,7 @@ export function pitShellCopy(kind: PitShellKind): PitEmptyCopy {
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Pit Command is org-scoped. Pick a workspace before logging batteries, issues, or maintenance — nothing is pre-seeded.",
+          "Pick a workspace before logging batteries, issues, or maintenance.",
       };
     case "empty":
       return {

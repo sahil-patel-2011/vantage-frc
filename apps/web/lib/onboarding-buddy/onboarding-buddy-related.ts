@@ -75,7 +75,7 @@ export function onboardingBuddySetupSteps(orgId?: string | null): OnboardingBudd
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — buddy pairings are org-scoped.",
+      detail: "Choose your team organization to open buddy pairings.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -168,7 +168,7 @@ export function onboardingBuddyShellCopy(kind: OnboardingBuddyShellKind): Onboar
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Buddy pairing is org-scoped. Join or pick a workspace before pairing members — nothing is pre-seeded.",
+          "Join or pick a workspace before pairing members.",
       };
     case "empty":
       return {
@@ -209,7 +209,7 @@ export function onboardingBuddyNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Buddy pairing is org-scoped — pick a team before suggesting buddies.",
+          detail: "Pick a team before suggesting buddies.",
           href: "/workspace",
           primary: true,
         },
@@ -255,7 +255,7 @@ export function onboardingBuddyNextActions(input: {
       {
         id: "retry",
         label: "Retry Onboarding Buddy",
-        detail: "Reload real memberships and pairings — nothing is pre-seeded while this fails.",
+        detail: "Reload real memberships and pairings.",
         href: withOrgHref("/onboarding-buddy", orgId),
         primary: true,
       },

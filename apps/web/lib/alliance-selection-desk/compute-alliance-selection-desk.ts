@@ -164,7 +164,7 @@ function setupSteps(orgId: string | null, eventKey: string | null): DeskSetupSte
     {
       id: "scouting",
       label: "Scout opponents",
-      detail: "Attach match/pit evidence to picks — never DEMO ranks",
+      detail: "Attach match/pit evidence to picks",
       href: hubHref("/competition", "scouting", orgId),
       done: false,
     },

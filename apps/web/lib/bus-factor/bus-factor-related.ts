@@ -75,7 +75,7 @@ export function busFactorSetupSteps(orgId?: string | null): BusFactorSetupStep[]
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — Bus-Factor is org-scoped.",
+      detail: "Choose your team organization to open Bus-Factor.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -164,7 +164,7 @@ export function busFactorShellCopy(kind: BusFactorShellKind): BusFactorEmptyCopy
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Bus-Factor is org-scoped. Pick a workspace before logging weekly workload — nothing is pre-seeded.",
+          "Pick a workspace before logging weekly workload.",
       };
     case "empty":
       return {

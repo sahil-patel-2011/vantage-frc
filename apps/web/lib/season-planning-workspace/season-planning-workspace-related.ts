@@ -74,7 +74,7 @@ export function seasonPlanningSetupSteps(orgId?: string | null): SeasonPlanningS
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — season plans are org-scoped.",
+      detail: "Choose your team organization to open season plans.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -152,7 +152,7 @@ export function seasonPlanningShellCopy(kind: SeasonPlanningShellKind): SeasonPl
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Season Planning is org-scoped. Pick a workspace before creating a plan.",
+          "Pick a workspace before creating a plan.",
       };
     case "empty":
       return {
@@ -192,7 +192,7 @@ export function seasonPlanningNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Season plans are org-scoped — pick a team before creating goals.",
+          detail: "Pick a team before creating goals.",
           href: "/workspace",
           primary: true,
         },

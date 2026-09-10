@@ -105,7 +105,7 @@ export function sketchToBriefShellCopy(kind: SketchToBriefShellKind): SketchToBr
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Sketch-to-Brief is org-scoped. Pick a workspace before logging whiteboard sketches — nothing is pre-seeded.",
+          "Pick a workspace before logging whiteboard sketches.",
       };
     case "empty":
       return {
@@ -149,7 +149,7 @@ export function sketchToBriefNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Sketches are org-scoped — pick a team before logging whiteboard notes.",
+          detail: "Pick a team before logging whiteboard notes.",
           href: "/workspace",
           primary: true,
         },

@@ -85,7 +85,7 @@ export function intelSetupSteps(orgId?: string | null): IntelSetupStep[] {
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — Intel and research are org-scoped.",
+      detail: "Choose your team organization to open Intel and research.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -166,7 +166,7 @@ export function intelShellCopy(kind: IntelShellKind): IntelEmptyCopy {
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Intel and metered research are org-scoped. Pick a workspace and sync TBA/Statbotics before metrics or findings appear — nothing is pre-seeded.",
+          "Pick a workspace and sync TBA/Statbotics before metrics or findings appear.",
       };
     case "empty":
       return {
@@ -210,7 +210,7 @@ export function intelNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Intel is org-scoped — choose a team before looking up research.",
+          detail: "Choose a team before looking up research.",
           href: "/workspace",
           primary: true,
         },

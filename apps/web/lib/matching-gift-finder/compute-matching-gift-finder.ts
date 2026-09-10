@@ -68,7 +68,7 @@ function setupSteps(orgId: string | null): MatchingGiftFinderSetupStep[] {
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — Matching Gift Finder is org-scoped.",
+      detail: "Choose your team organization to open Matching Gift Finder.",
       href: "/workspace",
     },
     {

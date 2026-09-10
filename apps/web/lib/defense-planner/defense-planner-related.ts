@@ -75,7 +75,7 @@ export function defensePlannerSetupSteps(orgId?: string | null): DefensePlannerS
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — Defense Planner is org-scoped.",
+      detail: "Choose your team organization to open Defense Planner.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -159,7 +159,7 @@ export function defensePlannerShellCopy(kind: DefensePlannerShellKind): DefenseP
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Defense Planner is org-scoped. Pick a workspace before logging robot profile or matchups — nothing is pre-seeded.",
+          "Pick a workspace before logging robot profile or matchups.",
       };
     case "empty":
       return {

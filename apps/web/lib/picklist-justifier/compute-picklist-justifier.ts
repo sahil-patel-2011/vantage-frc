@@ -43,19 +43,19 @@ function setupSteps(orgId: string | null): PicklistJustifierSetupStep[] {
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — Pick-list Justifier is org-scoped.",
+      detail: "Choose your team organization to open Pick-list Justifier.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
       id: "strategy",
       label: "Build a pick list",
-      detail: "Create a ranked pick list under Strategy — never DEMO rankings.",
+      detail: "Create a ranked pick list under Strategy.",
       href: hubHref("/competition", "strategy", orgId),
     },
     {
       id: "scouting",
       label: "Open Scouting",
-      detail: "Scout rows stay blank until your team enters them — never DEMO scores.",
+      detail: "Scout rows stay blank until your team enters them.",
       href: hubHref("/competition", "scouting", orgId),
     },
   ];

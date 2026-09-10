@@ -258,7 +258,7 @@ export async function computeRankingProjectionView(
 
   const row = metrics.rows[0];
   if (!row || row.rank == null) {
-    return setup("No TBA ranking row yet for your team at this event — never invent a projected rank.", org.orgId);
+    return setup("No TBA ranking row yet for your team at this event.", org.orgId);
   }
 
   const record =

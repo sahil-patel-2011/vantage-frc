@@ -83,7 +83,7 @@ export function impactNextActions(ctx: ImpactNextActionContext): ImpactNextActio
   actions.push({
     id: "evidence",
     label: "Record wins in Business · Awards",
-    detail: "Awarded evidence for grants comes from submissions you mark won — never invented award $.",
+    detail: "Awarded evidence for grants comes from submissions you mark won.",
     href: hubHref("/business", "evidence", orgId),
   });
 

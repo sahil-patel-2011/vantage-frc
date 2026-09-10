@@ -17,25 +17,25 @@ function setupStepsFor(orgId: string | null): VendorLeadTimesSetupStep[] {
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — Vendor Lead Times is org-scoped.",
+      detail: "Choose your team organization to open Vendor Lead Times.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
       id: "orders",
       label: "Open Orders",
-      detail: "Purchase orders stay empty until drafted — never DEMO PO totals.",
+      detail: "Purchase orders stay empty until drafted.",
       href: hubHref("/business", "orders", orgId),
     },
     {
       id: "spare-forecast",
       label: "Open Spare Forecast",
-      detail: "Spare shortfalls stay blank until inventory + FMEA land — never DEMO counts.",
+      detail: "Spare shortfalls stay blank until inventory + FMEA land.",
       href: hubHref("/build", "spare-forecast", orgId),
     },
     {
       id: "vendors",
       label: "Open Vendors",
-      detail: "Supplier contacts stay empty until you add them — never DEMO vendors.",
+      detail: "Supplier contacts stay empty until you add them.",
       href: withOrgHref("/vendors", orgId),
     },
   ];

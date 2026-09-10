@@ -118,7 +118,7 @@ export function seasonReportShellCopy(kind: SeasonReportShellKind): SeasonReport
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Season Report is org-scoped. Pick a workspace before logging build, results, budget, or outreach notes — nothing is pre-seeded.",
+          "Pick a workspace before logging build, results, budget, or outreach notes.",
       };
     case "empty":
       return {
@@ -158,7 +158,7 @@ export function seasonReportNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Season notes and snapshots are org-scoped — pick a team before logging entries.",
+          detail: "Pick a team before logging entries.",
           href: "/workspace",
           primary: true,
         },

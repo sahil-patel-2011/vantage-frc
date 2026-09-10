@@ -138,7 +138,7 @@ export function fmeaNextActions(input: {
     actions.push({
       id: "review-top",
       label: input.topTitle ? `Review “${input.topTitle}”` : "Review open risks",
-      detail: `${input.activeCount} active · top RPN ${input.highestRpn} from real O×S×D — not demo data.`,
+      detail: `${input.activeCount} active · top RPN ${input.highestRpn} from real O×S×D.`,
       href: hubHref("/team", "fmea", orgId),
       primary: true,
     });

@@ -74,7 +74,7 @@ export function logisticsSetupSteps(orgId?: string | null): LogisticsSetupStep[]
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — Logistics is org-scoped.",
+      detail: "Choose your team organization to open Logistics.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -136,7 +136,7 @@ export function logisticsShellCopy(kind: LogisticsShellKind): LogisticsEmptyCopy
         badge: "Setup required",
         title: "Finish setup for travel plans",
         description:
-          "Logistics is org-scoped. Pick a workspace and apply the event logistics migration if tables are missing — nothing is pre-seeded.",
+          "Pick a workspace and apply the event logistics migration if tables are missing.",
       };
     case "empty":
       return {
@@ -176,7 +176,7 @@ export function logisticsShellNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Logistics is org-scoped — pick a team before publishing hotels.",
+          detail: "Pick a team before publishing hotels.",
           href: "/workspace",
           primary: true,
         },
@@ -222,7 +222,7 @@ export function logisticsShellNextActions(input: {
       {
         id: "retry",
         label: "Retry Logistics",
-        detail: "Reload real hotels and travel legs — nothing is pre-seeded while this fails.",
+        detail: "Reload real hotels and travel legs.",
         href: withOrgHref("/logistics", orgId),
         primary: true,
       },

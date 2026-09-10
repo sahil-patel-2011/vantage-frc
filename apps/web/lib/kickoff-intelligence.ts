@@ -80,7 +80,7 @@ export type IntelligenceIngest = {
 };
 
 const DISCLAIMER =
-  "Labeled MODEL advice grounded in the uploaded manual/transcript and historical priority patterns — not DEMO stats or fabricated match metrics.";
+  "Labeled AI advice grounded in the uploaded manual/transcript and historical priority patterns.";
 
 function cleanLines(text: string): string[] {
   return text

@@ -75,13 +75,13 @@ export function outreachCalendarSetupSteps(orgId?: string | null): OutreachCalen
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — outreach plans are org-scoped.",
+      detail: "Choose your team organization to open outreach plans.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
       id: "schedule",
       label: "Schedule an outreach event",
-      detail: "Events stay blank until you add them — nothing is pre-seeded.",
+      detail: "Events stay blank until you add them.",
       href: orgId ? withOrgHref("/outreach-calendar", orgId) : "/outreach-calendar",
     },
     {
@@ -156,7 +156,7 @@ export function outreachCalendarShellCopy(kind: OutreachCalendarShellKind): Outr
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Outreach Calendar is org-scoped. Pick a workspace and schedule real events before projecting hours — nothing is pre-seeded.",
+          "Pick a workspace and schedule real events before projecting hours.",
       };
     case "empty":
       return {

@@ -475,7 +475,7 @@ export const SECTION_HELP: SectionHelpEntry[] = [
     when: "Build season, reviewed at the start and end of every meeting.",
     moments: ["kickoff", "build", "pre-comp"],
     how: [
-      "Add the first real action item — nothing is pre-seeded.",
+      "Add the first real action item.",
       "Give every item an owner and a due date.",
       "Filter by view to run a stand-up off the list.",
       "Promote recurring themes into the season plan or the risk register.",
@@ -1286,12 +1286,12 @@ export const SECTION_HELP: SectionHelpEntry[] = [
     hub: "ai",
     tab: "chat",
     title: "AI chat",
-    what: "Org-scoped AI chat channels with team memory, routed through your configured model and metered against your budget.",
+    what: "Your team's AI chat channels with team memory, routed through your configured model and metered against your budget.",
     why: "It answers questions with this team's context attached instead of generic advice from a public chatbot.",
     when: "All season, whenever a question needs your own data in the answer.",
     moments: ["preseason", "kickoff", "build", "pre-comp", "comp-day", "after"],
     how: [
-      "Open a team workspace — channels and memory are org-scoped.",
+      "Open a team workspace.",
       "Configure a model or bring your own key under Controls.",
       "Ask, and check the cited context on anything you will act on.",
     ],
@@ -1360,7 +1360,7 @@ export const SECTION_HELP: SectionHelpEntry[] = [
       "Set the redaction and consent policy under Governance.",
       "Watch Usage; the included allowance hard-stops unless you buy credits or enable pay-as-you-go.",
     ],
-    tips: ["Budgets are org-scoped — open a team workspace first or the page has nothing to write to."],
+    tips: ["Open a team workspace first or the page has nothing to write to."],
     related: [
       { label: "API keys", href: "/team/ai-keys" },
       { label: "Governance", href: "/ai?tab=governance" },
@@ -1469,7 +1469,7 @@ export const SECTION_HELP: SectionHelpEntry[] = [
       "Generate a starter caption from your title and notes, then rewrite it in the team's voice.",
       "Publish from your own social accounts — Vantage holds the draft, not the posting.",
     ],
-    tips: ["Titles and captions stay blank until you write them; nothing is pre-seeded."],
+    tips: ["Titles and captions stay blank until you write them; nothing is added for you."],
     related: [
       { label: "Media calendar", href: "/media?tab=calendar" },
       { label: "Media kit", href: "/media-kit" },

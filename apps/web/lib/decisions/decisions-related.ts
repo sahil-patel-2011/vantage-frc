@@ -113,7 +113,7 @@ export function decisionsShellCopy(kind: DecisionsShellKind): DecisionsEmptyCopy
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Decision Log is org-scoped. Pick a workspace before recording engineering or strategy calls — nothing is pre-seeded.",
+          "Pick a workspace before recording engineering or strategy calls.",
       };
     case "empty":
       return {
@@ -153,7 +153,7 @@ export function decisionsNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Decision records are org-scoped — pick a team before logging calls.",
+          detail: "Pick a team before logging calls.",
           href: "/workspace",
           primary: true,
         },

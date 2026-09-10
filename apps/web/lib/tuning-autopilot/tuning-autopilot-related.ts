@@ -121,7 +121,7 @@ export function tuningAutopilotShellCopy(kind: TuningAutopilotShellKind): Tuning
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Tuning Autopilot is org-scoped. Pick a workspace before logging gain sets and test results — nothing is pre-seeded.",
+          "Pick a workspace before logging gain sets and test results.",
       };
     case "empty":
       return {
@@ -163,7 +163,7 @@ export function tuningAutopilotNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Tuning sessions are org-scoped — pick a team before logging gain sets.",
+          detail: "Pick a team before logging gain sets.",
           href: "/workspace",
           primary: true,
         },

@@ -76,7 +76,7 @@ export function videoRescoutSetupSteps(orgId?: string | null): VideoRescoutSetup
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — video re-scout is org-scoped.",
+      detail: "Choose your team organization to open video re-scout.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -168,7 +168,7 @@ export function videoRescoutShellCopy(kind: VideoRescoutShellKind): VideoRescout
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Video re-scout is org-scoped. Pick a workspace before match reviews appear — nothing is pre-seeded.",
+          "Pick a workspace before match reviews appear.",
       };
     case "empty":
       return {
@@ -208,7 +208,7 @@ export function videoRescoutNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Video re-scout is org-scoped — pick a team before saving reviews.",
+          detail: "Pick a team before saving reviews.",
           href: "/workspace",
           primary: true,
         },
@@ -266,7 +266,7 @@ export function videoRescoutNextActions(input: {
       {
         id: "retry",
         label: "Retry video re-scout",
-        detail: "Reload real match reviews — nothing is pre-seeded while this fails.",
+        detail: "Reload real match reviews.",
         href: withOrgHref("/video", orgId),
         primary: true,
       },

@@ -72,7 +72,7 @@ export function spareRobotKitSetupSteps(orgId?: string | null): SpareRobotKitSet
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — spare kits are org-scoped.",
+      detail: "Choose your team organization to open spare kits.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -148,7 +148,7 @@ export function spareRobotKitShellCopy(kind: SpareRobotKitShellKind): SpareRobot
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Spare Robot Kit is org-scoped. Pick a workspace before matching spares to FMEA history — nothing is pre-seeded.",
+          "Pick a workspace before matching spares to FMEA history.",
       };
     case "empty":
       return {
@@ -187,7 +187,7 @@ export function spareRobotKitNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Spare kits are org-scoped — pick a team before matching bins to FMEA.",
+          detail: "Pick a team before matching bins to FMEA.",
           href: "/workspace",
           primary: true,
         },

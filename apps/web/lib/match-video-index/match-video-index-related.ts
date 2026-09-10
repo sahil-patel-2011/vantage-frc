@@ -68,7 +68,7 @@ export function matchVideoIndexSetupSteps(orgId?: string | null): MatchVideoInde
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — video indexes are org-scoped.",
+      detail: "Choose your team organization to open video indexes.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -133,7 +133,7 @@ export function matchVideoIndexShellCopy(kind: MatchVideoIndexShellKind): MatchV
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Match Video Index is org-scoped. Pick a workspace before indexing clips — nothing is pre-seeded.",
+          "Pick a workspace before indexing clips.",
       };
     case "empty":
       return {
@@ -165,7 +165,7 @@ export function matchVideoIndexNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Video indexes are org-scoped — pick a team before adding clips.",
+          detail: "Pick a team before adding clips.",
           href: "/workspace",
           primary: true,
         },

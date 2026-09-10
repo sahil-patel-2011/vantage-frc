@@ -121,7 +121,7 @@ export function decisionSearchShellCopy(kind: DecisionSearchShellKind): Decision
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Decision Search is org-scoped. Pick a workspace before indexing decisions, design reviews, or notebook entries — nothing is pre-seeded.",
+          "Pick a workspace before indexing decisions, design reviews, or notebook entries.",
       };
     case "empty":
       return {
@@ -161,7 +161,7 @@ export function decisionSearchNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Indexed decisions are org-scoped — pick a team before searching.",
+          detail: "Pick a team before searching.",
           href: "/workspace",
           primary: true,
         },

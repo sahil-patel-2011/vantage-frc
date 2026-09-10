@@ -32,37 +32,37 @@ function setupStepsFor(orgId: string | null, focus: "workspace" | "team" | "even
   const workspace: MatchCopilotSetupStep = {
     id: "workspace",
     label: "Select workspace",
-    detail: "Choose your team organization — Match Copilot is org-scoped.",
+    detail: "Choose your team organization to open Match Copilot.",
     href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
   };
   const team: MatchCopilotSetupStep = {
     id: "team",
     label: "Confirm team number",
-    detail: "Your team number powers match filtering — never DEMO schedules.",
+    detail: "Your team number powers match filtering.",
     href: withOrgHref("/team", orgId),
   };
   const command: MatchCopilotSetupStep = {
     id: "command",
     label: "Select active event",
-    detail: "Choose the competition you are at today — never DEMO event keys.",
+    detail: "Choose the competition you are at today.",
     href: hubHref("/competition", "command", orgId),
   };
   const strategy: MatchCopilotSetupStep = {
     id: "strategy",
     label: "Open Strategy",
-    detail: "Match plans stay empty until real metrics exist — never DEMO rankings.",
+    detail: "Match plans stay empty until real metrics exist.",
     href: hubHref("/competition", "strategy", orgId),
   };
   const schedule: MatchCopilotSetupStep = {
     id: "schedule",
     label: "Sync event schedule",
-    detail: "Confirm TBA sync has the qualification/playoff schedule loaded — never DEMO matches.",
+    detail: "Confirm TBA sync has the qualification/playoff schedule loaded.",
     href: withOrgHref("/team/data", orgId),
   };
   const fmea: MatchCopilotSetupStep = {
     id: "fmea",
     label: "Open FMEA",
-    detail: "Risk callouts stay blank until real open failures exist — never DEMO RPNs.",
+    detail: "Risk callouts stay blank until real open failures exist.",
     href: hubHref("/team", "fmea", orgId),
   };
 

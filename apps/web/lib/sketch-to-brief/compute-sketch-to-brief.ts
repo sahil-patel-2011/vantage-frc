@@ -27,19 +27,19 @@ function setupSteps(orgId: string | null): SketchToBriefSetupStep[] {
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — Sketch-to-Brief is org-scoped.",
+      detail: "Choose your team organization to open Sketch-to-Brief.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
       id: "kickoff",
       label: "Open Kickoff",
-      detail: "Rule notes and design priorities stay blank until logged — never DEMO rule text.",
+      detail: "Rule notes and design priorities stay blank until logged.",
       href: hubHref("/build", "kickoff", orgId),
     },
     {
       id: "cad",
       label: "Open CAD",
-      detail: "Mechanism geometry stays blank until connected — never DEMO models.",
+      detail: "Mechanism geometry stays blank until connected.",
       href: hubHref("/build", "cad", orgId),
     },
   ];
@@ -125,7 +125,7 @@ export async function computeSketchToBriefView(
 
   if (!org) {
     return setupRequired(
-      "Select a team workspace to turn kickoff sketches into CAD briefs — never DEMO brief metrics.",
+      "Select a team workspace to turn kickoff sketches into CAD briefs.",
       setupSteps(null),
       null,
       seasonYear,
@@ -205,7 +205,7 @@ export async function generateBriefFromSketch(
   const org = await resolveOrg(client, input.userId, input.requestedOrg);
   if (!org) {
     return setupRequired(
-      "Select a team workspace to turn kickoff sketches into CAD briefs — never DEMO brief metrics.",
+      "Select a team workspace to turn kickoff sketches into CAD briefs.",
       setupSteps(null),
       null,
       currentSeasonYear(),

@@ -76,7 +76,7 @@ export function buildBurndownSetupSteps(orgId?: string | null): BuildBurndownSet
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — burndown plans are org-scoped.",
+      detail: "Choose your team organization to open burndown plans.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -168,7 +168,7 @@ export function buildBurndownShellCopy(kind: BuildBurndownShellKind): BuildBurnd
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Build burndown is org-scoped. Join or pick a workspace before charting remaining work — nothing is pre-seeded.",
+          "Join or pick a workspace before charting remaining work.",
       };
     case "empty":
       return {
@@ -216,7 +216,7 @@ export function buildBurndownNextActions(input: {
       {
         id: "retry",
         label: "Retry Build Burndown",
-        detail: "Reload real tasks and plans — nothing is pre-seeded while this fails.",
+        detail: "Reload real tasks and plans.",
         href: withOrgHref("/build-burndown", orgId),
         primary: true,
       },

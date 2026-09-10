@@ -69,7 +69,7 @@ export function equipmentMaintenanceSetupSteps(orgId?: string | null): Equipment
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — equipment logs are org-scoped.",
+      detail: "Choose your team organization to open equipment logs.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -134,7 +134,7 @@ export function equipmentMaintenanceShellCopy(kind: EquipmentMaintenanceShellKin
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Equipment Maintenance is org-scoped. Pick a workspace before registering real shop machines — nothing is pre-seeded.",
+          "Pick a workspace before registering real shop machines.",
       };
     case "empty":
       return {

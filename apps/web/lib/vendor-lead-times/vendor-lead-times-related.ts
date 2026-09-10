@@ -118,7 +118,7 @@ export function vendorLeadTimesShellCopy(kind: VendorLeadTimesShellKind): Vendor
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Vendor Lead Times is org-scoped. Pick a workspace before logging real vendors and reorders — nothing is pre-seeded.",
+          "Pick a workspace before logging real vendors and reorders.",
       };
     case "empty":
       return {
@@ -160,7 +160,7 @@ export function vendorLeadTimesNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Lead times are org-scoped — pick a team before logging vendors.",
+          detail: "Pick a team before logging vendors.",
           href: "/workspace",
           primary: true,
         },

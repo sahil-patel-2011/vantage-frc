@@ -76,7 +76,7 @@ export function scoutAccuracySetupSteps(orgId?: string | null): ScoutAccuracySet
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — accuracy is org-scoped.",
+      detail: "Choose your team organization to open accuracy.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -206,7 +206,7 @@ export function scoutAccuracyShellCopy(kind: ScoutAccuracyShellKind): ScoutAccur
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Scout accuracy is org-scoped. Pick a workspace before TBA-verified ranks appear — nothing is pre-seeded.",
+          "Pick a workspace before TBA-verified ranks appear.",
       };
     case "empty":
       return {
@@ -245,7 +245,7 @@ export function scoutAccuracyNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Accuracy is org-scoped — pick a team before ranking scouts.",
+          detail: "Pick a team before ranking scouts.",
           href: "/workspace",
           primary: true,
         },
@@ -303,7 +303,7 @@ export function scoutAccuracyNextActions(input: {
       {
         id: "retry",
         label: "Retry scout accuracy",
-        detail: "Reload real TBA-verified ranks — nothing is pre-seeded while this fails.",
+        detail: "Reload real TBA-verified ranks.",
         href: withOrgHref("/scout-accuracy", orgId),
         primary: true,
       },

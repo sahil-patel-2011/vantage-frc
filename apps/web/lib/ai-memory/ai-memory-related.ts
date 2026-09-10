@@ -118,14 +118,14 @@ export function aiMemoryShellCopy(kind: AiMemoryShellKind): AiMemoryEmptyCopy {
       return {
         kind,
         title: "Loading team memory…",
-        description: "Checking org-scoped Neon memory settings for this workspace.",
+        description: "Checking your team's Neon memory settings for this workspace.",
       };
     case "auth_required":
       return {
         kind,
         badge: "Sign in",
         title: "Sign in to manage AI memory",
-        description: "Team memory policy is org-scoped. Sign in, then reopen Memory from the AI hub.",
+        description: "Sign in, then reopen Memory from the AI hub.",
       };
     case "forbidden":
       return {

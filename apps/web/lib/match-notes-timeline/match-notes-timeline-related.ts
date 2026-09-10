@@ -114,7 +114,7 @@ export function matchNotesTimelineShellCopy(kind: MatchNotesTimelineShellKind): 
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Match Note Timeline is org-scoped. Pick a workspace before logging clock-synced notes — nothing is pre-seeded.",
+          "Pick a workspace before logging clock-synced notes.",
       };
     case "empty":
       return {
@@ -154,7 +154,7 @@ export function matchNotesTimelineNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Match notes are org-scoped — pick a team before logging clock times.",
+          detail: "Pick a team before logging clock times.",
           href: "/workspace",
           primary: true,
         },

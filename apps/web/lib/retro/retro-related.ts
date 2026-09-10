@@ -77,7 +77,7 @@ export function retroSetupSteps(orgId?: string | null): RetroSetupStep[] {
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — retros and postmortems are org-scoped.",
+      detail: "Choose your team organization to open retros and postmortems.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -162,7 +162,7 @@ export function retroShellCopy(kind: RetroShellKind): RetroEmptyCopy {
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Retrospectives are org-scoped. Join or pick a workspace before collecting start/stop/continue feedback — nothing is pre-seeded.",
+          "Join or pick a workspace before collecting start/stop/continue feedback.",
       };
     case "empty":
       return {
@@ -210,7 +210,7 @@ export function retroNextActions(input: {
       {
         id: "retry",
         label: "Retry Retrospective",
-        detail: "Reload real sessions and action items — nothing is pre-seeded while this fails.",
+        detail: "Reload real sessions and action items.",
         href: withOrgHref("/retro", orgId),
         primary: true,
       },

@@ -95,7 +95,7 @@ export function batteryRotationSetupSteps(orgId?: string | null): BatteryRotatio
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — Battery Rotation is org-scoped.",
+      detail: "Choose your team organization to open Battery Rotation.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -183,7 +183,7 @@ export function batteryRotationShellCopy(kind: BatteryRotationShellKind): Batter
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Battery Rotation is org-scoped. Pick a workspace before scheduling packs from real IR trends — nothing is pre-seeded.",
+          "Pick a workspace before scheduling packs from real IR trends.",
       };
     case "empty":
       return {

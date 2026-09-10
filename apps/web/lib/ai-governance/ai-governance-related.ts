@@ -165,7 +165,7 @@ export function aiGovernanceShellCopy(kind: AiGovernanceShellKind): AiGovernance
       return {
         kind,
         title: "Loading AI governance…",
-        description: "Checking org-scoped policy, spend alerts, and the high-cost approval queue.",
+        description: "Checking your team's policy, spend alerts, and the high-cost approval queue.",
       };
     case "auth_required":
       return {

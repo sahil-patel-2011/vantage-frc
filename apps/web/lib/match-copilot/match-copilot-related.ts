@@ -110,7 +110,7 @@ export function matchCopilotShellCopy(kind: MatchCopilotShellKind): MatchCopilot
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Match Copilot is org-scoped. Pick a workspace, set an active event, and confirm your next match before a brief appears — nothing is pre-seeded.",
+          "Pick a workspace, set an active event, and confirm your next match before a brief appears.",
       };
     case "empty":
       return {
@@ -150,7 +150,7 @@ export function matchCopilotNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Match briefs are org-scoped — pick a team before fusing the next match.",
+          detail: "Pick a team before fusing the next match.",
           href: "/workspace",
           primary: true,
         },
@@ -197,7 +197,7 @@ export function matchCopilotNextActions(input: {
       {
         id: "fmea",
         label: "Open FMEA",
-        detail: "Ground risk callouts in real open failures — nothing is pre-seeded.",
+        detail: "Ground risk callouts in real open failures.",
         href: hubHref("/team", "fmea", orgId),
       },
     ];

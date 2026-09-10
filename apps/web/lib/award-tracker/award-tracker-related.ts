@@ -76,25 +76,25 @@ export function awardTrackerSetupSteps(orgId?: string | null): AwardTrackerSetup
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — award submissions are org-scoped.",
+      detail: "Choose your team organization to open award submissions.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
       id: "evidence",
       label: "Open Awards",
-      detail: "Award evidence stays blank until your team uploads it — nothing is pre-seeded.",
+      detail: "Award evidence stays blank until your team uploads it.",
       href: hubHref("/business", "evidence", orgId),
     },
     {
       id: "awards-workbench",
       label: "Open Awards workbench",
-      detail: "Submission packets stay empty until real uploads exist — nothing is pre-seeded.",
+      detail: "Submission packets stay empty until real uploads exist.",
       href: withOrgHref("/team/awards", orgId),
     },
     {
       id: "impact-essay",
       label: "Open Impact Essay",
-      detail: "Essay drafts stay blank until grounded outreach exists — nothing is pre-seeded.",
+      detail: "Essay drafts stay blank until grounded outreach exists.",
       href: hubHref("/business", "impact-essay", orgId),
     },
   ];
@@ -166,7 +166,7 @@ export function awardTrackerShellCopy(kind: AwardTrackerShellKind): AwardTracker
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Award Tracker is org-scoped. Pick a workspace and log real submissions before tracking deadlines — nothing is pre-seeded.",
+          "Pick a workspace and log real submissions before tracking deadlines.",
       };
     case "empty":
       return {

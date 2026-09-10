@@ -73,7 +73,7 @@ export function codeDeployLogSetupSteps(orgId?: string | null): CodeDeployLogSet
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — deploy logs are org-scoped.",
+      detail: "Choose your team organization to open deploy logs.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -148,7 +148,7 @@ export function codeDeployLogShellCopy(kind: CodeDeployLogShellKind): CodeDeploy
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Code Deploy Log is org-scoped. Pick a workspace before recording firmware builds — nothing is pre-seeded.",
+          "Pick a workspace before recording firmware builds.",
       };
     case "empty":
       return {
@@ -188,7 +188,7 @@ export function codeDeployLogNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Deploy logs are org-scoped — pick a team before recording builds.",
+          detail: "Pick a team before recording builds.",
           href: "/workspace",
           primary: true,
         },

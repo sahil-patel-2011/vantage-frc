@@ -23,19 +23,19 @@ function setupStepsFor(orgId: string | null): VendorsSetupStep[] {
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — Vendor Directory is org-scoped.",
+      detail: "Choose your team organization to open Vendor Directory.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
       id: "orders",
       label: "Open Orders",
-      detail: "Purchase orders stay empty until drafted — never DEMO PO totals.",
+      detail: "Purchase orders stay empty until drafted.",
       href: hubHref("/business", "orders", orgId),
     },
     {
       id: "vendor-lead-times",
       label: "Open Vendor Lead Times",
-      detail: "Reorder-by dates stay blank until lead times land — never DEMO urgency.",
+      detail: "Reorder-by dates stay blank until lead times land.",
       href: hubHref("/business", "vendor-lead-times", orgId),
     },
   ];

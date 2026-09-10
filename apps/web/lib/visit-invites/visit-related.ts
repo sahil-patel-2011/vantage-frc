@@ -84,7 +84,7 @@ export function visitNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Visit invites are org-scoped — pick a team before scheduling shop tours.",
+          detail: "Pick a team before scheduling shop tours.",
           href: "/workspace",
           primary: true,
         },
@@ -124,7 +124,7 @@ export function visitNextActions(input: {
       {
         id: "retry",
         label: "Retry Visit Invites",
-        detail: "Reload real scheduled visits — nothing is pre-seeded while this fails.",
+        detail: "Reload real scheduled visits.",
         href: visitInvitesShareHref(orgId),
         primary: true,
       },
@@ -278,7 +278,7 @@ export function visitSetupSteps(orgId?: string | null): VisitSetupStep[] {
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — Visit Invites is org-scoped.",
+      detail: "Choose your team organization to open Visit Invites.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -325,7 +325,7 @@ export function visitShellCopy(kind: VisitShellKind): VisitEmptyCopy {
         badge: "Setup required",
         title: "Finish setup for visit invites",
         description:
-          "Visit Invites is org-scoped. Pick a workspace and apply the visit invites migration if tables are missing — nothing is pre-seeded.",
+          "Pick a workspace and apply the visit invites migration if tables are missing.",
       };
     case "empty":
       return {

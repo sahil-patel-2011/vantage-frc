@@ -98,7 +98,7 @@ export function batteryHealthForecastSetupSteps(
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — Battery Health Forecast is org-scoped.",
+      detail: "Choose your team organization to open Battery Health Forecast.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -188,7 +188,7 @@ export function batteryHealthForecastShellCopy(
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Battery Health Forecast is org-scoped. Pick a workspace before projecting retirement from real logs — nothing is pre-seeded.",
+          "Pick a workspace before projecting retirement from real logs.",
       };
     case "empty":
       return {

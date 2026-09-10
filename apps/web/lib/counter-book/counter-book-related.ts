@@ -109,7 +109,7 @@ export function counterBookShellCopy(kind: CounterBookShellKind): CounterBookEmp
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Counter-book is org-scoped. Pick a workspace before generating reports — nothing is pre-seeded.",
+          "Pick a workspace before generating reports.",
       };
     case "empty":
       return {
@@ -147,7 +147,7 @@ export function counterBookNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Counter-books are org-scoped — pick a team before generating reports.",
+          detail: "Pick a team before generating reports.",
           href: "/workspace",
           primary: true,
         },

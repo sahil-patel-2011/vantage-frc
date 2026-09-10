@@ -76,7 +76,7 @@ export function scoutDisagreementsSetupSteps(orgId?: string | null): ScoutDisagr
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — disagreement review is org-scoped.",
+      detail: "Choose your team organization to open disagreement review.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -169,7 +169,7 @@ export function scoutDisagreementsShellCopy(kind: ScoutDisagreementsShellKind): 
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Scout disagreement review is org-scoped. Pick a workspace before the resolution queue appears — nothing is pre-seeded.",
+          "Pick a workspace before the resolution queue appears.",
       };
     case "empty":
       return {
@@ -208,7 +208,7 @@ export function scoutDisagreementsNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Disagreement review is org-scoped — pick a team before resolving conflicts.",
+          detail: "Pick a team before resolving conflicts.",
           href: "/workspace",
           primary: true,
         },
@@ -266,7 +266,7 @@ export function scoutDisagreementsNextActions(input: {
       {
         id: "retry",
         label: "Retry scout disagreements",
-        detail: "Reload real conflict rows — nothing is pre-seeded while this fails.",
+        detail: "Reload real conflict rows.",
         href: withOrgHref("/scout-disagreements", orgId),
         primary: true,
       },

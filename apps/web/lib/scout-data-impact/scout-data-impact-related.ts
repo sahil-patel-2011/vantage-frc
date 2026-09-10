@@ -71,7 +71,7 @@ export function scoutDataImpactSetupSteps(orgId?: string | null): ScoutDataImpac
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — where-your-data-went is org-scoped.",
+      detail: "Choose your team organization to open where-your-data-went.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -178,7 +178,7 @@ export function scoutDataImpactShellCopy(kind: ScoutDataImpactShellKind): ScoutD
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Where-your-data-went is org-scoped. Pick a workspace before pick credit appears — nothing is pre-seeded.",
+          "Pick a workspace before pick credit appears.",
       };
     case "empty":
       return {
@@ -217,7 +217,7 @@ export function scoutDataImpactNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Where-your-data-went is org-scoped — pick a team before logging picks.",
+          detail: "Pick a team before logging picks.",
           href: "/workspace",
           primary: true,
         },
@@ -275,7 +275,7 @@ export function scoutDataImpactNextActions(input: {
       {
         id: "retry",
         label: "Retry scout data impact",
-        detail: "Reload real pick credit — nothing is pre-seeded while this fails.",
+        detail: "Reload real pick credit.",
         href: withOrgHref("/scout-data-impact", orgId),
         primary: true,
       },

@@ -100,7 +100,7 @@ export function alumniShellCopy(kind: AlumniShellKind): AlumniEmptyCopy {
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Alumni are org-scoped. Pick a workspace before adding graduates — nothing is pre-seeded.",
+          "Pick a workspace before adding graduates.",
       };
     case "empty":
       return {
@@ -131,7 +131,7 @@ export function alumniNextActions(input: {
       {
         id: "workspace",
         label: "Select workspace",
-        detail: "Alumni rows are org-scoped — pick a team before recording graduates.",
+        detail: "Pick a team before recording graduates.",
         href: "/workspace",
         primary: true,
       },

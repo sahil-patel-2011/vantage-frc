@@ -73,7 +73,7 @@ export function eventDayPlanSetupSteps(orgId?: string | null): EventDayPlanSetup
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — event-day plans are org-scoped.",
+      detail: "Choose your team organization to open event-day plans.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -148,7 +148,7 @@ export function eventDayPlanShellCopy(kind: EventDayPlanShellKind): EventDayPlan
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Event-Day Plan is org-scoped. Pick a workspace before overlaying quals, batteries, and pit windows — nothing is pre-seeded.",
+          "Pick a workspace before overlaying quals, batteries, and pit windows.",
       };
     case "empty":
       return {
@@ -188,7 +188,7 @@ export function eventDayPlanNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Event-day plans are org-scoped — pick a team before adding blocks.",
+          detail: "Pick a team before adding blocks.",
           href: "/workspace",
           primary: true,
         },

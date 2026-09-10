@@ -31,25 +31,25 @@ function setupStepsFor(orgId: string | null): JudgeSimSetupStep[] {
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — Judge-Pitch is org-scoped.",
+      detail: "Choose your team organization to open Judge-Pitch.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
       id: "impact",
       label: "Open Community Impact",
-      detail: "Outreach claims stay blank until real activities exist — never DEMO hours.",
+      detail: "Outreach claims stay blank until real activities exist.",
       href: hubHref("/business", "impact", orgId),
     },
     {
       id: "impact-essay",
       label: "Open Impact Essay",
-      detail: "Essay drafts stay empty until real impact rows exist — never DEMO awards.",
+      detail: "Essay drafts stay empty until real impact rows exist.",
       href: hubHref("/business", "impact-essay", orgId),
     },
     {
       id: "evidence",
       label: "Open Awards",
-      detail: "Award packets stay blank until your team uploads evidence — never DEMO packets.",
+      detail: "Award packets stay blank until your team uploads evidence.",
       href: hubHref("/business", "evidence", orgId),
     },
   ];
@@ -181,7 +181,7 @@ export async function computeJudgeSimView(
     return {
       status: "setup_required",
       message:
-        "Select a team workspace to practice judge Q&A grounded in your own logged evidence — never DEMO judge metrics.",
+        "Select a team workspace to practice judge Q&A grounded in your own logged evidence.",
       steps: setupStepsFor(null),
       orgId: null,
       seasonYear,

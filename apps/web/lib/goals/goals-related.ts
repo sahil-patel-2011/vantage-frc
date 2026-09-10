@@ -127,7 +127,7 @@ export function goalsNextActions(input: {
     actions.push({
       id: "update",
       label: input.topTitle ? `Update “${input.topTitle}”` : "Update goal progress",
-      detail: `${input.achieved}/${input.goalCount} achieved · enter current values from real work — never invent %.`,
+      detail: `${input.achieved}/${input.goalCount} achieved · enter current values from real work.`,
       href: goalsHref,
       primary: true,
     });

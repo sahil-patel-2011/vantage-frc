@@ -83,7 +83,7 @@ export function pairSetupSteps(orgId?: string | null): PairSetupStep[] {
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — pairing is org-scoped.",
+      detail: "Choose your team organization to open pairing.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -164,7 +164,7 @@ export function pairShellCopy(kind: PairShellKind): PairEmptyCopy {
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Editor pairing is org-scoped. Join or pick a workspace before approving a VS Code code — nothing is pre-seeded.",
+          "Join or pick a workspace before approving a VS Code code.",
       };
     case "empty":
       return {

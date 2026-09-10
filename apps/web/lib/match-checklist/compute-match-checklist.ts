@@ -198,7 +198,7 @@ export async function computeMatchChecklistView(
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Choose your team organization — checklist history stays org-scoped.",
+          detail: "Choose your team organization — checklist history stays your team's.",
           href: "/workspace",
         },
         {

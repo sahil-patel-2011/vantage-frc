@@ -80,7 +80,7 @@ export function grantEligibilityMatcherSetupSteps(
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — eligibility matches are org-scoped.",
+      detail: "Choose your team organization to open eligibility matches.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -162,7 +162,7 @@ export function grantEligibilityMatcherShellCopy(
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Eligibility matching is org-scoped. Pick a workspace and complete your team profile — nothing is pre-seeded.",
+          "Pick a workspace and complete your team profile.",
       };
     case "empty":
       return {
@@ -202,7 +202,7 @@ export function grantEligibilityMatcherNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Eligibility matches are org-scoped — pick a team before matching grants.",
+          detail: "Pick a team before matching grants.",
           href: "/workspace",
           primary: true,
         },

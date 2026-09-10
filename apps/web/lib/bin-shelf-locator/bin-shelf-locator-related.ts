@@ -73,7 +73,7 @@ export function binShelfLocatorSetupSteps(orgId?: string | null): BinShelfLocato
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — bin locations are org-scoped.",
+      detail: "Choose your team organization to open bin locations.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -142,7 +142,7 @@ export function binShelfLocatorShellCopy(kind: BinShelfLocatorShellKind): BinShe
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Bin/Shelf Locator is org-scoped. Pick a workspace before mapping bins — nothing is pre-seeded.",
+          "Pick a workspace before mapping bins.",
       };
     case "empty":
       return {
@@ -181,7 +181,7 @@ export function binShelfLocatorNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Locations are org-scoped — pick a team before mapping bins.",
+          detail: "Pick a team before mapping bins.",
           href: "/workspace",
           primary: true,
         },

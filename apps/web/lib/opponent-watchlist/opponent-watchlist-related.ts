@@ -114,7 +114,7 @@ export function opponentWatchlistShellCopy(kind: OpponentWatchlistShellKind): Op
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Opponent Watchlist is org-scoped. Pick a workspace before watching opponents — nothing is pre-seeded.",
+          "Pick a workspace before watching opponents.",
       };
     case "empty":
       return {
@@ -154,7 +154,7 @@ export function opponentWatchlistNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Watchlists are org-scoped — pick a team before tracking opponents.",
+          detail: "Pick a team before tracking opponents.",
           href: "/workspace",
           primary: true,
         },
@@ -201,7 +201,7 @@ export function opponentWatchlistNextActions(input: {
       {
         id: "scouting",
         label: "Open Scouting",
-        detail: "Ground opponent notes in real scout rows — nothing is pre-seeded.",
+        detail: "Ground opponent notes in real scout rows.",
         href: hubHref("/competition", "scouting", orgId),
       },
     ];

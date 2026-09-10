@@ -69,7 +69,7 @@ export function robotWeighInSetupSteps(orgId?: string | null): RobotWeighInSetup
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — weigh-ins are org-scoped.",
+      detail: "Choose your team organization to open weigh-ins.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -134,7 +134,7 @@ export function robotWeighInShellCopy(kind: RobotWeighInShellKind): RobotWeighIn
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Robot Weigh-In is org-scoped. Pick a workspace before logging real scale readings — nothing is pre-seeded.",
+          "Pick a workspace before logging real scale readings.",
       };
     case "empty":
       return {

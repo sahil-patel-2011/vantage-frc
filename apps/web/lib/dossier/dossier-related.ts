@@ -77,7 +77,7 @@ export function dossierSetupSteps(orgId?: string | null): DossierSetupStep[] {
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — dossiers are org-scoped.",
+      detail: "Choose your team organization to open dossiers.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -171,7 +171,7 @@ export function dossierShellCopy(kind: DossierShellKind): DossierEmptyCopy {
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Season dossiers are org-scoped. Pick a workspace and sync TBA/Statbotics before cited facts appear — nothing is pre-seeded.",
+          "Pick a workspace and sync TBA/Statbotics before cited facts appear.",
       };
     case "empty":
       return {
@@ -211,7 +211,7 @@ export function dossierNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Dossiers are org-scoped — choose a team before loading facts.",
+          detail: "Choose a team before loading facts.",
           href: "/workspace",
           primary: true,
         },

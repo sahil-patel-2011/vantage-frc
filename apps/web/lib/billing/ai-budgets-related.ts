@@ -197,7 +197,7 @@ export function aiBudgetsShellCopy(kind: AiBudgetsShellKind): AiBudgetsEmptyCopy
       return {
         kind,
         title: "Loading API budgets…",
-        description: "Checking org-scoped hard limits, allowlists, and included allowance.",
+        description: "Checking your team's hard limits, allowlists, and included allowance.",
       };
     case "auth_required":
       return {
@@ -473,7 +473,7 @@ export function aiUsageNextActions(input: {
       {
         id: "workspace",
         label: "Select workspace",
-        detail: "Usage ledgers are org-scoped — pick a team first.",
+        detail: "Pick a team first.",
         href: "/workspace",
         primary: true,
       },

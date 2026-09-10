@@ -75,13 +75,13 @@ export function sponsorSuiteSetupSteps(orgId?: string | null): SponsorSuiteSetup
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — sponsor suite is org-scoped.",
+      detail: "Choose your team organization to open sponsor suite.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
       id: "sponsors",
       label: "Open Sponsor CRM",
-      detail: "Sponsor rows stay blank until your team logs them — nothing is pre-seeded.",
+      detail: "Sponsor rows stay blank until your team logs them.",
       href: hubHref("/business", "sponsors", orgId),
     },
     {
@@ -189,7 +189,7 @@ export function sponsorSuiteShellCopy(kind: SponsorSuiteShellKind): SponsorSuite
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Sponsor Suite is org-scoped. Pick a workspace and log real sponsors before generating decks — nothing is pre-seeded.",
+          "Pick a workspace and log real sponsors before generating decks.",
       };
     case "empty":
       return {

@@ -19,19 +19,19 @@ function setupStepsFor(orgId: string | null): RiskBurndownSetupStep[] {
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — Risk-Register Burndown is org-scoped.",
+      detail: "Choose your team organization to open Risk-Register Burndown.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
       id: "risks",
       label: "Open Risks",
-      detail: "Season L×I scores stay empty until logged — never DEMO totals.",
+      detail: "Season L×I scores stay empty until logged.",
       href: withOrgHref("/risks", orgId),
     },
     {
       id: "fmea",
       label: "Open FMEA",
-      detail: "Failure modes stay blank until logged — never DEMO RPN scores.",
+      detail: "Failure modes stay blank until logged.",
       href: hubHref("/team", "fmea", orgId),
     },
   ];

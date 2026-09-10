@@ -75,25 +75,25 @@ export function sponsorWallSetupSteps(orgId?: string | null): SponsorWallSetupSt
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — sponsor walls are org-scoped.",
+      detail: "Choose your team organization to open sponsor walls.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
       id: "sponsors",
       label: "Open Sponsor CRM",
-      detail: "Sponsor rows stay blank until your team logs them — nothing is pre-seeded.",
+      detail: "Sponsor rows stay blank until your team logs them.",
       href: hubHref("/business", "sponsors", orgId),
     },
     {
       id: "sponsorship",
       label: "Open Sponsorship",
-      detail: "One-pagers stay empty until real packages exist — nothing is pre-seeded.",
+      detail: "One-pagers stay empty until real packages exist.",
       href: hubHref("/business", "sponsorship", orgId),
     },
     {
       id: "sponsor-suite",
       label: "Open Sponsor Suite",
-      detail: "Suite assets stay blank until real sponsors land — nothing is pre-seeded.",
+      detail: "Suite assets stay blank until real sponsors land.",
       href: hubHref("/business", "sponsor-suite", orgId),
     },
   ];
@@ -156,7 +156,7 @@ export function sponsorWallShellCopy(kind: SponsorWallShellKind): SponsorWallEmp
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Sponsor Wall is org-scoped. Pick a workspace and add real sponsors before publishing — nothing is pre-seeded.",
+          "Pick a workspace and add real sponsors before publishing.",
       };
     case "empty":
       return {

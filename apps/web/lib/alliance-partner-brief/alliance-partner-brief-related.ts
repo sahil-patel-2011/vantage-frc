@@ -115,7 +115,7 @@ export function alliancePartnerBriefShellCopy(kind: AlliancePartnerBriefShellKin
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Alliance-Partner Brief is org-scoped. Pick a workspace and run alliance selection before generating a partner brief — nothing is pre-seeded.",
+          "Pick a workspace and run alliance selection before generating a partner brief.",
       };
     case "empty":
       return {
@@ -157,7 +157,7 @@ export function alliancePartnerBriefNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Partner briefs are org-scoped — pick a team before generating roles.",
+          detail: "Pick a team before generating roles.",
           href: "/workspace",
           primary: true,
         },
@@ -204,7 +204,7 @@ export function alliancePartnerBriefNextActions(input: {
       {
         id: "scouting",
         label: "Open Scouting",
-        detail: "Ground partner strengths in real scout rows — nothing is pre-seeded.",
+        detail: "Ground partner strengths in real scout rows.",
         href: hubHref("/competition", "scouting", orgId),
       },
     ];

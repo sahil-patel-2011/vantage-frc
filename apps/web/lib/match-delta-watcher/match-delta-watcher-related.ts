@@ -72,7 +72,7 @@ export function matchDeltaWatcherSetupSteps(orgId?: string | null): MatchDeltaWa
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — match deltas are org-scoped.",
+      detail: "Choose your team organization to open match deltas.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -160,7 +160,7 @@ export function matchDeltaWatcherShellCopy(kind: MatchDeltaWatcherShellKind): Ma
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Match-Delta Watcher is org-scoped. Pick a workspace before comparing official results to predictions — nothing is pre-seeded.",
+          "Pick a workspace before comparing official results to predictions.",
       };
     case "empty":
       return {
@@ -199,7 +199,7 @@ export function matchDeltaWatcherNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Match deltas are org-scoped — pick a team before scanning results.",
+          detail: "Pick a team before scanning results.",
           href: "/workspace",
           primary: true,
         },

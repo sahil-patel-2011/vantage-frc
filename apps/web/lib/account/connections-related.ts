@@ -129,7 +129,7 @@ export function connectionsEmptyCopy(shell: ConnectionsShellKind): ConnectionsEm
       badgeTone: "setup",
       title: "No team connectors linked yet",
       description:
-        "Statuses stay blank until you configure TBA, authorize Onshape, add Discord, or link GitHub. Nothing is pre-seeded as linked.",
+        "Statuses stay blank until you configure TBA, authorize Onshape, add Discord, or link GitHub.",
     };
   }
   if (shell === "error") {
@@ -176,7 +176,7 @@ export function connectionsNextActions(input: {
       {
         id: "workspace",
         label: "Select a workspace",
-        detail: "Team connectors (TBA, Onshape, Discord, GitHub) are org-scoped — pick a team before linking.",
+        detail: "Pick a team before linking.",
         href: "/workspace",
         primary: true,
       },

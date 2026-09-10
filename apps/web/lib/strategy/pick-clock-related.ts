@@ -77,7 +77,7 @@ export function pickClockSetupSteps(orgId?: string | null): PickClockSetupStep[]
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — pick clock is org-scoped.",
+      detail: "Choose your team organization to open pick clock.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -182,7 +182,7 @@ export function pickClockShellCopy(kind: PickClockShellKind): PickClockEmptyCopy
         badge: "Setup required",
         title: "Select a team workspace and event",
         description:
-          "Pick clock is org- and event-scoped. Pick a workspace and active TBA event before recommendations appear — nothing is pre-seeded.",
+          "Pick clock is org- and event-scoped. Pick a workspace and active TBA event before recommendations appear.",
       };
     case "empty":
       return {
@@ -224,7 +224,7 @@ export function pickClockNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Pick clock is org-scoped — choose a team before ranking alliances.",
+          detail: "Choose a team before ranking alliances.",
           href: "/workspace",
           primary: true,
         },

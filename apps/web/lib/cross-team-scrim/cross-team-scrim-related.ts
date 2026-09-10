@@ -79,7 +79,7 @@ export function crossTeamScrimSetupSteps(orgId?: string | null): CrossTeamScrimS
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — scrim invites are org-scoped.",
+      detail: "Choose your team organization to open scrim invites.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -163,7 +163,7 @@ export function crossTeamScrimShellCopy(kind: CrossTeamScrimShellKind): CrossTea
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Scrim scheduling is org-scoped. Join or pick a workspace before proposing nearby partners — nothing is pre-seeded.",
+          "Join or pick a workspace before proposing nearby partners.",
       };
     case "empty":
       return {
@@ -209,7 +209,7 @@ export function crossTeamScrimNextActions(input: {
       {
         id: "retry",
         label: "Retry Scrim Scheduling",
-        detail: "Reload real invites — nothing is pre-seeded while this fails.",
+        detail: "Reload real invites.",
         href: withOrgHref("/cross-team-scrim", orgId),
         primary: true,
       },

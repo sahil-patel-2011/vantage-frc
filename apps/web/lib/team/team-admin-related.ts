@@ -80,7 +80,7 @@ export function teamAdminSetupSteps(orgId?: string | null): TeamAdminSetupStep[]
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — membership and invites are org-scoped.",
+      detail: "Choose your team organization to open membership and invites.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -164,7 +164,7 @@ export function teamAdminShellCopy(kind: TeamAdminShellKind): TeamAdminEmptyCopy
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Invites and member roles are org-scoped. Join or pick a workspace before managing access — nothing is pre-seeded.",
+          "Join or pick a workspace before managing access.",
       };
     case "empty":
       return {
@@ -205,7 +205,7 @@ export function teamAdminNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Membership and invites are org-scoped — pick a team before sending access.",
+          detail: "Pick a team before sending access.",
           href: "/workspace",
           primary: true,
         },

@@ -73,7 +73,7 @@ export function cadChangeRadarSetupSteps(orgId?: string | null): CadChangeRadarS
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — change radar is org-scoped.",
+      detail: "Choose your team organization to open change radar.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -152,7 +152,7 @@ export function cadChangeRadarShellCopy(kind: CadChangeRadarShellKind): CadChang
         badge: "Setup required",
         title: "Connect Onshape and select a workspace",
         description:
-          "Change radar needs an org and CAD connection. Snapshots stay blank until a real revision is recorded — nothing is pre-seeded.",
+          "Change radar needs an org and CAD connection. Snapshots stay blank until a real revision is recorded.",
       };
     case "empty":
       return {
@@ -194,7 +194,7 @@ export function cadChangeRadarNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Change radar is org-scoped — pick a team before tracking parts.",
+          detail: "Pick a team before tracking parts.",
           href: "/workspace",
           primary: true,
         },

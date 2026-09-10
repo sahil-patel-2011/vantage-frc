@@ -194,7 +194,7 @@ export function buildPitchMessage(input: PitchDraftInput): string {
     const prompt = input.grant?.prompt?.trim() || "(no specific prompt)";
     const limit = input.grant?.charLimit ? ` Character limit: ${input.grant.charLimit}.` : "";
     return [
-      `Draft a grant-answer pitch for ${handle} using ONLY the org-scoped team profile and business facts in context.`,
+      `Draft a grant-answer pitch for ${handle} using ONLY the your team's team profile and business facts in context.`,
       `Focus: ${focus}.${limit}`,
       `Grant prompt: ${prompt}`,
       "Do not invent metrics, awards, or other teams' data. If a fact is missing, omit it rather than fabricate it.",
@@ -204,7 +204,7 @@ export function buildPitchMessage(input: PitchDraftInput): string {
 
   const label = emailKindLabel(input.kind);
   return [
-    `Draft a ${label.toLowerCase()} sponsor pitch email for ${handle} using ONLY the org-scoped team profile and business facts in context.`,
+    `Draft a ${label.toLowerCase} sponsor pitch email for ${handle} using ONLY the your team's team profile and business facts in context.`,
     `Recipient organization: ${input.sponsor.sponsorName}.`,
     input.sponsor.contactName ? `Contact: ${input.sponsor.contactName}.` : null,
     "Do not invent metrics, awards, or other organizations' data. If a fact is missing, omit it rather than fabricate it.",

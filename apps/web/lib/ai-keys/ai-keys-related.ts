@@ -89,7 +89,7 @@ export function aiKeysShellCopy(kind: AiKeysShellKind, detail?: string | null): 
     return {
       eyebrow: "SIGN IN REQUIRED",
       title: "Sign in to manage API keys",
-      description: "BYOK keys are org-scoped and encrypted. Sign in, then open this page from Account or Team setup.",
+      description: "BYOK keys are your team's and encrypted. Sign in, then open this page from Account or Team setup.",
       badge: "Auth required",
     };
   }

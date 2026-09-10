@@ -77,7 +77,7 @@ export function scheduleNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Match schedules are org-scoped — pick a team before loading TBA rows.",
+          detail: "Pick a team before loading TBA rows.",
           href: "/workspace",
           primary: true,
         },
@@ -134,7 +134,7 @@ export function scheduleNextActions(input: {
       {
         id: "retry",
         label: "Retry Schedule",
-        detail: "Reload real TBA match rows — nothing is pre-seeded while this fails.",
+        detail: "Reload real TBA match rows.",
         href: withOrgHref("/schedule", orgId),
         primary: true,
       },
@@ -206,7 +206,7 @@ export function scheduleNextActions(input: {
     {
       id: "scouting",
       label: "Open Scouting",
-      detail: "Scout coverage chips on this board come from real assignments — never invented.",
+      detail: "Scout coverage chips on this board come from real assignments.",
       href: withOrgHref("/scouting", orgId),
     },
   ].slice(0, 4);

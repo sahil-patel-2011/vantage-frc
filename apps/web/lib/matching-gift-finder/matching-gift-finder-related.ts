@@ -73,7 +73,7 @@ export function matchingGiftFinderSetupSteps(orgId?: string | null): MatchingGif
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — matching gifts are org-scoped.",
+      detail: "Choose your team organization to open matching gifts.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -148,7 +148,7 @@ export function matchingGiftFinderShellCopy(kind: MatchingGiftFinderShellKind): 
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Matching Gift Finder is org-scoped. Pick a workspace before adding household employers — nothing is pre-seeded.",
+          "Pick a workspace before adding household employers.",
       };
     case "empty":
       return {
@@ -188,7 +188,7 @@ export function matchingGiftFinderNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Matching gifts are org-scoped — pick a team before adding contacts.",
+          detail: "Pick a team before adding contacts.",
           href: "/workspace",
           primary: true,
         },

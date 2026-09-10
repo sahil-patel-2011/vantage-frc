@@ -77,7 +77,7 @@ export function chemistrySetupSteps(orgId?: string | null): ChemistrySetupStep[]
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — chemistry scores are org-scoped.",
+      detail: "Choose your team organization to open chemistry scores.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -183,7 +183,7 @@ export function chemistryShellCopy(kind: ChemistryShellKind): ChemistryEmptyCopy
         badge: "Setup required",
         title: "Select a team workspace and event",
         description:
-          "Alliance chemistry is org- and event-scoped. Pick a workspace and active TBA event before scores appear — nothing is pre-seeded.",
+          "Alliance chemistry is org- and event-scoped. Pick a workspace and active TBA event before scores appear.",
       };
     case "empty":
       return {
@@ -224,7 +224,7 @@ export function chemistryNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Chemistry scores are org-scoped — choose a team before scoring alliances.",
+          detail: "Choose a team before scoring alliances.",
           href: "/workspace",
           primary: true,
         },

@@ -50,7 +50,7 @@ function setupSteps(orgId: string | null): ReadinessScoreSetupStep[] {
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — Readiness Score is org-scoped.",
+      detail: "Choose your team organization to open Readiness Score.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -62,13 +62,13 @@ function setupSteps(orgId: string | null): ReadinessScoreSetupStep[] {
     {
       id: "fmea",
       label: "Open FMEA",
-      detail: "Open failure modes stay blank until real rows exist — never DEMO RPN.",
+      detail: "Open failure modes stay blank until real rows exist.",
       href: hubHref("/build", "fmea", orgId),
     },
     {
       id: "inspection-copilot",
       label: "Open Inspection Copilot",
-      detail: "Inspection readiness stays blank until measurements exist — never DEMO risk.",
+      detail: "Inspection readiness stays blank until measurements exist.",
       href: hubHref("/build", "inspection-copilot", orgId),
     },
   ];

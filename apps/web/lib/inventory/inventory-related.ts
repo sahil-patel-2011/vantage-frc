@@ -79,7 +79,7 @@ export function inventorySetupSteps(orgId?: string | null): InventorySetupStep[]
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — Inventory is org-scoped.",
+      detail: "Choose your team organization to open Inventory.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -163,7 +163,7 @@ export function inventoryShellCopy(kind: InventoryShellKind): InventoryEmptyCopy
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Inventory is org-scoped. Pick a workspace before tracking real parts — nothing is pre-seeded.",
+          "Pick a workspace before tracking real parts.",
       };
     case "empty":
       return {
