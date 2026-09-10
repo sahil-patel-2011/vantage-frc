@@ -20,6 +20,8 @@ describe("sign-in Soft-UI helpers", () => {
     expect(emailOtpSetupRequired({ emailOtpAvailable: false })).toBe(true);
     expect(signInSetupCopy("email_otp").badge).toBe("setup_required");
     expect(signInSetupCopy("email_otp").title).toMatch(/mail provider/i);
+    expect(signInSetupCopy("database").title).toMatch(/configured database/i);
+    expect(signInSetupCopy("database").title).not.toMatch(/workspace/i);
   });
 
   it("uses one shared sign-in for every team", () => {

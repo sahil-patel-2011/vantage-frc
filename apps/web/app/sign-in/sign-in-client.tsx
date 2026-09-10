@@ -1,23 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
-import { VantageLogo } from "../../components/brand";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState, type FormEvent } from "react";
 import {
   DEFAULT_CODE_TTL_SECONDS,
-  OTP_LENGTH,
   SIGN_IN_FAILED_MESSAGE,
   WAITLIST_ONLY_MESSAGE,
-  activeDigitIndex,
   canResendCode,
   canSubmitCode,
   classifyOtpFailure,
   clearRememberedAccount,
-  codeDigits,
-  codeFromPastedText,
   codeSecondsRemaining,
   emailOtpSetupRequired,
-  formatCooldown,
-  formatCountdown,
   googleReady as isGoogleReady,
   initialSignInState,
   inviteTokenFromNext,
@@ -43,141 +36,31 @@ import {
   writeRememberedAccount,
   type RememberedAccount,
   type SignInAuthStatus,
-  type SignInSetupCopy,
 } from "../../lib/sign-in";
-import {
-  PENDING_INVITE_STORAGE_KEY,
-  inviteJoiningHeadline,
-  type InvitePreview,
-} from "../../lib/invite";
+import { inviteJoiningHeadline, type InvitePreview } from "../../lib/invite";
 import { safeAppPath } from "../../lib/security/safe-navigation";
 import { signOutAndRedirect } from "../../lib/sign-out";
+import {
+  AccessFooter,
+  InviteBanner,
+  SetupShell,
+  SignInCard,
+  SignInStatusBlock,
+} from "./sign-in-chrome";
+import { SignInCodeStep } from "./sign-in-code-step";
+import { SignInIdentityStep, SignInPasswordFooter } from "./sign-in-identity";
+import {
+  readOnboardingGate,
+  sessionProbeFromPayload,
+  storedInviteTokenFrom,
+  type PasswordPanel,
+  type SessionProbe,
+  type SignInBusy,
+} from "./sign-in-model";
+import { SignInSessionView } from "./sign-in-session";
 import "./sign-in-flow.css";
 
 type AuthStatus = SignInAuthStatus;
-
-type Busy = "idle" | "sending" | "verifying" | "resending" | "google" | "leaving";
-
-/** What the read-only session probe (`GET /api/auth/email-2fa`) told us. */
-type SessionProbe =
-  | { state: "checking" }
-  | { state: "none" }
-  | { state: "needs_verification"; emailHint: string }
-  | { state: "active"; emailHint: string };
-
-/* --------------------------------- helpers --------------------------------- */
-
-async function readOnboardingGate() {
-  try {
-    const response = await fetch("/api/onboarding", { credentials: "include" });
-    if (!response.ok) return null;
-    return (await response.json()) as { complete?: boolean; accessStatus?: string };
-  } catch {
-    return null;
-  }
-}
-
-function storedInviteToken(): string | null {
-  try {
-    return sessionStorage.getItem(PENDING_INVITE_STORAGE_KEY)?.trim() || null;
-  } catch {
-    return null;
-  }
-}
-
-/* -------------------------------- components -------------------------------- */
-
-function SetupShell({ copy }: { copy: SignInSetupCopy }) {
-  return (
-    <div className="signin-setup-shell" role="status">
-      <span>{copy.badge}</span>
-      <strong>{copy.title}</strong>
-      <p>{copy.description}</p>
-    </div>
-  );
-}
-
-function AccessFooter() {
-  return (
-    <p className="signin-waitlist">
-      Need access? <a href="/#waitlist">Join the waitlist</a>
-      <span aria-hidden="true"> · </span>
-      <a href="/pricing">Pricing</a>
-    </p>
-  );
-}
-
-/**
- * Six boxes the eye can count, one real input underneath.
- *
- * The single input is what carries `autocomplete="one-time-code"`, so iOS and
- * Android offer the code from the mail/SMS notification, and a full-code paste
- * lands in one place instead of scattering across six separate fields.
- */
-function CodeInput({
-  value,
-  disabled,
-  invalid,
-  inputRef,
-  onChange,
-}: {
-  value: string;
-  disabled: boolean;
-  invalid: boolean;
-  inputRef: React.RefObject<HTMLInputElement | null>;
-  onChange: (next: string) => void;
-}) {
-  const digits = codeDigits(value);
-  const active = activeDigitIndex(value);
-  const [focused, setFocused] = useState(false);
-
-  return (
-    /* The input is absolutely positioned over the boxes, so a click anywhere in
-       this block already lands on it — no extra click handler to keyboard-trap. */
-    <div className={`signin-code${invalid ? " invalid" : ""}${disabled ? " disabled" : ""}`}>
-      <input
-        ref={inputRef}
-        className="signin-code-input"
-        type="text"
-        inputMode="numeric"
-        autoComplete="one-time-code"
-        autoCorrect="off"
-        autoCapitalize="none"
-        spellCheck={false}
-        aria-label={`${OTP_LENGTH}-digit sign-in code`}
-        aria-invalid={invalid || undefined}
-        maxLength={OTP_LENGTH}
-        value={value}
-        disabled={disabled}
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
-        onChange={(event) => onChange(sanitizeCodeInput(event.target.value))}
-        onPaste={(event) => {
-          const pasted = codeFromPastedText(event.clipboardData.getData("text"));
-          if (!pasted) return;
-          event.preventDefault();
-          onChange(pasted);
-        }}
-      />
-      <div className="signin-code-boxes" aria-hidden="true">
-        {digits.map((digit, index) => (
-          <span
-            key={index}
-            className={
-              focused && !disabled && index === active && digits[index] === ""
-                ? "signin-code-box caret"
-                : "signin-code-box"
-            }
-          >
-            {digit}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/* ---------------------------------- client ---------------------------------- */
 
 export default function SignInClient({
   googleEnabled,
@@ -190,7 +73,7 @@ export default function SignInClient({
 }) {
   const [status, setStatus] = useState(initialStatus);
   const [flow, dispatch] = useReducer(signInFlowReducer, undefined, () => initialSignInState());
-  const [busy, setBusy] = useState<Busy>("idle");
+  const [busy, setBusy] = useState<SignInBusy>("idle");
   const [oauthMessage, setOauthMessage] = useState("");
   const [clock, setClock] = useState(() => Date.now());
   const [probe, setProbe] = useState<SessionProbe>({ state: "checking" });
@@ -198,7 +81,7 @@ export default function SignInClient({
   const [inviteToken, setInviteToken] = useState<string | null>(null);
   const [invitePreview, setInvitePreview] = useState<InvitePreview | null>(null);
   const [resolvedNext, setResolvedNext] = useState(() => safeAppPath(nextPath, "/dashboard"));
-  const [passwordPanel, setPasswordPanel] = useState<"closed" | "password" | "reset">("closed");
+  const [passwordPanel, setPasswordPanel] = useState<PasswordPanel>("closed");
   const [password, setPassword] = useState("");
   const [passwordMessage, setPasswordMessage] = useState("");
   const [resetSent, setResetSent] = useState(false);
@@ -215,8 +98,6 @@ export default function SignInClient({
   const inviteHeadline = inviteToken ? inviteJoiningHeadline(invitePreview) : null;
   const stepCopy = signInStepCopy(flow, inviteHeadline);
 
-  /* -------------------------------- one clock -------------------------------- */
-
   useEffect(() => {
     if (flow.step !== "code") return;
     const timer = window.setInterval(() => setClock(Date.now()), 1_000);
@@ -228,8 +109,6 @@ export default function SignInClient({
   const expired = isCodeExpired(flow, clock);
   const resendReady = canResendCode(flow, clock);
   const submitReady = canSubmitCode(flow, clock);
-
-  /* ------------------------------ request a code ----------------------------- */
 
   const sendFirstFactorCode = useCallback(
     async (email: string, options?: { resent?: boolean }) => {
@@ -334,8 +213,6 @@ export default function SignInClient({
     [status.emailOtpReason],
   );
 
-  /* ------------------------------- where to land ------------------------------ */
-
   const leave = useCallback(
     async (fallback?: string) => {
       setBusy("leaving");
@@ -351,8 +228,6 @@ export default function SignInClient({
     [inviteToken, resolvedNext],
   );
 
-  /* --------------------------------- bootstrap -------------------------------- */
-
   useEffect(() => {
     setRemembered(readRememberedAccount(browserStorage()));
 
@@ -361,7 +236,12 @@ export default function SignInClient({
     if (error) setOauthMessage(oauthErrorMessage(error));
 
     const rawNext = params.get("next") ?? nextPath;
-    const stashed = storedInviteToken();
+    let stashed: string | null;
+    try {
+      stashed = storedInviteTokenFrom(sessionStorage);
+    } catch {
+      stashed = null;
+    }
     const restored = restoreInviteNextPath(safeAppPath(rawNext, "/dashboard"), stashed);
     setResolvedNext(restored);
     const token = inviteTokenFromNext(restored) ?? stashed;
@@ -383,29 +263,15 @@ export default function SignInClient({
     void fetch("/api/auth/email-2fa", { credentials: "include" })
       .then(async (response) => {
         if (!active) return;
-        if (response.status === 401) {
-          setProbe({ state: "none" });
-          return;
-        }
-        if (!response.ok) {
-          setProbe({ state: "none" });
-          return;
-        }
-        const data = (await response.json()) as {
-          authenticated?: boolean;
-          requiresVerification?: boolean;
-          emailHint?: string;
-        };
+        const data = response.ok
+          ? ((await response.json()) as {
+              authenticated?: boolean;
+              requiresVerification?: boolean;
+              emailHint?: string;
+            })
+          : null;
         if (!active) return;
-        if (!data.authenticated) {
-          setProbe({ state: "none" });
-          return;
-        }
-        setProbe(
-          data.requiresVerification
-            ? { state: "needs_verification", emailHint: data.emailHint ?? "" }
-            : { state: "active", emailHint: data.emailHint ?? "" },
-        );
+        setProbe(sessionProbeFromPayload(response, data));
       })
       .catch(() => {
         if (active) setProbe({ state: "none" });
@@ -453,8 +319,6 @@ export default function SignInClient({
   useEffect(() => {
     if (flow.step === "code") codeRef.current?.focus();
   }, [flow.step]);
-
-  /* ------------------------------- verify a code ------------------------------ */
 
   const verifyCode = useCallback(async () => {
     const code = sanitizeCodeInput(flow.code);
@@ -521,9 +385,7 @@ export default function SignInClient({
     void verifyCode();
   }, [busy, flow, verifyCode]);
 
-  /* --------------------------------- actions --------------------------------- */
-
-  async function submitIdentity(event: React.FormEvent) {
+  async function submitIdentity(event: FormEvent) {
     event.preventDefault();
     const email = normalizeSignInEmail(flow.email);
     if (!isLikelyEmail(email) || !emailAvailable || busy !== "idle") return;
@@ -574,7 +436,7 @@ export default function SignInClient({
     }
   }
 
-  async function passwordSignIn(event: React.FormEvent) {
+  async function passwordSignIn(event: FormEvent) {
     event.preventDefault();
     const email = normalizeSignInEmail(flow.email);
     setBusy("verifying");
@@ -616,7 +478,7 @@ export default function SignInClient({
     }
   }
 
-  async function requestPasswordReset(event: React.FormEvent) {
+  async function requestPasswordReset(event: FormEvent) {
     event.preventDefault();
     const email = normalizeSignInEmail(flow.email);
     if (!emailAvailable) {
@@ -669,8 +531,6 @@ export default function SignInClient({
     emailRef.current?.focus();
   }
 
-  /* ---------------------------------- render ---------------------------------- */
-
   const preferred = useMemo(
     () => preferredSignInMethod(remembered, { google: googleAvailable, email: emailAvailable }),
     [remembered, googleAvailable, emailAvailable],
@@ -679,388 +539,115 @@ export default function SignInClient({
   const hint = invitedOnlyHint(flow);
   const working = busy !== "idle";
 
-  const inviteBanner = inviteToken ? (
-    <div className="signin-invite" role="note">
-      <span>INVITATION</span>
-      <strong>{inviteHeadline}</strong>
-      <p>
-        {invitePreview?.email
-          ? `Sign in as ${invitePreview.email} — this invite only works for that address. You’ll land back on the acceptance screen.`
-          : "Finish signing in and you’ll come straight back to the acceptance screen."}
-      </p>
-    </div>
-  ) : null;
-
-  // "Continue as" — a live session, so the form would only be noise.
   if (probe.state === "active") {
     return (
-      <main className="signin-page">
-        <section className="signin-card" aria-labelledby="signin-title">
-          <div className="signin-brand">
-            <VantageLogo />
-          </div>
-          <h1 id="signin-title">{inviteHeadline ?? "You’re already signed in"}</h1>
-          <p className="signin-sub">Continue with the account already open in this browser.</p>
-          {inviteBanner}
-          <div className="signin-step">
-            <button
-              type="button"
-              className="signin-submit"
-              disabled={working}
-              onClick={() => void leave()}
-            >
-              {working ? "Continuing…" : `Continue as ${probe.emailHint || "this account"}`}
-            </button>
-            <button
-              type="button"
-              className="signin-link signin-link-block"
-              disabled={working}
-              onClick={() => void signOutAndRedirect(`/signin?next=${encodeURIComponent(resolvedNext)}`)}
-            >
-              Use a different account
-            </button>
-          </div>
-          <AccessFooter />
-        </section>
-      </main>
+      <SignInSessionView
+        inviteHeadline={inviteHeadline}
+        inviteToken={inviteToken}
+        invitePreview={invitePreview}
+        emailHint={probe.emailHint}
+        working={working}
+        resolvedNext={resolvedNext}
+        onContinue={() => void leave()}
+        onSwitchAccount={(href) => void signOutAndRedirect(href)}
+      />
     );
   }
 
   return (
-    <main className="signin-page">
-      <section className="signin-card" aria-labelledby="signin-title">
-        <div className="signin-brand">
-          <VantageLogo />
-        </div>
-        <h1 id="signin-title">{stepCopy.title}</h1>
-        <p className="signin-sub">{stepCopy.sub}</p>
+    <SignInCard titleId="signin-title" title={stepCopy.title} subtitle={stepCopy.sub}>
+      <InviteBanner token={inviteToken} headline={inviteHeadline} preview={invitePreview} />
+      {unavailable ? <SetupShell copy={unavailable} /> : null}
 
-        {inviteBanner}
-        {unavailable ? <SetupShell copy={unavailable} /> : null}
+      <div className="signin-step">
+        {flow.step === "identity" ? (
+          <SignInIdentityStep
+            googleAvailable={googleAvailable}
+            emailAvailable={emailAvailable}
+            preferred={preferred}
+            rememberedEmail={remembered.email}
+            email={flow.email}
+            emailRef={emailRef}
+            busy={busy}
+            working={working}
+            passwordPanel={passwordPanel}
+            resetSent={resetSent}
+            password={password}
+            passwordMessage={passwordMessage}
+            code={flow.code}
+            codeRef={codeRef}
+            onGoogle={() => void google()}
+            onSubmitIdentity={(event) => void submitIdentity(event)}
+            onEmailChange={(email) => dispatch({ type: "email_changed", email })}
+            onEmailBlur={(email) =>
+              dispatch({ type: "email_changed", email: normalizeSignInEmail(email) })
+            }
+            onForgetAccount={forgetAccount}
+            onPasswordSubmit={(event) =>
+              void (passwordPanel === "reset" ? requestPasswordReset(event) : passwordSignIn(event))
+            }
+            onPasswordChange={setPassword}
+            onCodeChange={(code) => dispatch({ type: "code_changed", code })}
+          />
+        ) : (
+          <SignInCodeStep
+            channel={flow.channel}
+            email={flow.email}
+            emailHint={flow.emailHint}
+            code={flow.code}
+            codeRef={codeRef}
+            emailAvailable={emailAvailable}
+            invalid={Boolean(flow.failure)}
+            expired={expired}
+            codeSeconds={codeSeconds}
+            resendReady={resendReady}
+            resendSeconds={resendSeconds}
+            submitReady={submitReady}
+            busy={busy}
+            working={working}
+            resolvedNext={resolvedNext}
+            onSubmit={(event) => {
+              event.preventDefault();
+              void verifyCode();
+            }}
+            onCodeChange={(code) => dispatch({ type: "code_changed", code })}
+            onEditEmail={() => dispatch({ type: "edit_email" })}
+            onResend={() => void resend()}
+            onSwitchAccount={(href) => void signOutAndRedirect(href)}
+          />
+        )}
+      </div>
 
-        <div className="signin-step">
-          {flow.step === "identity" ? (
-            <>
-              {googleAvailable ? (
-                <>
-                  <button
-                    className="signin-google"
-                    type="button"
-                    onClick={() => void google()}
-                    disabled={working}
-                  >
-                    <GoogleMark />
-                    {busy === "google" ? "Opening Google…" : "Continue with Google"}
-                    {preferred === "google" ? <em className="signin-last-used">Last used</em> : null}
-                  </button>
-                  <div className="signin-or" role="separator">
-                    <span>or</span>
-                  </div>
-                </>
-              ) : null}
-
-              {passwordPanel === "closed" ? (
-                <form className="signin-form" onSubmit={(event) => void submitIdentity(event)}>
-                  <label>
-                    Email
-                    <span className="signin-field">
-                      <MailIcon />
-                      <input
-                        ref={emailRef}
-                        type="email"
-                        required
-                        autoComplete="email"
-                        autoCapitalize="none"
-                        spellCheck={false}
-                        placeholder="you@example.com"
-                        value={flow.email}
-                        disabled={!emailAvailable || working}
-                        autoFocus={preferred === "email" && !remembered.email}
-                        onChange={(event) =>
-                          dispatch({ type: "email_changed", email: event.target.value })
-                        }
-                        onBlur={(event) =>
-                          dispatch({
-                            type: "email_changed",
-                            email: normalizeSignInEmail(event.target.value),
-                          })
-                        }
-                      />
-                    </span>
-                    {remembered.email ? (
-                      <small className="signin-remembered">
-                        Remembered on this device.{" "}
-                        <button type="button" className="signin-link" onClick={forgetAccount}>
-                          Forget
-                        </button>
-                      </small>
-                    ) : null}
-                  </label>
-                  <button
-                    className="signin-submit"
-                    disabled={!emailAvailable || working || !isLikelyEmail(flow.email)}
-                  >
-                    {busy === "sending" ? "Sending code…" : "Email me a sign-in code"}
-                  </button>
-                </form>
-              ) : (
-                <form
-                  className="signin-form"
-                  onSubmit={(event) =>
-                    void (passwordPanel === "reset"
-                      ? requestPasswordReset(event)
-                      : passwordSignIn(event))
-                  }
-                >
-                  <label>
-                    Email
-                    <span className="signin-field">
-                      <MailIcon />
-                      <input
-                        type="email"
-                        required
-                        autoComplete="username"
-                        autoCapitalize="none"
-                        spellCheck={false}
-                        value={flow.email}
-                        disabled={working}
-                        onChange={(event) =>
-                          dispatch({ type: "email_changed", email: event.target.value })
-                        }
-                      />
-                    </span>
-                  </label>
-                  {passwordPanel === "reset" && resetSent ? (
-                    <label>
-                      Reset code
-                      <CodeInput
-                        value={flow.code}
-                        disabled={working}
-                        invalid={false}
-                        inputRef={codeRef}
-                        onChange={(next) => dispatch({ type: "code_changed", code: next })}
-                      />
-                    </label>
-                  ) : null}
-                  {passwordPanel === "password" || resetSent ? (
-                    <label>
-                      {passwordPanel === "reset" ? "New password" : "Password"}
-                      <span className="signin-field">
-                        <LockIcon />
-                        <input
-                          type="password"
-                          required
-                          minLength={passwordPanel === "reset" ? 12 : undefined}
-                          autoComplete={
-                            passwordPanel === "reset" ? "new-password" : "current-password"
-                          }
-                          value={password}
-                          disabled={working}
-                          onChange={(event) => setPassword(event.target.value)}
-                        />
-                      </span>
-                    </label>
-                  ) : null}
-                  <button className="signin-submit" disabled={working}>
-                    {passwordPanel === "reset"
-                      ? resetSent
-                        ? "Set new password"
-                        : "Send reset code"
-                      : working
-                        ? "Signing in…"
-                        : "Sign in with password"}
-                  </button>
-                  {passwordMessage ? (
-                    <p className="signin-status" role="status">
-                      {passwordMessage}
-                    </p>
-                  ) : null}
-                </form>
-              )}
-            </>
-          ) : (
-            <form
-              className="signin-form"
-              onSubmit={(event) => {
-                event.preventDefault();
-                void verifyCode();
-              }}
-            >
-              <div className="signin-code-target">
-                <strong>{flow.channel === "email-2fa" ? flow.emailHint : flow.email}</strong>
-                {flow.channel === "email-otp" ? (
-                  <button
-                    type="button"
-                    className="signin-link"
-                    disabled={working}
-                    onClick={() => dispatch({ type: "edit_email" })}
-                  >
-                    Edit
-                  </button>
-                ) : null}
-              </div>
-
-              <CodeInput
-                value={flow.code}
-                disabled={working || !emailAvailable}
-                invalid={Boolean(flow.failure)}
-                inputRef={codeRef}
-                onChange={(next) => dispatch({ type: "code_changed", code: next })}
-              />
-
-              <p className={expired ? "signin-expiry expired" : "signin-expiry"}>
-                {expired
-                  ? "This code is no longer valid. Send a new one."
-                  : `Expires in ${formatCountdown(codeSeconds)}.`}
-              </p>
-
-              <button className="signin-submit" disabled={!submitReady || working}>
-                {busy === "verifying" ? "Verifying…" : "Verify and continue"}
-              </button>
-
-              <div className="signin-footer-modes">
-                <button
-                  type="button"
-                  className="signin-link"
-                  disabled={!resendReady || working || !emailAvailable}
-                  onClick={() => void resend()}
-                >
-                  {resendReady
-                    ? busy === "resending"
-                      ? "Sending…"
-                      : "Send a new code"
-                    : `Resend in ${formatCooldown(resendSeconds)}`}
-                </button>
-                {flow.channel === "email-2fa" ? (
-                  <button
-                    type="button"
-                    className="signin-link"
-                    disabled={working}
-                    onClick={() =>
-                      void signOutAndRedirect(`/signin?next=${encodeURIComponent(resolvedNext)}`)
-                    }
-                  >
-                    Use another account
-                  </button>
-                ) : null}
-              </div>
-            </form>
-          )}
-        </div>
-
-        {flow.failure ? (
-          <p className="signin-status error" role="alert">
-            {flow.failure.message}
-          </p>
-        ) : flow.notice ? (
-          <p className="signin-status" role="status">
-            {flow.notice}
-          </p>
-        ) : null}
-
-        {oauthMessage ? (
-          <p className="signin-status error" role="alert">
-            {oauthMessage}
-          </p>
-        ) : null}
-
-        {hint ? (
-          <div className="signin-setup-shell" role="status">
-            <span>invite only</span>
-            <strong>No code in your inbox?</strong>
-            <p>{hint}</p>
-          </div>
-        ) : null}
-
-        <div className="signin-footer">
-          {flow.step === "identity" && status.passwordSignInAvailable ? (
-            <div className="signin-footer-modes">
-              {passwordPanel === "closed" ? (
-                <button
-                  type="button"
-                  className="signin-link"
-                  onClick={() => {
-                    setPasswordMessage("");
-                    setPasswordPanel("password");
-                  }}
-                >
-                  Use a password instead
-                </button>
-              ) : (
-                <>
-                  <button
-                    type="button"
-                    className="signin-link"
-                    onClick={() => {
-                      setPasswordPanel("closed");
-                      setResetSent(false);
-                      setPassword("");
-                      setPasswordMessage("");
-                    }}
-                  >
-                    Back to email codes
-                  </button>
-                  {passwordPanel === "password" ? (
-                    <button
-                      type="button"
-                      className="signin-link"
-                      onClick={() => {
-                        setPasswordMessage("");
-                        setResetSent(false);
-                        setPasswordPanel("reset");
-                      }}
-                    >
-                      Forgot password?
-                    </button>
-                  ) : null}
-                </>
-              )}
-            </div>
-          ) : null}
-          <AccessFooter />
-        </div>
-      </section>
-    </main>
-  );
-}
-
-function GoogleMark() {
-  return (
-    <svg aria-hidden="true" width="18" height="18" viewBox="0 0 48 48">
-      <path
-        fill="#FFC107"
-        d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.8 1.1 7.9 3l5.7-5.7C34.2 6.1 29.4 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z"
+      <SignInStatusBlock
+        failure={flow.failure?.message ?? null}
+        notice={flow.notice}
+        oauthMessage={oauthMessage}
+        inviteHint={hint}
       />
-      <path
-        fill="#FF3D00"
-        d="M6.3 14.7 12.9 19.6C14.7 15.1 19 12 24 12c3 0 5.8 1.1 7.9 3l5.7-5.7C34.2 6.1 29.4 4 24 4 16.3 4 9.5 8.3 6.3 14.7z"
-      />
-      <path
-        fill="#4CAF50"
-        d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.3 26.7 36 24 36c-5.3 0-9.7-3.3-11.3-8l-6.5 5C9.4 39.6 16.2 44 24 44z"
-      />
-      <path
-        fill="#1976D2"
-        d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.2-4.1 5.6l.1.1 6.2 5.2C39.3 37.2 44 32 44 24c0-1.3-.1-2.7-.4-3.5z"
-      />
-    </svg>
-  );
-}
 
-function MailIcon() {
-  return (
-    <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <rect x="3" y="5" width="18" height="14" rx="2" />
-      <path d="m4 7 8 6 8-6" />
-    </svg>
-  );
-}
-
-function LockIcon() {
-  return (
-    <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <rect x="5" y="11" width="14" height="10" rx="2" />
-      <path d="M8 11V8a4 4 0 0 1 8 0v3" />
-    </svg>
+      <div className="signin-footer">
+        <SignInPasswordFooter
+          passwordSignInAvailable={status.passwordSignInAvailable}
+          identityStep={flow.step === "identity"}
+          passwordPanel={passwordPanel}
+          onUsePassword={() => {
+            setPasswordMessage("");
+            setPasswordPanel("password");
+          }}
+          onBackToCodes={() => {
+            setPasswordPanel("closed");
+            setResetSent(false);
+            setPassword("");
+            setPasswordMessage("");
+          }}
+          onForgotPassword={() => {
+            setPasswordMessage("");
+            setResetSent(false);
+            setPasswordPanel("reset");
+          }}
+        />
+        <AccessFooter />
+      </div>
+    </SignInCard>
   );
 }

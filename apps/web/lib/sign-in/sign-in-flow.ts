@@ -118,7 +118,7 @@ export function signInSetupCopy(
   return {
     kind: "database",
     badge: "setup_required",
-    title: "Sign-in needs a configured workspace database",
+    title: "Sign-in needs a configured database",
     description: publicPasswordUnavailableCopy(status?.passwordReason),
   };
 }
