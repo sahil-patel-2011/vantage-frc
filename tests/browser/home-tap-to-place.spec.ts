@@ -47,7 +47,7 @@ test.describe("Home tap-to-place", () => {
     const firstAdd = page.locator("[data-testid^='dash-library-']").first();
     await expect(firstAdd).toBeVisible();
     await firstAdd.click();
-    await expect(page.getByText(/tap a slot/i)).toBeVisible();
+    await expect(page.getByText(/Tap a slot on the board to place/i).first()).toBeVisible();
     const canvas = page.getByTestId("dash-place-canvas");
     if (await canvas.count()) {
       await canvas.click({ position: { x: 24, y: 24 } });
