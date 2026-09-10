@@ -9,6 +9,13 @@
 //   node scripts/rls-proof-prepare-app-login.mjs
 import { Client } from "pg";
 
+const SET_ROLE = (process.env.RLS_PROOF_SET_ROLE ?? "vantage_app").trim();
+const ALLOWED_SET_ROLES = new Set(["vantage_app", "vantage_auth"]);
+if (!ALLOWED_SET_ROLES.has(SET_ROLE)) {
+  console.error(`RLS_PROOF_SET_ROLE must be vantage_app or vantage_auth (got ${SET_ROLE}).`);
+  process.exit(2);
+}
+
 const SU = process.env.RLS_PROOF_SUPERUSER_URL;
 const APP = process.env.RLS_PROOF_APP_URL;
 if (!SU || !APP) {
@@ -41,7 +48,9 @@ async function execFormat(template, params) {
     "CREATE ROLE %I LOGIN PASSWORD %L NOSUPERUSER NOBYPASSRLS INHERIT",
     "ALTER ROLE %I WITH LOGIN PASSWORD %L NOSUPERUSER NOBYPASSRLS INHERIT",
     "GRANT vantage_app TO %I",
+    "GRANT vantage_auth TO %I",
     "ALTER ROLE %I SET ROLE vantage_app",
+    "ALTER ROLE %I SET ROLE vantage_auth",
     "GRANT CONNECT ON DATABASE %I TO %I",
     "GRANT USAGE ON SCHEMA public TO %I",
   ]);
@@ -63,15 +72,15 @@ try {
   } else {
     await execFormat("ALTER ROLE %I WITH LOGIN PASSWORD %L NOSUPERUSER NOBYPASSRLS INHERIT", [login, password]);
   }
-  await execFormat("GRANT vantage_app TO %I", [login]);
-  await execFormat("ALTER ROLE %I SET ROLE vantage_app", [login]);
+  await execFormat(`GRANT ${SET_ROLE} TO %I`, [login]);
+  await execFormat(`ALTER ROLE %I SET ROLE ${SET_ROLE}`, [login]);
   if (database) await execFormat("GRANT CONNECT ON DATABASE %I TO %I", [database, login]);
   await execFormat("GRANT USAGE ON SCHEMA public TO %I", [login]);
   const who = await su.query(`SELECT rolsuper, rolbypassrls FROM pg_roles WHERE rolname = $1`, [login]);
   if (!who.rowCount || who.rows[0].rolsuper || who.rows[0].rolbypassrls) {
     throw new Error(`${login} is still superuser or BYPASSRLS after prepare`);
   }
-  console.log(`prepared ${login} as vantage_app (NOSUPERUSER, NOBYPASSRLS)`);
+  console.log(`prepared ${login} as ${SET_ROLE} (NOSUPERUSER, NOBYPASSRLS)`);
 } finally {
   await su.end();
 }

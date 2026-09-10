@@ -6,13 +6,15 @@
  * with the fixture cookie still proves the pages do not 500.
  *
  *   E2E_AUTH_FIXTURE=1 npm run dev:test --workspace=@vantage/web
- *   FEATURE_MAP_BASE_URL=http://localhost:3310 node --experimental-strip-types \
- *     scripts/feature-map-http-walk.mjs
+ *   FEATURE_MAP_BASE_URL=http://localhost:3001 FEATURE_MAP_COOKIE='better-auth.session_token=…' \
+ *     node --experimental-strip-types scripts/feature-map-http-walk.mjs
  */
 import { readFileSync } from "node:fs";
 import { productRoutesFromFeatureMap } from "../apps/web/lib/nav/feature-map-routes.ts";
 
 const BASE = (process.env.FEATURE_MAP_BASE_URL ?? "http://localhost:3310").replace(/\/$/, "");
+const usingSessionCookie = Boolean(process.env.FEATURE_MAP_COOKIE);
+const COOKIE = process.env.FEATURE_MAP_COOKIE ?? "vantage-e2e-session=authenticated";
 const markdown = readFileSync(new URL("../docs/FEATURE_MAP.md", import.meta.url), "utf8");
 const routes = productRoutesFromFeatureMap(markdown);
 
@@ -25,7 +27,7 @@ for (const route of routes) {
   try {
     const response = await fetch(url, {
       redirect: "follow",
-      headers: { cookie: "vantage-e2e-session=authenticated" },
+      headers: { cookie: COOKIE },
       signal: AbortSignal.timeout(30_000),
     });
     const status = response.status;
@@ -52,6 +54,7 @@ console.log(
   JSON.stringify(
     {
       base: BASE,
+      auth: usingSessionCookie ? "FEATURE_MAP_COOKIE" : "fixture",
       routes: routes.length,
       ...summary,
       notFound,
