@@ -355,9 +355,10 @@ describe("stylesheet integrity", () => {
 
   it("does not paint a second dark palette with #0f141a / #171d25", () => {
     // Dark mode is the designed tokens in system.css (#0c1118 / #151b24).
-    // Sign-in and Event Day used a competing well (#0f141a / #171d25) that
-    // made those screens a different product at night.
-    const competing = /#0f141a|#171d25/i;
+    // Sign-in, Event Day, and onboarding used competing wells
+    // (#0f141a / #171d25 / #111823 / #152036) that made those screens a different
+    // product at night.
+    const competing = /#0f141a|#171d25|#111823|#152036|#122a20|#2c1519|#2a2113|#33270f/i;
     const offenders: string[] = [];
     for (const file of files) {
       const text = readFileSync(file, "utf8");
