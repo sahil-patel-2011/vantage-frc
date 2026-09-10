@@ -110,9 +110,13 @@ export function discordSetupStatus(env: Record<string, string | undefined> = pro
     configured,
     setupRequired: !configured,
     inviteUrl,
+    // Two independent paths post to Discord and only one needs a deployment
+    // variable. Saying "Set DISCORD_BOT_TOKEN" alone reads as "this connector
+    // is blocked until an admin acts", which is false — a channel webhook is
+    // pasted by the team and needs nothing from the deployment at all.
     message: configured
-      ? "Discord bot token is configured."
-      : "Set DISCORD_BOT_TOKEN (and optionally DISCORD_CLIENT_ID) on the server to enable bot posts.",
+      ? "Discord bot token is configured, so bot posts work once a team saves a channel id. A channel webhook still posts without it."
+      : "Webhook posting needs nothing from the deployment: create one in Discord → Server Settings → Integrations → Webhooks and paste it below. Bot posts (which need a channel id instead of a webhook) additionally need DISCORD_BOT_TOKEN — and DISCORD_CLIENT_ID for the invite link — set in your deployment environment (Vercel → Project → Settings → Environment Variables), from discord.com/developers/applications → your app → Bot. Discord needs no callback URL from Vantage.",
   };
 }
 

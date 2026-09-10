@@ -382,6 +382,9 @@ const STANDALONE: CommandEntry[] = [
   { id: "appearance", label: "Appearance & theme", context: "Settings", href: "/account?tab=appearance", kind: "destination", keywords: ["theme", "dark mode", "light mode", "appearance", "colors"] },
   { id: "notifications", label: "Notifications", context: "Settings", href: "/notifications", kind: "destination", keywords: ["notifications", "alerts", "inbox", "unread"] },
   { id: "security", label: "Security", context: "Settings", href: "/security", kind: "destination", keywords: ["security", "password", "2fa", "mfa", "sessions"] },
+  // Nobody types "connector catalog". They type the provider's name, or the
+  // thing that stopped working ("emails not sending", "no match data").
+  { id: "connectors", label: "Connectors", context: "Settings", href: "/connectors", kind: "destination", keywords: ["connector", "connectors", "integration", "integrations", "connect", "github", "the blue alliance", "tba", "onshape", "discord", "slack", "stripe", "resend", "email delivery", "google sign in", "storage node", "fusion relay", "api key", "oauth", "callback url", "redirect uri", "webhook", "not connected", "setup required", "token expired", "emails not sending", "no match data"], featured: true },
   { id: "team-admin", label: "Team admin", context: "Settings", href: "/team/admin", kind: "destination", keywords: ["admin", "invite", "members", "roles", "permissions", "add someone"] },
   { id: "exports", label: "Export data", context: "Settings", href: "/exports", kind: "destination", keywords: ["export", "download", "csv", "takeout", "backup"] },
   { id: "help", label: "Help centre", context: "Support", href: "/help", kind: "destination", keywords: ["help", "how do i", "support", "docs", "manual", "articles", "tutorial", "faq"] },

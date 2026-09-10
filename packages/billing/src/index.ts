@@ -1034,12 +1034,53 @@ export function createKms(): KeyManagementService {
     : new LocalKmsService();
 }
 
-export function constructStripeEvent(payload: string | Buffer, signature: string): Stripe.Event {
-  if (!process.env.STRIPE_SECRET_KEY || !process.env.STRIPE_WEBHOOK_SECRET) {
-    throw new Error("Stripe credentials are not configured");
+/**
+ * Which Stripe variables are missing, in the order the dashboard asks for them.
+ * Exported so a settings surface and the webhook can say the same thing.
+ */
+export function stripeMissingEnv(env: NodeJS.ProcessEnv = process.env): string[] {
+  const missing: string[] = [];
+  if (!env.STRIPE_SECRET_KEY?.trim()) missing.push("STRIPE_SECRET_KEY");
+  if (!env.STRIPE_WEBHOOK_SECRET?.trim()) missing.push("STRIPE_WEBHOOK_SECRET");
+  return missing;
+}
+
+/**
+ * Stripe cannot verify a webhook because this deployment has no credentials.
+ *
+ * Its own type because the webhook route could not tell it apart from a real
+ * signature failure: both arrived as a thrown Error and both came back to
+ * Stripe as `400 {"error":"Invalid webhook"}`. In the Stripe dashboard those
+ * two look identical, so an operator who had created the endpoint but never set
+ * STRIPE_WEBHOOK_SECRET spent the afternoon regenerating a signing secret that
+ * was never the problem.
+ */
+export class StripeNotConfiguredError extends Error {
+  readonly missingEnv: string[];
+  constructor(missingEnv: string[]) {
+    super(
+      `Stripe is not configured on this deployment — set ${missingEnv.join(" and ")} in your ` +
+        "deployment environment (Vercel → Project → Settings → Environment Variables), then redeploy. " +
+        "STRIPE_SECRET_KEY comes from dashboard.stripe.com → Developers → API keys; STRIPE_WEBHOOK_SECRET " +
+        "is the signing secret shown when you add the endpoint under Developers → Webhooks.",
+    );
+    this.name = "StripeNotConfiguredError";
+    this.missingEnv = missingEnv;
   }
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-  return stripe.webhooks.constructEvent(payload, signature, process.env.STRIPE_WEBHOOK_SECRET);
+}
+
+export function isStripeNotConfigured(error: unknown): error is StripeNotConfiguredError {
+  return error instanceof StripeNotConfiguredError;
+}
+
+export function constructStripeEvent(payload: string | Buffer, signature: string): Stripe.Event {
+  const missing = stripeMissingEnv();
+  if (missing.length) throw new StripeNotConfiguredError(missing);
+  return new Stripe(process.env.STRIPE_SECRET_KEY!).webhooks.constructEvent(
+    payload,
+    signature,
+    process.env.STRIPE_WEBHOOK_SECRET!,
+  );
 }
 
 export async function applyStripeEvent(client: PoolClient, event: Stripe.Event): Promise<void> {
@@ -1182,7 +1223,7 @@ export async function createPlanCheckout(
   client: PoolClient,
   input: { orgId: string; planCode: string; successUrl: string; cancelUrl: string },
 ) {
-  if (!process.env.STRIPE_SECRET_KEY) throw new Error("Stripe credentials are not configured");
+  if (!process.env.STRIPE_SECRET_KEY?.trim()) throw new StripeNotConfiguredError(["STRIPE_SECRET_KEY"]);
   const plan = await client.query<{ stripePriceId: string | null; active: boolean }>(
     `SELECT stripe_price_id AS "stripePriceId",active FROM pricing_plans WHERE code=$1`,
     [input.planCode],
@@ -1209,7 +1250,7 @@ export async function createCreditPackCheckout(
   client: PoolClient,
   input: { orgId: string; packCode: string; successUrl: string; cancelUrl: string },
 ) {
-  if (!process.env.STRIPE_SECRET_KEY) throw new Error("Stripe credentials are not configured");
+  if (!process.env.STRIPE_SECRET_KEY?.trim()) throw new StripeNotConfiguredError(["STRIPE_SECRET_KEY"]);
   const pack = await client.query<{ stripePriceId: string | null; active: boolean }>(
     `SELECT stripe_price_id AS "stripePriceId",active FROM credit_packs WHERE code=$1`,
     [input.packCode],
@@ -1235,7 +1276,7 @@ export async function createPaygEnrollment(
   client: PoolClient,
   input: { orgId: string; successUrl: string; cancelUrl: string },
 ) {
-  if (!process.env.STRIPE_SECRET_KEY) throw new Error("Stripe credentials are not configured");
+  if (!process.env.STRIPE_SECRET_KEY?.trim()) throw new StripeNotConfiguredError(["STRIPE_SECRET_KEY"]);
   const billing = await client.query<{ customerId: string | null }>(
     `SELECT stripe_customer_id AS "customerId" FROM org_billing WHERE org_id=$1`,
     [input.orgId],
@@ -1254,7 +1295,7 @@ export async function createCustomerPortal(
   client: PoolClient,
   input: { orgId: string; returnUrl: string },
 ) {
-  if (!process.env.STRIPE_SECRET_KEY) throw new Error("Stripe credentials are not configured");
+  if (!process.env.STRIPE_SECRET_KEY?.trim()) throw new StripeNotConfiguredError(["STRIPE_SECRET_KEY"]);
   const billing = await client.query<{ customerId: string | null }>(
     `SELECT stripe_customer_id AS "customerId" FROM org_billing WHERE org_id=$1`,
     [input.orgId],

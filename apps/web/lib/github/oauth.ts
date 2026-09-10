@@ -27,13 +27,36 @@ export function isGitHubOAuthConfigured(env: NodeJS.ProcessEnv = process.env): b
   return Boolean(env.GITHUB_OAUTH_CLIENT_ID?.trim() && env.GITHUB_OAUTH_CLIENT_SECRET?.trim());
 }
 
+/**
+ * The Authorization callback URL an admin pastes into the GitHub OAuth App.
+ *
+ * Computed from the deployment base URL alone, deliberately NOT gated on the
+ * client credentials: the admin who has not created the OAuth App yet is the
+ * only person who needs this string, and they cannot produce a client id
+ * without first entering this URL on GitHub. `redirectUri` on the config keeps
+ * its null-when-unconfigured semantics because the Connect button reads it as
+ * "OAuth is usable". (Same split as `onshapeCallbackUrl`.)
+ */
+export function githubCallbackUrl(env: NodeJS.ProcessEnv = process.env): string {
+  const explicit = env.GITHUB_OAUTH_REDIRECT_URI?.trim();
+  if (explicit) return explicit;
+  const base = (env.BETTER_AUTH_URL ?? env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3001").replace(/\/$/, "");
+  return `${base}/api/github/oauth/callback`;
+}
+
+export function githubMissingEnv(env: NodeJS.ProcessEnv = process.env): string[] {
+  const missing: string[] = [];
+  if (!env.GITHUB_OAUTH_CLIENT_ID?.trim()) missing.push("GITHUB_OAUTH_CLIENT_ID");
+  if (!env.GITHUB_OAUTH_CLIENT_SECRET?.trim()) missing.push("GITHUB_OAUTH_CLIENT_SECRET");
+  return missing;
+}
+
 export function getGitHubOAuthConfig(env: NodeJS.ProcessEnv = process.env): GitHubOAuthConfig | null {
   if (!isGitHubOAuthConfigured(env)) return null;
-  const base = (env.BETTER_AUTH_URL ?? env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3001").replace(/\/$/, "");
   return {
     clientId: env.GITHUB_OAUTH_CLIENT_ID!.trim(),
     clientSecret: env.GITHUB_OAUTH_CLIENT_SECRET!.trim(),
-    redirectUri: env.GITHUB_OAUTH_REDIRECT_URI?.trim() || `${base}/api/github/oauth/callback`,
+    redirectUri: githubCallbackUrl(env),
     scopes: (env.GITHUB_OAUTH_SCOPES?.trim() || GITHUB_DEFAULT_SCOPES.join(" ")).split(/\s+/).filter(Boolean),
   };
 }
@@ -41,6 +64,9 @@ export function getGitHubOAuthConfig(env: NodeJS.ProcessEnv = process.env): GitH
 export function githubSetupStatus(env: NodeJS.ProcessEnv = process.env) {
   const configured = isGitHubOAuthConfigured(env);
   const config = configured ? getGitHubOAuthConfig(env) : null;
+  const callbackUrl = githubCallbackUrl(env);
+  const missingEnv = githubMissingEnv(env);
+  const scopes = config?.scopes ?? [...GITHUB_DEFAULT_SCOPES];
   // Feature is never blocked: PAT encrypt/save works without GITHUB_OAUTH_*.
   // Only the OAuth button needs server credentials.
   return {
@@ -50,11 +76,14 @@ export function githubSetupStatus(env: NodeJS.ProcessEnv = process.env) {
     /** Always false: org GitHub context is available via encrypted PAT without OAuth env. */
     setupRequired: false,
     redirectUri: config?.redirectUri ?? null,
-    scopes: config?.scopes ?? [...GITHUB_DEFAULT_SCOPES],
+    /** Always present — the URL to register even before the client exists. */
+    callbackUrl,
+    missingEnv,
+    scopes,
     patAvailable: true,
     message: configured
-      ? "GitHub OAuth is configured. Owners/admins can connect a robot-code repo in Team settings."
-      : "OAuth App not configured on this deployment — owners/admins can still encrypt and save a fine-grained or classic PAT in Team settings.",
+      ? `GitHub OAuth is configured. Owners/admins can connect a robot-code repo in Team settings. Registered Authorization callback URL: ${callbackUrl}`
+      : `Setup required — set ${missingEnv.join(" and ")} in your deployment environment (Vercel → Project → Settings → Environment Variables), then redeploy. Create the app at github.com → Settings → Developer settings → OAuth Apps and register this exact Authorization callback URL: ${callbackUrl} (scopes: ${scopes.join(", ")}). Until then, owners/admins can still encrypt and save a fine-grained or classic PAT in Team settings — that path needs no OAuth App.`,
   };
 }
 

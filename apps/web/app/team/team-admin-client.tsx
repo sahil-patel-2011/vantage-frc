@@ -154,6 +154,9 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
     }>
   >([]);
   const [githubOAuthSetupRequired, setGithubOAuthSetupRequired] = useState(false);
+  /** Setup copy from the server — names the variables and the callback URL. */
+  const [githubOAuthMessage, setGithubOAuthMessage] = useState("");
+  const [githubCredentialRejected, setGithubCredentialRejected] = useState<{ login: string | null } | null>(null);
   const [githubConnection, setGithubConnection] = useState<GitHubConnection | null>(null);
   const [githubRepos, setGithubRepos] = useState<GitHubRepo[]>([]);
   const [githubPat, setGithubPat] = useState("");
@@ -214,6 +217,10 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
       // OAuth App missing ≠ feature blocked — PAT always works.
       setGithubOAuthSetupRequired(
         Boolean(githubData.oauthSetupRequired ?? (githubData.setupRequired && !githubData.patAvailable)),
+      );
+      setGithubOAuthMessage(typeof githubData.message === "string" ? githubData.message : "");
+      setGithubCredentialRejected(
+        githubData.credentialRejected ? { login: githubData.rejectedLogin ?? null } : null,
       );
       setGithubConnection(githubData.connection ?? null);
       setDefaultRepo(githubData.connection?.defaultRepoFullName ?? "");
@@ -952,7 +959,22 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         <div className="admin-grid">
           <section className="intel-panel">
             {githubOAuthSetupRequired ? (
-              <p className="app-muted github-oauth-note">OAuth isn’t configured on this server. Save a PAT instead.</p>
+              // Was: "OAuth isn't configured on this server. Save a PAT
+              // instead." — true, and useless: it named no variable and gave no
+              // callback URL, so the admin could not act on it. The setup
+              // message from githubSetupStatus() names both.
+              <p className="app-muted github-oauth-note">
+                {githubOAuthMessage || "OAuth isn’t configured on this server. Save a PAT instead."}{" "}
+                <a href="/connectors">See all connectors</a>
+              </p>
+            ) : null}
+            {githubCredentialRejected ? (
+              <p className="app-muted github-oauth-note" role="status">
+                GitHub refused the stored credential for @{githubCredentialRejected.login ?? "this account"}. The
+                token was revoked, expired, or lost its scopes — Disconnect, then Connect GitHub again to issue a
+                new one. Nothing that reads the repo (deploy log, code review, calendar milestones) works until
+                then.
+              </p>
             ) : null}
             {githubConnection ? (
               <article className="admin-org">
@@ -975,9 +997,17 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
                 disabled={githubBusy || githubOAuthSetupRequired || githubLoading}
                 onClick={() => void connectGitHubOAuth()}
               >
-                {githubOAuthSetupRequired ? "Connect GitHub (OAuth unavailable)" : "Connect GitHub"}
+                {githubOAuthSetupRequired
+                  ? "Connect GitHub (OAuth unavailable)"
+                  : githubCredentialRejected
+                    ? "Reconnect GitHub"
+                    : "Connect GitHub"}
               </button>
-              {githubConnection ? (
+              {/* A rejected credential leaves no `connection` (that loader wants
+                  a spendable token), but the row and its dead token are still
+                  there — so Disconnect has to stay reachable, or the only way to
+                  clear it is a support request. */}
+              {githubConnection || githubCredentialRejected ? (
                 <button type="button" disabled={githubBusy} onClick={() => void disconnectGitHub()}>
                   Disconnect
                 </button>

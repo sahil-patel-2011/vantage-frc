@@ -14,6 +14,8 @@ type SlackView = {
   configured: boolean;
   canPost: boolean;
   inboundReady: boolean;
+  /** Absolute Request URL to register in Slack → Event Subscriptions. */
+  eventsUrl: string;
   message: string;
   channelLabel: string | null;
   enabled: boolean;
@@ -276,8 +278,17 @@ export default function TeamSlackClient({ orgId }: { orgId: string }) {
         </div>
         {view?.bridgePostLabel ? <p className="app-muted">Bridge: {view.bridgePostLabel}</p> : null}
         {status ? <p className={ok ? "team-discord-status ok" : "team-discord-status err"}>{status}</p> : null}
+        {/* Was a relative path. Slack's Event Subscriptions field rejects one,
+            so there was no way to finish inbound setup from what the page told
+            you. The absolute URL comes from the server, which knows the
+            deployment origin. */}
         <p className="app-muted">
-          Event Request URL: <code>/api/integrations/slack/events</code>. Ignore bot messages so Vantage posts do not loop.
+          Event Request URL for Slack → Event Subscriptions:{" "}
+          <code className="slack-events-url">{view?.eventsUrl ?? "…"}</code>
+          {view && !view.inboundReady
+            ? " — inbound replies also need SLACK_SIGNING_SECRET on the deployment, or a per-team signing secret saved above."
+            : null}{" "}
+          Subscribe to <code>message.channels</code>; Vantage ignores bot messages so its own posts do not loop.
         </p>
       </form>
 

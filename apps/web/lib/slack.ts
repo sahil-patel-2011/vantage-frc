@@ -61,18 +61,41 @@ export async function postToSlackWebhook(webhookUrl: string, text: string): Prom
   }
 }
 
-export function slackSetupStatus(): { configured: boolean; message: string } {
-  const signing = Boolean(process.env.SLACK_SIGNING_SECRET?.trim());
+/**
+ * The absolute Request URL an admin pastes into Slack → Event Subscriptions.
+ *
+ * Slack will not accept a relative path, and the Slack settings page showed
+ * exactly that: `/api/integrations/slack/events`, with no origin. There was no
+ * way to finish inbound setup from what the product told you. Computed from the
+ * deployment base URL, never from the signing secret, so it is readable before
+ * the app exists.
+ */
+export function slackEventsUrl(env: Record<string, string | undefined> = process.env): string {
+  const base = (env.BETTER_AUTH_URL ?? env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3001").replace(/\/$/, "");
+  return `${base}/api/integrations/slack/events`;
+}
+
+export function slackSetupStatus(env: Record<string, string | undefined> = process.env): {
+  configured: boolean;
+  message: string;
+  eventsUrl: string;
+  missingEnv: string[];
+} {
+  const signing = Boolean(env.SLACK_SIGNING_SECRET?.trim());
+  const eventsUrl = slackEventsUrl(env);
   if (signing) {
     return {
       configured: true,
-      message: "Platform Slack signing secret is set. Teams still paste a channel webhook to post from Vantage.",
+      eventsUrl,
+      missingEnv: [],
+      message: `Platform Slack signing secret is set. Register this exact Request URL on api.slack.com/apps → your app → Event Subscriptions: ${eventsUrl} (subscribe to message.channels). Teams still paste a channel webhook to post from Vantage.`,
     };
   }
   return {
     configured: false,
-    message:
-      "Inbound Slack events need SLACK_SIGNING_SECRET (or a per-team signing secret). Outbound still works with a channel webhook.",
+    eventsUrl,
+    missingEnv: ["SLACK_SIGNING_SECRET"],
+    message: `Outbound posting works today with a channel webhook and needs nothing else. Slack replies coming BACK into Vantage need SLACK_SIGNING_SECRET (or a per-team signing secret saved below) set in your deployment environment (Vercel → Project → Settings → Environment Variables), then redeploy — get it from api.slack.com/apps → your app → Basic Information → Signing Secret — and this exact Request URL registered under Event Subscriptions: ${eventsUrl}`,
   };
 }
 

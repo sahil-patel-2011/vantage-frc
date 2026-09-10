@@ -7,6 +7,12 @@
   font: 700 11px/1 ui-monospace, monospace;
   letter-spacing: 0.06em;
 }
+.cad-connections-page .cad-connection-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
 .cad-connections-page .cad-connection-tile ol {
   margin: 10px 0 0;
   padding-left: 18px;

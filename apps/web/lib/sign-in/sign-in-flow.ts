@@ -148,12 +148,19 @@ export function signInUnavailableCopy(input: {
         "The mail provider isn’t reachable, so no code can be sent. Continue with Google instead.",
     };
   }
+  // Deliberately names no environment variable. This page is public and signed
+  // out; the connector variables belong on /connectors and in
+  // docs/DEPLOYMENT.md, behind a session. A pointer to the setup guide is the
+  // most this page can honestly offer without turning a sign-in wall into a
+  // read-out of what the deployment is missing. (An existing test pins this.)
   return {
     kind: "email_otp",
     badge: "setup_required",
     title: "Sign-in isn’t configured on this deployment",
     description:
-      "Neither email codes nor Google are available, so no one can sign in yet. Nothing you type here would be sent. Ask whoever set up this Vantage deployment to finish auth configuration.",
+      "Neither email codes nor Google are available, so no one can sign in yet. Nothing you type here would be sent. " +
+      "Ask whoever set up this Vantage deployment to finish auth configuration — the exact variables, the redirect URI " +
+      "to register with Google, and the order to do them in are in the Connectors section of docs/DEPLOYMENT.md.",
   };
 }
 

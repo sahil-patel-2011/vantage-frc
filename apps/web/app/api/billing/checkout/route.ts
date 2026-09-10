@@ -3,6 +3,7 @@ import {
   createCustomerPortal,
   createPaygEnrollment,
   createPlanCheckout,
+  isStripeNotConfigured,
 } from "@vantage/billing";
 import { assertOrgCapability, auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
@@ -57,6 +58,12 @@ export async function POST(request: Request) {
     });
     return Response.json({ url: checkout.url });
   } catch (error) {
+    // An upgrade click on a deployment with no Stripe keys is a setup problem,
+    // not a bad request: 503 with the variable names, so the Upgrade button can
+    // say what is missing instead of "Checkout unavailable".
+    if (isStripeNotConfigured(error)) {
+      return Response.json({ error: error.message, missingEnv: error.missingEnv }, { status: 503 });
+    }
     return Response.json({ error: error instanceof Error ? error.message : "Checkout unavailable" }, { status: 400 });
   }
 }

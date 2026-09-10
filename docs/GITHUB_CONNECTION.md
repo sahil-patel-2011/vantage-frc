@@ -19,6 +19,43 @@ Migration: `packages/db/migrations/0112_github_context.sql` (`github_connections
 - `setupRequired: false` — feature is usable (PAT)
 - `oauthSetupRequired: true` — only when OAuth App credentials are blank
 - `patAvailable: true` — always
+- `callbackUrl` — **always present**, computed from `BETTER_AUTH_URL` and never gated on the client
+  credentials. The admin who has not created the OAuth App yet is the only person who needs it, and
+  GitHub will not issue a client id until they have pasted it in. (`redirectUri` keeps its old
+  null-when-unconfigured meaning: the Connect button reads it as "OAuth is usable".)
+- `missingEnv` — the blank required variables, so a card can list them as chips
+- `message` — names the variables, where to set them, the console, the callback URL and the scopes
+- `credentialRejected` / `rejectedLogin` — a stored token GitHub has refused (see below)
+
+## When a token dies
+
+A revoked PAT, an expired fine-grained PAT, or an OAuth App the account de-authorised all make every
+call answer `401 Bad credentials`. That used to leave the row at `status='connected'` forever: the card
+read **LINKED @octocat**, the deploy log was empty, and the raw provider string was the only clue.
+
+- `GitHubCredentialRejectedError` (`apps/web/lib/github/api.ts`) separates a refused credential from
+  every other failure. A **403 is only counted as a refusal when `x-ratelimit-remaining` is not `0`** —
+  a rate limit is a wait, and telling someone to reconnect over one makes them bin a working token.
+- `POST /api/github {action:"verify"}` spends one `/user` call against the stored credential and records
+  the result: healthy refreshes `github_login` and `last_tested_at`; refused sets `status='error'`.
+  `set-default-repo` records it too, since choosing a repo is usually where a dead token is first met.
+- `status='error'` deliberately **keeps the encrypted credential**. A revoked token is not a disconnect:
+  the admin may be re-authorising the same account, and the stored login is what tells them which one.
+  Only an explicit Disconnect overwrites the envelope.
+- `loadGitHubConnectionState()` reads rows in any status, so `/connectors` and Team admin can say
+  **"Token expired — reconnect"** rather than "Not connected" — which is what sends someone off to
+  create a second OAuth App instead of re-authorising the one they have. Disconnect stays reachable in
+  that state.
+- Marking the row is owner/admin only (the RLS UPDATE policy). A member who hits a dead token still gets
+  the plain message; a read never changes team state as a side effect.
+
+Status codes: auth `401`, role refusal `403`, a refused GitHub credential `502`, everything else `400`.
+
+## See also
+
+`/connectors` (Settings → Connectors) shows GitHub next to every other connector with the same callback
+URL, working Connect/Disconnect, and the missing variables. Section 4b of `docs/DEPLOYMENT.md` is the
+full table.
 
 ## Vercel env checklist (project `vantage-frc-web`)
 
@@ -79,7 +116,7 @@ step also links to Team → GitHub.
 | Method | Path | Purpose |
 |---|---|---|
 | GET | `/api/github?orgId=` | Status + public connection metadata |
-| POST | `/api/github` | `authorize-url` \| `connect-pat` \| `set-default-repo` \| `disconnect` |
+| POST | `/api/github` | `authorize-url` \| `connect-pat` \| `set-default-repo` \| `verify` \| `disconnect` |
 | GET | `/api/github/oauth/callback` | OAuth redirect |
 | GET | `/api/github/repos?orgId=` | List repos for linked account |
 | GET | `/api/github/contents?orgId=&path=` | Size-capped file/tree snippets |

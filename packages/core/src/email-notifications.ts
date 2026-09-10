@@ -701,18 +701,44 @@ export function preferenceKeyForCategory(category: EmailNotificationCategory) {
   return CATEGORY_COLUMNS[category];
 }
 
-/** Soft-check used by preference UI when Resend is absent in production. */
+/**
+ * Whether email will actually leave the building, and what to do if it will not.
+ *
+ * `missingEnv` is reported in every branch, including the development one:
+ * outside production `createEmailProvider()` returns the in-memory
+ * `LocalMailboxProvider`, so a send "succeeds" and nobody receives anything.
+ * Reporting that as plain `available` with no further detail is how a
+ * self-hosted non-production deployment ends up believing its dues reminders are
+ * going out.
+ */
 export function emailNotificationsSetupStatus() {
-  if (process.env.NODE_ENV !== "production") {
-    return { status: "available" as const, detail: "Local mailbox provider (development)." };
-  }
   const apiKey = runtimeEnv("RESEND_API_KEY");
   const from = runtimeEnv("AUTH_EMAIL_FROM");
-  if (apiKey && from) {
-    return { status: "available" as const, detail: "Resend is configured for transactional email." };
+  const missingEnv = [
+    ...(apiKey ? [] : ["RESEND_API_KEY"]),
+    ...(from ? [] : ["AUTH_EMAIL_FROM"]),
+  ];
+
+  if (process.env.NODE_ENV !== "production") {
+    return {
+      status: "available" as const,
+      missingEnv,
+      detail: missingEnv.length
+        ? `Development build: mail is written to an in-memory local mailbox and is NOT delivered to anyone. Set ${missingEnv.join(" and ")} and run a production build to send for real.`
+        : "Development build: mail is written to an in-memory local mailbox and is NOT delivered, even though Resend credentials are present.",
+    };
+  }
+  if (!missingEnv.length) {
+    return {
+      status: "available" as const,
+      missingEnv,
+      detail:
+        "Resend is configured for transactional email. The domain in AUTH_EMAIL_FROM must also be verified at resend.com → Domains, or Resend accepts the call and drops the message.",
+    };
   }
   return {
     status: "setup_required" as const,
-    detail: "Set RESEND_API_KEY and AUTH_EMAIL_FROM to deliver opt-in emails.",
+    missingEnv,
+    detail: `Setup required — set ${missingEnv.join(" and ")} in your deployment environment (Vercel → Project → Settings → Environment Variables), then redeploy. Create the key at resend.com → API Keys, and verify the sending domain at resend.com → Domains so it matches AUTH_EMAIL_FROM (for example "Vantage <access@your-team.org>"). Email needs no callback URL. Until this is set, invites, dues reminders, announcement digests and Drive share notices are not delivered.`,
   };
 }

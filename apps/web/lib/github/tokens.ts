@@ -65,6 +65,72 @@ export async function loadGitHubConnection(
   };
 }
 
+/**
+ * The connection row whatever its status, for surfaces that must distinguish
+ * "never linked" from "linked and the token is dead".
+ *
+ * `loadGitHubConnection` filters to `status='connected'` because its callers
+ * want a token they can spend. That filter is wrong for a status page: once a
+ * revoked credential is marked `error`, filtering it out makes the connectors
+ * card read "Not connected", which sends the reader off to create a second
+ * OAuth App instead of reconnecting the one they have.
+ */
+export async function loadGitHubConnectionState(
+  client: PoolClient,
+  orgId: string,
+): Promise<{
+  status: string;
+  authMethod: "oauth" | "pat";
+  githubLogin: string | null;
+  defaultRepoFullName: string | null;
+  lastTestedAt: string | null;
+} | null> {
+  const result = await client.query<{
+    status: string;
+    auth_method: "oauth" | "pat";
+    github_login: string | null;
+    default_repo_full_name: string | null;
+    last_tested_at: string | null;
+  }>(
+    `SELECT status, auth_method, github_login, default_repo_full_name, last_tested_at
+     FROM github_connections
+     WHERE org_id=$1::uuid AND disabled_at IS NULL
+     LIMIT 1`,
+    [orgId],
+  );
+  const row = result.rows[0];
+  if (!row) return null;
+  return {
+    status: row.status,
+    authMethod: row.auth_method,
+    githubLogin: row.github_login,
+    defaultRepoFullName: row.default_repo_full_name,
+    lastTestedAt: row.last_tested_at,
+  };
+}
+
+/**
+ * Record that GitHub refused the stored credential.
+ *
+ * Deliberately does NOT wipe `encrypted_credentials`. A revoked token is not a
+ * disconnect: the admin may be about to re-authorise the same account, and the
+ * login stored alongside it is what tells them which account to pick. Only an
+ * explicit Disconnect overwrites the envelope.
+ *
+ * The UPDATE policy on github_connections is owner/admin only, so this is a
+ * no-op for a member — by design. A member reading a dead repo list still gets
+ * the plain "GitHub rejected the stored credential" message; they simply cannot
+ * change team state as a side effect of a read.
+ */
+export async function markGitHubCredentialRejected(client: PoolClient, orgId: string): Promise<void> {
+  await client.query(
+    `UPDATE github_connections
+     SET status='error', last_tested_at=now(), updated_at=now()
+     WHERE org_id=$1::uuid AND disabled_at IS NULL AND status <> 'error'`,
+    [orgId],
+  );
+}
+
 export async function decryptGitHubTokens(encryptedCredentials: string): Promise<GitHubTokenSet> {
   const parsed = JSON.parse(encryptedCredentials) as EncryptedSecret;
   const plaintext = await decryptSecret(parsed, createKms());

@@ -6,11 +6,16 @@ import {
   createOnshapeApiTransport,
   createOnshapeHttp,
   createOnshapeOAuthState,
+  exchangeOnshapeCode,
   explainFeatureTreeForStudents,
   exportOnshapePartStudio,
+  fetchOnshapeSessionInfo,
   getOnshapeOAuthConfig,
   isOnshapeOAuthConfigured,
+  onshapeAccountRef,
+  onshapeCallbackUrl,
   onshapeSetupStatus,
+  refreshOnshapeToken,
   verifyOnshapeOAuthState,
   type OnshapeHttp,
 } from "../src/index";
@@ -43,10 +48,135 @@ describe("Onshape hosted setup", () => {
     expect(url).toContain(encodeURIComponent(config.redirectUri));
   });
 
+  it("names the missing vars and the exact callback URL while unconfigured", () => {
+    // The admin who has NOT set the client credentials is exactly the person who
+    // needs the callback URL — they cannot create the OAuth app without it.
+    const env = { BETTER_AUTH_URL: "https://vantage.example/" } as NodeJS.ProcessEnv;
+    const status = onshapeSetupStatus(env);
+    expect(status.configured).toBe(false);
+    expect(status.redirectUri).toBeNull();
+    expect(status.callbackUrl).toBe("https://vantage.example/api/cad/onshape/oauth/callback");
+    expect(status.missingEnv).toEqual(["ONSHAPE_OAUTH_CLIENT_ID", "ONSHAPE_OAUTH_CLIENT_SECRET"]);
+    expect(status.message).toContain("ONSHAPE_OAUTH_CLIENT_ID");
+    expect(status.message).toContain("ONSHAPE_OAUTH_CLIENT_SECRET");
+    expect(status.message).toContain("https://vantage.example/api/cad/onshape/oauth/callback");
+  });
+
+  it("reports only the one var that is actually missing", () => {
+    const env = { ONSHAPE_OAUTH_CLIENT_ID: "cid", BETTER_AUTH_URL: "https://v.example" } as NodeJS.ProcessEnv;
+    expect(onshapeSetupStatus(env).missingEnv).toEqual(["ONSHAPE_OAUTH_CLIENT_SECRET"]);
+  });
+
+  it("honours ONSHAPE_OAUTH_REDIRECT_URI for the registered callback", () => {
+    const env = { ONSHAPE_OAUTH_REDIRECT_URI: "https://alt.example/cb" } as NodeJS.ProcessEnv;
+    expect(onshapeCallbackUrl(env)).toBe("https://alt.example/cb");
+    expect(onshapeSetupStatus(env).callbackUrl).toBe("https://alt.example/cb");
+  });
+
   it("documents honest Linux Fusion limits", () => {
     const linux = cadOsSupportMatrix().find((row) => row.os === "linux");
     expect(linux?.fusion360Autodesk).toBe("unsupported");
     expect(linux?.onshapeHosted).toBe("supported");
+  });
+});
+
+describe("Onshape OAuth exchange against a mocked provider", () => {
+  const config = {
+    clientId: "cid",
+    clientSecret: "csecret",
+    redirectUri: "https://vantage.example/api/cad/onshape/oauth/callback",
+    scopes: ["OAuth2Read", "OAuth2Write"],
+  };
+
+  it("exchanges a code and keeps the redirect_uri the provider registered", async () => {
+    const calls: Array<{ url: string; body: string }> = [];
+    const fetchMock = vi.fn(async (url: string, init: RequestInit) => {
+      calls.push({ url: String(url), body: String(init.body) });
+      return new Response(
+        JSON.stringify({
+          access_token: "at-1",
+          refresh_token: "rt-1",
+          expires_in: 3600,
+          token_type: "Bearer",
+          scope: "OAuth2Read OAuth2Write",
+        }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      );
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    try {
+      const tokens = await exchangeOnshapeCode(config, "the-code");
+      expect(tokens.accessToken).toBe("at-1");
+      expect(tokens.refreshToken).toBe("rt-1");
+      expect(tokens.expiresAt).toBeGreaterThan(Date.now());
+      expect(calls[0]!.url).toContain("oauth.onshape.com/oauth/token");
+      const body = new URLSearchParams(calls[0]!.body);
+      expect(body.get("grant_type")).toBe("authorization_code");
+      expect(body.get("code")).toBe("the-code");
+      // A mismatch here is the single most common cause of invalid_grant.
+      expect(body.get("redirect_uri")).toBe(config.redirectUri);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("surfaces the provider's error_description instead of a bare 400", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        async () =>
+          new Response(JSON.stringify({ error: "invalid_grant", error_description: "Redirect URI mismatch" }), {
+            status: 400,
+            headers: { "content-type": "application/json" },
+          }),
+      ),
+    );
+    try {
+      await expect(exchangeOnshapeCode(config, "bad")).rejects.toThrow(/Redirect URI mismatch/);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("keeps the previous refresh token when the provider omits a new one", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        async () =>
+          new Response(JSON.stringify({ access_token: "at-2", expires_in: 1200 }), {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          }),
+      ),
+    );
+    try {
+      const refreshed = await refreshOnshapeToken(config, "rt-original");
+      expect(refreshed.accessToken).toBe("at-2");
+      expect(refreshed.refreshToken).toBe("rt-original");
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("labels the connection with the Onshape account, not the Vantage user id", async () => {
+    const http: OnshapeHttp = async () =>
+      new Response(JSON.stringify({ id: "os-9", name: "Jane Builder", email: "jane@team.org" }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    const info = await fetchOnshapeSessionInfo(http);
+    expect(info).toEqual({ id: "os-9", name: "Jane Builder", email: "jane@team.org" });
+    expect(onshapeAccountRef(info, "vantage-user-uuid")).toBe("onshape:jane@team.org");
+  });
+
+  it("falls back to the Vantage user id when the account lookup fails", async () => {
+    const failing: OnshapeHttp = async () => new Response("nope", { status: 403 });
+    expect(await fetchOnshapeSessionInfo(failing)).toBeNull();
+    const throwing: OnshapeHttp = async () => {
+      throw new Error("network down");
+    };
+    expect(await fetchOnshapeSessionInfo(throwing)).toBeNull();
+    expect(onshapeAccountRef(null, "vantage-user-uuid")).toBe("onshape:vantage-user-uuid");
   });
 });
 

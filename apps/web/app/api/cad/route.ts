@@ -132,7 +132,8 @@ export async function GET(request: Request) {
         ).rows,
         onshapeConnections: (
           await client.query(
-            `SELECT id,status,label,last_tested_at AS "lastTestedAt" FROM cad_connections
+            `SELECT id,status,label,external_account_ref AS "externalAccountRef",last_tested_at AS "lastTestedAt"
+             FROM cad_connections
              WHERE org_id=$1 AND user_id=$2 AND platform='onshape' AND disabled_at IS NULL ORDER BY updated_at DESC LIMIT 5`,
             [orgId, session.user.id],
           )

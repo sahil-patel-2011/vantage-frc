@@ -16,8 +16,17 @@ async function session() {
   return value;
 }
 
-const fail = (error: unknown, status = 400) =>
-  Response.json({ error: error instanceof Error ? error.message : "Slack request failed" }, { status });
+/**
+ * An expired session used to come back as 400, so the client offered a Retry
+ * that could never work instead of a sign-in link; a non-admin got 400 too,
+ * which reads as "you typed something wrong" rather than "ask an admin".
+ */
+const fail = (error: unknown, status = 400) => {
+  const message = error instanceof Error ? error.message : "Slack request failed";
+  if (/authentication required/i.test(message)) return Response.json({ error: message }, { status: 401 });
+  if (/administrator access required/i.test(message)) return Response.json({ error: message }, { status: 403 });
+  return Response.json({ error: message }, { status });
+};
 
 async function assertAdmin(client: import("@neondatabase/serverless").PoolClient, orgId: string, userId: string) {
   const admin = await client.query(
@@ -110,6 +119,8 @@ export async function GET(request: Request) {
         orgId,
         configured,
         platformConfigured: setup.configured,
+        /** Absolute — Slack rejects a relative Request URL, which is what the page used to show. */
+        eventsUrl: setup.eventsUrl,
         inboundReady,
         canPost: hasWebhook && (connection?.enabled ?? false),
         setupRequired: !hasWebhook,
