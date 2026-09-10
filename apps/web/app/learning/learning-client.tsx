@@ -8,10 +8,13 @@
 // below its stated minimum sample, and nothing is shown to a mentor that the
 // student cannot see about themselves.
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
 import { learningSurfaceLabel, LEARNING_SURFACES } from "../../lib/learning/learning-mode";
 import type { MemberRollup, SurfaceRollup } from "../../lib/learning/mentor-view";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import type { LearningFeedRow, LearningOverview } from "../api/learning/mentor/route";
 
 type ReadyView = Extract<LearningOverview, { status: "ready" }>;
@@ -21,6 +24,28 @@ const SURFACE_ROUTES: Record<string, string> = {
   power_budget: "/power-budget",
   shooter_table: "/shooter-table",
 };
+
+function isLearningOverview(value: unknown): value is LearningOverview {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "ready";
+}
+
+function learningCacheOrg(data: LearningOverview, orgHint: string): string {
+  if (data.status === "ready" && data.context.orgId.trim()) return data.context.orgId;
+  return orgHint;
+}
+
+async function persistLearningSnapshot(orgHint: string, data: LearningOverview): Promise<void> {
+  const cacheOrg = learningCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("learning", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("learning", "_", data);
+  } catch {
+    // Live Learning already painted; IndexedDB is best-effort.
+  }
+}
 
 function formatWhen(createdAt: string): string {
   const parsed = new Date(createdAt.replace(" ", "T"));
@@ -42,26 +67,70 @@ function statusBadge(rollup: SurfaceRollup) {
 export default function LearningClient() {
   const [view, setView] = useState<LearningOverview | null>(null);
   const [fetchFailed, setFetchFailed] = useState(false);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const [refreshError, setRefreshError] = useState("");
+  const viewRef = useRef<LearningOverview | null>(null);
+  viewRef.current = view;
 
-  const load = useCallback(() => {
-    setFetchFailed(false);
+  const load = useCallback(async () => {
     const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const query = urlOrg ? `?orgId=${encodeURIComponent(urlOrg)}` : "";
-    void fetch(`/api/learning/mentor${query}`)
-      .then(async (response) => {
-        const data = (await response.json()) as LearningOverview | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setFetchFailed(true);
+    const orgHint = params.get("orgId")?.trim() ?? "";
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<LearningOverview>("learning", orgHint || "_");
+      if (!viewRef.current && cached?.data && isLearningOverview(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
+    setFetchFailed(false);
+    setRefreshError("");
+    try {
+      const query = orgHint ? `?orgId=${encodeURIComponent(orgHint)}` : "";
+      const response = await fetch(`/api/learning/mentor${query}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      const data: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setFetchFailed(true);
+        return;
+      }
+      if (!response.ok || !isLearningOverview(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setRefreshError("Could not refresh Learning. Showing the last copy on this device.");
+          setFetchFailed(false);
           return;
         }
-        setView(data);
-      })
-      .catch(() => setFetchFailed(true));
+        setFetchFailed(true);
+        return;
+      }
+      setView(data);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistLearningSnapshot(orgHint, data);
+    } catch {
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setRefreshError("Could not refresh Learning. Showing the last copy on this device.");
+        setFetchFailed(false);
+        return;
+      }
+      setFetchFailed(true);
+    }
   }, []);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   const orgId = view && view.status === "ready" ? view.context.orgId : null;
@@ -78,25 +147,44 @@ export default function LearningClient() {
         title="Learning — Call Your Shot"
         description="Every call a member commits on the engineering calculators lands here. Mentors see who is calibrating and who needs a hand; each member sees their own record. Nothing is scored below four graded calls."
       />
+      <nav className="intel-actions" aria-label="Related calculators">
+        <a href="/gearbox">Gearbox</a>
+        <a href="/power-budget">Power budget</a>
+        <a href="/shooter-table">Shooter table</a>
+      </nav>
+      <OfflineBanner feature="Learning" fromCache={fromCache} cachedAt={cachedAt} />
+      {refreshError ? (
+        <p className="telemetry-status" role="alert">
+          {refreshError}
+        </p>
+      ) : null}
 
-      {fetchFailed ? (
+      {!view ? (
+        fetchFailed ? (
         <EmptyState
           title="Could not load learning activity"
           description="A network or server issue prevented loading. Try again."
         >
-          <Button variant="secondary" type="button" onClick={() => load()}>
+          <Button variant="secondary" type="button" onClick={() => void load()}>
             Retry
           </Button>
         </EmptyState>
-      ) : view == null ? (
+        ) : (
         <EmptyState title="Loading…" description="Checking your team." aria-busy />
+        )
       ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          <p className="app-muted">
-            Calls come from the calculators: once you belong to a team, every committed call on{" "}
-            <a href="/gearbox">Gearbox</a>, <a href="/power-budget">Power budget</a> or{" "}
-            <a href="/shooter-table">Shooter table</a> is recorded here.
-          </p>
+        <EmptyState
+          badge="Setup required"
+          badgeTone="setup"
+          title="Choose your team"
+          description={
+            view.message ||
+            "Join a team to record Call Your Shot activity. Calls from Gearbox, Power budget, and Shooter table land here once you belong to a team."
+          }
+        >
+          <Button as="a" variant="primary" href="/workspace">
+            Choose your team
+          </Button>
         </EmptyState>
       ) : (
         <ReadyBody view={view} />

@@ -132,7 +132,10 @@ export type OfflineFeature =
   | "subteams"
   | "budget"
   | "sponsorship"
-  | "safety";
+  | "safety"
+  | "writer"
+  | "learning"
+  | "training";
 
 const DB_NAME = "vantage-feature-cache";
 const DB_VERSION = 1;

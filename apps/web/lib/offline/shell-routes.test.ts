@@ -149,6 +149,9 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/budget")).toBe(true);
     expect(pathnameIsOfflineShell("/sponsorship")).toBe(true);
     expect(pathnameIsOfflineShell("/safety")).toBe(true);
+    expect(pathnameIsOfflineShell("/writer")).toBe(true);
+    expect(pathnameIsOfflineShell("/learning")).toBe(true);
+    expect(pathnameIsOfflineShell("/training")).toBe(true);
     expect(pathnameIsOfflineShell("/api/todos")).toBe(false);
   });
 
@@ -282,6 +285,9 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/sponsorship")).toBe("Sponsorship");
     expect(offlineCapableLabel("/sponsor-suite")).toBe("Sponsor Suite");
     expect(offlineCapableLabel("/safety")).toBe("Safety");
+    expect(offlineCapableLabel("/writer")).toBe("Writer");
+    expect(offlineCapableLabel("/learning")).toBe("Learning");
+    expect(offlineCapableLabel("/training")).toBe("Training");
   });
 
   it("keeps public/sw.js SHELL_ROUTES aligned with OFFLINE_SHELL_ROUTES", () => {
@@ -410,6 +416,9 @@ describe("offline shell routes", () => {
     expect(featureCacheKey("budget", "org-1", "2026")).toBe("budget:org-1:2026");
     expect(featureCacheKey("sponsorship", "org-1", "2026")).toBe("sponsorship:org-1:2026");
     expect(featureCacheKey("safety", "org-1")).toBe("safety:org-1");
+    expect(featureCacheKey("writer", "org-1", "2026")).toBe("writer:org-1:2026");
+    expect(featureCacheKey("learning", "org-1")).toBe("learning:org-1");
+    expect(featureCacheKey("training", "org-1")).toBe("training:org-1");
     expect(featureCacheKey("schedule", "org-1")).toBe("schedule:org-1");
   });
 

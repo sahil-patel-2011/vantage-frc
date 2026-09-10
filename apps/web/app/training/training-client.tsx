@@ -1,7 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { trainingCategoryLabel } from "../../lib/training";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
@@ -15,6 +18,28 @@ const STATUS_LABEL: Record<CertificationStatus, string> = {
   expiring_soon: "Expiring soon",
   expired: "Expired",
 };
+
+function isTrainingView(value: unknown): value is TrainingView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function trainingCacheOrg(data: TrainingView, orgHint: string): string {
+  if (typeof data.orgId === "string" && data.orgId.trim()) return data.orgId;
+  return orgHint;
+}
+
+async function persistTrainingSnapshot(orgHint: string, data: TrainingView): Promise<void> {
+  const cacheOrg = trainingCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("training", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("training", "_", data);
+  } catch {
+    // Live Training already painted; IndexedDB is best-effort.
+  }
+}
 
 function statusTone(status: CertificationStatus): string {
   if (status === "active") return "good";
@@ -36,34 +61,86 @@ export default function TrainingClient() {
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [loadErrorMessage, setLoadErrorMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<TrainingView | null>(null);
+  viewRef.current = view;
 
   const orgId = view && "orgId" in view ? view.orgId : null;
 
-  const load = useCallback(() => {
+  const load = useCallback(async () => {
+    const params = new URLSearchParams(window.location.search);
+    const orgHint = params.get("orgId")?.trim() ?? "";
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<TrainingView>("training", orgHint || "_");
+      if (!viewRef.current && cached?.data && isTrainingView(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
     setFetchFailed(false);
     setError("");
     setErrorStatus(null);
     setLoadErrorMessage("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    void fetch(`/api/training${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
-        const data = (await response.json()) as TrainingView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setLoadErrorMessage("error" in data && data.error ? data.error : "");
-          setErrorStatus(response.status);
-          setFetchFailed(true);
+    try {
+      const query = new URLSearchParams();
+      if (orgHint) query.set("orgId", orgHint);
+      const response = await fetch(`/api/training${query.toString() ? `?${query.toString()}` : ""}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      const data: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setLoadErrorMessage(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "",
+        );
+        setErrorStatus(response.status);
+        setFetchFailed(true);
+        return;
+      }
+      if (!response.ok || !isTrainingView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Training. Showing the last copy on this device.");
+          setFetchFailed(false);
           return;
         }
-        setView(data);
-      })
-      .catch(() => setFetchFailed(true));
+        setLoadErrorMessage(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "",
+        );
+        setErrorStatus(response.status);
+        setFetchFailed(true);
+        return;
+      }
+      setView(data);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistTrainingSnapshot(orgHint, data);
+    } catch {
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Training. Showing the last copy on this device.");
+        setFetchFailed(false);
+        return;
+      }
+      setFetchFailed(true);
+    }
   }, []);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   const mutate = useCallback(
@@ -76,13 +153,20 @@ export default function TrainingClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
-        const data = (await response.json()) as TrainingView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setError("error" in data && data.error ? data.error : "Something went wrong.");
+        const data: unknown = await response.json().catch(() => null);
+        if (!response.ok || !isTrainingView(data)) {
+          setError(
+            data && typeof data === "object" && "error" in data && typeof data.error === "string"
+              ? data.error
+              : "Something went wrong.",
+          );
           return;
         }
         setView(data);
+        setFromCache(false);
+        void persistTrainingSnapshot(orgId, data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -92,23 +176,24 @@ export default function TrainingClient() {
     [orgId, busy],
   );
 
-  const failure = fetchFailed
-    ? loadFailureCopy(
-        classifyLoadFailure({
-          status: errorStatus,
-          message: loadErrorMessage,
-          online: typeof navigator === "undefined" ? true : navigator.onLine,
-        }),
-        {
-          nextPath:
-            typeof window === "undefined"
-              ? null
-              : `${window.location.pathname}${window.location.search}`,
-          message:
-            loadErrorMessage || "A network or server issue prevented loading. Try again.",
-        },
-      )
-    : null;
+  const failure =
+    fetchFailed && !view
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus,
+            message: loadErrorMessage,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message:
+              loadErrorMessage || "A network or server issue prevented loading. Try again.",
+          },
+        )
+      : null;
 
   return (
     <main className="module-page">
@@ -122,6 +207,7 @@ export default function TrainingClient() {
         title="Training Matrix"
         description="Who is certified on mill, lathe, wiring, drive, and safety — with sign-off and expiry. Coverage reflects only what you record."
       />
+      <OfflineBanner feature="Training" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -129,7 +215,8 @@ export default function TrainingClient() {
         </p>
       ) : null}
 
-      {failure ? (
+      {!view ? (
+        failure ? (
         <EmptyState title={failure.title} description={failure.description}>
           {failure.primary ? (
             <Button as="a" variant="primary" href={failure.primary.href}>
@@ -137,13 +224,14 @@ export default function TrainingClient() {
             </Button>
           ) : null}
           {failure.showRetry ? (
-            <Button variant="secondary" type="button" onClick={() => load()}>
+            <Button variant="secondary" type="button" onClick={() => void load()}>
               Retry
             </Button>
           ) : null}
         </EmptyState>
-      ) : view == null ? (
+        ) : (
         <EmptyState title="Loading…" description="Checking your team." aria-busy />
+        )
       ) : view.status === "setup_required" ? (
         <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
           {view.steps[0] ? (

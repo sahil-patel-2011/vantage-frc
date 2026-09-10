@@ -154,6 +154,9 @@ const SHELL_ROUTES = [
   "/budget",
   "/sponsorship",
   "/safety",
+  "/writer",
+  "/learning",
+  "/training",
 ];
 
 function isShellPath(pathname) {

@@ -1,9 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AiHubRelated } from "../../components/ai-hub-related";
+import { OfflineBanner } from "../../components/offline-banner";
 import { UsageCutoffBanner, resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 import { ModelProvenance, Button, EmptyState } from "../../components/ui";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import {
   composeGrantAnswer,
   composeSponsorEmail,
@@ -33,6 +36,29 @@ const GRANT_FOCI: GrantFocus[] = ["general", "impact", "technical", "sustainabil
 
 function kindLabel(kind: DraftKind): string {
   return kind === "grant" ? "Grant answer" : emailKindLabel(kind);
+}
+
+function isWriterView(value: unknown): value is WriterView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function writerCacheOrg(data: WriterView, orgHint: string): string {
+  if (typeof data.orgId === "string" && data.orgId.trim()) return data.orgId;
+  return orgHint;
+}
+
+async function persistWriterSnapshot(orgHint: string, seasonHint: string, data: WriterView): Promise<void> {
+  const cacheOrg = writerCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  const seasonKey = String(data.seasonYear);
+  try {
+    await putFeatureSnapshot("writer", cacheOrg, data, seasonHint || seasonKey);
+    if (!orgHint) await putFeatureSnapshot("writer", "_", data, seasonHint || seasonKey);
+  } catch {
+    // Live Writer already painted; IndexedDB is best-effort.
+  }
 }
 
 function WriterNextActions({
@@ -92,37 +118,82 @@ export default function WriterClient({ orgId: orgIdProp }: { orgId?: string | nu
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
   const [cutoffCode, setCutoffCode] = useState<string | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<WriterView | null>(null);
+  viewRef.current = view;
 
   const orgId = (view && "orgId" in view ? view.orgId : null) ?? orgIdProp ?? null;
 
   const load = useCallback(
-    (seasonOverride?: number) => {
+    async (seasonOverride?: number) => {
+      const params = new URLSearchParams(window.location.search);
+      const orgHint = (params.get("orgId") ?? orgIdProp)?.trim() ?? "";
+      const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
+      const seasonHint =
+        seasonQuery && Number.isFinite(seasonQuery) ? String(seasonQuery) : String(new Date().getFullYear());
+      let hadCache = Boolean(viewRef.current);
+      try {
+        const cached = await getFeatureSnapshot<WriterView>("writer", orgHint || "_", seasonHint);
+        if (!viewRef.current && cached?.data && isWriterView(cached.data)) {
+          setView(cached.data);
+          setSeason(cached.data.seasonYear);
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          hadCache = true;
+        }
+      } catch {
+        // IndexedDB missing or blocked; live fetch still runs.
+      }
       setFetchFailed(false);
       setError("");
       setCutoffCode(null);
-      const params = new URLSearchParams(window.location.search);
-      const urlOrg = params.get("orgId") ?? orgIdProp ?? null;
-      const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
-      const query = new URLSearchParams();
-      if (urlOrg) query.set("orgId", urlOrg);
-      if (seasonQuery) query.set("season", String(seasonQuery));
-      void fetch(`/api/writer${query.toString() ? `?${query.toString()}` : ""}`)
-        .then(async (response) => {
-          const data = (await response.json()) as WriterView | { error?: string };
-          if (!response.ok || !("status" in data)) {
-            setFetchFailed(true);
+      try {
+        const query = new URLSearchParams();
+        if (orgHint) query.set("orgId", orgHint);
+        if (seasonQuery) query.set("season", String(seasonQuery));
+        const response = await fetch(`/api/writer${query.toString() ? `?${query.toString()}` : ""}`, {
+          cache: "no-store",
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+        });
+        const data: unknown = await response.json().catch(() => null);
+        if (response.status === 401 || response.status === 403) {
+          setView(null);
+          setFromCache(false);
+          setCachedAt(null);
+          setFetchFailed(true);
+          return;
+        }
+        if (!response.ok || !isWriterView(data)) {
+          if (hadCache || viewRef.current) {
+            setFromCache(true);
+            setError("Could not refresh Writer. Showing the last copy on this device.");
+            setFetchFailed(false);
             return;
           }
-          setView(data);
-          setSeason(data.seasonYear);
-        })
-        .catch(() => setFetchFailed(true));
+          setFetchFailed(true);
+          return;
+        }
+        setView(data);
+        setSeason(data.seasonYear);
+        setFromCache(false);
+        setCachedAt(null);
+        await persistWriterSnapshot(orgHint, seasonHint, data);
+      } catch {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Writer. Showing the last copy on this device.");
+          setFetchFailed(false);
+          return;
+        }
+        setFetchFailed(true);
+      }
     },
     [orgIdProp],
   );
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   const mutate = useCallback<Mutate>(
@@ -134,15 +205,22 @@ export default function WriterClient({ orgId: orgIdProp }: { orgId?: string | nu
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ orgId, seasonYear: season ?? undefined, ...payload }),
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       })
         .then(async (response) => {
-          const data = (await response.json()) as WriterView | { error?: string };
-          if (!response.ok || !("status" in data)) {
-            setError("error" in data && data.error ? data.error : "Something went wrong.");
+          const data: unknown = await response.json().catch(() => null);
+          if (!response.ok || !isWriterView(data)) {
+            setError(
+              data && typeof data === "object" && "error" in data && typeof data.error === "string"
+                ? data.error
+                : "Something went wrong.",
+            );
             return;
           }
           setView(data);
           setSeason(data.seasonYear);
+          setFromCache(false);
+          void persistWriterSnapshot(orgId, String(data.seasonYear), data);
         })
         .catch(() => setError("Network error — please try again."))
         .finally(() => setBusy(false));
@@ -206,6 +284,7 @@ export default function WriterClient({ orgId: orgIdProp }: { orgId?: string | nu
       ) : null}
 
       {orgId && cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} compact /> : null}
+      <OfflineBanner feature="Writer" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -213,20 +292,22 @@ export default function WriterClient({ orgId: orgIdProp }: { orgId?: string | nu
         </p>
       ) : null}
 
-      {fetchFailed ? (
+      {!view ? (
+        fetchFailed ? (
         <section className="app-card soft-panel writer-setup" role="status">
           {errorCopy.badge ? <span className="app-badge setup">{errorCopy.badge}</span> : null}
           <h2>{errorCopy.title}</h2>
           <p className="app-muted">{errorCopy.description}</p>
-          <Button variant="secondary" type="button" onClick={() => load()}>
+          <Button variant="secondary" type="button" onClick={() => void load()}>
             Retry
           </Button>
         </section>
-      ) : view == null ? (
+        ) : (
         <section className="app-card soft-panel" aria-busy>
           <h2>{loadingCopy.title}</h2>
           <p className="app-muted">{loadingCopy.description}</p>
         </section>
+        )
       ) : view.status === "setup_required" ? (
         <EmptyState
           soft
@@ -611,6 +692,7 @@ function Composer({
           return;
         }
         setView(data);
+        void persistWriterSnapshot(orgId, String(data.seasonYear), data);
         if (data.pitch) {
           setSubject(data.pitch.subject ?? "");
           setDraftBody(data.pitch.body);
