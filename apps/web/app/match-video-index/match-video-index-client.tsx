@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import {
   EmptyState,
   ErrorState,
@@ -30,7 +31,26 @@ import {
 } from "../../lib/match-video-index/match-video-index-related";
 import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./match-video-index.css";
+
+function isMatchVideoIndexView(value: unknown): value is MatchVideoIndexView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+async function persistMatchVideoIndexSnapshot(orgHint: string, data: MatchVideoIndexView): Promise<void> {
+  const cacheOrg =
+    "orgId" in data && typeof data.orgId === "string" && data.orgId.trim() ? data.orgId : orgHint;
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("match-video-index", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("match-video-index", "_", data);
+  } catch {
+    // Live index already painted; IndexedDB is best-effort.
+  }
+}
 
 type LiveView = Extract<MatchVideoIndexView, { status: "live" }>;
 
@@ -144,27 +164,64 @@ export default function MatchVideoIndexClient() {
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<MatchVideoIndexView | null>(null);
+  viewRef.current = view;
 
   const load = useCallback(() => {
-    setFetchFailed(false);
-    setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    void fetch(`/api/match-video-index${query.toString() ? `?${query.toString()}` : ""}`, {
-      cache: "no-store",
-      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
-    })
-      .then(async (response) => {
+    void (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const urlOrg = params.get("orgId")?.trim() ?? "";
+      let hadCache = Boolean(viewRef.current);
+      try {
+        const cached = await getFeatureSnapshot<MatchVideoIndexView>("match-video-index", urlOrg || "_");
+        if (!viewRef.current && cached?.data && isMatchVideoIndexView(cached.data)) {
+          setView(cached.data);
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          hadCache = true;
+        }
+      } catch {
+        // IndexedDB missing or blocked; live fetch still runs.
+      }
+      setFetchFailed(false);
+      setError("");
+      const query = new URLSearchParams();
+      if (urlOrg) query.set("orgId", urlOrg);
+      try {
+        const response = await fetch(
+          `/api/match-video-index${query.toString() ? `?${query.toString()}` : ""}`,
+          {
+            cache: "no-store",
+            signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+          },
+        );
         const data = (await response.json()) as MatchVideoIndexView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setFetchFailed(true);
+        if (!response.ok || !isMatchVideoIndexView(data)) {
+          if (hadCache || viewRef.current) {
+            setFromCache(true);
+            setError("Could not refresh the match video index. Showing the last copy on this device.");
+            setFetchFailed(false);
+          } else {
+            setFetchFailed(true);
+          }
           return;
         }
         setView(data);
-      })
-      .catch(() => setFetchFailed(true));
+        setFromCache(false);
+        setCachedAt(null);
+        await persistMatchVideoIndexSnapshot(urlOrg, data);
+      } catch {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh the match video index. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setFetchFailed(true);
+        }
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -210,6 +267,7 @@ export default function MatchVideoIndexClient() {
           return;
         }
         setView(data);
+        void persistMatchVideoIndexSnapshot(orgId, data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -220,7 +278,11 @@ export default function MatchVideoIndexClient() {
   );
 
   if (shell === "loading") {
-    return <IndexShell description={shellCopy.description} orgId={null} shell="loading" />;
+    return (
+      <IndexShell description={shellCopy.description} orgId={null} shell="loading">
+        <OfflineBanner feature="Match video index" fromCache={fromCache} cachedAt={cachedAt} />
+      </IndexShell>
+    );
   }
   if (shell === "error") {
     return (
@@ -230,7 +292,9 @@ export default function MatchVideoIndexClient() {
         shell="error"
         error={error || shellCopy.description}
         onRetry={() => load()}
-      />
+      >
+        <OfflineBanner feature="Match video index" fromCache={fromCache} cachedAt={cachedAt} />
+      </IndexShell>
     );
   }
   if (shell === "setup" || view?.status !== "live") {
@@ -239,7 +303,9 @@ export default function MatchVideoIndexClient() {
         description={view?.status === "setup_required" ? view.message : shellCopy.description}
         orgId={orgId}
         shell="setup"
-      />
+      >
+        <OfflineBanner feature="Match video index" fromCache={fromCache} cachedAt={cachedAt} />
+      </IndexShell>
     );
   }
 
@@ -257,6 +323,8 @@ export default function MatchVideoIndexClient() {
       >
         <RelatedStrip orgId={orgId} />
       </PageHeader>
+
+      <OfflineBanner feature="Match video index" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

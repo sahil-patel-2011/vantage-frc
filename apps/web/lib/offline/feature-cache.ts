@@ -36,7 +36,12 @@ export type OfflineFeature =
   | "picklist-collab"
   | "dossier"
   | "pit-repair"
-  | "event-day-plan";
+  | "event-day-plan"
+  | "field-reset"
+  | "drive-signals"
+  | "weigh-in"
+  | "match-delta"
+  | "match-video-index";
 
 const DB_NAME = "vantage-feature-cache";
 const DB_VERSION = 1;

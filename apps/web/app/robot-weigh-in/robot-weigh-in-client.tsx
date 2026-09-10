@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import {
   EmptyState,
   ErrorState,
@@ -30,7 +31,31 @@ import {
 } from "../../lib/robot-weigh-in/robot-weigh-in-related";
 import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./robot-weigh-in.css";
+
+function isRobotWeighInView(value: unknown): value is RobotWeighInView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+async function persistWeighInSnapshot(
+  orgHint: string,
+  seasonHint: string,
+  data: RobotWeighInView,
+): Promise<void> {
+  const cacheOrg =
+    "orgId" in data && typeof data.orgId === "string" && data.orgId.trim() ? data.orgId : orgHint;
+  if (!cacheOrg) return;
+  const seasonKey = String(data.seasonYear);
+  try {
+    await putFeatureSnapshot("weigh-in", cacheOrg, data, seasonHint || seasonKey);
+    if (!orgHint) await putFeatureSnapshot("weigh-in", "_", data, seasonHint || seasonKey);
+  } catch {
+    // Live weigh-in already painted; IndexedDB is best-effort.
+  }
+}
 
 type LiveView = Extract<RobotWeighInView, { status: "live" }>;
 
@@ -94,12 +119,14 @@ function WeighShell({
   shell,
   error,
   onRetry,
+  children,
 }: {
   description: string;
   orgId?: string | null;
   shell: RobotWeighInShellKind;
   error?: string;
   onRetry?: () => void;
+  children?: ReactNode;
 }) {
   const actions = robotWeighInNextActions({ orgId, shell });
   const copy = robotWeighInShellCopy(shell);
@@ -120,6 +147,7 @@ function WeighShell({
       >
         <RelatedStrip orgId={orgId} />
       </PageHeader>
+      {children}
       {shell === "loading" ? (
         <div aria-busy="true" aria-label="Loading Robot Weigh-In">
           <SoftBlockSkeleton lines={4} />
@@ -157,30 +185,75 @@ export default function RobotWeighInClient() {
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<RobotWeighInView | null>(null);
+  viewRef.current = view;
 
   const load = useCallback((seasonOverride?: number) => {
-    setFetchFailed(false);
-    setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    if (seasonQuery) query.set("season", String(seasonQuery));
-    void fetch(`/api/robot-weigh-in${query.toString() ? `?${query.toString()}` : ""}`, {
-      cache: "no-store",
-      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
-    })
-      .then(async (response) => {
+    void (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const urlOrg = params.get("orgId")?.trim() ?? "";
+      const seasonQuery =
+        seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
+      const seasonHint =
+        seasonQuery != null && Number.isFinite(seasonQuery) ? String(seasonQuery) : "";
+      let hadCache = Boolean(viewRef.current);
+      try {
+        const cached = await getFeatureSnapshot<RobotWeighInView>(
+          "weigh-in",
+          urlOrg || "_",
+          seasonHint,
+        );
+        if (!viewRef.current && cached?.data && isRobotWeighInView(cached.data)) {
+          setView(cached.data);
+          setSeason(cached.data.seasonYear);
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          hadCache = true;
+        }
+      } catch {
+        // IndexedDB missing or blocked; live fetch still runs.
+      }
+      setFetchFailed(false);
+      setError("");
+      const query = new URLSearchParams();
+      if (urlOrg) query.set("orgId", urlOrg);
+      if (seasonHint) query.set("season", seasonHint);
+      try {
+        const response = await fetch(
+          `/api/robot-weigh-in${query.toString() ? `?${query.toString()}` : ""}`,
+          {
+            cache: "no-store",
+            signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+          },
+        );
         const data = (await response.json()) as RobotWeighInView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setFetchFailed(true);
+        if (!response.ok || !isRobotWeighInView(data)) {
+          if (hadCache || viewRef.current) {
+            setFromCache(true);
+            setError("Could not refresh Robot weigh-in. Showing the last copy on this device.");
+            setFetchFailed(false);
+          } else {
+            setFetchFailed(true);
+          }
           return;
         }
         setView(data);
         setSeason(data.seasonYear);
-      })
-      .catch(() => setFetchFailed(true));
+        setFromCache(false);
+        setCachedAt(null);
+        await persistWeighInSnapshot(urlOrg, seasonHint, data);
+      } catch {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Robot weigh-in. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setFetchFailed(true);
+        }
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -229,6 +302,7 @@ export default function RobotWeighInClient() {
         }
         setView(data);
         setSeason(data.seasonYear);
+        void persistWeighInSnapshot(orgId, season != null ? String(season) : "", data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -239,7 +313,11 @@ export default function RobotWeighInClient() {
   );
 
   if (shell === "loading") {
-    return <WeighShell description={shellCopy.description} orgId={null} shell="loading" />;
+    return (
+      <WeighShell description={shellCopy.description} orgId={null} shell="loading">
+        <OfflineBanner feature="Robot weigh-in" fromCache={fromCache} cachedAt={cachedAt} />
+      </WeighShell>
+    );
   }
   if (shell === "error") {
     return (
@@ -249,7 +327,9 @@ export default function RobotWeighInClient() {
         shell="error"
         error={error || shellCopy.description}
         onRetry={() => load()}
-      />
+      >
+        <OfflineBanner feature="Robot weigh-in" fromCache={fromCache} cachedAt={cachedAt} />
+      </WeighShell>
     );
   }
   if (shell === "setup" || view?.status !== "live") {
@@ -258,7 +338,9 @@ export default function RobotWeighInClient() {
         description={view?.status === "setup_required" ? view.message : shellCopy.description}
         orgId={orgId}
         shell="setup"
-      />
+      >
+        <OfflineBanner feature="Robot weigh-in" fromCache={fromCache} cachedAt={cachedAt} />
+      </WeighShell>
     );
   }
 
@@ -297,6 +379,8 @@ export default function RobotWeighInClient() {
           ) : null}
         </div>
       </PageHeader>
+
+      <OfflineBanner feature="Robot weigh-in" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

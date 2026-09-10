@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import {
   Badge,
   type BadgeTone,
@@ -27,7 +28,31 @@ import {
 } from "../../lib/match-delta-watcher/match-delta-watcher-related";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./match-delta-watcher.css";
+
+function isMatchDeltaWatcherView(value: unknown): value is MatchDeltaWatcherView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+async function persistMatchDeltaSnapshot(
+  orgHint: string,
+  eventHint: string,
+  data: MatchDeltaWatcherView,
+): Promise<void> {
+  const cacheOrg =
+    "orgId" in data && typeof data.orgId === "string" && data.orgId.trim() ? data.orgId : orgHint;
+  if (!cacheOrg) return;
+  const key = eventHint || (data.status === "live" ? data.eventKey : "");
+  try {
+    await putFeatureSnapshot("match-delta", cacheOrg, data, key);
+    if (!orgHint) await putFeatureSnapshot("match-delta", "_", data, key);
+  } catch {
+    // Live watcher already painted; IndexedDB is best-effort.
+  }
+}
 
 const severityTone: Record<string, BadgeTone | undefined> = {
   critical: "danger",
@@ -150,30 +175,72 @@ export default function MatchDeltaWatcherClient() {
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [eventKey, setEventKey] = useState<string | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<MatchDeltaWatcherView | null>(null);
+  viewRef.current = view;
 
   const load = useCallback((eventOverride?: string) => {
-    setFetchFailed(false);
-    setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const eventQuery = eventOverride ?? params.get("eventKey");
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    if (eventQuery) query.set("eventKey", eventQuery);
-    void fetch(`/api/match-delta-watcher${query.toString() ? `?${query.toString()}` : ""}`, {
-      cache: "no-store",
-      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
-    })
-      .then(async (response) => {
+    void (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const urlOrg = params.get("orgId")?.trim() ?? "";
+      const eventQuery = eventOverride ?? params.get("eventKey") ?? "";
+      let hadCache = Boolean(viewRef.current);
+      try {
+        const cached = await getFeatureSnapshot<MatchDeltaWatcherView>(
+          "match-delta",
+          urlOrg || "_",
+          eventQuery,
+        );
+        if (!viewRef.current && cached?.data && isMatchDeltaWatcherView(cached.data)) {
+          setView(cached.data);
+          if (cached.data.status === "live") setEventKey(cached.data.eventKey);
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          hadCache = true;
+        }
+      } catch {
+        // IndexedDB missing or blocked; live fetch still runs.
+      }
+      setFetchFailed(false);
+      setError("");
+      const query = new URLSearchParams();
+      if (urlOrg) query.set("orgId", urlOrg);
+      if (eventQuery) query.set("eventKey", eventQuery);
+      try {
+        const response = await fetch(
+          `/api/match-delta-watcher${query.toString() ? `?${query.toString()}` : ""}`,
+          {
+            cache: "no-store",
+            signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+          },
+        );
         const data = (await response.json()) as MatchDeltaWatcherView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setFetchFailed(true);
+        if (!response.ok || !isMatchDeltaWatcherView(data)) {
+          if (hadCache || viewRef.current) {
+            setFromCache(true);
+            setError("Could not refresh Match-delta watcher. Showing the last copy on this device.");
+            setFetchFailed(false);
+          } else {
+            setFetchFailed(true);
+          }
           return;
         }
         setView(data);
         if (data.status === "live") setEventKey(data.eventKey);
-      })
-      .catch(() => setFetchFailed(true));
+        setFromCache(false);
+        setCachedAt(null);
+        await persistMatchDeltaSnapshot(urlOrg, eventQuery || (data.status === "live" ? data.eventKey : ""), data);
+      } catch {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Match-delta watcher. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setFetchFailed(true);
+        }
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -221,6 +288,7 @@ export default function MatchDeltaWatcherClient() {
         }
         setView(data);
         if (data.status === "live") setEventKey(data.eventKey);
+        void persistMatchDeltaSnapshot(orgId, eventKey ?? (data.status === "live" ? data.eventKey : ""), data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -231,7 +299,11 @@ export default function MatchDeltaWatcherClient() {
   );
 
   if (shell === "loading") {
-    return <WatcherShell description={shellCopy.description} orgId={null} shell="loading" />;
+    return (
+      <WatcherShell description={shellCopy.description} orgId={null} shell="loading">
+        <OfflineBanner feature="Match-delta watcher" fromCache={fromCache} cachedAt={cachedAt} />
+      </WatcherShell>
+    );
   }
 
   if (shell === "error") {
@@ -242,7 +314,9 @@ export default function MatchDeltaWatcherClient() {
         shell="error"
         error={error || shellCopy.description}
         onRetry={() => load()}
-      />
+      >
+        <OfflineBanner feature="Match-delta watcher" fromCache={fromCache} cachedAt={cachedAt} />
+      </WatcherShell>
     );
   }
 
@@ -252,12 +326,18 @@ export default function MatchDeltaWatcherClient() {
         description={view?.status === "setup_required" ? view.message : shellCopy.description}
         orgId={orgId}
         shell="setup"
-      />
+      >
+        <OfflineBanner feature="Match-delta watcher" fromCache={fromCache} cachedAt={cachedAt} />
+      </WatcherShell>
     );
   }
 
   if (view?.status !== "live") {
-    return <WatcherShell description={shellCopy.description} orgId={orgId} shell="setup" />;
+    return (
+      <WatcherShell description={shellCopy.description} orgId={orgId} shell="setup">
+        <OfflineBanner feature="Match-delta watcher" fromCache={fromCache} cachedAt={cachedAt} />
+      </WatcherShell>
+    );
   }
 
   return (
@@ -298,6 +378,8 @@ export default function MatchDeltaWatcherClient() {
           </Button>
         </div>
       </PageHeader>
+
+      <OfflineBanner feature="Match-delta watcher" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

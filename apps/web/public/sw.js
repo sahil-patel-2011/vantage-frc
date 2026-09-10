@@ -59,6 +59,11 @@ const SHELL_ROUTES = [
   "/dossier",
   "/pit-repair-triage",
   "/event-day-plan",
+  "/field-reset-timer",
+  "/drive-team-signals",
+  "/robot-weigh-in",
+  "/match-delta-watcher",
+  "/match-video-index",
 ];
 
 function isShellPath(pathname) {

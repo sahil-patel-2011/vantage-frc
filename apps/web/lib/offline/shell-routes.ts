@@ -41,6 +41,11 @@ export const OFFLINE_SHELL_ROUTES = [
   "/dossier",
   "/pit-repair-triage",
   "/event-day-plan",
+  "/field-reset-timer",
+  "/drive-team-signals",
+  "/robot-weigh-in",
+  "/match-delta-watcher",
+  "/match-video-index",
 ] as const;
 
 export type OfflineShellRoute = (typeof OFFLINE_SHELL_ROUTES)[number];
@@ -98,6 +103,11 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/picklist-collab")) return "Collaborative pick list";
   if (bare.startsWith("/dossier")) return "Dossier";
   if (bare.startsWith("/event-day-plan")) return "Event-day plan";
+  if (bare.startsWith("/field-reset-timer")) return "Field reset timer";
+  if (bare.startsWith("/drive-team-signals")) return "Drive-team signals";
+  if (bare.startsWith("/robot-weigh-in")) return "Robot weigh-in";
+  if (bare.startsWith("/match-delta-watcher")) return "Match-delta watcher";
+  if (bare.startsWith("/match-video-index")) return "Match video index";
   return null;
 }
 

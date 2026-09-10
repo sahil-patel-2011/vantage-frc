@@ -54,6 +54,11 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/dossier")).toBe(true);
     expect(pathnameIsOfflineShell("/pit-repair-triage")).toBe(true);
     expect(pathnameIsOfflineShell("/event-day-plan")).toBe(true);
+    expect(pathnameIsOfflineShell("/field-reset-timer")).toBe(true);
+    expect(pathnameIsOfflineShell("/drive-team-signals")).toBe(true);
+    expect(pathnameIsOfflineShell("/robot-weigh-in")).toBe(true);
+    expect(pathnameIsOfflineShell("/match-delta-watcher")).toBe(true);
+    expect(pathnameIsOfflineShell("/match-video-index")).toBe(true);
     expect(pathnameIsOfflineShell("/api/todos")).toBe(false);
   });
 
@@ -84,6 +89,11 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/dossier")).toBe("Dossier");
     expect(offlineCapableLabel("/pit-repair-triage")).toBe("Pit repair triage");
     expect(offlineCapableLabel("/event-day-plan")).toBe("Event-day plan");
+    expect(offlineCapableLabel("/field-reset-timer")).toBe("Field reset timer");
+    expect(offlineCapableLabel("/drive-team-signals")).toBe("Drive-team signals");
+    expect(offlineCapableLabel("/robot-weigh-in")).toBe("Robot weigh-in");
+    expect(offlineCapableLabel("/match-delta-watcher")).toBe("Match-delta watcher");
+    expect(offlineCapableLabel("/match-video-index")).toBe("Match video index");
   });
 
   it("keeps public/sw.js SHELL_ROUTES aligned with OFFLINE_SHELL_ROUTES", () => {
@@ -116,6 +126,11 @@ describe("offline shell routes", () => {
     expect(featureCacheKey("dossier", "org-1", "frc254")).toBe("dossier:org-1:frc254");
     expect(featureCacheKey("pit-repair", "org-1", "2026")).toBe("pit-repair:org-1:2026");
     expect(featureCacheKey("event-day-plan", "org-1", "2026onto")).toBe("event-day-plan:org-1:2026onto");
+    expect(featureCacheKey("field-reset", "org-1", "2026")).toBe("field-reset:org-1:2026");
+    expect(featureCacheKey("drive-signals", "org-1")).toBe("drive-signals:org-1");
+    expect(featureCacheKey("weigh-in", "org-1", "2026")).toBe("weigh-in:org-1:2026");
+    expect(featureCacheKey("match-delta", "org-1", "2026onto")).toBe("match-delta:org-1:2026onto");
+    expect(featureCacheKey("match-video-index", "org-1")).toBe("match-video-index:org-1");
     expect(featureCacheKey("schedule", "org-1")).toBe("schedule:org-1");
   });
 
