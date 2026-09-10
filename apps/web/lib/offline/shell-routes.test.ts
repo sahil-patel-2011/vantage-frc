@@ -103,6 +103,10 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/code-deploy-log")).toBe(true);
     expect(pathnameIsOfflineShell("/control-map")).toBe(true);
     expect(pathnameIsOfflineShell("/cross-team-scrim")).toBe(true);
+    expect(pathnameIsOfflineShell("/decision-search")).toBe(true);
+    expect(pathnameIsOfflineShell("/decisions")).toBe(true);
+    expect(pathnameIsOfflineShell("/failure-patterns")).toBe(true);
+    expect(pathnameIsOfflineShell("/grant-eligibility-matcher")).toBe(true);
     expect(pathnameIsOfflineShell("/api/todos")).toBe(false);
   });
 
@@ -185,6 +189,10 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/code-deploy-log")).toBe("Code Deploy Log");
     expect(offlineCapableLabel("/control-map")).toBe("Control Map");
     expect(offlineCapableLabel("/cross-team-scrim")).toBe("Cross-Team Scrims");
+    expect(offlineCapableLabel("/decision-search")).toBe("Decision Search");
+    expect(offlineCapableLabel("/decisions")).toBe("Decision Log");
+    expect(offlineCapableLabel("/failure-patterns")).toBe("Repeat Failure Patterns");
+    expect(offlineCapableLabel("/grant-eligibility-matcher")).toBe("Grant Eligibility Matcher");
   });
 
   it("keeps public/sw.js SHELL_ROUTES aligned with OFFLINE_SHELL_ROUTES", () => {
@@ -266,6 +274,10 @@ describe("offline shell routes", () => {
     expect(featureCacheKey("code-deploy-log", "org-1", "2026")).toBe("code-deploy-log:org-1:2026");
     expect(featureCacheKey("control-map", "org-1", "2026")).toBe("control-map:org-1:2026");
     expect(featureCacheKey("cross-team-scrim", "org-1", "2026")).toBe("cross-team-scrim:org-1:2026");
+    expect(featureCacheKey("decision-search", "org-1", "2026")).toBe("decision-search:org-1:2026");
+    expect(featureCacheKey("decisions", "org-1", "2026")).toBe("decisions:org-1:2026");
+    expect(featureCacheKey("failure-patterns", "org-1", "2026")).toBe("failure-patterns:org-1:2026");
+    expect(featureCacheKey("grant-eligibility-matcher", "org-1")).toBe("grant-eligibility-matcher:org-1");
     expect(featureCacheKey("schedule", "org-1")).toBe("schedule:org-1");
   });
 

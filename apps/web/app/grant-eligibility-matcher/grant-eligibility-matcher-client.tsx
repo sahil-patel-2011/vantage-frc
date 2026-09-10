@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import {
   EmptyState,
   ErrorState,
@@ -25,9 +26,31 @@ import {
 } from "../../lib/grant-eligibility-matcher/grant-eligibility-matcher-related";
 import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./grant-eligibility-matcher.css";
 
 type LiveView = Extract<GrantEligibilityView, { status: "live" }>;
+
+function isGrantEligibilityView(value: unknown): value is GrantEligibilityView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+async function persistGrantEligibilitySnapshot(
+  orgHint: string,
+  data: GrantEligibilityView,
+): Promise<void> {
+  const cacheOrg =
+    "orgId" in data && typeof data.orgId === "string" && data.orgId.trim() ? data.orgId : orgHint;
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("grant-eligibility-matcher", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("grant-eligibility-matcher", "_", data);
+  } catch {
+    // Live Grant Eligibility Matcher already painted; IndexedDB is best-effort.
+  }
+}
 
 function formatMoney(min: number | null, max: number | null): string {
   if (min == null && max == null) return "Amount not specified";
@@ -158,27 +181,67 @@ export default function GrantEligibilityMatcherClient() {
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [showIneligible, setShowIneligible] = useState(false);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<GrantEligibilityView | null>(null);
+  viewRef.current = view;
 
   const load = useCallback(() => {
-    setFetchFailed(false);
-    setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    void fetch(`/api/grant-eligibility-matcher${query.toString() ? `?${query.toString()}` : ""}`, {
-      cache: "no-store",
-      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
-    })
-      .then(async (response) => {
+    void (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const urlOrg = params.get("orgId")?.trim() ?? "";
+      let hadCache = Boolean(viewRef.current);
+      try {
+        const cached = await getFeatureSnapshot<GrantEligibilityView>(
+          "grant-eligibility-matcher",
+          urlOrg || "_",
+        );
+        if (!viewRef.current && cached?.data && isGrantEligibilityView(cached.data)) {
+          setView(cached.data);
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          hadCache = true;
+        }
+      } catch {
+        // IndexedDB missing or blocked; live fetch still runs.
+      }
+      setFetchFailed(false);
+      setError("");
+      const query = new URLSearchParams();
+      if (urlOrg) query.set("orgId", urlOrg);
+      try {
+        const response = await fetch(
+          `/api/grant-eligibility-matcher${query.toString() ? `?${query.toString()}` : ""}`,
+          {
+            cache: "no-store",
+            signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+          },
+        );
         const data = (await response.json()) as GrantEligibilityView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setFetchFailed(true);
+        if (!response.ok || !isGrantEligibilityView(data)) {
+          if (hadCache || viewRef.current) {
+            setFromCache(true);
+            setError("Could not refresh Grant Eligibility Matcher. Showing the last copy on this device.");
+            setFetchFailed(false);
+          } else {
+            setFetchFailed(true);
+          }
           return;
         }
         setView(data);
-      })
-      .catch(() => setFetchFailed(true));
+        setFromCache(false);
+        setCachedAt(null);
+        await persistGrantEligibilitySnapshot(urlOrg, data);
+      } catch {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Grant Eligibility Matcher. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setFetchFailed(true);
+        }
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -224,11 +287,12 @@ export default function GrantEligibilityMatcherClient() {
           signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as GrantEligibilityView | { error?: string };
-        if (!response.ok || !("status" in data)) {
+        if (!response.ok || !isGrantEligibilityView(data)) {
           setError("error" in data && data.error ? data.error : "Something went wrong.");
           return;
         }
         setView(data);
+        void persistGrantEligibilitySnapshot(orgId, data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -239,7 +303,11 @@ export default function GrantEligibilityMatcherClient() {
   );
 
   if (shell === "loading") {
-    return <MatcherShell description={shellCopy.description} orgId={null} shell="loading" />;
+    return (
+      <MatcherShell description={shellCopy.description} orgId={null} shell="loading">
+        <OfflineBanner feature="Grant Eligibility Matcher" fromCache={fromCache} cachedAt={cachedAt} />
+      </MatcherShell>
+    );
   }
 
   if (shell === "error") {
@@ -250,7 +318,9 @@ export default function GrantEligibilityMatcherClient() {
         shell="error"
         error={error || shellCopy.description}
         onRetry={() => load()}
-      />
+      >
+        <OfflineBanner feature="Grant Eligibility Matcher" fromCache={fromCache} cachedAt={cachedAt} />
+      </MatcherShell>
     );
   }
 
@@ -261,12 +331,17 @@ export default function GrantEligibilityMatcherClient() {
         orgId={orgId}
         shell="setup"
       >
+        <OfflineBanner feature="Grant Eligibility Matcher" fromCache={fromCache} cachedAt={cachedAt} />
       </MatcherShell>
     );
   }
 
   if (view?.status !== "live") {
-    return <MatcherShell description={shellCopy.description} orgId={orgId} shell="setup" />;
+    return (
+      <MatcherShell description={shellCopy.description} orgId={orgId} shell="setup">
+        <OfflineBanner feature="Grant Eligibility Matcher" fromCache={fromCache} cachedAt={cachedAt} />
+      </MatcherShell>
+    );
   }
 
   return (
@@ -289,6 +364,8 @@ export default function GrantEligibilityMatcherClient() {
           ))}
         </div>
       </PageHeader>
+
+      <OfflineBanner feature="Grant Eligibility Matcher" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="impact-status" role="alert">

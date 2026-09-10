@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { decisionCategoryLabel, decisionStatusLabel } from "../../lib/decisions";
 import {
@@ -20,11 +21,40 @@ import {
 } from "../../lib/decisions/decisions-related";
 import type { DecisionCategory, DecisionStatus, ResolvedDecision } from "../../lib/decisions/types";
 import { hubHref } from "../../lib/nav/hubs";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./decisions.css";
 
 type LiveView = Extract<DecisionsView, { status: "live" }>;
 type Mutate = (payload: Record<string, unknown>) => void;
+
+function isDecisionsView(value: unknown): value is DecisionsView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function decisionsCacheOrg(data: DecisionsView, orgHint: string): string {
+  if ("orgId" in data && typeof data.orgId === "string" && data.orgId.trim()) return data.orgId;
+  return orgHint;
+}
+
+async function persistDecisionsSnapshot(
+  orgHint: string,
+  seasonHint: string,
+  data: DecisionsView,
+): Promise<void> {
+  const cacheOrg = decisionsCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  const seasonKey = String(data.seasonYear);
+  try {
+    await putFeatureSnapshot("decisions", cacheOrg, data, seasonHint || seasonKey);
+    if (!orgHint) await putFeatureSnapshot("decisions", "_", data, seasonHint || seasonKey);
+  } catch {
+    // Live Decision Log already painted; IndexedDB is best-effort.
+  }
+}
 
 const STATUS_COLOR: Record<DecisionStatus, string> = {
   proposed: "#b26a00",
@@ -163,30 +193,78 @@ export default function DecisionsClient() {
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<DecisionsView | null>(null);
+  viewRef.current = view;
 
   const orgId = view && "orgId" in view ? view.orgId : null;
   const loading = view == null && !fetchFailed;
 
   const load = useCallback((seasonOverride?: number) => {
-    setFetchFailed(false);
-    setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    if (seasonQuery) query.set("season", String(seasonQuery));
-    void fetch(`/api/decisions${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
+    void (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const urlOrg = params.get("orgId")?.trim() ?? "";
+      const seasonQuery =
+        seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
+      const seasonHint =
+        seasonQuery != null && Number.isFinite(seasonQuery) ? String(seasonQuery) : "";
+      let hadCache = Boolean(viewRef.current);
+      try {
+        const cached = await getFeatureSnapshot<DecisionsView>(
+          "decisions",
+          urlOrg || "_",
+          seasonHint,
+        );
+        if (!viewRef.current && cached?.data && isDecisionsView(cached.data)) {
+          setView(cached.data);
+          setSeason(cached.data.seasonYear);
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          hadCache = true;
+        }
+      } catch {
+        // IndexedDB missing or blocked; live fetch still runs.
+      }
+      setFetchFailed(false);
+      setError("");
+      const query = new URLSearchParams();
+      if (urlOrg) query.set("orgId", urlOrg);
+      if (seasonHint) query.set("season", seasonHint);
+      try {
+        const response = await fetch(
+          `/api/decisions${query.toString() ? `?${query.toString()}` : ""}`,
+          {
+            cache: "no-store",
+            signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+          },
+        );
         const data = (await response.json()) as DecisionsView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setFetchFailed(true);
+        if (!response.ok || !isDecisionsView(data)) {
+          if (hadCache || viewRef.current) {
+            setFromCache(true);
+            setError("Could not refresh Decision Log. Showing the last copy on this device.");
+            setFetchFailed(false);
+          } else {
+            setFetchFailed(true);
+          }
           return;
         }
         setView(data);
         setSeason(data.seasonYear);
-      })
-      .catch(() => setFetchFailed(true));
+        setFromCache(false);
+        setCachedAt(null);
+        await persistDecisionsSnapshot(urlOrg, seasonHint, data);
+      } catch {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Decision Log. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setFetchFailed(true);
+        }
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -202,15 +280,17 @@ export default function DecisionsClient() {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ orgId, seasonYear: season ?? undefined, ...payload }),
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       })
         .then(async (response) => {
           const data = (await response.json()) as DecisionsView | { error?: string };
-          if (!response.ok || !("status" in data)) {
+          if (!response.ok || !isDecisionsView(data)) {
             setError("error" in data && data.error ? data.error : "Something went wrong.");
             return;
           }
           setView(data);
           setSeason(data.seasonYear);
+          void persistDecisionsSnapshot(orgId, season != null ? String(season) : "", data);
         })
         .catch(() => setError("Network error — please try again."))
         .finally(() => setBusy(false));
@@ -248,7 +328,9 @@ export default function DecisionsClient() {
         orgId={orgId}
         shell="loading"
         embedded={embedded}
-      />
+      >
+        <OfflineBanner feature="Decision Log" fromCache={fromCache} cachedAt={cachedAt} />
+      </DecisionsShell>
     );
   }
 
@@ -262,7 +344,9 @@ export default function DecisionsClient() {
         error={error}
         onRetry={() => load()}
         embedded={embedded}
-      />
+      >
+        <OfflineBanner feature="Decision Log" fromCache={fromCache} cachedAt={cachedAt} />
+      </DecisionsShell>
     );
   }
 
@@ -275,7 +359,7 @@ export default function DecisionsClient() {
         shell="setup"
         embedded={embedded}
       >
-        
+        <OfflineBanner feature="Decision Log" fromCache={fromCache} cachedAt={cachedAt} />
       </DecisionsShell>
     );
   }
@@ -288,7 +372,9 @@ export default function DecisionsClient() {
         orgId={orgId}
         shell="setup"
         embedded={embedded}
-      />
+      >
+        <OfflineBanner feature="Decision Log" fromCache={fromCache} cachedAt={cachedAt} />
+      </DecisionsShell>
     );
   }
 
@@ -300,7 +386,9 @@ export default function DecisionsClient() {
         orgId={orgId}
         shell="setup"
         embedded={embedded}
-      />
+      >
+        <OfflineBanner feature="Decision Log" fromCache={fromCache} cachedAt={cachedAt} />
+      </DecisionsShell>
     );
   }
 
@@ -352,6 +440,8 @@ export default function DecisionsClient() {
           {headerActions}
         </PageHeader>
       )}
+
+      <OfflineBanner feature="Decision Log" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

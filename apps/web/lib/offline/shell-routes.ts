@@ -90,6 +90,10 @@ export const OFFLINE_SHELL_ROUTES = [
   "/code-deploy-log",
   "/control-map",
   "/cross-team-scrim",
+  "/decision-search",
+  "/decisions",
+  "/failure-patterns",
+  "/grant-eligibility-matcher",
 ] as const;
 
 export type OfflineShellRoute = (typeof OFFLINE_SHELL_ROUTES)[number];
@@ -175,6 +179,10 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/code-deploy-log")) return "Code Deploy Log";
   if (bare.startsWith("/control-map")) return "Control Map";
   if (bare.startsWith("/cross-team-scrim")) return "Cross-Team Scrims";
+  if (bare.startsWith("/decision-search")) return "Decision Search";
+  if (bare.startsWith("/decisions")) return "Decision Log";
+  if (bare.startsWith("/failure-patterns")) return "Repeat Failure Patterns";
+  if (bare.startsWith("/grant-eligibility-matcher")) return "Grant Eligibility Matcher";
   if (bare.startsWith("/assembly-manual")) return "Assembly manual";
   if (bare.startsWith("/packing")) return "Packing";
   if (bare.startsWith("/batteries")) return "Batteries";

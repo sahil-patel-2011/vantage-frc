@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { MeteredAiCutoffBanner } from "../../components/metered-ai-cutoff-banner";
+import { OfflineBanner } from "../../components/offline-banner";
 import { resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { DECISION_SEARCH_SOURCE_KINDS, decisionSearchSourceLabel } from "../../lib/decision-search";
@@ -19,10 +20,39 @@ import {
 } from "../../lib/decision-search/decision-search-related";
 import type { DecisionSearchSourceKind } from "../../lib/decision-search/types";
 import { hubWorkbenchHref } from "../../lib/nav/hubs";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./decision-search.css";
 
 type LiveView = Extract<DecisionSearchView, { status: "live" }>;
+
+function isDecisionSearchView(value: unknown): value is DecisionSearchView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function decisionSearchCacheOrg(data: DecisionSearchView, orgHint: string): string {
+  if ("orgId" in data && typeof data.orgId === "string" && data.orgId.trim()) return data.orgId;
+  return orgHint;
+}
+
+async function persistDecisionSearchSnapshot(
+  orgHint: string,
+  seasonHint: string,
+  data: DecisionSearchView,
+): Promise<void> {
+  const cacheOrg = decisionSearchCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  const seasonKey = String(data.seasonYear);
+  try {
+    await putFeatureSnapshot("decision-search", cacheOrg, data, seasonHint || seasonKey);
+    if (!orgHint) await putFeatureSnapshot("decision-search", "_", data, seasonHint || seasonKey);
+  } catch {
+    // Live Decision Search already painted; IndexedDB is best-effort.
+  }
+}
 
 function DecisionSearchRelatedStrip({ orgId }: { orgId?: string | null }) {
   const links = decisionSearchRelatedLinks(orgId, { include: [...DECISION_SEARCH_RELATED_INCLUDE] });
@@ -155,30 +185,78 @@ export default function DecisionSearchClient() {
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
   const [cutoffCode, setCutoffCode] = useState<string | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<DecisionSearchView | null>(null);
+  viewRef.current = view;
 
   const orgId = view && "orgId" in view ? view.orgId : null;
   const loading = view == null && !fetchFailed;
 
   const load = useCallback((seasonOverride?: number) => {
-    setFetchFailed(false);
-    setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    if (seasonQuery) query.set("season", String(seasonQuery));
-    void fetch(`/api/decision-search${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
+    void (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const urlOrg = params.get("orgId")?.trim() ?? "";
+      const seasonQuery =
+        seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
+      const seasonHint =
+        seasonQuery != null && Number.isFinite(seasonQuery) ? String(seasonQuery) : "";
+      let hadCache = Boolean(viewRef.current);
+      try {
+        const cached = await getFeatureSnapshot<DecisionSearchView>(
+          "decision-search",
+          urlOrg || "_",
+          seasonHint,
+        );
+        if (!viewRef.current && cached?.data && isDecisionSearchView(cached.data)) {
+          setView(cached.data);
+          setSeason(cached.data.seasonYear);
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          hadCache = true;
+        }
+      } catch {
+        // IndexedDB missing or blocked; live fetch still runs.
+      }
+      setFetchFailed(false);
+      setError("");
+      const query = new URLSearchParams();
+      if (urlOrg) query.set("orgId", urlOrg);
+      if (seasonHint) query.set("season", seasonHint);
+      try {
+        const response = await fetch(
+          `/api/decision-search${query.toString() ? `?${query.toString()}` : ""}`,
+          {
+            cache: "no-store",
+            signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+          },
+        );
         const data = (await response.json()) as DecisionSearchView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setFetchFailed(true);
+        if (!response.ok || !isDecisionSearchView(data)) {
+          if (hadCache || viewRef.current) {
+            setFromCache(true);
+            setError("Could not refresh Decision Search. Showing the last copy on this device.");
+            setFetchFailed(false);
+          } else {
+            setFetchFailed(true);
+          }
           return;
         }
         setView(data);
         setSeason(data.seasonYear);
-      })
-      .catch(() => setFetchFailed(true));
+        setFromCache(false);
+        setCachedAt(null);
+        await persistDecisionSearchSnapshot(urlOrg, seasonHint, data);
+      } catch {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Decision Search. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setFetchFailed(true);
+        }
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -196,11 +274,12 @@ export default function DecisionSearchClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, seasonYear: season ?? undefined, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as
           | DecisionSearchView
           | { error?: string; code?: string; reason?: string };
-        if (!response.ok || !("status" in data)) {
+        if (!response.ok || !isDecisionSearchView(data)) {
           const cutoff = resolveCutoffErrorCode(response.status, {
             code: "code" in data ? data.code : undefined,
             reason: "reason" in data ? data.reason : undefined,
@@ -216,6 +295,7 @@ export default function DecisionSearchClient() {
         }
         setView(data);
         setSeason(data.seasonYear);
+        void persistDecisionSearchSnapshot(orgId, season != null ? String(season) : "", data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -253,7 +333,9 @@ export default function DecisionSearchClient() {
         description={shellCopy.description}
         orgId={orgId}
         shell="loading"
-      />
+      >
+        <OfflineBanner feature="Decision Search" fromCache={fromCache} cachedAt={cachedAt} />
+      </DecisionSearchShell>
     );
   }
 
@@ -266,7 +348,9 @@ export default function DecisionSearchClient() {
         shell="error"
         error={error}
         onRetry={() => load()}
-      />
+      >
+        <OfflineBanner feature="Decision Search" fromCache={fromCache} cachedAt={cachedAt} />
+      </DecisionSearchShell>
     );
   }
 
@@ -278,7 +362,7 @@ export default function DecisionSearchClient() {
         orgId={view.orgId}
         shell="setup"
       >
-        
+        <OfflineBanner feature="Decision Search" fromCache={fromCache} cachedAt={cachedAt} />
       </DecisionSearchShell>
     );
   }
@@ -290,7 +374,9 @@ export default function DecisionSearchClient() {
         description={shellCopy.description}
         orgId={orgId}
         shell="setup"
-      />
+      >
+        <OfflineBanner feature="Decision Search" fromCache={fromCache} cachedAt={cachedAt} />
+      </DecisionSearchShell>
     );
   }
 
@@ -301,7 +387,9 @@ export default function DecisionSearchClient() {
         description={shellCopy.description}
         orgId={orgId}
         shell="setup"
-      />
+      >
+        <OfflineBanner feature="Decision Search" fromCache={fromCache} cachedAt={cachedAt} />
+      </DecisionSearchShell>
     );
   }
 
@@ -344,6 +432,8 @@ export default function DecisionSearchClient() {
           ) : null}
         </div>
       </PageHeader>
+
+      <OfflineBanner feature="Decision Search" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

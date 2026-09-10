@@ -85,7 +85,11 @@ export type OfflineFeature =
   | "cad-change-radar"
   | "code-deploy-log"
   | "control-map"
-  | "cross-team-scrim";
+  | "cross-team-scrim"
+  | "decision-search"
+  | "decisions"
+  | "failure-patterns"
+  | "grant-eligibility-matcher";
 
 const DB_NAME = "vantage-feature-cache";
 const DB_VERSION = 1;

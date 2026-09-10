@@ -108,6 +108,10 @@ const SHELL_ROUTES = [
   "/code-deploy-log",
   "/control-map",
   "/cross-team-scrim",
+  "/decision-search",
+  "/decisions",
+  "/failure-patterns",
+  "/grant-eligibility-matcher",
 ];
 
 function isShellPath(pathname) {
