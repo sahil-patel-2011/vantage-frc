@@ -15,9 +15,9 @@
 }
 
 .awards-status.ok {
-  border-color: color-mix(in srgb, var(--app-positive) 40%, var(--line));
-  background: color-mix(in srgb, var(--app-positive) 10%, var(--surface));
-  color: var(--app-positive);
+  border-color: color-mix(in srgb, var(--positive) 40%, var(--line));
+  background: color-mix(in srgb, var(--positive) 10%, var(--surface));
+  color: var(--positive);
 }
 
 .awards-stats {

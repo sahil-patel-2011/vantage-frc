@@ -37,7 +37,7 @@
 
 .notif-next-actions > header p {
   margin: 0;
-  color: var(--app-muted);
+  color: var(--muted);
   font-size: 12px;
   line-height: 1.4;
 }
@@ -57,13 +57,13 @@
   gap: 12px;
   padding: 12px 14px;
   border-radius:var(--radius-sm);
-  border: 1px solid var(--app-line);
-  background: var(--app-bg);
+  border: 1px solid var(--line);
+  background: var(--bg);
 }
 
 .notif-next-actions li.primary {
-  border-color: color-mix(in srgb, var(--accent) 35%, var(--app-line));
-  background: color-mix(in srgb, var(--accent) 8%, var(--app-bg));
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--line));
+  background: color-mix(in srgb, var(--accent) 8%, var(--bg));
 }
 
 .notif-next-actions li div {
@@ -77,7 +77,7 @@
 }
 
 .notif-next-actions li span {
-  color: var(--app-muted);
+  color: var(--muted);
   font-size: 12px;
   line-height: 1.35;
 }

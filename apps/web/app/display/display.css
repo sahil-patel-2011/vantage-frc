@@ -3,7 +3,7 @@
   max-width: 1120px;
   margin: 0 auto;
   padding: 2rem 1.5rem 3rem;
-  color: var(--app-ink);
+  color: var(--ink);
 }
 
 .display-gate {
@@ -20,7 +20,7 @@
 
 .display-gate p {
   margin: 0;
-  color: var(--app-muted);
+  color: var(--muted);
   line-height: 1.45;
 }
 
@@ -66,7 +66,7 @@
 
 .disp-next-actions > header p {
   margin: 0;
-  color: var(--app-muted);
+  color: var(--muted);
   font-size: 12px;
   line-height: 1.4;
 }
@@ -86,13 +86,13 @@
   gap: 12px;
   padding: 12px 14px;
   border-radius: 12px;
-  border: 1px solid var(--app-line);
-  background: var(--app-bg);
+  border: 1px solid var(--line);
+  background: var(--bg);
 }
 
 .disp-next-actions li.primary {
-  border-color: color-mix(in srgb, var(--app-accent) 35%, var(--app-line));
-  background: color-mix(in srgb, var(--app-accent) 8%, var(--app-bg));
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--line));
+  background: color-mix(in srgb, var(--accent) 8%, var(--bg));
 }
 
 .disp-next-actions li div {
@@ -106,7 +106,7 @@
 }
 
 .disp-next-actions li span {
-  color: var(--app-muted);
+  color: var(--muted);
   font-size: 12px;
   line-height: 1.35;
 }
@@ -123,7 +123,7 @@
 
 .disp-section-head p {
   margin: 0;
-  color: var(--app-muted);
+  color: var(--muted);
   font-size: 12px;
   line-height: 1.4;
 }
@@ -138,14 +138,14 @@
 .display-steps article {
   padding: 0.85rem 1rem;
   border-radius: 12px;
-  background: var(--app-surface);
-  border: 1px solid var(--app-line);
+  background: var(--surface);
+  border: 1px solid var(--line);
   font-size: 0.9rem;
 }
 
 .display-steps article span {
   display: block;
-  color: var(--app-accent);
+  color: var(--accent);
   font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -159,37 +159,37 @@
 
 .display-steps article p {
   margin: 0;
-  color: var(--app-muted);
+  color: var(--muted);
   font-size: 0.82rem;
   line-height: 1.4;
 }
 
 .display-steps article.active {
-  border-color: color-mix(in srgb, var(--app-accent) 45%, var(--app-line));
-  background: color-mix(in srgb, var(--app-accent) 8%, var(--app-surface));
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
 }
 
 .display-status {
   padding: 0.65rem 1rem;
   border-radius: 10px;
   margin: 0 0 0.25rem;
-  background: color-mix(in srgb, var(--app-accent) 12%, transparent);
-  border: 1px solid color-mix(in srgb, var(--app-accent) 25%, transparent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
 }
 
 .display-empty {
   padding: 1.5rem;
   border-radius: 14px;
   margin: 0;
-  background: var(--app-bg);
-  border: 1px dashed var(--app-line);
-  color: var(--app-muted);
+  background: var(--bg);
+  border: 1px dashed var(--line);
+  color: var(--muted);
 }
 
 .display-empty h2 {
   margin: 0.5rem 0;
   font-size: 1.15rem;
-  color: var(--app-ink);
+  color: var(--ink);
 }
 
 .preset-picker {
@@ -202,8 +202,8 @@
   text-align: left;
   padding: 0.85rem 1rem;
   border-radius: 12px;
-  border: 1px solid var(--app-line);
-  background: var(--app-surface);
+  border: 1px solid var(--line);
+  background: var(--surface);
   cursor: pointer;
   color: inherit;
 }
@@ -215,13 +215,13 @@
 
 .preset-picker button span {
   font-size: 0.82rem;
-  color: var(--app-muted);
+  color: var(--muted);
   line-height: 1.35;
 }
 
 .preset-picker button.active {
-  border-color: var(--app-accent);
-  background: color-mix(in srgb, var(--app-accent) 12%, var(--app-surface));
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
 }
 
 .display-editor {
@@ -244,8 +244,8 @@
 .display-form {
   padding: 1.25rem;
   border-radius: 14px;
-  background: var(--app-surface);
-  border: 1px solid var(--app-line);
+  background: var(--surface);
+  border: 1px solid var(--line);
 }
 
 .display-form label {
@@ -260,13 +260,13 @@
   margin-top: 0.35rem;
   padding: 0.55rem 0.75rem;
   border-radius: 8px;
-  border: 1px solid var(--app-line);
-  background: var(--app-bg);
+  border: 1px solid var(--line);
+  background: var(--bg);
   color: inherit;
 }
 
 .display-form fieldset {
-  border: 1px solid var(--app-line);
+  border: 1px solid var(--line);
   border-radius: 10px;
   padding: 0.75rem;
   margin-bottom: 0.85rem;
@@ -290,8 +290,8 @@
 .display-actions button:not(.app-button) {
   padding: 0.55rem 1rem;
   border-radius: 8px;
-  border: 1px solid var(--app-line);
-  background: color-mix(in srgb, var(--app-accent) 15%, transparent);
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
   color: inherit;
   cursor: pointer;
 }
@@ -299,8 +299,8 @@
 .display-preview {
   padding: 1.25rem;
   border-radius: 14px;
-  background: var(--app-bg);
-  border: 1px solid var(--app-line);
+  background: var(--bg);
+  border: 1px solid var(--line);
   aspect-ratio: 16 / 9;
   display: flex;
   flex-direction: column;
@@ -309,7 +309,7 @@
 .display-preview > span {
   font-size: 0.7rem;
   letter-spacing: 0.08em;
-  color: var(--app-accent);
+  color: var(--accent);
   margin-bottom: 0.5rem;
 }
 
@@ -328,8 +328,8 @@
 .display-preview-grid article {
   padding: 0.65rem;
   border-radius: 8px;
-  background: var(--app-surface);
-  border: 1px solid var(--app-line);
+  background: var(--surface);
+  border: 1px solid var(--line);
   font-size: 0.78rem;
 }
 
@@ -340,7 +340,7 @@
 }
 
 .display-preview-grid article small {
-  color: var(--app-muted);
+  color: var(--muted);
 }
 
 .saved-boards {
@@ -356,13 +356,13 @@
   padding: 0.85rem 1rem;
   border-radius: 12px;
   margin-bottom: 0.5rem;
-  background: var(--app-surface);
-  border: 1px solid var(--app-line);
+  background: var(--surface);
+  border: 1px solid var(--line);
 }
 
 .saved-board small {
   display: block;
-  color: var(--app-muted);
+  color: var(--muted);
   text-transform: capitalize;
 }
 
@@ -376,7 +376,7 @@
 .saved-board-actions button {
   padding: 0.4rem 0.75rem;
   border-radius: 8px;
-  border: 1px solid var(--app-line);
+  border: 1px solid var(--line);
   background: transparent;
   color: inherit;
   cursor: pointer;
@@ -387,8 +387,8 @@
 .token-panel {
   padding: 1.25rem;
   border-radius: 14px;
-  background: var(--app-surface);
-  border: 1px solid var(--app-line);
+  background: var(--surface);
+  border: 1px solid var(--line);
 }
 
 .token-once {
@@ -413,7 +413,7 @@
   justify-content: space-between;
   gap: 0.5rem;
   padding: 0.65rem 0;
-  border-bottom: 1px solid var(--app-line);
+  border-bottom: 1px solid var(--line);
   font-size: 0.88rem;
 }
 

@@ -323,7 +323,7 @@ function PathRow({
             setMatchLabel("");
             setNotes("");
           }}
-          style={{ display: "grid", gap: 8, borderTop: "1px solid var(--app-border, #2a2a2a)", paddingTop: 8 }}
+          style={{ display: "grid", gap: 8, borderTop: "1px solid var(--line, #2a2a2a)", paddingTop: 8 }}
         >
           <FormGrid min={140}>
             <FormRow label="Outcome">

@@ -281,10 +281,10 @@ function KickoffPanel({
           onChange={(event) => onChange(event.target.value)}
           style={{
             ...TAP,
-            border: "1px solid var(--app-line)",
-            borderRadius: "var(--app-radius)",
-            background: "var(--app-surface)",
-            color: "var(--app-ink)",
+            border: "1px solid var(--line)",
+            borderRadius: "var(--radius-sm)",
+            background: "var(--surface)",
+            color: "var(--ink)",
             minWidth: 160,
           }}
         />
@@ -303,7 +303,7 @@ function KickoffPanel({
           Kickoff {formatIsoDate(roadmap.kickoffDate!)} · today {formatIsoDate(roadmap.today)}
         </p>
       ) : (
-        <p style={{ margin: 0, fontSize: 13, color: "var(--app-warning)" }}>
+        <p style={{ margin: 0, fontSize: 13, color: "var(--warning)" }}>
           No kickoff date set. The checklist below is complete and usable, but it is phrased in weeks
           relative to kickoff rather than dates — we will not make a date up for you.
         </p>
@@ -324,7 +324,7 @@ function KickoffPanel({
           flexWrap: "wrap",
           gap: 10,
           alignItems: "center",
-          borderTop: "1px solid var(--app-line)",
+          borderTop: "1px solid var(--line)",
           paddingTop: 12,
         }}
       >
@@ -436,7 +436,7 @@ function PhasePanel({
           justifyContent: "space-between",
           background: "transparent",
           border: "none",
-          color: "var(--app-ink)",
+          color: "var(--ink)",
           cursor: "pointer",
           textAlign: "left",
           padding: 0,
@@ -490,10 +490,10 @@ function TaskRow({
   return (
     <li
       style={{
-        border: "1px solid var(--app-line)",
+        border: "1px solid var(--line)",
         borderLeft: `4px solid ${tone}`,
-        borderRadius: "var(--app-radius)",
-        background: "var(--app-soft)",
+        borderRadius: "var(--radius-sm)",
+        background: "var(--surface-2)",
         padding: 12,
         opacity: dim ? 0.72 : 1,
         display: "grid",
@@ -523,14 +523,14 @@ function TaskRow({
       </p>
 
       {compact ? null : (
-        <p style={{ margin: 0, fontSize: 14, color: "var(--app-ink)" }}>
+        <p style={{ margin: 0, fontSize: 14, color: "var(--ink)" }}>
           <strong style={{ fontWeight: 600 }}>Why: </strong>
           {task.why}
         </p>
       )}
 
       {!compact && task.caveat ? (
-        <p style={{ margin: 0, fontSize: 13, color: "var(--app-warning)" }}>{task.caveat}</p>
+        <p style={{ margin: 0, fontSize: 13, color: "var(--warning)" }}>{task.caveat}</p>
       ) : null}
 
       {!compact && task.resourceLinks.length > 0 ? (

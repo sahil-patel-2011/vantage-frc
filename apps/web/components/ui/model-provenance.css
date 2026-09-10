@@ -21,7 +21,7 @@
   flex-wrap: wrap;
   gap: 0 4px;
   margin: 0;
-  color: var(--app-muted);
+  color: var(--muted);
   font-size: 11px;
   line-height: 1.5;
   overflow-wrap: anywhere;
@@ -43,11 +43,11 @@
   align-items: start;
   gap: 10px;
   padding: 11px 13px;
-  border: 1px solid var(--app-line);
-  border-radius: var(--app-radius, 10px);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm, 10px);
   /* Neutral, low-contrast fill: informational, never the warn/critical palette. */
-  background: color-mix(in srgb, var(--app-accent) 6%, var(--app-soft));
-  color: var(--app-ink);
+  background: color-mix(in srgb, var(--accent) 6%, var(--surface-2));
+  color: var(--ink);
 }
 
 .vmp-notice-icon {
@@ -57,7 +57,7 @@
   width: 18px;
   height: 18px;
   margin-top: 1px;
-  color: var(--app-accent);
+  color: var(--accent);
 }
 
 .vmp-notice-icon svg {
@@ -81,10 +81,10 @@
   justify-content: center;
   min-height: 44px;
   padding: 8px 14px;
-  border: 1px solid var(--app-line);
+  border: 1px solid var(--line);
   border-radius:var(--radius-xs);
-  background: var(--app-surface);
-  color: var(--app-ink);
+  background: var(--surface);
+  color: var(--ink);
   font: inherit;
   font-size: 12px;
   font-weight: 700;
@@ -94,12 +94,12 @@
 }
 
 .vmp-dismiss:hover {
-  border-color: color-mix(in srgb, var(--app-accent) 40%, var(--app-line));
-  background: color-mix(in srgb, var(--app-accent) 9%, var(--app-surface));
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
+  background: color-mix(in srgb, var(--accent) 9%, var(--surface));
 }
 
 .vmp-dismiss:focus-visible {
-  outline: 2px solid var(--app-accent);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 

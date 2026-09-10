@@ -39,7 +39,7 @@ jobs:
   browser:
     name: Playwright
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 40
     env:
       CI: "true"
       NEXT_TELEMETRY_DISABLED: "1"

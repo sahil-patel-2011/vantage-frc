@@ -10,9 +10,9 @@
   display: block;
   background: linear-gradient(
     90deg,
-    var(--app-soft),
-    color-mix(in srgb, var(--app-soft) 60%, var(--app-line)),
-    var(--app-soft)
+    var(--surface-2),
+    color-mix(in srgb, var(--surface-2) 60%, var(--line)),
+    var(--surface-2)
   );
   background-size: 200% 100%;
   animation: skeletonShimmer 1.4s ease-in-out infinite;
@@ -85,7 +85,7 @@
 }
 .toneNeutral {
   color: var(--muted);
-  background: var(--app-soft);
+  background: var(--surface-2);
   border-color: color-mix(in srgb, var(--line) 70%, transparent) !important;
 }
 .badgeIcon {
@@ -276,7 +276,7 @@
   position: relative;
   height: 8px;
   border-radius:var(--radius-pill);
-  background: var(--app-soft);
+  background: var(--surface-2);
   overflow: hidden;
 }
 .progressTrackEmpty {
@@ -385,7 +385,7 @@
   padding: 3px 8px;
   border-radius:var(--radius-pill);
   border: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
-  background: var(--app-soft);
+  background: var(--surface-2);
   color: var(--muted);
   font-size: 11px;
   font-weight: 600;
@@ -548,7 +548,7 @@
   border-radius:var(--radius-xs);
   line-height: 0;
 }
-.dialogClose:hover { background: var(--app-soft); }
+.dialogClose:hover { background: var(--surface-2); }
 .dialogClose svg { width: 18px; height: 18px; }
 .dialogBody { margin: 4px 0 0; font-size: 13px; line-height: 1.45; color: var(--muted); }
 .dialogActions { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
@@ -605,10 +605,10 @@
 }
 .btnSecondary:hover:not(:disabled) { border-color: color-mix(in srgb, var(--accent) 40%, var(--line)); }
 .btnGhost { background: transparent; color: var(--ink); }
-.btnGhost:hover:not(:disabled) { background: var(--app-soft); }
+.btnGhost:hover:not(:disabled) { background: var(--surface-2); }
 /* --app-critical-fill is the one destructive fill in the product (it is what
    `.app-button.danger` paints); #dc2626 here was a second one, light-only. */
-.btnDanger { background: var(--app-critical-fill); color: #fff; }
+.btnDanger { background: var(--critical-fill); color: #fff; }
 .btnDanger:hover:not(:disabled) { background: var(--critical); }
 .btnIcon {
   min-width: 24px;
@@ -618,7 +618,7 @@
   background: transparent;
   color: var(--ink);
 }
-.btnIcon:hover:not(:disabled) { background: var(--app-soft); }
+.btnIcon:hover:not(:disabled) { background: var(--surface-2); }
 @media (pointer: coarse) {
   .btnIcon { min-width: 44px; min-height: 44px; }
 }

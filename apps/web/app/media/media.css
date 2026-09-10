@@ -22,7 +22,7 @@
 }
 .media-form-actions{display:flex;flex-wrap:wrap;gap:8px}
 .media-kit-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
-.media-overdue{color:var(--app-critical);font-size:.85rem;font-weight:600}
+.media-overdue{color:var(--critical);font-size:.85rem;font-weight:600}
 .media-missing{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .media-missing span{font-size:0.85rem;opacity:0.85}
 @media(max-width:900px){

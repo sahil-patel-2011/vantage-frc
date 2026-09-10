@@ -38,7 +38,7 @@
 }
 
 .section-guide-search .eyebrow {
-  color: var(--app-muted);
+  color: var(--muted);
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.07em;
@@ -49,15 +49,15 @@
   width: 100%;
   min-height: 46px;
   padding: 10px 12px;
-  color: var(--app-ink);
-  background: var(--app-surface);
-  border: 1px solid var(--app-line);
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
   border-radius:var(--radius-xs);
   font-size: 16px;
 }
 
 .section-guide-search input:focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--app-accent) 45%, transparent);
+  outline: 3px solid color-mix(in srgb, var(--accent) 45%, transparent);
   outline-offset: 1px;
 }
 
@@ -73,7 +73,7 @@
   gap: 8px 16px;
   margin: 10px 0 8px;
   padding-bottom: 6px;
-  border-bottom: 1px solid var(--app-line);
+  border-bottom: 1px solid var(--line);
 }
 
 .section-guide-hub h3 {
@@ -85,7 +85,7 @@
   display: inline-flex;
   align-items: center;
   min-height: 44px;
-  color: var(--app-accent);
+  color: var(--accent);
   font-size: 12px;
   font-weight: 700;
   text-decoration: none;
@@ -105,10 +105,10 @@
 
 .section-guide-card {
   padding: 0;
-  color: var(--app-ink);
-  background: var(--app-surface);
-  border: 1px solid var(--app-line);
-  border-radius: var(--app-radius, 10px);
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm, 10px);
 }
 
 .section-guide-card > summary {
@@ -126,7 +126,7 @@
 
 .section-guide-card > summary::after {
   content: "Show steps";
-  color: var(--app-accent);
+  color: var(--accent);
   font-size: 11px;
   font-weight: 700;
 }
@@ -136,7 +136,7 @@
 }
 
 .section-guide-card > summary:focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--app-accent) 45%, transparent);
+  outline: 3px solid color-mix(in srgb, var(--accent) 45%, transparent);
   outline-offset: -3px;
 }
 
@@ -145,7 +145,7 @@
 }
 
 .section-guide-card > summary span {
-  color: var(--app-muted);
+  color: var(--muted);
   font-size: 13px;
   line-height: 1.5;
 }
@@ -154,7 +154,7 @@
   display: grid;
   gap: 10px;
   padding: 0 14px 14px;
-  border-top: 1px solid var(--app-line);
+  border-top: 1px solid var(--line);
   padding-top: 12px;
 }
 
@@ -167,7 +167,7 @@
 }
 
 .section-guide-fact > span {
-  color: var(--app-muted);
+  color: var(--muted);
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.07em;
@@ -182,9 +182,9 @@
 
 .section-guide-moment-chips em {
   padding: 5px 8px;
-  color: var(--app-muted);
-  background: var(--app-soft);
-  border: 1px solid var(--app-line);
+  color: var(--muted);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
   border-radius:var(--radius-xs);
   font-size: 10px;
   font-style: normal;
@@ -193,7 +193,7 @@
 
 .section-guide-detail h4 {
   margin: 4px 0 0;
-  color: var(--app-muted);
+  color: var(--muted);
   font-size:var(--text-xs);
   font-weight: 800;
   letter-spacing: 0.07em;
@@ -211,7 +211,7 @@
 }
 
 .section-guide-detail ol li::marker {
-  color: var(--app-accent);
+  color: var(--accent);
   font-weight: 700;
 }
 
@@ -227,9 +227,9 @@
   align-items: center;
   min-height: 44px;
   padding: 0 12px;
-  color: var(--app-ink);
-  background: var(--app-soft);
-  border: 1px solid var(--app-line);
+  color: var(--ink);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
   border-radius:var(--radius-xs);
   font-size: 12px;
   font-weight: 700;
@@ -237,8 +237,8 @@
 }
 
 .section-guide-links a:hover {
-  color: var(--app-accent);
-  border-color: color-mix(in srgb, var(--app-accent) 45%, var(--app-line));
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
 }
 
 @media (max-width: 720px) {

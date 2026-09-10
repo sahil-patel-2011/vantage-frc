@@ -19,7 +19,7 @@ import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure"
 type ActionBody = Record<string, unknown> & { action: string; orgId: string };
 
 const COLOR_HEX: Record<StrokeColor, string> = {
-  ink: "var(--app-ink)",
+  ink: "var(--ink)",
   red: "#d43a3a",
   blue: "#2f6fdd",
   green: "#1d9e5f",

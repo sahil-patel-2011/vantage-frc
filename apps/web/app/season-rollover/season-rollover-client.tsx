@@ -228,7 +228,7 @@ function PlanPanel({
       ) : null}
 
       <form
-        style={{ marginTop: 16, display: "grid", gap: 10, borderTop: "1px solid var(--app-border, #2a2f3a)", paddingTop: 16 }}
+        style={{ marginTop: 16, display: "grid", gap: 10, borderTop: "1px solid var(--line, #2a2f3a)", paddingTop: 16 }}
         onSubmit={(event) => {
           event.preventDefault();
           const from = Number(fromYear);

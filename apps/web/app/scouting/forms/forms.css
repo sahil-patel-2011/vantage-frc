@@ -66,9 +66,9 @@
   margin: 0 0 14px;
   padding: 10px 12px;
   border-radius:var(--radius-sm);
-  border: 1px solid color-mix(in srgb, var(--app-warning) 40%, var(--line));
-  background: color-mix(in srgb, var(--app-warning) 12%, var(--surface));
-  color: var(--app-warning);
+  border: 1px solid color-mix(in srgb, var(--warning) 40%, var(--line));
+  background: color-mix(in srgb, var(--warning) 12%, var(--surface));
+  color: var(--warning);
   font: 600 13px var(--font-source-sans), ui-sans-serif;
 }
 
@@ -336,15 +336,15 @@
 }
 
 .sfb-budget.caution {
-  color: var(--app-warning);
-  background: color-mix(in srgb, var(--app-warning) 12%, var(--surface));
-  border-color: color-mix(in srgb, var(--app-warning) 40%, var(--line));
+  color: var(--warning);
+  background: color-mix(in srgb, var(--warning) 12%, var(--surface));
+  border-color: color-mix(in srgb, var(--warning) 40%, var(--line));
 }
 
 .sfb-budget.over_budget {
-  color: var(--app-critical);
-  background: color-mix(in srgb, var(--app-critical) 12%, var(--surface));
-  border-color: color-mix(in srgb, var(--app-critical) 42%, var(--line));
+  color: var(--critical);
+  background: color-mix(in srgb, var(--critical) 12%, var(--surface));
+  border-color: color-mix(in srgb, var(--critical) 42%, var(--line));
 }
 
 .sfb-budget.healthy {
@@ -357,7 +357,7 @@
   padding-left: 1.1rem;
   display: grid;
   gap: 4px;
-  color: var(--app-critical);
+  color: var(--critical);
   font: 600 13px var(--font-source-sans), ui-sans-serif;
 }
 
@@ -431,9 +431,9 @@
 
 .sfb-status-unpublished .sfb-status-pill,
 .sfb-status-inline.sfb-status-unpublished strong {
-  color: var(--app-warning);
-  background: color-mix(in srgb, var(--app-warning) 12%, var(--surface));
-  border-color: color-mix(in srgb, var(--app-warning) 40%, var(--line));
+  color: var(--warning);
+  background: color-mix(in srgb, var(--warning) 12%, var(--surface));
+  border-color: color-mix(in srgb, var(--warning) 40%, var(--line));
 }
 
 .sfb-status-draft_changes .sfb-status-pill,
@@ -445,9 +445,9 @@
 
 .sfb-status-published .sfb-status-pill,
 .sfb-status-inline.sfb-status-published strong {
-  color: var(--app-positive);
-  background: color-mix(in srgb, var(--app-positive) 12%, var(--surface));
-  border-color: color-mix(in srgb, var(--app-positive) 40%, var(--line));
+  color: var(--positive);
+  background: color-mix(in srgb, var(--positive) 12%, var(--surface));
+  border-color: color-mix(in srgb, var(--positive) 40%, var(--line));
 }
 
 .sfb-status-inline {

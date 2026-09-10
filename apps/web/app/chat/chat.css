@@ -20,9 +20,9 @@
   gap: 6px;
   align-content: start;
   padding: 12px 14px;
-  background: var(--app-surface);
-  border: 1px solid var(--app-line);
-  border-radius: var(--app-radius);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
 }
 .ch-scope-card h2 {
   margin: 0;
@@ -30,7 +30,7 @@
 }
 .ch-scope-card p {
   margin: 0;
-  color: var(--app-muted);
+  color: var(--muted);
   font-size: 12px;
   line-height: 1.4;
 }
@@ -46,13 +46,13 @@
   gap: 8px 14px;
   align-items: center;
   padding: 10px 14px;
-  background: var(--app-surface);
-  border: 1px solid var(--app-line);
-  border-radius: var(--app-radius);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
   font-size: 12px;
 }
 .ch-gov a {
-  color: var(--app-accent);
+  color: var(--accent);
   font-weight: 700;
   text-decoration: none;
 }
@@ -64,10 +64,10 @@
   align-items: center;
   gap: 6px;
   margin-right: 4px;
-  color: var(--app-muted);
+  color: var(--muted);
 }
 .ch-cache strong {
-  color: var(--app-ink);
+  color: var(--ink);
   font-weight: 800;
 }
 .ch-layout {
@@ -85,9 +85,9 @@
   align-content: start;
   min-width: 0;
   padding: 14px;
-  background: var(--app-surface);
-  border: 1px solid var(--app-line);
-  border-radius: var(--app-radius);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
 }
 .ch-sidebar h2,
 .ch-main h2,
@@ -105,9 +105,9 @@
   min-height: 44px;
   padding: 8px 10px;
   text-align: left;
-  color: var(--app-ink);
-  background: var(--app-bg);
-  border: 1px solid var(--app-line);
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
   border-radius:var(--radius-xs);
   font: inherit;
   font-size: 12px;
@@ -116,7 +116,7 @@
 .ch-thread-actions button:hover,
 .ch-thread-list button:hover,
 .ch-context button:hover {
-  border-color: color-mix(in srgb, var(--app-accent) 35%, var(--app-line));
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--line));
 }
 .ch-thread-list {
   display: grid;
@@ -131,16 +131,16 @@
   width: 100%;
 }
 .ch-thread-list button.active {
-  background: color-mix(in srgb, var(--app-accent) 12%, var(--app-surface));
-  border-color: color-mix(in srgb, var(--app-accent) 40%, var(--app-line));
-  color: var(--app-accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
+  color: var(--accent);
 }
 .ch-thread-list span {
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--app-muted);
+  color: var(--muted);
 }
 .ch-thread-list button.active span {
   color: inherit;
@@ -158,7 +158,7 @@
 }
 .ch-empty p {
   margin: 0;
-  color: var(--app-muted);
+  color: var(--muted);
   font-size: 13px;
   max-width: 42ch;
 }
@@ -181,10 +181,10 @@
 }
 .ch-shared-banner {
   padding: 8px 12px;
-  background: color-mix(in srgb, var(--app-warning) 12%, var(--app-surface));
-  border: 1px solid color-mix(in srgb, var(--app-warning) 35%, var(--app-line));
+  background: color-mix(in srgb, var(--warning) 12%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--warning) 35%, var(--line));
   border-radius:var(--radius-xs);
-  color: var(--app-warning);
+  color: var(--warning);
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.03em;
@@ -200,19 +200,19 @@
   display: grid;
   gap: 6px;
   padding: 12px 14px;
-  background: var(--app-bg);
-  border: 1px solid var(--app-line);
+  background: var(--bg);
+  border: 1px solid var(--line);
   border-radius:var(--radius-sm);
 }
 .ch-msg.assistant {
-  border-color: color-mix(in srgb, var(--app-accent) 25%, var(--app-line));
+  border-color: color-mix(in srgb, var(--accent) 25%, var(--line));
 }
 .ch-msg > span {
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--app-muted);
+  color: var(--muted);
 }
 .ch-msg-body {
   margin: 0;
@@ -230,8 +230,8 @@
   gap: 2px;
   min-width: 120px;
   padding: 8px 10px;
-  background: var(--app-surface);
-  border: 1px solid var(--app-line);
+  background: var(--surface);
+  border: 1px solid var(--line);
   border-radius:var(--radius-xs);
   font-size: 11px;
 }
@@ -239,26 +239,26 @@
   font-size: 12px;
 }
 .ch-tool.status-empty {
-  border-color: color-mix(in srgb, var(--app-warning) 40%, var(--app-line));
+  border-color: color-mix(in srgb, var(--warning) 40%, var(--line));
 }
 .ch-tool.status-error,
 .ch-tool.status-failed {
-  border-color: color-mix(in srgb, var(--app-critical) 40%, var(--app-line));
+  border-color: color-mix(in srgb, var(--critical) 40%, var(--line));
 }
 .ch-provenance {
   margin: 0;
   padding-left: 16px;
-  color: var(--app-muted);
+  color: var(--muted);
   font-size: 11px;
 }
 .ch-msg small {
-  color: var(--app-muted);
+  color: var(--muted);
   font-size: 11px;
 }
 .ch-promote {
   justify-self: start;
   padding: 0;
-  color: var(--app-accent);
+  color: var(--accent);
   background: none;
   border: 0;
   font-size: 12px;
@@ -278,16 +278,16 @@
 .ch-composer-note {
   font-size: 11px;
   font-weight: 700;
-  color: var(--app-warning);
+  color: var(--warning);
 }
 .ch-composer textarea,
 .ch-context textarea,
 .ch-context input {
   min-height: 44px;
   padding: 8px 10px;
-  color: var(--app-ink);
-  background: var(--app-bg);
-  border: 1px solid var(--app-line);
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
   border-radius:var(--radius-xs);
   font: inherit;
 }
@@ -304,15 +304,15 @@
 }
 .ch-status {
   margin: 0;
-  color: var(--app-muted);
+  color: var(--muted);
   font-size: 12px;
 }
 .ch-context-block {
   display: grid;
   gap: 8px;
   padding: 12px;
-  background: var(--app-bg);
-  border: 1px solid var(--app-line);
+  background: var(--bg);
+  border: 1px solid var(--line);
   border-radius:var(--radius-xs);
 }
 .ch-row {
@@ -331,7 +331,7 @@
   gap: 6px;
 }
 .ch-actions button.secondary {
-  color: var(--app-muted);
+  color: var(--muted);
 }
 .ch-budget {
   display: grid;
@@ -340,7 +340,7 @@
 .ch-budget label {
   display: grid;
   gap: 4px;
-  color: var(--app-muted);
+  color: var(--muted);
   font-size: 11px;
   font-weight: 700;
 }
@@ -355,12 +355,12 @@
   display: grid;
   gap: 4px;
   padding: 10px;
-  background: var(--app-bg);
-  border: 1px solid var(--app-line);
+  background: var(--bg);
+  border: 1px solid var(--line);
   border-radius:var(--radius-xs);
 }
 .ch-memories small {
-  color: var(--app-muted);
+  color: var(--muted);
   font-size: 10px;
   font-weight: 800;
   text-transform: uppercase;

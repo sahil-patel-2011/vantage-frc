@@ -10,7 +10,7 @@
 .rwi-setup-steps,.rwi-list,.rwi-trend{list-style:none;padding:0;margin:0;display:grid;gap:10px}
 .rwi-setup-steps li,.rwi-row{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
 .rwi-tip,.rwi-block{margin:0;display:block}
-.rwi-playoff-cue{margin:0;padding:10px 12px;border-radius:var(--radius-xs);border:1px solid color-mix(in srgb,var(--app-warning) 38%,var(--app-line));background:color-mix(in srgb,var(--app-warning) 12%,var(--app-surface));color:var(--app-warning);font-size:12px;font-weight:600;line-height:1.4}
+.rwi-playoff-cue{margin:0;padding:10px 12px;border-radius:var(--radius-xs);border:1px solid color-mix(in srgb,var(--warning) 38%,var(--line));background:color-mix(in srgb,var(--warning) 12%,var(--surface));color:var(--warning);font-size:12px;font-weight:600;line-height:1.4}
 .rwi-trend li{display:grid;grid-template-columns:100px 1fr 90px;gap:8px;align-items:center}
 .rwi-trend-val{text-align:right}
 .rwi-checks{border:none;padding:0;margin:0;display:flex;gap:12px;flex-wrap:wrap}

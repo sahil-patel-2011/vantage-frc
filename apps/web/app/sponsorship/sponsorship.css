@@ -80,9 +80,9 @@
 }
 
 .svp-badge.ready {
-  color: var(--app-positive);
-  background: color-mix(in srgb, var(--app-positive) 14%, var(--surface));
-  border-color: color-mix(in srgb, var(--app-positive) 38%, var(--line));
+  color: var(--positive);
+  background: color-mix(in srgb, var(--positive) 14%, var(--surface));
+  border-color: color-mix(in srgb, var(--positive) 38%, var(--line));
 }
 
 .svp-composer {
@@ -240,9 +240,9 @@
 }
 
 .svp-meter i.ok {
-  color: var(--app-positive);
-  background: color-mix(in srgb, var(--app-positive) 14%, var(--surface));
-  border-color: color-mix(in srgb, var(--app-positive) 38%, var(--line));
+  color: var(--positive);
+  background: color-mix(in srgb, var(--positive) 14%, var(--surface));
+  border-color: color-mix(in srgb, var(--positive) 38%, var(--line));
 }
 
 .svp-note {

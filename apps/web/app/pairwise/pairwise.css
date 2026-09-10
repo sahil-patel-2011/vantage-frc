@@ -22,7 +22,7 @@
 
 .pairwise-actions li span,
 .pairwise-recent li span {
-  color: var(--app-muted);
+  color: var(--muted);
   font-size: 13px;
 }
 

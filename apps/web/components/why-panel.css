@@ -6,9 +6,9 @@
   display: grid;
   gap: 0;
   margin-top: 16px;
-  background: var(--app-surface);
-  border: 1px solid var(--app-line);
-  border-radius: var(--app-radius, 10px);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm, 10px);
   overflow: hidden;
 }
 
@@ -19,8 +19,8 @@
   width: 100%;
   min-height: 52px;
   padding: 12px 14px;
-  color: var(--app-ink);
-  background: var(--app-soft);
+  color: var(--ink);
+  background: var(--surface-2);
   border: 0;
   border-bottom: 1px solid transparent;
   text-align: left;
@@ -28,16 +28,16 @@
 }
 
 .why-toggle[aria-expanded="true"] {
-  border-bottom-color: var(--app-line);
+  border-bottom-color: var(--line);
 }
 
 .why-toggle:hover {
-  background: color-mix(in srgb, var(--app-accent) 8%, var(--app-soft));
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface-2));
 }
 
 .why-toggle-caret {
   width: 16px;
-  color: var(--app-accent);
+  color: var(--accent);
   font-size: 13px;
   line-height: 1;
 }
@@ -53,13 +53,13 @@
 }
 
 .why-toggle-text small {
-  color: var(--app-muted);
+  color: var(--muted);
   font-size: 11px;
 }
 
 .why-toggle-hint {
   margin-left: auto;
-  color: var(--app-accent);
+  color: var(--accent);
   font-size: 11px;
   font-weight: 700;
 }
@@ -74,7 +74,7 @@
   display: grid;
   gap: 8px;
   padding: 14px;
-  border-top: 1px solid var(--app-line);
+  border-top: 1px solid var(--line);
 }
 
 .why-step:first-child {
@@ -94,8 +94,8 @@
   flex: none;
   width: 22px;
   height: 22px;
-  color: var(--app-accent-ink);
-  background: var(--app-accent);
+  color: var(--accent-ink);
+  background: var(--accent);
   border-radius: 50%;
   font-size: 11px;
   font-weight: 800;
@@ -113,10 +113,10 @@
 
 .why-status {
   padding: 4px 7px;
-  border: 1px solid var(--app-line);
+  border: 1px solid var(--line);
   border-radius:var(--radius-xs);
-  color: var(--app-muted);
-  background: var(--app-soft);
+  color: var(--muted);
+  background: var(--surface-2);
   font-size: 10px;
   font-weight: 800;
   text-transform: uppercase;
@@ -124,18 +124,18 @@
 }
 
 .why-status--error {
-  color: var(--app-critical);
-  border-color: color-mix(in srgb, var(--app-critical) 45%, var(--app-line));
+  color: var(--critical);
+  border-color: color-mix(in srgb, var(--critical) 45%, var(--line));
 }
 
 .why-status--setup_required {
-  color: var(--app-warning);
-  border-color: color-mix(in srgb, var(--app-warning) 45%, var(--app-line));
+  color: var(--warning);
+  border-color: color-mix(in srgb, var(--warning) 45%, var(--line));
 }
 
 .why-outcome {
   margin: 0 0 0 32px;
-  color: var(--app-muted);
+  color: var(--muted);
   font-size: 12px;
   line-height: 1.5;
   overflow-wrap: anywhere;
@@ -147,9 +147,9 @@
   gap: 4px;
   margin: 0 0 0 32px;
   padding: 10px 12px;
-  background: var(--app-bg);
-  border: 1px solid var(--app-line);
-  border-left: 3px solid var(--app-accent);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
   border-radius:var(--radius-xs);
   font-size: 12px;
   line-height: 1.55;
@@ -158,7 +158,7 @@
 
 .why-reason > span,
 .why-principle > span {
-  color: var(--app-accent);
+  color: var(--accent);
   font-size: 9px;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -166,21 +166,21 @@
 }
 
 .why-reason--missing {
-  color: var(--app-muted);
-  border-left-color: var(--app-line);
+  color: var(--muted);
+  border-left-color: var(--line);
   font-style: italic;
 }
 
 .why-reason--missing > span {
-  color: var(--app-muted);
+  color: var(--muted);
 }
 
 .why-principle {
-  border-left-color: var(--app-positive);
+  border-left-color: var(--positive);
 }
 
 .why-principle > span {
-  color: var(--app-positive);
+  color: var(--positive);
 }
 
 .why-sources {
@@ -201,23 +201,23 @@
   display: inline-flex;
   align-items: center;
   min-height: 44px;
-  color: var(--app-accent);
+  color: var(--accent);
   font-weight: 700;
   text-decoration: none;
   overflow-wrap: anywhere;
 }
 
 .why-sources span {
-  color: var(--app-muted);
+  color: var(--muted);
   font-weight: 700;
 }
 
 .why-sources code {
   display: block;
   padding: 8px 10px;
-  color: var(--app-ink);
-  background: var(--app-soft);
-  border: 1px solid var(--app-line);
+  color: var(--ink);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
   border-radius:var(--radius-xs);
   font: 11px/1.6 ui-monospace, monospace;
   overflow-x: auto;
@@ -230,11 +230,11 @@
   gap: 8px;
   margin: 2px 0 0 32px;
   padding-top: 10px;
-  border-top: 1px dashed var(--app-line);
+  border-top: 1px dashed var(--line);
 }
 
 .why-explain-label {
-  color: var(--app-muted);
+  color: var(--muted);
   font-size: 9px;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -250,9 +250,9 @@
 .why-explain-button {
   min-height: 44px;
   padding: 10px 14px;
-  color: var(--app-ink);
-  background: var(--app-surface);
-  border: 1px solid var(--app-line);
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
   border-radius:var(--radius-xs);
   font-size: 12px;
   font-weight: 700;
@@ -260,8 +260,8 @@
 }
 
 .why-explain-button:hover:not(:disabled) {
-  border-color: var(--app-accent);
-  color: var(--app-accent);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .why-explain-button:disabled {
@@ -272,8 +272,8 @@
 .why-explain-text {
   margin: 0;
   padding: 10px 12px;
-  background: var(--app-bg);
-  border: 1px solid var(--app-line);
+  background: var(--bg);
+  border: 1px solid var(--line);
   border-radius:var(--radius-xs);
   font-size: 12px;
   line-height: 1.6;
@@ -282,13 +282,13 @@
 
 .why-explain-error {
   margin: 0;
-  color: var(--app-critical);
+  color: var(--critical);
   font-size: 12px;
   font-weight: 600;
 }
 
 .why-panel :focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--app-accent) 45%, transparent);
+  outline: 3px solid color-mix(in srgb, var(--accent) 45%, transparent);
   outline-offset: 2px;
 }
 

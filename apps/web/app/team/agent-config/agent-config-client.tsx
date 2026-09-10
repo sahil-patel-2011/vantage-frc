@@ -264,7 +264,7 @@ export default function AgentConfigClient() {
               </button>
             </div>
           ) : (
-            <p style={{ fontSize: 12, color: "var(--app-muted)" }}>
+            <p style={{ fontSize: 12, color: "var(--muted)" }}>
               You can read the team config. Editing is limited to owners/admins
               {view.allowMemberEdits ? "" : " (member edits are off)"}.
             </p>
@@ -303,7 +303,7 @@ export default function AgentConfigClient() {
             );
           })}
           {view.items.length === 0 ? (
-            <p style={{ fontSize: 13, color: "var(--app-muted)" }}>
+            <p style={{ fontSize: 13, color: "var(--muted)" }}>
               Nothing shared yet. Start with a <b>rules</b> item — one markdown list of the conventions every
               agent on the team must follow.
             </p>
@@ -379,7 +379,7 @@ export default function AgentConfigClient() {
 
             <details className="agent-config-cheatsheet">
               <summary>Format cheat-sheet: {KIND_LABEL[editor.kind]}</summary>
-              <p style={{ fontSize: 12, color: "var(--app-muted)" }}>{cheat.hint}</p>
+              <p style={{ fontSize: 12, color: "var(--muted)" }}>{cheat.hint}</p>
               <pre>{cheat.example}</pre>
             </details>
 
@@ -497,9 +497,9 @@ export default function AgentConfigClient() {
               }}>
                 <summary>Revision history</summary>
                 {revisions === null ? (
-                  <p style={{ fontSize: 12, color: "var(--app-muted)" }}>Loading…</p>
+                  <p style={{ fontSize: 12, color: "var(--muted)" }}>Loading…</p>
                 ) : revisions.length === 0 ? (
-                  <p style={{ fontSize: 12, color: "var(--app-muted)" }}>No revisions recorded yet.</p>
+                  <p style={{ fontSize: 12, color: "var(--muted)" }}>No revisions recorded yet.</p>
                 ) : (
                   <ul>
                     {revisions.map((revision) => (
@@ -542,14 +542,14 @@ export default function AgentConfigClient() {
         <h3>Claude Code (one command, run in your robot-code repo)</h3>
         <pre>{`vantage-cad agent sync # writes .claude/agents, team rules + CLAUDE.md import, .mcp.json (vantage-* only)
 vantage-cad agent sync --dry-run # preview without writing`}</pre>
-        <p style={{ fontSize: 12, color: "var(--app-muted)" }}>
+        <p style={{ fontSize: 12, color: "var(--muted)" }}>
           Requires one-time pairing via <code>vantage-cad setup</code>. Permissions are never auto-applied —
           sync writes <code>.claude/vantage-permissions.suggested.json</code> for a human to review.
         </p>
         <h3>Cursor (same command, Cursor-native formats)</h3>
         <pre>{`vantage-cad agent sync --agent cursor # rules → .cursor/rules/vantage/*.mdc, skills → .cursor/skills, MCP → .cursor/mcp.json
 vantage-cad agent sync --agent all # Claude Code + Cursor together`}</pre>
-        <p style={{ fontSize: 12, color: "var(--app-muted)" }}>
+        <p style={{ fontSize: 12, color: "var(--muted)" }}>
           Without <code>--agent</code>, sync targets whatever the repo already uses (a <code>.cursor/</code>{" "}
           folder enables Cursor). Rules without path scopes become always-on (<code>alwaysApply: true</code>);
           a rule starting with a <code>globs:</code> frontmatter block becomes auto-attached to matching
@@ -560,11 +560,11 @@ vantage-cad agent sync --agent all # Claude Code + Cursor together`}</pre>
         <h3>Any custom agent (typed JSON export)</h3>
         <pre>{`GET ${bundleUrl}
 GET ${bundleUrl}&format=cursor # same content materialized as Cursor-native files`}</pre>
-        <p style={{ fontSize: 12, color: "var(--app-muted)" }}>
+        <p style={{ fontSize: 12, color: "var(--muted)" }}>
           The export is signed in as you: team-wide items, plus the items shared with you.
         </p>
         <h3>Vantage in-app agent</h3>
-        <p style={{ fontSize: 12, color: "var(--app-muted)" }}>
+        <p style={{ fontSize: 12, color: "var(--muted)" }}>
           Valid <b>rules</b> items are injected into every in-app AI run automatically, labeled as
           &quot;Team agent rules&quot; in the run&apos;s context sources.
         </p>

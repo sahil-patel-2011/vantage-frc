@@ -1,38 +1,38 @@
 /* Season Calendar — co-located so styling survives independently of the shared
    global stylesheet. All selectors are .cal-* prefixed and theme-aware. */
-.cal-page input,.cal-page select{min-height:38px;padding:8px 10px;color:var(--app-ink);background:var(--app-bg);border:1px solid var(--app-line);border-radius:var(--radius-xs);font:inherit}
+.cal-page input,.cal-page select{min-height:38px;padding:8px 10px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:var(--radius-xs);font:inherit}
 .cal-empty{display:grid;gap:12px;justify-items:start;padding:26px}
-.cal-link{padding:0;color:var(--app-accent);background:none;border:0;font-size:12px;font-weight:700;cursor:pointer}
-.cal-link.danger{color:var(--app-critical)}
+.cal-link{padding:0;color:var(--accent);background:none;border:0;font-size:12px;font-weight:700;cursor:pointer}
+.cal-link.danger{color:var(--critical)}
 .cal-link:disabled{opacity:.5;cursor:default}
 
 /* Hero: next-milestone countdown + season progress. */
 .cal-hero{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;flex-wrap:wrap}
 .cal-hero-next{display:grid;gap:6px;justify-items:start;min-width:0}
-.cal-hero-kicker{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--app-muted)}
-.cal-countdown{font-size:32px;font-weight:800;line-height:1.05;color:var(--app-accent)}
+.cal-hero-kicker{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.cal-countdown{font-size:32px;font-weight:800;line-height:1.05;color:var(--accent)}
 .cal-hero-title{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .cal-hero-title strong{font-size:16px}
 .cal-hero-progress{display:grid;gap:8px;align-content:start;min-width:220px;flex:1;max-width:320px;font-size:12px}
-.cal-track{height:8px;background:var(--app-soft);border-radius:var(--radius-pill);overflow:hidden}
-.cal-track i{display:block;height:100%;background:var(--app-accent)}
-.cal-track i.done{background:var(--app-positive)}
+.cal-track{height:8px;background:var(--surface-2);border-radius:var(--radius-pill);overflow:hidden}
+.cal-track i{display:block;height:100%;background:var(--accent)}
+.cal-track i.done{background:var(--positive)}
 
 /* Kind chips: pill + border, colored via currentColor so they stay theme-safe. */
 .cal-chip{display:inline-flex;align-items:center;padding:2px 9px;border:1px solid currentColor;border-radius:var(--radius-pill);font-size:11px;font-weight:700;letter-spacing:.02em;white-space:nowrap}
-.cal-chip.kind-kickoff,.cal-chip.kind-design{color:var(--app-accent)}
-.cal-chip.kind-build{color:var(--app-ink)}
-.cal-chip.kind-practice{color:var(--app-positive)}
-.cal-chip.kind-event{color:var(--app-warning)}
-.cal-chip.kind-deadline{color:var(--app-critical)}
-.cal-chip.kind-meeting,.cal-chip.kind-outreach,.cal-chip.kind-other{color:var(--app-muted)}
+.cal-chip.kind-kickoff,.cal-chip.kind-design{color:var(--accent)}
+.cal-chip.kind-build{color:var(--ink)}
+.cal-chip.kind-practice{color:var(--positive)}
+.cal-chip.kind-event{color:var(--warning)}
+.cal-chip.kind-deadline{color:var(--critical)}
+.cal-chip.kind-meeting,.cal-chip.kind-outreach,.cal-chip.kind-other{color:var(--muted)}
 
 /* Seed panel (collapsible). */
-.cal-seed summary{font-size:13px;font-weight:700;color:var(--app-ink);cursor:pointer}
+.cal-seed summary{font-size:13px;font-weight:700;color:var(--ink);cursor:pointer}
 .cal-seed-body{display:grid;gap:10px;padding-top:12px}
 .cal-seed-body p{margin:0;font-size:12px}
 .cal-seed-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.cal-template-pick{display:grid;gap:6px;font-size:12px;font-weight:600;color:var(--app-muted)}
+.cal-template-pick{display:grid;gap:6px;font-size:12px;font-weight:600;color:var(--muted)}
 .cal-template-pick select{font-weight:500}
 .cal-template-desc{max-width:52rem}
 
@@ -42,31 +42,31 @@
 .cal-edit-actions{display:flex;gap:8px;flex-wrap:wrap}
 .cal-item-actions{display:grid;gap:6px;justify-items:end;padding-top:2px}
 .cal-workflow-links{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
-.cal-workflow-links a{font-size:11px;font-weight:700;color:var(--app-accent);text-decoration:none}
+.cal-workflow-links a{font-size:11px;font-weight:700;color:var(--accent);text-decoration:none}
 .cal-workflow-links a:hover{text-decoration:underline}
 
 /* Business / purchase dates (read-only). */
 .cal-linked h2{margin:0 0 6px;font-size:var(--title-3)}
 .cal-linked>p{margin:0 0 10px;font-size:12px}
 .cal-linked ul{margin:0;padding:0;list-style:none;display:grid;gap:6px}
-.cal-linked li{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:8px 10px;background:var(--app-bg);border:1px solid var(--app-line);border-radius:var(--radius-xs)}
+.cal-linked li{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:8px 10px;background:var(--bg);border:1px solid var(--line);border-radius:var(--radius-xs)}
 .cal-linked li a{display:flex;align-items:center;gap:8px;flex-wrap:wrap;color:inherit;text-decoration:none;min-width:0}
 .cal-linked li a strong{font-size:13px}
 
 /* Month timeline. */
 .cal-month{display:grid;gap:8px}
-.cal-month h2{display:flex;align-items:center;justify-content:space-between;margin:10px 0 0;font-size:var(--title-4);text-transform:uppercase;letter-spacing:.04em;color:var(--app-muted)}
+.cal-month h2{display:flex;align-items:center;justify-content:space-between;margin:10px 0 0;font-size:var(--title-4);text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
 .cal-month h2 span{font-variant-numeric:tabular-nums;font-size:11px}
 .cal-month ul{margin:0;padding:0;list-style:none;display:grid;gap:6px}
-.cal-item{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:var(--app-surface);border:1px solid var(--app-line);border-radius:var(--app-radius)}
+.cal-item{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-sm)}
 .cal-item.done,.cal-item.past{opacity:.62}
 .cal-item.done .cal-item-top strong{text-decoration:line-through}
 .cal-check{display:flex;align-items:center;padding-top:2px;cursor:pointer}
-.cal-check input{width:18px;height:18px;min-height:auto;flex:none;accent-color:var(--app-accent)}
+.cal-check input{width:18px;height:18px;min-height:auto;flex:none;accent-color:var(--accent)}
 .cal-item-main{display:grid;gap:3px;min-width:0;flex:1}
 .cal-item-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .cal-item-top strong{font-size:13px;min-width:0;overflow-wrap:anywhere}
-.cal-item-date{font-size:12px;color:var(--app-muted);font-variant-numeric:tabular-nums}
+.cal-item-date{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
 .cal-item-notes{margin:0;font-size:12px;overflow-wrap:anywhere}
 
 /* Add-milestone form. */
@@ -86,7 +86,7 @@
 }
 
 /* Remote-join links (Zoom / Meet / Teams) */
-.cal-join{display:inline-flex;align-items:center;gap:6px;width:max-content;margin-top:6px;padding:7px 12px;border-radius:var(--radius-xs);background:var(--app-accent);color:var(--app-accent-ink);font-size:12px;font-weight:800;text-decoration:none}
+.cal-join{display:inline-flex;align-items:center;gap:6px;width:max-content;margin-top:6px;padding:7px 12px;border-radius:var(--radius-xs);background:var(--accent);color:var(--accent-ink);font-size:12px;font-weight:800;text-decoration:none}
 .cal-join:hover{filter:brightness(1.06)}
 .cal-join.hero{margin-top:10px;padding:10px 16px;font-size:13px}
 
@@ -94,8 +94,8 @@
 .aii-panel{display:grid;gap:10px;margin-top:16px}
 .aii-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .aii-head h2{margin:0 0 4px;font-size:var(--title-3)}
-.aii-head h2 span{color:var(--app-accent)}
+.aii-head h2 span{color:var(--accent)}
 .aii-head p{margin:0;font-size:12px;max-width:520px}
-.aii-error{margin:0;color:var(--app-critical);font-size:12px;font-weight:600}
-.aii-text{margin:0;padding:12px 14px;background:var(--app-bg);border:1px solid var(--app-line);border-left:3px solid var(--app-accent);border-radius:var(--radius-xs);font-size:13px;line-height:1.6;white-space:pre-wrap}
-.aii-meta{color:var(--app-muted);font-size:10px}
+.aii-error{margin:0;color:var(--critical);font-size:12px;font-weight:600}
+.aii-text{margin:0;padding:12px 14px;background:var(--bg);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:var(--radius-xs);font-size:13px;line-height:1.6;white-space:pre-wrap}
+.aii-meta{color:var(--muted);font-size:10px}

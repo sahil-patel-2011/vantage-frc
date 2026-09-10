@@ -12,7 +12,11 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, sep } from "node:path";
 import { describe, expect, it } from "vitest";
 
-const ROOTS = [join(__dirname, "..", "..", "app"), join(__dirname, "..", "..", "components")];
+const ROOTS = [
+  join(__dirname, "..", "..", "app"),
+  join(__dirname, "..", "..", "components"),
+  join(__dirname, "..", "..", "lib"),
+];
 
 function collectCss(dir: string, acc: string[] = []): string[] {
   let entries: string[];
@@ -236,20 +240,57 @@ describe("stylesheet integrity", () => {
     ).toEqual([]);
   });
 
-  it("never consumes --soft-* tokens in product CSS", () => {
-    // Type, space, island, and control tokens now have canonical names
-    // (--title-*, --text-*, --space-*, --control-h, --island). Aliases stay
-    // declared in system.css so an old sheet would still resolve, but new
-    // consumption must not reintroduce a second name for the same value.
+  it("never consumes --app-* tokens in product CSS", () => {
+    // Color aliases stay declared in system.css (--app-accent: var(--accent)).
+    // Leaf sheets must use the canonical names; a second palette is how two
+    // secondary buttons on the same screen ended up different colours.
     const offenders: string[] = [];
     for (const file of files) {
       const text = scrub(readFileSync(file, "utf8"));
       text.split("\n").forEach((line, index) => {
-        if (/var\(--soft-/.test(line)) {
+        if (/var\(--app-/.test(line)) {
           offenders.push(`${file}:${index + 1}: ${line.trim().slice(0, 80)}`);
         }
       });
     }
-    expect(offenders, `CSS still consumes --soft-*:\n  ${offenders.join("\n  ")}`).toEqual([]);
+    expect(offenders, `CSS still consumes --app-*:\n  ${offenders.join("\n  ")}`).toEqual([]);
+  });
+
+  it("keeps product TSX off --app-* aliases", () => {
+    const roots = [
+      join(__dirname, "..", "..", "app"),
+      join(__dirname, "..", "..", "components"),
+      join(__dirname, "..", "..", "lib"),
+    ];
+    const offenders: string[] = [];
+    function walk(dir: string) {
+      let entries: string[];
+      try {
+        entries = readdirSync(dir);
+      } catch {
+        return;
+      }
+      for (const entry of entries) {
+        if (entry.startsWith(".") || entry === "node_modules") continue;
+        const full = join(dir, entry);
+        let stats;
+        try {
+          stats = statSync(full);
+        } catch {
+          continue;
+        }
+        if (stats.isDirectory()) walk(full);
+        else if (entry.endsWith(".tsx") || entry.endsWith(".ts")) {
+          const text = readFileSync(full, "utf8");
+          text.split("\n").forEach((line, index) => {
+            if (/var\(--app-/.test(line)) {
+              offenders.push(`${full}:${index + 1}: ${line.trim().slice(0, 80)}`);
+            }
+          });
+        }
+      }
+    }
+    for (const root of roots) walk(root);
+    expect(offenders, `TS/TSX still uses --app-*:\n  ${offenders.join("\n  ")}`).toEqual([]);
   });
 });

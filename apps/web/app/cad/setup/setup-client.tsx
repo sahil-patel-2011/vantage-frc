@@ -256,7 +256,7 @@ export default function CadSetupWizard({ orgId }: { orgId: string }) {
             </Button>
           </div>
           <pre className="install-command">{install}</pre>
-          <ol style={{ margin: 0, paddingLeft: 18, color: "var(--app-muted)", fontSize: 13 }}>
+          <ol style={{ margin: 0, paddingLeft: 18, color: "var(--muted)", fontSize: 13 }}>
             <li>
               Open <a href={`/cad/pair${q}`}>Pair desktop</a> after `vantage-cad setup` shows a code.
             </li>

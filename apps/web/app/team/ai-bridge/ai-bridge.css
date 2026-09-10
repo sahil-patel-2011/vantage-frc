@@ -27,9 +27,9 @@
   gap: 12px;
   align-content: start;
   padding: 16px;
-  border: 1px solid var(--app-border);
+  border: 1px solid var(--line);
   border-radius:var(--radius-sm);
-  background: var(--app-surface, transparent);
+  background: var(--surface, transparent);
 }
 
 .ai-bridge-card h2 {
@@ -74,7 +74,7 @@
   display: grid;
   gap: 6px;
   padding: 12px;
-  border: 1px solid var(--app-border);
+  border: 1px solid var(--line);
   border-radius:var(--radius-xs);
 }
 
@@ -90,12 +90,12 @@
   font-weight: 700;
   padding: 4px 10px;
   border-radius:var(--radius-pill);
-  border: 1px solid var(--app-border);
-  color: var(--app-muted, inherit);
+  border: 1px solid var(--line);
+  color: var(--muted, inherit);
 }
 
 .ai-bridge-dot.online {
-  color: var(--app-success);
+  color: var(--positive);
   border-color: currentColor;
 }
 

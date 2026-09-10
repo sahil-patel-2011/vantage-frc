@@ -316,9 +316,9 @@ function PickScreen({
                   display: "grid",
                   gap: 4,
                   cursor: "pointer",
-                  border: "1px solid var(--app-line)",
-                  background: "var(--app-surface)",
-                  color: "var(--app-ink)",
+                  border: "1px solid var(--line)",
+                  background: "var(--surface)",
+                  color: "var(--ink)",
                 }}
                 disabled={busy}
                 onClick={() => onPickSymptom(symptom.id)}
@@ -357,8 +357,8 @@ function SessionList({ sessions }: { sessions: PriorSession[] }) {
         <li
           key={entry.id}
           style={{
-            border: "1px solid var(--app-line)",
-            borderRadius: "var(--app-radius)",
+            border: "1px solid var(--line)",
+            borderRadius: "var(--radius-sm)",
             padding: 12,
             display: "grid",
             gap: 4,
@@ -470,8 +470,8 @@ function WalkScreen({
               <li
                 key={row.id}
                 style={{
-                  border: "1px solid var(--app-line)",
-                  borderRadius: "var(--app-radius)",
+                  border: "1px solid var(--line)",
+                  borderRadius: "var(--radius-sm)",
                   padding: 12,
                   display: "grid",
                   gap: 4,

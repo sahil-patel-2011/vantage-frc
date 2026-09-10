@@ -294,7 +294,7 @@ function TimedCalendarGrid({
                       height: `${block.heightPct}%`,
                       left: `calc(${(block.col / block.cols) * 100}% + 2px)`,
                       width: `calc(${100 / block.cols}% - 4px)`,
-                      borderColor: block.event.subteamColor ?? "var(--app-accent)",
+                      borderColor: block.event.subteamColor ?? "var(--accent)",
                     }}
                     onClick={() => onSelectEvent(block.event.id)}
                   >
@@ -442,7 +442,7 @@ function EventCard({
   onCancelEdit?: () => void;
   onSaveEdit?: (patch: Record<string, unknown>, scope: OccurrenceScope) => void;
 }) {
-  const accent = event.subteamColor ?? "var(--app-accent)";
+  const accent = event.subteamColor ?? "var(--accent)";
   const going = event.myRsvp === "going";
   const repeats = isSeriesEvent(event);
 
@@ -1092,7 +1092,7 @@ function DutyCard({
   busy: boolean;
   onDelete: () => void;
 }) {
-  const accent = duty.subteamColor ?? "var(--app-accent)";
+  const accent = duty.subteamColor ?? "var(--accent)";
 
   return (
     <article
@@ -2228,7 +2228,7 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
                               return (
                                 <li
                                   key={event.id}
-                                  style={{ background: event.subteamColor ?? "var(--app-accent)" }}
+                                  style={{ background: event.subteamColor ?? "var(--accent)" }}
                                   title={title}
                                 >
                                   {title}

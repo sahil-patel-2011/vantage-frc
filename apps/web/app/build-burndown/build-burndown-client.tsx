@@ -413,7 +413,7 @@ function BurndownChart({ view }: { view: LiveView }) {
             <div key={point.date} className="build-burndown-chart-row">
               <small className="app-muted">{point.date}</small>
               <span className="mini-probability" aria-label={`Planned remaining ${point.planned}`}>
-                <i style={{ width: `${(point.planned / maxRemaining) * 100}%`, background: "var(--app-accent, #6c8cff)" }} />
+                <i style={{ width: `${(point.planned / maxRemaining) * 100}%`, background: "var(--accent, #6c8cff)" }} />
               </span>
               <span className="mini-probability" aria-label={`Actual remaining ${point.actual ?? "unknown"}`}>
                 {point.actual != null ? (

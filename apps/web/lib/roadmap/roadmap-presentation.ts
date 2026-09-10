@@ -30,11 +30,11 @@ export const URGENCY_TONES: Record<TaskUrgency, UrgencyTone> = {
 };
 
 const TONE_VARS: Record<UrgencyTone, string> = {
-  critical: "var(--app-critical)",
-  warning: "var(--app-warning)",
-  accent: "var(--app-accent)",
-  muted: "var(--app-muted)",
-  positive: "var(--app-positive)",
+  critical: "var(--critical)",
+  warning: "var(--warning)",
+  accent: "var(--accent)",
+  muted: "var(--muted)",
+  positive: "var(--positive)",
 };
 
 /** Design token for a tone. Never a raw hex — light and dark both resolve. */

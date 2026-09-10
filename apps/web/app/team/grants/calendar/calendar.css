@@ -12,9 +12,9 @@
   width: 100%;
   min-height: 44px;
   padding: 10px 12px;
-  color: var(--app-ink);
-  background: var(--app-bg);
-  border: 1px solid var(--app-line);
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
   border-radius:var(--radius-xs);
   font: inherit;
 }
@@ -37,7 +37,7 @@
   padding-left: 18px;
   display: grid;
   gap: 4px;
-  color: var(--app-muted);
+  color: var(--muted);
   font-size: 13px;
 }
 .grant-cal-facts-form {
@@ -54,7 +54,7 @@
 .grant-cal-facts-form label span {
   font-size: 12px;
   font-weight: 700;
-  color: var(--app-muted);
+  color: var(--muted);
 }
 
 /* ---- Filters --------------------------------------------------------------------------- */
@@ -66,17 +66,17 @@
 .grant-cal-filter {
   min-height: 44px;
   padding: 10px 16px;
-  border: 1px solid var(--app-line);
+  border: 1px solid var(--line);
   border-radius:var(--radius-pill);
-  background: var(--app-surface);
-  color: var(--app-ink);
+  background: var(--surface);
+  color: var(--ink);
   font: inherit;
   font-weight: 600;
   cursor: pointer;
 }
 .grant-cal-filter.is-active {
-  border-color: var(--app-accent);
-  box-shadow: 0 0 0 1px var(--app-accent) inset;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent) inset;
 }
 
 /* ---- Grant rows ------------------------------------------------------------------------ */
@@ -91,21 +91,21 @@
   display: grid;
   gap: 10px;
   padding: 14px 16px;
-  background: var(--app-surface);
-  border: 1px solid var(--app-line);
+  background: var(--surface);
+  border: 1px solid var(--line);
   border-radius:var(--radius-sm);
   /* The urgency stripe is a redundant channel — the Badge always carries the words too. */
   border-left-width: 4px;
 }
 .grant-cal-row.urgency-closing-3,
 .grant-cal-row.urgency-closing-14 {
-  border-left-color: var(--biz-red, var(--app-accent));
+  border-left-color: var(--biz-red, var(--accent));
 }
 .grant-cal-row.urgency-closing-30 {
-  border-left-color: var(--biz-gold, var(--app-accent));
+  border-left-color: var(--biz-gold, var(--accent));
 }
 .grant-cal-row.urgency-open {
-  border-left-color: var(--biz-mint, var(--app-accent));
+  border-left-color: var(--biz-mint, var(--accent));
 }
 .grant-cal-row.urgency-closed {
   opacity: 0.72;
@@ -149,7 +149,7 @@
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
-  color: var(--app-muted);
+  color: var(--muted);
 }
 .grant-cal-facts dd {
   margin: 0;
@@ -163,15 +163,15 @@
   display: grid;
   gap: 3px;
   font-size: 13px;
-  color: var(--app-muted);
+  color: var(--muted);
 }
 .grant-cal-reasons.is-unknown {
-  color: var(--app-ink);
+  color: var(--ink);
 }
 .grant-cal-notes {
   margin: 0;
   font-size: 13px;
-  color: var(--app-muted);
+  color: var(--muted);
 }
 
 .grant-cal-actions {
@@ -199,7 +199,7 @@
 .grant-cal-form label span {
   font-size: 12px;
   font-weight: 700;
-  color: var(--app-muted);
+  color: var(--muted);
 }
 .grant-cal-form-wide {
   grid-column: 1 / -1;

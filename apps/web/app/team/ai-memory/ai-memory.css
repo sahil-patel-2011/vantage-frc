@@ -121,13 +121,13 @@
   display: grid;
   gap: 8px;
   padding: 12px;
-  border: 1px solid color-mix(in srgb, var(--app-line) 85%, transparent);
-  border-radius: var(--app-radius, 12px);
-  background: var(--app-soft, transparent);
+  border: 1px solid color-mix(in srgb, var(--line) 85%, transparent);
+  border-radius: var(--radius-sm, 12px);
+  background: var(--surface-2, transparent);
 }
 
 .dream-entry.weekly {
-  border-color: color-mix(in srgb, var(--app-accent) 45%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
 }
 
 .dream-entry > header {
@@ -142,7 +142,7 @@
   margin: 0;
   font-size:var(--title-3);
   letter-spacing:var(--tracking-tight);
-  color: var(--app-ink, inherit);
+  color: var(--ink, inherit);
 }
 
 .dream-chips {
@@ -157,9 +157,9 @@
 .dream-chips li {
   padding: 3px 9px;
   border-radius:var(--radius-pill);
-  border: 1px solid color-mix(in srgb, var(--app-line) 80%, transparent);
-  background: var(--app-surface, transparent);
-  color: var(--app-muted, inherit);
+  border: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
+  background: var(--surface, transparent);
+  color: var(--muted, inherit);
   font-size: 12px;
   line-height: 1.5;
   white-space: nowrap;
@@ -171,14 +171,14 @@
   line-height: 1.55;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  color: var(--app-ink, inherit);
+  color: var(--ink, inherit);
 }
 
 .dream-error-streak {
   display: grid;
   gap: 8px;
   justify-items: start;
-  border-color: color-mix(in srgb, var(--app-accent) 40%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
 }
 
 .dream-error-streak h3 {
@@ -200,7 +200,7 @@
   gap: 4px;
   font-size: 13px;
   line-height: 1.45;
-  color: var(--app-muted, inherit);
+  color: var(--muted, inherit);
 }
 
 @media (max-width: 420px) {

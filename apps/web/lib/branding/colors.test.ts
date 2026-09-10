@@ -155,6 +155,8 @@ describe("accent plan", () => {
     expect(light["--accent"]).toBe(light["--soft-accent"]);
     expect(light["--accent-soft"]).toBe(light["--soft-accent-soft"]);
     expect(light["--accent-ink"]).toMatch(/^#[0-9a-f]{6}$/);
+    expect(light["--accent-hover"]).toMatch(/^#[0-9a-f]{6}$/);
+    expect(light["--accent-hover"]).toBe(light["--app-accent-hover"]);
     // Text accent differs by theme because the card underneath differs.
     expect(light["--soft-accent"]).not.toBe(dark["--soft-accent"]);
     expect(light["--accent"]).not.toBe(dark["--accent"]);

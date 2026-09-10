@@ -237,12 +237,13 @@ export function buildAccentPlan(input: unknown): AccentPlan | null {
  */
 export function accentCssVariables(plan: AccentPlan, theme: ThemeKey): Record<string, string> {
   const side = theme === "dark" ? plan.dark : plan.light;
-  // Hover moves away from the card, matching the stock --app-accent-hover pair.
+  // Hover moves away from the card, matching the stock --accent-hover pair.
   const hover = mixHex(side.accent, theme === "dark" ? "#ffffff" : "#000000", 0.16);
   return {
     "--accent": side.accent,
     "--accent-soft": side.accentSoft,
     "--accent-ink": readableInkOn(side.accent),
+    "--accent-hover": hover,
     "--soft-accent": side.accent,
     "--soft-accent-soft": side.accentSoft,
     "--soft-brand": side.brand,
@@ -257,6 +258,7 @@ export const ACCENT_VARIABLE_NAMES = [
   "--accent",
   "--accent-soft",
   "--accent-ink",
+  "--accent-hover",
   "--soft-accent",
   "--soft-accent-soft",
   "--soft-brand",

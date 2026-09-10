@@ -12,10 +12,10 @@
   display: grid;
   gap: 14px;
   padding: 16px;
-  border: 1px solid var(--app-line, #d5dde8);
-  border-radius: var(--app-radius, 12px);
-  background: var(--app-surface, #fff);
-  color: var(--app-ink, #14243a);
+  border: 1px solid var(--line, #d5dde8);
+  border-radius: var(--radius-sm, 12px);
+  background: var(--surface, #fff);
+  color: var(--ink, #14243a);
 }
 
 .headRow {
@@ -31,14 +31,14 @@
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--app-muted, #5a6578);
+  color: var(--muted, #5a6578);
 }
 
 .lede {
   margin: 0;
   font-size: 14px;
   line-height: 1.5;
-  color: var(--app-muted, #5a6578);
+  color: var(--muted, #5a6578);
 }
 
 /* Toggle and skip are both >=44px tall so a student on a phone in the pit can hit them. */
@@ -49,38 +49,38 @@
   gap: 8px;
   min-height: 44px;
   padding: 0 14px;
-  border: 1px solid var(--app-line, #d5dde8);
+  border: 1px solid var(--line, #d5dde8);
   border-radius: 999px;
   background: transparent;
-  color: var(--app-ink, #14243a);
+  color: var(--ink, #14243a);
   font: inherit;
   font-size: 14px;
   cursor: pointer;
 }
 .toggle:hover,
 .ghostButton:hover {
-  border-color: var(--app-accent, #1457d9);
-  color: var(--app-accent, #1457d9);
+  border-color: var(--accent, #1457d9);
+  color: var(--accent, #1457d9);
 }
 .toggle input {
   width: 18px;
   height: 18px;
-  accent-color: var(--app-accent, #1457d9);
+  accent-color: var(--accent, #1457d9);
 }
 
 .primaryButton {
   min-height: 44px;
   padding: 0 18px;
   border: 1px solid transparent;
-  border-radius: var(--app-radius, 12px);
-  background: var(--app-accent, #1457d9);
-  color: var(--app-accent-ink, #fff);
+  border-radius: var(--radius-sm, 12px);
+  background: var(--accent, #1457d9);
+  color: var(--accent-ink, #fff);
   font: inherit;
   font-weight: 600;
   cursor: pointer;
 }
 .primaryButton:hover:not(:disabled) {
-  background: var(--app-accent-hover, #1a43b4);
+  background: var(--accent-hover, #1a43b4);
 }
 .primaryButton:disabled {
   opacity: 0.55;
@@ -104,9 +104,9 @@
   display: grid;
   gap: 6px;
   padding: 12px;
-  border: 1px solid var(--app-line, #d5dde8);
-  border-radius: var(--app-radius, 12px);
-  background: var(--app-bg, #eef2f7);
+  border: 1px solid var(--line, #d5dde8);
+  border-radius: var(--radius-sm, 12px);
+  background: var(--bg, #eef2f7);
 }
 .fieldLabel {
   font-weight: 600;
@@ -116,20 +116,20 @@
   margin: 0;
   font-size: 13px;
   line-height: 1.45;
-  color: var(--app-muted, #5a6578);
+  color: var(--muted, #5a6578);
 }
 .field input {
   min-height: 44px;
   padding: 0 12px;
-  border: 1px solid var(--app-line, #d5dde8);
-  border-radius: var(--app-radius, 12px);
-  background: var(--app-surface, #fff);
+  border: 1px solid var(--line, #d5dde8);
+  border-radius: var(--radius-sm, 12px);
+  background: var(--surface, #fff);
   color: inherit;
   font: inherit;
   width: 100%;
 }
 .field input:focus-visible {
-  outline: 2px solid var(--app-accent, #1457d9);
+  outline: 2px solid var(--accent, #1457d9);
   outline-offset: 1px;
 }
 
@@ -142,9 +142,9 @@
   display: grid;
   gap: 6px;
   padding: 12px;
-  border-left: 3px solid var(--app-line, #d5dde8);
-  border-radius: 0 var(--app-radius, 12px) var(--app-radius, 12px) 0;
-  background: var(--app-bg, #eef2f7);
+  border-left: 3px solid var(--line, #d5dde8);
+  border-radius: 0 var(--radius-sm, 12px) var(--radius-sm, 12px) 0;
+  background: var(--bg, #eef2f7);
 }
 .spotOn {
   border-left-color: #16a34a;
@@ -166,27 +166,27 @@
   margin: 0;
   font-size: 14px;
   line-height: 1.55;
-  color: var(--app-ink, #14243a);
+  color: var(--ink, #14243a);
 }
 .note {
-  color: var(--app-muted, #5a6578);
+  color: var(--muted, #5a6578);
 }
 
 .coach {
   margin: 0;
   padding: 10px 12px;
-  border: 1px dashed var(--app-line, #d5dde8);
-  border-radius: var(--app-radius, 12px);
+  border: 1px dashed var(--line, #d5dde8);
+  border-radius: var(--radius-sm, 12px);
   font-size: 14px;
   line-height: 1.55;
-  color: var(--app-muted, #5a6578);
+  color: var(--muted, #5a6578);
 }
 
 .trend {
   display: grid;
   gap: 8px;
   padding-top: 12px;
-  border-top: 1px solid var(--app-line, #d5dde8);
+  border-top: 1px solid var(--line, #d5dde8);
 }
 .trendHead {
   margin: 0;
@@ -208,10 +208,10 @@
   height: 30px;
   padding: 0 8px;
   border-radius: 999px;
-  border: 1px solid var(--app-line, #d5dde8);
+  border: 1px solid var(--line, #d5dde8);
   font-size: 12px;
   font-weight: 600;
-  color: var(--app-muted, #5a6578);
+  color: var(--muted, #5a6578);
 }
 .dotSpotOn {
   border-color: #16a34a;
@@ -229,7 +229,7 @@
 .status {
   margin: 0;
   font-size: 13px;
-  color: var(--app-muted, #5a6578);
+  color: var(--muted, #5a6578);
 }
 .error {
   color: #dc2626;

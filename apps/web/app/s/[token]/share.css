@@ -10,16 +10,16 @@
   display: grid;
   place-items: start center;
   padding: 32px 16px 48px;
-  background: var(--app-bg, #f7f7fb);
-  color: var(--app-text, #16161d);
+  background: var(--bg, #f7f7fb);
+  color: var(--ink, #16161d);
 }
 
 .share-card {
   width: min(720px, 100%);
   padding: 24px;
   border-radius: 16px;
-  background: var(--app-surface, #fff);
-  border: 1px solid var(--app-border, #e2e2ea);
+  background: var(--surface, #fff);
+  border: 1px solid var(--line, #e2e2ea);
 }
 
 .share-header h1 {
@@ -42,7 +42,7 @@
   line-height: 1.5;
   padding: 10px 12px;
   border-radius: 10px;
-  background: var(--app-surface-muted, rgba(128, 128, 150, 0.1));
+  background: var(--surface-2, rgba(128, 128, 150, 0.1));
 }
 
 .share-muted {
@@ -66,7 +66,7 @@
   justify-content: space-between;
   gap: 10px;
   padding: 12px 0;
-  border-top: 1px solid var(--app-border, #e2e2ea);
+  border-top: 1px solid var(--line, #e2e2ea);
 }
 
 .share-files li > div:first-child {
@@ -92,7 +92,7 @@
   padding: 0 14px;
   border-radius: 10px;
   border: 1px solid transparent;
-  background: var(--app-accent, #4d5bd8);
+  background: var(--accent, #4d5bd8);
   color: #fff;
   font-size: 14px;
   font-weight: 600;
@@ -103,13 +103,13 @@
 .share-button.ghost {
   background: transparent;
   color: inherit;
-  border-color: var(--app-border, #e2e2ea);
+  border-color: var(--line, #e2e2ea);
 }
 
 .share-footer {
   margin-top: 24px;
   padding-top: 16px;
-  border-top: 1px solid var(--app-border, #e2e2ea);
+  border-top: 1px solid var(--line, #e2e2ea);
   display: grid;
   gap: 8px;
 }
@@ -141,7 +141,7 @@
   max-height: 90vh;
   padding: 16px;
   border-radius: 14px;
-  background: var(--app-surface, #fff);
+  background: var(--surface, #fff);
   overflow: hidden;
 }
 

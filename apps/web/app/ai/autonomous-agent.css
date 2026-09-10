@@ -17,7 +17,7 @@
 }
 .aa-header p {
   margin: 0;
-  color: var(--app-muted);
+  color: var(--muted);
   max-width: 52ch;
   font-size: 13px;
   line-height: 1.45;
@@ -27,7 +27,7 @@
   font-size: 11px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--app-muted);
+  color: var(--muted);
   font-weight: 700;
 }
 .aa-header-actions {
@@ -43,12 +43,12 @@
 .aa-pill {
   font-size: 12px;
   padding: 4px 10px;
-  border-radius: var(--app-radius);
-  border: 1px solid var(--app-line);
-  background: var(--app-surface);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--surface);
 }
 .aa-pill.ok {
-  border-color: color-mix(in srgb, var(--app-accent) 40%, var(--app-line));
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
 }
 .aa-pill.warn {
   opacity: 0.9;
@@ -66,9 +66,9 @@
   min-height: 72px;
   resize: vertical;
   padding: 10px 12px;
-  border-radius: var(--app-radius);
-  border: 1px solid var(--app-line);
-  background: var(--app-bg);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--bg);
   color: inherit;
   font: inherit;
 }
@@ -101,10 +101,10 @@
 .aa-detail header p {
   margin: 0;
   font-size: 12px;
-  color: var(--app-muted);
+  color: var(--muted);
 }
 .aa-muted {
-  color: var(--app-muted);
+  color: var(--muted);
   font-size: 13px;
 }
 .aa-run-list {
@@ -120,8 +120,8 @@
   display: grid;
   gap: 2px;
   padding: 10px 12px;
-  border-radius: var(--app-radius);
-  border: 1px solid var(--app-line);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
   background: transparent;
   color: inherit;
   cursor: pointer;
@@ -132,11 +132,11 @@
 }
 .aa-run span {
   font-size: 11px;
-  color: var(--app-muted);
+  color: var(--muted);
 }
 .aa-run.active {
-  border-color: var(--app-accent);
-  background: color-mix(in srgb, var(--app-accent) 8%, transparent);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
 }
 .aa-status-row {
   display: flex;
@@ -152,17 +152,17 @@
   letter-spacing: 0.03em;
   padding: 2px 8px;
   border-radius:var(--radius-xs);
-  border: 1px solid var(--app-line);
+  border: 1px solid var(--line);
 }
 .aa-status--completed {
-  border-color: color-mix(in srgb, var(--app-accent) 50%, var(--app-line));
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--line));
 }
 .aa-status--setup_required,
 .aa-status--failed {
   opacity: 0.95;
 }
 .aa-error {
-  color: var(--app-muted);
+  color: var(--muted);
   font-size: 13px;
 }
 .aa-steps {
@@ -174,8 +174,8 @@
 }
 .aa-steps > li {
   padding: 10px 12px;
-  border: 1px solid var(--app-line);
-  border-radius: var(--app-radius);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
 }
 .aa-step-head {
   display: flex;
@@ -192,13 +192,13 @@
   max-height: 160px;
   white-space: pre-wrap;
   word-break: break-word;
-  background: var(--app-soft);
+  background: var(--surface-2);
   border-radius:var(--radius-xs);
 }
 .aa-answer {
   margin-top: 14px;
   padding-top: 12px;
-  border-top: 1px solid var(--app-line);
+  border-top: 1px solid var(--line);
 }
 .aa-answer p {
   margin: 0 0 10px;
@@ -216,6 +216,6 @@
 }
 .aa-empty p {
   margin: 0;
-  color: var(--app-muted);
+  color: var(--muted);
   font-size: 13px;
 }

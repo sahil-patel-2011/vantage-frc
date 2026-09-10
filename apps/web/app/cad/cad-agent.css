@@ -20,16 +20,16 @@
   flex: 1 1 280px;
   min-width: 0;
   font: 600 11px/1.2 var(--font-source-sans), ui-sans-serif;
-  color: var(--app-muted);
+  color: var(--muted);
 }
 .cad-agent-doc input {
   width: 100%;
   min-height: 40px;
   padding: 8px 12px;
-  border: 1px solid var(--app-line);
+  border: 1px solid var(--line);
   border-radius:var(--radius-xs);
-  background: var(--app-bg);
-  color: var(--app-ink);
+  background: var(--bg);
+  color: var(--ink);
   font: 400 13px/1.35 var(--font-source-sans), ui-sans-serif;
 }
 .cad-agent-leds {
@@ -40,23 +40,23 @@
 }
 .cad-agent-leds span {
   font: 600 11px/1.2 var(--font-source-sans), ui-sans-serif;
-  color: var(--app-muted);
+  color: var(--muted);
 }
 .cad-agent-leds span.on {
-  color: var(--app-positive);
+  color: var(--positive);
 }
 /* Deep link to the bound Part Studio, next to the binding it names. */
 .cad-agent-leds .cad-agent-open {
   display: inline-flex;
   align-items: center;
   min-height: 44px;
-  color: var(--app-accent);
+  color: var(--accent);
   font: 600 11px/1.2 var(--font-source-sans), ui-sans-serif;
   text-decoration: underline;
 }
 .cad-agent-error {
   margin: 0;
-  color: var(--app-critical);
+  color: var(--critical);
   font-size: 13px;
 }
 .cad-agent-workspace {
@@ -64,10 +64,10 @@
   grid-template-columns: minmax(280px, 38%) minmax(0, 1fr);
   min-height: 0;
   flex: 1;
-  border: 1px solid var(--app-line);
+  border: 1px solid var(--line);
   border-radius:var(--radius-sm);
   overflow: hidden;
-  background: var(--app-bg);
+  background: var(--bg);
 }
 .cad-agent-chat,
 .cad-agent-viewport {
@@ -78,7 +78,7 @@
 }
 .cad-agent-viewport {
   grid-template-rows: auto 1fr;
-  border-left: 1px solid var(--app-line);
+  border-left: 1px solid var(--line);
 }
 .cad-agent-col-head {
   display: flex;
@@ -86,11 +86,11 @@
   justify-content: space-between;
   gap: 10px;
   padding: 10px 14px;
-  border-bottom: 1px solid var(--app-line);
+  border-bottom: 1px solid var(--line);
   font: 700 12px/1 var(--font-source-sans), ui-sans-serif;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--app-muted);
+  color: var(--muted);
 }
 .cad-agent-col-head a {
   text-transform: none;
@@ -107,7 +107,7 @@
 .cad-agent-hint,
 .cad-agent-hero {
   margin: 0;
-  color: var(--app-muted);
+  color: var(--muted);
   font-size: 13px;
   line-height: 1.45;
 }
@@ -129,7 +129,7 @@
   font-size: 11px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--app-muted);
+  color: var(--muted);
 }
 .cad-agent-msg p {
   margin: 0;
@@ -138,23 +138,23 @@
   line-height: 1.45;
 }
 .cad-agent-msg--user p {
-  color: var(--app-ink);
+  color: var(--ink);
 }
 .cad-agent-composer {
   display: grid;
   gap: 8px;
   padding: 10px 12px 12px;
-  border-top: 1px solid var(--app-line);
+  border-top: 1px solid var(--line);
 }
 .cad-agent-composer textarea {
   width: 100%;
   resize: vertical;
   min-height: 72px;
   padding: 10px 12px;
-  border: 1px solid var(--app-line);
+  border: 1px solid var(--line);
   border-radius:var(--radius-xs);
-  background: var(--app-soft);
-  color: var(--app-ink);
+  background: var(--surface-2);
+  color: var(--ink);
   font: 400 14px/1.4 var(--font-source-sans), ui-sans-serif;
 }
 .cad-agent-composer-bar {
@@ -162,7 +162,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  color: var(--app-muted);
+  color: var(--muted);
   font-size: 12px;
 }
 .cad-agent-viewport iframe,
@@ -171,14 +171,14 @@
   height: 100%;
   min-height: 460px;
   border: 0;
-  background: var(--app-soft);
+  background: var(--surface-2);
 }
 .cad-agent-empty-view {
   display: grid;
   place-items: center;
   padding: 32px;
   text-align: center;
-  color: var(--app-muted);
+  color: var(--muted);
   font-size: 14px;
   line-height: 1.5;
 }
@@ -188,24 +188,24 @@
   display: inline-flex;
   gap: 2px;
   padding: 2px;
-  border: 1px solid var(--app-line);
+  border: 1px solid var(--line);
   border-radius:var(--radius-pill);
-  background: var(--app-soft);
+  background: var(--surface-2);
 }
 .cad-mode-btn {
   border: 0;
   border-radius:var(--radius-pill);
   padding: 4px 10px;
   background: transparent;
-  color: var(--app-muted);
+  color: var(--muted);
   font: 600 11px/1.2 var(--font-source-sans), ui-sans-serif;
   letter-spacing: 0.02em;
   text-transform: none;
   cursor: pointer;
 }
 .cad-mode-btn.active {
-  background: var(--app-bg);
-  color: var(--app-ink);
+  background: var(--bg);
+  color: var(--ink);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
 }
 .cad-mode-btn:disabled {
@@ -218,10 +218,10 @@
   display: grid;
   gap: 8px;
   padding: 12px 14px;
-  border: 1px solid var(--app-line);
-  border-left: 3px solid var(--app-accent);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
   border-radius:var(--radius-sm);
-  background: var(--app-soft);
+  background: var(--surface-2);
 }
 .cad-proposal-card b {
   font-size: 13px;
@@ -230,7 +230,7 @@
   margin: 0;
   font-size: 13px;
   line-height: 1.45;
-  color: var(--app-muted);
+  color: var(--muted);
 }
 .cad-proposal-count {
   font-variant-numeric: tabular-nums;
@@ -246,9 +246,9 @@
   display: grid;
   gap: 10px;
   padding: 12px 14px;
-  border: 1px solid var(--app-line);
+  border: 1px solid var(--line);
   border-radius:var(--radius-sm);
-  background: var(--app-soft);
+  background: var(--surface-2);
 }
 .cad-plan-panel > b,
 .cad-plan-questions > b,
@@ -256,7 +256,7 @@
   font-size: 12px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--app-muted);
+  color: var(--muted);
 }
 .cad-plan-steps {
   margin: 0;
@@ -273,15 +273,15 @@
   width: 100%;
   min-height: 34px;
   padding: 6px 10px;
-  border: 1px solid var(--app-line);
+  border: 1px solid var(--line);
   border-radius:var(--radius-xs);
-  background: var(--app-bg);
-  color: var(--app-ink);
+  background: var(--bg);
+  color: var(--ink);
   font: 400 13px/1.35 var(--font-source-sans), ui-sans-serif;
 }
 .cad-plan-detail {
   font-size: 12px;
-  color: var(--app-muted);
+  color: var(--muted);
   line-height: 1.4;
 }
 .cad-plan-questions {
@@ -292,7 +292,7 @@
   display: grid;
   gap: 4px;
   font-size: 13px;
-  color: var(--app-ink);
+  color: var(--ink);
 }
 .cad-plan-actions {
   display: flex;
@@ -306,9 +306,9 @@
   display: grid;
   gap: 8px;
   padding: 12px 14px;
-  border: 1px solid var(--app-line);
+  border: 1px solid var(--line);
   border-radius:var(--radius-sm);
-  background: var(--app-soft);
+  background: var(--surface-2);
 }
 .cad-task-list ul {
   margin: 0;
@@ -327,32 +327,32 @@
   font: 600 10px/1.4 var(--font-source-sans), ui-sans-serif;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: var(--app-muted);
-  border: 1px solid var(--app-line);
+  color: var(--muted);
+  border: 1px solid var(--line);
   border-radius:var(--radius-pill);
   padding: 2px 8px;
   white-space: nowrap;
 }
 .cad-task--done .cad-task-status {
-  color: var(--app-positive);
+  color: var(--positive);
   border-color: currentColor;
 }
 .cad-task--failed .cad-task-status {
-  color: var(--app-critical);
+  color: var(--critical);
   border-color: currentColor;
 }
 .cad-task--in_progress .cad-task-status {
-  color: var(--app-ink);
+  color: var(--ink);
   border-color: currentColor;
 }
 .cad-task-title {
   font-size: 13px;
-  color: var(--app-ink);
+  color: var(--ink);
 }
 .cad-task-note {
   grid-column: 2;
   font-size: 12px;
-  color: var(--app-muted);
+  color: var(--muted);
   line-height: 1.4;
   white-space: pre-wrap;
 }
@@ -363,7 +363,7 @@
   }
   .cad-agent-viewport {
     border-left: 0;
-    border-top: 1px solid var(--app-line);
+    border-top: 1px solid var(--line);
   }
   .cad-agent-chat,
   .cad-agent-viewport {

@@ -12,13 +12,13 @@
   margin: 0;
   padding: 10px 12px;
   border-radius:var(--radius-sm);
-  border: 1px solid color-mix(in srgb, var(--app-critical) 28%, var(--app-line));
-  background: color-mix(in srgb, var(--app-critical) 8%, var(--app-bg));
+  border: 1px solid color-mix(in srgb, var(--critical) 28%, var(--line));
+  background: color-mix(in srgb, var(--critical) 8%, var(--bg));
 }
 
 /* A rejected file always says what shape was expected. */
 .migrate-error small {
-  color: var(--app-muted);
+  color: var(--muted);
   font-size: 12px;
   line-height: 1.5;
 }
@@ -27,8 +27,8 @@
   margin: 0 0 12px;
   padding: 10px 12px;
   border-radius:var(--radius-sm);
-  border: 1px solid color-mix(in srgb, var(--app-warning) 28%, var(--app-line));
-  background: color-mix(in srgb, var(--app-warning) 8%, var(--app-bg));
+  border: 1px solid color-mix(in srgb, var(--warning) 28%, var(--line));
+  background: color-mix(in srgb, var(--warning) 8%, var(--bg));
   font-size: 13px;
   line-height: 1.5;
 }
@@ -54,9 +54,9 @@
   gap: 10px;
   min-height: 44px;
   padding: 10px 12px;
-  border: 1px solid var(--app-line);
+  border: 1px solid var(--line);
   border-radius:var(--radius-sm);
-  color: var(--app-muted);
+  color: var(--muted);
   font-size: 13px;
   font-weight: 600;
 }
@@ -67,19 +67,19 @@
   width: 24px;
   height: 24px;
   border-radius:var(--radius-pill);
-  border: 1px solid var(--app-line);
-  background: var(--app-bg);
+  border: 1px solid var(--line);
+  background: var(--bg);
   font-size: 11px;
 }
 
 .migrate-steps li.current {
-  color: var(--app-ink);
-  border-color: color-mix(in srgb, var(--app-accent) 35%, var(--app-line));
-  background: color-mix(in srgb, var(--app-accent) 8%, var(--app-bg));
+  color: var(--ink);
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--line));
+  background: color-mix(in srgb, var(--accent) 8%, var(--bg));
 }
 
 .migrate-steps li.done {
-  color: var(--app-ink);
+  color: var(--ink);
 }
 
 .migrate-steps li.done b {
@@ -89,9 +89,9 @@
 }
 
 .migrate-steps li.current b {
-  color: var(--app-accent-ink);
-  border-color: var(--app-accent);
-  background: var(--app-accent);
+  color: var(--accent-ink);
+  border-color: var(--accent);
+  background: var(--accent);
 }
 
 .migrate-picker {
@@ -108,15 +108,15 @@
   padding: 16px 18px;
   text-align: left;
   color: inherit;
-  background: var(--app-bg);
-  border: 1px solid var(--app-line);
+  background: var(--bg);
+  border: 1px solid var(--line);
   border-radius:var(--radius);
   cursor: pointer;
 }
 
 .migrate-tile:hover {
-  border-color: color-mix(in srgb, var(--app-accent) 40%, var(--app-line));
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--app-accent) 10%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 10%, transparent);
 }
 
 .migrate-tile strong {
@@ -126,7 +126,7 @@
 
 .migrate-tile span,
 .migrate-tile small {
-  color: var(--app-muted);
+  color: var(--muted);
   font-size: 12px;
   line-height: 1.4;
 }
@@ -160,7 +160,7 @@
 .migrate-feeds {
   margin: 0 0 12px;
   padding-left: 18px;
-  color: var(--app-muted);
+  color: var(--muted);
   font-size: 12px;
 }
 
@@ -168,7 +168,7 @@
   margin: 0;
   padding: 12px 14px;
   border-radius:var(--radius-sm);
-  background: var(--app-soft);
+  background: var(--surface-2);
   font-size: 13px;
 }
 
@@ -201,11 +201,11 @@
   font-weight:700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--app-muted);
+  color: var(--muted);
 }
 
 .migrate-tile small b {
-  color: var(--app-ink);
+  color: var(--ink);
   font-weight: 600;
 }
 
@@ -213,16 +213,16 @@
 .migrate-tile.unsupported {
   cursor: default;
   border-style: dashed;
-  background: color-mix(in srgb, var(--app-muted) 5%, var(--app-bg));
+  background: color-mix(in srgb, var(--muted) 5%, var(--bg));
 }
 
 .migrate-tile.unsupported:hover {
-  border-color: var(--app-line);
+  border-color: var(--line);
   box-shadow: none;
 }
 
 .migrate-tile.unsupported strong {
-  color: var(--app-muted);
+  color: var(--muted);
 }
 
 .migrate-unsupported {
@@ -250,10 +250,10 @@
 }
 
 .migrate-notes details {
-  border: 1px solid var(--app-line);
+  border: 1px solid var(--line);
   border-radius:var(--radius-sm);
   padding: 10px 12px;
-  background: var(--app-bg);
+  background: var(--bg);
 }
 
 .migrate-notes summary {
@@ -270,13 +270,13 @@
   padding-left: 18px;
   display: grid;
   gap: 6px;
-  color: var(--app-muted);
+  color: var(--muted);
   font-size: 12px;
   line-height: 1.5;
 }
 
 .migrate-notes li b {
-  color: var(--app-ink);
+  color: var(--ink);
 }
 
 .migrate-report {
@@ -292,9 +292,9 @@
   gap: 10px;
   margin: 16px 0;
   padding: 14px;
-  border: 1px solid var(--app-line);
+  border: 1px solid var(--line);
   border-radius:var(--radius-sm);
-  background: color-mix(in srgb, var(--app-muted) 4%, var(--app-bg));
+  background: color-mix(in srgb, var(--muted) 4%, var(--bg));
 }
 
 .migrate-mapping h3,
@@ -331,17 +331,17 @@
 
 .migrate-columns small {
   grid-column: 1 / -1;
-  color: var(--app-muted);
+  color: var(--muted);
   font-size: 12px;
   line-height: 1.4;
 }
 
 .migrate-confidence.likely {
-  color: var(--app-warning);
+  color: var(--warning);
 }
 
 .migrate-confidence.unsure {
-  color: var(--app-critical);
+  color: var(--critical);
 }
 
 .migrate-presets ul,
@@ -392,7 +392,7 @@
 }
 
 .migrate-fields code {
-  color: var(--app-muted);
+  color: var(--muted);
   font-size: 12px;
 }
 

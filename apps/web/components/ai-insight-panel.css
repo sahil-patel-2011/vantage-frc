@@ -2,12 +2,12 @@
 .aii-panel{display:grid;gap:10px;margin-top:16px}
 .aii-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .aii-head h2{margin:0 0 4px;font-size:var(--title-3)}
-.aii-head h2 span{color:var(--app-accent)}
+.aii-head h2 span{color:var(--accent)}
 .aii-head p{margin:0;font-size:12px;max-width:520px}
-.aii-error{margin:0;color:var(--app-critical);font-size:12px;font-weight:600}
-.aii-text{margin:0;padding:12px 14px;background:var(--app-bg);border:1px solid var(--app-line);border-left:3px solid var(--app-accent);border-radius:var(--radius-xs);font-size:13px;line-height:1.6;white-space:pre-wrap}
-.aii-meta{color:var(--app-muted);font-size:10px}
+.aii-error{margin:0;color:var(--critical);font-size:12px;font-weight:600}
+.aii-text{margin:0;padding:12px 14px;background:var(--bg);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:var(--radius-xs);font-size:13px;line-height:1.6;white-space:pre-wrap}
+.aii-meta{color:var(--muted);font-size:10px}
 /* Opt-in AI expansion sits under the computed text with its own badge. */
-.aii-ai-text{border-left-color:color-mix(in srgb, var(--app-accent) 55%, transparent);background:color-mix(in srgb, var(--app-accent) 6%, var(--app-bg))}
-.aii-note{margin:0;color:var(--app-muted);font-size:12px}
+.aii-ai-text{border-left-color:color-mix(in srgb, var(--accent) 55%, transparent);background:color-mix(in srgb, var(--accent) 6%, var(--bg))}
+.aii-note{margin:0;color:var(--muted);font-size:12px}
 .aii-panel .app-button{min-height:44px}

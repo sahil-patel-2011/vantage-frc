@@ -205,7 +205,7 @@
   font:12px/1.65 var(--m-mono);white-space:pre-wrap;overflow:visible
 }
 .code-product-demo .code-findings header>strong{font-size:22px}
-.code-finding-focus{display:grid;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--app-line)}
+.code-finding-focus{display:grid;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
 .code-finding-focus>div{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .code-finding-focus p{margin:0;color:var(--m-muted);font-size:13px;line-height:1.5}
 .code-finding-focus code{display:block;padding:8px 10px;color:#5a3a38;background:#fff5f4;border-radius:4px;font:11px/1.45 var(--m-mono);overflow-wrap:anywhere}

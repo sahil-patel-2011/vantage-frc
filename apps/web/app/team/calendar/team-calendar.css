@@ -4,9 +4,9 @@
 .tc-page textarea {
   min-height: 38px;
   padding: 8px 10px;
-  color: var(--app-ink);
-  background: var(--app-bg);
-  border: 1px solid var(--app-line);
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
   border-radius:var(--radius-xs);
   font: inherit;
 }
@@ -35,10 +35,10 @@
   gap: 10px;
   margin: 0 0 14px;
   padding: 16px 18px;
-  background: var(--app-surface);
-  border: 1px solid var(--app-line);
+  background: var(--surface);
+  border: 1px solid var(--line);
   border-radius:var(--radius-sm);
-  box-shadow: 0 8px 28px color-mix(in srgb, var(--app-ink) 4%, transparent);
+  box-shadow: 0 8px 28px color-mix(in srgb, var(--ink) 4%, transparent);
 }
 .tc-next-actions > header {
   display: grid;
@@ -51,7 +51,7 @@
 }
 .tc-next-actions > header p {
   margin: 0;
-  color: var(--app-muted);
+  color: var(--muted);
   font-size: 12px;
   line-height: 1.4;
 }
@@ -69,12 +69,12 @@
   gap: 12px;
   padding: 12px 14px;
   border-radius:var(--radius-sm);
-  border: 1px solid var(--app-line);
-  background: color-mix(in srgb, var(--app-bg) 70%, var(--app-surface));
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--bg) 70%, var(--surface));
 }
 .tc-next-actions li.primary {
-  border-color: color-mix(in srgb, var(--app-accent) 40%, var(--app-line));
-  background: color-mix(in srgb, var(--app-accent) 10%, var(--app-surface));
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
 }
 .tc-next-actions li div {
   display: grid;
@@ -85,7 +85,7 @@
   font-size: 14px;
 }
 .tc-next-actions li span {
-  color: var(--app-muted);
+  color: var(--muted);
   font-size: 12px;
   line-height: 1.35;
 }
@@ -102,19 +102,19 @@
 }
 .tc-tabs button {
   padding: 8px 14px;
-  border: 1px solid var(--app-line);
+  border: 1px solid var(--line);
   border-radius:var(--radius-pill);
-  background: var(--app-surface);
-  color: var(--app-muted);
+  background: var(--surface);
+  color: var(--muted);
   font: inherit;
   font-size: 13px;
   font-weight: 650;
   cursor: pointer;
 }
 .tc-tabs button.active {
-  color: var(--app-ink);
-  border-color: color-mix(in srgb, var(--app-accent) 45%, var(--app-line));
-  background: color-mix(in srgb, var(--app-accent) 12%, var(--app-surface));
+  color: var(--ink);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
 }
 
 .tc-filters {
@@ -130,10 +130,10 @@
   gap: 8px;
   min-height: 44px;
   padding: 7px 14px;
-  border: 1px solid var(--app-line);
+  border: 1px solid var(--line);
   border-radius:var(--radius-pill);
-  background: var(--app-surface);
-  color: var(--app-ink);
+  background: var(--surface);
+  color: var(--ink);
   font: inherit;
   font-size: 12px;
   font-weight: 650;
@@ -142,7 +142,7 @@
 .tc-filter.active {
   border-color: transparent;
   color: #fff;
-  box-shadow: 0 1px 0 color-mix(in srgb, var(--app-ink) 8%, transparent);
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--ink) 8%, transparent);
 }
 .tc-dot {
   width: 8px;
@@ -163,10 +163,10 @@
   display: grid;
   gap: 12px;
   padding: 16px;
-  background: var(--app-surface);
-  border: 1px solid var(--app-line);
-  border-radius: calc(var(--app-radius) + 2px);
-  box-shadow: 0 1px 0 color-mix(in srgb, var(--app-ink) 4%, transparent);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: calc(var(--radius-sm) + 2px);
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--ink) 4%, transparent);
 }
 
 .tc-panel h2 {
@@ -177,7 +177,7 @@
 .tc-muted {
   margin: 0;
   font-size: 12px;
-  color: var(--app-muted);
+  color: var(--muted);
 }
 
 .tc-day {
@@ -188,21 +188,21 @@
 }
 .tc-day.focused {
   padding: 12px;
-  border: 1px solid color-mix(in srgb, var(--app-accent) 35%, var(--app-line));
-  background: color-mix(in srgb, var(--app-accent) 6%, var(--app-surface));
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+  background: color-mix(in srgb, var(--accent) 6%, var(--surface));
 }
 .tc-day h3 {
   margin: 8px 0 0;
   font-size:var(--text-xs);
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--app-muted);
+  color: var(--muted);
 }
 .tc-day-count {
   font-weight: 650;
   letter-spacing: 0;
   text-transform: none;
-  color: var(--app-muted);
+  color: var(--muted);
 }
 .tc-list-hint {
   margin: 0;
@@ -213,17 +213,17 @@
 }
 
 .tc-duty.highlighted {
-  outline: 2px solid var(--tc-accent, var(--app-accent));
+  outline: 2px solid var(--tc-accent, var(--accent));
   outline-offset: 2px;
 }
 .tc-event {
   display: grid;
   gap: 6px;
   padding: 12px 13px;
-  border: 1px solid var(--app-line);
+  border: 1px solid var(--line);
   border-radius:var(--radius-sm);
-  background: color-mix(in srgb, var(--app-bg) 55%, var(--app-surface));
-  border-left: 3px solid var(--tc-accent, var(--app-accent));
+  background: color-mix(in srgb, var(--bg) 55%, var(--surface));
+  border-left: 3px solid var(--tc-accent, var(--accent));
 }
 .tc-event-top {
   display: flex;
@@ -240,7 +240,7 @@
   flex-wrap: wrap;
   gap: 8px 12px;
   font-size: 12px;
-  color: var(--app-muted);
+  color: var(--muted);
 }
 .tc-chip {
   display: inline-flex;
@@ -259,7 +259,7 @@
   font-size: 12px;
 }
 .tc-links a {
-  color: var(--app-accent);
+  color: var(--accent);
   font-weight: 650;
   text-decoration: none;
 }
@@ -270,7 +270,7 @@
   padding: 0;
   border: 0;
   background: none;
-  color: var(--app-critical);
+  color: var(--critical);
   font: inherit;
   font-size: 12px;
   font-weight: 700;
@@ -297,14 +297,14 @@
   display: grid;
   gap: 4px;
   font-size: 12px;
-  color: var(--app-muted);
+  color: var(--muted);
 }
 .tc-check {
   display: flex;
   align-items: center;
   gap: 8px;
   font-size: 12px;
-  color: var(--app-ink);
+  color: var(--ink);
 }
 .tc-check input {
   width: 16px;
@@ -323,15 +323,15 @@
   gap: 2px;
   padding: 10px 11px;
   border-radius:var(--radius-xs);
-  border: 1px solid var(--app-line);
-  background: var(--app-bg);
+  border: 1px solid var(--line);
+  background: var(--bg);
 }
 .tc-upcoming strong {
   font-size: 13px;
 }
 .tc-upcoming span {
   font-size: 12px;
-  color: var(--app-muted);
+  color: var(--muted);
 }
 
 .tc-sub-create {
@@ -352,8 +352,8 @@
   padding: 0;
 }
 .tc-color.active {
-  border-color: var(--app-ink);
-  box-shadow: 0 0 0 2px var(--app-surface);
+  border-color: var(--ink);
+  box-shadow: 0 0 0 2px var(--surface);
 }
 
 .tc-sub-list {
@@ -369,9 +369,9 @@
   justify-content: space-between;
   gap: 10px;
   padding: 10px 12px;
-  border: 1px solid var(--app-line);
+  border: 1px solid var(--line);
   border-radius:var(--radius-sm);
-  background: var(--app-bg);
+  background: var(--bg);
 }
 .tc-sub-name {
   display: flex;
@@ -388,7 +388,7 @@
 .tc-roster th,
 .tc-roster td {
   padding: 8px 6px;
-  border-bottom: 1px solid var(--app-line);
+  border-bottom: 1px solid var(--line);
   text-align: left;
   vertical-align: middle;
 }
@@ -396,7 +396,7 @@
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--app-muted);
+  color: var(--muted);
   font-weight: 700;
 }
 .tc-toggle {
@@ -408,9 +408,9 @@
   padding: 0 8px;
   margin: 0 3px 3px 0;
   border-radius:var(--radius-pill);
-  border: 1px solid var(--app-line);
-  background: var(--app-surface);
-  color: var(--app-muted);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--muted);
   font: inherit;
   font-size: 11px;
   font-weight: 700;
@@ -425,8 +425,8 @@
   margin: 0 0 12px;
   padding: 10px 12px;
   border-radius:var(--radius-xs);
-  background: color-mix(in srgb, var(--app-critical) 12%, var(--app-surface));
-  color: var(--app-critical);
+  background: color-mix(in srgb, var(--critical) 12%, var(--surface));
+  color: var(--critical);
   font-size: 13px;
 }
 
@@ -470,7 +470,7 @@
   align-items: center;
   border: 0;
   background: none;
-  color: var(--app-accent);
+  color: var(--accent);
   font: 700 13px inherit;
   cursor: pointer;
   padding: 0;
@@ -482,7 +482,7 @@
   gap: 8px;
   margin: 0 0 12px;
   font: 600 12px inherit;
-  color: var(--app-muted);
+  color: var(--muted);
 }
 .tc-filter-select select {
   min-height: 36px;
@@ -492,8 +492,8 @@
   display: inline-flex;
   padding: 3px;
   border-radius:var(--radius-pill);
-  background: color-mix(in srgb, var(--app-soft) 80%, var(--app-surface));
-  border: 1px solid var(--app-line);
+  background: color-mix(in srgb, var(--surface-2) 80%, var(--surface));
+  border: 1px solid var(--line);
 }
 .tc-mode button {
   min-height: 34px;
@@ -501,16 +501,16 @@
   border: 0;
   border-radius:var(--radius-pill);
   background: transparent;
-  color: var(--app-muted);
+  color: var(--muted);
   font: inherit;
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
 }
 .tc-mode button.active {
-  background: var(--app-surface);
-  color: var(--app-ink);
-  box-shadow: 0 1px 2px color-mix(in srgb, var(--app-ink) 10%, transparent);
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--ink) 10%, transparent);
 }
 .tc-nav-range {
   display: inline-flex;
@@ -526,9 +526,9 @@
   width: 34px;
   height: 34px;
   border-radius:var(--radius-xs);
-  border: 1px solid var(--app-line);
-  background: var(--app-surface);
-  color: var(--app-ink);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
   font-size: 18px;
   line-height: 1;
   cursor: pointer;
@@ -536,7 +536,7 @@
 .tc-text-link {
   border: 0;
   background: none;
-  color: var(--app-accent);
+  color: var(--accent);
   font: inherit;
   font-size: 12px;
   font-weight: 700;
@@ -555,28 +555,28 @@
   min-height: 44px;
   padding: 0 14px;
   border-radius:var(--radius-pill);
-  border: 1px solid color-mix(in srgb, var(--app-accent) 35%, var(--app-line));
-  background: color-mix(in srgb, var(--app-accent) 10%, var(--app-surface));
-  color: var(--app-accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  color: var(--accent);
   font: inherit;
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
 }
 .tc-rsvp-btn.soft {
-  border-color: var(--app-line);
-  background: var(--app-bg);
-  color: var(--app-muted);
+  border-color: var(--line);
+  background: var(--bg);
+  color: var(--muted);
 }
 .tc-rsvp-btn.active {
-  background: var(--app-accent);
+  background: var(--accent);
   border-color: transparent;
   /* --app-accent-ink, not #fff: the dark-theme accent is a light blue. */
-  color: var(--app-accent-ink);
+  color: var(--accent-ink);
 }
 .tc-rsvp-btn.soft.active {
-  background: color-mix(in srgb, var(--app-ink) 12%, var(--app-surface));
-  color: var(--app-ink);
+  background: color-mix(in srgb, var(--ink) 12%, var(--surface));
+  color: var(--ink);
 }
 .tc-rsvp-btn span {
   font-variant-numeric: tabular-nums;
@@ -587,7 +587,7 @@
   display: grid;
   gap: 10px;
   padding-bottom: 4px;
-  border-bottom: 1px solid var(--app-line);
+  border-bottom: 1px solid var(--line);
   margin-bottom: 4px;
 }
 .tc-quick-head h2 {
@@ -604,14 +604,14 @@
 }
 
 .tc-details {
-  border-top: 1px solid var(--app-line);
+  border-top: 1px solid var(--line);
   padding-top: 10px;
 }
 .tc-details summary {
   cursor: pointer;
   font-size: 13px;
   font-weight: 700;
-  color: var(--app-ink);
+  color: var(--ink);
   margin-bottom: 10px;
 }
 
@@ -640,8 +640,8 @@
   min-height: 160px;
   padding: 10px;
   border-radius:var(--radius-sm);
-  border: 1px solid var(--app-line);
-  background: color-mix(in srgb, var(--app-bg) 70%, var(--app-surface));
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--bg) 70%, var(--surface));
   text-align: left;
   color: inherit;
   font: inherit;
@@ -650,11 +650,11 @@
 }
 .tc-week-day:hover,
 .tc-week-day.picked {
-  border-color: color-mix(in srgb, var(--app-accent) 45%, var(--app-line));
-  box-shadow: 0 4px 14px color-mix(in srgb, var(--app-accent) 12%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 12%, transparent);
 }
 .tc-week-day.today {
-  background: color-mix(in srgb, var(--app-accent) 8%, var(--app-surface));
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
 }
 .tc-week-day header {
   display: flex;
@@ -662,13 +662,13 @@
   justify-content: space-between;
   gap: 6px;
   font-size: 11px;
-  color: var(--app-muted);
+  color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 .tc-week-day header strong {
   font-size: 18px;
-  color: var(--app-ink);
+  color: var(--ink);
   letter-spacing: -0.02em;
 }
 .tc-week-day ul {
@@ -683,13 +683,13 @@
   gap: 1px;
   padding: 6px 7px;
   border-radius:var(--radius-xs);
-  border-left: 3px solid var(--app-accent);
-  background: var(--app-surface);
+  border-left: 3px solid var(--accent);
+  background: var(--surface);
   font-size: 11px;
 }
 .tc-week-day li b {
   font-variant-numeric: tabular-nums;
-  color: var(--app-muted);
+  color: var(--muted);
   font-weight: 650;
 }
 .tc-week-day li span {
@@ -700,14 +700,14 @@
 .tc-week-day li.more {
   border: 0;
   background: transparent;
-  color: var(--app-muted);
+  color: var(--muted);
   padding: 0 2px;
 }
 .tc-add-hint {
   margin-top: auto;
   font-size: 10px;
   font-weight: 650;
-  color: var(--app-muted);
+  color: var(--muted);
 }
 
 .tc-month-head {
@@ -717,7 +717,7 @@
   margin-bottom: 6px;
   font-size: 11px;
   font-weight: 700;
-  color: var(--app-muted);
+  color: var(--muted);
   text-align: center;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -734,8 +734,8 @@
   min-height: 84px;
   padding: 6px;
   border-radius:var(--radius-xs);
-  border: 1px solid var(--app-line);
-  background: var(--app-bg);
+  border: 1px solid var(--line);
+  background: var(--bg);
   text-align: left;
   color: inherit;
   font: inherit;
@@ -746,15 +746,15 @@
   opacity: 0.45;
 }
 .tc-month-cell.today {
-  border-color: color-mix(in srgb, var(--app-accent) 50%, var(--app-line));
-  background: color-mix(in srgb, var(--app-accent) 8%, var(--app-surface));
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--line));
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
 }
 .tc-month-cell.picked,
 .tc-month-cell:hover {
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--app-accent) 35%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent);
 }
 .tc-month-cell.has-events {
-  border-color: color-mix(in srgb, var(--app-accent) 28%, var(--app-line));
+  border-color: color-mix(in srgb, var(--accent) 28%, var(--line));
 }
 .tc-month-cell-head {
   display: flex;
@@ -770,8 +770,8 @@
   height: 18px;
   padding: 0 5px;
   border-radius:var(--radius-pill);
-  background: color-mix(in srgb, var(--app-accent) 16%, var(--app-surface));
-  color: var(--app-accent);
+  background: color-mix(in srgb, var(--accent) 16%, var(--surface));
+  color: var(--accent);
   font-size: 10px;
   font-weight: 800;
   line-height: 18px;
@@ -796,7 +796,7 @@
   white-space: nowrap;
 }
 .tc-month-cell li.more {
-  color: var(--app-muted);
+  color: var(--muted);
   background: transparent;
   padding: 0 2px;
   font-weight: 700;
@@ -805,7 +805,7 @@
   margin-top: auto;
   font-size: 10px;
   font-weight: 650;
-  color: var(--app-muted);
+  color: var(--muted);
 }
 
 .tc-selected {
@@ -857,7 +857,7 @@
   padding: 12px 14px;
   border-radius:var(--radius-sm);
   background: color-mix(in srgb, var(--accent-soft) 70%, transparent);
-  border: 1px solid color-mix(in srgb, var(--app-accent) 18%, var(--app-line));
+  border: 1px solid color-mix(in srgb, var(--accent) 18%, var(--line));
 }
 .tc-sync-note strong {
   display: block;
@@ -870,7 +870,7 @@
   line-height: 1.45;
 }
 .tc-text-btn.danger {
-  color: var(--app-critical);
+  color: var(--critical);
 }
 
 @media (max-width: 900px) {
@@ -908,7 +908,7 @@
   }
 }
 
-.tc-travel{border-left:3px solid var(--app-accent);padding-left:10px}
+.tc-travel{border-left:3px solid var(--accent);padding-left:10px}
 
 .tc-page > .team-hq-strip {
   margin-bottom: 12px;
@@ -916,12 +916,12 @@
 
 .tc-github-hint {
   margin: 0 0 12px;
-  color: var(--app-muted);
+  color: var(--muted);
   font-size: 13px;
   line-height: 1.45;
 }
 .tc-github-hint a {
-  color: var(--app-accent);
+  color: var(--accent);
   font-weight: 700;
 }
 
@@ -932,8 +932,8 @@
   max-width: 100%;
   padding: 2px 8px;
   border-radius:var(--radius-xs);
-  border: 1px solid var(--app-line);
-  background: color-mix(in srgb, var(--app-ink) 7%, var(--app-surface));
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--ink) 7%, var(--surface));
   color: inherit;
   font: inherit;
   font-size: 11px;
@@ -946,11 +946,11 @@
   cursor: pointer;
 }
 .tc-github-chip {
-  background: color-mix(in srgb, var(--app-ink) 10%, var(--app-surface));
+  background: color-mix(in srgb, var(--ink) 10%, var(--surface));
 }
 .tc-github-peek {
-  background: color-mix(in srgb, var(--app-ink) 12%, var(--app-surface)) !important;
-  color: var(--app-ink) !important;
+  background: color-mix(in srgb, var(--ink) 12%, var(--surface)) !important;
+  color: var(--ink) !important;
 }
 
 .tc-timed-wrap {
@@ -962,9 +962,9 @@
   min-width: 640px;
   display: flex;
   flex-direction: column;
-  border: 1px solid var(--app-line);
+  border: 1px solid var(--line);
   border-radius:var(--radius-sm);
-  background: var(--app-surface);
+  background: var(--surface);
   overflow: hidden;
 }
 .tc-timed.is-day {
@@ -977,7 +977,7 @@
   grid-template-columns: 52px repeat(var(--tc-cols, 7), minmax(0, 1fr));
 }
 .tc-timed-corner {
-  border-bottom: 1px solid var(--app-line);
+  border-bottom: 1px solid var(--line);
 }
 .tc-timed-head > button {
   display: flex;
@@ -985,8 +985,8 @@
   align-items: baseline;
   padding: 8px 6px;
   border: 0;
-  border-left: 1px solid var(--app-line);
-  border-bottom: 1px solid var(--app-line);
+  border-left: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
   background: transparent;
   color: inherit;
   font: inherit;
@@ -994,16 +994,16 @@
   text-align: left;
 }
 .tc-timed-head > button.today strong {
-  color: var(--app-accent);
+  color: var(--accent);
 }
 .tc-allday-label,
 .tc-timed-gutter {
-  color: var(--app-muted);
+  color: var(--muted);
   font-size: 11px;
   padding: 6px 4px;
 }
 .tc-allday-label {
-  border-top: 1px solid var(--app-line);
+  border-top: 1px solid var(--line);
 }
 .tc-allday {
   min-height: 36px;
@@ -1011,8 +1011,8 @@
   flex-wrap: wrap;
   gap: 4px;
   padding: 4px;
-  border-left: 1px solid var(--app-line);
-  border-top: 1px solid var(--app-line);
+  border-left: 1px solid var(--line);
+  border-top: 1px solid var(--line);
 }
 .tc-timed-body {
   position: relative;
@@ -1029,7 +1029,7 @@
 .tc-timed-col {
   position: relative;
   height: calc(var(--tc-slot) * var(--tc-hours, 15));
-  border-left: 1px solid var(--app-line);
+  border-left: 1px solid var(--line);
 }
 .tc-timed-slot {
   display: block;
@@ -1037,22 +1037,22 @@
   height: var(--tc-slot);
   padding: 0;
   border: 0;
-  border-bottom: 1px solid color-mix(in srgb, var(--app-line) 65%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 65%, transparent);
   background: transparent;
   cursor: pointer;
 }
 .tc-timed-slot:hover {
-  background: color-mix(in srgb, var(--app-accent) 8%, transparent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
 }
 .tc-timed-block {
   position: absolute;
   z-index: 1;
   overflow: hidden;
   padding: 2px 6px;
-  border: 1px solid var(--app-accent);
+  border: 1px solid var(--accent);
   border-left-width: 3px;
   border-radius:var(--radius-xs);
-  background: color-mix(in srgb, var(--app-accent) 16%, var(--app-surface));
+  background: color-mix(in srgb, var(--accent) 16%, var(--surface));
   color: inherit;
   font: inherit;
   font-size: 11px;
@@ -1060,7 +1060,7 @@
   cursor: pointer;
 }
 .tc-timed-block.selected {
-  outline: 2px solid var(--app-accent);
+  outline: 2px solid var(--accent);
 }
 .tc-timed-block.tba {
   font-weight: 650;
@@ -1092,7 +1092,7 @@
   flex: none;
 }
 .tc-event-tools .tc-text-btn:first-child {
-  color: var(--app-accent);
+  color: var(--accent);
 }
 
 .tc-repeat-badge {
@@ -1102,7 +1102,7 @@
   margin: 0;
   font-size: 12px;
   font-weight: 650;
-  color: var(--app-accent);
+  color: var(--accent);
   overflow-wrap: anywhere;
 }
 
@@ -1110,9 +1110,9 @@
   display: grid;
   gap: 10px;
   padding: 12px;
-  border: 1px solid var(--app-line);
+  border: 1px solid var(--line);
   border-radius:var(--radius-sm);
-  background: color-mix(in srgb, var(--app-bg) 55%, var(--app-surface));
+  background: color-mix(in srgb, var(--bg) 55%, var(--surface));
 }
 .tc-repeat-days {
   margin: 0;
@@ -1122,7 +1122,7 @@
 .tc-repeat-days legend {
   padding: 0 0 6px;
   font-size: 12px;
-  color: var(--app-muted);
+  color: var(--muted);
 }
 .tc-repeat-day-row {
   display: flex;
@@ -1133,19 +1133,19 @@
   min-width: 46px;
   min-height: 44px;
   padding: 0 8px;
-  border: 1px solid var(--app-line);
+  border: 1px solid var(--line);
   border-radius:var(--radius-xs);
-  background: var(--app-surface);
-  color: var(--app-ink);
+  background: var(--surface);
+  color: var(--ink);
   font: inherit;
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
 }
 .tc-repeat-day.active {
-  border-color: var(--app-accent);
-  background: color-mix(in srgb, var(--app-accent) 16%, var(--app-surface));
-  color: var(--app-accent);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 16%, var(--surface));
+  color: var(--accent);
 }
 .tc-repeat-day:disabled {
   opacity: 0.5;
@@ -1164,26 +1164,26 @@
   margin: 0;
   font-size: 12px;
   font-weight: 650;
-  color: var(--app-accent);
+  color: var(--accent);
   overflow-wrap: anywhere;
 }
 .tc-repeat-summary.invalid {
-  color: var(--app-critical);
+  color: var(--critical);
 }
 
 .tc-scope {
   display: grid;
   gap: 8px;
   padding: 12px;
-  border: 1px solid var(--app-line);
+  border: 1px solid var(--line);
   border-radius:var(--radius-sm);
-  background: color-mix(in srgb, var(--app-bg) 55%, var(--app-surface));
+  background: color-mix(in srgb, var(--bg) 55%, var(--surface));
 }
 .tc-scope-title {
   margin: 0;
   font-size: 13px;
   font-weight: 700;
-  color: var(--app-ink);
+  color: var(--ink);
   overflow-wrap: anywhere;
 }
 .tc-scope-options {
@@ -1195,10 +1195,10 @@
   gap: 2px;
   min-height: 44px;
   padding: 8px 12px;
-  border: 1px solid var(--app-line);
+  border: 1px solid var(--line);
   border-radius:var(--radius-xs);
-  background: var(--app-surface);
-  color: var(--app-ink);
+  background: var(--surface);
+  color: var(--ink);
   font: inherit;
   text-align: left;
   cursor: pointer;
@@ -1208,13 +1208,13 @@
 }
 .tc-scope-btn span {
   font-size: 11px;
-  color: var(--app-muted);
+  color: var(--muted);
 }
 .tc-scope-btn:hover:not(:disabled) {
-  border-color: var(--app-accent);
+  border-color: var(--accent);
 }
 .tc-scope-btn.danger:hover:not(:disabled) {
-  border-color: var(--app-critical);
+  border-color: var(--critical);
 }
 .tc-scope-btn:disabled {
   opacity: 0.5;
@@ -1225,9 +1225,9 @@
   display: grid;
   gap: 10px;
   padding: 12px;
-  border: 1px solid var(--app-line);
+  border: 1px solid var(--line);
   border-radius:var(--radius-sm);
-  background: color-mix(in srgb, var(--app-bg) 55%, var(--app-surface));
+  background: color-mix(in srgb, var(--bg) 55%, var(--surface));
 }
 .tc-occurrence-actions {
   display: flex;
@@ -1258,9 +1258,9 @@
   display: grid;
   gap: 8px;
   padding: 12px;
-  background: var(--app-soft);
-  border: 1px solid var(--app-line);
-  border-radius: var(--app-radius);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
 }
 .tc-ai > header {
   display: flex;
@@ -1286,16 +1286,16 @@
   width: 100%;
   min-width: 0;
   padding: 8px 10px;
-  color: var(--app-ink);
-  background: var(--app-surface);
-  border: 1px solid var(--app-line);
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
   border-radius: var(--radius-xs);
   font: inherit;
   font-size: 12px;
 }
 
 .tc-ai-error {
-  color: var(--app-critical);
+  color: var(--critical);
   font-weight: 600;
 }
 
@@ -1305,7 +1305,7 @@
 }
 .tc-ai-basis {
   padding-top: 8px;
-  border-top: 1px solid var(--app-line);
+  border-top: 1px solid var(--line);
 }
 
 .tc-ai-list {
@@ -1321,8 +1321,8 @@
   align-items: center;
   gap: 10px;
   padding: 9px 10px;
-  background: var(--app-surface);
-  border: 1px solid var(--app-line);
+  background: var(--surface);
+  border: 1px solid var(--line);
   border-radius: var(--radius-xs);
 }
 .tc-ai-slot > div {
@@ -1341,10 +1341,10 @@
    but it must not look like the clear ones. */
 .tc-ai-slot.busy {
   border-style: dashed;
-  border-color: color-mix(in srgb, var(--app-critical) 45%, var(--app-line));
+  border-color: color-mix(in srgb, var(--critical) 45%, var(--line));
 }
 .tc-ai-clash {
-  color: var(--app-critical);
+  color: var(--critical);
   font-weight: 600;
 }
 
@@ -1364,19 +1364,19 @@
   gap: 4px;
   max-width: 100%;
   padding: 2px 6px 2px 2px;
-  background: var(--app-surface);
-  border: 1px solid var(--tc-task-color, var(--app-line));
-  border-left: 3px solid var(--tc-task-color, var(--app-muted));
+  background: var(--surface);
+  border: 1px solid var(--tc-task-color, var(--line));
+  border-left: 3px solid var(--tc-task-color, var(--muted));
   border-radius: var(--radius-xs);
   font-size: 11px;
   line-height: 1.3;
 }
 .tc-task-chip.is-doing {
-  background: color-mix(in srgb, var(--app-accent) 8%, var(--app-surface));
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
 }
 .tc-task-chip.is-late {
-  border-color: var(--app-critical);
-  border-left-color: var(--app-critical);
+  border-color: var(--critical);
+  border-left-color: var(--critical);
 }
 
 .tc-task-tick {
@@ -1384,18 +1384,18 @@
   width: 18px;
   height: 18px;
   padding: 0;
-  color: var(--app-muted);
-  background: var(--app-soft);
-  border: 1px solid var(--app-line);
+  color: var(--muted);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
   border-radius: 4px;
   font-size: 11px;
   line-height: 1;
   cursor: pointer;
 }
 .tc-task-tick:hover:not(:disabled) {
-  color: var(--app-accent-ink);
-  background: var(--app-accent);
-  border-color: var(--app-accent);
+  color: var(--accent-ink);
+  background: var(--accent);
+  border-color: var(--accent);
 }
 .tc-task-tick:disabled {
   cursor: default;
@@ -1404,7 +1404,7 @@
 
 .tc-task-title {
   overflow: hidden;
-  color: var(--app-ink);
+  color: var(--ink);
   text-decoration: none;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1415,7 +1415,7 @@
 
 .tc-task-more {
   align-self: center;
-  color: var(--app-muted);
+  color: var(--muted);
   font-size: 10px;
 }
 
@@ -1430,29 +1430,29 @@
 /* Month cells are buttons, so a task there is text, not a control — clicking
    the cell opens the day view, where the tick works. */
 .tc-task-peek {
-  background: var(--app-soft) !important;
-  color: var(--app-muted) !important;
+  background: var(--surface-2) !important;
+  color: var(--muted) !important;
 }
 
 .tc-task-summary {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: var(--app-muted);
+  color: var(--muted);
   text-decoration: none;
   font-size: 12px;
 }
 .tc-task-summary strong {
   padding: 2px 6px;
-  color: var(--app-ink);
-  background: var(--app-soft);
-  border: 1px solid var(--app-line);
+  color: var(--ink);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
   border-radius: 999px;
   font-size: 11px;
 }
 .tc-task-summary strong.is-late {
-  color: var(--app-critical);
-  border-color: var(--app-critical);
+  color: var(--critical);
+  border-color: var(--critical);
 }
 .tc-task-summary:hover {
   text-decoration: underline;
@@ -1468,13 +1468,13 @@
 .tc-entry-switch {
   display: inline-flex;
   padding: 2px;
-  background: var(--app-soft);
-  border: 1px solid var(--app-line);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
   border-radius: 999px;
 }
 .tc-entry-switch button {
   padding: 4px 10px;
-  color: var(--app-muted);
+  color: var(--muted);
   background: none;
   border: 0;
   border-radius: 999px;
@@ -1484,6 +1484,6 @@
   cursor: pointer;
 }
 .tc-entry-switch button.active {
-  color: var(--app-accent-ink);
-  background: var(--app-accent);
+  color: var(--accent-ink);
+  background: var(--accent);
 }

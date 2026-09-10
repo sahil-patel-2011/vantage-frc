@@ -77,13 +77,13 @@
 }
 
 .ai-keys-status.ok {
-  color: var(--app-positive);
-  background: color-mix(in srgb, var(--app-positive) 12%, transparent);
+  color: var(--positive);
+  background: color-mix(in srgb, var(--positive) 12%, transparent);
 }
 
 .ai-keys-status.missing {
-  color: var(--app-warning);
-  background: color-mix(in srgb, var(--app-warning) 12%, transparent);
+  color: var(--warning);
+  background: color-mix(in srgb, var(--warning) 12%, transparent);
 }
 
 .ai-keys-meta {
@@ -145,7 +145,7 @@
   margin: 0;
   padding: 10px 12px;
   border-radius:var(--radius-sm);
-  background: color-mix(in srgb, var(--app-warning) 14%, transparent);
+  background: color-mix(in srgb, var(--warning) 14%, transparent);
   line-height: 1.4;
   font-size: 0.9rem;
 }

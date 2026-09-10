@@ -26,8 +26,8 @@
   font-size: 13px;
   line-height: 1.45;
 }
-.rb-alert { background: color-mix(in srgb, var(--app-critical) 10%, transparent); color: var(--app-critical); }
-.rb-note { background: color-mix(in srgb, var(--app-positive) 12%, transparent); color: var(--app-positive); }
+.rb-alert { background: color-mix(in srgb, var(--critical) 10%, transparent); color: var(--critical); }
+.rb-note { background: color-mix(in srgb, var(--positive) 12%, transparent); color: var(--positive); }
 
 /* ---- totals strip ---- */
 .rb-totals {
@@ -119,13 +119,13 @@
   background: color-mix(in srgb, var(--muted) 14%, transparent);
   width: fit-content;
 }
-.rb-chip.submitted { color: var(--app-accent); background: color-mix(in srgb, var(--app-accent) 14%, transparent); }
-.rb-chip.approved { color: var(--app-warning); background: color-mix(in srgb, var(--app-warning) 18%, transparent); }
-.rb-chip.paid { color: var(--app-positive); background: color-mix(in srgb, var(--app-positive) 14%, transparent); }
-.rb-chip.denied { color: var(--app-critical); background: color-mix(in srgb, var(--app-critical) 12%, transparent); }
+.rb-chip.submitted { color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); }
+.rb-chip.approved { color: var(--warning); background: color-mix(in srgb, var(--warning) 18%, transparent); }
+.rb-chip.paid { color: var(--positive); background: color-mix(in srgb, var(--positive) 14%, transparent); }
+.rb-chip.denied { color: var(--critical); background: color-mix(in srgb, var(--critical) 12%, transparent); }
 
 .rb-receipt-link { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); font: 650 13px inherit; }
-.rb-no-receipt { color: var(--app-critical); font-weight: 650; }
+.rb-no-receipt { color: var(--critical); font-weight: 650; }
 
 /* ---- budget vs actual ---- */
 .rb-budget-lines { display: grid; gap: 12px; }
@@ -139,10 +139,10 @@
   background: color-mix(in srgb, var(--muted) 18%, transparent);
   overflow: hidden;
 }
-.rb-budget-fill { position: absolute; inset: 0 auto 0 0; border-radius:var(--radius-pill); background: var(--app-accent); }
-.rb-budget-line[data-state="over"] .rb-budget-fill { background: var(--app-critical); }
-.rb-budget-line[data-state="close"] .rb-budget-fill { background: var(--app-warning); }
-.rb-budget-line[data-state="on_track"] .rb-budget-fill { background: var(--app-positive); }
+.rb-budget-fill { position: absolute; inset: 0 auto 0 0; border-radius:var(--radius-pill); background: var(--accent); }
+.rb-budget-line[data-state="over"] .rb-budget-fill { background: var(--critical); }
+.rb-budget-line[data-state="close"] .rb-budget-fill { background: var(--warning); }
+.rb-budget-line[data-state="on_track"] .rb-budget-fill { background: var(--positive); }
 .rb-budget-line[data-state="no_budget"] .rb-budget-track { background: repeating-linear-gradient(
   135deg,
   color-mix(in srgb, var(--muted) 22%, transparent) 0 6px,

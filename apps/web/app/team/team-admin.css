@@ -27,7 +27,7 @@
   justify-content: space-between;
   gap: 0.75rem;
   padding: 0.75rem 0;
-  border-top: 1px solid color-mix(in srgb, var(--app-line) 80%, transparent);
+  border-top: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
 }
 
 .team-admin-next-actions li:first-child,
@@ -37,7 +37,7 @@
 }
 
 .team-admin-next-actions li.primary strong {
-  color: var(--app-fg, inherit);
+  color: var(--ink, inherit);
 }
 
 .team-admin-next-actions li div,
@@ -49,7 +49,7 @@
 
 .team-admin-next-actions li span,
 .team-admin-tip {
-  color: var(--app-muted);
+  color: var(--muted);
   font-size: 0.9rem;
 }
 
@@ -65,7 +65,7 @@
   min-width: 6.5rem;
   padding: 0.75rem 1rem;
   border-radius:var(--radius-sm);
-  background: color-mix(in srgb, var(--app-surface) 88%, var(--app-line));
+  background: color-mix(in srgb, var(--surface) 88%, var(--line));
 }
 
 .team-admin-metrics article strong {
@@ -76,7 +76,7 @@
 
 .team-admin-metrics article span {
   font-size: 0.8rem;
-  color: var(--app-muted);
+  color: var(--muted);
 }
 
 .team-admin-members article {
@@ -86,7 +86,7 @@
   justify-content: space-between;
   gap: 0.75rem;
   padding: 0.85rem 0;
-  border-bottom: 1px solid color-mix(in srgb, var(--app-line) 80%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
 }
 
 .team-admin-members article:last-child {
@@ -98,7 +98,7 @@
 }
 
 .team-admin-members small {
-  color: var(--app-muted);
+  color: var(--muted);
 }
 
 .team-invite-grid {
@@ -108,9 +108,9 @@
 .team-invite-form,
 .team-invite-ledger {
   padding: 1.15rem 1.2rem;
-  border: 1px solid color-mix(in srgb, var(--app-line) 85%, transparent);
+  border: 1px solid color-mix(in srgb, var(--line) 85%, transparent);
   border-radius:var(--radius);
-  background: color-mix(in srgb, var(--app-surface) 92%, var(--app-line));
+  background: color-mix(in srgb, var(--surface) 92%, var(--line));
 }
 
 .team-invite-form h2 {
@@ -120,7 +120,7 @@
 
 .team-invite-form > p {
   margin: 0 0 0.9rem;
-  color: var(--app-muted);
+  color: var(--muted);
   font-size: 0.92rem;
   line-height: 1.45;
 }
@@ -138,9 +138,9 @@
   width: 100%;
   min-height: 2.4rem;
   padding: 0.45rem 0.65rem;
-  border: 1px solid var(--app-line);
+  border: 1px solid var(--line);
   border-radius:var(--radius-sm);
-  background: var(--app-surface);
+  background: var(--surface);
 }
 
 .team-invite-banner,
@@ -161,34 +161,34 @@
 
 .team-invite-banner.setup,
 .team-invite-notice.warn {
-  border: 1px solid color-mix(in srgb, var(--app-warning) 40%, var(--app-line));
-  background: color-mix(in srgb, var(--app-warning) 12%, var(--app-surface));
-  color: var(--app-warning);
+  border: 1px solid color-mix(in srgb, var(--warning) 40%, var(--line));
+  background: color-mix(in srgb, var(--warning) 12%, var(--surface));
+  color: var(--warning);
 }
 
 .team-invite-banner.info {
-  border: 1px solid color-mix(in srgb, var(--app-accent) 40%, var(--app-line));
-  background: color-mix(in srgb, var(--app-accent) 10%, var(--app-surface));
-  color: var(--app-accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--line));
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  color: var(--accent);
 }
 
 .team-invite-notice.ok {
-  border: 1px solid color-mix(in srgb, var(--app-positive) 40%, var(--app-line));
-  background: color-mix(in srgb, var(--app-positive) 12%, var(--app-surface));
-  color: var(--app-positive);
+  border: 1px solid color-mix(in srgb, var(--positive) 40%, var(--line));
+  background: color-mix(in srgb, var(--positive) 12%, var(--surface));
+  color: var(--positive);
 }
 
 .team-invite-notice.error {
-  border: 1px solid color-mix(in srgb, var(--app-critical) 40%, var(--app-line));
-  background: color-mix(in srgb, var(--app-critical) 12%, var(--app-surface));
-  color: var(--app-critical);
+  border: 1px solid color-mix(in srgb, var(--critical) 40%, var(--line));
+  background: color-mix(in srgb, var(--critical) 12%, var(--surface));
+  color: var(--critical);
 }
 
 .team-invite-ledger article {
   display: grid;
   gap: 0.35rem;
   padding: 0.85rem 0;
-  border-bottom: 1px solid color-mix(in srgb, var(--app-line) 80%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
 }
 
 .team-invite-ledger article:last-child {
@@ -196,7 +196,7 @@
 }
 
 .team-invite-ledger article.pending {
-  background: color-mix(in srgb, var(--app-accent) 8%, var(--app-surface));
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
   margin: 0 -0.6rem;
   padding: 0.85rem 0.6rem;
   border-radius:var(--radius-sm);
@@ -209,7 +209,7 @@
 
 .team-invite-ledger small,
 .team-invite-ledger time {
-  color: var(--app-muted);
+  color: var(--muted);
   font-size: 0.82rem;
 }
 
@@ -222,9 +222,9 @@
 .team-invite-row-actions button {
   min-height: 2rem;
   padding: 0.25rem 0.7rem;
-  border: 1px solid var(--app-line);
+  border: 1px solid var(--line);
   border-radius:var(--radius-pill);
-  background: var(--app-surface);
+  background: var(--surface);
   font-size: 0.8rem;
   font-weight: 600;
 }

@@ -1,37 +1,37 @@
 /* Strategy Whiteboard — co-located so styling survives independently of the shared
    global stylesheet. All selectors are .wb-* prefixed and theme-aware. */
-.wb-page input{min-height:38px;padding:8px 10px;color:var(--app-ink);background:var(--app-bg);border:1px solid var(--app-line);border-radius:var(--radius-xs);font:inherit}
+.wb-page input{min-height:38px;padding:8px 10px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:var(--radius-xs);font:inherit}
 .wb-header-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 /* Scoped: the board toolbar wants a 32px control; the shared `.sm` stays 36px. */
 .wb-page .app-button.sm{min-height:32px;padding:5px 12px;font-size:11px}
 .wb-empty{display:grid;gap:12px;justify-items:start;padding:26px}
-.wb-link{padding:0;color:var(--app-accent);background:none;border:0;font-size:12px;font-weight:700;cursor:pointer}
-.wb-link.danger{color:var(--app-critical)}
+.wb-link{padding:0;color:var(--accent);background:none;border:0;font-size:12px;font-weight:700;cursor:pointer}
+.wb-link.danger{color:var(--critical)}
 .wb-layout{display:grid;grid-template-columns:minmax(200px,250px) 1fr;gap:16px;align-items:start}
 .wb-list{display:grid;gap:8px;align-content:start}
-.wb-list-item{display:flex;align-items:center;gap:8px;padding:4px 10px 4px 0;background:var(--app-surface);border:1px solid var(--app-line);border-radius:var(--app-radius)}
-.wb-list-item.active{border-color:var(--app-accent);box-shadow:0 0 0 1px var(--app-accent)}
-.wb-list-select{flex:1;display:grid;gap:3px;min-width:0;padding:10px 12px;text-align:left;background:none;border:0;cursor:pointer;color:var(--app-ink)}
+.wb-list-item{display:flex;align-items:center;gap:8px;padding:4px 10px 4px 0;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-sm)}
+.wb-list-item.active{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.wb-list-select{flex:1;display:grid;gap:3px;min-width:0;padding:10px 12px;text-align:left;background:none;border:0;cursor:pointer;color:var(--ink)}
 .wb-list-select strong{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.wb-list-select small{color:var(--app-muted);font-size:11px}
+.wb-list-select small{color:var(--muted);font-size:11px}
 .wb-editor{display:grid;gap:12px;min-width:0}
 .wb-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .wb-tools,.wb-actions{display:flex;gap:6px;flex-wrap:wrap}
-.wb-tools button,.wb-actions button:not(.app-button){min-height:34px;padding:6px 11px;border-radius:var(--radius-xs);border:1px solid var(--app-line);background:var(--app-bg);color:var(--app-ink);font-size:12px;font-weight:700;cursor:pointer}
-.wb-tools button.active{border-color:var(--app-accent);color:var(--app-accent);box-shadow:0 0 0 1px var(--app-accent)}
+.wb-tools button,.wb-actions button:not(.app-button){min-height:34px;padding:6px 11px;border-radius:var(--radius-xs);border:1px solid var(--line);background:var(--bg);color:var(--ink);font-size:12px;font-weight:700;cursor:pointer}
+.wb-tools button.active{border-color:var(--accent);color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
 .wb-colors{display:flex;gap:6px}
-.wb-swatch{width:26px;height:26px;border-radius:var(--radius-pill);border:2px solid var(--app-line);cursor:pointer;padding:0}
-.wb-swatch.active{border-color:var(--app-ink);box-shadow:0 0 0 2px var(--app-surface),0 0 0 4px var(--app-accent)}
+.wb-swatch{width:26px;height:26px;border-radius:var(--radius-pill);border:2px solid var(--line);cursor:pointer;padding:0}
+.wb-swatch.active{border-color:var(--ink);box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--accent)}
 .wb-field{width:100%;height:auto;border-radius:var(--radius-sm);touch-action:none;user-select:none;display:block}
 .wb-field.tool-pen,.wb-field.tool-arrow{cursor:crosshair}
 .wb-field.tool-move{cursor:default}
-.wb-carpet{fill:var(--app-soft)}
-.wb-border{stroke:var(--app-muted);stroke-width:3}
+.wb-carpet{fill:var(--surface-2)}
+.wb-border{stroke:var(--muted);stroke-width:3}
 .wb-zone.red{fill:rgba(212,58,58,.12)}
 .wb-zone.blue{fill:rgba(47,111,221,.12)}
-.wb-centerline{stroke:var(--app-muted);stroke-width:2;stroke-dasharray:10 8;opacity:.7}
+.wb-centerline{stroke:var(--muted);stroke-width:2;stroke-dasharray:10 8;opacity:.7}
 .wb-robot{cursor:grab}
-.wb-robot circle{stroke-width:3;stroke:var(--app-surface)}
+.wb-robot circle{stroke-width:3;stroke:var(--surface)}
 .wb-robot.red circle{fill:#d43a3a}
 .wb-robot.blue circle{fill:#2f6fdd}
 .wb-robot text{fill:#fff;font:800 13px system-ui,sans-serif;pointer-events:none}

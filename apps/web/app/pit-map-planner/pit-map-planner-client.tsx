@@ -384,8 +384,8 @@ function PitMapCanvas({ view }: { view: LiveView }) {
           width: widthPx,
           height: depthPx,
           maxWidth: "100%",
-          border: "2px solid var(--app-border, #444)",
-          background: "var(--app-canvas, rgba(127,127,127,0.06))",
+          border: "2px solid var(--line, #444)",
+          background: "var(--bg, rgba(127,127,127,0.06))",
           overflow: "auto",
         }}
       >

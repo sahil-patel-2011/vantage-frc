@@ -1,38 +1,38 @@
 /* Robot Inspection — co-located so styling survives independently of the shared
    global stylesheet. All selectors are .insp-* prefixed and theme-aware. */
-.insp-page input,.insp-page select{min-height:44px;padding:8px 10px;color:var(--app-ink);background:var(--app-bg);border:1px solid var(--app-line);border-radius:var(--radius-xs);font:inherit}
+.insp-page input,.insp-page select{min-height:44px;padding:8px 10px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:var(--radius-xs);font:inherit}
 .insp-header-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 /* Scoped: an unscoped `.app-button.sm` here leaks to every page once this stylesheet loads. */
 .insp-page .app-button.sm{min-height:44px;padding:5px 12px;font-size:11px}
 /* Scoped so it reliably beats the shared .soft-panel EmptyState shell regardless of import order. */
 .insp-page .insp-empty{display:grid;gap:12px;justify-items:start;padding:26px;text-align:left}
-.insp-link{display:inline-flex;align-items:center;min-height:44px;padding:0;color:var(--app-accent);background:none;border:0;font-size:12px;font-weight:700;cursor:pointer}
-.insp-link.danger{color:var(--app-critical)}
+.insp-link{display:inline-flex;align-items:center;min-height:44px;padding:0;color:var(--accent);background:none;border:0;font-size:12px;font-weight:700;cursor:pointer}
+.insp-link.danger{color:var(--critical)}
 .insp-summary{display:grid;grid-template-columns:1.3fr .7fr;gap:12px;margin-bottom:16px}
-.insp-summary-tile{display:grid;gap:6px;padding:16px;background:var(--app-surface);border:1px solid var(--app-line);border-radius:var(--app-radius)}
+.insp-summary-tile{display:grid;gap:6px;padding:16px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-sm)}
 .insp-summary-tile strong{font-size:26px;line-height:1;font-variant-numeric:tabular-nums}
-.insp-summary-tile span{color:var(--app-muted);font-size:11px}
-.insp-summary-tile.warn strong{color:var(--app-critical)}
-.insp-track{display:block;height:7px;background:var(--app-soft);border-radius:var(--radius-pill);overflow:hidden}
-.insp-track i{display:block;height:100%;background:var(--app-positive)}
-.insp-track i.warn{background:var(--app-warning)}
+.insp-summary-tile span{color:var(--muted);font-size:11px}
+.insp-summary-tile.warn strong{color:var(--critical)}
+.insp-track{display:block;height:7px;background:var(--surface-2);border-radius:var(--radius-pill);overflow:hidden}
+.insp-track i{display:block;height:100%;background:var(--positive)}
+.insp-track i.warn{background:var(--warning)}
 .insp-layout{display:grid;grid-template-columns:1.25fr .75fr;gap:16px;align-items:start}
 .insp-panel{display:grid;gap:12px;align-content:start;min-width:0}
 .insp-group h2{margin:0 0 10px;font-size:var(--title-3)}
 .insp-group ul{margin:0;padding:0;list-style:none;display:grid;gap:4px}
-.insp-item{display:grid;gap:5px;padding:9px 0;border-top:1px solid var(--app-line)}
+.insp-item{display:grid;gap:5px;padding:9px 0;border-top:1px solid var(--line)}
 .insp-item-main{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .insp-req{font-size:13px;min-width:0}
-.insp-item.s-pass .insp-req{color:var(--app-muted)}
-.insp-item.s-fail .insp-req{color:var(--app-critical);font-weight:600}
-.insp-custom{font-style:normal;margin-left:6px;padding:1px 6px;background:var(--app-soft);border:1px solid var(--app-line);border-radius:var(--radius-pill);font-size:9px;font-weight:800;color:var(--app-muted);text-transform:uppercase}
+.insp-item.s-pass .insp-req{color:var(--muted)}
+.insp-item.s-fail .insp-req{color:var(--critical);font-weight:600}
+.insp-custom{font-style:normal;margin-left:6px;padding:1px 6px;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius-pill);font-size:9px;font-weight:800;color:var(--muted);text-transform:uppercase}
 .insp-buttons{display:flex;align-items:center;gap:5px;flex:none}
 /* Pass/fail/N-A are the primary tap targets on a pit tablet — keep them full size. */
-.insp-btn{min-width:44px;min-height:44px;padding:4px 10px;border-radius:var(--radius-xs);border:1px solid var(--app-line);background:var(--app-bg);color:var(--app-muted);font-size:11px;font-weight:800;cursor:pointer}
-.insp-btn.pass.active{color:#fff;background:var(--app-positive-fill);border-color:var(--app-positive-fill)}
-.insp-btn.fail.active{color:#fff;background:var(--app-critical-fill);border-color:var(--app-critical-fill)}
-.insp-btn.na.active{color:var(--app-ink);background:var(--app-soft);border-color:var(--app-muted)}
-.insp-meta{color:var(--app-muted);font-size:10px}
+.insp-btn{min-width:44px;min-height:44px;padding:4px 10px;border-radius:var(--radius-xs);border:1px solid var(--line);background:var(--bg);color:var(--muted);font-size:11px;font-weight:800;cursor:pointer}
+.insp-btn.pass.active{color:#fff;background:var(--positive-fill);border-color:var(--positive-fill)}
+.insp-btn.fail.active{color:#fff;background:var(--critical-fill);border-color:var(--critical-fill)}
+.insp-btn.na.active{color:var(--ink);background:var(--surface-2);border-color:var(--muted)}
+.insp-meta{color:var(--muted);font-size:10px}
 .insp-note-form{display:flex;gap:8px}
 .insp-note-form input{flex:1}
 .insp-add h2{margin:0 0 10px;font-size:var(--title-3)}
@@ -45,9 +45,9 @@
 .insp-weigh-form input[type=number],.insp-limit-form input{width:120px}
 .insp-weigh-form input:not([type=number]){flex:1;min-width:130px}
 .insp-weights{margin:6px 0 0;padding:0;list-style:none;display:grid;gap:6px}
-.insp-weights li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 12px;background:var(--app-bg);border:1px solid var(--app-line);border-radius:var(--radius-xs);font-size:13px}
-.insp-weights li.over{border-color:var(--app-critical)}
-.insp-weights li.over b{color:var(--app-critical)}
+.insp-weights li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 12px;background:var(--bg);border:1px solid var(--line);border-radius:var(--radius-xs);font-size:13px}
+.insp-weights li.over{border-color:var(--critical)}
+.insp-weights li.over b{color:var(--critical)}
 .insp-weights b{font-variant-numeric:tabular-nums}
 @media(max-width:900px){.insp-layout,.insp-summary{grid-template-columns:1fr}.insp-item-main{flex-direction:column;align-items:flex-start}}
 
@@ -55,8 +55,8 @@
 .aii-panel{display:grid;gap:10px;margin-top:16px}
 .aii-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .aii-head h2{margin:0 0 4px;font-size:var(--title-3)}
-.aii-head h2 span{color:var(--app-accent)}
+.aii-head h2 span{color:var(--accent)}
 .aii-head p{margin:0;font-size:12px;max-width:520px}
-.aii-error{margin:0;color:var(--app-critical);font-size:12px;font-weight:600}
-.aii-text{margin:0;padding:12px 14px;background:var(--app-bg);border:1px solid var(--app-line);border-left:3px solid var(--app-accent);border-radius:var(--radius-xs);font-size:13px;line-height:1.6;white-space:pre-wrap}
-.aii-meta{color:var(--app-muted);font-size:10px}
+.aii-error{margin:0;color:var(--critical);font-size:12px;font-weight:600}
+.aii-text{margin:0;padding:12px 14px;background:var(--bg);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:var(--radius-xs);font-size:13px;line-height:1.6;white-space:pre-wrap}
+.aii-meta{color:var(--muted);font-size:10px}

@@ -93,9 +93,9 @@
   gap: 11px;
   margin: 0 0 16px;
   padding: 14px;
-  border: 1px solid color-mix(in srgb, var(--app-positive) 35%, var(--line));
+  border: 1px solid color-mix(in srgb, var(--positive) 35%, var(--line));
   border-radius:var(--radius-sm);
-  background: color-mix(in srgb, var(--app-positive) 10%, var(--surface));
+  background: color-mix(in srgb, var(--positive) 10%, var(--surface));
 }
 
 .invite-security-note > b {
@@ -105,7 +105,7 @@
   height: 28px;
   border-radius:var(--radius-pill);
   color: #fff;
-  background: var(--app-positive);
+  background: var(--positive);
 }
 
 .invite-security-note p {

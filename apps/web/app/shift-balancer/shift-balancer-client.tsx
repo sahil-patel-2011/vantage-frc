@@ -422,7 +422,7 @@ function PlansPanel({
           {sheets.map((sheet) => (
             <article
               key={sheet.scoutId}
-              style={{ border: "1px solid var(--app-border, #ccc)", borderRadius: 8, padding: 12 }}
+              style={{ border: "1px solid var(--line, #ccc)", borderRadius: 8, padding: 12 }}
             >
               <strong>{sheet.scoutName}</strong>
               <ul style={{ listStyle: "none", padding: 0, margin: "8px 0 0", display: "grid", gap: 4 }}>

@@ -15,13 +15,13 @@
   gap: 8px 14px;
   align-items: center;
   padding: 10px 14px;
-  background: var(--app-surface);
-  border: 1px solid var(--app-line);
-  border-radius: var(--app-radius);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
   font-size: 12px;
 }
 .cdc-gov a {
-  color: var(--app-accent);
+  color: var(--accent);
   font-weight: 700;
   text-decoration: none;
 }
@@ -38,9 +38,9 @@
   gap: 6px;
   align-content: start;
   padding: 14px;
-  background: var(--app-surface);
-  border: 1px solid var(--app-line);
-  border-radius: var(--app-radius);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
 }
 .cdc-billing h2 {
   margin: 0;
@@ -48,7 +48,7 @@
 }
 .cdc-billing p {
   margin: 0;
-  color: var(--app-muted);
+  color: var(--muted);
   font-size: 12px;
   line-height: 1.45;
 }
@@ -59,10 +59,10 @@
   margin-top: 4px;
 }
 .cdc-billing-local {
-  border-color: color-mix(in srgb, var(--app-positive) 28%, var(--app-line));
+  border-color: color-mix(in srgb, var(--positive) 28%, var(--line));
 }
 .cdc-billing-ultra {
-  border-color: color-mix(in srgb, var(--app-accent) 28%, var(--app-line));
+  border-color: color-mix(in srgb, var(--accent) 28%, var(--line));
 }
 .cdc-bugbot-modes {
   display: grid;
@@ -74,22 +74,22 @@
   gap: 4px;
   text-align: left;
   padding: 12px 14px;
-  border: 1px solid var(--app-line);
-  border-radius: var(--app-radius);
-  background: var(--app-bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
   cursor: pointer;
   color: inherit;
 }
 .cdc-bugbot-modes button.is-active {
-  border-color: color-mix(in srgb, var(--app-accent) 45%, var(--app-line));
-  background: color-mix(in srgb, var(--app-accent) 8%, var(--app-surface));
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
 }
 .cdc-bugbot-modes strong {
   font-size: 13px;
 }
 .cdc-bugbot-modes span {
   font-size: 12px;
-  color: var(--app-muted);
+  color: var(--muted);
 }
 .cdc-github-scan {
   display: grid;
@@ -133,12 +133,12 @@
   justify-content: space-between;
   gap: 12px;
   padding: 10px 12px;
-  background: var(--app-bg);
-  border: 1px solid var(--app-line);
+  background: var(--bg);
+  border: 1px solid var(--line);
   border-radius:var(--radius-xs);
 }
 .cdc-next-actions li.primary {
-  border-color: color-mix(in srgb, var(--app-accent) 35%, var(--app-line));
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--line));
 }
 .cdc-next-actions li strong {
   display: block;
@@ -147,7 +147,7 @@
 .cdc-next-actions li span {
   display: block;
   margin-top: 2px;
-  color: var(--app-muted);
+  color: var(--muted);
   font-size: 12px;
   line-height: 1.4;
 }
@@ -160,15 +160,15 @@
   display: grid;
   gap: 4px;
   padding: 14px;
-  background: var(--app-surface);
-  border: 1px solid var(--app-line);
-  border-radius: var(--app-radius);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
 }
 .cdc-flow b {
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.04em;
-  color: var(--app-muted);
+  color: var(--muted);
 }
 .cdc-flow h2 {
   margin: 0;
@@ -176,7 +176,7 @@
 }
 .cdc-flow p {
   margin: 0;
-  color: var(--app-muted);
+  color: var(--muted);
   font-size: 12px;
 }
 .cdc-workbench {
@@ -195,9 +195,9 @@
   display: grid;
   gap: 12px;
   padding: 16px;
-  background: var(--app-surface);
-  border: 1px solid var(--app-line);
-  border-radius: var(--app-radius);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
 }
 .cdc-panel header {
   display: flex;
@@ -212,7 +212,7 @@
 .cdc-panel label {
   display: grid;
   gap: 4px;
-  color: var(--app-muted);
+  color: var(--muted);
   font-size: 11px;
   font-weight: 700;
 }
@@ -220,9 +220,9 @@
 .cdc-panel textarea {
   min-height: 44px;
   padding: 8px 10px;
-  color: var(--app-ink);
-  background: var(--app-bg);
-  border: 1px solid var(--app-line);
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
   border-radius:var(--radius-xs);
   font: inherit;
 }
@@ -249,8 +249,8 @@
   display: grid;
   gap: 8px;
   padding: 12px;
-  background: var(--app-bg);
-  border: 1px solid var(--app-line);
+  background: var(--bg);
+  border: 1px solid var(--line);
   border-radius:var(--radius-sm);
 }
 .cdc-finding-head {
@@ -269,23 +269,23 @@
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  background: var(--app-soft);
-  color: var(--app-muted);
+  background: var(--surface-2);
+  color: var(--muted);
 }
 .cdc-severity.high {
-  background: color-mix(in srgb, var(--app-critical) 14%, var(--app-surface));
-  color: var(--app-critical);
+  background: color-mix(in srgb, var(--critical) 14%, var(--surface));
+  color: var(--critical);
 }
 .cdc-severity.medium {
-  background: color-mix(in srgb, var(--app-warning) 14%, var(--app-surface));
-  color: var(--app-warning);
+  background: color-mix(in srgb, var(--warning) 14%, var(--surface));
+  color: var(--warning);
 }
 .cdc-lesson {
   display: grid;
   gap: 6px;
   padding: 10px;
-  background: var(--app-surface);
-  border: 1px dashed var(--app-line);
+  background: var(--surface);
+  border: 1px dashed var(--line);
   border-radius:var(--radius-xs);
 }
 .cdc-lesson span {
@@ -293,7 +293,7 @@
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--app-muted);
+  color: var(--muted);
 }
 .cdc-lesson p {
   margin: 0;
@@ -304,7 +304,7 @@
   display: block;
   padding: 8px 10px;
   overflow-x: auto;
-  background: var(--app-surface);
+  background: var(--surface);
   border-radius:var(--radius-xs);
   font-size: 11px;
 }
@@ -321,21 +321,21 @@
   gap: 10px;
   align-items: start;
   padding: 10px;
-  background: var(--app-bg);
-  border: 1px solid var(--app-line);
+  background: var(--bg);
+  border: 1px solid var(--line);
   border-radius:var(--radius-xs);
   font-size: 13px;
 }
 .cdc-checks b {
-  color: var(--app-muted);
+  color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
 .cdc-proposal {
   display: grid;
   gap: 8px;
   padding: 12px;
-  background: var(--app-bg);
-  border: 1px solid var(--app-line);
+  background: var(--bg);
+  border: 1px solid var(--line);
   border-radius:var(--radius-sm);
 }
 .cdc-proposal > span {
@@ -343,14 +343,14 @@
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--app-muted);
+  color: var(--muted);
 }
 .cdc-proposal pre {
   margin: 0;
   padding: 10px;
   overflow: auto;
   max-height: 220px;
-  background: var(--app-surface);
+  background: var(--surface);
   border-radius:var(--radius-xs);
   font-size: 11px;
   line-height: 1.4;
@@ -369,13 +369,13 @@
   text-align: left;
   vertical-align: top;
   padding: 8px 10px;
-  border-bottom: 1px solid var(--app-line);
+  border-bottom: 1px solid var(--line);
 }
 .cdc-bugbot-table th {
   font-size: 11px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--app-muted);
+  color: var(--muted);
 }
 .cdc-bugbot-table code {
   display: block;
@@ -402,9 +402,9 @@
   display: grid;
   gap: 8px;
   padding: 12px;
-  border: 1px solid var(--app-line);
-  border-radius: var(--app-radius, 12px);
-  background: var(--app-surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm, 12px);
+  background: var(--surface);
 }
 .cdc-scan-plan-head {
   display: flex;
@@ -418,12 +418,12 @@
   border-radius:var(--radius-pill);
   font-size: 12px;
   font-weight: 700;
-  background: var(--app-soft);
-  color: var(--app-muted);
+  background: var(--surface-2);
+  color: var(--muted);
 }
 .cdc-scan-cost.paid {
-  background: color-mix(in srgb, var(--app-accent) 16%, var(--app-surface));
-  color: var(--app-accent);
+  background: color-mix(in srgb, var(--accent) 16%, var(--surface));
+  color: var(--accent);
 }
 .cdc-skip-list {
   display: flex;
@@ -433,7 +433,7 @@
   padding: 0;
   list-style: none;
   font-size: 12px;
-  color: var(--app-muted);
+  color: var(--muted);
 }
 .cdc-coverage-toggle {
   justify-self: start;
@@ -449,7 +449,7 @@
   font-size:var(--text-xs);
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--app-muted);
+  color: var(--muted);
 }
 .cdc-coverage-detail ol {
   margin: 0;
@@ -469,30 +469,30 @@
   display: grid;
   gap: 6px;
   padding: 10px 12px;
-  border: 1px solid var(--app-line);
-  border-radius: var(--app-radius, 12px);
-  background: var(--app-surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm, 12px);
+  background: var(--surface);
   font-size: 13px;
 }
 .cdc-scan-progress.partial {
-  border-color: color-mix(in srgb, var(--app-critical) 45%, var(--app-line));
+  border-color: color-mix(in srgb, var(--critical) 45%, var(--line));
 }
 .cdc-scan-bar {
   height: 8px;
   border-radius:var(--radius-pill);
   overflow: hidden;
-  background: var(--app-soft);
+  background: var(--surface-2);
 }
 .cdc-scan-bar > span {
   display: block;
   height: 100%;
-  background: var(--app-accent);
+  background: var(--accent);
   transition: width 200ms ease;
 }
 .cdc-partial-note {
   font-size: 12px;
   line-height: 1.45;
-  color: var(--app-critical);
+  color: var(--critical);
 }
 .cdc-partial-tag {
   padding: 2px 8px;
@@ -500,8 +500,8 @@
   font-size: 10px;
   font-weight: 800;
   text-transform: uppercase;
-  background: color-mix(in srgb, var(--app-critical) 14%, var(--app-surface));
-  color: var(--app-critical);
+  background: color-mix(in srgb, var(--critical) 14%, var(--surface));
+  color: var(--critical);
 }
 
 /* ---- Coverage report and NEW / KNOWN / FIXED delta ---- */
@@ -509,9 +509,9 @@
   display: grid;
   gap: 8px;
   padding: 10px 12px;
-  border: 1px solid var(--app-line);
-  border-radius: var(--app-radius, 12px);
-  background: var(--app-surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm, 12px);
+  background: var(--surface);
   font-size: 13px;
 }
 .cdc-coverage ol,
@@ -542,16 +542,16 @@
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  background: var(--app-soft);
-  color: var(--app-muted);
+  background: var(--surface-2);
+  color: var(--muted);
 }
 .cdc-delta-chip.new {
-  background: color-mix(in srgb, var(--app-critical) 14%, var(--app-surface));
-  color: var(--app-critical);
+  background: color-mix(in srgb, var(--critical) 14%, var(--surface));
+  color: var(--critical);
 }
 .cdc-delta-chip.fixed {
-  background: color-mix(in srgb, var(--app-good) 16%, var(--app-surface));
-  color: var(--app-good);
+  background: color-mix(in srgb, var(--positive) 16%, var(--surface));
+  color: var(--positive);
 }
 
 /* ---- Dismissals ---- */
@@ -560,9 +560,9 @@
   gap: 8px;
   margin-top: 10px;
   padding: 12px;
-  border: 1px dashed var(--app-line);
-  border-radius: var(--app-radius, 12px);
-  background: var(--app-surface);
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-sm, 12px);
+  background: var(--surface);
 }
 .cdc-dismiss-form input {
   width: 100%;

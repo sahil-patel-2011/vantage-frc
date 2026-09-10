@@ -101,12 +101,12 @@
 
 .team-background-page .status-good {
   margin: 0 0 8px;
-  color: var(--app-positive);
+  color: var(--positive);
   font-weight: 700;
 }
 
 .team-background-page .status-bad {
   margin: 0 0 8px;
-  color: var(--app-critical);
+  color: var(--critical);
   font-weight: 700;
 }

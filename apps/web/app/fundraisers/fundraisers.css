@@ -28,7 +28,7 @@
 }
 
 .fr-track i {
-  background: linear-gradient(90deg, var(--biz-mint, var(--app-positive)), color-mix(in srgb, var(--biz-mint, var(--app-positive)) 72%, var(--app-accent)));
+  background: linear-gradient(90deg, var(--biz-mint, var(--positive)), color-mix(in srgb, var(--biz-mint, var(--positive)) 72%, var(--accent)));
 }
 
 .fr-track-sm {
@@ -38,7 +38,7 @@
 }
 
 .fr-track-sm i {
-  background: linear-gradient(90deg, var(--biz-mint, var(--app-positive)), color-mix(in srgb, var(--biz-mint, var(--app-positive)) 72%, var(--app-accent)));
+  background: linear-gradient(90deg, var(--biz-mint, var(--positive)), color-mix(in srgb, var(--biz-mint, var(--positive)) 72%, var(--accent)));
 }
 
 .fr-progress-note {

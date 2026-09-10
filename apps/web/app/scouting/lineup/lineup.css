@@ -38,8 +38,8 @@
 .lineup-live-pill::before{
   content:"";
   width:8px;height:8px;border-radius:var(--radius-pill);
-  background:var(--app-positive);
-  box-shadow:0 0 0 4px color-mix(in srgb,var(--app-positive) 18%,transparent);
+  background:var(--positive);
+  box-shadow:0 0 0 4px color-mix(in srgb,var(--positive) 18%,transparent);
   animation:lineup-pulse 1.6s ease-in-out infinite;
 }
 @keyframes lineup-pulse{
@@ -112,8 +112,8 @@
   padding:12px 14px;border-radius:var(--radius-sm);border:1px solid var(--line);
   background:var(--bg);
 }
-.lineup-gap-list li.unscouted{border-color:color-mix(in srgb,var(--app-critical) 50%,var(--line));background:color-mix(in srgb,var(--app-critical) 10%,var(--surface))}
-.lineup-gap-list li.assigned{border-color:color-mix(in srgb,var(--app-warning) 50%,var(--line));background:color-mix(in srgb,var(--app-warning) 10%,var(--surface))}
+.lineup-gap-list li.unscouted{border-color:color-mix(in srgb,var(--critical) 50%,var(--line));background:color-mix(in srgb,var(--critical) 10%,var(--surface))}
+.lineup-gap-list li.assigned{border-color:color-mix(in srgb,var(--warning) 50%,var(--line));background:color-mix(in srgb,var(--warning) 10%,var(--surface))}
 .lineup-gap-list li.double{border-color:color-mix(in srgb,var(--accent) 50%,var(--line));background:color-mix(in srgb,var(--accent) 10%,var(--surface))}
 .lineup-gap-list strong{font-size:14px;color:var(--ink)}
 .lineup-gap-list span{grid-column:1;color:var(--muted);font-size:12px}
@@ -137,9 +137,9 @@
   transition:transform .16s ease,box-shadow .16s ease;
 }
 .lineup-board article:hover{transform:translateY(-1px);box-shadow:var(--shadow)}
-.lineup-board article.unscouted{border-color:color-mix(in srgb,var(--app-critical) 50%,var(--line));background:color-mix(in srgb,var(--app-critical) 10%,var(--surface))}
-.lineup-board article.assigned{border-color:color-mix(in srgb,var(--app-warning) 50%,var(--line));background:color-mix(in srgb,var(--app-warning) 10%,var(--surface))}
-.lineup-board article.covered{border-color:color-mix(in srgb,var(--app-positive) 50%,var(--line));background:color-mix(in srgb,var(--app-positive) 10%,var(--surface))}
+.lineup-board article.unscouted{border-color:color-mix(in srgb,var(--critical) 50%,var(--line));background:color-mix(in srgb,var(--critical) 10%,var(--surface))}
+.lineup-board article.assigned{border-color:color-mix(in srgb,var(--warning) 50%,var(--line));background:color-mix(in srgb,var(--warning) 10%,var(--surface))}
+.lineup-board article.covered{border-color:color-mix(in srgb,var(--positive) 50%,var(--line));background:color-mix(in srgb,var(--positive) 10%,var(--surface))}
 .lineup-board article.double{border-color:color-mix(in srgb,var(--accent) 50%,var(--line));background:color-mix(in srgb,var(--accent) 10%,var(--surface))}
 .lineup-board b,.lineup-board small{
   color:var(--muted);

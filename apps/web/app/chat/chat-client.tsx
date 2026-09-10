@@ -737,7 +737,7 @@ export default function ChatClient({
                 Save team budget
               </Button>
             </form>
-            <a href={memoryHref} style={{ fontSize: 12, fontWeight: 700, color: "var(--app-accent)" }}>
+            <a href={memoryHref} style={{ fontSize: 12, fontWeight: 700, color: "var(--accent)" }}>
               Open AI memory governance →
             </a>
           </div>

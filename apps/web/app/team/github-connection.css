@@ -27,7 +27,7 @@
   justify-content: space-between;
   gap: 0.75rem;
   padding: 0.75rem 0;
-  border-top: 1px solid color-mix(in srgb, var(--app-line) 80%, transparent);
+  border-top: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
 }
 
 .github-next-actions li:first-child,
@@ -37,7 +37,7 @@
 }
 
 .github-next-actions li.primary strong {
-  color: var(--app-fg, inherit);
+  color: var(--ink, inherit);
 }
 
 .github-next-actions li div,
@@ -49,7 +49,7 @@
 
 .github-next-actions li span,
 .github-tip {
-  color: var(--app-muted);
+  color: var(--muted);
   font-size: 0.9rem;
 }
 
@@ -65,7 +65,7 @@
   min-width: 6.5rem;
   padding: 0.75rem 1rem;
   border-radius:var(--radius-sm);
-  background: color-mix(in srgb, var(--app-surface) 88%, var(--app-line));
+  background: color-mix(in srgb, var(--surface) 88%, var(--line));
 }
 
 .github-metrics article strong {
@@ -76,7 +76,7 @@
 
 .github-metrics article span {
   font-size: 0.8rem;
-  color: var(--app-muted);
+  color: var(--muted);
 }
 
 .github-oauth-note {

@@ -15,7 +15,7 @@
 }
 
 .messages-group-heading .eyebrow {
-  color: var(--app-muted);
+  color: var(--muted);
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.06em;
@@ -26,9 +26,9 @@
 .messages-channel-archive-toggle {
   min-height: 32px;
   padding: 6px 10px;
-  color: var(--app-accent);
+  color: var(--accent);
   background: transparent;
-  border: 1px solid var(--app-line);
+  border: 1px solid var(--line);
   border-radius:var(--radius-xs);
   font-size: 12px;
   font-weight: 700;
@@ -38,13 +38,13 @@
 .messages-channel-archive-toggle {
   width: 100%;
   margin-top: 6px;
-  color: var(--app-muted);
+  color: var(--muted);
   text-align: left;
 }
 
 .messages-channel-add:hover,
 .messages-channel-archive-toggle:hover {
-  background: var(--app-soft);
+  background: var(--surface-2);
 }
 
 .messages-channel-form {
@@ -60,9 +60,9 @@
   min-width: 0;
   min-height: 36px;
   padding: 6px 10px;
-  color: var(--app-ink);
-  background: var(--app-surface);
-  border: 1px solid var(--app-line);
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
   border-radius:var(--radius-xs);
   font: inherit;
   font-size: 13px;
@@ -71,9 +71,9 @@
 .messages-channel-form button {
   min-height: 36px;
   padding: 6px 12px;
-  color: var(--app-ink);
-  background: var(--app-soft);
-  border: 1px solid var(--app-line);
+  color: var(--ink);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
   border-radius:var(--radius-xs);
   font-size: 12px;
   font-weight: 700;
@@ -81,9 +81,9 @@
 }
 
 .messages-channel-form button[type="submit"] {
-  color: var(--app-on-accent);
-  background: var(--app-accent);
-  border-color: var(--app-accent);
+  color: var(--accent-ink);
+  background: var(--accent);
+  border-color: var(--accent);
 }
 
 .messages-channel-actions {
@@ -96,9 +96,9 @@
 .messages-channel-actions button {
   min-height: 32px;
   padding: 6px 12px;
-  color: var(--app-ink);
-  background: var(--app-surface);
-  border: 1px solid var(--app-line);
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
   border-radius:var(--radius-xs);
   font-size: 12px;
   font-weight: 700;
@@ -106,7 +106,7 @@
 }
 
 .messages-channel-actions button:hover:not(:disabled) {
-  background: var(--app-soft);
+  background: var(--surface-2);
 }
 
 .messages-channel-actions button:disabled {
@@ -126,6 +126,6 @@
 
 .messages-group-empty {
   margin: 2px 0 4px;
-  color: var(--app-muted);
+  color: var(--muted);
   font-size: 12px;
 }

@@ -4,8 +4,8 @@
 .orders-embedded {
   /* Approval green tracks the shared semantic token, so dark mode needs no overrides.
      `-fill` is the darker variant used behind white text (see styles.css). */
-  --orders-accent: var(--app-positive);
-  --orders-accent-fill: var(--app-positive-fill);
+  --orders-accent: var(--positive);
+  --orders-accent-fill: var(--positive-fill);
   --orders-accent-soft: color-mix(in srgb, var(--orders-accent) 14%, var(--surface));
   --orders-accent-border: color-mix(in srgb, var(--orders-accent) 28%, var(--line));
   display: grid;
@@ -240,9 +240,9 @@
 }
 
 .orders-status.pending {
-  color: var(--app-warning);
-  background: color-mix(in srgb, var(--app-warning) 14%, var(--surface));
-  border-color: color-mix(in srgb, var(--app-warning) 38%, var(--line));
+  color: var(--warning);
+  background: color-mix(in srgb, var(--warning) 14%, var(--surface));
+  border-color: color-mix(in srgb, var(--warning) 38%, var(--line));
 }
 
 .orders-status.approved {
@@ -252,17 +252,17 @@
 }
 
 .orders-status.rejected {
-  color: var(--app-critical);
-  background: color-mix(in srgb, var(--app-critical) 14%, var(--surface));
-  border-color: color-mix(in srgb, var(--app-critical) 38%, var(--line));
+  color: var(--critical);
+  background: color-mix(in srgb, var(--critical) 14%, var(--surface));
+  border-color: color-mix(in srgb, var(--critical) 38%, var(--line));
 }
 
 .orders-status.ordered,
 .orders-status.received,
 .orders-status.reimbursed {
-  color: var(--app-accent);
-  background: color-mix(in srgb, var(--app-accent) 14%, var(--surface));
-  border-color: color-mix(in srgb, var(--app-accent) 38%, var(--line));
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+  border-color: color-mix(in srgb, var(--accent) 38%, var(--line));
 }
 
 .orders-meta {
@@ -311,9 +311,9 @@
 
 .orders-actions button.danger,
 .orders-admin-row button.danger {
-  color: var(--app-critical);
-  border-color: color-mix(in srgb, var(--app-critical) 38%, var(--line));
-  background: color-mix(in srgb, var(--app-critical) 12%, var(--surface));
+  color: var(--critical);
+  border-color: color-mix(in srgb, var(--critical) 38%, var(--line));
+  background: color-mix(in srgb, var(--critical) 12%, var(--surface));
 }
 
 .orders-actions button:disabled,
@@ -394,15 +394,15 @@
 }
 
 .orders-warn {
-  background: color-mix(in srgb, var(--app-warning) 14%, var(--surface));
-  color: var(--app-warning);
-  border: 1px solid color-mix(in srgb, var(--app-warning) 38%, var(--line));
+  background: color-mix(in srgb, var(--warning) 14%, var(--surface));
+  color: var(--warning);
+  border: 1px solid color-mix(in srgb, var(--warning) 38%, var(--line));
 }
 
 .orders-error {
-  background: color-mix(in srgb, var(--app-critical) 14%, var(--surface));
-  color: var(--app-critical);
-  border: 1px solid color-mix(in srgb, var(--app-critical) 38%, var(--line));
+  background: color-mix(in srgb, var(--critical) 14%, var(--surface));
+  color: var(--critical);
+  border: 1px solid color-mix(in srgb, var(--critical) 38%, var(--line));
 }
 
 .orders-admin-row {

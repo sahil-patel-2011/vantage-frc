@@ -72,9 +72,9 @@ export function SponsoredPromoBanner({
       style={{
         margin: "0 0 0.75rem",
         padding: "0.65rem 0.85rem",
-        border: "1px solid var(--app-border, #c9d0da)",
-        background: expired ? "var(--app-warn-bg, #fff7ed)" : "var(--app-surface-2, #f4f7fb)",
-        color: "var(--app-text, #1a2332)",
+        border: "1px solid var(--line, #c9d0da)",
+        background: expired ? "var(--warning-soft, #fff7ed)" : "var(--surface-2, #f4f7fb)",
+        color: "var(--ink, #1a2332)",
         fontSize: "0.9rem",
         lineHeight: 1.45,
       }}

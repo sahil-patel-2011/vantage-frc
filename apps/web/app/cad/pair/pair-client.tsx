@@ -82,7 +82,7 @@ export default function PairClient({
             />
             <span>
               <strong>Onshape hosted</strong>
-              <small style={{ display: "block", color: "var(--app-muted)", fontWeight: 500 }}>
+              <small style={{ display: "block", color: "var(--muted)", fontWeight: 500 }}>
                 Server-run OAuth jobs; CLI monitors and diagnoses
               </small>
             </span>
@@ -96,7 +96,7 @@ export default function PairClient({
             />
             <span>
               <strong>Fusion 360 local</strong>
-              <small style={{ display: "block", color: "var(--app-muted)", fontWeight: 500 }}>
+              <small style={{ display: "block", color: "var(--muted)", fontWeight: 500 }}>
                 Relay runs only on this desktop with Fusion
               </small>
             </span>

@@ -7,42 +7,42 @@
 .kiosk-header-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 
 /* Network state ---------------------------------------------------------- */
-.kiosk-net{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-height:44px;padding:10px 14px;background:var(--app-surface);border:1px solid var(--app-line);border-radius:var(--app-radius);font-size:13px}
-.kiosk-net .dot{width:10px;height:10px;border-radius:50%;background:var(--app-positive);flex:0 0 auto}
+.kiosk-net{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-height:44px;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-sm);font-size:13px}
+.kiosk-net .dot{width:10px;height:10px;border-radius:50%;background:var(--positive);flex:0 0 auto}
 .kiosk-net strong{font-weight:700}
-.kiosk-net.offline{border-color:var(--app-warning);background:color-mix(in srgb,var(--app-warning) 10%,var(--app-surface))}
-.kiosk-net.offline .dot{background:var(--app-warning)}
-.kiosk-pending{display:inline-flex;align-items:center;gap:10px;margin-left:auto;color:var(--app-muted);font-size:12px;font-weight:700}
-.kiosk-pending.warn{color:var(--app-warning)}
-.kiosk-inline-btn{min-height:44px;padding:8px 14px;color:var(--app-accent);background:transparent;border:1px solid var(--app-line);border-radius:8px;font:inherit;font-size:12px;font-weight:700;cursor:pointer}
-.kiosk-inline-btn:hover{border-color:var(--app-accent)}
+.kiosk-net.offline{border-color:var(--warning);background:color-mix(in srgb,var(--warning) 10%,var(--surface))}
+.kiosk-net.offline .dot{background:var(--warning)}
+.kiosk-pending{display:inline-flex;align-items:center;gap:10px;margin-left:auto;color:var(--muted);font-size:12px;font-weight:700}
+.kiosk-pending.warn{color:var(--warning)}
+.kiosk-inline-btn{min-height:44px;padding:8px 14px;color:var(--accent);background:transparent;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:12px;font-weight:700;cursor:pointer}
+.kiosk-inline-btn:hover{border-color:var(--accent)}
 
 /* The one field that matters ---------------------------------------------- */
-.kiosk-scan-form{display:grid;gap:12px;padding:clamp(16px,3vw,26px);background:var(--app-surface);border:2px solid var(--app-accent);border-radius:var(--app-radius);box-shadow:var(--app-shadow)}
-.kiosk-scan-label{color:var(--app-muted);font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
-.kiosk-scan-input{width:100%;min-height:88px;padding:12px 18px;color:var(--app-ink);background:var(--app-bg);border:2px solid var(--app-line);border-radius:12px;font:800 clamp(32px,7vw,54px)/1.1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.12em;text-align:center}
-.kiosk-scan-input::placeholder{color:var(--app-muted);opacity:.5;letter-spacing:.2em}
-.kiosk-scan-input:focus-visible{outline:4px solid color-mix(in srgb,var(--app-accent) 45%,transparent);outline-offset:2px;border-color:var(--app-accent)}
+.kiosk-scan-form{display:grid;gap:12px;padding:clamp(16px,3vw,26px);background:var(--surface);border:2px solid var(--accent);border-radius:var(--radius-sm);box-shadow:var(--shadow)}
+.kiosk-scan-label{color:var(--muted);font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.kiosk-scan-input{width:100%;min-height:88px;padding:12px 18px;color:var(--ink);background:var(--bg);border:2px solid var(--line);border-radius:12px;font:800 clamp(32px,7vw,54px)/1.1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.12em;text-align:center}
+.kiosk-scan-input::placeholder{color:var(--muted);opacity:.5;letter-spacing:.2em}
+.kiosk-scan-input:focus-visible{outline:4px solid color-mix(in srgb,var(--accent) 45%,transparent);outline-offset:2px;border-color:var(--accent)}
 .kiosk-scan-input:disabled{opacity:.6}
 .kiosk-scan-row{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap}
-.kiosk-kind{display:grid;gap:5px;min-width:170px;color:var(--app-muted)}
+.kiosk-kind{display:grid;gap:5px;min-width:170px;color:var(--muted)}
 .kiosk-kind>span{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase}
-.kiosk-kind select{min-height:52px;padding:10px 12px;color:var(--app-ink);background:var(--app-bg);border:1px solid var(--app-line);border-radius:10px;font:inherit;font-size:15px}
+.kiosk-kind select{min-height:52px;padding:10px 12px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;font:inherit;font-size:15px}
 /* --app-accent-ink, not #fff: the dark-theme accent is a light blue and white
    text on it fails contrast. The token flips to near-black in dark mode. */
-.kiosk-submit{flex:1 1 200px;min-height:52px;padding:12px 22px;color:var(--app-accent-ink);background:var(--app-accent);border:0;border-radius:10px;font:800 16px inherit;cursor:pointer}
+.kiosk-submit{flex:1 1 200px;min-height:52px;padding:12px 22px;color:var(--accent-ink);background:var(--accent);border:0;border-radius:10px;font:800 16px inherit;cursor:pointer}
 .kiosk-submit:disabled{opacity:.55;cursor:default}
 .kiosk-help{margin:0;font-size:12px;line-height:1.5}
 
 /* Feedback banner — one loud line that clears itself after ~4s ------------- */
-.kiosk-banner{display:flex;align-items:center;justify-content:center;min-height:76px;padding:14px 18px;border:2px solid var(--app-line);border-radius:var(--app-radius);background:var(--app-surface);font:800 clamp(17px,3.2vw,28px)/1.25 inherit;text-align:center}
-.kiosk-banner.idle{color:var(--app-muted);font-weight:600;border-style:dashed}
-.kiosk-banner.in{color:var(--app-positive);border-color:var(--app-positive);background:color-mix(in srgb,var(--app-positive) 12%,var(--app-surface))}
-.kiosk-banner.out{color:var(--app-accent);border-color:var(--app-accent);background:color-mix(in srgb,var(--app-accent) 12%,var(--app-surface))}
-.kiosk-banner.queued{color:var(--app-warning);border-color:var(--app-warning);background:color-mix(in srgb,var(--app-warning) 12%,var(--app-surface))}
-.kiosk-banner.error{color:var(--app-critical);border-color:var(--app-critical);background:color-mix(in srgb,var(--app-critical) 12%,var(--app-surface))}
+.kiosk-banner{display:flex;align-items:center;justify-content:center;min-height:76px;padding:14px 18px;border:2px solid var(--line);border-radius:var(--radius-sm);background:var(--surface);font:800 clamp(17px,3.2vw,28px)/1.25 inherit;text-align:center}
+.kiosk-banner.idle{color:var(--muted);font-weight:600;border-style:dashed}
+.kiosk-banner.in{color:var(--positive);border-color:var(--positive);background:color-mix(in srgb,var(--positive) 12%,var(--surface))}
+.kiosk-banner.out{color:var(--accent);border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--surface))}
+.kiosk-banner.queued{color:var(--warning);border-color:var(--warning);background:color-mix(in srgb,var(--warning) 12%,var(--surface))}
+.kiosk-banner.error{color:var(--critical);border-color:var(--critical);background:color-mix(in srgb,var(--critical) 12%,var(--surface))}
 
-.kiosk-rejected{display:grid;gap:10px;border-color:var(--app-critical)}
+.kiosk-rejected{display:grid;gap:10px;border-color:var(--critical)}
 .kiosk-rejected ul{display:grid;gap:6px;margin:0;padding-left:18px;font-size:13px}
 .kiosk-rejected p{margin:0;font-size:12px}
 
@@ -55,35 +55,35 @@
 .kiosk-panel .app-button{justify-self:start}
 
 .kiosk-here{display:grid;gap:8px;margin:0;padding:0;list-style:none}
-.kiosk-here li{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:48px;padding:10px 14px;background:var(--app-surface);border:1px solid var(--app-positive);border-radius:10px;font-size:15px}
-.kiosk-here li b{color:var(--app-positive);font-variant-numeric:tabular-nums}
+.kiosk-here li{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:48px;padding:10px 14px;background:var(--surface);border:1px solid var(--positive);border-radius:10px;font-size:15px}
+.kiosk-here li b{color:var(--positive);font-variant-numeric:tabular-nums}
 
-.kiosk-sweep-result{margin:0;padding:10px 12px;color:var(--app-ink);background:var(--app-soft);border-left:3px solid var(--app-accent);border-radius:0 8px 8px 0;font-size:13px;line-height:1.5}
-.kiosk-flag-note{margin:0;color:var(--app-warning);font-size:12px;font-weight:700;line-height:1.5}
+.kiosk-sweep-result{margin:0;padding:10px 12px;color:var(--ink);background:var(--surface-2);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;font-size:13px;line-height:1.5}
+.kiosk-flag-note{margin:0;color:var(--warning);font-size:12px;font-weight:700;line-height:1.5}
 
 .kiosk-board{display:grid;gap:8px;margin:0;padding:0;list-style:none}
-.kiosk-board li{display:grid;grid-template-columns:1fr auto;gap:5px 12px;padding:10px 12px;background:var(--app-surface);border:1px solid var(--app-line);border-radius:10px}
-.kiosk-board li.met{border-color:var(--app-positive)}
+.kiosk-board li{display:grid;grid-template-columns:1fr auto;gap:5px 12px;padding:10px 12px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.kiosk-board li.met{border-color:var(--positive)}
 .kiosk-board .who{display:flex;align-items:center;gap:8px;min-width:0}
 .kiosk-board .who strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px}
-.kiosk-board .who em{font-style:normal;color:var(--app-positive);font-size:10px;font-weight:800}
+.kiosk-board .who em{font-style:normal;color:var(--positive);font-size:10px;font-weight:800}
 .kiosk-board .value{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
-.kiosk-board .track{grid-column:1/-1;height:5px;background:var(--app-soft);border-radius:999px;overflow:hidden}
-.kiosk-board .track i{display:block;height:100%;background:var(--app-accent)}
-.kiosk-board .track i.done{background:var(--app-positive)}
+.kiosk-board .track{grid-column:1/-1;height:5px;background:var(--surface-2);border-radius:999px;overflow:hidden}
+.kiosk-board .track i{display:block;height:100%;background:var(--accent)}
+.kiosk-board .track i.done{background:var(--positive)}
 
 /* Admin setup ------------------------------------------------------------- */
-.kiosk-tabs{display:inline-flex;gap:6px;padding:4px;background:var(--app-soft);border:1px solid var(--app-line);border-radius:12px}
-.kiosk-tabs button{min-height:44px;padding:8px 14px;color:var(--app-muted);background:transparent;border:0;border-radius:8px;font:inherit;font-size:12px;font-weight:700;cursor:pointer}
-.kiosk-tabs button.active{color:var(--app-ink);background:var(--app-surface);box-shadow:inset 0 0 0 1px var(--app-line)}
+.kiosk-tabs{display:inline-flex;gap:6px;padding:4px;background:var(--surface-2);border:1px solid var(--line);border-radius:12px}
+.kiosk-tabs button{min-height:44px;padding:8px 14px;color:var(--muted);background:transparent;border:0;border-radius:8px;font:inherit;font-size:12px;font-weight:700;cursor:pointer}
+.kiosk-tabs button.active{color:var(--ink);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
 .kiosk-form{display:grid;gap:12px}
 .kiosk-form .app-button{justify-self:start}
 .kiosk-form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
-.kiosk-form input,.kiosk-form select{min-height:44px;padding:10px 12px;color:var(--app-ink);background:var(--app-bg);border:1px solid var(--app-line);border-radius:8px;font:inherit;font-size:15px}
+.kiosk-form input,.kiosk-form select{min-height:44px;padding:10px 12px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;font:inherit;font-size:15px}
 .kiosk-cards{display:grid;gap:8px;margin:0;padding:0;list-style:none}
-.kiosk-cards li{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:52px;padding:10px 14px;background:var(--app-surface);border:1px solid var(--app-line);border-radius:10px}
+.kiosk-cards li{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:52px;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
 .kiosk-cards li>div{display:grid;gap:2px;min-width:0}
-.kiosk-cards small{color:var(--app-muted);font-size:11px;font-variant-numeric:tabular-nums}
+.kiosk-cards small{color:var(--muted);font-size:11px;font-variant-numeric:tabular-nums}
 .kiosk-cards .hours-link{min-height:44px;padding:0 6px}
 
 @media(max-width:860px){.kiosk-columns{grid-template-columns:1fr}}

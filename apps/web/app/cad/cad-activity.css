@@ -1,8 +1,8 @@
 /* Recent CAD activity — web agent + terminal sessions in one list. */
 .cad-activity {
-  border: 1px solid var(--app-line);
+  border: 1px solid var(--line);
   border-radius:var(--radius-sm);
-  background: var(--app-bg);
+  background: var(--bg);
   display: grid;
 }
 .cad-activity-head {
@@ -11,9 +11,9 @@
   justify-content: space-between;
   gap: 10px;
   padding: 10px 14px;
-  border-bottom: 1px solid var(--app-line);
+  border-bottom: 1px solid var(--line);
   font: 700 12px/1 var(--font-source-sans), ui-sans-serif;
-  color: var(--app-ink);
+  color: var(--ink);
 }
 .cad-activity-head button {
   min-height: 44px;
@@ -24,7 +24,7 @@
   margin: 0;
   padding: 14px;
   font: 400 13px/1.45 var(--font-source-sans), ui-sans-serif;
-  color: var(--app-muted);
+  color: var(--muted);
 }
 .cad-activity-list {
   list-style: none;
@@ -38,9 +38,9 @@
   gap: 6px 10px;
   padding: 10px 14px;
   min-height: 44px;
-  border-bottom: 1px solid var(--app-line);
+  border-bottom: 1px solid var(--line);
   font: 400 13px/1.35 var(--font-source-sans), ui-sans-serif;
-  color: var(--app-ink);
+  color: var(--ink);
 }
 .cad-activity-item:last-child {
   border-bottom: none;
@@ -51,23 +51,23 @@
   text-transform: uppercase;
   padding: 4px 7px;
   border-radius:var(--radius-pill);
-  border: 1px solid var(--app-line);
-  color: var(--app-muted);
+  border: 1px solid var(--line);
+  color: var(--muted);
   white-space: nowrap;
 }
 .cad-activity-source--terminal {
-  color: var(--app-positive);
+  color: var(--positive);
   border-color: currentColor;
 }
 .cad-activity-title {
   font-weight: 600;
 }
 .cad-activity-meta {
-  color: var(--app-muted);
+  color: var(--muted);
   font-size: 12px;
 }
 .cad-activity-status--failed {
-  color: var(--app-critical);
+  color: var(--critical);
   font-size: 12px;
   font-weight: 600;
 }
@@ -83,7 +83,7 @@
   display: flex;
   gap: 2px;
   padding: 2px;
-  border: 1px solid var(--app-line);
+  border: 1px solid var(--line);
   border-radius:var(--radius-pill);
 }
 .cad-activity-chip {
@@ -92,19 +92,19 @@
   border: none;
   border-radius:var(--radius-pill);
   background: transparent;
-  color: var(--app-muted);
+  color: var(--muted);
   font: 600 12px/1 var(--font-source-sans), ui-sans-serif;
   cursor: pointer;
 }
 .cad-activity-chip:hover {
-  color: var(--app-ink);
+  color: var(--ink);
 }
 .cad-activity-chip.active {
-  background: var(--app-ink);
-  color: var(--app-bg);
+  background: var(--ink);
+  color: var(--bg);
 }
 .cad-activity-chip:focus-visible {
-  outline: 2px solid var(--app-accent, currentColor);
+  outline: 2px solid var(--accent, currentColor);
   outline-offset: 2px;
 }
 
@@ -129,25 +129,25 @@
   cursor: pointer;
 }
 .cad-activity-row:hover {
-  background: color-mix(in srgb, var(--app-ink) 5%, transparent);
+  background: color-mix(in srgb, var(--ink) 5%, transparent);
 }
 .cad-activity-row:focus-visible {
-  outline: 2px solid var(--app-accent, currentColor);
+  outline: 2px solid var(--accent, currentColor);
   outline-offset: -2px;
 }
 .cad-activity-caret {
   margin-left: auto;
-  color: var(--app-muted);
+  color: var(--muted);
 }
 .cad-activity-detail {
   padding: 0 14px 12px 14px;
-  border-top: 1px dashed var(--app-line);
+  border-top: 1px dashed var(--line);
 }
 .cad-activity-open {
   display: inline-flex;
   align-items: center;
   min-height: 44px;
-  color: var(--app-accent);
+  color: var(--accent);
   font: 600 12px/1 var(--font-source-sans), ui-sans-serif;
 }
 
@@ -157,11 +157,11 @@
   gap: 8px;
   margin: 10px 0;
   padding: 12px;
-  border: 1px solid var(--app-line);
+  border: 1px solid var(--line);
   border-radius:var(--radius-sm);
-  background: var(--app-bg);
+  background: var(--bg);
   font: 400 13px/1.4 var(--font-source-sans), ui-sans-serif;
-  color: var(--app-ink);
+  color: var(--ink);
 }
 .cad-step-list {
   list-style: none;
@@ -176,7 +176,7 @@
   gap: 10px;
   min-height: 44px;
   padding: 8px 0;
-  border-bottom: 1px solid var(--app-line);
+  border-bottom: 1px solid var(--line);
 }
 .cad-step:last-child {
   border-bottom: none;
@@ -188,8 +188,8 @@
   width: 22px;
   height: 22px;
   border-radius:var(--radius-pill);
-  border: 1px solid var(--app-line);
-  color: var(--app-muted);
+  border: 1px solid var(--line);
+  color: var(--muted);
   font: 700 11px/1 var(--font-source-sans), ui-sans-serif;
 }
 .cad-step-body {
@@ -203,20 +203,20 @@
   overflow-wrap: anywhere;
 }
 .cad-step-detail {
-  color: var(--app-muted);
+  color: var(--muted);
   font-size: 12px;
   overflow-wrap: anywhere;
 }
 .cad-step-status {
   flex: 0 0 auto;
-  color: var(--app-muted);
+  color: var(--muted);
   font: 600 11px/1 var(--font-source-sans), ui-sans-serif;
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 .cad-step--failed .cad-step-index,
 .cad-step--failed .cad-step-status {
-  color: var(--app-critical);
+  color: var(--critical);
   border-color: currentColor;
 }
 
@@ -241,7 +241,7 @@
   font:700 var(--text-xs)/1 var(--font-source-sans), ui-sans-serif;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--app-muted);
+  color: var(--muted);
 }
 .cad-tools-group ul {
   list-style: none;
@@ -254,7 +254,7 @@
   display: grid;
   gap: 3px;
   padding: 8px 0;
-  border-bottom: 1px solid var(--app-line);
+  border-bottom: 1px solid var(--line);
 }
 .cad-tools-group ul li:last-child {
   border-bottom: none;
@@ -267,7 +267,7 @@
 }
 .cad-tool-head code {
   font: 600 12px/1.3 var(--font-mono, ui-monospace), monospace;
-  color: var(--app-ink);
+  color: var(--ink);
   overflow-wrap: anywhere;
 }
 .cad-tool-badge {
@@ -280,17 +280,17 @@
   white-space: nowrap;
 }
 .cad-tool-badge--onshape {
-  color: var(--app-accent);
+  color: var(--accent);
 }
 .cad-tool-badge--fusion {
-  color: var(--app-muted);
+  color: var(--muted);
 }
 .cad-tool-desc {
-  color: var(--app-muted);
+  color: var(--muted);
   font: 400 12px/1.45 var(--font-source-sans), ui-sans-serif;
 }
 .cad-tool-note {
-  color: var(--app-muted);
+  color: var(--muted);
   font: 400 11px/1.4 var(--font-source-sans), ui-sans-serif;
   font-style: italic;
 }

@@ -260,7 +260,7 @@ function LinkRowItem({
   const [notifiedSubteam, setNotifiedSubteam] = useState<ObjectChatBridgeSubteam>(link.subteam);
 
   return (
-    <li style={{ display: "grid", gap: 8, borderTop: "1px solid var(--app-border, #333)", paddingTop: 10 }}>
+    <li style={{ display: "grid", gap: 8, borderTop: "1px solid var(--line, #333)", paddingTop: 10 }}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
         <div>
           <span className={`app-badge ${statusTone(link.status)}`}>{statusLabel(link.status)}</span>

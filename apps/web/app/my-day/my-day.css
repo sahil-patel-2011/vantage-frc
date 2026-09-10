@@ -2,10 +2,10 @@
 
 .myday-page {
   /* Alliance colours ride the shared status tokens so both themes stay legible. */
-  --myday-red: var(--app-critical-fill);
-  --myday-red-soft: color-mix(in srgb, var(--app-critical) 14%, var(--surface));
-  --myday-blue: var(--app-accent);
-  --myday-blue-soft: color-mix(in srgb, var(--app-accent) 14%, var(--surface));
+  --myday-red: var(--critical-fill);
+  --myday-red-soft: color-mix(in srgb, var(--critical) 14%, var(--surface));
+  --myday-blue: var(--accent);
+  --myday-blue-soft: color-mix(in srgb, var(--accent) 14%, var(--surface));
   --myday-ink: var(--ink);
   --myday-muted: var(--muted);
   --myday-line: var(--line);
@@ -32,9 +32,9 @@
   margin: 0;
   padding: 10px 14px;
   border-radius:var(--radius-sm);
-  border: 1px solid color-mix(in srgb, var(--app-warning) 40%, var(--myday-line));
-  background: color-mix(in srgb, var(--app-warning) 12%, var(--myday-card));
-  color: var(--app-warning);
+  border: 1px solid color-mix(in srgb, var(--warning) 40%, var(--myday-line));
+  background: color-mix(in srgb, var(--warning) 12%, var(--myday-card));
+  color: var(--warning);
   font: 600 13px/1.35 var(--font-source-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
@@ -101,12 +101,12 @@
 }
 
 .myday-bumper.alliance-red {
-  color: var(--app-accent-ink);
+  color: var(--accent-ink);
   background: var(--myday-red);
 }
 
 .myday-bumper.alliance-blue {
-  color: var(--app-accent-ink);
+  color: var(--accent-ink);
   background: var(--myday-blue);
 }
 
@@ -182,7 +182,7 @@
 .myday-link.primary {
   border-color: transparent;
   background: var(--accent);
-  color: var(--app-accent-ink);
+  color: var(--accent-ink);
 }
 
 .myday-list-section {

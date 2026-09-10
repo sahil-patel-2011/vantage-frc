@@ -10,15 +10,15 @@
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--app-muted);
+  color: var(--muted);
 }
 
 .model-selector-select {
   width: 100%;
   padding: 9px 12px;
   border-radius:var(--radius-sm);
-  border: 1px solid var(--app-border);
-  background: var(--app-surface);
+  border: 1px solid var(--line);
+  background: var(--surface);
   color: inherit;
   font: inherit;
 }
@@ -32,13 +32,13 @@
   display: inline-block;
   padding: 9px 12px;
   border-radius:var(--radius-sm);
-  border: 1px dashed var(--app-border);
-  background: var(--app-surface-muted);
-  color: var(--app-muted);
+  border: 1px dashed var(--line);
+  background: var(--surface-2);
+  color: var(--muted);
   font-size: 0.92rem;
 }
 
 .model-selector-hint {
   font-size: 0.8rem;
-  color: var(--app-muted);
+  color: var(--muted);
 }

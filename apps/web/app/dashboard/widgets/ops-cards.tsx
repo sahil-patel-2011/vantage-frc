@@ -424,7 +424,7 @@ export function renderOpsWidget({
                     <span>
                       <i
                         className="dash-subteam-dot"
-                        style={{ background: item.subteamColor ?? "var(--app-accent, #0f766e)" }}
+                        style={{ background: item.subteamColor ?? "var(--accent, #0f766e)" }}
                         aria-hidden
                       />
                       <a href={calendarHref}>{item.title}</a>

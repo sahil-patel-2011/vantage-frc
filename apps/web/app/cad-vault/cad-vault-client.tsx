@@ -111,7 +111,7 @@ function StlCanvas({ data, label }: { data: Uint8Array; label: string }) {
       ref={canvasRef}
       role="img"
       aria-label={label}
-      style={{ width: "100%", maxWidth: 320, height: "auto", borderRadius: "var(--app-radius, 12px)", border: "1px solid var(--app-line)" }}
+      style={{ width: "100%", maxWidth: 320, height: "auto", borderRadius: "var(--radius-sm, 12px)", border: "1px solid var(--line)" }}
     />
   );
 }
@@ -131,7 +131,7 @@ function StoredVersionPreview({ version }: { version: CadVersionSummary }) {
           alt={`Server-rendered thumbnail of ${version.filename}`}
           width={220}
           height={220}
-          style={{ maxWidth: "100%", height: "auto", borderRadius: "var(--app-radius, 12px)", border: "1px solid var(--app-line)" }}
+          style={{ maxWidth: "100%", height: "auto", borderRadius: "var(--radius-sm, 12px)", border: "1px solid var(--line)" }}
         />
         <figcaption className="app-muted">
           <small>{formatBytes(version.byteSize)} — too large for the live preview; showing the stored thumbnail.</small>
@@ -491,8 +491,8 @@ export default function CadVaultClient() {
             onDragLeave={() => setDragActive(false)}
             onDrop={onDrop}
             style={{
-              border: `2px dashed ${dragActive ? "var(--app-accent)" : "var(--app-line)"}`,
-              borderRadius: "var(--app-radius, 12px)",
+              border: `2px dashed ${dragActive ? "var(--accent)" : "var(--line)"}`,
+              borderRadius: "var(--radius-sm, 12px)",
               padding: 16,
               display: "grid",
               gap: 8,
@@ -500,7 +500,7 @@ export default function CadVaultClient() {
               textAlign: "center",
               minHeight: 96,
               alignContent: "center",
-              background: dragActive ? "var(--app-soft, transparent)" : "transparent",
+              background: dragActive ? "var(--surface-2, transparent)" : "transparent",
             }}
           >
             {pending ? (
@@ -785,7 +785,7 @@ function DocumentCard({
           {doc.versions.map((version) => (
             <li
               key={version.publicId}
-              style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap", alignItems: "center", borderTop: "1px solid var(--app-line)", paddingTop: 8 }}
+              style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap", alignItems: "center", borderTop: "1px solid var(--line)", paddingTop: 8 }}
             >
               <div>
                 <strong>v{version.version}</strong>{" "}

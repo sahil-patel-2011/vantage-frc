@@ -42,6 +42,9 @@
   --warning-soft: color-mix(in srgb, var(--warning) 14%, var(--surface));
   --critical-soft: color-mix(in srgb, var(--critical) 13%, var(--surface));
   --positive-soft: color-mix(in srgb, var(--positive) 13%, var(--surface));
+  --accent-hover: color-mix(in srgb, var(--accent) 82%, #000);
+  --positive-fill: #267353;
+  --critical-fill: #a33a32;
   --line-soft: color-mix(in srgb, var(--line) 55%, transparent);
   --ring: color-mix(in srgb, var(--accent) 62%, transparent);
   --radius: 16px;
@@ -185,7 +188,7 @@
   --app-accent: var(--accent);
   --app-accent-ink: var(--accent-ink);
   --app-on-accent: var(--accent-ink);
-  --app-accent-hover: color-mix(in srgb, var(--accent) 82%, #000);
+  --app-accent-hover: var(--accent-hover);
   --app-radius: var(--radius-sm);
   --app-shadow: var(--shadow);
   --app-warn: var(--warning);
@@ -196,8 +199,8 @@
   --app-good: var(--positive);
   --app-success: var(--positive);
   --app-positive: var(--positive);
-  --app-positive-fill: #267353;
-  --app-critical-fill: #a33a32;
+  --app-positive-fill: var(--positive-fill);
+  --app-critical-fill: var(--critical-fill);
 
   --border-soft: var(--line);
   --hairline: var(--line);
@@ -249,8 +252,9 @@
   --shadow-lift: 0 16px 42px rgba(0, 0, 0, .5);
   --shadow-pop: 0 20px 50px rgba(0, 0, 0, .55);
   --glow: radial-gradient(120% 80% at 10% -10%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 55%);
-  --app-positive-fill: #2b7d5b;
-  --app-critical-fill: #c2483d;
+  --accent-hover: color-mix(in srgb, var(--accent) 82%, #fff);
+  --positive-fill: #2b7d5b;
+  --critical-fill: #c2483d;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -274,8 +278,9 @@
     --shadow-lift: 0 16px 42px rgba(0, 0, 0, .5);
     --shadow-pop: 0 20px 50px rgba(0, 0, 0, .55);
     --glow: radial-gradient(120% 80% at 10% -10%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 55%);
-    --app-positive-fill: #2b7d5b;
-    --app-critical-fill: #c2483d;
+    --accent-hover: color-mix(in srgb, var(--accent) 82%, #fff);
+    --positive-fill: #2b7d5b;
+    --critical-fill: #c2483d;
   }
 }
 
@@ -554,7 +559,7 @@ html[data-theme="dark"] .marketing-lux {
 }
 .app-button.danger {
   color: #fff;
-  background: var(--app-critical-fill);
+  background: var(--critical-fill);
   border-color: transparent;
 }
 .app-button.ghost {
