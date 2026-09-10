@@ -109,8 +109,8 @@ export function offlineBootStatusLine(input: {
     queued > 0
       ? `${formatOfflineCount(input.entries, true)} scout entries · ${formatOfflineCount(input.media, true)} media queued`
       : "scout outbox empty";
-  const workspace = input.orgRemembered ? " · workspace remembered" : "";
-  return `${net} · ${outbox}${workspace}`;
+  const team = input.orgRemembered ? " · team remembered" : "";
+  return `${net} · ${outbox}${team}`;
 }
 
 /** Classify Offline Shell Soft-UI from API + readiness tier. */
@@ -210,7 +210,7 @@ export function offlineShellNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Readiness and sync logs are saved per team — pick an org first.",
+        detail: "Readiness and sync logs are saved per team — choose your team first.",
         href: "/workspace",
         primary: true,
       },

@@ -52,7 +52,7 @@ describe("formatOfflineCount + status line", () => {
         media: 1,
         orgRemembered: true,
       }),
-    ).toMatch(/Offline · 2 scout entries · 1 media queued · workspace remembered/);
+    ).toMatch(/Offline · 2 scout entries · 1 media queued · team remembered/);
     expect(
       offlineBootStatusLine({
         online: true,
@@ -102,7 +102,7 @@ describe("classifyOfflineShell + copy", () => {
 });
 
 describe("offlineShellNextActions", () => {
-  it("asks for workspace when org is missing", () => {
+  it("asks for a team when org is missing", () => {
     const actions = offlineShellNextActions({ shell: "empty" });
     expect(actions[0]?.id).toBe("workspace");
     expect(actions.some((a) => a.id === "scouting")).toBe(true);
