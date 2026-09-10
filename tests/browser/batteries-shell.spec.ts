@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { expectHubReadyOrGate } from "./hub-org-gate";
+import { expectHubReadyOrGate, loadFailureHeading } from "./hub-org-gate";
 import { signInAs, signInFixture } from "./session";
 
 test.beforeEach(async ({ context }) => {
@@ -26,7 +26,7 @@ test("Batteries still loads after the panel split", async ({ page }) => {
 
   const add = page.getByRole("heading", { name: "Add a battery", exact: true });
   const setup = page.getByRole("heading", { name: "Select a team", exact: true });
-  const unavailable = page.getByRole("heading", { name: /Could not load batteries/i });
+  const unavailable = loadFailureHeading(page);
   if (!(await expectHubReadyOrGate(page, add, setup.or(unavailable)))) {
     await page.screenshot({ path: "/opt/cursor/artifacts/batteries-after-split.png", fullPage: true });
     return;

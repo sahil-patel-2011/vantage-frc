@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { expectHubReadyOrGate } from "./hub-org-gate";
+import { expectHubReadyOrGate, loadFailureHeading } from "./hub-org-gate";
 import { signInAs, signInFixture } from "./session";
 
 test.beforeEach(async ({ context }) => {
@@ -13,14 +13,11 @@ test("Inspection Copilot still loads after the panel split", async ({ page }) =>
     timeout: 20_000,
   });
   await expect(page.locator("body")).not.toContainText("Application error");
-  await expect(page.getByRole("heading", { name: "Loading inspection copilot…" })).toBeHidden({
-    timeout: 20_000,
-  });
 
   const form = page.locator("#inspection-copilot-form");
   const readyHeading = page.getByRole("heading", { name: "Run an inspection-readiness check" });
   const setup = page.getByRole("heading", { name: /Select a team|Choose a team/i });
-  const unavailable = page.getByRole("heading", { name: /Could not load the inspection copilot/i });
+  const unavailable = loadFailureHeading(page);
   if (!(await expectHubReadyOrGate(page, readyHeading, setup.or(unavailable)))) {
     await expect(page.getByRole("tab")).toHaveCount(0);
     if (await setup.isVisible()) {

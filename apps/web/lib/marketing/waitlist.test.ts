@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it } from "vitest";
-import { MemoryWaitlistStore, waitlistSchema } from "./waitlist";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { MemoryWaitlistStore, createWaitlistStore, waitlistSchema } from "./waitlist";
 
 describe("waitlist validation", () => {
   it("normalizes valid input", () => {
@@ -95,5 +95,18 @@ describe("admin waitlist tools", () => {
     const refreshed = await store.list({ q: "alpha" });
     expect(refreshed[0]?.launchInvitedAt).toBeTruthy();
     expect(refreshed[0]?.convertedAt).toBeNull();
+  });
+});
+
+describe("createWaitlistStore", () => {
+  const previousCi = process.env.CI;
+  afterEach(() => {
+    if (previousCi === undefined) delete process.env.CI;
+    else process.env.CI = previousCi;
+  });
+
+  it("uses the in-memory store on CI so the public form does not need Postgres", () => {
+    process.env.CI = "true";
+    expect(createWaitlistStore()).toBeInstanceOf(MemoryWaitlistStore);
   });
 });

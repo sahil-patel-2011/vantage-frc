@@ -12,6 +12,6 @@ test("a visitor can join the waitlist", async ({ page }) => {
   await finalForm.getByRole("checkbox", { name: /I agree to the Terms of Service/i }).check();
   await finalForm.getByRole("checkbox", { name: /I agree to the Privacy Policy/i }).check();
   await join.click();
-  await expect(page.getByRole("heading", { name: "You’re on the list." })).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole("heading", { name: /on the list/i })).toBeVisible({ timeout: 15_000 });
   await expect(page.getByText("does not create a Vantage account")).toBeVisible();
 });

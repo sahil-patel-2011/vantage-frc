@@ -259,6 +259,10 @@ export class NeonWaitlistStore implements WaitlistStore {
 const globalStore = globalThis as typeof globalThis & { vantageWaitlist?: MemoryWaitlistStore };
 
 export function createWaitlistStore(): WaitlistStore {
+  const memory = (globalStore.vantageWaitlist ??= new MemoryWaitlistStore());
+  // GHA Playwright has no Postgres. A DATABASE_URL leftover (or a Neon host
+  // the runner cannot reach) must not 500 the public waitlist form.
+  if (process.env.CI === "true") return memory;
   const url = resolveMarketingDatabaseUrl();
   if (url) {
     return new NeonWaitlistStore(url);
@@ -266,6 +270,6 @@ export function createWaitlistStore(): WaitlistStore {
   if (process.env.NODE_ENV === "production") {
     throw new Error("MARKETING_DATABASE_URL or DATABASE_URL is required in production");
   }
-  return (globalStore.vantageWaitlist ??= new MemoryWaitlistStore());
+  return memory;
 }
 

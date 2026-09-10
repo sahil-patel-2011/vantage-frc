@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { expectHubReadyOrGate } from "./hub-org-gate";
+import { expectHubReadyOrGate, loadFailureHeading } from "./hub-org-gate";
 import { signInAs, signInFixture } from "./session";
 
 test.beforeEach(async ({ context }) => {
@@ -25,7 +25,7 @@ test("Inventory still loads after the panel split", async ({ page }) => {
   const tracked = page.getByText("Tracked items", { exact: true });
   const empty = page.getByRole("heading", { name: "Add a part before tracking stock" });
   const setup = page.getByRole("heading", { name: /Select a team|Choose a team|Finish setup/i });
-  const unavailable = page.getByRole("heading", { name: /Could not load Inventory/i });
+  const unavailable = loadFailureHeading(page);
   if (!(await expectHubReadyOrGate(page, tracked, empty.or(setup).or(unavailable)))) {
     await expect(page.getByRole("tab")).toHaveCount(0);
     if (await empty.isVisible()) {
