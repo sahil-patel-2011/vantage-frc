@@ -1,11 +1,8 @@
 "use client";
 
-import { useOnline } from "../../lib/offline";
-
-import { OfflineBanner } from "../../components/offline-banner";
-
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { OfflineBanner } from "../../components/offline-banner";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { TeamOpsNav } from "../../components/team-ops-nav";
 import { priorityLabel, statusLabel } from "../../lib/tasks";
@@ -14,10 +11,16 @@ import {
   TASK_PRIORITIES,
   TASK_STATUSES,
 } from "../../lib/tasks/task-constants";
-// Type-only, so it is erased before bundling and never pulls compute-tasks'
-// server imports into the browser.
 import type { TasksView } from "../../lib/tasks/compute-tasks";
 import type { TaskPriority, TaskWithFlags } from "../../lib/tasks/types";
+import {
+  QUEUED_ON_DEVICE,
+  getFeatureSnapshot,
+  putFeatureSnapshot,
+  queueProductWrite,
+  syncOutbox,
+  useOnline,
+} from "../../lib/offline";
 
 type LiveView = Extract<TasksView, { status: "live" }>;
 type Mutate = (payload: Record<string, unknown>) => void;
@@ -41,8 +44,8 @@ function dueLabel(task: TaskWithFlags): { text: string; tone: string } | null {
 
 export default function TasksClient() {
   const online = useOnline();
-  const [fromCache] = useState(false);
-  const [cachedAt] = useState<string | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
   const [view, setView] = useState<TasksView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
@@ -65,30 +68,62 @@ export default function TasksClient() {
     const query = new URLSearchParams();
     if (urlOrg) query.set("orgId", urlOrg);
     if (seasonQuery) query.set("season", String(seasonQuery));
-    void fetch(`/api/tasks${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
+    void (async () => {
+      const cached = urlOrg
+        ? await getFeatureSnapshot<TasksView>("season-tasks", urlOrg, seasonQuery ? String(seasonQuery) : "")
+        : null;
+      if (cached?.data) {
+        setView(cached.data);
+        setSeason(cached.data.seasonYear);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+      }
+      try {
+        const response = await fetch(`/api/tasks${query.toString() ? `?${query.toString()}` : ""}`);
         const data = (await response.json()) as TasksView | { error?: string };
         if (!response.ok || !("status" in data)) {
           setErrorStatus(response.status);
           setErrorMessage("error" in data && data.error ? data.error : null);
-          setFetchFailed(true);
+          if (!cached) setFetchFailed(true);
           return;
         }
         setView(data);
         setSeason(data.seasonYear);
-      })
-      .catch(() => setFetchFailed(true));
+        setFromCache(false);
+        setCachedAt(null);
+        const cacheOrg = data.orgId || urlOrg;
+        if (cacheOrg) {
+          await putFeatureSnapshot("season-tasks", cacheOrg, data, seasonQuery ? String(seasonQuery) : "");
+        }
+      } catch {
+        if (!cached) setFetchFailed(true);
+      }
+    })();
   }, []);
 
   useEffect(() => {
     load();
   }, [load]);
 
+  useEffect(() => {
+    if (!orgId) return;
+    const onOnline = () => {
+      void syncOutbox({ orgId }).then(() => load());
+    };
+    window.addEventListener("online", onOnline);
+    return () => window.removeEventListener("online", onOnline);
+  }, [orgId, load]);
+
   const mutate = useCallback<Mutate>(
     (payload) => {
       if (!orgId || busy) return;
       if (!navigator.onLine) {
-        setError("You're offline — changes will save when you reconnect.");
+        void queueProductWrite({
+          feature: "season_task",
+          orgId,
+          payload: { orgId, seasonYear: season ?? undefined, ...payload },
+        });
+        setError(QUEUED_ON_DEVICE);
         return;
       }
       setBusy(true);
@@ -107,7 +142,18 @@ export default function TasksClient() {
           setView(data);
           setSeason(data.seasonYear);
         })
-        .catch(() => setError("Network error — please try again."))
+        .catch(() => {
+          if (!navigator.onLine) {
+            void queueProductWrite({
+              feature: "season_task",
+              orgId,
+              payload: { orgId, seasonYear: season ?? undefined, ...payload },
+            });
+            setError(QUEUED_ON_DEVICE);
+            return;
+          }
+          setError("Network error — please try again.");
+        })
         .finally(() => setBusy(false));
     },
     [orgId, season, busy],

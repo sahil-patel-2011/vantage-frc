@@ -2,8 +2,8 @@ import type { PoolClient } from "@neondatabase/serverless";
 import type { ContextItem } from "./index";
 
 /**
- * Real org/session facts injected into Soft-UI chat prompts.
- * Never invents DEMO metrics — only fields present in the DB row.
+ * Real org/session facts injected into product chat prompts.
+ * Only fields present in the DB row are formatted. Missing sources stay absent.
  */
 
 export type OrgSessionFacts = {
@@ -32,6 +32,13 @@ export type OrgSessionFacts = {
     latestYear: { year: number; epa: number | null; rankWorld: number | null; teamsWorld: number | null } | null;
     computedAt: string;
   } | null;
+  /** Recent CAD vault rows. Titles and links only — no fabricated mass. */
+  cadVault?: Array<{
+    title: string;
+    kind: string;
+    externalUrl: string | null;
+    hasUpload: boolean;
+  }>;
 };
 
 export type OrgSessionContextItem = ContextItem & {
@@ -88,6 +95,17 @@ export function formatOrgSessionContext(facts: OrgSessionFacts): string | null {
       parts.push(`Awards on record: ${d.awards.slice(0, 8).map((a) => `${a.year} ${a.name}`).join("; ")}${d.awards.length > 8 ? ` (+${d.awards.length - 8} more)` : ""}`);
     }
     parts.push(`Dossier from The Blue Alliance and Statbotics, as of ${d.computedAt.slice(0, 10)}`);
+  }
+
+  if (facts.cadVault && facts.cadVault.length > 0) {
+    parts.push(
+      `CAD vault: ${facts.cadVault
+        .map((doc) => {
+          const how = doc.externalUrl ? ` link ${doc.externalUrl}` : doc.hasUpload ? " uploaded file" : "";
+          return `${doc.title} (${doc.kind}${how})`;
+        })
+        .join("; ")}`,
+    );
   }
 
   if (parts.length === 0) return null;
@@ -168,6 +186,33 @@ export async function loadOrgSessionFacts(
     row.teamNumber === null || row.teamNumber === undefined ? null : Number(row.teamNumber);
   const seasonYear =
     row.seasonYear === null || row.seasonYear === undefined ? null : Number(row.seasonYear);
+  let cadVault: OrgSessionFacts["cadVault"];
+  try {
+    const vault = await client.query<{
+      title: string;
+      kind: string;
+      externalUrl: string | null;
+      currentVersion: number | null;
+    }>(
+      `SELECT title, kind, external_url AS "externalUrl", current_version AS "currentVersion"
+         FROM cad_documents
+        WHERE org_id = $1::uuid AND status = 'active'
+        ORDER BY updated_at DESC
+        LIMIT 8`,
+      [orgId],
+    );
+    cadVault = vault.rows
+      .map((doc) => ({
+        title: doc.title.trim(),
+        kind: doc.kind.trim() || "part",
+        externalUrl: doc.externalUrl?.trim() || null,
+        hasUpload: Number(doc.currentVersion ?? 0) > 0,
+      }))
+      .filter((doc) => doc.title.length > 0);
+    if (cadVault.length === 0) cadVault = undefined;
+  } catch {
+    cadVault = undefined;
+  }
   return {
     orgName: row.orgName?.trim() || null,
     teamNumber: teamNumber !== null && Number.isFinite(teamNumber) ? teamNumber : null,
@@ -177,6 +222,7 @@ export async function loadOrgSessionFacts(
     schoolFunded: row.schoolFunded ?? null,
     sponsorsAllowed: row.sponsorsAllowed ?? null,
     dossier: dossierFacts(row),
+    cadVault,
   };
 }
 

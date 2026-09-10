@@ -1685,12 +1685,63 @@ export const HELP_ARTICLES: HelpArticle[] = [
     ],
   },
   {
+    id: "packing-lists",
+    slug: "packing-lists",
+    category: "competition",
+    title: "Packing lists at the event",
+    summary:
+      "Check off the load-out on your phone. The last list stays on this device if venue Wi-Fi drops; packed ticks upload when you are back online.",
+    keywords: ["packing", "load-out", "load out", "trailer", "what to bring", "cart", "offline packing"],
+    relatedHref: "/packing",
+    sections: [
+      {
+        heading: "What you see",
+        body: [
+          "A list seeded with the usual FRC kit: batteries, bumpers, tools, drive station. Teammates request extras; the packing lead owns the master list.",
+          "If the signal dies, a quiet bar says you are looking at the copy saved on this phone.",
+        ],
+      },
+      {
+        heading: "What to do",
+        body: [
+          "Open Packing once on venue Wi-Fi so it caches. Tick items as you pack. Those ticks wait on the device and send when you reconnect.",
+          "Need something that is not on the list? Submit a request — do not wait for a laptop.",
+        ],
+      },
+    ],
+  },
+  {
+    id: "batteries-at-events",
+    slug: "batteries-at-events",
+    category: "team",
+    title: "Battery logs in the pit",
+    summary:
+      "Charge cycles and assignments come from logs your team enters. The last snapshot stays on this device; a new log queues if the Wi-Fi drops.",
+    keywords: ["batteries", "charge log", "pack rotation", "internal resistance", "offline batteries"],
+    relatedHref: "/batteries",
+    sections: [
+      {
+        heading: "What you see",
+        body: [
+          "Each pack shows assignment, last charge, and health from measurements you logged. Unknown means nobody has measured it yet.",
+          "When you are offline, the same page stays up from the last visit.",
+        ],
+      },
+      {
+        heading: "What to do",
+        body: [
+          "Log a charge or a Beak reading after each cycle. If the network is gone, the log sits on this device until it can upload.",
+        ],
+      },
+    ],
+  },
+  {
     id: "offline-at-events",
     slug: "offline-at-events",
     category: "competition",
     title: "Using the shop without signal",
     summary:
-      "Competition, Hours, Chat, Files, and Match notes keep working on this device. Your last snapshot stays on screen. Ticks, RSVPs, clock-ins, checklist taps, notes, and chat queue and send when you are back online.",
+      "Competition, Hours, Chat, Files, Packing, Batteries, Pit, and Match notes keep working on this device. Your last snapshot stays on screen. Ticks, RSVPs, clock-ins, packing checks, battery logs, checklist taps, notes, and chat queue and send when you are back online.",
     keywords: ["offline", "venue wifi", "outbox", "keep on this device", "hours", "chat"],
     relatedHref: "/competition",
     sections: [
@@ -1698,7 +1749,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         heading: "What you see",
         body: [
           "A quiet bar says offline and shows the time of the last snapshot. The same screens stay up — there is no dead Retry wall.",
-          "Writes you make (task ticks, calendar RSVP, clock in/out, match notes, pit checks, chat) sit on this device until the network returns.",
+          "Writes you make (task ticks, calendar RSVP, clock in/out, packing checks, battery logs, match notes, pit checks, chat) sit on this device until the network returns.",
         ],
       },
       {

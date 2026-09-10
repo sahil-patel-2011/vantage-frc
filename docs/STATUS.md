@@ -71,6 +71,8 @@ See `docs/COMPETITIVE_NOTES.md`. That document is the brief for Tasks 2–4.
 | `/team/relays` | Connector card only — no list of paired Pis, roles, or queue | this branch |
 | `/account` Connections tab | Duplicate of `/connectors`; now redirects | this branch |
 | `/hours` `/messages` `/match-checklist` `/match-notes-timeline` | Offline writes said they would wait, then dropped the change | this branch |
+| `/packing` `/batteries` `/pit` `/tasks` | Last snapshot was dropped when venue Wi-Fi died; packing ticks and battery logs were not queued | this branch |
+| `/pit` | "no invented percentage" on the board | this branch |
 | `/files` | No way to keep a file on the device | this branch |
 | `/team/ai-keys` `/team/ai-usage` `/pricing` | "BYOK" on student screens | this branch |
 
@@ -84,7 +86,7 @@ See `docs/COMPETITIVE_NOTES.md`. That document is the brief for Tasks 2–4.
 | 2 | One design system | in progress | tokens in `system.css`; Button now emits `.app-button` so chrome and the primitive match. ClassName migration of leftover `.app-button` still open. |
 | 3 | Full UI pass | in progress | Account Connections tab now redirects to `/connectors`. BYOK stripped from student tsx. FEATURE_MAP titles no longer say Soft-UI/DEMO. Finance in Ask AI copy. FEATURE_MAP walk unfinished. |
 | 4 | Home widgets | in progress | Real loaders for student/mentor defaults (files, chat, my day, learn, duties, budget, attendance, outreach, announcements, weather city, …). Live cards in `widgets/home-cards.tsx`. Weather temperature is fetched in the browser from Open-Meteo on event day only — never invented in the snapshot. 2200-line dashboard-client still not fully split. |
-| 5 | Offline shell | in progress | Calendar RSVP, hours clock, chat send, match notes, pit checklist queue while offline. Hours/checklist/notes/chat restore last snapshot. Files can be kept on-device (200 MB cap). Assembly PDFs keep themselves. |
+| 5 | Offline shell | in progress | Packing, batteries, pit, and the season task board restore the last snapshot and queue writes (`packing_action`, `batteries_action`, `pit_board`, `season_task`). Targeted vitest: packing/outbox/shell-routes/help 44 passed. Playwright offline spec now also opens `/packing`. No signed-in `next start` walk. |
 | 6 | Desktop installers + auto-update | in progress | `/api/desktop/release`, NSIS+MSI+DMG workflow, unsigned license. macOS artifacts cannot be built in this image. |
 | 7 | freebuff Pi fleet | in progress | `docs/FREEBUFF.md`, pairing API, `/team/relays` node list, compact+prompt. TTFT unmeasured (no Pi). |
 | 8 | Match prediction ±3 | in progress | Next match widget shows calibrated score + ±band when year EPA exists. **Not a season ±3 claim.** |
@@ -92,7 +94,7 @@ See `docs/COMPETITIVE_NOTES.md`. That document is the brief for Tasks 2–4.
 | 10 | Connectors | audit (already on main) | Account `?tab=integrations` redirects to `/connectors`. TBA next-action from Account goes there too. |
 | 11 | Copy sweep | audit | BYOK banned in `copy-lint.test.ts`. Student tsx rewritten to "your keys". Help article title no longer says BYOK. |
 | 12 | Bugbot / agents | in progress | quotes required (existing); prompt now forbids push/PR; compact wired in HTTP adapter. Scan time unprinted. |
-| 13 | CAD / assembly manual | pending | link-first already on vault; assembly-manual on a real Onshape document still unverified |
+| 13 | CAD / assembly manual | in progress | Ask AI plans `cad.vault` for heavy-part / fastener questions; session facts list vault titles and Onshape links (no fabricated kg). Prompt pins "Cite vault documents by title". Assembly manual on a real Onshape document still unverified. |
 | 14 | Business funding models | in progress | `funding_model` column, onboarding radios, Business default tab + sponsor hide |
 | 15 | Modular monolith | in progress | ESLint `no-restricted-imports` on dashboard/offline/drive vs scouting/messages/pit/hours. |
 | 16 | Supabase readiness | in progress | preflight dual URLs + rehearsal script. **Not connected.** |

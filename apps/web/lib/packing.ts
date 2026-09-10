@@ -227,6 +227,35 @@ export function packProgress(items: PackingItem[]): PackProgress {
   };
 }
 
+/** Writes that are safe to store on the device — they already carry the row id. */
+export const PACKING_QUEUEABLE_ACTIONS = ["toggle_item", "request_item"] as const;
+
+export function isPackingQueueableAction(action: string): boolean {
+  return (PACKING_QUEUEABLE_ACTIONS as readonly string[]).includes(action);
+}
+
+/** Flip a packed checkbox on the last snapshot so the pit list does not snap back. */
+export function applyPackingLocalWrite(
+  view: PackingView,
+  body: { action: string; id?: unknown; packed?: unknown },
+  nowIso = "1970-01-01T00:00:00.000Z",
+): PackingView {
+  if (view.status !== "ready") return view;
+  if (body.action !== "toggle_item" || typeof body.id !== "string") return view;
+  const packed = Boolean(body.packed);
+  return {
+    ...view,
+    lists: view.lists.map((list) => ({
+      ...list,
+      items: list.items.map((row) =>
+        row.id === body.id
+          ? { ...row, packed, packedAt: packed ? nowIso : null, packedByName: packed ? row.packedByName : null }
+          : row,
+      ),
+    })),
+  };
+}
+
 /** Group items by category, template categories first, in sort order. */
 export function groupPacking(items: PackingItem[]): Array<{ category: string; items: PackingItem[] }> {
   const order = new Map(PACKING_TEMPLATE.map((entry, index) => [entry.category, index]));

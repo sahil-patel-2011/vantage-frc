@@ -15,6 +15,10 @@ export const OUTBOX_FEATURES = [
   "match_note",
   "pit_checklist",
   "chat_message",
+  "packing_action",
+  "batteries_action",
+  "season_task",
+  "pit_board",
 ] as const;
 
 export type OutboxFeature = (typeof OUTBOX_FEATURES)[number];
@@ -127,6 +131,10 @@ export const DEFAULT_OUTBOX_ADAPTERS: OutboxSyncAdapter[] = [
   { feature: "match_note", endpoint: (item) => ({ url: "/api/match-notes-timeline", method: "POST", body: item.payload }) },
   { feature: "pit_checklist", endpoint: (item) => ({ url: "/api/match-checklist", method: "POST", body: item.payload }) },
   { feature: "chat_message", endpoint: (item) => ({ url: "/api/messages", method: "POST", body: item.payload }) },
+  { feature: "packing_action", endpoint: (item) => ({ url: "/api/packing", method: "POST", body: item.payload }) },
+  { feature: "batteries_action", endpoint: (item) => ({ url: "/api/batteries", method: "POST", body: item.payload }) },
+  { feature: "season_task", endpoint: (item) => ({ url: "/api/tasks", method: "POST", body: item.payload }) },
+  { feature: "pit_board", endpoint: (item) => ({ url: "/api/pit", method: "POST", body: item.payload }) },
 ];
 
 export function nextBackoffMs(attempt: number): number {

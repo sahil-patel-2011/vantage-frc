@@ -213,6 +213,8 @@ describe("help search index", () => {
     expect(searchHelpArticles("my kit")[0]?.slug).toBe("my-kit");
     expect(searchHelpArticles("import notion trello").map((hit) => hit.slug)).toContain("migrate");
     expect(searchHelpArticles("venue wifi")[0]?.slug).toBe("offline-at-events");
+    expect(searchHelpArticles("packing list")[0]?.slug).toBe("packing-lists");
+    expect(searchHelpArticles("battery logs")[0]?.slug).toBe("batteries-at-events");
   });
 
   it("ignores short queries and scores zero for nonsense", () => {

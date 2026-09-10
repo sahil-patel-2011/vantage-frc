@@ -59,6 +59,7 @@ export const CROSS_FEATURE_TOOL_GRAPH = {
     "research.findings",
     "cad.briefs",
     "cad.create_brief",
+    "cad.vault",
     "inventory.availability",
   ],
   agent: [
@@ -85,6 +86,7 @@ export const CROSS_FEATURE_TOOL_GRAPH = {
     "fmea.open_risks",
     "fmea.repeat",
     "cad.briefs",
+    "cad.vault",
     "inventory.availability",
     "finance.orders",
     "finance.create_purchase_request",
@@ -150,6 +152,7 @@ export const ORG_DATA_TOOL_NAMES = [
   "cad.briefs",
   "cad.design_context",
   "cad.create_brief",
+  "cad.vault",
   "inventory.availability",
   "knowledge.search",
   "knowledge.get_page",

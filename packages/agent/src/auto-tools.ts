@@ -37,7 +37,8 @@ const NEED_PART_RE =
   /\b(?:need|order|buy|purchase|request)\s+(?:a\s+|an\s+|the\s+)?(?:part|component|bolt|bearing|motor|gear|belt|shaft|sensor|pneumatic|cylinder|tube|plate|spacer)\b/i;
 const NEED_PART_NAME_RE =
   /\b(?:need|order|buy|purchase|request)\s+(?:a\s+|an\s+|the\s+)?(?:part\s+)?["“]?([^"”\n,.!?]{2,80})["”]?/i;
-const CAD_RE = /\b(cad|onshape|fusion|engineering\s*brief|design\s*brief|mechanism|extrude|sketch|geometry)\b/i;
+const CAD_RE =
+  /\b(cad|onshape|fusion|engineering\s*brief|design\s*brief|mechanism|extrude|sketch|geometry|fastener|bracket|too heavy|how heavy|part heavy|why.{0,40}heavy|mass properties|moment of inertia)\b/i;
 const KNOWLEDGE_RE =
   /\b(wiki|knowledge\s*base|handoff|onboarding|institutional\s*knowledge|why\s+did\s+we|how\s+do\s+we|decision(?:\s+record)?s?|design\s*review|ADR|last\s+season|prior\s+season|cross[- ]season|convention(?:s)?|subsystem\s+guide)\b/i;
 const WIKI_SLUG_RE = /\b(?:wiki|page)\s+([a-z0-9]+(?:-[a-z0-9]+)*)\b/i;
@@ -145,6 +146,9 @@ export function planChatToolCalls(message: string, options: ChatToolPlanOptions 
     const slugMatch = text.match(WIKI_SLUG_RE);
     if (slugMatch?.[1]) add("knowledge.get_page", { slug: slugMatch[1] });
     add("knowledge.search", { query: text.slice(0, 200), limit: isCadSurface ? 6 : 8 });
+  }
+  if (wantsCad) {
+    add("cad.vault", { query: text.slice(0, 160), limit: 8 });
   }
 
   if (wantsFmea) {
@@ -284,8 +288,9 @@ export function planChatToolCalls(message: string, options: ChatToolPlanOptions 
     add("strategy.match", { matchKey: options.selected.matchKey });
   }
 
-  // Cap tool fan-out — slightly higher on CAD/strategy so the shared graph stays intact.
-  const cap = isCadSurface || isStrategySurface ? 12 : 10;
+  // Cap tool fan-out. CAD/strategy need room for vault + match + scouting
+  // without dropping the shared graph.
+  const cap = isCadSurface || isStrategySurface ? 16 : 10;
   return calls.slice(0, cap);
 }
 
@@ -756,7 +761,9 @@ export function annotateToolOutput(name: string, output: unknown, input?: unknow
               ? "No research findings stored for this team."
               : name === "knowledge.search"
                 ? "No wiki pages, decisions, or design reviews matched that query."
-                : "No reference metrics found for this team/event.",
+                : name === "cad.vault"
+                  ? "No CAD files or Onshape links in the vault yet."
+                  : "No reference metrics found for this team/event.",
         output,
         input,
       };

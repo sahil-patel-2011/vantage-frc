@@ -309,5 +309,15 @@ describe("chat auto-tool planning", () => {
     const { planChatToolCalls } = await import("../src/auto-tools");
     const calls = planChatToolCalls("Design a 2-stage elevator", { capability: "cad" });
     expect(calls.some((call) => call.name === "knowledge.search")).toBe(true);
+    expect(calls.some((call) => call.name === "cad.vault")).toBe(true);
+  });
+
+  it("plans the CAD vault for a heavy-part question", async () => {
+    const { planChatToolCalls, annotateToolOutput } = await import("../src/auto-tools");
+    const calls = planChatToolCalls("why is this part heavy");
+    expect(calls.some((call) => call.name === "cad.vault")).toBe(true);
+    const empty = annotateToolOutput("cad.vault", []);
+    expect(empty.status).toBe("empty");
+    expect(empty.summary).toMatch(/vault/i);
   });
 });

@@ -20,7 +20,11 @@ export type OfflineFeature =
   | "strategy"
   | "hours"
   | "match-checklist"
-  | "match-notes";
+  | "match-notes"
+  | "packing"
+  | "batteries"
+  | "pit"
+  | "season-tasks";
 
 const DB_NAME = "vantage-feature-cache";
 const DB_VERSION = 1;

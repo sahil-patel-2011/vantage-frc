@@ -40,6 +40,8 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/pit")).toBe(true);
     expect(pathnameIsOfflineShell("/video-analysis")).toBe(true);
     expect(pathnameIsOfflineShell("/assembly-manual")).toBe(true);
+    expect(pathnameIsOfflineShell("/packing")).toBe(true);
+    expect(pathnameIsOfflineShell("/batteries")).toBe(true);
     expect(pathnameIsOfflineShell("/api/todos")).toBe(false);
   });
 
@@ -54,6 +56,8 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/hours")).toBe("Hours");
     expect(offlineCapableLabel("/messages")).toBe("Chat");
     expect(offlineCapableLabel("/assembly-manual")).toBe("Assembly manual");
+    expect(offlineCapableLabel("/packing")).toBe("Packing");
+    expect(offlineCapableLabel("/batteries")).toBe("Batteries");
   });
 
   it("keeps public/sw.js SHELL_ROUTES aligned with OFFLINE_SHELL_ROUTES", () => {
@@ -68,6 +72,10 @@ describe("offline shell routes", () => {
     expect(featureCacheKey("todos", " org-1 ")).toBe("todos:org-1");
     expect(featureCacheKey("logistics", "")).toBe("logistics:_");
     expect(featureCacheKey("files", "org-1", "team:")).toBe("files:org-1:team:");
+    expect(featureCacheKey("packing", "org-1")).toBe("packing:org-1");
+    expect(featureCacheKey("batteries", "org-1")).toBe("batteries:org-1");
+    expect(featureCacheKey("pit", "org-1")).toBe("pit:org-1");
+    expect(featureCacheKey("season-tasks", "org-1", "2026")).toBe("season-tasks:org-1:2026");
   });
 
   it("falls failed navigations back to the precached shell", () => {

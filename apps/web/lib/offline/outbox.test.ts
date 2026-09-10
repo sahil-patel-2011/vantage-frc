@@ -112,6 +112,30 @@ describe("offline outbox", () => {
     expect(await listOutbox(ORG)).toEqual([]);
   });
 
+  it("routes packing, batteries, pit, and season-task writes to their product APIs", () => {
+    const webRoot = join(__dirname, "..", "..");
+    const item = {
+      clientId: "c",
+      feature: "packing_action" as const,
+      orgId: ORG,
+      payload: { action: "toggle_item" },
+      queuedAt: new Date().toISOString(),
+      status: "queued" as const,
+    };
+    const extra = DEFAULT_OUTBOX_ADAPTERS.filter((adapter) =>
+      ["packing_action", "batteries_action", "season_task", "pit_board"].includes(adapter.feature),
+    );
+    expect(extra).toHaveLength(4);
+    for (const adapter of extra) {
+      const req = adapter.endpoint(item);
+      const rel = req.url.replace(/^\//, "");
+      expect(
+        existsSync(join(webRoot, "app", rel, "route.ts")),
+        `${adapter.feature} → ${req.url}`,
+      ).toBe(true);
+    }
+  });
+
   it("keeps the server copy on a 409 instead of dropping the local write", async () => {
     await enqueueOutboxItem({
       clientId: "c1",

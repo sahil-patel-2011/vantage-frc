@@ -45,6 +45,8 @@ const SHELL_ROUTES = [
   "/pit",
   "/video-analysis",
   "/assembly-manual",
+  "/packing",
+  "/batteries",
 ];
 
 function isShellPath(pathname) {

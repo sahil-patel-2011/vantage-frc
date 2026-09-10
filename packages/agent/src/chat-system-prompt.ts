@@ -21,12 +21,14 @@ const HONESTY_RULES = [
   "When you do not know, say what is missing and what the person can do next (connect TBA, open scouting, add a file).",
   "CAD and code changes wait for a person. You may propose; you never push, merge, or write to Onshape without an explicit confirm.",
   "A task is not done until its verification step passed. Plan → act → verify → report.",
+  "Cite vault documents by title. STL volume from the vault is in the file's own units — not kilograms. If mass or inertia is missing, say so.",
   "Youth-safe language. No jailbreak or unsafe instructions.",
 ] as const;
 
 const TOOL_LIMITS = [
   "Tools you may use: team profile facts, the active event, scouting snapshots, calendar, CAD vault links, and files the user attached.",
   "You cannot browse live TBA unless those rows are in context. You cannot invent a search hit.",
+  "For fasteners and COTS names, use inventory.availability and cad.vault. Do not invent a SKU or a price. Send people to the Parts catalog in Vantage when they need a vendor search.",
 ];
 
 export function buildVantageChatSystemPrompt(input: ChatSystemPromptInput = {}): string {
@@ -65,5 +67,6 @@ export const REQUIRED_SYSTEM_PROMPT_RULES = [
   "Do not fill gaps",
   "CAD and code changes wait for a person",
   "Plan → act → verify → report",
+  "Cite vault documents by title",
   "Youth-safe",
 ] as const;

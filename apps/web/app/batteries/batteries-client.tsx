@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { EmptyState, PageHeader } from "../../components/ui";
+import { OfflineBanner } from "../../components/offline-banner";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { BuildHubRelated } from "../../components/build-hub-related";
 import { TeamHubRelated } from "../../components/team-hub-related";
@@ -14,6 +15,14 @@ import {
   formatPackEvidence,
   packHasMeasurement,
 } from "../../lib/battery/battery-related";
+import {
+  QUEUED_ON_DEVICE,
+  getFeatureSnapshot,
+  isBrowserOffline,
+  putFeatureSnapshot,
+  queueProductWrite,
+  syncOutbox,
+} from "../../lib/offline";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./batteries.css";
 
@@ -177,6 +186,8 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
   // Kept so an expired session offers sign-in instead of a Retry that cannot work.
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
   const [packForm, setPackForm] = useState({
     label: "",
     brand: "",
@@ -198,19 +209,29 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
   const load = useCallback(async () => {
     setFetchFailed(false);
     const params = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
-    const orgId = params.get("orgId");
+    const orgId = params.get("orgId") ?? "";
+    const cached = orgId ? await getFeatureSnapshot<View>("batteries", orgId) : null;
+    if (cached?.data) {
+      setView(cached.data);
+      setFromCache(true);
+      setCachedAt(cached.cachedAt);
+    }
     try {
       const response = await fetch(`/api/batteries${orgId ? `?orgId=${encodeURIComponent(orgId)}` : ""}`);
       const data = (await response.json()) as View & { error?: string };
       if (!response.ok || !("status" in data)) {
         setError(data.error ?? "Could not load batteries.");
         setErrorStatus(response.status);
-        setFetchFailed(true);
+        if (!cached) setFetchFailed(true);
         return;
       }
       setError("");
       setErrorStatus(null);
       setView(data);
+      setFromCache(false);
+      setCachedAt(null);
+      const cacheOrg = data.status === "ready" ? data.context.orgId || orgId : orgId;
+      if (cacheOrg) await putFeatureSnapshot("batteries", cacheOrg, data);
       if (data.status === "ready") {
         setLogForm((prev) => {
           if (prev.batteryId && data.packs.some((pack) => pack.id === prev.batteryId)) return prev;
@@ -219,7 +240,7 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
       }
     } catch {
       setErrorStatus(null);
-      setFetchFailed(true);
+      if (!cached) setFetchFailed(true);
     }
   }, []);
 
@@ -227,8 +248,28 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
     void load();
   }, [load]);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const orgId = params.get("orgId") ?? "";
+    if (!orgId) return;
+    const onOnline = () => {
+      void syncOutbox({ orgId }).then(() => load());
+    };
+    window.addEventListener("online", onOnline);
+    return () => window.removeEventListener("online", onOnline);
+  }, [load]);
+
   const run = useCallback(
     async (body: ActionBody, key: string) => {
+      if (isBrowserOffline() && (body.action === "log_event" || body.action === "assign_pack") && body.orgId) {
+        await queueProductWrite({
+          feature: "batteries_action",
+          orgId: body.orgId,
+          payload: body,
+        });
+        setError(QUEUED_ON_DEVICE);
+        return;
+      }
       setBusyKey(key);
       setError("");
       setOkMessage("");
@@ -254,6 +295,15 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
         );
         await load();
       } catch {
+        if (isBrowserOffline() && (body.action === "log_event" || body.action === "assign_pack") && body.orgId) {
+          await queueProductWrite({
+            feature: "batteries_action",
+            orgId: body.orgId,
+            payload: body,
+          });
+          setError(QUEUED_ON_DEVICE);
+          return;
+        }
         setError("Network error — changes were not saved.");
       } finally {
         setBusyKey(null);
@@ -316,6 +366,7 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
           description="Track charge cycles, assignment, and competition readiness for every pack — from real logs only."
         />
         {!embed ? <TeamOpsNav active="batteries" /> : null}
+        <OfflineBanner feature="Batteries" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState title="Select a team workspace" description={view.message} badge="Setup" badgeTone="setup" soft>
           <a className="app-button" href="/workspace">
             Choose workspace
@@ -387,6 +438,7 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
           </a>
         </div>
       </PageHeader>
+      <OfflineBanner feature="Batteries" fromCache={fromCache} cachedAt={cachedAt} />
       {!embed ? <TeamOpsNav orgId={orgId} active="batteries" /> : null}
       {!embed ? <BatteriesRelated orgId={orgId} /> : null}
 

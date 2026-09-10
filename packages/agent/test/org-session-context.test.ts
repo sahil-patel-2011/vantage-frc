@@ -26,6 +26,27 @@ describe("org session context", () => {
     expect(text).not.toMatch(/DEMO/i);
   });
 
+  it("lists vault documents by title and whether they are a link or an upload", () => {
+    const text = formatOrgSessionContext({
+      orgName: "Team",
+      teamNumber: 6925,
+      activeEventKey: null,
+      seasonYear: null,
+      teamAffiliation: null,
+      schoolFunded: null,
+      sponsorsAllowed: null,
+      cadVault: [
+        { title: "Intake assembly", kind: "assembly", externalUrl: "https://cad.onshape.com/documents/abc", hasUpload: false },
+        { title: "Bracket v3", kind: "part", externalUrl: null, hasUpload: true },
+      ],
+    });
+    expect(text).toContain("Intake assembly");
+    expect(text).toContain("https://cad.onshape.com/documents/abc");
+    expect(text).toContain("Bracket v3");
+    expect(text).toContain("uploaded file");
+    expect(text).not.toMatch(/\bkg\b/i);
+  });
+
   it("returns null when nothing real is present", () => {
     expect(
       formatOrgSessionContext({

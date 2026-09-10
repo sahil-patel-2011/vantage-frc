@@ -1,9 +1,25 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import {
+  QUEUED_ON_DEVICE,
+  getFeatureSnapshot,
+  isBrowserOffline,
+  putFeatureSnapshot,
+  queueProductWrite,
+  syncOutbox,
+} from "../../lib/offline";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
-import { groupPacking, packProgress, type PackingList, type PackingView } from "../../lib/packing";
+import {
+  applyPackingLocalWrite,
+  groupPacking,
+  isPackingQueueableAction,
+  packProgress,
+  type PackingList,
+  type PackingView,
+} from "../../lib/packing";
 
 type ActionBody = Record<string, unknown> & { action: string; orgId: string };
 
@@ -276,25 +292,37 @@ export default function PackingClient() {
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [newTitle, setNewTitle] = useState("");
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setFetchFailed(false);
     setErrorStatus(null);
     const params = new URLSearchParams(window.location.search);
-    const orgId = params.get("orgId");
+    const orgId = params.get("orgId") ?? "";
+    const cached = orgId ? await getFeatureSnapshot<PackingView>("packing", orgId) : null;
+    if (cached?.data) {
+      setView(cached.data);
+      setFromCache(true);
+      setCachedAt(cached.cachedAt);
+    }
     try {
       const response = await fetch(`/api/packing${orgId ? `?orgId=${encodeURIComponent(orgId)}` : ""}`);
       const data = (await response.json()) as PackingView | { error?: string };
       if (!response.ok || !("status" in data)) {
         setError("error" in data && data.error ? data.error : "Could not load packing lists.");
         setErrorStatus(response.status);
-        setFetchFailed(true);
+        if (!cached) setFetchFailed(true);
         return;
       }
       setError("");
       setView(data);
+      setFromCache(false);
+      setCachedAt(null);
+      const cacheOrg = data.context.orgId || orgId;
+      if (cacheOrg) await putFeatureSnapshot("packing", cacheOrg, data);
     } catch {
-      setFetchFailed(true);
+      if (!cached) setFetchFailed(true);
     }
   }, []);
 
@@ -302,8 +330,29 @@ export default function PackingClient() {
     void load();
   }, [load]);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const orgId = params.get("orgId") ?? "";
+    if (!orgId) return;
+    const onOnline = () => {
+      void syncOutbox({ orgId }).then(() => load());
+    };
+    window.addEventListener("online", onOnline);
+    return () => window.removeEventListener("online", onOnline);
+  }, [load]);
+
   const run = useCallback(
     async (body: ActionBody, key: string) => {
+      if (isBrowserOffline() && isPackingQueueableAction(body.action) && body.orgId) {
+        await queueProductWrite({
+          feature: "packing_action",
+          orgId: body.orgId,
+          payload: body,
+        });
+        setView((current) => (current ? applyPackingLocalWrite(current, body, new Date().toISOString()) : current));
+        setError(QUEUED_ON_DEVICE);
+        return;
+      }
       setBusyKey(key);
       setError("");
       try {
@@ -321,6 +370,16 @@ export default function PackingClient() {
         if (body.action === "delete_list") setSelectedId(null);
         await load();
       } catch {
+        if (isBrowserOffline() && isPackingQueueableAction(body.action) && body.orgId) {
+          await queueProductWrite({
+            feature: "packing_action",
+            orgId: body.orgId,
+            payload: body,
+          });
+          setView((current) => (current ? applyPackingLocalWrite(current, body, new Date().toISOString()) : current));
+          setError(QUEUED_ON_DEVICE);
+          return;
+        }
         setError("Network error — changes were not saved.");
       } finally {
         setBusyKey(null);
@@ -390,6 +449,7 @@ export default function PackingClient() {
             <p>Competition load-out checklists so nothing gets left in the shop.</p>
           </div>
         </header>
+        <OfflineBanner feature="Packing" fromCache={fromCache} cachedAt={cachedAt} />
         <div className="app-card pack-empty">
           <strong>Select a team workspace</strong>
           <p className="app-muted">{view.message}</p>
@@ -451,6 +511,7 @@ export default function PackingClient() {
           </button>
         </div>
       </header>
+      <OfflineBanner feature="Packing" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

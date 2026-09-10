@@ -68,6 +68,7 @@ export const SHARED_STRATEGY_CAD_TOOLS = [
   "cad.briefs",
   "cad.design_context",
   "cad.create_brief",
+  "cad.vault",
   "inventory.availability",
   "knowledge.search",
   "knowledge.get_page",
@@ -951,6 +952,59 @@ export function createVantageToolRegistry(): AIToolRegistry {
               [orgId, input.limit],
             )
           ).rows;
+        },
+      }),
+    )
+    .register(
+      tool({
+        name: "cad.vault",
+        description:
+          "Read this team's CAD vault: Onshape links and uploaded STEP/STL titles. STL volume is in the file's own units, never kilograms. Empty when the team has not saved any documents.",
+        parseInput(value) {
+          const input = object(value);
+          const query = String(input.query ?? "").trim().slice(0, 160);
+          const limitRaw = Number(input.limit ?? 8);
+          const limit = Number.isFinite(limitRaw) ? Math.min(20, Math.max(1, Math.floor(limitRaw))) : 8;
+          return { query, limit };
+        },
+        parseOutput: rowsOutput,
+        async execute({ client, orgId }, input) {
+          try {
+            return (
+              await client.query(
+                `SELECT d.id, d.title, d.kind, d.status,
+                        d.external_url AS "externalUrl",
+                        d.current_version AS "currentVersion",
+                        v.filename, v.format,
+                        CASE
+                          WHEN v.geometry ? 'volume' AND (v.geometry->>'volume') ~ '^-?[0-9]+(\\.[0-9]+)?$'
+                          THEN (v.geometry->>'volume')::float8
+                          ELSE NULL
+                        END AS "stlVolumeFileUnits",
+                        CASE
+                          WHEN v.geometry ? 'triangleCount' AND (v.geometry->>'triangleCount') ~ '^[0-9]+$'
+                          THEN (v.geometry->>'triangleCount')::int
+                          ELSE NULL
+                        END AS "triangleCount"
+                   FROM cad_documents d
+                   LEFT JOIN LATERAL (
+                     SELECT filename, format, geometry
+                       FROM cad_document_versions
+                      WHERE document_id = d.id AND org_id = d.org_id
+                      ORDER BY version DESC
+                      LIMIT 1
+                   ) v ON true
+                  WHERE d.org_id = $1::uuid
+                    AND d.status = 'active'
+                    AND ($2 = '' OR concat_ws(' ', d.title, coalesce(d.description, ''), d.kind, coalesce(d.external_url, '')) ILIKE '%'||$2||'%')
+                  ORDER BY d.updated_at DESC
+                  LIMIT $3`,
+                [orgId, input.query, input.limit],
+              )
+            ).rows;
+          } catch {
+            return [];
+          }
         },
       }),
     )

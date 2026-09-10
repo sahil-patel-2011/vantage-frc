@@ -3,8 +3,17 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import PartnerPlacement from "../../components/partner-placement";
 import { EmptyState, PageHeader } from "../../components/ui";
+import { OfflineBanner } from "../../components/offline-banner";
 import { visibilityPollDelay } from "../../lib/perf/visibility-poll";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import {
+  QUEUED_ON_DEVICE,
+  getFeatureSnapshot,
+  isBrowserOffline,
+  putFeatureSnapshot,
+  queueProductWrite,
+  syncOutbox,
+} from "../../lib/offline";
 import {
   PIT_BOARD_POLL_MS,
   pitTurnaroundFromSchedule,
@@ -298,25 +307,41 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
   const [fetchFailed, setFetchFailed] = useState(false);
   // Kept so an expired session offers sign-in instead of a Retry that cannot work.
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
 
   const load = useCallback(async () => {
+    const cached = orgId ? await getFeatureSnapshot<Data>("pit", orgId) : null;
+    if (cached?.data) {
+      setData(cached.data);
+      setFromCache(true);
+      setCachedAt(cached.cachedAt);
+      setLoading(false);
+    }
     try {
       const r = await fetch(`/api/pit?orgId=${encodeURIComponent(orgId)}`, { cache: "no-store" });
       const body = (await r.json()) as Data | { error?: string };
       if (!r.ok || !("gate" in body)) {
-        setFetchFailed(true);
-        setErrorStatus(r.status);
-        setError("error" in body && body.error ? body.error : "Could not load Pit command");
+        if (!cached) {
+          setFetchFailed(true);
+          setErrorStatus(r.status);
+          setError("error" in body && body.error ? body.error : "Could not load Pit command");
+        }
         return;
       }
       setData(body);
       setFetchFailed(false);
       setErrorStatus(null);
       setError("");
+      setFromCache(false);
+      setCachedAt(null);
+      if (orgId) await putFeatureSnapshot("pit", orgId, body);
     } catch (e) {
-      setFetchFailed(true);
-      setErrorStatus(null);
-      setError(e instanceof Error ? e.message : "Could not load Pit command");
+      if (!cached) {
+        setFetchFailed(true);
+        setErrorStatus(null);
+        setError(e instanceof Error ? e.message : "Could not load Pit command");
+      }
     } finally {
       setLoading(false);
     }
@@ -337,16 +362,30 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
     const onVisibility = () => {
       if (document.visibilityState === "visible") void load();
     };
+    const onOnline = () => {
+      void syncOutbox({ orgId }).then(() => load());
+    };
     document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("online", onOnline);
     return () => {
       cancelled = true;
       if (timer !== null) window.clearTimeout(timer);
       clearInterval(clock);
       document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("online", onOnline);
     };
-  }, [load]);
+  }, [load, orgId]);
 
   async function mutate(payload: Record<string, unknown>, success: string, key = String(payload.action)) {
+    if (isBrowserOffline()) {
+      await queueProductWrite({
+        feature: "pit_board",
+        orgId,
+        payload: { ...payload, orgId },
+      });
+      setError(QUEUED_ON_DEVICE);
+      return;
+    }
     setBusy(key);
     setError("");
     try {
@@ -361,6 +400,15 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
       setForm(null);
       await load();
     } catch (e) {
+      if (isBrowserOffline()) {
+        await queueProductWrite({
+          feature: "pit_board",
+          orgId,
+          payload: { ...payload, orgId },
+        });
+        setError(QUEUED_ON_DEVICE);
+        return;
+      }
       setError(e instanceof Error ? e.message : "Pit action failed");
     } finally {
       setBusy("");
@@ -471,7 +519,7 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
         description={
           shell === "empty"
             ? shellCopy.description
-            : `${data.context.eventName ?? "No active event"} · explicit evidence, no invented percentage`
+            : `${data.context.eventName ?? "No active event"} · counts come from logs and issues your team entered`
         }
       >
         <PitRelatedStrip orgId={orgId} />
@@ -481,6 +529,7 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
           <b>{countdown(data, now)}</b>
         </div>
       </PageHeader>
+      <OfflineBanner feature="Pit" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

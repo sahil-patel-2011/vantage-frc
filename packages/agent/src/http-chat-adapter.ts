@@ -40,7 +40,7 @@ export type HttpChatAdapterConfig = {
   providerLabel?: string;
   /** Abort upstream after this many ms. */
   timeoutMs?: number;
-  /** Soft-UI capability for system prompt (chat, strategy, …). */
+  /** Product surface for the system prompt (chat, strategy, CAD, …). */
   capability?: string;
   /** Extra headers (OpenRouter HTTP-Referer / X-Title). Never log values. */
   extraHeaders?: Record<string, string>;

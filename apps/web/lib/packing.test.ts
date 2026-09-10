@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  applyPackingLocalWrite,
   canDismissPackingRequest,
   canManagePackingMaster,
   groupPacking,
@@ -9,6 +10,7 @@ import {
   pendingPackingRequests,
   type PackingItem,
   type PackingRequest,
+  type PackingView,
 } from "./packing";
 
 const ORG = "11111111-1111-4111-8111-111111111111";
@@ -226,6 +228,37 @@ describe("packing request inbox", () => {
     const member = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
     expect(canDismissPackingRequest("member", lead, member, member)).toBe(true);
     expect(canDismissPackingRequest("member", lead, member, lead)).toBe(false);
+  });
+
+  it("keeps a packed tick on the last snapshot until the queue uploads", () => {
+    const view: PackingView = {
+      status: "ready",
+      context: {
+        orgId: ORG,
+        orgName: "Team",
+        teamNumber: 6925,
+        role: "member",
+        eventKey: null,
+      },
+      lists: [
+        {
+          id: ID,
+          title: "Load-out",
+          eventKey: null,
+          createdBy: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          createdByName: "A",
+          updatedAt: "2026-03-01T12:00:00.000Z",
+          canManageMaster: false,
+          items: [item({ id: "i1", packed: false })],
+          requests: [],
+        },
+      ],
+    };
+    const next = applyPackingLocalWrite(view, { action: "toggle_item", id: "i1", packed: true }, "2026-03-01T18:00:00.000Z");
+    expect(next.status).toBe("ready");
+    if (next.status !== "ready") return;
+    expect(next.lists[0]?.items[0]?.packed).toBe(true);
+    expect(next.lists[0]?.items[0]?.packedAt).toBe("2026-03-01T18:00:00.000Z");
   });
 
   it("surfaces pending requests in created order and ignores decided rows", () => {

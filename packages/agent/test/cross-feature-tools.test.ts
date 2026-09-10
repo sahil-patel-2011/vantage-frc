@@ -28,6 +28,7 @@ describe("cross-feature AI tool graph", () => {
         "finance.create_purchase_request",
         "cad.create_brief",
         "cad.design_context",
+        "cad.vault",
         "inventory.availability",
         "scouting.team",
         "scouting.schema",
@@ -43,6 +44,7 @@ describe("cross-feature AI tool graph", () => {
         "strategy.match",
         "fmea.open_risks",
         "cad.create_brief",
+        "cad.vault",
         "knowledge.get_page",
         "my_day.summary",
         "scouting.team",
@@ -50,8 +52,9 @@ describe("cross-feature AI tool graph", () => {
       ]),
     );
     expect(ORG_DATA_TOOLS).toEqual(
-      expect.arrayContaining(["fmea.open_risks", "my_day.summary", "cad.create_brief", "calendar.upcoming"]),
+      expect.arrayContaining(["fmea.open_risks", "my_day.summary", "cad.create_brief", "cad.vault", "calendar.upcoming"]),
     );
+    expect(toolUsesOrgData("cad.vault")).toBe(true);
     expect(toolUsesOrgData("fmea.open_risks")).toBe(true);
     expect(toolUsesOrgData("my_day.summary")).toBe(true);
     expect(toolUsesOrgData("reference.team")).toBe(false);
@@ -63,6 +66,7 @@ describe("cross-feature AI tool graph", () => {
         "web.search",
         "web.fetch",
         "cad.create_brief",
+        "cad.vault",
         "finance.summary",
         "my_day.summary",
         "scouting.team",
@@ -80,6 +84,7 @@ describe("cross-feature AI tool graph", () => {
         "scouting.team",
         "scouting.schema",
         "knowledge.search",
+        "cad.vault",
         "finance.create_purchase_request",
       ]),
     );
@@ -114,6 +119,7 @@ describe("cross-feature AI tool graph", () => {
         "strategy.design",
         "fmea.open_risks",
         "cad.briefs",
+        "cad.vault",
         "inventory.availability",
         "knowledge.search",
       ]),
