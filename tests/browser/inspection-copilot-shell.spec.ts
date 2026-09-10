@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { expectHubReadyOrGate } from "./hub-org-gate";
 import { signInAs, signInFixture } from "./session";
 
 test.beforeEach(async ({ context }) => {
@@ -17,11 +18,14 @@ test("Inspection Copilot still loads after the panel split", async ({ page }) =>
   });
 
   const form = page.locator("#inspection-copilot-form");
-  const setup = page.getByRole("button", { name: "Choose your team" });
-  const retry = page.getByRole("button", { name: "Retry" });
-  await expect(form.or(setup).or(retry)).toBeVisible({ timeout: 15_000 });
-
-  if ((await form.count()) === 0) {
+  const readyHeading = page.getByRole("heading", { name: "Run an inspection-readiness check" });
+  const setup = page.getByRole("heading", { name: /Select a team|Choose a team/i });
+  const unavailable = page.getByRole("heading", { name: /Could not load the inspection copilot/i });
+  if (!(await expectHubReadyOrGate(page, readyHeading, setup.or(unavailable)))) {
+    await expect(page.getByRole("tab")).toHaveCount(0);
+    if (await setup.isVisible()) {
+      await expect(page.getByRole("link", { name: "Choose your team" })).toHaveCount(1);
+    }
     return;
   }
 
@@ -30,8 +34,4 @@ test("Inspection Copilot still loads after the panel split", async ({ page }) =>
   await expect(page.getByRole("button", { name: "Predict inspection failures" })).toBeVisible();
   await expect(page.getByRole("region", { name: "Inspection Copilot summary" })).toBeVisible();
   await expect(form.getByRole("tab")).toHaveCount(0);
-
-  if (process.env.INSPECTION_SHOT === "1") {
-    await page.screenshot({ path: "/opt/cursor/artifacts/inspection-after-split.png", fullPage: true });
-  }
 });

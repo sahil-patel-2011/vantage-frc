@@ -1,5 +1,6 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
+import { setupActionsFrom } from "../setup-actions";
 
 /** Soft-UI related surfaces for Inspection Copilot (never DEMO risk scores). */
 export const INSPECTION_COPILOT_RELATED_LINKS = [
@@ -132,21 +133,91 @@ export function inspectionCopilotShellCopy(kind: InspectionCopilotShellKind): In
         description:
           "Risk and flags stay blank until you enter a real weight budget, frame/bumper measurements, and wiring/power state. Cross-check Batteries, FMEA, and Subsystems.",
       };
-    default:
+    case "ready":
       return {
-        kind: "ready",
+        kind,
         title: "Inspection-readiness checks",
         description:
           "Predictions use only the limits and measurements your team logged. Resolve critical flags before travel.",
       };
+    default: {
+      const _never: never = kind;
+      return _never;
+    }
   }
+}
+
+export type InspectionCopilotSetupStep = {
+  id: string;
+  label: string;
+  detail: string;
+  href: string;
+};
+
+function inspectionCopilotRelatedHrefs(orgId?: string | null): Set<string> {
+  return new Set(
+    inspectionCopilotRelatedLinks(orgId, { include: [...INSPECTION_COPILOT_RELATED_INCLUDE] }).map(
+      (link) => link.href,
+    ),
+  );
+}
+
+function dropRelatedStripDuplicates<T extends { href: string }>(
+  orgId: string | null | undefined,
+  items: T[],
+): T[] {
+  const related = inspectionCopilotRelatedHrefs(orgId);
+  return items.filter((item) => !related.has(item.href));
+}
+
+/** Empty-card primary on the no-org / setup shells. */
+export function inspectionCopilotCardPrimaryHref(orgId?: string | null): string {
+  return orgId ? withOrgHref("/workspace", orgId) : "/workspace";
+}
+
+export function inspectionSetupSteps(orgId?: string | null): InspectionCopilotSetupStep[] {
+  return dropRelatedStripDuplicates(orgId, [
+    {
+      id: "workspace",
+      label: "Choose your team",
+      detail: "Pick a team before logging readiness checks.",
+      href: inspectionCopilotCardPrimaryHref(orgId),
+    },
+    {
+      id: "batteries",
+      label: "Open Batteries",
+      detail: "Pack health stays blank until logged.",
+      href: hubHref("/team", "batteries", orgId),
+    },
+    {
+      id: "fmea",
+      label: "Open FMEA",
+      detail: "Failure modes stay blank until scored.",
+      href: hubHref("/build", "fmea", orgId),
+    },
+  ]);
 }
 
 /**
  * Soft-UI next actions for Inspection Copilot empty/setup shells.
- * Points at Batteries / FMEA / Weigh-in — never invents DEMO risk scores.
+ * Destinations already in the header related strip are omitted so each href
+ * appears once.
  */
 export function inspectionCopilotNextActions(input: {
+  orgId?: string | null;
+  shell: InspectionCopilotShellKind;
+  checkCount?: number;
+  flaggedCount?: number;
+  criticalCount?: number;
+}): InspectionCopilotNextAction[] {
+  const orgId = input.orgId ?? null;
+  if (!orgId || input.shell === "setup") {
+    return setupActionsFrom(inspectionSetupSteps(orgId));
+  }
+  return dropRelatedStripDuplicates(orgId, inspectionCopilotNextActionCandidates(input));
+}
+
+function inspectionCopilotNextActionCandidates(input: {
   orgId?: string | null;
   shell: InspectionCopilotShellKind;
   checkCount?: number;
@@ -157,65 +228,6 @@ export function inspectionCopilotNextActions(input: {
   const checkCount = input.checkCount ?? 0;
   const flaggedCount = input.flaggedCount ?? 0;
   const criticalCount = input.criticalCount ?? 0;
-
-  if (!orgId || input.shell === "setup") {
-    if (!orgId) {
-      return [
-        {
-          id: "workspace",
-          label: "Choose your team",
-          detail: "Pick a team before predicting inspection failures.",
-          href: "/workspace",
-          primary: true,
-        },
-        {
-          id: "batteries",
-          label: "Open Batteries",
-          detail: "Pack health stays blank until logged.",
-          href: hubHref("/team", "batteries", null),
-        },
-        {
-          id: "fmea",
-          label: "Open FMEA",
-          detail: "Failure modes stay blank until scored.",
-          href: hubHref("/build", "fmea", null),
-        },
-        {
-          id: "subsystems",
-          label: "Open Subsystems",
-          detail: "Subsystem names stay empty until you author them.",
-          href: withOrgHref("/subsystems", null),
-        },
-      ];
-    }
-    return [
-      {
-        id: "workspace",
-        label: "Choose your team",
-        detail: "Finish membership setup so Inspection Copilot can resolve your organization.",
-        href: withOrgHref("/workspace", orgId),
-        primary: true,
-      },
-      {
-        id: "batteries",
-        label: "Open Batteries",
-        detail: "Battery strap/secure state is part of the wiring/power checklist.",
-        href: hubHref("/team", "batteries", orgId),
-      },
-      {
-        id: "fmea",
-        label: "Open FMEA",
-        detail: "High-RPN mechanisms often need the earliest weigh-in and bumper checks.",
-        href: hubHref("/build", "fmea", orgId),
-      },
-      {
-        id: "subsystems",
-        label: "Open Subsystems",
-        detail: "Name mechanisms so itemized weigh-in rows stay grounded.",
-        href: withOrgHref("/subsystems", orgId),
-      },
-    ];
-  }
 
   if (input.shell === "error") {
     return [

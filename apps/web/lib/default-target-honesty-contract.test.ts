@@ -15,7 +15,9 @@ describe("Default yardstick labels stay honest", () => {
     );
     expect(
       web("app/inspection-copilot/inspection-copilot-client.tsx") +
-        web("app/inspection-copilot/inspection-new-check-form.tsx"),
+        web("app/inspection-copilot/inspection-new-check-form.tsx") +
+        web("app/inspection-copilot/inspection-form-sections.tsx") +
+        web("app/inspection-copilot/inspection-new-check-model.ts"),
     ).toContain(
       "default 115 until you set one",
     );

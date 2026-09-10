@@ -7,6 +7,7 @@ import {
   inspectionCopilotNextActions,
   inspectionCopilotRelatedLinks,
   inspectionCopilotShellCopy,
+  inspectionSetupSteps,
 } from "./inspection-copilot-related";
 import { expectPlainCopy } from "../ui/copy-assertions";
 
@@ -37,33 +38,30 @@ describe("inspectionCopilotRelatedLinks", () => {
 });
 
 describe("inspectionCopilotNextActions", () => {
-  it("gates on workspace when org is missing", () => {
+  it("setup without a team is one Choose your team step (Batteries / FMEA / Weigh-in live in the related strip)", () => {
     const actions = inspectionCopilotNextActions({ orgId: null, shell: "setup" });
+    expect(actions.map((a) => a.id)).toEqual(["workspace"]);
     expect(actions[0]?.href).toBe("/workspace");
     expect(actions[0]?.primary).toBe(true);
-    expect(actions.some((a) => a.id === "batteries")).toBe(true);
-    expect(actions.some((a) => a.id === "fmea")).toBe(true);
-    expect(actions.some((a) => a.id === "subsystems")).toBe(true);
   });
 
-  it("setup with org points at Workspace + Batteries / FMEA / Subsystems", () => {
+  it("setup with org derives from inspectionSetupSteps", () => {
+    const steps = inspectionSetupSteps("org-1");
     const actions = inspectionCopilotNextActions({ orgId: "org-1", shell: "setup" });
+    expect(actions.map((a) => a.id)).toEqual(steps.map((s) => s.id));
     expect(actions[0]?.id).toBe("workspace");
-    expect(actions.some((a) => a.id === "batteries")).toBe(true);
-    expect(actions.some((a) => a.id === "fmea")).toBe(true);
-    expect(actions.some((a) => a.id === "subsystems")).toBe(true);
+    expect(actions[0]?.primary).toBe(true);
+    expect(actions).toHaveLength(1);
     expect(actions.every((a) => !/\bdemo\b/i.test(`${a.label} ${a.detail}`))).toBe(true);
   });
 
-  it("points empty boards at run-check + Batteries / FMEA / Subsystems", () => {
+  it("points empty boards at run-check plus Subsystems (Batteries / FMEA live in the related strip)", () => {
     const actions = inspectionCopilotNextActions({
       orgId: "org-1",
       shell: "empty",
       checkCount: 0,
     });
-    expect(actions.map((a) => a.id)).toEqual(
-      expect.arrayContaining(["run-check", "batteries", "fmea", "subsystems"]),
-    );
+    expect(actions.map((a) => a.id)).toEqual(["run-check", "subsystems"]);
     expect(actions[0]?.href).toBe("#inspection-copilot-form");
     expect(actions.every((a) => !a.href.toLowerCase().includes("demo"))).toBe(true);
   });
@@ -77,8 +75,8 @@ describe("inspectionCopilotNextActions", () => {
       criticalCount: 1,
     });
     expect(actions[0]?.id).toBe("resolve-critical");
-    expect(actions.some((a) => a.id === "batteries")).toBe(true);
-    expect(actions.some((a) => a.id === "fmea")).toBe(true);
+    expect(actions.some((a) => a.id === "batteries")).toBe(false);
+    expect(actions.some((a) => a.id === "fmea")).toBe(false);
     expect(actions.some((a) => a.id === "subsystems")).toBe(true);
     expect(actions.every((a) => !a.href.toLowerCase().includes("demo"))).toBe(true);
   });

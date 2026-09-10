@@ -137,6 +137,9 @@ function isCopyFile(entry: string): boolean {
   if (entry === "workspace-join.ts") return true;
   if (entry === "invite-flow.ts") return true;
   if (entry === "catalog.ts") return true;
+  // Inspection form labels/hints live in the catalog so the 1k split does not
+  // hide student copy from this scan.
+  if (entry === "inspection-new-check-model.ts") return true;
   return false;
 }
 

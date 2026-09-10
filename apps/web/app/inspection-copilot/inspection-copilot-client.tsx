@@ -12,6 +12,7 @@ import {
 } from "../../lib/inspection-copilot/inspection-copilot-related";
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { InspectionNextActionsPanel, InspectionShell } from "./inspection-chrome";
 import { ChecksList } from "./inspection-checks-list";
 import { NewCheckForm } from "./inspection-new-check-form";
@@ -34,7 +35,10 @@ export default function InspectionCopilotClient() {
     const query = new URLSearchParams();
     if (urlOrg) query.set("orgId", urlOrg);
     if (seasonQuery) query.set("season", String(seasonQuery));
-    void fetch(`/api/inspection-copilot${query.toString() ? `?${query.toString()}` : ""}`)
+    void fetch(`/api/inspection-copilot${query.toString() ? `?${query.toString()}` : ""}`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+    })
       .then(async (response) => {
         const data = (await response.json()) as InspectionCopilotView | { error?: string };
         if (!response.ok || !("status" in data)) {
@@ -98,6 +102,7 @@ export default function InspectionCopilotClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, seasonYear: season ?? undefined, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as InspectionCopilotView | { error?: string };
         if (!response.ok || !("status" in data)) {

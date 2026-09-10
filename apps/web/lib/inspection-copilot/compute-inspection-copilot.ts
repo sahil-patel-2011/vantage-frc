@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
 import { meteredAI } from "@vantage/billing";
 import { predictInspectionFailures } from ".";
+import { inspectionSetupSteps } from "./inspection-copilot-related";
 import type {
   FrameBumperSpec,
   InspectionCopilotCheck,
@@ -224,32 +225,7 @@ export async function computeInspectionCopilotView(
     return {
       status: "setup_required",
       message: "Select a team to predict inspection failures before you travel.",
-      steps: [
-        {
-          id: "workspace",
-          label: "Choose your team",
-          detail: "Pick a team before logging readiness checks.",
-          href: "/workspace",
-        },
-        {
-          id: "batteries",
-          label: "Open Batteries",
-          detail: "Pack health stays blank until logged.",
-          href: "/team?tab=batteries",
-        },
-        {
-          id: "fmea",
-          label: "Open FMEA",
-          detail: "Failure modes stay blank until scored.",
-          href: "/build?tab=fmea",
-        },
-        {
-          id: "subsystems",
-          label: "Open Subsystems",
-          detail: "Subsystem names stay empty until you author them.",
-          href: "/subsystems",
-        },
-      ],
+      steps: inspectionSetupSteps(null),
       orgId: null,
       seasonYear,
     };
