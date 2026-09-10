@@ -399,7 +399,7 @@ export async function POST(request: Request) {
                 sourceIds: contextSources.map((source) => source.id),
               },
               {
-                claim: "Design directions are MODEL advice, not DEMO match statistics",
+                claim: "Design directions are advice from the uploaded release, not match statistics",
                 classification: "model_inference",
                 sourceIds: [`kickoff-strategy:${action.seasonYear}`],
               },

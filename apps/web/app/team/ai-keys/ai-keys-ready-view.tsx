@@ -401,7 +401,7 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
           </section>
 
           <section className="app-card soft-panel ai-keys-routing" aria-label="Model routing">
-            <span className="eyebrow">MODEL ROUTING</span>
+            <span className="eyebrow">ROUTING</span>
             <h2>Fixed model or Automode</h2>
             <p className="app-muted">
               Automode picks from your enabled pool by task toughness: CAD and Code → high reasoning;
@@ -501,7 +501,7 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
 
           {modelPolicy?.canManage ? (
             <section className="app-card soft-panel ai-keys-model-policy" aria-label="Model policy">
-              <span className="eyebrow">MODEL POLICY</span>
+              <span className="eyebrow">POLICY</span>
               <h2>Which models members may pick</h2>
               <p className="app-muted">
                 Selection policy for the whole team, app-wide. Separate from API spend limits —

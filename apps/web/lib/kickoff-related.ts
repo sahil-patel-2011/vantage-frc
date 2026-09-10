@@ -109,7 +109,7 @@ export function kickoffNextActions(input: {
     actions.push({
       id: "open-cad-brief",
       label: "Open CAD brief",
-      detail: "Continue the kickoff design brief in Onshape/Fusion paths — MODEL-labeled.",
+      detail: "Continue the kickoff design brief in Onshape/Fusion paths.",
       href: cadHref,
     });
   } else if (input.hasIntelligence) {

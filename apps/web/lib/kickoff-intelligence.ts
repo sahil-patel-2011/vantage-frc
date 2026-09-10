@@ -5,7 +5,7 @@ import { createHash } from "node:crypto";
 import type { Phase } from "./kickoff";
 
 export const KICKOFF_INTELLIGENCE_MODEL = "vantage-kickoff-intelligence-v1";
-export const KICKOFF_ADVICE_LABEL = "MODEL" as const;
+export const KICKOFF_ADVICE_LABEL = "Advice" as const;
 
 export type IntelligenceSourceKind = "manual" | "transcript" | "url";
 

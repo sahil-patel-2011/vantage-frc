@@ -207,7 +207,7 @@ export default function AiUsageClient({ orgId }: { orgId: string | null }) {
               </section>
 
               <section className="app-card soft-panel">
-                <span className="eyebrow">BY MODEL</span>
+                <span className="eyebrow">BY AI</span>
                 <ul className="ai-usage-list">
                   {payload.byModel.map((row) => (
                     <li key={`${row.provider}-${row.model}`}>

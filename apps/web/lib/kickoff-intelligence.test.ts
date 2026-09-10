@@ -120,7 +120,7 @@ describe("buildStrategyFromIntelligence", () => {
     });
 
     expect(strategy.adviceLabel).toBe(KICKOFF_ADVICE_LABEL);
-    expect(strategy.localText).toMatch(/MODEL/);
+    expect(strategy.localText).toMatch(/Advice/);
     expect(strategy.localText).not.toMatch(/DEMO|fabricated EPA|fake OPR/i);
     expect(strategy.historicalPatterns.some((line) => /Prior seasons/i.test(line))).toBe(true);
     expect(strategy.designPriorities.length).toBeGreaterThan(0);
@@ -128,7 +128,7 @@ describe("buildStrategyFromIntelligence", () => {
 });
 
 describe("buildCadBriefFromIntelligence", () => {
-  it("produces a CAD brief seed labeled MODEL with provenance sources", () => {
+  it("produces a CAD brief seed labeled as advice with provenance sources", () => {
     const summary = structureGameIntelligence({
       seasonYear: 2027,
       manualText: FIXTURE_MANUAL,
@@ -142,7 +142,7 @@ describe("buildCadBriefFromIntelligence", () => {
     });
 
     expect(brief.title).toMatch(/2027/);
-    expect(brief.request).toMatch(/\[MODEL\]/);
+    expect(brief.request).toMatch(/\[Advice\]/);
     expect(brief.request).toMatch(/Best design directions/i);
     expect(brief.sources[0]?.id).toBe(`kickoff-intel:${ID}`);
     expect(brief.sources.some((source) => source.classification === "researched_claim")).toBe(true);

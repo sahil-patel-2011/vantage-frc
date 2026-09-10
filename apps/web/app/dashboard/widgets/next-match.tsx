@@ -1,5 +1,6 @@
 "use client";
 
+import { nextMatchDriverLines, nextMatchScoreLine } from "../../../lib/dashboard/next-match-copy";
 import { predictionWinDisplay } from "../../../lib/strategy/prediction-display";
 import { LiveCountdown } from "./live-countdown";
 
@@ -20,7 +21,7 @@ export function NextMatchLive({ data }: { data: Record<string, unknown> }) {
   });
   const low = typeof data.confidenceLow === "number" ? data.confidenceLow : Number(data.confidenceLow);
   const high = typeof data.confidenceHigh === "number" ? data.confidenceHigh : Number(data.confidenceHigh);
-  const factors = (data.keyFactors as Array<{ name?: string; impact?: string }> | undefined)?.slice(0, 3) ?? [];
+  const drivers = nextMatchDriverLines(data);
 
   return (
     <div className={`dash-next-match${alliance ? ` alliance-${alliance}` : ""}`}>
@@ -67,21 +68,21 @@ export function NextMatchLive({ data }: { data: Record<string, unknown> }) {
       Number.isFinite(data.redPredicted) &&
       Number.isFinite(data.bluePredicted) ? (
         <p className="app-muted">
-          About {Math.round(Number(data.redPredicted))}–{Math.round(Number(data.bluePredicted))} points
-          {typeof data.errorBand === "number" && Number.isFinite(data.errorBand)
-            ? ` · typical error ±${Math.round(Number(data.errorBand))} (last measured set)`
-            : ""}
+          {nextMatchScoreLine({
+            redPredicted: Number(data.redPredicted),
+            bluePredicted: Number(data.bluePredicted),
+            errorBand: typeof data.errorBand === "number" ? data.errorBand : null,
+          })}
         </p>
       ) : null}
       {typeof data.briefing === "string" && data.briefing ? (
         <p className="dash-bumper-cue">{data.briefing}</p>
       ) : null}
-      {factors.length ? (
+      {drivers.length ? (
         <ul className="dash-checklist">
-          {factors.map((factor, index) => (
-            <li key={`${factor.name}-${index}`}>
-              <span>{factor.name ?? "Why"}</span>
-              <b>{factor.impact ?? ""}</b>
+          {drivers.map((line) => (
+            <li key={line}>
+              <span>{line}</span>
             </li>
           ))}
         </ul>

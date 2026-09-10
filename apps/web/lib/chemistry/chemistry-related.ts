@@ -198,7 +198,7 @@ export function chemistryShellCopy(kind: ChemistryShellKind): ChemistryEmptyCopy
         kind: "ready",
         title: "Alliance chemistry",
         description:
-          "MODEL fit from synced event EPA and scout reliability only. Verify with pit notes before locking picks.",
+          "Partner fit from synced event ratings and scout reliability only. Verify with pit notes before locking picks.",
       };
   }
 }
@@ -342,7 +342,7 @@ export function chemistryNextActions(input: {
     {
       id: "chemistry",
       label: "Review chemistry score",
-      detail: `MODEL fit across ${formatChemistryMetric(seatCount, true)} seat${seatCount === 1 ? "" : "s"} from synced EPA only.`,
+      detail: `Partner fit across ${formatChemistryMetric(seatCount, true)} seat${seatCount === 1 ? "" : "s"} from synced ratings only.`,
       href: hubHref("/competition", "chemistry", orgId),
       primary: true,
     },

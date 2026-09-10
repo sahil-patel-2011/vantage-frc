@@ -310,8 +310,8 @@ export function CommandReadyView({
               <div>
                 <h2>Matchup snapshot</h2>
                 <p>
-                  {snap?.prediction.modelVersion
-                    ? `MODEL ${snap.prediction.modelVersion}`
+                  {snap?.prediction.status === "live"
+                    ? "Win chance from this event's ratings"
                     : "Labeled win/loss when schedule + metrics exist"}
                 </p>
               </div>

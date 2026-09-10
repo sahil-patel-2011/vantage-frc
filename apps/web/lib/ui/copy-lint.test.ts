@@ -50,9 +50,9 @@ const RULES: readonly Rule[] = [
     why: 'tenancy jargon — say "your team\'s"',
   },
   {
-    label: "MODEL advice",
-    pattern: /\bMODEL\s+advice\b/i,
-    why: "internal routing vocabulary",
+    label: "MODEL",
+    pattern: /\bMODEL\b/,
+    why: 'internal routing vocabulary — say "advice" or name the source',
   },
   {
     label: "fixture",
@@ -141,6 +141,7 @@ function isCopyFile(entry: string): boolean {
   // hide student copy from this scan.
   if (entry === "inspection-new-check-model.ts") return true;
   if (entry === "app-shell-model.ts") return true;
+  if (entry === "next-match-copy.ts") return true;
   return false;
 }
 

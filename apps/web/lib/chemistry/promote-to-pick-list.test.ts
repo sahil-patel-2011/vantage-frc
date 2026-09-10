@@ -101,7 +101,7 @@ describe("partnerFitNotes", () => {
 
   it("stamps a MODEL line from a real score and keeps caller notes", () => {
     expect(partnerFitNotes({ fit: realFit, notes: "Captain wants this seat" })).toBe(
-      "Captain wants this seat Chemistry MODEL alliance-chemistry-v1: 72/100 partner fit (role fit 85, EPA 94.2). Not a TBA pick fact.",
+      "Captain wants this seat Chemistry 72/100 partner fit (role fit 85, EPA 94.2). Verify with pit notes before locking the pick.",
     );
   });
 });
@@ -118,7 +118,7 @@ describe("partnerFitJustification", () => {
     expect(result?.rationale).toContain("254, 1678");
     expect(result?.sources[0]?.kind).toBe("chemistry");
     expect(result?.rationale).not.toMatch(/\bDEMO\b/i);
-    expect(result?.sources[0]?.detail).toMatch(/never a TBA pick fact/i);
+    expect(result?.sources[0]?.detail).toMatch(/partner fit/i);
   });
 });
 

@@ -731,7 +731,7 @@ export default function IntelClient({ orgId }: { orgId: string }) {
                     ) : null}
                     {comparison.chemistry ? (
                       <p>
-                        <span className="app-badge setup">MODEL</span> Chemistry{" "}
+                        Chemistry{" "}
                         <strong>{comparison.chemistry.score ?? "—"}</strong>
                         {comparison.chemistry.caveat || comparison.chemistry.caveats?.[0] ? (
                           <span className="app-muted">

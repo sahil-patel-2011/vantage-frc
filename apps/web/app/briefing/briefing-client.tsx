@@ -425,8 +425,7 @@ export default function BriefingClient() {
             <span className="brief-prob-num">{winPct ?? ""}</span>
             <span className="brief-prob-label">win probability</span>
             <span className="brief-prob-range">
-              confidence {pct(view.prediction.confidenceLow)}–{pct(view.prediction.confidenceHigh)} ·{" "}
-              {view.prediction.modelVersion}
+              typical range {pct(view.prediction.confidenceLow)}–{pct(view.prediction.confidenceHigh)}
             </span>
           </div>
         ) : (

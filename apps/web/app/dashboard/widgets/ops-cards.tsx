@@ -139,7 +139,7 @@ export function renderOpsWidget({
               <div className="dash-stat-row">
                 <strong>{win.label}</strong>
                 <span>
-                  {alliance ? `${alliance} alliance` : "alliance TBD"} · {String(data.modelVersion ?? "")}
+                  {alliance ? `${alliance} alliance` : "alliance not set"}
                 </span>
               </div>
               <div className="mini-probability">

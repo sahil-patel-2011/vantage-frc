@@ -104,7 +104,6 @@ export function partnerFitNotes(input: {
 
   const score = finiteScore(input.fit?.score);
   if (score != null) {
-    const version = (input.fit?.modelVersion ?? "alliance-chemistry-v1").trim() || "alliance-chemistry-v1";
     const extras: string[] = [];
     if (input.fit?.complementarity != null && Number.isFinite(input.fit.complementarity)) {
       extras.push(`role fit ${Math.round(input.fit.complementarity)}`);
@@ -113,9 +112,9 @@ export function partnerFitNotes(input: {
       extras.push(`EPA ${input.fit.totalEpa}`);
     }
     parts.push(
-      `Chemistry MODEL ${version}: ${score}/100 partner fit${
+      `Chemistry ${score}/100 partner fit${
         extras.length ? ` (${extras.join(", ")})` : ""
-      }. Not a TBA pick fact.`,
+      }. Verify with pit notes before locking the pick.`,
     );
   }
 
@@ -131,7 +130,6 @@ export function partnerFitJustification(
 ): { rationale: string; sources: JustificationSource[] } | null {
   const score = finiteScore(fit?.score);
   if (score == null) return null;
-  const version = (fit?.modelVersion ?? "alliance-chemistry-v1").trim() || "alliance-chemistry-v1";
   const alliance = (fit?.allianceTeamKeys ?? [])
     .map((key) => key.replace(/^frc/i, ""))
     .filter(Boolean)
@@ -143,16 +141,16 @@ export function partnerFitJustification(
   if (fit?.reliabilityBlend != null && Number.isFinite(fit.reliabilityBlend)) {
     extras.push(`scout reliability ${Math.round(fit.reliabilityBlend)}%`);
   }
-  const rationale = `Alliance chemistry MODEL ${version}: ${score}/100 partner fit${
+  const rationale = `Alliance chemistry ${score}/100 partner fit${
     extras.length ? ` — ${extras.join(", ")}` : ""
-  }${alliance ? ` for ${alliance}` : ""}. Verify with pit notes before locking the pick — not a TBA fact.`;
+  }${alliance ? ` for ${alliance}` : ""}. Verify with pit notes before locking the pick.`;
   return {
     rationale,
     sources: [
       {
         kind: "chemistry",
-        label: "Alliance chemistry MODEL",
-        detail: `${version} scored ${score}/100 from synced event EPA and scout reliability — never a TBA pick fact.`,
+        label: "Alliance chemistry",
+        detail: `Partner fit ${score}/100 from synced event ratings and scout reliability.`,
       },
     ],
   };

@@ -474,7 +474,7 @@ export default function UsageClient({ orgId }: { orgId: string }) {
                   ))}
               </section>
               <section className="intel-panel">
-                <span className="eyebrow">BY MODEL · ALL TIME</span>
+                <span className="eyebrow">BY AI · ALL TIME</span>
                 {!usage.models.length && (
                   <p className="app-muted">No model usage recorded yet.</p>
                 )}

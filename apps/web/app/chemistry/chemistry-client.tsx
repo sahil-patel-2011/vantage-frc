@@ -370,8 +370,8 @@ export default function ChemistryClient(_props: { embedded?: boolean } = {}) {
         title="Alliance chemistry"
         description={
           view?.eventName
-            ? `${view.eventName} · MODEL fit from synced EPA and scout reliability.`
-            : "Score how well 2–3 robots complement each other — roles, EPA balance, scout reliability. Labeled MODEL, never a TBA pick fact."
+            ? `${view.eventName} · Partner fit from synced ratings and your scouting.`
+            : "Score how well 2–3 robots complement each other — roles, ratings balance, scout reliability."
         }
       >
         <div className="chem-heading">
@@ -478,7 +478,7 @@ export default function ChemistryClient(_props: { embedded?: boolean } = {}) {
                 </span>
                 <div>
                   <h2>Chemistry score</h2>
-                  <p>MODEL {chemistry.modelVersion}</p>
+                  <p>Partner fit from synced ratings</p>
                 </div>
               </div>
             </header>

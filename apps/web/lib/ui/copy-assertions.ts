@@ -12,6 +12,7 @@
 
 const BANNED: ReadonlyArray<readonly [RegExp, string]> = [
   [/\bDEMO\b/, "engineering shorthand for placeholder data"],
+  [/\bMODEL\b/, "internal routing vocabulary"],
   [/\bnever\s+invent(s|ed|ing)?\b/i, "a promise of honesty tells the reader nothing to do"],
   [/\bsoft[-\s]?ui\b/i, "internal design-system codename"],
   [/\borg[-\s]scoped\b/i, "tenancy jargon"],

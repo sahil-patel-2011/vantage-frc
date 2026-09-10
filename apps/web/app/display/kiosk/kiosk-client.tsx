@@ -188,7 +188,7 @@ export default function KioskClient({
           <>
             <section className="display-kiosk-panel">
               <article>
-                <span>WIN PREDICTION · MODEL</span>
+                <span>WIN PREDICTION</span>
                 <strong>
                   {predictionWinDisplay({
                     pRed: prediction.pRed,
@@ -199,8 +199,8 @@ export default function KioskClient({
                   RED
                 </strong>
                 <small>
-                  {prediction.modelVersion} · {Math.round(prediction.confidenceLow * 100)}–
-                  {Math.round(prediction.confidenceHigh * 100)}% · {prediction.matchKey}
+                  Typical range {Math.round(prediction.confidenceLow * 100)}–
+                  {Math.round(prediction.confidenceHigh * 100)}%
                 </small>
               </article>
               <article>
