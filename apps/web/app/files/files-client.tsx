@@ -33,6 +33,7 @@ import {
   listOfflineFiles,
 } from "../../lib/offline/file-bytes";
 import type { DriveFile, DriveSharedWithMe } from "../../lib/drive/types";
+import { FILES_RELATED_INCLUDE, filesRelatedLinks } from "../../lib/drive/files-related";
 import { uploadOneFile, type UploadItem } from "./upload-queue";
 import {
   RAILS,
@@ -317,6 +318,16 @@ export default function FilesClient() {
     </PageHeader>
   );
 
+  const related = (
+    <nav className="product-hub-related" aria-label="Related files tools">
+      {filesRelatedLinks(activeOrgId, { include: [...FILES_RELATED_INCLUDE] }).map((link) => (
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
+          {link.label}
+        </Button>
+      ))}
+    </nav>
+  );
+
   const rails = (
     <nav className="drive-rail" aria-label="File spaces">
       {RAILS.map((entry) => (
@@ -341,6 +352,7 @@ export default function FilesClient() {
   return (
     <main className="app-page drive-page">
       {header}
+      {related}
       <OfflineBanner feature="Files" fromCache={fromCache} cachedAt={cachedAt} />
       {activeOrgId && offlineBytes > 0 ? (
         <p className="app-muted drive-offline-usage">

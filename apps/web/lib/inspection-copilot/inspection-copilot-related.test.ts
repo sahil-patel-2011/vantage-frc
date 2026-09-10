@@ -11,14 +11,14 @@ import {
 import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("inspectionCopilotRelatedLinks", () => {
-  it("builds Batteries / FMEA / Subsystems cross-links", () => {
+  it("builds Batteries / FMEA / Weigh-in cross-links", () => {
     const links = inspectionCopilotRelatedLinks("org-1", {
       include: [...INSPECTION_COPILOT_RELATED_INCLUDE],
     });
-    expect(links.map((l) => l.id)).toEqual(["batteries", "fmea", "subsystems"]);
+    expect(links.map((l) => l.id)).toEqual(["batteries", "fmea", "weigh-in"]);
     expect(links.find((l) => l.id === "batteries")?.href).toBe("/team?tab=batteries&orgId=org-1");
     expect(links.find((l) => l.id === "fmea")?.href).toBe("/build?tab=fmea&orgId=org-1");
-    expect(links.find((l) => l.id === "subsystems")?.href).toBe("/subsystems?orgId=org-1");
+    expect(links.find((l) => l.id === "weigh-in")?.href).toBe("/build?tab=robot-weigh-in&orgId=org-1");
   });
 
   it("excludes the active surface and respects include", () => {

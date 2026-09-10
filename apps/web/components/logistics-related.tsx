@@ -8,7 +8,7 @@ import {
   type LogisticsRelatedId,
 } from "../lib/logistics/logistics-related";
 
-/** Soft-UI cross-links between Logistics and Event Day / My Day / Team calendar / Visit invites. */
+/** Soft-UI cross-links between Logistics and Event Day / My Day / Calendar / Packing / Visit invites. */
 export function LogisticsRelated({
   orgId,
   active,

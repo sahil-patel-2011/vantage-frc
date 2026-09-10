@@ -7,6 +7,7 @@ export const LOGISTICS_RELATED_LINKS = [
   { id: "command", label: "Event Day", kind: "competition" as const, tab: "command" },
   { id: "my-day", label: "My Day", kind: "competition" as const, tab: "my-day" },
   { id: "calendar", label: "Team calendar", kind: "path" as const, path: "/team/calendar?tab=trip" },
+  { id: "packing", label: "Packing", kind: "path" as const, path: "/packing" },
   { id: "visit-invites", label: "Visit invites", kind: "path" as const, path: "/visit-invites" },
 ] as const;
 
@@ -18,11 +19,12 @@ export type LogisticsRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — Event Day · My Day · Calendar · Visit invites. */
+/** Focused Soft-UI strip — Event Day · My Day · Calendar · Packing · Visit invites. */
 export const LOGISTICS_RELATED_INCLUDE: LogisticsRelatedId[] = [
   "command",
   "my-day",
   "calendar",
+  "packing",
   "visit-invites",
 ];
 

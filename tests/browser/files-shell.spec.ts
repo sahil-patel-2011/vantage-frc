@@ -18,6 +18,9 @@ test("Files hub still loads after the panel split", async ({ page }) => {
 
   await expect(page.getByRole("heading", { name: "Who can see what" })).toBeVisible();
   await expect(page.getByText("A share link works without a Vantage account.")).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Related files tools" }).getByRole("link", { name: "Playbook" })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Related files tools" }).getByRole("link", { name: "Team chat" })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Related files tools" }).getByRole("link", { name: "CAD" })).toBeVisible();
 
   if ((await spaces.count()) === 0) {
     return;

@@ -2,8 +2,9 @@
  * Product navigation — single source of truth for the app-shell drawer,
  * command palette, and breadcrumb labels.
  *
- * Drawer IA is almost flat: one hub link per pillar. Deep tools live as
- * hub tabs / More tools; Cmd+K searches the full catalog.
+ * Drawer IA: one hub row per pillar plus that hub's other workbenches (the
+ * default workbench is the hub row itself). Nested tools stay on the hub
+ * ToolStrip and Cmd+K — never dumped into All.
  *
  * Pillars: Competition · Team · Logistics · Business · Build (+ Home).
  * Media folded into Business › Outreach; AI is the persistent "Ask AI"
@@ -11,7 +12,7 @@
  * footer only.
  */
 
-import { PRODUCT_HUBS } from "./hubs";
+import { NAV_HUBS, PRODUCT_HUBS, hubPrimaryTabs } from "./hubs";
 
 export type NavItemState = "setup" | "planned";
 
@@ -88,7 +89,8 @@ export const ORG_EXEMPT_HREFS = new Set([
 ]);
 
 /**
- * Drawer IA — one link per pillar. Deep tools are hub tabs + Cmd+K.
+ * Drawer IA — one hub row per pillar. Other workbenches hang off that row via
+ * panelSubLinks; nested tools stay on the hub ToolStrip and Cmd+K.
  * Settings / Account / App manual live in the drawer footer, not here.
  */
 export const PRODUCT_NAV_GROUPS: ProductNavGroup[] = [
@@ -130,12 +132,32 @@ export const PRODUCT_NAV_GROUPS: ProductNavGroup[] = [
   },
 ];
 
-/** Standalone logistics tools — Cmd+K / breadcrumbs only (not drawer leaves). */
+/** Standalone logistics tools — All-panel sub-links, Cmd+K, and breadcrumbs. */
 export const LOGISTICS_DEEP_LINKS: ProductNavItem[] = [
   { href: "/packing", label: "Packing", icon: "grid" },
   { href: "/duties", label: "Duties", icon: "users" },
   { href: "/visit-invites", label: "Visit invites", icon: "users" },
 ];
+
+/**
+ * All-panel leaves under a pillar.
+ *
+ * Hub rows already open the default workbench (Competition → Event day).
+ * Repeating that name here printed it twice. The other workbenches stay
+ * here so All can open Scouting / Chat / CAD without a second hop through
+ * the hub TabBar. Nested tools (Forms, Alliance desk, Bugbot) stay off
+ * this list — they live on the workbench ToolStrip.
+ */
+export function panelSubLinks(group: ProductNavGroup): Array<{ href: string; label: string }> {
+  if (group.label === "Logistics") {
+    return LOGISTICS_DEEP_LINKS.map((item) => ({ href: item.href, label: item.label }));
+  }
+  const hub = NAV_HUBS.find((entry) => entry.label === group.label);
+  if (!hub) return [];
+  return hubPrimaryTabs(hub)
+    .filter((tab) => tab.id !== hub.defaultTab)
+    .map((tab) => ({ href: `${hub.href}?tab=${tab.id}`, label: tab.label }));
+}
 
 /** Quiet chrome destinations — Cmd+K / footer, never drawer accordion dumps. */
 export const SETTINGS_DEEP_LINKS: ProductNavItem[] = [

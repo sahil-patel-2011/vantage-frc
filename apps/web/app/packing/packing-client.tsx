@@ -3,7 +3,6 @@ import { Button } from "../../components/ui";
 
 import { useCallback, useEffect, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { withOrgHref } from "../../lib/nav/product-nav";
 import {
   QUEUED_ON_DEVICE,
   getFeatureSnapshot,
@@ -13,6 +12,7 @@ import {
   syncOutbox,
 } from "../../lib/offline";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import { PACKING_RELATED_INCLUDE, packingRelatedLinks } from "../../lib/packing-related";
 import {
   applyPackingLocalWrite,
   groupPacking,
@@ -23,6 +23,20 @@ import {
 } from "../../lib/packing";
 
 type ActionBody = Record<string, unknown> & { action: string; orgId: string };
+
+function PackingRelatedStrip({ orgId }: { orgId?: string | null }) {
+  const links = packingRelatedLinks(orgId, { include: [...PACKING_RELATED_INCLUDE] });
+  if (!links.length) return null;
+  return (
+    <nav className="product-hub-related" aria-label="Related packing tools">
+      {links.map((link) => (
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
+          {link.label}
+        </Button>
+      ))}
+    </nav>
+  );
+}
 
 function fmtWhen(iso: string | null): string {
   if (!iso) return "";
@@ -396,6 +410,7 @@ export default function PackingClient() {
           <div>
             <span className="breadcrumbs">Competition / Packing</span>
             <h1>Packing Lists</h1>
+            <PackingRelatedStrip />
           </div>
         </header>
         <div className="app-card pack-empty">
@@ -448,6 +463,7 @@ export default function PackingClient() {
             <span className="breadcrumbs">Competition / Packing</span>
             <h1>Packing Lists</h1>
             <p>Competition load-out checklists so nothing gets left in the shop.</p>
+            <PackingRelatedStrip orgId={view.context.orgId} />
           </div>
         </header>
         <OfflineBanner feature="Packing" fromCache={fromCache} cachedAt={cachedAt} />
@@ -485,17 +501,9 @@ export default function PackingClient() {
             {view.context.teamNumber ? ` (Team ${view.context.teamNumber})` : ""} — seeded with the standard FRC
             competition kit. Teammates request extras; the packing lead owns the master list.
           </p>
-          {/* Packing sits between the shelf it draws from and the trip it loads
-              into. Both were a hamburger away from a page you work standing up
-              in the shop. */}
-          <nav className="product-hub-related" aria-label="Related packing tools">
-            <Button as="a" variant="secondary" href={withOrgHref("/spares", view.context.orgId)}>
-              Consumables
-            </Button>
-            <Button as="a" variant="secondary" href={withOrgHref("/logistics", view.context.orgId)}>
-              Logistics
-            </Button>
-          </nav>
+          {/* Packing sits between the shelf it draws from, the trip it loads
+              into, and the dated pre-event checklist. */}
+          <PackingRelatedStrip orgId={view.context.orgId} />
         </div>
         <div className="pack-header-actions">
           <input

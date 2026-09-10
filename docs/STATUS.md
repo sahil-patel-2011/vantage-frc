@@ -110,7 +110,9 @@ See `docs/COMPETITIVE_NOTES.md`. That document is the brief for Tasks 2–4.
 | `/team/calendar` | Hub shell was 2335 lines; event editors, duties/trip/subteams, ICS, GitHub hint, and timed grid now live in sibling modules. Calendar tabs stay custom buttons, not a TabBar. | this commit |
 | `/scouting` | Hub shell was 1882 lines; chrome, field widgets, quarantine, media downscale, and the ready workbench now live in sibling modules. Match/Pit stay a ToolStrip, not a nested TabBar. | this commit |
 | `/team` Chat | Hub shell was 1455 lines; labels/helpers and the painted workbench now live in sibling modules. Channels stay sidebar buttons, not a TabBar. | this commit |
-| `/code` | Hub shell was 1838 lines; types, chrome, coach workbench, and Bugbot now live in sibling modules (no file over 1k). Bugbot billing stays a `role="group"`, not a nested TabBar. | this commit |
+| `/files` | Standalone Drive had no next step into Playbook / Chat / CAD | this commit |
+| All panel | Hub rows hid Scouting / Chat / CAD behind a second TabBar hop; other workbenches now hang under the hub row (default tab stays the hub link) | this commit |
+| `/packing` `/logistics` `/inspection-copilot` | Packing now hands off to Event readiness; Logistics includes Packing; Inspection Copilot strip is Batteries / FMEA / Weigh-in | this commit |
 
 ---
 

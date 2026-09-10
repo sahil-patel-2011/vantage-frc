@@ -5,6 +5,7 @@ import { withOrgHref } from "../nav/product-nav";
 export const INSPECTION_COPILOT_RELATED_LINKS = [
   { id: "batteries", label: "Batteries", kind: "team" as const, tab: "batteries" },
   { id: "fmea", label: "FMEA", kind: "build" as const, tab: "fmea" },
+  { id: "weigh-in", label: "Weigh-in", kind: "build" as const, tab: "robot-weigh-in" },
   { id: "subsystems", label: "Subsystems", kind: "path" as const, path: "/subsystems" },
   { id: "inspection", label: "Inspection", kind: "path" as const, path: "/inspection" },
   { id: "match-checklist", label: "Match checklist", kind: "path" as const, path: "/match-checklist" },
@@ -18,15 +19,15 @@ export type InspectionCopilotRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — Batteries / FMEA / Subsystems first. */
+/** Focused Soft-UI strip — Batteries / FMEA / Weigh-in. */
 export const INSPECTION_COPILOT_RELATED_INCLUDE: InspectionCopilotRelatedId[] = [
   "batteries",
   "fmea",
-  "subsystems",
+  "weigh-in",
 ];
 
 /**
- * Soft-UI cross-links from Inspection Copilot → Batteries / FMEA / Subsystems.
+ * Soft-UI cross-links from Inspection Copilot → Batteries / FMEA / Weigh-in.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function inspectionCopilotRelatedLinks(

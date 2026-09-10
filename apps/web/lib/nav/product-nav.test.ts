@@ -8,6 +8,7 @@ import {
   PILLAR_SHEET_LINKS,
   PRIMARY_TABS,
   PRODUCT_NAV_GROUPS,
+  panelSubLinks,
   withOrgHref,
   withSelectedOrgHref,
 } from "./product-nav";
@@ -72,6 +73,40 @@ describe("product-nav", () => {
       "/competition",
     );
     expect(PRODUCT_NAV_GROUPS.find((g) => g.label === "Team")?.items[0]?.href).toBe("/team");
+  });
+
+  it("lists other workbenches under All so the default tab is not printed twice", () => {
+    const byLabel = Object.fromEntries(
+      PRODUCT_NAV_GROUPS.map((group) => [group.label, panelSubLinks(group)]),
+    );
+    expect(byLabel.Home).toEqual([]);
+    expect(byLabel.Competition?.map((entry) => entry.label)).toEqual(["Scouting", "Strategy", "Pit"]);
+    expect(byLabel.Competition?.map((entry) => entry.href)).toEqual([
+      "/competition?tab=scouting",
+      "/competition?tab=strategy",
+      "/competition?tab=match-checklist",
+    ]);
+    expect(byLabel.Team?.map((entry) => entry.label)).toEqual(["Chat", "People", "Work", "Playbook"]);
+    expect(byLabel.Business?.map((entry) => entry.label)).toEqual([
+      "Money",
+      "Sponsors",
+      "Grants",
+      "Outreach",
+    ]);
+    expect(byLabel.Build?.map((entry) => entry.label)).toEqual(["CAD", "Code", "Robot"]);
+    expect(byLabel.Logistics?.map((entry) => entry.label)).toEqual([
+      "Packing",
+      "Duties",
+      "Visit invites",
+    ]);
+    for (const group of PRODUCT_NAV_GROUPS) {
+      const sub = panelSubLinks(group);
+      expect(sub.length).toBeLessThanOrEqual(5);
+      expect(sub.some((entry) => entry.label === group.label)).toBe(false);
+      expect(sub.some((entry) => entry.href === "/competition?tab=forms")).toBe(false);
+      expect(sub.some((entry) => entry.href === "/alliance-selection-desk")).toBe(false);
+      expect(sub.some((entry) => entry.href === "/bugbot")).toBe(false);
+    }
   });
 
   it("puts deep tools in Cmd+K catalog, not the drawer", () => {

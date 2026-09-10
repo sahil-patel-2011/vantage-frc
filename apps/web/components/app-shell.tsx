@@ -5,17 +5,15 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ShellOutboxStatus } from "./shell-outbox-status";
 import {
   ISLAND_TAB_CATALOG,
-  LOGISTICS_DEEP_LINKS,
   ORG_EXEMPT_HREFS,
   PRODUCT_NAV_GROUPS,
   breadcrumbForPath,
   findNavMatch,
   navTitleForPath,
+  panelSubLinks,
   withOrgHref,
   withSelectedOrgHref,
-  type ProductNavGroup,
 } from "../lib/nav/product-nav";
-import { navHubByLabel } from "../lib/nav/hubs";
 import { defaultIslandHrefs, resolveIslandTabs } from "../lib/nav/island-preferences";
 import {
   pathAllowedByHubAccess,
@@ -69,23 +67,6 @@ type Me = {
 };
 
 const groups = PRODUCT_NAV_GROUPS;
-
-/**
- * Sub-links the panel has to carry itself.
- *
- * Every hub with a `ProductHubDef` renders its own section tab bar on the page,
- * so repeating those sections here put the same four labels on screen twice
- * (drawer "Event day / Scouting / Strategy / Pit" beside the page's own tab bar
- * saying the same thing). The panel now defers to the page for those.
- *
- * Logistics is the one pillar with no in-page tab bar, so Packing / Duties /
- * Visit invites would have no browsable home at all — they stay here.
- */
-function panelSubLinks(group: ProductNavGroup): Array<{ href: string; label: string }> {
-  if (navHubByLabel(group.label)) return [];
-  if (group.label !== "Logistics") return [];
-  return LOGISTICS_DEEP_LINKS.map((item) => ({ href: item.href, label: item.label }));
-}
 
 function formatMembershipLabel(row: MembershipOption): string {
   const team =
@@ -1193,8 +1174,8 @@ export default function AppShell() {
               const toneStyle = { ["--tone" as string]: group.tone };
               return (
                 <div key={group.label} className="soft-nav-group" style={toneStyle}>
-                  {/* One row, one destination. The hub's own tab bar lists its
-                      sections once the member is there. */}
+                  {/* Hub row opens the default workbench. Sub-links are the other
+                      workbenches so All can land on Scouting without a second hop. */}
                   <a
                     className={`soft-drawer-hub${isActive ? " is-active" : ""}`}
                     aria-current={isActive ? "page" : undefined}
@@ -1212,7 +1193,9 @@ export default function AppShell() {
                         <a
                           key={entry.href}
                           href={withOrgHref(entry.href, orgId)}
-                          aria-current={pathname === (entry.href.split("?")[0] ?? entry.href) ? "page" : undefined}
+                          aria-current={
+                            islandTabIsActive(pathname, pathSearch, entry.href) ? "page" : undefined
+                          }
                           onClick={closeNav}
                         >
                           {entry.label}

@@ -13,12 +13,13 @@ import {
 describe("logistics-related Soft-UI helpers", () => {
   it("builds Event Day / My Day / calendar / visit-invites cross-links", () => {
     const links = logisticsRelatedLinks("org-1", { include: [...LOGISTICS_RELATED_INCLUDE] });
-    expect(links.map((l) => l.id)).toEqual(["command", "my-day", "calendar", "visit-invites"]);
+    expect(links.map((l) => l.id)).toEqual(["command", "my-day", "calendar", "packing", "visit-invites"]);
     expect(links.find((l) => l.id === "command")?.href).toBe("/competition?tab=command&orgId=org-1");
     expect(links.find((l) => l.id === "my-day")?.href).toBe("/competition?tab=my-day&orgId=org-1");
     expect(links.find((l) => l.id === "calendar")?.href).toContain("/team/calendar");
     expect(links.find((l) => l.id === "calendar")?.href).toContain("tab=trip");
     expect(links.find((l) => l.id === "calendar")?.href).toContain("orgId=org-1");
+    expect(links.find((l) => l.id === "packing")?.href).toBe("/packing?orgId=org-1");
     expect(links.find((l) => l.id === "visit-invites")?.href).toBe("/visit-invites?orgId=org-1");
   });
 

@@ -15,6 +15,20 @@ async function bodyLinks(page: Page): Promise<string[]> {
   );
 }
 
+function hrefMatchesTarget(href: string, target: string): boolean {
+  const [hrefPath, hrefQuery] = href.split("?");
+  const [targetPath, targetQuery] = target.split("?");
+  if (hrefPath !== targetPath) return false;
+  if (!targetQuery) return true;
+  const want = new URLSearchParams(targetQuery);
+  const have = new URLSearchParams(hrefQuery ?? "");
+  for (const [key, value] of want.entries()) {
+    if (key === "orgId") continue;
+    if (have.get(key) !== value) return false;
+  }
+  return true;
+}
+
 test.describe("one control per destination", () => {
   /**
    * `/logistics` rendered LogisticsRelated twice on the same screen — once in the
@@ -25,7 +39,7 @@ test.describe("one control per destination", () => {
     await page.goto("/logistics");
     await expect(page.getByRole("heading", { level: 1, name: "Logistics" })).toBeVisible();
     const main = page.locator("main");
-    for (const label of ["Event Day", "My Day", "Team calendar", "Visit invites"]) {
+    for (const label of ["Event Day", "My Day", "Team calendar", "Visit invites", "Packing"]) {
       await expect(main.getByRole("link", { name: label, exact: true })).toHaveCount(1);
     }
     const links = await bodyLinks(page);
@@ -61,6 +75,8 @@ test.describe("workflow handoffs", () => {
   const HANDOFFS = [
     { path: "/spares", heading: /Consumables/i, links: ["/orders", "/packing"] },
     { path: "/incidents", heading: /Safety Incident Log/i, links: ["/safety", "/build?tab=fmea"] },
+    { path: "/packing", heading: /Packing Lists/i, links: ["/spares", "/logistics", "/event-readiness"] },
+    { path: "/files", heading: /^Files$/, links: ["/team?tab=knowledge", "/team?tab=messages", "/build?tab=cad"] },
   ] as const;
 
   for (const handoff of HANDOFFS) {
@@ -70,15 +86,38 @@ test.describe("workflow handoffs", () => {
       const links = await bodyLinks(page);
       for (const target of handoff.links) {
         expect(
-          links.some((href) => href.split("?")[0] === target.split("?")[0]),
+          links.some((href) => hrefMatchesTarget(href, target)),
           `${handoff.path} should link to ${target}; body links were ${links.join(" ")}`,
         ).toBe(true);
       }
     });
   }
 
+  test("inspection copilot hands off to weigh-in", async ({ page }) => {
+    await page.goto("/inspection-copilot");
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Inspection-Readiness Copilot" }),
+    ).toBeVisible();
+    const links = await bodyLinks(page);
+    expect(
+      links.some((href) => hrefMatchesTarget(href, "/build?tab=robot-weigh-in")),
+      `inspection-copilot should link to weigh-in; body links were ${links.join(" ")}`,
+    ).toBe(true);
+  });
+
   test("every workflow handoff target resolves", async ({ page, request }) => {
-    const targets = ["/orders", "/packing", "/safety", "/build", "/robot-weigh-in", "/inspection-copilot", "/logistics", "/spares"];
+    const targets = [
+      "/orders",
+      "/packing",
+      "/safety",
+      "/build",
+      "/robot-weigh-in",
+      "/inspection-copilot",
+      "/logistics",
+      "/spares",
+      "/event-readiness",
+      "/files",
+    ];
     for (const target of targets) {
       const response = await request.get(target);
       expect(response.status(), `${target} status`).toBeLessThan(400);

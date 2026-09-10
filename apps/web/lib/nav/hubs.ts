@@ -454,9 +454,9 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
 ];
 
 /**
- * The primary workspaces: what the island, the All panel and the marketing
- * page list. Four plus Home is the whole top level; everything else is a tool
- * inside one of them.
+ * The primary workspaces: what the island, the All panel hub rows and the
+ * marketing page list. Four plus Home is the whole top level; All hangs the
+ * other workbenches under each hub row. Nested tools stay inside a workbench.
  */
 export const NAV_HUBS: ProductHubDef[] = PRODUCT_HUBS.filter((hub) => !hub.hidden);
 
