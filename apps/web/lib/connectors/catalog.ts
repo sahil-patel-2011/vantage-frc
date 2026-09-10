@@ -35,7 +35,8 @@ export type ConnectorId =
   | "email"
   | "stripe"
   | "storage-node"
-  | "fusion-relay";
+  | "fusion-relay"
+  | "free-relay";
 
 /**
  * Who owns the link.
@@ -252,6 +253,22 @@ export const CONNECTORS: readonly ConnectorDefinition[] = [
     providerConsole: "Install the Vantage Fusion add-in on the laptop, then pair it from CAD Connections",
     permissions: ["A pairing code approved by an owner or admin"],
     managePath: "/cad/connections",
+    hasConnectAction: false,
+    hasDisconnectAction: false,
+  },
+  {
+    id: "free-relay",
+    label: "Free relay (Pi)",
+    powers: "Ask AI, Bugbot, assembly manuals and video analysis on the team's Raspberry Pi instead of a paid key.",
+    scope: "team",
+    requiredEnv: [],
+    optionalEnv: ["FREE_RELAY_BASE_URL", "FREE_RELAY_API_KEY", "FREE_RELAY_MODEL"],
+    callbackPath: "/api/relay/pair/poll",
+    callbackLabel: "Poll URL the Pi reads while pairing",
+    providerConsole:
+      "Run the Vantage relay worker on the Pi (scripts/pi/install-free-relay.sh). It prints a pairing code. Do not paste a Freebuff website cookie — that is not allowed.",
+    permissions: ["A pairing code approved by an owner or admin", "A DeepSeek endpoint the team owns"],
+    managePath: "/team/relays",
     hasConnectAction: false,
     hasDisconnectAction: false,
   },

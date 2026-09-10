@@ -53,6 +53,13 @@ const PUBLIC_PREFIXES = [
   // Desktop shell browser-link sign-in: challenge start + poll + one-time code
   // exchange (no session cookie; approval itself stays session-gated).
   "/api/desktop/link",
+  // Unsigned desktop updater: version + download URLs. No secrets, no session.
+  "/api/desktop/release",
+  // Pi relay pairing: the worker prints a code and polls; approval stays session-gated.
+  "/api/relay/pair/start",
+  "/api/relay/pair/poll",
+  "/api/storage-node/pair/start",
+  "/api/storage-node/pair/poll",
   // CAD desktop CLI: pairing codes + device-token relay (no session cookie).
   "/api/cad/pair/start",
   "/api/cad/pair/poll",

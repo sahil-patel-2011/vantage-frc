@@ -3,6 +3,7 @@ import type { PoolClient } from "@neondatabase/serverless";
 import { createFreeRelayChatAdapter, type FreeRelayJobKind } from "./adapter";
 import { sweepAssemblyManualRuns, type AssemblyManualSweep } from "./assembly-manual";
 import { runMemoryDreamJob } from "./memory-dream";
+import { sweepVideoAnalysisJobs, type VideoJobSweep } from "./video-jobs";
 
 export type FreeRelaySweepResult = {
   scheduled: number;
@@ -17,6 +18,7 @@ export type FreeRelaySweepResult = {
    * reporting an empty queue.
    */
   assemblyManual?: AssemblyManualSweep;
+  videoAnalysis?: VideoJobSweep;
 };
 
 /**
@@ -179,6 +181,7 @@ export async function runFreeRelaySweep(input?: {
   // deterministic step sentences and still produces the book — so it is swept
   // before the free-relay AI gate below, not after it.
   let assemblyManual: AssemblyManualSweep | undefined;
+  let videoAnalysis: VideoJobSweep | undefined;
   if (input?.advanceAssemblyManuals ?? true) {
     const pool = createSqlPool(connectionString);
     const client = await pool.connect();
@@ -186,6 +189,10 @@ export async function runFreeRelaySweep(input?: {
       assemblyManual = await sweepAssemblyManualRuns(client, {
         leaseOwner: freeRelayLeaseOwner(),
         ...(input?.assemblyManualSliceMs !== undefined ? { sliceMs: input.assemblyManualSliceMs } : {}),
+      });
+      videoAnalysis = await sweepVideoAnalysisJobs(client, {
+        leaseOwner: freeRelayLeaseOwner(),
+        adapter: null,
       });
     } finally {
       client.release();
@@ -203,6 +210,7 @@ export async function runFreeRelaySweep(input?: {
       skipped: true,
       reason: "free_relay_unset",
       ...(assemblyManual ? { assemblyManual } : {}),
+      ...(videoAnalysis ? { videoAnalysis } : {}),
     };
   }
 
@@ -247,5 +255,6 @@ export async function runFreeRelaySweep(input?: {
     failed,
     skipped: false,
     ...(assemblyManual ? { assemblyManual } : {}),
+    ...(videoAnalysis ? { videoAnalysis } : {}),
   };
 }

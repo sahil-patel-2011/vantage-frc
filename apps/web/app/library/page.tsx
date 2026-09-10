@@ -1,9 +1,10 @@
-import LibraryClient from "./library-client";
+import { redirect } from "next/navigation";
 
 export const metadata = {
-  title: "Library",
+  title: "Files",
 };
 
+/** Team Library is Drive. Old bookmarks land on /files. */
 export default function LibraryPage() {
-  return <LibraryClient />;
+  redirect("/files");
 }

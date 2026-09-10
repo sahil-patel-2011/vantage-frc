@@ -82,6 +82,15 @@ const KEYWORDS: Record<string, string[]> = {
   "competition:match-notes-timeline": ["notes", "timeline", "timestamps", "match log"],
   "competition:match-delta-watcher": ["delta", "changes", "what changed", "diff"],
   "competition:match-video-index": ["video", "film", "footage", "rewatch", "clips"],
+  "competition:video-analysis": [
+    "analyze video",
+    "video analysis",
+    "match video",
+    "pit camera",
+    "youtube",
+    "timeline",
+    "from video",
+  ],
   "competition:epa-trend-alerts": ["epa", "opr", "trends", "alerts", "statbotics", "rating"],
   "competition:overnight-intel": ["overnight", "intel", "research", "prep", "tomorrow"],
   "competition:district-advancement": ["district", "advancement", "points", "qualify", "states"],
@@ -130,6 +139,7 @@ const KEYWORDS: Record<string, string[]> = {
   // Nobody searches for "Vantage Drive". They search for the thing they are
   // trying to find, or for the product they are trying to leave.
   "team:files": [
+    "library", "files", "marketplace", "manuals", "step", "dxf", "folders", "resources",
     "files", "drive", "file", "folder", "folders", "upload", "uploads", "storage",
     "google drive", "dropbox", "onedrive", "share a file", "share file", "share link",
     "attachment", "attachments", "documents", "pdf", "spreadsheet", "video", "videos",
@@ -350,7 +360,7 @@ const KEYWORDS: Record<string, string[]> = {
   "business:reimbursements": ["reimburse", "reimbursement", "pay me back", "receipt", "expense claim", "i paid for"],
   "team:my-kit": ["my kit", "my stuff", "what do i need", "my tasks", "my assignments", "personal"],
   "team:team-storage": ["storage node", "raspberry pi", "self host", "storage", "disk", "pi"],
-  "team:library": ["library", "files", "marketplace", "manuals", "step", "dxf", "folders", "resources"],
+  "team:team-relays": ["relay", "raspberry pi", "freebuff", "deepseek", "ask ai pi", "video pi", "pair pi"],
   "ai:ai-bridge": ["subscription bridge", "claude code", "codex", "chatgpt", "subscription", "bridge", "free ai"],
   "build:agent-config": ["agent config", "agent rules", "claude.md", "mcp", "subagent", "team rules", "coding agent"],
   "media:media-library": ["media library", "photos", "videos", "album", "gallery", "pictures", "upload photo"],
@@ -384,7 +394,7 @@ const STANDALONE: CommandEntry[] = [
   { id: "security", label: "Security", context: "Settings", href: "/security", kind: "destination", keywords: ["security", "password", "2fa", "mfa", "sessions"] },
   // Nobody types "connector catalog". They type the provider's name, or the
   // thing that stopped working ("emails not sending", "no match data").
-  { id: "connectors", label: "Connectors", context: "Settings", href: "/connectors", kind: "destination", keywords: ["connector", "connectors", "integration", "integrations", "connect", "github", "the blue alliance", "tba", "onshape", "discord", "slack", "stripe", "resend", "email delivery", "google sign in", "storage node", "fusion relay", "api key", "oauth", "callback url", "redirect uri", "webhook", "not connected", "setup required", "token expired", "emails not sending", "no match data"], featured: true },
+  { id: "connectors", label: "Connectors", context: "Settings", href: "/connectors", kind: "destination", keywords: ["connector", "connectors", "integration", "integrations", "connect", "github", "the blue alliance", "tba", "onshape", "discord", "slack", "stripe", "resend", "email delivery", "google sign in", "storage node", "fusion relay", "free relay", "raspberry pi", "api key", "oauth", "callback url", "redirect uri", "webhook", "not connected", "setup required", "token expired", "emails not sending", "no match data"], featured: true },
   { id: "team-admin", label: "Team admin", context: "Settings", href: "/team/admin", kind: "destination", keywords: ["admin", "invite", "members", "roles", "permissions", "add someone"] },
   { id: "exports", label: "Export data", context: "Settings", href: "/exports", kind: "destination", keywords: ["export", "download", "csv", "takeout", "backup"] },
   { id: "help", label: "Help centre", context: "Support", href: "/help", kind: "destination", keywords: ["help", "how do i", "support", "docs", "manual", "articles", "tutorial", "faq"] },

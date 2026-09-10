@@ -666,10 +666,10 @@ export async function loadVirtualFolders(
   const libraryTotal = Number(library.rows[0]?.total ?? 0);
   folders.push({
     id: "team-library",
-    name: "Team Library (links & older uploads)",
+    name: "Older Team Library",
     description:
-      "The shared shelf from before Files existed: links and earlier uploads, with their own sharing. New files belong in Team files above.",
-    href: "/library",
+      "Links and earlier uploads from before Files. Team-wide items are also copied into the From Team Library folder. Restricted items stay here until an owner re-shares them.",
+    href: "/files",
     itemCount: libraryTotal,
     items: library.rows.map((row) => ({
       id: row.id,
@@ -677,7 +677,7 @@ export async function loadVirtualFolders(
       byteSize: Number(row.byteSize ?? 0),
       contentType: row.contentType ?? (row.kind === "link" ? "text/uri-list" : "application/octet-stream"),
       createdAt: row.createdAt,
-      href: "/library",
+      href: "/files",
     })),
   });
 

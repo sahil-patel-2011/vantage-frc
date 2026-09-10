@@ -203,6 +203,26 @@ export async function loadConnectorProofs(
     };
   }
 
+  const freeRelay = await safeRows<{ name: string; lastHeartbeatAt: string | null }>(
+    client,
+    `SELECT name, last_heartbeat_at::text AS "lastHeartbeatAt"
+     FROM relay_nodes
+     WHERE org_id=$1::uuid AND revoked_at IS NULL
+     ORDER BY last_heartbeat_at DESC NULLS LAST
+     LIMIT 1`,
+    [orgId],
+  );
+  const freeRelayRow = freeRelay[0];
+  if (freeRelayRow) {
+    proofs["free-relay"] = {
+      linked: true,
+      account: freeRelayRow.name,
+      note: freeRelayRow.lastHeartbeatAt
+        ? `Paired and last heard from at ${freeRelayRow.lastHeartbeatAt}.`
+        : "Paired, but it has never sent a heartbeat — start vantage-relay@chat on the Pi.",
+    };
+  }
+
   return proofs;
 }
 

@@ -12,17 +12,17 @@ import {
  * then platform OPENROUTER_API_KEY free pool.
  */
 export function createFreeRelayChatAdapter(capability?: string): ChatAdapter {
-  const groq = tryCreateGroqFreeAdapter({ capability });
-  if (groq) return groq;
-
   const freeRelay = tryCreateFreeRelayAdapter({ capability });
   if (freeRelay) return freeRelay;
+
+  const groq = tryCreateGroqFreeAdapter({ capability });
+  if (groq) return groq;
 
   const openrouter = tryCreateOpenRouterFreeAdapter({ capability });
   if (openrouter) return openrouter;
 
   throw new Error(
-    "Free relay is not configured. Set FREE_RELAY_BASE_URL (Pi Freebuff proxy) or OPENROUTER_API_KEY.",
+    "Free relay is not configured. Set FREE_RELAY_BASE_URL (Pi DeepSeek endpoint) or a team/hosted key.",
   );
 }
 
@@ -45,6 +45,8 @@ export const FREE_RELAY_FEATURES = new Set([
   "overnight_intel",
   "bugbot_scan",
   "bugbot",
+  "video_analysis",
+  "assembly_manual",
 ]);
 
 export function isFreeRelayFeature(feature: string | null | undefined): boolean {

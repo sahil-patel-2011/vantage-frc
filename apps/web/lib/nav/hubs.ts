@@ -109,6 +109,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         { id: "match-notes-timeline", label: "Match notes", legacyHref: "/match-notes-timeline" },
         { id: "match-delta-watcher", label: "Match delta", legacyHref: "/match-delta-watcher" },
         { id: "match-video-index", label: "Match video", legacyHref: "/match-video-index" },
+        { id: "video-analysis", label: "Analyze video", legacyHref: "/video-analysis" },
         { id: "epa-trend-alerts", label: "EPA alerts", legacyHref: "/epa-trend-alerts" },
         { id: "overnight-intel", label: "Overnight intel", legacyHref: "/overnight-intel" },
         { id: "district-advancement", label: "Districts", legacyHref: "/district-advancement" },
@@ -222,10 +223,8 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         // Google Drive — a tool nobody can click to might as well not exist.
         { id: "files", label: "Files", legacyHref: "/files", featured: true },
         { id: "migrate", label: "Bring your season", legacyHref: "/migrate", featured: true },
-        // The team's shared shelf: any file (STEP/DXF, PDFs, manuals), nestable
-        // folders, and external links — with team-wide vs restricted sharing.
-        { id: "library", label: "Library", legacyHref: "/library", featured: true },
         { id: "team-storage", label: "Storage node", legacyHref: "/team/storage" },
+        { id: "team-relays", label: "AI relays", legacyHref: "/team/relays" },
         // Who may write the playbook. It belongs beside the pages it governs,
         // not in a settings corner — the owner grants the role from here.
         { id: "doc-roles", label: "Document roles", legacyHref: "/doc-roles" },

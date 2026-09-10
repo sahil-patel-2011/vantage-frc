@@ -34,3 +34,23 @@ export type {
   AssemblyManualSweep,
   AssemblyManualSweepOptions,
 } from "./assembly-manual";
+export {
+  analyzeClip,
+  fakeVisionAdapter,
+  formatVideoCitation,
+  minutesBehindLive,
+  sampleFrames,
+  stitchObservations,
+} from "./video-analysis";
+export {
+  claimVideoAnalysisJobs,
+  runVideoAnalysisJob,
+  sweepVideoAnalysisJobs,
+} from "./video-jobs";
+export type { VideoJobSweep } from "./video-jobs";
+export type {
+  VideoAnalysisRecord,
+  VideoObservation,
+  VideoSourceKind,
+  VisionAdapter,
+} from "./video-analysis";

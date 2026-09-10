@@ -56,7 +56,8 @@ export const LEGACY_HUB_REDIRECTS: LegacyRedirect[] = [
   { source: "/team/ai-hub", destination: "/ai?tab=chat" },
   { source: "/travel", destination: "/logistics" },
   { source: "/travel/:path*", destination: "/logistics" },
-  { source: "/help", destination: "/docs" },
+  { source: "/library", destination: "/files" },
+  { source: "/library/:path*", destination: "/files" },
   { source: "/help/:slug", destination: "/docs/:slug" },
   { source: "/pit-tv", destination: "/display/pit" },
   // Match Copilot's pre-match half was consolidated into the one Pre-Match

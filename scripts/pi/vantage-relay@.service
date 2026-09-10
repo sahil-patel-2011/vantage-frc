@@ -1,0 +1,20 @@
+[Unit]
+Description=Vantage free-relay (%i)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=vantage
+WorkingDirectory=/opt/vantage
+# Role is the instance name: chat | agent | video
+Environment=VANTAGE_RELAY_ROLE=%i
+EnvironmentFile=-/etc/vantage/relay.env
+ExecStart=/usr/bin/npm run free-relay:daemon --workspace=@vantage/free-relay
+Restart=on-failure
+RestartSec=5
+# Several instances per Pi are expected (chat-1, chat-2, … via distinct names).
+Environment=VANTAGE_RELAY_INSTANCE=%i
+
+[Install]
+WantedBy=multi-user.target

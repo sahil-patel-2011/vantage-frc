@@ -38,6 +38,7 @@ describe("connector catalog shape", () => {
       "google",
       "onshape",
       "fusion-relay",
+      "free-relay",
     ]) {
       expect(ids, `${id} missing from the catalog`).toContain(id);
     }
