@@ -5,7 +5,6 @@ import { pickHomeBoard } from "../../../lib/dashboard/boards";
 import {
   canWriteOrgDashboard,
   catalogEntry,
-  DEFAULT_DASHBOARD_LAYOUT,
   defaultDashboardLayoutForAudience,
   filterLayoutForRole,
   isDashboardWidgetType,
@@ -334,7 +333,9 @@ export async function POST(request: Request) {
         }
 
         const validated = validateDashboardLayout(
-          board.layout?.length ? board.layout : DEFAULT_DASHBOARD_LAYOUT,
+          board.layout?.length
+            ? board.layout
+            : await defaultLayoutForMember(client, session.user.id, role),
           role,
         );
         if (!validated.ok) throw new Error(validated.error);
@@ -403,7 +404,9 @@ export async function POST(request: Request) {
         }
 
         const layout = filterLayoutForRole(
-          ensureOnboardingChecklist(board.layout?.length ? board.layout : DEFAULT_DASHBOARD_LAYOUT),
+          board.layout?.length
+            ? ensureOnboardingChecklist(board.layout)
+            : await defaultLayoutForMember(client, session.user.id, role),
           role,
         );
         return {

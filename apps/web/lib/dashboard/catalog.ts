@@ -748,6 +748,17 @@ export function defaultDashboardLayoutForAudience(
   return layout.map((item) => ({ ...item }));
 }
 
+/**
+ * Empty stored layout → student/mentor Home. Unknown audience is a student.
+ * The competition-focus board stays `DEFAULT_DASHBOARD_LAYOUT` / focus=competition.
+ */
+export function layoutOrAudienceDefault(
+  layout: DashboardWidgetLayout[] | null | undefined,
+  audience: HomeAudienceKind | null | undefined,
+): DashboardWidgetLayout[] {
+  return layout?.length ? layout : defaultDashboardLayoutForAudience(audience);
+}
+
 export const SECONDARY_WIDGET_TYPES: DashboardWidgetType[] = [
   "competition_snapshot",
   "scouting_coverage",

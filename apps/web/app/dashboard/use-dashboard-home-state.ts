@@ -7,12 +7,14 @@ import {
 } from "../../lib/dashboard/boards";
 import { dashboardPollDelay, mergeDashboardContext, mergeDashboardWidgets, snapshotPollWidgetTypes } from "../../lib/dashboard/refresh";
 import {
-  DEFAULT_DASHBOARD_LAYOUT,
+  defaultDashboardLayoutForAudience,
+  layoutOrAudienceDefault,
   type DashboardWidgetLayout,
   type DashboardWidgetType,
 } from "../../lib/dashboard/catalog";
 import type { WidgetPayload } from "../../lib/dashboard/snapshot";
 import type { DashboardShellKind } from "../../lib/dashboard/dashboard-related";
+import { homeAudienceFromTeamRole } from "../../lib/home-workflows";
 import { fetchProductSession } from "../../lib/nav/product-session";
 import { persistOrgIdInUrl, readOrgIdFromSearch } from "../../lib/nav/resolve-org";
 import { CONTEXT_REFRESH_MS } from "./dashboard-canvas";
@@ -25,7 +27,9 @@ import type { BoardMeta, BoardState, Me } from "./dashboard-board-types";
 export function useDashboardHomeState(initialOrgId = "") {
   const [me, setMe] = useState<Me>({ orgId: initialOrgId || undefined });
   const [board, setBoard] = useState<BoardState | null>(null);
-  const [layout, setLayout] = useState<DashboardWidgetLayout[]>(DEFAULT_DASHBOARD_LAYOUT);
+  const [layout, setLayout] = useState<DashboardWidgetLayout[]>(() =>
+    defaultDashboardLayoutForAudience("student"),
+  );
   const [widgets, setWidgets] = useState<Record<string, WidgetPayload>>({});
   const [context, setContext] = useState<Record<string, unknown>>({});
   const [editing, setEditing] = useState(false);
@@ -84,7 +88,9 @@ export function useDashboardHomeState(initialOrgId = "") {
       return;
     }
     const data = await response.json();
-    const nextLayout = data.active?.layout?.length ? data.active.layout : DEFAULT_DASHBOARD_LAYOUT;
+    const stripAudience = data.context?.homeStrip?.audience;
+    const audience = stripAudience === "mentor" ? "mentor" : "student";
+    const nextLayout = layoutOrAudienceDefault(data.active?.layout, audience);
     setRole(data.role ?? null);
     setCanShareOrg(Boolean(data.canShareOrg));
     setBoards(Array.isArray(data.boards) ? data.boards : []);
@@ -110,6 +116,7 @@ export function useDashboardHomeState(initialOrgId = "") {
           orgName: data.orgName,
           teamNumber: data.teamNumber,
           role: data.role,
+          teamRole: data.teamRole,
           tbaConfigured: data.tbaConfigured,
         });
         setRole(data.role ?? null);
@@ -124,12 +131,13 @@ export function useDashboardHomeState(initialOrgId = "") {
 
   useEffect(() => {
     if (!orgId) {
-      setLayout(DEFAULT_DASHBOARD_LAYOUT);
+      const fallback = defaultDashboardLayoutForAudience(homeAudienceFromTeamRole(me.teamRole));
+      setLayout(fallback);
       setBoard({
         id: null,
         name: "Default home",
         scope: "personal",
-        layout: DEFAULT_DASHBOARD_LAYOUT,
+        layout: fallback,
         isDefault: true,
       });
       return;
@@ -175,7 +183,7 @@ export function useDashboardHomeState(initialOrgId = "") {
       inFlight?.abort();
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [orgId, loadHome, loadSnapshot]);
+  }, [orgId, loadHome, loadSnapshot, me.teamRole]);
 
   useEffect(() => {
     document.body.classList.toggle("dash-editing", editing || previewing);

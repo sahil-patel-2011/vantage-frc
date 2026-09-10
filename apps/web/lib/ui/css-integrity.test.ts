@@ -373,4 +373,17 @@ describe("stylesheet integrity", () => {
       `competing dark hex (use --bg / --surface):\n  ${offenders.join("\n  ")}`,
     ).toEqual([]);
   });
+
+  it("paints sign-in from canonical tokens in both themes", () => {
+    // Same gold as onboarding: light rules consume --bg/--surface/--ink/--accent
+    // so a html[data-theme="dark"] counterpart is unnecessary and forbidden.
+    const signin = files.find((file) => file.endsWith(`${sep}sign-in-flow.css`) || file.endsWith("/sign-in-flow.css"));
+    expect(signin).toBeDefined();
+    const text = readFileSync(signin!, "utf8");
+    expect(text).not.toMatch(/html\[data-theme=["']dark["']\]/);
+    expect(text).not.toMatch(/#6e6e73|#1d1d1f|#f5f5f7|#d2d2d7|#fafafa|#ffffff\b|#fff\b/i);
+    expect(text).toContain("var(--bg)");
+    expect(text).toContain("var(--surface)");
+    expect(text).toContain("var(--accent)");
+  });
 });

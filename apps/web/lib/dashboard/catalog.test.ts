@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   DASHBOARD_WIDGET_TYPES,
@@ -13,6 +15,7 @@ import {
   filterLayoutForRole,
   homeViewLayout,
   inferWidgetSize,
+  layoutOrAudienceDefault,
   packDashboardLayout,
   scaleLayoutToCols,
   validateDashboardLayout,
@@ -236,5 +239,32 @@ describe("widget registry", () => {
     expect(validateDashboardLayout(student, "scout").ok).toBe(true);
     expect(validateDashboardLayout(mentor, "admin").ok).toBe(true);
     expect(validateDashboardLayout(mentor, "scout").ok).toBe(false);
+  });
+
+  it("empty Home fallback is the audience board, not the competition set", () => {
+    const student = layoutOrAudienceDefault([], "student");
+    const mentor = layoutOrAudienceDefault(undefined, "mentor");
+    expect(student.map((item) => item.type)).toContain("my_day");
+    expect(student.map((item) => item.type)).not.toContain("competition_snapshot");
+    expect(mentor.map((item) => item.type)).toContain("duties");
+    expect(mentor.map((item) => item.type)).not.toContain("competition_snapshot");
+    const kept = defaultDashboardLayoutForAudience("student");
+    expect(layoutOrAudienceDefault(kept, "mentor")).toBe(kept);
+    expect(layoutOrAudienceDefault(null, null).map((item) => item.type)).toEqual(
+      defaultDashboardLayoutForAudience("student").map((item) => item.type),
+    );
+  });
+
+  it("Home client and dashboard API do not fall back to the competition board", () => {
+    const roots = join(__dirname, "..", "..");
+    const files = [
+      join(roots, "app", "dashboard", "use-dashboard-home-state.ts"),
+      join(roots, "app", "dashboard", "use-dashboard-board-ops.ts"),
+      join(roots, "app", "api", "dashboards", "route.ts"),
+    ];
+    for (const file of files) {
+      const text = readFileSync(file, "utf8");
+      expect(text, file).not.toMatch(/\bDEFAULT_DASHBOARD_LAYOUT\b/);
+    }
   });
 });

@@ -16,11 +16,11 @@ import {
 } from "../../lib/dashboard/boards";
 import {
   DASHBOARD_COLUMNS,
-  DEFAULT_DASHBOARD_LAYOUT,
   WIDGET_SIZE_LABEL,
   applyWidgetSize,
   catalogEntry,
   defaultDashboardLayoutForAudience,
+  layoutOrAudienceDefault,
   packDashboardLayout,
   type DashboardWidgetLayout,
   type DashboardWidgetType,
@@ -320,7 +320,7 @@ export function useDashboardBoardOps(input: {
         layout: data.layout,
       });
       setScope(data.scope);
-      setLayout(data.layout?.length ? data.layout : DEFAULT_DASHBOARD_LAYOUT);
+      setLayout(layoutOrAudienceDefault(data.layout, resetAudience));
       setBoardsOpen(false);
       setMessageKind("success");
       setMessage(`Switched to ${data.name}`);
@@ -351,7 +351,6 @@ export function useDashboardBoardOps(input: {
           orgId,
           name: label,
           scope: createScope,
-          layout: DEFAULT_DASHBOARD_LAYOUT,
           activate: true,
           action: "create",
         }),
@@ -484,7 +483,7 @@ export function useDashboardBoardOps(input: {
   }
 
   function cancelEditing() {
-    setLayout(board?.layout ?? DEFAULT_DASHBOARD_LAYOUT);
+    setLayout(layoutOrAudienceDefault(board?.layout, resetAudience));
     setEditing(false);
     setPreviewing(false);
     setLibraryOpen(false);
@@ -528,9 +527,10 @@ export function useDashboardBoardOps(input: {
         setMessage(data.error ?? "Reset failed");
         return;
       }
-      const nextLayout: DashboardWidgetLayout[] = Array.isArray(data.layout)
-        ? data.layout
-        : DEFAULT_DASHBOARD_LAYOUT;
+      const nextLayout = layoutOrAudienceDefault(
+        Array.isArray(data.layout) ? data.layout : null,
+        resetAudience,
+      );
       setLayout(nextLayout);
       setBoard((current) => (current ? { ...current, layout: nextLayout } : current));
       setMessageKind("success");

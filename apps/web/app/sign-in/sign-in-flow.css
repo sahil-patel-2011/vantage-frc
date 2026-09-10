@@ -1,19 +1,19 @@
-/* Sign-in Soft-UI — .signin-* + onboarding Soft-UI tokens. Closed access, no DEMO auth. */
+/* Sign-in — canonical tokens in light and dark. Closed access, no DEMO auth. */
 
 .signin-page {
   padding: 48px 18px;
   background:
-    radial-gradient(900px 480px at 50% -20%, rgba(0, 0, 0, 0.035), transparent 55%),
-    linear-gradient(180deg, #ffffff 0%, #f5f5f7 100%);
+    radial-gradient(circle at 12% 0, color-mix(in srgb, var(--accent) 14%, transparent), transparent 36%),
+    var(--bg);
 }
 
 .signin-card {
   width: min(100%, 440px);
   padding: 36px 32px 28px;
-  border-radius:var(--radius-lg);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 20px 48px rgba(0, 0, 0, 0.06);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  background: #fff;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-pop);
+  border: 1px solid var(--line);
+  background: var(--surface);
 }
 
 .signin-brand {
@@ -24,7 +24,7 @@
   display: block;
   margin: 0 0 8px;
   text-align: center;
-  color: #6e6e73;
+  color: var(--muted);
   font: 600 10px var(--font-source-sans), ui-sans-serif;
   letter-spacing: 0.08em;
 }
@@ -32,7 +32,7 @@
 .signin-progress-label {
   margin: 0 0 10px;
   text-align: center;
-  color: #6e6e73;
+  color: var(--muted);
   font: 600 11px var(--font-source-sans), ui-sans-serif;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -63,7 +63,7 @@
 .signin-waitlist {
   margin: 18px 0 0;
   text-align: center;
-  color: #6e6e73;
+  color: var(--muted);
   font-size: 13px;
 }
 
@@ -82,10 +82,10 @@
 .signin-last-used {
   margin-left: 8px;
   padding: 2px 7px;
-  border-radius:var(--radius-pill);
-  border: 1px solid #d2d2d7;
-  background: #fafafa;
-  color: #6e6e73;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--muted);
   font: 600 10px var(--font-source-sans), ui-sans-serif;
   font-style: normal;
   letter-spacing: 0.04em;
@@ -102,7 +102,7 @@
 .signin-remembered {
   display: block;
   margin-top: 6px;
-  color: #6e6e73;
+  color: var(--muted);
   font-size: 12px;
 }
 
@@ -113,9 +113,9 @@
   justify-content: space-between;
   gap: 8px;
   padding: 10px 12px;
-  border: 1px solid #d2d2d7;
-  border-radius:var(--radius-sm);
-  background: #fafafa;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
 }
 
 .signin-code-target strong {
@@ -168,21 +168,21 @@
   place-items: center;
   min-width: 0;
   min-height: 52px;
-  border: 1px solid #d2d2d7;
-  border-radius:var(--radius-sm);
-  background: #fff;
-  color: #1d1d1f;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
   font: 600 22px var(--font-ibm-mono), ui-monospace, monospace;
   transition: border-color 0.14s ease, box-shadow 0.14s ease;
 }
 
 .signin-code-box.caret {
-  border-color: #1d1d1f;
-  box-shadow: 0 0 0 3px rgba(29, 29, 31, 0.09);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
 }
 
 .signin-code.invalid .signin-code-box {
-  border-color: #c2483c;
+  border-color: var(--critical);
 }
 
 .signin-invite {
@@ -190,36 +190,36 @@
   gap: 6px;
   margin: 0 0 16px;
   padding: 14px;
-  border: 1px solid #a8bee4;
-  border-radius:var(--radius-sm);
-  background: #f2f6fd;
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--line));
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
   text-align: left;
 }
 
 .signin-invite > span {
   justify-self: start;
-  color: #3a5a8a;
+  color: var(--accent);
   font: 700 10px var(--font-ibm-mono), monospace;
   letter-spacing: 0.08em;
 }
 
 .signin-invite strong {
-  color: #1d3557;
+  color: var(--ink);
   font-size: 15px;
 }
 
 .signin-invite p {
   margin: 0;
-  color: #46618a;
+  color: var(--muted);
   font-size: 12px;
   line-height: 1.45;
 }
 
 /* The shared `.signin-status` is an amber notice; a failure must not read as one. */
 .signin-status.error {
-  border-color: #eec2bb;
-  background: #fdf3f1;
-  color: #8f2f25;
+  border-color: color-mix(in srgb, var(--critical) 40%, var(--line));
+  background: var(--critical-soft);
+  color: var(--critical);
 }
 
 /* Comfortable tap targets for the secondary actions inside the flow. */
@@ -245,24 +245,24 @@
 
 .signin-method-tabs button {
   min-height: 42px;
-  border: 1px solid #d2d2d7;
-  border-radius:var(--radius-pill);
-  background: #fafafa;
-  color: #6e6e73;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--bg);
+  color: var(--muted);
   font: 600 13px var(--font-source-sans), ui-sans-serif;
   cursor: pointer;
   transition: border-color 0.16s ease, background 0.16s ease, color 0.16s ease;
 }
 
 .signin-method-tabs button:hover {
-  border-color: #1d1d1f;
-  color: #1d1d1f;
+  border-color: var(--ink);
+  color: var(--ink);
 }
 
 .signin-method-tabs button[aria-pressed="true"] {
-  border-color: #1d1d1f;
-  background: #1d1d1f;
-  color: #fff;
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
   box-shadow: none;
 }
 
@@ -278,7 +278,7 @@
 }
 
 .signin-method-heading span {
-  color: #6e6e73;
+  color: var(--muted);
   font: 600 10px var(--font-source-sans), ui-sans-serif;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -293,18 +293,18 @@
   gap: 8px;
   margin: 0 0 12px;
   padding: 14px;
-  border: 1px dashed #f0c36d;
-  border-radius:var(--radius-sm);
-  background: #fff8eb;
+  border: 1px dashed color-mix(in srgb, var(--warning) 40%, var(--line));
+  border-radius: var(--radius-sm);
+  background: var(--warning-soft);
 }
 
 .signin-setup-shell > span {
   justify-self: start;
   padding: 4px 9px;
-  border-radius:var(--radius-pill);
-  border: 1px solid #f0c36d;
-  background: #fff;
-  color: #8a5a10;
+  border-radius: var(--radius-pill);
+  border: 1px solid color-mix(in srgb, var(--warning) 40%, var(--line));
+  background: var(--surface);
+  color: var(--warning);
   font: 700 10px var(--font-ibm-mono), monospace;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -312,12 +312,12 @@
 
 .signin-setup-shell strong {
   font-size: 13px;
-  color: #6b4610;
+  color: var(--warning);
 }
 
 .signin-setup-shell p {
   margin: 0;
-  color: #8a6a2a;
+  color: var(--warning);
   font-size: 12px;
   line-height: 1.45;
 }
@@ -328,17 +328,17 @@
 
 .signin-google:not(:disabled):hover {
   transform: translateY(-1px);
-  border-color: #a8bee4;
-  box-shadow: 0 8px 20px rgba(25, 46, 82, 0.08);
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--accent) 12%, transparent);
 }
 
 .signin-access-note {
   grid-template-columns: 30px 1fr;
   gap: 10px;
   align-items: start;
-  border-color: #a8d4bf;
-  background: #eef9f4;
-  color: #46675b;
+  border-color: color-mix(in srgb, var(--positive) 40%, var(--line));
+  background: var(--positive-soft);
+  color: var(--positive);
 }
 
 .signin-access-note > b.signin-access-mark {
@@ -346,9 +346,9 @@
   place-items: center;
   width: 28px;
   height: 28px;
-  border-radius:var(--radius-pill);
-  color: #fff;
-  background: #16855b;
+  border-radius: var(--radius-pill);
+  color: var(--accent-ink);
+  background: var(--positive-fill);
   font-size: 12px;
 }
 
@@ -358,7 +358,7 @@
 }
 
 .signin-access-note > span > b {
-  color: #164b36;
+  color: var(--positive);
   font-size: 13px;
 }
 
@@ -402,18 +402,18 @@
   justify-content: center;
   min-height: 40px;
   padding: 0 14px;
-  border-radius:var(--radius-pill);
-  border: 1px solid #d2d2d7;
-  background: #fff;
-  color: #1d1d1f;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink);
   font: 600 13px var(--font-source-sans), ui-sans-serif;
   text-decoration: none;
 }
 
 .signin-cta-row a.primary {
-  border-color: #1d1d1f;
-  background: #1d1d1f;
-  color: #fff;
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-ink);
 }
 
 .signin-price-strip {
@@ -424,21 +424,21 @@
   margin: 0;
   padding: 0;
   list-style: none;
-  border: 1px solid #d2d2d7;
-  border-radius:var(--radius-sm);
-  background: #d2d2d7;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--line);
 }
 
 .signin-price-strip li {
   display: grid;
   gap: 4px;
   padding: 10px 8px;
-  background: #fafafa;
+  background: var(--bg);
   text-align: center;
 }
 
 .signin-price-strip span {
-  color: #6e6e73;
+  color: var(--muted);
   font: 600 10px var(--font-source-sans), ui-sans-serif;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -446,7 +446,7 @@
 
 .signin-price-strip strong {
   font: 600 13px var(--font-source-sans), ui-sans-serif;
-  color: #1d1d1f;
+  color: var(--ink);
 }
 
 @media (max-width: 520px) {
@@ -460,13 +460,13 @@
 
   .signin-code-box {
     min-height: 48px;
-    border-radius:var(--radius-xs);
+    border-radius: var(--radius-xs);
     font-size: 19px;
   }
 
   .signin-card {
     padding: 24px 17px;
-    border-radius:var(--radius);
+    border-radius: var(--radius);
   }
 
   .signin-price-strip {
@@ -500,125 +500,4 @@
   .signin-google:not(:disabled):hover {
     transform: none;
   }
-}
-
-html[data-theme="dark"] .signin-page {
-  background:
-    radial-gradient(circle at 12% 0, color-mix(in srgb, var(--accent) 14%, transparent), transparent 36%),
-    var(--bg);
-}
-
-html[data-theme="dark"] .signin-card {
-  background: var(--surface);
-  border-color: var(--line);
-}
-
-html[data-theme="dark"] .signin-method-tabs button {
-  background: var(--bg);
-  border-color: var(--line);
-  color: var(--muted);
-}
-
-html[data-theme="dark"] .signin-method-tabs button[aria-pressed="true"] {
-  background: var(--accent-soft);
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
-html[data-theme="dark"] .signin-code-box {
-  background: var(--bg);
-  border-color: var(--line);
-  color: var(--ink);
-}
-
-html[data-theme="dark"] .signin-code-box.caret {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
-}
-
-html[data-theme="dark"] .signin-code.invalid .signin-code-box {
-  border-color: var(--critical);
-}
-
-html[data-theme="dark"] .signin-code-target,
-html[data-theme="dark"] .signin-last-used {
-  background: var(--bg);
-  border-color: var(--line);
-  color: var(--muted);
-}
-
-html[data-theme="dark"] .signin-code-target strong {
-  color: var(--ink);
-}
-
-html[data-theme="dark"] .signin-remembered {
-  color: var(--muted);
-}
-
-html[data-theme="dark"] .signin-invite {
-  border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
-  background: var(--accent-soft);
-}
-
-html[data-theme="dark"] .signin-invite > span {
-  color: var(--accent);
-}
-
-html[data-theme="dark"] .signin-invite strong {
-  color: var(--ink);
-}
-
-html[data-theme="dark"] .signin-invite p {
-  color: var(--muted);
-}
-
-html[data-theme="dark"] .signin-status.error {
-  border-color: color-mix(in srgb, var(--critical) 40%, var(--line));
-  background: var(--critical-soft);
-  color: var(--critical);
-}
-
-html[data-theme="dark"] .signin-setup-shell {
-  border-color: color-mix(in srgb, var(--warning) 40%, var(--line));
-  background: var(--warning-soft);
-}
-
-html[data-theme="dark"] .signin-setup-shell strong,
-html[data-theme="dark"] .signin-setup-shell p {
-  color: var(--warning);
-}
-
-html[data-theme="dark"] .signin-access-note {
-  border-color: color-mix(in srgb, var(--positive) 40%, var(--line));
-  background: var(--positive-soft);
-  color: var(--positive);
-}
-
-html[data-theme="dark"] .signin-access-note > span > b {
-  color: var(--positive);
-}
-
-html[data-theme="dark"] .signin-cta-row a {
-  background: var(--bg);
-  border-color: var(--line);
-  color: var(--accent);
-}
-
-html[data-theme="dark"] .signin-cta-row a.primary {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--accent-ink);
-}
-
-html[data-theme="dark"] .signin-price-strip {
-  background: var(--surface-2);
-  border-color: var(--line);
-}
-
-html[data-theme="dark"] .signin-price-strip li {
-  background: var(--bg);
-}
-
-html[data-theme="dark"] .signin-price-strip strong {
-  color: var(--ink);
 }
