@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { ClientHubAccessRow } from "./hub-access-filter";
+import { FEATURE_API_TIMEOUT_MS } from "./resolve-org";
 
 export type ClientAccessProfile = {
   ready: boolean;
@@ -28,7 +29,10 @@ export function useClientAccessProfile(): ClientAccessProfile {
 
   useEffect(() => {
     let cancelled = false;
-    void fetch("/api/me")
+    void fetch("/api/me", {
+      cache: "no-store",
+      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+    })
       .then(async (response) => {
         if (!response.ok) {
           if (!cancelled) {

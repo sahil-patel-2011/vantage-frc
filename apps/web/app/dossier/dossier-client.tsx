@@ -18,6 +18,8 @@ import {
 } from "../../lib/dossier/dossier-related";
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { fetchProductSession } from "../../lib/nav/product-session";
+import { FEATURE_API_TIMEOUT_MS, readOrgIdFromSearch } from "../../lib/nav/resolve-org";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import "./dossier.css";
 
@@ -28,8 +30,6 @@ const CATEGORY_LABEL: Record<string, string> = {
   record: "Event record",
   scout: "Org scout",
 };
-
-type Me = { orgId?: string | null };
 
 function DossierRelatedStrip({ orgId }: { orgId?: string | null }) {
   const links = dossierRelatedLinks(orgId, {
@@ -209,7 +209,9 @@ export default function DossierClient() {
       if (activeOrg) params.set("orgId", activeOrg);
       const teamValue = team ?? new URLSearchParams(window.location.search).get("team");
       if (teamValue) params.set("team", teamValue);
-      void fetch(`/api/dossier?${params.toString()}`)
+      void fetch(`/api/dossier?${params.toString()}`, {
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      })
         .then(async (response) => {
           const data = (await response.json()) as DossierView | { error?: string };
           if (!response.ok || !("status" in data)) {
@@ -232,22 +234,20 @@ export default function DossierClient() {
   );
 
   useEffect(() => {
-    const fromUrl = new URLSearchParams(window.location.search).get("orgId");
+    const fromUrl = readOrgIdFromSearch(window.location.search);
     const teamFromUrl = new URLSearchParams(window.location.search).get("team");
     if (teamFromUrl) setQuery(teamFromUrl);
-    void fetch("/api/me")
-      .then(async (r) => (r.ok ? ((await r.json()) as Me) : null))
-      .then((data) => {
-        const resolved = fromUrl || data?.orgId || null;
-        setOrgId(resolved);
-        load(teamFromUrl ?? undefined, resolved);
-      })
-      .catch(() => {
-        setOrgId(fromUrl);
-        load(teamFromUrl ?? undefined, fromUrl);
-      });
+    if (fromUrl) {
+      setOrgId(fromUrl);
+      load(teamFromUrl ?? undefined, fromUrl);
+      return;
+    }
+    void fetchProductSession().then((data) => {
+      const resolved = data?.orgId || null;
+      setOrgId(resolved);
+      load(teamFromUrl ?? undefined, resolved);
+    });
     // Initial load only.
-     
   }, []);
 
   function onSearch(event: React.FormEvent) {

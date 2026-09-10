@@ -129,7 +129,7 @@ See `docs/COMPETITIVE_NOTES.md`. That document is the brief for Tasks 2–4.
 | Next match widget | Red/Blue printed as a dash “range”; live EPA drivers never shown; MODEL leftover on Event Day / Chemistry / kiosk | this commit |
 | `/dashboard` First-run banner | GHA Playwright hid the region until `/api/me` finished; GitHub Actions has no Postgres so that fetch hung past the 5s default. Banner now paints on the loading shell; session abort is 8s. | this commit |
 | `/hours` | Custom header, native clock buttons, hung `/api/hours` without a timeout, and a mentor “engagement digest” on the student clock-in page. Shell is now PageHeader + EmptyState, fetches abort at 8s, Clock in is a Button, digest is owner/admin only. | this commit |
-| `/competition` Chemistry / Pick clock / My Day / Pit | Chemistry and Pick clock fetched `/api/me` with no timeout; GHA without Postgres hung. HubOrgGate now wraps those tabs plus My Day and the pit checklist so a missing team paints **Choose a team**. Fetches abort at 8s. Setup copy no longer says org-/event-scoped. Pick clock no longer paints a 6-step checklist beside the related strip. | this commit |
+| `/competition` Chemistry / Pick clock / My Day / Pit | Chemistry and Pick clock fetched `/api/me` with no timeout; GHA without Postgres hung. HubOrgGate now wraps those tabs plus My Day and the pit checklist so a missing team paints **Choose a team**. Fetches abort at 8s. Setup copy no longer says org-/event-scoped. Pick clock no longer paints a 6-step checklist beside the related strip. Team dossier and hub access also abort `/api/me` at 8s. | this commit |
 
 ---
 
