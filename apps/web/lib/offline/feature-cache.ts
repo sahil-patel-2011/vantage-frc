@@ -43,7 +43,10 @@ export type OfflineFeature =
   | "match-delta"
   | "match-video-index"
   | "draft"
-  | "lineup";
+  | "lineup"
+  | "strategy-cards"
+  | "match-copilot"
+  | "event-readiness";
 
 const DB_NAME = "vantage-feature-cache";
 const DB_VERSION = 1;

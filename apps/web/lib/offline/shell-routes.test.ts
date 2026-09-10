@@ -61,6 +61,9 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/match-video-index")).toBe(true);
     expect(pathnameIsOfflineShell("/strategy/draft")).toBe(true);
     expect(pathnameIsOfflineShell("/scouting/lineup")).toBe(true);
+    expect(pathnameIsOfflineShell("/match-strategy-cards")).toBe(true);
+    expect(pathnameIsOfflineShell("/match-copilot")).toBe(true);
+    expect(pathnameIsOfflineShell("/event-readiness")).toBe(true);
     expect(pathnameIsOfflineShell("/api/todos")).toBe(false);
   });
 
@@ -98,6 +101,9 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/match-video-index")).toBe("Match video index");
     expect(offlineCapableLabel("/strategy/draft")).toBe("Alliance board");
     expect(offlineCapableLabel("/scouting/lineup")).toBe("Lineup & coverage");
+    expect(offlineCapableLabel("/match-strategy-cards")).toBe("Match strategy cards");
+    expect(offlineCapableLabel("/match-copilot")).toBe("Match Copilot");
+    expect(offlineCapableLabel("/event-readiness")).toBe("Event readiness");
   });
 
   it("keeps public/sw.js SHELL_ROUTES aligned with OFFLINE_SHELL_ROUTES", () => {
@@ -137,6 +143,9 @@ describe("offline shell routes", () => {
     expect(featureCacheKey("match-video-index", "org-1")).toBe("match-video-index:org-1");
     expect(featureCacheKey("draft", "org-1", "2026onto")).toBe("draft:org-1:2026onto");
     expect(featureCacheKey("lineup", "org-1", "2026onto")).toBe("lineup:org-1:2026onto");
+    expect(featureCacheKey("strategy-cards", "org-1")).toBe("strategy-cards:org-1");
+    expect(featureCacheKey("match-copilot", "org-1")).toBe("match-copilot:org-1");
+    expect(featureCacheKey("event-readiness", "org-1", "2026onto")).toBe("event-readiness:org-1:2026onto");
     expect(featureCacheKey("schedule", "org-1")).toBe("schedule:org-1");
   });
 

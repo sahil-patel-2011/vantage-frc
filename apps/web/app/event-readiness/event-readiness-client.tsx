@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import {
   Badge,
   Button,
@@ -29,8 +30,36 @@ import {
   type RollupSource,
 } from "../../lib/event-readiness/types";
 import { hubHref } from "../../lib/nav/hubs";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./event-readiness.css";
+
+function isEventReadinessView(value: unknown): value is EventReadinessView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+async function persistEventReadinessSnapshot(
+  orgHint: string,
+  data: EventReadinessView,
+): Promise<void> {
+  const cacheOrg =
+    "orgId" in data && typeof data.orgId === "string" && data.orgId.trim() ? data.orgId : orgHint;
+  if (!cacheOrg) return;
+  const key = data.status === "live" ? data.plan.eventKey : "";
+  try {
+    await putFeatureSnapshot("event-readiness", cacheOrg, data, key);
+    await putFeatureSnapshot("event-readiness", cacheOrg, data);
+    if (!orgHint) {
+      await putFeatureSnapshot("event-readiness", "_", data, key);
+      await putFeatureSnapshot("event-readiness", "_", data);
+    }
+  } catch {
+    // Live readiness already painted; IndexedDB is best-effort.
+  }
+}
 
 type LiveView = Extract<EventReadinessView, { status: "live" }>;
 type ScheduledReadinessItem = ScheduledItem<ReadinessItem>;
@@ -109,29 +138,77 @@ export default function EventReadinessClient() {
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [eventKey, setEventKey] = useState<string | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<EventReadinessView | null>(null);
+  viewRef.current = view;
 
   const load = useCallback((overrides?: { eventKey?: string }) => {
-    setFetchFailed(false);
-    setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    const nextEvent = overrides?.eventKey ?? eventKey;
-    if (nextEvent) query.set("eventKey", nextEvent);
-    void fetch(`/api/event-readiness${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
+    void (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const urlOrg = params.get("orgId")?.trim() ?? "";
+      const eventQuery = overrides?.eventKey ?? params.get("eventKey") ?? "";
+      let hadCache = Boolean(viewRef.current);
+      try {
+        const cached =
+          (await getFeatureSnapshot<EventReadinessView>(
+            "event-readiness",
+            urlOrg || "_",
+            eventQuery,
+          )) ??
+          (eventQuery
+            ? await getFeatureSnapshot<EventReadinessView>("event-readiness", urlOrg || "_")
+            : null);
+        if (!viewRef.current && cached?.data && isEventReadinessView(cached.data)) {
+          setView(cached.data);
+          if (cached.data.status === "live") setEventKey(cached.data.plan.eventKey);
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          hadCache = true;
+        }
+      } catch {
+        // IndexedDB missing or blocked; live fetch still runs.
+      }
+      setFetchFailed(false);
+      setError("");
+      const query = new URLSearchParams();
+      if (urlOrg) query.set("orgId", urlOrg);
+      if (eventQuery) query.set("eventKey", eventQuery);
+      try {
+        const response = await fetch(
+          `/api/event-readiness${query.toString() ? `?${query.toString()}` : ""}`,
+          {
+            cache: "no-store",
+            signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+          },
+        );
         const data = (await response.json()) as EventReadinessView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setFetchFailed(true);
+        if (!response.ok || !isEventReadinessView(data)) {
+          if (hadCache || viewRef.current) {
+            setFromCache(true);
+            setError("Could not refresh Event readiness. Showing the last copy on this device.");
+            setFetchFailed(false);
+          } else {
+            setFetchFailed(true);
+          }
           return;
         }
         setView(data);
         if (data.status === "live") setEventKey(data.plan.eventKey);
-      })
-      .catch(() => setFetchFailed(true));
-     
-  }, [eventKey]);
+        setFromCache(false);
+        setCachedAt(null);
+        await persistEventReadinessSnapshot(urlOrg, data);
+      } catch {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Event readiness. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setFetchFailed(true);
+        }
+      }
+    })();
+  }, []);
 
   useEffect(() => {
     load();
@@ -150,6 +227,7 @@ export default function EventReadinessClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, eventKey: eventKey ?? undefined, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as EventReadinessView | { error?: string };
         if (!response.ok || !("status" in data)) {
@@ -158,6 +236,7 @@ export default function EventReadinessClient() {
         }
         setView(data);
         if (data.status === "live") setEventKey(data.plan.eventKey);
+        void persistEventReadinessSnapshot(orgId, data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -170,6 +249,7 @@ export default function EventReadinessClient() {
   if (view == null && !fetchFailed) {
     return (
       <Shell orgId={null}>
+        <OfflineBanner feature="Event readiness" fromCache={fromCache} cachedAt={cachedAt} />
         <div aria-busy="true" aria-label="Loading event readiness">
           <SoftBlockSkeleton lines={4} />
         </div>
@@ -180,6 +260,7 @@ export default function EventReadinessClient() {
   if (fetchFailed || view == null) {
     return (
       <Shell orgId={orgId}>
+        <OfflineBanner feature="Event readiness" fromCache={fromCache} cachedAt={cachedAt} />
         <ErrorState message="Could not load event readiness." onRetry={() => load()} />
       </Shell>
     );
@@ -188,6 +269,7 @@ export default function EventReadinessClient() {
   if (view.status === "setup_required") {
     return (
       <Shell orgId={orgId}>
+        <OfflineBanner feature="Event readiness" fromCache={fromCache} cachedAt={cachedAt} />
         {error ? (
           <p className="telemetry-status" role="alert">
             {error}
@@ -218,6 +300,8 @@ export default function EventReadinessClient() {
       view={view}
       busy={busy}
       error={error}
+      fromCache={fromCache}
+      cachedAt={cachedAt}
       mutate={mutate}
       onPickEvent={(key) => {
         setEventKey(key);
@@ -376,12 +460,16 @@ function LivePlan({
   view,
   busy,
   error,
+  fromCache,
+  cachedAt,
   mutate,
   onPickEvent,
 }: {
   view: LiveView;
   busy: boolean;
   error: string;
+  fromCache: boolean;
+  cachedAt: string | null;
   mutate: (payload: Record<string, unknown>) => void;
   onPickEvent: (eventKey: string) => void;
 }) {
@@ -423,6 +511,8 @@ function LivePlan({
           </label>
         ) : null}
       </PageHeader>
+
+      <OfflineBanner feature="Event readiness" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">
