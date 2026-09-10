@@ -1,8 +1,9 @@
 import { expect, test } from "@playwright/test";
-import { signInFixture } from "./session";
+import { signInAs, signInFixture } from "./session";
 
 test.beforeEach(async ({ context }) => {
-  await signInFixture(context);
+  const signed = await signInAs(context, "owner");
+  if (!signed) await signInFixture(context);
 });
 
 test("docs manual views and season moments are a tool strip, not a tab bar", async ({ page }) => {
