@@ -112,7 +112,7 @@ See `docs/COMPETITIVE_NOTES.md`. That document is the brief for Tasks 2–4.
 | `/team` Chat | Hub shell was 1455 lines; labels/helpers and the painted workbench now live in sibling modules. Channels stay sidebar buttons, not a TabBar. | this commit |
 | `/files` | Standalone Drive had no next step into Playbook / Chat / CAD | this commit |
 | All panel | Hub rows hid Scouting / Chat / CAD behind a second TabBar hop; other workbenches now hang under the hub row (default tab stays the hub link) | this commit |
-| `/packing` `/logistics` `/inspection-copilot` | Packing now hands off to Event readiness; Logistics includes Packing; Inspection Copilot strip is Batteries / FMEA / Weigh-in | this commit |
+| Inspection Copilot error copy | still said Subsystems after the strip became Weigh-in | this commit |
 
 ---
 

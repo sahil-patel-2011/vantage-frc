@@ -114,7 +114,7 @@ export function inspectionCopilotShellCopy(kind: InspectionCopilotShellKind): In
         badge: "Unavailable",
         title: "Could not load the inspection copilot",
         description:
-          "A network or server issue blocked readiness checks. Retry, or open Batteries / FMEA / Subsystems while it reloads.",
+          "A network or server issue blocked readiness checks. Retry, or open Batteries / FMEA / Weigh-in while it reloads.",
       };
     case "setup":
       return {
@@ -144,7 +144,7 @@ export function inspectionCopilotShellCopy(kind: InspectionCopilotShellKind): In
 
 /**
  * Soft-UI next actions for Inspection Copilot empty/setup shells.
- * Points at Batteries / FMEA / Subsystems — never invents DEMO risk scores.
+ * Points at Batteries / FMEA / Weigh-in — never invents DEMO risk scores.
  */
 export function inspectionCopilotNextActions(input: {
   orgId?: string | null;
