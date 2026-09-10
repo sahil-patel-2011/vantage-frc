@@ -135,7 +135,9 @@ export type OfflineFeature =
   | "safety"
   | "writer"
   | "learning"
-  | "training";
+  | "training"
+  | "tool-checkout"
+  | "goals";
 
 const DB_NAME = "vantage-feature-cache";
 const DB_VERSION = 1;

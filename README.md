@@ -100,8 +100,11 @@ Until those are set, email 2FA is honestly not enforced; Google/password still w
    Coming soon.
 
 Local development: also add `http://localhost:3001` as an origin and
-`http://localhost:3001/api/auth/callback/google` as a redirect URI. Keep `BETTER_AUTH_URL` matching the app
-origin.
+`http://localhost:3001/api/auth/callback/google` as a redirect URI. Copy
+`GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` into gitignored `apps/web/.env.local`
+(`vercel env pull` is fine — it is not a deploy). Keep `BETTER_AUTH_URL` as
+`http://localhost:3001` locally. `next dev` ignores a production `BETTER_AUTH_URL`
+copied from Vercel so Google does not callback to the hosted app.
 
 ### GitHub robot-code context (optional OAuth)
 

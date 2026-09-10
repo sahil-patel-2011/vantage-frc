@@ -157,6 +157,8 @@ const SHELL_ROUTES = [
   "/writer",
   "/learning",
   "/training",
+  "/tool-checkout",
+  "/goals",
 ];
 
 function isShellPath(pathname) {

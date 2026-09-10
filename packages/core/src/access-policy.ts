@@ -63,14 +63,41 @@ export function email2faSatisfiedByAuthMethod(method: SessionAuthMethod, enforce
   return method === "email_otp" || method === "google" || method === "desktop_link";
 }
 
+function stripTrailingSlash(value: string) {
+  return value.replace(/\/$/, "");
+}
+
+function isLocalhostAuthOrigin(value: string) {
+  try {
+    const url = new URL(value.includes("://") ? value : `https://${value}`);
+    return ["localhost", "127.0.0.1"].includes(url.hostname);
+  } catch {
+    return false;
+  }
+}
+
+/** True for `next dev` / vitest — not a Vercel runtime, even if `.env.local` was pulled from Vercel. */
+function isLocalAuthRuntime() {
+  return process.env.NODE_ENV !== "production" && process.env.VERCEL !== "1";
+}
+
 /** Resolve the public auth origin for Better Auth callbacks (never use bare VERCEL_URL alone when BETTER_AUTH_URL is set). */
 export function resolveAuthBaseURL() {
+  const localOverride = runtimeEnv("BETTER_AUTH_URL_LOCAL");
+  if (isLocalAuthRuntime() && localOverride) return stripTrailingSlash(localOverride);
   const explicit = runtimeEnv("BETTER_AUTH_URL") || runtimeEnv("NEXT_PUBLIC_APP_URL");
-  if (explicit) return explicit.replace(/\/$/, "");
+  if (explicit) {
+    // `vercel env pull` copies production BETTER_AUTH_URL. Local Google OAuth must
+    // callback to this machine, not vantage-frc-web.vercel.app.
+    if (isLocalAuthRuntime() && !isLocalhostAuthOrigin(explicit)) {
+      return "http://localhost:3001";
+    }
+    return stripTrailingSlash(explicit);
+  }
   const productionHost = runtimeEnv("VERCEL_PROJECT_PRODUCTION_URL");
-  if (productionHost) return `https://${productionHost.replace(/\/$/, "")}`;
+  if (productionHost) return `https://${stripTrailingSlash(productionHost)}`;
   const deploymentHost = runtimeEnv("VERCEL_URL");
-  if (deploymentHost) return `https://${deploymentHost.replace(/\/$/, "")}`;
+  if (deploymentHost) return `https://${stripTrailingSlash(deploymentHost)}`;
   return "http://localhost:3001";
 }
 

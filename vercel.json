@@ -7,6 +7,7 @@
   "github": {
     "silent": true
   },
+  "ignoreCommand": "node -e \"process.exit(process.env.VERCEL_GIT_COMMIT_REF === 'main' ? 1 : 0)\"",
   "crons": [
     {
       "path": "/api/cron/tba-sync?mode=event-day",

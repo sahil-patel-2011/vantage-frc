@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { TeamHubRelated } from "../../components/team-hub-related";
@@ -19,6 +20,8 @@ import {
   goalsRelatedLinks,
 } from "../../lib/goals/goals-related";
 import type { GoalCategory, GoalEvaluation, GoalPriority, GoalStatus, MetricType } from "../../lib/goals/types";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./goals.css";
 
@@ -31,6 +34,29 @@ const METRIC_LABEL: Record<MetricType, string> = {
   currency: "Dollars",
   binary: "Yes / no",
 };
+
+function isGoalsView(value: unknown): value is GoalsView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function goalsCacheOrg(data: GoalsView, orgHint: string): string {
+  if (typeof data.orgId === "string" && data.orgId.trim()) return data.orgId;
+  return orgHint;
+}
+
+async function persistGoalsSnapshot(orgHint: string, seasonHint: string, data: GoalsView): Promise<void> {
+  const cacheOrg = goalsCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  const seasonKey = String(data.seasonYear);
+  try {
+    await putFeatureSnapshot("goals", cacheOrg, data, seasonHint || seasonKey);
+    if (!orgHint) await putFeatureSnapshot("goals", "_", data, seasonHint || seasonKey);
+  } catch {
+    // Live Goals already painted; IndexedDB is best-effort.
+  }
+}
 
 function GoalsRelated({ orgId }: { orgId: string }) {
   const primary = goalsRelatedLinks(orgId, { include: ["todos", "practice", "team"] });
@@ -100,37 +126,92 @@ export default function GoalsClient() {
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<GoalsView | null>(null);
+  viewRef.current = view;
 
   const orgId = view && "orgId" in view ? view.orgId : null;
 
-  const load = useCallback((seasonOverride?: number) => {
+  const load = useCallback(async (seasonOverride?: number) => {
+    const params = new URLSearchParams(window.location.search);
+    const orgHint = params.get("orgId")?.trim() ?? "";
+    const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
+    const seasonHint =
+      seasonQuery && Number.isFinite(seasonQuery) ? String(seasonQuery) : String(new Date().getFullYear());
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<GoalsView>("goals", orgHint || "_", seasonHint);
+      if (!viewRef.current && cached?.data && isGoalsView(cached.data)) {
+        setView(cached.data);
+        setSeason(cached.data.seasonYear);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
     setFetchFailed(false);
     setError("");
     setLoadError("");
     setErrorStatus(null);
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    if (seasonQuery) query.set("season", String(seasonQuery));
-    void fetch(`/api/goals${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
-        const data = (await response.json()) as GoalsView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setFetchFailed(true);
-          setErrorStatus(response.status);
-          setLoadError("error" in data && data.error ? data.error : "");
+    try {
+      const query = new URLSearchParams();
+      if (orgHint) query.set("orgId", orgHint);
+      if (seasonQuery) query.set("season", String(seasonQuery));
+      const response = await fetch(`/api/goals${query.toString() ? `?${query.toString()}` : ""}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      const data: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setFetchFailed(true);
+        setErrorStatus(response.status);
+        setLoadError(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "",
+        );
+        return;
+      }
+      if (!response.ok || !isGoalsView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Goals. Showing the last copy on this device.");
+          setFetchFailed(false);
           return;
         }
-        setView(data);
-        setSeason(data.seasonYear);
-      })
-      .catch(() => setFetchFailed(true));
+        setFetchFailed(true);
+        setErrorStatus(response.status);
+        setLoadError(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "",
+        );
+        return;
+      }
+      setView(data);
+      setSeason(data.seasonYear);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistGoalsSnapshot(orgHint, seasonHint, data);
+    } catch {
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Goals. Showing the last copy on this device.");
+        setFetchFailed(false);
+        return;
+      }
+      setFetchFailed(true);
+    }
   }, []);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   const mutate = useCallback<Mutate>(
@@ -142,15 +223,22 @@ export default function GoalsClient() {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ orgId, seasonYear: season ?? undefined, ...payload }),
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       })
         .then(async (response) => {
-          const data = (await response.json()) as GoalsView | { error?: string };
-          if (!response.ok || !("status" in data)) {
-            setError("error" in data && data.error ? data.error : "Something went wrong.");
+          const data: unknown = await response.json().catch(() => null);
+          if (!response.ok || !isGoalsView(data)) {
+            setError(
+              data && typeof data === "object" && "error" in data && typeof data.error === "string"
+                ? data.error
+                : "Something went wrong.",
+            );
             return;
           }
           setView(data);
           setSeason(data.seasonYear);
+          setFromCache(false);
+          void persistGoalsSnapshot(orgId, String(data.seasonYear), data);
         })
         .catch(() => setError("Network error — please try again."))
         .finally(() => setBusy(false));
@@ -158,7 +246,7 @@ export default function GoalsClient() {
     [orgId, season, busy],
   );
 
-  if (fetchFailed || view == null) {
+  if (!view) {
     // Retry cannot fix an expired session, so the failure decides its own action.
     const failure = fetchFailed
       ? loadFailureCopy(
@@ -183,6 +271,7 @@ export default function GoalsClient() {
           title="Goals"
           description="Measurable season objectives with progress from real current values."
         />
+        <OfflineBanner feature="Goals" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
           title={failure ? failure.title : "Loading season goals…"}
@@ -195,7 +284,7 @@ export default function GoalsClient() {
             </Button>
           ) : null}
           {failure?.showRetry ? (
-            <Button variant="secondary" type="button" onClick={() => load()}>
+            <Button variant="secondary" type="button" onClick={() => void load()}>
               Retry
             </Button>
           ) : null}
@@ -211,7 +300,10 @@ export default function GoalsClient() {
           breadcrumbs="Team / Goals"
           title="Goals"
           description="Set measurable season objectives; progress fills in as your team logs work against them."
-        />
+        >
+          {view.orgId ? <GoalsRelated orgId={view.orgId} /> : null}
+        </PageHeader>
+        <OfflineBanner feature="Goals" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState soft badge="Setup required" badgeTone="setup" title={view.message}>
           {view.steps[0] ? (
             <Button as="a" variant="primary" href={view.steps[0].href}>
@@ -219,7 +311,6 @@ export default function GoalsClient() {
             </Button>
           ) : null}
         </EmptyState>
-        <NextActions orgId={view.orgId} goalCount={0} achieved={0} needsAttention={0} />
       </main>
     );
   }
@@ -248,7 +339,7 @@ export default function GoalsClient() {
                 onChange={(event) => {
                   const next = Number(event.target.value);
                   setSeason(next);
-                  load(next);
+                  void load(next);
                 }}
               >
                 {view.seasons.map((year) => (
@@ -270,6 +361,7 @@ export default function GoalsClient() {
           </Button>
         </div>
       </PageHeader>
+      <OfflineBanner feature="Goals" fromCache={fromCache} cachedAt={cachedAt} />
 
       {orgId ? <GoalsRelated orgId={orgId} /> : null}
 
@@ -296,13 +388,7 @@ export default function GoalsClient() {
           soft
           title="No season goals yet"
           description="Add a measurable target above (matches won, outreach hours, dollars raised, a yes/no milestone). Season progress stays blank until then."
-        >
-          <div className="goals-row-links">
-            <a href={withOrgHref("/todos", orgId)}>Todos →</a>
-            <a href={withOrgHref("/practice", orgId)}>Practice →</a>
-            <a href={withOrgHref("/team", orgId)}>Team hub →</a>
-          </div>
-        </EmptyState>
+        />
       ) : null}
 
       <AddGoalForm busy={busy} mutate={mutate} />

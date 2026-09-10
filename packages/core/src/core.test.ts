@@ -223,6 +223,33 @@ describe("waitlist-only auth access policy", () => {
     expect(origins).toContain("http://127.0.0.1:3310");
   });
 
+  it("does not send local Google callbacks to Vercel after env pull", async () => {
+    const previous = {
+      betterAuth: process.env.BETTER_AUTH_URL,
+      local: process.env.BETTER_AUTH_URL_LOCAL,
+      appUrl: process.env.NEXT_PUBLIC_APP_URL,
+      vercel: process.env.VERCEL,
+    };
+    delete process.env.VERCEL;
+    delete process.env.BETTER_AUTH_URL_LOCAL;
+    process.env.BETTER_AUTH_URL = "https://vantage-frc-web.vercel.app";
+    process.env.NEXT_PUBLIC_APP_URL = "https://vantage-frc-web.vercel.app";
+    const { resolveAuthBaseURL } = await import("./access-policy");
+    expect(resolveAuthBaseURL()).toBe("http://localhost:3001");
+    process.env.BETTER_AUTH_URL_LOCAL = "http://127.0.0.1:3001";
+    expect(resolveAuthBaseURL()).toBe("http://127.0.0.1:3001");
+    process.env.VERCEL = "1";
+    expect(resolveAuthBaseURL()).toBe("https://vantage-frc-web.vercel.app");
+    if (previous.betterAuth == null) delete process.env.BETTER_AUTH_URL;
+    else process.env.BETTER_AUTH_URL = previous.betterAuth;
+    if (previous.local == null) delete process.env.BETTER_AUTH_URL_LOCAL;
+    else process.env.BETTER_AUTH_URL_LOCAL = previous.local;
+    if (previous.appUrl == null) delete process.env.NEXT_PUBLIC_APP_URL;
+    else process.env.NEXT_PUBLIC_APP_URL = previous.appUrl;
+    if (previous.vercel == null) delete process.env.VERCEL;
+    else process.env.VERCEL = previous.vercel;
+  });
+
   it("treats only a real Better Auth session cookie as signed in", () => {
     expect(hasBetterAuthSessionCookie(null)).toBe(false);
     expect(hasBetterAuthSessionCookie("vantage-e2e-session=authenticated")).toBe(false);

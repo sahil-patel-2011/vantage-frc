@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import {
   Badge,
   type BadgeTone,
@@ -35,6 +36,7 @@ import {
 } from "../../lib/tool-checkout/tool-checkout-related";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./tool-checkout.css";
 
 type LiveView = Extract<ToolCheckoutView, { status: "live" }>;
@@ -50,6 +52,28 @@ const STATUS_TONE: Record<ToolCheckoutStatus, BadgeTone> = {
   checked_out: "setup",
   overdue: "danger",
 };
+
+function isToolCheckoutView(value: unknown): value is ToolCheckoutView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function toolCheckoutCacheOrg(data: ToolCheckoutView, orgHint: string): string {
+  if (typeof data.orgId === "string" && data.orgId.trim()) return data.orgId;
+  return orgHint;
+}
+
+async function persistToolCheckoutSnapshot(orgHint: string, data: ToolCheckoutView): Promise<void> {
+  const cacheOrg = toolCheckoutCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("tool-checkout", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("tool-checkout", "_", data);
+  } catch {
+    // Live Tool checkout already painted; IndexedDB is best-effort.
+  }
+}
 
 function RelatedStrip({ orgId }: { orgId?: string | null }) {
   const links = toolCheckoutRelatedLinks(orgId, {
@@ -98,12 +122,16 @@ function CheckoutShell({
   shell,
   error,
   onRetry,
+  fromCache = false,
+  cachedAt = null,
 }: {
   description: string;
   orgId?: string | null;
   shell: ToolCheckoutShellKind;
   error?: string;
   onRetry?: () => void;
+  fromCache?: boolean;
+  cachedAt?: string | null;
 }) {
   const actions = toolCheckoutNextActions({ orgId, shell });
   const copy = toolCheckoutShellCopy(shell);
@@ -124,6 +152,7 @@ function CheckoutShell({
       >
         <RelatedStrip orgId={orgId} />
       </PageHeader>
+      <OfflineBanner feature="Tool checkout" fromCache={fromCache} cachedAt={cachedAt} />
       {shell === "loading" ? (
         <div aria-busy="true" aria-label="Loading Tool Checkout">
           <SoftBlockSkeleton lines={4} />
@@ -158,31 +187,70 @@ export default function ToolCheckoutClient() {
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<ToolCheckoutView | null>(null);
+  viewRef.current = view;
 
-  const load = useCallback(() => {
+  const load = useCallback(async () => {
+    const params = new URLSearchParams(window.location.search);
+    const orgHint = params.get("orgId")?.trim() ?? "";
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<ToolCheckoutView>("tool-checkout", orgHint || "_");
+      if (!viewRef.current && cached?.data && isToolCheckoutView(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
     setFetchFailed(false);
     setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    void fetch(`/api/tool-checkout${query.toString() ? `?${query.toString()}` : ""}`, {
-      cache: "no-store",
-      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
-    })
-      .then(async (response) => {
-        const data = (await response.json()) as ToolCheckoutView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setFetchFailed(true);
+    try {
+      const query = new URLSearchParams();
+      if (orgHint) query.set("orgId", orgHint);
+      const response = await fetch(`/api/tool-checkout${query.toString() ? `?${query.toString()}` : ""}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      const data: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setFetchFailed(true);
+        return;
+      }
+      if (!response.ok || !isToolCheckoutView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Tool checkout. Showing the last copy on this device.");
+          setFetchFailed(false);
           return;
         }
-        setView(data);
-      })
-      .catch(() => setFetchFailed(true));
+        setFetchFailed(true);
+        return;
+      }
+      setView(data);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistToolCheckoutSnapshot(orgHint, data);
+    } catch {
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Tool checkout. Showing the last copy on this device.");
+        setFetchFailed(false);
+        return;
+      }
+      setFetchFailed(true);
+    }
   }, []);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   const orgId = view && "orgId" in view ? view.orgId : null;
@@ -191,7 +259,7 @@ export default function ToolCheckoutClient() {
 
   const shell = classifyToolCheckoutShell({
     loading: view == null && !fetchFailed,
-    fetchFailed,
+    fetchFailed: fetchFailed && !view,
     status: view?.status ?? null,
     orgId,
     toolCount,
@@ -219,12 +287,18 @@ export default function ToolCheckoutClient() {
           body: JSON.stringify({ orgId, ...payload }),
           signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
-        const data = (await response.json()) as ToolCheckoutView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setError("error" in data && data.error ? data.error : "Something went wrong.");
+        const data: unknown = await response.json().catch(() => null);
+        if (!response.ok || !isToolCheckoutView(data)) {
+          setError(
+            data && typeof data === "object" && "error" in data && typeof data.error === "string"
+              ? data.error
+              : "Something went wrong.",
+          );
           return;
         }
         setView(data);
+        setFromCache(false);
+        void persistToolCheckoutSnapshot(orgId, data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -235,7 +309,15 @@ export default function ToolCheckoutClient() {
   );
 
   if (shell === "loading") {
-    return <CheckoutShell description={shellCopy.description} orgId={null} shell="loading" />;
+    return (
+      <CheckoutShell
+        description={shellCopy.description}
+        orgId={null}
+        shell="loading"
+        fromCache={fromCache}
+        cachedAt={cachedAt}
+      />
+    );
   }
   if (shell === "error") {
     return (
@@ -244,7 +326,9 @@ export default function ToolCheckoutClient() {
         orgId={orgId}
         shell="error"
         error={error || shellCopy.description}
-        onRetry={() => load()}
+        onRetry={() => void load()}
+        fromCache={fromCache}
+        cachedAt={cachedAt}
       />
     );
   }
@@ -254,6 +338,8 @@ export default function ToolCheckoutClient() {
         description={view?.status === "setup_required" ? view.message : shellCopy.description}
         orgId={orgId}
         shell="setup"
+        fromCache={fromCache}
+        cachedAt={cachedAt}
       />
     );
   }
@@ -272,6 +358,7 @@ export default function ToolCheckoutClient() {
       >
         <RelatedStrip orgId={orgId} />
       </PageHeader>
+      <OfflineBanner feature="Tool checkout" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

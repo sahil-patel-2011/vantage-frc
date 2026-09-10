@@ -139,6 +139,8 @@ export const OFFLINE_SHELL_ROUTES = [
   "/writer",
   "/learning",
   "/training",
+  "/tool-checkout",
+  "/goals",
 ] as const;
 
 export type OfflineShellRoute = (typeof OFFLINE_SHELL_ROUTES)[number];
@@ -288,6 +290,8 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/writer")) return "Writer";
   if (bare.startsWith("/learning")) return "Learning";
   if (bare.startsWith("/training")) return "Training";
+  if (bare.startsWith("/tool-checkout")) return "Tool checkout";
+  if (bare.startsWith("/goals")) return "Goals";
   if (bare.startsWith("/match-delta-watcher")) return "Match-delta watcher";
   if (bare.startsWith("/match-video-index")) return "Match video index";
   if (bare.startsWith("/match-strategy-cards")) return "Match strategy cards";
