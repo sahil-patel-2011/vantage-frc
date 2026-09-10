@@ -325,15 +325,22 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
 
   if (shell === "setup") {
     const needsEvent = !hasActiveEvent;
-    const needsTba = hasActiveEvent && !tbaConfigured;
+    // Was `hasActiveEvent && !tbaConfigured`, which hid the key form behind the
+    // event picker. Every "Connect TBA" button in the product — the dashboard
+    // widget, the setup checklist, Command's empty state — lands here, and a
+    // workspace that has not picked an event yet (the common case for a team
+    // setting Vantage up) got "Select an active event" and no way to connect
+    // TBA at all. The two are independent: a key can be saved before an event
+    // exists, and both are needed before anything syncs.
+    const needsTba = !tbaConfigured;
     return (
       <TeamDataShell
-        title={needsEvent ? "Select an active event" : needsTba ? "Connect TBA" : "Finish Team Data setup"}
+        title={needsTba ? "Connect TBA" : needsEvent ? "Select an active event" : "Finish Team Data setup"}
         description={
-          needsEvent
-            ? "Team Data syncs only for a real workspace event — Schedule, Event Day, and Strategy stay empty until then."
-            : needsTba
-              ? "Save an encrypted TBA fallback key (or ask a platform admin for TBA_AUTH_KEY). Nothing is filled with DEMO ranks or EPA."
+          needsTba
+            ? `Save an encrypted TBA Read API v3 key below, or ask whoever runs this deployment to set TBA_AUTH_KEY (Vercel → Project → Settings → Environment Variables). Get the key at thebluealliance.com → Account → Read API Keys.${needsEvent ? " You will also need to pick an active event before anything syncs." : ""} Nothing is filled with DEMO ranks or EPA.`
+            : needsEvent
+              ? "Team Data syncs only for a real workspace event — Schedule, Event Day, and Strategy stay empty until then."
               : "Finish workspace setup so TBA sync can resolve your organization."
         }
         orgId={orgId}
@@ -345,7 +352,9 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
           <section className="app-card soft-panel team-data-panel">
             <h2>TBA fallback key</h2>
             <p className="app-muted">
-              Optional encrypted fallback when platform ingest needs an org credential. Never shown again after save.
+              Encrypted on save and never shown again. Create one at thebluealliance.com → Account → Read API
+              Keys; the Read API v3 key is the only permission Vantage needs. A platform-wide{" "}
+              <code>TBA_AUTH_KEY</code> set on the deployment covers every team and makes this unnecessary.
             </p>
             <form className="team-data-key-form" onSubmit={saveFallbackKey}>
               <label>
