@@ -1,3 +1,4 @@
+import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 
 /** Soft-UI related surfaces for Team admin membership (never DEMO members). */
@@ -198,13 +199,17 @@ export function teamAdminShellCopy(kind: TeamAdminShellKind): TeamAdminEmptyCopy
         description:
           "The members list and invite ledger stay empty until real people join. Cross-check Account, Discord, and Connections.",
       };
-    default:
+    case "ready":
       return {
-        kind: "ready",
+        kind,
         title: "Members and invites",
         description:
           "Only real membership rows and invites appear here.",
       };
+    default: {
+      const _never: never = kind;
+      return _never;
+    }
   }
 }
 
@@ -220,6 +225,9 @@ export function teamAdminNextActions(input: {
   pendingInviteCount?: number;
   pendingAccessCount?: number;
 }): TeamAdminNextAction[] {
+  if (!input.orgId || input.shell === "setup") {
+    return setupActionsFrom(teamAdminSetupSteps(input.orgId));
+  }
   return dropRelatedStripDuplicates(input.orgId, teamAdminNextActionCandidates(input));
 }
 
@@ -233,65 +241,6 @@ function teamAdminNextActionCandidates(input: {
   const orgId = input.orgId ?? null;
   const pendingInvites = input.pendingInviteCount ?? 0;
   const pendingAccess = input.pendingAccessCount ?? 0;
-
-  if (!orgId || input.shell === "setup") {
-    if (!orgId) {
-      return [
-        {
-          id: "workspace",
-          label: "Choose your team",
-          detail: "Pick a team before sending access.",
-          href: teamAdminCardPrimaryHref(null),
-          primary: true,
-        },
-        {
-          id: "account",
-          label: "Account profile",
-          detail: "Display name and notification prefs still save for this login without a team.",
-          href: "/account?tab=profile",
-        },
-        {
-          id: "connections",
-          label: "Account Connections",
-          detail: "Honest connector status — Connected only from real rows.",
-          href: "/connectors",
-        },
-        {
-          id: "discord",
-          label: "Discord",
-          detail: "Guild bridge settings need a team too.",
-          href: withOrgHref("/team/discord", null),
-        },
-      ];
-    }
-    return [
-      {
-        id: "workspace",
-        label: "Choose your team",
-        detail: "Finish membership setup so Team admin can resolve your organization.",
-        href: teamAdminCardPrimaryHref(orgId),
-        primary: true,
-      },
-      {
-        id: "account",
-        label: "Account profile",
-        detail: "Confirm your login identity before inviting teammates.",
-        href: "/account?tab=profile",
-      },
-      {
-        id: "discord",
-        label: "Open Discord",
-        detail: "Optional guild bridge stays blank until configured.",
-        href: withOrgHref("/team/discord", orgId),
-      },
-      {
-        id: "connections",
-        label: "Account Connections",
-        detail: "TBA, Onshape, Discord, and GitHub status for this team.",
-        href: "/connectors",
-      },
-    ];
-  }
 
   if (input.shell === "empty") {
     return [

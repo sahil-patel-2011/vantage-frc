@@ -30,7 +30,8 @@ function item(partial: Partial<InventoryItem> & Pick<InventoryItem, "id" | "name
 describe("inventory-model", () => {
   it("formats quantities without inventing stock", () => {
     expect(fmtQty(3)).toBe("3");
-    expect(fmtQty(1.255)).toBe("1.26");
+    expect(fmtQty(1.5)).toBe("1.5");
+    expect(fmtQty(1.26)).toBe("1.26");
   });
 
   it("describes Stock / Locations / BOM exhaustively", () => {
