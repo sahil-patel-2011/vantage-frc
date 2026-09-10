@@ -98,9 +98,14 @@ pool (`DATABASE_BILLING_URL`, falling back to `DATABASE_URL` — `packages/db/sr
    `processStripeEvent` in `packages/billing`.
 3. Copy the signing secret into `STRIPE_WEBHOOK_SECRET` and redeploy.
 4. Optionally provision a least-privilege `vantage_billing` role and set `DATABASE_BILLING_URL`.
-5. Send a test event from Stripe; expect `{"received":true}`. Missing/invalid signature → 400.
+5. Send a test event from Stripe; expect `{"received":true}`. A missing or invalid signature → 400.
+   **Missing `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` → 503, naming them** — those two used to be
+   indistinguishable in the Stripe dashboard, which sent people off regenerating a signing secret that
+   was never the problem. A failure after the signature verifies → 500, so Stripe retries.
 
-Without Stripe env, checkout surfaces are setup_required — the site still runs.
+Without Stripe env, checkout surfaces are setup_required — the site still runs, and
+`/api/billing/checkout` answers 503 with the variable names rather than "Checkout unavailable".
+See section 4b for the full connector table.
 
 ## 4. Resend (auth email)
 
@@ -109,6 +114,14 @@ Resend) enable email OTP sign-in, email 2FA, and invite delivery. Until both are
 redeployed, email 2FA is not enforced and email delivery reports setup_required — this is a designed
 degradation, not an error. `ENABLE_EMAIL_2FA_BYPASS` keeps 2FA off even with Resend configured; leave
 it unset.
+
+Two failure modes worth knowing before you debug a "missing" email:
+
+- **The domain must be verified in Resend**, not just the key created. An unverified sending domain is
+  accepted by the API and the message is dropped — nothing in the response says so.
+- **Outside production nothing is delivered at any setting.** `createEmailProvider()` returns an
+  in-memory local mailbox when `NODE_ENV !== "production"`; `/connectors` says so rather than reporting
+  a healthy connector. See section 4b.
 
 ## 4a. Object storage for Vantage Drive (`DRIVE_OBJECT_*`)
 
@@ -146,6 +159,68 @@ Notes:
 - The intent is to point this at **Supabase Storage** once that account exists. Identity and product
   data stay on Better Auth + `withRls` regardless — this is object storage only, never the Supabase Data
   API (see `docs/SUPABASE_CUTOVER.md`).
+
+## 4b. Connectors: every variable, callback URL and provider permission
+
+Vantage talks to ten outside services. Every one of them degrades to a named setup state rather than
+an error, and **`/connectors`** (Settings → Connectors) is the page that shows all ten at once with the
+exact callback URL to register, the variables that are missing, the permissions to grant, and working
+Connect / Disconnect buttons. It reads the same catalog this table is generated from —
+`apps/web/lib/connectors/catalog.ts` — so if the two ever disagree, the file is right and this table is
+stale.
+
+Two invariants hold across every connector, and they are worth stating because breaking either is what
+made connectors feel broken before:
+
+- **A callback URL is computed from `BETTER_AUTH_URL` alone, never from the credentials.** The admin who
+  has not created the provider application yet is the only person who needs the URL — and cannot obtain
+  a client id without pasting it in first. So the URL is readable with nothing configured.
+- **"Connected" always means a real stored row**, never "the environment variable is present". A
+  deployment with `GITHUB_OAUTH_CLIENT_ID` set has an OAuth application, not a linked repository.
+
+Replace `https://<your-domain>` with `BETTER_AUTH_URL` exactly — a trailing slash or an `http://` host
+is the most common cause of `redirect_uri_mismatch` an hour later.
+
+| Connector | Variables | URL to register with the provider | Where you create the credential | Permissions / scopes to grant |
+| --- | --- | --- | --- | --- |
+| Google sign-in | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Authorised redirect URI: `https://<your-domain>/api/auth/callback/google` | Google Cloud console → APIs & Services → Credentials → OAuth 2.0 Client IDs → **Web application** | `openid`, `email`, `profile` |
+| GitHub | `GITHUB_OAUTH_CLIENT_ID`, `GITHUB_OAUTH_CLIENT_SECRET` (optional `GITHUB_OAUTH_REDIRECT_URI`, `GITHUB_OAUTH_SCOPES`) | Authorization callback URL: `https://<your-domain>/api/github/oauth/callback` | github.com → Settings → Developer settings → OAuth Apps → New OAuth App | `read:user`, `repo` (never `workflow`; Vantage never pushes) |
+| The Blue Alliance | `TBA_AUTH_KEY` (alias `TBA_API_KEY`) | **none** — TBA has no OAuth and needs no URL from us | thebluealliance.com → Account → Read API Keys | Read API v3 |
+| Onshape | `ONSHAPE_OAUTH_CLIENT_ID`, `ONSHAPE_OAUTH_CLIENT_SECRET` (optional `ONSHAPE_OAUTH_REDIRECT_URI`, `ONSHAPE_OAUTH_SCOPES`) | Redirect URL: `https://<your-domain>/api/cad/onshape/oauth/callback` | dev-portal.onshape.com → OAuth applications | `OAuth2Read`, `OAuth2Write` |
+| Discord | **none for webhooks.** `DISCORD_BOT_TOKEN` (+ `DISCORD_CLIENT_ID` for the invite link) only for bot posts | **none** | Webhook: Discord → Server Settings → Integrations → Webhooks. Bot: discord.com/developers/applications → your app → Bot | Send Messages, Embed Links, Read Message History |
+| Slack | **none for outbound.** `SLACK_SIGNING_SECRET` (or a per-team secret saved on `/team/slack`) only for replies coming back | Request URL: `https://<your-domain>/api/integrations/slack/events` | api.slack.com/apps → your app → Incoming Webhooks, then Event Subscriptions (secret under Basic Information) | `incoming-webhook`, `chat:write`, `channels:history`; subscribe to `message.channels` |
+| Email (Resend) | `RESEND_API_KEY`, `AUTH_EMAIL_FROM` | **none** | resend.com → API Keys, **and** Domains → verify the sending domain | Sending access; the domain in `AUTH_EMAIL_FROM` must be verified |
+| Stripe | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` (optional `DATABASE_BILLING_URL`) | Endpoint URL: `https://<your-domain>/api/stripe/webhook` | Secret key: dashboard.stripe.com → Developers → **API keys**. Signing secret: Developers → **Webhooks** → Add endpoint | Events `checkout.session.completed`, `customer.subscription.*`, `invoice.payment_failed` |
+| Team storage node | `DATABASE_CAD_RELAY_URL` (the `vantage_pairing` role; may point at `DATABASE_URL` until a dedicated role exists) | **none** — the node polls `/api/storage-node/pair/poll` | Run the storage-node agent on the team machine; it prints a pairing code | A pairing code approved by an owner or admin, at `/team/storage` |
+| Fusion 360 relay | `FUSION_RELAY_SIGNING_SECRET`, `DATABASE_CAD_RELAY_URL` | **none** | Install the Vantage Fusion add-in on the laptop | A pairing code approved by an owner or admin, at `/cad/connections` |
+
+Notes that cost time when they are missed:
+
+- **Resend accepts the call and drops the message** when the domain in `AUTH_EMAIL_FROM` is not verified.
+  A green API key is not proof that mail is arriving.
+- **Outside production, email is never delivered at all.** `createEmailProvider()` returns an in-memory
+  local mailbox when `NODE_ENV !== "production"`, whatever `RESEND_API_KEY` says. The status on
+  `/connectors` states this explicitly rather than reporting a healthy connector.
+- **Stripe's webhook answers 503, not 400, when its variables are missing**, and names them. A 400 is
+  reserved for a payload we genuinely do not trust — and Stripe does not retry a 400, so a setup problem
+  reported as one would silently drop the events that arrive while you fix it. A failure *after* the
+  signature verifies is a 500, so Stripe retries rather than treating a lost subscription activation as
+  delivered.
+- **Slack's Request URL must be absolute.** Slack rejects a path. Outbound posting works with just a
+  channel webhook and needs nothing from the deployment; only replies coming back need the signing
+  secret and the Request URL.
+- **Discord needs nothing from the deployment for the common case.** A channel webhook is pasted by the
+  team on `/team/discord`. `DISCORD_BOT_TOKEN` is only for the bot path, which posts to a channel id
+  instead of a webhook.
+- **A revoked GitHub token reports "Token expired — reconnect"**, not "Not connected". `/api/github`
+  with `action: "verify"` spends one call against the stored credential and records the result; a
+  refused credential is told apart from a rate limit by `x-ratelimit-remaining`, because advising a
+  reconnect on a rate limit would throw away a working token.
+- **Pairing endpoints answer 503 for a missing `DATABASE_CAD_RELAY_URL`.** The caller is an agent on
+  someone's shop computer, and a 400 tells it that *it* sent something wrong, so it stops.
+- **A team-scoped connector never reads as Connected from environment alone.** GitHub, Discord, Slack and
+  the storage node each need a row an owner or admin created; until then `/connectors` says "Ready to
+  connect" or "Not connected", which are different states with different fixes.
 
 ## 5. Cron jobs and the CRON_SECRET
 
