@@ -39,7 +39,7 @@ Assumption stated: “a new FRC student can do everything from one login without
 | Check | Result | Evidence |
 |---|---|---|
 | `npm ci` | 718 packages, 9s | this session, no lockfile change |
-| `npm test` | **872 files, 8,290 passed, 10 skipped, 60.19s** | `vitest run` this session |
+| `npm test` | **878 files, 8,320 passed, 10 skipped, 51.93s** | `vitest run` this session |
 | `npm run typecheck` | clean across workspaces that changed | this session |
 | `npx eslint .` | clean (exit 0) | this session, 30.7s |
 | `npm run build --workspace=@vantage/web` | compiled, **zero warnings**, `/connectors` `/team/relays` `/video-analysis` in the route table | `next build` this session, 85.7s |
@@ -92,8 +92,8 @@ See `docs/COMPETITIVE_NOTES.md`. That document is the brief for Tasks 2–4.
 
 | # | Task | Status | Verification |
 |---|---|---|---|
-| 1 | Land / baseline / competitive notes | done | this file + `COMPETITIVE_NOTES.md`; latest full suite **876 files, 8,315 passed, 10 skipped** (53.0s) |
-| 2 | One design system | in progress | tokens in `system.css`; Button now emits `.app-button` so chrome and the primitive match. ClassName migration of leftover `.app-button` still open. |
+| 1 | Land / baseline / competitive notes | done | this file + `COMPETITIVE_NOTES.md`; latest full suite **878 files, 8,320 passed, 10 skipped** (51.93s) |
+| 2 | One design system | in progress | tokens in `system.css`; Button emits `.app-button`. Hub related-strips, ErrorState, ProductHub, and hub-access gates now use `<Button>`. Leftover `className="app-button"` still open on many feature clients. |
 | 3 | Full UI pass | in progress | Workspace jargon replaced with "team". Allowlist / API-budget student copy rewritten. Empty/setup cards now keep one primary (related dests stay in next-actions + hub strip); `empty-state-primary.test.ts` locks it. FEATURE_MAP walk unfinished. |
 | 4 | Home widgets | in progress | Real loaders for student/mentor defaults (files, chat, my day, learn, duties, budget, attendance, outreach, announcements, weather city, …). Live cards in `widgets/home-cards.tsx`. Weather temperature is fetched in the browser from Open-Meteo on event day only — never invented in the snapshot. Canvas helpers (`greeting`, `resolveGrid`, `useMeasuredCanvas`) live in `dashboard-canvas.ts`. `dashboard-client.tsx` is still the drag/save shell. |
 | 5 | Offline shell | in progress | Season calendar now restores the last snapshot and queues add/tick/edit/delete (`calendar_action`). Seed-season still needs a connection. Packing/batteries/pit/season-tasks already queued. Playwright spec also opens `/calendar` and `/packing`. No signed-in `next start` walk. |

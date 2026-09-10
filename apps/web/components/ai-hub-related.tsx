@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "./ui";
 import { hubHref } from "../lib/nav/hubs";
 import { withOrgHref } from "../lib/nav/product-nav";
 
@@ -41,17 +42,17 @@ export function AiHubRelated({
       {AI_TABS.map((link) => {
         if (link.id === active) return null;
         return (
-          <a key={link.id} className="app-button secondary" href={hubHref("/ai", link.id, orgId)}>
+          <Button key={link.id} as="a" variant="secondary" href={hubHref("/ai", link.id, orgId)}>
             {link.label}
-          </a>
+          </Button>
         );
       })}
       {CROSS_HUB.map((link) => {
         if (link.id === active) return null;
         return (
-          <a key={link.id} className="app-button secondary" href={withOrgHref(link.href, orgId)}>
+          <Button key={link.id} as="a" variant="secondary" href={withOrgHref(link.href, orgId)}>
             {link.label}
-          </a>
+          </Button>
         );
       })}
     </nav>

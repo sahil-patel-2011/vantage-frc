@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { EmptyState, PageHeader } from "./ui";
+import { Button, EmptyState, PageHeader } from "./ui";
 import {
   clientCanAccessHub,
   clientCanAccessHubTab,
@@ -32,12 +32,12 @@ export function SoftAccessDenied({
       <EmptyState soft badge={badge} badgeTone="setup" title={heading} description={description}>
         {actions ?? (
           <>
-            <a className="app-button" href="/dashboard">
+            <Button as="a" variant="primary" href="/dashboard">
               Back to Home
-            </a>
-            <a className="app-button secondary" href="/docs">
+            </Button>
+            <Button as="a" variant="secondary" href="/docs">
               App manual
-            </a>
+            </Button>
           </>
         )}
       </EmptyState>
@@ -61,12 +61,12 @@ export function HubTabForbidden({
         owner to update section access under Team → Security.
       </p>
       <div className="product-hub-setup-actions soft-btn-row">
-        <a className="app-button" href="/dashboard">
+        <Button as="a" variant="primary" href="/dashboard">
           Back to Home
-        </a>
-        <a className="app-button secondary" href="/docs?q=hub+access">
+        </Button>
+        <Button as="a" variant="secondary" href="/docs?q=hub+access">
           How section access works
-        </a>
+        </Button>
       </div>
     </section>
   );
@@ -82,15 +82,15 @@ export function SponsorsFundingForbidden({ breadcrumbs = "Business / Sponsors" }
       description="Your funding profile turns off sponsor CRM and the tools that depend on it. An owner can re-enable sponsors under Team → Background."
       actions={
         <>
-          <a className="app-button" href="/business">
+          <Button as="a" variant="primary" href="/business">
             Open Business
-          </a>
-          <a className="app-button secondary" href="/team/background">
+          </Button>
+          <Button as="a" variant="secondary" href="/team/background">
             Funding profile
-          </a>
-          <a className="app-button secondary" href="/docs?q=sponsors">
+          </Button>
+          <Button as="a" variant="secondary" href="/docs?q=sponsors">
             App manual
-          </a>
+          </Button>
         </>
       }
     />

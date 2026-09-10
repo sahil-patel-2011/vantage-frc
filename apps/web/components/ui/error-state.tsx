@@ -85,9 +85,9 @@ export function ErrorState({
       {body != null && body !== "" ? <p className={styles.errorMessage}>{body}</p> : null}
       <div className={styles.errorActions}>
         {copy.primary ? (
-          <a className="app-button" href={copy.primary.href}>
+          <Button as="a" variant="primary" href={copy.primary.href}>
             {copy.primary.label}
-          </a>
+          </Button>
         ) : null}
         {copy.showRetry ? (
           <Button variant="secondary" size="sm" onClick={retry}>

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react
 import { HelpTip } from "./help-tip";
 import { HubTabForbidden } from "./hub-access-gate";
 import { OfflineBanner } from "./offline-banner";
-import { EmptyState, PageHeader, TabBar, ToolStrip } from "./ui";
+import { EmptyState, PageHeader, TabBar, ToolStrip, Button } from "./ui";
 import { sectionHelpFor } from "../lib/help/section-help";
 import {
   clientCanAccessHub,
@@ -93,9 +93,9 @@ export function HubLegacyRedirect({
       <span className="app-badge">Opening</span>
       <h2>{def?.label ?? "Feature"}</h2>
       <p className="app-muted">Taking you to the full page…</p>
-      <a className="app-button secondary" href={href}>
+      <Button as="a" variant="secondary" href={href}>
         Continue
-      </a>
+      </Button>
     </section>
   );
 }
@@ -111,9 +111,9 @@ export function HubLegacyOpen({ label, href }: { label: string; href: string }) 
       <span className="app-badge">Opening</span>
       <h2>{label}</h2>
       <p className="app-muted">Taking you to the full page…</p>
-      <a className="app-button secondary" href={href}>
+      <Button as="a" variant="secondary" href={href}>
         Continue
-      </a>
+      </Button>
     </section>
   );
 }
@@ -203,9 +203,9 @@ export function ProductHubShell({
           title={`${hub.label} is not available`}
           description="Your access to this section is limited. Ask an owner to update it under Security."
         >
-          <a className="app-button" href="/dashboard">
+          <Button as="a" variant="primary" href="/dashboard">
             Home
-          </a>
+          </Button>
         </EmptyState>
       </main>
     );
@@ -293,9 +293,9 @@ export function HubOrgGate({
         <h2>Choose a team</h2>
         <p className="app-muted">{label} needs a team selected.</p>
         <div className="product-hub-setup-actions">
-          <a className="app-button" href="/workspace">
+          <Button as="a" variant="primary" href="/workspace">
             Choose team
-          </a>
+          </Button>
         </div>
       </section>
     );

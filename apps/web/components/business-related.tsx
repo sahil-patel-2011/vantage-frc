@@ -1,5 +1,7 @@
 "use client";
 
+import { Button } from "./ui";
+
 import {
   businessRelatedLinks,
   type BusinessRelatedId,
@@ -27,9 +29,9 @@ export function BusinessRelated({
       aria-label={ariaLabel}
     >
       {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
+        <Button key={link.id} as="a" variant="secondary" href={link.href}>
           {link.label}
-        </a>
+        </Button>
       ))}
     </nav>
   );
