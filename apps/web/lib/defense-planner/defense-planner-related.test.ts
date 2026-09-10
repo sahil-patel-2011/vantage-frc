@@ -4,6 +4,7 @@ import {
   classifyDefensePlannerShell,
   defensePlannerNextActions,
   defensePlannerRelatedLinks,
+  defensePlannerSetupSteps,
   defensePlannerShellCopy,
   formatDefensePlannerMetric,
   shouldShowDefensePlannerSummaryTiles,
@@ -39,20 +40,30 @@ describe("defensePlannerRelatedLinks", () => {
   });
 });
 
+describe("defensePlannerSetupSteps", () => {
+  it("no-org setup is only Choose your team", () => {
+    expect(defensePlannerSetupSteps(null).map((s) => s.id)).toEqual(["workspace"]);
+  });
+
+  it("keeps Set active event; Strategy / Scouting / Counter-book live on the related strip", () => {
+    const steps = defensePlannerSetupSteps("org-1");
+    expect(steps.map((s) => s.id)).toEqual(["command"]);
+    expect(steps[0]?.href).toBe("/competition?tab=command&orgId=org-1");
+  });
+});
+
 describe("defensePlannerNextActions", () => {
   it("gates on workspace when org is missing", () => {
     const actions = defensePlannerNextActions({ orgId: null, shell: "setup" });
+    expect(actions.map((a) => a.id)).toEqual(["workspace"]);
     expect(actions[0]?.href).toBe("/workspace");
     expect(actions[0]?.primary).toBe(true);
-    expect(actions.some((a) => a.id === "strategy")).toBe(true);
-    expect(actions.some((a) => a.id === "scouting")).toBe(true);
   });
 
-  it("setup with org points at Workspace + Strategy / Scouting", () => {
+  it("setup with org is only Set active event", () => {
     const actions = defensePlannerNextActions({ orgId: "org-1", shell: "setup" });
-    expect(actions[0]?.id).toBe("workspace");
-    expect(actions.some((a) => a.id === "strategy")).toBe(true);
-    expect(actions.some((a) => a.id === "scouting")).toBe(true);
+    expect(actions.map((a) => a.id)).toEqual(["command"]);
+    expect(actions[0]?.href).toBe("/competition?tab=command&orgId=org-1");
     expect(actions.every((a) => !/\bdemo\b/i.test(`${a.label} ${a.detail}`))).toBe(true);
   });
 

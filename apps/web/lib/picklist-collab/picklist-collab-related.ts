@@ -70,27 +70,41 @@ export type PicklistCollabSetupStepLink = {
   href: string;
 };
 
+function picklistCollabRelatedHrefs(orgId?: string | null): Set<string> {
+  return new Set(
+    picklistCollabRelatedLinks(orgId, {
+      include: [...PICKLIST_COLLAB_RELATED_INCLUDE],
+    }).map((link) => link.href),
+  );
+}
+
+function dropRelatedStripDuplicates<T extends { href: string }>(
+  orgId: string | null | undefined,
+  items: T[],
+): T[] {
+  const related = picklistCollabRelatedHrefs(orgId);
+  return items.filter((item) => !related.has(item.href));
+}
+
 export function picklistCollabSetupSteps(orgId?: string | null): PicklistCollabSetupStepLink[] {
-  return [
+  if (!orgId) {
+    return [
+      {
+        id: "workspace",
+        label: "Choose your team",
+        detail: "Choose your team to open pick lists.",
+        href: "/workspace",
+      },
+    ];
+  }
+  return dropRelatedStripDuplicates(orgId, [
     {
-      id: "workspace",
-      label: "Choose your team",
-      detail: "Choose your team to open pick lists.",
-      href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
+      id: "command",
+      label: "Set active event",
+      detail: "Pick the event this alliance is at — ranks stay empty until it is set.",
+      href: hubHref("/competition", "command", orgId),
     },
-    {
-      id: "strategy",
-      label: "Open Strategy",
-      detail: "Event strategy stays empty until real metrics exist.",
-      href: hubHref("/competition", "strategy", orgId),
-    },
-    {
-      id: "scouting",
-      label: "Open Scouting",
-      detail: "Scout rows stay blank until your team enters them.",
-      href: hubHref("/competition", "scouting", orgId),
-    },
-  ];
+  ]);
 }
 
 /** Real entry / vote counts only — never invent DEMO totals. */

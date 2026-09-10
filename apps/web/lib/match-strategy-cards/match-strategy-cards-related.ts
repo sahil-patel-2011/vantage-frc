@@ -1,5 +1,6 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
+import { setupActionsFrom } from "../setup-actions";
 
 /** Soft-UI related surfaces for Match Strategy Cards (never DEMO game plans). */
 export const MATCH_STRATEGY_CARDS_RELATED_LINKS = [
@@ -75,35 +76,43 @@ export type MatchStrategyCardsSetupStepLink = {
   href: string;
 };
 
+function matchStrategyCardsRelatedHrefs(orgId?: string | null): Set<string> {
+  return new Set(
+    matchStrategyCardsRelatedLinks(orgId, {
+      include: [...MATCH_STRATEGY_CARDS_RELATED_INCLUDE],
+    }).map((link) => link.href),
+  );
+}
+
+function dropRelatedStripDuplicates<T extends { href: string }>(
+  orgId: string | null | undefined,
+  items: T[],
+): T[] {
+  const related = matchStrategyCardsRelatedHrefs(orgId);
+  return items.filter((item) => !related.has(item.href));
+}
+
 export function matchStrategyCardsSetupSteps(
   orgId?: string | null,
 ): MatchStrategyCardsSetupStepLink[] {
-  return [
+  if (!orgId) {
+    return [
+      {
+        id: "workspace",
+        label: "Choose your team",
+        detail: "Choose your team to open strategy cards.",
+        href: "/workspace",
+      },
+    ];
+  }
+  return dropRelatedStripDuplicates(orgId, [
     {
-      id: "workspace",
-      label: "Choose your team",
-      detail: "Choose your team to open strategy cards.",
-      href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
+      id: "team-data",
+      label: "Sync Team Data",
+      detail: "Pull the match schedule from The Blue Alliance so cards can appear.",
+      href: withOrgHref("/team/data", orgId),
     },
-    {
-      id: "strategy",
-      label: "Open Strategy",
-      detail: "Confirm event context and schedule sync.",
-      href: hubHref("/competition", "strategy", orgId),
-    },
-    {
-      id: "command",
-      label: "Open Command",
-      detail: "Event-day command stays empty until real matches exist.",
-      href: hubHref("/competition", "command", orgId),
-    },
-    {
-      id: "match-checklist",
-      label: "Open Match checklist",
-      detail: "Pair printable cards with pre-match checklists.",
-      href: hubHref("/competition", "match-checklist", orgId),
-    },
-  ];
+  ]);
 }
 
 /** Real card / saved counts only — never invent DEMO totals. */
@@ -201,50 +210,7 @@ export function matchStrategyCardsNextActions(input: {
   const needsDeploySafety = Boolean(input.needsDeploySafety);
 
   if (!orgId || input.shell === "setup") {
-    if (!orgId) {
-      return [
-        {
-          id: "workspace",
-          label: "Choose your team",
-          detail: "Pick a team before drafting plans.",
-          href: "/workspace",
-          primary: true,
-        },
-        {
-          id: "strategy",
-          label: "Open Strategy",
-          detail: "Confirm event context.",
-          href: hubHref("/competition", "strategy", null),
-        },
-        {
-          id: "command",
-          label: "Open Command",
-          detail: "Event-day command stays empty until real matches exist.",
-          href: hubHref("/competition", "command", null),
-        },
-      ];
-    }
-    return [
-      {
-        id: "workspace",
-        label: "Choose your team",
-        detail: "Finish membership setup so Match Strategy Cards can resolve your organization.",
-        href: withOrgHref("/workspace", orgId),
-        primary: true,
-      },
-      {
-        id: "strategy",
-        label: "Open Strategy",
-        detail: "Set active event so the match schedule can sync.",
-        href: hubHref("/competition", "strategy", orgId),
-      },
-      {
-        id: "command",
-        label: "Open Command",
-        detail: "Confirm event-day context before printing cards.",
-        href: hubHref("/competition", "command", orgId),
-      },
-    ];
+    return setupActionsFrom(matchStrategyCardsSetupSteps(orgId));
   }
 
   if (input.shell === "error") {

@@ -110,7 +110,7 @@ function DossierShell({
           },
         )
       : null;
-  const steps = shell === "setup" ? dossierSetupSteps(orgId) : [];
+  const setup = shell === "setup" ? dossierSetupSteps(orgId)[0] : null;
   const teamDataHref = withOrgHref("/team/data", orgId);
 
   return (
@@ -154,35 +154,18 @@ function DossierShell({
             Retry
           </Button>
         ) : null}
-        {shell === "setup" ? (
-          <Button as="a" variant="primary" href={orgId ? teamDataHref : "/workspace"}>{orgId ? "Sync Team Data" : "Choose your team"}</Button>
+        {!failure?.primary && setup ? (
+          <Button as="a" variant="primary" href={setup.href}>
+            {setup.label}
+          </Button>
         ) : null}
         {shell === "empty" ? (
-          <Button as="a" variant="primary" href={teamDataHref}>Sync season metrics</Button>
+          <Button as="a" variant="primary" href={teamDataHref}>
+            Sync season metrics
+          </Button>
         ) : null}
       </EmptyState>
-      {steps.length > 0 ? (
-        <Panel className="dossier-panel" aria-label="Setup steps">
-          <header>
-            <h2>Setup steps</h2>
-            <p className="app-muted">Finish these once and this page fills in.</p>
-          </header>
-          <ul className="dossier-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <p className="app-muted">{step.detail}</p>
-                </div>
-                <Button as="a" variant="secondary" href={step.href}>
-                  Open
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </Panel>
-      ) : null}
-      {steps.length === 0 ? <DossierNextActionsPanel actions={actions} /> : null}
+      {shell === "ready" ? <DossierNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }
@@ -384,47 +367,10 @@ export default function DossierClient() {
                 : emptyCopy.description
             }
           >
-            {/* One action: the thing that actually fills this page. Strategy,
-                Scouting, and Pick desk are in the strip at the top and again in
-                Setup steps and Next actions directly below, each with the
-                reason you would go there. */}
             <Button as="a" variant="primary" href={withOrgHref("/team/data", resolvedOrgId)}>
               Sync season metrics
             </Button>
           </EmptyState>
-          {view?.status === "empty" || view?.status === "setup_required" ? (
-            <Panel className="dossier-panel" aria-label="Setup steps">
-              <header>
-                <h2>Setup steps</h2>
-                <p className="app-muted">Finish these once and this page fills in.</p>
-              </header>
-              <ol className="dossier-setup-steps">
-                {view.steps.map((step) => (
-                  <li key={step.id} className={step.done ? "done" : undefined}>
-                    <div>
-                      <strong>{step.label}</strong>
-                      <p className="app-muted">{step.detail}</p>
-                    </div>
-                    {step.done ? (
-                      <em className="app-muted">Done</em>
-                    ) : (
-                      <Button as="a" variant="secondary" href={step.href}>
-                        Open
-                      </Button>
-                    )}
-                  </li>
-                ))}
-              </ol>
-              {"referenceAccess" in view && !view.referenceAccess.statbotics.cacheHasMetrics ? (
-                <p className="app-muted">
-                  Statbotics cache: empty ({view.referenceAccess.statbotics.eventMetricRows} event /{" "}
-                  {view.referenceAccess.statbotics.yearMetricRows} year rows). Public API — no key
-                  required.
-                </p>
-              ) : null}
-            </Panel>
-          ) : null}
-          <DossierNextActionsPanel actions={readyActions} />
         </>
       ) : view?.status === "live" ? (
         <>

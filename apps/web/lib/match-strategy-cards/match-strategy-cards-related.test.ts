@@ -5,6 +5,7 @@ import {
   formatMatchStrategyCardsMetric,
   matchStrategyCardsNextActions,
   matchStrategyCardsRelatedLinks,
+  matchStrategyCardsSetupSteps,
   matchStrategyCardsShellCopy,
   shouldShowMatchStrategyCardsSummaryTiles,
 } from "./match-strategy-cards-related";
@@ -26,10 +27,30 @@ describe("matchStrategyCardsRelatedLinks", () => {
   });
 });
 
+describe("matchStrategyCardsSetupSteps", () => {
+  it("no-org setup is only Choose your team", () => {
+    expect(matchStrategyCardsSetupSteps(null).map((s) => s.id)).toEqual(["workspace"]);
+  });
+
+  it("keeps Sync Team Data; Strategy / Checklist / Command live on the related strip", () => {
+    const steps = matchStrategyCardsSetupSteps("org-1");
+    expect(steps.map((s) => s.id)).toEqual(["team-data"]);
+    expect(steps[0]?.href).toBe("/team/data?orgId=org-1");
+  });
+});
+
 describe("matchStrategyCardsNextActions", () => {
   it("gates on workspace when org is missing", () => {
     const actions = matchStrategyCardsNextActions({ orgId: null, shell: "setup" });
+    expect(actions.map((a) => a.id)).toEqual(["workspace"]);
     expect(actions[0]?.href).toBe("/workspace");
+    expect(actions[0]?.primary).toBe(true);
+  });
+
+  it("setup with org is only Sync Team Data", () => {
+    const actions = matchStrategyCardsNextActions({ orgId: "org-1", shell: "setup" });
+    expect(actions.map((a) => a.id)).toEqual(["team-data"]);
+    expect(actions[0]?.href).toBe("/team/data?orgId=org-1");
   });
 
   it("points empty schedules at strategy sync", () => {

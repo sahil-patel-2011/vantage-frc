@@ -1,7 +1,6 @@
 import { EmptyState, PageHeader, Button } from "../../../components/ui";
 import {
   LINEUP_RELATED_INCLUDE,
-  lineupNextActions,
   lineupRelatedLinks,
   lineupSetupSteps,
   lineupShellCopy,
@@ -22,9 +21,8 @@ export default async function ScoutingLineupPage({
   const { orgId } = await searchParams;
   if (!orgId) {
     const copy = lineupShellCopy("setup");
-    const actions = lineupNextActions({ orgId: null, shell: "setup" });
     const related = lineupRelatedLinks(null, { include: [...LINEUP_RELATED_INCLUDE] });
-    const steps = lineupSetupSteps(null);
+    const setup = lineupSetupSteps(null)[0];
     return (
       <main className="module-page lineup-page soft-gate">
         <PageHeader
@@ -47,51 +45,12 @@ export default async function ScoutingLineupPage({
           title={copy.title}
           description={copy.description}
         >
-          <Button as="a" variant="primary" href="/workspace">
-            Choose your team
-          </Button>
+          {setup ? (
+            <Button as="a" variant="primary" href={setup.href}>
+              {setup.label}
+            </Button>
+          ) : null}
         </EmptyState>
-        <section className="app-card soft-panel lineup-panel" aria-label="Setup steps">
-          <header>
-            <h2>Setup steps</h2>
-            <p className="app-muted">Finish these once and this page fills in.</p>
-          </header>
-          <ul className="lineup-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <p className="app-muted lineup-tip">{step.detail}</p>
-                </div>
-                <Button as="a" variant="secondary" href={step.href}>
-                  Open
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </section>
-        <section
-          className="app-card soft-panel edc-next-actions lineup-next-actions"
-          aria-label="Next actions"
-        >
-          <header>
-            <h2>Next actions</h2>
-            <p className="app-muted">Each one opens the page where you finish the work.</p>
-          </header>
-          <ol>
-            {actions.map((action) => (
-              <li key={action.id} className={action.primary ? "primary" : undefined}>
-                <div>
-                  <strong>{action.label}</strong>
-                  <span>{action.detail}</span>
-                </div>
-                <Button as="a" variant="secondary" href={action.href}>
-                  Open
-                </Button>
-              </li>
-            ))}
-          </ol>
-        </section>
         <p className="app-muted lineup-footer-links">
           Also see <a href={withOrgHref("/scout-coverage-live", null)}>Scout Coverage Live</a>
         </p>

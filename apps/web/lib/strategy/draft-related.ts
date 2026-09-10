@@ -1,5 +1,6 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
+import { setupActionsFrom } from "../setup-actions";
 
 /** Soft-UI related surfaces for Draft board (never DEMO boards). */
 export const DRAFT_RELATED_LINKS = [
@@ -68,39 +69,39 @@ export type DraftSetupStep = {
   href: string;
 };
 
+function draftRelatedHrefs(orgId?: string | null): Set<string> {
+  return new Set(
+    draftRelatedLinks(orgId, { include: [...DRAFT_RELATED_INCLUDE] }).map((link) => link.href),
+  );
+}
+
+function dropRelatedStripDuplicates<T extends { href: string }>(
+  orgId: string | null | undefined,
+  items: T[],
+): T[] {
+  const related = draftRelatedHrefs(orgId);
+  return items.filter((item) => !related.has(item.href));
+}
+
 export function draftSetupSteps(orgId?: string | null): DraftSetupStep[] {
-  return [
-    {
-      id: "workspace",
-      label: "Choose your team",
-      detail: "Choose your team to open draft boards.",
-      href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
-    },
+  if (!orgId) {
+    return [
+      {
+        id: "workspace",
+        label: "Choose your team",
+        detail: "Choose your team to open draft boards.",
+        href: "/workspace",
+      },
+    ];
+  }
+  return dropRelatedStripDuplicates(orgId, [
     {
       id: "command",
       label: "Set active event",
-      detail: "Pick the TBA event your team is competing at — alliance slots stay blank until synced.",
+      detail: "Pick the event this alliance is at — alliance slots stay blank until it is set.",
       href: hubHref("/competition", "command", orgId),
     },
-    {
-      id: "team-data",
-      label: "Sync Team Data",
-      detail: "Pull rankings from The Blue Alliance and Statbotics.",
-      href: withOrgHref("/team/data", orgId),
-    },
-    {
-      id: "pick-desk",
-      label: "Open Pick desk",
-      detail: "Arrange first / second / third picks from real event teams before draft day.",
-      href: withOrgHref("/strategy?tab=picks", orgId),
-    },
-    {
-      id: "scouting",
-      label: "Open Scouting",
-      detail: "Match and pit entries deepen pick assist once synced.",
-      href: hubHref("/competition", "scouting", orgId),
-    },
-  ];
+  ]);
 }
 
 /** Real pool / filled-slot counts only — never invent DEMO totals. */
@@ -212,62 +213,7 @@ export function draftNextActions(input: {
   const filledSlots = input.filledSlots ?? 0;
 
   if (!orgId || input.shell === "setup") {
-    if (!orgId) {
-      return [
-        {
-          id: "workspace",
-          label: "Choose your team",
-          detail: "Choose a team before alliance selection.",
-          href: "/workspace",
-          primary: true,
-        },
-        {
-          id: "strategy",
-          label: "Open Strategy",
-          detail: "Win/loss and draft day stay empty until real metrics exist.",
-          href: hubHref("/competition", "strategy", null),
-        },
-        {
-          id: "pick-desk",
-          label: "Open Pick desk",
-          detail: "Pick tiers stay blank until your team syncs event rows.",
-          href: withOrgHref("/strategy?tab=picks", null),
-        },
-        {
-          id: "scouting",
-          label: "Open Scouting",
-          detail: "Scout rows stay blank until your team enters them.",
-          href: hubHref("/competition", "scouting", null),
-        },
-      ];
-    }
-    return [
-      {
-        id: "command",
-        label: "Set active event",
-        detail: "Draft day needs a TBA event before the alliance board appears.",
-        href: hubHref("/competition", "command", orgId),
-        primary: true,
-      },
-      {
-        id: "strategy",
-        label: "Open Strategy",
-        detail: "Confirm event context before opening draft day.",
-        href: hubHref("/competition", "strategy", orgId),
-      },
-      {
-        id: "pick-desk",
-        label: "Open Pick desk",
-        detail: "Arrange first / second / third picks before captains start selecting.",
-        href: withOrgHref("/strategy?tab=picks", orgId),
-      },
-      {
-        id: "scouting",
-        label: "Open Scouting",
-        detail: "Scout depth stays honest when the event is unset.",
-        href: hubHref("/competition", "scouting", orgId),
-      },
-    ];
+    return setupActionsFrom(draftSetupSteps(orgId));
   }
 
   if (input.shell === "error") {

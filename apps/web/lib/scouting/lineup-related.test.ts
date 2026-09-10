@@ -42,19 +42,14 @@ describe("lineupRelatedLinks", () => {
 });
 
 describe("lineupSetupSteps", () => {
-  it("uses hubHref / withOrgHref and never DEMO %", () => {
+  it("no-org setup is only Choose your team", () => {
+    expect(lineupSetupSteps(null).map((s) => s.id)).toEqual(["workspace"]);
+  });
+
+  it("keeps Set active event; Scouting / Strategy / Form builder live on the related strip", () => {
     const steps = lineupSetupSteps("org-1");
-    expect(steps.find((s) => s.id === "workspace")?.href).toBe("/workspace?orgId=org-1");
-    expect(steps.find((s) => s.id === "command")?.href).toBe(
-      "/competition?tab=command&orgId=org-1",
-    );
-    expect(steps.find((s) => s.id === "scouting")?.href).toBe(
-      "/competition?tab=scouting&orgId=org-1",
-    );
-    expect(steps.find((s) => s.id === "forms")?.href).toBe("/competition?tab=forms&orgId=org-1");
-    expect(steps.find((s) => s.id === "strategy")?.href).toBe(
-      "/competition?tab=strategy&orgId=org-1",
-    );
+    expect(steps.map((s) => s.id)).toEqual(["command"]);
+    expect(steps[0]?.href).toBe("/competition?tab=command&orgId=org-1");
     expect(steps.every((s) => !/\bDEMO\b/.test(s.label))).toBe(true);
     expect(steps.every((s) => !/demo/i.test(s.href))).toBe(true);
   });
@@ -217,18 +212,15 @@ describe("defaultLineupFocusMatchKey", () => {
 describe("lineupNextActions", () => {
   it("prioritizes workspace when no org", () => {
     const actions = lineupNextActions({ orgId: null, shell: "setup" });
-    expect(actions[0]?.id).toBe("workspace");
-    expect(actions.some((a) => a.id === "scouting")).toBe(true);
-    expect(actions.some((a) => a.id === "strategy")).toBe(true);
-    expect(actions.some((a) => a.id === "forms")).toBe(true);
+    expect(actions.map((a) => a.id)).toEqual(["workspace"]);
+    expect(actions[0]?.href).toBe("/workspace");
+    expect(actions[0]?.primary).toBe(true);
   });
 
-  it("setup with org points at Event Day + Scouting / Form builder / Strategy", () => {
+  it("setup with org is only Set active event", () => {
     const actions = lineupNextActions({ orgId: "org-1", shell: "setup" });
-    expect(actions[0]?.id).toBe("command");
-    expect(actions.some((a) => a.id === "scouting")).toBe(true);
-    expect(actions.some((a) => a.id === "forms")).toBe(true);
-    expect(actions.some((a) => a.id === "strategy")).toBe(true);
+    expect(actions.map((a) => a.id)).toEqual(["command"]);
+    expect(actions[0]?.href).toBe("/competition?tab=command&orgId=org-1");
     expect(actions.every((a) => !/\bDEMO\b/.test(a.label))).toBe(true);
     expect(actions.every((a) => !/demo/i.test(a.href))).toBe(true);
   });

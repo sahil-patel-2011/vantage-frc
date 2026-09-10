@@ -70,33 +70,41 @@ export type DefensePlannerSetupStep = {
   href: string;
 };
 
+function defensePlannerRelatedHrefs(orgId?: string | null): Set<string> {
+  return new Set(
+    defensePlannerRelatedLinks(orgId, {
+      include: [...DEFENSE_PLANNER_RELATED_INCLUDE],
+    }).map((link) => link.href),
+  );
+}
+
+function dropRelatedStripDuplicates<T extends { href: string }>(
+  orgId: string | null | undefined,
+  items: T[],
+): T[] {
+  const related = defensePlannerRelatedHrefs(orgId);
+  return items.filter((item) => !related.has(item.href));
+}
+
 export function defensePlannerSetupSteps(orgId?: string | null): DefensePlannerSetupStep[] {
-  return [
+  if (!orgId) {
+    return [
+      {
+        id: "workspace",
+        label: "Choose your team",
+        detail: "Choose your team to open Defense Planner.",
+        href: "/workspace",
+      },
+    ];
+  }
+  return dropRelatedStripDuplicates(orgId, [
     {
-      id: "workspace",
-      label: "Choose your team",
-      detail: "Choose your team to open Defense Planner.",
-      href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
+      id: "command",
+      label: "Set active event",
+      detail: "Pick the event this alliance is at — matchups stay empty until it is set.",
+      href: hubHref("/competition", "command", orgId),
     },
-    {
-      id: "strategy",
-      label: "Open Strategy",
-      detail: "Event strategy stays empty until real metrics exist.",
-      href: hubHref("/competition", "strategy", orgId),
-    },
-    {
-      id: "scouting",
-      label: "Open Scouting",
-      detail: "Scout rows stay blank until your team enters them.",
-      href: hubHref("/competition", "scouting", orgId),
-    },
-    {
-      id: "counter-book",
-      label: "Open Counter-book",
-      detail: "Opponent tendencies stay blank until scout samples exist.",
-      href: hubHref("/competition", "counter-book", orgId),
-    },
-  ];
+  ]);
 }
 
 /** Real matchup counts only — never invent DEMO defense totals. */

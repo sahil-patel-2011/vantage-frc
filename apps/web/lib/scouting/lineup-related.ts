@@ -1,6 +1,7 @@
 import type { CoverageGapStatus, CoverageSlotInput } from "@vantage/scouting/coverage";
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
+import { setupActionsFrom } from "../setup-actions";
 
 /** Soft-UI related surfaces for Lineup & Coverage (never DEMO %). */
 export const LINEUP_RELATED_LINKS = [
@@ -68,39 +69,39 @@ export type LineupSetupStep = {
   href: string;
 };
 
+function lineupRelatedHrefs(orgId?: string | null): Set<string> {
+  return new Set(
+    lineupRelatedLinks(orgId, { include: [...LINEUP_RELATED_INCLUDE] }).map((link) => link.href),
+  );
+}
+
+function dropRelatedStripDuplicates<T extends { href: string }>(
+  orgId: string | null | undefined,
+  items: T[],
+): T[] {
+  const related = lineupRelatedHrefs(orgId);
+  return items.filter((item) => !related.has(item.href));
+}
+
 export function lineupSetupSteps(orgId?: string | null): LineupSetupStep[] {
-  return [
-    {
-      id: "workspace",
-      label: "Choose your team",
-      detail: "Choose your team to open coverage.",
-      href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
-    },
+  if (!orgId) {
+    return [
+      {
+        id: "workspace",
+        label: "Choose your team",
+        detail: "Choose your team to open coverage.",
+        href: "/workspace",
+      },
+    ];
+  }
+  return dropRelatedStripDuplicates(orgId, [
     {
       id: "command",
       label: "Set active event",
-      detail: "Pick the TBA event your team is competing at — schedule stays blank until synced.",
+      detail: "Pick the event this alliance is at — schedule stays blank until it is set.",
       href: hubHref("/competition", "command", orgId),
     },
-    {
-      id: "scouting",
-      label: "Open Scouting",
-      detail: "Assignments and entries stay blank until real scout rows exist.",
-      href: hubHref("/competition", "scouting", orgId),
-    },
-    {
-      id: "forms",
-      label: "Open Form builder",
-      detail: "Publish a real schema before scouts fill match rows.",
-      href: hubHref("/competition", "forms", orgId),
-    },
-    {
-      id: "strategy",
-      label: "Open Strategy",
-      detail: "Pick desk reads the same coverage.",
-      href: hubHref("/competition", "strategy", orgId),
-    },
-  ];
+  ]);
 }
 
 /** Real slot counts only — never invent DEMO totals. */
@@ -337,62 +338,7 @@ export function lineupNextActions(input: {
   const totalSlots = input.totalSlots ?? 0;
 
   if (!orgId || input.shell === "setup") {
-    if (!orgId) {
-      return [
-        {
-          id: "workspace",
-          label: "Choose your team",
-          detail: "Pick a team before watching live gaps.",
-          href: "/workspace",
-          primary: true,
-        },
-        {
-          id: "scouting",
-          label: "Open Scouting",
-          detail: "Scout rows stay blank until your team enters them.",
-          href: hubHref("/competition", "scouting", null),
-        },
-        {
-          id: "strategy",
-          label: "Open Strategy",
-          detail: "Pick lists stay empty until real metrics exist.",
-          href: hubHref("/competition", "strategy", null),
-        },
-        {
-          id: "forms",
-          label: "Open Form builder",
-          detail: "Schemas stay blank until you publish a real form.",
-          href: hubHref("/competition", "forms", null),
-        },
-      ];
-    }
-    return [
-      {
-        id: "command",
-        label: "Set active event",
-        detail: "Lineup needs a TBA event context before match slots appear.",
-        href: hubHref("/competition", "command", orgId),
-        primary: true,
-      },
-      {
-        id: "scouting",
-        label: "Open Scouting",
-        detail: "Confirm assignments and entries for the active event.",
-        href: hubHref("/competition", "scouting", orgId),
-      },
-      {
-        id: "forms",
-        label: "Open Form builder",
-        detail: "Publish a schema so scouts can fill real match rows.",
-        href: hubHref("/competition", "forms", orgId),
-      },
-      {
-        id: "strategy",
-        label: "Open Strategy",
-        detail: "Pick desk coverage stays honest when the event is unset.",
-        href: hubHref("/competition", "strategy", orgId),
-      },
-    ];
+    return setupActionsFrom(lineupSetupSteps(orgId));
   }
 
   if (input.shell === "error") {

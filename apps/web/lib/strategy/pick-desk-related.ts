@@ -1,5 +1,6 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
+import { setupActionsFrom } from "../setup-actions";
 
 /** Soft-UI related surfaces for Pick desk (never DEMO picks). */
 export const PICK_DESK_RELATED_LINKS = [
@@ -72,39 +73,39 @@ export type PickDeskSetupStep = {
   href: string;
 };
 
+function pickDeskRelatedHrefs(orgId?: string | null): Set<string> {
+  return new Set(
+    pickDeskRelatedLinks(orgId, { include: [...PICK_DESK_RELATED_INCLUDE] }).map((link) => link.href),
+  );
+}
+
+function dropRelatedStripDuplicates<T extends { href: string }>(
+  orgId: string | null | undefined,
+  items: T[],
+): T[] {
+  const related = pickDeskRelatedHrefs(orgId);
+  return items.filter((item) => !related.has(item.href));
+}
+
 export function pickDeskSetupSteps(orgId?: string | null): PickDeskSetupStep[] {
-  return [
-    {
-      id: "workspace",
-      label: "Choose your team",
-      detail: "Choose your team to open pick desks.",
-      href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
-    },
+  if (!orgId) {
+    return [
+      {
+        id: "workspace",
+        label: "Choose your team",
+        detail: "Choose your team to open pick desks.",
+        href: "/workspace",
+      },
+    ];
+  }
+  return dropRelatedStripDuplicates(orgId, [
     {
       id: "command",
       label: "Set active event",
-      detail: "Pick the TBA event your team is competing at — ranks stay blank until synced.",
+      detail: "Pick the event this alliance is at — ranks stay blank until it is set.",
       href: hubHref("/competition", "command", orgId),
     },
-    {
-      id: "team-data",
-      label: "Sync Team Data",
-      detail: "Pull rankings from The Blue Alliance and Statbotics.",
-      href: withOrgHref("/team/data", orgId),
-    },
-    {
-      id: "scouting",
-      label: "Open Scouting",
-      detail: "Match and pit entries deepen pick explainability once synced.",
-      href: hubHref("/competition", "scouting", orgId),
-    },
-    {
-      id: "coverage",
-      label: "Open Coverage",
-      detail: "Confirm which matches still need scouts before trusting pick ranks.",
-      href: withOrgHref("/scouting/lineup", orgId),
-    },
-  ];
+  ]);
 }
 
 /** Real candidate / list counts only — never invent DEMO totals. */
@@ -201,62 +202,7 @@ export function pickDeskNextActions(input: {
   const listCount = input.listCount ?? 0;
 
   if (!orgId || input.shell === "setup") {
-    if (!orgId) {
-      return [
-        {
-          id: "workspace",
-          label: "Choose your team",
-          detail: "Choose a team before ranking alliances.",
-          href: "/workspace",
-          primary: true,
-        },
-        {
-          id: "strategy",
-          label: "Open Strategy",
-          detail: "Win/loss and pick lists stay empty until real metrics exist.",
-          href: hubHref("/competition", "strategy", null),
-        },
-        {
-          id: "scouting",
-          label: "Open Scouting",
-          detail: "Scout rows stay blank until your team enters them.",
-          href: hubHref("/competition", "scouting", null),
-        },
-        {
-          id: "coverage",
-          label: "Open Coverage",
-          detail: "Coverage stays blank until a schedule syncs.",
-          href: withOrgHref("/scouting/lineup", null),
-        },
-      ];
-    }
-    return [
-      {
-        id: "command",
-        label: "Set active event",
-        detail: "Pick desk needs a TBA event before the candidate pool appears.",
-        href: hubHref("/competition", "command", orgId),
-        primary: true,
-      },
-      {
-        id: "strategy",
-        label: "Open Strategy",
-        detail: "Confirm event context before arranging first / second / third picks.",
-        href: hubHref("/competition", "strategy", orgId),
-      },
-      {
-        id: "scouting",
-        label: "Open Scouting",
-        detail: "Scout depth stays honest when the event is unset.",
-        href: hubHref("/competition", "scouting", orgId),
-      },
-      {
-        id: "coverage",
-        label: "Open Coverage",
-        detail: "See which matches still need scouts for this event.",
-        href: withOrgHref("/scouting/lineup", orgId),
-      },
-    ];
+    return setupActionsFrom(pickDeskSetupSteps(orgId));
   }
 
   if (input.shell === "error") {

@@ -37,19 +37,14 @@ describe("dossierRelatedLinks", () => {
 });
 
 describe("dossierSetupSteps", () => {
-  it("uses hubHref / withOrgHref and never DEMO stats", () => {
+  it("no-org setup is only Choose your team", () => {
+    expect(dossierSetupSteps(null).map((s) => s.id)).toEqual(["workspace"]);
+  });
+
+  it("keeps Sync Team Data; Strategy / Scouting / Pick desk live on the related strip", () => {
     const steps = dossierSetupSteps("org-1");
-    expect(steps.find((s) => s.id === "workspace")?.href).toBe("/workspace?orgId=org-1");
-    expect(steps.find((s) => s.id === "team-data")?.href).toBe("/team/data?orgId=org-1");
-    expect(steps.find((s) => s.id === "strategy")?.href).toBe(
-      "/competition?tab=strategy&orgId=org-1",
-    );
-    expect(steps.find((s) => s.id === "scouting")?.href).toBe(
-      "/competition?tab=scouting&orgId=org-1",
-    );
-    expect(steps.find((s) => s.id === "pick-desk")?.href).toBe(
-      "/strategy?tab=picks&orgId=org-1",
-    );
+    expect(steps.map((s) => s.id)).toEqual(["team-data"]);
+    expect(steps[0]?.href).toBe("/team/data?orgId=org-1");
     expect(steps.every((s) => !/\bDEMO\b/.test(s.label))).toBe(true);
     expect(steps.every((s) => !/demo/i.test(s.href))).toBe(true);
   });
@@ -132,18 +127,15 @@ describe("dossierShellCopy", () => {
 describe("dossierNextActions", () => {
   it("prioritizes workspace when no org", () => {
     const actions = dossierNextActions({ orgId: null, shell: "setup" });
-    expect(actions[0]?.id).toBe("workspace");
-    expect(actions.some((a) => a.id === "strategy")).toBe(true);
-    expect(actions.some((a) => a.id === "scouting")).toBe(true);
-    expect(actions.some((a) => a.id === "pick-desk")).toBe(true);
+    expect(actions.map((a) => a.id)).toEqual(["workspace"]);
+    expect(actions[0]?.href).toBe("/workspace");
+    expect(actions[0]?.primary).toBe(true);
   });
 
-  it("setup with org points at Strategy / Scouting / Pick desk", () => {
+  it("setup with org is only Sync Team Data", () => {
     const actions = dossierNextActions({ orgId: "org-1", shell: "setup" });
-    expect(actions[0]?.id).toBe("team-data");
-    expect(actions.some((a) => a.id === "strategy")).toBe(true);
-    expect(actions.some((a) => a.id === "scouting")).toBe(true);
-    expect(actions.some((a) => a.id === "pick-desk")).toBe(true);
+    expect(actions.map((a) => a.id)).toEqual(["team-data"]);
+    expect(actions[0]?.href).toBe("/team/data?orgId=org-1");
     expect(actions.every((a) => !/\bDEMO\b/.test(a.label))).toBe(true);
     expect(actions.every((a) => !/demo/i.test(a.href))).toBe(true);
   });

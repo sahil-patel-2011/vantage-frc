@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import { EmptyState, PageHeader, Panel, Button } from "../../../components/ui";
+import { EmptyState, PageHeader, Button } from "../../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 import { CopyShareLink } from "../../../components/copy-share-link";
 import type { CoverageGapSlot, CoverageGapSummary } from "@vantage/scouting/coverage";
@@ -23,6 +23,7 @@ import {
 } from "../../../lib/scouting/lineup-related";
 import { hubHref } from "../../../lib/nav/hubs";
 import { withOrgHref } from "../../../lib/nav/product-nav";
+import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
 import "./lineup.css";
 
 type CoverageScout = {
@@ -140,7 +141,7 @@ function LineupShell({
   const actions = lineupNextActions({ orgId, shell });
   const copy = lineupShellCopy(shell);
   const competitionHref = hubHref("/competition", "scouting", orgId);
-  const steps = shell === "setup" ? lineupSetupSteps(orgId) : [];
+  const setup = shell === "setup" ? lineupSetupSteps(orgId)[0] : null;
   const failure =
     shell === "error"
       ? loadFailureCopy(
@@ -201,35 +202,18 @@ function LineupShell({
             Retry
           </Button>
         ) : null}
-        {shell === "setup" ? (
-          <Button as="a" variant="primary" href={orgId ? commandHref : "/workspace"}>{orgId ? "Set active event" : "Choose your team"}</Button>
+        {!failure?.primary && setup ? (
+          <Button as="a" variant="primary" href={setup.href}>
+            {setup.label}
+          </Button>
         ) : null}
         {shell === "empty" ? (
-          <Button as="a" variant="primary" href={commandHref}>Sync event schedule</Button>
+          <Button as="a" variant="primary" href={commandHref}>
+            Sync event schedule
+          </Button>
         ) : null}
       </EmptyState>
-      {steps.length > 0 ? (
-        <Panel className="lineup-panel" aria-label="Setup steps">
-          <header>
-            <h2>Setup steps</h2>
-            <p className="app-muted">Finish these once and this page fills in.</p>
-          </header>
-          <ul className="lineup-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <p className="app-muted lineup-tip">{step.detail}</p>
-                </div>
-                <Button as="a" variant="secondary" href={step.href}>
-                  Open
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </Panel>
-      ) : null}
-      <LineupNextActionsPanel actions={actions} />
+      {shell === "ready" ? <LineupNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }
@@ -250,7 +234,10 @@ export default function LineupClient({ orgId }: { orgId: string }) {
     if (!qualsOnly) params.set("qualsOnly", "0");
     if (focusMatch) params.set("matchKey", focusMatch);
     try {
-      const response = await fetch(`/api/scouting/coverage?${params}`);
+      const response = await fetch(`/api/scouting/coverage?${params}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
       const data = (await response.json()) as CoverageView & { error?: string };
       if (!response.ok) {
         setFetchFailed(true);
@@ -284,6 +271,7 @@ export default function LineupClient({ orgId }: { orgId: string }) {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, focusMatchKey: focusMatch, qualsOnly, ...body }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as CoverageView & { error?: string };
         if (!response.ok) {

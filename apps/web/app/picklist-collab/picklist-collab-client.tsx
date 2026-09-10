@@ -29,7 +29,7 @@ import {
 } from "../../lib/picklist-collab/picklist-collab-related";
 import type { PicklistCollabEntry, PicklistCollabTier } from "../../lib/picklist-collab/types";
 import { hubWorkbenchHref } from "../../lib/nav/hubs";
-import { withOrgHref } from "../../lib/nav/product-nav";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import "./picklist-collab.css";
 
 type LiveView = Extract<PicklistCollabView, { status: "live" }>;
@@ -96,7 +96,7 @@ function CollabShell({
   const actions = picklistCollabNextActions({ orgId, shell });
   const copy = picklistCollabShellCopy(shell);
   const competitionHref = hubWorkbenchHref("competition", "picklist-collab", orgId);
-  const steps = shell === "setup" ? picklistCollabSetupSteps(orgId) : [];
+  const setup = shell === "setup" ? picklistCollabSetupSteps(orgId)[0] : null;
 
   return (
     <main className="module-page picklist-collab-page soft-gate">
@@ -127,33 +127,19 @@ function CollabShell({
           title={copy.title}
           description={error ?? copy.description}
         >
-          {shell === "setup" ? (
-            <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
+          {setup ? (
+            <Button as="a" variant="primary" href={setup.href}>
+              {setup.label}
+            </Button>
+          ) : null}
+          {shell === "empty" ? (
+            <Button as="a" variant="primary" href="#picklist-collab-create">
+              Create pick list
+            </Button>
           ) : null}
         </EmptyState>
       )}
-      {steps.length > 0 ? (
-        <Panel className="picklist-collab-panel" aria-label="Setup steps">
-          <header>
-            <h2>Setup steps</h2>
-            <p className="app-muted">Finish these once and this page fills in.</p>
-          </header>
-          <ul className="picklist-collab-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <p className="app-muted picklist-collab-tip">{step.detail}</p>
-                </div>
-                <Button as="a" variant="secondary" href={step.href}>
-                  Open
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </Panel>
-      ) : null}
-      {steps.length === 0 ? <NextActionsPanel actions={actions} /> : null}
+      {shell === "ready" ? <NextActionsPanel actions={actions} /> : null}
     </main>
   );
 }
@@ -174,7 +160,10 @@ export default function PicklistCollabClient() {
     if (urlOrg) query.set("orgId", urlOrg);
     const targetList = listOverride ?? params.get("listId");
     if (targetList) query.set("listId", targetList);
-    void fetch(`/api/picklist-collab${query.toString() ? `?${query.toString()}` : ""}`)
+    void fetch(`/api/picklist-collab${query.toString() ? `?${query.toString()}` : ""}`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+    })
       .then(async (response) => {
         const data = (await response.json()) as PicklistCollabView | { error?: string };
         if (!response.ok || !("status" in data)) {
@@ -227,6 +216,7 @@ export default function PicklistCollabClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, listId: listId ?? undefined, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as PicklistCollabView | { error?: string };
         if (!response.ok || !("status" in data)) {
@@ -266,22 +256,7 @@ export default function PicklistCollabClient() {
         description={view?.status === "setup_required" ? view.message : shellCopy.description}
         orgId={orgId}
         shell="setup"
-      >
-        {view?.status === "setup_required" && view.steps.length > 0 ? (
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        ) : null}
-        {orgId ? <CreateListForm busy={busy} mutate={mutate} /> : null}
-      </CollabShell>
+      />
     );
   }
 
@@ -336,7 +311,7 @@ export default function PicklistCollabClient() {
         </p>
       ) : null}
 
-      <NextActionsPanel actions={nextActions} />
+      {shell === "ready" ? <NextActionsPanel actions={nextActions} /> : null}
 
       {showTiles && view?.status === "live" ? (
         <section className="picklist-collab-stats" aria-label="Pick list counts">

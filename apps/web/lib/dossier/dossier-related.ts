@@ -1,5 +1,6 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
+import { setupActionsFrom } from "../setup-actions";
 
 /** Soft-UI related surfaces for Team Dossier (never DEMO stats). */
 export const DOSSIER_RELATED_LINKS = [
@@ -72,39 +73,39 @@ export type DossierSetupStep = {
   href: string;
 };
 
+function dossierRelatedHrefs(orgId?: string | null): Set<string> {
+  return new Set(
+    dossierRelatedLinks(orgId, { include: [...DOSSIER_RELATED_INCLUDE] }).map((link) => link.href),
+  );
+}
+
+function dropRelatedStripDuplicates<T extends { href: string }>(
+  orgId: string | null | undefined,
+  items: T[],
+): T[] {
+  const related = dossierRelatedHrefs(orgId);
+  return items.filter((item) => !related.has(item.href));
+}
+
 export function dossierSetupSteps(orgId?: string | null): DossierSetupStep[] {
-  return [
-    {
-      id: "workspace",
-      label: "Choose your team",
-      detail: "Choose your team to open dossiers.",
-      href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
-    },
+  if (!orgId) {
+    return [
+      {
+        id: "workspace",
+        label: "Choose your team",
+        detail: "Choose your team to open dossiers.",
+        href: "/workspace",
+      },
+    ];
+  }
+  return dropRelatedStripDuplicates(orgId, [
     {
       id: "team-data",
       label: "Sync Team Data",
       detail: "Pull team identity and season numbers from The Blue Alliance and Statbotics.",
       href: withOrgHref("/team/data", orgId),
     },
-    {
-      id: "strategy",
-      label: "Open Strategy",
-      detail: "Confirm event context before citing season facts in picks.",
-      href: hubHref("/competition", "strategy", orgId),
-    },
-    {
-      id: "scouting",
-      label: "Open Scouting",
-      detail: "Add org scout notes so reliability / foul cards can appear.",
-      href: hubHref("/competition", "scouting", orgId),
-    },
-    {
-      id: "pick-desk",
-      label: "Open Pick desk",
-      detail: "Cross-check cited facts against first / second / third tiers.",
-      href: withOrgHref("/strategy?tab=picks", orgId),
-    },
-  ];
+  ]);
 }
 
 /** Real cited-fact counts only — never invent DEMO totals. */
@@ -206,62 +207,7 @@ export function dossierNextActions(input: {
   const teamNumber = input.teamNumber ?? null;
 
   if (!orgId || input.shell === "setup") {
-    if (!orgId) {
-      return [
-        {
-          id: "workspace",
-          label: "Choose your team",
-          detail: "Choose a team before loading facts.",
-          href: "/workspace",
-          primary: true,
-        },
-        {
-          id: "strategy",
-          label: "Open Strategy",
-          detail: "Win/loss and draft day stay empty until real metrics exist.",
-          href: hubHref("/competition", "strategy", null),
-        },
-        {
-          id: "scouting",
-          label: "Open Scouting",
-          detail: "Scout notes stay blank until your team syncs entries.",
-          href: hubHref("/competition", "scouting", null),
-        },
-        {
-          id: "pick-desk",
-          label: "Open Pick desk",
-          detail: "Pick tiers stay blank until your team syncs event rows.",
-          href: withOrgHref("/strategy?tab=picks", null),
-        },
-      ];
-    }
-    return [
-      {
-        id: "team-data",
-        label: "Sync Team Data",
-        detail: "Dossiers need TBA identity + Statbotics EPA before cards can cite facts.",
-        href: withOrgHref("/team/data", orgId),
-        primary: true,
-      },
-      {
-        id: "strategy",
-        label: "Open Strategy",
-        detail: "Confirm event context before citing season facts in picks.",
-        href: hubHref("/competition", "strategy", orgId),
-      },
-      {
-        id: "scouting",
-        label: "Open Scouting",
-        detail: "Add org scout notes so reliability / foul cards can appear.",
-        href: hubHref("/competition", "scouting", orgId),
-      },
-      {
-        id: "pick-desk",
-        label: "Open Pick desk",
-        detail: "Arrange first / second / third picks from real event teams.",
-        href: withOrgHref("/strategy?tab=picks", orgId),
-      },
-    ];
+    return setupActionsFrom(dossierSetupSteps(orgId));
   }
 
   if (input.shell === "error") {

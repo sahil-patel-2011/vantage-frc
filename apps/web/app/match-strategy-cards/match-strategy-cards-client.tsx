@@ -28,7 +28,7 @@ import {
 } from "../../lib/match-strategy-cards/match-strategy-cards-related";
 import type { MatchStrategyCard, MatchStrategyRoleAssignment } from "../../lib/match-strategy-cards/types";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
-import { withOrgHref } from "../../lib/nav/product-nav";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import "./match-strategy-cards.css";
 
 function RelatedStrip({ orgId }: { orgId?: string | null }) {
@@ -90,7 +90,7 @@ function CardsShell({
   const actions = matchStrategyCardsNextActions({ orgId, shell });
   const copy = matchStrategyCardsShellCopy(shell);
   const competitionHref = hubWorkbenchHref("competition", "match-strategy-cards", orgId);
-  const steps = shell === "setup" ? matchStrategyCardsSetupSteps(orgId) : [];
+  const setup = shell === "setup" ? matchStrategyCardsSetupSteps(orgId)[0] : null;
 
   return (
     <main className="module-page msc-page soft-gate">
@@ -98,10 +98,10 @@ function CardsShell({
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Match Strategy Cards"}
+            {" / Match strategy cards"}
           </>
         }
-        title="Match Strategy Cards"
+        title="Match strategy cards"
         description={description}
       >
         <RelatedStrip orgId={orgId} />
@@ -121,36 +121,19 @@ function CardsShell({
           title={copy.title}
           description={error ?? copy.description}
         >
-          {shell === "setup" ? (
-            <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
+          {setup ? (
+            <Button as="a" variant="primary" href={setup.href}>
+              {setup.label}
+            </Button>
           ) : null}
           {shell === "empty" ? (
-            <Button as="a" variant="primary" href={hubHref("/competition", "strategy", orgId)}>Open Strategy</Button>
+            <Button as="a" variant="primary" href={hubHref("/competition", "strategy", orgId)}>
+              Open Strategy
+            </Button>
           ) : null}
         </EmptyState>
       )}
-      {steps.length > 0 ? (
-        <Panel className="msc-panel" aria-label="Setup steps">
-          <header>
-            <h2>Setup steps</h2>
-            <p className="app-muted">Finish these once and this page fills in.</p>
-          </header>
-          <ul className="msc-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <p className="app-muted msc-tip">{step.detail}</p>
-                </div>
-                <Button as="a" variant="secondary" href={step.href}>
-                  Open
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </Panel>
-      ) : null}
-      {steps.length === 0 ? <NextActionsPanel actions={actions} /> : null}
+      {shell === "ready" ? <NextActionsPanel actions={actions} /> : null}
     </main>
   );
 }
@@ -168,7 +151,10 @@ export default function MatchStrategyCardsClient() {
     const urlOrg = params.get("orgId");
     const query = new URLSearchParams();
     if (urlOrg) query.set("orgId", urlOrg);
-    void fetch(`/api/match-strategy-cards${query.toString() ? `?${query.toString()}` : ""}`)
+    void fetch(`/api/match-strategy-cards${query.toString() ? `?${query.toString()}` : ""}`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+    })
       .then(async (response) => {
         const data = (await response.json()) as MatchStrategyCardsView | { error?: string };
         if (!response.ok || !("status" in data)) {
@@ -247,6 +233,7 @@ export default function MatchStrategyCardsClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as MatchStrategyCardsView | { error?: string };
         if (!response.ok || !("status" in data)) {
@@ -285,21 +272,7 @@ export default function MatchStrategyCardsClient() {
         description={view?.status === "setup_required" ? view.message : shellCopy.description}
         orgId={orgId}
         shell="setup"
-      >
-        {view?.status === "setup_required" && view.steps.length > 0 ? (
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        ) : null}
-      </CardsShell>
+      />
     );
   }
 
@@ -317,10 +290,10 @@ export default function MatchStrategyCardsClient() {
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Match Strategy Cards"}
+            {" / Match strategy cards"}
           </>
         }
-        title="Match Strategy Cards"
+        title="Match strategy cards"
         description="Printable game plan for our next TBA match — roles, auto, defense, threats. Auto / backup / deploy cues come from written text only."
       >
         <div className="msc-header-actions">
@@ -341,7 +314,7 @@ export default function MatchStrategyCardsClient() {
       <NextActionsPanel actions={nextActions} />
 
       {showTiles ? (
-        <section className="msc-stats" aria-label="Match Strategy Cards counts">
+        <section className="msc-stats" aria-label="Match strategy cards counts">
           <StatTile label="Scheduled" value={formatMatchStrategyCardsMetric(cardCount, true)} />
           <StatTile label="Saved plans" value={formatMatchStrategyCardsMetric(savedCount, true)} />
         </section>

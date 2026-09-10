@@ -3,9 +3,9 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { PickCandidate, PickTier } from "@vantage/prediction-strategy";
 import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
-import { EmptyState, Panel, Button } from "../../components/ui";
-import { hubHref } from "../../lib/nav/hubs";
+import { EmptyState, Button } from "../../components/ui";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import {
   PICK_DESK_RELATED_INCLUDE,
   classifyPickDeskShell,
@@ -161,11 +161,7 @@ function PickDeskShell({
 }) {
   const actions = pickDeskNextActions({ orgId, shell });
   const copy = pickDeskShellCopy(shell);
-  const steps = shell === "setup" ? pickDeskSetupSteps(orgId) : [];
-  const strategyHref = hubHref("/competition", "strategy", orgId);
-  const scoutingHref = hubHref("/competition", "scouting", orgId);
-  const coverageHref = withOrgHref("/scouting/lineup", orgId);
-  const commandHref = hubHref("/competition", "command", orgId);
+  const setup = shell === "setup" ? pickDeskSetupSteps(orgId)[0] : null;
   const teamDataHref = withOrgHref("/team/data", orgId);
 
   return (
@@ -205,50 +201,18 @@ function PickDeskShell({
             Retry
           </Button>
         ) : null}
-        {shell === "setup" ? (
-          <Button as="a" variant="primary" href={orgId ? commandHref : "/workspace"}>
-            {orgId ? "Set active event" : "Choose your team"}
+        {setup ? (
+          <Button as="a" variant="primary" href={setup.href}>
+            {setup.label}
           </Button>
         ) : null}
         {shell === "empty" ? (
-          <>
-            <Button as="a" variant="primary" href={teamDataHref}>
-              Sync event metrics
-            </Button>
-            <Button as="a" variant="secondary" href={strategyHref}>
-              Open Strategy
-            </Button>
-            <Button as="a" variant="secondary" href={scoutingHref}>
-              Open Scouting
-            </Button>
-            <Button as="a" variant="secondary" href={coverageHref}>
-              Open Coverage
-            </Button>
-          </>
+          <Button as="a" variant="primary" href={teamDataHref}>
+            Sync event metrics
+          </Button>
         ) : null}
       </EmptyState>
-      {steps.length > 0 ? (
-        <Panel className="pick-desk-panel" aria-label="Setup steps">
-          <header>
-            <h2>Setup steps</h2>
-            <p className="app-muted">Finish these once and this page fills in.</p>
-          </header>
-          <ul className="pick-desk-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <p className="app-muted">{step.detail}</p>
-                </div>
-                <Button as="a" variant="secondary" href={step.href}>
-                  Open
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </Panel>
-      ) : null}
-      <PickDeskNextActionsPanel actions={actions} />
+      {shell === "ready" ? <PickDeskNextActionsPanel actions={actions} /> : null}
     </section>
   );
 }
@@ -279,7 +243,10 @@ export function PickListWorkbench({
     const qs = orgId ? `?orgId=${encodeURIComponent(orgId)}` : "";
     setLoading(true);
     setFetchFailed(false);
-    void fetch(`/api/strategy/pick-desk${qs}`)
+    void fetch(`/api/strategy/pick-desk${qs}`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+    })
       .then(async (response) => {
         const data = await response.json();
         if (data.status === "setup_required") {
@@ -435,6 +402,7 @@ export function PickListWorkbench({
           notes: entry.notes ?? undefined,
         })),
       }),
+      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
     });
     const data = (await response.json()) as {
       id?: string;
@@ -473,6 +441,7 @@ export function PickListWorkbench({
         action: "seat-top-accurate",
         seatCount: 3,
       }),
+      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
     });
     const data = (await response.json().catch(() => ({}))) as {
       error?: string;

@@ -1,9 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import { EmptyState, PageHeader, Panel, Button } from "../../../components/ui";
+import { EmptyState, PageHeader, Button } from "../../../components/ui";
 import { hubHref } from "../../../lib/nav/hubs";
 import { withOrgHref } from "../../../lib/nav/product-nav";
+import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
 import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 import {
   DRAFT_RELATED_INCLUDE,
@@ -162,8 +163,7 @@ function DraftShell({
 }) {
   const actions = draftNextActions({ orgId, shell });
   const copy = draftShellCopy(shell);
-  const steps = shell === "setup" ? draftSetupSteps(orgId) : [];
-  const commandHref = hubHref("/competition", "command", orgId);
+  const setup = shell === "setup" ? draftSetupSteps(orgId)[0] : null;
   const teamDataHref = withOrgHref("/team/data", orgId);
 
   return (
@@ -203,35 +203,18 @@ function DraftShell({
             Retry
           </Button>
         ) : null}
-        {shell === "setup" ? (
-          <Button as="a" variant="primary" href={orgId ? commandHref : "/workspace"}>{orgId ? "Set active event" : "Choose your team"}</Button>
+        {!primary && setup ? (
+          <Button as="a" variant="primary" href={setup.href}>
+            {setup.label}
+          </Button>
         ) : null}
         {shell === "empty" ? (
-          <Button as="a" variant="primary" href={teamDataHref}>Sync event metrics</Button>
+          <Button as="a" variant="primary" href={teamDataHref}>
+            Sync event metrics
+          </Button>
         ) : null}
       </EmptyState>
-      {steps.length > 0 ? (
-        <Panel className="draft-panel" aria-label="Setup steps">
-          <header>
-            <h2>Setup steps</h2>
-            <p className="app-muted">Finish these once and this page fills in.</p>
-          </header>
-          <ul className="draft-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <p className="app-muted">{step.detail}</p>
-                </div>
-                <Button as="a" variant="secondary" href={step.href}>
-                  Open
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </Panel>
-      ) : null}
-      <DraftNextActionsPanel actions={actions} />
+      {shell === "ready" ? <DraftNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }
@@ -262,7 +245,10 @@ export default function DraftClient() {
     setFetchFailed(false);
     setErrorStatus(null);
     setErrorMessage(null);
-    void fetch(`/api/strategy/draft${qs}`)
+    void fetch(`/api/strategy/draft${qs}`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+    })
       .then(async (response) => {
         const payload = await response.json();
         // A rejected request (expired session, no access) used to fall through as
@@ -351,6 +337,7 @@ export default function DraftClient() {
         state: next,
         pickListId: next.pickListId,
       }),
+      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
     });
     const body = await response.json();
     setStatus(response.ok ? "Board saved." : body.error ?? "Save failed");
@@ -410,6 +397,7 @@ export default function DraftClient() {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ orgId: data.orgId, boardId: data.board.id, action: "share" }),
+      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
     });
     const body = await response.json();
     setSaving(false);
@@ -739,6 +727,7 @@ export default function DraftClient() {
                           action: "revoke-share",
                           tokenId: token.id,
                         }),
+                        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
                       }).then(() => load());
                     }}
                   >

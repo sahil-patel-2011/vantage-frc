@@ -37,19 +37,14 @@ describe("pickDeskRelatedLinks", () => {
 });
 
 describe("pickDeskSetupSteps", () => {
-  it("uses hubHref / withOrgHref and never DEMO picks", () => {
+  it("no-org setup is only Choose your team", () => {
+    expect(pickDeskSetupSteps(null).map((s) => s.id)).toEqual(["workspace"]);
+  });
+
+  it("keeps Set active event; Strategy / Scouting / Coverage live on the related strip", () => {
     const steps = pickDeskSetupSteps("org-1");
-    expect(steps.find((s) => s.id === "workspace")?.href).toBe("/workspace?orgId=org-1");
-    expect(steps.find((s) => s.id === "command")?.href).toBe(
-      "/competition?tab=command&orgId=org-1",
-    );
-    expect(steps.find((s) => s.id === "team-data")?.href).toBe("/team/data?orgId=org-1");
-    expect(steps.find((s) => s.id === "scouting")?.href).toBe(
-      "/competition?tab=scouting&orgId=org-1",
-    );
-    expect(steps.find((s) => s.id === "coverage")?.href).toBe(
-      "/scouting/lineup?orgId=org-1",
-    );
+    expect(steps.map((s) => s.id)).toEqual(["command"]);
+    expect(steps[0]?.href).toBe("/competition?tab=command&orgId=org-1");
     expect(steps.every((s) => !/\bDEMO\b/.test(s.label))).toBe(true);
     expect(steps.every((s) => !/demo/i.test(s.href))).toBe(true);
   });
@@ -104,18 +99,15 @@ describe("pickDeskShellCopy", () => {
 describe("pickDeskNextActions", () => {
   it("prioritizes workspace when no org", () => {
     const actions = pickDeskNextActions({ orgId: null, shell: "setup" });
-    expect(actions[0]?.id).toBe("workspace");
-    expect(actions.some((a) => a.id === "strategy")).toBe(true);
-    expect(actions.some((a) => a.id === "scouting")).toBe(true);
-    expect(actions.some((a) => a.id === "coverage")).toBe(true);
+    expect(actions.map((a) => a.id)).toEqual(["workspace"]);
+    expect(actions[0]?.href).toBe("/workspace");
+    expect(actions[0]?.primary).toBe(true);
   });
 
-  it("setup with org points at Strategy / Scouting / Coverage", () => {
+  it("setup with org is only Set active event", () => {
     const actions = pickDeskNextActions({ orgId: "org-1", shell: "setup" });
-    expect(actions[0]?.id).toBe("command");
-    expect(actions.some((a) => a.id === "strategy")).toBe(true);
-    expect(actions.some((a) => a.id === "scouting")).toBe(true);
-    expect(actions.some((a) => a.id === "coverage")).toBe(true);
+    expect(actions.map((a) => a.id)).toEqual(["command"]);
+    expect(actions[0]?.href).toBe("/competition?tab=command&orgId=org-1");
     expect(actions.every((a) => !/\bDEMO\b/.test(a.label))).toBe(true);
     expect(actions.every((a) => !/demo/i.test(a.href))).toBe(true);
   });
