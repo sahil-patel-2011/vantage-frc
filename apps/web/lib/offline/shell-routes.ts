@@ -36,6 +36,7 @@ export const OFFLINE_SHELL_ROUTES = [
   "/alliance-selection-desk",
   "/print-farm",
   "/inventory",
+  "/defense-planner",
 ] as const;
 
 export type OfflineShellRoute = (typeof OFFLINE_SHELL_ROUTES)[number];
@@ -88,6 +89,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/alliance-selection-desk")) return "Alliance selection desk";
   if (bare.startsWith("/print-farm")) return "Print Farm";
   if (bare.startsWith("/inventory")) return "Inventory";
+  if (bare.startsWith("/defense-planner")) return "Defense planner";
   return null;
 }
 

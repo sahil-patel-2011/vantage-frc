@@ -49,6 +49,7 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/alliance-selection-desk")).toBe(true);
     expect(pathnameIsOfflineShell("/print-farm")).toBe(true);
     expect(pathnameIsOfflineShell("/inventory")).toBe(true);
+    expect(pathnameIsOfflineShell("/defense-planner")).toBe(true);
     expect(pathnameIsOfflineShell("/api/todos")).toBe(false);
   });
 
@@ -74,6 +75,7 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/alliance-selection-desk")).toBe("Alliance selection desk");
     expect(offlineCapableLabel("/print-farm")).toBe("Print Farm");
     expect(offlineCapableLabel("/inventory")).toBe("Inventory");
+    expect(offlineCapableLabel("/defense-planner")).toBe("Defense planner");
   });
 
   it("keeps public/sw.js SHELL_ROUTES aligned with OFFLINE_SHELL_ROUTES", () => {
@@ -101,6 +103,7 @@ describe("offline shell routes", () => {
     expect(featureCacheKey("alliance-desk", "org-1", "sess-1")).toBe("alliance-desk:org-1:sess-1");
     expect(featureCacheKey("print-farm", "org-1")).toBe("print-farm:org-1");
     expect(featureCacheKey("inventory", "org-1")).toBe("inventory:org-1");
+    expect(featureCacheKey("defense-planner", "org-1", "2026")).toBe("defense-planner:org-1:2026");
     expect(featureCacheKey("schedule", "org-1")).toBe("schedule:org-1");
   });
 

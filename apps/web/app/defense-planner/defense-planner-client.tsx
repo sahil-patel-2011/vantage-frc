@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import {
   Badge,
   EmptyState,
@@ -35,7 +36,35 @@ import {
 import type { DrivetrainType } from "../../lib/defense-planner/types";
 import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./defense-planner.css";
+
+function isDefensePlannerView(value: unknown): value is DefensePlannerView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function defensePlannerCacheOrg(data: DefensePlannerView, orgHint: string): string {
+  if (typeof data.orgId === "string" && data.orgId.trim()) return data.orgId;
+  return orgHint;
+}
+
+async function persistDefensePlannerSnapshot(
+  orgHint: string,
+  seasonHint: string,
+  data: DefensePlannerView,
+): Promise<void> {
+  const cacheOrg = defensePlannerCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  const seasonKey = String(data.seasonYear);
+  try {
+    await putFeatureSnapshot("defense-planner", cacheOrg, data, seasonHint || seasonKey);
+    if (!orgHint) await putFeatureSnapshot("defense-planner", "_", data, seasonHint || seasonKey);
+  } catch {
+    // Live planner already painted; IndexedDB is best-effort.
+  }
+}
 
 function recommendationTone(recommendation: string): BadgeTone {
   if (recommendation === "play_defense") return "good";
@@ -167,30 +196,75 @@ export default function DefensePlannerClient() {
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
   const [cutoffCode, setCutoffCode] = useState<string | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<DefensePlannerView | null>(null);
+  viewRef.current = view;
 
   const load = useCallback((seasonOverride?: number) => {
-    setFetchFailed(false);
-    setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    if (seasonQuery) query.set("season", String(seasonQuery));
-    void fetch(`/api/defense-planner${query.toString() ? `?${query.toString()}` : ""}`, {
-      cache: "no-store",
-      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
-    })
-      .then(async (response) => {
+    void (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const urlOrg = params.get("orgId")?.trim() ?? "";
+      const seasonQuery =
+        seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
+      const seasonHint =
+        seasonQuery != null && Number.isFinite(seasonQuery) ? String(seasonQuery) : "";
+      let hadCache = Boolean(viewRef.current);
+      try {
+        const cached = await getFeatureSnapshot<DefensePlannerView>(
+          "defense-planner",
+          urlOrg || "_",
+          seasonHint,
+        );
+        if (!viewRef.current && cached?.data && isDefensePlannerView(cached.data)) {
+          setView(cached.data);
+          setSeason(cached.data.seasonYear);
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          hadCache = true;
+        }
+      } catch {
+        // IndexedDB missing or blocked; live fetch still runs.
+      }
+      setFetchFailed(false);
+      setError("");
+      const query = new URLSearchParams();
+      if (urlOrg) query.set("orgId", urlOrg);
+      if (seasonHint) query.set("season", seasonHint);
+      try {
+        const response = await fetch(
+          `/api/defense-planner${query.toString() ? `?${query.toString()}` : ""}`,
+          {
+            cache: "no-store",
+            signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+          },
+        );
         const data = (await response.json()) as DefensePlannerView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setFetchFailed(true);
+        if (!response.ok || !isDefensePlannerView(data)) {
+          if (hadCache || viewRef.current) {
+            setFromCache(true);
+            setError("Could not refresh Defense planner. Showing the last copy on this device.");
+            setFetchFailed(false);
+          } else {
+            setFetchFailed(true);
+          }
           return;
         }
         setView(data);
         setSeason(data.seasonYear);
-      })
-      .catch(() => setFetchFailed(true));
+        setFromCache(false);
+        setCachedAt(null);
+        await persistDefensePlannerSnapshot(urlOrg, seasonHint, data);
+      } catch {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Defense planner. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setFetchFailed(true);
+        }
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -247,6 +321,7 @@ export default function DefensePlannerClient() {
         }
         setView(data);
         setSeason(data.seasonYear);
+        void persistDefensePlannerSnapshot(orgId, season != null ? String(season) : "", data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -257,7 +332,11 @@ export default function DefensePlannerClient() {
   );
 
   if (shell === "loading") {
-    return <DefenseShell description={shellCopy.description} orgId={null} shell="loading" />;
+    return (
+      <DefenseShell description={shellCopy.description} orgId={null} shell="loading">
+        <OfflineBanner feature="Defense planner" fromCache={fromCache} cachedAt={cachedAt} />
+      </DefenseShell>
+    );
   }
 
   if (shell === "error") {
@@ -268,7 +347,9 @@ export default function DefensePlannerClient() {
         shell="error"
         error={error || shellCopy.description}
         onRetry={() => load()}
-      />
+      >
+        <OfflineBanner feature="Defense planner" fromCache={fromCache} cachedAt={cachedAt} />
+      </DefenseShell>
     );
   }
 
@@ -278,12 +359,18 @@ export default function DefensePlannerClient() {
         description={view?.status === "setup_required" ? view.message : shellCopy.description}
         orgId={orgId}
         shell="setup"
-      />
+      >
+        <OfflineBanner feature="Defense planner" fromCache={fromCache} cachedAt={cachedAt} />
+      </DefenseShell>
     );
   }
 
   if (view?.status !== "live") {
-    return <DefenseShell description={shellCopy.description} orgId={orgId} shell="setup" />;
+    return (
+      <DefenseShell description={shellCopy.description} orgId={orgId} shell="setup">
+        <OfflineBanner feature="Defense planner" fromCache={fromCache} cachedAt={cachedAt} />
+      </DefenseShell>
+    );
   }
 
   return (
@@ -325,6 +412,8 @@ export default function DefensePlannerClient() {
           ))}
         </div>
       </PageHeader>
+
+      <OfflineBanner feature="Defense planner" fromCache={fromCache} cachedAt={cachedAt} />
 
       {orgId && cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} compact /> : null}
 
