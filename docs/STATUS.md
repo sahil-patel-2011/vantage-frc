@@ -128,6 +128,7 @@ See `docs/COMPETITIVE_NOTES.md`. That document is the brief for Tasks 2–4.
 | `/inspection-copilot` | Log-check form was 1034 lines; catalog, payload builder, and section panels now live in sibling modules. Shell form is **94** lines. Setup keeps one **Choose your team** primary; Batteries / FMEA / Weigh-in stay in the header related strip. Fetches abort at 8s so GHA without Postgres recovers. Binder hint no longer says "never invent". | this commit |
 | Next match widget | Red/Blue printed as a dash “range”; live EPA drivers never shown; MODEL leftover on Event Day / Chemistry / kiosk | this commit |
 | `/dashboard` First-run banner | GHA Playwright hid the region until `/api/me` finished; GitHub Actions has no Postgres so that fetch hung past the 5s default. Banner now paints on the loading shell; session abort is 8s. | this commit |
+| `/hours` | Custom header, native clock buttons, hung `/api/hours` without a timeout, and a mentor “engagement digest” on the student clock-in page. Shell is now PageHeader + EmptyState, fetches abort at 8s, Clock in is a Button, digest is owner/admin only. | this commit |
 
 ---
 
