@@ -37,6 +37,10 @@ export const OFFLINE_SHELL_ROUTES = [
   "/print-farm",
   "/inventory",
   "/defense-planner",
+  "/picklist-collab",
+  "/dossier",
+  "/pit-repair-triage",
+  "/event-day-plan",
 ] as const;
 
 export type OfflineShellRoute = (typeof OFFLINE_SHELL_ROUTES)[number];
@@ -78,7 +82,8 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/messages")) return "Chat";
   if (bare.startsWith("/match-checklist")) return "Match checklist";
   if (bare.startsWith("/match-notes-timeline")) return "Match notes";
-  if (bare.startsWith("/pit")) return "Pit";
+  if (bare.startsWith("/pit-repair-triage")) return "Pit repair triage";
+  if (bare === "/pit" || bare.startsWith("/pit/")) return "Pit";
   if (bare.startsWith("/video-analysis")) return "Video";
   if (bare.startsWith("/assembly-manual")) return "Assembly manual";
   if (bare.startsWith("/packing")) return "Packing";
@@ -90,6 +95,9 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/print-farm")) return "Print Farm";
   if (bare.startsWith("/inventory")) return "Inventory";
   if (bare.startsWith("/defense-planner")) return "Defense planner";
+  if (bare.startsWith("/picklist-collab")) return "Collaborative pick list";
+  if (bare.startsWith("/dossier")) return "Dossier";
+  if (bare.startsWith("/event-day-plan")) return "Event-day plan";
   return null;
 }
 

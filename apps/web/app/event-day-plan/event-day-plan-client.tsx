@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import {
   Badge,
   Button,
@@ -31,7 +32,35 @@ import {
 } from "../../lib/event-day-plan/event-day-plan-related";
 import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./event-day-plan.css";
+
+function isEventDayPlanView(value: unknown): value is EventDayPlanView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+async function persistEventDayPlanSnapshot(
+  orgHint: string,
+  variant: string,
+  data: EventDayPlanView,
+): Promise<void> {
+  const cacheOrg =
+    "orgId" in data && typeof data.orgId === "string" && data.orgId.trim()
+      ? data.orgId
+      : orgHint;
+  if (!cacheOrg) return;
+  const key =
+    variant ||
+    (data.status === "live" ? data.eventKey : data.planDate);
+  try {
+    await putFeatureSnapshot("event-day-plan", cacheOrg, data, key);
+    if (!orgHint) await putFeatureSnapshot("event-day-plan", "_", data, key);
+  } catch {
+    // Live plan already painted; IndexedDB is best-effort.
+  }
+}
 
 type LiveView = Extract<EventDayPlanView, { status: "live" }>;
 
@@ -173,34 +202,77 @@ export default function EventDayPlanClient() {
   const [busy, setBusy] = useState(false);
   const [planDate, setPlanDate] = useState<string | null>(null);
   const [eventKey, setEventKey] = useState<string | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<EventDayPlanView | null>(null);
+  viewRef.current = view;
 
   const load = useCallback((overrides?: { planDate?: string; eventKey?: string }) => {
-    setFetchFailed(false);
-    setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    const nextDate = overrides?.planDate ?? planDate;
-    const nextEvent = overrides?.eventKey ?? eventKey;
-    if (nextDate) query.set("planDate", nextDate);
-    if (nextEvent) query.set("eventKey", nextEvent);
-    void fetch(`/api/event-day-plan${query.toString() ? `?${query.toString()}` : ""}`, {
-      cache: "no-store",
-      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
-    })
-      .then(async (response) => {
+    void (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const urlOrg = params.get("orgId")?.trim() ?? "";
+      const nextDate = overrides?.planDate ?? planDate ?? params.get("planDate") ?? "";
+      const nextEvent = overrides?.eventKey ?? eventKey ?? params.get("eventKey") ?? "";
+      const variant = nextEvent || nextDate;
+      let hadCache = Boolean(viewRef.current);
+      try {
+        const cached = await getFeatureSnapshot<EventDayPlanView>(
+          "event-day-plan",
+          urlOrg || "_",
+          variant,
+        );
+        if (!viewRef.current && cached?.data && isEventDayPlanView(cached.data)) {
+          setView(cached.data);
+          setPlanDate(cached.data.planDate);
+          if (cached.data.status === "live") setEventKey(cached.data.eventKey);
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          hadCache = true;
+        }
+      } catch {
+        // IndexedDB missing or blocked; live fetch still runs.
+      }
+      setFetchFailed(false);
+      setError("");
+      const query = new URLSearchParams();
+      if (urlOrg) query.set("orgId", urlOrg);
+      if (nextDate) query.set("planDate", nextDate);
+      if (nextEvent) query.set("eventKey", nextEvent);
+      try {
+        const response = await fetch(
+          `/api/event-day-plan${query.toString() ? `?${query.toString()}` : ""}`,
+          {
+            cache: "no-store",
+            signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+          },
+        );
         const data = (await response.json()) as EventDayPlanView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setFetchFailed(true);
+        if (!response.ok || !isEventDayPlanView(data)) {
+          if (hadCache || viewRef.current) {
+            setFromCache(true);
+            setError("Could not refresh the event-day plan. Showing the last copy on this device.");
+            setFetchFailed(false);
+          } else {
+            setFetchFailed(true);
+          }
           return;
         }
         setView(data);
         setPlanDate(data.planDate);
         if (data.status === "live") setEventKey(data.eventKey);
-      })
-      .catch(() => setFetchFailed(true));
-     
+        setFromCache(false);
+        setCachedAt(null);
+        await persistEventDayPlanSnapshot(urlOrg, variant, data);
+      } catch {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh the event-day plan. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setFetchFailed(true);
+        }
+      }
+    })();
   }, [planDate, eventKey]);
 
   useEffect(() => {
@@ -257,6 +329,7 @@ export default function EventDayPlanClient() {
         setView(data);
         setPlanDate(data.planDate);
         if (data.status === "live") setEventKey(data.eventKey);
+        void persistEventDayPlanSnapshot(orgId, eventKey ?? planDate ?? "", data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -267,7 +340,11 @@ export default function EventDayPlanClient() {
   );
 
   if (shell === "loading") {
-    return <PlanShell description={shellCopy.description} orgId={null} shell="loading" />;
+    return (
+      <PlanShell description={shellCopy.description} orgId={null} shell="loading">
+        <OfflineBanner feature="Event-day plan" fromCache={fromCache} cachedAt={cachedAt} />
+      </PlanShell>
+    );
   }
 
   if (shell === "error") {
@@ -278,7 +355,9 @@ export default function EventDayPlanClient() {
         shell="error"
         error={error || shellCopy.description}
         onRetry={() => load()}
-      />
+      >
+        <OfflineBanner feature="Event-day plan" fromCache={fromCache} cachedAt={cachedAt} />
+      </PlanShell>
     );
   }
 
@@ -288,12 +367,18 @@ export default function EventDayPlanClient() {
         description={view?.status === "setup_required" ? view.message : shellCopy.description}
         orgId={orgId}
         shell="setup"
-      />
+      >
+        <OfflineBanner feature="Event-day plan" fromCache={fromCache} cachedAt={cachedAt} />
+      </PlanShell>
     );
   }
 
   if (view?.status !== "live") {
-    return <PlanShell description={shellCopy.description} orgId={orgId} shell="setup" />;
+    return (
+      <PlanShell description={shellCopy.description} orgId={orgId} shell="setup">
+        <OfflineBanner feature="Event-day plan" fromCache={fromCache} cachedAt={cachedAt} />
+      </PlanShell>
+    );
   }
 
   return (
@@ -343,6 +428,8 @@ export default function EventDayPlanClient() {
           ))}
         </div>
       </PageHeader>
+
+      <OfflineBanner feature="Event-day plan" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

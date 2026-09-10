@@ -55,6 +55,10 @@ const SHELL_ROUTES = [
   "/print-farm",
   "/inventory",
   "/defense-planner",
+  "/picklist-collab",
+  "/dossier",
+  "/pit-repair-triage",
+  "/event-day-plan",
 ];
 
 function isShellPath(pathname) {

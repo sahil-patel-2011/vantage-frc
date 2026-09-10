@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   Badge,
   type BadgeTone,
@@ -12,6 +12,7 @@ import {
   Panel,
   SoftBlockSkeleton,
   StatTile, Button } from "../../components/ui";
+import { OfflineBanner } from "../../components/offline-banner";
 import {
   TRIAGE_STATUSES,
   mainBreakerTripCue,
@@ -36,7 +37,33 @@ import {
 } from "../../lib/pit-repair-triage/pit-repair-triage-related";
 import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./pit-repair-triage.css";
+
+function isPitRepairTriageView(value: unknown): value is PitRepairTriageView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+async function persistPitRepairSnapshot(
+  orgHint: string,
+  seasonHint: string,
+  data: PitRepairTriageView,
+): Promise<void> {
+  const cacheOrg =
+    "orgId" in data && typeof data.orgId === "string" && data.orgId.trim()
+      ? data.orgId
+      : orgHint;
+  if (!cacheOrg) return;
+  const seasonKey = String(data.seasonYear);
+  try {
+    await putFeatureSnapshot("pit-repair", cacheOrg, data, seasonHint || seasonKey);
+    if (!orgHint) await putFeatureSnapshot("pit-repair", "_", data, seasonHint || seasonKey);
+  } catch {
+    // Live triage already painted; IndexedDB is best-effort.
+  }
+}
 
 const DECISION_TONE: Record<TriageDecision, BadgeTone> = {
   fix: "good",
@@ -167,30 +194,75 @@ export default function PitRepairTriageClient() {
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<PitRepairTriageView | null>(null);
+  viewRef.current = view;
 
   const load = useCallback((seasonOverride?: number) => {
-    setFetchFailed(false);
-    setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    if (seasonQuery) query.set("season", String(seasonQuery));
-    void fetch(`/api/pit-repair-triage${query.toString() ? `?${query.toString()}` : ""}`, {
-      cache: "no-store",
-      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
-    })
-      .then(async (response) => {
+    void (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const urlOrg = params.get("orgId")?.trim() ?? "";
+      const seasonQuery =
+        seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
+      const seasonHint =
+        seasonQuery != null && Number.isFinite(seasonQuery) ? String(seasonQuery) : "";
+      let hadCache = Boolean(viewRef.current);
+      try {
+        const cached = await getFeatureSnapshot<PitRepairTriageView>(
+          "pit-repair",
+          urlOrg || "_",
+          seasonHint,
+        );
+        if (!viewRef.current && cached?.data && isPitRepairTriageView(cached.data)) {
+          setView(cached.data);
+          setSeason(cached.data.seasonYear);
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          hadCache = true;
+        }
+      } catch {
+        // IndexedDB missing or blocked; live fetch still runs.
+      }
+      setFetchFailed(false);
+      setError("");
+      const query = new URLSearchParams();
+      if (urlOrg) query.set("orgId", urlOrg);
+      if (seasonHint) query.set("season", seasonHint);
+      try {
+        const response = await fetch(
+          `/api/pit-repair-triage${query.toString() ? `?${query.toString()}` : ""}`,
+          {
+            cache: "no-store",
+            signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+          },
+        );
         const data = (await response.json()) as PitRepairTriageView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setFetchFailed(true);
+        if (!response.ok || !isPitRepairTriageView(data)) {
+          if (hadCache || viewRef.current) {
+            setFromCache(true);
+            setError("Could not refresh pit repair. Showing the last copy on this device.");
+            setFetchFailed(false);
+          } else {
+            setFetchFailed(true);
+          }
           return;
         }
         setView(data);
         setSeason(data.seasonYear);
-      })
-      .catch(() => setFetchFailed(true));
+        setFromCache(false);
+        setCachedAt(null);
+        await persistPitRepairSnapshot(urlOrg, seasonHint, data);
+      } catch {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh pit repair. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setFetchFailed(true);
+        }
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -248,6 +320,7 @@ export default function PitRepairTriageClient() {
         }
         setView(data);
         setSeason(data.seasonYear);
+        void persistPitRepairSnapshot(orgId, season != null ? String(season) : "", data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -258,7 +331,11 @@ export default function PitRepairTriageClient() {
   );
 
   if (shell === "loading") {
-    return <TriageShell description={shellCopy.description} orgId={null} shell="loading" />;
+    return (
+      <TriageShell description={shellCopy.description} orgId={null} shell="loading">
+        <OfflineBanner feature="Pit repair triage" fromCache={fromCache} cachedAt={cachedAt} />
+      </TriageShell>
+    );
   }
   if (shell === "error") {
     return (
@@ -268,7 +345,9 @@ export default function PitRepairTriageClient() {
         shell="error"
         error={error || shellCopy.description}
         onRetry={() => load()}
-      />
+      >
+        <OfflineBanner feature="Pit repair triage" fromCache={fromCache} cachedAt={cachedAt} />
+      </TriageShell>
     );
   }
   if (shell === "setup" || view?.status !== "live") {
@@ -277,7 +356,9 @@ export default function PitRepairTriageClient() {
         description={view?.status === "setup_required" ? view.message : shellCopy.description}
         orgId={orgId}
         shell="setup"
-      />
+      >
+        <OfflineBanner feature="Pit repair triage" fromCache={fromCache} cachedAt={cachedAt} />
+      </TriageShell>
     );
   }
 
@@ -316,6 +397,8 @@ export default function PitRepairTriageClient() {
           ) : null}
         </div>
       </PageHeader>
+
+      <OfflineBanner feature="Pit repair triage" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import {
   Badge,
   Button,
@@ -30,7 +31,32 @@ import {
 import type { PicklistCollabEntry, PicklistCollabTier } from "../../lib/picklist-collab/types";
 import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./picklist-collab.css";
+
+function isPicklistCollabView(value: unknown): value is PicklistCollabView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+async function persistPicklistCollabSnapshot(
+  orgHint: string,
+  listHint: string,
+  data: PicklistCollabView,
+): Promise<void> {
+  const cacheOrg =
+    "orgId" in data && typeof data.orgId === "string" && data.orgId.trim()
+      ? data.orgId
+      : orgHint;
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("picklist-collab", cacheOrg, data, listHint);
+    if (!orgHint) await putFeatureSnapshot("picklist-collab", "_", data, listHint);
+  } catch {
+    // Live pick list already painted; IndexedDB is best-effort.
+  }
+}
 
 type LiveView = Extract<PicklistCollabView, { status: "live" }>;
 
@@ -150,30 +176,74 @@ export default function PicklistCollabClient() {
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [listId, setListId] = useState<string | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<PicklistCollabView | null>(null);
+  viewRef.current = view;
 
   const load = useCallback((listOverride?: string | null) => {
-    setFetchFailed(false);
-    setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    const targetList = listOverride ?? params.get("listId");
-    if (targetList) query.set("listId", targetList);
-    void fetch(`/api/picklist-collab${query.toString() ? `?${query.toString()}` : ""}`, {
-      cache: "no-store",
-      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
-    })
-      .then(async (response) => {
+    void (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const urlOrg = params.get("orgId")?.trim() ?? "";
+      const targetList = (listOverride ?? params.get("listId") ?? "").trim();
+      let hadCache = Boolean(viewRef.current);
+      try {
+        const cached = await getFeatureSnapshot<PicklistCollabView>(
+          "picklist-collab",
+          urlOrg || "_",
+          targetList,
+        );
+        if (!viewRef.current && cached?.data && isPicklistCollabView(cached.data)) {
+          setView(cached.data);
+          if (cached.data.status === "live" && cached.data.activeList) {
+            setListId(cached.data.activeList.id);
+          }
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          hadCache = true;
+        }
+      } catch {
+        // IndexedDB missing or blocked; live fetch still runs.
+      }
+      setFetchFailed(false);
+      setError("");
+      const query = new URLSearchParams();
+      if (urlOrg) query.set("orgId", urlOrg);
+      if (targetList) query.set("listId", targetList);
+      try {
+        const response = await fetch(
+          `/api/picklist-collab${query.toString() ? `?${query.toString()}` : ""}`,
+          {
+            cache: "no-store",
+            signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+          },
+        );
         const data = (await response.json()) as PicklistCollabView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setFetchFailed(true);
+        if (!response.ok || !isPicklistCollabView(data)) {
+          if (hadCache || viewRef.current) {
+            setFromCache(true);
+            setError("Could not refresh the pick list. Showing the last copy on this device.");
+            setFetchFailed(false);
+          } else {
+            setFetchFailed(true);
+          }
           return;
         }
         setView(data);
         if (data.status === "live" && data.activeList) setListId(data.activeList.id);
-      })
-      .catch(() => setFetchFailed(true));
+        setFromCache(false);
+        setCachedAt(null);
+        await persistPicklistCollabSnapshot(urlOrg, targetList, data);
+      } catch {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh the pick list. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setFetchFailed(true);
+        }
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -225,6 +295,7 @@ export default function PicklistCollabClient() {
         }
         setView(data);
         if (data.status === "live" && data.activeList) setListId(data.activeList.id);
+        void persistPicklistCollabSnapshot(orgId, listId ?? "", data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -235,7 +306,11 @@ export default function PicklistCollabClient() {
   );
 
   if (shell === "loading") {
-    return <CollabShell description={shellCopy.description} orgId={null} shell="loading" />;
+    return (
+      <CollabShell description={shellCopy.description} orgId={null} shell="loading">
+        <OfflineBanner feature="Collaborative pick list" fromCache={fromCache} cachedAt={cachedAt} />
+      </CollabShell>
+    );
   }
 
   if (shell === "error") {
@@ -246,7 +321,9 @@ export default function PicklistCollabClient() {
         shell="error"
         error={error || shellCopy.description}
         onRetry={() => load()}
-      />
+      >
+        <OfflineBanner feature="Collaborative pick list" fromCache={fromCache} cachedAt={cachedAt} />
+      </CollabShell>
     );
   }
 
@@ -256,7 +333,9 @@ export default function PicklistCollabClient() {
         description={view?.status === "setup_required" ? view.message : shellCopy.description}
         orgId={orgId}
         shell="setup"
-      />
+      >
+        <OfflineBanner feature="Collaborative pick list" fromCache={fromCache} cachedAt={cachedAt} />
+      </CollabShell>
     );
   }
 
@@ -304,6 +383,8 @@ export default function PicklistCollabClient() {
           ))}
         </div>
       </PageHeader>
+
+      <OfflineBanner feature="Collaborative pick list" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

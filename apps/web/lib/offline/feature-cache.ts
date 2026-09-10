@@ -32,7 +32,11 @@ export type OfflineFeature =
   | "alliance-desk"
   | "print-farm"
   | "inventory"
-  | "defense-planner";
+  | "defense-planner"
+  | "picklist-collab"
+  | "dossier"
+  | "pit-repair"
+  | "event-day-plan";
 
 const DB_NAME = "vantage-feature-cache";
 const DB_VERSION = 1;

@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { EmptyState, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
+import { OfflineBanner } from "../../components/offline-banner";
 import type { DossierView } from "../../lib/dossier/compute-dossier";
 import {
   DOSSIER_RELATED_INCLUDE,
@@ -20,8 +21,33 @@ import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { fetchProductSession } from "../../lib/nav/product-session";
 import { FEATURE_API_TIMEOUT_MS, readOrgIdFromSearch } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import "./dossier.css";
+
+function isDossierView(value: unknown): value is DossierView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "empty" || status === "live";
+}
+
+async function persistDossierSnapshot(
+  orgHint: string,
+  teamHint: string,
+  data: DossierView,
+): Promise<void> {
+  const cacheOrg =
+    "orgId" in data && typeof data.orgId === "string" && data.orgId.trim()
+      ? data.orgId
+      : orgHint;
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("dossier", cacheOrg, data, teamHint);
+    if (!orgHint) await putFeatureSnapshot("dossier", "_", data, teamHint);
+  } catch {
+    // Live dossier already painted; IndexedDB is best-effort.
+  }
+}
 
 const CATEGORY_LABEL: Record<string, string> = {
   identity: "Identity",
@@ -179,39 +205,79 @@ export default function DossierClient() {
   // Kept so an expired session offers sign-in instead of a Retry that cannot work.
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [orgId, setOrgId] = useState<string | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<DossierView | null>(null);
+  viewRef.current = view;
 
   const load = useCallback(
     (team?: string, resolvedOrg?: string | null) => {
-      setFetchFailed(false);
-      setError("");
-      setErrorStatus(null);
-      setLoading(true);
-      const params = new URLSearchParams();
-      const activeOrg =
-        resolvedOrg ?? orgId ?? new URLSearchParams(window.location.search).get("orgId");
-      if (activeOrg) params.set("orgId", activeOrg);
-      const teamValue = team ?? new URLSearchParams(window.location.search).get("team");
-      if (teamValue) params.set("team", teamValue);
-      void fetch(`/api/dossier?${params.toString()}`, {
-        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
-      })
-        .then(async (response) => {
+      void (async () => {
+        const params = new URLSearchParams();
+        const activeOrg =
+          (resolvedOrg ?? orgId ?? new URLSearchParams(window.location.search).get("orgId") ?? "").trim();
+        const teamValue = (team ?? new URLSearchParams(window.location.search).get("team") ?? "").trim();
+        let hadCache = Boolean(viewRef.current);
+        try {
+          const cached = await getFeatureSnapshot<DossierView>(
+            "dossier",
+            activeOrg || "_",
+            teamValue,
+          );
+          if (!viewRef.current && cached?.data && isDossierView(cached.data)) {
+            setView(cached.data);
+            if (cached.data.orgId) setOrgId(cached.data.orgId);
+            setFromCache(true);
+            setCachedAt(cached.cachedAt);
+            setLoading(false);
+            hadCache = true;
+          }
+        } catch {
+          // IndexedDB missing or blocked; live fetch still runs.
+        }
+        setFetchFailed(false);
+        setError("");
+        setErrorStatus(null);
+        if (!hadCache) setLoading(true);
+        if (activeOrg) params.set("orgId", activeOrg);
+        if (teamValue) params.set("team", teamValue);
+        try {
+          const response = await fetch(`/api/dossier?${params.toString()}`, {
+            signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+          });
           const data = (await response.json()) as DossierView | { error?: string };
-          if (!response.ok || !("status" in data)) {
-            setError("error" in data && data.error ? data.error : "Could not load dossier");
-            setErrorStatus(response.status);
-            setFetchFailed(true);
-            setView(null);
+          if (!response.ok || !isDossierView(data)) {
+            if (hadCache || viewRef.current) {
+              setFromCache(true);
+              setError("Could not refresh the dossier. Showing the last copy on this device.");
+              setFetchFailed(false);
+            } else {
+              setError("error" in data && data.error ? data.error : "Could not load dossier");
+              setErrorStatus(response.status);
+              setFetchFailed(true);
+              setView(null);
+            }
+            setLoading(false);
             return;
           }
           setView(data);
           if (data.orgId) setOrgId(data.orgId);
-        })
-        .catch(() => {
-          setFetchFailed(true);
-          setView(null);
-        })
-        .finally(() => setLoading(false));
+          setFromCache(false);
+          setCachedAt(null);
+          await persistDossierSnapshot(activeOrg, teamValue, data);
+        } catch {
+          if (hadCache || viewRef.current) {
+            setFromCache(true);
+            setError("Could not refresh the dossier. Showing the last copy on this device.");
+            setFetchFailed(false);
+          } else {
+            setFetchFailed(true);
+            setView(null);
+          }
+        } finally {
+          setLoading(false);
+        }
+      })();
     },
     [orgId],
   );
@@ -278,7 +344,9 @@ export default function DossierClient() {
               }
             : undefined
         }
-      />
+      >
+        <OfflineBanner feature="Dossier" fromCache={fromCache} cachedAt={cachedAt} />
+      </DossierShell>
     );
   }
 
@@ -310,6 +378,8 @@ export default function DossierClient() {
           <DossierRelatedStrip orgId={resolvedOrgId} />
         </div>
       </PageHeader>
+
+      <OfflineBanner feature="Dossier" fromCache={fromCache} cachedAt={cachedAt} />
 
       <DataSourceDegradedBanner health={view?.dataSourceHealth} />
 

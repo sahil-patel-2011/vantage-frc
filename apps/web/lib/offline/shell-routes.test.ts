@@ -50,6 +50,10 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/print-farm")).toBe(true);
     expect(pathnameIsOfflineShell("/inventory")).toBe(true);
     expect(pathnameIsOfflineShell("/defense-planner")).toBe(true);
+    expect(pathnameIsOfflineShell("/picklist-collab")).toBe(true);
+    expect(pathnameIsOfflineShell("/dossier")).toBe(true);
+    expect(pathnameIsOfflineShell("/pit-repair-triage")).toBe(true);
+    expect(pathnameIsOfflineShell("/event-day-plan")).toBe(true);
     expect(pathnameIsOfflineShell("/api/todos")).toBe(false);
   });
 
@@ -76,6 +80,10 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/print-farm")).toBe("Print Farm");
     expect(offlineCapableLabel("/inventory")).toBe("Inventory");
     expect(offlineCapableLabel("/defense-planner")).toBe("Defense planner");
+    expect(offlineCapableLabel("/picklist-collab")).toBe("Collaborative pick list");
+    expect(offlineCapableLabel("/dossier")).toBe("Dossier");
+    expect(offlineCapableLabel("/pit-repair-triage")).toBe("Pit repair triage");
+    expect(offlineCapableLabel("/event-day-plan")).toBe("Event-day plan");
   });
 
   it("keeps public/sw.js SHELL_ROUTES aligned with OFFLINE_SHELL_ROUTES", () => {
@@ -104,6 +112,10 @@ describe("offline shell routes", () => {
     expect(featureCacheKey("print-farm", "org-1")).toBe("print-farm:org-1");
     expect(featureCacheKey("inventory", "org-1")).toBe("inventory:org-1");
     expect(featureCacheKey("defense-planner", "org-1", "2026")).toBe("defense-planner:org-1:2026");
+    expect(featureCacheKey("picklist-collab", "org-1", "list-1")).toBe("picklist-collab:org-1:list-1");
+    expect(featureCacheKey("dossier", "org-1", "frc254")).toBe("dossier:org-1:frc254");
+    expect(featureCacheKey("pit-repair", "org-1", "2026")).toBe("pit-repair:org-1:2026");
+    expect(featureCacheKey("event-day-plan", "org-1", "2026onto")).toBe("event-day-plan:org-1:2026onto");
     expect(featureCacheKey("schedule", "org-1")).toBe("schedule:org-1");
   });
 
