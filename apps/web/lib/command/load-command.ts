@@ -167,7 +167,7 @@ export async function loadEventDayCommand(
   const setupSteps = [
     {
       id: "event",
-      label: "Select active event",
+      label: "Set active event",
       detail: canSetEvent
         ? "Choose the competition you are at today."
         : "Ask an owner/admin to set the active event.",

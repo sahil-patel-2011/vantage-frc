@@ -136,6 +136,11 @@ const RULES: readonly Rule[] = [
     why: 'say "Set your active event" in a sentence, or "Set active event" as the title/button',
   },
   {
+    label: "Select active event",
+    pattern: /\bSelect active event\b/i,
+    why: 'say "Set active event" — the Event Day picker heading',
+  },
+  {
     // "Set the real build-season window — no sample timelines." The em-dash
     // clause is the tell: everything before it is the instruction, everything
     // after it is the product promising it did not make the data up. Lower-case
@@ -223,7 +228,7 @@ function collectSource(dir: string, acc: string[] = []): string[] {
 }
 
 const SELECT_RULES = RULES.filter((rule) =>
-  ["Select a team", "Select an active event", "Select event", "Select an event"].includes(
+  ["Select a team", "Select an active event", "Select event", "Select an event", "Select active event"].includes(
     rule.label,
   ),
 );

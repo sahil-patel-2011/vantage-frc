@@ -32,7 +32,7 @@ export function CommandEventPicker({
     <div className="edc-modal" role="dialog" aria-modal="true" aria-labelledby="edc-event-title">
       <div>
         <header>
-          <h2 id="edc-event-title">Select active event</h2>
+          <h2 id="edc-event-title">Set active event</h2>
           <Button variant="icon" aria-label="Close" onClick={onClose}>
             ×
           </Button>

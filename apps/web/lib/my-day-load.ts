@@ -243,7 +243,7 @@ export async function loadMyDayView(
       steps: [
         {
           id: "event",
-          label: "Select active event",
+          label: "Set active event",
           detail: "Set the competition you are at today",
           href: `/command${orgQ}`,
         },

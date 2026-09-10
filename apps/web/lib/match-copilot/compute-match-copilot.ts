@@ -43,7 +43,7 @@ function setupStepsFor(orgId: string | null, focus: "workspace" | "team" | "even
   };
   const command: MatchCopilotSetupStep = {
     id: "command",
-    label: "Select active event",
+    label: "Set active event",
     detail: "Choose the competition you are at today.",
     href: hubHref("/competition", "command", orgId),
   };
