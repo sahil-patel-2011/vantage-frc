@@ -32,4 +32,8 @@ test("CAD hub still loads after the panel split", async ({ page }) => {
   await modes.getByRole("button", { name: "Simple" }).click();
 
   await expect(page.getByRole("region", { name: "Recent CAD activity" })).toBeVisible();
+
+  if (process.env.CAD_SHOT === "1") {
+    await page.screenshot({ path: "/opt/cursor/artifacts/cad-after-split.png", fullPage: true });
+  }
 });

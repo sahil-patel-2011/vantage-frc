@@ -13,7 +13,10 @@ describe("Default yardstick labels stay honest", () => {
     expect(web("app/outreach-calendar/outreach-calendar-client.tsx")).toContain(
       "default 80h / 750 people",
     );
-    expect(web("app/inspection-copilot/inspection-copilot-client.tsx")).toContain(
+    expect(
+      web("app/inspection-copilot/inspection-copilot-client.tsx") +
+        web("app/inspection-copilot/inspection-new-check-form.tsx"),
+    ).toContain(
       "default 115 until you set one",
     );
     expect(web("app/readiness-score/readiness-score-client.tsx")).toContain(
