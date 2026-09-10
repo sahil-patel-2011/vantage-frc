@@ -87,6 +87,10 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/media-kit")).toBe(true);
     expect(pathnameIsOfflineShell("/sponsor-wall")).toBe(true);
     expect(pathnameIsOfflineShell("/sponsor-suite")).toBe(true);
+    expect(pathnameIsOfflineShell("/outreach-calendar")).toBe(true);
+    expect(pathnameIsOfflineShell("/visit-invites")).toBe(true);
+    expect(pathnameIsOfflineShell("/judge-sim")).toBe(true);
+    expect(pathnameIsOfflineShell("/impact-essay")).toBe(true);
     expect(pathnameIsOfflineShell("/api/todos")).toBe(false);
   });
 
@@ -151,6 +155,10 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/media-kit")).toBe("Media Kit");
     expect(offlineCapableLabel("/sponsor-wall")).toBe("Sponsor Wall");
     expect(offlineCapableLabel("/sponsor-suite")).toBe("Sponsor Suite");
+    expect(offlineCapableLabel("/outreach-calendar")).toBe("Outreach Calendar");
+    expect(offlineCapableLabel("/visit-invites")).toBe("Visit Invites");
+    expect(offlineCapableLabel("/judge-sim")).toBe("Judge-Pitch Simulator");
+    expect(offlineCapableLabel("/impact-essay")).toBe("Impact Essay");
   });
 
   it("keeps public/sw.js SHELL_ROUTES aligned with OFFLINE_SHELL_ROUTES", () => {
@@ -216,6 +224,10 @@ describe("offline shell routes", () => {
     expect(featureCacheKey("media-kit", "org-1", "2026")).toBe("media-kit:org-1:2026");
     expect(featureCacheKey("sponsor-wall", "org-1")).toBe("sponsor-wall:org-1");
     expect(featureCacheKey("sponsor-suite", "org-1", "2026")).toBe("sponsor-suite:org-1:2026");
+    expect(featureCacheKey("outreach-calendar", "org-1", "2026")).toBe("outreach-calendar:org-1:2026");
+    expect(featureCacheKey("visit-invites", "org-1")).toBe("visit-invites:org-1");
+    expect(featureCacheKey("judge-sim", "org-1", "2026")).toBe("judge-sim:org-1:2026");
+    expect(featureCacheKey("impact-essay", "org-1", "2026")).toBe("impact-essay:org-1:2026");
     expect(featureCacheKey("schedule", "org-1")).toBe("schedule:org-1");
   });
 

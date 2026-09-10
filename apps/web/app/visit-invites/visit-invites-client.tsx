@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { VisitRelated } from "../../components/visit-related";
 import {
   CardGridSkeleton,
@@ -11,6 +12,8 @@ import {
   StatRowSkeleton,
   StatTile, Button } from "../../components/ui";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import {
   VISIT_RELATED_INCLUDE,
   classifyVisitShell,
@@ -37,6 +40,23 @@ import {
 } from "../../lib/visit-invites";
 
 type ActionBody = Record<string, unknown> & { action: string; orgId: string };
+
+function isVisitInvitesView(value: unknown): value is VisitInvitesView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "ready";
+}
+
+async function persistVisitInvitesSnapshot(orgHint: string, data: VisitInvitesView): Promise<void> {
+  const cacheOrg = data.context.orgId?.trim() || orgHint;
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("visit-invites", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("visit-invites", "_", data);
+  } catch {
+    // Live Visit Invites already painted; IndexedDB is best-effort.
+  }
+}
 
 function orgFromUrl(): string | null {
   if (typeof window === "undefined") return null;
@@ -203,24 +223,59 @@ export default function VisitInvitesClient() {
   const [capacity, setCapacity] = useState("");
   const [status, setStatus] = useState<VisitStatus>("scheduled");
   const [syncToCalendar, setSyncToCalendar] = useState(true);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<VisitInvitesView | null>(null);
+  viewRef.current = view;
 
   const load = useCallback(async () => {
-    setError("");
-    const q = orgFromUrl();
+    const q = orgFromUrl()?.trim() ?? "";
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<VisitInvitesView>("visit-invites", q || "_");
+      if (!viewRef.current && cached?.data && isVisitInvitesView(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
     const url = q ? `/api/visit-invites?orgId=${encodeURIComponent(q)}` : "/api/visit-invites";
     try {
-      const res = await fetch(url, { credentials: "include" });
-      const data = (await res.json()) as VisitInvitesView & { error?: string };
-      if (!res.ok || !("status" in data)) {
-        setError(data.error ?? "Could not load visit invites");
-        setFetchFailed(true);
+      const res = await fetch(url, {
+        credentials: "include",
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      const data = (await res.json()) as VisitInvitesView | { error?: string };
+      if (!res.ok || !isVisitInvitesView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Visit Invites. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setError("error" in data && data.error ? data.error : "Could not load visit invites");
+          setFetchFailed(true);
+        }
         return;
       }
       setFetchFailed(false);
+      setError("");
       setView(data);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistVisitInvitesSnapshot(q, data);
     } catch {
-      setFetchFailed(true);
-      setError("Could not load visit invites");
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Visit Invites. Showing the last copy on this device.");
+        setFetchFailed(false);
+      } else {
+        setFetchFailed(true);
+        setError("Could not load visit invites");
+      }
     }
   }, []);
 
@@ -237,13 +292,15 @@ export default function VisitInvitesClient() {
         credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
-      const data = (await res.json()) as VisitInvitesView & { error?: string };
-      if (!res.ok) {
-        setError(data.error ?? "Request failed");
+      const data = (await res.json()) as VisitInvitesView | { error?: string };
+      if (!res.ok || !isVisitInvitesView(data)) {
+        setError("error" in data && data.error ? data.error : "Request failed");
         return;
       }
       setView(data);
+      void persistVisitInvitesSnapshot(body.orgId, data);
       if (body.action === "upsert_visit") {
         setShareNote(
           body.status === "draft"
@@ -276,7 +333,9 @@ export default function VisitInvitesClient() {
         shell={shell}
         error={error}
         onRetry={() => void load()}
-      />
+      >
+        <OfflineBanner feature="Visit Invites" fromCache={fromCache} cachedAt={cachedAt} />
+      </VisitShell>
     );
   }
 
@@ -288,7 +347,9 @@ export default function VisitInvitesClient() {
         description={view.message || copy.description}
         orgId={view.context.orgId}
         shell="setup"
-      />
+      >
+        <OfflineBanner feature="Visit Invites" fromCache={fromCache} cachedAt={cachedAt} />
+      </VisitShell>
     );
   }
 
@@ -329,6 +390,7 @@ export default function VisitInvitesClient() {
           </Button>
         </div>
       </PageHeader>
+      <OfflineBanner feature="Visit Invites" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? <p className="visit-warn" role="alert">{error}</p> : null}
       {shareNote ? <p className="visit-share-note" role="status">{shareNote}</p> : null}

@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
 import { UsageCutoffBanner, resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 import { AWARD_LABEL, IMPACT_ESSAY_AWARDS, awardLabel } from "../../lib/impact-essay";
@@ -19,8 +20,37 @@ import {
 } from "../../lib/impact-essay/impact-essay-related";
 import type { ImpactEssayAward } from "../../lib/impact-essay/types";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./impact-essay.css";
+
+function isImpactEssayView(value: unknown): value is ImpactEssayView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function impactEssayCacheOrg(data: ImpactEssayView, orgHint: string): string {
+  if (typeof data.orgId === "string" && data.orgId.trim()) return data.orgId;
+  return orgHint;
+}
+
+async function persistImpactEssaySnapshot(
+  orgHint: string,
+  seasonHint: string,
+  data: ImpactEssayView,
+): Promise<void> {
+  const cacheOrg = impactEssayCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  const seasonKey = String(data.seasonYear);
+  try {
+    await putFeatureSnapshot("impact-essay", cacheOrg, data, seasonHint || seasonKey);
+    if (!orgHint) await putFeatureSnapshot("impact-essay", "_", data, seasonHint || seasonKey);
+  } catch {
+    // Live Impact Essay already painted; IndexedDB is best-effort.
+  }
+}
 
 type LiveView = Extract<ImpactEssayView, { status: "live" }>;
 
@@ -144,27 +174,75 @@ export default function ImpactEssayClient() {
   const [cutoffCode, setCutoffCode] = useState<string | null>(null);
   const [season, setSeason] = useState<number | null>(null);
   const [award, setAward] = useState<ImpactEssayAward>("impact");
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<ImpactEssayView | null>(null);
+  viewRef.current = view;
 
   const load = useCallback((seasonOverride?: number) => {
-    setFetchFailed(false);
-    setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    if (seasonQuery) query.set("season", String(seasonQuery));
-    void fetch(`/api/impact-essay${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
+    void (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const urlOrg = params.get("orgId")?.trim() ?? "";
+      const seasonQuery =
+        seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
+      const seasonHint =
+        seasonQuery != null && Number.isFinite(seasonQuery) ? String(seasonQuery) : "";
+      let hadCache = Boolean(viewRef.current);
+      try {
+        const cached = await getFeatureSnapshot<ImpactEssayView>(
+          "impact-essay",
+          urlOrg || "_",
+          seasonHint,
+        );
+        if (!viewRef.current && cached?.data && isImpactEssayView(cached.data)) {
+          setView(cached.data);
+          setSeason(cached.data.seasonYear);
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          hadCache = true;
+        }
+      } catch {
+        // IndexedDB missing or blocked; live fetch still runs.
+      }
+      setFetchFailed(false);
+      setError("");
+      const query = new URLSearchParams();
+      if (urlOrg) query.set("orgId", urlOrg);
+      if (seasonHint) query.set("season", seasonHint);
+      try {
+        const response = await fetch(
+          `/api/impact-essay${query.toString() ? `?${query.toString()}` : ""}`,
+          {
+            cache: "no-store",
+            signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+          },
+        );
         const data = (await response.json()) as ImpactEssayView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setFetchFailed(true);
+        if (!response.ok || !isImpactEssayView(data)) {
+          if (hadCache || viewRef.current) {
+            setFromCache(true);
+            setError("Could not refresh Impact Essay. Showing the last copy on this device.");
+            setFetchFailed(false);
+          } else {
+            setFetchFailed(true);
+          }
           return;
         }
         setView(data);
         setSeason(data.seasonYear);
-      })
-      .catch(() => setFetchFailed(true));
+        setFromCache(false);
+        setCachedAt(null);
+        await persistImpactEssaySnapshot(urlOrg, seasonHint, data);
+      } catch {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Impact Essay. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setFetchFailed(true);
+        }
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -215,9 +293,10 @@ export default function ImpactEssayClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, seasonYear: season ?? undefined, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as ImpactEssayView | { error?: string; code?: string };
-        if (!response.ok || !("status" in data)) {
+        if (!response.ok || !isImpactEssayView(data)) {
           const cutoff = resolveCutoffErrorCode(response.status, data);
           if (cutoff) {
             setCutoffCode(cutoff);
@@ -229,6 +308,7 @@ export default function ImpactEssayClient() {
         }
         setView(data);
         setSeason(data.seasonYear);
+        void persistImpactEssaySnapshot(orgId, season != null ? String(season) : "", data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -239,7 +319,11 @@ export default function ImpactEssayClient() {
   );
 
   if (shell === "loading") {
-    return <ImpactEssayShell description={shellCopy.description} orgId={null} shell="loading" />;
+    return (
+      <ImpactEssayShell description={shellCopy.description} orgId={null} shell="loading">
+        <OfflineBanner feature="Impact Essay" fromCache={fromCache} cachedAt={cachedAt} />
+      </ImpactEssayShell>
+    );
   }
 
   if (shell === "error") {
@@ -250,7 +334,9 @@ export default function ImpactEssayClient() {
         shell="error"
         error={error || shellCopy.description}
         onRetry={() => load()}
-      />
+      >
+        <OfflineBanner feature="Impact Essay" fromCache={fromCache} cachedAt={cachedAt} />
+      </ImpactEssayShell>
     );
   }
 
@@ -261,13 +347,17 @@ export default function ImpactEssayClient() {
         orgId={orgId}
         shell="setup"
       >
-        
+        <OfflineBanner feature="Impact Essay" fromCache={fromCache} cachedAt={cachedAt} />
       </ImpactEssayShell>
     );
   }
 
   if (view?.status !== "live") {
-    return <ImpactEssayShell description={shellCopy.description} orgId={orgId} shell="setup" />;
+    return (
+      <ImpactEssayShell description={shellCopy.description} orgId={orgId} shell="setup">
+        <OfflineBanner feature="Impact Essay" fromCache={fromCache} cachedAt={cachedAt} />
+      </ImpactEssayShell>
+    );
   }
 
   return (
@@ -309,6 +399,7 @@ export default function ImpactEssayClient() {
           ))}
         </div>
       </PageHeader>
+      <OfflineBanner feature="Impact Essay" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

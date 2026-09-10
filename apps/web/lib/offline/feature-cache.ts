@@ -69,7 +69,11 @@ export type OfflineFeature =
   | "grant-report"
   | "media-kit"
   | "sponsor-wall"
-  | "sponsor-suite";
+  | "sponsor-suite"
+  | "outreach-calendar"
+  | "visit-invites"
+  | "judge-sim"
+  | "impact-essay";
 
 const DB_NAME = "vantage-feature-cache";
 const DB_VERSION = 1;

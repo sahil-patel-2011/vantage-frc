@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { JUDGE_SIM_CATEGORIES, judgeSimCategoryLabel, judgeSimVerdictLabel } from "../../lib/judge-sim";
 import type { JudgeSimView } from "../../lib/judge-sim/compute-judge-sim";
@@ -18,8 +19,37 @@ import {
 } from "../../lib/judge-sim/judge-sim-related";
 import type { JudgeSimCategory, JudgeSimVerdict } from "../../lib/judge-sim/types";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./judge-sim.css";
+
+function isJudgeSimView(value: unknown): value is JudgeSimView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function judgeSimCacheOrg(data: JudgeSimView, orgHint: string): string {
+  if (typeof data.orgId === "string" && data.orgId.trim()) return data.orgId;
+  return orgHint;
+}
+
+async function persistJudgeSimSnapshot(
+  orgHint: string,
+  seasonHint: string,
+  data: JudgeSimView,
+): Promise<void> {
+  const cacheOrg = judgeSimCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  const seasonKey = String(data.seasonYear);
+  try {
+    await putFeatureSnapshot("judge-sim", cacheOrg, data, seasonHint || seasonKey);
+    if (!orgHint) await putFeatureSnapshot("judge-sim", "_", data, seasonHint || seasonKey);
+  } catch {
+    // Live Judge-Pitch already painted; IndexedDB is best-effort.
+  }
+}
 
 function verdictTone(verdict: JudgeSimVerdict): string {
   if (verdict === "well_backed") return "good";
@@ -147,27 +177,75 @@ export default function JudgeSimClient() {
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<JudgeSimView | null>(null);
+  viewRef.current = view;
 
   const load = useCallback((seasonOverride?: number) => {
-    setFetchFailed(false);
-    setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    if (seasonQuery) query.set("season", String(seasonQuery));
-    void fetch(`/api/judge-sim${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
+    void (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const urlOrg = params.get("orgId")?.trim() ?? "";
+      const seasonQuery =
+        seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
+      const seasonHint =
+        seasonQuery != null && Number.isFinite(seasonQuery) ? String(seasonQuery) : "";
+      let hadCache = Boolean(viewRef.current);
+      try {
+        const cached = await getFeatureSnapshot<JudgeSimView>(
+          "judge-sim",
+          urlOrg || "_",
+          seasonHint,
+        );
+        if (!viewRef.current && cached?.data && isJudgeSimView(cached.data)) {
+          setView(cached.data);
+          setSeason(cached.data.seasonYear);
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          hadCache = true;
+        }
+      } catch {
+        // IndexedDB missing or blocked; live fetch still runs.
+      }
+      setFetchFailed(false);
+      setError("");
+      const query = new URLSearchParams();
+      if (urlOrg) query.set("orgId", urlOrg);
+      if (seasonHint) query.set("season", seasonHint);
+      try {
+        const response = await fetch(
+          `/api/judge-sim${query.toString() ? `?${query.toString()}` : ""}`,
+          {
+            cache: "no-store",
+            signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+          },
+        );
         const data = (await response.json()) as JudgeSimView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setFetchFailed(true);
+        if (!response.ok || !isJudgeSimView(data)) {
+          if (hadCache || viewRef.current) {
+            setFromCache(true);
+            setError("Could not refresh Judge-Pitch. Showing the last copy on this device.");
+            setFetchFailed(false);
+          } else {
+            setFetchFailed(true);
+          }
           return;
         }
         setView(data);
         setSeason(data.seasonYear);
-      })
-      .catch(() => setFetchFailed(true));
+        setFromCache(false);
+        setCachedAt(null);
+        await persistJudgeSimSnapshot(urlOrg, seasonHint, data);
+      } catch {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Judge-Pitch. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setFetchFailed(true);
+        }
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -213,14 +291,16 @@ export default function JudgeSimClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, seasonYear: season ?? undefined, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as JudgeSimView | { error?: string };
-        if (!response.ok || !("status" in data)) {
+        if (!response.ok || !isJudgeSimView(data)) {
           setError("error" in data && data.error ? data.error : "Something went wrong.");
           return;
         }
         setView(data);
         setSeason(data.seasonYear);
+        void persistJudgeSimSnapshot(orgId, season != null ? String(season) : "", data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -231,7 +311,11 @@ export default function JudgeSimClient() {
   );
 
   if (shell === "loading") {
-    return <JudgeSimShell description={shellCopy.description} orgId={null} shell="loading" />;
+    return (
+      <JudgeSimShell description={shellCopy.description} orgId={null} shell="loading">
+        <OfflineBanner feature="Judge-Pitch Simulator" fromCache={fromCache} cachedAt={cachedAt} />
+      </JudgeSimShell>
+    );
   }
 
   if (shell === "error") {
@@ -242,7 +326,9 @@ export default function JudgeSimClient() {
         shell="error"
         error={error || shellCopy.description}
         onRetry={() => load()}
-      />
+      >
+        <OfflineBanner feature="Judge-Pitch Simulator" fromCache={fromCache} cachedAt={cachedAt} />
+      </JudgeSimShell>
     );
   }
 
@@ -253,13 +339,17 @@ export default function JudgeSimClient() {
         orgId={orgId}
         shell="setup"
       >
-        
+        <OfflineBanner feature="Judge-Pitch Simulator" fromCache={fromCache} cachedAt={cachedAt} />
       </JudgeSimShell>
     );
   }
 
   if (view?.status !== "live") {
-    return <JudgeSimShell description={shellCopy.description} orgId={orgId} shell="setup" />;
+    return (
+      <JudgeSimShell description={shellCopy.description} orgId={orgId} shell="setup">
+        <OfflineBanner feature="Judge-Pitch Simulator" fromCache={fromCache} cachedAt={cachedAt} />
+      </JudgeSimShell>
+    );
   }
 
   return (
@@ -301,6 +391,7 @@ export default function JudgeSimClient() {
           ))}
         </div>
       </PageHeader>
+      <OfflineBanner feature="Judge-Pitch Simulator" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

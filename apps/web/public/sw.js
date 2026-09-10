@@ -92,6 +92,10 @@ const SHELL_ROUTES = [
   "/media-kit",
   "/sponsor-wall",
   "/sponsor-suite",
+  "/outreach-calendar",
+  "/visit-invites",
+  "/judge-sim",
+  "/impact-essay",
 ];
 
 function isShellPath(pathname) {
