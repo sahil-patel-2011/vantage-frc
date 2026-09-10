@@ -7,7 +7,7 @@ export function slackRelatedLinks(orgId: string) {
   return [
     { id: "messages", label: "Team chat", href: hubHref("/team", "messages", orgId) },
     { id: "discord", label: "Discord", href: withOrgHref("/team/discord", orgId) },
-    { id: "account", label: "Account connections", href: "/account?tab=integrations" },
+    { id: "account", label: "Account connections", href: "/connectors" },
   ];
 }
 

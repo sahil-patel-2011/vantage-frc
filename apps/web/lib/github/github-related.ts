@@ -9,7 +9,7 @@ export const GITHUB_RELATED_LINKS = [
     id: "connections",
     label: "Account Connections",
     kind: "account" as const,
-    path: "/account?tab=integrations",
+    path: "/connectors",
   },
   { id: "chat", label: "AI chat", kind: "ai" as const, tab: "chat" },
   { id: "admin", label: "Team admin", kind: "path" as const, path: "/team/admin" },
@@ -237,7 +237,7 @@ export function githubNextActions(input: {
           id: "connections",
           label: "Account Connections",
           detail: "Honest connector status for TBA, Onshape, Discord, and GitHub.",
-          href: "/account?tab=integrations",
+          href: "/connectors",
         },
       ];
     }
@@ -265,7 +265,7 @@ export function githubNextActions(input: {
         id: "connections",
         label: "Account Connections",
         detail: "See GitHub among other workspace connectors — Connected only from real rows.",
-        href: "/account?tab=integrations",
+        href: "/connectors",
       },
     ];
   }
@@ -297,7 +297,7 @@ export function githubNextActions(input: {
         id: "connections",
         label: "Account Connections",
         detail: "GitHub stays Not connected on Account until a real link exists.",
-        href: "/account?tab=integrations",
+        href: "/connectors",
       },
     ];
   }
@@ -330,7 +330,7 @@ export function githubNextActions(input: {
         id: "connections",
         label: "Account Connections",
         detail: "Confirm GitHub shows Connected from the real workspace row.",
-        href: "/account?tab=integrations",
+        href: "/connectors",
       },
     ];
   }
@@ -353,7 +353,7 @@ export function githubNextActions(input: {
       id: "connections",
       label: "Account Connections",
       detail: "GitHub Connected reflects this workspace link.",
-      href: "/account?tab=integrations",
+      href: "/connectors",
     },
     {
       id: "chat",

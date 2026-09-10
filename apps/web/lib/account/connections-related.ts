@@ -50,7 +50,7 @@ export function connectionsRelatedLinks(
     return true;
   }).map((link) => {
     if (link.id === "account") {
-      return { id: link.id, label: link.label, href: "/account?tab=integrations" };
+      return { id: link.id, label: link.label, href: "/account" };
     }
     if (link.id === "workspace") {
       return { id: link.id, label: link.label, href: "/workspace" };
@@ -255,7 +255,7 @@ export function connectionsNextActions(input: {
       id: "google",
       label: "Google sign-in setup",
       detail: "This deployment is missing Google OAuth env — use email OTP until an admin configures it.",
-      href: "/account?tab=integrations",
+      href: "/connectors",
     });
   }
 

@@ -55,7 +55,7 @@ export const SETTINGS_NAV: SettingsNavItem[] = [
   },
   {
     id: "my-ai-keys",
-    label: "My AI keys",
+    label: "AI keys",
     href: "/team/ai-keys",
     icon: "bolt",
     scope: "personal",

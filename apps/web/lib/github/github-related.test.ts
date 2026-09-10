@@ -28,7 +28,7 @@ describe("githubRelatedLinks", () => {
     expect(links.map((l) => l.id)).toEqual(["pair", "code", "connections"]);
     expect(links.find((l) => l.id === "pair")?.href).toBe("/editor/pair?orgId=org-1");
     expect(links.find((l) => l.id === "code")?.href).toBe("/build?tab=code&orgId=org-1");
-    expect(links.find((l) => l.id === "connections")?.href).toBe("/account?tab=integrations");
+    expect(links.find((l) => l.id === "connections")?.href).toBe("/connectors");
   });
 
   it("never uses DEMO labels or hrefs", () => {
@@ -124,6 +124,6 @@ describe("githubNextActions", () => {
     });
     expect(actions[0]?.id).toBe("code");
     expect(actions.find((a) => a.id === "pair")?.href).toBe("/editor/pair?orgId=org-1");
-    expect(actions.find((a) => a.id === "connections")?.href).toBe("/account?tab=integrations");
+    expect(actions.find((a) => a.id === "connections")?.href).toBe("/connectors");
   });
 });

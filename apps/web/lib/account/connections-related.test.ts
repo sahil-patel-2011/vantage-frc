@@ -15,7 +15,7 @@ describe("connectionsRelatedLinks", () => {
   it("builds Account / CAD / Discord cross-links with careful hrefs", () => {
     const links = connectionsRelatedLinks("org-1", { include: [...CONNECTIONS_RELATED_INCLUDE] });
     expect(links.map((l) => l.id)).toEqual(["account", "cad", "discord", "slack"]);
-    expect(links.find((l) => l.id === "account")?.href).toBe("/account?tab=integrations");
+    expect(links.find((l) => l.id === "account")?.href).toBe("/account");
     expect(links.find((l) => l.id === "cad")?.href).toBe("/cad/connections?orgId=org-1");
     expect(links.find((l) => l.id === "discord")?.href).toBe("/team/discord?orgId=org-1");
   });

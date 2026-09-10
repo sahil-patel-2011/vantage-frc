@@ -88,7 +88,7 @@ export async function GET(request: Request) {
         return {
           status: "empty" as const,
           message:
-            "No org pEPA snapshots yet. Scout 3+ matches per team and open Strategy — pEPA is never invented from public scores alone.",
+            "No scouting-based ratings yet. Scout at least 3 matches per team, then open Strategy.",
           orgId,
           eventKey,
           teams: [],
@@ -99,7 +99,7 @@ export async function GET(request: Request) {
 
       return {
         status: "live" as const,
-        message: "Org-private analytics. Not shared. Not Statbotics.",
+        message: "From your team's scouting. Not shared with other teams.",
         orgId,
         eventKey,
         teams: snapshots.rows.map((row) => ({
@@ -122,7 +122,7 @@ export async function GET(request: Request) {
   } catch {
     return Response.json({
       status: "setup_required",
-      message: "Private analytics tables are not available yet. Apply migration 0430.",
+      message: "Scouting ratings are not available yet. Ask an owner to finish setup.",
       orgId: null,
       eventKey: null,
       teams: [],

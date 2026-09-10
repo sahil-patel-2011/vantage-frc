@@ -566,7 +566,7 @@ export function annotateToolOutput(name: string, output: unknown, input?: unknow
         name,
         status: "setup_required",
         classification,
-        summary: String(row.message ?? "Private Edge is not available yet."),
+        summary: String(row.message ?? "Your team's scouting ratings are not available yet."),
         output,
         input,
       };
@@ -577,7 +577,7 @@ export function annotateToolOutput(name: string, output: unknown, input?: unknow
         name,
         status: "empty",
         classification,
-        summary: String(row.emptyReason ?? row.message ?? "No org pEPA yet — public EPA is not cloned."),
+        summary: String(row.emptyReason ?? row.message ?? "No scouting ratings yet — public scores are not copied in."),
         output,
         input,
       };
@@ -586,7 +586,7 @@ export function annotateToolOutput(name: string, output: unknown, input?: unknow
       name,
       status: "ok",
       classification,
-      summary: `${teams.length} org-private pEPA row(s) for ${String(row.eventKey ?? "event")}`,
+      summary: `${teams.length} scouting rating${teams.length === 1 ? "" : "s"} for ${String(row.eventKey ?? "this event")}`,
       output,
       input,
     };

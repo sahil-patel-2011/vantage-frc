@@ -544,7 +544,7 @@ export function createVantageToolRegistry(): AIToolRegistry {
           if (!eventKey) {
             return {
               status: "setup_required",
-              message: "Set an active event to read org-private pEPA.",
+              message: "Set an active event to read your team's scouting ratings.",
               teams: [],
             };
           }
@@ -586,12 +586,12 @@ export function createVantageToolRegistry(): AIToolRegistry {
               pitSignals: pit.rows,
               emptyReason: snapshots.rows.length
                 ? null
-                : "No org pEPA yet — scout 3+ matches and open Strategy. Public EPA alone is not cloned.",
+                : "No scouting ratings yet. Scout at least 3 matches, then open Strategy.",
             };
           } catch {
             return {
               status: "setup_required",
-              message: "Private Edge tables are not migrated yet.",
+              message: "Scouting ratings are not available yet. Ask an owner to finish setup.",
               eventKey,
               teams: [],
             };

@@ -16,13 +16,13 @@ const stages = [
     id: "1",
     title: "Stand up the team",
     detail:
-      "A platform admin provisions the org. Owners invite exact emails. Members finish onboarding (role, crew, optional team number). Incomplete profiles stay on /onboarding.",
+      "A mentor or owner invites you by email. You finish a short setup (role, crew, optional team number). Until that is done, you stay on the welcome steps.",
   },
   {
     id: "2",
     title: "Connect what you already have",
     detail:
-      "Link TBA for this team’s events. Publish scout forms. Optional: Onshape or Fusion, GitHub for Bugbot, Groq/OpenRouter or BYOK for Assistant. Unconfigured connectors stay setup-required — they do not invent data.",
+      "Connect The Blue Alliance for this team’s events. Publish scout forms. Optional: Onshape or Fusion, GitHub, and your own AI keys. Missing connections show a Connect card with the exact next step.",
   },
   {
     id: "3",
@@ -40,7 +40,7 @@ const stages = [
     id: "5",
     title: "Pick from your notes",
     detail:
-      "Alliance Selection Desk, pick list, pairwise ranking, and drive-team tags attach scout evidence to public facts. Private Edge stays blank until scout n is real.",
+      "Alliance Selection Desk, pick list, pairwise ranking, and drive-team tags attach scout evidence to public facts. Your team’s scouting numbers stay blank until someone actually scouts.",
   },
   {
     id: "6",

@@ -20,7 +20,7 @@ describe("teamAdminRelatedLinks", () => {
     expect(links.map((l) => l.id)).toEqual(["account", "discord", "connections"]);
     expect(links.find((l) => l.id === "account")?.href).toBe("/account?tab=profile");
     expect(links.find((l) => l.id === "discord")?.href).toBe("/team/discord?orgId=org-1");
-    expect(links.find((l) => l.id === "connections")?.href).toBe("/account?tab=integrations");
+    expect(links.find((l) => l.id === "connections")?.href).toBe("/connectors");
   });
 
   it("excludes the active surface and respects include", () => {
@@ -44,7 +44,7 @@ describe("teamAdminSetupSteps", () => {
     expect(steps.map((s) => s.id)).toEqual(["workspace", "invite", "discord", "connections"]);
     expect(steps.find((s) => s.id === "invite")?.href).toBe("/team/admin?orgId=org-1#membership");
     expect(steps.find((s) => s.id === "discord")?.href).toBe("/team/discord?orgId=org-1");
-    expect(steps.find((s) => s.id === "connections")?.href).toBe("/account?tab=integrations");
+    expect(steps.find((s) => s.id === "connections")?.href).toBe("/connectors");
     expect(steps.every((s) => !/\bDEMO\b/.test(s.label))).toBe(true);
   });
 });
@@ -123,7 +123,7 @@ describe("teamAdminNextActions", () => {
     });
     expect(actions[0]?.id).toBe("invite");
     expect(actions.find((a) => a.id === "discord")?.href).toBe("/team/discord?orgId=org-1");
-    expect(actions.find((a) => a.id === "connections")?.href).toBe("/account?tab=integrations");
+    expect(actions.find((a) => a.id === "connections")?.href).toBe("/connectors");
   });
 
   it("surfaces pending access requests before invite ledger", () => {

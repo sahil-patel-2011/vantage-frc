@@ -163,7 +163,7 @@ export function accountNextActions(input: {
       id: "google",
       label: "Google sign-in setup",
       detail: "This deployment is missing Google OAuth env — use email OTP until an admin configures it.",
-      href: "/account?tab=integrations",
+      href: "/connectors",
     });
   }
 

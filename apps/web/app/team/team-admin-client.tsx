@@ -616,7 +616,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
           <strong>Notification prefs</strong>
           <span>In-app and email opt-ins</span>
         </a>
-        <a href="/account?tab=integrations">
+        <a href="/connectors">
           <strong>Account Connections</strong>
           <span>TBA, Onshape, Discord, Slack, GitHub</span>
         </a>
@@ -636,7 +636,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         <a href="/security">Personal security</a>
         <a href="/account?tab=profile">Account</a>
         <a href={withOrgHref("/team/discord", orgId)}>Discord</a>
-        <a href="/account?tab=integrations">Connections</a>
+        <a href="/connectors">Connections</a>
       </nav>
 
       <section className="compare-panel team-admin-membership" id="membership" aria-labelledby="membership-title">

@@ -17,7 +17,7 @@ const assistantJobs = [
 ] as const;
 
 const scoutFeeds = [
-  { title: "Competition · Strategy", copy: "Private Edge and playbooks from attributed scout facts — empty until scouted." },
+  { title: "Competition · Strategy", copy: "Playbooks from your scouting plus public facts — empty until someone scouts." },
   { title: "Alliance Selection Desk", copy: "Shared 8-alliance board with scout evidence attached. TBA conflict flags when cache exists." },
   { title: "Pick clock & pairwise", copy: "Timed picks plus qualitative A-beats-B ranking. Empty until real taps." },
   { title: "Drive-team tags", copy: "Defense, climb, partner-fit labels on event robots — blank until applied." },

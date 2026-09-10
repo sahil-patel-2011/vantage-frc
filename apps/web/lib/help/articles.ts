@@ -1482,12 +1482,12 @@ export const HELP_ARTICLES: HelpArticle[] = [
       "setup required",
       "connect",
     ],
-    relatedHref: "/account?tab=integrations",
+    relatedHref: "/connectors",
     sections: [
       {
         heading: "Where connections live",
         body: [
-          "Account → Integrations lists TBA, Onshape, Google, Discord, Slack, and GitHub with their real status — “Connected” appears only when a working credential row exists.",
+          "Settings → Connectors lists Google, GitHub, The Blue Alliance, Onshape, Discord, Slack, email, Stripe, storage, Fusion, and the shop Pi. “Connected” appears only when a working credential row exists.",
           "The Blue Alliance is configured under Team → Data (/team/data); schedules, rankings, and match cards stay empty until it is connected and an active event is picked.",
         ],
       },

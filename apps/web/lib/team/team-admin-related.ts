@@ -8,7 +8,7 @@ export const TEAM_ADMIN_RELATED_LINKS = [
     id: "connections",
     label: "Account Connections",
     kind: "account" as const,
-    path: "/account?tab=integrations",
+    path: "/connectors",
   },
   { id: "security", label: "Security & delegation", kind: "path" as const, path: "/team/security" },
   { id: "admin", label: "Team admin", kind: "path" as const, path: "/team/admin" },
@@ -99,7 +99,7 @@ export function teamAdminSetupSteps(orgId?: string | null): TeamAdminSetupStep[]
       id: "connections",
       label: "Account Connections",
       detail: "Honest connector status for TBA, Onshape, Discord, and GitHub.",
-      href: "/account?tab=integrations",
+      href: "/connectors",
     },
   ];
 }
@@ -219,7 +219,7 @@ export function teamAdminNextActions(input: {
           id: "connections",
           label: "Account Connections",
           detail: "Honest connector status — Connected only from real rows.",
-          href: "/account?tab=integrations",
+          href: "/connectors",
         },
         {
           id: "discord",
@@ -253,7 +253,7 @@ export function teamAdminNextActions(input: {
         id: "connections",
         label: "Account Connections",
         detail: "TBA, Onshape, Discord, and GitHub status for this workspace.",
-        href: "/account?tab=integrations",
+        href: "/connectors",
       },
     ];
   }
@@ -283,7 +283,7 @@ export function teamAdminNextActions(input: {
         id: "connections",
         label: "Account Connections",
         detail: "Workspace connectors stay honest until linked.",
-        href: "/account?tab=integrations",
+        href: "/connectors",
       },
     ];
   }
@@ -313,7 +313,7 @@ export function teamAdminNextActions(input: {
         id: "connections",
         label: "Account Connections",
         detail: "Confirm connectors for the workspace these members will use.",
-        href: "/account?tab=integrations",
+        href: "/connectors",
       },
     ];
   }
@@ -343,7 +343,7 @@ export function teamAdminNextActions(input: {
         id: "connections",
         label: "Account Connections",
         detail: "Honest TBA / Onshape / Discord / GitHub status for this team.",
-        href: "/account?tab=integrations",
+        href: "/connectors",
       },
     ];
   }
@@ -372,7 +372,7 @@ export function teamAdminNextActions(input: {
       id: "connections",
       label: "Account Connections",
       detail: "Workspace connectors stay Connected only from real rows.",
-      href: "/account?tab=integrations",
+      href: "/connectors",
     },
     {
       id: "account",

@@ -86,7 +86,7 @@ function metricLine(candidate: PickCandidate | undefined) {
   if (!candidate) return "No event metrics linked";
   const parts = [
     candidate.epa != null ? `EPA ${candidate.epa.toFixed(1)}` : null,
-    candidate.pepa != null ? `pEPA ${candidate.pepa.toFixed(1)}` : null,
+    candidate.pepa != null ? `Our scouting ${candidate.pepa.toFixed(1)}` : null,
     candidate.record,
     candidate.rank != null ? `rank ${candidate.rank}` : null,
     candidate.source,
@@ -742,8 +742,8 @@ export function PickListWorkbench({
         <header>
           <h3>Event pool</h3>
           <small>
-            Only teams with synced TBA/Statbotics rows. Suggestions use event EPA / org pEPA
-            percentiles + scout reliability.
+            Only teams with synced TBA/Statbotics rows. Suggestions use public ratings plus your
+            scouting when you have it.
           </small>
         </header>
         {!pool.length ? (

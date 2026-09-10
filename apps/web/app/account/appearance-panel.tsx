@@ -448,7 +448,7 @@ export default function AppearancePanel() {
             {cockpitBusy ? "Saving…" : "Save cockpit"}
           </button>
           <a className="app-button secondary" href="/team/ai-keys">
-            AI keys (BYOK / local)
+            Your AI keys
           </a>
           <a className="app-button secondary" href="/cad/setup">
             Onshape CAD
