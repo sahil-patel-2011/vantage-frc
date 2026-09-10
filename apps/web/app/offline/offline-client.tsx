@@ -1,5 +1,6 @@
 "use client";
 
+import "../product-styles";
 import { useEffect, useState } from "react";
 import { Button } from "../../components/ui";
 import { getLastOrgId, pendingCounts } from "../../lib/scout-offline";

@@ -237,7 +237,11 @@ export default function FundraisersClient({ orgId }: { orgId: string | null }) {
           />
         ) : null}
         <EmptyState soft badge="Setup required" badgeTone="setup" title={view.message}>
-          <FundraisersNextActions actions={nextActions} />
+          {nextActions[0] ? (
+            <Button as="a" variant="primary" href={nextActions[0].href}>
+              {nextActions[0].label}
+            </Button>
+          ) : null}
         </EmptyState>
       </main>
     );
@@ -339,15 +343,9 @@ export default function FundraisersClient({ orgId }: { orgId: string | null }) {
           description={
             canManageMoney
               ? "Add a community event below. Proceeds stay at $0 until an owner/admin records a real deposit."
-              : "A finance lead plans events and records deposits. Open Sponsors, Grants, or Orders meanwhile."
+              : "A finance lead plans events and records deposits. Sponsors, Grants, and Orders stay in the header."
           }
-        >
-          <BusinessRelated
-            orgId={view.context.orgId}
-            include={["sponsors", "grants", "orders"]}
-            ariaLabel="Empty fundraisers related links"
-          />
-        </EmptyState>
+        />
       ) : null}
 
       <div className="fr-grid">

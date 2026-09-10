@@ -159,6 +159,18 @@
   --critical-fill: #c2483d;
 }
 
+/* Shared reset so marketing can load without styles.css. Product body fill
+   and safe-area padding stay in styles.css (imported only on product shells). */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+}
+
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #0c1118;

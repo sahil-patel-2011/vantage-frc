@@ -82,10 +82,6 @@ function TeamDataShell({
   description,
   orgId,
   shell,
-  hasActiveEvent,
-  tbaConfigured,
-  matchCount,
-  metricCount,
   error,
   onRetry,
   children,
@@ -94,22 +90,10 @@ function TeamDataShell({
   description: string;
   orgId?: string | null;
   shell: TeamDataShellKind;
-  hasActiveEvent?: boolean;
-  tbaConfigured?: boolean;
-  matchCount?: number;
-  metricCount?: number;
   error?: string;
   onRetry?: () => void;
   children?: ReactNode;
 }) {
-  const actions = teamDataNextActions({
-    orgId,
-    shell,
-    hasActiveEvent,
-    tbaConfigured,
-    matchCount,
-    metricCount,
-  });
   const workspaceHref = orgId ? withOrgHref("/workspace", orgId) : "/workspace";
 
   return (
@@ -143,22 +127,15 @@ function TeamDataShell({
         }
         aria-busy={shell === "loading" || undefined}
       >
-        <div className="team-data-inline-actions">
-          {shell === "error" && onRetry ? (
-            <Button variant="secondary" type="button" onClick={onRetry}>
-              Retry
-            </Button>
-          ) : null}
-          {shell === "setup" ? (
-            <Button as="a" variant="primary" href={workspaceHref}>Choose your team</Button>
-          ) : null}
-          <TeamDataRelated
-            orgId={orgId}
-            include={shell === "setup" ? ["schedule", "command", "strategy"] : [...TEAM_DATA_RELATED_INCLUDE]}
-          />
-        </div>
+        {shell === "error" && onRetry ? (
+          <Button variant="secondary" type="button" onClick={onRetry}>
+            Retry
+          </Button>
+        ) : null}
+        {shell === "setup" ? (
+          <Button as="a" variant="primary" href={workspaceHref}>Choose your team</Button>
+        ) : null}
       </EmptyState>
-      {shell !== "loading" ? <TeamDataNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }
@@ -437,8 +414,6 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
         }
         orgId={orgId}
         shell="setup"
-        hasActiveEvent={hasActiveEvent}
-        tbaConfigured={tbaConfigured}
       >
         <OfflineBanner feature="Team Data" fromCache={fromCache} cachedAt={cachedAt} />
         {needsTba ? (
@@ -516,14 +491,10 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
             title="Sync the active event"
             description={`Event ${activeEventKey} is selected, but there are no match or ranking rows yet. Sync pulls real The Blue Alliance data.`}
           >
-            <div className="team-data-inline-actions">
-              <Button variant="primary" type="button" disabled={busy} onClick={() => void syncActiveEvent()}>
-                {busy ? "Working…" : "Sync active event"}
-              </Button>
-              <TeamDataRelated orgId={orgId} include={[...TEAM_DATA_RELATED_INCLUDE]} />
-            </div>
+            <Button variant="primary" type="button" disabled={busy} onClick={() => void syncActiveEvent()}>
+              {busy ? "Working…" : "Sync active event"}
+            </Button>
           </EmptyState>
-          <TeamDataNextActionsPanel actions={nextActions} />
         </>
       ) : null}
 

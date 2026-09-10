@@ -295,21 +295,10 @@ export default function GrantsClient({ orgId: orgIdProp }: { orgId?: string }) {
           />
         ) : null}
         <EmptyState soft badge="Setup required" badgeTone="setup" title={view.message}>
-          
-          {nextActions.length ? (
-            <ol className="gwe-next-actions">
-              {nextActions.map((action) => (
-                <li key={action.id} className={action.primary ? "primary" : undefined}>
-                  <div>
-                    <strong>{action.label}</strong>
-                    <span>{action.detail}</span>
-                  </div>
-                  <Button as="a" variant="secondary" href={action.href}>
-                    Open
-                  </Button>
-                </li>
-              ))}
-            </ol>
+          {nextActions[0] ? (
+            <Button as="a" variant="primary" href={nextActions[0].href}>
+              {nextActions[0].label}
+            </Button>
           ) : null}
         </EmptyState>
       </main>

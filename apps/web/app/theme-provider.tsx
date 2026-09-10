@@ -1,10 +1,13 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import AppShell from "../components/app-shell";
 import PaidSessionSplash from "../components/paid-session-splash";
 import AppearanceRuntime from "../lib/branding/appearance-runtime";
+import { pathnameUsesAppShell } from "../lib/nav/product-route";
+
+const AppShell = dynamic(() => import("../components/app-shell"), { ssr: true });
 
 /** Resolved color scheme applied to the document. */
 export type Theme = "light" | "dark";
@@ -173,17 +176,7 @@ export function ThemeToggle({ expanded = false }: { expanded?: boolean }) {
 
 export default function ThemeProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const productRoute = !["/", "/features", "/features/cad", "/features/strategy", "/features/code", "/workflow", "/desktop", "/for-teams", "/pricing", "/privacy", "/terms", "/signin", "/sign-in", "/offline"].includes(pathname)
-    && !pathname.startsWith("/display/kiosk")
-    && !pathname.startsWith("/display/pit")
-    && !pathname.startsWith("/showcase/present")
-    // Public sponsor storefront stays shell-free; /support tickets use the Soft-UI app chrome.
-    && !/^\/support\/[^/]+/.test(pathname)
-    // Token-scoped public form intake. The person answering has no account, so
-    // the product chrome is not just useless to them — the top bar renders a
-    // notifications bell and an avatar for whoever last signed in on that
-    // browser, and the island offers navigation they cannot follow.
-    && !/^\/f\/[a-f0-9]{32}$/.test(pathname);
+  const productRoute = pathnameUsesAppShell(pathname);
 
   useEffect(() => {
     if (!productRoute) return;

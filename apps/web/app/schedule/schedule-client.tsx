@@ -180,8 +180,6 @@ function ScheduleShell({
   description,
   orgId,
   shell,
-  hasActiveEvent,
-  matchCount,
   fetchFailed,
   error,
   errorStatus,
@@ -194,8 +192,6 @@ function ScheduleShell({
   description: string;
   orgId?: string | null;
   shell: ScheduleShellKind;
-  hasActiveEvent?: boolean;
-  matchCount?: number;
   fetchFailed?: boolean;
   error?: string;
   /** HTTP status of the failed load, so an expired session can offer sign-in. */
@@ -205,12 +201,6 @@ function ScheduleShell({
   cachedAt?: string | null;
   children?: ReactNode;
 }) {
-  const actions = scheduleNextActions({
-    orgId,
-    shell,
-    hasActiveEvent,
-    matchCount,
-  });
   const workspaceHref = orgId ? withOrgHref("/workspace", orgId) : "/workspace";
   const failure =
     shell === "error"
@@ -261,29 +251,22 @@ function ScheduleShell({
         description={failure ? failure.description : description}
         aria-busy={shell === "loading" || undefined}
       >
-        <div className="sched-inline-actions">
-          {failure?.primary ? (
-            <Button as="a" variant="primary" href={failure.primary.href}>
-              {failure.primary.label}
-            </Button>
-          ) : null}
-          {failure?.showRetry && onRetry ? (
-            <Button type="button" variant="secondary" onClick={onRetry}>
-              Retry
-            </Button>
-          ) : null}
-          {shell === "setup" ? (
-            <Button as="a" variant="primary" href={workspaceHref}>
-              Choose your team
-            </Button>
-          ) : null}
-          <ScheduleRelated
-            orgId={orgId}
-            include={shell === "setup" ? ["calendar", "command", "my-day"] : [...SCHEDULE_RELATED_INCLUDE]}
-          />
-        </div>
+        {failure?.primary ? (
+          <Button as="a" variant="primary" href={failure.primary.href}>
+            {failure.primary.label}
+          </Button>
+        ) : null}
+        {failure?.showRetry && onRetry ? (
+          <Button type="button" variant="secondary" onClick={onRetry}>
+            Retry
+          </Button>
+        ) : null}
+        {shell === "setup" ? (
+          <Button as="a" variant="primary" href={workspaceHref}>
+            Choose your team
+          </Button>
+        ) : null}
       </EmptyState>
-      {shell !== "loading" ? <ScheduleNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }
@@ -407,7 +390,6 @@ export default function ScheduleClient() {
         description={view.message}
         orgId={orgId}
         shell="setup"
-        hasActiveEvent={Boolean(view.context.eventKey)}
         fromCache={fromCache}
         cachedAt={cachedAt}
       />
@@ -499,20 +481,13 @@ export default function ScheduleClient() {
       ) : null}
 
       {view.matches.length === 0 ? (
-        <>
           <EmptyState
             soft
             badge="No matches yet"
             badgeTone="setup"
             title={scheduleCacheRequiredCopy().title}
             description={scheduleCacheRequiredCopy().description}
-          >
-            <div className="sched-inline-actions">
-              <ScheduleRelated orgId={orgId} include={["calendar", "command", "my-day"]} />
-            </div>
-          </EmptyState>
-          <ScheduleNextActionsPanel actions={nextActions} />
-        </>
+          />
       ) : (
         <>
           <div className="sched-controls">
@@ -552,11 +527,7 @@ export default function ScheduleClient() {
               soft
               title="Nothing matches your filters"
               description="Try showing played matches or switching back to all matches."
-            >
-              <div className="sched-inline-actions">
-                <ScheduleRelated orgId={orgId} include={["my-day", "command", "calendar"]} />
-              </div>
-            </EmptyState>
+            />
           ) : (
             groups.map((group) => (
               <section key={group.level} className="sched-group">

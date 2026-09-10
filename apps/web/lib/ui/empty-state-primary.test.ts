@@ -177,4 +177,31 @@ describe("empty-state R4 (one primary on the empty card)", () => {
     walk(APP);
     expect(hits, hits.join("\n")).toEqual([]);
   });
+
+  it("does not nest related strips inside EmptyState", () => {
+    const hits: string[] = [];
+    for (const file of clients) {
+      const src = readFileSync(file, "utf8");
+      let from = 0;
+      while (true) {
+        const start = src.indexOf("<EmptyState", from);
+        if (start < 0) break;
+        const tagEnd = src.indexOf(">", start);
+        if (tagEnd < 0) break;
+        const opening = src.slice(start, tagEnd + 1);
+        if (opening.endsWith("/>")) {
+          from = tagEnd + 1;
+          continue;
+        }
+        const close = src.indexOf("</EmptyState>", tagEnd);
+        if (close < 0) break;
+        const inner = src.slice(tagEnd + 1, close);
+        if (/<[A-Z][A-Za-z0-9]*Related\b/.test(inner)) {
+          hits.push(`${file} EmptyState nests a Related strip`);
+        }
+        from = close + 1;
+      }
+    }
+    expect(hits, hits.join("\n")).toEqual([]);
+  });
 });

@@ -347,13 +347,7 @@ export default function AwardsClient({ orgId }: { orgId: string }) {
               badgeTone="setup"
               title="No FIRST award submissions yet"
               description="Pick an award from the FIRST catalog to pre-load essay prompts. Wins you already earned can be logged on Business · Awards & evidence without inventing history."
-            >
-              <BusinessRelated
-                orgId={orgId}
-                include={["impact", "evidence", "grants", "sponsors"]}
-                ariaLabel="Empty awards related links"
-              />
-            </EmptyState>
+            />
           ) : null}
 
           <div className="awards-grid">

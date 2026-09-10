@@ -1,9 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Mono, Source_Sans_3, Source_Serif_4 } from "next/font/google";
 import Script from "next/script";
-import "./soft-ui.css";
-import "./styles.css";
 // Last on purpose: system.css is the shared default layer (see its header).
+// Leftover product chrome sheets load from product-styles.ts via AppShell
+// and the public shells that need them — not from this root layout — so
+// marketing routes do not download scout/intel/kiosk chrome.
 import "./system.css";
 import PwaRegister from "./pwa-register";
 import ThemeProvider from "./theme-provider";

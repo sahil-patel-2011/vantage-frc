@@ -128,7 +128,7 @@ The measured state of the design layer, which is why the app looks inconsistent:
 | Thing | Reality |
 |---|---|
 | CSS files / lines | 166 files, 22,698 lines, 9,830 rule blocks. One CSS Module; everything else global. |
-| Loaded on every route | `marketing.css` (1,949) + `soft-ui.css` (2,472) + `styles.css` (417) = 4,838 lines |
+| Loaded on every route | Root layout: `system.css` (tokens + reset). Marketing sheets load from `marketing-styles.ts` via SiteHeader. Product chrome (`soft-ui.css` + leftover `styles.css`) loads from `product-styles.ts` via AppShell / sign-in / kiosk / offline / showcase present. |
 | Token sets | 3 competing: `--soft-*` (23, the only complete light/dark pair), `--app-*` (16, defined **twice** in `styles.css` — teal at :20, blue at :65), `--m-*` (32, marketing) |
 | `--app-accent` | resolves through **4** declarations depending on route and theme |
 | Button systems | **6**. `.app-button` 447 uses, `.primary-action` 70, shared `<Button>` 46, `.soft-btn`, 29 per-feature classes, and 239 bare-`button` rules across 29 files |

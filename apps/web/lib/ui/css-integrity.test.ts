@@ -431,4 +431,33 @@ describe("stylesheet integrity", () => {
     expect(marketingStyles).toMatch(/marketing\.css/);
     expect(marketingStyles).toMatch(/marketing-v3\.css/);
   });
+
+  it("does not load leftover product chrome from the root layout", () => {
+    const layout = readFileSync(join(__dirname, "..", "..", "app", "layout.tsx"), "utf8");
+    expect(layout).not.toMatch(/soft-ui\.css/);
+    expect(layout).not.toMatch(/["']\.\/styles\.css["']/);
+    expect(layout).toMatch(/system\.css/);
+    const productStyles = readFileSync(
+      join(__dirname, "..", "..", "app", "product-styles.ts"),
+      "utf8",
+    );
+    expect(productStyles.indexOf("soft-ui.css")).toBeGreaterThan(-1);
+    expect(productStyles.indexOf("styles.css")).toBeGreaterThan(productStyles.indexOf("soft-ui.css"));
+    const shell = readFileSync(join(__dirname, "..", "..", "components", "app-shell.tsx"), "utf8");
+    expect(shell).toMatch(/product-styles/);
+    const theme = readFileSync(join(__dirname, "..", "..", "app", "theme-provider.tsx"), "utf8");
+    expect(theme).toMatch(/dynamic\(\(\) => import\("\.\.\/components\/app-shell"\)/);
+    expect(theme).not.toMatch(/import AppShell from/);
+    const signIn = readFileSync(join(__dirname, "..", "..", "app", "sign-in", "sign-in-client.tsx"), "utf8");
+    expect(signIn).toMatch(/product-styles/);
+    const kiosk = readFileSync(join(__dirname, "..", "..", "app", "display", "kiosk", "kiosk-client.tsx"), "utf8");
+    expect(kiosk).toMatch(/product-styles/);
+    const offline = readFileSync(join(__dirname, "..", "..", "app", "offline", "offline-client.tsx"), "utf8");
+    expect(offline).toMatch(/product-styles/);
+    const showcase = readFileSync(
+      join(__dirname, "..", "..", "app", "showcase", "present", "presentation-client.tsx"),
+      "utf8",
+    );
+    expect(showcase).toMatch(/product-styles/);
+  });
 });

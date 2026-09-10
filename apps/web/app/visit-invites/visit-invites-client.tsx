@@ -106,8 +106,6 @@ function VisitShell({
   orgId,
   shell,
   canManage,
-  visitCount,
-  hostGaps,
   error,
   onRetry,
   children,
@@ -117,19 +115,10 @@ function VisitShell({
   orgId?: string | null;
   shell: VisitShellKind;
   canManage?: boolean;
-  visitCount?: number;
-  hostGaps?: number;
   error?: string;
   onRetry?: () => void;
   children?: ReactNode;
 }) {
-  const actions = visitNextActions({
-    orgId,
-    shell,
-    canManage,
-    visitCount,
-    hostGaps,
-  });
   const copy = visitShellCopy(shell);
   const workspaceHref = orgId ? withOrgHref("/workspace", orgId) : "/workspace";
 
@@ -156,7 +145,6 @@ function VisitShell({
         </PageHeader>
         {children}
         <ErrorState title={title || copy.title} message={error || copy.description} onRetry={onRetry} />
-        <VisitNextActionsPanel actions={actions} />
       </main>
     );
   }
@@ -180,21 +168,15 @@ function VisitShell({
         title={title || copy.title}
         description={description || copy.description}
       >
-        <div className="visit-inline-actions">
-          {shell === "setup" ? (
-            <Button as="a" variant="primary" href={workspaceHref}>Choose your team</Button>
-          ) : null}
-          {shell === "empty" && canManage ? (
-            <Button as="a" variant="primary" href={visitInvitesShareHref(orgId) + "#visit-create"}>
-              Create the first visit
-            </Button>
-          ) : null}
-          {/* Related links stay in the header — repeating them here showed the
-              same three or four buttons twice on one screen. */}
-        </div>
-        
+        {shell === "setup" ? (
+          <Button as="a" variant="primary" href={workspaceHref}>Choose your team</Button>
+        ) : null}
+        {shell === "empty" && canManage ? (
+          <Button as="a" variant="primary" href={visitInvitesShareHref(orgId) + "#visit-create"}>
+            Create the first visit
+          </Button>
+        ) : null}
       </EmptyState>
-      <VisitNextActionsPanel actions={actions} />
     </main>
   );
 }
@@ -551,7 +533,6 @@ export default function VisitInvitesClient() {
               </Button>
             ) : null}
           </EmptyState>
-          <VisitNextActionsPanel actions={nextActions} />
         </>
       ) : (
         <>

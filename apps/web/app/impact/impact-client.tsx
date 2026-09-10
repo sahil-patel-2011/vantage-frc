@@ -241,15 +241,11 @@ export default function ImpactClient() {
         <EmptyState soft title="Loading…" description="Checking your team." aria-busy />
       ) : view.status === "setup_required" ? (
         <>
-          <ImpactNextActions actions={nextActions} />
           <EmptyState soft badge="Setup required" badgeTone="setup" title={view.message}>
-            
-            {relatedOrg ? (
-              <BusinessRelated
-                orgId={relatedOrg}
-                include={["awards", "grants", "sponsors"]}
-                ariaLabel="Setup impact related links"
-              />
+            {nextActions[0] ? (
+              <Button as="a" variant="primary" href={nextActions[0].href}>
+                {nextActions[0].label}
+              </Button>
             ) : null}
           </EmptyState>
         </>
@@ -261,7 +257,7 @@ export default function ImpactClient() {
           <LogActivityForm busy={busy} mutate={mutate} members={view.members} currentUserId={view.currentUserId} />
           {view.summary.totalEvents > 0 ? <Breakdowns view={view} /> : null}
           <PeoplePanel people={view.people} seasonYear={view.seasonYear} />
-          <RecentActivities view={view} busy={busy} mutate={mutate} relatedOrg={relatedOrg} />
+          <RecentActivities view={view} busy={busy} mutate={mutate} />
         </div>
       )}
     </main>
@@ -412,12 +408,10 @@ function RecentActivities({
   view,
   busy,
   mutate,
-  relatedOrg,
 }: {
   view: LiveView;
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => void;
-  relatedOrg: string | null;
 }) {
   const [editing, setEditing] = useState<string | null>(null);
   if (view.summary.totalEvents === 0) {
@@ -428,15 +422,7 @@ function RecentActivities({
         badgeTone="setup"
         title="Log your first community-impact activity"
         description="STEM demos, mentoring, and community events build the Impact and Engineering Inspiration narratives — empty means nothing logged, not a placeholder scoreboard."
-      >
-        {relatedOrg ? (
-          <BusinessRelated
-            orgId={relatedOrg}
-            include={["awards", "grants", "sponsors"]}
-            ariaLabel="Empty impact related links"
-          />
-        ) : null}
-      </EmptyState>
+      />
     );
   }
   return (

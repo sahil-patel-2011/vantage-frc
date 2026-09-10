@@ -58,6 +58,7 @@ import {
   type SignInBusy,
 } from "./sign-in-model";
 import { SignInSessionView } from "./sign-in-session";
+import "../product-styles";
 import "./sign-in-flow.css";
 
 type AuthStatus = SignInAuthStatus;

@@ -1,5 +1,6 @@
 "use client";
 
+import "../../product-styles";
 import { useCallback, useEffect, useState } from "react";
 import {
   bumperBanner,

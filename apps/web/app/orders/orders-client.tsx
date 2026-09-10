@@ -325,13 +325,7 @@ export default function OrdersClient({ embedded = false, seasonYear, orgId: orgI
               soft
               title="Buy sheet is empty"
               description="Add what the team bought or needs: what, why, when, and the cost. Totals stay blank until someone logs a real estimate."
-            >
-              <BusinessRelated
-                orgId={live!.orgId}
-                include={["sponsors", "fundraisers", "budget"]}
-                ariaLabel="Empty orders links"
-              />
-            </EmptyState>
+            />
           ) : null}
           {live!.financeAiEnabled && live!.aiSummary ? <AiSummaryPanel summary={live!.aiSummary} /> : null}
           {live!.metrics.mineToBuy > 0 ? (
