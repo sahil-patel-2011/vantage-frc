@@ -54,7 +54,8 @@ function livePortal(input: { schoolFunded: boolean; sponsorsAllowed: boolean }) 
 
 async function stubBusiness(page: Page, payload: ReturnType<typeof livePortal>) {
   await page.route("**/api/business**", async (route) => {
-    if (route.request().method() === "GET") {
+    const path = new URL(route.request().url()).pathname;
+    if (route.request().method() === "GET" && path === "/api/business") {
       await route.fulfill({
         status: 200,
         contentType: "application/json",

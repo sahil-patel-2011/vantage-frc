@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { EmptyState, PageHeader, TabBar, ToolStrip, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import type { BusinessPortalView } from "../../lib/business-portal";
@@ -94,10 +94,15 @@ export default function BusinessClient() {
 
   const live = view?.status === "live" ? view : null;
   const sponsorsAllowed = live?.sponsorsAllowed ?? access.sponsorsAllowed;
+  const appliedFundingDefault = useRef(false);
 
   useEffect(() => {
-    if (typeof window === "undefined" || !live) return;
-    if (new URLSearchParams(window.location.search).get("tab")) return;
+    if (typeof window === "undefined" || !live || appliedFundingDefault.current) return;
+    if (new URLSearchParams(window.location.search).get("tab")) {
+      appliedFundingDefault.current = true;
+      return;
+    }
+    appliedFundingDefault.current = true;
     const model = fundingModelFromFlags({
       schoolFunded: Boolean(live.schoolFunded),
       sponsorsAllowed: live.sponsorsAllowed !== false,
