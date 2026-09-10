@@ -14,7 +14,7 @@ import {
 } from "@vantage/scouting";
 import { StudioField } from "../studio-fields";
 import "../scouting.css";
-import { EmptyState, FormRow, PageHeader, Panel, TabBar } from "../../../components/ui";
+import { EmptyState, FormRow, PageHeader, Panel, ToolStrip } from "../../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 import {
   ANSWER_KIND_OPTIONS,
@@ -305,14 +305,10 @@ function FormBuilderShell({
           </button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button is-primary" href={orgId ? commandHref : workspaceHref}>
-            {orgId ? "Set active event" : "Choose your team"}
-          </a>
+          <a className="app-button is-primary" href={orgId ? commandHref : workspaceHref}>{orgId ? "Set active event" : "Choose your team"}</a>
         ) : null}
         {shell === "empty" ? (
-          <a className="app-button is-primary" href={scoutingHref}>
-            Open Scouting
-          </a>
+          <a className="app-button is-primary" href={scoutingHref}>Open Scouting</a>
         ) : null}
         {shell === "setup" && steps.length > 0 ? (
           <ol className="sfb-setup-steps">
@@ -924,11 +920,11 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
         />
       ) : null}
 
-      <TabBar
+      <ToolStrip
         aria-label="Form type"
         value={type}
         onChange={(id) => switchType(id as EntryType)}
-        tabs={[
+        items={[
           { id: "match", label: "Match form" },
           { id: "pit", label: "Pit form" },
         ]}

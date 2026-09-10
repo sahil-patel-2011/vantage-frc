@@ -131,14 +131,10 @@ function LocatorShell({
           description={error ?? copy.description}
         >
           {shell === "setup" ? (
-            <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
-              Choose your team
-            </a>
+            <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
           ) : null}
           {shell === "empty" ? (
-            <a className="app-button" href="#bin-shelf-locations">
-              Map the first location
-            </a>
+            <a className="app-button is-primary" href="#bin-shelf-locations">Map the first location</a>
           ) : null}
         </EmptyState>
       )}

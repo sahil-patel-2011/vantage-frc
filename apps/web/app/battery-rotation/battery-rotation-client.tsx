@@ -97,8 +97,6 @@ function BatteryRotationShell({
   const copy = batteryRotationShellCopy(shell);
   const competitionHref = withOrgHref("/competition", orgId);
   const batteriesHref = hubHref("/team", "batteries", orgId);
-  const forecastHref = hubHref("/build", "battery-health-forecast", orgId);
-  const pitHref = withOrgHref("/pit", orgId);
 
   return (
     <main className="module-page battery-rotation-page soft-gate">
@@ -137,22 +135,10 @@ function BatteryRotationShell({
           </button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
-            Choose your team
-          </a>
+          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
         ) : null}
         {shell === "empty" ? (
-          <>
-            <a className="app-button" href={batteriesHref}>
-              Open Batteries
-            </a>
-            <a className="app-button secondary" href={forecastHref}>
-              Open Health Forecast
-            </a>
-            <a className="app-button secondary" href={pitHref}>
-              Open Pit command
-            </a>
-          </>
+          <a className="app-button is-primary" href={batteriesHref}>Open Batteries</a>
         ) : null}
       </EmptyState>
       <BatteryRotationNextActionsPanel actions={actions} />
@@ -325,14 +311,8 @@ export default function BatteryRotationClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <a className="app-button" href={batteriesHref}>
+          <a className="app-button is-primary" href={batteriesHref}>
             Open Batteries
-          </a>
-          <a className="app-button secondary" href={forecastHref}>
-            Open Health Forecast
-          </a>
-          <a className="app-button secondary" href={pitHref}>
-            Open Pit command
           </a>
         </EmptyState>
       ) : null}

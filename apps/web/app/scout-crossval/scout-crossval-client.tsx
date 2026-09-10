@@ -107,8 +107,6 @@ function ScoutCrossvalShell({
   const competitionHref = hubHref("/competition", "scouting", orgId);
   const steps = shell === "setup" ? scoutCrossvalSetupSteps(orgId) : [];
   const scoutingHref = hubHref("/competition", "scouting", orgId);
-  const coverageHref = withOrgHref("/scout-coverage-live", orgId);
-  const accuracyHref = withOrgHref("/scout-accuracy", orgId);
 
   return (
     <main className="module-page scout-crossval-page soft-gate">
@@ -146,22 +144,10 @@ function ScoutCrossvalShell({
           description={error ?? copy.description}
         >
           {shell === "setup" ? (
-            <a className="app-button" href={orgId ? scoutingHref : "/workspace"}>
-              {orgId ? "Open Scouting" : "Choose your team"}
-            </a>
+            <a className="app-button is-primary" href={orgId ? scoutingHref : "/workspace"}>{orgId ? "Open Scouting" : "Choose your team"}</a>
           ) : null}
           {shell === "empty" ? (
-            <>
-              <a className="app-button" href={scoutingHref}>
-                Log scout entries
-              </a>
-              <a className="app-button secondary" href={coverageHref}>
-                Open Coverage Live
-              </a>
-              <a className="app-button secondary" href={accuracyHref}>
-                Open Accuracy
-              </a>
-            </>
+            <a className="app-button is-primary" href={scoutingHref}>Log scout entries</a>
           ) : null}
         </EmptyState>
       )}

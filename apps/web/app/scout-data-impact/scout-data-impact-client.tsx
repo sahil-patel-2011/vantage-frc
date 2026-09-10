@@ -115,9 +115,7 @@ function ScoutDataImpactShell({
           },
         )
       : null;
-  const scoutingHref = hubHref("/competition", "scouting", orgId);
   const strategyHref = hubHref("/competition", "strategy", orgId);
-  const accuracyHref = withOrgHref("/scout-accuracy", orgId);
 
   return (
     <main className="module-page scout-data-impact-page soft-gate">
@@ -161,25 +159,10 @@ function ScoutDataImpactShell({
           </button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button" href={orgId ? strategyHref : "/workspace"}>
-            {orgId ? "Open Strategy" : "Choose your team"}
-          </a>
+          <a className="app-button is-primary" href={orgId ? strategyHref : "/workspace"}>{orgId ? "Open Strategy" : "Choose your team"}</a>
         ) : null}
         {shell === "empty" ? (
-          <>
-            <a className="app-button" href="#log-alliance-pick">
-              Log an alliance pick
-            </a>
-            <a className="app-button secondary" href={strategyHref}>
-              Open Strategy
-            </a>
-            <a className="app-button secondary" href={scoutingHref}>
-              Open Scouting
-            </a>
-            <a className="app-button secondary" href={accuracyHref}>
-              Open Accuracy
-            </a>
-          </>
+          <a className="app-button is-primary" href="#log-alliance-pick">Log an alliance pick</a>
         ) : null}
       </EmptyState>
       {shell === "empty" || shell === "setup" ? logPick : null}

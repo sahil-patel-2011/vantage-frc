@@ -34,7 +34,7 @@ import {
   type DefensePlannerShellKind,
 } from "../../lib/defense-planner/defense-planner-related";
 import type { DrivetrainType } from "../../lib/defense-planner/types";
-import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
+import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./defense-planner.css";
 
@@ -145,22 +145,10 @@ function DefenseShell({
           description={error ?? copy.description}
         >
           {shell === "setup" ? (
-            <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
-              Choose your team
-            </a>
+            <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
           ) : null}
           {shell === "empty" ? (
-            <>
-              <a className="app-button" href="#defense-planner-matchup">
-                Log a matchup
-              </a>
-              <a className="app-button secondary" href={hubHref("/competition", "scouting", orgId)}>
-                Open Scouting
-              </a>
-              <a className="app-button secondary" href={hubHref("/competition", "strategy", orgId)}>
-                Open Strategy
-              </a>
-            </>
+            <a className="app-button is-primary" href="#defense-planner-matchup">Log a matchup</a>
           ) : null}
         </EmptyState>
       )}
@@ -381,14 +369,8 @@ export default function DefensePlannerClient() {
           description={shellCopy.description}
           className="product-hub-setup"
         >
-          <a className="app-button" href={hasProfile ? "#defense-planner-matchup" : "#defense-planner-profile"}>
+          <a className="app-button is-primary" href={hasProfile ? "#defense-planner-matchup" : "#defense-planner-profile"}>
             {hasProfile ? "Log a matchup" : "Save robot profile"}
-          </a>
-          <a className="app-button secondary" href={hubHref("/competition", "scouting", orgId)}>
-            Open Scouting
-          </a>
-          <a className="app-button secondary" href={hubHref("/competition", "strategy", orgId)}>
-            Open Strategy
           </a>
         </EmptyState>
       ) : null}

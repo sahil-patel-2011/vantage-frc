@@ -159,14 +159,10 @@ function ScoutAccuracyShell({
           </button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button is-primary" href={orgId ? scoutingHref : "/workspace"}>
-            {orgId ? "Open Scouting" : "Choose your team"}
-          </a>
+          <a className="app-button is-primary" href={orgId ? scoutingHref : "/workspace"}>{orgId ? "Open Scouting" : "Choose your team"}</a>
         ) : null}
         {shell === "empty" ? (
-          <a className="app-button is-primary" href={scoutingHref}>
-            Log scout entries
-          </a>
+          <a className="app-button is-primary" href={scoutingHref}>Log scout entries</a>
         ) : null}
       </EmptyState>
       {steps.length > 0 ? (

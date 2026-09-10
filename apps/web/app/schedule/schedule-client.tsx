@@ -267,9 +267,7 @@ function ScheduleShell({
             </button>
           ) : null}
           {shell === "setup" ? (
-            <a className="app-button" href={workspaceHref}>
-              Choose your team
-            </a>
+            <a className="app-button is-primary" href={workspaceHref}>Choose your team</a>
           ) : null}
           <ScheduleRelated
             orgId={orgId}

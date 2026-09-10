@@ -133,9 +133,7 @@ function ShellPanel({
       <h2>{copy.title}</h2>
       <p className="app-muted">{copy.description}</p>
       {shell === "empty" ? (
-        <a className="app-button primary" href="/workspace">
-          Choose your team
-        </a>
+        <a className="app-button primary is-primary" href="/workspace">Choose your team</a>
       ) : null}
       {shell === "auth_required" ? (
         <a

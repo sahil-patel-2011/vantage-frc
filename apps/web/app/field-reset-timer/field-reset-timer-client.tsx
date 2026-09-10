@@ -134,19 +134,10 @@ function TimerShell({
           description={error ?? copy.description}
         >
           {shell === "setup" ? (
-            <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
-              Choose your team
-            </a>
+            <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
           ) : null}
           {shell === "empty" ? (
-            <>
-              <a className="app-button" href={hubHref("/team", "practice", orgId)}>
-                Open Practice
-              </a>
-              <a className="app-button secondary" href={hubHref("/competition", "drive-team-signals", orgId)}>
-                Open Drive-Team Signals
-              </a>
-            </>
+            <a className="app-button is-primary" href={hubHref("/team", "practice", orgId)}>Open Practice</a>
           ) : null}
         </EmptyState>
       )}

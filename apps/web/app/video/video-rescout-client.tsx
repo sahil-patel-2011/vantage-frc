@@ -114,8 +114,6 @@ function VideoRescoutShell({
   const competitionHref = hubHref("/competition", "scouting", orgId);
   const steps = shell === "setup" ? videoRescoutSetupSteps(orgId) : [];
   const scoutingHref = hubHref("/competition", "scouting", orgId);
-  const accuracyHref = withOrgHref("/scout-accuracy", orgId);
-  const disagreementsHref = withOrgHref("/scout-disagreements", orgId);
 
   return (
     <main className="module-page vid-page soft-gate">
@@ -159,25 +157,10 @@ function VideoRescoutShell({
           </button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button" href={orgId ? scoutingHref : "/workspace"}>
-            {orgId ? "Open Scouting" : "Choose your team"}
-          </a>
+          <a className="app-button is-primary" href={orgId ? scoutingHref : "/workspace"}>{orgId ? "Open Scouting" : "Choose your team"}</a>
         ) : null}
         {shell === "empty" ? (
-          <>
-            <a className="app-button" href="#video-new-review">
-              Add a match review
-            </a>
-            <a className="app-button secondary" href={scoutingHref}>
-              Open Scouting
-            </a>
-            <a className="app-button secondary" href={accuracyHref}>
-              Open Accuracy
-            </a>
-            <a className="app-button secondary" href={disagreementsHref}>
-              Open Disagreements
-            </a>
-          </>
+          <a className="app-button is-primary" href="#video-new-review">Add a match review</a>
         ) : null}
       </EmptyState>
       {steps.length > 0 ? (

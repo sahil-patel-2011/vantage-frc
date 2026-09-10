@@ -133,19 +133,10 @@ function SignalsShell({
           description={error ?? copy.description}
         >
           {shell === "setup" ? (
-            <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
-              Choose your team
-            </a>
+            <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
           ) : null}
           {shell === "empty" ? (
-            <>
-              <a className="app-button" href={hubHref("/competition", "match-checklist", orgId)}>
-                Open Match Checklist
-              </a>
-              <a className="app-button secondary" href={hubHref("/team", "field-reset-timer", orgId)}>
-                Open Field Reset Timer
-              </a>
-            </>
+            <a className="app-button is-primary" href={hubHref("/competition", "match-checklist", orgId)}>Open Match Checklist</a>
           ) : null}
         </EmptyState>
       )}

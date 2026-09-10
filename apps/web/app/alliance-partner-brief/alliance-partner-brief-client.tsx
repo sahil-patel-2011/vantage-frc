@@ -97,9 +97,7 @@ function BriefShell({
   const actions = alliancePartnerBriefNextActions({ orgId, shell });
   const copy = alliancePartnerBriefShellCopy(shell);
   const competitionHref = hubWorkbenchHref("competition", "alliance-partner-brief", orgId);
-  const strategyHref = hubHref("/competition", "strategy", orgId);
   const allianceBoardHref = withOrgHref("/strategy/draft", orgId);
-  const scoutingHref = hubHref("/competition", "scouting", orgId);
 
   return (
     <main className="module-page alliance-partner-brief-page soft-gate">
@@ -138,22 +136,10 @@ function BriefShell({
           </button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
-            Choose your team
-          </a>
+          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
         ) : null}
         {shell === "empty" ? (
-          <>
-            <a className="app-button" href={allianceBoardHref}>
-              Open Alliance board
-            </a>
-            <a className="app-button secondary" href={strategyHref}>
-              Open Strategy
-            </a>
-            <a className="app-button secondary" href={scoutingHref}>
-              Open Scouting
-            </a>
-          </>
+          <a className="app-button is-primary" href={allianceBoardHref}>Open Alliance board</a>
         ) : null}
       </EmptyState>
       <BriefNextActionsPanel actions={actions} />
@@ -322,14 +308,8 @@ export default function AlliancePartnerBriefClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <a className="app-button" href={allianceBoardHref}>
+          <a className="app-button is-primary" href={allianceBoardHref}>
             Open Alliance board
-          </a>
-          <a className="app-button secondary" href={strategyHref}>
-            Open Strategy
-          </a>
-          <a className="app-button secondary" href={scoutingHref}>
-            Open Scouting
           </a>
         </EmptyState>
       ) : null}

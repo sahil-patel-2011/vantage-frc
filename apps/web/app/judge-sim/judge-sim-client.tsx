@@ -92,8 +92,6 @@ function JudgeSimShell({
   const copy = judgeSimShellCopy(shell);
   const businessHref = hubWorkbenchHref("business", "judge-sim", orgId);
   const impactHref = hubHref("/business", "impact", orgId);
-  const essayHref = hubHref("/business", "impact-essay", orgId);
-  const awardsHref = hubHref("/business", "evidence", orgId);
 
   return (
     <main className="module-page judge-sim-page soft-gate">
@@ -132,22 +130,10 @@ function JudgeSimShell({
           </button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
-            Choose your team
-          </a>
+          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
         ) : null}
         {shell === "empty" ? (
-          <>
-            <a className="app-button" href={impactHref}>
-              Open Community Impact
-            </a>
-            <a className="app-button secondary" href={essayHref}>
-              Open Impact Essay
-            </a>
-            <a className="app-button secondary" href={awardsHref}>
-              Open Awards
-            </a>
-          </>
+          <a className="app-button is-primary" href={impactHref}>Open Community Impact</a>
         ) : null}
       </EmptyState>
       <JudgeSimNextActionsPanel actions={actions} />
@@ -379,14 +365,8 @@ export default function JudgeSimClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <a className="app-button" href={impactHref}>
+          <a className="app-button is-primary" href={impactHref}>
             Open Community Impact
-          </a>
-          <a className="app-button secondary" href={essayHref}>
-            Open Impact Essay
-          </a>
-          <a className="app-button secondary" href={awardsHref}>
-            Open Awards
           </a>
         </EmptyState>
       ) : null}

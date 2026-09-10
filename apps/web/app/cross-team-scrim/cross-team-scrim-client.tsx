@@ -21,7 +21,7 @@ import {
   type CrossTeamScrimShellKind,
 } from "../../lib/cross-team-scrim/cross-team-scrim-related";
 import type { ScrimDataShareScope, ScrimStatus } from "../../lib/cross-team-scrim/types";
-import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
+import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./cross-team-scrim.css";
 
@@ -134,22 +134,10 @@ function ScrimShell({
           </button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
-            Choose your team
-          </a>
+          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
         ) : null}
         {shell === "empty" ? (
-          <>
-            <a className="app-button" href="#cross-team-scrim-propose">
-              Propose a scrim
-            </a>
-            <a className="app-button secondary" href={hubHref("/team", "calendar", orgId)}>
-              Open Calendar
-            </a>
-            <a className="app-button secondary" href={hubHref("/competition", "scouting", orgId)}>
-              Open Scouting
-            </a>
-          </>
+          <a className="app-button is-primary" href="#cross-team-scrim-propose">Propose a scrim</a>
         ) : null}
       </EmptyState>
       {steps.length > 0 ? (
@@ -351,14 +339,8 @@ export default function CrossTeamScrimClient() {
           description={shellCopy.description}
           className="product-hub-setup"
         >
-          <a className="app-button" href="#cross-team-scrim-propose">
+          <a className="app-button is-primary" href="#cross-team-scrim-propose">
             Propose a scrim
-          </a>
-          <a className="app-button secondary" href={hubHref("/team", "calendar", orgId)}>
-            Open Calendar
-          </a>
-          <a className="app-button secondary" href={hubHref("/competition", "scouting", orgId)}>
-            Open Scouting
           </a>
         </EmptyState>
       ) : null}

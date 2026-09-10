@@ -101,8 +101,6 @@ function CopilotShell({
   const copy = matchCopilotShellCopy(shell);
   const competitionHref = hubWorkbenchHref("competition", "match-copilot", orgId);
   const strategyHref = hubHref("/competition", "strategy", orgId);
-  const commandHref = hubHref("/competition", "command", orgId);
-  const fmeaHref = hubHref("/team", "fmea", orgId);
 
   return (
     <main className="module-page match-copilot-page soft-gate">
@@ -141,22 +139,10 @@ function CopilotShell({
           </button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
-            Choose your team
-          </a>
+          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
         ) : null}
         {shell === "empty" ? (
-          <>
-            <a className="app-button" href={strategyHref}>
-              Open Strategy
-            </a>
-            <a className="app-button secondary" href={commandHref}>
-              Open Command
-            </a>
-            <a className="app-button secondary" href={fmeaHref}>
-              Open FMEA
-            </a>
-          </>
+          <a className="app-button is-primary" href={strategyHref}>Open Strategy</a>
         ) : null}
       </EmptyState>
       <CopilotNextActionsPanel actions={actions} />
@@ -336,14 +322,8 @@ export default function MatchCopilotClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <a className="app-button" href={strategyHref}>
+          <a className="app-button is-primary" href={strategyHref}>
             Open Strategy
-          </a>
-          <a className="app-button secondary" href={commandHref}>
-            Open Command
-          </a>
-          <a className="app-button secondary" href={fmeaHref}>
-            Open FMEA
           </a>
         </EmptyState>
       ) : null}

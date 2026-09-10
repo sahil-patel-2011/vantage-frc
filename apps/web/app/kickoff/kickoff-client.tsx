@@ -757,7 +757,7 @@ function PrioritySection({
           title="No priorities yet"
           description="Generate a release summary above to seed Strategy priorities, or add capabilities manually."
         >
-          <a className="app-button secondary" href={hubHref("/competition", "strategy", orgId)}>
+          <a className="app-button is-primary" href={hubHref("/competition", "strategy", orgId)}>
             Open Strategy
           </a>
         </EmptyState>

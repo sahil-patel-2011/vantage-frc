@@ -89,8 +89,6 @@ function SketchShell({
   const actions = sketchToBriefNextActions({ orgId, shell });
   const copy = sketchToBriefShellCopy(shell);
   const buildHref = hubWorkbenchHref("build", "sketch-to-brief", orgId);
-  const kickoffHref = hubHref("/build", "kickoff", orgId);
-  const cadHref = hubHref("/build", "cad", orgId);
 
   return (
     <main className="module-page sketch-to-brief-page soft-gate">
@@ -129,22 +127,10 @@ function SketchShell({
           </button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
-            Choose your team
-          </a>
+          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
         ) : null}
         {shell === "empty" ? (
-          <>
-            <a className="app-button" href="#sketch-to-brief-log-sketch">
-              Log a sketch
-            </a>
-            <a className="app-button secondary" href={kickoffHref}>
-              Open Kickoff
-            </a>
-            <a className="app-button secondary" href={cadHref}>
-              Open CAD
-            </a>
-          </>
+          <a className="app-button is-primary" href="#sketch-to-brief-log-sketch">Log a sketch</a>
         ) : null}
       </EmptyState>
       <SketchNextActionsPanel actions={actions} />
@@ -339,14 +325,8 @@ export default function SketchToBriefClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <a className="app-button" href="#sketch-to-brief-log-sketch">
+          <a className="app-button is-primary" href="#sketch-to-brief-log-sketch">
             Log a sketch
-          </a>
-          <a className="app-button secondary" href={kickoffHref}>
-            Open Kickoff
-          </a>
-          <a className="app-button secondary" href={cadHref}>
-            Open CAD
           </a>
         </EmptyState>
       ) : null}
@@ -477,14 +457,8 @@ function SketchList({
           title="Log your first kickoff sketch"
           description="Once logged, generate a grounded first-pass CAD brief from it."
         >
-          <a className="app-button" href="#sketch-to-brief-log-sketch">
+          <a className="app-button is-primary" href="#sketch-to-brief-log-sketch">
             Log a sketch
-          </a>
-          <a className="app-button secondary" href={kickoffHref}>
-            Open Kickoff
-          </a>
-          <a className="app-button secondary" href={cadHref}>
-            Open CAD
           </a>
         </EmptyState>
       </div>
@@ -558,14 +532,8 @@ function BriefList({
           title="Generate a CAD brief from a logged sketch"
           description="Briefs stay blank until you generate one from a real sketch."
         >
-          <a className="app-button" href="#sketch-to-brief-sketches">
+          <a className="app-button is-primary" href="#sketch-to-brief-sketches">
             View sketches
-          </a>
-          <a className="app-button secondary" href={kickoffHref}>
-            Open Kickoff
-          </a>
-          <a className="app-button secondary" href={cadHref}>
-            Open CAD
           </a>
         </EmptyState>
       </div>

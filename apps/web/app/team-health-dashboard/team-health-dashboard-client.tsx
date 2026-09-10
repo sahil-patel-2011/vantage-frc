@@ -130,19 +130,10 @@ function TeamHealthShell({
           description={error ?? copy.description}
         >
           {shell === "setup" ? (
-            <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
-              Choose your team
-            </a>
+            <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
           ) : null}
           {shell === "empty" ? (
-            <>
-              <a className="app-button" href={hubHref("/team", "attendance", orgId)}>
-                Open Attendance
-              </a>
-              <a className="app-button secondary" href={hubHref("/team", "hours-self-view", orgId)}>
-                Open My Hours
-              </a>
-            </>
+            <a className="app-button is-primary" href={hubHref("/team", "attendance", orgId)}>Open Attendance</a>
           ) : null}
         </EmptyState>
       )}

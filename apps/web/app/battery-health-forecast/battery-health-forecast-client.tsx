@@ -101,8 +101,6 @@ function BatteryHealthForecastShell({
   const copy = batteryHealthForecastShellCopy(shell);
   const buildHref = withOrgHref("/build", orgId);
   const rotationHref = hubHref("/competition", "battery-rotation", orgId);
-  const batteriesHref = hubHref("/team", "batteries", orgId);
-  const pitHref = withOrgHref("/pit", orgId);
 
   return (
     <main className="module-page battery-health-forecast-page soft-gate">
@@ -141,22 +139,10 @@ function BatteryHealthForecastShell({
           </button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
-            Choose your team
-          </a>
+          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
         ) : null}
         {shell === "empty" ? (
-          <>
-            <a className="app-button" href={rotationHref}>
-              Open Battery Rotation
-            </a>
-            <a className="app-button secondary" href={batteriesHref}>
-              Open Batteries
-            </a>
-            <a className="app-button secondary" href={pitHref}>
-              Open Pit Command
-            </a>
-          </>
+          <a className="app-button is-primary" href={rotationHref}>Open Battery Rotation</a>
         ) : null}
       </EmptyState>
       <BatteryHealthForecastNextActionsPanel actions={actions} />
@@ -339,14 +325,8 @@ export default function BatteryHealthForecastClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <a className="app-button" href={rotationHref}>
+          <a className="app-button is-primary" href={rotationHref}>
             Open Battery Rotation
-          </a>
-          <a className="app-button secondary" href={batteriesHref}>
-            Open Batteries
-          </a>
-          <a className="app-button secondary" href={pitHref}>
-            Open Pit Command
           </a>
         </EmptyState>
       ) : null}

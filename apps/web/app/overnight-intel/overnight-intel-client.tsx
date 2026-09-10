@@ -99,8 +99,6 @@ function IntelShell({
   const actions = overnightIntelNextActions({ orgId, shell, needsActiveEvent });
   const copy = overnightIntelShellCopy(shell);
   const competitionHref = hubWorkbenchHref("competition", "overnight-intel", orgId);
-  const commandHref = hubHref("/competition", "command", orgId);
-  const strategyHref = hubHref("/competition", "strategy", orgId);
 
   return (
     <main className="module-page overnight-intel-page soft-gate">
@@ -150,17 +148,7 @@ function IntelShell({
           )
         ) : null}
         {shell === "empty" ? (
-          <>
-            <a className="app-button" href="#overnight-intel-generate">
-              Generate tonight&apos;s brief
-            </a>
-            <a className="app-button secondary" href={commandHref}>
-              Open Command
-            </a>
-            <a className="app-button secondary" href={strategyHref}>
-              Open Strategy
-            </a>
-          </>
+          <a className="app-button is-primary" href="#overnight-intel-generate">Generate tonight&apos;s brief</a>
         ) : null}
       </EmptyState>
       <IntelNextActionsPanel actions={actions} />
@@ -361,15 +349,9 @@ export default function OvernightIntelClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <button type="button" className="app-button" disabled={busy} onClick={() => void generateBrief()}>
+          <button type="button" className="app-button is-primary" disabled={busy} onClick={() => void generateBrief()}>
             {busy ? "Generating…" : "Generate tonight's brief"}
           </button>
-          <a className="app-button secondary" href={commandHref}>
-            Open Command
-          </a>
-          <a className="app-button secondary" href={scoutingHref}>
-            Open Scouting
-          </a>
         </EmptyState>
       ) : null}
 

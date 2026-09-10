@@ -131,19 +131,10 @@ function RadarShell({
           description={error ?? copy.description}
         >
           {shell === "setup" ? (
-            <a className="app-button" href={orgId ? hubHref("/build", "cad", orgId) : "/workspace"}>
-              {orgId ? "Open CAD" : "Choose your team"}
-            </a>
+            <a className="app-button is-primary" href={orgId ? hubHref("/build", "cad", orgId) : "/workspace"}>{orgId ? "Open CAD" : "Choose your team"}</a>
           ) : null}
           {shell === "empty" ? (
-            <>
-              <a className="app-button" href="#cad-change-radar-snapshot">
-                Record the first snapshot
-              </a>
-              <a className="app-button secondary" href={hubHref("/build", "cad", orgId)}>
-                Open CAD
-              </a>
-            </>
+            <a className="app-button is-primary" href="#cad-change-radar-snapshot">Record the first snapshot</a>
           ) : null}
         </EmptyState>
       )}

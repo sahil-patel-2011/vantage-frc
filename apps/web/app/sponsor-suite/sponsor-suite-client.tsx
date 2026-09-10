@@ -132,22 +132,10 @@ function SponsorSuiteShell({
           </button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
-            Choose your team
-          </a>
+          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
         ) : null}
         {shell === "empty" ? (
-          <>
-            <a className="app-button" href={hubHref("/business", "sponsors", orgId)}>
-              Open Sponsor CRM
-            </a>
-            <a className="app-button secondary" href={hubHref("/business", "sponsorship", orgId)}>
-              Open Sponsorship
-            </a>
-            <a className="app-button secondary" href={hubHref("/business", "sponsor-wall", orgId)}>
-              Open Sponsor Wall
-            </a>
-          </>
+          <a className="app-button is-primary" href={hubHref("/business", "sponsors", orgId)}>Open Sponsor CRM</a>
         ) : null}
       </EmptyState>
       {shell === "setup" && steps.length > 0 ? (
@@ -391,11 +379,8 @@ export default function SponsorSuiteClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <a className="app-button" href={hubHref("/business", "sponsors", orgId)}>
+          <a className="app-button is-primary" href={hubHref("/business", "sponsors", orgId)}>
             Open Sponsor CRM
-          </a>
-          <a className="app-button secondary" href="#sponsor-suite-goal">
-            Set a season goal
           </a>
         </EmptyState>
       ) : null}

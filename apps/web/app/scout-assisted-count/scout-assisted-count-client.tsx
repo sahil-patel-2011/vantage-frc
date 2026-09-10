@@ -127,14 +127,10 @@ function CountShell({
           description={error ?? copy.description}
         >
           {shell === "setup" ? (
-            <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
-              Choose your team
-            </a>
+            <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
           ) : null}
           {shell === "empty" ? (
-            <a className="app-button" href="#scout-assisted-count-start">
-              Start a session
-            </a>
+            <a className="app-button is-primary" href="#scout-assisted-count-start">Start a session</a>
           ) : null}
         </EmptyState>
       )}

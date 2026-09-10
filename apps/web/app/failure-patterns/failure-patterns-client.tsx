@@ -132,19 +132,10 @@ function PatternsShell({
           description={error ?? copy.description}
         >
           {shell === "setup" ? (
-            <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
-              Choose your team
-            </a>
+            <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
           ) : null}
           {shell === "empty" ? (
-            <>
-              <a className="app-button" href={hubHref("/build", "fmea", orgId)}>
-                Open FMEA
-              </a>
-              <a className="app-button secondary" href={hubHref("/competition", "pit-repair-triage", orgId)}>
-                Open Pit Triage
-              </a>
-            </>
+            <a className="app-button is-primary" href={hubHref("/build", "fmea", orgId)}>Open FMEA</a>
           ) : null}
         </EmptyState>
       )}
@@ -348,11 +339,8 @@ export default function FailurePatternsClient() {
           title="No FMEA or incident records yet this season"
           description="Log failures in FMEA or equipment incidents."
         >
-          <a className="app-button" href={hubHref("/build", "fmea", orgId)}>
+          <a className="app-button is-primary" href={hubHref("/build", "fmea", orgId)}>
             Open FMEA
-          </a>
-          <a className="app-button secondary" href={hubHref("/competition", "pit-repair-triage", orgId)}>
-            Open Pit Triage
           </a>
         </EmptyState>
       ) : (

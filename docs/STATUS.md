@@ -82,6 +82,9 @@ See `docs/COMPETITIVE_NOTES.md`. That document is the brief for Tasks 2–4.
 | `/offline` `/offline-shell` | "Offline Shell", "precache" | this commit |
 | `/workspace` empty states | "Select a team workspace" / "Open Workspace" | this commit |
 | `/competition` Scouting empty | Coverage/Strategy/Offline duplicated the hub strip and next-actions | this commit |
+| Competition empty cards | Empty/setup walls still offered 3–4 sibling buttons (Open Strategy, Open Coverage, …) | this commit |
+| `/scouting/forms` | Match / Pit used a TabBar under the hub tabs | this commit |
+| `/team/data` | "Workspace inventory" | this commit |
 
 ---
 
@@ -91,8 +94,8 @@ See `docs/COMPETITIVE_NOTES.md`. That document is the brief for Tasks 2–4.
 |---|---|---|---|
 | 1 | Land / baseline / competitive notes | done | this file + `COMPETITIVE_NOTES.md`; latest full suite **876 files, 8,315 passed, 10 skipped** (53.0s) |
 | 2 | One design system | in progress | tokens in `system.css`; Button now emits `.app-button` so chrome and the primitive match. ClassName migration of leftover `.app-button` still open. |
-| 3 | Full UI pass | in progress | Workspace jargon replaced with "team". Allowlist / API-budget student copy rewritten. FEATURE_MAP walk unfinished. |
-| 4 | Home widgets | in progress | Real loaders for student/mentor defaults (files, chat, my day, learn, duties, budget, attendance, outreach, announcements, weather city, …). Live cards in `widgets/home-cards.tsx`. Weather temperature is fetched in the browser from Open-Meteo on event day only — never invented in the snapshot. 2200-line dashboard-client still not fully split. |
+| 3 | Full UI pass | in progress | Workspace jargon replaced with "team". Allowlist / API-budget student copy rewritten. Empty/setup cards now keep one primary (related dests stay in next-actions + hub strip); `empty-state-primary.test.ts` locks it. FEATURE_MAP walk unfinished. |
+| 4 | Home widgets | in progress | Real loaders for student/mentor defaults (files, chat, my day, learn, duties, budget, attendance, outreach, announcements, weather city, …). Live cards in `widgets/home-cards.tsx`. Weather temperature is fetched in the browser from Open-Meteo on event day only — never invented in the snapshot. Canvas helpers (`greeting`, `resolveGrid`, `useMeasuredCanvas`) live in `dashboard-canvas.ts`. `dashboard-client.tsx` is still the drag/save shell. |
 | 5 | Offline shell | in progress | Season calendar now restores the last snapshot and queues add/tick/edit/delete (`calendar_action`). Seed-season still needs a connection. Packing/batteries/pit/season-tasks already queued. Playwright spec also opens `/calendar` and `/packing`. No signed-in `next start` walk. |
 | 6 | Desktop installers + auto-update | in progress | `/api/desktop/release`, NSIS+MSI+DMG workflow, unsigned license. macOS artifacts cannot be built in this image. |
 | 7 | freebuff Pi fleet | in progress | `docs/FREEBUFF.md`, pairing API, `/team/relays` node list, compact+prompt. TTFT unmeasured (no Pi). |

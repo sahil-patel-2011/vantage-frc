@@ -100,7 +100,6 @@ function RiskBurndownShell({
   const copy = riskBurndownShellCopy(shell);
   const teamHref = hubWorkbenchHref("team", "risk-burndown", orgId);
   const risksHref = withOrgHref("/risks", orgId);
-  const fmeaHref = hubHref("/team", "fmea", orgId);
 
   return (
     <main className="module-page risk-burndown-page soft-gate">
@@ -139,19 +138,10 @@ function RiskBurndownShell({
           </button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
-            Choose your team
-          </a>
+          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
         ) : null}
         {shell === "empty" ? (
-          <>
-            <a className="app-button" href={risksHref}>
-              Open Risks
-            </a>
-            <a className="app-button secondary" href={fmeaHref}>
-              Open FMEA
-            </a>
-          </>
+          <a className="app-button is-primary" href={risksHref}>Open Risks</a>
         ) : null}
       </EmptyState>
       <RiskBurndownNextActionsPanel actions={actions} />
@@ -348,11 +338,8 @@ export default function RiskBurndownClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <a className="app-button" href={risksHref}>
+          <a className="app-button is-primary" href={risksHref}>
             Open Risks
-          </a>
-          <a className="app-button secondary" href={fmeaHref}>
-            Open FMEA
           </a>
         </EmptyState>
       ) : null}

@@ -29,7 +29,7 @@ import {
   type ScoutingHeatSignalsNextAction,
   type ScoutingHeatSignalsShellKind,
 } from "../../lib/scouting-heat-signals/scouting-heat-signals-related";
-import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
+import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./scouting-heat-signals.css";
 
@@ -142,19 +142,10 @@ function HeatShell({
           description={error ?? copy.description}
         >
           {shell === "setup" ? (
-            <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
-              Choose your team
-            </a>
+            <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
           ) : null}
           {shell === "empty" ? (
-            <>
-              <a className="app-button" href="#scouting-heat-log">
-                Log a heat signal
-              </a>
-              <a className="app-button secondary" href={hubHref("/competition", "scouting", orgId)}>
-                Open Scouting
-              </a>
-            </>
+            <a className="app-button is-primary" href="#scouting-heat-log">Log a heat signal</a>
           ) : null}
         </EmptyState>
       )}

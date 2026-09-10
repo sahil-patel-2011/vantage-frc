@@ -18,7 +18,6 @@ import {
 } from "../../lib/media-kit/media-kit-related";
 import type { MediaKitAssetKind, MediaKitReadinessTier } from "../../lib/media-kit/types";
 import type { MediaLibraryView } from "../../lib/media-library/types";
-import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./media-kit.css";
 
@@ -136,25 +135,10 @@ function MediaKitShell({
           </button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
-            Choose your team
-          </a>
+          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
         ) : null}
         {shell === "empty" ? (
-          <>
-            <a className="app-button" href="#media-kit-profile">
-              Save team profile
-            </a>
-            <a className="app-button secondary" href={hubHref("/business", "sponsor-suite", orgId)}>
-              Open Sponsor Suite
-            </a>
-            <a
-              className="app-button secondary"
-              href={hubHref("/business", "outreach-calendar", orgId)}
-            >
-              Open Outreach Calendar
-            </a>
-          </>
+          <a className="app-button is-primary" href="#media-kit-profile">Save team profile</a>
         ) : null}
       </EmptyState>
       {shell === "setup" && steps.length > 0 ? (
@@ -370,11 +354,8 @@ export default function MediaKitClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <a className="app-button" href="#media-kit-profile">
+          <a className="app-button is-primary" href="#media-kit-profile">
             Save team profile
-          </a>
-          <a className="app-button secondary" href="#media-kit-assets">
-            Add a logo
           </a>
         </EmptyState>
       ) : null}

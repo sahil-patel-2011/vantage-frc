@@ -123,22 +123,10 @@ function GrantReportShell({
           </button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
-            Choose your team
-          </a>
+          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
         ) : null}
         {shell === "empty" ? (
-          <>
-            <a className="app-button" href={hubHref("/business", "grants", orgId)}>
-              Open Grants
-            </a>
-            <a className="app-button secondary" href={withOrgHref("/team/grants", orgId)}>
-              Open Grants workbench
-            </a>
-            <a className="app-button secondary" href={hubHref("/business", "impact", orgId)}>
-              Open Community Impact
-            </a>
-          </>
+          <a className="app-button is-primary" href={hubHref("/business", "grants", orgId)}>Open Grants</a>
         ) : null}
       </EmptyState>
       {shell === "setup" && steps.length > 0 ? (
@@ -349,14 +337,8 @@ export default function GrantReportClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <a className="app-button" href={grantsHref}>
+          <a className="app-button is-primary" href={grantsHref}>
             Open Grants
-          </a>
-          <a className="app-button secondary" href={workbenchHref}>
-            Open Grants workbench
-          </a>
-          <a className="app-button secondary" href={impactHref}>
-            Open Community Impact
           </a>
         </EmptyState>
       ) : null}

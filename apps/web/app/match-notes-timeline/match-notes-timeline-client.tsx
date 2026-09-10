@@ -96,9 +96,6 @@ function MatchNotesShell({
   const actions = matchNotesTimelineNextActions({ orgId, shell });
   const copy = matchNotesTimelineShellCopy(shell);
   const competitionHref = hubWorkbenchHref("competition", "match-notes-timeline", orgId);
-  const scheduleHref = withOrgHref("/schedule", orgId);
-  const strategyHref = hubHref("/competition", "strategy", orgId);
-  const scoutingHref = hubHref("/competition", "scouting", orgId);
 
   return (
     <main className="module-page match-notes-timeline-page soft-gate">
@@ -137,25 +134,10 @@ function MatchNotesShell({
           </button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
-            Choose your team
-          </a>
+          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
         ) : null}
         {shell === "empty" ? (
-          <>
-            <a className="app-button" href="#match-notes-timeline-log">
-              Log a note
-            </a>
-            <a className="app-button secondary" href={scheduleHref}>
-              Open Schedule
-            </a>
-            <a className="app-button secondary" href={strategyHref}>
-              Open Strategy
-            </a>
-            <a className="app-button secondary" href={scoutingHref}>
-              Open Scouting
-            </a>
-          </>
+          <a className="app-button is-primary" href="#match-notes-timeline-log">Log a note</a>
         ) : null}
       </EmptyState>
       <MatchNotesNextActionsPanel actions={actions} />
@@ -369,17 +351,8 @@ export default function MatchNotesTimelineClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <a className="app-button" href="#match-notes-timeline-log">
+          <a className="app-button is-primary" href="#match-notes-timeline-log">
             Log a note
-          </a>
-          <a className="app-button secondary" href={scheduleHref}>
-            Open Schedule
-          </a>
-          <a className="app-button secondary" href={strategyHref}>
-            Open Strategy
-          </a>
-          <a className="app-button secondary" href={scoutingHref}>
-            Open Scouting
           </a>
         </EmptyState>
       ) : null}

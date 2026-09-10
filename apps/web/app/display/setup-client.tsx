@@ -324,11 +324,8 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
               title="No active event yet"
               description="Set an Event Day event so next-match and coverage can read The Blue Alliance. Boards stay blank until then."
             >
-              <a className="app-button" href={hubHref("/competition", "command", orgId)}>
+              <a className="app-button is-primary" href={hubHref("/competition", "command", orgId)}>
                 Open Event Day
-              </a>
-              <a className="app-button secondary" href={hubHref("/competition", "strategy", orgId)}>
-                Open Strategy
               </a>
             </EmptyState>
           ) : null}

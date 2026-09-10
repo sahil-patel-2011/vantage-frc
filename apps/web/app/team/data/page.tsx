@@ -10,7 +10,7 @@ import "./team-data.css";
 export const metadata = {
   title: "Team data",
   description:
-    "Match-data sync, cache health, and workspace inventory. Links to Schedule, Event Day, and Strategy.",
+    "Match-data sync, cache health, and team inventory. Links to Schedule, Event Day, and Strategy.",
 };
 
 export default async function TeamDataPage({ searchParams }: { searchParams: Promise<{ orgId?: string }> }) {
@@ -56,7 +56,7 @@ export default async function TeamDataPage({ searchParams }: { searchParams: Pro
           </ol>
         </section>
         <p>
-          <a className="app-button" href={withOrgHref("/workspace", null)}>
+          <a className="app-button is-primary" href={withOrgHref("/workspace", null)}>
             Choose your team
           </a>
         </p>

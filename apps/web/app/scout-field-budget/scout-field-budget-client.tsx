@@ -28,7 +28,7 @@ import {
   type ScoutFieldBudgetNextAction,
   type ScoutFieldBudgetShellKind,
 } from "../../lib/scout-field-budget/scout-field-budget-related";
-import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
+import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./scout-field-budget.css";
 
@@ -131,19 +131,10 @@ function BudgetShell({
           description={error ?? copy.description}
         >
           {shell === "setup" ? (
-            <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
-              Choose your team
-            </a>
+            <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
           ) : null}
           {shell === "empty" ? (
-            <>
-              <a className="app-button" href="#scout-field-budget-lint">
-                Lint a schema
-              </a>
-              <a className="app-button secondary" href={hubHref("/competition", "forms", orgId)}>
-                Open Form builder
-              </a>
-            </>
+            <a className="app-button is-primary" href="#scout-field-budget-lint">Lint a schema</a>
           ) : null}
         </EmptyState>
       )}

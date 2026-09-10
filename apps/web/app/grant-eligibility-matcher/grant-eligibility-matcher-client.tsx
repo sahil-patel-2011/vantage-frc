@@ -24,7 +24,7 @@ import {
   type GrantEligibilityMatcherNextAction,
   type GrantEligibilityMatcherShellKind,
 } from "../../lib/grant-eligibility-matcher/grant-eligibility-matcher-related";
-import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
+import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./grant-eligibility-matcher.css";
 
@@ -139,19 +139,10 @@ function MatcherShell({
           description={error ?? copy.description}
         >
           {shell === "setup" ? (
-            <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
-              Choose your team
-            </a>
+            <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
           ) : null}
           {shell === "empty" ? (
-            <>
-              <a className="app-button" href="#grant-eligibility-profile">
-                Complete team profile
-              </a>
-              <a className="app-button secondary" href={hubHref("/business", "grants", orgId)}>
-                Open Grants
-              </a>
-            </>
+            <a className="app-button is-primary" href="#grant-eligibility-profile">Complete team profile</a>
           ) : null}
         </EmptyState>
       )}

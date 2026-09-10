@@ -206,14 +206,10 @@ function IntelShell({
           </button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button" href={orgId ? teamDataHref : "/workspace"}>
-            {orgId ? "Sync Team Data" : "Choose your team"}
-          </a>
+          <a className="app-button is-primary" href={orgId ? teamDataHref : "/workspace"}>{orgId ? "Sync Team Data" : "Choose your team"}</a>
         ) : null}
         {shell === "empty" ? (
-          <a className="app-button" href={teamDataHref}>
-            Sync season metrics
-          </a>
+          <a className="app-button is-primary" href={teamDataHref}>Sync season metrics</a>
         ) : null}
       </EmptyState>
       {steps.length > 0 ? (

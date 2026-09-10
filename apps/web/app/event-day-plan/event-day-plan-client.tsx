@@ -29,7 +29,7 @@ import {
   type EventDayPlanNextAction,
   type EventDayPlanShellKind,
 } from "../../lib/event-day-plan/event-day-plan-related";
-import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
+import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./event-day-plan.css";
 
@@ -152,19 +152,10 @@ function PlanShell({
           description={error ?? copy.description}
         >
           {shell === "setup" ? (
-            <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
-              Choose your team
-            </a>
+            <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
           ) : null}
           {shell === "empty" ? (
-            <>
-              <a className="app-button" href="#event-day-plan-add">
-                Add the first block
-              </a>
-              <a className="app-button secondary" href={hubHref("/competition", "command", orgId)}>
-                Open Command
-              </a>
-            </>
+            <a className="app-button is-primary" href="#event-day-plan-add">Add the first block</a>
           ) : null}
         </EmptyState>
       )}

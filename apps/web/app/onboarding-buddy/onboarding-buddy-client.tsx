@@ -125,22 +125,10 @@ function BuddyShell({
           </button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
-            Choose your team
-          </a>
+          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
         ) : null}
         {shell === "empty" ? (
-          <>
-            <a className="app-button" href="#onboarding-buddy-unpaired">
-              Pair a member
-            </a>
-            <a className="app-button secondary" href={withOrgHref("/onboarding", orgId)}>
-              Open Onboarding
-            </a>
-            <a className="app-button secondary" href={withOrgHref("/team/data", orgId)}>
-              Open Team Data
-            </a>
-          </>
+          <a className="app-button is-primary" href="#onboarding-buddy-unpaired">Pair a member</a>
         ) : null}
       </EmptyState>
       {steps.length > 0 ? (
@@ -349,14 +337,8 @@ export default function OnboardingBuddyClient() {
           description={shellCopy.description}
           className="product-hub-setup"
         >
-          <a className="app-button" href="#onboarding-buddy-unpaired">
+          <a className="app-button is-primary" href="#onboarding-buddy-unpaired">
             Pair a member
-          </a>
-          <a className="app-button secondary" href={withOrgHref("/onboarding", orgId)}>
-            Open Onboarding
-          </a>
-          <a className="app-button secondary" href={withOrgHref("/team/data", orgId)}>
-            Open Team Data
           </a>
         </EmptyState>
       ) : null}

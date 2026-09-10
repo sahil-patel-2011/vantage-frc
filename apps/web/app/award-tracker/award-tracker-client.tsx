@@ -150,22 +150,10 @@ function AwardTrackerShell({
           </button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
-            Choose your team
-          </a>
+          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
         ) : null}
         {shell === "empty" ? (
-          <>
-            <a className="app-button" href={hubHref("/business", "evidence", orgId)}>
-              Open Awards
-            </a>
-            <a className="app-button secondary" href={withOrgHref("/team/awards", orgId)}>
-              Open Awards workbench
-            </a>
-            <a className="app-button secondary" href={hubHref("/business", "impact-essay", orgId)}>
-              Open Impact Essay
-            </a>
-          </>
+          <a className="app-button is-primary" href={hubHref("/business", "evidence", orgId)}>Open Awards</a>
         ) : null}
       </EmptyState>
       {shell === "setup" && steps.length > 0 ? (
@@ -403,14 +391,8 @@ export default function AwardTrackerClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <a className="app-button" href="#award-tracker-create">
+          <a className="app-button is-primary" href="#award-tracker-create">
             Track a submission
-          </a>
-          <a className="app-button secondary" href={evidenceHref}>
-            Open Awards
-          </a>
-          <a className="app-button secondary" href={essayHref}>
-            Open Impact Essay
           </a>
         </EmptyState>
       ) : null}

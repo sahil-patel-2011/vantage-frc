@@ -112,9 +112,6 @@ function ScoutCoverageLiveShell({
   const copy = scoutCoverageLiveShellCopy(shell);
   const competitionHref = hubHref("/competition", "scouting", orgId);
   const steps = shell === "setup" ? scoutCoverageLiveSetupSteps(orgId) : [];
-  const scoutingHref = hubHref("/competition", "scouting", orgId);
-  const lineupHref = withOrgHref("/scouting/lineup", orgId);
-  const crossvalHref = withOrgHref("/scout-crossval", orgId);
   const commandHref = hubHref("/competition", "command", orgId);
 
   return (
@@ -153,25 +150,10 @@ function ScoutCoverageLiveShell({
           description={error ?? copy.description}
         >
           {shell === "setup" ? (
-            <a className="app-button" href={orgId ? commandHref : "/workspace"}>
-              {orgId ? "Set active event" : "Choose your team"}
-            </a>
+            <a className="app-button is-primary" href={orgId ? commandHref : "/workspace"}>{orgId ? "Set active event" : "Choose your team"}</a>
           ) : null}
           {shell === "empty" ? (
-            <>
-              <a className="app-button" href={commandHref}>
-                Sync event schedule
-              </a>
-              <a className="app-button secondary" href={scoutingHref}>
-                Open Scouting
-              </a>
-              <a className="app-button secondary" href={lineupHref}>
-                Open Lineup
-              </a>
-              <a className="app-button secondary" href={crossvalHref}>
-                Open Cross-Validation
-              </a>
-            </>
+            <a className="app-button is-primary" href={commandHref}>Sync event schedule</a>
           ) : null}
         </EmptyState>
       )}

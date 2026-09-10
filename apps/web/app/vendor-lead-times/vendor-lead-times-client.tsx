@@ -92,8 +92,6 @@ function VendorLeadTimesShell({
   const copy = vendorLeadTimesShellCopy(shell);
   const businessHref = hubWorkbenchHref("business", "vendor-lead-times", orgId);
   const ordersHref = hubHref("/business", "orders", orgId);
-  const spareHref = hubHref("/build", "spare-forecast", orgId);
-  const vendorsHref = withOrgHref("/vendors", orgId);
 
   return (
     <main className="module-page vendor-lead-times-page soft-gate">
@@ -132,22 +130,10 @@ function VendorLeadTimesShell({
           </button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
-            Choose your team
-          </a>
+          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
         ) : null}
         {shell === "empty" ? (
-          <>
-            <a className="app-button" href={ordersHref}>
-              Open Orders
-            </a>
-            <a className="app-button secondary" href={spareHref}>
-              Open Spare Forecast
-            </a>
-            <a className="app-button secondary" href={vendorsHref}>
-              Open Vendors
-            </a>
-          </>
+          <a className="app-button is-primary" href={ordersHref}>Open Orders</a>
         ) : null}
       </EmptyState>
       <VendorLeadTimesNextActionsPanel actions={actions} />
@@ -325,14 +311,8 @@ export default function VendorLeadTimesClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <a className="app-button" href={ordersHref}>
+          <a className="app-button is-primary" href={ordersHref}>
             Open Orders
-          </a>
-          <a className="app-button secondary" href={spareHref}>
-            Open Spare Forecast
-          </a>
-          <a className="app-button secondary" href={vendorsHref}>
-            Open Vendors
           </a>
         </EmptyState>
       ) : null}

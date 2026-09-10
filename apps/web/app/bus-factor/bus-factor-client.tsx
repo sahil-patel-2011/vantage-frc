@@ -30,7 +30,7 @@ import {
   type BusFactorShellKind,
 } from "../../lib/bus-factor/bus-factor-related";
 import type { BusFactorArea, RiskLevel } from "../../lib/bus-factor/types";
-import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
+import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./bus-factor.css";
 
@@ -138,22 +138,10 @@ function BusFactorShell({
           description={error ?? copy.description}
         >
           {shell === "setup" ? (
-            <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
-              Choose your team
-            </a>
+            <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
           ) : null}
           {shell === "empty" ? (
-            <>
-              <a className="app-button" href="#bus-factor-log">
-                Log a workload entry
-              </a>
-              <a className="app-button secondary" href={hubHref("/team", "hours-self-view", orgId)}>
-                Open My Hours
-              </a>
-              <a className="app-button secondary" href={hubHref("/team", "attendance", orgId)}>
-                Open Attendance
-              </a>
-            </>
+            <a className="app-button is-primary" href="#bus-factor-log">Log a workload entry</a>
           ) : null}
         </EmptyState>
       )}
@@ -354,14 +342,8 @@ export default function BusFactorClient() {
           description={shellCopy.description}
           className="product-hub-setup"
         >
-          <a className="app-button" href="#bus-factor-log">
+          <a className="app-button is-primary" href="#bus-factor-log">
             Log a workload entry
-          </a>
-          <a className="app-button secondary" href={hubHref("/team", "hours-self-view", orgId)}>
-            Open My Hours
-          </a>
-          <a className="app-button secondary" href={hubHref("/team", "attendance", orgId)}>
-            Open Attendance
           </a>
         </EmptyState>
       ) : null}

@@ -33,7 +33,7 @@ import {
   type CodeDeployLogNextAction,
   type CodeDeployLogShellKind,
 } from "../../lib/code-deploy-log/code-deploy-log-related";
-import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
+import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./code-deploy-log.css";
 
@@ -140,19 +140,10 @@ function DeployShell({
           description={error ?? copy.description}
         >
           {shell === "setup" ? (
-            <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
-              Choose your team
-            </a>
+            <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
           ) : null}
           {shell === "empty" ? (
-            <>
-              <a className="app-button" href="#code-deploy-log-form">
-                Log the first deploy
-              </a>
-              <a className="app-button secondary" href={hubHref("/build", "code", orgId)}>
-                Open Code Coach
-              </a>
-            </>
+            <a className="app-button is-primary" href="#code-deploy-log-form">Log the first deploy</a>
           ) : null}
         </EmptyState>
       )}

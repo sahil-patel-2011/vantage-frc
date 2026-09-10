@@ -126,14 +126,10 @@ function IndexShell({
           description={error ?? copy.description}
         >
           {shell === "setup" ? (
-            <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
-              Choose your team
-            </a>
+            <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
           ) : null}
           {shell === "empty" ? (
-            <a className="app-button" href="#match-video-index-add">
-              Add a match video
-            </a>
+            <a className="app-button is-primary" href="#match-video-index-add">Add a match video</a>
           ) : null}
         </EmptyState>
       )}

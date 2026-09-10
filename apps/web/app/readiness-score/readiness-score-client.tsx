@@ -162,22 +162,10 @@ function ReadinessShell({
           description={error ?? copy.description}
         >
           {shell === "setup" ? (
-            <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
-              Choose your team
-            </a>
+            <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
           ) : null}
           {shell === "empty" ? (
-            <>
-              <a className="app-button" href={hubHref("/build", "subsystems", orgId)}>
-                Open Subsystems
-              </a>
-              <a className="app-button secondary" href={hubHref("/build", "fmea", orgId)}>
-                Open FMEA
-              </a>
-              <a className="app-button secondary" href={hubHref("/build", "inspection-copilot", orgId)}>
-                Open Inspection Copilot
-              </a>
-            </>
+            <a className="app-button is-primary" href={hubHref("/build", "subsystems", orgId)}>Open Subsystems</a>
           ) : null}
         </EmptyState>
       )}
@@ -411,14 +399,8 @@ export default function ReadinessScoreClient() {
           description={shellCopy.description}
           className="product-hub-setup"
         >
-          <a className="app-button" href={hubHref("/build", "subsystems", orgId)}>
+          <a className="app-button is-primary" href={hubHref("/build", "subsystems", orgId)}>
             Open Subsystems
-          </a>
-          <a className="app-button secondary" href={hubHref("/build", "fmea", orgId)}>
-            Open FMEA
-          </a>
-          <a className="app-button secondary" href={hubHref("/build", "inspection-copilot", orgId)}>
-            Open Inspection Copilot
           </a>
         </EmptyState>
       ) : null}

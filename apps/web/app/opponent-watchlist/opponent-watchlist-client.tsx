@@ -97,9 +97,6 @@ function WatchlistShell({
   const actions = opponentWatchlistNextActions({ orgId, shell });
   const copy = opponentWatchlistShellCopy(shell);
   const competitionHref = hubWorkbenchHref("competition", "opponent-watchlist", orgId);
-  const strategyHref = hubHref("/competition", "strategy", orgId);
-  const epaAlertsHref = hubHref("/competition", "epa-trend-alerts", orgId);
-  const scoutingHref = hubHref("/competition", "scouting", orgId);
 
   return (
     <main className="module-page opponent-watchlist-page soft-gate">
@@ -138,25 +135,10 @@ function WatchlistShell({
           </button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
-            Choose your team
-          </a>
+          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
         ) : null}
         {shell === "empty" ? (
-          <>
-            <a className="app-button" href="#opponent-watchlist-watch">
-              Watch a team
-            </a>
-            <a className="app-button secondary" href={strategyHref}>
-              Open Strategy
-            </a>
-            <a className="app-button secondary" href={epaAlertsHref}>
-              Open EPA Trend Alerts
-            </a>
-            <a className="app-button secondary" href={scoutingHref}>
-              Open Scouting
-            </a>
-          </>
+          <a className="app-button is-primary" href="#opponent-watchlist-watch">Watch a team</a>
         ) : null}
       </EmptyState>
       <WatchlistNextActionsPanel actions={actions} />
@@ -318,17 +300,8 @@ export default function OpponentWatchlistClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <a className="app-button" href="#opponent-watchlist-watch">
+          <a className="app-button is-primary" href="#opponent-watchlist-watch">
             Watch a team
-          </a>
-          <a className="app-button secondary" href={strategyHref}>
-            Open Strategy
-          </a>
-          <a className="app-button secondary" href={epaAlertsHref}>
-            Open EPA Trend Alerts
-          </a>
-          <a className="app-button secondary" href={scoutingHref}>
-            Open Scouting
           </a>
         </EmptyState>
       ) : null}

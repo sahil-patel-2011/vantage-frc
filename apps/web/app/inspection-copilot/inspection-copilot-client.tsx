@@ -94,9 +94,6 @@ function InspectionShell({
   const actions = inspectionCopilotNextActions({ orgId, shell });
   const copy = inspectionCopilotShellCopy(shell);
   const buildHref = hubHref("/build", "fmea", orgId);
-  const batteriesHref = hubHref("/team", "batteries", orgId);
-  const fmeaHref = hubHref("/build", "fmea", orgId);
-  const subsystemsHref = withOrgHref("/subsystems", orgId);
 
   return (
     <main className="module-page inspection-copilot-page soft-gate">
@@ -135,25 +132,10 @@ function InspectionShell({
           </button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
-            Choose your team
-          </a>
+          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
         ) : null}
         {shell === "empty" ? (
-          <>
-            <a className="app-button" href="#inspection-copilot-form">
-              Run a check
-            </a>
-            <a className="app-button secondary" href={batteriesHref}>
-              Open Batteries
-            </a>
-            <a className="app-button secondary" href={fmeaHref}>
-              Open FMEA
-            </a>
-            <a className="app-button secondary" href={subsystemsHref}>
-              Open Subsystems
-            </a>
-          </>
+          <a className="app-button is-primary" href="#inspection-copilot-form">Run a check</a>
         ) : null}
       </EmptyState>
       <InspectionNextActionsPanel actions={actions} />
@@ -356,17 +338,8 @@ export default function InspectionCopilotClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <a className="app-button" href="#inspection-copilot-form">
+          <a className="app-button is-primary" href="#inspection-copilot-form">
             Run a check
-          </a>
-          <a className="app-button secondary" href={batteriesHref}>
-            Open Batteries
-          </a>
-          <a className="app-button secondary" href={fmeaHref}>
-            Open FMEA
-          </a>
-          <a className="app-button secondary" href={subsystemsHref}>
-            Open Subsystems
           </a>
         </EmptyState>
       ) : null}

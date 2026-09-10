@@ -87,8 +87,6 @@ function ImpactEssayShell({
   const copy = impactEssayShellCopy(shell);
   const businessHref = hubWorkbenchHref("business", "impact-essay", orgId);
   const impactHref = hubHref("/business", "impact", orgId);
-  const awardsHref = hubHref("/business", "evidence", orgId);
-  const writerHref = hubHref("/ai", "writer", orgId);
 
   return (
     <main className="module-page impact-essay-page soft-gate">
@@ -127,22 +125,10 @@ function ImpactEssayShell({
           </button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
-            Choose your team
-          </a>
+          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
         ) : null}
         {shell === "empty" ? (
-          <>
-            <a className="app-button" href={impactHref}>
-              Open Community Impact
-            </a>
-            <a className="app-button secondary" href={awardsHref}>
-              Open Awards
-            </a>
-            <a className="app-button secondary" href={writerHref}>
-              Open Writer
-            </a>
-          </>
+          <a className="app-button is-primary" href={impactHref}>Open Community Impact</a>
         ) : null}
       </EmptyState>
       <ImpactEssayNextActionsPanel actions={actions} />
@@ -394,14 +380,8 @@ export default function ImpactEssayClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <a className="app-button" href={impactHref}>
+          <a className="app-button is-primary" href={impactHref}>
             Open Community Impact
-          </a>
-          <a className="app-button secondary" href={awardsHref}>
-            Open Awards
-          </a>
-          <a className="app-button secondary" href={writerHref}>
-            Open Writer
           </a>
         </EmptyState>
       ) : null}

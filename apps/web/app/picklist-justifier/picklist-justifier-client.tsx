@@ -84,7 +84,6 @@ function JustifierShell({
   const copy = picklistJustifierShellCopy(shell);
   const competitionHref = hubWorkbenchHref("competition", "picklist-justifier", orgId);
   const strategyHref = hubHref("/competition", "strategy", orgId);
-  const collabHref = hubHref("/competition", "picklist-collab", orgId);
 
   return (
     <main className="module-page picklist-justifier-page soft-gate">
@@ -123,19 +122,10 @@ function JustifierShell({
           </button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
-            Choose your team
-          </a>
+          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
         ) : null}
         {shell === "empty" ? (
-          <>
-            <a className="app-button" href={strategyHref}>
-              Open Strategy
-            </a>
-            <a className="app-button secondary" href={collabHref}>
-              Open Collaborative Pick List
-            </a>
-          </>
+          <a className="app-button is-primary" href={strategyHref}>Open Strategy</a>
         ) : null}
       </EmptyState>
       <JustifierNextActionsPanel actions={actions} />
@@ -198,7 +188,6 @@ export default function PicklistJustifierClient() {
   });
   const competitionHref = hubWorkbenchHref("competition", "picklist-justifier", orgId);
   const strategyHref = hubHref("/competition", "strategy", orgId);
-  const collabHref = hubHref("/competition", "picklist-collab", orgId);
   const scoutingHref = hubHref("/competition", "scouting", orgId);
   const draftHref = withOrgHref("/strategy/draft", orgId);
 
@@ -349,14 +338,8 @@ export default function PicklistJustifierClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <a className="app-button" href={strategyHref}>
+          <a className="app-button is-primary" href={strategyHref}>
             Open Strategy
-          </a>
-          <a className="app-button secondary" href={collabHref}>
-            Open Collaborative Pick List
-          </a>
-          <a className="app-button secondary" href={scoutingHref}>
-            Open Scouting
           </a>
         </EmptyState>
       ) : (

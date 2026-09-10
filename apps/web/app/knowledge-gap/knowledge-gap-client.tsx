@@ -142,19 +142,10 @@ function GapShell({
           description={error ?? copy.description}
         >
           {shell === "setup" ? (
-            <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
-              Choose your team
-            </a>
+            <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
           ) : null}
           {shell === "empty" ? (
-            <>
-              <a className="app-button" href="#knowledge-gap-scan">
-                Run scan
-              </a>
-              <a className="app-button secondary" href={hubHref("/team", "knowledge", orgId)}>
-                Open Knowledge
-              </a>
-            </>
+            <a className="app-button is-primary" href="#knowledge-gap-scan">Run scan</a>
           ) : null}
         </EmptyState>
       )}

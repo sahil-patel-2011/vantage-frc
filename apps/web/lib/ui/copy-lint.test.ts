@@ -96,7 +96,7 @@ const RULES: readonly Rule[] = [
   },
   {
     label: "workspace (as a team picker)",
-    pattern: /\bopen your workspace\b|\bmore than one workspace\b|\bworkspace membership\b|\bteam workspaces\b/i,
+    pattern: /\bopen your workspace\b|\bmore than one workspace\b|\bworkspace membership\b|\bteam workspaces\b|\bworkspace inventory\b/i,
     why: 'say "team" — students pick 6925, not a workspace',
   },
   {

@@ -189,9 +189,7 @@ function EventDayShell({
       >
         {shell === "setup" ? primarySetupCta : null}
         {shell === "empty" ? (
-          <a className="app-button" href={withOrgHref("/schedule", orgId)}>
-            Check schedule sync
-          </a>
+          <a className="app-button is-primary" href={withOrgHref("/schedule", orgId)}>Check schedule sync</a>
         ) : null}
       </EmptyState>
     </main>

@@ -99,7 +99,6 @@ function SpareForecastShell({
   const buildHref = withOrgHref("/build", orgId);
   const copy = spareForecastShellCopy(shell);
   const inventoryHref = withOrgHref("/inventory", orgId);
-  const batteriesHref = hubHref("/team", "batteries", orgId);
   const ordersHref = hubHref("/business", "orders", orgId);
   const subsystemsHref = withOrgHref("/subsystems", orgId);
 
@@ -142,22 +141,10 @@ function SpareForecastShell({
           </button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
-            Choose your team
-          </a>
+          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
         ) : null}
         {shell === "empty" ? (
-          <>
-            <a className="app-button" href={inventoryHref}>
-              Open Inventory
-            </a>
-            <a className="app-button secondary" href={subsystemsHref}>
-              Open Subsystems
-            </a>
-            <a className="app-button secondary" href={batteriesHref}>
-              Open Batteries
-            </a>
-          </>
+          <a className="app-button is-primary" href={inventoryHref}>Open Inventory</a>
         ) : null}
         {shell === "no_risk" ? (
           <>

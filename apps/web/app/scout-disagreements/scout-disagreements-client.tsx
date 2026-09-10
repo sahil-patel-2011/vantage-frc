@@ -117,8 +117,6 @@ function ScoutDisagreementsShell({
         )
       : null;
   const scoutingHref = hubHref("/competition", "scouting", orgId);
-  const accuracyHref = withOrgHref("/scout-accuracy", orgId);
-  const coverageHref = withOrgHref("/scouting/lineup", orgId);
 
   return (
     <main className="module-page scout-disagreements-page soft-gate">
@@ -162,22 +160,10 @@ function ScoutDisagreementsShell({
           </button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button" href={orgId ? scoutingHref : "/workspace"}>
-            {orgId ? "Open Scouting" : "Choose your team"}
-          </a>
+          <a className="app-button is-primary" href={orgId ? scoutingHref : "/workspace"}>{orgId ? "Open Scouting" : "Choose your team"}</a>
         ) : null}
         {shell === "empty" ? (
-          <>
-            <a className="app-button" href={scoutingHref}>
-              Log scout entries
-            </a>
-            <a className="app-button secondary" href={accuracyHref}>
-              Open Accuracy
-            </a>
-            <a className="app-button secondary" href={coverageHref}>
-              Open Coverage
-            </a>
-          </>
+          <a className="app-button is-primary" href={scoutingHref}>Log scout entries</a>
         ) : null}
       </EmptyState>
       {steps.length > 0 ? (
@@ -460,14 +446,8 @@ function Queue({
         title="Log your first conflicting field"
         description="When two scouts report different values for the same match/team/field, log it here."
       >
-        <a className="app-button" href={hubHref("/competition", "scouting", view.orgId)}>
+        <a className="app-button is-primary" href={hubHref("/competition", "scouting", view.orgId)}>
           Open Scouting
-        </a>
-        <a className="app-button secondary" href={withOrgHref("/scout-accuracy", view.orgId)}>
-          Open Accuracy
-        </a>
-        <a className="app-button secondary" href={withOrgHref("/scouting/lineup", view.orgId)}>
-          Open Coverage
         </a>
       </EmptyState>
     );

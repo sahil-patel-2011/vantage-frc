@@ -18,7 +18,7 @@ import {
   type BuildBurndownShellKind,
 } from "../../lib/build-burndown/build-burndown-related";
 import type { BuildTaskCategory, BuildTaskStatus } from "../../lib/build-burndown/types";
-import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
+import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./build-burndown.css";
 
@@ -133,22 +133,10 @@ function BurndownShell({
           </button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
-            Choose your team
-          </a>
+          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
         ) : null}
         {shell === "empty" ? (
-          <>
-            <a className="app-button" href="#build-burndown-plan">
-              Set kickoff plan
-            </a>
-            <a className="app-button secondary" href={hubHref("/build", "kickoff", orgId)}>
-              Open Kickoff
-            </a>
-            <a className="app-button secondary" href={hubHref("/team", "task-board", orgId)}>
-              Open Task board
-            </a>
-          </>
+          <a className="app-button is-primary" href="#build-burndown-plan">Set kickoff plan</a>
         ) : null}
       </EmptyState>
       {steps.length > 0 ? (
@@ -352,14 +340,8 @@ export default function BuildBurndownClient() {
           description={shellCopy.description}
           className="product-hub-setup"
         >
-          <a className="app-button" href={hasPlan ? "#build-burndown-tasks" : "#build-burndown-plan"}>
+          <a className="app-button is-primary" href={hasPlan ? "#build-burndown-tasks" : "#build-burndown-plan"}>
             {hasPlan ? "Add a build task" : "Set kickoff plan"}
-          </a>
-          <a className="app-button secondary" href={hubHref("/build", "kickoff", orgId)}>
-            Open Kickoff
-          </a>
-          <a className="app-button secondary" href={hubHref("/team", "task-board", orgId)}>
-            Open Task board
           </a>
         </EmptyState>
       ) : null}

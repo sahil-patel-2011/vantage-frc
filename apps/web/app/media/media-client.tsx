@@ -222,19 +222,10 @@ function MediaShell({
           </button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
-            Choose your team
-          </a>
+          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
         ) : null}
         {shell === "empty" ? (
-          <>
-            <a className="app-button" href={orgId ? withOrgHref("/media-kit", orgId) : "/media-kit"}>
-              Build Media Kit
-            </a>
-            <button type="button" className="app-button secondary" onClick={onRetry}>
-              Refresh
-            </button>
-          </>
+          <a className="app-button is-primary" href={orgId ? withOrgHref("/media-kit", orgId) : "/media-kit"}>Build Media Kit</a>
         ) : null}
       </EmptyState>
       {shell === "setup" && steps.length > 0 ? (

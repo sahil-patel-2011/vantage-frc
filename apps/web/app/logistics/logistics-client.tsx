@@ -165,9 +165,7 @@ function LogisticsShell({
         description={error ?? copy.description}
       >
         {shell === "setup" ? (
-          <a className="app-button" href={workspaceHref}>
-            Choose your team
-          </a>
+          <a className="app-button is-primary" href={workspaceHref}>Choose your team</a>
         ) : null}
         {shell === "empty" && canManage ? (
           <a className="app-button" href={withOrgHref("/logistics", orgId) + "#logistics-create-trip"}>

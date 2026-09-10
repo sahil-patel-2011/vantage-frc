@@ -25,7 +25,6 @@ import type {
   OutreachCategory,
   OutreachStatus,
 } from "../../lib/outreach-calendar/types";
-import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./outreach-calendar.css";
 
@@ -164,22 +163,10 @@ function OutreachShell({
           </button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
-            Choose your team
-          </a>
+          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
         ) : null}
         {shell === "empty" ? (
-          <>
-            <a className="app-button" href="#outreach-calendar-schedule">
-              Schedule an event
-            </a>
-            <a className="app-button secondary" href={hubHref("/business", "impact", orgId)}>
-              Open Community Impact
-            </a>
-            <a className="app-button secondary" href={hubHref("/business", "media-kit", orgId)}>
-              Open Media Kit
-            </a>
-          </>
+          <a className="app-button is-primary" href="#outreach-calendar-schedule">Schedule an event</a>
         ) : null}
       </EmptyState>
       {shell === "setup" && steps.length > 0 ? (
@@ -394,11 +381,8 @@ export default function OutreachCalendarClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <a className="app-button" href="#outreach-calendar-schedule">
+          <a className="app-button is-primary" href="#outreach-calendar-schedule">
             Schedule an event
-          </a>
-          <a className="app-button secondary" href={hubHref("/business", "impact", orgId)}>
-            Open Community Impact
           </a>
         </EmptyState>
       ) : null}

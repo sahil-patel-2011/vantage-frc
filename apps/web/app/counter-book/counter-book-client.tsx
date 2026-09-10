@@ -88,8 +88,6 @@ function CounterShell({
   const actions = counterBookNextActions({ orgId, shell });
   const copy = counterBookShellCopy(shell);
   const competitionHref = hubWorkbenchHref("competition", "counter-book", orgId);
-  const strategyHref = hubHref("/competition", "strategy", orgId);
-  const scoutingHref = hubHref("/competition", "scouting", orgId);
 
   return (
     <main className="module-page counter-book-page soft-gate">
@@ -128,22 +126,10 @@ function CounterShell({
           </button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
-            Choose your team
-          </a>
+          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
         ) : null}
         {shell === "empty" ? (
-          <>
-            <a className="app-button" href="#counter-book-generate">
-              Generate a report
-            </a>
-            <a className="app-button secondary" href={strategyHref}>
-              Open Strategy
-            </a>
-            <a className="app-button secondary" href={scoutingHref}>
-              Open Scouting
-            </a>
-          </>
+          <a className="app-button is-primary" href="#counter-book-generate">Generate a report</a>
         ) : null}
       </EmptyState>
       <CounterNextActionsPanel actions={actions} />
@@ -317,14 +303,8 @@ export default function CounterBookClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <a className="app-button" href="#counter-book-generate">
+          <a className="app-button is-primary" href="#counter-book-generate">
             Generate a report
-          </a>
-          <a className="app-button secondary" href={strategyHref}>
-            Open Strategy
-          </a>
-          <a className="app-button secondary" href={scoutingHref}>
-            Open Scouting
           </a>
         </EmptyState>
       ) : null}

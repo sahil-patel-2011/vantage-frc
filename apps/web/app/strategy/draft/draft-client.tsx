@@ -163,9 +163,6 @@ function DraftShell({
   const actions = draftNextActions({ orgId, shell });
   const copy = draftShellCopy(shell);
   const steps = shell === "setup" ? draftSetupSteps(orgId) : [];
-  const strategyHref = hubHref("/competition", "strategy", orgId);
-  const pickDeskHref = withOrgHref("/strategy?tab=picks", orgId);
-  const scoutingHref = hubHref("/competition", "scouting", orgId);
   const commandHref = hubHref("/competition", "command", orgId);
   const teamDataHref = withOrgHref("/team/data", orgId);
 
@@ -207,25 +204,10 @@ function DraftShell({
           </button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button" href={orgId ? commandHref : "/workspace"}>
-            {orgId ? "Set active event" : "Choose your team"}
-          </a>
+          <a className="app-button is-primary" href={orgId ? commandHref : "/workspace"}>{orgId ? "Set active event" : "Choose your team"}</a>
         ) : null}
         {shell === "empty" ? (
-          <>
-            <a className="app-button" href={teamDataHref}>
-              Sync event metrics
-            </a>
-            <a className="app-button secondary" href={strategyHref}>
-              Open Strategy
-            </a>
-            <a className="app-button secondary" href={pickDeskHref}>
-              Open Pick desk
-            </a>
-            <a className="app-button secondary" href={scoutingHref}>
-              Open Scouting
-            </a>
-          </>
+          <a className="app-button is-primary" href={teamDataHref}>Sync event metrics</a>
         ) : null}
       </EmptyState>
       {steps.length > 0 ? (

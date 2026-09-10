@@ -224,9 +224,6 @@ function PitShell({
         )
       : null;
   const competitionHref = withOrgHref("/competition", orgId);
-  const batteriesHref = hubHref("/team", "batteries", orgId);
-  const checklistHref = hubHref("/competition", "match-checklist", orgId);
-  const commandHref = hubHref("/competition", "command", orgId);
 
   return (
     <main className="module-page pit-page soft-gate">
@@ -270,25 +267,10 @@ function PitShell({
           </button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
-            Choose your team
-          </a>
+          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
         ) : null}
         {shell === "empty" ? (
-          <>
-            <a className="app-button" href="#pit-actions">
-              Log first evidence
-            </a>
-            <a className="app-button secondary" href={batteriesHref}>
-              Open Batteries
-            </a>
-            <a className="app-button secondary" href={checklistHref}>
-              Open Match checklist
-            </a>
-            <a className="app-button secondary" href={commandHref}>
-              Open Event Day
-            </a>
-          </>
+          <a className="app-button is-primary" href="#pit-actions">Log first evidence</a>
         ) : null}
       </EmptyState>
       <PitNextActionsPanel actions={actions} />
@@ -458,8 +440,6 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
   const relatedLinks = pitRelatedLinks(orgId, { include: [...PIT_RELATED_INCLUDE] });
   const competitionHref = withOrgHref("/competition", orgId);
   const batteriesHref = hubHref("/team", "batteries", orgId);
-  const checklistHref = hubHref("/competition", "match-checklist", orgId);
-  const commandHref = hubHref("/competition", "command", orgId);
   const fmeaHref = hubHref("/build", "fmea", orgId);
   const setupSteps = pitSetupSteps(orgId);
   const showSummary = shouldShowPitSummaryTiles({
@@ -551,17 +531,8 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
             title={shellCopy.title}
             description={shellCopy.description}
           >
-            <a className="app-button" href="#pit-actions">
+            <a className="app-button is-primary" href="#pit-actions">
               Log first evidence
-            </a>
-            <a className="app-button secondary" href={batteriesHref}>
-              Open Batteries
-            </a>
-            <a className="app-button secondary" href={checklistHref}>
-              Open Match checklist
-            </a>
-            <a className="app-button secondary" href={commandHref}>
-              Open Event Day
             </a>
           </EmptyState>
           <ol className="strategy-setup-steps">

@@ -294,14 +294,10 @@ function ScoutingShell({
           </button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button is-primary" href={orgId ? commandHref : workspaceHref}>
-            {orgId ? "Set active event" : "Choose your team"}
-          </a>
+          <a className="app-button is-primary" href={orgId ? commandHref : workspaceHref}>{orgId ? "Set active event" : "Choose your team"}</a>
         ) : null}
         {shell === "empty" ? (
-          <a className="app-button is-primary" href={formsHref}>
-            Open Form builder
-          </a>
+          <a className="app-button is-primary" href={formsHref}>Open Form builder</a>
         ) : null}
         {!embedded && shell === "setup" && steps.length > 0 ? (
           <ol className="scout-setup-steps">

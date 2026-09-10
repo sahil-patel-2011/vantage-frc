@@ -92,8 +92,6 @@ function EpaShell({
   const actions = epaTrendAlertsNextActions({ orgId, shell });
   const copy = epaTrendAlertsShellCopy(shell);
   const competitionHref = hubWorkbenchHref("competition", "epa-trend-alerts", orgId);
-  const strategyHref = hubHref("/competition", "strategy", orgId);
-  const watchlistHref = hubHref("/competition", "opponent-watchlist", orgId);
 
   return (
     <main className="module-page epa-trend-alerts-page soft-gate">
@@ -132,22 +130,10 @@ function EpaShell({
           </button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
-            Choose your team
-          </a>
+          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
         ) : null}
         {shell === "empty" ? (
-          <>
-            <a className="app-button" href="#epa-trend-alerts-watch">
-              Watch a team
-            </a>
-            <a className="app-button secondary" href={strategyHref}>
-              Open Strategy
-            </a>
-            <a className="app-button secondary" href={watchlistHref}>
-              Open Opponent Watchlist
-            </a>
-          </>
+          <a className="app-button is-primary" href="#epa-trend-alerts-watch">Watch a team</a>
         ) : null}
       </EmptyState>
       <EpaNextActionsPanel actions={actions} />
@@ -309,14 +295,8 @@ export default function EpaTrendAlertsClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <a className="app-button" href="#epa-trend-alerts-watch">
+          <a className="app-button is-primary" href="#epa-trend-alerts-watch">
             Watch a team
-          </a>
-          <a className="app-button secondary" href={strategyHref}>
-            Open Strategy
-          </a>
-          <a className="app-button secondary" href={watchlistHref}>
-            Open Opponent Watchlist
           </a>
         </EmptyState>
       ) : null}

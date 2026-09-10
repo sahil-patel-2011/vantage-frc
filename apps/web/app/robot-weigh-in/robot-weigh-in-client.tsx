@@ -136,19 +136,10 @@ function WeighShell({
           description={error ?? copy.description}
         >
           {shell === "setup" ? (
-            <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
-              Choose your team
-            </a>
+            <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
           ) : null}
           {shell === "empty" ? (
-            <>
-              <a className="app-button" href={hubHref("/build", "readiness-score", orgId)}>
-                Open Readiness
-              </a>
-              <a className="app-button secondary" href={hubHref("/build", "inspection-copilot", orgId)}>
-                Open Inspection Copilot
-              </a>
-            </>
+            <a className="app-button is-primary" href={hubHref("/build", "readiness-score", orgId)}>Open Readiness</a>
           ) : null}
         </EmptyState>
       )}

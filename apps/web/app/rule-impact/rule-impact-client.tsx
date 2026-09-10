@@ -109,9 +109,6 @@ function RuleImpactShell({
   const actions = ruleImpactNextActions({ orgId, shell });
   const copy = ruleImpactShellCopy(shell);
   const buildHref = hubWorkbenchHref("build", "rule-impact", orgId);
-  const kickoffHref = hubHref("/build", "kickoff", orgId);
-  const cadHref = hubHref("/build", "cad", orgId);
-  const subsystemsHref = withOrgHref("/subsystems", orgId);
 
   return (
     <main className="module-page rule-impact-page soft-gate">
@@ -150,25 +147,10 @@ function RuleImpactShell({
           </button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
-            Choose your team
-          </a>
+          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
         ) : null}
         {shell === "empty" ? (
-          <>
-            <a className="app-button" href="#rule-impact-log-change">
-              Log a rule change
-            </a>
-            <a className="app-button secondary" href={kickoffHref}>
-              Open Kickoff
-            </a>
-            <a className="app-button secondary" href={cadHref}>
-              Open CAD
-            </a>
-            <a className="app-button secondary" href={subsystemsHref}>
-              Open Subsystems
-            </a>
-          </>
+          <a className="app-button is-primary" href="#rule-impact-log-change">Log a rule change</a>
         ) : null}
       </EmptyState>
       <RuleImpactNextActionsPanel actions={actions} />
@@ -358,17 +340,8 @@ export default function RuleImpactClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <a className="app-button" href="#rule-impact-log-change">
+          <a className="app-button is-primary" href="#rule-impact-log-change">
             Log a rule change
-          </a>
-          <a className="app-button secondary" href={kickoffHref}>
-            Open Kickoff
-          </a>
-          <a className="app-button secondary" href={cadHref}>
-            Open CAD
-          </a>
-          <a className="app-button secondary" href={subsystemsHref}>
-            Open Subsystems
           </a>
         </EmptyState>
       ) : null}
@@ -388,14 +361,8 @@ export default function RuleImpactClient() {
             title="No prior-season subsystems on file"
             description="Log robot subsystems so Rule Impact can diff them against logged rule changes — empty means nothing on file."
           >
-            <a className="app-button" href={subsystemsHref}>
+            <a className="app-button is-primary" href={subsystemsHref}>
               Open Subsystems
-            </a>
-            <a className="app-button secondary" href={kickoffHref}>
-              Open Kickoff
-            </a>
-            <a className="app-button secondary" href={cadHref}>
-              Open CAD
             </a>
           </EmptyState>
         )}

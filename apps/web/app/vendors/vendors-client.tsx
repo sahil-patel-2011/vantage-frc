@@ -107,7 +107,6 @@ function VendorsShell({
   const copy = vendorsShellCopy(shell);
   const buildHref = withOrgHref("/build", orgId);
   const ordersHref = hubHref("/business", "orders", orgId);
-  const leadTimesHref = hubHref("/business", "vendor-lead-times", orgId);
 
   return (
     <main className="module-page vendors-page soft-gate">
@@ -146,19 +145,10 @@ function VendorsShell({
           </button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
-            Choose your team
-          </a>
+          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
         ) : null}
         {shell === "empty" ? (
-          <>
-            <a className="app-button" href={ordersHref}>
-              Open Orders
-            </a>
-            <a className="app-button secondary" href={leadTimesHref}>
-              Open Vendor Lead Times
-            </a>
-          </>
+          <a className="app-button is-primary" href={ordersHref}>Open Orders</a>
         ) : null}
       </EmptyState>
       <VendorsNextActionsPanel actions={actions} />
@@ -327,11 +317,8 @@ export default function VendorsClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <a className="app-button" href={ordersHref}>
+          <a className="app-button is-primary" href={ordersHref}>
             Open Orders
-          </a>
-          <a className="app-button secondary" href={leadTimesHref}>
-            Open Vendor Lead Times
           </a>
         </EmptyState>
       ) : null}

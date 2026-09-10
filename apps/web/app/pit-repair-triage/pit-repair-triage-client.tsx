@@ -35,7 +35,7 @@ import {
   type PitRepairTriageNextAction,
   type PitRepairTriageShellKind,
 } from "../../lib/pit-repair-triage/pit-repair-triage-related";
-import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
+import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./pit-repair-triage.css";
 
@@ -148,19 +148,10 @@ function TriageShell({
           description={error ?? copy.description}
         >
           {shell === "setup" ? (
-            <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
-              Choose your team
-            </a>
+            <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
           ) : null}
           {shell === "empty" ? (
-            <>
-              <a className="app-button" href="#pit-repair-triage-log">
-                Log a pit failure
-              </a>
-              <a className="app-button secondary" href={hubHref("/build", "fmea", orgId)}>
-                Open FMEA
-              </a>
-            </>
+            <a className="app-button is-primary" href="#pit-repair-triage-log">Log a pit failure</a>
           ) : null}
         </EmptyState>
       )}

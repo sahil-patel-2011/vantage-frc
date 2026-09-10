@@ -118,9 +118,7 @@ function PairShell({
         description={copy.description}
       >
         {shell === "setup" ? (
-          <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
-            Choose your team
-          </a>
+          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
         ) : null}
       </EmptyState>
       {steps.length > 0 ? (
@@ -297,17 +295,8 @@ export default function PairClient({
           description={shellCopy.description}
           className="product-hub-setup"
         >
-          <a className="app-button" href="#pair-approve">
+          <a className="app-button is-primary" href="#pair-approve">
             Enter pairing code
-          </a>
-          <a className="app-button secondary" href={hubHref("/build", "code", orgId)}>
-            Open Code Coach
-          </a>
-          <a
-            className="app-button secondary"
-            href={withOrgHref("/team/admin", orgId) + "#github-connection"}
-          >
-            GitHub context
           </a>
         </EmptyState>
       ) : null}

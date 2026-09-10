@@ -188,7 +188,6 @@ function MyDayShell({
   const teamDataHref = withOrgHref("/team/data", orgId);
   const commandHref = hubHref("/competition", "command", orgId);
   const scheduleHref = withOrgHref("/schedule", orgId);
-  const strategyHref = hubHref("/competition", "strategy", orgId);
 
   return (
     <main className={`module-page myday-page soft-gate${embedded ? " is-embedded" : ""}`}>
@@ -230,28 +229,12 @@ function MyDayShell({
           </button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button" href={orgId ? teamDataHref : workspaceHref}>
-            {orgId ? "Sync Team Data" : "Choose your team"}
-          </a>
+          <a className="app-button is-primary" href={orgId ? teamDataHref : workspaceHref}>{orgId ? "Sync Team Data" : "Choose your team"}</a>
         ) : null}
         {shell === "empty" ? (
-          <>
-            <a
-              className="app-button"
-              href={emptyReason === "no_upcoming" ? scheduleHref : commandHref}
-            >
-              {emptyReason === "no_upcoming" ? "Open Schedule" : "Open Event Day"}
-            </a>
-            <a
-              className="app-button secondary"
-              href={emptyReason === "no_upcoming" ? commandHref : scheduleHref}
-            >
-              {emptyReason === "no_upcoming" ? "Open Event Day" : "Open Schedule"}
-            </a>
-            <a className="app-button secondary" href={strategyHref}>
-              Open Strategy
-            </a>
-          </>
+          <a className="app-button is-primary" href={emptyReason === "no_upcoming" ? scheduleHref : commandHref}>
+            {emptyReason === "no_upcoming" ? "Open Schedule" : "Open Event Day"}
+          </a>
         ) : null}
         {!embedded && shell === "setup" && steps.length > 0 ? (
           <ol className="strategy-setup-steps">

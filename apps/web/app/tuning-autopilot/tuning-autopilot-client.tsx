@@ -90,9 +90,6 @@ function TuningShell({
   const actions = tuningAutopilotNextActions({ orgId, shell });
   const copy = tuningAutopilotShellCopy(shell);
   const buildHref = hubWorkbenchHref("build", "tuning-autopilot", orgId);
-  const cadHref = hubHref("/build", "cad", orgId);
-  const fmeaHref = hubHref("/build", "fmea", orgId);
-  const practiceHref = hubHref("/team", "practice", orgId);
 
   return (
     <main className="module-page tuning-autopilot-page soft-gate">
@@ -131,25 +128,10 @@ function TuningShell({
           </button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
-            Choose your team
-          </a>
+          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
         ) : null}
         {shell === "empty" ? (
-          <>
-            <a className="app-button" href="#tuning-autopilot-new-session">
-              Start a session
-            </a>
-            <a className="app-button secondary" href={cadHref}>
-              Open CAD
-            </a>
-            <a className="app-button secondary" href={fmeaHref}>
-              Open FMEA
-            </a>
-            <a className="app-button secondary" href={practiceHref}>
-              Open Practice
-            </a>
-          </>
+          <a className="app-button is-primary" href="#tuning-autopilot-new-session">Start a session</a>
         ) : null}
       </EmptyState>
       <TuningNextActionsPanel actions={actions} />
@@ -350,17 +332,8 @@ export default function TuningAutopilotClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <a className="app-button" href="#tuning-autopilot-new-session">
+          <a className="app-button is-primary" href="#tuning-autopilot-new-session">
             Start a session
-          </a>
-          <a className="app-button secondary" href={cadHref}>
-            Open CAD
-          </a>
-          <a className="app-button secondary" href={fmeaHref}>
-            Open FMEA
-          </a>
-          <a className="app-button secondary" href={practiceHref}>
-            Open Practice
           </a>
         </EmptyState>
       ) : null}

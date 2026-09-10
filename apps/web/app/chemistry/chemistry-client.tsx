@@ -103,9 +103,6 @@ function ChemistryShell({
         )
       : null;
   const steps = shell === "setup" ? chemistrySetupSteps(orgId) : [];
-  const strategyHref = hubHref("/competition", "strategy", orgId);
-  const pickDeskHref = withOrgHref("/strategy?tab=picks", orgId);
-  const draftHref = withOrgHref("/strategy/draft", orgId);
   const commandHref = hubHref("/competition", "command", orgId);
   const teamDataHref = withOrgHref("/team/data", orgId);
 
@@ -147,25 +144,10 @@ function ChemistryShell({
           </button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button" href={orgId ? commandHref : "/workspace"}>
-            {orgId ? "Set active event" : "Choose your team"}
-          </a>
+          <a className="app-button is-primary" href={orgId ? commandHref : "/workspace"}>{orgId ? "Set active event" : "Choose your team"}</a>
         ) : null}
         {shell === "empty" ? (
-          <>
-            <a className="app-button" href={teamDataHref}>
-              Sync event metrics
-            </a>
-            <a className="app-button secondary" href={strategyHref}>
-              Open Strategy
-            </a>
-            <a className="app-button secondary" href={pickDeskHref}>
-              Open Pick desk
-            </a>
-            <a className="app-button secondary" href={draftHref}>
-              Open Draft board
-            </a>
-          </>
+          <a className="app-button is-primary" href={teamDataHref}>Sync event metrics</a>
         ) : null}
       </EmptyState>
       {steps.length > 0 ? (
@@ -626,12 +608,6 @@ export default function ChemistryClient(_props: { embedded?: boolean } = {}) {
         >
           <a className="app-button secondary" href={strategyHref}>
             Open Strategy
-          </a>
-          <a className="app-button secondary" href={pickDeskHref}>
-            Open Pick desk
-          </a>
-          <a className="app-button secondary" href={draftHref}>
-            Open Draft board
           </a>
         </EmptyState>
       )}

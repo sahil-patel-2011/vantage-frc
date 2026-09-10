@@ -8,7 +8,17 @@ import { signInFixture } from "./session";
  * loud buttons and have to guess.
  */
 const PUBLIC_ROUTES = ["/", "/pricing", "/signin"];
-const PRODUCT_ROUTES = ["/dashboard", "/team", "/build", "/competition", "/business"];
+const PRODUCT_ROUTES = [
+  "/dashboard",
+  "/team",
+  "/build",
+  "/competition",
+  "/business",
+  "/scouting",
+  "/strategy",
+  "/chemistry",
+  "/pick-clock",
+];
 
 async function visiblePrimaryCount(page: import("@playwright/test").Page): Promise<number> {
   return page.locator(PRIMARY_CONTROL_SELECTOR).evaluateAll((nodes) =>

@@ -144,14 +144,10 @@ function RoiShell({
           description={error ?? copy.description}
         >
           {shell === "setup" ? (
-            <a className="app-button" href={orgId ? hubHref("/business", "sponsors", orgId) : "/workspace"}>
-              {orgId ? "Open Sponsor CRM" : "Choose your team"}
-            </a>
+            <a className="app-button is-primary" href={orgId ? hubHref("/business", "sponsors", orgId) : "/workspace"}>{orgId ? "Open Sponsor CRM" : "Choose your team"}</a>
           ) : null}
           {shell === "empty" ? (
-            <a className="app-button" href={hubHref("/business", "sponsors", orgId)}>
-              Add a sponsor
-            </a>
+            <a className="app-button is-primary" href={hubHref("/business", "sponsors", orgId)}>Add a sponsor</a>
           ) : null}
         </EmptyState>
       )}

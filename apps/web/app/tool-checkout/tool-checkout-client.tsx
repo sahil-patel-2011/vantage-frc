@@ -140,19 +140,10 @@ function CheckoutShell({
           description={error ?? copy.description}
         >
           {shell === "setup" ? (
-            <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
-              Choose your team
-            </a>
+            <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
           ) : null}
           {shell === "empty" ? (
-            <>
-              <a className="app-button" href={hubHref("/team", "equipment-maintenance", orgId)}>
-                Open Equipment
-              </a>
-              <a className="app-button secondary" href={withOrgHref("/inventory", orgId)}>
-                Open Inventory
-              </a>
-            </>
+            <a className="app-button is-primary" href={hubHref("/team", "equipment-maintenance", orgId)}>Open Equipment</a>
           ) : null}
         </EmptyState>
       )}

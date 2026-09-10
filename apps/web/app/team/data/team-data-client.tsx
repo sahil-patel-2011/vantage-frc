@@ -123,9 +123,7 @@ function TeamDataShell({
             </button>
           ) : null}
           {shell === "setup" ? (
-            <a className="app-button" href={workspaceHref}>
-              Choose your team
-            </a>
+            <a className="app-button is-primary" href={workspaceHref}>Choose your team</a>
           ) : null}
           <TeamDataRelated
             orgId={orgId}
@@ -434,7 +432,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
 
       <div className="team-data-layout">
         <section className="app-card soft-panel team-data-panel">
-          <h2>Workspace inventory</h2>
+          <h2>Team inventory</h2>
           <p className="app-muted">
             Active event: <strong>{activeEventKey ?? "Not set"}</strong>
           </p>

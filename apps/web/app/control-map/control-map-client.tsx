@@ -182,9 +182,7 @@ function ControlMapShell({
           </button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
-            Choose your team
-          </a>
+          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
         ) : null}
       </EmptyState>
       <ControlMapNextActionsPanel actions={actions} />
@@ -363,14 +361,8 @@ export default function ControlMapClient({ orgId: orgIdProp }: { orgId: string |
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <a className="app-button" href="#control-map-form">
+          <a className="app-button is-primary" href="#control-map-form">
             Add first binding
-          </a>
-          <a className="app-button secondary" href={subsystemsHref}>
-            Open Subsystems
-          </a>
-          <a className="app-button secondary" href={fmeaHref}>
-            Open FMEA
           </a>
         </EmptyState>
       ) : null}

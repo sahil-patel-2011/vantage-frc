@@ -130,22 +130,10 @@ function SponsorWallShell({
           </button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
-            Choose your team
-          </a>
+          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
         ) : null}
         {shell === "empty" ? (
-          <>
-            <a className="app-button" href={hubHref("/business", "sponsors", orgId)}>
-              Open Sponsor CRM
-            </a>
-            <a className="app-button secondary" href={hubHref("/business", "sponsorship", orgId)}>
-              Open Sponsorship
-            </a>
-            <a className="app-button secondary" href={hubHref("/business", "sponsor-suite", orgId)}>
-              Open Sponsor Suite
-            </a>
-          </>
+          <a className="app-button is-primary" href={hubHref("/business", "sponsors", orgId)}>Open Sponsor CRM</a>
         ) : null}
       </EmptyState>
       {shell === "setup" && steps.length > 0 ? (
@@ -345,14 +333,8 @@ export default function SponsorWallClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <a className="app-button" href="#sponsor-wall-add">
+          <a className="app-button is-primary" href="#sponsor-wall-add">
             Add a sponsor
-          </a>
-          <a className="app-button secondary" href={sponsorsHref}>
-            Open Sponsor CRM
-          </a>
-          <a className="app-button secondary" href={sponsorshipHref}>
-            Open Sponsorship
           </a>
         </EmptyState>
       ) : null}

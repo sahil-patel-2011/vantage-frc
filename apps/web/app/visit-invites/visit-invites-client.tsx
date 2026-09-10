@@ -165,9 +165,7 @@ function VisitShell({
       >
         <div className="visit-inline-actions">
           {shell === "setup" ? (
-            <a className="app-button" href={workspaceHref}>
-              Choose your team
-            </a>
+            <a className="app-button is-primary" href={workspaceHref}>Choose your team</a>
           ) : null}
           {shell === "empty" && canManage ? (
             <a className="app-button" href={visitInvitesShareHref(orgId) + "#visit-create"}>

@@ -18,7 +18,7 @@ import {
   type RetroShellKind,
 } from "../../lib/retro/retro-related";
 import type { RetroActionStatus, RetroHandoffTarget, RetroItemKind } from "../../lib/retro/types";
-import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
+import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./retro.css";
 
@@ -136,22 +136,10 @@ function RetroShell({
           </button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
-            Choose your team
-          </a>
+          <a className="app-button is-primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</a>
         ) : null}
         {shell === "empty" ? (
-          <>
-            <a className="app-button" href="#retro-new-session">
-              Start a session
-            </a>
-            <a className="app-button secondary" href={hubHref("/team", "messages", orgId)}>
-              Open Messages
-            </a>
-            <a className="app-button secondary" href={withOrgHref("/decisions", orgId)}>
-              Open Decisions
-            </a>
-          </>
+          <a className="app-button is-primary" href="#retro-new-session">Start a session</a>
         ) : null}
       </EmptyState>
       {steps.length > 0 ? (
@@ -395,14 +383,8 @@ export default function RetroClient() {
           description={shellCopy.description}
           className="product-hub-setup"
         >
-          <a className="app-button" href="#retro-new-session">
+          <a className="app-button is-primary" href="#retro-new-session">
             Start a session
-          </a>
-          <a className="app-button secondary" href={hubHref("/team", "messages", orgId)}>
-            Open Messages
-          </a>
-          <a className="app-button secondary" href={withOrgHref("/decisions", orgId)}>
-            Open Decisions
           </a>
         </EmptyState>
       ) : null}
