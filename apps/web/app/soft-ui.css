@@ -1744,12 +1744,12 @@ body.has-app-shell .module-page.soft-gate{max-width:var(--measure)}
 .notif-list small{display:block;margin-top:3px;color:var(--muted);font-size:12px}
 .notif-list p{margin:0;color:var(--muted);font-size:13px;line-height:1.45}
 .notif-list footer{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-.notif-list footer button,.notif-toolbar button,.notif-toolbar a{
+.notif-list footer button,.notif-toolbar-actions button,.notif-toolbar-actions a{
   min-height:40px;padding:0 12px;border-radius:var(--radius-xs);border:1px solid var(--line);
   background:var(--bg);color:var(--ink);font:700 12px var(--font-source-sans),ui-sans-serif;
   text-decoration:none;cursor:pointer;
 }
-.notif-list footer button.primary,.notif-toolbar button.primary{
+.notif-list footer button.primary,.notif-toolbar-actions button.primary{
   color:var(--accent-ink);background:var(--accent);border-color:var(--accent);
 }
 .notif-empty{display:grid;gap:8px;place-items:center;min-height:220px;padding:32px;text-align:center;

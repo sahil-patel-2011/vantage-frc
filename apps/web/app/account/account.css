@@ -16,6 +16,10 @@
   margin: 0 0 2px;
 }
 
+.account-page .hub-tool-strip {
+  margin: 0 0 4px;
+}
+
 .account-org-context {
   display: grid;
   gap: 10px;

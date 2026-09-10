@@ -93,6 +93,12 @@
   align-items: center;
 }
 
+.notif-toolbar .hub-tool-strip {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+}
+
 .notif-list {
   margin: 0;
   padding: 0;

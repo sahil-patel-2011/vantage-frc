@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { TabBar } from "../../components/ui";
+import { ToolStrip } from "../../components/ui";
 import { PRODUCT_HUBS } from "../../lib/nav/hubs";
 import {
   SEASON_MOMENTS,
@@ -9,6 +9,7 @@ import {
   type SeasonMoment,
   type SectionHelpEntry,
 } from "../../lib/help/section-help";
+import "../product-hub.css";
 import "./section-guide.css";
 
 type MomentFilter = SeasonMoment | "all";
@@ -62,17 +63,18 @@ export default function SectionGuide() {
         </p>
       </header>
 
-      <TabBar
-        aria-label="Season moment"
-        variant="toolbar"
-        value={moment}
-        onChange={(next) => setMoment(next as MomentFilter)}
-        className="section-guide-moments"
-        tabs={[
-          { id: "all", label: "All season" },
-          ...SEASON_MOMENTS.map((entry) => ({ id: entry.id, label: entry.label })),
-        ]}
-      />
+      <div className="section-guide-moments">
+        <ToolStrip
+          aria-label="Season moment"
+          value={moment}
+          onChange={(next) => setMoment(next as MomentFilter)}
+          visibleCount={8}
+          items={[
+            { id: "all", label: "All season" },
+            ...SEASON_MOMENTS.map((entry) => ({ id: entry.id, label: entry.label })),
+          ]}
+        />
+      </div>
 
       <p className="section-guide-count app-muted" role="status">
         {activeMoment ? `${activeMoment.blurb} · ` : ""}

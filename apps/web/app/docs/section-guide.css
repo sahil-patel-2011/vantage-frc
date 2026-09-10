@@ -22,6 +22,10 @@
   margin: 0;
 }
 
+.section-guide-moments .hub-tool-strip {
+  margin: 0;
+}
+
 .section-guide-moments button {
   min-height: 44px;
 }

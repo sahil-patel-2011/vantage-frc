@@ -42,7 +42,7 @@ type CanvasRect = { left: number; top: number; width: number; bottom: number; ri
 
 /**
  * Pointer drag for Home edit mode — mouse, touch, and pen share one session.
- * Keyboard reordering stays in the dashboard client.
+ * Keyboard reordering lives in useDashboardBoardOps.
  */
 export function useDashboardPointerDrag(input: {
   editing: boolean;

@@ -9,6 +9,8 @@ import {
 } from "../../lib/dashboard/catalog";
 import type { NudgeDirection } from "../../lib/dashboard/grid-drag";
 import type { IconName } from "../../components/icon";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
 
 export const CONTEXT_REFRESH_MS = 5 * 60_000;
 
@@ -85,6 +87,39 @@ export function greeting() {
   if (hour < 12) return "Good morning";
   if (hour < 17) return "Good afternoon";
   return "Good evening";
+}
+
+export function homeQuickStart(orgId: string | null) {
+  return [
+    {
+      id: "my-day",
+      label: "My day",
+      detail: "Assignments and next match",
+      href: withOrgHref("/my-day", orgId),
+      icon: "calendar" as const satisfies IconName,
+    },
+    {
+      id: "scout",
+      label: "Scout",
+      detail: "Open your event form",
+      href: hubHref("/competition", "scouting", orgId),
+      icon: "clipboard" as const satisfies IconName,
+    },
+    {
+      id: "work",
+      label: "Work",
+      detail: "Your open team tasks",
+      href: withOrgHref("/todos", orgId),
+      icon: "grid" as const satisfies IconName,
+    },
+    {
+      id: "messages",
+      label: "Messages",
+      detail: "Team channels and DMs",
+      href: hubHref("/team", "messages", orgId),
+      icon: "chat" as const satisfies IconName,
+    },
+  ];
 }
 
 /** Phone/tablet/laptop grid, collapsed to one column on a narrow canvas. */

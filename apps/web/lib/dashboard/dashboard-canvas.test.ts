@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveGrid, widgetLockReason } from "../../app/dashboard/dashboard-canvas";
+import { homeQuickStart, resolveGrid, widgetLockReason } from "../../app/dashboard/dashboard-canvas";
 import { WIDGET_CATALOG } from "./catalog";
 
 describe("dashboard canvas helpers", () => {
@@ -16,5 +16,11 @@ describe("dashboard canvas helpers", () => {
     const reason = widgetLockReason(locked);
     expect(reason).toMatch(/only/i);
     expect(reason).not.toMatch(/undefined/);
+  });
+
+  it("keeps jump-back-in on team-scoped routes", () => {
+    const items = homeQuickStart("org-1");
+    expect(items.map((item) => item.id)).toEqual(["my-day", "scout", "work", "messages"]);
+    expect(items.every((item) => item.href.includes("orgId=org-1"))).toBe(true);
   });
 });

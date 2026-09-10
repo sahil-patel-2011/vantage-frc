@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { EmptyState, PageHeader, TabBar, Button } from "../../components/ui";
+import { EmptyState, PageHeader, ToolStrip, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   NOTIFICATION_RELATED_INCLUDE,
@@ -236,22 +236,23 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
         })()
       ) : (
         <>
-          <TabBar
-            variant="toolbar"
-            aria-label="Inbox filters"
-            value={filter}
-            onChange={(id) => setFilter(id as "all" | "unread")}
-            tabs={[
-              { id: "all", label: "All" },
-              { id: "unread", label: "Unread" },
-            ]}
-          >
+          <div className="notif-toolbar">
+            <ToolStrip
+              aria-label="Inbox filters"
+              value={filter}
+              onChange={(id) => setFilter(id as "all" | "unread")}
+              visibleCount={4}
+              items={[
+                { id: "all", label: "All" },
+                { id: "unread", label: "Unread" },
+              ]}
+            />
             <div className="notif-toolbar-actions">
               <Button variant="secondary" type="button" disabled={busy || unreadCount < 1} onClick={() => void patch("read_all")}>
                 Mark all as read
               </Button>
             </div>
-          </TabBar>
+          </div>
 
           <NextActions itemCount={items.length} unreadCount={unreadCount} filter={filter} />
 

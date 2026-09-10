@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { EmptyState, PageHeader, Panel, TabBar, Button } from "../../components/ui";
+import { EmptyState, PageHeader, Panel, ToolStrip, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   ACCOUNT_RELATED_INCLUDE,
@@ -20,6 +20,7 @@ import {
 import { SettingsBar } from "../../components/settings-bar";
 import { signOutAndRedirect } from "../../lib/sign-out";
 import AppearancePanel from "./appearance-panel";
+import "../product-hub.css";
 import "./account.css";
 
 type NotificationPrefs = {
@@ -815,12 +816,12 @@ export default function AccountClient() {
             )}
           </nav>
 
-          <TabBar
-            className="account-tabs"
+          <ToolStrip
             aria-label="Account sections"
             value={tab}
             onChange={(id) => selectTab(id as Tab)}
-            tabs={[
+            visibleCount={4}
+            items={[
               { id: "profile", label: "Profile" },
               { id: "appearance", label: "Appearance" },
               { id: "notifications", label: "Notifications" },

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { PageHeader, TabBar, Button } from "../../components/ui";
+import { PageHeader, ToolStrip, Button } from "../../components/ui";
 import {
   HELP_ARTICLES,
   filterHelpArticles,
@@ -11,6 +11,7 @@ import {
   type HelpArticle,
   type HelpCategoryId,
 } from "../../lib/help";
+import "../product-hub.css";
 import "./help.css";
 
 type HelpView = "topics" | "sections";
@@ -94,12 +95,12 @@ export default function HelpClient({ sectionGuide }: HelpClientProps = {}) {
       </PageHeader>
 
       {hasGuide ? (
-        <TabBar
+        <ToolStrip
           aria-label="Manual views"
           value={view}
           onChange={(next) => setView(next as HelpView)}
-          className="help-views"
-          tabs={[
+          visibleCount={4}
+          items={[
             { id: "topics", label: "Topics" },
             { id: "sections", label: "Section by section" },
           ]}

@@ -2,6 +2,10 @@
   max-width: 52rem;
 }
 
+.help-page .hub-tool-strip {
+  margin: 0 0 1.25rem;
+}
+
 .help-search {
   display: flex;
   flex-direction: column;
