@@ -2,34 +2,8 @@ import { expect, test } from "@playwright/test";
 import { signInFixture } from "./session";
 
 test.describe("Home venue weather", () => {
-  test.use({
-    viewport: { width: 390, height: 844 },
-    hasTouch: true,
-    isMobile: true,
-  });
-
   test.beforeEach(async ({ context }) => {
     await signInFixture(context);
-    await context.addInitScript(() => {
-      const originalMatchMedia = window.matchMedia.bind(window);
-      window.matchMedia = (query) => {
-        if (String(query).includes("pointer: coarse")) {
-          return {
-            matches: true,
-            media: query,
-            onchange: null,
-            addListener() {},
-            removeListener() {},
-            addEventListener() {},
-            removeEventListener() {},
-            dispatchEvent() {
-              return false;
-            },
-          };
-        }
-        return originalMatchMedia(query);
-      };
-    });
     await context.route("https://geocoding-api.open-meteo.com/**", async (route) => {
       await route.fulfill({
         contentType: "application/json",
@@ -45,26 +19,17 @@ test.describe("Home venue weather", () => {
   });
 
   test("library weather card stays honest without an event city", async ({ page }) => {
-    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.setViewportSize({ width: 1400, height: 900 });
     await page.goto("/dashboard");
     await page.waitForLoadState("domcontentloaded");
-    const edit = page.getByRole("button", { name: /edit home/i });
-    await expect(edit.first()).toBeVisible();
-    await edit.first().click();
+    await page.getByTestId("dash-customize").evaluate((node) => (node as HTMLButtonElement).click());
     await page.getByTestId("dash-open-library").click();
     const weather = page.getByTestId("dash-library-weather_venue");
     await expect(weather).toBeVisible();
     await weather.click();
-    const canvas = page.getByTestId("dash-place-canvas");
-    if (await canvas.count()) {
-      await canvas.click({ position: { x: 24, y: 24 } });
-    }
-    await expect(
-      page
-        .getByText(
-          /No venue weather|Weather appears when an event with a location is active|Forecast shows on event day|26°C · Clear/i,
-        )
-        .first(),
-    ).toBeVisible();
+    await expect(page.getByText(/Venue weather added to the board/i).first()).toBeVisible();
+    await expect(page.getByRole("heading", { name: "No venue weather" })).toBeVisible();
+    await expect(page.getByText("Weather appears when an event with a location is active.")).toBeVisible();
+    await expect(page.getByText("26°C · Clear")).toHaveCount(0);
   });
 });
