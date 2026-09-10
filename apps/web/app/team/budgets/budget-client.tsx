@@ -634,7 +634,7 @@ function UsageCutoffQuickActions({
         disabled={busy != null || paygEnabled}
         onClick={() => void checkout("payg")}
       >
-        {paygEnabled ? "PAYG enabled" : busy === "payg" ? "Opening…" : "Enable PAYG"}
+        {paygEnabled ? "Pay-as-you-go is on" : busy === "payg" ? "Opening…" : "Turn on pay-as-you-go"}
       </button>
       <button
         type="button"

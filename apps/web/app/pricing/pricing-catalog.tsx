@@ -109,7 +109,7 @@ const faqs: Array<{ q: string; a: string }> = [
   },
   {
     q: "What happens when a hosted allowance runs out?",
-    a: "Hosted usage hard-stops. You can buy AI credit packs, enable pay-as-you-go with an explicit spend cap, or keep working on your own keys or local models — there is never a silent overage.",
+    a: "Hosted Chat stops when the included allowance is used up. You can buy credit packs, turn on pay-as-you-go with a spend cap, or keep working on your own keys or local models.",
   },
   {
     q: "Can we try team hosted AI before paying?",

@@ -167,7 +167,7 @@ export function evaluateUsageCutoff(snapshot: UsageCutoffSnapshot): UsageCutoffA
         level: "at",
         reason: "credits",
         title: "AI credits depleted",
-        body: "Plan hosted usage is used up and prepaid AI credits are at $0. Buy another credit pack or raise the PAYG spend cap to resume managed calls.",
+        body: "Plan hosted usage is used up and prepaid credits are at $0. Buy another pack or raise the pay-as-you-go spend cap.",
         percent: allowance,
       };
     }
@@ -179,8 +179,8 @@ export function evaluateUsageCutoff(snapshot: UsageCutoffSnapshot): UsageCutoffA
       return {
         level: "at",
         reason: "spend_cap",
-        title: "PAYG spend cap reached",
-        body: "Overage is hard-stopped at the monthly PAYG spend cap. Raise the cap, buy AI credits, or wait for the next billing period.",
+        title: "Pay-as-you-go spend cap reached",
+        body: "Spending stopped at the monthly cap. Raise the cap, buy credits, or wait for the next billing period.",
         percent: 100,
       };
     }
@@ -202,7 +202,7 @@ export function evaluateUsageCutoff(snapshot: UsageCutoffSnapshot): UsageCutoffA
       percent: allowance,
       reason: "allowance",
       title: "Approaching hosted AI limit",
-      body: `${Math.round(allowance)}% of this period’s hosted AI usage is used. After 100%, managed AI hard-stops unless you buy AI credits or enable PAYG.`,
+      body: `${Math.round(allowance)}% of this period’s hosted Chat is used. After 100%, Chat stops unless you buy credits or turn on pay-as-you-go.`,
     });
   }
   if (snapshot.orgMonthlyBudgetPercent != null && snapshot.orgMonthlyBudgetPercent >= floor) {
@@ -260,7 +260,7 @@ export function cutoffCtas(alert: UsageCutoffAlert, orgId: string): CutoffCta[] 
     });
     ctas.push({
       id: "payg",
-      label: "Enable PAYG",
+      label: "Turn on pay-as-you-go",
       checkoutAction: "payg",
       href: pricingHref,
     });
@@ -327,18 +327,18 @@ export function messageForCutoffError(
     body = "An admin paused Chat. They can turn it back on under Chat limits.";
   } else if (match("spend_cap") || match("overage spend")) {
     reason = "spend_cap";
-    title = "PAYG spend cap reached";
-    body = "Overage is hard-stopped at the monthly PAYG spend cap.";
+    title = "Pay-as-you-go spend cap reached";
+    body = "Spending stopped at the monthly pay-as-you-go cap.";
   } else if (match("insufficient_prepaid") || match("credit_cap") || match("credit limit") || match("usage_hard_cutoff")) {
     reason = match("payg_not_enabled") ? "payg_required" : "credits";
-    title = match("payg_not_enabled") ? "PAYG or credits required" : "AI credits exhausted";
+    title = match("payg_not_enabled") ? "Pay-as-you-go or credits required" : "Chat credits used up";
     body = match("payg_not_enabled")
-      ? "Hosted AI usage is exhausted and PAYG is off. Enable PAYG or buy AI credits to continue."
-      : "Prepaid AI credits cannot cover this call. Buy a credit pack or enable PAYG.";
+      ? "Hosted Chat is used up and pay-as-you-go is off. Turn it on or buy credits to continue."
+      : "Prepaid credits cannot cover this call. Buy a pack or turn on pay-as-you-go.";
   } else if (match("payg_not_enabled")) {
     reason = "payg_required";
-    title = "PAYG or credits required";
-    body = "Hosted AI usage is exhausted and PAYG is off. Enable PAYG or buy AI credits to continue.";
+    title = "Pay-as-you-go or credits required";
+    body = "Hosted Chat is used up and pay-as-you-go is off. Turn it on or buy credits to continue.";
   } else if (match("managed_allowance") || match("sponsored_allowance") || match("allowance")) {
     reason = "allowance";
     title = "Hosted AI usage exhausted";
