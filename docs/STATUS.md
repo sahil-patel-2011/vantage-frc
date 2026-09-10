@@ -88,7 +88,7 @@ See `docs/COMPETITIVE_NOTES.md`. That document is the brief for Tasks 2–4.
 
 | # | Task | Status | Verification |
 |---|---|---|---|
-| 1 | Land / baseline / competitive notes | done | this file + `COMPETITIVE_NOTES.md`; 8,262 tests |
+| 1 | Land / baseline / competitive notes | done | this file + `COMPETITIVE_NOTES.md`; latest full suite **876 files, 8,314 passed, 10 skipped** (56.4s) |
 | 2 | One design system | in progress | tokens in `system.css`; Button now emits `.app-button` so chrome and the primitive match. ClassName migration of leftover `.app-button` still open. |
 | 3 | Full UI pass | in progress | PAYG / kill switch / BYOK / TBA_AUTH_KEY stripped from Chat limits, Usage, Pricing, Help, Team Data, and related-copy. Season calendar is in Help and ⌘K. FEATURE_MAP walk unfinished. |
 | 4 | Home widgets | in progress | Real loaders for student/mentor defaults (files, chat, my day, learn, duties, budget, attendance, outreach, announcements, weather city, …). Live cards in `widgets/home-cards.tsx`. Weather temperature is fetched in the browser from Open-Meteo on event day only — never invented in the snapshot. 2200-line dashboard-client still not fully split. |
@@ -96,7 +96,7 @@ See `docs/COMPETITIVE_NOTES.md`. That document is the brief for Tasks 2–4.
 | 6 | Desktop installers + auto-update | in progress | `/api/desktop/release`, NSIS+MSI+DMG workflow, unsigned license. macOS artifacts cannot be built in this image. |
 | 7 | freebuff Pi fleet | in progress | `docs/FREEBUFF.md`, pairing API, `/team/relays` node list, compact+prompt. TTFT unmeasured (no Pi). |
 | 8 | Match prediction ±3 | in progress | Next match widget shows calibrated score + ±band when year EPA exists. **Not a season ±3 claim.** |
-| 9 | Video analysis | in progress | schema + queue UI + confirm-as-evidence (does not merge into scouting). Worker skips without a vision model. No live Pi. |
+| 9 | Video analysis | in progress | schema + queue UI + confirm-as-evidence. Confirmed events now appear on the match-notes timeline as **From video**. Worker skips without a vision model. No live Pi. |
 | 10 | Connectors | audit (already on main) | Account `?tab=integrations` redirects to `/connectors`. TBA next-action from Account goes there too. |
 | 11 | Copy sweep | in progress | `copy-lint.test.ts` now scans related-copy, the in-app manual, usage banners, and dossier setup copy. Bans PAYG and kill switch as well as BYOK. |
 | 12 | Bugbot / agents | in progress | quotes required (existing); prompt now forbids push/PR; compact wired in HTTP adapter. Scan time unprinted. |

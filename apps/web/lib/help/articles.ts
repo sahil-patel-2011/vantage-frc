@@ -1672,7 +1672,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
     slug: "analyze-video",
     category: "competition",
     title: "Analyze a match or pit video",
-    summary: "Queue a video for the video Pi. You get a timeline with timestamps. Scouted numbers do not change until a person confirms.",
+    summary: "Queue a video for the video Pi. You get a timeline with timestamps. Confirming saves it on Match notes as from-video evidence. Scouted cycle counts stay as the scouts entered them.",
     keywords: ["video", "match video", "pit camera", "youtube"],
     relatedHref: "/video-analysis",
     sections: [
@@ -1680,13 +1680,13 @@ export const HELP_ARTICLES: HelpArticle[] = [
         heading: "What you see",
         body: [
           "Paste a YouTube, TBA, uploaded file, or pit camera link. Jobs show queued, running, or finished, and how many minutes behind live they are.",
-          "Each event is labelled with a confidence. Nothing is merged into scouting until someone confirms it.",
+          "Each event is labelled with a confidence. Confirming it puts those events on Match notes as From video. Scouted numbers stay as the scouts entered them.",
         ],
       },
       {
         heading: "What to do",
         body: [
-          "Pair a Pi with the video role first (Team → AI relays). Then queue a video from Competition → Analyze video.",
+          "Pair a Pi with the video role first (Team → AI relays). Then queue a video from Competition → Analyze video. After it is ready, confirm it so Match notes can show the events.",
           "If no Pi is paired, the job stays queued and the page says so.",
         ],
       },

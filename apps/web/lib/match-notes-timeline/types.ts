@@ -6,6 +6,8 @@ export type MatchNotePhase = "auto" | "teleop" | "endgame" | "other";
 
 export type MatchNoteCategory = "observation" | "strategy" | "issue" | "highlight" | "other";
 
+export type MatchNoteSource = "human" | "video";
+
 export type MatchNoteEntry = {
   id: string;
   matchLabel: string;
@@ -17,6 +19,8 @@ export type MatchNoteEntry = {
   clockSeconds: number;
   note: string;
   createdAt: string;
+  source: MatchNoteSource;
+  confidence: number | null;
 };
 
 export type MatchTimeline = {

@@ -471,8 +471,10 @@ function Timelines({
                   <strong style={{ fontFamily: "monospace" }}>{formatClock(entry.clockSeconds)}</strong>{" "}
                   <span className="app-badge setup">{matchNotePhaseLabel(entry.phase)}</span>{" "}
                   <span className="app-badge good">{matchNoteCategoryLabel(entry.category)}</span>
+                  {entry.source === "video" ? <span className="app-badge">From video</span> : null}
                   <div>{entry.note}</div>
                 </div>
+                {entry.source === "video" ? null : (
                 <button
                   type="button"
                   className="text-button"
@@ -485,6 +487,7 @@ function Timelines({
                 >
                   Delete
                 </button>
+                )}
               </li>
             ))}
           </ul>

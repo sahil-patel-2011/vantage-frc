@@ -82,6 +82,7 @@ describe("computeMatchNotesTimelineView", () => {
         ],
       },
       { rows: [{ seasonYear: 2026 }] },
+      { rows: [] },
     ]);
 
     const view = await computeMatchNotesTimelineView(client, { userId: "user-1", requestedOrg: "org-1" });
@@ -101,6 +102,56 @@ describe("computeMatchNotesTimelineView", () => {
     expect(view.summary.totalMatches).toBe(2);
     expect(view.summary.byCategory.find((c) => c.category === "issue")?.count).toBe(1);
     expect(view.summary.byPhase.find((p) => p.phase === "endgame")?.count).toBe(1);
+  });
+
+  it("places confirmed video events on the same match timeline, labeled as from video", async () => {
+    const { client, calls } = makeClient([
+      { rows: [{ orgId: "org-1", teamNumber: 6925 }] },
+      {
+        rows: [
+          {
+            id: "note-1",
+            matchLabel: "Qualification 3",
+            matchKey: "2026miket_qm3",
+            teamNumber: 6925,
+            seasonYear: 2026,
+            phase: "auto",
+            category: "observation",
+            clockSeconds: 4,
+            note: "Preload scored.",
+            createdAt: "2026-03-01T10:00:00.000Z",
+          },
+        ],
+      },
+      { rows: [{ seasonYear: 2026 }] },
+      {
+        rows: [
+          {
+            id: "job-1",
+            matchKey: "2026miket_qm3",
+            createdAt: "2026-03-01T10:05:00.000Z",
+            result: {
+              events: [
+                { tSec: 8, kind: "score", label: "auto speaker", confidence: 0.7 },
+                { kind: "score", label: "missing clock" },
+              ],
+            },
+          },
+        ],
+      },
+    ]);
+
+    const view = await computeMatchNotesTimelineView(client, { userId: "user-1", requestedOrg: "org-1" });
+    expect(view.status).toBe("live");
+    if (view.status !== "live") throw new Error("expected live view");
+
+    expect(calls.some((call) => call.text.includes("video_analysis_jobs"))).toBe(true);
+    const timeline = view.timelines.find((t) => t.matchLabel === "Qualification 3");
+    expect(timeline?.entries).toHaveLength(2);
+    const video = timeline?.entries.find((e) => e.source === "video");
+    expect(video?.note).toContain("from video (confidence 0.7)");
+    expect(video?.clockSeconds).toBe(8);
+    expect(timeline?.entries.every((e) => e.matchLabel === "Qualification 3")).toBe(true);
   });
 });
 

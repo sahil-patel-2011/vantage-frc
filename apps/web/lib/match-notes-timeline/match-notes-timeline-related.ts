@@ -247,6 +247,12 @@ export function matchNotesTimelineNextActions(input: {
         primary: true,
       },
       {
+        id: "video-analysis",
+        label: "Analyze a match video",
+        detail: "Confirmed video events show here as from-video evidence. Scouted cycle counts stay as the scouts entered them.",
+        href: withOrgHref("/video-analysis", orgId),
+      },
+      {
         id: "schedule",
         label: "Cross-check Schedule",
         detail: "Use real match labels from the schedule.",
@@ -264,7 +270,7 @@ export function matchNotesTimelineNextActions(input: {
         detail: "Pair clock notes with real scout rows for film review.",
         href: hubHref("/competition", "scouting", orgId),
       },
-    ].slice(0, 4);
+    ].slice(0, 5);
   }
 
   const actions: MatchNotesTimelineNextAction[] = [

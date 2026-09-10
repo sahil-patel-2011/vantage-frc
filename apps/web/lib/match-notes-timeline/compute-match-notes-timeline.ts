@@ -1,5 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
-import { groupIntoTimelines, MATCH_NOTE_CATEGORIES, MATCH_NOTE_PHASES, summarizeMatchNotes } from ".";
+import { groupIntoTimelines, MATCH_NOTE_CATEGORIES, MATCH_NOTE_PHASES, mergeTimelineEntries, summarizeMatchNotes, videoJobsToTimelineEntries } from ".";
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 import type {
@@ -67,6 +67,8 @@ function mapEntry(row: EntryRow): MatchNoteEntry {
     clockSeconds: Number(row.clockSeconds) || 0,
     note: row.note,
     createdAt: row.createdAt,
+    source: "human",
+    confidence: null,
   };
 }
 
@@ -92,8 +94,8 @@ function setupSteps(orgId: string | null): MatchNotesTimelineSetupStep[] {
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open Match Note Timeline.",
+      label: "Select a team",
+      detail: "Choose your team to open the match-note timeline.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -120,7 +122,7 @@ function setupSteps(orgId: string | null): MatchNotesTimelineSetupStep[] {
 function setupRequiredView(seasonYear: number, orgId: string | null = null): MatchNotesTimelineView {
   return {
     status: "setup_required",
-    message: "Select a team workspace to log in-match notes synced to the match clock.",
+    message: "Select a team to log in-match notes synced to the match clock.",
     steps: setupSteps(orgId),
     orgId,
     seasonYear,
@@ -138,7 +140,7 @@ export async function computeMatchNotesTimelineView(
     return setupRequiredView(seasonYear);
   }
 
-  const [entryResult, seasonResult] = await Promise.all([
+  const [entryResult, seasonResult, videoResult] = await Promise.all([
     client.query<EntryRow>(
       `SELECT id, match_label AS "matchLabel", match_key AS "matchKey", team_number AS "teamNumber",
               season_year AS "seasonYear", phase, category, clock_seconds AS "clockSeconds", note,
@@ -152,9 +154,31 @@ export async function computeMatchNotesTimelineView(
       `SELECT DISTINCT season_year AS "seasonYear" FROM match_notes_timeline_entries WHERE org_id = $1 ORDER BY season_year DESC`,
       [org.orgId],
     ),
+    client.query<{
+      id: string;
+      matchKey: string | null;
+      createdAt: string;
+      result: unknown;
+    }>(
+      `SELECT id,
+              match_key AS "matchKey",
+              to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "createdAt",
+              result
+       FROM video_analysis_jobs
+       WHERE org_id = $1::uuid
+         AND status = 'completed'
+         AND COALESCE((checkpoint->>'confirmed')::boolean, false)
+       ORDER BY created_at DESC
+       LIMIT 50`,
+      [org.orgId],
+    ),
   ]);
 
-  const entries = entryResult.rows.map(mapEntry);
+  const human = entryResult.rows.map(mapEntry);
+  const video = videoJobsToTimelineEntries(videoResult.rows).filter(
+    (entry) => entry.seasonYear === seasonYear,
+  );
+  const entries = mergeTimelineEntries(human, video);
   const timelines = groupIntoTimelines(entries);
   const summary = summarizeMatchNotes(entries);
   const seasons = seasonResult.rows.map((r) => r.seasonYear);
