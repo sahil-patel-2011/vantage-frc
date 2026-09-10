@@ -22,10 +22,34 @@ export default function BuildHub() {
   return (
     <ProductHubShell hubId="build" embeddedTabs={EMBEDDED_TABS}>
       {({ tab, orgId }) => {
-        if (tab === "kickoff") return <KickoffClient embedded />;
-        if (tab === "fmea") return <FmeaClient embedded />;
-        if (tab === "prototype") return <PrototypeTrackerClient embedded />;
-        if (tab === "batteries") return <BatteriesClient embedded />;
+        if (tab === "kickoff") {
+          return (
+            <HubOrgGate orgId={orgId} label="Kickoff">
+              {() => <KickoffClient embedded />}
+            </HubOrgGate>
+          );
+        }
+        if (tab === "fmea") {
+          return (
+            <HubOrgGate orgId={orgId} label="FMEA">
+              {() => <FmeaClient embedded />}
+            </HubOrgGate>
+          );
+        }
+        if (tab === "prototype") {
+          return (
+            <HubOrgGate orgId={orgId} label="Prototype tracker">
+              {() => <PrototypeTrackerClient embedded />}
+            </HubOrgGate>
+          );
+        }
+        if (tab === "batteries") {
+          return (
+            <HubOrgGate orgId={orgId} label="Batteries">
+              {() => <BatteriesClient embedded />}
+            </HubOrgGate>
+          );
+        }
         if (tab === "code" || tab === "bugbot") {
           return (
             <HubOrgGate orgId={orgId} label={tab === "bugbot" ? "AI Bugbot" : "Code"}>

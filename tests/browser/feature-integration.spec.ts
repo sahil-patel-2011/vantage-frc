@@ -35,6 +35,18 @@ test.describe("one control per destination", () => {
    * page header and again inside the empty state — so Event Day / My Day /
    * Team calendar / Visit invites each appeared as two separate buttons.
    */
+  test("team admin offers each related destination once", async ({ page }) => {
+    await page.goto("/team/admin");
+    await expect(page.getByRole("heading", { level: 1, name: "Team admin" })).toBeVisible();
+    const main = page.locator("main");
+    for (const label of ["Account", "Discord", "Account Connections"]) {
+      await expect(main.getByRole("link", { name: label, exact: true })).toHaveCount(1);
+    }
+    await expect(main.getByRole("link", { name: "Choose your team", exact: true })).toHaveCount(1);
+    await expect(main.getByRole("heading", { name: "Next actions" })).toHaveCount(0);
+    await expect(main.getByRole("heading", { name: "Setup steps" })).toHaveCount(0);
+  });
+
   test("logistics offers each related destination once", async ({ page }) => {
     await page.goto("/logistics");
     await expect(page.getByRole("heading", { level: 1, name: "Logistics" })).toBeVisible();

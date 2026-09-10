@@ -13,6 +13,7 @@ import {
   TEAM_ADMIN_RELATED_INCLUDE,
   classifyTeamAdminShell,
   formatTeamAdminMetric,
+  teamAdminCardPrimaryHref,
   teamAdminNextActions,
   teamAdminRelatedLinks,
   teamAdminSetupSteps,
@@ -443,17 +444,28 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
           { nextPath, message: membershipErrorMessage || membershipCopy.description },
         )
       : null;
+  const membershipCardPrimary =
+    membershipShell === "empty"
+      ? "#invite-form"
+      : membershipShell === "setup"
+        ? teamAdminCardPrimaryHref(orgId)
+        : null;
   const membershipActions = teamAdminNextActions({
     orgId,
     shell: membershipShell,
     memberCount: members.length,
     pendingInviteCount: pendingInvites,
     pendingAccessCount: pendingAccess,
-  });
+  }).filter((action) => !membershipCardPrimary || action.href !== membershipCardPrimary);
   const membershipRelated = teamAdminRelatedLinks(orgId, {
     include: [...TEAM_ADMIN_RELATED_INCLUDE],
   });
-  const membershipSteps = membershipShell === "setup" ? teamAdminSetupSteps(orgId) : [];
+  const membershipSteps =
+    membershipShell === "setup"
+      ? teamAdminSetupSteps(orgId).filter(
+          (step) => !membershipCardPrimary || step.href !== membershipCardPrimary,
+        )
+      : [];
   const showMembershipTiles = shouldShowTeamAdminSummaryTiles({
     memberCount: members.length,
     inviteCount: invites.length,

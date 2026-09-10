@@ -5,6 +5,7 @@ import {
   formatTeamAdminMetric,
   isTeamAdminBoardEmpty,
   shouldShowTeamAdminSummaryTiles,
+  teamAdminCardPrimaryHref,
   teamAdminNextActions,
   teamAdminRelatedLinks,
   teamAdminSetupSteps,
@@ -39,13 +40,16 @@ describe("teamAdminRelatedLinks", () => {
 });
 
 describe("teamAdminSetupSteps", () => {
-  it("points setup at Workspace + invite / Discord / Connections", () => {
+  it("keeps Choose your team + invite; Discord / Connections live on the related strip", () => {
     const steps = teamAdminSetupSteps("org-1");
-    expect(steps.map((s) => s.id)).toEqual(["workspace", "invite", "discord", "connections"]);
+    expect(steps.map((s) => s.id)).toEqual(["workspace", "invite"]);
     expect(steps.find((s) => s.id === "invite")?.href).toBe("/team/admin?orgId=org-1#membership");
-    expect(steps.find((s) => s.id === "discord")?.href).toBe("/team/discord?orgId=org-1");
-    expect(steps.find((s) => s.id === "connections")?.href).toBe("/connectors");
     expect(steps.every((s) => !/\bDEMO\b/.test(s.label))).toBe(true);
+  });
+
+  it("no-org setup is only Choose your team", () => {
+    expect(teamAdminSetupSteps(null).map((s) => s.id)).toEqual(["workspace"]);
+    expect(teamAdminCardPrimaryHref(null)).toBe("/workspace");
   });
 });
 
@@ -91,29 +95,25 @@ describe("teamAdminShellCopy", () => {
 });
 
 describe("teamAdminNextActions", () => {
-  it("prioritizes workspace when no org", () => {
+  it("prioritizes workspace when no org and does not repeat the related strip", () => {
     const actions = teamAdminNextActions({ orgId: null, shell: "setup" });
-    expect(actions[0]?.id).toBe("workspace");
-    expect(actions.some((a) => a.id === "account")).toBe(true);
-    expect(actions.some((a) => a.id === "discord")).toBe(true);
-    expect(actions.some((a) => a.id === "connections")).toBe(true);
+    expect(actions.map((a) => a.id)).toEqual(["workspace"]);
+    expect(actions[0]?.href).toBe("/workspace");
   });
 
-  it("empty shell points at invite + Account / Discord / Connections", () => {
+  it("empty shell points at invite, not Account / Discord / Connections", () => {
     const actions = teamAdminNextActions({
       orgId: "org-1",
       shell: "empty",
       memberCount: 0,
     });
-    expect(actions[0]?.id).toBe("invite");
-    expect(actions.map((a) => a.id)).toEqual(
-      expect.arrayContaining(["account", "discord", "connections"]),
-    );
+    expect(actions.map((a) => a.id)).toEqual(["invite"]);
+    expect(actions[0]?.href).toBe("#invite-form");
     expect(actions.every((a) => !/\bDEMO\b/.test(a.label))).toBe(true);
     expect(actions.every((a) => !/demo/i.test(a.href))).toBe(true);
   });
 
-  it("ready boards prioritize invite without DEMO members", () => {
+  it("ready boards prioritize invite without repeating the related strip", () => {
     const actions = teamAdminNextActions({
       orgId: "org-1",
       shell: "ready",
@@ -122,8 +122,31 @@ describe("teamAdminNextActions", () => {
       pendingAccessCount: 0,
     });
     expect(actions[0]?.id).toBe("invite");
-    expect(actions.find((a) => a.id === "discord")?.href).toBe("/team/discord?orgId=org-1");
-    expect(actions.find((a) => a.id === "connections")?.href).toBe("/connectors");
+    expect(actions.map((a) => a.id)).toEqual(["invite", "security"]);
+    expect(actions.find((a) => a.id === "security")?.href).toBe("/team/security?orgId=org-1");
+  });
+
+  it("does not repeat header related-strip destinations as next actions", () => {
+    const related = new Set(
+      teamAdminRelatedLinks("org-1", { include: [...TEAM_ADMIN_RELATED_INCLUDE] }).map(
+        (link) => link.href,
+      ),
+    );
+    for (const shell of ["empty", "setup", "ready"] as const) {
+      const actions = teamAdminNextActions({
+        orgId: "org-1",
+        shell,
+        memberCount: 4,
+        pendingInviteCount: 0,
+        pendingAccessCount: 0,
+      });
+      expect(actions.every((action) => !related.has(action.href))).toBe(true);
+    }
+    const noOrg = teamAdminNextActions({ orgId: null, shell: "setup" });
+    const relatedNoOrg = new Set(
+      teamAdminRelatedLinks(null, { include: [...TEAM_ADMIN_RELATED_INCLUDE] }).map((link) => link.href),
+    );
+    expect(noOrg.every((action) => !relatedNoOrg.has(action.href))).toBe(true);
   });
 
   it("surfaces pending access requests before invite ledger", () => {

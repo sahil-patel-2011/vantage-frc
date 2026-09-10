@@ -28,9 +28,15 @@ export function persistOrgIdInUrl(orgId: string): void {
 
 type MeOrgPayload = { orgId?: string | null };
 
+/** GHA Playwright has no Postgres. A hung `/api/me` left hubs on Opening your team. */
+const ME_ORG_TIMEOUT_MS = 8_000;
+
 export async function fetchActiveOrgId(): Promise<string | null> {
   try {
-    const response = await fetch("/api/me", { cache: "no-store" });
+    const response = await fetch("/api/me", {
+      cache: "no-store",
+      signal: AbortSignal.timeout(ME_ORG_TIMEOUT_MS),
+    });
     if (!response.ok) return null;
     const data = (await response.json()) as MeOrgPayload;
     const id = typeof data.orgId === "string" ? data.orgId.trim() : "";

@@ -75,20 +75,43 @@ export type TeamAdminSetupStep = {
   href: string;
 };
 
+function teamAdminRelatedHrefs(orgId?: string | null): Set<string> {
+  return new Set(
+    teamAdminRelatedLinks(orgId, { include: [...TEAM_ADMIN_RELATED_INCLUDE] }).map((link) => link.href),
+  );
+}
+
+function dropRelatedStripDuplicates<T extends { href: string }>(
+  orgId: string | null | undefined,
+  items: T[],
+): T[] {
+  const related = teamAdminRelatedHrefs(orgId);
+  return items.filter((item) => !related.has(item.href));
+}
+
+/** Empty-card primary on the no-org / setup shells. */
+export function teamAdminCardPrimaryHref(orgId?: string | null): string {
+  return orgId ? withOrgHref("/workspace", orgId) : "/workspace";
+}
+
 export function teamAdminSetupSteps(orgId?: string | null): TeamAdminSetupStep[] {
-  return [
+  const steps: TeamAdminSetupStep[] = [
     {
       id: "workspace",
       label: "Choose your team",
       detail: "Choose your team to open membership and invites.",
-      href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
+      href: teamAdminCardPrimaryHref(orgId),
     },
-    {
+  ];
+  if (orgId) {
+    steps.push({
       id: "invite",
       label: "Invite an exact email",
       detail: "Team numbers never grant access — send a real invite; the ledger stays blank until then.",
-      href: orgId ? withOrgHref("/team/admin", orgId) + "#membership" : "/team/admin#membership",
-    },
+      href: withOrgHref("/team/admin", orgId) + "#membership",
+    });
+  }
+  steps.push(
     {
       id: "discord",
       label: "Link Discord",
@@ -101,7 +124,8 @@ export function teamAdminSetupSteps(orgId?: string | null): TeamAdminSetupStep[]
       detail: "Honest connector status for TBA, Onshape, Discord, and GitHub.",
       href: "/connectors",
     },
-  ];
+  );
+  return dropRelatedStripDuplicates(orgId, steps);
 }
 
 /** Real member / invite counts only — never invent DEMO totals. */
@@ -186,9 +210,20 @@ export function teamAdminShellCopy(kind: TeamAdminShellKind): TeamAdminEmptyCopy
 
 /**
  * Soft-UI next actions for Team admin membership empty/setup shells.
- * Points at Account / Discord / Connections — never invents DEMO members.
+ * Destinations already in the header related strip are omitted so each href
+ * appears once. Never invents DEMO members.
  */
 export function teamAdminNextActions(input: {
+  orgId?: string | null;
+  shell: TeamAdminShellKind;
+  memberCount?: number;
+  pendingInviteCount?: number;
+  pendingAccessCount?: number;
+}): TeamAdminNextAction[] {
+  return dropRelatedStripDuplicates(input.orgId, teamAdminNextActionCandidates(input));
+}
+
+function teamAdminNextActionCandidates(input: {
   orgId?: string | null;
   shell: TeamAdminShellKind;
   memberCount?: number;
@@ -206,7 +241,7 @@ export function teamAdminNextActions(input: {
           id: "workspace",
           label: "Choose your team",
           detail: "Pick a team before sending access.",
-          href: "/workspace",
+          href: teamAdminCardPrimaryHref(null),
           primary: true,
         },
         {
@@ -234,7 +269,7 @@ export function teamAdminNextActions(input: {
         id: "workspace",
         label: "Choose your team",
         detail: "Finish membership setup so Team admin can resolve your organization.",
-        href: withOrgHref("/workspace", orgId),
+        href: teamAdminCardPrimaryHref(orgId),
         primary: true,
       },
       {
@@ -264,7 +299,7 @@ export function teamAdminNextActions(input: {
         id: "invite",
         label: "Invite an exact email",
         detail: "Team numbers never grant access — send a real invite.",
-        href: "#membership",
+        href: "#invite-form",
         primary: true,
       },
       {
