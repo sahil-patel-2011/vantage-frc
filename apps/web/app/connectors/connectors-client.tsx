@@ -9,6 +9,12 @@ import {
   connectorDisconnectEndpoint,
   type ConnectorStatusView,
 } from "../../lib/connectors/actions";
+import {
+  CONNECTORS_PAGE_LOADING,
+  connectorAudienceFromRole,
+  connectorScopeNote,
+  connectorsPageDescription,
+} from "../../lib/connectors/catalog";
 import CadDocumentPicker from "../cad/connections/cad-document-picker";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
@@ -21,12 +27,6 @@ type ConnectorsView = {
   summary: string;
   connectors: ConnectorStatusView[];
   degraded?: string;
-};
-
-const SCOPE_NOTE: Record<string, string> = {
-  platform: "Deployment-wide — set by whoever runs this Vantage deployment.",
-  team: "Saved per team — an owner or admin links it once for everyone.",
-  member: "Personal — each member authorises their own account.",
 };
 
 function CopyableUrl({ label, url }: { label: string; url: string }) {
@@ -217,7 +217,7 @@ export default function ConnectorsClient() {
         <PageHeader
           breadcrumbs="Settings / Connectors"
           title="Connectors"
-          description="Checking what this deployment has configured and what this team has linked."
+          description={CONNECTORS_PAGE_LOADING}
         />
         <OfflineBanner feature="Connectors" fromCache={fromCache} cachedAt={cachedAt} />
         {fetchFailed ? (
@@ -248,7 +248,7 @@ export default function ConnectorsClient() {
             badge="Loading"
             badgeTone="setup"
             title="Loading connectors"
-            description="Reading deployment configuration and stored links."
+            description={CONNECTORS_PAGE_LOADING}
           />
         )}
       </main>
@@ -262,7 +262,7 @@ export default function ConnectorsClient() {
       <PageHeader
         breadcrumbs="Settings / Connectors"
         title="Connectors"
-        description={`Every service Vantage talks to, what it is missing, and the exact URL to register with the provider. ${view.summary}.`}
+        description={connectorsPageDescription({ canManage, summary: view.summary })}
       />
       <OfflineBanner feature="Connectors" fromCache={fromCache} cachedAt={cachedAt} />
 
@@ -287,7 +287,8 @@ export default function ConnectorsClient() {
 
       <ul className="connector-list">
         {connectors.map((connector) => {
-          const badge = connectorBadge(connector.state);
+          const audience = connectorAudienceFromRole(canManage);
+          const badge = connectorBadge(connector.state, audience);
           const busy = busyId === connector.id;
           const managedByOthers = connector.scope === "team" && !canManage;
           return (
@@ -301,7 +302,7 @@ export default function ConnectorsClient() {
               </div>
 
               <p className="connector-detail">{connector.detail}</p>
-              <p className="app-muted connector-scope">{SCOPE_NOTE[connector.scope]}</p>
+              <p className="app-muted connector-scope">{connectorScopeNote(connector.scope, audience)}</p>
 
               {connector.missingEnv.length > 0 ? (
                 <ul className="connector-env">

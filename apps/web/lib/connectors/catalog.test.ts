@@ -5,7 +5,9 @@ import {
   connectorAudienceFromRole,
   connectorById,
   connectorCallbackUrl,
+  connectorScopeNote,
   connectorStatusLine,
+  connectorsPageDescription,
   describeConnector,
   deploymentBaseUrl,
   joinEnvNames,
@@ -354,6 +356,18 @@ describe("student connector cards", () => {
     const student = describeConnector(connectorById("onshape"), BASE, {}, "student");
     expect(student.permissions).toEqual(["Vantage can read and edit Onshape documents you pick."]);
     expect(student.permissions.join(" ")).not.toMatch(/OAuth2Read|CLIENT_SECRET/i);
+  });
+
+  it("keeps the Connectors page lead student-safe", () => {
+    expect(connectorsPageDescription({ canManage: false, summary: "1 connected" })).toBe(
+      "Connect Onshape, GitHub, and the other services this team uses. Ask a mentor when a card says to. 1 connected.",
+    );
+    expect(connectorsPageDescription({ canManage: false, summary: "1 connected" })).not.toMatch(
+      STUDENT_CONNECTOR_LEAK,
+    );
+    expect(connectorScopeNote("member", "student")).toBe("Personal — you connect your own account.");
+    expect(connectorScopeNote("platform", "student")).toMatch(/ask a mentor/i);
+    expect(connectorScopeNote("platform", "operator")).toMatch(/Deployment-wide/);
   });
 
   it("asks a mentor when Onshape is not ready, and still names env vars for operators", () => {

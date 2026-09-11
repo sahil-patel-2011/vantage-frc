@@ -1,0 +1,41 @@
+/* Document picker on CAD connections and the Onshape Connectors card. */
+.cad-document-picker {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 16px;
+}
+.cad-document-picker header {
+  display: grid;
+  gap: 4px;
+}
+.cad-document-picker h2 {
+  margin: 0;
+  font-size: var(--title-3);
+}
+.cad-document-picker label {
+  display: grid;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+.cad-document-picker small {
+  font-weight: 500;
+}
+.cad-document-picker input,
+.cad-document-picker select {
+  min-height: 38px;
+  padding: 8px 10px;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xs);
+  font: inherit;
+}
+.cad-document-picker-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}

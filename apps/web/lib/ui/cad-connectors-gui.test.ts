@@ -6,13 +6,15 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import {
-  CAD_DOCUMENT_BIND,
-  CAD_PASTE_LINK_LABEL,
-  ONSHAPE_STUDENT_PERMISSIONS,
-} from "../cad/cad-document-picker";
+import { CAD_DOCUMENT_BIND, CAD_PASTE_LINK_LABEL, ONSHAPE_STUDENT_PERMISSIONS } from "../cad/cad-document-picker";
 import { CAD_PAIR_TITLE } from "../cad/cad-setup-copy";
-import { studentPermissionsCopy } from "../connectors/catalog";
+import { connectorBadge } from "../connectors/actions";
+import {
+  CONNECTORS_PAGE_STUDENT_DESCRIPTION,
+  connectorScopeNote,
+  connectorsPageDescription,
+  studentPermissionsCopy,
+} from "../connectors/catalog";
 import { pairShellCopy } from "../editor/pair-related";
 import { expectPlainCopy } from "./copy-assertions";
 
@@ -29,6 +31,7 @@ const SLICE = [
   "app/editor/pair/page.tsx",
   "lib/cad/cad-document-picker.ts",
   "lib/connectors/catalog.ts",
+  "lib/connectors/actions.ts",
 ] as const;
 
 function read(rel: string): string {
@@ -58,11 +61,32 @@ describe("CAD connectors GUI student chrome", () => {
     expect(picker).toMatch(/CAD_PASTE_LINK_LABEL/);
     expect(picker).toMatch(/CAD_DOCUMENT_BIND/);
     expect(picker).toMatch(/listOnshapeDocuments/);
+    expect(picker).toMatch(/cad-document-picker.css/);
     expect(picker).not.toMatch(/CLIENT_SECRET|OAuth2Read|ONSHAPE_OAUTH|vantage-cad/);
     expect(CAD_PASTE_LINK_LABEL).toBe("Paste an Onshape link");
     expect(CAD_DOCUMENT_BIND).toBe("Use this document");
     expectPlainCopy(ONSHAPE_STUDENT_PERMISSIONS);
     expect(studentPermissionsCopy("onshape")).toBe(ONSHAPE_STUDENT_PERMISSIONS);
+  });
+
+  it("Connectors student chrome never dumps register URLs or env names", () => {
+    const src = read("app/connectors/connectors-client.tsx");
+    expect(src).toMatch(/connectorsPageDescription/);
+    expect(src).toMatch(/connectorScopeNote/);
+    expect(src).toMatch(/connectorAudienceFromRole/);
+    expect(CONNECTORS_PAGE_STUDENT_DESCRIPTION).not.toMatch(/OAuth|CLIENT_SECRET|register with the provider|Vercel/i);
+    expectPlainCopy(CONNECTORS_PAGE_STUDENT_DESCRIPTION);
+    expect(connectorsPageDescription({ canManage: false, summary: "3 connected" })).not.toMatch(
+      /register with the provider|OAuth|CLIENT_SECRET/,
+    );
+    expect(connectorsPageDescription({ canManage: true, summary: "3 connected" })).toMatch(
+      /register with the provider/,
+    );
+    expect(connectorScopeNote("member", "student")).toBe("Personal — you connect your own account.");
+    expect(connectorScopeNote("platform", "student")).toMatch(/ask a mentor/i);
+    expect(connectorBadge("not_configured", "student").label).toBe("Needs setup");
+    expect(connectorBadge("token_expired", "student").label).toBe("Reconnect");
+    expect(connectorBadge("not_configured").label).toBe("Not configured");
   });
 
   it("Pair this computer and Pair VS Code keep Team picker and fixture headings", () => {
@@ -94,6 +118,7 @@ describe("CAD connectors GUI student chrome", () => {
       const src = read(rel);
       if (rel === "lib/connectors/catalog.ts") {
         expect(src, rel).toMatch(/studentPermissionsCopy/);
+        expect(src, rel).toMatch(/CONNECTORS_PAGE_STUDENT_DESCRIPTION/);
         continue;
       }
       expect(src, rel).not.toMatch(/ONSHAPE_OAUTH_CLIENT_SECRET|CLIENT_SECRET|Onshape OAuth/);

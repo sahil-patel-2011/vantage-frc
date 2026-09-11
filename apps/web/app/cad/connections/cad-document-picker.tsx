@@ -24,6 +24,7 @@ import {
   type ListedOnshapeDocument,
 } from "../../../lib/cad/list-onshape-documents";
 import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
+import "./cad-document-picker.css";
 
 type ListedTab = { id: string; name: string };
 

@@ -15,7 +15,7 @@
  * typed on another machine (storage node, Fusion relay).
  */
 import type { BadgeTone } from "../../components/ui/badge";
-import type { ConnectorId, ConnectorState, ConnectorStatus } from "./catalog";
+import type { ConnectorAudience, ConnectorId, ConnectorState, ConnectorStatus } from "./catalog";
 
 export type ConnectorStatusView = ConnectorStatus;
 
@@ -44,17 +44,24 @@ export function connectorDisconnectEndpoint(id: ConnectorId): string | null {
  * and `token_expired` gets its own wording rather than being folded into
  * "Connected" (which is what made a dead credential look healthy).
  */
-export function connectorBadge(state: ConnectorState): { tone: BadgeTone; label: string } {
+export function connectorBadge(
+  state: ConnectorState,
+  audience: ConnectorAudience = "operator",
+): { tone: BadgeTone; label: string } {
   switch (state) {
     case "connected":
       return { tone: "good", label: "Connected" };
     case "token_expired":
-      return { tone: "error", label: "Token expired" };
+      return { tone: "error", label: audience === "student" ? "Reconnect" : "Token expired" };
     case "not_configured":
-      return { tone: "setup", label: "Not configured" };
+      return { tone: "setup", label: audience === "student" ? "Needs setup" : "Not configured" };
     case "ready":
       return { tone: "info", label: "Ready to connect" };
-    default:
+    case "not_connected":
       return { tone: "neutral", label: "Not connected" };
+    default: {
+      const _exhaustive: never = state;
+      return _exhaustive;
+    }
   }
 }

@@ -370,6 +370,61 @@ export function connectorAudienceFromRole(canManage: boolean): ConnectorAudience
   return canManage ? "operator" : "student";
 }
 
+export const CONNECTORS_PAGE_STUDENT_DESCRIPTION =
+  "Connect Onshape, GitHub, and the other services this team uses. Ask a mentor when a card says to.";
+
+export const CONNECTORS_PAGE_OPERATOR_DESCRIPTION =
+  "Every service Vantage talks to, what it is missing, and the exact URL to register with the provider.";
+
+export const CONNECTORS_PAGE_LOADING =
+  "Checking which services this team has linked.";
+
+export function connectorsPageDescription(input: {
+  canManage: boolean;
+  summary: string;
+}): string {
+  const lead = input.canManage
+    ? CONNECTORS_PAGE_OPERATOR_DESCRIPTION
+    : CONNECTORS_PAGE_STUDENT_DESCRIPTION;
+  const summary = input.summary.trim();
+  return summary ? `${lead} ${summary}.` : lead;
+}
+
+export function connectorScopeNote(scope: ConnectorScope, audience: ConnectorAudience): string {
+  switch (audience) {
+    case "student":
+      switch (scope) {
+        case "platform":
+          return "Set for this whole Vantage site — ask a mentor if it is missing.";
+        case "team":
+          return "Saved for this team — an owner or admin links it once for everyone.";
+        case "member":
+          return "Personal — you connect your own account.";
+        default: {
+          const _exhaustive: never = scope;
+          return _exhaustive;
+        }
+      }
+    case "operator":
+      switch (scope) {
+        case "platform":
+          return "Deployment-wide — set by whoever runs this Vantage deployment.";
+        case "team":
+          return "Saved per team — an owner or admin links it once for everyone.";
+        case "member":
+          return "Personal — each member authorises their own account.";
+        default: {
+          const _exhaustive: never = scope;
+          return _exhaustive;
+        }
+      }
+    default: {
+      const _exhaustive: never = audience;
+      return _exhaustive;
+    }
+  }
+}
+
 /**
  * What a student reads instead of OAuth2Read / env-var scopes.
  * One sentence per connector — never client secrets or provider jargon.
