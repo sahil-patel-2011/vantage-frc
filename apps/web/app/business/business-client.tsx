@@ -5,8 +5,12 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } fro
 import { EmptyState, PageHeader, TabBar, ToolStrip, Button } from "../../components/ui";
 import { HelpTip } from "../../components/help-tip";
 import { OfflineBanner } from "../../components/offline-banner";
+import { BusinessRelated } from "../../components/business-related";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
-import type { BusinessPortalView } from "../../lib/business-portal";
+import { isBusinessPortalView, type BusinessPortalView } from "../../lib/business-portal";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { BUSINESS_FUNDING_RELATED_INCLUDE } from "../../lib/business/business-related";
 import {
   businessDefaultTab,
   fundingModelFromFlags,
@@ -31,6 +35,7 @@ import { PartnerPlacementsPanel } from "./partner-placements-panel";
 import { SponsorPipelinePanel } from "./sponsor-pipeline-panel";
 import {
   isTab,
+  readOrgIdFromUrl,
   readTabFromUrl,
   redirectMoreToolTab,
   writeTabToUrl,
@@ -47,6 +52,27 @@ const SponsorshipClient = dynamic(() => import("../sponsorship/sponsorship-clien
 const BUSINESS_HUB = hubById("business");
 const WORKBENCHES = hubPrimaryTabs(BUSINESS_HUB);
 
+function businessCacheOrg(data: BusinessPortalView, orgHint: string): string {
+  if (data.status === "live" && data.orgId.trim()) return data.orgId;
+  return orgHint;
+}
+
+async function persistBusinessSnapshot(
+  orgHint: string,
+  seasonHint: string,
+  data: BusinessPortalView,
+): Promise<void> {
+  const cacheOrg = businessCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  const seasonKey = String(data.seasonYear);
+  try {
+    await putFeatureSnapshot("business", cacheOrg, data, seasonHint || seasonKey);
+    if (!orgHint) await putFeatureSnapshot("business", "_", data, seasonHint || seasonKey);
+  } catch {
+    // Live Business already painted; IndexedDB is best-effort.
+  }
+}
+
 export default function BusinessClient() {
   const access = useClientAccessProfile();
   const [view, setView] = useState<BusinessPortalView | null>(null);
@@ -56,6 +82,10 @@ export default function BusinessClient() {
   // Kept apart from mutation errors so an expired session offers sign-in, not a Retry that cannot work.
   const [loadFailure, setLoadFailure] = useState<{ status: number | null; message: string } | null>(null);
   const [notice, setNotice] = useState("");
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<BusinessPortalView | null>(null);
+  viewRef.current = view;
 
   const selectTab = useCallback((next: Tab) => {
     setTab(next);
@@ -63,29 +93,79 @@ export default function BusinessClient() {
   }, []);
 
   const load = useCallback(async (seasonOverride?: number) => {
+    const params = new URLSearchParams(window.location.search);
+    const orgHint = params.get("orgId")?.trim() ?? "";
+    const seasonHint = seasonOverride
+      ? String(seasonOverride)
+      : params.get("season") && Number.isFinite(Number(params.get("season")))
+        ? String(Number(params.get("season")))
+        : String(new Date().getFullYear());
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<BusinessPortalView>(
+        "business",
+        orgHint || "_",
+        seasonHint,
+      );
+      if (!viewRef.current && cached?.data && isBusinessPortalView(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
     setError("");
     setLoadFailure(null);
-    const params = new URLSearchParams(window.location.search);
     const query = new URLSearchParams();
-    if (params.get("orgId")) query.set("orgId", params.get("orgId")!);
+    if (orgHint) query.set("orgId", orgHint);
     if (seasonOverride) query.set("season", String(seasonOverride));
     try {
-      const response = await fetch(`/api/business?${query.toString()}`);
+      const response = await fetch(`/api/business?${query.toString()}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
       const data = (await response.json()) as BusinessPortalView | { error?: string };
-      if (!response.ok || !("status" in data)) {
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
         setLoadFailure({
           status: response.status,
-          message: ("error" in data && data.error) || "Could not load portal",
+          message: ("error" in data && data.error) || "Choose your team",
         });
+        return;
+      }
+      if (!response.ok || !isBusinessPortalView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Business. Showing the last copy on this device.");
+          setLoadFailure(null);
+        } else {
+          setLoadFailure({
+            status: response.status,
+            message: ("error" in data && data.error) || "Could not load portal",
+          });
+        }
         return;
       }
       setLoadFailure(null);
       setView(data);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistBusinessSnapshot(orgHint, seasonHint, data);
     } catch (cause) {
-      setLoadFailure({
-        status: null,
-        message: cause instanceof Error ? cause.message : "Could not load the business portal",
-      });
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Business. Showing the last copy on this device.");
+        setLoadFailure(null);
+      } else {
+        setLoadFailure({
+          status: null,
+          message: cause instanceof Error ? cause.message : "Could not load the business portal",
+        });
+      }
     }
   }, []);
 
@@ -165,11 +245,13 @@ export default function BusinessClient() {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ orgId: live.orgId, seasonYear: live.seasonYear, ...payload }),
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
       const data = (await response.json()) as BusinessPortalView | { error?: string };
-      if (!response.ok || !("status" in data)) throw new Error("error" in data && data.error ? data.error : "Request failed");
+      if (!response.ok || !isBusinessPortalView(data)) throw new Error("error" in data && data.error ? data.error : "Request failed");
       setView(data);
       setNotice("Saved. The whole team now sees the latest record.");
+      await persistBusinessSnapshot(live.orgId, String(live.seasonYear), data);
       return true;
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Request failed");
@@ -259,9 +341,18 @@ export default function BusinessClient() {
             </ToneBadge>
           </div>
         ) : null}
+        <BusinessRelated
+          orgId={live?.orgId ?? readOrgIdFromUrl()}
+          include={
+            sponsorsAllowed === false
+              ? BUSINESS_FUNDING_RELATED_INCLUDE.filter((id) => id !== "sponsors")
+              : [...BUSINESS_FUNDING_RELATED_INCLUDE]
+          }
+          ariaLabel="Related funding tools"
+        />
       </PageHeader>
 
-      <OfflineBanner feature="Business" />
+      <OfflineBanner feature="Business" fromCache={fromCache} cachedAt={cachedAt} />
       <TabBar
         aria-label="Business sections"
         value={workbenchId}
@@ -326,7 +417,18 @@ export default function BusinessClient() {
       ) : null}
 
       {!view ? (
-        loadFailure ? (
+        loadFailure && (loadFailure.status === 401 || loadFailure.status === 403) ? (
+          <EmptyState
+            badge="Needs setup"
+            badgeTone="setup"
+            title="Choose your team"
+            description="Choose your team, then come back to start this season’s money plan."
+          >
+            <Button as="a" variant="primary" href="/workspace">
+              Choose your team
+            </Button>
+          </EmptyState>
+        ) : loadFailure ? (
           (() => {
             const copy = loadFailureCopy(
               classifyLoadFailure({

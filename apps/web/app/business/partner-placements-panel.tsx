@@ -1,9 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import PartnerPlacement from "../../components/partner-placement";
 import { EmptyState, Button } from "../../components/ui";
+import { OfflineBanner } from "../../components/offline-banner";
 import { sponsorCrmNextActions } from "../../lib/business/sponsor-crm-next-actions";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 
 type Program = {
   settings: { publicId: string; storefrontEnabled: boolean; paymentUrl: string | null; pitch: string } | null;
@@ -70,6 +73,19 @@ const surfaceLabel: Record<string, string> = {
 };
 const today = () => new Date().toISOString().slice(0, 10);
 const nextYear = () => new Date(Date.now() + 365 * 86_400_000).toISOString().slice(0, 10);
+
+function isPlacementProgram(value: unknown): value is Program {
+  return Boolean(value && typeof value === "object" && "packages" in value);
+}
+
+async function persistPlacementsSnapshot(orgId: string, data: Program): Promise<void> {
+  if (!orgId) return;
+  try {
+    await putFeatureSnapshot("partner-placements", orgId, data);
+  } catch {
+    // Live Partners already painted; IndexedDB is best-effort.
+  }
+}
 
 function SurfaceChecks({ defaults = ["business_wall"] }: { defaults?: string[] }) {
   return (
@@ -145,21 +161,63 @@ export function PartnerPlacementsPanel({
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
   const [migrationMissing, setMigrationMissing] = useState(false);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const [chooseTeam, setChooseTeam] = useState(false);
+  const programHold = useRef<Program | null>(null);
+  programHold.current = program;
 
   const load = useCallback(async () => {
+    let hadCache = Boolean(programHold.current);
+    try {
+      const cached = await getFeatureSnapshot<Program>("partner-placements", orgId || "_");
+      if (!programHold.current && cached?.data && isPlacementProgram(cached.data)) {
+        setProgram(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
     try {
       setMigrationMissing(false);
-      const response = await fetch(`/api/business/placements?orgId=${encodeURIComponent(orgId)}`);
+      const response = await fetch(`/api/business/placements?orgId=${encodeURIComponent(orgId)}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
       const data = (await response.json()) as Program | { error?: string };
-      if (!response.ok || !("packages" in data)) {
+      if (response.status === 401 || response.status === 403) {
+        setProgram(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setChooseTeam(true);
+        setError("");
+        return;
+      }
+      if (!response.ok || !isPlacementProgram(data)) {
         const message = "error" in data ? data.error : "Could not load partner placements";
         if (typeof message === "string" && /migration/i.test(message)) setMigrationMissing(true);
+        if (hadCache || programHold.current) {
+          setFromCache(true);
+          setError("Could not refresh Partners. Showing the last copy on this device.");
+          return;
+        }
         throw new Error(message ?? "Could not load partner placements");
       }
+      setChooseTeam(false);
       setProgram(data);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistPlacementsSnapshot(orgId, data);
       setError("");
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not load partner placements");
+      if (hadCache || programHold.current) {
+        setFromCache(true);
+        setError("Could not refresh Partners. Showing the last copy on this device.");
+      } else {
+        setError(cause instanceof Error ? cause.message : "Could not load partner placements");
+      }
     }
   }, [orgId]);
 
@@ -180,11 +238,12 @@ export function PartnerPlacementsPanel({
           body: JSON.stringify({ orgId, seasonYear, ...payload }),
         });
         const data = (await response.json()) as Program | { error?: string };
-        if (!response.ok || !("packages" in data)) {
+        if (!response.ok || !isPlacementProgram(data)) {
           throw new Error("error" in data ? data.error : "Could not save");
         }
         setProgram(data);
         setNotice("Partner program saved.");
+        await persistPlacementsSnapshot(orgId, data);
       } catch (cause) {
         setError(cause instanceof Error ? cause.message : "Could not save");
       } finally {
@@ -234,6 +293,23 @@ export function PartnerPlacementsPanel({
 
   const pending = useMemo(() => program?.submissions.filter((item) => item.status === "pending") ?? [], [program]);
 
+  if (chooseTeam) {
+    return (
+      <div className="biz-stack">
+        <EmptyState
+          badge="Needs setup"
+          badgeTone="setup"
+          title="Choose your team"
+          description="Choose your team, then come back to open partner packages."
+        >
+          <Button as="a" variant="primary" href="/workspace">
+            Choose your team
+          </Button>
+        </EmptyState>
+      </div>
+    );
+  }
+
   if (!program && !error) {
     return (
       <EmptyState
@@ -249,7 +325,7 @@ export function PartnerPlacementsPanel({
     return (
       <div className="biz-stack">
         <EmptyState
-          badge="Setup required"
+          badge="Needs setup"
           badgeTone="setup"
           title="Partner placements unavailable"
           description={error || "This section is not ready yet. Try again in a moment."}
@@ -264,6 +340,7 @@ export function PartnerPlacementsPanel({
 
   return (
     <div className="biz-stack placement-stack">
+      <OfflineBanner feature="Partners" fromCache={fromCache} cachedAt={cachedAt} />
       {program.packages.length && program.sponsors.length ? (
         <PlacementsNextActions
           orgId={orgId}
@@ -356,7 +433,7 @@ export function PartnerPlacementsPanel({
                 <input
                   name="paymentUrl"
                   type="url"
-                  placeholder="https://your-team-payment-link"
+                  placeholder="https://"
                   defaultValue={program.settings?.paymentUrl ?? ""}
                 />
                 <small>Money goes straight to your team. You record it once it arrives.</small>

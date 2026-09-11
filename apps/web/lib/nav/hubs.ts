@@ -271,7 +271,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
       { id: "overview", label: "Overview" },
       { id: "finance", label: "Money" },
       ...nest("finance", [
-        { id: "budget", label: "Budget" },
+        { id: "budget", label: "Budget", featured: true },
         // The mentor-only season budget (0621 put season_budgets behind the
         // manage_budget capability in RLS). Distinct from the per-category
         // budget-vs-actual panel on the "Budget" tab above, which any member

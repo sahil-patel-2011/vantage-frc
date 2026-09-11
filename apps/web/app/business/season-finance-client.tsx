@@ -1,8 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { Badge, EmptyState, StatTile, Button } from "../../components/ui";
 import { ExportButton, type CsvColumn } from "../../components/ui/export-button";
+import { OfflineBanner } from "../../components/offline-banner";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import {
   MONEY_SOURCE_LABELS,
   type FinanceBalanceView,
@@ -23,6 +26,25 @@ import { formatSponsorUsd, sponsorPageTotals } from "../../lib/sponsors/totals";
 import "./season-finance.css";
 
 type LiveView = Extract<SeasonFinanceView, { status: "live" }>;
+
+function isSeasonFinanceView(value: unknown): value is SeasonFinanceView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "live" || status === "setup_required";
+}
+
+async function persistSeasonFinanceSnapshot(
+  orgId: string,
+  seasonYear: number,
+  data: SeasonFinanceView,
+): Promise<void> {
+  if (!orgId) return;
+  try {
+    await putFeatureSnapshot("season-finance", orgId, data, String(seasonYear));
+  } catch {
+    // Live Money already painted; IndexedDB is best-effort.
+  }
+}
 
 function money(cents: number): string {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(
@@ -55,28 +77,79 @@ export default function SeasonFinanceClient({
   const [notice, setNotice] = useState("");
   const [sponsorLines, setSponsorLines] = useState<Array<{ id: string; name: string; amountUsd: number }>>([]);
   const [budgetLines, setBudgetLines] = useState<BudgetLine[]>([]);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewHold = useRef<SeasonFinanceView | null>(null);
+  viewHold.current = view;
 
   const load = useCallback(async () => {
+    let hadCache = Boolean(viewHold.current);
+    try {
+      const cached = await getFeatureSnapshot<SeasonFinanceView>(
+        "season-finance",
+        orgId || "_",
+        String(seasonYear),
+      );
+      if (!viewHold.current && cached?.data && isSeasonFinanceView(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
     setError("");
     setLoadFailure(null);
     const query = new URLSearchParams({ orgId, season: String(seasonYear) });
     try {
-      const response = await fetch(`/api/business/finance?${query.toString()}`);
+      const response = await fetch(`/api/business/finance?${query.toString()}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
       const data = (await response.json()) as SeasonFinanceView | { error?: string };
-      if (!response.ok || !("status" in data)) {
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
         setLoadFailure({
           status: response.status,
-          message: ("error" in data && data.error) || "Could not load season finance",
+          message: ("error" in data && data.error) || "Choose your team",
         });
+        return;
+      }
+      if (!response.ok || !isSeasonFinanceView(data)) {
+        if (hadCache || viewHold.current) {
+          setFromCache(true);
+          setError("Could not refresh Money. Showing the last copy on this device.");
+          setLoadFailure(null);
+        } else {
+          setLoadFailure({
+            status: response.status,
+            message: ("error" in data && data.error) || "Could not load season finance",
+          });
+        }
         return;
       }
       setLoadFailure(null);
       setView(data);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistSeasonFinanceSnapshot(orgId, seasonYear, data);
       try {
         const [sponsorsRes, contribRes, budgetRes] = await Promise.all([
-          fetch(`/api/sponsors?orgId=${encodeURIComponent(orgId)}`),
-          fetch(`/api/sponsors/contributions?orgId=${encodeURIComponent(orgId)}&seasonYear=${seasonYear}`),
-          fetch(`/api/finance/budget-vs-actual?orgId=${encodeURIComponent(orgId)}&seasonYear=${seasonYear}`),
+          fetch(`/api/sponsors?orgId=${encodeURIComponent(orgId)}`, {
+            cache: "no-store",
+            signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+          }),
+          fetch(
+            `/api/sponsors/contributions?orgId=${encodeURIComponent(orgId)}&seasonYear=${seasonYear}`,
+            { cache: "no-store", signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS) },
+          ),
+          fetch(
+            `/api/finance/budget-vs-actual?orgId=${encodeURIComponent(orgId)}&seasonYear=${seasonYear}`,
+            { cache: "no-store", signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS) },
+          ),
         ]);
         const sponsorsData = sponsorsRes.ok ? await sponsorsRes.json() : { sponsors: [] };
         const contribData = contribRes.ok ? await contribRes.json() : { contributions: [] };
@@ -100,10 +173,16 @@ export default function SeasonFinanceClient({
         setBudgetLines([]);
       }
     } catch (cause) {
-      setLoadFailure({
-        status: null,
-        message: cause instanceof Error ? cause.message : "Could not load season finance",
-      });
+      if (hadCache || viewHold.current) {
+        setFromCache(true);
+        setError("Could not refresh Money. Showing the last copy on this device.");
+        setLoadFailure(null);
+      } else {
+        setLoadFailure({
+          status: null,
+          message: cause instanceof Error ? cause.message : "Could not load season finance",
+        });
+      }
     }
   }, [orgId, seasonYear]);
 
@@ -122,13 +201,15 @@ export default function SeasonFinanceClient({
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ orgId, seasonYear, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as SeasonFinanceView | { error?: string };
-        if (!response.ok || !("status" in data)) {
+        if (!response.ok || !isSeasonFinanceView(data)) {
           throw new Error("error" in data && data.error ? data.error : "Could not save");
         }
         setView(data);
         setNotice("Saved.");
+        await persistSeasonFinanceSnapshot(orgId, seasonYear, data);
         return true;
       } catch (cause) {
         setError(cause instanceof Error ? cause.message : "Could not save");
@@ -178,6 +259,7 @@ export default function SeasonFinanceClient({
 
   return (
     <div className={`biz-stack season-finance${embedded ? " embedded" : ""}`}>
+      <OfflineBanner feature="Money" fromCache={fromCache} cachedAt={cachedAt} />
       {error ? (
         <div className="biz-alert danger" role="alert">
           <strong>Couldn’t complete that.</strong>
@@ -199,8 +281,19 @@ export default function SeasonFinanceClient({
 
       {!view && !loadFailure ? <p className="app-muted">Loading season finance…</p> : null}
 
-      {!view && loadFailure
-        ? (() => {
+      {!view && loadFailure && (loadFailure.status === 401 || loadFailure.status === 403) ? (
+        <EmptyState
+          badge="Needs setup"
+          badgeTone="setup"
+          title="Choose your team"
+          description="Choose your team to open this season’s money plan."
+        >
+          <Button as="a" variant="primary" href="/workspace">
+            Choose your team
+          </Button>
+        </EmptyState>
+      ) : !view && loadFailure ? (
+        (() => {
             const copy = loadFailureCopy(
               classifyLoadFailure({
                 status: loadFailure.status,
@@ -232,10 +325,10 @@ export default function SeasonFinanceClient({
               </EmptyState>
             );
           })()
-        : null}
+      ) : null}
 
       {view?.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title="Choose your team" description="Choose your team to open this season’s money plan.">
+        <EmptyState badge="Needs setup" badgeTone="setup" title="Choose your team" description="Choose your team to open this season’s money plan.">
           {view.steps[0] ? (
             <Button as="a" variant="primary" href={view.steps[0].href}>
               {view.steps[0].label}

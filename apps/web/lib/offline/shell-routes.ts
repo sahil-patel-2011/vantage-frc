@@ -120,6 +120,7 @@ export const OFFLINE_SHELL_ROUTES = [
   "/fundraisers",
   "/impact",
   "/orders",
+  "/business",
   "/team/grants",
   "/practice",
   "/manufacturing",
@@ -351,6 +352,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/impact")) return "Community Impact";
   if (bare.startsWith("/fundraisers")) return "Fundraisers";
   if (bare.startsWith("/orders")) return "Orders";
+  if (bare.startsWith("/business")) return "Business";
   if (bare.startsWith("/battery-rotation")) return "Battery Rotation";
   if (bare.startsWith("/vendors")) return "Vendors";
   if (bare.startsWith("/season-report")) return "Season Report";

@@ -392,7 +392,7 @@ export default function GrantCalendarClient({ orgId: orgIdProp }: { orgId?: stri
         <main className="module-page grant-cal-page content soft-gate">
           {header}
           <OfflineBanner feature="Grant calendar" fromCache={fromCache} cachedAt={cachedAt} />
-          <EmptyState soft badge="Setup required" badgeTone="setup" title="Choose your team">
+          <EmptyState soft badge="Needs setup" badgeTone="setup" title="Choose your team">
             {view.steps[0] ? (
               <Button as="a" variant="primary" href={view.steps[0].href}>
                 {view.steps[0].label}

@@ -14,13 +14,14 @@ import {
 } from "../../lib/business-portal";
 import { describeBudgetLine, type BudgetLine, type BudgetVsActualView } from "../../lib/finance/budget-vs-actual";
 import { FundraisingGlance } from "./fundraising-glance";
-import { dollars, money, percent, statusLabel, type Tab } from "./business-helpers";
+import { dollars, hasRecordedWorkingFunds, money, moneyWhenRecorded, percent, recordedWorkingFundsCents, statusLabel, type Tab } from "./business-helpers";
 import { Field, ToneBadge } from "./business-ui";
 
 export function Overview({ view, setTab }: { view: BusinessView; setTab: (tab: Tab) => void }) {
   const sponsorsAllowed = view.sponsorsAllowed !== false;
-  const available = view.budget.totalBudgetCents + view.budget.sponsorIncomeCents + view.budget.grantIncomeCents;
-  const utilization = percent(view.budget.committedCents, available);
+  const available = recordedWorkingFundsCents(view.budget);
+  const fundsOnRecord = hasRecordedWorkingFunds(view.budget);
+  const utilization = fundsOnRecord ? percent(view.budget.committedCents, available) : null;
   const submitted = view.purchases.filter((purchase) => purchase.status === "submitted");
   const followUps = sponsorsAllowed
     ? view.sponsors.filter((sponsor) => sponsorHealth(sponsor) !== "healthy")
@@ -46,8 +47,24 @@ export function Overview({ view, setTab }: { view: BusinessView; setTab: (tab: T
           before it reads how much of this season's budget is committed. */}
       <SustainabilityPanel orgId={view.orgId} seasonYear={view.seasonYear} />
       <section className="biz-kpis" aria-label="Season funding summary">
-        <Kpi label="Working funds" value={money(available)} detail={`${money(view.budget.totalBudgetCents)} base budget`} tone="blue" />
-        <Kpi label="Committed" value={money(view.budget.committedCents)} detail={`${utilization}% of working funds`} tone={utilization > 90 ? "danger" : "neutral"} />
+        <Kpi
+          label="Working funds"
+          value={fundsOnRecord ? money(available) : "—"}
+          detail={
+            view.budget.totalBudgetCents > 0
+              ? `${money(view.budget.totalBudgetCents)} base budget`
+              : fundsOnRecord
+                ? "Recorded sponsor and grant cash — season budget not set"
+                : "Set a season budget"
+          }
+          tone="blue"
+        />
+        <Kpi
+          label="Committed"
+          value={moneyWhenRecorded(view.budget.committedCents)}
+          detail={utilization == null ? "Blank until a budget or cash is recorded" : `${utilization}% of working funds`}
+          tone={utilization != null && utilization > 90 ? "danger" : "neutral"}
+        />
         <Kpi
           label="Raised vs goal"
           value={progress.goalCents > 0 ? `${progress.percentOfGoal}%` : "—"}
@@ -60,9 +77,24 @@ export function Overview({ view, setTab }: { view: BusinessView; setTab: (tab: T
           }
           tone={progress.goalCents > 0 && progress.percentOfGoal >= 100 ? "good" : "blue"}
         />
-        <Kpi label="Grant awards" value={money(view.budget.grantIncomeCents)} detail={`${view.grants.length} applications tracked`} tone="good" />
-        <Kpi label="Awaiting approval" value={money(view.budget.requestedCents)} detail={`${pulse.pendingCount} open orders`} tone={pulse.pendingCount ? "warn" : "neutral"} />
-        <Kpi label="Ready to buy" value={String(pulse.readyToBuyCount)} detail={`${money(pulse.openTotalCents)} open`} tone={pulse.readyToBuyCount ? "warn" : "neutral"} />
+        <Kpi
+          label="Grant awards"
+          value={moneyWhenRecorded(view.budget.grantIncomeCents)}
+          detail={`${view.grants.length} applications tracked`}
+          tone="good"
+        />
+        <Kpi
+          label="Awaiting approval"
+          value={moneyWhenRecorded(view.budget.requestedCents)}
+          detail={`${pulse.pendingCount} open orders`}
+          tone={pulse.pendingCount ? "warn" : "neutral"}
+        />
+        <Kpi
+          label="Ready to buy"
+          value={String(pulse.readyToBuyCount)}
+          detail={pulse.openTotalCents > 0 ? `${money(pulse.openTotalCents)} open` : "No open order total yet"}
+          tone={pulse.readyToBuyCount ? "warn" : "neutral"}
+        />
       </section>
 
       {pulse.financeAiEnabled && pulse.aiHeadline ? (
@@ -96,12 +128,12 @@ export function Overview({ view, setTab }: { view: BusinessView; setTab: (tab: T
 
       <section className="biz-grid two">
         <article className="app-card biz-finance-pulse">
-          <header><div><span className="biz-overline">Financial pulse</span><h2>Know the number before saying yes.</h2></div><strong>{utilization}%</strong></header>
-          <div className="biz-progress"><i style={{ width: `${utilization}%` }} /></div>
+          <header><div><span className="biz-overline">Financial pulse</span><h2>Know the number before saying yes.</h2></div><strong>{utilization == null ? "—" : `${utilization}%`}</strong></header>
+          <div className="biz-progress"><i style={{ width: `${utilization ?? 0}%` }} /></div>
           <div className="biz-split-metrics">
-            <div><span>Approved + ordered</span><strong>{money(view.budget.committedCents)}</strong></div>
-            <div><span>Actually ordered</span><strong>{money(view.budget.spentCents)}</strong></div>
-            <div><span>Fundraising actual</span><strong>{money(progress.actualCents)}</strong></div>
+            <div><span>Approved + ordered</span><strong>{moneyWhenRecorded(view.budget.committedCents)}</strong></div>
+            <div><span>Actually ordered</span><strong>{moneyWhenRecorded(view.budget.spentCents)}</strong></div>
+            <div><span>Fundraising actual</span><strong>{moneyWhenRecorded(progress.actualCents)}</strong></div>
           </div>
           {/* Three same-weight buttons became one primary + one secondary + overflow. */}
           <ActionMenu

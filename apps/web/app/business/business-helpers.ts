@@ -74,6 +74,27 @@ export function percent(value: number, total: number): number {
   return Math.min(100, Math.max(0, Math.round((value / total) * 100)));
 }
 
+/** Recorded working funds — blank until a budget or cash line exists. */
+export function recordedWorkingFundsCents(budget: {
+  totalBudgetCents: number;
+  sponsorIncomeCents: number;
+  grantIncomeCents: number;
+}): number {
+  return budget.totalBudgetCents + budget.sponsorIncomeCents + budget.grantIncomeCents;
+}
+
+export function hasRecordedWorkingFunds(budget: {
+  totalBudgetCents: number;
+  sponsorIncomeCents: number;
+  grantIncomeCents: number;
+}): boolean {
+  return recordedWorkingFundsCents(budget) > 0;
+}
+
+export function moneyWhenRecorded(cents: number): string {
+  return cents > 0 ? money(cents) : "—";
+}
+
 export function statusLabel(value: string): string {
   return value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 }

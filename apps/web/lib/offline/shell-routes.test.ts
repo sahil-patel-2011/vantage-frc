@@ -133,6 +133,7 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/fundraisers")).toBe(true);
     expect(pathnameIsOfflineShell("/impact")).toBe(true);
     expect(pathnameIsOfflineShell("/orders")).toBe(true);
+    expect(pathnameIsOfflineShell("/business")).toBe(true);
     expect(pathnameIsOfflineShell("/team/grants")).toBe(true);
     expect(pathnameIsOfflineShell("/practice")).toBe(true);
     expect(pathnameIsOfflineShell("/manufacturing")).toBe(true);
@@ -271,6 +272,7 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/impact")).toBe("Community Impact");
     expect(offlineCapableLabel("/fundraisers")).toBe("Fundraisers");
     expect(offlineCapableLabel("/orders")).toBe("Orders");
+    expect(offlineCapableLabel("/business")).toBe("Business");
     expect(offlineCapableLabel("/battery-rotation")).toBe("Battery Rotation");
     expect(offlineCapableLabel("/vendors")).toBe("Vendors");
     expect(offlineCapableLabel("/season-report")).toBe("Season Report");
@@ -545,6 +547,9 @@ describe("offline shell routes", () => {
     expect(featureCacheKey("schedule", "org-1")).toBe("schedule:org-1");
     expect(featureCacheKey("scouting", "org-1")).toBe("scouting:org-1");
     expect(featureCacheKey("pick-desk", "org-1")).toBe("pick-desk:org-1");
+    expect(featureCacheKey("business", "org-1", "2026")).toBe("business:org-1:2026");
+    expect(featureCacheKey("season-finance", "org-1", "2026")).toBe("season-finance:org-1:2026");
+    expect(featureCacheKey("partner-placements", "org-1")).toBe("partner-placements:org-1");
   });
 
   it("falls failed navigations back to the precached shell", () => {

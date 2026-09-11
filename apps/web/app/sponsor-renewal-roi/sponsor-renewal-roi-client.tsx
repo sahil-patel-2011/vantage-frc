@@ -166,7 +166,7 @@ function RoiShell({
       ) : (
         <EmptyState
           soft
-          badge={shell === "setup" ? "Setup required" : copy.badge}
+          badge={shell === "setup" ? "Needs setup" : copy.badge}
           badgeTone="setup"
           title={copy.title}
           description={error ?? copy.description}
@@ -471,7 +471,7 @@ function SponsorRiskCard({
       {risk.noLinkedActivity ? (
         <EmptyState
           soft
-          badge="Setup required"
+          badge="Needs setup"
           badgeTone="setup"
           title="No linked activity for this sponsor yet"
           description="Log a sponsor interaction, contribution, or community-impact mention naming this sponsor to compute a renewal-risk score."

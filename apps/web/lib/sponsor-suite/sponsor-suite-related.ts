@@ -186,7 +186,7 @@ export function sponsorSuiteShellCopy(kind: SponsorSuiteShellKind): SponsorSuite
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Choose your team and log real sponsors before generating decks.",

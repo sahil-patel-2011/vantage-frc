@@ -304,7 +304,7 @@ export default function BudgetClient() {
         <OfflineBanner feature="Season budget" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
-          badge="Setup required"
+          badge="Needs setup"
           badgeTone="setup"
           title="Choose your team"
           description={view.message}

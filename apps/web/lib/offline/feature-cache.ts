@@ -243,7 +243,10 @@ export type OfflineFeature =
   | "wiring"
   | "wiring-diagnoser"
   | "scouting"
-  | "pick-desk";
+  | "pick-desk"
+  | "business"
+  | "season-finance"
+  | "partner-placements";
 
 const DB_NAME = "vantage-feature-cache";
 const DB_VERSION = 1;

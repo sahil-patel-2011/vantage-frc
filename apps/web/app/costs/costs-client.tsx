@@ -318,7 +318,7 @@ export default function CostsClient() {
             {error}
           </p>
         ) : null}
-        <EmptyState soft badge="Setup required" badgeTone="setup" title={view.message}>
+        <EmptyState soft badge="Needs setup" badgeTone="setup" title={view.message}>
           {view.steps[0] ? (
             <Button as="a" variant="primary" href={view.steps[0].href}>
               {view.steps[0].label}

@@ -64,6 +64,13 @@ export const BUSINESS_GRANTS_RELATED_INCLUDE: BusinessRelatedId[] = [
   "finance-ai",
 ];
 
+/** This week's student/mentor funding strip — Sponsors · Budget · Grants. */
+export const BUSINESS_FUNDING_RELATED_INCLUDE: BusinessRelatedId[] = [
+  "sponsors",
+  "budget",
+  "grants",
+];
+
 /** Fundraisers Soft-UI strip (`/fundraisers`) — sponsors, grants, orders, season costs. */
 export const FUNDRAISERS_RELATED_INCLUDE: BusinessRelatedId[] = [
   "finance",

@@ -201,6 +201,12 @@ export type BusinessSetupView = {
 
 export type BusinessPortalView = BusinessView | BusinessSetupView;
 
+export function isBusinessPortalView(value: unknown): value is BusinessPortalView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "live" || status === "setup_required";
+}
+
 export function purchaseTotal(input: Pick<PurchaseRequest, "quantity" | "unitPriceCents" | "shippingCents">): number {
   return Math.max(0, Math.round(input.quantity)) * Math.max(0, Math.round(input.unitPriceCents)) + Math.max(0, Math.round(input.shippingCents));
 }

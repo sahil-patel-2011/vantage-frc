@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   businessRelatedLinks,
   AWARDS_RELATED_INCLUDE,
+  BUSINESS_FUNDING_RELATED_INCLUDE,
   BUSINESS_GRANTS_RELATED_INCLUDE,
   COSTS_RELATED_INCLUDE,
   FUNDRAISERS_RELATED_INCLUDE,
@@ -53,6 +54,15 @@ describe("business-related Soft-UI helpers", () => {
     const links = businessRelatedLinks("org-1", { include: BUSINESS_GRANTS_RELATED_INCLUDE });
     expect(links.find((l) => l.id === "grant-workbench")?.href).toBe("/team/grants?orgId=org-1");
     expect(links.find((l) => l.id === "writer")?.href).toBe("/writer?orgId=org-1");
+  });
+
+  it("this week's funding strip is Sponsors, Budget, and Grants", () => {
+    expect([...BUSINESS_FUNDING_RELATED_INCLUDE]).toEqual(["sponsors", "budget", "grants"]);
+    const links = businessRelatedLinks("org-1", { include: [...BUSINESS_FUNDING_RELATED_INCLUDE] });
+    expect(links.map((link) => link.id)).toEqual(["sponsors", "grants", "budget"]);
+    expect(links.find((link) => link.id === "sponsors")?.href).toBe("/business?tab=sponsors&orgId=org-1");
+    expect(links.find((link) => link.id === "budget")?.href).toBe("/business?tab=budget&orgId=org-1");
+    expect(links.find((link) => link.id === "grants")?.href).toBe("/business?tab=grants&orgId=org-1");
   });
 
   it("builds fundraisers Soft-UI cross-links to sponsors, grants, orders, and season costs", () => {

@@ -153,7 +153,7 @@ export function sponsorWallShellCopy(kind: SponsorWallShellKind): SponsorWallEmp
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Choose your team and add real sponsors before publishing.",

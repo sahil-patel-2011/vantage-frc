@@ -145,7 +145,7 @@ export function sponsorRenewalRoiShellCopy(kind: SponsorRenewalRoiShellKind): Sp
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Add sponsors before scoring renewal risk",
         description:
           "Renewal ROI needs an org and at least one CRM sponsor. Scores stay blank until interactions, contributions, or impact mentions exist.",

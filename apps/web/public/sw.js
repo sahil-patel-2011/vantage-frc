@@ -138,6 +138,7 @@ const SHELL_ROUTES = [
   "/fundraisers",
   "/impact",
   "/orders",
+  "/business",
   "/team/grants",
   "/practice",
   "/manufacturing",
