@@ -13,6 +13,8 @@ import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
 import { withOrgHref } from "../../../lib/nav/product-nav";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
 import { ONSHAPE_STUDENT_PERMISSIONS } from "../../../lib/cad/cad-document-picker";
+import { FUSION_MISSING_CONFIG_MESSAGE } from "../../../lib/cad/fusion-setup-strings";
+import { FusionEditBoard } from "../fusion-edit-board";
 import CadDocumentPicker from "./cad-document-picker";
 
 type Device = {
@@ -39,6 +41,7 @@ type CadConnectionsView = {
   onshapeOauthReady: boolean;
   onshapeConnections: OnshapeConnection[];
   onshapeSetupMessage: string;
+  fusionReady: boolean;
 };
 
 function isCadConnectionsView(value: unknown): value is CadConnectionsView {
@@ -203,6 +206,10 @@ export default function CadConnections({ orgId }: { orgId: string }) {
           setupRequired?: boolean;
           message?: string;
         };
+        fusion?: {
+          configured?: boolean;
+          setupRequired?: boolean;
+        };
         onshapeConnections?: OnshapeConnection[];
         error?: string;
       };
@@ -219,6 +226,7 @@ export default function CadConnections({ orgId }: { orgId: string }) {
               ? String(row.onshape?.message ?? "Connect Onshape in the browser to run hosted CAD jobs.")
               : ONSHAPE_OAUTH_CTA.disabledDetail
             : "",
+        fusionReady: Boolean(row.fusion?.configured) && row.fusion?.setupRequired !== true,
       };
       setView(next);
       setFromCache(false);
@@ -407,14 +415,21 @@ export default function CadConnections({ orgId }: { orgId: string }) {
             <article className="app-card cad-connection-tile" id="fusion">
               <div>
                 <span className={`app-badge ${desktopOnline ? "good" : "setup"}`}>
-                  {desktopOnline ? "Paired" : "Not paired"}
+                  {desktopOnline ? "Paired" : view.fusionReady ? "Not paired" : "Needs setup"}
                 </span>
-                <h2>Fusion desktop</h2>
+                <h2>Fusion</h2>
                 <p className="app-muted">
-                  Fusion stays on this computer. Pair the desktop app when you need Autodesk jobs — Vantage never runs
-                  Fusion in the cloud.
+                  Fusion stays on this computer. Paste a share link to edit it, or pair the desktop app for
+                  Autodesk jobs.
                 </p>
               </div>
+              {!view.fusionReady ? (
+                <aside className="cad-setup-required" role="status">
+                  <strong>Needs setup</strong>
+                  <p>{FUSION_MISSING_CONFIG_MESSAGE}</p>
+                </aside>
+              ) : null}
+              <FusionEditBoard compact />
               <Button as="a" variant="secondary" href={withOrgHref("/cad/pair", orgId)}>
                 Pair this computer
               </Button>

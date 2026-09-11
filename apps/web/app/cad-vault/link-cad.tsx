@@ -3,8 +3,10 @@
 import { useMemo, useState } from "react";
 import { FormGrid, FormRow, Panel, Button } from "../../components/ui";
 import { parseCadExternalUrl } from "../../lib/cad-vault/cad-link";
+import { fusionEditHref } from "../../lib/cad/fusion-edit-link";
 import { onshapeEditHref } from "../../lib/cad/onshape-edit-link";
 import { CAD_DOCUMENT_KINDS, cadKindLabel, type CadDocumentKind } from "../../lib/cad-vault/view";
+import { FusionEditButton } from "../cad/fusion-edit-board";
 import { OnshapeDocumentEmbed, OnshapeEditButton } from "../cad/onshape-edit-board";
 
 /**
@@ -77,6 +79,8 @@ export function LinkCadPanel({
 
   const system = parsed?.ok ? (parsed.value.kind === "onshape" ? "Onshape" : "Fusion") : "CAD";
   const onshapeHref = parsed?.ok && parsed.value.kind === "onshape" ? onshapeEditHref(parsed.value.url) : null;
+  const fusionHref = parsed?.ok && parsed.value.kind === "fusion" ? fusionEditHref(parsed.value.url) : null;
+  const editHref = onshapeHref || fusionHref;
 
   return (
     <Panel id="link-cad" aria-label="Link an Onshape or Fusion document" style={{ display: "grid", gap: 12 }}>
@@ -141,8 +145,9 @@ export function LinkCadPanel({
           ) : null}
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {onshapeHref ? <OnshapeEditButton href={onshapeHref} title={title || null} /> : null}
+            {fusionHref ? <FusionEditButton href={fusionHref} title={title || null} /> : null}
             <Button
-              variant={onshapeHref ? "secondary" : "primary"}
+              variant={editHref ? "secondary" : "primary"}
               type="button"
               disabled={busy || saving || !title.trim()}
               onClick={() => void save()}

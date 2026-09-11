@@ -26,6 +26,8 @@ describe("hosted CAD routes do not treat API keys as connected", () => {
     expect(cad).toContain("configured: hosted.configured");
     expect(cad).toContain("setupRequired: hosted.setupRequired");
     expect(cad).toContain("onshapeConfigured: hosted.configured");
+    expect(cad).toContain("hostedFusionSetup");
+    expect(cad).toContain("fusionConfigured: fusion.configured");
     expect(cad).toContain(
       "Connect Onshape in CAD Connections. A saved Onshape password on the server does not count as connected.",
     );

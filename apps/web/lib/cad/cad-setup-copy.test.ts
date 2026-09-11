@@ -11,6 +11,8 @@ import {
   CAD_SETUP_CONNECT,
   CAD_SETUP_DESCRIPTION,
   CAD_SETUP_FUSION,
+  CAD_SETUP_FUSION_ASK_MENTOR,
+  CAD_SETUP_FUSION_READY,
   CAD_SETUP_ONSHAPE_BLOCKED,
   CAD_SETUP_ONSHAPE_READY,
   CAD_SETUP_RECONNECT,
@@ -28,6 +30,8 @@ const ALL_COPY = [
   CAD_SETUP_ONSHAPE_READY,
   CAD_SETUP_ONSHAPE_BLOCKED,
   CAD_SETUP_FUSION,
+  CAD_SETUP_FUSION_ASK_MENTOR,
+  CAD_SETUP_FUSION_READY,
   CAD_PAIR_DESCRIPTION,
   CAD_PAIR_ONSHAPE,
   CAD_PAIR_FUSION,
@@ -36,7 +40,7 @@ const ALL_COPY = [
   ONSHAPE_STUDENT_PERMISSIONS_HINT,
 ].join(" ");
 
-const LEAK = /ONSHAPE_OAUTH|vantage-cad|Vercel|key_source|OAuth|CLI|BroadcastChannel|\bP2P\b|RESEND/i;
+const LEAK = /ONSHAPE_OAUTH|FUSION_RELAY|vantage-cad|Vercel|key_source|OAuth|CLI|BroadcastChannel|\bP2P\b|RESEND/i;
 
 describe("CAD setup student copy", () => {
   it("never dumps CLI, env var names, or engineering vocabulary", () => {
@@ -47,6 +51,9 @@ describe("CAD setup student copy", () => {
     expectPlainCopy(CAD_SETUP_ASK_MENTOR);
     expectPlainCopy(CAD_SETUP_ONSHAPE_READY);
     expectPlainCopy(CAD_SETUP_FUSION);
+    expectPlainCopy(CAD_SETUP_FUSION_ASK_MENTOR);
+    expectPlainCopy(CAD_SETUP_FUSION_READY);
+    expect(CAD_SETUP_FUSION_ASK_MENTOR).toMatch(/Ask a mentor/i);
     expectPlainCopy(CAD_PAIR_DESCRIPTION);
     expectPlainCopy(CAD_PAIR_APPROVED);
     expect(CAD_PAIR_TITLE).toBe("Pair this computer");

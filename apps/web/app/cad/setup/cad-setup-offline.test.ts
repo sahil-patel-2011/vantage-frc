@@ -15,7 +15,8 @@ describe("CAD setup last snapshot stays on the phone", () => {
     expect(src).toMatch(/if \(!view\)/);
     expect(src).toMatch(/clearFeatureSnapshot/);
     expect(src).toMatch(/Choose your team/);
-    expect(src).toMatch(/OnshapeEditBoard/);
+            expect(src).toMatch(/OnshapeEditBoard/);
+    expect(src).toMatch(/FusionEditBoard/);
     expect(src).toMatch(/Needs setup/);
   });
 });

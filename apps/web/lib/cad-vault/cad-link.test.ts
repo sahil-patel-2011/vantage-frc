@@ -48,7 +48,7 @@ describe("cadLinkLabel", () => {
     expect(cadLinkLabel("https://cad.onshape.com/documents/aaaaaaaaaaaaaaaaaaaaaaaa", "Intake")).toBe(
       "Edit Intake in Onshape",
     );
-    expect(cadLinkLabel("https://a360.co/intake-2026", "Intake")).toBe("Open Intake in Fusion");
+    expect(cadLinkLabel("https://a360.co/intake-2026", "Intake")).toBe("Edit Intake in Fusion");
     expect(cadLinkKind("https://example.com/x")).toBe("other");
     expect(cadLinkLabel("https://example.com/x", "Plate")).toBe("Open Plate");
   });
