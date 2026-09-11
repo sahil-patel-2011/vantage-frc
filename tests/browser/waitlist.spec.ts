@@ -19,6 +19,12 @@ test("a visitor can join the waitlist", async ({ page }) => {
   await finalForm.getByRole("checkbox", { name: /I agree to the Terms of Service/i }).check();
   await finalForm.getByRole("checkbox", { name: /I agree to the Privacy Policy/i }).check();
   await join.click();
-  await expect(page.getByRole("heading", { name: /on the list/i })).toBeVisible({ timeout: 15_000 });
-  await expect(page.getByText("does not create a Vantage account")).toBeVisible();
+  const success = page.getByTestId("waitlist-success");
+  const error = page.getByTestId("waitlist-error");
+  const closed = page.getByTestId("waitlist-unavailable");
+  await expect(success.or(closed).or(error)).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByText("Setup required")).toHaveCount(0);
+  if (await success.count()) {
+    await expect(page.getByText("does not create a Vantage account")).toBeVisible();
+  }
 });

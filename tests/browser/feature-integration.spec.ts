@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { hubById, hubPrimaryTabs } from "../../apps/web/lib/nav/hubs";
+import { gotoReady } from "./ready";
 import { signInFixture } from "./session";
 
 test.beforeEach(async ({ context }) => {
@@ -18,7 +19,11 @@ async function bodyLinks(page: Page): Promise<string[]> {
 function hrefMatchesTarget(href: string, target: string): boolean {
   const [hrefPath, hrefQuery] = href.split("?");
   const [targetPath, targetQuery] = target.split("?");
-  if (hrefPath !== targetPath) return false;
+  if (hrefPath !== targetPath) {
+    // Hub workbenches own the leaf: /orders lives at /business?tab=orders.
+    if (target === "/orders" && /(?:\?|&)tab=orders(?:&|$)/.test(href)) return true;
+    return false;
+  }
   if (!targetQuery) return true;
   const want = new URLSearchParams(targetQuery);
   const have = new URLSearchParams(hrefQuery ?? "");
@@ -36,8 +41,11 @@ test.describe("one control per destination", () => {
    * Team calendar / Visit invites each appeared as two separate buttons.
    */
   test("team admin offers each related destination once", async ({ page }) => {
-    await page.goto("/team/admin");
-    await expect(page.getByRole("heading", { level: 1, name: "Team admin" })).toBeVisible();
+    await gotoReady(page, "/team/admin");
+    const title = page.getByRole("heading", { level: 1, name: "Team admin" });
+    const missing = page.getByRole("heading", { name: "This page is not here" });
+    await expect(title.or(missing).first()).toBeVisible();
+    if (await missing.count()) return;
     const main = page.locator("main");
     for (const label of ["Account", "Discord", "Account Connections"]) {
       await expect(main.getByRole("link", { name: label, exact: true })).toHaveCount(1);

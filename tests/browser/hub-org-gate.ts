@@ -1,4 +1,5 @@
 import { expect, type Locator, type Page } from "@playwright/test";
+import { waitForLoadingGone } from "./ready";
 
 /**
  * GHA Playwright does not start Postgres. `signInAs` ECONNREFUSED and the
@@ -29,17 +30,13 @@ export async function expectHubReadyOrGate(
 ): Promise<boolean> {
   const gate = hubTeamGate(page);
   const timeout = 20_000;
-  if (recovery) {
-    await expect(ready.or(recovery).or(gate)).toBeVisible({ timeout });
-    if ((await ready.count()) === 0) {
-      await expect(gate.or(recovery)).toBeVisible();
-      return false;
-    }
-    return true;
-  }
-  await expect(ready.or(gate)).toBeVisible({ timeout });
-  if ((await ready.count()) === 0) {
-    await expect(gate).toBeVisible();
+  await waitForLoadingGone(page, timeout);
+  const combined = recovery ? ready.or(recovery).or(gate) : ready.or(gate);
+  // `.or()` is strict when two headings match (h1 "Match video" and
+  // h2 "Loading match video…"). Wait out Loading… then take the first ready card.
+  await expect(combined.first()).toBeVisible({ timeout });
+  if ((await ready.count()) === 0 || !(await ready.first().isVisible().catch(() => false))) {
+    await expect(recovery ? gate.or(recovery).first() : gate).toBeVisible();
     return false;
   }
   return true;

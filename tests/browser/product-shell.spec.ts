@@ -41,7 +41,9 @@ test("dashboard editor rearranges widgets with drag-and-drop", async ({ page }) 
   // assert it is a real enabled control rather than a legacy drag attribute.
   await expect(page.locator(".dash-widget-palette button").first()).toBeEnabled();
 
-  const snapshot = page.locator('[data-testid="dash-grid-item"][data-widget-type="competition_snapshot"]');
+  // next_match is a full-width hero (w=12) so a horizontal drag cannot
+  // change its cell. Student Home's second card is a 4-column tile.
+  const snapshot = page.getByTestId("dash-grid-item").nth(1);
   await expect(snapshot).toBeVisible();
   await snapshot.evaluate((node) => node.scrollIntoView({ block: "center" }));
   const before = `${await snapshot.getAttribute("data-widget-x")},${await snapshot.getAttribute("data-widget-y")}`;

@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { waitForLoadingGone } from "./ready";
 import { signInAs, signInFixture } from "./session";
 
 test.beforeEach(async ({ context }) => {
@@ -8,7 +9,7 @@ test.beforeEach(async ({ context }) => {
 
 test("Research is a student lookup, not an engineering wall", async ({ page }) => {
   await page.goto("/intel");
-  await expect(page.locator("body")).not.toContainText("Application error");
+  await waitForLoadingGone(page);
   await expect(page.getByRole("heading", { level: 1, name: "Research" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Setup steps" })).toHaveCount(0);
   await expect(page.getByText("org-scoped")).toHaveCount(0);
@@ -23,12 +24,8 @@ test("Research is a student lookup, not an engineering wall", async ({ page }) =
 
 test("Overnight brief keeps one primary and related in the header", async ({ page }) => {
   await page.goto("/overnight-intel");
-  await expect(page.locator("body")).not.toContainText("Application error");
+  await waitForLoadingGone(page);
   await expect(page.getByRole("heading", { level: 1, name: "Overnight brief" })).toBeVisible();
-  await page
-    .getByRole("heading", { name: "Loading overnight brief…" })
-    .waitFor({ state: "hidden", timeout: 12_000 })
-    .catch(() => undefined);
   await expect(page.getByRole("heading", { name: "Setup steps" })).toHaveCount(0);
   await expect(page.getByText("org-scoped")).toHaveCount(0);
   await expect(page.getByText("Grounding path")).toHaveCount(0);

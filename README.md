@@ -80,6 +80,8 @@ npm install            # Node 22+
 npm run dev            # http://localhost:3001 (boots without a database; product screens show setup states)
 npm run typecheck && npm run lint && npm test
 npm run build --workspace=@vantage/web
+npx playwright install chromium   # once per machine
+npm run test:browser              # Playwright vs http://127.0.0.1:3310 (E2E_AUTH_FIXTURE, local vantage_ci)
 ```
 
 Conventions, verification and the pull-request checklist are in
