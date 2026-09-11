@@ -5,30 +5,30 @@ import { marketingPageMetadata } from "../../lib/marketing/seo";
 export const metadata: Metadata = marketingPageMetadata({
   title: "Desktop app — Vantage",
   description:
-    "Windows desktop shell for the Vantage FRC app. Account required: same invite-only product, native window, persistent sign-in, and local CAD relay.",
+    "Vantage in a Windows window for FRC teams. Same invite-only sign-in as the website. Windows may warn that the file isn’t signed yet — that is expected.",
   path: "/desktop",
 });
 
 const facts = [
   {
     title: "Account required",
-    copy: "The desktop app is the hosted app in a native window — it only works signed in. Signed out, it shows a sign-in screen and blocks everything else. Access stays invite-only.",
+    copy: "Sign in the same way as the website — Google or an email code. Your team owner or admin invites your exact email. Everyone else lands on the waitlist.",
   },
   {
     title: "Stays signed in",
-    copy: "One sign-in (Google or email code) persists between launches until the session expires or you sign out. Window size and position restore too.",
+    copy: "One sign-in lasts between launches on this computer until the session expires or you sign out. Window size and position come back too.",
   },
   {
-    title: "Same product, locked down",
-    copy: "No second database. The window only opens Vantage and its sign-in and billing pages; other links open in your browser. vantage-frc:// links open the app.",
+    title: "Same Vantage",
+    copy: "This is the live product in its own window, not a second copy. Other links open in your browser. vantage-frc:// links open the app.",
   },
   {
-    title: "Windows first, unsigned",
-    copy: "Download an unsigned installer from GitHub Releases, or build it from the repo. SmartScreen warns until code-signing certs exist. No auto-update — install newer releases yourself.",
+    title: "Windows may warn",
+    copy: "Download from GitHub Releases. Windows SmartScreen may warn that the publisher is unknown. That is expected until a signing certificate exists — not a virus.",
   },
   {
-    title: "CAD stays local",
-    copy: "Fusion jobs still run through the paired vantage-cad relay on your machine. Onshape stays hosted OAuth.",
+    title: "Fusion stays on this computer",
+    copy: "Fusion jobs still run through the paired CAD app on this machine. Onshape stays in the browser.",
   },
 ] as const;
 
@@ -41,8 +41,8 @@ export default function DesktopPage() {
           <p className="lux-kicker">Desktop</p>
           <h1>Vantage on the desktop.</h1>
           <p>
-            A native Windows window around the live app — scouting, CAD, and Bugbot included. Not a separate
-            cloud, and not usable without a Vantage account: the app gates itself to the sign-in flow until you are in.
+            The same Vantage you use in a browser, in its own Windows window. Sign in the same way. Your team
+            owner invites your exact email.
           </p>
           <div className="actions">
             <a className="button primary" href="/signin">
@@ -59,9 +59,10 @@ export default function DesktopPage() {
             <header className="lux-section-head">
               <h2>What you install</h2>
               <p>
-                Tagged GitHub Releases (<code>desktop-v*</code>) publish unsigned NSIS and portable exes. From a
-                clone: <code>npm run desktop:dist</code> writes <code>apps/desktop/release/</code>. Details in{" "}
-                <a href="https://github.com/sahil-patel-2011/vantage-frc/blob/main/docs/DESKTOP.md">docs/DESKTOP.md</a>.
+                Download the Windows app from GitHub Releases. Windows may warn that the publisher is unknown —
+                that is expected. Mentors who build from the repo can follow{" "}
+                <a href="https://github.com/sahil-patel-2011/vantage-frc/blob/main/docs/DESKTOP.md">the desktop notes</a>.
+                Signing a release is optional and not required to run.
               </p>
             </header>
             <ul className="lux-feature-grid">

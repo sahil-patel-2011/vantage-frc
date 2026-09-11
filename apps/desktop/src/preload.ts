@@ -11,6 +11,8 @@ import type { UpdateStatus } from "./update-service";
 contextBridge.exposeInMainWorld("vantageDesktop", {
   isDesktop: true,
   platform: process.platform,
+  /** Bundled file:// pages only: try the app again. Main refuses this from the website. */
+  retry: (): Promise<void> => ipcRenderer.invoke("desktop-shell:retry"),
   link: {
     /** Start (or restart) the browser sign-in flow. */
     start: (): Promise<void> => ipcRenderer.invoke("desktop-link:start"),

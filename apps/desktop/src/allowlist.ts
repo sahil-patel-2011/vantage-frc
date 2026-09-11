@@ -7,6 +7,19 @@ function hostnameOf(url: URL): string {
   return url.hostname.replace(/^\[|\]$/g, "").toLowerCase();
 }
 
+/** Localhost / loopback so a mentor's VANTAGE_URL can target a machine-local web app. */
+export function isLoopbackHost(host: string): boolean {
+  return LOOPBACK.has(host.replace(/^\[|\]$/g, "").toLowerCase());
+}
+
+export function isLoopbackOrigin(origin: string): boolean {
+  try {
+    return isLoopbackHost(new URL(origin).hostname);
+  } catch {
+    return false;
+  }
+}
+
 function endsWithHost(host: string, suffix: string): boolean {
   return host === suffix || host.endsWith(`.${suffix}`);
 }
@@ -26,7 +39,7 @@ export function isLocalShellPage(url: URL): boolean {
 /** Origins the BrowserWindow is allowed to *start* on. */
 export function isAllowedAppOrigin(url: URL): boolean {
   const host = hostnameOf(url);
-  if (LOOPBACK.has(host)) {
+  if (isLoopbackHost(host)) {
     return url.protocol === "http:" || url.protocol === "https:";
   }
   return url.protocol === "https:" && host === "vantage-frc-web.vercel.app";
@@ -52,7 +65,7 @@ export function isAllowedNavigation(href: string): boolean {
   }
 
   const host = hostnameOf(url);
-  if (LOOPBACK.has(host)) {
+  if (isLoopbackHost(host)) {
     return url.protocol === "http:" || url.protocol === "https:";
   }
   if (url.protocol !== "https:") return false;

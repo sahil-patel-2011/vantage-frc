@@ -105,7 +105,7 @@
 
       <section class="card">
         <h1 id="title">Checking for updates…</h1>
-        <p id="body">Vantage is looking for a newer desktop release.</p>
+        <p id="body">Vantage is looking for a newer Windows app.</p>
         <div class="versions">
           <span>Installed <b id="current">—</b></span>
           <span id="available-wrap" hidden>Available <b id="available">—</b></span>
@@ -132,8 +132,8 @@
 
       function render(status) {
         if (!status) {
-          $("title").textContent = "Update status unavailable";
-          $("body").textContent = "This window could not reach the update service.";
+          $("title").textContent = "Couldn't check for an update";
+          $("body").textContent = "Try again when you're online.";
           return;
         }
         $("current").textContent = status.currentVersion;
@@ -146,19 +146,20 @@
 
         if (kind === "none") {
           $("title").textContent = "Vantage is up to date";
-          $("body").textContent = "No desktop update is needed. The app itself updates whenever the page reloads.";
-        } else if (kind === "required") {
-          $("title").textContent = "Update required";
           $("body").textContent =
-            "Vantage on the web no longer supports this desktop version, so the product will not work correctly in this window until it is updated.";
+            "You're on the current Windows app. Team pages update on their own when you reopen them.";
+        } else if (kind === "required") {
+          $("title").textContent = "Update needed";
+          $("body").textContent =
+            "This copy of Vantage is too old to work with the website. Update before you keep going.";
         } else if (kind === "overdue") {
           $("title").textContent = "Update ready to install";
           $("body").textContent =
-            "A newer Vantage desktop release has been waiting more than two days. It will install on its own the next time you close the app.";
+            "A newer Vantage app has been waiting. It will install the next time you close this window — never during a match.";
         } else {
           $("title").textContent = "Update available";
           $("body").textContent =
-            "A newer Vantage desktop release is available. It will install quietly when you next close the app.";
+            "A newer Vantage app is available. It will install quietly the next time you close this window.";
         }
 
         const canInstall = kind !== "none" && !status.portable;
@@ -175,11 +176,9 @@
 
         const notes = [];
         if (status.portable) {
-          notes.push(
-            "This is the portable build — it has no installer to replace in place. Download the new portable .exe and swap the file.",
-          );
+          notes.push("This copy of Vantage is a single file. Download the new file and replace this one.");
         }
-        if (status.lastError) notes.push("Last attempt: " + status.lastError);
+        if (status.lastError) notes.push(status.lastError);
         $("note").className = "note" + (status.lastError ? " warn" : "");
         $("note").textContent = notes.join(" ");
         show($("note"), notes.length > 0);

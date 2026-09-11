@@ -51,14 +51,8 @@
       }
       h1 { font-size: 1.5rem; font-weight: 600; margin-bottom: 12px; }
       p { color: var(--muted); line-height: 1.55; margin-bottom: 10px; }
-      code {
-        background: color-mix(in srgb, var(--line) 55%, transparent);
-        border-radius: 4px;
-        padding: 0.1em 0.35em;
-        font-size: 0.9em;
-      }
       .actions { margin-top: 26px; display: flex; flex-wrap: wrap; gap: 12px; }
-      a.button {
+      button.button {
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -66,43 +60,69 @@
         min-width: 44px;
         padding: 0 22px;
         border-radius: 10px;
+        font: inherit;
         font-size: 0.95rem;
         font-weight: 600;
-        text-decoration: none;
+        cursor: pointer;
         background: var(--accent);
         color: var(--accent-ink);
         border: 1px solid var(--accent);
       }
+      .button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
       .fine { margin-top: 22px; font-size: 0.85rem; }
     </style>
   </head>
   <body>
     <main class="card">
       <div class="word">Vantage</div>
-      <h1>Can’t reach Vantage</h1>
-      <p>The desktop shell couldn’t load the hosted workspace. Check your connection, then retry.</p>
+      <h1 id="title">Can't reach Vantage</h1>
+      <p id="body">Vantage isn't reachable right now. Check your connection, then try again.</p>
       <div class="actions">
-        <a class="button" id="retry" href="#">Retry</a>
+        <button class="button" id="retry" type="button">Try again</button>
       </div>
-      <p class="fine">Trying <code id="target">https://vantage-frc-web.vercel.app</code>. View → Reload works too.</p>
+      <p class="fine" id="hint">Ctrl+R also tries again.</p>
     </main>
     <script>
       (function () {
-        var fallback = "https://vantage-frc-web.vercel.app";
-        var origin = fallback;
+        var COPY = {
+          offline: {
+            title: "You're offline",
+            body: "This computer is not connected. Check Wi-Fi, then try again."
+          },
+          timeout: {
+            title: "Can't reach Vantage",
+            body: "Vantage took too long to answer. Venue Wi-Fi can do this — try again in a moment."
+          },
+          local: {
+            title: "Can't reach Vantage",
+            body: "Vantage isn't running on this computer yet. Start it, then try again."
+          },
+          unreachable: {
+            title: "Can't reach Vantage",
+            body: "Vantage isn't reachable right now. Check your connection, then try again."
+          }
+        };
+        var reason = "unreachable";
         try {
-          var raw = new URLSearchParams(location.search).get("origin") || fallback;
-          var u = new URL(raw);
-          var loopback = ["localhost", "127.0.0.1", "[::1]"];
-          if (
-            (u.protocol === "https:" && u.hostname === "vantage-frc-web.vercel.app") ||
-            ((u.protocol === "http:" || u.protocol === "https:") && loopback.indexOf(u.hostname) !== -1)
-          ) {
-            origin = u.origin;
+          var raw = new URLSearchParams(location.search).get("reason") || "";
+          if (raw === "offline" || raw === "timeout" || raw === "local" || raw === "unreachable") {
+            reason = raw;
           }
         } catch (e) {}
-        document.getElementById("retry").href = origin + "/";
-        document.getElementById("target").textContent = origin;
+        var copy = COPY[reason] || COPY.unreachable;
+        document.getElementById("title").textContent = copy.title;
+        document.getElementById("body").textContent = copy.body;
+        document.getElementById("retry").textContent = "Try again";
+        document.getElementById("hint").textContent = "Ctrl+R also tries again.";
+
+        document.getElementById("retry").addEventListener("click", function () {
+          var api = window.vantageDesktop;
+          if (api && typeof api.retry === "function") {
+            api.retry();
+            return;
+          }
+          location.reload();
+        });
       })();
     </script>
   </body>
