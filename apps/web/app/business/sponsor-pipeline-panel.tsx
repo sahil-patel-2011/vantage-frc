@@ -1,9 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
-import { BusinessRelated } from "../../components/business-related";
 import { EmptyState, Button } from "../../components/ui";
-import { SPONSOR_CRM_RELATED_INCLUDE } from "../../lib/business/business-related";
 import { sponsorCrmNextActions } from "../../lib/business/sponsor-crm-next-actions";
 import {
   SPONSOR_PIPELINE_STAGES,
@@ -166,14 +164,7 @@ export function SponsorPipelinePanel({
 
   return (
     <div className="biz-stack">
-      <BusinessRelated
-        orgId={view.orgId}
-        active="sponsors"
-        include={SPONSOR_CRM_RELATED_INCLUDE}
-        ariaLabel="Related fundraising tools"
-      />
-
-      <NextActions view={view} />
+      {activeSponsors.length ? <NextActions view={view} /> : null}
 
       <section className="app-card soft-panel biz-pipeline-goal">
         <header className="biz-card-head">
@@ -222,7 +213,7 @@ export function SponsorPipelinePanel({
         <div className="biz-meter" aria-label="Fundraising progress">
           <span style={{ width: `${percent(progress.actualCents, progress.goalCents || 1)}%` }} />
         </div>
-        <p className="app-muted">Pipeline stages stay inside your org workspace. Other teams&apos; sponsors never appear here.</p>
+        <p className="app-muted">Only this team’s sponsors appear here.</p>
       </section>
 
       {!activeSponsors.length ? (
@@ -230,26 +221,20 @@ export function SponsorPipelinePanel({
           soft
           badge={view.canManageFinance ? "Get started" : "Setup"}
           badgeTone={view.canManageFinance ? "" : "setup"}
-          title={view.canManageFinance ? "No sponsors in the CRM yet" : "Sponsor CRM is empty"}
+          title={view.canManageFinance ? "No sponsors yet" : "Sponsor list is empty"}
           description={
             view.canManageFinance
-              ? "Add a partner below, run source-linked research, or open Fundraisers and Grants. Pipeline totals only reflect recorded contributions."
-              : "A finance lead adds CRM rows. You can still open related fundraising tools while the board is empty."
+              ? "Add a partner below, or open Fundraisers and Grants. Totals only reflect recorded contributions."
+              : "A finance lead adds sponsors. You can still open Fundraisers and Grants while this list is empty."
           }
-        >
-          <BusinessRelated
-            orgId={view.orgId}
-            include={["fundraisers", "grants", "placements", "finance-ai"]}
-            ariaLabel="Empty CRM next links"
-          />
-        </EmptyState>
+        />
       ) : null}
 
       {reminders.length ? (
         <section className="app-card biz-reminder-panel">
           <header className="biz-card-head">
             <div>
-              <span className="biz-overline">CRM nudges</span>
+              <span className="biz-overline">Follow-ups</span>
               <h2>Thank-yous, renewals, and overdue follow-ups</h2>
             </div>
             <span className="biz-count">{reminders.length}</span>
@@ -304,7 +289,7 @@ export function SponsorPipelinePanel({
       <section className="app-card">
         <header className="biz-card-head">
           <div>
-            <span className="biz-overline">Sponsor pipeline CRM</span>
+            <span className="biz-overline">Sponsor pipeline</span>
             <h2>Prospect → ask → visit → pledged → active → renewal</h2>
           </div>
           <span className="biz-count">{formatSponsorUsd(teamTotalUsd)} team total · {activeSponsors.length}</span>
@@ -417,7 +402,7 @@ export function SponsorPipelinePanel({
                   </a>
                   {view.canManageFinance ? (
                     <button disabled={busy} onClick={() => void mutate({ action: "save-prospect", prospectId: prospect.id })}>
-                      Add to CRM
+                      Add sponsor
                     </button>
                   ) : null}
                   <button disabled={busy} onClick={() => void mutate({ action: "dismiss-prospect", prospectId: prospect.id })}>

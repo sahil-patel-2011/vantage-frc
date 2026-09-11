@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { BusinessRelated } from "../../components/business-related";
 import PartnerPlacement from "../../components/partner-placement";
 import { EmptyState, Button } from "../../components/ui";
 import { ActionMenu, type ActionSpec } from "../../components/ui/action-menu";
@@ -13,7 +12,6 @@ import {
   type GrantApplication,
   type PurchaseRequest,
 } from "../../lib/business-portal";
-import { BUSINESS_GRANTS_RELATED_INCLUDE } from "../../lib/business/business-related";
 import { describeBudgetLine, type BudgetLine, type BudgetVsActualView } from "../../lib/finance/budget-vs-actual";
 import { FundraisingGlance } from "./fundraising-glance";
 import { dollars, money, percent, statusLabel, type Tab } from "./business-helpers";
@@ -83,8 +81,8 @@ export function Overview({ view, setTab }: { view: BusinessView; setTab: (tab: T
             ))}
           </ul>
           <small className="app-muted" style={{ display: "block", marginTop: 8 }}>
-            Opt-in guidance from Season Costs — no card or bank data stored. Finance in Ask AI is under{" "}
-            <a href={financeAiHref}>AI → Finance</a>.
+            Optional guidance from Season Costs — no card or bank data stored. Ask AI about money is under{" "}
+            <a href={financeAiHref}>Ask AI</a>.
           </small>
         </section>
       ) : null}
@@ -93,6 +91,7 @@ export function Overview({ view, setTab }: { view: BusinessView; setTab: (tab: T
         view={view}
         sponsorsAllowed={sponsorsAllowed}
         onOpenSponsors={() => setTab("sponsors")}
+        onOpenBudget={() => setTab("budget")}
       />
 
       <section className="biz-grid two">
@@ -159,9 +158,9 @@ export function Overview({ view, setTab }: { view: BusinessView; setTab: (tab: T
           <span className="biz-overline">Season spend + finance AI</span>
           <h2>Track spend, and choose what AI can read.</h2>
           <p className="app-muted">
-            <a href={costsHref}>Season Costs</a> tracks event spend and a local rule-based assistant for open{" "}
-            <a href={ordersHref}>purchase requests</a>. Chat tools that read redacted budgets require{" "}
-            <a href={financeAiHref}>Finance in Ask AI</a> under AI governance. Card and bank details stay out.
+            <a href={costsHref}>Season Costs</a> tracks event spend and a local assistant for open{" "}
+            <a href={ordersHref}>purchase requests</a>. Chat that reads redacted budgets lives under{" "}
+            <a href={financeAiHref}>Ask AI</a>. Card and bank details stay out.
           </p>
           {/* Finance-in-AI is the same label pointing at the same href three
               lines up, in this card's own sentence. One copy. */}
@@ -316,30 +315,11 @@ function PurchaseRow({ purchase, canManage, busy, mutate }: { purchase: Purchase
 export function Grants({ view, busy, submit, mutate }: { view: BusinessView; busy: boolean; submit: Submit; mutate: Mutate }) {
   const [selectedDraft, setSelectedDraft] = useState(view.drafts[0]?.id ?? "");
   const draft = view.drafts.find((item) => item.id === selectedDraft) ?? view.drafts[0];
-  /**
-   * One row of related destinations, not three.
-   *
-   * Sponsor CRM is a workbench in the tab bar directly above this panel, so the
-   * strip was repeating a tab; the sentence underneath then repeated the strip's
-   * own workbench and writer links with different wording, and the empty state
-   * repeated all of it a third time. Keep only what the tab bar does not carry.
-   */
-  const grantsRelated = useMemo(
-    () => BUSINESS_GRANTS_RELATED_INCLUDE.filter((id) => id !== "sponsors"),
-    [],
-  );
   return (
     <div className="biz-stack">
-      <BusinessRelated
-        orgId={view.orgId}
-        active="grants"
-        include={grantsRelated}
-        ariaLabel="Related grant writing tools"
-      />
       <div className="biz-detail-link">
         <span>
-          Guided need · impact · budget · timeline essays live in the grant writing workbench
-          above. Reporting on an award you already won:
+          Guided need · impact · budget · timeline essays live in Grant writing. Reporting on an award you already won:
         </span>
         <a href={`/grant-report?orgId=${encodeURIComponent(view.orgId)}`}>Grant report →</a>
       </div>
@@ -349,7 +329,7 @@ export function Grants({ view, busy, submit, mutate }: { view: BusinessView; bus
           badge={view.canManageFinance ? "Get started" : "Setup"}
           badgeTone={view.canManageFinance ? "" : "setup"}
           title={view.canManageFinance ? "No grant applications yet" : "Grant pipeline is empty"}
-          description="Add an opportunity in the form below, or compose narratives in the writing workbench linked above. Award $ appears only after you record a real award."
+          description="Add an opportunity in the form below, or write in Grant writing. Award $ appears only after you record a real award."
         />
       ) : null}
       <section className="biz-grid two">
@@ -393,8 +373,7 @@ export function Grants({ view, busy, submit, mutate }: { view: BusinessView; bus
           <span className="biz-overline">Template writing studio</span>
           <h2>Draft faster without inventing a single metric.</h2>
           <p>
-            Template drafts pull only from this team&apos;s Impact log and award history — not metered AI. For AI assist
-            with hard cutoffs, open the grant writing workbench or Writer.
+            Template drafts pull only from this team&apos;s Impact log and award history. For help writing, open Grant writing or Writer.
           </p>
           <form className="biz-form-grid" onSubmit={(event) => void submit(event, "generate-draft")}>
             <Field label="Document">
@@ -502,10 +481,10 @@ export function Grants({ view, busy, submit, mutate }: { view: BusinessView; bus
           <EmptyState
             soft
             title="No sourced drafts yet"
-            description="Generate a template draft above, or open the grant writing workbench for guided fields and metered AI."
+            description="Generate a template draft above, or open Grant writing for guided fields."
           >
-            <Button as="a" variant="secondary" href={`/team/grants?orgId=${encodeURIComponent(view.orgId)}`}>
-              Grant writing workbench
+            <Button as="a" variant="primary" href={`/team/grants?orgId=${encodeURIComponent(view.orgId)}`}>
+              Open grant writing
             </Button>
           </EmptyState>
         )}
@@ -530,8 +509,7 @@ export function Evidence({ view, busy, submit }: { view: BusinessView; busy: boo
   return <div className="biz-stack">
     <div className="biz-detail-link">
       <span>Need FIRST catalog prompts, essay drafts, character limits, and submission status?</span>
-      <a href={`/team/awards?orgId=${encodeURIComponent(view.orgId)}`}>Open the full awards workbench →</a>
-      <a href={`/award-tracker?orgId=${encodeURIComponent(view.orgId)}`}>Award tracker →</a>
+      <a href={`/team/awards?orgId=${encodeURIComponent(view.orgId)}`}>Open awards →</a>
     </div>
     <section className="biz-grid two"><article className="app-card"><span className="biz-overline">Verified achievement record</span><h2>Add an award once. Reuse it for years.</h2><form className="biz-form-grid" onSubmit={(event) => void submit(event, "add-award")}><Field label="Award"><input name="awardName" required placeholder="Engineering Inspiration Award" /></Field><Field label="Event"><input name="eventName" placeholder="District Championship" /></Field><Field label="Level"><input name="awardLevel" placeholder="Winner, finalist, district…" /></Field><Field label="Official source"><input name="sourceUrl" type="url" placeholder="https://…" /></Field><Field label="Why it mattered" hint="Capture the story future students would otherwise lose." wide><textarea name="story" rows={4} placeholder="What the team did, who led it, and what changed…" /></Field><Button variant="primary" disabled={busy}>Add award to {view.seasonYear}</Button></form></article><article className="app-card biz-impact-link"><span className="biz-overline">Live impact evidence</span><h2>Your grant facts are only as strong as this log.</h2><div className="biz-evidence-stats"><b>{view.impact.activities}<small>activities</small></b><b>{view.impact.hours}<small>hours</small></b><b>{view.impact.peopleReached.toLocaleString()}<small>people reached</small></b></div><p>These figures flow directly into sourced writing drafts. Add outreach, mentoring, demos, and service in Community Impact.</p><Button as="a" variant="primary" href={`/impact?orgId=${encodeURIComponent(view.orgId)}&season=${view.seasonYear}`}>Open Community Impact</Button></article></section><section className="app-card"><header className="biz-card-head"><div><span className="biz-overline">Team history</span><h2>The proof that graduates with the team—not with a person.</h2></div><span className="biz-count">{view.awards.length}</span></header><div className="biz-award-years">{[...grouped.entries()].sort(([a], [b]) => b - a).map(([year, awards]) => <section key={year}><h3>{year}</h3><div>{awards.map((award) => <article key={award.id}><ToneBadge tone="good">Achievement</ToneBadge><strong>{award.awardName}</strong><span>{[award.eventName, award.awardLevel].filter(Boolean).join(" · ") || "Team record"}</span>{award.story ? <p>{award.story}</p> : null}{award.sourceUrl ? <a href={award.sourceUrl} target="_blank" rel="noreferrer">Verify source ↗</a> : null}</article>)}</div></section>)}{!view.awards.length ? <p className="biz-empty-inline">Start with the team’s most recent judged or competition award.</p> : null}</div></section>
   </div>;

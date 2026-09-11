@@ -1,7 +1,4 @@
 .product-hub-tabs { margin: 0 0 8px; }
-.product-hub--team > .app-page-header {
-  display: none;
-}
 .product-hub .product-hub-tabs.soft-tab-bar {
   background: transparent;
   border: 0;
@@ -355,6 +352,13 @@
 .product-hub--competition .myday-related,
 .product-hub--competition .strategy-header-actions .product-hub-related,
 .product-hub--competition .sfb-related {
+  display: none !important;
+}
+
+/* Business uses the same hub chrome as Team / Build / Competition. Related
+   chips already live as workbench tabs and the tool strip. */
+.product-hub--business .product-hub-related,
+.business-page .product-hub-related {
   display: none !important;
 }
 

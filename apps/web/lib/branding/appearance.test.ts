@@ -51,24 +51,18 @@ describe("density token mapping", () => {
     const comfortable = densityTokens("comfortable");
     expect(comfortable).toEqual({
       "--space-1": 4,
-      "--soft-space-1": 4,
       "--space-2": 8,
-      "--soft-space-2": 8,
       "--space-3": 12,
-      "--soft-space-3": 12,
       "--space-4": 16,
-      "--soft-space-4": 16,
       "--space-5": 20,
-      "--soft-space-5": 20,
       "--space-6": 24,
-      "--soft-space-6": 24,
     });
 
     const compact = densityTokens("compact");
     for (const [index, base] of SPACE_RAMP.entries()) {
       const n = index + 1;
       expect(compact[`--space-${n}`]).toBeCloseTo(base * DENSITY_SCALE.compact, 6);
-      expect(compact[`--soft-space-${n}`]).toBe(compact[`--space-${n}`]);
+      expect(compact[`--soft-space-${n}`]).toBeUndefined();
       expect(compact[`--space-${n}`]!).toBeLessThan(comfortable[`--space-${n}`]!);
       expect(compact[`--space-${n}`]!).toBeGreaterThan(0);
     }

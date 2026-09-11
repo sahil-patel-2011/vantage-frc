@@ -1,6 +1,5 @@
 "use client";
 
-import { BusinessRelated } from "../../components/business-related";
 import { EmptyState, Button } from "../../components/ui";
 import type { BusinessView } from "../../lib/business-portal";
 import { PIPELINE_STAGE_LABELS } from "../../lib/sponsor-pipeline";
@@ -22,10 +21,12 @@ function percent(value: number, total: number): number {
 export function FundraisingGlance({
   view,
   onOpenSponsors,
+  onOpenBudget,
   sponsorsAllowed = true,
 }: {
   view: BusinessView;
   onOpenSponsors: () => void;
+  onOpenBudget: () => void;
   sponsorsAllowed?: boolean;
 }) {
   const progress = view.fundraisingProgress;
@@ -52,19 +53,13 @@ export function FundraisingGlance({
         title="No season fundraising goal yet"
         description={
           sponsorsAllowed
-            ? "Set a budget goal, then add sponsors, grants, or fundraiser events."
-            : "Set a budget goal, then add grants or fundraiser events."
+            ? "Set a budget goal, then add sponsors, grants, or fundraisers."
+            : "Set a budget goal, then add grants or fundraisers."
         }
       >
-        <BusinessRelated
-          orgId={view.orgId}
-          include={
-            sponsorsAllowed
-              ? ["budget", "sponsors", "grants", "fundraisers", "orders"]
-              : ["budget", "grants", "fundraisers", "orders"]
-          }
-          ariaLabel="Fundraising glance setup links"
-        />
+        <Button variant="primary" type="button" onClick={onOpenBudget}>
+          Set a season goal
+        </Button>
       </EmptyState>
     );
   }
@@ -76,7 +71,7 @@ export function FundraisingGlance({
           <span className="biz-overline">Season fundraising</span>
           <h2>{hasGoal ? "Goal vs actual" : "Recorded inflows"}</h2>
           <p className="app-muted" style={{ margin: "6px 0 0", fontSize: 13 }}>
-            Org-local cash + grants only.
+            Cash and grants this team recorded.
           </p>
         </div>
         <span className={`biz-badge ${tone}`}>
@@ -115,22 +110,12 @@ export function FundraisingGlance({
         {sponsorsAllowed ? <span>{money(progress.pledgedPipelineCents)} pledged</span> : null}
       </footer>
 
-      <BusinessRelated
-        orgId={view.orgId}
-        include={
-          sponsorsAllowed
-            ? ["fundraisers", "sponsors", "grants", "orders"]
-            : ["fundraisers", "grants", "orders"]
-        }
-        ariaLabel="Fundraising glance related links"
-      />
-
       {sponsorsAllowed ? (
         <div className="biz-stage-pipeline" aria-label="Sponsor stage pipeline">
           <header>
             <span className="biz-overline">Stage pipeline</span>
             <Button variant="secondary" type="button" onClick={onOpenSponsors}>
-              Open CRM
+              Open sponsors
             </Button>
           </header>
           {partnerCount === 0 ? (

@@ -3,6 +3,8 @@
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { EmptyState, PageHeader, TabBar, ToolStrip, Button } from "../../components/ui";
+import { HelpTip } from "../../components/help-tip";
+import { OfflineBanner } from "../../components/offline-banner";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import type { BusinessPortalView } from "../../lib/business-portal";
 import {
@@ -10,6 +12,7 @@ import {
   fundingModelFromFlags,
 } from "../../lib/funding-profile";
 import { SoftAccessDenied } from "../../components/hub-access-gate";
+import { sectionHelpFor } from "../../lib/help/section-help";
 import {
   clientCanAccessHub,
   filterSponsorTabs,
@@ -229,14 +232,14 @@ export default function BusinessClient() {
   }
 
   return (
-    <main className="module-page business-page">
+    <main className="module-page business-page product-hub product-hub--business">
       <PageHeader
         breadcrumbs="Business"
         title="Business"
         description={
           live
-            ? `Season finance, budget, purchases, sponsors, grants, and award evidence for ${live.teamNumber ? `FRC ${live.teamNumber}` : live.orgName} · ${live.seasonYear}.`
-            : "Season finance, budget, purchases, sponsors, grants, and award evidence — one season source of truth."
+            ? `Money, sponsors, grants, and awards for ${live.teamNumber ? `FRC ${live.teamNumber}` : live.orgName} · ${live.seasonYear}.`
+            : "Money, sponsors, grants, and outreach for this season."
         }
       >
         {live ? (
@@ -258,6 +261,7 @@ export default function BusinessClient() {
         ) : null}
       </PageHeader>
 
+      <OfflineBanner feature="Business" />
       <TabBar
         aria-label="Business sections"
         value={workbenchId}
@@ -267,7 +271,9 @@ export default function BusinessClient() {
         }}
         tabs={visibleWorkbenches.map((entry) => ({ id: entry.id, label: entry.label }))}
         className="product-hub-tabs"
-      />
+      >
+        <HelpTip entry={sectionHelpFor("business", tab) ?? sectionHelpFor("business", workbenchId)} />
+      </TabBar>
       {visibleNested.length > 0 ? (
         <ToolStrip
           aria-label={`Tools in ${BUSINESS_HUB.tabs.find((entry) => entry.id === workbenchId)?.label ?? "Business"}`}
@@ -352,12 +358,17 @@ export default function BusinessClient() {
             );
           })()
         ) : (
-          <EmptyState soft title="Opening business…" description="Loading this season’s budget, orders, partners, grants, and evidence." aria-busy />
+          <EmptyState soft title="Opening business…" description="Loading this season’s money, grants, and awards." aria-busy />
         )
       ) : null}
 
       {view?.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message} description="Choose the organization for this team, then return here to start the season business plan.">
+        <EmptyState
+          badge="Setup required"
+          badgeTone="setup"
+          title="Choose your team"
+          description="Choose your team, then come back to start this season’s money plan."
+        >
           <Button as="a" variant="primary" href="/workspace">
             Choose your team
           </Button>

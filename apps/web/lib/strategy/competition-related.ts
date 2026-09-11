@@ -2,12 +2,12 @@ import { hubHref } from "../nav/hubs";
 
 /** Soft-UI related Competition surfaces for Event Day / Strategy / picks. */
 export const COMPETITION_RELATED_LINKS = [
-  { id: "command", label: "Event Day", tab: "command" },
+  { id: "command", label: "Event day", tab: "command" },
   { id: "my-day", label: "My Day", tab: "my-day" },
   { id: "strategy", label: "Strategy", tab: "strategy" },
   { id: "scouting", label: "Scouting", tab: "scouting" },
-  { id: "forms", label: "Form builder", tab: "forms" },
-  { id: "match-checklist", label: "Match checklist", tab: "match-checklist" },
+  { id: "forms", label: "Forms", tab: "forms" },
+  { id: "match-checklist", label: "Pit", tab: "match-checklist" },
   { id: "pick-clock", label: "Pick clock", tab: "pick-clock" },
   { id: "chemistry", label: "Chemistry", tab: "chemistry" },
   { id: "alliance-desk", label: "Alliance desk", href: "/alliance-selection-desk" },

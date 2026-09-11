@@ -24,4 +24,16 @@ describe("team-related Soft-UI helpers", () => {
     const links = teamHubRelatedLinks("org-1");
     expect(links.every((l) => !/demo/i.test(l.label))).toBe(true);
   });
+
+  it("names Team workbenches the same way the hub tabs do", () => {
+    const labels = Object.fromEntries(teamHubRelatedLinks("org-1").map((link) => [link.id, link.label]));
+    expect(labels).toMatchObject({
+      calendar: "Calendar",
+      messages: "Chat",
+      attendance: "People",
+      todos: "Work",
+      knowledge: "Playbook",
+      fmea: "Failure notes",
+    });
+  });
 });

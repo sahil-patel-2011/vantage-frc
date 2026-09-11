@@ -312,6 +312,7 @@ describe("product hubs", () => {
       "scout-field-budget",
       "data-quality-scorecard",
     ]);
+    expect(competition.tabs.find((tab) => tab.id === "scout-p2p-relay")?.label).toBe("Pit link");
     expect(competition.tabs.find((tab) => tab.id === "scout-field-budget")?.label).toBe(
       "Field value",
     );
@@ -327,6 +328,13 @@ describe("product hubs", () => {
     expect(team.tabs.find((tab) => tab.id === "task-board")?.legacyHref).toBe("/tasks");
     expect(hubStripTabs(team, "todos").map((tab) => tab.id)).not.toContain("task-board");
     expect(hubStripTabs(team, "todos", "task-board").map((tab) => tab.id)).toContain("task-board");
+  });
+
+  it("keeps student-facing hub descriptions free of workbench chrome talk", () => {
+    for (const hub of NAV_HUBS) {
+      expect(hub.description, hub.id).toBeTruthy();
+      expect(hub.description, hub.id).not.toMatch(/tabs inside|workbench|Soft-UI/i);
+    }
   });
 
   it("sends the Business outreach calendar tab to /outreach-calendar, not the content calendar", () => {
