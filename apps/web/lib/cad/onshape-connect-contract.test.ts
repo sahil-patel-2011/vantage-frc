@@ -83,9 +83,13 @@ describe("Connections page", () => {
     expect(client).toMatch(/>\s*Disconnect\s*</);
   });
 
-  it("prints the callback URL to register while OAuth is unconfigured", () => {
-    expect(client).toContain("onshapeCallbackUrl");
-    expect(client).toContain("dev-portal.onshape.com");
+  it("keeps OAuth portal URLs off the student Connections page", () => {
+    // Mentors register the callback under Connectors. Students see Connect /
+    // Needs setup, never the Onshape developer portal or a callback URL.
+    expect(client).not.toContain("onshapeCallbackUrl");
+    expect(client).not.toContain("dev-portal.onshape.com");
+    expect(client).toContain("ONSHAPE_OAUTH_CTA");
+    expect(client).toContain("Needs setup");
   });
 });
 

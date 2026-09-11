@@ -90,11 +90,11 @@ describe("eventDayNextActions", () => {
   it("prioritizes event setup when missing", () => {
     const actions = eventDayNextActions(baseSnap({ eventKey: null, eventName: null }));
     expect(actions[0]?.id).toBe("event");
-    expect(actions.some((a) => a.id === "strategy")).toBe(false);
-    expect(actions.some((a) => a.id === "my-day")).toBe(false);
+    expect(actions[0]?.primary).toBe(true);
+    expect(actions[0]?.label).toMatch(/Set active event/);
   });
 
-  it("surfaces checklist and scout gaps when a match is queued", () => {
+  it("surfaces scout gaps when a match is queued without duplicating the related strip", () => {
     const actions = eventDayNextActions(
       baseSnap({
         matches: [
@@ -133,10 +133,10 @@ describe("eventDayNextActions", () => {
         },
       }),
     );
-    expect(actions.find((a) => a.id === "checklist")?.primary).toBe(true);
+    // Match checklist lives on the Event day related strip, so Next actions
+    // must not duplicate it. Scout gaps still belong on the action list.
+    expect(actions.find((a) => a.id === "checklist")).toBeUndefined();
     expect(actions.find((a) => a.id === "scout")?.label).toMatch(/2 coverage/);
-    expect(actions.find((a) => a.id === "my-day")).toBeUndefined();
-    expect(actions.find((a) => a.id === "logistics")).toBeUndefined();
     expect(
       actions.every((a) => {
         const blob = `${a.label} ${a.detail}`;

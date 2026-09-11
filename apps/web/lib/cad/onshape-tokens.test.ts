@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import type { PoolClient } from "@neondatabase/serverless";
 import { hostedOnshapeAuthFromEnv } from "./hosted-auth";
 import { hostedOnshapeEnvStatus } from "./onshape-setup-copy";
+import { MISSING_ENV_MESSAGE, MISSING_SESSION_MESSAGE } from "./onshape-setup-strings";
 import { loadCadAgentOnshape } from "./onshape-tokens";
 
 const ORIGINAL = {
@@ -43,7 +44,7 @@ describe("hosted Onshape credential resolution", () => {
         "00000000-0000-0000-0000-000000000001",
         "00000000-0000-0000-0000-000000000002",
       ),
-    ).rejects.toThrow(/Setup required/);
+    ).rejects.toThrow(MISSING_ENV_MESSAGE);
   });
 
   it("returns a setup error when neither hosted path exists", async () => {
@@ -55,7 +56,7 @@ describe("hosted Onshape credential resolution", () => {
     delete process.env.ONSHAPE_API_SECRET;
 
     expect(hostedOnshapeEnvStatus(process.env).setupRequired).toBe(true);
-    expect(hostedOnshapeEnvStatus(process.env).message).toMatch(/Setup required/);
+    expect(hostedOnshapeEnvStatus(process.env).message).toBe(MISSING_ENV_MESSAGE);
 
     await expect(
       loadCadAgentOnshape(
@@ -63,7 +64,7 @@ describe("hosted Onshape credential resolution", () => {
         "00000000-0000-0000-0000-000000000001",
         "00000000-0000-0000-0000-000000000002",
       ),
-    ).rejects.toThrow(/Setup required/);
+    ).rejects.toThrow(MISSING_ENV_MESSAGE);
   });
 
   it("is not setup_required at the env layer when OAuth is configured, but still refuses a hosted load without a session", async () => {
@@ -85,6 +86,6 @@ describe("hosted Onshape credential resolution", () => {
         "00000000-0000-0000-0000-000000000001",
         "00000000-0000-0000-0000-000000000002",
       ),
-    ).rejects.toThrow(/Setup required/);
+    ).rejects.toThrow(MISSING_SESSION_MESSAGE);
   });
 });
