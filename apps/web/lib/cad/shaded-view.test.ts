@@ -185,7 +185,7 @@ describe("CadViewport", () => {
 
   it("shows an empty state plus Open in Onshape text link when there is no PNG", () => {
     const markup = html({ openUrl: onshapeUrl });
-    expect(markup).toContain("No shaded view yet");
+    expect(markup).toContain("No picture yet");
     expect(markup).toMatch(/<a[^>]+href="https:\/\/cad\.onshape\.com/);
     expect(markup).toMatch(/<a[^>]+target="_blank"/);
     expect(markup).not.toContain("<iframe");
@@ -194,7 +194,7 @@ describe("CadViewport", () => {
 
   it("refuses to treat an Onshape document URL as a PNG src", () => {
     const markup = html({ pngBase64: onshapeUrl, openUrl: onshapeUrl, setupRequired: true });
-    expect(markup).toContain("Onshape setup required");
+    expect(markup).toContain("Connect Onshape");
     expect(markup).not.toContain(`src="${onshapeUrl}"`);
     expect(markup).not.toContain("<iframe");
   });

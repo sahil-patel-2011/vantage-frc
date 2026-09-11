@@ -44,7 +44,7 @@ function OpenInOnshapeLink({ href }: { href: string }) {
 }
 
 /**
- * In-app CAD viewport: a real Onshape shaded-view PNG, or an honest empty
+ * In-app CAD viewport: a real Onshape picture, or an honest empty
  * state. Never an Onshape iframe. "Open in Onshape" is a text link only.
  */
 export function CadViewport({ pngBase64, openUrl, setupRequired = false }: CadViewportProps) {
@@ -60,16 +60,16 @@ export function CadViewport({ pngBase64, openUrl, setupRequired = false }: CadVi
       </div>
       {src ? (
         <div className="cad-agent-empty-view">
-          <img alt="Onshape shaded view" src={src} />
+          <img alt="Onshape picture" src={src} />
         </div>
       ) : (
         <EmptyState
           className="cad-agent-empty-view"
-          title={setupRequired ? "Onshape setup required" : "No shaded view yet"}
+          title={setupRequired ? "Connect Onshape" : "No picture yet"}
           description={
             setupRequired
-              ? "Connect Onshape before a shaded view can load. The viewport stays empty."
-              : "No Onshape shaded-view PNG is available. The viewport stays empty until a real render arrives."
+              ? "Connect Onshape before a picture can load. The viewport stays empty."
+              : "No picture of this part yet. The viewport stays empty until Onshape sends a real view."
           }
           badge={setupRequired ? "Setup" : undefined}
           badgeTone={setupRequired ? "setup" : undefined}

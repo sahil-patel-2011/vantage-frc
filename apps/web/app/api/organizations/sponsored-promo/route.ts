@@ -43,7 +43,7 @@ export async function GET(request: Request) {
           balanced: true,
           note:
             pool.configured.length > 0
-              ? `Usage is balanced across ${pool.configured.length} configured provider${pool.configured.length === 1 ? "" : "s"} (weighted round-robin). Keys stay on the server.`
+              ? `Work is spread across ${pool.configured.length} connected AI${pool.configured.length === 1 ? "" : "s"}. Keys stay on the server.`
               : "No sponsored provider keys are configured on this deployment.",
         },
       };

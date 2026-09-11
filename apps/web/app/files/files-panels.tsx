@@ -38,7 +38,7 @@ export function UploadList({ uploads, onClear }: { uploads: UploadItem[]; onClea
               <span className="drive-route">{entry.routeLabel}</span>
               <span className="app-muted">
                 {entry.phase === "hashing"
-                  ? "Checksumming"
+                  ? "Checking the file"
                   : entry.phase === "routing"
                     ? "Deciding where it goes"
                     : entry.phase === "sending"
@@ -198,9 +198,11 @@ export function Body(props: BodyProps) {
           <span className="app-muted drive-usage">
             {listing.usage.fileCount} file{listing.usage.fileCount === 1 ? "" : "s"} ·{" "}
             {formatDriveBytes(listing.usage.dbBytes)} in Vantage
-            {listing.usage.nodeBytes > 0 ? ` · ${formatDriveBytes(listing.usage.nodeBytes)} on your node` : ""}
+            {listing.usage.nodeBytes > 0
+              ? ` · ${formatDriveBytes(listing.usage.nodeBytes)} on your storage node`
+              : ""}
             {listing.usage.objectBytes > 0
-              ? ` · ${formatDriveBytes(listing.usage.objectBytes)} in object storage`
+              ? ` · ${formatDriveBytes(listing.usage.objectBytes)} in hosted storage`
               : ""}
           </span>
         </div>

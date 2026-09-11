@@ -55,7 +55,7 @@ export function fileIcon(file: { contentClass: string; contentType: string }): s
 
 export function storageLabel(file: DriveFile): string {
   if (file.storageLocation === "node") return "On your storage node";
-  if (file.storageLocation === "object") return "In object storage";
+  if (file.storageLocation === "object") return "In hosted storage";
   return "In Vantage";
 }
 

@@ -45,9 +45,9 @@ export function EventDayNextActionsPanel({ actions }: { actions: EventDayShellNe
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className={action.primary ? "app-button" : "app-button secondary"} href={action.href}>
+            <Button as="a" variant={action.primary ? "primary" : "secondary"} href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
@@ -140,7 +140,7 @@ export function EventDayShell({
       <EmptyState
         soft
         className="edc-empty"
-        badge={shell === "setup" ? "Setup required" : copy.badge}
+        badge={shell === "setup" ? "Setup" : copy.badge}
         badgeTone="setup"
         title={eventDayEmptyTitle({ shell, orgId, hasActiveEvent })}
         description={

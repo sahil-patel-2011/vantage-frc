@@ -3,8 +3,8 @@
  * the way that answer requires, then finalize.
  *
  * Kept out of the component so the sequencing is readable and so the honest
- * route label ("Going to your storage node", "Stored in Vantage", "Straight to
- * object storage") comes from the same object that drives the transfer — the
+ * route label ("Going to your storage node", "Stored in Vantage", "Going to
+ * hosted storage") comes from the same object that drives the transfer — the
  * user is never shown one destination and given another.
  *
  * Client-safe: fetch, Blob and the shared streaming hasher only.
@@ -59,7 +59,7 @@ type GrantResponse =
 /** The sentence shown next to the file while it uploads. */
 export function routeLabelFor(destination: string, nodeName?: string): string {
   if (destination === "node") return `Going to your storage node${nodeName ? ` (${nodeName})` : ""}`;
-  if (destination === "object") return "Straight to object storage";
+  if (destination === "object") return "Going to hosted storage";
   if (destination === "cloud") return "Stored in Vantage";
   return "Nowhere to put it";
 }

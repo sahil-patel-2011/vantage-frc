@@ -86,13 +86,13 @@ export function SponsoredPromoBanner({
       {payload.eligible && configured.length > 0 ? (
         <div style={{ marginTop: "0.45rem", fontSize: "0.85rem", opacity: 0.92 }}>
           <div>
-            Pool: {configured.join(", ")}
-            {payload.pool?.balanced ? " · balanced (weighted round-robin)" : null}
+            Connected: {configured.join(", ")}
+            {payload.pool?.balanced ? " · spreading work across them" : null}
           </div>
           {payload.pool?.note ? <div style={{ marginTop: "0.2rem" }}>{payload.pool.note}</div> : null}
           {degraded.length > 0 ? (
             <div style={{ marginTop: "0.2rem" }}>
-              Temporarily degraded (skipped as primary): {degraded.join(", ")}
+              Temporarily skipped: {degraded.join(", ")}
             </div>
           ) : null}
         </div>

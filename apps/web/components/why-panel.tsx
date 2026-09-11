@@ -44,9 +44,22 @@ type ExplainState = {
 };
 
 function statusLabel(status: Narration["status"]): string {
-  if (status === "setup_required") return "setup required";
-  if (status === "pending") return "not run yet";
-  return status;
+  switch (status) {
+    case "setup_required":
+      return "Needs setup";
+    case "pending":
+      return "not run yet";
+    case "ok":
+      return "Done";
+    case "empty":
+      return "Nothing found";
+    case "error":
+      return "Error";
+    default: {
+      const _never: never = status;
+      return _never;
+    }
+  }
 }
 
 export function WhyPanel({

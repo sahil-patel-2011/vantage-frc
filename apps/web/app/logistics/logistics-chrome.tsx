@@ -35,9 +35,9 @@ export function LogisticsNextActionsPanel({ actions }: { actions: LogisticsShell
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className={action.primary ? "app-button" : "app-button secondary"} href={action.href}>
+            <Button as="a" variant={action.primary ? "primary" : "secondary"} href={action.href}>
               Open
-            </a>
+            </Button>
           </li>
         ))}
       </ol>
