@@ -12,5 +12,8 @@ describe("Match video last snapshot stays on the phone", () => {
     expect(src).toMatch(/"match-video"/);
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
     expect(src).toMatch(/feature="Match video"/);
+    expect(src).toMatch(/if \(!view\)/);
+    expect(src).not.toMatch(/fetchFailed \|\| !view/);
+    expect(src).not.toMatch(/fetchFailed \|\| view == null/);
   });
 });

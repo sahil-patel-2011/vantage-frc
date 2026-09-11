@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AiInsightPanel } from "../../components/ai-insight-panel";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import {
   QUEUED_ON_DEVICE,
   getFeatureSnapshot,
@@ -34,6 +35,23 @@ import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure"
 
 type ActionBody = Record<string, unknown> & { action: string; orgId: string };
 type ReadyView = Extract<CalendarView, { status: "ready" }>;
+
+function isCalendarView(value: unknown): value is CalendarView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "ready";
+}
+
+async function persistCalendarSnapshot(orgHint: string, data: CalendarView): Promise<void> {
+  const cacheOrg = data.context.orgId?.trim() || orgHint;
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("calendar", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("calendar", "_", data);
+  } catch {
+    // Live season calendar already painted; IndexedDB is best-effort.
+  }
+}
 
 function fmtDate(iso: string): string {
   const date = new Date(`${iso}T00:00:00`);
@@ -287,35 +305,66 @@ export default function CalendarClient() {
   const [endsOn, setEndsOn] = useState("");
   const [notes, setNotes] = useState("");
   const [meetingUrl, setMeetingUrl] = useState("");
+  const viewRef = useRef<CalendarView | null>(null);
+  viewRef.current = view;
 
   const load = useCallback(async () => {
+    const params = new URLSearchParams(window.location.search);
+    const urlOrg = params.get("orgId")?.trim() ?? "";
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<CalendarView>("calendar", urlOrg || "_");
+      if (!viewRef.current && cached?.data && isCalendarView(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
     setFetchFailed(false);
     setErrorStatus(null);
-    const params = new URLSearchParams(window.location.search);
-    const orgId = params.get("orgId") ?? "";
-    const cached = orgId ? await getFeatureSnapshot<CalendarView>("calendar", orgId) : null;
-    if (cached?.data) {
-      setView(cached.data);
-      setFromCache(true);
-      setCachedAt(cached.cachedAt);
-    }
     try {
-      const response = await fetch(`/api/calendar${orgId ? `?orgId=${encodeURIComponent(orgId)}` : ""}`);
+      const response = await fetch(`/api/calendar${urlOrg ? `?orgId=${encodeURIComponent(urlOrg)}` : ""}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
       const data = (await response.json()) as CalendarView | { error?: string };
-      if (!response.ok || !("status" in data)) {
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
         setError("error" in data && data.error ? data.error : "Could not load the season calendar.");
         setErrorStatus(response.status);
-        if (!cached) setFetchFailed(true);
+        setFetchFailed(true);
+        return;
+      }
+      if (!response.ok || !isCalendarView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Season Calendar. Showing the last copy on this device.");
+          setFetchFailed(false);
+          return;
+        }
+        setError("error" in data && data.error ? data.error : "Could not load the season calendar.");
+        setErrorStatus(response.status);
+        setFetchFailed(true);
         return;
       }
       setError("");
       setView(data);
       setFromCache(false);
       setCachedAt(null);
-      const cacheOrg = ("context" in data && data.context.orgId) || orgId;
-      if (cacheOrg) await putFeatureSnapshot("calendar", cacheOrg, data);
+      await persistCalendarSnapshot(urlOrg, data);
     } catch {
-      if (!cached) setFetchFailed(true);
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Season Calendar. Showing the last copy on this device.");
+        setFetchFailed(false);
+        return;
+      }
+      setFetchFailed(true);
     }
   }, []);
 
@@ -346,7 +395,12 @@ export default function CalendarClient() {
           orgId: body.orgId,
           payload: body,
         });
-        setView((current) => (current ? applyCalendarLocalWrite(current, body, new Date().toISOString()) : current));
+        setView((current) => {
+          if (!current) return current;
+          const next = applyCalendarLocalWrite(current, body, new Date().toISOString());
+          void persistCalendarSnapshot(String(body.orgId), next);
+          return next;
+        });
         setError(QUEUED_ON_DEVICE);
         return;
       }
@@ -357,6 +411,7 @@ export default function CalendarClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify(body),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as { error?: string };
         if (!response.ok) {
@@ -371,7 +426,12 @@ export default function CalendarClient() {
             orgId: body.orgId,
             payload: body,
           });
-          setView((current) => (current ? applyCalendarLocalWrite(current, body, new Date().toISOString()) : current));
+          setView((current) => {
+            if (!current) return current;
+            const next = applyCalendarLocalWrite(current, body, new Date().toISOString());
+            void persistCalendarSnapshot(String(body.orgId), next);
+            return next;
+          });
           setError(QUEUED_ON_DEVICE);
           return;
         }
@@ -383,7 +443,7 @@ export default function CalendarClient() {
     [load],
   );
 
-  if (fetchFailed || !view) {
+  if (!view) {
     return (
       <main className="module-page cal-page">
         <PageHeader breadcrumbs="Team / Calendar" title="Season calendar" />

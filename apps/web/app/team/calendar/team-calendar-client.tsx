@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "../../../components/ui";
 import { OfflineBanner } from "../../../components/offline-banner";
+import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
 import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 import {
   dayCountLabel,
@@ -67,6 +68,23 @@ import { GitHubCalendarHint } from "./github-calendar-hint";
 import { DayTasks } from "./task-chip";
 import { TimedCalendarGrid } from "./timed-calendar-grid";
 
+function isSubteamCalendarView(value: unknown): value is SubteamCalendarView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "ready";
+}
+
+async function persistTeamCalendarSnapshot(orgHint: string, data: SubteamCalendarView): Promise<void> {
+  const cacheOrg = data.context.orgId?.trim() || orgHint;
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("team-calendar", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("team-calendar", "_", data);
+  } catch {
+    // Live team calendar already painted; IndexedDB is best-effort.
+  }
+}
+
 export default function TeamCalendarClient({ embedded = false }: { embedded?: boolean } = {}) {
   const online = useOnline();
   const [view, setView] = useState<SubteamCalendarView | null>(null);
@@ -94,34 +112,60 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
   const [prefill, setPrefill] = useState<EventPrefill | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const detailsRef = useRef<HTMLDetailsElement | null>(null);
+  const viewRef = useRef<SubteamCalendarView | null>(null);
+  viewRef.current = view;
 
   const load = useCallback(async () => {
-    setFetchFailed(false);
     const params = new URLSearchParams(window.location.search);
-    const orgId = params.get("orgId") ?? "";
+    const urlOrg = params.get("orgId")?.trim() ?? "";
     const dutyId = params.get("dutyId");
     if (dutyId) {
       setHighlightDutyId(dutyId);
       setTab("duties");
     }
     if (params.get("tab") === "trip") setTab("trip");
-    const cached = await getFeatureSnapshot<SubteamCalendarView>("team-calendar", orgId);
-    if (cached?.data) {
-      setView(cached.data);
-      setFromCache(true);
-      setCachedAt(cached.cachedAt);
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<SubteamCalendarView>("team-calendar", urlOrg || "_");
+      if (!viewRef.current && cached?.data && isSubteamCalendarView(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
     }
+    setFetchFailed(false);
     try {
       const query = new URLSearchParams();
-      if (orgId) query.set("orgId", orgId);
+      if (urlOrg) query.set("orgId", urlOrg);
       query.set("scope", syncScope);
       if (syncScope === "subteam" && syncSubteamId) query.set("subteamId", syncSubteamId);
-      const response = await fetch(`/api/team/calendar?${query.toString()}`);
+      const response = await fetch(`/api/team/calendar?${query.toString()}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
       const data = (await response.json()) as SubteamCalendarView | { error?: string };
-      if (!response.ok || !("status" in data)) {
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
         setError("error" in data && data.error ? data.error : "Could not load the team calendar.");
         setErrorStatus(response.status);
-        if (!cached) setFetchFailed(true);
+        setFetchFailed(true);
+        return;
+      }
+      if (!response.ok || !isSubteamCalendarView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Calendar. Showing the last copy on this device.");
+          setFetchFailed(false);
+          return;
+        }
+        setError("error" in data && data.error ? data.error : "Could not load the team calendar.");
+        setErrorStatus(response.status);
+        setFetchFailed(true);
         return;
       }
       setError("");
@@ -129,10 +173,15 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
       setView(data);
       setFromCache(false);
       setCachedAt(null);
-      const cacheOrg = data.context.orgId || orgId;
-      if (cacheOrg) await putFeatureSnapshot("team-calendar", cacheOrg, data);
+      await persistTeamCalendarSnapshot(urlOrg, data);
     } catch {
-      if (!cached) setFetchFailed(true);
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Calendar. Showing the last copy on this device.");
+        setFetchFailed(false);
+        return;
+      }
+      setFetchFailed(true);
     }
   }, [syncScope, syncSubteamId]);
 
@@ -162,6 +211,7 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify(body),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as { error?: string };
         if (!response.ok) {
@@ -189,6 +239,7 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify(body),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as { error?: string };
         if (!response.ok) {
@@ -265,7 +316,7 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
     [quickDay, quickHour],
   );
 
-  if (fetchFailed || !view) {
+  if (!view) {
     return (
       <main className={`module-page tc-page${embedded ? " is-embedded" : ""}`}>
         {!embedded ? (

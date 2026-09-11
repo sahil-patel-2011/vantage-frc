@@ -438,7 +438,7 @@ export default function VideoRescoutClient() {
 
   const shell = classifyVideoRescoutShell({
     loading: view == null && !fetchFailed,
-    fetchFailed,
+    fetchFailed: fetchFailed && view == null,
     status: view?.status ?? null,
     orgId,
     reviewCount,

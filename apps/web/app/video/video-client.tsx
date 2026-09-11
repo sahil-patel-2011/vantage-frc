@@ -262,6 +262,15 @@ export default function VideoClient() {
         signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
       const data = (await response.json()) as VideoView | { error?: string };
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setError("error" in data && data.error ? data.error : "Could not load video reviews.");
+        setErrorStatus(response.status);
+        setFetchFailed(true);
+        return;
+      }
       if (!response.ok || !isVideoView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
@@ -323,7 +332,7 @@ export default function VideoClient() {
     [load],
   );
 
-  if (fetchFailed || !view) {
+  if (!view) {
     return (
       <main className="module-page vid-page">
         <header className="app-page-header">

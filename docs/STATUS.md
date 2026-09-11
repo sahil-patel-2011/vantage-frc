@@ -1,10 +1,10 @@
 # Vantage status
 
-*Working log of what is done, what is in progress, and what only the owner can unblock. Last updated 2026-09-10.*
+*Working log of what is done, what is in progress, and what only the owner can unblock. Last updated 2026-09-11.*
 
 Living record of the master engineering brief. Update this file at the end of every task. Numbers are from commands that were actually run, not memory.
 
-**Branch:** `cursor/vantage-master-brief-c0b5` off `origin/main` at `1a5a9048`.
+**Branch:** `cursor/student-leaf-gold-c0b5` off `origin/main` at `dc016b44`.
 **Date opened:** 2026-09-10.
 
 ## Decisions the owner should know
@@ -191,6 +191,7 @@ See `docs/COMPETITIVE_NOTES.md`. That document is the brief for Tasks 2–4.
 | Season Costs / CAD Review Queue / Duties / Announcements last snapshot | Four more student boards went blank when venue Wi-Fi dropped. Each now restores the last IndexedDB copy (`feature: "costs"` / `"cad-review-queue"` / `"duties"` / `"announcements"`). Season Costs and CAD Review Queue key the cache by season. Costs setup no longer paints a Next-actions wall. Duties setup keeps one **Choose your team** primary; My Day stays in the header. Announcements and Duties error no longer paint Choose your team on a network failure. `/cad-review-queue` is labeled CAD Review Queue, not CAD Change Radar. Those routes are on the service-worker shell list. Source locks: `costs-offline.test.ts`, `cad-review-queue-offline.test.ts`, `duties-offline.test.ts`, `announcements-offline.test.ts`. Playwright offline those four not run this revision. | this commit |
 | Localhost Google after Vercel env | `next dev` used production `BETTER_AUTH_URL` after a Vercel env pull, so Google callbacks left localhost. Local runtime now keeps `http://localhost:3001` unless `BETTER_AUTH_URL_LOCAL` says otherwise. Preview Vercel builds skip unless the branch is `main`. | this commit |
 | Risks / Subsystem Sign-off / Prototypes / Equipment Maintenance last snapshot | Four more student boards went blank when venue Wi-Fi dropped. Each now restores the last IndexedDB copy (`feature: "risks"` / `"subsystem-signoff"` / `"prototype-tracker"` / `"equipment-maintenance"`). Risks, Subsystem Sign-off, and Prototypes key the cache by season. Risks, Sign-off, and Prototypes setup no longer paint a Next-actions wall. `/risks` is labeled Risk Register; `/risk-burndown` stays Risk-Register Burndown. Those routes are on the service-worker shell list. Source locks: `risks-offline.test.ts`, `subsystem-signoff-offline.test.ts`, `prototype-tracker-offline.test.ts`, `equipment-maintenance-offline.test.ts`. Playwright offline those four not run this revision. | this commit |
+| Packing / Season Calendar / Team Calendar leftover blanking | Those three already cached, but a failed refresh still painted the error shell via `fetchFailed \|\| !view` (and IndexedDB `put` throwing after a live GET could set `fetchFailed`). Each now keeps a painted board (`if (!view)`), reads cache with `orgId \|\| "_"`, aborts at 8s, drops the board on 401/403, and persists from a helper in the client. Inspection, unused Match video (`video-client.tsx`), Match video re-scout, and Print Farm use the same error-shell rule. Source locks: `packing-offline.test.ts`, `calendar-offline.test.ts`, `team-calendar-offline.test.ts`, `inspection-offline.test.ts`, `video-offline.test.ts`, `video-rescout-offline.test.ts`, `print-farm-offline.test.ts`. Fixture Playwright `offline-competition.spec.ts` **6 passed / 6** (5.2s) on :3310: Season calendar, Packing, Team calendar, Inspection, Match video, Print Farm still render after `context.setOffline`. No season ±3 claim — fixture MAE **89.7** / band ±90 unchanged. | this commit |
 
 ---
 
