@@ -1,11 +1,12 @@
 # Vantage status
 
-*Working log of what is done, what is in progress, and what only the owner can unblock. Last updated 2026-09-10.*
+*Working log of what is done, what is in progress, and what only the owner can unblock. Last updated 2026-09-11.*
 
 Living record of the master engineering brief. Update this file at the end of every task. Numbers are from commands that were actually run, not memory.
 
-**Branch:** `cursor/vantage-master-brief-c0b5` off `origin/main` at `1a5a9048`.
-**Date opened:** 2026-09-10.
+**Branch:** `cursor/files-tags-cutoff-chrome-c0b5` off `origin/main` at `dc016b44`.
+**Date opened:** 2026-09-11.
+**This revision:** leftover student chrome not in open PRs #2–#40. Last-snapshot clients remaining on main minus those diffs are skip-list, flow-only, public-token, or multi-fetch. Files layout, Drive-team tags, usage-cutoff banner, share-link, Account profile, Help search, and phone-code setup no longer use native `app-button` / **Pairwise 2.0** / **Hard cut-off** / **subscription bridge** / **Twilio OTP env** copy. Proof this session: `npm run typecheck --workspace=@vantage/web` clean; targeted vitest **6 files / 30 passed**; Playwright `files-tags-cutoff-chrome.spec.ts` **1 passed / 1** (9.7s) on :3310 + local `vantage_ci` (127.0.0.1, not production DATABASE_*). No season ±3 claim — fixture MAE **89.7** / band ±90 unchanged. Master brief is **not** done.
 
 ## Decisions the owner should know
 
@@ -191,6 +192,7 @@ See `docs/COMPETITIVE_NOTES.md`. That document is the brief for Tasks 2–4.
 | Season Costs / CAD Review Queue / Duties / Announcements last snapshot | Four more student boards went blank when venue Wi-Fi dropped. Each now restores the last IndexedDB copy (`feature: "costs"` / `"cad-review-queue"` / `"duties"` / `"announcements"`). Season Costs and CAD Review Queue key the cache by season. Costs setup no longer paints a Next-actions wall. Duties setup keeps one **Choose your team** primary; My Day stays in the header. Announcements and Duties error no longer paint Choose your team on a network failure. `/cad-review-queue` is labeled CAD Review Queue, not CAD Change Radar. Those routes are on the service-worker shell list. Source locks: `costs-offline.test.ts`, `cad-review-queue-offline.test.ts`, `duties-offline.test.ts`, `announcements-offline.test.ts`. Playwright offline those four not run this revision. | this commit |
 | Localhost Google after Vercel env | `next dev` used production `BETTER_AUTH_URL` after a Vercel env pull, so Google callbacks left localhost. Local runtime now keeps `http://localhost:3001` unless `BETTER_AUTH_URL_LOCAL` says otherwise. Preview Vercel builds skip unless the branch is `main`. | this commit |
 | Risks / Subsystem Sign-off / Prototypes / Equipment Maintenance last snapshot | Four more student boards went blank when venue Wi-Fi dropped. Each now restores the last IndexedDB copy (`feature: "risks"` / `"subsystem-signoff"` / `"prototype-tracker"` / `"equipment-maintenance"`). Risks, Subsystem Sign-off, and Prototypes key the cache by season. Risks, Sign-off, and Prototypes setup no longer paint a Next-actions wall. `/risks` is labeled Risk Register; `/risk-burndown` stays Risk-Register Burndown. Those routes are on the service-worker shell list. Source locks: `risks-offline.test.ts`, `subsystem-signoff-offline.test.ts`, `prototype-tracker-offline.test.ts`, `equipment-maintenance-offline.test.ts`. Playwright offline those four not run this revision. | this commit |
+| Leftover Files / tags / cutoff student chrome | Open PRs #2–#40 already own last-snapshot gold and skip-list leftover. Files **not** in those PRs: Files Grid/List still used a raw `app-button` class; Drive-team tags next-action Open and Remove did too, and the board still said **Pairwise 2.0**; usage-cutoff banner said **Hard cut-off** on a native button; share-link defaulted to `className="app-button secondary"`; Account profile printed **SMS OTP / Twilio env** on native Save / Sign out; Help search said **subscription bridge**. Copy now uses `Button`, **At the limit**, **Tag robots as you watch**, **Needs setup**, and text-message phrasing. Source lock: `files-tags-cutoff-chrome.test.ts`. Fixture Playwright `files-tags-cutoff-chrome.spec.ts` **1 passed / 1** (9.7s) on :3310 + local `vantage_ci` (127.0.0.1, not production DATABASE_*). No season ±3 claim — fixture MAE **89.7** / band ±90 unchanged. | this commit |
 
 ---
 

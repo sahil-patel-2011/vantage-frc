@@ -1,7 +1,7 @@
 "use client";
-import { Button } from "./ui";
 
 import { useState } from "react";
+import { Button } from "./ui";
 import {
   buildUsageCutoffSnapshot,
   cutoffCtas,
@@ -91,7 +91,7 @@ function BannerShell({
     >
       <div className="usage-cutoff-banner-copy">
         <strong>
-          {level === "at" ? "Hard cut-off" : "Near limit"}
+          {level === "at" ? "At the limit" : "Near the limit"}
           {percent != null ? ` · ${Math.min(999, Math.round(percent))}%` : ""}
         </strong>
         <span className="usage-cutoff-banner-title">{title}</span>
@@ -101,15 +101,15 @@ function BannerShell({
       <div className="usage-cutoff-banner-ctas">
         {ctas.map((cta) =>
           cta.checkoutAction ? (
-            <button
+            <Button
               key={cta.id}
               type="button"
-              className={cta.id === "credits" || cta.id === "upgrade" ? "primary-action" : "app-button secondary"}
+              variant={cta.id === "credits" || cta.id === "upgrade" ? "primary" : "secondary"}
               disabled={busy != null}
               onClick={() => void onCta(cta)}
             >
               {busy === cta.id ? "Opening…" : cta.label}
-            </button>
+            </Button>
           ) : (
             <Button as="a" variant="secondary" key={cta.id} href={cta.href ?? cutoffPricingHref(orgId)}>
               {cta.label}
@@ -121,7 +121,7 @@ function BannerShell({
   );
 }
 
-/** Soft-UI banner for near/at plan allowance, credits, PAYG, or org budget hard cut-offs. */
+/** Banner for near/at plan allowance, credits, pay-as-you-go, or team budget limits. */
 export function UsageCutoffBanner({ orgId, snapshot, errorCode, className, compact }: BannerProps) {
   let alert: UsageCutoffAlert | null = null;
   if (errorCode) {

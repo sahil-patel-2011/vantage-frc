@@ -31,11 +31,11 @@ export function phoneOtpSetupStatus(): { configured: boolean; message: string } 
   const token = process.env.TWILIO_AUTH_TOKEN?.trim();
   const from = process.env.TWILIO_FROM_NUMBER?.trim();
   if (sid && token && from) {
-    return { configured: true, message: "Twilio SMS is configured for phone OTP." };
+    return { configured: true, message: "We'll text a code to this number to confirm it." };
   }
   return {
     configured: false,
-    message: "Phone OTP send needs TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_FROM_NUMBER.",
+    message: "Phone codes need text messaging set up on this team. Email sign-in still works.",
   };
 }
 
