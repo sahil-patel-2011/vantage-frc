@@ -159,6 +159,7 @@ export const OFFLINE_SHELL_ROUTES = [
   "/parts-catalog",
   "/parts-relay",
   "/cad/setup",
+  "/cad/pair",
   "/account",
   "/alumni-network",
   "/auto-routines",
@@ -376,8 +377,9 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/subsystem-signoff")) return "Subsystem Sign-off";
   if (bare.startsWith("/prototype-tracker")) return "Prototype-to-Decision Tracker";
   if (bare.startsWith("/equipment-maintenance")) return "Equipment Maintenance";
-  if (bare.startsWith("/cad/connections")) return "CAD connections";
   if (bare.startsWith("/cad/setup")) return "CAD setup";
+  if (bare.startsWith("/cad/pair")) return "Pair this computer";
+  if (bare.startsWith("/cad/connections")) return "CAD connections";
   if (bare.startsWith("/spare-robot-kit")) return "Spare Robot Kit";
   if (bare.startsWith("/spare-forecast")) return "Spare Forecast";
   if (bare.startsWith("/sponsor-renewal-roi")) return "Sponsor Renewal ROI";

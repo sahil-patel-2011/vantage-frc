@@ -12,6 +12,10 @@ describe("CAD Learn last snapshot stays on the phone", () => {
     expect(src).toMatch(/"cad-learn"/);
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
     expect(src).toMatch(/feature="CAD Learn"/);
+    expect(src).toMatch(/if \(!view\)/);
+    expect(src).toMatch(/clearFeatureSnapshot/);
+    expect(src).toMatch(/authBlocked/);
+    expect(src).toMatch(/OnshapeEditBoard/);
   });
 
   it("keeps related in the header and does not stack Vantage sibling CTAs in Stuck", () => {

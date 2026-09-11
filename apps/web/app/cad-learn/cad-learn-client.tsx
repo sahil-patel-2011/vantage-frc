@@ -10,11 +10,17 @@ import {
   totalCadMinutes,
 } from "../../lib/cad-learn/track";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
-import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import {
+  clearFeatureSnapshot,
+  getFeatureSnapshot,
+  putFeatureSnapshot,
+} from "../../lib/offline/feature-cache";
+import { classifyCadLearnShell } from "../../lib/cad-learn/cad-learn-related";
 import "../cad/cad-setup.css";
-import { CadLearnHeader, CadLearnNextActions } from "./cad-learn-chrome";
+import { CadLearnEmptyCard, CadLearnHeader, CadLearnNextActions } from "./cad-learn-chrome";
 import { LessonBody } from "./cad-learn-lesson";
 import { BAND_LABEL, isCadLearnView, type CadLearnView } from "./cad-learn-model";
+import { OnshapeEditBoard } from "../cad/onshape-edit-board";
 
 async function persistCadLearnSnapshot(orgHint: string, data: CadLearnView): Promise<void> {
   const cacheOrg = data.orgId.trim() || orgHint;
@@ -33,6 +39,8 @@ export default function CadLearnClient() {
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
   const [refreshError, setRefreshError] = useState("");
+  const [fetchFailed, setFetchFailed] = useState(false);
+  const [authBlocked, setAuthBlocked] = useState(false);
   const elements = useRef(new Map<string, HTMLElement>());
   const viewed = useRef(new Set<string>());
   const viewRef = useRef<CadLearnView | null>(null);
@@ -55,6 +63,8 @@ export default function CadLearnClient() {
       // IndexedDB missing or blocked; live fetch still runs.
     }
     setRefreshError("");
+    setFetchFailed(false);
+    setAuthBlocked(false);
     try {
       const query = orgHint ? `?orgId=${encodeURIComponent(orgHint)}` : "";
       const response = await fetch(`/api/cad-learn/progress${query}`, {
@@ -62,15 +72,21 @@ export default function CadLearnClient() {
         signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
       if (response.status === 401 || response.status === 403) {
+        await clearFeatureSnapshot("cad-learn", orgHint || "_");
+        if (orgHint) await clearFeatureSnapshot("cad-learn", orgHint);
         setView(null);
         setFromCache(false);
         setCachedAt(null);
+        setAuthBlocked(true);
+        setFetchFailed(false);
         return;
       }
       if (!response.ok) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
           setRefreshError("Could not refresh CAD Learn. Showing the last copy on this device.");
+        } else {
+          setFetchFailed(true);
         }
         return;
       }
@@ -79,6 +95,8 @@ export default function CadLearnClient() {
         if (hadCache || viewRef.current) {
           setFromCache(true);
           setRefreshError("Could not refresh CAD Learn. Showing the last copy on this device.");
+        } else {
+          setFetchFailed(true);
         }
         return;
       }
@@ -91,6 +109,8 @@ export default function CadLearnClient() {
       if (hadCache || viewRef.current) {
         setFromCache(true);
         setRefreshError("Could not refresh CAD Learn. Showing the last copy on this device.");
+      } else {
+        setFetchFailed(true);
       }
     } finally {
       setReady(true);
@@ -166,6 +186,20 @@ export default function CadLearnClient() {
   const remainingMinutes = remainingLessons.reduce((sum, lesson) => sum + lesson.minutes, 0);
   const firstUndoneId = remainingLessons[0]?.id ?? null;
 
+  if (!view) {
+    const shell = classifyCadLearnShell({ ready, fetchFailed, authBlocked });
+    return (
+      <main className="module-page cl-page">
+        <CadLearnHeader orgId={null} />
+        <OfflineBanner feature="CAD Learn" fromCache={fromCache} cachedAt={cachedAt} />
+        <CadLearnEmptyCard
+          shell={shell}
+          onRetry={shell === "error" ? () => void load() : undefined}
+        />
+      </main>
+    );
+  }
+
   return (
     <main className="module-page cl-page">
       <CadLearnHeader orgId={view?.orgId ?? null} />
@@ -175,13 +209,15 @@ export default function CadLearnClient() {
           {refreshError}
         </p>
       ) : null}
-      {view?.orgId ? (
+      {view.orgId ? (
         <CadLearnNextActions
           orgId={view.orgId}
           firstUndoneId={firstUndoneId}
           remainingLessons={remainingLessons.length}
         />
       ) : null}
+
+      <OnshapeEditBoard />
 
       <div className="cl-shell">
         <nav className="cl-side" aria-label="CAD track sections">

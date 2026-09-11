@@ -1,4 +1,6 @@
-import { EmptyState } from "../../components/ui";
+import { EmptyState, Button } from "../../components/ui";
+import { OnshapeDocumentEmbed, OnshapeEditButton } from "./onshape-edit-board";
+import { onshapeEditHref } from "../../lib/cad/onshape-edit-link";
 
 export type CadViewportProps = {
   pngBase64?: string | null;
@@ -6,23 +8,9 @@ export type CadViewportProps = {
   setupRequired?: boolean;
 };
 
-function safeOpenUrl(url: string | null | undefined): string | null {
-  if (typeof url !== "string") return null;
-  const trimmed = url.trim();
-  if (!trimmed) return null;
-  try {
-    const parsed = new URL(trimmed);
-    if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return null;
-    return parsed.toString();
-  } catch {
-    return null;
-  }
-}
-
 /**
  * Only a PNG data URL (or raw PNG base64) may become an <img src>.
- * http(s) Onshape document URLs are rejected so this pane can never
- * point an embed or image at cad.onshape.com.
+ * http(s) Onshape document URLs stay on the official embed iframe instead.
  */
 function pngImgSrc(pngBase64: string | null | undefined): string | null {
   if (typeof pngBase64 !== "string") return null;
@@ -35,30 +23,24 @@ function pngImgSrc(pngBase64: string | null | undefined): string | null {
   return `data:image/png;base64,${value.replace(/\s+/g, "")}`;
 }
 
-function OpenInOnshapeLink({ href }: { href: string }) {
-  return (
-    <a href={href} target="_blank" rel="noreferrer">
-      Open in Onshape
-    </a>
-  );
-}
-
 /**
- * In-app CAD viewport: a real Onshape picture, or an honest empty
- * state. Never an Onshape iframe. "Open in Onshape" is a text link only.
+ * In-app CAD viewport: official Onshape embed + Edit in Onshape, a real
+ * picture when Onshape sent one, or an honest empty state.
  */
 export function CadViewport({ pngBase64, openUrl, setupRequired = false }: CadViewportProps) {
   const src = pngImgSrc(pngBase64);
-  const href = safeOpenUrl(openUrl);
-  const openLink = href ? <OpenInOnshapeLink href={href} /> : null;
+  const editHref = onshapeEditHref(openUrl);
+  const editButton = editHref ? <OnshapeEditButton href={editHref} /> : null;
 
   return (
     <section className="cad-agent-viewport" aria-label="CAD viewport">
       <div className="cad-agent-col-head">
         Viewport
-        {openLink ?? <span>Onshape</span>}
+        {editButton ?? <span>Onshape</span>}
       </div>
-      {src ? (
+      {editHref ? (
+        <OnshapeDocumentEmbed url={editHref} />
+      ) : src ? (
         <div className="cad-agent-empty-view">
           <img alt="Onshape picture" src={src} />
         </div>
@@ -68,14 +50,18 @@ export function CadViewport({ pngBase64, openUrl, setupRequired = false }: CadVi
           title={setupRequired ? "Connect Onshape" : "No picture yet"}
           description={
             setupRequired
-              ? "Connect Onshape before a picture can load. The viewport stays empty."
-              : "No picture of this part yet. The viewport stays empty until Onshape sends a real view."
+              ? "Ask a mentor to finish Onshape setup, or paste a document link to edit it in Onshape."
+              : "Paste an Onshape document link to edit it here. The viewport stays empty until a document is open."
           }
-          badge={setupRequired ? "Setup" : undefined}
+          badge={setupRequired ? "Needs setup" : undefined}
           badgeTone={setupRequired ? "setup" : undefined}
           soft
         >
-          {openLink}
+          {setupRequired ? (
+            <Button as="a" variant="primary" href="/cad-vault#link-cad">
+              Paste an Onshape link
+            </Button>
+          ) : null}
         </EmptyState>
       )}
     </section>

@@ -102,7 +102,7 @@ export function cadVaultShellCopy(kind: CadVaultShellKind): CadVaultShellCopy {
         badge: "No documents yet",
         title: "Link a CAD document",
         description:
-          "Paste an Onshape or Fusion link so everyone can open the live model by name. Printable STL or STEP files can wait.",
+          "Paste an Onshape or Fusion link so everyone can edit the live model by name. Printable STL or STEP files can wait.",
       };
     default:
       return {

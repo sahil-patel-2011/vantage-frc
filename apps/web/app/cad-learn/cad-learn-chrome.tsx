@@ -1,11 +1,13 @@
 "use client";
 
-import { PageHeader, Button } from "../../components/ui";
+import { EmptyState, PageHeader, Button } from "../../components/ui";
 import {
   CAD_LEARN_PAGE_DESCRIPTION,
   CAD_LEARN_RELATED_INCLUDE,
   cadLearnNextActions,
   cadLearnRelatedLinks,
+  cadLearnShellCopy,
+  type CadLearnShellKind,
 } from "../../lib/cad-learn/cad-learn-related";
 import { withOrgHref } from "../../lib/nav/product-nav";
 
@@ -37,6 +39,37 @@ export function CadLearnHeader({ orgId }: { orgId?: string | null }) {
     >
       <CadLearnRelated orgId={orgId} />
     </PageHeader>
+  );
+}
+
+export function CadLearnEmptyCard({
+  shell,
+  onRetry,
+}: {
+  shell: CadLearnShellKind;
+  onRetry?: () => void;
+}) {
+  const copy = cadLearnShellCopy(shell);
+  return (
+    <EmptyState
+      soft
+      badge={copy.badge}
+      badgeTone="setup"
+      title={copy.title}
+      description={copy.description}
+      aria-busy={shell === "loading"}
+    >
+      {shell === "setup" ? (
+        <Button as="a" variant="primary" href="/workspace">
+          Choose your team
+        </Button>
+      ) : null}
+      {shell === "error" && onRetry ? (
+        <Button variant="primary" type="button" onClick={onRetry}>
+          Retry
+        </Button>
+      ) : null}
+    </EmptyState>
   );
 }
 

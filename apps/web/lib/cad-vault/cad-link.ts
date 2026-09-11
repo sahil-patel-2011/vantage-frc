@@ -76,7 +76,16 @@ export function cadLinkKind(url: string | null | undefined): "onshape" | "fusion
 export function cadLinkLabel(url: string, title?: string | null): string {
   const kind = cadLinkKind(url);
   const name = title?.trim();
-  if (kind === "onshape") return name ? `Open ${name} in Onshape` : "Open in Onshape";
-  if (kind === "fusion") return name ? `Open ${name} in Fusion` : "Open in Fusion";
-  return name ? `Open ${name}` : "Open CAD link";
+  switch (kind) {
+    case "onshape":
+      return name ? `Edit ${name} in Onshape` : "Edit in Onshape";
+    case "fusion":
+      return name ? `Open ${name} in Fusion` : "Open in Fusion";
+    case "other":
+      return name ? `Open ${name}` : "Open CAD link";
+    default: {
+      const exhaustive: never = kind;
+      return exhaustive;
+    }
+  }
 }

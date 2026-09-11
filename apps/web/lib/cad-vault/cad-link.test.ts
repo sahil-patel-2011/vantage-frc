@@ -46,7 +46,7 @@ describe("parseCadExternalUrl", () => {
 describe("cadLinkLabel", () => {
   it("names Onshape and Fusion from the URL, not External source", () => {
     expect(cadLinkLabel("https://cad.onshape.com/documents/aaaaaaaaaaaaaaaaaaaaaaaa", "Intake")).toBe(
-      "Open Intake in Onshape",
+      "Edit Intake in Onshape",
     );
     expect(cadLinkLabel("https://a360.co/intake-2026", "Intake")).toBe("Open Intake in Fusion");
     expect(cadLinkKind("https://example.com/x")).toBe("other");

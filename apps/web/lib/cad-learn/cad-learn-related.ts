@@ -75,7 +75,7 @@ export function cadLearnNextActions(input: {
   actions.push({
     id: "vault",
     label: "Link your CAD in the vault",
-    detail: "Paste the Onshape or Fusion link so the team can open it by name.",
+    detail: "Paste the Onshape or Fusion link so the team can edit it by name.",
     href: withOrgHref("/cad-vault", input.orgId),
     primary: actions.length === 0,
   });
@@ -105,3 +105,53 @@ export function cadLearnCheckNote(note: string): string {
 
 export const CAD_LEARN_PAGE_DESCRIPTION =
   "Onshape from the first sketch to a mated assembly. At the end you link your part and Vantage checks how heavy it is — and how hard it is to spin — against your team's reference.";
+
+export type CadLearnShellKind = "loading" | "error" | "setup";
+
+export type CadLearnShellCopy = {
+  kind: CadLearnShellKind;
+  badge?: string;
+  title: string;
+  description: string;
+};
+
+export function classifyCadLearnShell(input: {
+  ready?: boolean;
+  fetchFailed?: boolean;
+  authBlocked?: boolean;
+}): CadLearnShellKind {
+  if (input.authBlocked) return "setup";
+  if (input.fetchFailed) return "error";
+  if (!input.ready) return "loading";
+  return "loading";
+}
+
+export function cadLearnShellCopy(kind: CadLearnShellKind): CadLearnShellCopy {
+  switch (kind) {
+    case "loading":
+      return {
+        kind,
+        badge: "Loading",
+        title: "Loading Learn CAD…",
+        description: "Fetching your team's CAD lessons.",
+      };
+    case "error":
+      return {
+        kind,
+        badge: "Unavailable",
+        title: "Could not load Learn CAD",
+        description: "Check your connection and try again.",
+      };
+    case "setup":
+      return {
+        kind,
+        badge: "Needs setup",
+        title: "Choose your team",
+        description: "Choose your team to save Learn CAD progress.",
+      };
+    default: {
+      const exhaustive: never = kind;
+      return exhaustive;
+    }
+  }
+}

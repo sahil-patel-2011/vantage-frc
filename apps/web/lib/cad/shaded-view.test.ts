@@ -175,27 +175,40 @@ describe("CadViewport", () => {
     return renderToStaticMarkup(createElement(CadViewport, props));
   }
 
-  it("renders the PNG as an img data URL and never an iframe", () => {
-    const markup = html({ pngBase64: png, openUrl: onshapeUrl });
+  it("shows a real picture when Onshape sent one and no document URL is open", () => {
+    const markup = html({ pngBase64: png });
     expect(markup).toContain(`src="data:image/png;base64,${png}"`);
-    expect(markup).toContain("Open in Onshape");
-    expect(markup).toMatch(/<a[^>]+target="_blank"/);
     expect(markup).not.toContain("<iframe");
   });
 
-  it("shows an empty state plus Open in Onshape text link when there is no PNG", () => {
+  it("embeds the official Onshape document and Edit in Onshape", () => {
+    const markup = html({ pngBase64: png, openUrl: onshapeUrl });
+    expect(markup).toContain("Edit in Onshape");
+    expect(markup).toContain("<iframe");
+    expect(markup).toContain(`src="${onshapeUrl}"`);
+    expect(markup).toMatch(/<a[^>]+target="_blank"/);
+    expect(markup).not.toMatch(/<img[^>]+src="https:\/\/cad\.onshape/);
+  });
+
+  it("embeds a pasted document when there is no picture", () => {
     const markup = html({ openUrl: onshapeUrl });
-    expect(markup).toContain("No picture yet");
-    expect(markup).toMatch(/<a[^>]+href="https:\/\/cad\.onshape\.com/);
-    expect(markup).toMatch(/<a[^>]+target="_blank"/);
-    expect(markup).not.toContain("<iframe");
-    expect(markup).not.toMatch(/<iframe[^>]*src=/);
+    expect(markup).toContain("Edit in Onshape");
+    expect(markup).toMatch(/<iframe[^>]+src="https:\/\/cad\.onshape\.com/);
+    expect(markup).not.toContain("No picture yet");
   });
 
-  it("refuses to treat an Onshape document URL as a PNG src", () => {
+  it("refuses to treat an Onshape document URL as an img src", () => {
     const markup = html({ pngBase64: onshapeUrl, openUrl: onshapeUrl, setupRequired: true });
+    expect(markup).not.toMatch(/<img[^>]+src="https:\/\/cad\.onshape/);
+    expect(markup).toContain("<iframe");
+    expect(markup).toContain("Edit in Onshape");
+  });
+
+  it("Needs setup when Onshape is missing and no document is open", () => {
+    const markup = html({ setupRequired: true });
     expect(markup).toContain("Connect Onshape");
-    expect(markup).not.toContain(`src="${onshapeUrl}"`);
+    expect(markup).toContain("Needs setup");
+    expect(markup).toContain("Paste an Onshape link");
     expect(markup).not.toContain("<iframe");
   });
 });

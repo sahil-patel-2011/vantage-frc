@@ -21,6 +21,7 @@ import { CadActivityPanel } from "./cad-activity-panel";
 import { CadStepPane } from "./cad-step-pane";
 import { CadToolsPanel, type CadToolRow } from "./cad-tools-panel";
 import { realReturnedId } from "./cad-session";
+import { onshapeEditHref } from "../../lib/cad/onshape-edit-link";
 import {
   MODE_LABELS,
   TASK_STATUS_LABELS,
@@ -145,6 +146,7 @@ export function CadReadyView({
   onUpdateFeature,
   onSetVariable,
 }: CadReadyViewProps) {
+  const editHref = onshapeEditHref(state?.openUrl || url);
   return (
     <main className="module-page cad-module cad-agent">
       {cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} compact /> : null}
@@ -204,9 +206,9 @@ export function CadReadyView({
           <span className={boundOk ? "on" : ""} title={state?.bound?.documentId ?? undefined}>
             {boundOk ? state?.bound?.documentName || "Part Studio bound" : "Not bound"}
           </span>
-          {state?.openUrl ? (
-            <a className="cad-agent-open" href={state.openUrl} target="_blank" rel="noreferrer">
-              Open in Onshape
+          {editHref ? (
+            <a className="cad-agent-open" href={editHref} target="_blank" rel="noreferrer">
+              Edit in Onshape
             </a>
           ) : null}
         </div>
@@ -434,7 +436,7 @@ export function CadReadyView({
 
         <CadViewport
           pngBase64={state?.shadedPngBase64}
-          openUrl={state?.openUrl}
+          openUrl={state?.openUrl || url}
           setupRequired={!onshapeOk}
         />
       </div>
