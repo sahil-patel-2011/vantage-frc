@@ -28,6 +28,8 @@ describe("calibrated alliance score predictor", () => {
     expect(isScorePredictionSkip(skipped)).toBe(true);
     if (!isScorePredictionSkip(skipped)) return;
     expect(skipped.skipReason.length).toBeGreaterThan(10);
+    expect(skipped.skipReason).not.toMatch(/\bEPA\b/);
+    expect(skipped.skipReason).not.toMatch(/\bOPR\b/);
   });
 
   it("explains the top drivers in student-facing words", () => {

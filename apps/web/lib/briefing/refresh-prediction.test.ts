@@ -6,6 +6,7 @@ vi.mock("../strategy/recompute", async () => {
   return { ...actual, recomputeStrategyView: vi.fn() };
 });
 
+import { EMPTY_PREDICTION_COPY } from "../strategy/prediction-empty-copy";
 import { recomputeStrategyView } from "../strategy/recompute";
 import { briefingSectionsFromStrategyView, refreshBriefingPrediction } from "./refresh-prediction";
 
@@ -117,7 +118,7 @@ function liveView(overrides: Partial<Extract<StrategyView, { status: "live" }>> 
 function emptyView(): Extract<StrategyView, { status: "empty" }> {
   return {
     status: "empty",
-    message: "No prediction yet — need event/year EPA covering enough alliance robots (and optional scouting) before the model can run.",
+    message: EMPTY_PREDICTION_COPY,
     steps: [],
     orgId: "org-1",
     eventKey: "2026mijac",
