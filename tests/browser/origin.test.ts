@@ -4,6 +4,7 @@ import {
   LOCAL_VANTAGE_CI_ADMIN,
   LOCAL_VANTAGE_CI_APP,
   playwrightWebServerEnv,
+  shouldReuseLiveNextDevLock,
 } from "./origin";
 
 const KEYS = [
@@ -62,6 +63,14 @@ describe("assertLocalFixtureDatabase", () => {
 
   it("refuses a non-URL", () => {
     expect(() => assertLocalFixtureDatabase({ DATABASE_URL: "not-a-url" })).toThrow(/is not a URL/);
+  });
+});
+
+describe("shouldReuseLiveNextDevLock", () => {
+  it("reuses a human next only when NEXT_DIST_DIR is .next", () => {
+    expect(shouldReuseLiveNextDevLock({})).toBe(false);
+    expect(shouldReuseLiveNextDevLock({ NEXT_DIST_DIR: ".next-pw" })).toBe(false);
+    expect(shouldReuseLiveNextDevLock({ NEXT_DIST_DIR: ".next" })).toBe(true);
   });
 });
 

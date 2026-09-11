@@ -7,6 +7,7 @@ import {
   playwrightOrigin,
   playwrightPort,
   playwrightWebServerEnv,
+  shouldReuseLiveNextDevLock,
 } from "./tests/browser/origin";
 
 assertLocalFixtureDatabase();
@@ -53,8 +54,10 @@ function liveNextDevLock(): { origin: string; port: number } | null {
   }
 }
 
+process.env.NEXT_DIST_DIR ??= ".next-pw";
+
 const explicitBase = process.env.PLAYWRIGHT_BASE_URL?.replace(/\/$/, "") || "";
-const lock = liveNextDevLock();
+const lock = shouldReuseLiveNextDevLock() ? liveNextDevLock() : null;
 const origin = explicitBase || lock?.origin || playwrightOrigin();
 const port = lock?.port ?? playwrightPort();
 const hostname = cookieDomain(origin);

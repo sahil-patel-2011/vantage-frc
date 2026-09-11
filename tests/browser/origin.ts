@@ -27,6 +27,16 @@ export function playwrightPort(): number {
   }
 }
 
+/**
+ * Isolated Playwright (`NEXT_DIST_DIR=.next-pw`, the default) must not
+ * attach to a leftover human `next dev` on `.next`. Opt in to reuse with
+ * NEXT_DIST_DIR=.next or PLAYWRIGHT_BASE_URL.
+ */
+export function shouldReuseLiveNextDevLock(env: NodeJS.Dict<string> = process.env): boolean {
+  const dist = env.NEXT_DIST_DIR?.trim() || ".next-pw";
+  return dist === ".next";
+}
+
 export function cookieDomain(origin = playwrightOrigin()): string {
   return new URL(origin).hostname;
 }
