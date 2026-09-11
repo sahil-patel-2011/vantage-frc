@@ -1,9 +1,9 @@
-/** Soft-UI related surfaces for the account inbox (never DEMO notifications). */
+/** Related surfaces for the account inbox. */
 export const NOTIFICATION_RELATED_LINKS = [
   { id: "whats-new", label: "What’s new", href: "/whats-new" },
   { id: "support", label: "Help & Support", href: "/support" },
   { id: "account", label: "Account", href: "/account" },
-  { id: "preferences", label: "Notification prefs", href: "/notifications/preferences" },
+  { id: "preferences", label: "Preferences", href: "/notifications/preferences" },
 ] as const;
 
 export type NotificationRelatedId = (typeof NOTIFICATION_RELATED_LINKS)[number]["id"];
@@ -14,7 +14,7 @@ export type NotificationRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — What’s new · Support · Account · prefs. */
+/** Header strip — What’s new · Support · Account · Preferences. */
 export const NOTIFICATION_RELATED_INCLUDE: NotificationRelatedId[] = [
   "whats-new",
   "support",
@@ -22,7 +22,7 @@ export const NOTIFICATION_RELATED_INCLUDE: NotificationRelatedId[] = [
   "preferences",
 ];
 
-/** Cross-links for Notifications Soft-UI (never DEMO inbox rows). */
+/** Cross-links for the inbox header. */
 export function notificationRelatedLinks(options?: {
   active?: NotificationRelatedId;
   include?: NotificationRelatedId[];
@@ -44,89 +44,34 @@ export type NotificationNextAction = {
 };
 
 /**
- * Soft-UI next actions for the inbox.
- * Empty stays empty until a real notifications row exists — never DEMO alerts.
+ * Inbox next actions. Empty keeps one EmptyState primary; related stays in
+ * the header. Mark-as-read lives in the toolbar, so this list is empty unless
+ * a caller still needs the unread count as a single primary.
  */
 export function notificationNextActions(input: {
   itemCount: number;
   unreadCount: number;
   filter?: "all" | "unread";
 }): NotificationNextAction[] {
-  const filter = input.filter ?? "all";
-  const actions: NotificationNextAction[] = [];
-
-  if (input.itemCount === 0 && filter === "unread") {
-    actions.push({
-      id: "caught-up",
-      label: "You’re caught up",
-      detail: "No unread rows — switch to All to review history, or leave the inbox clear.",
-      href: "/notifications",
-      primary: true,
-    });
-  } else if (input.itemCount === 0) {
-    actions.push({
-      id: "empty",
-      label: "Inbox stays empty until something real arrives",
-      detail:
-        "Coach todos, duties, calendar events, releases, and teammate messages land here with real timestamps.",
-      href: "/notifications/preferences",
-      primary: true,
-    });
-  } else if (input.unreadCount > 0) {
-    actions.push({
+  if (input.itemCount === 0) return [];
+  if (input.unreadCount < 1) return [];
+  return [
+    {
       id: "mark-read",
       label: `Mark ${input.unreadCount} as read`,
-      detail: "Unread rows stay highlighted until you open them or mark them read — clears only real inbox items.",
+      detail: "Unread rows stay highlighted until you open them or mark them read.",
       href: "#notif-inbox-list",
       primary: true,
-    });
-  } else {
-    actions.push({
-      id: "clear",
-      label: "Inbox clear",
-      detail: "Everything shown is marked read. New real events will bump the unread badge again.",
-      href: "/notifications?filter=unread",
-      primary: true,
-    });
-  }
-
-  actions.push(
-    {
-      id: "preferences",
-      label: "Tune what notifies",
-      detail: "Choose which coach→member and product events may land in this inbox.",
-      href: "/notifications/preferences",
-      primary: false,
     },
-    {
-      id: "whats-new",
-      label: "What’s new",
-      detail: "Published release notes for your plan — separate from invented competition notices.",
-      href: "/whats-new",
-    },
-    {
-      id: "support",
-      label: "Help & Support",
-      detail: "Open a real platform ticket if an alert never arrived or looks wrong.",
-      href: "/support",
-    },
-    {
-      id: "account",
-      label: "Account",
-      detail: "Profile, appearance, and a shortcut into notification prefs.",
-      href: "/account?tab=notifications",
-    },
-  );
-
-  return actions.slice(0, 5);
+  ];
 }
 
-/** Soft-UI read-state label — blank-safe, never a DEMO status. */
+/** Read-state label — blank-safe. */
 export function notificationReadLabel(readAt: string | null | undefined): "Unread" | "Read" {
   return readAt ? "Read" : "Unread";
 }
 
-/** Soft-UI badge tone for read state. */
+/** Badge tone for read state. */
 export function notificationReadTone(readAt: string | null | undefined): "setup" | "good" | "" {
   if (!readAt) return "setup";
   return "good";

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { notificationBody, notificationHref, notificationTitle } from "./format";
+import { notificationBody, notificationHref, notificationTitle, notificationTypeLabel } from "./format";
 
 describe("notification helpers", () => {
   it("prefers payload title and body", () => {
@@ -8,7 +8,9 @@ describe("notification helpers", () => {
   });
 
   it("humanizes type when payload has no title", () => {
-    expect(notificationTitle("credit_low")).toBe("Credit Low");
+    expect(notificationTitle("credit_low")).toBe("Billing");
+    expect(notificationTypeLabel("todo_assigned")).toBe("Todo");
+    expect(notificationTypeLabel("unknown_kind")).toBe("Unknown Kind");
     expect(notificationBody({})).toBeNull();
   });
 

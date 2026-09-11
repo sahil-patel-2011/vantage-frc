@@ -6,6 +6,7 @@ import {
 } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { studentEmailDelivery } from "../../../../lib/account/account-api-related";
 
 // Read-only. `/api/account` (PUT) is the single writer for profiles.notification_prefs and
 // user email preferences — two writers with different shapes silently clobbered each other.
@@ -32,7 +33,7 @@ export async function GET() {
     });
     return Response.json({
       ...data,
-      delivery: emailNotificationsSetupStatus(),
+      delivery: studentEmailDelivery(emailNotificationsSetupStatus()),
     });
   } catch {
     return Response.json({ error: "Could not load notification preferences." }, { status: 500 });
