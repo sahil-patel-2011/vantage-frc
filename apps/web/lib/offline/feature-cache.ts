@@ -58,6 +58,7 @@ export type OfflineFeature =
   | "shift-balancer"
   | "counter-book"
   | "overnight-intel"
+  | "intel"
   | "alliance-brief"
   | "picklist-justifier"
   | "opponent-watchlist"

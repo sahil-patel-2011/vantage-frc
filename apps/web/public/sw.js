@@ -79,6 +79,7 @@ const SHELL_ROUTES = [
   "/team-tags",
   "/shift-balancer",
   "/counter-book",
+  "/intel",
   "/overnight-intel",
   "/alliance-partner-brief",
   "/picklist-justifier",

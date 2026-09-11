@@ -96,7 +96,7 @@ export function OvernightIntelShell({
         soft
         badge={
           shell === "setup"
-            ? "Setup"
+            ? "Needs setup"
             : shell === "error"
               ? "Unavailable"
               : shell === "empty"

@@ -163,7 +163,7 @@ describe("overnight-intel pure helpers", () => {
     });
     expect(text).toContain("Houston Regional");
     expect(text).toContain("No new research findings");
-    expect(text).toContain("No material EPA movement");
+    expect(text).toContain("No material season-rating movement");
     expect(text).toContain("No new scouting entries");
   });
 });

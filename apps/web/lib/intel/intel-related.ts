@@ -168,7 +168,7 @@ export function classifyIntelShell(input: {
   return "ready";
 }
 
-/** Empty / setup / error copy — never DEMO research, never TBA/org jargon. */
+/** Empty / setup / error copy — never DEMO research, never ranking-source jargon. */
 export function intelShellCopy(kind: IntelShellKind): IntelEmptyCopy {
   switch (kind) {
     case "loading":
@@ -188,7 +188,7 @@ export function intelShellCopy(kind: IntelShellKind): IntelEmptyCopy {
     case "setup":
       return {
         kind,
-        badge: "Setup",
+        badge: "Needs setup",
         title: "Choose your team",
         description: "Choose your team before looking up another FRC team.",
       };

@@ -200,7 +200,7 @@ export function IntelReadyView({
       <section className="intel-metric-grid" aria-label="Season scores">
         {(
           [
-            ["Season EPA", metric?.epaTotal],
+            ["Season rating", metric?.epaTotal],
             ["Auto", metric?.epaAuto],
             ["Teleop", metric?.epaTeleop],
             ["Endgame", metric?.epaEndgame],
@@ -263,7 +263,7 @@ export function IntelReadyView({
                   <button type="button" onClick={() => onSelectSimilar(team.teamNumber)}>
                     <b>{team.teamNumber}</b>
                     <span>{team.nickname}</span>
-                    <em>{team.epaTotal.toFixed(1)} EPA</em>
+                    <em>{team.epaTotal.toFixed(1)} rating</em>
                   </button>
                 </li>
               ))}

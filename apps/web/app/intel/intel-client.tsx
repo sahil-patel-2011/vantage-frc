@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import {
   UsageCutoffBanner,
   resolveCutoffErrorCode,
@@ -15,6 +16,7 @@ import {
 } from "../../lib/intel/intel-related";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { clearFeatureSnapshot, getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { IntelRelatedStrip, IntelShell } from "./intel-chrome";
 import {
   IntelLookupForm,
@@ -26,13 +28,33 @@ import {
 } from "./intel-ready-view";
 import "./intel.css";
 
+type IntelBoardView = {
+  intel: IntelDetail;
+  similar: Array<IntelSearchTeam & { epaTotal: number }>;
+  scoutNotes: IntelScoutNote[];
+  activeEvent: IntelActiveEvent | null;
+};
+
+function isIntelBoardView(value: unknown): value is IntelBoardView {
+  if (!value || typeof value !== "object") return false;
+  const row = value as { intel?: { team?: { teamNumber?: unknown } } };
+  return typeof row.intel?.team?.teamNumber === "number";
+}
+
+async function persistIntelSnapshot(orgHint: string, data: IntelBoardView): Promise<void> {
+  const cacheOrg = orgHint.trim() || "_";
+  try {
+    await putFeatureSnapshot("intel", cacheOrg, data);
+    if (!orgHint.trim()) await putFeatureSnapshot("intel", "_", data);
+  } catch {
+    // Live Research already painted; IndexedDB is best-effort.
+  }
+}
+
 export default function IntelClient({ orgId }: { orgId: string }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<IntelSearchTeam[]>([]);
-  const [intel, setIntel] = useState<IntelDetail | null>(null);
-  const [similar, setSimilar] = useState<Array<IntelSearchTeam & { epaTotal: number }>>([]);
-  const [scoutNotes, setScoutNotes] = useState<IntelScoutNote[]>([]);
-  const [activeEvent, setActiveEvent] = useState<IntelActiveEvent | null>(null);
+  const [view, setView] = useState<IntelBoardView | null>(null);
   const [summary, setSummary] = useState("");
   const [compare, setCompare] = useState("");
   const [comparison, setComparison] = useState<IntelCompareResult | null>(null);
@@ -45,6 +67,10 @@ export default function IntelClient({ orgId }: { orgId: string }) {
   const [fetchFailed, setFetchFailed] = useState(false);
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [loadingTeam, setLoadingTeam] = useState(false);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<IntelBoardView | null>(null);
+  viewRef.current = view;
 
   const chemistryHref = comparison
     ? withOrgHref(
@@ -52,6 +78,21 @@ export default function IntelClient({ orgId }: { orgId: string }) {
         orgId,
       )
     : withOrgHref("/chemistry", orgId);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const cached = await getFeatureSnapshot<IntelBoardView>("intel", orgId || "_");
+        if (!viewRef.current && cached?.data && isIntelBoardView(cached.data)) {
+          setView(cached.data);
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+        }
+      } catch {
+        // IndexedDB missing or blocked; live lookup still runs.
+      }
+    })();
+  }, [orgId]);
 
   async function search(event: FormEvent) {
     event.preventDefault();
@@ -70,20 +111,34 @@ export default function IntelClient({ orgId }: { orgId: string }) {
       };
       if (!response.ok) {
         setErrorStatus(response.status);
-        setFetchFailed(true);
-        setResults([]);
-        setStatus(data.error ?? "Could not search teams");
+        if (viewRef.current) {
+          setFromCache(true);
+          setStatus("Could not refresh the lookup. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setFetchFailed(true);
+          setResults([]);
+          setStatus(data.error ?? "Could not search teams");
+        }
         setMessageKind("error");
         return;
       }
       setResults(data.teams ?? []);
-      if (data.activeEvent) setActiveEvent(data.activeEvent);
+      if (data.activeEvent) {
+        setView((current) => (current ? { ...current, activeEvent: data.activeEvent ?? current.activeEvent } : current));
+      }
       setStatus("");
       setMessageKind("success");
     } catch {
-      setFetchFailed(true);
-      setResults([]);
-      setStatus("Network error — please try again.");
+      if (viewRef.current) {
+        setFromCache(true);
+        setStatus("Could not refresh the lookup. Showing the last copy on this device.");
+        setFetchFailed(false);
+      } else {
+        setFetchFailed(true);
+        setResults([]);
+        setStatus("Network error — please try again.");
+      }
       setMessageKind("error");
     }
   }
@@ -106,27 +161,64 @@ export default function IntelClient({ orgId }: { orgId: string }) {
         error?: string;
       };
       if (!response.ok) {
-        setErrorStatus(response.status);
-        setFetchFailed(true);
-        setIntel(null);
-        setSimilar([]);
-        setScoutNotes([]);
-        setStatus(data.error ?? "Could not load team");
+        if (response.status === 401 || response.status === 403) {
+          setView(null);
+          setFromCache(false);
+          setCachedAt(null);
+          setFetchFailed(true);
+          setErrorStatus(response.status);
+          setStatus(data.error ?? "Could not load team");
+          setMessageKind("error");
+          void clearFeatureSnapshot("intel", orgId || "_");
+          return;
+        }
+        if (viewRef.current) {
+          setFromCache(true);
+          setStatus("Could not refresh this team. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setErrorStatus(response.status);
+          setFetchFailed(true);
+          setStatus(data.error ?? "Could not load team");
+        }
         setMessageKind("error");
         return;
       }
-      setIntel(data.team ?? null);
-      setSimilar(data.similarTeams ?? []);
-      setScoutNotes(data.scoutObservations ?? []);
-      if (data.activeEvent) setActiveEvent(data.activeEvent);
+      if (!data.team) {
+        if (viewRef.current) {
+          setFromCache(true);
+          setStatus("Could not refresh this team. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setFetchFailed(true);
+          setStatus("Could not load team");
+        }
+        setMessageKind("error");
+        return;
+      }
+      const next: IntelBoardView = {
+        intel: data.team,
+        similar: data.similarTeams ?? [],
+        scoutNotes: data.scoutObservations ?? [],
+        activeEvent: data.activeEvent ?? viewRef.current?.activeEvent ?? null,
+      };
+      setView(next);
       setSummary("");
       setComparison(null);
       setStatus("");
       setMessageKind("success");
+      setFromCache(false);
+      setCachedAt(null);
+      await persistIntelSnapshot(orgId, next);
     } catch {
-      setFetchFailed(true);
-      setIntel(null);
-      setStatus("Network error — please try again.");
+      if (viewRef.current) {
+        setFromCache(true);
+        setStatus("Could not refresh this team. Showing the last copy on this device.");
+        setFetchFailed(false);
+      } else {
+        setFetchFailed(true);
+        setStatus("Network error — please try again.");
+      }
       setMessageKind("error");
     } finally {
       setLoadingTeam(false);
@@ -134,7 +226,7 @@ export default function IntelClient({ orgId }: { orgId: string }) {
   }
 
   async function action(path: string, label: string) {
-    if (!intel) return;
+    if (!view) return;
     setStatus(label);
     setCutoffCode(null);
     try {
@@ -142,7 +234,7 @@ export default function IntelClient({ orgId }: { orgId: string }) {
         method: "POST",
         headers: { "content-type": "application/json" },
         signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
-        body: JSON.stringify({ orgId, teamNumber: intel.team.teamNumber }),
+        body: JSON.stringify({ orgId, teamNumber: view.intel.team.teamNumber }),
       });
       const data = (await response.json()) as {
         summary?: string;
@@ -160,7 +252,7 @@ export default function IntelClient({ orgId }: { orgId: string }) {
       if (path.includes("summary") && data.summary) setSummary(data.summary);
       setStatus(response.ok ? (path.includes("research") ? "Public notes updated." : "") : data.error ?? "");
       setMessageKind(response.ok ? "success" : "error");
-      if (response.ok && path.includes("research")) await select(intel.team.teamNumber);
+      if (response.ok && path.includes("research")) await select(view.intel.team.teamNumber);
     } catch {
       setStatus("Network error — please try again.");
       setMessageKind("error");
@@ -173,7 +265,7 @@ export default function IntelClient({ orgId }: { orgId: string }) {
       .split(/[,\s]+/)
       .map(Number)
       .filter(Number.isInteger);
-    if (intel && !numbers.includes(intel.team.teamNumber)) numbers.unshift(intel.team.teamNumber);
+    if (view && !numbers.includes(view.intel.team.teamNumber)) numbers.unshift(view.intel.team.teamNumber);
     setSubmitting(true);
     setCutoffCode(null);
     try {
@@ -196,9 +288,9 @@ export default function IntelClient({ orgId }: { orgId: string }) {
     }
   }
 
-  async function savePick() {
-    if (!intel) return;
-    if (!activeEvent?.eventKey) {
+  const savePick = useCallback(async () => {
+    if (!view) return;
+    if (!view.activeEvent?.eventKey) {
       setStatus("Set your active event before saving a pick.");
       setMessageKind("error");
       return;
@@ -211,13 +303,13 @@ export default function IntelClient({ orgId }: { orgId: string }) {
         signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         body: JSON.stringify({
           orgId,
-          eventKey: activeEvent.eventKey,
+          eventKey: view.activeEvent.eventKey,
           name: pickName,
-          entries: [{ teamKey: intel.team.teamKey, rank: 1, tier: "review" }],
+          entries: [{ teamKey: view.intel.team.teamKey, rank: 1, tier: "review" }],
         }),
       });
       const data = (await response.json()) as { error?: string };
-      setStatus(response.ok ? `Saved ${intel.team.teamNumber} to ${pickName}.` : data.error ?? "Save failed");
+      setStatus(response.ok ? `Saved ${view.intel.team.teamNumber} to ${pickName}.` : data.error ?? "Save failed");
       setMessageKind(response.ok ? "success" : "error");
     } catch {
       setStatus("Network error — please try again.");
@@ -225,42 +317,44 @@ export default function IntelClient({ orgId }: { orgId: string }) {
     } finally {
       setSubmitting(false);
     }
-  }
+  }, [orgId, pickName, view]);
 
   const shell = classifyIntelShell({
-    loading: loadingTeam && !intel,
-    fetchFailed: fetchFailed && !intel && results.length === 0,
+    loading: loadingTeam && !view,
+    fetchFailed: fetchFailed && !view && results.length === 0,
     orgId,
-    hasSelectedTeam: intel != null,
+    hasSelectedTeam: view != null,
   });
 
-  if (shell === "loading" || shell === "error") {
-    return (
-      <IntelShell
-        orgId={orgId}
-        shell={shell}
-        error={shell === "error" ? status || "Could not load Research." : undefined}
-        errorStatus={errorStatus}
-        onRetry={
-          shell === "error"
-            ? () => {
-                setFetchFailed(false);
-                setErrorStatus(null);
-                setStatus("");
-              }
-            : undefined
-        }
-      />
-    );
+  if (!view) {
+    if (shell === "loading" || shell === "error") {
+      return (
+        <IntelShell
+          orgId={orgId}
+          shell={shell}
+          error={shell === "error" ? status || "Could not load Research." : undefined}
+          errorStatus={errorStatus}
+          onRetry={
+            shell === "error"
+              ? () => {
+                  setFetchFailed(false);
+                  setErrorStatus(null);
+                  setStatus("");
+                }
+              : undefined
+          }
+        />
+      );
+    }
   }
 
-  const findingCount = intel?.findings.length ?? 0;
+  const findingCount = view?.intel.findings.length ?? 0;
   const readyActions = intelNextActions({
     orgId,
     shell,
-    teamNumber: intel?.team.teamNumber ?? null,
+    teamNumber: view?.intel.team.teamNumber ?? null,
     findingCount,
-    scoutNoteCount: scoutNotes.length,
+    scoutNoteCount: view?.scoutNotes.length ?? 0,
   });
   const emptyCopy = intelShellCopy("empty");
 
@@ -269,10 +363,11 @@ export default function IntelClient({ orgId }: { orgId: string }) {
       <PageHeader
         breadcrumbs="Competition / Research"
         title="Research"
-        description={intelShellCopy(intel ? "ready" : "empty").description}
+        description={intelShellCopy(view ? "ready" : "empty").description}
       >
-        <IntelRelatedStrip orgId={orgId} teamNumber={intel?.team.teamNumber ?? null} />
+        <IntelRelatedStrip orgId={orgId} teamNumber={view?.intel.team.teamNumber ?? null} />
       </PageHeader>
+      <OfflineBanner feature="Research" fromCache={fromCache} cachedAt={cachedAt} />
 
       {cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} compact /> : null}
 
@@ -296,18 +391,18 @@ export default function IntelClient({ orgId }: { orgId: string }) {
         />
       ) : null}
 
-      {shell === "ready" && intel ? (
+      {shell === "ready" && view ? (
         <IntelReadyView
-          intel={intel}
-          similar={similar}
+          intel={view.intel}
+          similar={view.similar}
           summary={summary}
           compare={compare}
           comparison={comparison}
           pickName={pickName}
           toolsOpen={toolsOpen}
           submitting={submitting}
-          scoutNotes={scoutNotes}
-          activeEvent={activeEvent}
+          scoutNotes={view.scoutNotes}
+          activeEvent={view.activeEvent}
           readyActions={readyActions}
           chemistryHref={chemistryHref}
           onWriteBrief={() => void action("/api/intel/summary", "Writing a brief…")}

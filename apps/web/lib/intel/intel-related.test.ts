@@ -94,7 +94,7 @@ describe("intelShellCopy", () => {
       expect(copy.description).not.toMatch(/global team index/i);
     }
     expect(intelShellCopy("empty").badge).toBe("Look up a team");
-    expect(intelShellCopy("setup").badge).toBe("Setup");
+    expect(intelShellCopy("setup").badge).toBe("Needs setup");
     expect(intelShellCopy("empty").title).toBe("Look up a team");
     expect(intelShellCopy("ready").title).toBe("Research");
   });
