@@ -93,7 +93,9 @@ test.describe("student-week GUI path", () => {
     await openStudent(page, "/hours-self-view");
     await expect(page.getByRole("heading", { name: "My Hours" })).toBeVisible();
     await expectNoBanned(page, "My Hours");
-    const clock = page.locator("#hours-clock").getByRole("button", { name: /Clock in|Clock out/i });
+    const clock = page.getByRole("region", { name: "Clock in or out" }).getByRole("button", {
+      name: /Clock in|Clock out/i,
+    });
     const clockAnywhere = page.getByRole("button", { name: /Clock in|Clock out/i });
     const setup = page.getByRole("link", { name: /Choose your team|Sign in again/i });
     await expect(clock.or(clockAnywhere).or(setup).first()).toBeVisible({ timeout: 12_000 });
@@ -189,6 +191,21 @@ test.describe("student-week GUI path", () => {
     const edit = page.getByRole("link", { name: /Edit( .* )?in Onshape/i }).first();
     await expect(edit).toBeVisible();
     await expect(edit).toHaveAttribute("href", /onshape\.com/);
+
+    await openStudent(page, orgId ? `/build?tab=cad&orgId=${encodeURIComponent(orgId)}` : "/build?tab=cad");
+    const viewport = page.getByTestId("cad-viewport");
+    const hubChoose = page.getByRole("heading", { name: "Choose your team", exact: true });
+    await expect(viewport.or(hubChoose)).toBeVisible({ timeout: 20_000 });
+    if ((await viewport.count()) > 0) {
+      await expectNoBanned(page, "CAD hub", ["vantage-cad", "ONSHAPE_OAUTH"]);
+      const hubPaste = page.getByPlaceholder(/cad\.onshape\.com\/documents/i).first();
+      if ((await hubPaste.count()) > 0) {
+        await hubPaste.fill(ONSHAPE_URL);
+        const hubEdit = page.getByRole("link", { name: /Edit( .* )?in Onshape/i }).first();
+        await expect(hubEdit).toBeVisible();
+        await expect(hubEdit).toHaveAttribute("href", /onshape\.com/);
+      }
+    }
   });
 
   test("CAD paste offers Edit in Fusion", async ({ page }) => {
@@ -283,5 +300,6 @@ test.describe("marketing waitlist and sign-in", () => {
     await waitlist.click();
     await expect(page).toHaveURL(/waitlist|#waitlist|\/$/);
     await expect(page.getByText("Setup required")).toHaveCount(0);
+    await expect(page.getByTestId("waitlist-form").or(page.getByTestId("waitlist-unavailable"))).toBeVisible();
   });
 });
