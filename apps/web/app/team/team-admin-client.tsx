@@ -165,7 +165,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
     const params = new URLSearchParams(window.location.search);
     if (params.get("github") === "connected") setMessage("GitHub connected for this team.");
     if (params.get("github") === "denied") setMessage("GitHub authorization was denied.");
-    if (params.get("github") === "error") setMessage(params.get("error") || "GitHub OAuth failed.");
+    if (params.get("github") === "error") setMessage(params.get("error") || "Could not connect GitHub.");
     void load();
   }, [orgId]);
   async function copyInviteLink(id: string, url: string) {
@@ -337,7 +337,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
       });
       const data = await response.json();
       if (!response.ok) {
-        setMessage(data.error ?? "Could not start GitHub OAuth");
+        setMessage(data.error ?? "Could not start GitHub sign-in");
         return;
       }
       window.location.href = data.url;
@@ -356,7 +356,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         body: JSON.stringify({ orgId, action: "connect-pat", pat: githubPat }),
       });
       const data = await response.json();
-      setMessage(response.ok ? "GitHub PAT encrypted and saved for this team." : data.error);
+      setMessage(response.ok ? "GitHub token saved for this team." : data.error);
       if (response.ok) {
         setGithubPat("");
         await load();
@@ -492,7 +492,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         </a>
         <a href={withOrgHref("/team/security", orgId)}>
           <strong>Security &amp; delegation</strong>
-          <span>Auth policy and API-key powers</span>
+          <span>Sign-in rules and who can do what</span>
         </a>
         <a href={withOrgHref("/team/ai-keys", orgId)}>
           <strong>AI keys</strong>
@@ -500,10 +500,10 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         </a>
         <a href={withOrgHref("/team/budgets", orgId)}>
           <strong>Chat limits</strong>
-          <span>Spend and token hard limits</span>
+          <span>How much Chat can spend</span>
         </a>
         <a href={withOrgHref("/team/ai-policy", orgId)}>
-          <strong>AI governance</strong>
+          <strong>AI rules</strong>
           <span>Tools, spend alerts, approvals</span>
         </a>
         <a href={`${withOrgHref("/team/budgets", orgId)}#prompt-caching`}>
@@ -512,7 +512,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         </a>
         <a href={withOrgHref("/team/ai-memory", orgId)}>
           <strong>AI memory</strong>
-          <span>Team memory governance</span>
+          <span>What Ask AI remembers</span>
         </a>
         <a href={withOrgHref("/team/data", orgId)}>
           <strong>Live data</strong>

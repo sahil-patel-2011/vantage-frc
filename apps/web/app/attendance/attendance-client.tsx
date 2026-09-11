@@ -225,7 +225,7 @@ function MemberOneTap({
       <EmptyState
         soft
         title="No roster members yet"
-        description="One-tap marks use real workspace members. Invite teammates, or type a name below."
+        description="One-tap marks use real teammates. Invite them, or type a name below."
       />
     );
   }

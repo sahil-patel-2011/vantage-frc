@@ -1,7 +1,7 @@
 "use client";
 
 import { PageHeader, Button } from "../../components/ui";
-import { helpArticleHref, helpCategoryLabel, type HelpArticle } from "../../lib/help";
+import { helpCategoryLabel, type HelpArticle } from "../../lib/help";
 import "./help.css";
 
 export default function HelpArticleClient({ article }: { article: HelpArticle }) {
@@ -46,7 +46,6 @@ export default function HelpArticleClient({ article }: { article: HelpArticle })
       <nav className="help-article-footer" aria-label="Help navigation">
         <a href="/help">← Help centre</a>
         <a href="/docs?view=sections">Section-by-section guide</a>
-        <a href={helpArticleHref(article.slug)}>Permalink</a>
         <a href="/support">Support tickets</a>
       </nav>
     </main>

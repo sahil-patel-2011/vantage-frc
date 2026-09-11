@@ -366,7 +366,7 @@ export function strategyNextActions(input: {
     {
       id: "scouting",
       label: "Open Scouting",
-      detail: "Deepen matchup explainability with membership-bound scout rows.",
+      detail: "Deepen matchup explainability with this team’s scout notes.",
       href: hubHref("/competition", "scouting", orgId),
     },
     {

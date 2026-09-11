@@ -192,7 +192,7 @@ export function pickClockShellCopy(kind: PickClockShellKind): PickClockEmptyCopy
         kind,
         title: "45-second pick clock",
         description:
-          "Next best available team from synced event metrics and membership-bound scout depth.",
+          "Next best available team from synced event metrics and this team’s scout notes.",
       };
     default: {
       const _exhaustive: never = kind;

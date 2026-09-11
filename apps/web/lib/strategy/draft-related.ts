@@ -191,7 +191,7 @@ export function draftShellCopy(kind: DraftShellKind): DraftEmptyCopy {
         kind: "ready",
         title: "Draft day alliance board",
         description:
-          "Captains, first picks, then reverse second picks from synced event teams only. Mentor share links stay org-bound.",
+          "Captains, first picks, then reverse second picks from synced event teams only. Mentor share links only open for this team.",
       };
   }
 }
@@ -252,7 +252,7 @@ export function draftNextActions(input: {
         id: "team-data",
         label: "Sync event metrics",
         detail:
-          "Pull TBA/Statbotics team_event_metrics — the draft pool stays blank until then.",
+          "Sync the event’s team list from The Blue Alliance — the draft pool stays blank until then.",
         href: withOrgHref("/team/data", orgId),
         primary: true,
       },
@@ -283,7 +283,7 @@ export function draftNextActions(input: {
       label: filledSlots > 0 ? "Continue draft day" : "Start captains, then first picks",
       detail:
         filledSlots > 0
-          ? `${formatDraftMetric(filledSlots, true)} filled slot${filledSlots === 1 ? "" : "s"} use real event teams only. Mentor links stay org-bound.`
+          ? `${formatDraftMetric(filledSlots, true)} filled slot${filledSlots === 1 ? "" : "s"} use real event teams only. Mentor links only open for this team.`
           : "Assign captains, then first picks, then reverse second picks from the synced pool.",
       href: withOrgHref("/strategy/draft", orgId),
       primary: true,
@@ -297,7 +297,7 @@ export function draftNextActions(input: {
     {
       id: "scouting",
       label: "Open Scouting",
-      detail: "Deepen pick assist with membership-bound scout rows.",
+      detail: "Deepen pick assist with your team’s scout notes.",
       href: hubHref("/competition", "scouting", orgId),
     },
     {

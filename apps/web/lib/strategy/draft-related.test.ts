@@ -125,7 +125,8 @@ describe("draftShellCopy", () => {
     expect(draftShellCopy("empty").badge).toBe("No draft board yet");
     expectPlainCopy(draftShellCopy("empty").description);
     expect(draftShellCopy("setup").badge).toBe("Setup required");
-    expect(draftShellCopy("ready").description).toMatch(/org-bound/i);
+    expectPlainCopy(draftShellCopy("ready").description);
+    expect(draftShellCopy("ready").description).toMatch(/this team/i);
   });
 });
 
@@ -153,6 +154,7 @@ describe("draftNextActions", () => {
       teamCount: 0,
     });
     expect(actions[0]?.id).toBe("team-data");
+    expect(actions[0]?.detail).not.toMatch(/team_event_metrics/);
     expect(actions.map((a) => a.id)).toEqual(
       expect.arrayContaining(["team-data", "strategy", "pick-desk", "scouting"]),
     );
@@ -160,7 +162,7 @@ describe("draftNextActions", () => {
     expect(actions.every((a) => !/\bDEMO\b/.test(a.label))).toBe(true);
   });
 
-  it("ready prioritizes board without DEMO boards and keeps org-bound share copy", () => {
+  it("ready prioritizes board without DEMO boards and keeps this-team share copy", () => {
     const actions = draftNextActions({
       orgId: "org-1",
       shell: "ready",
@@ -170,7 +172,7 @@ describe("draftNextActions", () => {
     });
     expect(actions[0]?.id).toBe("board");
     expect(actions[0]?.detail).toMatch(/3 filled/);
-    expect(actions[0]?.detail).toMatch(/org-bound/i);
+    expect(actions[0]?.detail).toMatch(/this team/i);
     expect(actions.some((a) => a.id === "pick-desk")).toBe(true);
     expect(actions.some((a) => a.id === "scouting")).toBe(true);
     expect(actions.every((a) => !/\bDEMO\b/.test(a.label))).toBe(true);
