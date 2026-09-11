@@ -1,7 +1,7 @@
 import PrintFarmClient from "./print-farm-client";
 
 export const metadata = {
-  title: "3D Print Farm",
+  title: "Print farm",
 };
 
 export default function PrintFarmPage() {

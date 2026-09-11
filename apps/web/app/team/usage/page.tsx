@@ -16,7 +16,7 @@ export default async function TeamUsagePage({
       <main className="module-page ai-budgets-page">
         <EmptyState
           soft
-          badge="Setup"
+          badge="Needs setup"
           badgeTone="setup"
           title="Choose your team"
           description="Each team has its own AI usage log. Choose your team, then return from Ask AI."

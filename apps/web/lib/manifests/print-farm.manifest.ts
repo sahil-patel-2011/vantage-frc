@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "print-farm",
-  title: "3D Print Farm",
+  title: "Print farm",
   route: "/print-farm",
   apiRoute: "/api/print-farm",
   hub: "Build",

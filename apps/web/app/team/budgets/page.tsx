@@ -12,7 +12,7 @@ export default async function BudgetPage({ searchParams }: { searchParams: Promi
       <main className="module-page ai-budgets-page">
         <EmptyState
           soft
-          badge="Setup"
+          badge="Needs setup"
           badgeTone="setup"
           title="Choose your team"
           description="Each team sets its own Chat limits. Choose your team, then come back from Ask AI."

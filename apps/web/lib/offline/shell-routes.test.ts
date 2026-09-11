@@ -194,6 +194,7 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/alumni-network")).toBe(true);
     expect(pathnameIsOfflineShell("/mock-judging")).toBe(true);
     expect(pathnameIsOfflineShell("/knowledge-drafts")).toBe(true);
+    expect(pathnameIsOfflineShell("/team/knowledge")).toBe(true);
     expect(pathnameIsOfflineShell("/start")).toBe(true);
     expect(pathnameIsOfflineShell("/showcase")).toBe(true);
     expect(pathnameIsOfflineShell("/cross-domain-alerts")).toBe(true);
@@ -226,7 +227,7 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/chemistry")).toBe("Chemistry");
     expect(offlineCapableLabel("/pick-clock")).toBe("Pick clock");
     expect(offlineCapableLabel("/alliance-selection-desk")).toBe("Alliance selection desk");
-    expect(offlineCapableLabel("/print-farm")).toBe("Print Farm");
+    expect(offlineCapableLabel("/print-farm")).toBe("Print farm");
     expect(offlineCapableLabel("/inventory")).toBe("Inventory");
     expect(offlineCapableLabel("/defense-planner")).toBe("Defense planner");
     expect(offlineCapableLabel("/picklist-collab")).toBe("Collaborative pick list");
@@ -245,7 +246,7 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/event-readiness")).toBe("Event readiness");
     expect(offlineCapableLabel("/video-analysis")).toBe("Video");
     expect(offlineCapableLabel("/video")).toBe("Match video");
-    expect(offlineCapableLabel("/inspection-copilot")).toBe("Inspection Copilot");
+    expect(offlineCapableLabel("/inspection-copilot")).toBe("Inspection");
     expect(offlineCapableLabel("/inspection")).toBe("Inspection");
     expect(offlineCapableLabel("/fmea")).toBe("FMEA");
     expect(offlineCapableLabel("/match-sim")).toBe("Match Simulator");
@@ -319,6 +320,7 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/team/data")).toBe("Team Data");
     expect(offlineCapableLabel("/team/grants")).toBe("Grant writing");
     expect(offlineCapableLabel("/team")).toBe("Team");
+    expect(offlineCapableLabel("/team/knowledge")).toBe("Playbook");
     expect(offlineCapableLabel("/tuning-autopilot")).toBe("Tuning Autopilot");
     expect(offlineCapableLabel("/practice")).toBe("Practice");
     expect(offlineCapableLabel("/manufacturing")).toBe("Manufacturing");
@@ -475,6 +477,7 @@ describe("offline shell routes", () => {
     expect(featureCacheKey("grant-eligibility-matcher", "org-1")).toBe("grant-eligibility-matcher:org-1");
     expect(featureCacheKey("hours-self-view", "org-1")).toBe("hours-self-view:org-1");
     expect(featureCacheKey("knowledge-gap", "org-1", "2026")).toBe("knowledge-gap:org-1:2026");
+    expect(featureCacheKey("knowledge", "org-1")).toBe("knowledge:org-1");
     expect(featureCacheKey("matching-gift-finder", "org-1")).toBe("matching-gift-finder:org-1");
     expect(featureCacheKey("onboarding-buddy", "org-1")).toBe("onboarding-buddy:org-1");
     expect(featureCacheKey("risk-burndown", "org-1", "2026")).toBe("risk-burndown:org-1:2026");

@@ -167,7 +167,7 @@ export function mediaShellCopy(kind: MediaShellKind): MediaEmptyCopy {
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Media is your team's for business and press workflows. Choose your team before recording assets or outreach.",

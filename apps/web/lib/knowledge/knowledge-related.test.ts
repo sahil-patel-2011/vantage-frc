@@ -9,6 +9,11 @@ describe("knowledge-related Soft-UI helpers", () => {
     expect(links.find((l) => l.id === "cad")?.href).toBe("/build?tab=cad&orgId=org-1");
     expect(links.find((l) => l.id === "decisions")?.href).toContain("/decisions");
     expect(links.find((l) => l.id === "assistant")?.href).toContain("/chat");
+    expect(knowledgeRelatedLinks("org-1", { include: ["messages", "fmea", "decisions"] }).map((l) => l.id)).toEqual([
+      "messages",
+      "fmea",
+      "decisions",
+    ]);
   });
 
   it("excludes active and respects include", () => {

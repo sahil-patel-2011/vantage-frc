@@ -20,6 +20,13 @@ export type KnowledgeRelatedLink = {
   href: string;
 };
 
+/** Focused header strip — Team chat / FMEA / Decisions. */
+export const KNOWLEDGE_RELATED_INCLUDE: KnowledgeRelatedId[] = [
+  "messages",
+  "fmea",
+  "decisions",
+];
+
 /** Cross-links for Knowledge Soft-UI (never DEMO article placeholders). */
 export function knowledgeRelatedLinks(
   orgId?: string | null,

@@ -130,7 +130,7 @@ export function knowledgeGapShellCopy(kind: KnowledgeGapShellKind): KnowledgeGap
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Choose your team before scanning.",
@@ -168,7 +168,7 @@ export function knowledgeGapNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before running a scan.",
+          detail: "Choose your team before running a scan.",
           href: "/workspace",
           primary: true,
         },

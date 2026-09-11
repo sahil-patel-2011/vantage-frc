@@ -51,7 +51,8 @@ const KEY_SOURCE_LABELS: Record<string, string> = {
 };
 
 function money(n: number) {
-  if (!Number.isFinite(n) || n <= 0) return "$0.00";
+  if (!Number.isFinite(n) || n < 0) return "—";
+  if (n === 0) return "$0.00";
   if (n < 0.01) return `$${n.toFixed(4)}`;
   return `$${n.toFixed(2)}`;
 }
@@ -201,7 +202,7 @@ export default function AiUsageClient({ orgId }: { orgId: string | null }) {
       {!orgId ? (
         <EmptyState
           soft
-          badge="Setup"
+          badge="Needs setup"
           badgeTone="setup"
           title="Choose your team"
           description="Choose your team, then return here."

@@ -106,7 +106,7 @@ describe("scoutDisagreementsShellCopy", () => {
       expect(copy.title).not.toMatch(/\bDEMO\b/);
     }
     expectPlainCopy(scoutDisagreementsShellCopy("empty").description);
-    expect(scoutDisagreementsShellCopy("setup").badge).toBe("Setup required");
+    expect(scoutDisagreementsShellCopy("setup").badge).toBe("Needs setup");
   });
 });
 

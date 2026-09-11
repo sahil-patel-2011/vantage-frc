@@ -1,22 +1,62 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
+  KNOWLEDGE_RELATED_INCLUDE,
   KNOWLEDGE_TEMPLATES,
   KNOWLEDGE_TEMPLATE_KINDS,
   MAX_BODY,
   TEMPLATE_KIND_LABEL,
+  knowledgeRelatedLinks,
   type KnowledgePageSummary,
   type KnowledgeTemplateKind,
   type KnowledgeWikiView,
 } from "../../../lib/knowledge";
+import { OfflineBanner } from "../../../components/offline-banner";
 import { EmptyState, Button } from "../../../components/ui";
 import { ActionMenu, type ActionSpec } from "../../../components/ui/action-menu";
+import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 import "./knowledge.css";
 
 type Tab = "wiki" | "search" | "templates" | "ai";
 type LinkTargetType = "decision" | "design_review";
+
+function isKnowledgeWikiView(value: unknown): value is KnowledgeWikiView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "ready";
+}
+
+function knowledgeCacheOrg(data: KnowledgeWikiView, orgHint: string): string {
+  if (typeof data.orgId === "string" && data.orgId.trim()) return data.orgId;
+  return orgHint;
+}
+
+async function persistKnowledgeSnapshot(orgHint: string, data: KnowledgeWikiView): Promise<void> {
+  const cacheOrg = knowledgeCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("knowledge", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("knowledge", "_", data);
+  } catch {
+    // Live Playbook already painted; IndexedDB is best-effort.
+  }
+}
+
+function KnowledgeRelated({ orgId }: { orgId?: string | null }) {
+  const links = knowledgeRelatedLinks(orgId, { include: [...KNOWLEDGE_RELATED_INCLUDE] });
+  return (
+    <nav className="product-hub-related" aria-label="Related team tools">
+      {links.map((link) => (
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
+          {link.label}
+        </Button>
+      ))}
+    </nav>
+  );
+}
 
 function fmtUpdated(iso: string): string {
   const d = new Date(iso);
@@ -125,6 +165,11 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
   const [error, setError] = useState("");
   // Kept so an expired session offers sign-in instead of a Retry that cannot work.
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
+  const [fetchFailed, setFetchFailed] = useState(false);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<KnowledgeWikiView | null>(null);
+  viewRef.current = view;
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
   const [tab, setTab] = useState<Tab>("wiki");
@@ -191,7 +236,7 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
   const load = useCallback(
     async (opts?: { pageId?: string; page?: string; q?: string }) => {
       const params = new URLSearchParams(window.location.search);
-      const urlOrg = params.get("orgId");
+      const urlOrg = params.get("orgId")?.trim() ?? "";
       if (urlOrg) params.set("orgId", urlOrg);
       // Soft-UI hub redirects used to emit revisionId; wiki API expects pageId.
       const revisionId = params.get("revisionId");
@@ -200,22 +245,67 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
       if (opts?.pageId) params.set("pageId", opts.pageId);
       if (opts?.page) params.set("page", opts.page);
       if (opts?.q) params.set("q", opts.q);
+      let hadCache = Boolean(viewRef.current);
       try {
-        const response = await fetch(`/api/team/wiki?${params}`);
+        const cached = await getFeatureSnapshot<KnowledgeWikiView>("knowledge", urlOrg || "_");
+        if (!viewRef.current && cached?.data && isKnowledgeWikiView(cached.data)) {
+          setView(cached.data);
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          hadCache = true;
+          if (cached.data.status === "ready" && cached.data.selected && !opts?.q) {
+            hydrateFromSelected(cached.data);
+          }
+        }
+      } catch {
+        // IndexedDB missing or blocked; live fetch still runs.
+      }
+      setFetchFailed(false);
+      try {
+        const response = await fetch(`/api/team/wiki?${params}`, {
+          cache: "no-store",
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+        });
         const data = (await response.json()) as KnowledgeWikiView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setError("error" in data && data.error ? data.error : "Could not load knowledge base.");
+        if (response.status === 401 || response.status === 403) {
+          setView(null);
+          setFromCache(false);
+          setCachedAt(null);
+          setFetchFailed(true);
+          setErrorStatus(response.status);
+          setError("error" in data && data.error ? data.error : "Could not load the playbook.");
+          return;
+        }
+        if (!response.ok || !isKnowledgeWikiView(data)) {
+          if (hadCache || viewRef.current) {
+            setFromCache(true);
+            setError("Could not refresh the playbook. Showing the last copy on this device.");
+            setFetchFailed(false);
+            return;
+          }
+          setFetchFailed(true);
+          setError("error" in data && data.error ? data.error : "Could not load the playbook.");
           setErrorStatus(response.status);
           return;
         }
         setError("");
         setErrorStatus(null);
         setView(data);
+        setFromCache(false);
+        setCachedAt(null);
         if (data.status === "ready" && data.selected && !opts?.q) {
           hydrateFromSelected(data);
         }
+        await persistKnowledgeSnapshot(urlOrg, data);
       } catch {
-        setError("Network error loading knowledge base.");
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh the playbook. Showing the last copy on this device.");
+          setFetchFailed(false);
+          return;
+        }
+        setFetchFailed(true);
+        setError("Network error loading the playbook.");
         setErrorStatus(null);
       }
     },
@@ -254,16 +344,18 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
         body: JSON.stringify({ orgId, ...payload }),
       });
       const data = (await response.json()) as KnowledgeWikiView | { error?: string };
-      if (!response.ok || !("status" in data)) {
+      if (!response.ok || !isKnowledgeWikiView(data)) {
         setError("error" in data && data.error ? data.error : "Could not save.");
         return;
       }
       setView(data);
+      setFromCache(false);
       setStatus("Saved.");
       setCreating(false);
       if (data.status === "ready" && data.selected) {
         hydrateFromSelected(data);
       }
+      void persistKnowledgeSnapshot(orgId, data);
     } catch {
       setError("Network error — nothing was saved.");
     } finally {
@@ -338,56 +430,65 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
 
   const bodyRemaining = MAX_BODY - draftBody.length;
 
-  if (!view && !error) {
+  if (!view) {
+    if (fetchFailed) {
+      const copy = loadFailureCopy(
+        classifyLoadFailure({
+          status: errorStatus,
+          message: error,
+          online: typeof navigator === "undefined" ? true : navigator.onLine,
+        }),
+        {
+          nextPath:
+            typeof window === "undefined"
+              ? null
+              : `${window.location.pathname}${window.location.search}`,
+          message: error,
+        },
+      );
+      return (
+        <main className={`module-page kb-page${embedded ? " is-embedded" : ""}`}>
+          {!embedded ? (
+            <header className="kb-hero">
+              <div>
+                <h1>Playbook</h1>
+              </div>
+              <KnowledgeRelated />
+            </header>
+          ) : null}
+          <OfflineBanner feature="Playbook" fromCache={fromCache} cachedAt={cachedAt} />
+          <EmptyState soft title={copy.title} description={copy.description}>
+            {copy.primary ? (
+              <Button as="a" variant="primary" href={copy.primary.href}>
+                {copy.primary.label}
+              </Button>
+            ) : null}
+            {copy.showRetry ? (
+              <Button variant="secondary" type="button" onClick={() => void load()}>
+                Retry
+              </Button>
+            ) : null}
+          </EmptyState>
+        </main>
+      );
+    }
     return (
       <main className="module-page kb-page">
+        {!embedded ? (
+          <header className="kb-hero">
+            <div>
+              <h1>Playbook</h1>
+            </div>
+            <KnowledgeRelated />
+          </header>
+        ) : null}
+        <OfflineBanner feature="Playbook" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState soft title="Loading…" aria-busy />
       </main>
     );
   }
 
-  // Nothing loaded at all — say why, and offer the action that actually fixes it.
-  if (!view && error) {
-    const copy = loadFailureCopy(
-      classifyLoadFailure({
-        status: errorStatus,
-        message: error,
-        online: typeof navigator === "undefined" ? true : navigator.onLine,
-      }),
-      {
-        nextPath:
-          typeof window === "undefined"
-            ? null
-            : `${window.location.pathname}${window.location.search}`,
-        message: error,
-      },
-    );
-    return (
-      <main className={`module-page kb-page${embedded ? " is-embedded" : ""}`}>
-        {!embedded ? (
-          <header className="kb-hero">
-            <div>
-              <h1>Playbook</h1>
-            </div>
-          </header>
-        ) : null}
-        <EmptyState soft title={copy.title} description={copy.description}>
-          {copy.primary ? (
-            <Button as="a" variant="primary" href={copy.primary.href}>
-              {copy.primary.label}
-            </Button>
-          ) : null}
-          {copy.showRetry ? (
-            <Button variant="secondary" type="button" onClick={() => void load()}>
-              Retry
-            </Button>
-          ) : null}
-        </EmptyState>
-      </main>
-    );
-  }
-
-  if (view?.status === "setup_required") {
+  if (view.status === "setup_required") {
     return (
       <main className="module-page kb-page">
         {!embedded ? (
@@ -395,9 +496,17 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
             <div>
               <h1>Playbook</h1>
             </div>
+            <KnowledgeRelated orgId={view.orgId} />
           </header>
         ) : null}
-        <EmptyState soft badge="Setup" badgeTone="setup" title="Choose your team" description={view.message}>
+        <OfflineBanner feature="Playbook" fromCache={fromCache} cachedAt={cachedAt} />
+        <EmptyState
+          soft
+          badge="Needs setup"
+          badgeTone="setup"
+          title="Choose your team"
+          description={view.message}
+        >
           <Button as="a" variant="primary" href="/workspace">
             Choose your team
           </Button>
@@ -413,8 +522,11 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
           <div>
             <h1>Playbook</h1>
           </div>
+          <KnowledgeRelated orgId={orgId} />
         </header>
       ) : null}
+
+      <OfflineBanner feature="Playbook" fromCache={fromCache} cachedAt={cachedAt} />
 
       {tab !== "wiki" ? (
         <button type="button" className="kb-back" onClick={() => setTab("wiki")}>

@@ -185,6 +185,7 @@ export const OFFLINE_SHELL_ROUTES = [
   "/goals-tracker",
   "/hours/kiosk",
   "/incident-heatmap",
+  "/team/knowledge",
   "/knowledge-drafts",
   "/leadership",
   "/media-library",
@@ -297,6 +298,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/team/security")) return "Team security";
   if (bare.startsWith("/team/slack")) return "Slack";
   if (bare.startsWith("/team/storage")) return "Storage";
+  if (bare.startsWith("/team/knowledge")) return "Playbook";
   if (bare === "/team") return "Team";
   if (bare.startsWith("/todos") || bare.startsWith("/tasks")) return "Todos";
   if (bare.startsWith("/logistics")) return "Logistics";
@@ -322,7 +324,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare === "/pit" || bare.startsWith("/pit/")) return "Pit";
   if (bare.startsWith("/video-analysis")) return "Video";
   if (bare.startsWith("/video")) return "Match video";
-  if (bare.startsWith("/inspection-copilot")) return "Inspection Copilot";
+  if (bare.startsWith("/inspection-copilot")) return "Inspection";
   if (bare.startsWith("/inspection")) return "Inspection";
   if (bare.startsWith("/fmea")) return "FMEA";
   if (bare.startsWith("/match-sim")) return "Match Simulator";
@@ -408,7 +410,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/chemistry")) return "Chemistry";
   if (bare.startsWith("/pick-clock")) return "Pick clock";
   if (bare.startsWith("/alliance-selection-desk")) return "Alliance selection desk";
-  if (bare.startsWith("/print-farm")) return "Print Farm";
+  if (bare.startsWith("/print-farm")) return "Print farm";
   if (bare.startsWith("/inventory")) return "Inventory";
   if (bare.startsWith("/defense-planner")) return "Defense planner";
   if (bare.startsWith("/picklist-collab")) return "Collaborative pick list";
