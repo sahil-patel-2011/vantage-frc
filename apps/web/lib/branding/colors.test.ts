@@ -176,5 +176,6 @@ describe("accent plan", () => {
     ]);
     expect(LEGACY_ACCENT_ALIASES).toContain("--soft-accent");
     expect(LEGACY_ACCENT_ALIASES).toContain("--app-accent");
+    expect(LEGACY_ACCENT_ALIASES).toContain("--soft-space-1");
   });
 });

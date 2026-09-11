@@ -264,6 +264,12 @@ export const LEGACY_ACCENT_ALIASES = [
   "--soft-accent-soft",
   "--soft-brand",
   "--soft-brand-ink",
+  "--soft-space-1",
+  "--soft-space-2",
+  "--soft-space-3",
+  "--soft-space-4",
+  "--soft-space-5",
+  "--soft-space-6",
   "--app-accent",
   "--app-accent-hover",
 ] as const;
