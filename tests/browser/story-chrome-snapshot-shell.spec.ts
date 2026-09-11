@@ -26,9 +26,21 @@ test("Prompts has student chrome without VANTAGE leftover", async ({ page }) => 
 test("Ask AI history has student chrome without VANTAGE leftover", async ({ page }) => {
   await page.goto("/team/ai-runs");
   await expect(page.locator("body")).not.toContainText("Application error");
-  await expect(page.getByRole("heading", { level: 1 })).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByRole("heading", { level: 1, name: "Ask AI history" })).toBeVisible({
+    timeout: 20_000,
+  });
   await expect(page.getByText("VANTAGE /")).toHaveCount(0);
   await expect(page.getByText("orchestrator")).toHaveCount(0);
+});
+
+test("Awards has student chrome and one Choose your team primary", async ({ page }) => {
+  await page.goto("/team/awards");
+  await expect(page.locator("body")).not.toContainText("Application error");
+  await expect(page.getByRole("heading", { level: 1, name: "Awards" })).toBeVisible({
+    timeout: 20_000,
+  });
+  await expect(page.getByText("VANTAGE /")).toHaveCount(0);
+  await expect(page.getByRole("heading", { level: 2, name: "Choose your team" })).toBeVisible();
 });
 
 test("Desktop install copy has no CLI or OAuth dump", async ({ page }) => {
