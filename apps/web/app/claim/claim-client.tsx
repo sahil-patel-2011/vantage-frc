@@ -66,7 +66,7 @@ export default function ClaimWorkspaceClient() {
           <FormRow label="Team name">
             <input value={name} onChange={(event) => setName(event.target.value)} />
           </FormRow>
-          <FormRow label="URL slug">
+          <FormRow label="Short name">
             <input value={slug} onChange={(event) => setSlug(event.target.value)} placeholder="cheesy-poofs" />
           </FormRow>
           <FormRow label="FRC team number">

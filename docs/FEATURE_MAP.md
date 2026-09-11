@@ -1,6 +1,6 @@
 # Vantage feature map
 
-*Reference: every screen and route. Tests and the route walker read this file, so keep the table format. Last updated 2026-09-10.*
+*Reference: every screen and route. Tests and the route walker read this file, so keep the table format. Last updated 2026-09-11.*
 
 | Hub | Route | Tabs |
 |---|---|---|
@@ -58,7 +58,7 @@
 | Visit Invites | `/visit-invites` | Shop tours / demo days, hosts, RSVPs; empty/setup + next actions; cross-links to Logistics / Event Day / Calendar|
 | Business | `/business` | Overview · **Finance** · Budget · Orders · Sponsors · Sponsorship · Grants · … — sponsor tabs hide when org `sponsors_allowed=false` |
 | Media (folded) | `/media` (tools under Business › Outreach) | Content calendar, drafts, reminders, kit and the photo/video library are Outreach tools now — one fewer pillar. The `/media` page and its tabs still resolve (hidden hub in `hubs.ts`) |
-| Section access | `/team/security` | Owner/admin limit which hubs and tabs scouts and viewers can open (`membership_hub_access`); Hub access panel above capabilities; Help `/help/hub-access`; unrestricted when no rows |
+| Section access | `/team/security` | Owner/admin limit which hubs and tabs scouts and viewers can open (`membership_hub_access`); Hub access panel above capabilities; Help `/help/hub-access`; unrestricted when no rows. Last snapshot stays on the phone (`hub-access` / `member-capabilities` / `auth-policy`). No-org empty keeps one **Choose your team** primary. |
 | Onboarding | `/onboarding` · `/start` · `/team/background` | Per-person role + crew + short “how you help” description; team number is optional; entering a number for a team that already has Vantage only requests **that team’s** approval — never auto-join. Team heads set affiliation + school funds / grants / sponsors_allowed; owners/admins can edit post-onboarding on Team Background (`/api/organizations/funding-profile`). Load/mutate/shell is `onboarding-client.tsx`; chrome, funding fields, step forms, pending, and landing live in sibling modules. No nested TabBar. |
 | Exports | `/exports` | Audited CSV/ZIP takeout; team AI chats/memory/artifacts are on this team; private AI is member-only; keys never included |
 | Desktop | `/desktop` · `apps/desktop` | Windows Electron shell around the hosted Vantage app; only Vantage and its sign-in/billing hosts open in the window; Fusion CAD still uses local `vantage-cad` — unsigned until certs |
@@ -68,7 +68,7 @@
 | Business grants | `/business?tab=grants` · `/team/grants` | Pipeline + draft library + guided grant writing; empty/setup + next actions; metered AI hard-stop via UsageCutoffBanner; cross-links to sponsors / fundraisers / writer|
 | Business fundraisers | `/fundraisers` · Overview fundraising glance | events + goal progress from recorded deposits/goals only; empty/setup + next actions; cross-links to Sponsors / Grants / Orders|
 | Business impact & awards | `/impact` · `/team/awards` · Business · Awards | outreach log + readiness from recorded activities; award essays from catalog submissions; empty/setup + next actions; cross-links to Business hub / Grants / Sponsors|
-| Media workspace | `/media` (Media pillar) | TabBar: Calendar · Drafts · Reminders · Kit · Impact — content CRUD + metered caption drafts + due reminders; Business More tools Media Kit / Outreach deep-link here; Help `/help/media-workspace`; empty/setup|
+| Media workspace | `/media` (tools under Business › Outreach) | ToolStrip: Calendar · Drafts · Reminders · Kit · Impact — content CRUD + metered caption drafts + due reminders; Business More tools Media Kit / Outreach deep-link here; Help `/help/media-workspace`; empty/setup. Last snapshot stays on the phone. |
 | Build | `/build` | Kickoff · CAD · Code · Robot (Bugbot under Code; FMEA / batteries / inspection under Robot) |
 | Readiness Score | `/readiness-score` (Build More tools) | Ship-readiness index from subsystems / checklist / FMEA / weight·power; empty/setup + next actions; UsageCutoffBanner on metered subsystem writes; FMEA / Inspection / Code via hubHref|
 | Power budget | `/power-budget` | Logged branch loads vs 120A main / ~100A sustained; **wrong breaker size** (40A radio / 10A swerve), **supply current limits**, and **stagger mechanisms / check binding** cues from real ratings only|
@@ -105,8 +105,8 @@
 | Connections | `/account?tab=integrations` (also `/cad/connections`) | TBA / Onshape / Google / Discord / Slack / GitHub setup_required + empty shells; Connected only from real rows; cross-links to Account / CAD / Discord / Slack|
 | Team chat | `/team?tab=messages` · `/messages` | Org-scoped team channel + DMs; inbox notifications (`teamChat`); optional Slack bridge (`/team/slack`)|
 | Account profile | `/account` | Display + legal name, DOB, recovery email, phone OTP (Twilio setup_required until env); notification prefs including team chat |
-| Bring your season | `/migrate` (Team More tools, featured) | ICS inbound + paste + pull; scout CSV commit with identity lock; hours CSV → attendance; Notion JSON → calendar/knowledge/tasks; OAuth stays setup_required until `NOTION_CLIENT_ID`|
-| Claim team | `/claim` | Self-serve org via `claim_frc_team_workspace` (verified email, unused TBA team number in `teams_ref`); members still exact-email invite; STIMS remains official |
+| Bring your season | `/migrate` (Team More tools, featured) | ICS inbound + paste + pull; scout CSV commit with identity lock; hours CSV → attendance; Notion paste → calendar/knowledge/tasks; Notion sign-in stays setup until configured. Last snapshot stays on the phone. No-org empty keeps one **Choose your team** primary. |
+| Claim team | `/claim` | Self-serve org via `claim_frc_team_workspace` (verified email, unused TBA team number in `teams_ref`); the team’s **Short name** is what other pages show — not a URL slug. Members still exact-email invite; STIMS remains official |
 | Shop hours | `/hours` (Team More tools, featured) | Clock in/out, kiosk scans, and last-snapshot when the shop Wi-Fi dies. Queued clock events upload when you are back online. |
 | My hours | `/hours-self-view` (Team More tools) | Your hours plus who is in the shop from open sessions. Kiosk lock + biometric consent. |
 | Robot | `/robot` (Build More tools, featured) | Subsystem blueprint plus FMEA / batteries / weigh-in / inspection links — Onshape/Fusion stay CAD systems of record |

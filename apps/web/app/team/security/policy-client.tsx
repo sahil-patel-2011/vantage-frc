@@ -1,25 +1,115 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { PageHeader, Panel } from "../../../components/ui";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { OfflineBanner } from "../../../components/offline-banner";
+import { PageHeader, Panel, Button } from "../../../components/ui";
+import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
+
+type AuthPolicy = {
+  allowPassword: boolean;
+  allowGoogle: boolean;
+  allowEmailOtp: boolean;
+  mfaPolicy: string;
+  rememberedDeviceDays: number;
+};
+
+const DEFAULT_POLICY: AuthPolicy = {
+  allowPassword: false,
+  allowGoogle: true,
+  allowEmailOtp: true,
+  mfaPolicy: "optional",
+  rememberedDeviceDays: 14,
+};
+
+function isAuthPolicy(value: unknown): value is AuthPolicy {
+  if (!value || typeof value !== "object") return false;
+  const row = value as AuthPolicy;
+  return typeof row.allowEmailOtp === "boolean" && typeof row.mfaPolicy === "string";
+}
+
+async function persistAuthPolicySnapshot(orgId: string, data: AuthPolicy): Promise<void> {
+  if (!orgId.trim()) return;
+  try {
+    await putFeatureSnapshot("auth-policy", orgId, data);
+  } catch {
+    // Live sign-in policy already painted; IndexedDB is best-effort.
+  }
+}
 
 export default function AuthPolicyClient({ orgId }: { orgId: string }) {
-  const [policy, setPolicy] = useState({
-    allowPassword: false,
-    allowGoogle: true,
-    allowEmailOtp: true,
-    mfaPolicy: "optional",
-    rememberedDeviceDays: 14,
-  });
+  const [policy, setPolicy] = useState<AuthPolicy>(DEFAULT_POLICY);
   const [message, setMessage] = useState("");
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState(false);
+  const loadedRef = useRef(false);
+  loadedRef.current = loaded;
+
+  const load = useCallback(async () => {
+    let hadCache = loadedRef.current;
+    try {
+      const cached = await getFeatureSnapshot<AuthPolicy>("auth-policy", orgId);
+      if (cached?.data && isAuthPolicy(cached.data)) {
+        if (!loadedRef.current) {
+          setPolicy(cached.data);
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          setLoaded(true);
+        }
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
+    try {
+      const response = await fetch(`/api/organizations/auth-policy?orgId=${orgId}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      const data: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        setPolicy(DEFAULT_POLICY);
+        setFromCache(false);
+        setCachedAt(null);
+        setLoaded(true);
+        setMessage(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "Could not load sign-in policy.",
+        );
+        return;
+      }
+      const next =
+        data && typeof data === "object" && "policy" in data ? (data as { policy?: unknown }).policy : null;
+      if (!response.ok || !isAuthPolicy(next)) {
+        if (hadCache || loadedRef.current) {
+          setFromCache(true);
+          setMessage("Could not refresh sign-in policy. Showing the last copy on this device.");
+          setLoaded(true);
+          return;
+        }
+        setLoaded(true);
+        return;
+      }
+      setPolicy(next);
+      setFromCache(false);
+      setCachedAt(null);
+      setLoaded(true);
+      setMessage("");
+      await persistAuthPolicySnapshot(orgId, next);
+    } catch {
+      if (hadCache || loadedRef.current) {
+        setFromCache(true);
+        setMessage("Could not refresh sign-in policy. Showing the last copy on this device.");
+      }
+      setLoaded(true);
+    }
+  }, [orgId]);
 
   useEffect(() => {
-    void fetch(`/api/organizations/auth-policy?orgId=${orgId}`)
-      .then((response) => response.json())
-      .then((data) => {
-        if (data.policy) setPolicy(data.policy);
-      });
-  }, [orgId]);
+    void load();
+  }, [load]);
 
   async function save(event: React.FormEvent) {
     event.preventDefault();
@@ -27,9 +117,11 @@ export default function AuthPolicyClient({ orgId }: { orgId: string }) {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ orgId, ...policy }),
+      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
     });
-    const data = await response.json();
-    setMessage(response.ok ? "Authentication policy saved and audited." : data.error);
+    const data = (await response.json()) as { error?: string };
+    setMessage(response.ok ? "Sign-in policy saved and audited." : (data.error ?? "Could not save."));
+    if (response.ok) await persistAuthPolicySnapshot(orgId, policy);
   }
 
   return (
@@ -37,15 +129,16 @@ export default function AuthPolicyClient({ orgId }: { orgId: string }) {
       <PageHeader
         breadcrumbs="Settings / Team security"
         title="Team security"
-        description="Organization sign-in policy, 2FA requirements, hub access for scouts/viewers, and delegated admin powers. Personal authenticator setup lives under Account → Security."
+        description="Team sign-in policy, 2FA requirements, hub access for scouts/viewers, and delegated admin powers. Personal authenticator setup lives under Account → Security."
       >
         <nav className="settings-inline-links" aria-label="Related settings">
           <a href={`/team?orgId=${orgId}`}>Team admin</a>
           <a href={`/team/budgets?orgId=${orgId}`}>Chat limits</a>
-          <a href={`/team?orgId=${orgId}#custom-providers`}>API keys</a>
+          <a href={`/team/ai-keys?orgId=${orgId}`}>Team keys</a>
           <a href="/security">Personal 2FA</a>
         </nav>
       </PageHeader>
+      <OfflineBanner feature="Team security" fromCache={fromCache} cachedAt={cachedAt} />
 
       {message ? (
         <p role="status" className="telemetry-status">
@@ -101,7 +194,7 @@ export default function AuthPolicyClient({ orgId }: { orgId: string }) {
           >
             <option value="off">Off</option>
             <option value="optional">Optional</option>
-            <option value="required">Required for organization access</option>
+            <option value="required">Required for team access</option>
           </select>
         </label>
         <label>
@@ -115,9 +208,9 @@ export default function AuthPolicyClient({ orgId }: { orgId: string }) {
           />
           <small>days (0 disables remembered devices)</small>
         </label>
-        <button className="primary-action" type="submit">
+        <Button variant="primary" type="submit">
           Save access policy
-        </button>
+        </Button>
       </Panel>
     </main>
   );

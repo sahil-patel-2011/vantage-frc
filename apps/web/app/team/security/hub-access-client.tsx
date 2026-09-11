@@ -1,9 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { OfflineBanner } from "../../../components/offline-banner";
 import { EmptyState, Panel, Button } from "../../../components/ui";
 import { CLIENT_HUB_IDS, type ClientHubId } from "../../../lib/nav/hub-access-filter";
 import { PRODUCT_HUBS } from "../../../lib/nav/hubs";
+import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
 
 type Member = {
   userId: string;
@@ -56,6 +59,25 @@ function draftToPayload(draft: Record<ClientHubId, string[] | null>): HubAccessR
   }));
 }
 
+type HubAccessSnapshot = {
+  members: Member[];
+  hubAccessByUser: Record<string, HubAccessRow[]>;
+};
+
+function isHubAccessSnapshot(value: unknown): value is HubAccessSnapshot {
+  if (!value || typeof value !== "object") return false;
+  return Array.isArray((value as { members?: unknown }).members);
+}
+
+async function persistHubAccessSnapshot(orgId: string, data: HubAccessSnapshot): Promise<void> {
+  if (!orgId.trim()) return;
+  try {
+    await putFeatureSnapshot("hub-access", orgId, data);
+  } catch {
+    // Live hub access already painted; IndexedDB is best-effort.
+  }
+}
+
 export default function HubAccessClient({ orgId }: { orgId: string }) {
   const [members, setMembers] = useState<Member[]>([]);
   const [hubAccessByUser, setHubAccessByUser] = useState<Record<string, HubAccessRow[]>>({});
@@ -63,34 +85,92 @@ export default function HubAccessClient({ orgId }: { orgId: string }) {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [savingUserId, setSavingUserId] = useState<string | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const membersRef = useRef<Member[]>([]);
+  membersRef.current = members;
 
   const hubCatalog = useMemo(() => CLIENT_HUB_IDS, []);
 
-  async function load() {
-    setLoading(true);
-    const response = await fetch(`/api/organizations/members?orgId=${encodeURIComponent(orgId)}`);
-    const data = await response.json();
-    if (!response.ok) {
-      setMessage(data.error ?? "Unable to load members");
-      setLoading(false);
-      return;
-    }
-    const nextMembers = (data.members ?? []) as Member[];
-    const byUser = (data.hubAccessByUser ?? {}) as Record<string, HubAccessRow[]>;
-    setMembers(nextMembers);
-    setHubAccessByUser(byUser);
+  const applySnapshot = useCallback((data: HubAccessSnapshot, cached: boolean, cachedAtValue: string | null) => {
+    setMembers(data.members);
+    setHubAccessByUser(data.hubAccessByUser);
     const nextDrafts: Record<string, Record<ClientHubId, string[] | null>> = {};
-    for (const member of nextMembers) {
-      nextDrafts[member.userId] = rowsToDraft(byUser[member.userId]);
+    for (const member of data.members) {
+      nextDrafts[member.userId] = rowsToDraft(data.hubAccessByUser[member.userId]);
     }
     setDrafts(nextDrafts);
-    setMessage("");
+    setFromCache(cached);
+    setCachedAt(cachedAtValue);
     setLoading(false);
-  }
+  }, []);
+
+  const load = useCallback(async () => {
+    let hadCache = membersRef.current.length > 0;
+    try {
+      const cached = await getFeatureSnapshot<HubAccessSnapshot>("hub-access", orgId);
+      if (cached?.data && isHubAccessSnapshot(cached.data)) {
+        if (!membersRef.current.length) applySnapshot(cached.data, true, cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
+    try {
+      const response = await fetch(`/api/organizations/members?orgId=${encodeURIComponent(orgId)}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      const data: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        setMembers([]);
+        setFromCache(false);
+        setCachedAt(null);
+        setMessage(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "Unable to load members",
+        );
+        setLoading(false);
+        return;
+      }
+      if (!response.ok || !data || typeof data !== "object") {
+        if (hadCache || membersRef.current.length) {
+          setFromCache(true);
+          setMessage("Could not refresh hub access. Showing the last copy on this device.");
+          setLoading(false);
+          return;
+        }
+        setMessage(
+          data && typeof data === "object" && "error" in data && typeof (data as { error?: unknown }).error === "string"
+            ? (data as { error: string }).error
+            : "Unable to load members",
+        );
+        setLoading(false);
+        return;
+      }
+      const nextMembers = ((data as { members?: Member[] }).members ?? []) as Member[];
+      const byUser = ((data as { hubAccessByUser?: Record<string, HubAccessRow[]> }).hubAccessByUser ??
+        {}) as Record<string, HubAccessRow[]>;
+      const snapshot: HubAccessSnapshot = { members: nextMembers, hubAccessByUser: byUser };
+      applySnapshot(snapshot, false, null);
+      setMessage("");
+      await persistHubAccessSnapshot(orgId, snapshot);
+    } catch {
+      if (hadCache || membersRef.current.length) {
+        setFromCache(true);
+        setMessage("Could not refresh hub access. Showing the last copy on this device.");
+        setLoading(false);
+        return;
+      }
+      setMessage("Unable to load members");
+      setLoading(false);
+    }
+  }, [applySnapshot, orgId]);
 
   useEffect(() => {
     void load();
-  }, [orgId]);
+  }, [load]);
 
   function toggleHub(userId: string, hubId: ClientHubId) {
     setDrafts((prev) => {
@@ -159,6 +239,7 @@ export default function HubAccessClient({ orgId }: { orgId: string }) {
 
   return (
     <Panel className="member-hub-access-panel">
+      <OfflineBanner feature="Team security" fromCache={fromCache} cachedAt={cachedAt} />
       <span className="eyebrow">Who can open what</span>
       <h2>Hub access</h2>
       <p className="app-muted">

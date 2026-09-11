@@ -2,7 +2,7 @@
 
 import { useCallback, type ReactNode } from "react";
 import { UsageCutoffBanner } from "../../components/usage-cutoff-banner";
-import { PageHeader, Panel, TabBar, ToolStrip } from "../../components/ui";
+import { PageHeader, Panel, ToolStrip } from "../../components/ui";
 import {
   formatMediaMetric,
   mediaReadinessPct,
@@ -95,12 +95,13 @@ export function LiveMediaWorkspace({
       </PageHeader>
       {banner}
 
-      <TabBar
+      <ToolStrip
         aria-label="Media sections"
         value={tab}
-        onChange={(id) => onTab(id as Tab)}
-        tabs={tabs}
-        className="product-hub-tabs"
+        onChange={(id) => {
+          if (tabs.some((entry) => entry.id === id)) onTab(id as Tab);
+        }}
+        items={tabs.map((entry) => ({ id: entry.id, label: entry.label }))}
       />
       {/* Tools *inside* the open workbench only. "Kit" is already the selected
           tab one row up, so listing its root here rendered the same workbench

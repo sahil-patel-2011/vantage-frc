@@ -397,7 +397,7 @@ export default function MediaClient() {
     itemCount: items.length,
   });
 
-  // Live org always gets the TabBar hub so users can create the first draft/schedule.
+  // Live org always gets the section chips so users can create the first draft/schedule.
   if (hubDenied || accessDenied) {
     return (
       <SoftAccessDenied
