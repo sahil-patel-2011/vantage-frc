@@ -297,7 +297,7 @@ export function HubOrgGate({
   if (!orgId) {
     return (
       <EmptyState
-        badge="Setup required"
+        badge="Needs setup"
         badgeTone="setup"
         title="Choose your team"
         description={`Choose your team to open ${label}.`}

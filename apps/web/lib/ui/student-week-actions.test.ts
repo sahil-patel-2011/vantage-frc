@@ -27,6 +27,7 @@ const THIS_WEEK = [
   "app/hours-self-view/hours-self-view-client.tsx",
   "app/todos/todos-client.tsx",
   "lib/cad-vault/cad-vault-related.ts",
+  "components/product-hub.tsx",
 ] as const;
 
 describe("student-week action path", () => {

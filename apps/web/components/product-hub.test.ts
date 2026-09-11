@@ -12,6 +12,8 @@ describe("product hub student chrome", () => {
   it("asks students to choose a team with one EmptyState primary", () => {
     const src = read("components/product-hub.tsx");
     expect(src).toContain('title="Choose your team"');
+    expect(src).toContain('badge="Needs setup"');
+    expect(src).not.toMatch(/Setup required/);
     expect(src).toContain('href="/workspace"');
     expect(src).toMatch(/Choose your team to open/);
     expect(src).not.toMatch(/Team needed/);
