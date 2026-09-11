@@ -11,7 +11,12 @@ function src(rel: string) {
 describe("marketing chrome", () => {
   it("landing hero has one primary CTA and a sign-in text link", () => {
     const page = src("app/page.tsx");
-    const hero = page.slice(page.indexOf("lux-hero"), page.indexOf("HomeShowcase"));
+    // Slice the hero section, not the HomeShowcase import at the top of the file.
+    const heroStart = page.indexOf('className="lux-hero"');
+    const heroEnd = page.indexOf("<HomeShowcase");
+    expect(heroStart).toBeGreaterThan(-1);
+    expect(heroEnd).toBeGreaterThan(heroStart);
+    const hero = page.slice(heroStart, heroEnd);
     expect(hero.match(/className="button primary"/g)).toHaveLength(1);
     expect(hero).toMatch(/Join the waitlist/);
     expect(hero).toMatch(/Already invited\? Sign in/);
