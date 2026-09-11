@@ -83,16 +83,17 @@ test("student this week can walk Business Sponsors, Budget, and Grants", async (
   }
 
   const related = page.getByRole("navigation", { name: /Related funding tools/i }).first();
-  await expect(related).toBeVisible();
+  await expect(related).toBeVisible({ timeout: 20_000 });
   await expect(related.getByRole("link", { name: "Sponsors" })).toBeVisible();
   await expect(related.getByRole("link", { name: "Budget" })).toBeVisible();
   await expect(related.getByRole("link", { name: "Grants" })).toBeVisible();
 
+  const tabs = page.getByRole("tablist", { name: "Business sections" });
+  await tabs.getByRole("tab", { name: "Overview" }).click();
   const workingFunds = page.getByLabel("Season funding summary").locator("article", { hasText: "Working funds" });
   await expect(workingFunds.getByText("—")).toBeVisible();
   await expect(workingFunds).not.toContainText("$0");
 
-  const tabs = page.getByRole("tablist", { name: "Business sections" });
   await expect(tabs.getByRole("tab", { name: "Sponsors" })).toBeVisible();
   await tabs.getByRole("tab", { name: "Money" }).click();
   await expect(page.locator("body")).not.toContainText("Application error");

@@ -52,6 +52,7 @@ describe("Business funding GUI student chrome", () => {
     expect(hub).toMatch(/response\.status === 401 \|\| response\.status === 403/);
     expect(hub).toMatch(/Choose your team/);
     expect(hub).toMatch(/BUSINESS_FUNDING_RELATED_INCLUDE/);
+    expect(hub).toMatch(/className="business-funding-related"/);
     expect(hub).toMatch(/AbortSignal\.timeout\(FEATURE_API_TIMEOUT_MS\)/);
     expect(hub).toMatch(/badge="Needs setup"/);
     expect(hub).toMatch(/if \(!viewRef\.current && cached\?\.data/);
@@ -66,6 +67,14 @@ describe("Business funding GUI student chrome", () => {
     expect(partners).toMatch(/putFeatureSnapshot\("partner-placements"/);
     expect(partners).toMatch(/hadCache \|\| programHold\.current/);
     expect(partners).toMatch(/Choose your team/);
+  });
+
+  it("paints this week's funding strip instead of hiding every Business related row", () => {
+    const css = read("app/product-hub.css");
+    expect(css).toMatch(/\.business-page \.business-funding-related/);
+    expect(css).toMatch(
+      /\.business-page \.business-funding-related[\s\S]{0,80}display:\s*flex\s*!important/,
+    );
   });
 
   it("does not print Setup required, Stripe, or OAuth on this slice", () => {

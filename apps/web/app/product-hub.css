@@ -355,11 +355,16 @@
   display: none !important;
 }
 
-/* Business uses the same hub chrome as Team / Build / Competition. Related
-   chips already live as workbench tabs and the tool strip. */
+/* Hide the old full CRM related dump. This week's funding strip
+   (Sponsors · Grants · Budget) stays visible in the header. */
 .product-hub--business .product-hub-related,
 .business-page .product-hub-related {
   display: none !important;
+}
+.product-hub--business .business-funding-related,
+.business-page .business-funding-related {
+  display: flex !important;
+  margin: 0;
 }
 
 /* Business hub nested panels (Orders / Sponsorship) */

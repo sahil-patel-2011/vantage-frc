@@ -348,6 +348,7 @@ export default function BusinessClient() {
               ? BUSINESS_FUNDING_RELATED_INCLUDE.filter((id) => id !== "sponsors")
               : [...BUSINESS_FUNDING_RELATED_INCLUDE]
           }
+          className="business-funding-related"
           ariaLabel="Related funding tools"
         />
       </PageHeader>
