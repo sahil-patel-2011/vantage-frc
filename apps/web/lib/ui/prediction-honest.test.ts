@@ -19,7 +19,7 @@ import {
 import { expectPlainCopy } from "./copy-assertions";
 
 const WEB = join(__dirname, "..", "..");
-const ROOT = join(__dirname, "..", "..", "..");
+const ROOT = join(WEB, "..", "..");
 
 /**
  * Student-visible match-prediction chrome. Not Strategy boards already owned by

@@ -1,6 +1,6 @@
 /**
  * Student-facing empty / setup copy for match prediction.
- * Ratings stay blank until synced — never EPA / TBA jargon, never a made-up %.
+ * Ratings stay blank until synced — no public-stats jargon, never a made-up %.
  */
 
 export const EMPTY_PREDICTION_COPY =
