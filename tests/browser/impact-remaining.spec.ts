@@ -36,10 +36,10 @@ test("Impact / community student boards keep Needs setup and skip invented score
       await expect(page.locator("body"), `${route} still shows ${phrase}`).not.toContainText(phrase);
     }
 
-    const chooseTeam = page.getByRole("heading", { name: "Choose your team", exact: true });
+    const chooseTeam = page.locator("main").getByRole("heading", { name: "Choose your team", exact: true });
     if ((await chooseTeam.count()) > 0 && (await chooseTeam.isVisible())) {
-      await expect(page.getByText("Needs setup")).toBeVisible();
-      await expect(page.getByRole("link", { name: "Choose your team" })).toBeVisible();
+      await expect(page.locator("main").getByText("Needs setup", { exact: true }).first()).toBeVisible();
+      await expect(page.locator("main").getByRole("link", { name: "Choose your team" })).toHaveCount(1);
       await expect(page.getByRole("heading", { name: "Next actions" })).toHaveCount(0);
     }
   }

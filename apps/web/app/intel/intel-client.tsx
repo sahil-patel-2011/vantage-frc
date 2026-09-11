@@ -14,7 +14,12 @@ import {
   type IntelActiveEvent,
   type IntelScoutNote,
 } from "../../lib/intel/intel-related";
-import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import {
+  FEATURE_API_TIMEOUT_MS,
+  fetchActiveOrgId,
+  persistOrgIdInUrl,
+  readOrgIdFromSearch,
+} from "../../lib/nav/resolve-org";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { clearFeatureSnapshot, getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { IntelRelatedStrip, IntelShell } from "./intel-chrome";
@@ -51,7 +56,36 @@ async function persistIntelSnapshot(orgHint: string, data: IntelBoardView): Prom
   }
 }
 
-export default function IntelClient({ orgId }: { orgId: string }) {
+export default function IntelClient() {
+  const [orgId, setOrgId] = useState("");
+  const [orgReady, setOrgReady] = useState(false);
+
+  useEffect(() => {
+    const fromUrl = readOrgIdFromSearch(window.location.search);
+    if (fromUrl) {
+      setOrgId(fromUrl);
+      setOrgReady(true);
+      return;
+    }
+    void fetchActiveOrgId().then((id) => {
+      if (id) {
+        persistOrgIdInUrl(id);
+        setOrgId(id);
+      }
+      setOrgReady(true);
+    });
+  }, []);
+
+  if (!orgReady) {
+    return <IntelShell orgId={null} shell="loading" />;
+  }
+  if (!orgId) {
+    return <IntelShell orgId={null} shell="setup" />;
+  }
+  return <IntelLive orgId={orgId} />;
+}
+
+function IntelLive({ orgId }: { orgId: string }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<IntelSearchTeam[]>([]);
   const [view, setView] = useState<IntelBoardView | null>(null);

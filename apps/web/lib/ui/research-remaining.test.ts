@@ -46,6 +46,7 @@ describe("Research remaining student chrome", () => {
     const intel = readFileSync(join(WEB, "app/intel/intel-client.tsx"), "utf8");
     const overnight = readFileSync(join(WEB, "app/overnight-intel/overnight-intel-client.tsx"), "utf8");
     expect(intel).toMatch(/if \(!view\)/);
+    expect(intel).toMatch(/fetchActiveOrgId/);
     expect(intel).toMatch(/getFeatureSnapshot/);
     expect(intel).toMatch(/putFeatureSnapshot/);
     expect(intel).toMatch(/orgId \|\| "_"/);

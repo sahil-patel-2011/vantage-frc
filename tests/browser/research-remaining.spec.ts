@@ -16,7 +16,7 @@ test("Research is a student look-up with Needs setup and Rating, not EPA", async
   await waitForLoadingGone(page);
   await expect(page.locator("body")).not.toContainText("Application error");
   const heading = page.getByRole("heading", { level: 1, name: "Research" });
-  const setup = page.getByRole("heading", { name: "Choose your team", exact: true });
+  const setup = page.locator("main").getByRole("heading", { name: "Choose your team", exact: true });
   const unavailable = loadFailureHeading(page);
   if (!(await expectHubReadyOrGate(page, heading, setup.or(unavailable)))) {
     await page.screenshot({ path: "/opt/cursor/artifacts/research-remaining.png", fullPage: true });
@@ -29,8 +29,8 @@ test("Research is a student look-up with Needs setup and Rating, not EPA", async
   await expect(page.getByRole("heading", { name: "Setup steps" })).toHaveCount(0);
   await expect(page.getByRole("navigation", { name: "Related competition tools" })).toBeVisible();
   if (await setup.isVisible()) {
-    await expect(page.getByText("Needs setup").first()).toBeVisible();
-    await expect(page.getByRole("link", { name: "Choose your team" })).toHaveCount(1);
+    await expect(page.locator("main").getByText("Needs setup", { exact: true }).first()).toBeVisible();
+    await expect(page.locator("main").getByRole("link", { name: "Choose your team" })).toHaveCount(1);
     await expect(page.getByRole("heading", { name: "Next actions" })).toHaveCount(0);
   } else if (await page.getByRole("heading", { name: "Look up a team" }).isVisible()) {
     await expect(page.getByRole("heading", { name: "Next actions" })).toHaveCount(0);

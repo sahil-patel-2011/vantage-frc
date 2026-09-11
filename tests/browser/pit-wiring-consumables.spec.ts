@@ -24,7 +24,7 @@ test("Pit wiring / consumables say Needs setup with one primary", async ({ page 
     await waitForLoadingGone(page);
     await expect(page.locator("body")).not.toContainText("Application error");
     const heading = page.getByRole("heading", { level: 1 }).filter({ hasText: leaf.heading });
-    const setup = page.getByRole("heading", { name: "Choose your team", exact: true });
+    const setup = page.locator("main").getByRole("heading", { name: "Choose your team", exact: true });
     const unavailable = loadFailureHeading(page);
     if (!(await expectHubReadyOrGate(page, heading, setup.or(unavailable)))) {
       await page.screenshot({
@@ -37,9 +37,9 @@ test("Pit wiring / consumables say Needs setup with one primary", async ({ page 
       await expect(page.locator("body"), `${leaf.path} still shows ${phrase}`).not.toContainText(phrase);
     }
     if (await setup.isVisible()) {
-      await expect(page.getByText("Needs setup").first()).toBeVisible();
+      await expect(page.locator("main").getByText("Needs setup", { exact: true }).first()).toBeVisible();
       await expect(page.getByRole("heading", { name: "Next actions" })).toHaveCount(0);
-      await expect(page.getByRole("link", { name: "Choose your team" })).toHaveCount(1);
+      await expect(page.locator("main").getByRole("link", { name: "Choose your team" })).toHaveCount(1);
     } else {
       await expect(heading.first()).toBeVisible();
     }

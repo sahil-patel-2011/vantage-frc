@@ -46,10 +46,10 @@ for (const leaf of LEAVES) {
     for (const bit of leaf.relatedBits) {
       await expect(related).toContainText(bit);
     }
-    const chooseTeam = page.getByRole("link", { name: "Choose your team" });
+    const chooseTeam = page.locator("main").getByRole("link", { name: "Choose your team" });
     if ((await chooseTeam.count()) > 0) {
       await expect(chooseTeam).toHaveCount(1);
-      await expect(page.getByText("Needs setup").first()).toBeVisible();
+      await expect(page.locator("main").getByText("Needs setup", { exact: true }).first()).toBeVisible();
       await expect(page.getByRole("heading", { name: "Next actions" })).toHaveCount(0);
     } else if (await page.getByRole("heading", { name: "Add your first leadership role" }).isVisible()) {
       await expect(page.getByRole("heading", { name: "Next actions" })).toHaveCount(0);

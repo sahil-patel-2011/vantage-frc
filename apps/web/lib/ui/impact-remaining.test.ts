@@ -21,6 +21,7 @@ const WEB = join(__dirname, "..", "..");
 const SLICE = [
   "app/impact/impact-client.tsx",
   "app/team/awards/awards-client.tsx",
+  "app/team/awards/page.tsx",
   "app/impact-essay/impact-essay-client.tsx",
   "app/outreach-calendar/outreach-calendar-client.tsx",
   "app/judge-sim/judge-sim-client.tsx",
@@ -42,6 +43,7 @@ describe("Impact / community remaining student chrome", () => {
     for (const rel of SLICE) {
       const src = readFileSync(join(WEB, rel), "utf8");
       expect(src, rel).not.toMatch(/Setup required/);
+      expect(src, rel).not.toMatch(/Team needed/);
       expect(src, rel).not.toMatch(/\bPick a team\b/);
       expect(src, rel).not.toMatch(/\bStripe\b/);
       expect(src, rel).not.toMatch(/\bOAuth\b/);

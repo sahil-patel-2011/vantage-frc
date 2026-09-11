@@ -14,7 +14,7 @@ import {
 import { buildAwardExportPayload } from "../../../lib/awards/export";
 import { AWARDS_RELATED_INCLUDE } from "../../../lib/business/business-related";
 import { awardsNextActions } from "../../../lib/business/awards-next-actions";
-import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
+import { FEATURE_API_TIMEOUT_MS, fetchActiveOrgId, persistOrgIdInUrl, readOrgIdFromSearch } from "../../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 import "./awards.css";
@@ -100,7 +100,67 @@ async function persistAwardsSnapshot(orgId: string, data: { submissions: Submiss
   }
 }
 
-export default function AwardsClient({ orgId }: { orgId: string }) {
+export default function AwardsClient() {
+  const [orgId, setOrgId] = useState("");
+  const [orgReady, setOrgReady] = useState(false);
+
+  useEffect(() => {
+    const fromUrl = readOrgIdFromSearch(window.location.search);
+    if (fromUrl) {
+      setOrgId(fromUrl);
+      setOrgReady(true);
+      return;
+    }
+    void fetchActiveOrgId().then((id) => {
+      if (id) {
+        persistOrgIdInUrl(id);
+        setOrgId(id);
+      }
+      setOrgReady(true);
+    });
+  }, []);
+
+  if (!orgReady) {
+    return (
+      <main className="module-page awards-page">
+        <PageHeader breadcrumbs="Business / Awards" title="Awards" description="Checking which team you are on." />
+        <EmptyState soft title="Loading awards…" description="Checking your team." aria-busy />
+      </main>
+    );
+  }
+  if (!orgId) {
+    return (
+      <main className="module-page awards-page">
+        <PageHeader
+          breadcrumbs="Business / Awards"
+          title="Awards"
+          description="Award submissions and essay prompts belong to one team — choose your team first."
+        >
+          <BusinessRelated
+            orgId={null}
+            active="awards"
+            include={AWARDS_RELATED_INCLUDE}
+            ariaLabel="Related awards and impact tools"
+          />
+        </PageHeader>
+        <EmptyState
+          soft
+          badge="Needs setup"
+          badgeTone="setup"
+          title="Choose your team"
+          description="Award essays stay with one team. Choose your team to open them."
+        >
+          <Button as="a" variant="primary" href="/workspace">
+            Choose your team
+          </Button>
+        </EmptyState>
+      </main>
+    );
+  }
+  return <AwardsLive orgId={orgId} />;
+}
+
+function AwardsLive({ orgId }: { orgId: string }) {
   const seasonYear = new Date().getFullYear();
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
