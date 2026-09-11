@@ -223,7 +223,7 @@ describe("widget registry", () => {
     expect(student.map((item) => item.type)).toEqual([
       "next_match",
       "my_day",
-      "learn_progress",
+      "hours_month",
       "team_todos",
       "files_recent",
       "team_chat",

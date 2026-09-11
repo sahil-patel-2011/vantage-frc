@@ -44,11 +44,107 @@ export function homeHeaderDetail(input: {
   eventName: unknown;
 }): string {
   if (!input.meLoaded) return "Loading your team…";
-  if (!input.orgId) return "Choose your team to load live data.";
+  if (!input.orgId) return "Choose your team to see your day.";
   if (input.tbaConfigured === false) {
-    return "Your week — what is next, what is due, and what to learn. Match data arrives once The Blue Alliance is connected below.";
+    return "Your week — next match, hours, and what to do now. Match times fill in after a mentor connects the event.";
   }
-  if (input.setupRequired) return "Set your active event to load competition data.";
+  if (input.setupRequired) return "Set the event you’re at so match times can show.";
   if (input.eventName) return String(input.eventName);
-  return "Home — widgets appear when live data exists.";
+  return "Your week. Cards fill in as the team adds matches, hours, and duties.";
+}
+
+export type HomeNowAction = {
+  title: string;
+  detail: string;
+  href: string;
+  cta: string;
+};
+
+function firstString(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed.length ? trimmed : null;
+}
+
+function firstListTitle(data: Record<string, unknown> | undefined, key: string): string | null {
+  const raw = data?.[key];
+  if (!Array.isArray(raw) || raw.length === 0) return null;
+  const first = raw[0];
+  if (!first || typeof first !== "object") return null;
+  return firstString((first as { title?: unknown }).title);
+}
+
+/** One next step a student can take — never a wall of launchpads, never invented counts. */
+export function homeNowAction(input: {
+  orgId: string;
+  nextMatchLabel?: string | null;
+  dutyTitle?: string | null;
+  openTodos?: number;
+}): HomeNowAction {
+  if (!input.orgId) {
+    return {
+      title: "Choose your team",
+      detail: "Home fills in with your next match, hours, and what to do today.",
+      href: "/workspace",
+      cta: "Choose your team",
+    };
+  }
+  const match = firstString(input.nextMatchLabel);
+  if (match) {
+    return {
+      title: "You’re up next",
+      detail: match,
+      href: "/my-day",
+      cta: "Open My Day",
+    };
+  }
+  const duty = firstString(input.dutyTitle);
+  if (duty) {
+    return {
+      title: "You’re on duty",
+      detail: duty,
+      href: "/my-day",
+      cta: "See duties",
+    };
+  }
+  const todos = input.openTodos ?? 0;
+  if (Number.isInteger(todos) && todos > 0) {
+    return {
+      title: todos === 1 ? "One thing on your list" : `${todos} things on your list`,
+      detail: "Open Todos and knock one out.",
+      href: "/todos",
+      cta: "Open todos",
+    };
+  }
+  return {
+    title: "Nothing you have to do right now",
+    detail: "When a match, duty, or task is assigned, it shows up here.",
+    href: "/my-day",
+    cta: "Open My Day",
+  };
+}
+
+export function homeNowFromWidgets(input: {
+  orgId: string;
+  nextMatchData?: Record<string, unknown>;
+  widgets: Record<string, { type: string; data?: Record<string, unknown> }>;
+}): HomeNowAction {
+  const byType = (type: string) => Object.values(input.widgets).find((row) => row.type === type)?.data;
+  const next = input.nextMatchData ?? byType("next_match");
+  const matchBits = [firstString(next?.compLevel), firstString(String(next?.matchNumber ?? ""))].filter(Boolean);
+  const matchLabel =
+    firstString(next?.matchLabel) ??
+    (matchBits.length ? matchBits.join(" ") : null);
+  const myDay = byType("my_day");
+  const dutyTitle = firstListTitle(myDay, "duties") ?? firstListTitle(byType("duties"), "items");
+  const todoData = byType("team_todos");
+  const todoItems = Array.isArray(todoData?.items) ? todoData.items.length : 0;
+  const openTodos =
+    typeof todoData?.open === "number" && Number.isFinite(todoData.open) ? Number(todoData.open) : todoItems;
+  return homeNowAction({
+    orgId: input.orgId,
+    nextMatchLabel: matchLabel,
+    dutyTitle,
+    openTodos,
+  });
 }

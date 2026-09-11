@@ -688,6 +688,41 @@ body.soft-nav-panel-open .soft-island{
 .dash-next-glance strong{font:700 12px var(--font-source-sans),ui-sans-serif}
 .dash-next-glance b{font:700 12px ui-monospace,monospace}
 
+.dash-now{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  margin:0 0 16px;
+  padding:16px 18px;
+  border-radius:var(--radius);
+  background:var(--surface);
+  border:1px solid var(--line);
+  box-shadow:var(--shadow);
+}
+.dash-now span{
+  display:block;
+  font:700 10px/1 var(--font-source-sans),ui-sans-serif;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  color:var(--muted);
+}
+.dash-now strong{
+  display:block;
+  margin-top:6px;
+  font:650 20px/1.25 var(--font-source-sans),ui-sans-serif;
+  color:var(--ink);
+}
+.dash-now p{
+  margin:6px 0 0;
+  color:var(--muted);
+  max-width:46ch;
+}
+.dash-now .app-button{flex:0 0 auto}
+@media (max-width:640px){
+  .dash-now{flex-direction:column;align-items:stretch}
+}
+
 .dash-role-strip{
   margin:0 0 16px;padding:12px 14px;border-radius:var(--radius);
   background:color-mix(in srgb,var(--surface) 94%,var(--accent-soft));

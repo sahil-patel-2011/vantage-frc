@@ -10,6 +10,7 @@ import { emptyHintFor, WidgetShell as Shell } from "./widgets/widget-shell";
 import { OnboardingChecklistCard } from "./widgets/onboarding-card";
 import {
   FilesRecentLive,
+  HoursThisMonthLive,
   LearnProgressLive,
   MyDayLive,
   TeamChatLive,
@@ -26,6 +27,7 @@ const STUDENT_WIDGET_TYPES = new Set([
   "next_match",
   "ask_ai",
   "my_day",
+  "hours_month",
   "learn_progress",
   "files_recent",
   "team_chat",
@@ -82,6 +84,12 @@ export const DashboardWidgetView = memo(function DashboardWidgetView({
       return (
         <Shell type={type} title="My day" payload={payload} href={withOrg("/my-day")} emptyHint={hint} orgId={orgId}>
           {payload?.status === "live" ? <MyDayLive data={data} /> : null}
+        </Shell>
+      );
+    case "hours_month":
+      return (
+        <Shell type={type} title="Hours this month" payload={payload} href={withOrg("/hours")} emptyHint={hint} orgId={orgId}>
+          {payload?.status === "live" ? <HoursThisMonthLive data={data} /> : null}
         </Shell>
       );
     case "learn_progress":

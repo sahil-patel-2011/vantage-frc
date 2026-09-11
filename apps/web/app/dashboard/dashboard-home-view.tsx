@@ -46,7 +46,7 @@ import { DashboardBoardBar } from "./dashboard-board-bar";
 import { DashboardSetupBanner } from "./dashboard-setup-banner";
 import { CopyShareLink } from "../../components/copy-share-link";
 import { VenueShortcutCheatsheet, type VenueShortcut } from "../../hooks/use-venue-shortcuts";
-import { homeHeaderDetail } from "./dashboard-home-model";
+import { homeHeaderDetail, homeNowFromWidgets } from "./dashboard-home-model";
 
 const DashboardBoardsModal = dynamic(
   () => import("./dashboard-boards-modal").then((mod) => mod.DashboardBoardsModal),
@@ -261,6 +261,7 @@ export function DashboardHomeView(props: {
 
   const firstName = (me.name ?? "coach").split(" ")[0] || "coach";
   const boardIsEmpty = layout.length === 0;
+  const now = homeNowFromWidgets({ orgId, nextMatchData, widgets });
 
   return (
     <main className={`dash-home${editing ? " is-editing" : ""}`} data-grid={grid.label} data-cols={cols}>
@@ -298,7 +299,7 @@ export function DashboardHomeView(props: {
         </div>
         <div className="dash-home-actions">
           {nextMatchData && !editing && !viewLayout.some((item) => item.type === "next_match") ? (
-            <a className="dash-next-glance" href={withOrgHref("/intel", orgId || null)}>
+            <a className="dash-next-glance" href={withOrgHref("/my-day", orgId || null)}>
               <span>Next</span>
               <strong>
                 {String(nextMatchData.compLevel ?? "Match").toUpperCase()} {String(nextMatchData.matchNumber ?? "")}
@@ -345,16 +346,28 @@ export function DashboardHomeView(props: {
           </details>
         </div>
       </header>
+      {!editing ? (
+        <section className="dash-now" aria-label="What to do now" data-testid="dash-now">
+          <div>
+            <span>What to do now</span>
+            <strong>{now.title}</strong>
+            <p>{now.detail}</p>
+          </div>
+          <Button as="a" variant="primary" href={withOrgHref(now.href, orgId || null)}>
+            {now.cta}
+          </Button>
+        </section>
+      ) : null}
       <VenueShortcutCheatsheet open={cheatOpen} onClose={() => setCheatOpen(false)} shortcuts={shortcuts} />
 
       {orgId && !editing && homeStripItems.length > 0 ? (
         <section
           className="dash-role-strip"
           data-audience={homeAudience ?? "student"}
-          aria-label={homeAudience === "mentor" ? "Mentor focus" : "Student focus"}
+          aria-label={homeAudience === "mentor" ? "Mentor focus" : "This week"}
         >
           <header className="dash-role-strip-head">
-            <span>{homeAudience === "mentor" ? "Mentor focus" : "Student focus"}</span>
+            <span>{homeAudience === "mentor" ? "Mentor focus" : "This week"}</span>
             <a href={withOrgHref("/logistics", orgId)}>
               {homeAudience === "mentor" ? "Hotels & travel" : "My hotel & leave times"}
             </a>

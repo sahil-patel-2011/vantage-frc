@@ -116,3 +116,14 @@ export function TeamChatLive({ data }: { data: Record<string, unknown> }) {
     </div>
   );
 }
+
+export function HoursThisMonthLive({ data }: { data: Record<string, unknown> }) {
+  return (
+    <div className="dash-metric-grid">
+      <div>
+        <strong>{String(data.hours ?? "—")}</strong>
+        <span>this month</span>
+      </div>
+    </div>
+  );
+}

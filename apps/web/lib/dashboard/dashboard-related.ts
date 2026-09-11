@@ -116,7 +116,7 @@ export function dashboardNextActions(input: {
   if (shell === "tba") {
     actions.push({
       id: "tba",
-      label: "Connect TBA",
+      label: "Connect match results",
       detail: "Needed for live match and rank widgets.",
       href: withOrgHref("/team/data", orgId),
       primary: true,
@@ -211,7 +211,7 @@ export function dashboardSetupSteps(input: {
     },
     {
       id: "tba",
-      label: "Connect TBA",
+      label: "Connect match results",
       detail: "Match and rank data",
       href: withOrgHref("/team/data", orgId),
       state: stateOf("tba", tbaDone),
@@ -245,7 +245,7 @@ export function dashboardSetupTitle(shell: DashboardShellKind): string {
     case "setup":
       return "Set an active event";
     case "tba":
-      return "Connect TBA";
+      return "Connect match results";
     case "loading":
       return "Loading…";
     case "ready":
@@ -264,7 +264,7 @@ export function dashboardSetupBlurb(shell: DashboardShellKind): string {
     case "setup":
       return "Set the event this board should follow.";
     case "tba":
-      return "Sync The Blue Alliance for live match data.";
+      return "Ask a mentor to connect match results so cards can fill in.";
     case "loading":
       return "Checking your team.";
     case "ready":
@@ -310,7 +310,7 @@ export function dashboardSetupBannerLabel(primary: DashboardNextAction | Dashboa
     case "invite":
       return "Open invite";
     case "tba":
-      return "Connect TBA";
+      return "Connect match results";
     case "event":
       return "Set active event";
     default:

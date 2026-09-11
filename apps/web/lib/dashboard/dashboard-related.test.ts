@@ -119,7 +119,7 @@ describe("dashboard Soft-UI related", () => {
     ).toBe("Open invite");
     expect(
       dashboardSetupBannerLabel({ id: "tba", label: "TBA", detail: "", href: "/team/data", state: "current" }),
-    ).toBe("Connect TBA");
+    ).toBe("Connect match results");
     expect(
       dashboardSetupBannerLabel({ id: "event", label: "Event", detail: "", href: "/command", state: "current" }),
     ).toBe("Set active event");

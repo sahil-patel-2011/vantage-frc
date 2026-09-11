@@ -4,9 +4,9 @@
 
 Living record of the master engineering brief. Update this file at the end of every task. Numbers are from commands that were actually run, not memory.
 
-**Branch:** `main` (merge train after PR #41).
+**Branch:** `cursor/student-home-now-c0b5` off `origin/main`.
 **Date opened:** 2026-09-11.
-**This revision:** landing open drafts onto main so students see Home, hubs, Research, Video, and CAD — not another last-snapshot copy PR. Vercel skip-before-claim is on main. Master brief is **not** done.
+**This revision:** student Home What-to-do-now card (one primary), hours widget on the default student board, no TBA jargon on Home chrome. Open drafts #2–#41 merge train is on main (Vercel skip-before-claim, hubs, Home empty states, Research, Video, CAD vault/learn/setup). Last-snapshot family that only fought the offline feature-list tail was skipped. Master brief is **not** done.
 
 ## Decisions the owner should know
 

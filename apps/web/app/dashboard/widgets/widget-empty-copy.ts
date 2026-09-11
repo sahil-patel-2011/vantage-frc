@@ -9,7 +9,7 @@ export type EmptyHint = {
 export const WIDGET_EMPTY_COPY: Record<string, EmptyHint> = {
   next_match: {
     title: "No upcoming match",
-    body: "Shows the next scheduled match once match data is connected.",
+    body: "This fills in when the team’s event has a schedule.",
     ctaHref: "/my-day",
     ctaLabel: "Open My Day",
   },
@@ -38,10 +38,10 @@ export const WIDGET_EMPTY_COPY: Record<string, EmptyHint> = {
     ctaLabel: "Open Strategy",
   },
   sync_status: {
-    title: "Match data not connected",
-    body: "Connect The Blue Alliance so match cards can fill in.",
+    title: "Match results not connected",
+    body: "Ask a mentor to connect match results so cards can fill in.",
     ctaHref: "/team/data",
-    ctaLabel: "Connect TBA",
+    ctaLabel: "Open Team Data",
   },
   pit_youtube: {
     title: "No pit stream",
@@ -87,7 +87,7 @@ export const WIDGET_EMPTY_COPY: Record<string, EmptyHint> = {
   },
   my_day: {
     title: "Nothing on your day yet",
-    body: "Your next match and leave time show up after match data is connected.",
+    body: "Your next match, hours, and duties show up once the team has a schedule.",
     ctaHref: "/my-day",
     ctaLabel: "Open My Day",
   },

@@ -724,7 +724,7 @@ export function defaultDashboardLayoutForFocus(focus: string | null | undefined)
 const STUDENT_HOME_LAYOUT: DashboardWidgetLayout[] = [
   { i: "w-next_match", type: "next_match", x: 0, y: 0, w: 12, h: 4, minW: 3, minH: 3 },
   { i: "w-my_day", type: "my_day", x: 0, y: 4, w: 4, h: 3, minW: 3, minH: 2 },
-  { i: "w-learn_progress", type: "learn_progress", x: 4, y: 4, w: 4, h: 3, minW: 3, minH: 2 },
+  { i: "w-hours_month", type: "hours_month", x: 4, y: 4, w: 4, h: 3, minW: 3, minH: 2 },
   { i: "w-team_todos", type: "team_todos", x: 8, y: 4, w: 4, h: 3, minW: 3, minH: 2 },
   { i: "w-files_recent", type: "files_recent", x: 0, y: 7, w: 4, h: 3, minW: 3, minH: 2 },
   { i: "w-team_chat", type: "team_chat", x: 4, y: 7, w: 4, h: 3, minW: 3, minH: 2 },

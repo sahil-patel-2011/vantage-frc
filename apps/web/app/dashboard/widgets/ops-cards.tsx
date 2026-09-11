@@ -50,7 +50,7 @@ function setupQuickActions(orgId: string, tbaConfigured?: boolean) {
     return [{ href: "/invite", label: "Open invite", detail: "Use the link sent to your email." }];
   }
   if (tbaConfigured === false) {
-    return [{ href: withOrgHref("/team/data", orgId), label: "Connect TBA", detail: "Match data for this team." }];
+    return [{ href: withOrgHref("/team/data", orgId), label: "Connect match results", detail: "Match times for this team." }];
   }
   return [
     { href: hubHref("/competition", "command", orgId), label: "Set active event", detail: "Competition cards need an event." },
