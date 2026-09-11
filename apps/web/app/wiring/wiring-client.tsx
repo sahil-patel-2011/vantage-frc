@@ -1,5 +1,5 @@
 "use client";
-import { Button } from "../../components/ui";
+import { Button, EmptyState } from "../../components/ui";
 import { useCallback, useEffect, useState } from "react";
 import { CAN_BUSES, DEVICE_TYPES, deviceTypeLabel, deviceUsesCan, type CanBus, type WiringConflict } from "../../lib/wiring";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
@@ -80,7 +80,21 @@ export default function WiringClient({ orgId }: { orgId: string | null }) {
     );
   }
   if (view.status === "setup_required") {
-    return <main className="intel-app"><header className="intel-header"><div><span className="eyebrow">VANTAGE / WIRING</span><h1>Wiring map</h1></div></header><p className="telemetry-status">{view.message}</p></main>;
+    return (
+      <main className="intel-app">
+        <header className="intel-header">
+          <div>
+            <span className="eyebrow">VANTAGE / WIRING</span>
+            <h1>Wiring map</h1>
+          </div>
+        </header>
+        <EmptyState badge="Setup required" badgeTone="setup" soft title="Choose your team" description={view.message}>
+          <Button as="a" variant="primary" href="/workspace">
+            Choose your team
+          </Button>
+        </EmptyState>
+      </main>
+    );
   }
 
   const canForm = deviceUsesCan(form.deviceType);

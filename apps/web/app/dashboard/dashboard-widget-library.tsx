@@ -17,14 +17,14 @@ export function DashboardWidgetLibrary({
   onClose: () => void;
   addableEntries: PaletteRow[];
   paletteEntries: PaletteRow[];
-  onPick: (entry: WidgetCatalogEntry) => void;
+  onPick: (entry: WidgetCatalogEntry, pointerType: string) => void;
 }) {
   return (
     <Modal
       open={open}
       onClose={onClose}
       title="Widget library"
-      description="One of each type per board. Tap to add, then drag the card into place."
+      description="On a phone, tap a card then tap a slot on the board. On a computer, click to add it."
       variant="sheet"
     >
       {addableEntries.length === 0 ? (
@@ -38,7 +38,12 @@ export function DashboardWidgetLibrary({
                 <button
                   type="button"
                   data-testid={`dash-library-${entry.type}`}
-                  onClick={() => onPick(entry)}
+                  onClick={(event) => {
+                    const native = event.nativeEvent;
+                    const pointerType =
+                      "pointerType" in native ? String((native as PointerEvent).pointerType) : "";
+                    onPick(entry, pointerType);
+                  }}
                   title={entry.description}
                 >
                   <i>

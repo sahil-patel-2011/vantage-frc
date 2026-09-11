@@ -1,5 +1,5 @@
 "use client";
-import { Button } from "../../components/ui";
+import { Button, EmptyState } from "../../components/ui";
 import { useCallback, useEffect, useState } from "react";
 import { BRINGUP_PHASES, BRINGUP_PHASE_LABEL, BRINGUP_RESULTS, type BringupPhase, type BringupResult } from "../../lib/bringup";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
@@ -70,7 +70,21 @@ export default function BringupClient({ orgId }: { orgId: string | null }) {
     );
   }
   if (view.status === "setup_required") {
-    return <main className="intel-app"><header className="intel-header"><div><span className="eyebrow">VANTAGE / BRING-UP</span><h1>Robot bring-up</h1></div></header><p className="telemetry-status">{view.message}</p></main>;
+    return (
+      <main className="intel-app">
+        <header className="intel-header">
+          <div>
+            <span className="eyebrow">VANTAGE / BRING-UP</span>
+            <h1>Robot bring-up</h1>
+          </div>
+        </header>
+        <EmptyState badge="Setup required" badgeTone="setup" soft title="Choose your team" description={view.message}>
+          <Button as="a" variant="primary" href="/workspace">
+            Choose your team
+          </Button>
+        </EmptyState>
+      </main>
+    );
   }
 
   const p = view.progress;

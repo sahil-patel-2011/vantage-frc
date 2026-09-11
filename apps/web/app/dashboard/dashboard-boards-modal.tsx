@@ -131,7 +131,7 @@ export function DashboardBoardsModal({
         {orgBoards.length === 0 ? (
           <p className="dash-library-empty">
             {canShareOrg
-              ? "No team boards yet — create a shared Home Screen for the whole org."
+              ? "No team boards yet — create a shared Home Screen for the whole team."
               : "No team boards published yet."}
           </p>
         ) : (

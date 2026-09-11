@@ -93,8 +93,8 @@ export function supportStatusTone(status: SupportTicketStatus): "good" | "setup"
 }
 
 /**
- * Soft-UI next actions for empty / setup Support.
- * Points at real workspace, new-ticket form, Account, and Notifications — never invents DEMO tickets.
+ * Next actions for a ready Support board.
+ * Setup shells keep one EmptyState primary instead of this panel.
  */
 export function supportNextActions(input: {
   orgId?: string | null;
@@ -108,7 +108,7 @@ export function supportNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Support tickets are saved to your active team — choose a team first.",
+        detail: "Support tickets are saved to your active team — choose your team.",
         href: "/workspace",
         primary: true,
       },

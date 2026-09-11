@@ -425,7 +425,7 @@ export default function MediaLibraryClient() {
     return (
       <div className="ml-page">
         <PageHeader title="Media Library" description="Team photos and videos, in one place." />
-        <EmptyState title="Pick a team first" description={view.message}>
+        <EmptyState badge="Setup required" badgeTone="setup" title="Choose your team" description={view.message}>
           {view.steps[0] ? (
             <Button as="a" variant="primary" href={view.steps[0].href}>
               {view.steps[0].label}

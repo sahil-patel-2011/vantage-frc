@@ -89,7 +89,7 @@
   width:min(520px,100vw);max-height:min(78vh,640px);padding:18px 18px calc(20px + var(--safe-bottom));
   border-radius:22px 22px 0 0;background:var(--surface);border:1px solid var(--line);border-bottom:0;
   /* Bottom sheet: the shadow must throw UPWARD, so this one stays directional
-     rather than taking --soft-shadow-pop. Depth matched to the pop token. */
+     rather than taking --shadow-pop. Depth matched to the pop token. */
   box-shadow:0 -16px 40px rgba(12,17,24,.26);overflow:auto;animation:dash-sheet-up .28s ease;
 }
 .dash-boards-sheet header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
@@ -417,7 +417,7 @@
 .dash-home[data-cols="4"] .dash-size-btn.dash-size-reset{padding:0 8px}
 
 /* Start here — the learning tracks and the team profile, for a new member's
-   first weeks. Same shape as Jump back in, one row of plain links. */
+   first weeks. Same shape as the former Jump-back-in strip, one row of plain links. */
 .dash-learn {
   display: grid;
   gap: 10px;
@@ -462,4 +462,21 @@
   color: var(--muted);
   font-size: 12px;
   line-height: 1.35;
+}
+
+/* Widget chrome uses the product tokens, never leftover --soft-* / --app-* aliases. */
+.dash-widget.app-card{
+  background:var(--surface);
+  color:var(--ink);
+  border:1px solid var(--line);
+  box-shadow:var(--shadow);
+}
+.dash-widget.app-card.is-empty{
+  background:var(--bg);
+  box-shadow:none;
+}
+.dash-widget.app-card header h2{color:var(--ink)}
+.dash-pgrid[data-pending-place]:not([data-pending-place=""]){
+  touch-action:manipulation;
+  cursor:pointer;
 }

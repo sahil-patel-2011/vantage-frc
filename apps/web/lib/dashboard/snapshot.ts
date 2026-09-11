@@ -311,7 +311,7 @@ export async function loadDashboardSnapshot(
         "setup_required",
         "competition_snapshot",
         undefined,
-        "Choose your team so Statbotics/TBA EPA can load.",
+        "Choose your team so rank and record can load.",
       );
       return;
     }
@@ -388,8 +388,8 @@ export async function loadDashboardSnapshot(
       "competition_snapshot",
       undefined,
       eventKey
-        ? "Statbotics/TBA metrics not synced for this team yet — open Team → Data."
-        : "Set an active event or sync Statbotics year EPA under Team → Data.",
+        ? "Match data is not connected for this team yet — open Team Data."
+        : "Set an active event or connect match data under Team Data.",
     );
   }
 
@@ -502,7 +502,7 @@ export async function loadDashboardSnapshot(
         "setup_required",
         "sync_status",
         undefined,
-        "The Blue Alliance is not connected. Save a key under Team → Data before match and ranking sync.",
+        "The Blue Alliance is not connected. Save a key under Team Data before match and ranking cards can fill in.",
       );
       return;
     }
@@ -518,7 +518,7 @@ export async function loadDashboardSnapshot(
        ORDER BY source`,
     );
     if (!health.rowCount) {
-      widgets.sync_status = stamp("setup_required", "sync_status", undefined, "Reference sync health is not available yet.");
+      widgets.sync_status = stamp("setup_required", "sync_status", undefined, "Match data health is not available yet.");
       return;
     }
     widgets.sync_status = stamp("live", "sync_status", { sources: health.rows });
@@ -543,7 +543,7 @@ export async function loadDashboardSnapshot(
 
   async function aiUsage() {
     if (!canAccessWidget("ai_usage", input.role)) {
-      widgets.ai_usage = stamp("setup_required", "ai_usage", undefined, "Owner/admin access required.");
+      widgets.ai_usage = stamp("setup_required", "ai_usage", undefined, "Ask a team admin to open this card.");
       return;
     }
     const [entitlement, models, wallet] = await Promise.all([
@@ -711,7 +711,7 @@ export async function loadDashboardSnapshot(
         "setup_required",
         "team_todos",
         undefined,
-        "Team todos need the latest database migration.",
+        "Team todos are not available yet. Ask a mentor to finish team setup.",
       );
     }
   }
@@ -791,7 +791,7 @@ export async function loadDashboardSnapshot(
         "setup_required",
         "subteam_upcoming",
         { href: `/team/calendar${orgQuery}` },
-        "Subteam calendars need the latest database migration.",
+          "Subteam calendars need a team database update — ask a mentor.",
       );
     }
   }
@@ -904,7 +904,7 @@ export async function loadDashboardSnapshot(
       complete ? "live" : "setup_required",
       "onboarding_checklist",
       { steps, complete },
-      complete ? undefined : "Complete the first-run checklist to unlock live widgets.",
+      complete ? undefined : "Finish the next setup step. Live cards appear when match, files, or chat data exists.",
     );
   }
 

@@ -1,5 +1,5 @@
 "use client";
-import { Button } from "../../components/ui";
+import { Button, EmptyState } from "../../components/ui";
 import { useCallback, useEffect, useState } from "react";
 import { AUTO_PRIORITIES, AUTO_STATUS_LABEL, AUTO_STATUSES, START_POSITIONS, type AutoPriority, type AutoStatus, type StartPosition } from "../../lib/auto-routines";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
@@ -79,7 +79,21 @@ export default function AutoRoutinesClient({ orgId }: { orgId: string | null }) 
     );
   }
   if (view.status === "setup_required") {
-    return <main className="intel-app"><header className="intel-header"><div><span className="eyebrow">VANTAGE / AUTOS</span><h1>Autonomous library</h1></div></header><p className="telemetry-status">{view.message}</p></main>;
+    return (
+      <main className="intel-app">
+        <header className="intel-header">
+          <div>
+            <span className="eyebrow">VANTAGE / AUTOS</span>
+            <h1>Autonomous library</h1>
+          </div>
+        </header>
+        <EmptyState badge="Setup required" badgeTone="setup" soft title="Choose your team" description={view.message}>
+          <Button as="a" variant="primary" href="/workspace">
+            Choose your team
+          </Button>
+        </EmptyState>
+      </main>
+    );
   }
 
   return (

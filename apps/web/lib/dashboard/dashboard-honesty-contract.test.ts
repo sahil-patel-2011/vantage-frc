@@ -14,7 +14,8 @@ describe("Dashboard prediction honesty", () => {
     expect(snapshot).toContain("ourAlliance");
     expect(widgets).toContain("predictionWinDisplay");
     expect(widgets).toContain("data.ourAlliance");
-    expect(widgets).toContain("Recompute on Strategy");
+    expect(widgets).toContain('href={withOrg("/strategy")}');
+    expect(widgets).toContain("Open Strategy to compute one");
     expect(widgets).not.toContain('alliance: "red"');
     expect(widgets).not.toMatch(/Math\.round\(pRed \* 100\)/);
   });

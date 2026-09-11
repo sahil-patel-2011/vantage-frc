@@ -174,9 +174,21 @@ export function dashboardSetupSteps(input: {
   const isOwnerAdmin = role === "owner" || role === "admin";
   const eventDone = hasOrg && !input.setupRequired;
   const tbaDone = input.tbaConfigured === true;
-  const tbaCurrent = hasOrg && input.tbaConfigured === false;
   const scoutDone = input.hasScoutingSchemas === true;
   const aiDone = input.hasAiProvider === true;
+
+  // Exactly one current gate, matching the first-run banner. Optional scout/AI
+  // steps stay pending until done — never painted as "you are here".
+  let currentId = "";
+  if (!hasOrg) currentId = "workspace";
+  else if (input.tbaConfigured === false) currentId = "tba";
+  else if (input.setupRequired) currentId = "event";
+
+  const stateOf = (id: string, done: boolean): DashboardSetupStep["state"] => {
+    if (done) return "done";
+    if (id === currentId) return "current";
+    return "pending";
+  };
 
   const steps: DashboardSetupStep[] = [
     {
@@ -188,28 +200,28 @@ export function dashboardSetupSteps(input: {
           : "You’re on a team"
         : "Open the invite sent to your email",
       href: hasOrg ? withOrgHref("/workspace", orgId) : "/invite",
-      state: hasOrg ? "done" : "current",
+      state: stateOf("workspace", hasOrg),
     },
     {
       id: "event",
       label: "Set active event",
       detail: "Set the active competition",
       href: hubHref("/competition", "command", orgId),
-      state: !hasOrg ? "pending" : eventDone ? "done" : "current",
+      state: stateOf("event", eventDone),
     },
     {
       id: "tba",
       label: "Connect TBA",
       detail: "Match and rank data",
       href: withOrgHref("/team/data", orgId),
-      state: !hasOrg ? "pending" : tbaDone ? "done" : tbaCurrent ? "current" : "pending",
+      state: stateOf("tba", tbaDone),
     },
     {
       id: "scout",
       label: "Scout forms",
       detail: "Match and pit forms",
       href: hubHref("/competition", "forms", orgId),
-      state: !hasOrg || input.setupRequired ? "pending" : scoutDone ? "done" : "current",
+      state: stateOf("scout", scoutDone),
     },
   ];
 
@@ -219,7 +231,7 @@ export function dashboardSetupSteps(input: {
       label: "AI keys",
       detail: "Optional provider keys",
       href: withOrgHref("/team/ai-keys", orgId),
-      state: !hasOrg ? "pending" : aiDone ? "done" : "current",
+      state: stateOf("ai", aiDone),
     });
   }
 
@@ -250,7 +262,7 @@ export function dashboardSetupBlurb(shell: DashboardShellKind): string {
     case "no_org":
       return "Open the invite sent to your email.";
     case "setup":
-      return "Pick the event this board should follow.";
+      return "Set the event this board should follow.";
     case "tba":
       return "Sync The Blue Alliance for live match data.";
     case "loading":
@@ -300,7 +312,7 @@ export function dashboardSetupBannerLabel(primary: DashboardNextAction | Dashboa
     case "tba":
       return "Connect TBA";
     case "event":
-      return "Set event";
+      return "Set active event";
     default:
       return primary.label;
   }

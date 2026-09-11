@@ -58,8 +58,11 @@ describe("dashboard Soft-UI related", () => {
     expect(steps.find((step) => step.id === "workspace")?.state).toBe("done");
     expect(steps.find((step) => step.id === "workspace")?.label).toBe("Your team");
     expect(steps.find((step) => step.id === "workspace")?.detail).not.toMatch(/accept an invite/i);
-    expect(steps.find((step) => step.id === "event")?.state).toBe("current");
+    expect(steps.find((step) => step.id === "event")?.state).toBe("pending");
     expect(steps.find((step) => step.id === "tba")?.state).toBe("current");
+    expect(steps.filter((step) => step.state === "current")).toHaveLength(1);
+    expect(steps.find((step) => step.id === "scout")?.state).toBe("pending");
+    expect(steps.find((step) => step.id === "ai")?.state).toBe("pending");
     expect(steps.find((step) => step.id === "tba")?.href).toContain("orgId=");
     expect(steps.find((step) => step.id === "ai")?.href).toContain("/team/ai-keys");
   });
@@ -119,7 +122,7 @@ describe("dashboard Soft-UI related", () => {
     ).toBe("Connect TBA");
     expect(
       dashboardSetupBannerLabel({ id: "event", label: "Event", detail: "", href: "/command", state: "current" }),
-    ).toBe("Set event");
+    ).toBe("Set active event");
     expect(
       dashboardSetupBannerLabel({ id: "other", label: "Choose your team", detail: "", href: "/workspace", primary: true }),
     ).toBe("Choose your team");

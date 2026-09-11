@@ -213,6 +213,7 @@ describe("widget registry", () => {
       expect(meta.emptyWhen.length, entry.type).toBeGreaterThan(3);
       expect(meta.helpArticle.length, entry.type).toBeGreaterThan(2);
       expect(meta.audience.length, entry.type).toBeGreaterThan(0);
+      expect(entry.description, entry.type).not.toMatch(/\b(EPA|Statbotics|reference tables)\b/);
     }
   });
 
