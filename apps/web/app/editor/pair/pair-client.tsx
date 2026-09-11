@@ -303,7 +303,7 @@ export default function PairClient({
                 spellCheck={false}
               />
             </FormRow>
-            <FormRow label="Organization / workspace">
+            <FormRow label="Team">
               <select value={orgId} onChange={(e) => setOrgId(e.target.value)} required>
                 {organizations.map((org) => (
                   <option value={org.id} key={org.id}>

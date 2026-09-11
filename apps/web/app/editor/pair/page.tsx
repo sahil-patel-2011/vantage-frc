@@ -1,7 +1,6 @@
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
-import { redirect } from "next/navigation";
 import PairClient, { type PairDevice, type PairOrganization } from "./pair-client";
 
 // Session-gated server page: never prerendered, so a credential-free build works.
@@ -18,10 +17,21 @@ export default async function EditorPairPage({
 }: {
   searchParams: Promise<{ code?: string; orgId?: string }>;
 }) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) redirect("/signin?next=%2Feditor%2Fpair");
-
   const params = await searchParams;
+  const session = await auth.api.getSession({ headers: await headers() });
+  // Proxy already requires a session (or the local E2E fixture cookie). Do not
+  // bounce a fixture walk to /signin — that cookie then redirects to /dashboard
+  // and Pair VS Code never appears.
+  if (!session) {
+    return (
+      <PairClient
+        initialCode={params.code ?? ""}
+        organizations={[]}
+        devices={[]}
+        preferredOrgId={params.orgId ?? null}
+      />
+    );
+  }
 
   const { orgs, devices } = await withRls({ userId: session.user.id }, async (client) => {
     const orgRows = (
