@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import path from "node:path";
 import { expect, type Locator, type Page } from "@playwright/test";
 
 /**
@@ -30,4 +32,19 @@ export async function expectReadyOr(
   await waitForLoadingGone(page, timeout);
   await expect(first.or(second)).toBeVisible({ timeout });
   return (await first.count()) > 0 && (await first.isVisible());
+}
+
+/**
+ * Agent sessions write under /opt/cursor/artifacts. A laptop without that
+ * directory should still run `npm run test:browser` — never fail the suite
+ * because a screenshot path was missing.
+ */
+export async function artifactScreenshot(page: Page, filename: string): Promise<void> {
+  const dir = process.env.PLAYWRIGHT_ARTIFACT_DIR ?? "/opt/cursor/artifacts";
+  try {
+    fs.mkdirSync(dir, { recursive: true });
+    await page.screenshot({ path: path.join(dir, filename), fullPage: true });
+  } catch {
+    // optional
+  }
 }

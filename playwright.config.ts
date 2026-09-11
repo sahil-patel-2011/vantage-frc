@@ -6,9 +6,13 @@ import {
   cookieDomain,
   playwrightOrigin,
   playwrightPort,
+  playwrightWebServerEnv,
 } from "./tests/browser/origin";
 
 assertLocalFixtureDatabase();
+
+const ARTIFACT_DIR = process.env.PLAYWRIGHT_ARTIFACT_DIR ?? "/opt/cursor/artifacts";
+fs.mkdirSync(ARTIFACT_DIR, { recursive: true });
 
 const isCi = Boolean(process.env.CI);
 
@@ -18,7 +22,6 @@ const isCi = Boolean(process.env.CI);
  * `.next/dev/lock`. Attach to that origin instead of crashing.
  */
 function liveNextDevLock(): { origin: string; port: number } | null {
-  if (isCi) return null;
   const lockPath = path.join(__dirname, "apps/web/.next/dev/lock");
   try {
     const lock = JSON.parse(fs.readFileSync(lockPath, "utf8")) as {
@@ -27,8 +30,21 @@ function liveNextDevLock(): { origin: string; port: number } | null {
       hostname?: string;
       appUrl?: string;
     };
-    if (!lock.pid || !lock.port) return null;
-    process.kill(lock.pid, 0);
+    if (!lock.pid || !lock.port) {
+      fs.unlinkSync(lockPath);
+      return null;
+    }
+    try {
+      process.kill(lock.pid, 0);
+    } catch {
+      // Next refuses a second `next dev` while the lock file exists, even
+      // when the pid is already gone. Drop the stale file so webServer can start.
+      fs.unlinkSync(lockPath);
+      return null;
+    }
+    // GitHub Actions / CI always starts its own webServer. A live lock on
+    // a shared box is reused so two `next dev` processes do not fight.
+    if (isCi) return null;
     const hostname = lock.hostname || "127.0.0.1";
     const origin = (lock.appUrl || `http://${hostname}:${lock.port}`).replace(/\/$/, "");
     return { origin, port: lock.port };
@@ -86,20 +102,7 @@ export default defineConfig({
           command: `npx next dev --port ${port} --hostname 127.0.0.1`,
           cwd: path.join(__dirname, "apps/web"),
           url: origin,
-          env: {
-            ...process.env,
-            NODE_ENV: "development",
-            E2E_AUTH_FIXTURE: "1",
-            PLAYWRIGHT_BASE_URL: origin,
-            AUTH_TRUSTED_ORIGINS: [
-              process.env.AUTH_TRUSTED_ORIGINS,
-              origin,
-              `http://localhost:${port}`,
-              `http://127.0.0.1:${port}`,
-            ]
-              .filter(Boolean)
-              .join(","),
-          },
+          env: playwrightWebServerEnv(origin, port),
           reuseExistingServer: !process.env.CI,
           timeout: 180_000,
         },

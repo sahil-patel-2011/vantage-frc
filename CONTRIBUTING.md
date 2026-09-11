@@ -71,7 +71,7 @@ npm run typecheck                        # every workspace
 npm run lint
 npm test                                 # ~8,600 tests in about 90 seconds
 npm run build --workspace=@vantage/web   # zero warnings — a warning once hid eleven dead media queries
-npx playwright install chromium          # once per machine
+npx playwright install chromium          # once per machine (`npm run test:browser:install`)
 npm run test:browser                     # Playwright vs http://127.0.0.1:3310 (E2E_AUTH_FIXTURE=1, local vantage_ci)
 ```
 

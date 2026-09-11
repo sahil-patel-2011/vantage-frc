@@ -32,14 +32,23 @@ export function cookieDomain(origin = playwrightOrigin()): string {
 }
 
 /**
+ * Same login the GitHub Actions RLS job uses. Local Playwright may fill these
+ * in when the shell has no DATABASE_* so `next dev` talks to vantage_ci.
+ * GitHub Actions browser job leaves DATABASE_* unset on purpose.
+ */
+export const LOCAL_VANTAGE_CI_APP = "postgresql://vantage_ci_app:app@127.0.0.1:5432/vantage_ci";
+export const LOCAL_VANTAGE_CI_ADMIN = "postgresql://postgres:postgres@127.0.0.1:5432/vantage_ci";
+
+const DATABASE_KEYS = ["DATABASE_URL", "DATABASE_AUTH_URL", "DATABASE_ADMIN_URL"] as const;
+
+/**
  * Playwright must never inherit a hosted/production DATABASE_*. Local
  * fixture is vantage_ci (or another test/ci database name) on the loopback.
  * GitHub Actions browser job has no DATABASE_* — that is allowed.
  */
-export function assertLocalFixtureDatabase(): void {
-  const keys = ["DATABASE_URL", "DATABASE_AUTH_URL", "DATABASE_ADMIN_URL"] as const;
-  for (const key of keys) {
-    const value = process.env[key];
+export function assertLocalFixtureDatabase(env: NodeJS.Dict<string> = process.env): void {
+  for (const key of DATABASE_KEYS) {
+    const value = env[key];
     if (!value) continue;
     let url: URL;
     try {
@@ -57,4 +66,38 @@ export function assertLocalFixtureDatabase(): void {
       );
     }
   }
+}
+
+/** Env for the Playwright-owned `next dev` child. Never copies production DATABASE_*. */
+export function playwrightWebServerEnv(origin: string, port: number): NodeJS.ProcessEnv {
+  const trusted = [
+    process.env.AUTH_TRUSTED_ORIGINS,
+    origin,
+    `http://localhost:${port}`,
+    `http://127.0.0.1:${port}`,
+  ]
+    .filter(Boolean)
+    .join(",");
+  const env: NodeJS.ProcessEnv = {
+    ...process.env,
+    NODE_ENV: "development",
+    E2E_AUTH_FIXTURE: "1",
+    PLAYWRIGHT_BASE_URL: origin,
+    BETTER_AUTH_URL: origin,
+    BETTER_AUTH_URL_LOCAL: origin,
+    NEXT_PUBLIC_APP_URL: origin,
+    NEXT_PUBLIC_SITE_URL: origin,
+    AUTH_TRUSTED_ORIGINS: trusted,
+  };
+  // GitHub Actions browser job has no Postgres. Cursor/local boxes do —
+  // fill vantage_ci when DATABASE_* is unset. `CI=true` is not enough:
+  // cloud agent shells often set CI without being GHA.
+  if (process.env.GITHUB_ACTIONS !== "true") {
+    env.DATABASE_URL ??= LOCAL_VANTAGE_CI_APP;
+    env.DATABASE_AUTH_URL ??= LOCAL_VANTAGE_CI_APP;
+    env.DATABASE_ADMIN_URL ??= LOCAL_VANTAGE_CI_ADMIN;
+    env.BETTER_AUTH_SECRET ??= "vantage-local-playwright-auth-secret";
+  }
+  assertLocalFixtureDatabase(env);
+  return env;
 }

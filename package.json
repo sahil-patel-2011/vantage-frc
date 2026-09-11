@@ -15,6 +15,7 @@
     "test": "vitest run",
     "test:browser": "playwright test",
     "test:browser:attach": "playwright test -c playwright.fixture.config.ts",
+    "test:browser:install": "playwright install chromium",
     "test:migrations": "vitest run packages/db/src/migrations-unique.test.ts scripts/deploy-preflight.test.ts",
     "test:db:integration": "vitest run packages/db/src/postgres-integration.test.ts",
     "test:cad": "npm test --workspace=@vantage/cad && npm test --workspace=@vantage/cad-cli",

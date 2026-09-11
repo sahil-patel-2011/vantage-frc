@@ -1,5 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
-import { cookieDomain } from "./tests/browser/origin";
+import { assertLocalFixtureDatabase, cookieDomain } from "./tests/browser/origin";
+
+assertLocalFixtureDatabase();
 
 /**
  * Same suite, pointed at a dev server you started yourself.

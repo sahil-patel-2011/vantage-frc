@@ -48,6 +48,8 @@ jobs:
     timeout-minutes: 30
     env:
       CI: "true"
+      NODE_ENV: "development"
+      E2E_AUTH_FIXTURE: "1"
       NEXT_TELEMETRY_DISABLED: "1"
     steps:
       - uses: actions/checkout@v4
