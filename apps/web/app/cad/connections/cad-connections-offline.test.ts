@@ -15,6 +15,7 @@ describe("CAD connections last snapshot stays on the phone", () => {
     expect(src).toMatch(/hadCache \|\| viewRef\.current/);
     expect(src).toMatch(/Choose your team/);
     expect(src).toMatch(/CadDocumentPicker/);
+    expect(src).toMatch(/FusionEditBoard/);
     expect(src).toMatch(/ONSHAPE_STUDENT_PERMISSIONS/);
     expect(src).not.toMatch(/fetchFailed \|\| !view/);
     expect(src).not.toMatch(/CLIENT_SECRET|Onshape OAuth/);

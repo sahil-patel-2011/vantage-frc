@@ -80,7 +80,7 @@ export function cadLinkLabel(url: string, title?: string | null): string {
     case "onshape":
       return name ? `Edit ${name} in Onshape` : "Edit in Onshape";
     case "fusion":
-      return name ? `Open ${name} in Fusion` : "Open in Fusion";
+      return name ? `Edit ${name} in Fusion` : "Edit in Fusion";
     case "other":
       return name ? `Open ${name}` : "Open CAD link";
     default: {

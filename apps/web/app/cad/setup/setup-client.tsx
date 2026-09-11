@@ -8,6 +8,8 @@ import {
   CAD_SETUP_CONNECT,
   CAD_SETUP_DESCRIPTION,
   CAD_SETUP_FUSION,
+  CAD_SETUP_FUSION_ASK_MENTOR,
+  CAD_SETUP_FUSION_READY,
   CAD_SETUP_ONSHAPE_READY,
   CAD_SETUP_RECONNECT,
   CAD_SETUP_TITLE,
@@ -17,6 +19,7 @@ import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
 import { withOrgHref } from "../../../lib/nav/product-nav";
 import { getFeatureSnapshot, putFeatureSnapshot, clearFeatureSnapshot } from "../../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
+import { FusionEditBoard } from "../fusion-edit-board";
 import { OnshapeEditBoard } from "../onshape-edit-board";
 
 type CadTarget = "onshape" | "fusion360";
@@ -46,6 +49,7 @@ type CadSetupView = {
   onshapeReady: boolean;
   onshapeConnected: boolean;
   onshapeAccount: string | null;
+  fusionReady: boolean;
 };
 
 function isCadSetupView(value: unknown): value is CadSetupView {
@@ -228,9 +232,14 @@ export default function CadSetupWizard({ orgId }: { orgId: string }) {
           redirectUri?: string | null;
           scopes?: unknown[] | null;
         };
+        fusion?: {
+          configured?: boolean;
+          setupRequired?: boolean;
+        };
         onshapeConnections?: OnshapeConnection[];
       };
       const onshapeReady = onshapeOauthCtaEnabled(row.onshape);
+      const fusionReady = Boolean(row.fusion?.configured) && row.fusion?.setupRequired !== true;
       const connections = Array.isArray(row.onshapeConnections) ? row.onshapeConnections : [];
       const connected = connections.find((item) => item.status === "connected");
       const next: CadSetupView = {
@@ -240,6 +249,7 @@ export default function CadSetupWizard({ orgId }: { orgId: string }) {
         onshapeReady,
         onshapeConnected: Boolean(connected),
         onshapeAccount: onshapeAccountLabel(connected?.externalAccountRef) ?? connected?.label ?? null,
+        fusionReady,
       };
       setView(next);
       setFromCache(false);
@@ -381,8 +391,14 @@ export default function CadSetupWizard({ orgId }: { orgId: string }) {
           <p>{CAD_SETUP_ASK_MENTOR}</p>
         </aside>
       ) : null}
+      {!view.fusionReady && cadTarget === "fusion360" ? (
+        <aside className="cad-setup-required" role="status">
+          <strong>Needs setup</strong>
+          <p>{CAD_SETUP_FUSION_ASK_MENTOR}</p>
+        </aside>
+      ) : null}
 
-      <OnshapeEditBoard />
+      {cadTarget === "fusion360" ? <FusionEditBoard /> : <OnshapeEditBoard />}
 
       <ol className="cad-setup-steps" aria-label="CAD setup progress">
         {([1, 2, 3] as const).map((n) => (
@@ -420,7 +436,7 @@ export default function CadSetupWizard({ orgId }: { orgId: string }) {
             />
             <span>
               <strong>Fusion on this computer</strong>
-              <small>{CAD_SETUP_FUSION}</small>
+              <small>{view.fusionReady ? CAD_SETUP_FUSION_READY : CAD_SETUP_FUSION_ASK_MENTOR}</small>
             </span>
           </label>
           <div className="cad-setup-actions">

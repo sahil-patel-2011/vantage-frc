@@ -3,8 +3,10 @@
 import { useState } from "react";
 import { Button, Panel } from "../../components/ui";
 import { cadLinkKind, cadLinkLabel } from "../../lib/cad-vault/cad-link";
+import { fusionEditHref } from "../../lib/cad/fusion-edit-link";
 import { onshapeEditHref } from "../../lib/cad/onshape-edit-link";
 import { cadKindLabel, type CadDocumentSummary, type SubsystemOption } from "../../lib/cad-vault/view";
+import { FusionEditButton } from "../cad/fusion-edit-board";
 import { OnshapeDocumentEmbed, OnshapeEditButton } from "../cad/onshape-edit-board";
 import { formatBytes, GeometrySummary, StoredVersionPreview } from "./cad-vault-preview";
 
@@ -52,7 +54,8 @@ export function DocumentCard({
 }) {
   const [showVersions, setShowVersions] = useState(false);
   const latest = doc.latest;
-  const editHref = onshapeEditHref(doc.externalUrl);
+  const onshapeHref = onshapeEditHref(doc.externalUrl);
+  const fusionHref = fusionEditHref(doc.externalUrl);
   const linkKind = cadLinkKind(doc.externalUrl);
 
   return (
@@ -60,9 +63,13 @@ export function DocumentCard({
       <header style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap", alignItems: "flex-start" }}>
         <div>
           <h2 style={{ margin: 0 }}>{doc.title}</h2>
-          {editHref ? (
+          {onshapeHref ? (
             <p style={{ margin: "6px 0 0" }}>
-              <OnshapeEditButton href={editHref} title={doc.title} />
+              <OnshapeEditButton href={onshapeHref} title={doc.title} />
+            </p>
+          ) : fusionHref ? (
+            <p style={{ margin: "6px 0 0" }}>
+              <FusionEditButton href={fusionHref} title={doc.title} />
             </p>
           ) : doc.externalUrl ? (
             <p style={{ margin: "6px 0 0" }}>
@@ -97,7 +104,7 @@ export function DocumentCard({
         </div>
       </header>
 
-      <OnshapeCardPreview kind={linkKind} editHref={editHref} title={doc.title} />
+      <OnshapeCardPreview kind={linkKind} editHref={onshapeHref} title={doc.title} />
 
       {latest ? (
         <div style={{ display: "grid", gap: 8 }}>
@@ -114,7 +121,9 @@ export function DocumentCard({
         <p className="app-muted" style={{ margin: 0 }}>
           <small>
             {doc.externalUrl
-              ? "Linked live model — Edit in Onshape opens the document. Printable files are optional."
+              ? linkKind === "fusion"
+                ? "Linked live model — Edit in Fusion opens the document. Printable files are optional."
+                : "Linked live model — Edit in Onshape opens the document. Printable files are optional."
               : "No file uploaded yet — this document is an empty shell."}
           </small>
         </p>

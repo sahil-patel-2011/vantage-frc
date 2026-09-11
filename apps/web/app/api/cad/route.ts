@@ -43,6 +43,7 @@ import {
   parseCadUserPreferences,
 } from "../../../lib/cad/adaptive-context";
 import { failMeteredAi } from "../../../lib/metered-ai-fail";
+import { hostedFusionSetup } from "../../../lib/cad/fusion-setup";
 import { hostedOnshapeEnvAuth, readHostedOnshapeEnvFlags } from "../../../lib/cad/hosted-auth";
 import { loadCadAgentOnshape } from "../../../lib/cad/onshape-tokens";
 import { refreshShadedPngBase64 } from "../../../lib/cad/shaded-view";
@@ -142,6 +143,7 @@ export async function GET(request: Request) {
       };
     });
     const hosted = hostedOnshapeEnvAuth(readHostedOnshapeEnvFlags());
+    const fusion = hostedFusionSetup();
     return Response.json({
       ...data,
       onshape: {
@@ -153,6 +155,8 @@ export async function GET(request: Request) {
           : onshapeSetupStatus().message,
       },
       onshapeConfigured: hosted.configured,
+      fusion,
+      fusionConfigured: fusion.configured,
       osSupport: cadOsSupportMatrix(),
     });
   } catch (error) {
