@@ -21,6 +21,7 @@ import { CadActivityPanel } from "./cad-activity-panel";
 import { CadStepPane } from "./cad-step-pane";
 import { CadToolsPanel, type CadToolRow } from "./cad-tools-panel";
 import { realReturnedId } from "./cad-session";
+import { OnshapeEditButton } from "./onshape-edit-board";
 import { onshapeEditHref } from "../../lib/cad/onshape-edit-link";
 import {
   MODE_LABELS,
@@ -164,7 +165,12 @@ export function CadReadyView({
             }}
           />
         </label>
-        <Button variant="primary" type="button" disabled={!url.trim() || busy !== null} onClick={() => void bind()}>
+        <Button
+          variant={editHref ? "secondary" : "primary"}
+          type="button"
+          disabled={!url.trim() || busy !== null}
+          onClick={() => void bind()}
+        >
           {busy === "bind" ? "Binding…" : "Bind"}
         </Button>
         {listedElements.elements.length ? (
@@ -206,11 +212,7 @@ export function CadReadyView({
           <span className={boundOk ? "on" : ""} title={state?.bound?.documentId ?? undefined}>
             {boundOk ? state?.bound?.documentName || "Part Studio bound" : "Not bound"}
           </span>
-          {editHref ? (
-            <a className="cad-agent-open" href={editHref} target="_blank" rel="noreferrer">
-              Edit in Onshape
-            </a>
-          ) : null}
+          {editHref ? <OnshapeEditButton href={editHref} /> : null}
         </div>
       </header>
       <nav className="product-hub-related cad-related" aria-label="Related CAD tools">
@@ -286,8 +288,12 @@ export function CadReadyView({
           </div>
           {state && !state.onshapeConnected ? (
             <div className="cad-agent-setup">
-              <p>Paste an Onshape or Fusion link to keep the document with the team.</p>
-              <Button as="a" variant="primary" href={`${withOrgHref("/cad-vault", orgId)}#link-cad`}>
+              <p>Paste an Onshape document link above to edit it here, or keep it in the vault.</p>
+              <Button
+                as="a"
+                variant={editHref ? "secondary" : "primary"}
+                href={`${withOrgHref("/cad-vault", orgId)}#link-cad`}
+              >
                 Link a CAD document
               </Button>
               <p className="cad-agent-hint">

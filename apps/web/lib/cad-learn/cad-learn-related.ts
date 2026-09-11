@@ -82,7 +82,7 @@ export function cadLearnNextActions(input: {
   actions.push({
     id: "cad",
     label: "Open the CAD workbench",
-    detail: "Bind a Part Studio when you are ready to sketch in Vantage.",
+    detail: "Paste an Onshape document and Edit in Onshape from the workbench.",
     href: hubHref("/build", "cad", input.orgId),
   });
   return actions.slice(0, 4);

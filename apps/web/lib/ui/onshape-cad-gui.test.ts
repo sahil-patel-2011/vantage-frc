@@ -60,6 +60,11 @@ describe("Onshape CAD GUI human-edit slice", () => {
     expect(setup).toMatch(/Choose your team/);
     expect(setup).toMatch(/OnshapeEditBoard/);
     expect(setup).toMatch(/Needs setup/);
+
+    const ready = readFileSync(join(WEB, "app/cad/cad-ready-view.tsx"), "utf8");
+    expect(ready).toMatch(/OnshapeEditButton/);
+    expect(ready).toMatch(/variant=\{editHref \? "secondary" : "primary"\}/);
+    expect(ready).not.toMatch(/cad-agent-open/);
   });
 
   it("does not print leftover Setup required / VANTAGE / OAuth on this slice", () => {
