@@ -6,6 +6,7 @@ vi.mock("./compute-strategy", () => ({
 }));
 
 import { computeStrategyView } from "./compute-strategy";
+import { EMPTY_PREDICTION_COPY, EMPTY_PREDICTION_NO_SCHEDULE_COPY } from "./prediction-empty-copy";
 import {
   STRATEGY_RECOMPUTE_ACTION,
   briefingRequestsStrategyRefresh,
@@ -111,7 +112,7 @@ function liveView(overrides: Partial<Extract<StrategyView, { status: "live" }>> 
 function emptyView(): Extract<StrategyView, { status: "empty" }> {
   return {
     status: "empty",
-    message: "No prediction yet — need a match schedule for your team at this event from TBA, plus team metrics.",
+    message: EMPTY_PREDICTION_NO_SCHEDULE_COPY,
     steps: [],
     orgId: "org-1",
     eventKey: "2026mijac",
@@ -187,7 +188,8 @@ describe("empty EPA stays empty — never 50%", () => {
     );
     expect(result.status).toBe("empty");
     if (result.status !== "empty") return;
-    expect(result.message).toMatch(/EPA/i);
+    expect(result.message).toBe(EMPTY_PREDICTION_COPY);
+    expect(result.message).not.toMatch(/\bEPA\b/);
     expect(result).not.toHaveProperty("prediction");
     expect(JSON.stringify(result)).not.toMatch(/0\.5/);
     expect(JSON.stringify(result)).not.toMatch(/DEMO/i);

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { Button } from "../../components/ui";
+import { Button, EmptyState } from "../../components/ui";
 import {
   briefingChecklist,
   matchLabel,
@@ -373,13 +373,11 @@ export default function BriefingClient() {
           </div>
         </header>
         <OfflineBanner feature="Pre-match briefing" fromCache={fromCache} cachedAt={cachedAt} />
-        <div className="app-card brief-empty">
-          <strong>Almost there</strong>
-          <p className="app-muted">{view.message}</p>
-          <Button as="a" variant="primary" href="/workspace">
-            Choose your team
+        <EmptyState soft badge="Needs setup" badgeTone="setup" title={view.message}>
+          <Button as="a" variant="primary" href={view.context.orgId ? "/command" : "/workspace"}>
+            {view.context.orgId ? "Set active event" : "Choose your team"}
           </Button>
-        </div>
+        </EmptyState>
       </main>
     );
   }

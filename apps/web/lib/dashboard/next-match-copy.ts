@@ -3,6 +3,8 @@
  * Red/Blue are two alliance totals, never a dash "range".
  */
 
+import { typicalScoreErrorCopy } from "@vantage/prediction-strategy";
+
 export function nextMatchScoreLine(input: {
   redPredicted: number;
   bluePredicted: number;
@@ -12,7 +14,7 @@ export function nextMatchScoreLine(input: {
   const blue = Math.round(input.bluePredicted);
   const band =
     typeof input.errorBand === "number" && Number.isFinite(input.errorBand)
-      ? ` · typical error ±${Math.round(input.errorBand)} (last measured set)`
+      ? ` · ${typicalScoreErrorCopy(input.errorBand)}`
       : "";
   return `Red ${red} · Blue ${blue}${band}`;
 }
@@ -25,7 +27,7 @@ function asDriverList(value: unknown): string[] {
     .slice(0, 3);
 }
 
-/** Prefer live EPA drivers; stored key-factor rows are a fallback. */
+/** Prefer live score drivers; stored key-factor rows are a fallback. */
 export function nextMatchDriverLines(data: Record<string, unknown>): string[] {
   const live = asDriverList(data.scoreDrivers);
   if (live.length) return live;
