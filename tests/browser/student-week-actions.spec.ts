@@ -9,6 +9,8 @@ test.beforeEach(async ({ context }) => {
 });
 
 const BANNED = ["Connect TBA", "The Blue Alliance", "TBA/Statbotics", "Setup required", "OAuth", "ONSHAPE_"];
+/** Video paste names The Blue Alliance as a source. That is not leftover chrome. */
+const BANNED_VIDEO = ["Connect TBA", "TBA/Statbotics", "Setup required", "OAuth", "ONSHAPE_"];
 
 test("student this week can walk Home → My Day/Scout → Video paste → CAD link", async ({
   page,
@@ -78,7 +80,7 @@ test("student this week can walk Home → My Day/Scout → Video paste → CAD l
 
   await page.goto("/video-analysis");
   await waitForLoadingGone(page);
-  for (const phrase of BANNED) {
+  for (const phrase of BANNED_VIDEO) {
     await expect(page.locator("body"), `Video still shows ${phrase}`).not.toContainText(phrase);
   }
   const paste = page.getByRole("region", { name: "Paste a video" });
