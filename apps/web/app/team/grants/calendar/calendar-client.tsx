@@ -5,14 +5,20 @@
 // workbench at /team/grants — finding a grant and writing one are different jobs on
 // different days, and the calendar has to load without the writing view's AI machinery.
 
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { OfflineBanner } from "../../../../components/offline-banner";
 import { Badge, EmptyState, PageHeader, Panel, Button } from "../../../../components/ui";
+import { BusinessRelated } from "../../../../components/business-related";
 import type {
   GrantCalendarEntry,
   GrantCalendarView,
 } from "../../../../lib/grants-calendar/compute-grants-calendar";
 import { urgencyLabel } from "../../../../lib/grants-calendar/eligibility";
 import type { DeadlineUrgency } from "../../../../lib/grants-calendar/types";
+import { FEATURE_API_TIMEOUT_MS } from "../../../../lib/nav/resolve-org";
+import { withOrgHref } from "../../../../lib/nav/product-nav";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../../../lib/offline/feature-cache";
+import { classifyLoadFailure, loadFailureCopy } from "../../../../lib/ui/load-failure";
 import "./calendar.css";
 
 type Filter = "all" | "open" | "eligible" | "watching";
@@ -48,14 +54,117 @@ function money(value: number | null): string | null {
   return `$${Math.round(value).toLocaleString("en-US")}`;
 }
 
+function isGrantCalendarView(value: unknown): value is GrantCalendarView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function responseError(data: unknown): string {
+  return data && typeof data === "object" && "error" in data && typeof data.error === "string"
+    ? data.error
+    : "";
+}
+
+function grantsCalendarCacheOrg(data: GrantCalendarView, orgHint: string): string {
+  switch (data.status) {
+    case "setup_required":
+      return (typeof data.orgId === "string" && data.orgId.trim()) || orgHint;
+    case "live":
+      return data.orgId.trim() || orgHint;
+    default: {
+      data satisfies never;
+      return orgHint;
+    }
+  }
+}
+
+async function persistGrantCalendarSnapshot(
+  orgHint: string,
+  seasonHint: string,
+  data: GrantCalendarView,
+): Promise<void> {
+  const cacheOrg = grantsCalendarCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  const variant = data.status === "live" ? String(data.seasonYear) : seasonHint;
+  try {
+    await putFeatureSnapshot("grants-calendar", cacheOrg, data, variant);
+    if (!orgHint) await putFeatureSnapshot("grants-calendar", "_", data, variant);
+  } catch {
+    // Live Grant calendar already painted; IndexedDB is best-effort.
+  }
+}
+
+function GrantCalendarRelated({ orgId }: { orgId?: string | null }) {
+  if (!orgId) return null;
+  return (
+    <BusinessRelated
+      orgId={orgId}
+      include={["grant-workbench", "writer", "sponsors", "fundraisers"]}
+      ariaLabel="Related grant tools"
+    />
+  );
+}
+
+function GrantCalendarNextActions({ orgId }: { orgId: string }) {
+  const actions = [
+    {
+      id: "write",
+      label: "Open Grant writing",
+      detail: "Turn a watched deadline into a draft while the facts are still on this phone.",
+      href: withOrgHref("/team/grants", orgId),
+      primary: true,
+    },
+    {
+      id: "background",
+      label: "Open Team background",
+      detail: "Eligibility chips stay unknown until student count, Title I, and 501(c)(3) are recorded.",
+      href: withOrgHref("/team/background", orgId),
+    },
+    {
+      id: "writer",
+      label: "Open Writer",
+      detail: "Grant drafts pull from the same team facts this calendar uses.",
+      href: withOrgHref("/writer", orgId),
+    },
+  ];
+  return (
+    <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <Button as="a" variant="secondary" href={action.href}>
+              Open
+            </Button>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
 export default function GrantCalendarClient({ orgId: orgIdProp }: { orgId?: string }) {
   const [view, setView] = useState<GrantCalendarView | null>(null);
-  const [loadFailure, setLoadFailure] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>("open");
   const [showAdd, setShowAdd] = useState(false);
+  const [fetchFailed, setFetchFailed] = useState(false);
+  const [loadError, setLoadError] = useState("");
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<GrantCalendarView | null>(null);
+  viewRef.current = view;
 
   const orgParam = useCallback(() => {
     if (orgIdProp) return orgIdProp;
@@ -64,15 +173,55 @@ export default function GrantCalendarClient({ orgId: orgIdProp }: { orgId?: stri
   }, [orgIdProp]);
 
   const load = useCallback(async () => {
-    setLoadFailure(null);
-    const org = orgParam();
-    const query = org ? `?orgId=${encodeURIComponent(org)}` : "";
+    const orgHint = orgParam()?.trim() ?? "";
+    const seasonHint = String(new Date().getFullYear());
+    let hadCache = Boolean(viewRef.current);
     try {
-      const response = await fetch(`/api/grants-calendar${query}`);
-      const data = (await response.json()) as GrantCalendarView | { error?: string };
-      if (!response.ok || !("status" in data)) {
-        setLoadFailure(
-          ("error" in data && data.error) ||
+      const cached = await getFeatureSnapshot<GrantCalendarView>(
+        "grants-calendar",
+        orgHint || "_",
+        seasonHint,
+      );
+      if (!viewRef.current && cached?.data && isGrantCalendarView(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
+    setFetchFailed(false);
+    setLoadError("");
+    setErrorStatus(null);
+    setError("");
+    try {
+      const query = orgHint ? `?orgId=${encodeURIComponent(orgHint)}` : "";
+      const response = await fetch(`/api/grants-calendar${query}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      const data: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setFetchFailed(true);
+        setErrorStatus(response.status);
+        setLoadError(responseError(data));
+        return;
+      }
+      if (!response.ok || !isGrantCalendarView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Grant calendar. Showing the last copy on this device.");
+          setFetchFailed(false);
+          return;
+        }
+        setFetchFailed(true);
+        setErrorStatus(response.status);
+        setLoadError(
+          responseError(data) ||
             (response.status === 401
               ? "Your session expired. Sign in again to open the grant calendar."
               : "Could not load the grant calendar."),
@@ -80,8 +229,19 @@ export default function GrantCalendarClient({ orgId: orgIdProp }: { orgId?: stri
         return;
       }
       setView(data);
+      setFromCache(false);
+      setCachedAt(null);
+      const variant = data.status === "live" ? String(data.seasonYear) : seasonHint;
+      await persistGrantCalendarSnapshot(orgHint, variant, data);
     } catch {
-      setLoadFailure(
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Grant calendar. Showing the last copy on this device.");
+        setFetchFailed(false);
+        return;
+      }
+      setFetchFailed(true);
+      setLoadError(
         "Could not reach the grant calendar. Check your connection and try again — no deadline is ever guessed offline.",
       );
     }
@@ -92,6 +252,7 @@ export default function GrantCalendarClient({ orgId: orgIdProp }: { orgId?: stri
   }, [load]);
 
   const live = view?.status === "live" ? view : null;
+  const orgId = view && "orgId" in view ? view.orgId : orgIdProp ?? null;
 
   const post = useCallback(
     async (body: Record<string, unknown>, busyKey: string) => {
@@ -105,13 +266,16 @@ export default function GrantCalendarClient({ orgId: orgIdProp }: { orgId?: stri
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ ...body, orgId: org }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
-        const data = (await response.json()) as GrantCalendarView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setError(("error" in data && data.error) || "That change did not save.");
+        const data: unknown = await response.json().catch(() => null);
+        if (!response.ok || !isGrantCalendarView(data)) {
+          setError(responseError(data) || "That change did not save.");
           return;
         }
         setView(data);
+        setFromCache(false);
+        void persistGrantCalendarSnapshot(org, data.status === "live" ? String(data.seasonYear) : "", data);
         return data;
       } catch {
         setError("That change did not save — check your connection and try again.");
@@ -151,54 +315,70 @@ export default function GrantCalendarClient({ orgId: orgIdProp }: { orgId?: stri
         return live.entries.filter((entry) => entry.eligible !== false);
       case "watching":
         return live.entries.filter((entry) => entry.watching);
-      default:
+      case "all":
         return live.entries;
+      default: {
+        filter satisfies never;
+        return live.entries;
+      }
     }
   }, [live, filter]);
 
-  if (loadFailure) {
-    return (
-      <main className="module-page grant-cal-page content">
-        <PageHeader
-          breadcrumbs="Business / Grants / Calendar"
-          title="Grant calendar"
-          description={loadFailure}
-        />
-        <EmptyState
-          soft
-          badge="Retry"
-          title="Grant calendar unavailable"
-          description="Deadlines come from recorded calendar rows only — nothing is estimated while the calendar is offline."
-        >
-          <Button variant="primary" type="button" onClick={() => void load()}>
-            Try again
-          </Button>
-        </EmptyState>
-      </main>
-    );
-  }
+  const header = (
+    <PageHeader
+      breadcrumbs="Business / Grants / Calendar"
+      title="Grant calendar"
+      description={
+        live
+          ? `${live.platformCount} maintained ${
+              live.platformCount === 1 ? "grant" : "grants"
+            }${live.teamCount > 0 ? ` plus ${live.teamCount} your team added` : ""}. Watch one and we email you 30, 14, and 3 days before it closes.`
+          : "Upcoming grant deadlines with eligibility from recorded team facts only."
+      }
+    >
+      <GrantCalendarRelated orgId={orgId} />
+    </PageHeader>
+  );
 
   if (!view) {
+    const failure = fetchFailed
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus,
+            message: loadError,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: loadError,
+          },
+        )
+      : null;
     return (
       <main className="module-page grant-cal-page content">
-        <PageHeader breadcrumbs="Business / Grants / Calendar" title="Grant calendar" />
-        <EmptyState soft title="Opening the grant calendar…" aria-busy />
-      </main>
-    );
-  }
-
-  if (view.status === "setup_required") {
-    return (
-      <main className="module-page grant-cal-page content soft-gate">
-        <PageHeader
-          breadcrumbs="Business / Grants / Calendar"
-          title="Grant calendar"
-          description={view.message}
-        />
-        <EmptyState soft badge="Setup required" badgeTone="setup" title="Choose your team">
-          {view.steps[0] ? (
-            <Button as="a" variant="primary" href={view.steps[0].href}>
-              {view.steps[0].label}
+        {header}
+        <OfflineBanner feature="Grant calendar" fromCache={fromCache} cachedAt={cachedAt} />
+        <EmptyState
+          soft
+          title={failure ? failure.title : "Opening the grant calendar…"}
+          description={
+            failure
+              ? failure.description
+              : "Deadlines come from recorded calendar rows only — nothing is estimated."
+          }
+          aria-busy={!fetchFailed}
+        >
+          {failure?.primary ? (
+            <Button as="a" variant="primary" href={failure.primary.href}>
+              {failure.primary.label}
+            </Button>
+          ) : null}
+          {failure?.showRetry ? (
+            <Button variant="primary" type="button" onClick={() => void load()}>
+              Try again
             </Button>
           ) : null}
         </EmptyState>
@@ -206,19 +386,33 @@ export default function GrantCalendarClient({ orgId: orgIdProp }: { orgId?: stri
     );
   }
 
+  switch (view.status) {
+    case "setup_required":
+      return (
+        <main className="module-page grant-cal-page content soft-gate">
+          {header}
+          <OfflineBanner feature="Grant calendar" fromCache={fromCache} cachedAt={cachedAt} />
+          <EmptyState soft badge="Setup required" badgeTone="setup" title="Choose your team">
+            {view.steps[0] ? (
+              <Button as="a" variant="primary" href={view.steps[0].href}>
+                {view.steps[0].label}
+              </Button>
+            ) : null}
+          </EmptyState>
+        </main>
+      );
+    case "live":
+      break;
+    default: {
+      view satisfies never;
+      return null;
+    }
+  }
+
   return (
     <main className="module-page grant-cal-page content">
-      <PageHeader
-        breadcrumbs="Business / Grants / Calendar"
-        title="Grant calendar"
-        description={`${live!.platformCount} maintained ${
-          live!.platformCount === 1 ? "grant" : "grants"
-        }${live!.teamCount > 0 ? ` plus ${live!.teamCount} your team added` : ""}. Watch one and we email you 30, 14, and 3 days before it closes.`}
-      >
-        <Button as="a" variant="ghost" href={`/team/grants?orgId=${encodeURIComponent(live!.orgId)}`}>
-          Grant writing
-        </Button>
-      </PageHeader>
+      {header}
+      <OfflineBanner feature="Grant calendar" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="app-error" role="alert">
@@ -231,21 +425,21 @@ export default function GrantCalendarClient({ orgId: orgIdProp }: { orgId?: stri
         </p>
       ) : null}
 
-      {live!.profileGaps.length > 0 ? (
+      {view.profileGaps.length > 0 ? (
         <Panel className="grant-cal-gaps">
           <h2>Why some grants say “eligibility unknown”</h2>
           <p className="app-muted">
             We will not guess. Record these and the chips below turn into real answers:
           </p>
           <ul>
-            {live!.profileGaps.map((gap) => (
+            {view.profileGaps.map((gap) => (
               <li key={gap}>{gap}</li>
             ))}
           </ul>
-          {live!.canManage ? (
+          {view.canManage ? (
             <EligibilityFactsForm
-              titleI={live!.profile.titleI}
-              nonprofit501c3={live!.profile.nonprofit501c3}
+              titleI={view.profile.titleI}
+              nonprofit501c3={view.profile.nonprofit501c3}
               busy={busyId === "facts"}
               onSave={async (facts) => {
                 const result = await post(
@@ -277,12 +471,12 @@ export default function GrantCalendarClient({ orgId: orgIdProp }: { orgId?: stri
         <EmptyState
           soft
           title={
-            live!.entries.length === 0
+            view.entries.length === 0
               ? "No grants on the calendar yet"
               : "Nothing matches this filter"
           }
           description={
-            live!.entries.length === 0
+            view.entries.length === 0
               ? "No grants added yet. Owners and admins can add a grant your team found, with its deadline."
               : "Try “All” to see closed and undated grants too."
           }
@@ -294,7 +488,7 @@ export default function GrantCalendarClient({ orgId: orgIdProp }: { orgId?: stri
               key={entry.opportunity.id}
               entry={entry}
               busy={busyId === entry.opportunity.id}
-              canManage={live!.canManage}
+              canManage={view.canManage}
               onToggleWatch={() => void toggleWatch(entry)}
               onRemove={() =>
                 void post(
@@ -307,7 +501,7 @@ export default function GrantCalendarClient({ orgId: orgIdProp }: { orgId?: stri
         </ul>
       )}
 
-      {live!.canManage ? (
+      {view.canManage ? (
         <Panel className="grant-cal-add">
           <Button variant="ghost" type="button" aria-expanded={showAdd} onClick={() => setShowAdd((open) => !open)}>
             {showAdd ? "Cancel" : "Add a grant your team found"}
@@ -326,6 +520,8 @@ export default function GrantCalendarClient({ orgId: orgIdProp }: { orgId?: stri
           ) : null}
         </Panel>
       ) : null}
+
+      <GrantCalendarNextActions orgId={view.orgId} />
     </main>
   );
 }
@@ -421,15 +617,15 @@ function GrantRow({
       {opportunity.notes ? <p className="grant-cal-notes">{opportunity.notes}</p> : null}
 
       <div className="grant-cal-actions">
-        <button
+        <Button
+          variant={entry.watching ? "primary" : "secondary"}
           type="button"
-          className={`app-button${entry.watching ? "" : " ghost"}`}
           onClick={onToggleWatch}
           disabled={busy}
           aria-pressed={entry.watching}
         >
           {busy ? "Saving…" : entry.watching ? "Watching — alerts on" : "Watch this grant"}
-        </button>
+        </Button>
         {canManage && entry.teamAdded ? (
           <Button variant="ghost" type="button" onClick={onRemove} disabled={busy}>
             Remove

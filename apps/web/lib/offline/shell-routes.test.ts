@@ -165,6 +165,11 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/subsystem-signoff")).toBe(true);
     expect(pathnameIsOfflineShell("/prototype-tracker")).toBe(true);
     expect(pathnameIsOfflineShell("/equipment-maintenance")).toBe(true);
+    expect(pathnameIsOfflineShell("/sponsor-tier-calculator")).toBe(true);
+    expect(pathnameIsOfflineShell("/knowledge-drafts")).toBe(true);
+    expect(pathnameIsOfflineShell("/team/grants/calendar")).toBe(true);
+    expect(pathnameIsOfflineShell("/team/background")).toBe(true);
+    expect(pathnameIsOfflineShell("/team/getting-started")).toBe(true);
     expect(pathnameIsOfflineShell("/api/todos")).toBe(false);
   });
 
@@ -316,6 +321,12 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/subsystem-signoff")).toBe("Subsystem Sign-off");
     expect(offlineCapableLabel("/prototype-tracker")).toBe("Prototype-to-Decision Tracker");
     expect(offlineCapableLabel("/equipment-maintenance")).toBe("Equipment Maintenance");
+    expect(offlineCapableLabel("/sponsor-tier-calculator")).toBe("Sponsor Tier Calculator");
+    expect(offlineCapableLabel("/knowledge-drafts")).toBe("Knowledge drafts");
+    expect(offlineCapableLabel("/team/grants/calendar")).toBe("Grant calendar");
+    expect(offlineCapableLabel("/team/grants")).toBe("Grant writing");
+    expect(offlineCapableLabel("/team/background")).toBe("Team background");
+    expect(offlineCapableLabel("/team/getting-started")).toBe("Getting started");
   });
 
   it("keeps public/sw.js SHELL_ROUTES aligned with OFFLINE_SHELL_ROUTES", () => {
@@ -460,6 +471,13 @@ describe("offline shell routes", () => {
     expect(featureCacheKey("subsystem-signoff", "org-1", "2026")).toBe("subsystem-signoff:org-1:2026");
     expect(featureCacheKey("prototype-tracker", "org-1", "2026")).toBe("prototype-tracker:org-1:2026");
     expect(featureCacheKey("equipment-maintenance", "org-1")).toBe("equipment-maintenance:org-1");
+    expect(featureCacheKey("sponsor-tier-calculator", "org-1", "2026")).toBe(
+      "sponsor-tier-calculator:org-1:2026",
+    );
+    expect(featureCacheKey("knowledge-drafts", "org-1")).toBe("knowledge-drafts:org-1");
+    expect(featureCacheKey("grants-calendar", "org-1", "2026")).toBe("grants-calendar:org-1:2026");
+    expect(featureCacheKey("team-background", "org-1")).toBe("team-background:org-1");
+    expect(featureCacheKey("getting-started", "org-1")).toBe("getting-started:org-1");
     expect(featureCacheKey("schedule", "org-1")).toBe("schedule:org-1");
   });
 

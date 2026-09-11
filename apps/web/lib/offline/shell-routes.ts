@@ -152,6 +152,11 @@ export const OFFLINE_SHELL_ROUTES = [
   "/subsystem-signoff",
   "/prototype-tracker",
   "/equipment-maintenance",
+  "/sponsor-tier-calculator",
+  "/knowledge-drafts",
+  "/team/grants/calendar",
+  "/team/background",
+  "/team/getting-started",
 ] as const;
 
 export type OfflineShellRoute = (typeof OFFLINE_SHELL_ROUTES)[number];
@@ -184,7 +189,10 @@ export function offlineCapableLabel(pathname: string): string | null {
     return "Calendar";
   }
   if (bare.startsWith("/team/data")) return "Team Data";
+  if (bare.startsWith("/team/grants/calendar")) return "Grant calendar";
   if (bare.startsWith("/team/grants")) return "Grant writing";
+  if (bare.startsWith("/team/background")) return "Team background";
+  if (bare.startsWith("/team/getting-started")) return "Getting started";
   if (bare === "/team") return "Team";
   if (bare.startsWith("/todos") || bare.startsWith("/tasks")) return "Todos";
   if (bare.startsWith("/logistics")) return "Logistics";
@@ -266,6 +274,8 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/subsystem-signoff")) return "Subsystem Sign-off";
   if (bare.startsWith("/prototype-tracker")) return "Prototype-to-Decision Tracker";
   if (bare.startsWith("/equipment-maintenance")) return "Equipment Maintenance";
+  if (bare.startsWith("/sponsor-tier-calculator")) return "Sponsor Tier Calculator";
+  if (bare.startsWith("/knowledge-drafts")) return "Knowledge drafts";
   if (bare.startsWith("/spare-robot-kit")) return "Spare Robot Kit";
   if (bare.startsWith("/spare-forecast")) return "Spare Forecast";
   if (bare.startsWith("/sponsor-renewal-roi")) return "Sponsor Renewal ROI";

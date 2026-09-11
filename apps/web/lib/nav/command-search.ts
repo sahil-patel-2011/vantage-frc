@@ -200,6 +200,10 @@ const KEYWORDS: Record<string, string[]> = {
   "business:grants": ["grants", "grant", "apply", "funding", "foundation"],
   "business:grant-report": ["grant report", "reporting", "grant followup"],
   "business:grant-eligibility-matcher": ["eligibility", "which grants", "qualify"],
+  "business:grant-calendar": [
+    "grant calendar", "grant deadline", "when does the grant close", "watch a grant",
+    "boeing grant", "grant alerts",
+  ],
   "business:evidence": ["outreach", "evidence", "community", "impact"],
   "business:fundraisers": ["fundraiser", "fundraising", "raise money", "donations", "events"],
   "business:impact": ["impact", "outreach hours", "community service"],
@@ -325,6 +329,12 @@ const KEYWORDS: Record<string, string[]> = {
   "team:knowledge-drafts": [
     "wiki drafts", "knowledge drafts", "capture", "capture from work", "document",
     "document it", "write it up", "handoff", "knowledge", "draft a page", "review drafts",
+  ],
+  "team:getting-started": [
+    "team setup checklist", "invite the team", "setup signals", "org-wide checklist",
+  ],
+  "team:team-background": [
+    "team background", "mission", "who we are", "history", "demographics", "funding model",
   ],
   "build:manufacturing": [
     "manufacturing", "kanban", "parts board", "needs cam", "cam", "machining", "mill",

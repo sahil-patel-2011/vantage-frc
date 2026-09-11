@@ -174,6 +174,8 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         // needs it is new to the TEAM, not to the robot.
         { id: "dev-setup", label: "Programming setup", legacyHref: "/dev-setup", featured: true },
         { id: "onboarding-buddy", label: "Onboarding buddy", legacyHref: "/onboarding-buddy" },
+        { id: "getting-started", label: "Team setup", legacyHref: "/team/getting-started" },
+        { id: "team-background", label: "Team background", legacyHref: "/team/background" },
         { id: "alumni-network", label: "Alumni", legacyHref: "/alumni-network" },
         { id: "skills-graph", label: "Skills", legacyHref: "/skills-graph" },
         // Learning sits next to Skills because its predictions feed the skills graph;
@@ -296,6 +298,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
       ...nest("grants", [
         // The "Grants" workbench root already links /team/grants; a second nested
         // entry for the same route showed the page twice in the inner TabBar.
+        { id: "grant-calendar", label: "Grant calendar", legacyHref: "/team/grants/calendar", featured: true },
         { id: "grant-report", label: "Reports", legacyHref: "/grant-report" },
         { id: "grant-eligibility-matcher", label: "Eligibility", legacyHref: "/grant-eligibility-matcher" },
       ]),
