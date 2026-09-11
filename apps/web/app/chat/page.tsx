@@ -1,6 +1,4 @@
 import { EmptyState, Button } from "../../components/ui";
-import { hubHref } from "../../lib/nav/hubs";
-import { withOrgHref } from "../../lib/nav/product-nav";
 import ChatClient from "./chat-client";
 import "./chat.css";
 
@@ -23,22 +21,10 @@ export default async function ChatPage({
           badge="Setup"
           badgeTone="setup"
           title="Choose your team"
-          description="Each team has its own channels and memory. Choose your team or Account, then return from the AI hub."
+          description="Each team has its own channels and memory. Choose your team, then return from Ask AI."
         >
-          <Button as="a" variant="secondary" href="/workspace">
+          <Button as="a" variant="primary" href="/workspace">
             Choose your team
-          </Button>
-          <Button as="a" variant="secondary" href={withOrgHref("/account", null)}>
-            Account
-          </Button>
-          <Button as="a" variant="secondary" href={hubHref("/ai", "budgets", null)}>
-            Budgets
-          </Button>
-          <Button as="a" variant="secondary" href={hubHref("/ai", "memory", null)}>
-            Memory
-          </Button>
-          <Button as="a" variant="secondary" href={hubHref("/competition", "strategy", null)}>
-            Strategy
           </Button>
         </EmptyState>
       </main>

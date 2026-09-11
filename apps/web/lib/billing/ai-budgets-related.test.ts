@@ -111,21 +111,21 @@ describe("classifyAiBudgetsShell + copy", () => {
 });
 
 describe("aiBudgetsNextActions", () => {
-  it("asks for workspace when org is missing", () => {
+  it("asks for a team when org is missing", () => {
     const actions = aiBudgetsNextActions({ shell: "empty" });
+    expect(actions).toHaveLength(1);
     expect(actions[0]?.id).toBe("workspace");
-    expect(actions.some((a) => a.id === "pricing")).toBe(true);
-    expect(actions.some((a) => a.id === "account")).toBe(true);
+    expect(actions[0]?.label).toBe("Choose your team");
+    expect(actions[0]?.detail).not.toMatch(/pick a team first/i);
+    expectPlainCopy(actions[0]!.detail);
   });
 
-  it("points empty at configure + Chat / Pricing / Account", () => {
+  it("keeps one primary on empty Chat limits", () => {
     const actions = aiBudgetsNextActions({ orgId: "org-1", shell: "empty" });
+    expect(actions).toHaveLength(1);
     expect(actions[0]?.id).toBe("configure");
-    expect(actions.some((a) => a.id === "chat")).toBe(true);
-    expect(actions.some((a) => a.id === "pricing")).toBe(true);
-    expect(actions.some((a) => a.id === "account")).toBe(true);
-    expect(actions.find((a) => a.id === "chat")?.href).toContain("tab=chat");
-    expect(actions.find((a) => a.id === "pricing")?.href).toContain("/pricing");
+    expect(actions[0]?.primary).toBe(true);
+    expect(actions[0]?.href).toBe("#org-hard-limits");
   });
 });
 
@@ -157,14 +157,16 @@ describe("classifyAiUsageShell + next actions", () => {
     ).toBe("ready");
   });
 
-  it("points empty usage at Chat / Budgets / Pricing / Account", () => {
+  it("keeps one primary on empty usage", () => {
     const actions = aiUsageNextActions({ orgId: "org-2", shell: "empty" });
+    expect(actions).toHaveLength(1);
     expect(actions[0]?.id).toBe("chat");
-    expect(actions.some((a) => a.id === "budgets")).toBe(true);
-    expect(actions.find((a) => a.id === "budgets")?.href).toContain("tab=budgets");
-    expect(actions.some((a) => a.id === "pricing")).toBe(true);
-    expect(actions.some((a) => a.id === "account")).toBe(true);
+    expect(actions[0]?.href).toContain("tab=chat");
     expectPlainCopy(aiUsageShellCopy("empty").description);
+    const noOrg = aiUsageNextActions({ shell: "setup" });
+    expect(noOrg).toHaveLength(1);
+    expect(noOrg[0]?.label).toBe("Choose your team");
+    expect(noOrg[0]?.detail).not.toMatch(/pick a team first/i);
   });
 });
 

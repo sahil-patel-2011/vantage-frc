@@ -1,5 +1,4 @@
 import { EmptyState, Button } from "../../../components/ui";
-import { withOrgHref } from "../../../lib/nav/product-nav";
 import BudgetClient from "./budget-client";
 
 export const metadata = {
@@ -16,16 +15,10 @@ export default async function BudgetPage({ searchParams }: { searchParams: Promi
           badge="Setup"
           badgeTone="setup"
           title="Choose your team"
-          description="Each team sets its own Chat limits. Open Teams or Account, then come back from Ask AI."
+          description="Each team sets its own Chat limits. Choose your team, then come back from Ask AI."
         >
-          <Button as="a" variant="secondary" href="/workspace">
-            Open Teams
-          </Button>
-          <Button as="a" variant="secondary" href={withOrgHref("/account", null)}>
-            Account
-          </Button>
-          <Button as="a" variant="secondary" href={withOrgHref("/pricing", null)}>
-            Pricing
+          <Button as="a" variant="primary" href="/workspace">
+            Choose your team
           </Button>
         </EmptyState>
       </main>

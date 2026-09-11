@@ -1,6 +1,4 @@
 import { EmptyState, Button } from "../../../components/ui";
-import { hubHref } from "../../../lib/nav/hubs";
-import { withOrgHref } from "../../../lib/nav/product-nav";
 import UsageClient from "./usage-client";
 
 export const metadata = {
@@ -21,19 +19,10 @@ export default async function TeamUsagePage({
           badge="Setup"
           badgeTone="setup"
           title="Choose your team"
-          description="Each team has its own AI usage log. Choose your team or Account, then return from the AI hub."
+          description="Each team has its own AI usage log. Choose your team, then return from Ask AI."
         >
-          <Button as="a" variant="secondary" href="/workspace">
+          <Button as="a" variant="primary" href="/workspace">
             Choose your team
-          </Button>
-          <Button as="a" variant="secondary" href={withOrgHref("/account", null)}>
-            Account
-          </Button>
-          <Button as="a" variant="secondary" href={withOrgHref("/pricing", null)}>
-            Pricing
-          </Button>
-          <Button as="a" variant="secondary" href={hubHref("/ai", "chat", null)}>
-            Chat
           </Button>
         </EmptyState>
       </main>

@@ -3,6 +3,7 @@ import { Button } from "../../../components/ui";
 
 import { useEffect, useMemo, useState } from "react";
 import { AiHubRelated } from "../../../components/ai-hub-related";
+import { EmptyState, PageHeader, Button } from "../../../components/ui";
 import { UsageCutoffBanner } from "../../../components/usage-cutoff-banner";
 import {
   AI_USAGE_RELATED_INCLUDE,
@@ -16,7 +17,6 @@ import {
 } from "../../../lib/billing/ai-budgets-related";
 import { buildUsageCutoffSnapshot } from "../../../lib/billing/usage-cutoff";
 import { hubHref } from "../../../lib/nav/hubs";
-import { withOrgHref } from "../../../lib/nav/product-nav";
 import "../budgets/ai-budgets.css";
 
 type UsageData = {
@@ -85,7 +85,7 @@ type DenialsData = {
 };
 
 const KEY_SOURCE_LABELS: Record<string, string> = {
-  platform: "Platform key",
+  platform: "Hosted by Vantage",
   byo: "Your own key",
   local: "Local",
   local_cli: "Local CLI",
@@ -127,14 +127,14 @@ function denialReasonLabel(reason: string): string {
     sponsored_ai_unavailable: "Sponsored AI unavailable",
     commercial_approval_required: "Commercial approval required",
     verified_invited_member_required: "Verified invited member required",
-    org_rate_limit: "Org daily rate limit",
+    org_rate_limit: "Team daily rate limit",
     user_rate_limit: "Your daily rate limit",
     ip_rate_limit: "IP daily rate limit",
   };
   if (fixed[reason]) return fixed[reason];
   const scopeMatch = reason.match(/^(\w+)\.(daily|monthly)_(spend|tokens)$/);
   if (scopeMatch) {
-    const scope = scopeMatch[1];
+    const scope = scopeMatch[1] === "org" ? "team" : scopeMatch[1];
     const period = scopeMatch[2] === "monthly" ? "Monthly" : "Daily";
     const kind = scopeMatch[3] === "tokens" ? "token" : "spend";
     return `${period} ${kind} limit (${scope})`;
@@ -188,6 +188,31 @@ function NextActions({ orgId, shell }: { orgId: string; shell: AiBudgetsShellKin
   );
 }
 
+function ShellPrimary({
+  orgId,
+  shell,
+  onRetry,
+}: {
+  orgId: string;
+  shell: AiBudgetsShellKind;
+  onRetry?: () => void;
+}) {
+  if (shell === "error" && onRetry) {
+    return (
+      <Button variant="primary" type="button" onClick={onRetry}>
+        Retry
+      </Button>
+    );
+  }
+  const primary = aiUsageNextActions({ orgId, shell }).find((action) => action.primary);
+  if (!primary) return null;
+  return (
+    <Button as="a" variant="primary" href={primary.href}>
+      {primary.label}
+    </Button>
+  );
+}
+
 export default function UsageClient({ orgId }: { orgId: string }) {
   const [usage, setUsage] = useState<UsageData | null>(null);
   const [activity, setActivity] = useState<ActivityData | null>(null);
@@ -197,11 +222,7 @@ export default function UsageClient({ orgId }: { orgId: string }) {
   const [httpStatus, setHttpStatus] = useState<number | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  const chatHref = hubHref("/ai", "chat", orgId);
   const budgetsHref = hubHref("/ai", "budgets", orgId);
-  const pricingHref = withOrgHref("/pricing", orgId);
-  const accountHref = withOrgHref("/account", orgId);
-  const promptCachingHref = `${budgetsHref}#prompt-caching`;
 
   useEffect(() => {
     let active = true;
@@ -327,28 +348,11 @@ export default function UsageClient({ orgId }: { orgId: string }) {
 
   return (
     <main className="intel-app ai-budgets-page ai-usage-page">
-      <header className="intel-header">
-        <div>
-          <span className="eyebrow">AI / USAGE &amp; ACTIVITY</span>
-          <h1>Where the team&apos;s AI spend goes</h1>
-          <p className="app-muted">
-            A transparent record of every metered AI call — the model, the feature, the member, and which key funded it.
-            Set hard limits on{" "}
-            <a href={budgetsHref}>Chat limits</a>. Resume cut-offs via{" "}
-            <a href={pricingHref}>Pricing</a> or <a href={accountHref}>Account</a>.
-          </p>
-        </div>
-        <nav className="intel-actions" aria-label="Governance links">
-          <a href={chatHref}>Chat</a>
-          <a href={budgetsHref}>Budgets</a>
-          <a href={promptCachingHref}>Prompt caching</a>
-          <a href={pricingHref}>Pricing</a>
-          <a href={accountHref}>Account</a>
-          <a href={hubHref("/ai", "governance", orgId)}>Governance</a>
-          <a href={withOrgHref("/team/ai-runs", orgId)}>AI runs</a>
-          <a href={hubHref("/ai", "memory", orgId)}>Memory</a>
-        </nav>
-      </header>
+      <PageHeader
+        breadcrumbs="Ask AI / Usage"
+        title="Where the team's AI spend goes"
+        description="A record of every billed Chat call — the model, the feature, the member, and which key funded it."
+      />
 
       <AiHubRelated orgId={orgId} />
       <UsageRelatedStrip orgId={orgId} />
@@ -367,29 +371,32 @@ export default function UsageClient({ orgId }: { orgId: string }) {
       ) : null}
 
       {blocked ? (
-        <section className="app-card soft-panel product-hub-setup" role="status">
-          {shellCopy.badge ? <span className="app-badge setup">{shellCopy.badge}</span> : null}
-          <h2>{shellCopy.title}</h2>
-          <p className="app-muted">{shellCopy.description}</p>
-          <NextActions orgId={orgId} shell={shell} />
-          {shell === "error" ? (
-            <Button variant="secondary" type="button" onClick={() => retry()}>
-              Retry
-            </Button>
-          ) : null}
-        </section>
+        <EmptyState
+          soft
+          badge={shellCopy.badge}
+          badgeTone="setup"
+          title={shellCopy.title}
+          description={shellCopy.description}
+        >
+          <ShellPrimary orgId={orgId} shell={shell} onRetry={() => retry()} />
+        </EmptyState>
       ) : null}
 
       {!loading && !blocked ? (
         <>
           {showEmptyBanner ? (
-            <section className="app-card soft-panel product-hub-setup" role="status">
-              {shellCopy.badge ? <span className="app-badge setup">{shellCopy.badge}</span> : null}
-              <h2>{shellCopy.title}</h2>
-              <p className="app-muted">{shellCopy.description}</p>
-              <NextActions orgId={orgId} shell={shell} />
-            </section>
-          ) : null}
+            <EmptyState
+              soft
+              badge={shellCopy.badge}
+              badgeTone="setup"
+              title={shellCopy.title}
+              description={shellCopy.description}
+            >
+              <ShellPrimary orgId={orgId} shell={shell} />
+            </EmptyState>
+          ) : (
+            <NextActions orgId={orgId} shell={shell} />
+          )}
 
           {cutoffSnapshot ? <UsageCutoffBanner orgId={orgId} snapshot={cutoffSnapshot} /> : null}
 

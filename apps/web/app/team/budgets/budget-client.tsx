@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AiHubRelated } from "../../../components/ai-hub-related";
-import { PageHeader, Button } from "../../../components/ui";
+import { PageHeader, Button, EmptyState } from "../../../components/ui";
 import { UsageCutoffBanner } from "../../../components/usage-cutoff-banner";
 import {
   AI_BUDGETS_RELATED_INCLUDE,
@@ -90,6 +90,31 @@ function NextActions({ orgId, shell }: { orgId: string; shell: AiBudgetsShellKin
   );
 }
 
+function ShellPrimary({
+  orgId,
+  shell,
+  onRetry,
+}: {
+  orgId: string;
+  shell: AiBudgetsShellKind;
+  onRetry?: () => void;
+}) {
+  if (shell === "error" && onRetry) {
+    return (
+      <Button variant="primary" type="button" onClick={onRetry}>
+        Retry
+      </Button>
+    );
+  }
+  const primary = aiBudgetsNextActions({ orgId, shell }).find((action) => action.primary);
+  if (!primary) return null;
+  return (
+    <Button as="a" variant="primary" href={primary.href}>
+      {primary.label}
+    </Button>
+  );
+}
+
 export default function BudgetClient({ orgId }: { orgId: string }) {
   const [policy, setPolicy] = useState({
     ...blank,
@@ -121,9 +146,6 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
   const usageHref = hubHref("/ai", "usage", orgId);
   const pricingHref = withOrgHref("/pricing", orgId);
   const accountHref = withOrgHref("/account", orgId);
-  const adminHref = withOrgHref("/team/admin", orgId);
-  const headerLinks = aiBudgetsRelatedLinks(orgId);
-
   async function load() {
     setLoading(true);
     setLoadError(null);
@@ -245,20 +267,7 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
         breadcrumbs="Chat / Limits"
         title="Chat limits"
         description="Spend and token limits are checked before every Chat message. The included allowance stops unless you buy credits or turn on pay-as-you-go."
-      >
-        <nav className="settings-inline-links" aria-label="Related settings">
-          {headerLinks
-            .filter((link) =>
-              ["chat", "usage", "pricing", "account", "governance", "admin"].includes(link.id),
-            )
-            .map((link) => (
-              <a key={link.id} href={link.href}>
-                {link.label}
-              </a>
-            ))}
-          <a href={`${adminHref}#custom-providers`}>API keys</a>
-        </nav>
-      </PageHeader>
+      />
 
       <AiHubRelated orgId={orgId} active="budgets" />
       <BudgetsRelatedStrip orgId={orgId} />
@@ -273,17 +282,15 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
       ) : null}
 
       {blocked ? (
-        <section className="app-card soft-panel product-hub-setup" role="status">
-          {shellCopy.badge ? <span className="app-badge setup">{shellCopy.badge}</span> : null}
-          <h2>{shellCopy.title}</h2>
-          <p className="app-muted">{shellCopy.description}</p>
-          <NextActions orgId={orgId} shell={shell} />
-          {shell === "error" ? (
-            <Button variant="secondary" type="button" onClick={() => void load()}>
-              Retry
-            </Button>
-          ) : null}
-        </section>
+        <EmptyState
+          soft
+          badge={shellCopy.badge}
+          badgeTone="setup"
+          title={shellCopy.title}
+          description={shellCopy.description}
+        >
+          <ShellPrimary orgId={orgId} shell={shell} onRetry={() => void load()} />
+        </EmptyState>
       ) : null}
 
       {!loading && !blocked ? (
@@ -304,7 +311,7 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
                 <p className="app-muted">{card.body}</p>
                 {card.id === "limits" ? (
                   <Button as="a" variant="secondary" href="#org-hard-limits">
-                    Edit hard limits
+                    Edit spend limits
                   </Button>
                 ) : null}
                 {card.id === "usage" ? (
@@ -327,13 +334,18 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
           </section>
 
           {showEmptyBanner ? (
-            <section className="app-card soft-panel product-hub-setup" role="status">
-              {shellCopy.badge ? <span className="app-badge setup">{shellCopy.badge}</span> : null}
-              <h2>{shellCopy.title}</h2>
-              <p className="app-muted">{shellCopy.description}</p>
-              <NextActions orgId={orgId} shell={shell} />
-            </section>
-          ) : null}
+            <EmptyState
+              soft
+              badge={shellCopy.badge}
+              badgeTone="setup"
+              title={shellCopy.title}
+              description={shellCopy.description}
+            >
+              <ShellPrimary orgId={orgId} shell={shell} />
+            </EmptyState>
+          ) : (
+            <NextActions orgId={orgId} shell={shell} />
+          )}
 
           {snapshot ? <UsageCutoffBanner orgId={orgId} snapshot={snapshot} /> : null}
 
@@ -432,7 +444,7 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
                 });
               }}
             >
-              <span className="eyebrow">Organization hard limits</span>
+              <span className="eyebrow">Team spend limits</span>
               <div className="budget-fields">
                 {(Object.keys(blank) as Array<keyof typeof blank>).map((key) => (
                   <label key={key}>

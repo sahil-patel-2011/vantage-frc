@@ -63,32 +63,35 @@ describe("classifyAiMemoryShell + copy", () => {
   it("refuses invented DEMO memories in empty/setup copy", () => {
     for (const kind of ["empty", "setup", "forbidden", "ready"] as const) {
       const copy = aiMemoryShellCopy(kind);
-      expect(copy.description).toMatch(/never|not|empty|admin/i);
       expect(copy.title).not.toMatch(/\bDEMO\b/);
+      expectPlainCopy(copy.description);
     }
-    expectPlainCopy(aiMemoryShellCopy("empty").description);
-    expectPlainCopy(aiMemoryShellCopy("setup").description);
   });
 });
 
 describe("aiMemoryNextActions", () => {
-  it("asks for workspace when org is missing", () => {
+  it("asks for a team when org is missing", () => {
     const actions = aiMemoryNextActions({ shell: "empty" });
+    expect(actions).toHaveLength(1);
     expect(actions[0]?.id).toBe("workspace");
+    expect(actions[0]?.label).toBe("Choose your team");
     expect(actions[0]?.primary).toBe(true);
+    expect(actions[0]?.detail).not.toMatch(/pick a team first/i);
+    expect(actions[0]?.detail).not.toMatch(/per org/);
+    expectPlainCopy(actions[0]!.detail);
   });
 
-  it("points empty at enable + Chat/Budgets", () => {
+  it("keeps one primary on empty Memory", () => {
     const actions = aiMemoryNextActions({
       orgId: "org-1",
       shell: "empty",
       enabled: false,
       activeCount: 0,
     });
+    expect(actions).toHaveLength(1);
     expect(actions[0]?.id).toBe("enable");
-    expect(actions.some((a) => a.id === "chat")).toBe(true);
-    expect(actions.some((a) => a.id === "budgets")).toBe(true);
-    expect(actions.find((a) => a.id === "chat")?.href).toContain("tab=chat");
+    expect(actions[0]?.primary).toBe(true);
+    expect(actions[0]?.href).toBe("#team-memory-policy");
   });
 
   it("points setup at promote-from-Chat", () => {
@@ -98,14 +101,15 @@ describe("aiMemoryNextActions", () => {
       enabled: true,
       activeCount: 0,
     });
+    expect(actions).toHaveLength(1);
     expect(actions[0]?.id).toBe("promote");
     expect(actions[0]?.href).toContain("/ai");
   });
 
   it("points forbidden members at private Chat memory", () => {
     const actions = aiMemoryNextActions({ orgId: "org-1", shell: "forbidden" });
+    expect(actions).toHaveLength(1);
     expect(actions[0]?.id).toBe("chat-private");
-    expect(actions.some((a) => a.id === "budgets")).toBe(true);
   });
 });
 
