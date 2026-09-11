@@ -179,6 +179,18 @@ export default function MatchDebriefClient({ orgId }: { orgId: string | null }) 
       : null;
     return (
       <main className="intel-app">
+        <PageHeader
+          breadcrumbs={
+            <>
+              <a href={withOrgHref("/competition", orgId)}>Competition</a>
+              {" / Match debrief"}
+            </>
+          }
+          title="Match debrief"
+          description="Log how our robot performed each match — separate from scouting other teams."
+        >
+          <MatchDebriefRelated orgId={orgId} />
+        </PageHeader>
         <OfflineBanner feature="Match debrief" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
