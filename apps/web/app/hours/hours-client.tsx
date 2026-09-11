@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import {
   type BuildHoursView,
@@ -25,6 +25,29 @@ import { HoursReadyView } from "./hours-ready-view";
 import type { ActionBody } from "./hours-model";
 import "./hours.css";
 
+function isBuildHoursView(value: unknown): value is BuildHoursView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "ready";
+}
+
+function hoursCacheOrg(data: BuildHoursView, orgHint: string): string {
+  const fromContext = data.context.orgId?.trim();
+  if (fromContext) return fromContext;
+  return orgHint;
+}
+
+async function persistHoursSnapshot(orgHint: string, data: BuildHoursView): Promise<void> {
+  const cacheOrg = hoursCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("hours", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("hours", "_", data);
+  } catch {
+    // Live Hours already painted; IndexedDB is best-effort.
+  }
+}
+
 export default function HoursClient() {
   const [view, setView] = useState<BuildHoursView | null>(null);
   const [error, setError] = useState("");
@@ -37,6 +60,8 @@ export default function HoursClient() {
   const [online, setOnline] = useState(true);
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<BuildHoursView | null>(null);
+  viewRef.current = view;
 
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 30_000);
@@ -44,26 +69,56 @@ export default function HoursClient() {
   }, []);
 
   const load = useCallback(async () => {
-    setFetchFailed(false);
-    setErrorStatus(null);
     const params = new URLSearchParams(window.location.search);
-    const orgId = params.get("orgId") ?? "";
-    const cached = orgId ? await getFeatureSnapshot<BuildHoursView>("hours", orgId) : null;
-    if (cached?.data) {
-      setView(cached.data);
-      setFromCache(true);
-      setCachedAt(cached.cachedAt);
-    }
+    const orgHint = params.get("orgId")?.trim() ?? "";
+    let hadCache = Boolean(viewRef.current);
     try {
-      const response = await fetch(`/api/hours${orgId ? `?orgId=${encodeURIComponent(orgId)}` : ""}`, {
+      const cached = await getFeatureSnapshot<BuildHoursView>("hours", orgHint || "_");
+      if (!viewRef.current && cached?.data && isBuildHoursView(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
+    setFetchFailed(false);
+    setError("");
+    setErrorStatus(null);
+    try {
+      const response = await fetch(`/api/hours${orgHint ? `?orgId=${encodeURIComponent(orgHint)}` : ""}`, {
         cache: "no-store",
         signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
-      const data = (await response.json()) as BuildHoursView | { error?: string };
-      if (!response.ok || !("status" in data)) {
-        setError("error" in data && data.error ? data.error : "Could not load shop hours.");
+      const data: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setFetchFailed(true);
         setErrorStatus(response.status);
-        if (!cached) setFetchFailed(true);
+        setError(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "",
+        );
+        return;
+      }
+      if (!response.ok || !isBuildHoursView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Hours. Showing the last copy on this device.");
+          setFetchFailed(false);
+          return;
+        }
+        setFetchFailed(true);
+        setErrorStatus(response.status);
+        setError(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "Could not load shop hours.",
+        );
         return;
       }
       setError("");
@@ -71,10 +126,15 @@ export default function HoursClient() {
       setFromCache(false);
       setCachedAt(null);
       setNow(Date.now());
-      const cacheOrg = data.status === "ready" ? data.context.orgId || orgId : orgId;
-      if (cacheOrg) await putFeatureSnapshot("hours", cacheOrg, data);
+      await persistHoursSnapshot(orgHint, data);
     } catch {
-      if (!cached) setFetchFailed(true);
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Hours. Showing the last copy on this device.");
+        setFetchFailed(false);
+        return;
+      }
+      setFetchFailed(true);
     }
   }, []);
 
@@ -171,7 +231,7 @@ export default function HoursClient() {
     void refreshPending();
   }, [refreshPending]);
 
-  if (fetchFailed || !view) {
+  if (!view) {
     const failure = fetchFailed
       ? loadFailureCopy(
           classifyLoadFailure({
@@ -188,7 +248,14 @@ export default function HoursClient() {
           },
         )
       : null;
-    return <HoursLoadShell failure={failure} onRetry={() => void load()} />;
+    return (
+      <HoursLoadShell
+        failure={failure}
+        onRetry={() => void load()}
+        fromCache={fromCache}
+        cachedAt={cachedAt}
+      />
+    );
   }
 
   if (view.status === "setup_required") {

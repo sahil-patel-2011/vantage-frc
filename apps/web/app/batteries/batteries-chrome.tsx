@@ -26,15 +26,20 @@ export function BatteriesLoadShell({
   embed,
   failure,
   onRetry,
+  fromCache = false,
+  cachedAt = null,
 }: {
   embed: HubEmbed | null;
   failure: LoadFailureCopy | null;
   onRetry: () => void;
+  fromCache?: boolean;
+  cachedAt?: string | null;
 }) {
   return (
     <main className="module-page batt-page">
       <PageHeader breadcrumbs={batteryCrumbs(embed)} title="Batteries" />
       {!embed ? <TeamOpsNav active="batteries" /> : null}
+      <OfflineBanner feature="Batteries" fromCache={fromCache} cachedAt={cachedAt} />
       <EmptyState
         title={failure ? failure.title : "Loading batteries…"}
         description={failure ? failure.description : undefined}

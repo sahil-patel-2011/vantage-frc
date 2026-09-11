@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { batteryNextActions, packHasMeasurement } from "../../lib/battery/battery-related";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import {
   QUEUED_ON_DEVICE,
   getFeatureSnapshot,
@@ -33,6 +34,28 @@ import {
 } from "./batteries-model";
 import "./batteries.css";
 
+function isBatteriesView(value: unknown): value is View {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "ready";
+}
+
+function batteriesCacheOrg(data: View, orgHint: string): string {
+  if (data.status === "ready" && data.context.orgId.trim()) return data.context.orgId;
+  return orgHint;
+}
+
+async function persistBatteriesSnapshot(orgHint: string, data: View): Promise<void> {
+  const cacheOrg = batteriesCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("batteries", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("batteries", "_", data);
+  } catch {
+    // Live Batteries already painted; IndexedDB is best-effort.
+  }
+}
+
 function useHubEmbed(): HubEmbed | null {
   const [embed, setEmbed] = useState<HubEmbed | null>(null);
   useEffect(() => {
@@ -58,24 +81,63 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
   const [cachedAt, setCachedAt] = useState<string | null>(null);
   const [packForm, setPackForm] = useState<PackForm>(EMPTY_PACK_FORM);
   const [logForm, setLogForm] = useState<LogForm>(EMPTY_LOG_FORM);
+  const viewRef = useRef<View | null>(null);
+  viewRef.current = view;
 
   const load = useCallback(async () => {
-    setFetchFailed(false);
     const params = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
-    const orgId = params.get("orgId") ?? "";
-    const cached = orgId ? await getFeatureSnapshot<View>("batteries", orgId) : null;
-    if (cached?.data) {
-      setView(cached.data);
-      setFromCache(true);
-      setCachedAt(cached.cachedAt);
-    }
+    const orgHint = params.get("orgId")?.trim() ?? "";
+    let hadCache = Boolean(viewRef.current);
     try {
-      const response = await fetch(`/api/batteries${orgId ? `?orgId=${encodeURIComponent(orgId)}` : ""}`);
-      const data = (await response.json()) as View & { error?: string };
-      if (!response.ok || !("status" in data)) {
-        setError(data.error ?? "Could not load batteries.");
+      const cached = await getFeatureSnapshot<View>("batteries", orgHint || "_");
+      if (!viewRef.current && cached?.data && isBatteriesView(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
+    setFetchFailed(false);
+    setError("");
+    setErrorStatus(null);
+    try {
+      const response = await fetch(
+        `/api/batteries${orgHint ? `?orgId=${encodeURIComponent(orgHint)}` : ""}`,
+        {
+          cache: "no-store",
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+        },
+      );
+      const data: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setFetchFailed(true);
         setErrorStatus(response.status);
-        if (!cached) setFetchFailed(true);
+        setError(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "",
+        );
+        return;
+      }
+      if (!response.ok || !isBatteriesView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Batteries. Showing the last copy on this device.");
+          setFetchFailed(false);
+          return;
+        }
+        setFetchFailed(true);
+        setErrorStatus(response.status);
+        setError(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "Could not load batteries.",
+        );
         return;
       }
       setError("");
@@ -83,8 +145,7 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
       setView(data);
       setFromCache(false);
       setCachedAt(null);
-      const cacheOrg = data.status === "ready" ? data.context.orgId || orgId : orgId;
-      if (cacheOrg) await putFeatureSnapshot("batteries", cacheOrg, data);
+      await persistBatteriesSnapshot(orgHint, data);
       if (data.status === "ready") {
         setLogForm((prev) => {
           if (prev.batteryId && data.packs.some((pack) => pack.id === prev.batteryId)) return prev;
@@ -92,8 +153,13 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
         });
       }
     } catch {
-      setErrorStatus(null);
-      if (!cached) setFetchFailed(true);
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Batteries. Showing the last copy on this device.");
+        setFetchFailed(false);
+        return;
+      }
+      setFetchFailed(true);
     }
   }, []);
 
@@ -131,6 +197,7 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify(body),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as { error?: string };
         if (!response.ok) {
@@ -157,7 +224,7 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
     [load],
   );
 
-  if (fetchFailed || !view) {
+  if (!view) {
     const failure = fetchFailed
       ? loadFailureCopy(
           classifyLoadFailure({
@@ -174,7 +241,15 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
           },
         )
       : null;
-    return <BatteriesLoadShell embed={embed} failure={failure} onRetry={() => void load()} />;
+    return (
+      <BatteriesLoadShell
+        embed={embed}
+        failure={failure}
+        onRetry={() => void load()}
+        fromCache={fromCache}
+        cachedAt={cachedAt}
+      />
+    );
   }
 
   if (view.status === "setup_required") {

@@ -28,14 +28,19 @@ export function HoursRelatedStrip({ orgId }: { orgId?: string | null }) {
 export function HoursLoadShell({
   failure,
   onRetry,
+  fromCache = false,
+  cachedAt = null,
 }: {
   failure: LoadFailureCopy | null;
   onRetry: () => void;
+  fromCache?: boolean;
+  cachedAt?: string | null;
 }) {
   const copy = hoursShellCopy("loading");
   return (
     <main className="module-page hours-page">
       <PageHeader breadcrumbs="Team / Hours" title={HOURS_PAGE_TITLE} />
+      <OfflineBanner feature="Hours" fromCache={fromCache} cachedAt={cachedAt} />
       <EmptyState
         title={failure ? failure.title : copy.title}
         description={failure ? failure.description : copy.description}
