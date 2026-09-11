@@ -252,6 +252,7 @@ const SHELL_ROUTES = [
   "/team/grants/calendar",
   "/team/profile",
   "/team/prompts",
+  "/team/relays",
   "/team/security",
   "/team/slack",
   "/team/storage",

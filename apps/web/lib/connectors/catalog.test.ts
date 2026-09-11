@@ -389,4 +389,15 @@ describe("student connector cards", () => {
     expect(status.detail).not.toMatch(STUDENT_CONNECTOR_LEAK);
     expect(status.detail).toMatch(/Ask a mentor to finish GitHub/);
   });
+
+  it("student free-relay card is paste-token only, never a Freebuff wrapper", () => {
+    const student = describeConnector(connectorById("free-relay"), BASE, {}, "student");
+    expect(student.permissions).toEqual([
+      "Paste the token the team's Raspberry Pi prints. Never a Freebuff website cookie, a browser extension, or a bookmarklet.",
+    ]);
+    expect(student.callbackUrl).toBeNull();
+    expect(student.permissions.join(" ")).not.toMatch(STUDENT_CONNECTOR_LEAK);
+    expect(student.permissions.join(" ")).not.toMatch(/freebuff\.com/i);
+    expect(student.statusLine).not.toMatch(/Setup required/);
+  });
 });

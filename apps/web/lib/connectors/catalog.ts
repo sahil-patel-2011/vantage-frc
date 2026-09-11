@@ -266,8 +266,8 @@ export const CONNECTORS: readonly ConnectorDefinition[] = [
     callbackPath: "/api/relay/pair/poll",
     callbackLabel: "Poll URL the Pi reads while pairing",
     providerConsole:
-      "Run the Vantage relay worker on the Pi (scripts/pi/install-free-relay.sh). It prints a pairing code. Do not paste a Freebuff website cookie — that is not allowed.",
-    permissions: ["A pairing code approved by an owner or admin", "A DeepSeek endpoint the team owns"],
+      "Run the Vantage relay worker on the Pi (scripts/pi/install-free-relay.sh). It prints a token to paste at Team → AI relays. Do not paste a Freebuff website cookie, install a browser extension, or use a bookmarklet — those wrap Freebuff and are not allowed.",
+    permissions: ["A token pasted by an owner or admin", "A DeepSeek endpoint the team owns"],
     managePath: "/team/relays",
     hasConnectAction: false,
     hasDisconnectAction: false,
@@ -452,7 +452,7 @@ export function studentPermissionsCopy(id: ConnectorId): string {
     case "fusion-relay":
       return "Fusion stays on this computer. Pair it from CAD Connections.";
     case "free-relay":
-      return "Run Ask AI on the team's Raspberry Pi.";
+      return "Paste the token the team's Raspberry Pi prints. Never a Freebuff website cookie, a browser extension, or a bookmarklet.";
     default: {
       const _exhaustive: never = id;
       return _exhaustive;

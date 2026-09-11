@@ -179,6 +179,7 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/troubleshoot")).toBe(true);
     expect(pathnameIsOfflineShell("/media-library")).toBe(true);
     expect(pathnameIsOfflineShell("/connectors")).toBe(true);
+    expect(pathnameIsOfflineShell("/team/relays")).toBe(true);
     expect(pathnameIsOfflineShell("/support")).toBe(true);
     expect(pathnameIsOfflineShell("/team/discord")).toBe(true);
     expect(pathnameIsOfflineShell("/hours/kiosk")).toBe(true);
@@ -378,6 +379,7 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/notifications")).toBe("Notifications");
     expect(offlineCapableLabel("/team/grants/calendar")).toBe("Grant calendar");
     expect(offlineCapableLabel("/team/admin")).toBe("Team admin");
+    expect(offlineCapableLabel("/team/relays")).toBe("AI relays");
     expect(offlineCapableLabel("/team/security")).toBe("Team security");
     expect(offlineCapableLabel("/security")).toBe("Security");
     expect(offlineCapableLabel("/wiring-diagnoser")).toBe("Wiring check");

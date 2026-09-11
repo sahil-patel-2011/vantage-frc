@@ -27,7 +27,7 @@ Freebuff's terms (effective 2026-09-02) forbid:
 
 FRC users are often minors. Vantage must not send student prompts to Freebuff's **hosted** free product.
 
-**A browser extension that rides a logged-in Freebuff tab is forbidden.** It is a wrapper around their session. Do not build it. `origin/pi-freebuff-layer` was dropped for this reason.
+**A browser extension that rides a logged-in Freebuff tab is forbidden.** It is a wrapper around their session. Do not build it. A bookmarklet that does the same thing is the same wrapper. Do not build it. `origin/pi-freebuff-layer` was dropped for this reason.
 
 The official published SDK/API, used **on hardware the team owns** against an endpoint the team configured, is the compliant path.
 
@@ -69,7 +69,7 @@ Chat goes to the least-loaded online chat instance. Agent/video jobs go to those
 
 Allowed: paste/authorize **your relay endpoint + token**.
 
-Not allowed: a Freebuff website session, a browser extension, a scraper, or sending a student's prompt to freebuff.com.
+Not allowed: a Freebuff website session, a browser extension, a bookmarklet, a scraper, or sending a student's prompt to freebuff.com.
 
 ## Owner still has to
 

@@ -234,6 +234,7 @@ export const OFFLINE_SHELL_ROUTES = [
   "/team/grants/calendar",
   "/team/profile",
   "/team/prompts",
+  "/team/relays",
   "/team/security",
   "/team/slack",
   "/team/storage",
@@ -294,6 +295,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/team/getting-started")) return "Getting started";
   if (bare.startsWith("/team/profile")) return "Team profile";
   if (bare.startsWith("/team/prompts")) return "Prompts";
+  if (bare.startsWith("/team/relays")) return "AI relays";
   if (bare.startsWith("/team/security")) return "Team security";
   if (bare.startsWith("/team/slack")) return "Slack";
   if (bare.startsWith("/team/storage")) return "Storage";
