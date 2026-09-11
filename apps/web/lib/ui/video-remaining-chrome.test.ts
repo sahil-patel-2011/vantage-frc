@@ -72,9 +72,9 @@ describe("remaining video-analysis student chrome", () => {
     expect(client).not.toMatch(/Analyze this video/);
     expect(chrome).not.toMatch(/Analyze this video/);
     expect(queue).toMatch(/FormRow/);
-    expect(queue).toMatch(/formatVideoSourceRef/);
+    expect(queue).toMatch(/formatVideoSourceRef\(job\.sourceKind, job\.sourceRef\)/);
     expect(queue).not.toMatch(/min behind/);
-    expect(queue).not.toMatch(/job\.sourceRef/);
+    expect(queue).not.toMatch(/<div>\{job\.sourceRef\}<\/div>/);
     expect(client).not.toMatch(/href="#video-paste"/);
 
     const emptyAt = client.indexOf('shell === "empty" ? (');
