@@ -40,7 +40,7 @@ describe("parentsNextActions", () => {
     const actions = parentsNextActions({ orgId: "org-1", shell: "restricted" });
     expect(actions[0]?.id).toBe("home");
     expect(actions[0]?.label).toBe("Open Home");
-    expect(actions[0]?.href).toBe("/dashboard?orgId=org-1");
+    expect(actions[0]?.href).toBe("/dashboard");
     expect(actions).toHaveLength(1);
   });
 

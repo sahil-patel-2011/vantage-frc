@@ -253,7 +253,6 @@ export async function GET(request: Request) {
       {
         status: "setup_required",
         orgId: null,
-        message:
         message: "Could not load parent contacts. Choose your team and try again.",
       } satisfies ParentsView,
       { status: 200 },

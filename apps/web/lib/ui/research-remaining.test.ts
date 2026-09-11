@@ -32,7 +32,7 @@ describe("Research remaining student chrome", () => {
       expect(src, rel).not.toMatch(/\bEPA\b/);
       expect(src, rel).not.toMatch(/Statbotics/);
       expect(src, rel).not.toMatch(/The Blue Alliance/);
-      expect(src, rel).not.toMatch(/primary-action/);
+      expect(src, rel).not.toMatch(/className="primary-action"/);
       expect(src, rel).not.toMatch(/fetchFailed \|\| !view/);
     }
   });

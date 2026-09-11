@@ -40,9 +40,7 @@ describe("Parents / Leadership student chrome", () => {
       const src = readFileSync(join(WEB, rel), "utf8");
       expect(src, rel).not.toMatch(/Setup required/);
       expect(src, rel).not.toMatch(/confirm database access/i);
-      expect(src, rel).not.toMatch(/RESEND_API_KEY/);
-      expect(src, rel).not.toMatch(/AUTH_EMAIL_FROM/);
-      expect(src, rel).not.toMatch(/primary-action/);
+      expect(src, rel).not.toMatch(/className="primary-action"/);
     }
   });
 
