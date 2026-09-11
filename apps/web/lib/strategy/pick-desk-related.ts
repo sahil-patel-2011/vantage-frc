@@ -181,7 +181,7 @@ export function pickDeskShellCopy(kind: PickDeskShellKind): PickDeskEmptyCopy {
         kind: "ready",
         title: "First / second / third pick desk",
         description:
-          "Ranks use only synced event metrics and membership-bound scout depth.",
+          "Ranks use only synced event metrics and this team’s scout notes.",
       };
   }
 }
@@ -240,7 +240,7 @@ export function pickDeskNextActions(input: {
       {
         id: "team-data",
         label: "Sync event metrics",
-        detail: "Pull TBA/Statbotics team_event_metrics — pick tiers stay blank until then.",
+        detail: "Sync the event’s team list from The Blue Alliance — pick tiers stay blank until then.",
         href: withOrgHref("/team/data", orgId),
         primary: true,
       },
@@ -279,7 +279,7 @@ export function pickDeskNextActions(input: {
     {
       id: "scouting",
       label: "Open Scouting",
-      detail: "Deepen pick explainability with membership-bound scout rows.",
+      detail: "Deepen pick explainability with this team’s scout notes.",
       href: hubHref("/competition", "scouting", orgId),
     },
     {

@@ -34,7 +34,7 @@ export default function BoardClient() {
   useEffect(() => {
     const token = new URLSearchParams(window.location.search).get("token");
     if (!token) {
-      setError("Missing share token.");
+      setError("This mentor link is missing. Ask the person who shared it to send it again.");
       setLoading(false);
       return;
     }
@@ -67,7 +67,7 @@ export default function BoardClient() {
           badge="Unavailable"
           badgeTone="setup"
           title={copy.title}
-          description={`${error} Mentor links stay org-bound.`}
+          description={`${error} This link only opens the board for the team that created it.`}
         />
       </main>
     );
@@ -81,7 +81,7 @@ export default function BoardClient() {
           soft
           className="draft-empty"
           title={copy.title}
-          description="Resolving the org-bound mentor token."
+          description="Opening this team’s mentor link."
           aria-busy
         />
       </main>

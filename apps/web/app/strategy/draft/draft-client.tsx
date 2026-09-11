@@ -215,7 +215,7 @@ function DraftShell({
       <PageHeader
         breadcrumbs="Competition / Strategy / Draft"
         title="Alliance board"
-        description="Draft day from synced event teams only. Mentor share links stay org-bound."
+        description="Draft day from synced event teams only. Mentor share links only open for this team."
       >
         <DraftRelatedStrip orgId={orgId} />
       </PageHeader>
@@ -523,7 +523,7 @@ export default function DraftClient() {
     }
     const absolute = `${window.location.origin}${body.url}`;
     setShareUrl(absolute);
-    setStatus("Mentor link created (read-only, org-bound, 14 days).");
+    setStatus("Mentor link created (read-only, this team only, 14 days).");
     void navigator.clipboard?.writeText(absolute);
     load();
   }
@@ -596,7 +596,7 @@ export default function DraftClient() {
       <PageHeader
         breadcrumbs="Competition / Strategy / Draft"
         title="Draft day alliance board"
-        description={`${data.eventName ?? data.eventKey} · captains then first picks, then reverse second picks. Only teams with synced event metrics appear in the pool. Mentor share tokens stay org-bound.`}
+        description={`${data.eventName ?? data.eventKey} · captains then first picks, then reverse second picks. Only teams with synced event metrics appear in the pool. Mentor share links only open for this team.`}
       >
         <div className="strategy-pick-actions">
           <DraftRelatedStrip orgId={data.orgId} />
@@ -750,7 +750,7 @@ export default function DraftClient() {
         </div>
         {shareUrl ? (
           <p className="strategy-share-url">
-            <span>Read-only org-bound link</span>
+            <span>Read-only link for this team</span>
             <code>{shareUrl}</code>
           </p>
         ) : null}
