@@ -62,6 +62,12 @@ describe("hoursSelfViewNextActions", () => {
 describe("classifyHoursSelfViewShell + helpers", () => {
   it("classifies loading / error / setup / empty / ready", () => {
     expect(classifyHoursSelfViewShell({ loading: true })).toBe("loading");
+    expect(
+      classifyHoursSelfViewShell({ loading: false, fetchFailed: true, failureStatus: 401 }),
+    ).toBe("setup");
+    expect(
+      classifyHoursSelfViewShell({ loading: false, fetchFailed: true, failureStatus: 403 }),
+    ).toBe("setup");
     expect(classifyHoursSelfViewShell({ loading: false, fetchFailed: true })).toBe("error");
     expect(
       classifyHoursSelfViewShell({ loading: false, status: "setup_required", orgId: "org-1" }),

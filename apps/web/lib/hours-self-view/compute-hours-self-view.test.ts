@@ -1,6 +1,6 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { describe, expect, it, vi } from "vitest";
-import { computeHoursSelfViewView, clockSelfIn, clockSelfOut } from "./compute-hours-self-view";
+import { computeHoursSelfViewView, clockSelfIn, clockSelfOut, hoursSelfViewChooseTeamView } from "./compute-hours-self-view";
 import { evaluateBiometricGate, summarizeHoursSelfEntries, summarizeWhoIsHere } from ".";
 
 const ORG = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
@@ -26,6 +26,8 @@ describe("computeHoursSelfViewView", () => {
       expect(view.orgId).toBeNull();
       expect(view.steps.length).toBeGreaterThan(0);
     }
+    expect(hoursSelfViewChooseTeamView().status).toBe("setup_required");
+    expect(hoursSelfViewChooseTeamView().orgId).toBeNull();
   });
 
   it("returns a live view with own-hours summary, kiosk sessions, and the biometric gate", async () => {

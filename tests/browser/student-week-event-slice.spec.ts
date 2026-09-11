@@ -88,14 +88,17 @@ test("student this week can walk Event day packing/checklist → My Hours clock-
     await expect(page.locator("body"), `My Hours still shows ${phrase}`).not.toContainText(phrase);
   }
   await expect(page.getByRole("heading", { name: "My Hours" })).toBeVisible();
-  const hoursPrimary = page.getByRole("button", { name: /Clock in|Clock out|Retry/i }).or(
-    page.getByRole("link", { name: /Choose your team|Sign in again/i }),
-  );
-  await expect(hoursPrimary.first()).toBeVisible({ timeout: 12_000 });
+  await expect(page.getByRole("button", { name: "Retry" })).toHaveCount(0);
+  await expect(page.getByText("Something went wrong")).toHaveCount(0);
+  const hoursClock = page.getByRole("button", { name: /Clock in|Clock out/i });
+  const hoursEmpty = page.getByRole("heading", { name: "Clock in to start your record" });
+  await expect(hoursClock.or(hoursEmpty).first()).toBeVisible({ timeout: 12_000 });
   await expect(page.getByText("hour_logs")).toHaveCount(0);
   if (await page.getByRole("button", { name: "Clock in" }).count()) {
+    await expect(hoursEmpty).toBeVisible();
     await page.getByRole("button", { name: "Clock in" }).click();
     await expect(page.locator("body")).not.toContainText("Application error");
+    await expect(page.getByText("Something went wrong")).toHaveCount(0);
   }
 
   await page.goto("/strategy?tab=picks");

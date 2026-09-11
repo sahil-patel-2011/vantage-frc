@@ -118,6 +118,25 @@ async function resolveOrg(
   return membership.rows[0] ?? null;
 }
 
+/** Honest empty/setup — never invents hour totals when there is no team. */
+export function hoursSelfViewChooseTeamView(
+  message = "Choose your team to view your own hours.",
+): Extract<HoursSelfViewView, { status: "setup_required" }> {
+  return {
+    status: "setup_required",
+    message,
+    steps: [
+      {
+        id: "workspace",
+        label: "Choose your team",
+        detail: "Pick which FRC team you are working as.",
+        href: "/workspace",
+      },
+    ],
+    orgId: null,
+  };
+}
+
 export async function computeHoursSelfViewView(
   client: PoolClient,
   input: { userId: string; requestedOrg: string | null },
@@ -125,14 +144,7 @@ export async function computeHoursSelfViewView(
   const org = await resolveOrg(client, input.userId, input.requestedOrg);
 
   if (!org) {
-    return {
-      status: "setup_required",
-      message: "Choose your team to view your own hours.",
-      steps: [
-        { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
-      ],
-      orgId: null,
-    };
+    return hoursSelfViewChooseTeamView();
   }
 
   const [entryResult, kioskResult, consentResult, presentResult] = await Promise.all([

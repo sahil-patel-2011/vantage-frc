@@ -115,6 +115,7 @@ function HoursShell({
   orgId,
   shell,
   error,
+  errorStatus,
   onRetry,
   children,
 }: {
@@ -122,6 +123,7 @@ function HoursShell({
   orgId?: string | null;
   shell: HoursSelfViewShellKind;
   error?: string;
+  errorStatus?: number | null;
   onRetry?: () => void;
   children?: ReactNode;
 }) {
@@ -150,7 +152,7 @@ function HoursShell({
           <SoftBlockSkeleton lines={4} />
         </div>
       ) : shell === "error" ? (
-        <ErrorState message={error ?? copy.description} onRetry={onRetry} />
+        <ErrorState message={error ?? copy.description} status={errorStatus} onRetry={onRetry} />
       ) : (
         <EmptyState
           soft
@@ -175,6 +177,7 @@ export default function HoursSelfViewClient() {
   const [view, setView] = useState<HoursSelfViewView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
@@ -199,6 +202,7 @@ export default function HoursSelfViewClient() {
       }
       setFetchFailed(false);
       setError("");
+      setErrorStatus(null);
       const query = new URLSearchParams();
       if (urlOrg) query.set("orgId", urlOrg);
       try {
@@ -215,6 +219,7 @@ export default function HoursSelfViewClient() {
           setFromCache(false);
           setCachedAt(null);
           setFetchFailed(true);
+          setErrorStatus(response.status);
           void clearFeatureSnapshot("hours-self-view", urlOrg || "_");
           if (urlOrg) void clearFeatureSnapshot("hours-self-view", urlOrg);
           return;
@@ -226,6 +231,7 @@ export default function HoursSelfViewClient() {
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
+            setErrorStatus(response.status);
           }
           return;
         }
@@ -256,6 +262,7 @@ export default function HoursSelfViewClient() {
   const shell = classifyHoursSelfViewShell({
     loading: view == null && !fetchFailed,
     fetchFailed,
+    failureStatus: errorStatus,
     status: view?.status ?? null,
     orgId,
     entryCount,
@@ -332,6 +339,7 @@ export default function HoursSelfViewClient() {
         orgId={orgId}
         shell="error"
         error={error || shellCopy.description}
+        errorStatus={errorStatus}
         onRetry={() => load()}
       >
         <OfflineBanner feature="My Hours" fromCache={fromCache} cachedAt={cachedAt} />

@@ -12,5 +12,7 @@ describe("My Hours last snapshot stays on the phone", () => {
     expect(src).toMatch(/"hours-self-view"/);
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
     expect(src).toMatch(/feature="My Hours"/);
+    expect(src).toMatch(/failureStatus: errorStatus/);
+    expect(src).toMatch(/status=\{errorStatus\}/);
   });
 });

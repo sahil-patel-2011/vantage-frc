@@ -43,12 +43,10 @@ for (const route of NO_ORG_ROUTES) {
     const choose = main.getByRole("link", { name: "Choose your team" });
     await expect(choose).toHaveAttribute("href", "/workspace");
     await choose.click();
-    // /workspace picks the team for real sessions. Under E2E_AUTH_FIXTURE there
-    // is no Better Auth session behind the cookie, so it bounces
-    // /workspace → /signin → /dashboard; what this asserts is that the link
-    // resolves and leaves the dead end, not which door the fixture ends at.
-    await expect(page).not.toHaveURL(new RegExp(`${route.path}$`));
-    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    // Fixture cookie is not Better Auth. /workspace must still open (empty join
+    // or the seeded team) instead of bouncing /signin → /dashboard.
+    await expect(page).toHaveURL(/\/workspace/);
+    await expect(page).not.toHaveURL(/signin/);
   });
 }
 

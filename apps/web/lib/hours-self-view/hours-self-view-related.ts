@@ -103,11 +103,13 @@ export function shouldShowHoursSelfViewSummaryTiles(entryCount: number): boolean
 export function classifyHoursSelfViewShell(input: {
   loading?: boolean;
   fetchFailed?: boolean;
+  failureStatus?: number | null;
   status?: "setup_required" | "live" | null;
   orgId?: string | null;
   entryCount?: number;
 }): HoursSelfViewShellKind {
   if (input.loading) return "loading";
+  if (input.failureStatus === 401 || input.failureStatus === 403) return "setup";
   if (input.fetchFailed) return "error";
   if (input.status === "setup_required" || !input.orgId) return "setup";
   if ((input.entryCount ?? 0) === 0) return "empty";

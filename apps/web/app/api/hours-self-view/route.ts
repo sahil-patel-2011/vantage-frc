@@ -1,11 +1,11 @@
-import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
-import { headers } from "next/headers";
+import { resolveRequestActor } from "../../../lib/auth/request-actor";
 import {
   computeHoursSelfViewView,
   clockSelfIn,
   clockSelfOut,
   deleteKioskSession,
+  hoursSelfViewChooseTeamView,
   recordBiometricConsent,
   registerKioskSession,
   setKioskLock,
@@ -54,35 +54,35 @@ function parseHoursSelfViewAction(value: string): HoursSelfViewAction | null {
 }
 
 export async function GET(request: Request) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  const actor = await resolveRequestActor();
+  if (!actor) {
+    return Response.json(hoursSelfViewChooseTeamView("Choose your team to view your own hours."), {
+      status: 200,
+    });
+  }
 
   const url = new URL(request.url);
   const requestedOrg = url.searchParams.get("orgId");
 
   try {
-    const view = await withRls({ userId: session.user.id }, (client) =>
-      computeHoursSelfViewView(client, { userId: session.user.id, requestedOrg }),
+    const view = await withRls({ userId: actor.userId }, (client) =>
+      computeHoursSelfViewView(client, { userId: actor.userId, requestedOrg }),
     );
     return Response.json(view);
   } catch {
-    return Response.json(
-      {
-        status: "setup_required",
-        message: "Could not load your hours. Choose your team.",
-        steps: [
-          { id: "workspace", label: "Choose your team", detail: "Choose which FRC team you are working as.", href: "/workspace" },
-        ],
-        orgId: null,
-      } satisfies HoursSelfViewView,
-      { status: 200 },
-    );
+    return Response.json(hoursSelfViewChooseTeamView("Could not load your hours. Choose your team."), {
+      status: 200,
+    });
   }
 }
 
 export async function POST(request: Request) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  const actor = await resolveRequestActor();
+  if (!actor) {
+    return Response.json(hoursSelfViewChooseTeamView("Choose your team before clocking in."), {
+      status: 200,
+    });
+  }
 
   let body: Record<string, unknown>;
   try {
@@ -95,7 +95,7 @@ export async function POST(request: Request) {
   const action = typeof body.action === "string" ? body.action : "";
   if (!orgId) return Response.json({ error: "orgId is required" }, { status: 400 });
 
-  const userId = session.user.id;
+  const userId = actor.userId;
 
   try {
     const view = await withRls({ userId, orgId }, async (client) => {

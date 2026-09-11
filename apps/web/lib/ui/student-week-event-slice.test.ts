@@ -69,6 +69,7 @@ describe("student-week Event day / Hours / Pick desk slice", () => {
     const client = readFileSync(join(WEB, "app/hours-self-view/hours-self-view-client.tsx"), "utf8");
     expect(client).toMatch(/action: "clock_in"/);
     expect(client).toMatch(/action: "clock_out"/);
+    expect(client).toMatch(/failureStatus: errorStatus/);
     expect(client).not.toMatch(/hour_logs/);
     expect(client).not.toMatch(/Open Attendance/);
   });

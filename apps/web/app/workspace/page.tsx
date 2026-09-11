@@ -1,9 +1,10 @@
 ﻿import { Button } from "../../components/ui";
-import { assertOrgAuthentication, auth } from "@vantage/core";
+import { assertOrgAuthentication } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
+import { isE2eFixtureCookie, resolveRequestActor } from "../../lib/auth/request-actor";
 import { loadDataSourceHealth } from "../../lib/reference-health";
 import {
   classifyWorkspaceShell,
@@ -25,21 +26,61 @@ export const metadata = {
 // Session-gated server page: never prerendered, so a credential-free build works.
 export const dynamic = "force-dynamic";
 
+function WorkspaceEmptyJoin() {
+  const copy = workspaceShellCopy("empty");
+  const actions = workspaceJoinNextActions("empty");
+  const primary = actions.find((action) => action.primary) ?? actions[0];
+  return (
+    <main className="onboarding-page invite-flow-page">
+      <section className="onboarding-card invite-flow-card" aria-labelledby="workspace-join-title">
+        <header className="invite-flow-header">
+          <div className="onboarding-brand">
+            <VantageLogo />
+          </div>
+          <h1 id="workspace-join-title">{copy.title}</h1>
+          <p className="onboarding-sub">{copy.description}</p>
+        </header>
+        {primary ? (
+          <p className="invite-primary-cta">
+            <Button as="a" variant="primary" href={primary.href}>
+              {primary.label}
+            </Button>
+          </p>
+        ) : null}
+        <ul className="workspace-quiet-links">
+          {actions
+            .filter((action) => action.id !== primary?.id)
+            .map((action) => (
+              <li key={action.id}>
+                <a href={action.href}>{action.label}</a>
+                <span>{action.detail}</span>
+              </li>
+            ))}
+        </ul>
+      </section>
+    </main>
+  );
+}
+
 export default async function WorkspacePage({ searchParams }: { searchParams: Promise<{ orgId?: string }> }) {
   const { orgId: orgIdParam } = await searchParams;
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) redirect("/signin?next=%2Fworkspace");
+  const cookieHeader = (await headers()).get("cookie");
+  const actor = await resolveRequestActor();
+  if (!actor) {
+    if (isE2eFixtureCookie(cookieHeader)) return <WorkspaceEmptyJoin />;
+    redirect("/signin?next=%2Fworkspace");
+  }
 
   const orgId = orgIdParam ?? null;
   if (!orgId) {
-    const memberships = await withRls({ userId: session.user.id }, async (client) =>
+    const memberships = await withRls({ userId: actor.userId }, async (client) =>
       client.query<{ orgId: string; orgName: string; teamNumber: number | null }>(
         `SELECT m.org_id AS "orgId", o.name AS "orgName", o.team_number AS "teamNumber"
          FROM memberships m
          JOIN organizations o ON o.id = m.org_id
          WHERE m.user_id = $1
          ORDER BY o.name`,
-        [session.user.id],
+        [actor.userId],
       ),
     );
     const options = realWorkspaceMemberships(memberships.rows);
@@ -50,39 +91,7 @@ export default async function WorkspacePage({ searchParams }: { searchParams: Pr
     }
 
     if (shell === "empty") {
-      const copy = workspaceShellCopy("empty");
-      const actions = workspaceJoinNextActions("empty");
-      const primary = actions.find((a) => a.primary) ?? actions[0];
-      return (
-        <main className="onboarding-page invite-flow-page">
-          <section className="onboarding-card invite-flow-card" aria-labelledby="workspace-join-title">
-            <header className="invite-flow-header">
-              <div className="onboarding-brand">
-                <VantageLogo />
-              </div>
-              <h1 id="workspace-join-title">{copy.title}</h1>
-              <p className="onboarding-sub">{copy.description}</p>
-            </header>
-            {primary ? (
-              <p className="invite-primary-cta">
-                <Button as="a" variant="primary" href={primary.href}>
-                  {primary.label}
-                </Button>
-              </p>
-            ) : null}
-            <ul className="workspace-quiet-links">
-              {actions
-                .filter((a) => a.id !== primary?.id)
-                .map((action) => (
-                  <li key={action.id}>
-                    <a href={action.href}>{action.label}</a>
-                    <span>{action.detail}</span>
-                  </li>
-                ))}
-            </ul>
-          </section>
-        </main>
-      );
+      return <WorkspaceEmptyJoin />;
     }
 
     const copy = workspaceShellCopy("select");
@@ -117,26 +126,26 @@ export default async function WorkspacePage({ searchParams }: { searchParams: Pr
     );
   }
 
-  const data = await withRls({ userId: session.user.id, orgId }, async (client) => {
+  const data = await withRls({ userId: actor.userId, orgId }, async (client) => {
     const membership = await client.query<{ role: string }>(
       "SELECT role FROM memberships WHERE org_id=$1 AND user_id=$2",
-      [orgId, session.user.id],
+      [orgId, actor.userId],
     );
     if (!membership.rows[0]) throw new Error("Organization access denied");
-    try {
-      await assertOrgAuthentication(client, {
-        userId: session.user.id,
-        orgId,
-        sessionId: session.session.id,
-        authMethod: String(
-          (session.session as typeof session.session & { authMethod?: string }).authMethod ?? "unknown",
-        ),
-        rememberedDeviceToken: (await cookies()).get("vantage_mfa_device")?.value,
-      });
-    } catch {
-      redirect(
-        `/security?orgId=${encodeURIComponent(orgId)}&stepup=1&returnTo=${encodeURIComponent(`/workspace?orgId=${orgId}`)}`,
-      );
+    if (actor.sessionId) {
+      try {
+        await assertOrgAuthentication(client, {
+          userId: actor.userId,
+          orgId,
+          sessionId: actor.sessionId,
+          authMethod: actor.authMethod,
+          rememberedDeviceToken: (await cookies()).get("vantage_mfa_device")?.value,
+        });
+      } catch {
+        redirect(
+          `/security?orgId=${encodeURIComponent(orgId)}&stepup=1&returnTo=${encodeURIComponent(`/workspace?orgId=${orgId}`)}`,
+        );
+      }
     }
     const context = await client.query<{ eventKey: string | null; eventName: string | null }>(
       `SELECT c.active_event_key AS "eventKey", e.name AS "eventName"
@@ -186,7 +195,7 @@ export default async function WorkspacePage({ searchParams }: { searchParams: Pr
         </a>
         <SyncIndicator />
         <span>
-          {session.user.name} · {data.role}
+          {actor.name} · {data.role}
         </span>
       </header>
       <section className={`active-event ${data.context.eventKey ? "" : "inactive"}`}>

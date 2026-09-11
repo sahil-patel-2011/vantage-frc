@@ -1,7 +1,6 @@
 import type { PoolClient } from "@neondatabase/serverless";
-import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
-import { headers } from "next/headers";
+import { resolveRequestActor } from "../../../lib/auth/request-actor";
 import {
   parseBuildHoursAction,
   type BuildHoursView,
@@ -29,10 +28,10 @@ class HttpError extends Error {
   }
 }
 
-async function requireSession() {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) throw new HttpError(401, "Authentication required");
-  return session;
+async function requireActor() {
+  const actor = await resolveRequestActor();
+  if (!actor) throw new HttpError(401, "Authentication required");
+  return actor;
 }
 
 async function membershipRole(client: PoolClient, orgId: string, userId: string) {
@@ -51,13 +50,22 @@ function fail(error: unknown) {
   return Response.json({ error: error instanceof Error ? error.message : "Hours request failed" }, { status });
 }
 
+function hoursChooseTeamView(): BuildHoursView {
+  return {
+    status: "setup_required",
+    message: "Choose your team to track build hours.",
+    context: { orgId: null, orgName: null, teamNumber: null, role: null, userId: null },
+  };
+}
+
 export async function GET(request: Request) {
   try {
-    const session = await requireSession();
+    const actor = await resolveRequestActor();
+    if (!actor) return Response.json(hoursChooseTeamView());
     const url = new URL(request.url);
     const requestedOrg = url.searchParams.get("orgId");
 
-    const view = await withRls({ userId: session.user.id }, async (client) => {
+    const view = await withRls({ userId: actor.userId }, async (client) => {
       const membership = await client.query<{
         orgId: string;
         orgName: string;
@@ -70,7 +78,7 @@ export async function GET(request: Request) {
          WHERE m.user_id = $1 AND ($2::uuid IS NULL OR m.org_id = $2::uuid)
          ORDER BY CASE m.role WHEN 'owner' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END, o.team_number
          LIMIT 1`,
-        [session.user.id, requestedOrg],
+        [actor.userId, requestedOrg],
       );
 
       const row = membership.rows[0];
@@ -78,7 +86,7 @@ export async function GET(request: Request) {
         return {
           status: "setup_required",
           message: "Choose your team to track build hours.",
-          context: { orgId: null, orgName: null, teamNumber: null, role: null, userId: session.user.id },
+          context: { orgId: null, orgName: null, teamNumber: null, role: null, userId: actor.userId },
         } satisfies BuildHoursView;
       }
 
@@ -121,7 +129,7 @@ export async function GET(request: Request) {
           orgName: row.orgName,
           teamNumber: row.teamNumber,
           role: row.role,
-          userId: session.user.id,
+          userId: actor.userId,
         },
         records: records.rows,
         policy: policyRows.rows[0] ?? { seasonGoalHours: 0, seasonStart: null },
@@ -137,9 +145,9 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const session = await requireSession();
+    const actor = await requireActor();
     const body = await request.json();
-    const userId = session.user.id;
+    const userId = actor.userId;
 
     if (isEnrollScanBody(body)) {
       const enroll = parseEnrollScanAction(body);
