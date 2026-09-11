@@ -94,7 +94,13 @@ async function fetchSessionCookie(
 export async function signInAs(context: BrowserContext, role: FixtureRole): Promise<boolean> {
   const { email, password } = fixtureAccount(role);
   if (!cookieCache.has(email)) {
-    cookieCache.set(email, await fetchSessionCookie(context, email, password));
+    try {
+      cookieCache.set(email, await fetchSessionCookie(context, email, password));
+    } catch {
+      // Next crashed or is still booting. Do not cache the miss — the next
+      // test can retry, and callers still fall back to the fixture cookie.
+      return false;
+    }
   }
   const value = cookieCache.get(email) ?? null;
   if (!value) return false;

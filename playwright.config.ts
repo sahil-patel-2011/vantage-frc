@@ -53,19 +53,24 @@ function liveNextDevLock(): { origin: string; port: number } | null {
   }
 }
 
+const explicitBase = process.env.PLAYWRIGHT_BASE_URL?.replace(/\/$/, "") || "";
 const lock = liveNextDevLock();
-const attachOrigin = process.env.PLAYWRIGHT_BASE_URL?.replace(/\/$/, "") || lock?.origin || null;
-const origin = attachOrigin ?? playwrightOrigin();
+const origin = explicitBase || lock?.origin || playwrightOrigin();
 const port = lock?.port ?? playwrightPort();
 const hostname = cookieDomain(origin);
-const startWebServer = !attachOrigin;
+// A live lock only tells us which port to reuse. Skipping webServer entirely
+// meant a crashed leftover `next dev` took the rest of the suite with it.
+const startWebServer = !explicitBase;
 
 // session.ts reads PLAYWRIGHT_BASE_URL for the fixture cookie URL.
 process.env.PLAYWRIGHT_BASE_URL = origin;
 
-if (attachOrigin) {
+if (explicitBase) {
   // eslint-disable-next-line no-console
-  console.log(`Playwright attaching to ${origin} (no webServer)`);
+  console.log(`Playwright attaching to ${origin} (PLAYWRIGHT_BASE_URL, no webServer)`);
+} else if (lock) {
+  // eslint-disable-next-line no-console
+  console.log(`Playwright reusing ${origin} via webServer.reuseExistingServer`);
 }
 
 export default defineConfig({
