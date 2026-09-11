@@ -10,7 +10,7 @@ import {
   SoftBlockSkeleton,
   StatTile,
 } from "../../components/ui";
-import { hubWorkbenchHref } from "../../lib/nav/hubs";
+import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import type { LiveView } from "./print-farm-model";
 
@@ -41,15 +41,15 @@ function farmShellBody({
   switch (kind) {
     case "loading":
       return (
-        <div aria-busy="true" aria-label="Loading the Print Farm">
+        <div aria-busy="true" aria-label="Loading the print farm">
           <SoftBlockSkeleton lines={4} />
         </div>
       );
     case "error":
       return (
         <ErrorState
-          title="Could not load the Print Farm"
-          message={error ?? "Could not load the Print Farm."}
+          title="Could not load the print farm"
+          message={error ?? "Could not load the print farm."}
           onRetry={onRetry}
         />
       );
@@ -57,7 +57,7 @@ function farmShellBody({
       return (
         <EmptyState
           soft
-          badge="Setup"
+          badge="Needs setup"
           badgeTone="setup"
           title="Choose your team"
           description={description}
@@ -96,12 +96,24 @@ export function FarmShell({
         breadcrumbs={
           <>
             <a href={buildHref}>Build</a>
-            {" / Print Farm"}
+            {" / Print farm"}
           </>
         }
-        title="3D Print Farm"
+        title="Print farm"
         description={description}
-      />
+      >
+        <nav className="product-hub-related" aria-label="Related build tools">
+          <Button as="a" variant="secondary" href={hubHref("/build", "cad", orgId)}>
+            CAD
+          </Button>
+          <Button as="a" variant="secondary" href={withOrgHref("/files", orgId)}>
+            Files
+          </Button>
+          <Button as="a" variant="secondary" href={withOrgHref("/inventory", orgId)}>
+            Inventory
+          </Button>
+        </nav>
+      </PageHeader>
       {children}
       {farmShellBody({ kind, description, orgId, error, onRetry })}
       <NonGoalsNote />
@@ -123,12 +135,24 @@ export function PrintFarmReadyHeader({
         breadcrumbs={
           <>
             <a href={buildHref}>Build</a>
-            {" / Print Farm"}
+            {" / Print farm"}
           </>
         }
-        title="3D Print Farm"
+        title="Print farm"
         description="Queue prints, report printer status, and track filament by hand — nothing here is live machine data."
-      />
+      >
+        <nav className="product-hub-related" aria-label="Related build tools">
+          <Button as="a" variant="secondary" href={hubHref("/build", "cad", orgId)}>
+            CAD
+          </Button>
+          <Button as="a" variant="secondary" href={withOrgHref("/files", orgId)}>
+            Files
+          </Button>
+          <Button as="a" variant="secondary" href={withOrgHref("/inventory", orgId)}>
+            Inventory
+          </Button>
+        </nav>
+      </PageHeader>
       {error ? (
         <p className="telemetry-status" role="alert">
           {error}

@@ -121,20 +121,27 @@ export function isAiBudgetsIncompleteSetup(policy: AiBudgetsPolicySnapshot): boo
   return policy.modelAllowlistEnabled || policy.providerAllowlistEnabled;
 }
 
-/** Real spend lines only — blank until load succeeds; never DEMO $. */
+/** Real spend lines only — blank until a ledger value exists; never invent $0.00. */
 export function formatAiBudgetsMoney(value: unknown, loaded: boolean): string {
   if (!loaded) return "…";
-  const n = Number(value ?? 0);
-  if (!Number.isFinite(n) || n < 0) return "$0.00";
+  if (value == null || value === "") return "—";
+  const n = Number(value);
+  if (!Number.isFinite(n) || n < 0) return "—";
   return `$${n.toFixed(2)}`;
 }
 
-/** Real token / call counts only — never invent DEMO totals. */
+/** Real token / call counts only — blank until a ledger value exists. */
 export function formatAiBudgetsCount(value: unknown, loaded: boolean): string {
   if (!loaded) return "…";
-  const n = Number(value ?? 0);
-  if (!Number.isFinite(n) || n < 0) return "0";
+  if (value == null || value === "") return "—";
+  const n = Number(value);
+  if (!Number.isFinite(n) || n < 0) return "—";
   return Math.floor(n).toLocaleString();
+}
+
+/** Hide $0 tiles until a real Chat limits / usage ledger is ready. */
+export function shouldShowAiBudgetsSummaryTiles(shell: AiBudgetsShellKind): boolean {
+  return shell === "ready";
 }
 
 export function policySnapshotFromBudgetForm(input: {
@@ -225,7 +232,7 @@ export function aiBudgetsShellCopy(kind: AiBudgetsShellKind): AiBudgetsEmptyCopy
     case "setup":
       return {
         kind,
-        badge: "Setup",
+        badge: "Needs setup",
         title: "Finish Chat limits",
         description:
           "Add a spend limit next to any model list. Chat, Pricing, and Account stay one hop away.",
@@ -422,7 +429,7 @@ export function aiUsageShellCopy(kind: AiBudgetsShellKind): AiBudgetsEmptyCopy {
     case "setup":
       return {
         kind,
-        badge: "Setup",
+        badge: "Needs setup",
         title: "Choose your team and plan",
         description:
           "Usage needs a team on a plan. Choose your team, then send a Chat message to record the first call.",

@@ -45,7 +45,7 @@ export default async function ScoutDataImpactPage({
         </PageHeader>
         <EmptyState
           soft
-          badge="Setup required"
+          badge="Needs setup"
           badgeTone="setup"
           title={copy.title}
           description={copy.description}

@@ -194,6 +194,7 @@ export type OfflineFeature =
   | "hours-kiosk"
   | "hub-access"
   | "incident-heatmap"
+  | "knowledge"
   | "knowledge-drafts"
   | "leadership"
   | "media-library"

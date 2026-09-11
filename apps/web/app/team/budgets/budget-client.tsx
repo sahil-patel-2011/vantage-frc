@@ -14,6 +14,7 @@ import {
   formatAiBudgetsCount,
   formatAiBudgetsMoney,
   policySnapshotFromBudgetForm,
+  shouldShowAiBudgetsSummaryTiles,
   type AiBudgetsShellKind,
 } from "../../../lib/billing/ai-budgets-related";
 import { buildUsageCutoffSnapshot } from "../../../lib/billing/usage-cutoff";
@@ -349,6 +350,7 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
 
           {snapshot ? <UsageCutoffBanner orgId={orgId} snapshot={snapshot} /> : null}
 
+          {shouldShowAiBudgetsSummaryTiles(shell) ? (
           <section className="metric-grid" aria-label="Usage snapshot">
             <article>
               <span>Spend today</span>
@@ -363,7 +365,7 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
               <strong>{allowanceLabel}</strong>
             </article>
             <article>
-              <span>Usage Credits</span>
+              <span>Credits</span>
               <strong>{formatAiBudgetsMoney(cutoff?.walletBalanceUsd, metricsLoaded)}</strong>
             </article>
             <article>
@@ -377,9 +379,10 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
               </strong>
             </article>
           </section>
+          ) : null}
 
-          <section className="intel-panel budget-cutoff-panel" aria-label="Hard cut-off options">
-            <span className="eyebrow">Hard cut-offs</span>
+          <section className="intel-panel budget-cutoff-panel" aria-label="When hosted Chat runs out">
+            <span className="eyebrow">When hosted Chat runs out</span>
             <h2 style={{ margin: "4px 0 8px", fontSize: 18 }}>After hosted AI runs out</h2>
             <p className="app-muted" style={{ marginTop: 0 }}>
               Plan{cutoff?.planCode ? ` (${cutoff.planCode})` : ""} hosted Chat stops at 100%. Resume with credits,

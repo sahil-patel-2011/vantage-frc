@@ -452,4 +452,46 @@ describe("user-facing copy", () => {
     },
     60_000,
   );
+
+  it(
+    "student-week boards do not print Setup required, VANTAGE /, or TBA/Statbotics",
+    () => {
+      const studentWeek = [
+        "lib/scouting/scouting-related.ts",
+        "app/scouting/scouting-chrome.tsx",
+        "lib/strategy/strategy-related.ts",
+        "app/strategy/strategy-chrome.tsx",
+        "lib/strategy/pick-desk-related.ts",
+        "lib/command/event-day-related.ts",
+        "app/command/command-chrome.tsx",
+        "lib/ai-chat/ai-chat-related.ts",
+        "app/chat/chat-client.tsx",
+        "app/business/business-client.tsx",
+        "app/cad/setup/page.tsx",
+      ] as const;
+      const rules: readonly Rule[] = [
+        {
+          label: "Setup required",
+          pattern: /Setup required/,
+          why: 'student-week boards say "Needs setup"',
+        },
+        {
+          label: "VANTAGE /",
+          pattern: /VANTAGE \//,
+          why: "student-week chrome does not print the mill prefix",
+        },
+        {
+          label: "TBA/Statbotics",
+          pattern: /TBA\/Statbotics/,
+          why: "student-week boards say synced event numbers, not TBA/Statbotics",
+        },
+      ];
+      const findings = studentWeek.flatMap((rel) => scan(join(WEB_ROOT, rel), rules));
+      const report = findings
+        .map((f) => `apps/web/${f.file}:${f.line}  [${f.label}] ${f.why}\n    ${f.text}`)
+        .join("\n");
+      expect(report, `\n${findings.length} leftover phrase(s) on student-week boards:\n${report}\n`).toBe("");
+    },
+    60_000,
+  );
 });

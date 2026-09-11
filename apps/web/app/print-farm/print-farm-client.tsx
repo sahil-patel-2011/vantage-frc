@@ -1,6 +1,6 @@
 "use client";
 
-// 3D Print Farm — deliberately small, honest, and MANUAL.
+// Print farm — deliberately small, honest, and MANUAL.
 // Non-goals (also stated in migration 0473): no slicer integration, no G-code upload,
 // no printer telemetry, no OctoPrint/Bambu/Prusa API. Printer status is human-reported
 // and always shown with how long ago it was reported. Every derived number (ETA, bias,
@@ -91,7 +91,7 @@ export default function PrintFarmClient() {
         if (!response.ok || !isPrintFarmView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Print Farm. Showing the last copy on this device.");
+            setError("Could not refresh the print farm. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -105,7 +105,7 @@ export default function PrintFarmClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Print Farm. Showing the last copy on this device.");
+          setError("Could not refresh the print farm. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -149,7 +149,7 @@ export default function PrintFarmClient() {
   );
 
   const banner = (
-    <OfflineBanner feature="Print Farm" fromCache={fromCache} cachedAt={cachedAt} />
+    <OfflineBanner feature="Print farm" fromCache={fromCache} cachedAt={cachedAt} />
   );
 
   if (!view) {
@@ -159,7 +159,7 @@ export default function PrintFarmClient() {
           description="Queue prints, report printer status, and track filament by hand."
           orgId={orgId}
           kind="error"
-          error="Could not load the Print Farm."
+          error="Could not load the print farm."
           onRetry={() => load()}
         >
           {banner}

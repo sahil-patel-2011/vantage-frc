@@ -295,7 +295,13 @@ export default function InspectionClient() {
           </div>
         </header>
         <OfflineBanner feature="Inspection" fromCache={fromCache} cachedAt={cachedAt} />
-        <EmptyState className="insp-empty" title="Choose your team" description={view.message}>
+        <EmptyState
+          className="insp-empty"
+          badge="Needs setup"
+          badgeTone="setup"
+          title="Choose your team"
+          description={view.message}
+        >
           <Button as="a" variant="primary" href="/workspace">
             Choose your team
           </Button>
@@ -341,7 +347,7 @@ export default function InspectionClient() {
               Weigh-in
             </Button>
             <Button as="a" variant="secondary" href={withOrgHref("/inspection-copilot", orgId || null)}>
-              Inspection copilot
+              Inspection
             </Button>
           </nav>
         </div>

@@ -14,8 +14,13 @@ export type WhatsNewRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — Support · Pricing · Inbox. */
-export const WHATS_NEW_RELATED_INCLUDE: WhatsNewRelatedId[] = ["support", "pricing", "inbox"];
+/** Focused Soft-UI strip — Support · Pricing · Inbox · Prefs. */
+export const WHATS_NEW_RELATED_INCLUDE: WhatsNewRelatedId[] = [
+  "support",
+  "pricing",
+  "inbox",
+  "preferences",
+];
 
 /** Cross-links for What’s new Soft-UI (never DEMO release cards). */
 export function whatsNewRelatedLinks(options?: {
@@ -49,33 +54,7 @@ export function whatsNewNextActions(input: {
   const actions: WhatsNewNextAction[] = [];
 
   if (input.releaseCount === 0) {
-    actions.push({
-      id: "empty",
-      label: "No published releases yet",
-      detail:
-        "This feed stays blank until Vantage publishes a release that matches your team’s plan.",
-      href: "/whats-new",
-      primary: true,
-    });
-    actions.push({
-      id: "pricing",
-      label: "Compare plans on Pricing",
-      detail: "Some notes target paid or Max entitlements — check which unlocks apply to your team.",
-      href: "/pricing",
-    });
-    actions.push({
-      id: "support",
-      label: "Ask Help & Support",
-      detail: "If a published unlock is missing from this list, open a ticket instead of inventing history.",
-      href: "/support",
-    });
-    actions.push({
-      id: "preferences",
-      label: "Tune release emails",
-      detail: "Choose inbox vs email delivery for product updates when the next real note ships.",
-      href: "/notifications/preferences",
-    });
-    return actions;
+    return [];
   }
 
   if ((input.unreadCount ?? 0) > 0) {

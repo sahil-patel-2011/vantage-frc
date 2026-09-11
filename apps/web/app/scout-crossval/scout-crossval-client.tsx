@@ -163,7 +163,7 @@ function ScoutCrossvalShell({
           soft
           badge={
             shell === "setup"
-              ? "Setup required"
+              ? "Needs setup"
               : shell === "empty"
                 ? "No entries yet"
                 : copy.badge

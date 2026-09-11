@@ -13,6 +13,7 @@ import {
   formatAiBudgetsCount,
   formatAiBudgetsMoney,
   isAiBudgetsDefault,
+  shouldShowAiBudgetsSummaryTiles,
   isAiBudgetsIncompleteSetup,
   policySnapshotFromBudgetForm,
   type AiBudgetsPolicySnapshot,
@@ -171,11 +172,20 @@ describe("classifyAiUsageShell + next actions", () => {
 });
 
 describe("formatAiBudgetsMoney + scope cards", () => {
-  it("formats only real spend", () => {
+  it("formats only real spend and stays blank when the ledger is missing", () => {
     expect(formatAiBudgetsMoney(null, false)).toBe("…");
+    expect(formatAiBudgetsMoney(null, true)).toBe("—");
+    expect(formatAiBudgetsMoney("", true)).toBe("—");
     expect(formatAiBudgetsMoney("12.5", true)).toBe("$12.50");
+    expect(formatAiBudgetsMoney(0, true)).toBe("$0.00");
     expect(formatAiBudgetsCount("4", true)).toBe("4");
     expect(formatAiBudgetsCount(null, false)).toBe("…");
+    expect(formatAiBudgetsCount(null, true)).toBe("—");
+    expect(shouldShowAiBudgetsSummaryTiles("empty")).toBe(false);
+    expect(shouldShowAiBudgetsSummaryTiles("setup")).toBe(false);
+    expect(shouldShowAiBudgetsSummaryTiles("ready")).toBe(true);
+    expect(aiBudgetsShellCopy("setup").badge).toBe("Needs setup");
+    expect(aiUsageShellCopy("setup").badge).toBe("Needs setup");
   });
 
   it("clarifies ownership without DEMO", () => {

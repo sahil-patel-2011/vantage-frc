@@ -9,7 +9,7 @@ test.beforeEach(async ({ context }) => {
 
 test("Print Farm still loads after the panel split", async ({ page }) => {
   await page.goto("/print-farm");
-  await expect(page.getByRole("heading", { level: 1, name: "3D Print Farm" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Print farm" })).toBeVisible();
   await expect(page.locator("body")).not.toContainText("Application error");
 
   const islandTeam = page.getByTestId("soft-island").getByRole("link", { name: "Team", exact: true });
@@ -18,13 +18,13 @@ test("Print Farm still loads after the panel split", async ({ page }) => {
     const orgId = href ? new URL(href, page.url()).searchParams.get("orgId") : null;
     if (orgId) {
       await page.goto(`/print-farm?orgId=${encodeURIComponent(orgId)}`);
-      await expect(page.getByRole("heading", { level: 1, name: "3D Print Farm" })).toBeVisible();
+      await expect(page.getByRole("heading", { level: 1, name: "Print farm" })).toBeVisible();
     }
   }
 
   const queue = page.getByRole("heading", { name: "Queue a print", exact: true });
   const setup = page.getByRole("heading", { name: /Choose your team|Choose your team/i });
-  const unavailable = page.getByRole("heading", { name: /Could not load the Print Farm/i });
+  const unavailable = page.getByRole("heading", { name: /Could not load the print farm/i });
   if (!(await expectHubReadyOrGate(page, queue, setup.or(unavailable)))) {
     await expect(page.getByRole("tab")).toHaveCount(0);
     if (await setup.isVisible()) {

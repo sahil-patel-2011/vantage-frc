@@ -278,7 +278,7 @@ export default function FilesClient() {
         await load();
         return true;
       } catch {
-        setNotice("Could not reach Vantage. Check your connection and try again.");
+        setNotice("Could not reach Files. Check your connection and try again.");
         return false;
       }
     },

@@ -90,7 +90,11 @@ export function Body(props: BodyProps) {
   }
   if (listing.status === "setup_required") {
     return (
-      <EmptyState badge="Setup" badgeTone="setup" title="Files needs a database" description={listing.reason} />
+      <EmptyState badge="Needs setup" badgeTone="setup" title="Choose your team" description={listing.reason}>
+        <Button as="a" variant="primary" href="/workspace">
+          Choose your team
+        </Button>
+      </EmptyState>
     );
   }
   if (listing.status === "error") {
@@ -197,7 +201,7 @@ export function Body(props: BodyProps) {
           <NewFolderButton onCreate={props.onCreateFolder} />
           <span className="app-muted drive-usage">
             {listing.usage.fileCount} file{listing.usage.fileCount === 1 ? "" : "s"} ·{" "}
-            {formatDriveBytes(listing.usage.dbBytes)} in Vantage
+            {formatDriveBytes(listing.usage.dbBytes)} stored here
             {listing.usage.nodeBytes > 0
               ? ` · ${formatDriveBytes(listing.usage.nodeBytes)} on your storage node`
               : ""}

@@ -31,6 +31,7 @@ export {
   searchKnowledgeCorpus,
 } from "./compute-wiki";
 export {
+  KNOWLEDGE_RELATED_INCLUDE,
   KNOWLEDGE_RELATED_LINKS,
   knowledgeRelatedLinks,
   knowledgeSetupNextActions,

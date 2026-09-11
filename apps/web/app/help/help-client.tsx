@@ -79,19 +79,22 @@ export default function HelpClient({ sectionGuide }: HelpClientProps = {}) {
         description={
           hasGuide
             ? "Two views of the same manual: searchable how-to articles, and a section-by-section walk of every hub."
-            : "Searchable how-to articles for every hub — getting started, scouting, AI keys, billing, and admin. Also available from Cmd+K."
+            : "Searchable how-to articles for every hub — getting started, scouting, AI keys, and Chat limits. Also available from Cmd+K."
         }
       >
-        <div className="help-header-actions">
+        <nav className="product-hub-related" aria-label="Related account tools">
+          <Button as="a" variant="secondary" href="/whats-new">
+            What’s new
+          </Button>
+          <Button as="a" variant="secondary" href="/support">
+            Support tickets
+          </Button>
           {!hasGuide ? (
             <Button as="a" variant="secondary" href="/docs?view=sections">
               Section-by-section guide
             </Button>
           ) : null}
-          <Button as="a" variant="secondary" href="/support">
-            Support tickets
-          </Button>
-        </div>
+        </nav>
       </PageHeader>
 
       {hasGuide ? (

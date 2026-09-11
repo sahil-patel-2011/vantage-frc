@@ -204,6 +204,7 @@ const SHELL_ROUTES = [
   "/goals-tracker",
   "/hours/kiosk",
   "/incident-heatmap",
+  "/team/knowledge",
   "/knowledge-drafts",
   "/leadership",
   "/media-library",

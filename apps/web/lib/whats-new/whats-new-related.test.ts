@@ -6,12 +6,11 @@ import {
   whatsNewNextActions,
   whatsNewRelatedLinks,
 } from "./whats-new-related";
-import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("whatsNewRelatedLinks", () => {
   it("includes Support and Pricing by default focus strip", () => {
-    const links = whatsNewRelatedLinks({ include: ["support", "pricing", "inbox"] });
-    expect(links.map((l) => l.id)).toEqual(["support", "pricing", "inbox"]);
+    const links = whatsNewRelatedLinks({ include: ["support", "pricing", "inbox", "preferences"] });
+    expect(links.map((l) => l.id)).toEqual(["support", "pricing", "inbox", "preferences"]);
     expect(links.find((l) => l.id === "support")?.href).toBe("/support");
     expect(links.find((l) => l.id === "pricing")?.href).toBe("/pricing");
   });
@@ -26,12 +25,7 @@ describe("whatsNewRelatedLinks", () => {
 describe("whatsNewNextActions", () => {
   it("keeps empty feed empty — never DEMO release history", () => {
     const actions = whatsNewNextActions({ releaseCount: 0 });
-    expect(actions[0]?.id).toBe("empty");
-    expect(actions[0]?.primary).toBe(true);
-    expectPlainCopy(actions[0]?.detail.toLowerCase());
-    expect(actions.some((a) => a.id === "pricing")).toBe(true);
-    expect(actions.some((a) => a.id === "support")).toBe(true);
-    expect(actions.every((a) => !/demo/i.test(a.label))).toBe(true);
+    expect(actions).toEqual([]);
   });
 
   it("prioritizes unread releases when real rows exist", () => {

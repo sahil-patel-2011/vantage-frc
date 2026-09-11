@@ -119,7 +119,7 @@ describe("scoutAccuracyShellCopy", () => {
       expect(copy.title).not.toMatch(/\bDEMO\b/);
     }
     expectPlainCopy(scoutAccuracyShellCopy("empty").description);
-    expect(scoutAccuracyShellCopy("setup").badge).toBe("Setup required");
+    expect(scoutAccuracyShellCopy("setup").badge).toBe("Needs setup");
   });
 });
 

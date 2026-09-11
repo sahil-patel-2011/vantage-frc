@@ -105,7 +105,7 @@ export function inspectionCopilotShellCopy(kind: InspectionCopilotShellKind): In
     case "loading":
       return {
         kind,
-        title: "Loading inspection copilot…",
+        title: "Loading inspection…",
         description:
           "Checking which team you are on and logged readiness checks.",
       };
@@ -113,7 +113,7 @@ export function inspectionCopilotShellCopy(kind: InspectionCopilotShellKind): In
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load the inspection copilot",
+        title: "Could not load inspection",
         description:
           "A network or server issue blocked readiness checks. Retry, or open Batteries / FMEA / Weigh-in while it reloads.",
       };

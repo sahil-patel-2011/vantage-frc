@@ -163,7 +163,7 @@ function ScoutCoverageLiveShell({
           soft
           badge={
             shell === "setup"
-              ? "Setup required"
+              ? "Needs setup"
               : shell === "empty"
                 ? "No schedule yet"
                 : copy.badge

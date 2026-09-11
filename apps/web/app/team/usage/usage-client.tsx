@@ -12,6 +12,7 @@ import {
   classifyAiUsageShell,
   formatAiBudgetsCount,
   formatAiBudgetsMoney,
+  shouldShowAiBudgetsSummaryTiles,
   type AiBudgetsShellKind,
 } from "../../../lib/billing/ai-budgets-related";
 import { buildUsageCutoffSnapshot } from "../../../lib/billing/usage-cutoff";
@@ -84,7 +85,7 @@ type DenialsData = {
 };
 
 const KEY_SOURCE_LABELS: Record<string, string> = {
-  platform: "Hosted by Vantage",
+  platform: "Hosted",
   byo: "Your own key",
   local: "Local",
   local_cli: "Local CLI",
@@ -399,7 +400,7 @@ export default function UsageClient({ orgId }: { orgId: string }) {
 
           {cutoffSnapshot ? <UsageCutoffBanner orgId={orgId} snapshot={cutoffSnapshot} /> : null}
 
-          {activity ? (
+          {shouldShowAiBudgetsSummaryTiles(shell) && activity ? (
             <section className="metric-grid">
               <article>
                 <span>Calls · last {windowDays}d</span>
