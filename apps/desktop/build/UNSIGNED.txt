@@ -1,7 +1,7 @@
 This Vantage installer is unsigned.
 
-Windows SmartScreen and macOS Gatekeeper will warn until an Authenticode
-certificate (Windows) and Apple Developer ID + notarization (macOS) are
-configured. The owner has to buy those; the build does not pretend they exist.
+Windows SmartScreen and macOS Gatekeeper will warn until a signing certificate
+is configured. That warning is expected — not a virus. The owner has to buy
+those certificates; this build does not pretend they exist.
 
-The window loads the hosted Vantage web app. It is not a second backend.
+The window loads the live Vantage website. It is not a second copy of Vantage.

@@ -5,6 +5,7 @@ import {
   isAllowedAppOrigin,
   isAllowedNavigation,
   isAllowedWhileSignedOut,
+  isLoopbackOrigin,
   isSessionCookieName,
   parseDeepLinkPath,
   sanitizeAppOrigin,
@@ -43,6 +44,11 @@ describe("desktop navigation allowlist", () => {
     expect(sanitizeAppOrigin(undefined)).toBe(DEFAULT_PRODUCTION_ORIGIN);
     expect(sanitizeAppOrigin("https://phish.example")).toBe(DEFAULT_PRODUCTION_ORIGIN);
     expect(sanitizeAppOrigin("http://localhost:3001/extra")).toBe("http://localhost:3001");
+  });
+
+  it("treats IPv6 loopback as a mentor override, not production", () => {
+    expect(isLoopbackOrigin("http://[::1]:3001")).toBe(true);
+    expect(sanitizeAppOrigin("http://[::1]:3001/path")).toBe("http://[::1]:3001");
   });
 
   it("recognizes only the Better Auth session cookie", () => {
