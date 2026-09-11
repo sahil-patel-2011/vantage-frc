@@ -18,7 +18,7 @@ const isCi = Boolean(process.env.CI);
  * `.next/dev/lock`. Attach to that origin instead of crashing.
  */
 function liveNextDevLock(): { origin: string; port: number } | null {
-  if (isCi || process.env.PLAYWRIGHT_BASE_URL) return null;
+  if (isCi) return null;
   const lockPath = path.join(__dirname, "apps/web/.next/dev/lock");
   try {
     const lock = JSON.parse(fs.readFileSync(lockPath, "utf8")) as {
@@ -38,16 +38,18 @@ function liveNextDevLock(): { origin: string; port: number } | null {
 }
 
 const lock = liveNextDevLock();
-const origin = lock?.origin ?? playwrightOrigin();
+const attachOrigin = process.env.PLAYWRIGHT_BASE_URL?.replace(/\/$/, "") || lock?.origin || null;
+const origin = attachOrigin ?? playwrightOrigin();
 const port = lock?.port ?? playwrightPort();
 const hostname = cookieDomain(origin);
+const startWebServer = !attachOrigin;
 
 // session.ts reads PLAYWRIGHT_BASE_URL for the fixture cookie URL.
 process.env.PLAYWRIGHT_BASE_URL = origin;
 
-if (lock) {
+if (attachOrigin) {
   // eslint-disable-next-line no-console
-  console.log(`Playwright attaching to existing next at ${origin} (pid in apps/web/.next/dev/lock)`);
+  console.log(`Playwright attaching to ${origin} (no webServer)`);
 }
 
 export default defineConfig({
@@ -78,9 +80,8 @@ export default defineConfig({
       origins: [],
     },
   },
-  ...(lock
-    ? {}
-    : {
+  ...(startWebServer
+    ? {
         webServer: {
           command: `npx next dev --port ${port} --hostname 127.0.0.1`,
           cwd: path.join(__dirname, "apps/web"),
@@ -102,6 +103,7 @@ export default defineConfig({
           reuseExistingServer: !process.env.CI,
           timeout: 180_000,
         },
-      }),
+      }
+    : {}),
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
 });

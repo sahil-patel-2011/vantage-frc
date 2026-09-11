@@ -75,10 +75,11 @@ npx playwright install chromium          # once per machine
 npm run test:browser                     # Playwright vs http://127.0.0.1:3310 (E2E_AUTH_FIXTURE=1, local vantage_ci)
 ```
 
-If `:3310` is taken, `PLAYWRIGHT_PORT=3510 npm run test:browser`. To attach to a server you already
-started: `E2E_AUTH_FIXTURE=1 NODE_ENV=development npm run dev:test --workspace=@vantage/web`, then
-`PLAYWRIGHT_BASE_URL=http://127.0.0.1:3310 npm run test:browser:attach`. Never point Playwright at
-production `DATABASE_*`.
+If `:3310` is taken by this checkout's `next dev`, Playwright attaches to `.next/dev/lock`
+instead of failing. `PLAYWRIGHT_PORT=3510 npm run test:browser` still starts a server when
+no lock is live. To attach to a server you already started on another port:
+`PLAYWRIGHT_BASE_URL=http://127.0.0.1:3410 npm run test:browser:attach`. Never point
+Playwright at production `DATABASE_*`.
 
 For a screen change, load it in a browser on a local database and write down what you saw. For a
 database change, run `scripts/rls-proof.mjs` against a local Postgres as a non-superuser login. For a
