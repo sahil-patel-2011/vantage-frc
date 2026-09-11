@@ -183,6 +183,13 @@ export default function EventReadinessClient() {
           },
         );
         const data = (await response.json()) as EventReadinessView | { error?: string };
+        if (response.status === 401 || response.status === 403) {
+          setView(null);
+          setFromCache(false);
+          setCachedAt(null);
+          setFetchFailed(true);
+          return;
+        }
         if (!response.ok || !isEventReadinessView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
@@ -246,18 +253,17 @@ export default function EventReadinessClient() {
     [orgId, busy, eventKey],
   );
 
-  if (view == null && !fetchFailed) {
-    return (
-      <Shell orgId={null}>
-        <OfflineBanner feature="Event readiness" fromCache={fromCache} cachedAt={cachedAt} />
-        <div aria-busy="true" aria-label="Loading event readiness">
-          <SoftBlockSkeleton lines={4} />
-        </div>
-      </Shell>
-    );
-  }
-
-  if (fetchFailed || view == null) {
+  if (!view) {
+    if (!fetchFailed) {
+      return (
+        <Shell orgId={null}>
+          <OfflineBanner feature="Event readiness" fromCache={fromCache} cachedAt={cachedAt} />
+          <div aria-busy="true" aria-label="Loading event readiness">
+            <SoftBlockSkeleton lines={4} />
+          </div>
+        </Shell>
+      );
+    }
     return (
       <Shell orgId={orgId}>
         <OfflineBanner feature="Event readiness" fromCache={fromCache} cachedAt={cachedAt} />

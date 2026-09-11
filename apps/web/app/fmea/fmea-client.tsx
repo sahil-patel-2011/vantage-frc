@@ -147,10 +147,14 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
       const seasonQuery =
         seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
       const seasonHint =
-        seasonQuery != null && Number.isFinite(seasonQuery) ? String(seasonQuery) : "";
+        seasonQuery != null && Number.isFinite(seasonQuery)
+          ? String(seasonQuery)
+          : String(new Date().getFullYear());
       let hadCache = Boolean(viewRef.current);
       try {
-        const cached = await getFeatureSnapshot<FmeaView>("fmea", urlOrg || "_", seasonHint);
+        const cached =
+          (await getFeatureSnapshot<FmeaView>("fmea", urlOrg || "_", seasonHint)) ??
+          (await getFeatureSnapshot<FmeaView>("fmea", urlOrg || "_"));
         if (!viewRef.current && cached?.data && isFmeaView(cached.data)) {
           setView(cached.data);
           setSeason(cached.data.seasonYear);
@@ -174,6 +178,15 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
           signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as FmeaView | { error?: string };
+        if (response.status === 401 || response.status === 403) {
+          setView(null);
+          setFromCache(false);
+          setCachedAt(null);
+          setFetchFailed(true);
+          setErrorStatus(response.status);
+          setLoadError("error" in data && data.error ? data.error : "");
+          return;
+        }
         if (!response.ok || !isFmeaView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
@@ -234,7 +247,7 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
     [orgId, season, busy],
   );
 
-  if (fetchFailed || view == null) {
+  if (!view) {
     // Retry cannot fix an expired session, so the failure decides its own action.
     const failure = fetchFailed
       ? loadFailureCopy(
@@ -290,6 +303,11 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
           description="Capture every in-match and pit failure against a subsystem. Score occurrence, severity, and detection from real events only."
         />
         <OfflineBanner feature="FMEA" fromCache={fromCache} cachedAt={cachedAt} />
+        {error ? (
+          <p className="fmea-alert" role="alert">
+            {error}
+          </p>
+        ) : null}
         <EmptyState soft badge="Setup required" badgeTone="setup" title={view.message}>
           {view.steps[0] ? (
             <Button as="a" variant="primary" href={view.steps[0].href}>
