@@ -1,5 +1,7 @@
 # Vantage CAD desktop relay
 
+*For whoever runs Fusion 360 on the team laptop, and contributors maintaining the relay. Last updated 2026-09-10.*
+
 ## OS matrix (honest)
 
 | OS | `vantage-cad` CLI | Fusion Autodesk app | VantageCadRelay add-in | Onshape hosted |

@@ -1,5 +1,7 @@
 # Daily team performance email
 
+*For team admins and contributors: the weekly performance email. Last updated 2026-08-24.*
+
 One email per member on days the team actually has performance data: how the
 team performed today, tomorrow's schedule, and up to three "do better"
 pointers — every line grounded in real cached data. On days with nothing real

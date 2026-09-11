@@ -1,5 +1,7 @@
 # Vantage pricing ladder
 
+*For operators enabling billing, and anyone asking what a plan includes. Last updated 2026-08-24.*
+
 Effective 2026-08-24 (migration `0481_pricing_ladder.sql`, catalog `packages/billing/src/catalog.ts`).
 
 ## The model in one paragraph

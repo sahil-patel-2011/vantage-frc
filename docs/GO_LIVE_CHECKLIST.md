@@ -1,5 +1,7 @@
 # Go-live checklist
 
+*For operators, before real users sign in. Last updated 2026-09-09.*
+
 Verified 2026-08-24 by tracing source end to end (not by browser clicks). Each journey below lists the
 actual hops in code with file evidence, and an honest PASS/FAIL. Companion docs: `docs/DEPLOYMENT.md`
 (how to deploy) and `npm run deploy:preflight` (env + migration inventory gate).

@@ -1,5 +1,7 @@
 # Vantage feature map
 
+*Reference: every screen and route. Tests and the route walker read this file, so keep the table format. Last updated 2026-09-10.*
+
 | Hub | Route | Tabs |
 |---|---|---|
 | Competition | `/competition` | **Event day · Scouting · Strategy · Pit** — related tools are inner tabs, not a More-tools dump (My Day under Event day, Forms under Scouting, Alliance desk under Strategy) |

@@ -1,5 +1,7 @@
 # Push notifications & the TBA Firehose
 
+*For operators configuring notifications, and contributors. Last updated 2026-08-24.*
+
 How Vantage pings the right person at the right moment — "you're scouting 254 in Qual 42,
 seven minutes out" — and exactly what happens when the keys are not configured.
 

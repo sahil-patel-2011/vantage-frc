@@ -1,5 +1,7 @@
 # Supabase cutover (Postgres host only)
 
+*For operators moving the database host from Neon to Supabase. Last updated 2026-08-31.*
+
 Vantage can run on **Supabase Postgres** the same way it runs on Neon: one database, **org-scoped RLS**, Better Auth sessions. This is a host switch, not a product rewrite.
 
 ## What does not change

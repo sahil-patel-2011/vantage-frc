@@ -1,5 +1,7 @@
 # Finance Data Security
 
+*For operators and contributors touching money-related data. Last updated 2026-08-24.*
+
 Reviewed statement of how team money data is protected in Vantage. Every claim below was verified by
 reading the cited migration or source file on 2026-08-23 (branch `cursor/simplify-team-hub`). This
 document favors accuracy over reassurance: gaps and findings are listed alongside the protections.

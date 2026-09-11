@@ -1,5 +1,7 @@
 # Vantage status
 
+*Working log of what is done, what is in progress, and what only the owner can unblock. Last updated 2026-09-10.*
+
 Living record of the master engineering brief. Update this file at the end of every task. Numbers are from commands that were actually run, not memory.
 
 **Branch:** `cursor/vantage-master-brief-c0b5` off `origin/main` at `1a5a9048`.

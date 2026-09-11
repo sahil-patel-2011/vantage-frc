@@ -1,5 +1,7 @@
 # Vantage local model relay contract
 
+*For contributors: the contract between a hosted deployment and a model running on a team's own network. Last updated 2026-09-10.*
+
 Hosted Vantage workers cannot reach `localhost` or a team LAN. A local model configuration therefore creates
 relay jobs; it never asks Vercel to call the local URL.
 

@@ -1,81 +1,98 @@
-# The FRC season workflow in Vantage
+# The season, phase by phase
 
-How a team runs its season through the app, phase by phase. Every route is org-scoped
-(`?orgId=…`) and mobile-friendly; features marked ✦ include an on-demand AI insight panel
-(metered, provenance-tracked, grounded only in your own data).
+*For team members and mentors: where each job of the FRC season lives in Vantage. Every page
+also works from the phone in the stands, and keeps its last snapshot when the venue Wi-Fi drops.
+Last reviewed September 2026.*
 
-## 1 · Preseason (Sep–Dec)
+Vantage is organized as **Home** plus four workspaces — **Competition**, **Team**, **Build**,
+**Business** — with **Ask AI** on every page. The paths below are direct links; the same pages are
+reachable from the workspace tabs.
+
+## 1 · Preseason (September – December)
+
 | Do | Where |
 |---|---|
-| Recruit, roster, roles | `/team`, `/recruitment` |
-| Train new members, track certifications | `/training` |
-| Log shop hours from day one (travel eligibility) | `/hours` ✦ + `/hours/kiosk` (shop-door tablet) |
-| Meeting attendance & meetings | `/attendance`, `/meetings` |
-| Fundraising: sponsors, grants, budget | `/business`, `/fundraisers`, `/team/budgets` |
-| Stock the shop: parts, spares, reorder levels | `/inventory` ✦ |
+| Set up the team: roster, roles, invitations | Team › People (`/team`) |
+| Bring new members up to speed: laptop setup, Git and WPILib, Onshape | Learn tracks (`/dev-setup`, `/cad-learn`) |
+| Train and certify members on tools | `/training` |
+| Log shop hours from day one (travel eligibility depends on it) | `/hours`, and the shop-door tablet at `/hours/kiosk` |
+| Meeting attendance | `/attendance` |
+| Sponsors, grants, budget, fundraisers | Business (`/business`), `/fundraisers`, `/team/budgets` |
+| Stock the shop: parts, spares, reorder levels | `/inventory`, and the COTS reference at `/parts-catalog` |
+| Fill in the team profile (public record, history, statistics) | `/team/profile` |
 
-## 2 · Kickoff weekend (early Jan)
-The Team 254 / FIRST kickoff-worksheet flow: read rules → score the game → pick a strategy.
+## 2 · Kickoff weekend (early January)
+
+Read the rules, score the game, pick a strategy — the classic kickoff-worksheet flow.
+
 | Do | Where |
 |---|---|
-| Rules Q&A with rule refs; score every action (points vs cycle time → pts/sec) | `/kickoff` ✦ |
-| Vote the design priority matrix (weight 1–5, commit/cut) | `/kickoff` ✦ |
-| Seed the 8-week milestone plan from kickoff date | `/calendar` ✦ |
-| Subscribe Google/Apple calendars (tokenized ICS feed) | `/team/calendar` → Sync |
+| Rules questions with references; score every action (points versus cycle time) | `/kickoff` |
+| Vote the design priorities (weight, commit or cut) | `/kickoff` |
+| Seed the build-season milestone plan from the kickoff date | `/calendar` |
+| Subscribe phones and Google/Apple calendars to the team calendar | `/team/calendar` → Sync |
 
-## 3 · Build season (weeks 1–6)
+## 3 · Build season (weeks 1 – 6)
+
 | Do | Where |
 |---|---|
-| Milestones: design freeze → drivetrain rolling → full robot; **remote meetings carry Zoom/Meet/Teams Join buttons** | `/calendar` ✦ |
-| Phone calendar sync (personal / subteam / whole-team ICS) | `/team/calendar` → Sync |
-| Tasks per subteam | `/tasks` |
-| CAD iterations & design review | `/cad` |
-| BOM per mechanism: can we build it from stock? | `/inventory` ✦ (BOM tab) |
+| Milestones: design freeze, drivetrain rolling, full robot; remote meetings carry Join buttons | `/calendar` |
+| Tasks per subteam, duties | `/tasks`, `/duties` |
+| CAD: vault, design review, change radar, the assembly manual | Build › CAD (`/build?tab=cad`), `/assembly-manual` |
+| Parts: request, approve, order | `/part-requests`, `/inventory` |
+| Robot code: repository, deploy log, Bugbot | Build › Code |
 | Engineering notebook | `/notebook` |
 | Safety incidents | `/safety` |
-| Hours keep accruing | `/hours` ✦ |
+| Files: drawings, photos, documents, shared with the team or a person | `/files` |
+| Team chat | `/messages` |
 
-## 4 · Pre-competition (week before an event)
+## 4 · The week before an event
+
 | Do | Where |
 |---|---|
-| Self-inspect vs the FRC checklist; weigh-ins vs limit | `/inspection` ✦ |
+| Self-inspection against the FRC checklist; weigh-ins | `/inspection` |
 | Drive practice: timed cycles, success rates | `/practice` |
 | Draw and save match plays | `/whiteboard` |
 | Pack the trailer from the standard load-out | `/packing` |
-| Battery fleet, event readiness | `/batteries`, `/event-readiness`, `/pit` |
+| Batteries, event readiness, pit plan | `/batteries`, `/event-readiness`, `/pit` |
+| Travel, lodging, duties | `/logistics` |
 
 ## 5 · Competition day
+
 | Do | Where |
 |---|---|
-| Everything at a glance | `/command`, `/dashboard` |
-| Full match schedule, on-deck countdown, scout coverage | `/schedule` ✦ |
-| Rankings + playoff bracket | `/rankings` |
-| **One-tap drive-coach briefing: prediction + plan + play + practice + opponent film** | `/briefing` |
-| Scout every match (offline-capable) | `/scouting` |
-| Predictions, what-ifs, playbooks, pick lists | `/strategy` |
-| Opponent intel & research | `/intel`, `/dossier` |
-| Pit ops: failures, fixes, release gate | `/pit`, `/repairs` |
-| Match debrief: prediction vs actual, lessons | `/match-debrief` |
-| Re-watch film with timestamped, tagged notes | `/video` ✦ |
-| Judge presentations & awards | `/showcase`, `/awards`, `/mock-judging` |
+| Everything at a glance, field-side | Event day (`/command`), `/my-day` |
+| Match schedule, on-deck countdown, scouting coverage | `/schedule` |
+| Rankings and the playoff bracket | `/rankings` |
+| A 20-second drive-coach briefing: prediction, plan, opponent notes | `/briefing` |
+| Scout every match — works with no signal | `/scouting` |
+| Predictions with their reasoning, match plans, pick lists | `/strategy` |
+| Alliance selection board | `/alliance-selection-desk` |
+| Opponent intel and team dossiers | `/intel`, `/dossier` |
+| Pit: checklist, repair triage | `/match-checklist`, `/pit-repair-triage` |
+| Match debrief: prediction versus actual, lessons | `/match-debrief` |
+| Re-watch film with timestamped notes | `/video` |
+| Judge presentations and practice | `/showcase`, `/judge-sim`, `/mock-judging` |
 
-## 6 · Post-event / offseason
+## 6 · After the event, and the off-season
+
 | Do | Where |
 |---|---|
-| Film review, failure tagging | `/video` ✦ |
-| Impact/outreach records | `/impact`, `/awards` |
-| Retro + season rollover | `/retro`, `/season-rollover` |
-| Exports & audits | `/exports`, `/team/audit` |
+| Outreach and impact hours, by person | `/impact` |
+| Outreach calendar | `/outreach-calendar` |
+| Retrospective, then roll the season over | `/retro`, `/season-rollover` |
+| Exports and the audit log | `/exports`, `/team/audit` |
 
-## The AI layer (✦)
-Eight insight kinds run through the metered `AIOrchestrator` with provenance-classified
-sources: practice coach, inspection advisor, stock advisor, kickoff strategist, schedule
-risk, video scout summary, engagement digest, prediction accuracy. Deterministic local
-provider by default; platform-routed models swap in with zero feature-code changes.
+## Ask AI, all season
 
-## Efficiency rules of thumb
-- **One source of truth per fact** — enter data once where it happens, read it everywhere.
-- **Seed, don't type** — kickoff priorities, calendar milestones, inspection checklist, and
-  packing lists all start from built-in templates.
-- **Everything works by URL** — bookmark the phase you're in.
-- **Remote-friendly** — meeting milestones carry Join links so the hub is the one place to look.
+Ask AI is one button on every page. It answers from your team's own records and public event
+data, shows what it read, and says when it does not know. It never fills a gap with a made-up
+number.
+
+## Three habits that make it work
+
+- **Enter a fact once, where it happens.** Hours at the door, scouting in the stands, receipts in
+  Business. Every other page reads from there.
+- **Seed, don't type.** Kickoff priorities, calendar milestones, the inspection checklist and the
+  packing list all start from built-in templates.
+- **Bookmark the phase you are in.** Every page has a stable address.

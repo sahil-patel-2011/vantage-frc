@@ -1,47 +1,49 @@
-# Custom domain readiness (marketing + auth)
+# Putting Vantage on your own domain
 
-When you buy a domain for Vantage (e.g. `vantagefrc.com`), attach it in Vercel and set the
-env vars below so SEO canonicals, Open Graph, Better Auth, and Stripe redirects leave
-`*.vercel.app`.
+*For operators of a self-hosted deployment. Last reviewed September 2026.*
 
-## Vercel
-1. Project **vantage-frc-web** → Settings → Domains → add the apex + `www` (redirect one to the other).
-2. Wait for DNS + certificate Ready.
-3. Production redeploy after env changes.
+By default a deployment lives at its `*.vercel.app` address. Attaching your own domain (say,
+`vantage.yourteam.org`) takes five steps: Vercel, environment variables, Google, Stripe, email.
 
-## Required env (Production)
-| Key | Set to |
-| --- | --- |
-| `NEXT_PUBLIC_SITE_URL` | `https://your-domain.com` (no trailing slash) — drives `metadataBase`, OG, sitemap, robots, `/llms.txt` |
-| `NEXT_PUBLIC_APP_URL` | Same origin — used across app links and trusted-origin resolution |
-| `BETTER_AUTH_URL` | Same origin — Better Auth base URL / OAuth callbacks |
-| `AUTH_TRUSTED_ORIGINS` | Optional comma list if you keep preview or alternate hosts (e.g. `https://www.your-domain.com`) |
+## 1. Vercel
 
-`packages/core` `resolveAuthTrustedOrigins` already allows `NEXT_PUBLIC_SITE_URL`,
-`NEXT_PUBLIC_APP_URL`, the production Vercel host, and `AUTH_TRUSTED_ORIGINS`.
+1. Project → **Settings → Domains** → add the domain (add both the bare domain and `www`, and
+   redirect one to the other).
+2. Follow Vercel's DNS instructions and wait until the certificate shows **Ready**.
+3. After the environment changes below, redeploy production.
 
-## Google OAuth
-Add authorized redirect URI:
-`https://your-domain.com/api/auth/callback/google`
-(and keep the Vercel URL until cutover is complete).
+## 2. Environment variables (Production)
 
-## Stripe
-Checkout `success_url` / `cancel_url` are built from the **request origin** in
-`apps/web/app/api/billing/checkout/route.ts`. After the custom domain is primary, open
-checkout from that host. Update Stripe Customer Portal / webhook endpoint URLs if they
-still point at `vantage-frc-web.vercel.app`. Keep `STRIPE_SECRET_KEY` and
-`STRIPE_WEBHOOK_SECRET` in sync with the Dashboard endpoint you use.
+| Variable | Set to |
+|---|---|
+| `NEXT_PUBLIC_SITE_URL` | `https://your-domain` (no trailing slash) — used for canonical links, social previews, the sitemap and robots |
+| `NEXT_PUBLIC_APP_URL` | The same origin — used for in-app links and trusted origins |
+| `BETTER_AUTH_URL` | The same origin — sign-in and OAuth callbacks |
+| `AUTH_TRUSTED_ORIGINS` | Optional, comma-separated: any other hosts that must keep working (for example `https://www.your-domain`, or the old Vercel address during the switch) |
 
-## Email (Resend)
-If `AUTH_EMAIL_FROM` / magic links embed an origin, ensure links resolve on the new domain.
-Update any Resend domain auth (SPF/DKIM) for the sending domain.
+## 3. Google sign-in
 
-## Verify after cutover
-- `https://your-domain.com/sitemap.xml` uses the new host
-- View-source: `og:url` / canonical match the custom domain
-- `https://your-domain.com/llms.txt` and `/llms-full.txt` load
-- Sign-in + Google OAuth round-trip
-- Waitlist submit still works
+In the Google Cloud console, add `https://your-domain/api/auth/callback/google` as an authorized
+redirect URI. Keep the old Vercel address listed until the switch is complete, then remove it.
 
-Until the domain is purchased, leave `NEXT_PUBLIC_SITE_URL` unset or pointed at
-`https://vantage-frc-web.vercel.app` — SEO helpers fall back safely.
+## 4. Stripe (only if billing is enabled)
+
+Checkout success and cancel pages are built from the address the checkout was opened on, so once the
+new domain is primary, open checkout from it. Update the Customer Portal return URL and the webhook
+endpoint in the Stripe dashboard if they still point at the Vercel address, and keep
+`STRIPE_WEBHOOK_SECRET` matching the endpoint you use.
+
+## 5. Email (Resend)
+
+If your sending address changes with the domain, verify the new sending domain in Resend
+(SPF and DKIM) and update `AUTH_EMAIL_FROM`.
+
+## Check that it worked
+
+- `https://your-domain/sitemap.xml` lists the new host
+- View source on the home page: the canonical link and `og:url` use the new domain
+- Sign in, including Google, round-trips on the new domain
+- The waitlist form still submits
+
+Until you have a domain, leave `NEXT_PUBLIC_SITE_URL` unset or pointed at the Vercel address;
+everything falls back safely.

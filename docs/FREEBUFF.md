@@ -1,5 +1,7 @@
 # Freebuff, the Pi fleet, and what Vantage will not do
 
+*For the team running Raspberry Pi relays, and anyone asking what Vantage will and will not do with Freebuff. Last updated 2026-09-10.*
+
 Status as of 2026-09-10. Terms checked against https://freebuff.com/terms-of-service (effective 2026-09-02).
 
 ## What the owner is running

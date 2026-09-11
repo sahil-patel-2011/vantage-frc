@@ -1,5 +1,7 @@
 # AI Subscription Bridge
 
+*For members who want the team's AI chats to run through their own Claude Code subscription, and the contributors who maintain the bridge. Last updated 2026-08-24.*
+
 A team member (typically a mentor) who already pays for **Claude Pro/Max** — which includes the
 Claude Code CLI — or **ChatGPT** — which includes the Codex CLI — can serve the team's AI from
 their own always-on computer: *interactive chat* by default, or — if they flip the device's

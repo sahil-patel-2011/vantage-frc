@@ -1,5 +1,7 @@
 # Claude Code → Onshape / Fusion 360
 
+*For developers who want to drive Onshape or Fusion 360 from Claude Code. Last updated 2026-08-31.*
+
 Drive real CAD from the terminal. Claude Code calls Vantage's CAD tools over MCP; the tools call
 Onshape's REST API or your local Fusion add-in. There is no mock geometry — every feature in this
 document lands in a real document.

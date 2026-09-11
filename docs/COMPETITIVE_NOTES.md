@@ -1,5 +1,7 @@
 # Competitive notes — what Vantage will not repeat
 
+*For product decisions: what other FRC tools do well, where they fall down, and the mistakes Vantage avoids. Last updated 2026-09-10.*
+
 Verified 2026-09-10 against live sites and current GitHub READMEs. This is the brief for Tasks 2–4 (design system, UI pass, Home widgets). Every “do not repeat” line points at a Vantage surface that must answer it.
 
 Sources opened this session:

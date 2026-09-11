@@ -1,5 +1,7 @@
 # Subteam coverage audit
 
+*Reference: what each subteam gets from Vantage, and the known gaps. Last updated 2026-08-24.*
+
 **What this is.** A subteam-by-subteam walk of what a member actually needs across an FRC season,
 which Vantage surface serves each need today, and what is genuinely missing. Every route named
 below was verified to exist as an `apps/web/app/<route>/page.tsx`. Every gap below was verified

@@ -1,5 +1,7 @@
 # Assembly manual
 
+*For teams turning an Onshape assembly into a build book, and contributors working on the engine behind it. Last updated 2026-09-09.*
+
 Turns a team's Onshape assembly into a printable, step-by-step build book — the
 LEGO-instructions idea, applied to a real FRC mechanism.
 

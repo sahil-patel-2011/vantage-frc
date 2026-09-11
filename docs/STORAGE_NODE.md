@@ -1,5 +1,7 @@
 # Self-hosted storage node
 
+*For the team running a storage node, and operators. Last updated 2026-08-24.*
+
 A storage node is an always-on computer your team runs — a Raspberry Pi in the shop is the
 canonical choice, but any Linux/macOS/Windows box with Node.js 20+ works. It stores your team's
 large binary files (media, exports, scans) on its own disk so the hosted database never maxes

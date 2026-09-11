@@ -1,5 +1,7 @@
 # UI design rules for Vantage
 
+*For contributors building or changing screens. Last updated 2026-09-10.*
+
 Research brief behind `docs/archive/UI_SIMPLIFICATION_PLAN.md`. Grounded in Apple HIG, Tesla in-car UI (including
 its documented criticisms), Microsoft Fluent 2 / Windows 11, the command-palette lineage (VS Code, Linear,
 Raycast), and Base44. Rules marked [CI] are statically checkable — build them as lint rules or tests so

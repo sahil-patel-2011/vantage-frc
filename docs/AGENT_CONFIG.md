@@ -1,5 +1,7 @@
 # Team-shared agent configuration
 
+*For contributors and operators configuring agent bundles. Last updated 2026-08-24.*
+
 A team authors its coding-agent setup **once** at `/team/agent-config` — rules,
 reusable subagent definitions, MCP server entries, permission snippets, and
 skills — and every member's agent consumes it:

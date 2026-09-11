@@ -114,14 +114,14 @@ Competition venues have bad networks, so the web app is built to keep working wi
 | `connector` | Shared core of the downloadable connector (pairing, device identity, capabilities) |
 | `storage-node` | The self-hosted file node |
 | `intel-research` | Scheduled and on-demand research jobs |
-| `import` / `export-center` | Bring-your-season importers and org-scoped exports |
+| `import` / `export-center` | Bring-your-season importers and team-scoped exports |
 | `vantage-cad-cli`, `fusion360-official-connector`, `vantage-vscode`, `ai-bridge` | Developer-facing connectors |
 
 ## Rules for new work
 
 - New capabilities land in a workspace section or a package — never as an orphan route. Every route
   must be reachable from navigation and listed in `docs/FEATURE_MAP.md` (a test checks this).
-- Every request database access goes through `withRls`; every new org-scoped table gets RLS, policies
+- Every request database access goes through `withRls`; every new team-scoped table gets RLS, policies
   and grants in its migration, and a block in `scripts/rls-proof.mjs`.
 - Every AI call is metered and tagged with its feature.
 - No feature shows a number it did not compute from real rows.

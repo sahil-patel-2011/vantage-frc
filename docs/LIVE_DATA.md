@@ -1,11 +1,58 @@
-# Live data ingestion
+# Event data: where it comes from
 
-TBA is the primary official shared source. One platform worker ingests normalized schedules, results/breakdowns, rankings/status-related payloads and available data into platform-global reference tables. ETag/Last-Modified cursors, idempotent upserts, bounded concurrency, in-flight deduplication, retry/backoff, freshness timestamps, and last-known-good rows prevent per-organization polling and ordinary-user outages.
+*For team admins wondering why a screen is empty, and operators configuring a deployment. Last
+reviewed September 2026.*
 
-The platform TBA Read API key is server-only and encrypted with the KMS envelope service when configured in Platform → Live Data. `TBA_AUTH_KEY` is the environment fallback (`TBA_API_KEY` is accepted as an alias). The UI never returns a key. Any key pasted into chat is exposed and must be rotated.
+Match schedules, results, rankings and team statistics in Vantage come from two public sources:
 
-Event-day cron (`/api/cron/tba-sync?mode=event-day`, authorized by `CRON_SECRET`) refreshes only active and org-subscribed events about once a minute. Season cron (`mode=season`) rebuilds the year every six hours. Admins can also trigger sync from Live Data. POST a body with `eventKey` for webhook-style single-event refresh.
+- **The Blue Alliance (TBA)** — the official record of FRC events, matches and rankings
+- **Statbotics** — team performance statistics (EPA) computed from those results
 
-Owners/admins—not scouts/viewers—see fallback onboarding during sustained platform failures. They must use the official [TBA account page](https://www.thebluealliance.com/account), sign in, create a descriptively named Read API v3 key, paste it into the write-only encrypted field, test, and save. The global scheduler may use an org key by opaque ID as a controlled fallback; it does not create a duplicate polling stream.
+## One cache for everyone
 
-FIRST Events API is optional when documented credentials are configured. Statbotics provides statistical EPA/prediction inputs. Other web sources require a registered HTTPS/ToS-aware adapter with robots/rate policy, provenance, timestamp, and confidence. Qualitative research never overrides official match results; conflicts preserve the official value and remain visible.
+Vantage does **not** let each team poll these services. One background worker reads them into shared
+reference tables in the database, and every team's screens read from those tables. That keeps
+Vantage a polite citizen of TBA's rate limits and means the data is identical for every team.
+
+The worker uses TBA's change validators (ETag / Last-Modified) so an unchanged event costs nothing,
+retries with backoff, never runs two refreshes of the same event at once, and keeps the last good
+copy of every row if a refresh fails. Every table carries a freshness timestamp that the app shows
+when data is stale.
+
+## When it refreshes
+
+On the hosted deployment (Vercel Hobby plan, two scheduled jobs):
+
+| Job | When | What it does |
+|---|---|---|
+| Event-day sync | Daily at 14:00 UTC | Refreshes active events and events teams have subscribed to |
+| Season sync | Daily at 06:00 UTC | Rebuilds the year's events, teams, matches and statistics |
+
+During a competition, a team admin can press **Sync now** on Team › Live data (`/team/data`) for the
+active event at any time; platform admins have the same button under Admin → Live Data. A deployment
+on a paid Vercel plan, or with an external scheduler, can call the same endpoints more often (see
+[DEPLOYMENT.md](DEPLOYMENT.md)).
+
+## The TBA key
+
+Reading TBA needs a free **Read API v3 key** from https://www.thebluealliance.com/account.
+
+- **Platform-wide:** the operator sets `TBA_AUTH_KEY` on the deployment (or stores a key encrypted
+  under Admin → Live Data). One key covers every team.
+- **Per team (fallback):** if the platform has no key, a team owner or admin can paste one on
+  Team › Live data. It is encrypted on save and never shown again, and it does not start a second
+  polling stream — the shared worker simply uses it.
+
+A key pasted into a chat or an issue is exposed; rotate it.
+
+## What else feeds in
+
+- **Statbotics** needs no key.
+- **Video analysis** and **research** can add qualitative notes and confidence-rated observations,
+  with their source and timestamp. They never override an official result: if a note disagrees with
+  TBA, the official value stays and the disagreement is shown.
+
+## When a screen is empty
+
+Competition screens stay empty until an active event is set and the reference tables have rows for
+it. The screen says which of the two is missing and where to fix it.

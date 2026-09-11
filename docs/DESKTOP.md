@@ -1,6 +1,8 @@
 # Vantage desktop
 
-Windows desktop shell around the hosted Vantage web app (`https://vantage-frc-web.vercel.app`).
+*For anyone installing the desktop app, and contributors who build and release it. Last updated 2026-09-10.*
+
+Desktop app for Windows and macOS around the hosted Vantage web app (`https://vantage-frc-web.vercel.app`).
 It is not a second backend. Auth, RLS, billing, and CAD jobs stay on the web deployment.
 
 ## Requirements
@@ -154,7 +156,7 @@ Hostile `VANTAGE_URL` values are ignored and production is used.
 npm run desktop:dist
 ```
 
-Outputs under `apps/desktop/release/` (NSIS setup + portable exe). Windows SmartScreen will warn until Authenticode certs exist. Fusion CAD still uses `vantage-cad` on the machine (`docs/CAD_RELAY.md`).
+Outputs under `apps/desktop/release/` (Windows: MSI, NSIS setup and portable exe; macOS: DMG and zip from the macOS workflow). Windows SmartScreen will warn until Authenticode certs exist. Fusion CAD still uses `vantage-cad` on the machine (`docs/CAD_RELAY.md`).
 
 Tagged builds (`desktop-v*`) also publish those exes to GitHub Releases. Marketing copy lives at `/desktop`.
 

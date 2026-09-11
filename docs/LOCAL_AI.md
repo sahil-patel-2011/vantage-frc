@@ -1,5 +1,7 @@
 # Running Vantage on local or free AI endpoints
 
+*For teams running AI on a local or free model endpoint. Last updated 2026-08-31.*
+
 A team that points Vantage at Ollama, LM Studio, a LAN inference box, or any $0
 OpenAI-compatible key gets the **same features** as a team on a frontier key.
 What changes is only (a) which endpoint answers and (b) an honest, one-line

@@ -1,5 +1,7 @@
 # Nightly team memory consolidation ("dreaming")
 
+*For team admins deciding whether to turn on overnight team memory, and contributors maintaining it. Last updated 2026-08-24.*
+
 Once a night, Vantage folds each team's last 24 hours of **real** activity into
 one compact team memory so agent surfaces (team-scope chat context via
 `AgentRepository.retrieveContext`) start tomorrow already knowing what happened

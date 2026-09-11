@@ -1,5 +1,7 @@
 # GitHub connection (Team settings + AI context)
 
+*For team admins linking the robot-code repository, and operators configuring GitHub OAuth. Last updated 2026-09-09.*
+
 Org-scoped robot-code bridge so FRC Assistant / code assist can pull **size-capped, read-only** file
 snippets from one linked GitHub account. Never pushes. Never requests the `workflow` scope.
 

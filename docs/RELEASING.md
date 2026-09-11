@@ -1,5 +1,7 @@
 # Releasing Vantage — the contract for agents
 
+*For whoever cuts a release, including AI agents. Last updated 2026-08-24.*
+
 When the owner says **"release this as the new version"**, follow this document exactly.
 It is executable-by-instruction: every step names the file, function, or endpoint to use.
 No step invents content — release notes describe only what actually shipped.
