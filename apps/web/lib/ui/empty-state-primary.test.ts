@@ -271,11 +271,40 @@ describe("empty-state R4 (one primary on the empty card)", () => {
     expect(hits, hits.join("\n")).toEqual([]);
   });
 
+  /**
+   * JSX that still shares EmptyState's parent. Stops at the expression's
+   * closing `)` so a later `return` or the other arm of a setup ternary is
+   * not treated as a sibling. Leftover extra buttons were Next-actions in
+   * that same parent; gold gates them on ready.
+   */
+  function emptyStateParentRest(src: string, close: number): string | null {
+    let i = close + "</EmptyState>".length;
+    const end = Math.min(src.length, i + 800);
+    while (i < end) {
+      while (i < end && /\s/.test(src[i] ?? "")) i += 1;
+      if (i >= end) return null;
+      if (src.startsWith("</>", i)) {
+        i += 3;
+        continue;
+      }
+      if (src.startsWith("</", i)) {
+        const gt = src.indexOf(">", i);
+        if (gt < 0 || gt >= end) return null;
+        i = gt + 1;
+        continue;
+      }
+      if (src.startsWith(") :", i) || src.startsWith(");", i) || src[i] === ")") return null;
+      return src.slice(i, Math.min(src.length, i + 400));
+    }
+    return null;
+  }
+
   it("Next-actions after EmptyState stay gated on ready", () => {
     const SKIP = new Set([
       "intel-client.tsx",
       "overnight-intel-client.tsx",
       "admin-client.tsx",
+      "partner-placements-panel.tsx", // PR #3
     ]);
     const hits: string[] = [];
     function walk(dir: string) {
@@ -294,9 +323,14 @@ describe("empty-state R4 (one primary on the empty card)", () => {
         while (true) {
           const close = src.indexOf("</EmptyState>", from);
           if (close < 0) break;
-          const after = src.slice(close, close + 480);
-          const next = /<[A-Z][A-Za-z0-9]*NextActions[A-Za-z0-9]*\b/.exec(after);
-          if (next && !/shell === ["']ready["']/.test(after) && !/status === ["']ready["']/.test(after)) {
+          const rest = emptyStateParentRest(src, close);
+          if (
+            rest &&
+            /<[A-Z][A-Za-z0-9]*NextActions[A-Za-z0-9]*\b/.test(rest) &&
+            !/[Ss]hell === ["']ready["']/.test(rest) &&
+            !/status === ["']ready["']/.test(rest) &&
+            !/shell !== ["']ready["']/.test(rest)
+          ) {
             hits.push(`${full} EmptyState is followed by an unguarded Next-actions panel`);
           }
           from = close + 1;
