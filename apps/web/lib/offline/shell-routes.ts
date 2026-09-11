@@ -472,7 +472,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/incident-heatmap")) return "Incident Heatmap";
   if (bare.startsWith("/knowledge-drafts")) return "Knowledge drafts";
   if (bare.startsWith("/leadership")) return "Leadership Continuity";
-  if (bare.startsWith("/meeting-autopilot")) return "Meeting-agenda autopilot";
+  if (bare.startsWith("/meeting-autopilot")) return "Meeting agenda";
   if (bare.startsWith("/mentor-hours")) return "Mentor Hours";
   if (bare.startsWith("/migrate")) return "Bring your season";
   if (bare.startsWith("/mock-judging")) return "Mock Judging";
