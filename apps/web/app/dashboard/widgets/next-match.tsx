@@ -61,7 +61,7 @@ export function NextMatchLive({ data }: { data: Record<string, unknown> }) {
             : ""}
         </p>
       ) : (
-        <p className="app-muted">No stored prediction for this match yet. Open Strategy after TBA sync.</p>
+        <p className="app-muted">No stored prediction for this match yet. Open Strategy after match data is connected.</p>
       )}
       {typeof data.redPredicted === "number" &&
       typeof data.bluePredicted === "number" &&

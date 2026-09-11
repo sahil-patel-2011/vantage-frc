@@ -24,7 +24,6 @@ import {
   type DashboardSetupStep,
   type DashboardShellKind,
 } from "../../lib/dashboard/dashboard-related";
-import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { Icon } from "../../components/icon";
 import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
@@ -32,7 +31,7 @@ import { OfflineBanner } from "../../components/offline-banner";
 import type { DataSourceHealthView } from "../../lib/reference-health";
 import { DashboardGridItem } from "./dashboard-grid-item";
 import { LiveCountdown } from "./widgets";
-import { WIDGET_PICKER_ICON, greeting, homeQuickStart } from "./dashboard-canvas";
+import { WIDGET_PICKER_ICON, greeting } from "./dashboard-canvas";
 import type { HomeStripItem } from "../../lib/home-workflows";
 import { Button } from "../../components/ui";
 import type {
@@ -262,7 +261,6 @@ export function DashboardHomeView(props: {
 
   const firstName = (me.name ?? "coach").split(" ")[0] || "coach";
   const boardIsEmpty = layout.length === 0;
-  const quickStart = homeQuickStart(orgId || null);
 
   return (
     <main className={`dash-home${editing ? " is-editing" : ""}`} data-grid={grid.label} data-cols={cols}>
@@ -310,25 +308,6 @@ export function DashboardHomeView(props: {
               </b>
             </a>
           ) : null}
-          {!orgId ? (
-            <Button as="a" variant="secondary" href="/workspace">
-              Choose your team
-            </Button>
-          ) : (setupRequired || tbaConfigured === false) && dashShell === "ready" ? (
-            // The first-run banner below already carries this action; showing
-            // it here too was the third "Connect TBA" on one screen.
-            <Button
-              as="a"
-              variant="secondary"
-              href={
-                tbaConfigured === false
-                  ? withOrgHref("/team/data", orgId)
-                  : hubHref("/competition", "command", orgId)
-              }
-            >
-              {tbaConfigured === false ? "Connect TBA" : "Set active event"}
-            </Button>
-          ) : null}
           {!editing && !previewing ? (
             <Button
               variant="secondary"
@@ -367,58 +346,6 @@ export function DashboardHomeView(props: {
         </div>
       </header>
       <VenueShortcutCheatsheet open={cheatOpen} onClose={() => setCheatOpen(false)} shortcuts={shortcuts} />
-
-      {orgId && meLoaded && !editing ? (
-        <nav className="dash-quick-start" aria-label="Quick start">
-          <div className="dash-quick-start-heading">
-            <strong>Jump back in</strong>
-            <span>Four common team jobs, always one tap away</span>
-          </div>
-          <div className="dash-quick-start-links">
-            {quickStart.map((item) => (
-              <a key={item.id} href={item.href}>
-                <i aria-hidden="true">
-                  <Icon name={item.icon} />
-                </i>
-                <span>
-                  <strong>{item.label}</strong>
-                  <small>{item.detail}</small>
-                </span>
-                <b aria-hidden="true">→</b>
-              </a>
-            ))}
-          </div>
-        </nav>
-      ) : null}
-
-      {/* Learning first. A new member's Home should point at the tracks that
-          make them useful, not only at event-day tools they cannot use yet. */}
-      {orgId && meLoaded && !editing ? (
-        <nav className="dash-learn" aria-label="Start here">
-          <div className="dash-learn-heading">
-            <strong>Start here</strong>
-            <span>The tracks every new member works through — and the profile the team already has</span>
-          </div>
-          <div className="dash-learn-links">
-            <a href={withOrgHref("/dev-setup", orgId)}>
-              <strong>Set up your laptop</strong>
-              <small>Git, VS Code, WPILib, PathPlanner, GitHub — step by step</small>
-            </a>
-            <a href={withOrgHref("/cad-learn", orgId)}>
-              <strong>Learn CAD</strong>
-              <small>Onshape from the first sketch to a graded part</small>
-            </a>
-            <a href={withOrgHref("/files", orgId)}>
-              <strong>Files</strong>
-              <small>Team drive and your own private space</small>
-            </a>
-            <a href={withOrgHref("/team/profile", orgId)}>
-              <strong>Team profile</strong>
-              <small>Where we are from, seasons, awards, results</small>
-            </a>
-          </div>
-        </nav>
-      ) : null}
 
       {orgId && !editing && homeStripItems.length > 0 ? (
         <section
@@ -485,10 +412,7 @@ export function DashboardHomeView(props: {
 
       {meLoaded && dashShell === "ready" && nextActions.length > 0 && !editing ? (
         <p className="dash-ready-cue" role="status">
-          <span>
-            <strong>{nextActions[0]?.label}</strong>
-            {nextActions[0]?.detail ? ` — ${nextActions[0].detail}` : ""}
-          </span>
+          <span>{nextActions[0]?.detail ?? nextActions[0]?.label}</span>
           {nextActions[0]?.href ? (
             <Button as="a" variant="secondary" href={nextActions[0].href}>
               {nextActions[0].label}
@@ -592,7 +516,7 @@ export function DashboardHomeView(props: {
               </span>
               <strong>Add your first widget</strong>
               <span>
-                Pick next match, robot readiness, scouting coverage and more — then drag them into the order
+                Add next match, my day, learn, files, or chat — then drag them into the order
                 your team reads them.
               </span>
             </button>
@@ -600,7 +524,7 @@ export function DashboardHomeView(props: {
             <div className="dash-quiet-home" role="status">
               <strong>Nothing live yet</strong>
               <span>
-                Home stays quiet until match, scouting, or robot data exists. Edit Home to pin widgets anyway.
+                Home stays quiet until match, files, or chat data exists. Edit Home to pin cards anyway.
               </span>
             </div>
           ) : (
@@ -739,10 +663,11 @@ export function DashboardHomeView(props: {
           onClose={() => setLibraryOpen(false)}
           addableEntries={addableEntries}
           paletteEntries={paletteEntries}
-          onPick={(entry) => {
+          onPick={(entry, pointerType) => {
             requestPlaceWidget(
               entry,
               prefersTapToPlace({
+                pointerType,
                 coarse: window.matchMedia("(pointer: coarse)").matches,
               }),
               true,

@@ -43,4 +43,17 @@ describe("Home first-paint JS split", () => {
       );
     }
   });
+
+  it("does not paint Jump back in / Start here launchpads or a setup-steps wall", () => {
+    const home = readFileSync(join(DIR, "dashboard-home-view.tsx"), "utf8");
+    const student = readFileSync(join(DIR, "widgets.tsx"), "utf8");
+    const ops = readFileSync(join(DIR, "widgets", "ops-cards.tsx"), "utf8");
+    const onboarding = readFileSync(join(DIR, "widgets", "onboarding-card.tsx"), "utf8");
+    expect(home).not.toMatch(/Jump back in/);
+    expect(home).not.toMatch(/dash-learn/);
+    expect(home).not.toMatch(/homeQuickStart/);
+    expect(student).not.toMatch(/dash-setup-steps/);
+    expect(ops).not.toMatch(/dash-setup-steps/);
+    expect(onboarding).not.toMatch(/dash-setup-steps/);
+  });
 });

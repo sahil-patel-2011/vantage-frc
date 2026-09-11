@@ -116,7 +116,7 @@ async function myDay(client: PoolClient, ctx: HomeWidgetContext): Promise<Loaded
     [ctx.orgId, ctx.userId],
   );
   if (!matchLabel && events.length === 0 && duties.length === 0) {
-    return empty("No matches on your day yet. Open My Day after TBA sync.");
+    return empty("No matches on your day yet. Open My Day after match data is connected.");
   }
   return live({
     href: "/my-day",
@@ -647,7 +647,7 @@ export const HOME_WIDGET_LOADERS: Record<
 export const HOME_WIDGET_TYPES = Object.keys(HOME_WIDGET_LOADERS) as DashboardWidgetType[];
 
 const FALLBACK_MESSAGE: Record<string, string> = {
-  my_day: "No matches on your day yet. Open My Day after TBA sync.",
+  my_day: "No matches on your day yet. Open My Day after match data is connected.",
   learn_progress: "Start Learn CAD or programming setup to see progress here.",
   files_recent: "No files opened yet. Open Files to add one.",
   team_chat: "No unread team chats.",

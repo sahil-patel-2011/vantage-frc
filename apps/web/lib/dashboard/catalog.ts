@@ -282,7 +282,7 @@ export const WIDGET_CATALOG: WidgetCatalogEntry[] = [
   {
     type: "onboarding_checklist",
     label: "Setup checklist",
-    description: "First-run steps: team, event, TBA, scouting, and AI",
+    description: "The next setup step for this team",
     defaultW: 12,
     defaultH: 4,
     minW: 6,
@@ -363,7 +363,7 @@ export const WIDGET_CATALOG: WidgetCatalogEntry[] = [
   {
     type: "competition_snapshot",
     label: "Competition snapshot",
-    description: "Rank, record, and EPA from synced reference tables",
+    description: "Rank and record from match data",
     defaultW: 6,
     defaultH: 3,
     minW: 3,
@@ -372,7 +372,7 @@ export const WIDGET_CATALOG: WidgetCatalogEntry[] = [
   {
     type: "sync_status",
     label: "Sync status",
-    description: "TBA / Statbotics health and last successful sync",
+    description: "Whether match data last connected",
     defaultW: 4,
     defaultH: 3,
     minW: 3,
@@ -381,7 +381,7 @@ export const WIDGET_CATALOG: WidgetCatalogEntry[] = [
   {
     type: "pit_youtube",
     label: "Pit stream",
-    description: "Organization YouTube pit embed",
+    description: "The team's pit camera on YouTube",
     defaultW: 6,
     defaultH: 4,
     minW: 4,
@@ -390,7 +390,7 @@ export const WIDGET_CATALOG: WidgetCatalogEntry[] = [
   {
     type: "notifications",
     label: "Notifications",
-    description: "Unread notifications for the signed-in user",
+    description: "Unread alerts for you",
     defaultW: 4,
     defaultH: 3,
     minW: 3,
@@ -408,7 +408,7 @@ export const WIDGET_CATALOG: WidgetCatalogEntry[] = [
   {
     type: "ai_usage",
     label: "AI usage",
-    description: "Credits and allowance (owner/admin only)",
+    description: "How much AI the team has used",
     defaultW: 4,
     defaultH: 3,
     minW: 3,
@@ -580,7 +580,7 @@ export const WIDGET_CATALOG: WidgetCatalogEntry[] = [
   {
     type: "coding_resources",
     label: "Coding resources",
-    description: "Bound repo, deploy log, Bugbot findings",
+    description: "Robot code repo and review findings",
     defaultW: 4,
     defaultH: 3,
     minW: 3,
@@ -591,7 +591,7 @@ export const WIDGET_CATALOG: WidgetCatalogEntry[] = [
   {
     type: "team_profile",
     label: "Team profile",
-    description: "What TBA and Statbotics have on record for this team",
+    description: "What match data has on record for this team",
     defaultW: 4,
     defaultH: 3,
     minW: 3,
