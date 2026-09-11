@@ -255,7 +255,7 @@ export async function loadMyDayView(
     return {
       status: "setup_required",
       context,
-      message: "Set your organization team number so we can filter your matches.",
+      message: "Set your team's number so we can filter your matches.",
       steps: [
         {
           id: "team",

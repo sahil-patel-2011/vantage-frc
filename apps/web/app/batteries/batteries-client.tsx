@@ -178,14 +178,12 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
   }
 
   if (view.status === "setup_required") {
-    const setupActions = batteryNextActions({ packs: [], logCount: 0 });
     return (
       <BatteriesSetupShell
         embed={embed}
         message={view.message}
         fromCache={fromCache}
         cachedAt={cachedAt}
-        actions={setupActions}
       />
     );
   }
@@ -218,7 +216,7 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
         okMessage={okMessage}
         orgId={orgId}
       />
-      <BatteriesNextActions actions={nextActions} ready />
+      {view.packs.length > 0 ? <BatteriesNextActions actions={nextActions} ready /> : null}
       <BatteriesSummary view={view} />
       <div className="batt-layout">
         <BatteriesFleetColumn

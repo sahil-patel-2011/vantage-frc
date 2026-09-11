@@ -7,7 +7,6 @@ import {
   batteryVentChargeCue,
 } from "../../lib/battery";
 import { formatPackEvidence } from "../../lib/battery/battery-related";
-import { BatteriesRelated } from "./batteries-chrome";
 import {
   fmtWhen,
   healthBadge,
@@ -45,7 +44,9 @@ export function BatteriesFleetColumn({
           description="Add a pack label to start. Resistance, voltage, and cycles stay blank until someone logs them."
           soft
         >
-          <BatteriesRelated orgId={orgId} />
+          <Button as="a" variant="primary" href="#batt-add-pack">
+            Add a battery
+          </Button>
         </EmptyState>
       ) : null}
       <div className="batt-panel">

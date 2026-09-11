@@ -272,7 +272,7 @@ function PitShell({
           <Button as="a" variant="primary" href="#pit-actions">Log first evidence</Button>
         ) : null}
       </EmptyState>
-      <PitNextActionsPanel actions={actions} />
+      {shell === "ready" ? <PitNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }

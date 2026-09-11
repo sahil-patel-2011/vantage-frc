@@ -32,6 +32,13 @@ test("Batteries still loads after the panel split", async ({ page }) => {
     return;
   }
 
+  if (await setup.isVisible()) {
+    await expect(page.getByRole("heading", { name: "Next actions" })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "Choose your team" })).toHaveCount(1);
+    await page.screenshot({ path: "/opt/cursor/artifacts/batteries-after-split.png", fullPage: true });
+    return;
+  }
+
   await expect(page.getByRole("heading", { name: "Add a battery" })).toBeVisible();
   await page.screenshot({ path: "/opt/cursor/artifacts/batteries-after-split.png", fullPage: true });
 });

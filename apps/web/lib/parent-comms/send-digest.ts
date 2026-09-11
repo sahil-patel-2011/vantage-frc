@@ -421,7 +421,7 @@ export async function sendParentDigestForOrg(
       continue;
     }
     if (!emailConfigured) {
-      await record("setup_required", "configure email delivery (RESEND_API_KEY / AUTH_EMAIL_FROM)", null);
+      await record("setup_required", "configure email delivery", null);
       continue;
     }
 

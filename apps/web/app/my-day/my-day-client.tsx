@@ -245,7 +245,7 @@ function MyDayShell({
           </Button>
         ) : null}
       </EmptyState>
-      {embedded || shell !== "ready" ? null : <MyDayNextActionsPanel actions={actions} />}
+      {shell === "ready" && !embedded ? <MyDayNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }

@@ -291,7 +291,7 @@ export function aiGovernanceNextActions(input: {
     actions.push({
       id: "finish",
       label: "Finish incomplete policy",
-      detail: "Select allowed features/tools or set a USD threshold for high-cost approval.",
+      detail: "Choose allowed features or tools, or set a USD threshold for high-cost approval.",
       href: "#ai-governance-policy",
       primary: true,
     });

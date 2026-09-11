@@ -58,10 +58,10 @@ describe("telling the poster what actually went out", () => {
       eligible: 0,
       sent: 0,
       failed: 0,
-      setupRequired: "Email delivery requires RESEND_API_KEY and AUTH_EMAIL_FROM.",
+      setupRequired: "Email delivery is not configured.",
     });
     expect(summary).toContain("Posted to the team inbox");
-    expect(summary).toContain("RESEND_API_KEY");
+    expect(summary).toMatch(/not sent/i);
   });
 
   it("does not claim an audience that does not exist yet", () => {

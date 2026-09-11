@@ -182,7 +182,7 @@ export function controlMapNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Finish membership setup so Control Map can resolve your organization.",
+        detail: "Finish membership setup so Control Map can load.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
       },

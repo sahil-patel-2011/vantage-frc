@@ -171,7 +171,7 @@ export function sketchToBriefNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Finish membership setup so Sketch-to-Brief can resolve your organization.",
+        detail: "Finish membership setup so Sketch-to-Brief can load.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
       },

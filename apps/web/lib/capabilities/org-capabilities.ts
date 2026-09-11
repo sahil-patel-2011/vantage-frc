@@ -97,7 +97,7 @@ export async function resolveMembership(
       403,
       requestedOrgId
         ? "You are not a member of that team."
-        : "Join or select a team first.",
+        : "Choose your team first.",
       "org_not_found",
     );
   }

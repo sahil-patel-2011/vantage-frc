@@ -165,7 +165,7 @@ function WatchlistShell({
           <Button as="a" variant="primary" href="#opponent-watchlist-watch">Watch a team</Button>
         ) : null}
       </EmptyState>
-      <WatchlistNextActionsPanel actions={actions} />
+      {shell === "ready" ? <WatchlistNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }

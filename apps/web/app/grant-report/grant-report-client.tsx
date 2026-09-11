@@ -157,8 +157,7 @@ function GrantReportShell({
           <Button as="a" variant="primary" href={hubHref("/business", "grants", orgId)}>Open Grants</Button>
         ) : null}
       </EmptyState>
-      
-      <GrantReportNextActionsPanel actions={actions} />
+      {shell === "ready" ? <GrantReportNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }

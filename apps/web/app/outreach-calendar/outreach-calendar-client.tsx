@@ -197,8 +197,7 @@ function OutreachShell({
           <Button as="a" variant="primary" href="#outreach-calendar-schedule">Schedule an event</Button>
         ) : null}
       </EmptyState>
-      
-      <OutreachNextActionsPanel actions={actions} />
+      {shell === "ready" ? <OutreachNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }

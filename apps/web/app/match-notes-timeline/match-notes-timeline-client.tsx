@@ -140,7 +140,7 @@ function MatchNotesShell({
           <Button as="a" variant="primary" href="#match-notes-timeline-log">Log a note</Button>
         ) : null}
       </EmptyState>
-      <MatchNotesNextActionsPanel actions={actions} />
+      {shell === "ready" ? <MatchNotesNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }

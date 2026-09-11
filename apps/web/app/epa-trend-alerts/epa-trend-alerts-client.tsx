@@ -157,7 +157,7 @@ function EpaShell({
           <Button as="a" variant="primary" href="#epa-trend-alerts-watch">Watch a team</Button>
         ) : null}
       </EmptyState>
-      <EpaNextActionsPanel actions={actions} />
+      {shell === "ready" ? <EpaNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }

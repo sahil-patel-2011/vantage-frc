@@ -168,7 +168,7 @@ function BatteryHealthForecastShell({
           <Button as="a" variant="primary" href={rotationHref}>Open Battery Rotation</Button>
         ) : null}
       </EmptyState>
-      <BatteryHealthForecastNextActionsPanel actions={actions} />
+      {shell === "ready" ? <BatteryHealthForecastNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }

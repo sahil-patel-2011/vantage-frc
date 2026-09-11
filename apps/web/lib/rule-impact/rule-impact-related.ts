@@ -194,7 +194,7 @@ export function ruleImpactNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Finish membership setup so Rule Impact can resolve your organization.",
+        detail: "Finish membership setup so Rule Impact can load.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
       },

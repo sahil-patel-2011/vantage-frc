@@ -178,7 +178,7 @@ function DecisionsShell({
           {error}
         </p>
       ) : null}
-      <DecisionsNextActionsPanel actions={actions} />
+      {shell === "ready" ? <DecisionsNextActionsPanel actions={actions} /> : null}
     </Root>
   );
 }

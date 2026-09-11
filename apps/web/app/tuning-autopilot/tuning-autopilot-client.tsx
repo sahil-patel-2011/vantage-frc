@@ -164,7 +164,7 @@ function TuningShell({
           <Button as="a" variant="primary" href="#tuning-autopilot-new-session">Start a session</Button>
         ) : null}
       </EmptyState>
-      <TuningNextActionsPanel actions={actions} />
+      {shell === "ready" ? <TuningNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }

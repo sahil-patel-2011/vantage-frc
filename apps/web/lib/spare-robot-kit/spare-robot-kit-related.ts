@@ -209,7 +209,7 @@ export function spareRobotKitNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Finish membership setup so Spare Robot Kit can resolve your organization.",
+        detail: "Finish membership setup so Spare Robot Kit can load.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
       },

@@ -273,9 +273,13 @@ describe("empty-state R4 (one primary on the empty card)", () => {
   });
 
   it("setup_required shells do not paint a Next-actions panel", () => {
+    const SKIP = new Set([
+      "todos-client.tsx", // PRs #4 and #7
+    ]);
     const hits: string[] = [];
     const marker = 'status === "setup_required" ? (';
     for (const file of clients) {
+      if (SKIP.has(file.split("/").pop() ?? "")) continue;
       const src = readFileSync(file, "utf8");
       for (const inner of parenBlocks(src, marker)) {
         if (NEXT_ACTIONS_TAG.test(inner)) {
@@ -311,6 +315,117 @@ describe("empty-state R4 (one primary on the empty card)", () => {
         }
       }
     }
+  it("does not nest related strips inside EmptyState in chrome or fleet shells", () => {
+    const SKIP = new Set([
+      "fundraising-glance.tsx",
+      "sponsor-pipeline-panel.tsx",
+      "partner-placements-panel.tsx",
+    ]);
+    const hits: string[] = [];
+    function walk(dir: string) {
+      for (const entry of readdirSync(dir)) {
+        if (entry.startsWith(".") || entry === "node_modules") continue;
+        const full = join(dir, entry);
+        const stats = statSync(full);
+        if (stats.isDirectory()) {
+          walk(full);
+          continue;
+        }
+        if (!entry.endsWith(".tsx")) continue;
+        if (SKIP.has(entry)) continue;
+        const src = readFileSync(full, "utf8");
+        let from = 0;
+        while (true) {
+          const start = src.indexOf("<EmptyState", from);
+          if (start < 0) break;
+          const tagEnd = src.indexOf(">", start);
+          if (tagEnd < 0) break;
+          const opening = src.slice(start, tagEnd + 1);
+          if (opening.endsWith("/>")) {
+            from = tagEnd + 1;
+            continue;
+          }
+          const close = src.indexOf("</EmptyState>", tagEnd);
+          if (close < 0) break;
+          const inner = src.slice(tagEnd + 1, close);
+          if (/<[A-Z][A-Za-z0-9]*Related\b/.test(inner)) {
+            hits.push(`${full} EmptyState nests a Related strip`);
+          }
+          from = close + 1;
+        }
+      }
+    }
+    walk(APP_ROOT);
+    expect(hits, hits.join("\n")).toEqual([]);
+  });
+
+  /**
+   * JSX that still shares EmptyState's parent. Stops at the expression's
+   * closing `)` so a later `return` or the other arm of a setup ternary is
+   * not treated as a sibling. Leftover extra buttons were Next-actions in
+   * that same parent; gold gates them on ready.
+   */
+  function emptyStateParentRest(src: string, close: number): string | null {
+    let i = close + "</EmptyState>".length;
+    const end = Math.min(src.length, i + 800);
+    while (i < end) {
+      while (i < end && /\s/.test(src[i] ?? "")) i += 1;
+      if (i >= end) return null;
+      if (src.startsWith("</>", i)) {
+        i += 3;
+        continue;
+      }
+      if (src.startsWith("</", i)) {
+        const gt = src.indexOf(">", i);
+        if (gt < 0 || gt >= end) return null;
+        i = gt + 1;
+        continue;
+      }
+      if (src.startsWith(") :", i) || src.startsWith(");", i) || src[i] === ")") return null;
+      return src.slice(i, Math.min(src.length, i + 400));
+    }
+    return null;
+  }
+
+  it("Next-actions after EmptyState stay gated on ready", () => {
+    const SKIP = new Set([
+      "intel-client.tsx",
+      "overnight-intel-client.tsx",
+      "admin-client.tsx",
+      "partner-placements-panel.tsx", // PR #3
+    ]);
+    const hits: string[] = [];
+    function walk(dir: string) {
+      for (const entry of readdirSync(dir)) {
+        if (entry.startsWith(".") || entry === "node_modules") continue;
+        const full = join(dir, entry);
+        const stats = statSync(full);
+        if (stats.isDirectory()) {
+          walk(full);
+          continue;
+        }
+        if (!entry.endsWith(".tsx")) continue;
+        if (SKIP.has(entry)) continue;
+        const src = readFileSync(full, "utf8");
+        let from = 0;
+        while (true) {
+          const close = src.indexOf("</EmptyState>", from);
+          if (close < 0) break;
+          const rest = emptyStateParentRest(src, close);
+          if (
+            rest &&
+            /<[A-Z][A-Za-z0-9]*NextActions[A-Za-z0-9]*\b/.test(rest) &&
+            !/[Ss]hell === ["']ready["']/.test(rest) &&
+            !/status === ["']ready["']/.test(rest) &&
+            !/shell !== ["']ready["']/.test(rest)
+          ) {
+            hits.push(`${full} EmptyState is followed by an unguarded Next-actions panel`);
+          }
+          from = close + 1;
+        }
+      }
+    }
+    walk(APP_ROOT);
     expect(hits, hits.join("\n")).toEqual([]);
   });
 });

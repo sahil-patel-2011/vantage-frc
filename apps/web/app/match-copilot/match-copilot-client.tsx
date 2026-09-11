@@ -166,7 +166,7 @@ function CopilotShell({
           <Button as="a" variant="primary" href={strategyHref}>Open Strategy</Button>
         ) : null}
       </EmptyState>
-      <CopilotNextActionsPanel actions={actions} />
+      {shell === "ready" ? <CopilotNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }

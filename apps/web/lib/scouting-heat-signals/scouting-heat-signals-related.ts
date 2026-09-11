@@ -208,7 +208,7 @@ export function scoutingHeatSignalsNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Finish membership setup so Heat Signals can resolve your organization.",
+        detail: "Finish membership setup so Heat Signals can load.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
       },

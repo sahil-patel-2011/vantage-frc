@@ -169,8 +169,7 @@ function MediaKitShell({
           <Button as="a" variant="primary" href="#media-kit-profile">Save team profile</Button>
         ) : null}
       </EmptyState>
-      
-      <MediaKitNextActionsPanel actions={actions} />
+      {shell === "ready" ? <MediaKitNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }

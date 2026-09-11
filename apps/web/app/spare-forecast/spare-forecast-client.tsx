@@ -190,7 +190,7 @@ function SpareForecastShell({
           </>
         ) : null}
       </EmptyState>
-      <SpareForecastNextActionsPanel actions={actions} />
+      {shell === "ready" ? <SpareForecastNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }

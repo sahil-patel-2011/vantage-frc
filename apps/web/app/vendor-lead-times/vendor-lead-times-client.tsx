@@ -157,7 +157,7 @@ function VendorLeadTimesShell({
           <Button as="a" variant="primary" href={ordersHref}>Open Orders</Button>
         ) : null}
       </EmptyState>
-      <VendorLeadTimesNextActionsPanel actions={actions} />
+      {shell === "ready" ? <VendorLeadTimesNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }

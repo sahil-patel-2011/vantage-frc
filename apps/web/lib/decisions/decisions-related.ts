@@ -181,7 +181,7 @@ export function decisionsNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Finish membership setup so Decision Log can resolve your organization.",
+        detail: "Finish membership setup so Decision Log can load.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
       },

@@ -155,8 +155,7 @@ function SponsorWallShell({
           <Button as="a" variant="primary" href={hubHref("/business", "sponsors", orgId)}>Open Sponsor CRM</Button>
         ) : null}
       </EmptyState>
-      
-      <SponsorWallNextActionsPanel actions={actions} />
+      {shell === "ready" ? <SponsorWallNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }

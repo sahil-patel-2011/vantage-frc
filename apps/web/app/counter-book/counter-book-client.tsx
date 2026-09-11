@@ -153,7 +153,7 @@ function CounterShell({
           <Button as="a" variant="primary" href="#counter-book-generate">Generate a report</Button>
         ) : null}
       </EmptyState>
-      <CounterNextActionsPanel actions={actions} />
+      {shell === "ready" ? <CounterNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }

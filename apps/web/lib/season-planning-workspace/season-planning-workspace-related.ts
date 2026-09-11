@@ -214,7 +214,7 @@ export function seasonPlanningNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Finish membership setup so Season Planning can resolve your organization.",
+        detail: "Finish membership setup so Season Planning can load.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
       },

@@ -166,7 +166,7 @@ function JudgeSimShell({
           <Button as="a" variant="primary" href={impactHref}>Open Community Impact</Button>
         ) : null}
       </EmptyState>
-      <JudgeSimNextActionsPanel actions={actions} />
+      {shell === "ready" ? <JudgeSimNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }

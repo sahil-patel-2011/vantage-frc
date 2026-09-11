@@ -159,7 +159,7 @@ function JustifierShell({
           <Button as="a" variant="primary" href={strategyHref}>Open Strategy</Button>
         ) : null}
       </EmptyState>
-      <JustifierNextActionsPanel actions={actions} />
+      {shell === "ready" ? <JustifierNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }

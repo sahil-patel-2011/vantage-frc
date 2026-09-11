@@ -48,7 +48,7 @@ export async function POST(request: Request) {
       return privateJson(
         {
           error:
-            "Password reset emails are unavailable until RESEND_API_KEY and AUTH_EMAIL_FROM are configured.",
+            "Password reset emails are unavailable until email sending is configured.",
           setupRequired: true,
         },
         { status: 503 },
