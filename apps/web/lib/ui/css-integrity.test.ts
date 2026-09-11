@@ -10,7 +10,12 @@
  */
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, sep } from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+// Every test here reads and scans hundreds of files. Alone that is well under
+// a second; beside a production build the "--m-* marketing tokens" scan hit
+// 5.1 s and the 5 s default turned a green tree red. Same fix as copy-lint.
+vi.setConfig({ testTimeout: 60_000 });
 
 const ROOTS = [
   join(__dirname, "..", "..", "app"),

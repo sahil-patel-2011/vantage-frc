@@ -5,8 +5,12 @@
  */
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { isPrimaryControl } from "./primary-control";
+
+// Walks every *-client.tsx under app/. Beside a production build two of these
+// took 5.4 s and 12.7 s and failed on the 5 s default; alone they take ~1 s.
+vi.setConfig({ testTimeout: 60_000 });
 
 const APP_ROOT = join(__dirname, "..", "..", "app");
 const EMPTY_OPEN = '{shell === "empty" ? (';
