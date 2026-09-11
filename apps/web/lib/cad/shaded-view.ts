@@ -34,19 +34,19 @@ export type ShadedViewInput = {
 };
 
 export const SHADED_VIEW_UNAUTHORIZED =
-  "Onshape did not authorize this shaded view. Connect Onshape and try again.";
+  "Onshape did not allow this picture. Connect Onshape and try again.";
 
 export const SHADED_VIEW_MISSING =
-  "No Onshape shaded-view PNG is available. The viewport stays empty until a real render arrives.";
+  "No picture of this part yet. The viewport stays empty until Onshape sends a real view.";
 
 export const SHADED_VIEW_NOT_PNG =
-  "Onshape returned bytes that are not a PNG shaded view. The viewport stays empty.";
+  "Onshape sent a file this viewport cannot show. The viewport stays empty.";
 
 export const SHADED_VIEW_UNBOUND =
-  "Bind a Part Studio before a shaded view can load.";
+  "Open a Part Studio before a picture can load.";
 
 export const SHADED_VIEW_FAILED =
-  "Could not load a shaded view from Onshape. The viewport stays empty.";
+  "Could not load a picture from Onshape. The viewport stays empty.";
 
 const PNG_MAGIC = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a] as const;
 const DATA_URL_PREFIX = "data:image/png;base64,";

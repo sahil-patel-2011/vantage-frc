@@ -17,9 +17,8 @@ import type { LiveView } from "./print-farm-model";
 export function NonGoalsNote() {
   return (
     <p className="app-muted pf-nongoals">
-      Manual by design: no slicer integration, no G-code upload, no printer telemetry, no
-      OctoPrint/Bambu/Prusa API. Printer status is what a teammate last reported — nothing here is
-      live machine data.
+      Printer status is what a teammate last reported — this page is not a live feed from the
+      printers.
     </p>
   );
 }
@@ -58,7 +57,7 @@ function farmShellBody({
       return (
         <EmptyState
           soft
-          badge="Setup required"
+          badge="Setup"
           badgeTone="setup"
           title="Choose your team"
           description={description}
