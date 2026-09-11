@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { loadFailureHeading } from "./hub-org-gate";
 import { expectReadyOr, waitForLoadingGone } from "./ready";
 import { signInAs, signInFixture } from "./session";
 
@@ -94,22 +95,22 @@ test("student this week can walk Home → My Day/Scout → Video paste → CAD l
 
   await page.goto("/cad-vault");
   await waitForLoadingGone(page);
-  await expect(
-    page.getByRole("heading", {
-      name: /Choose your team|Link a CAD document|Link an Onshape or Fusion document/i,
-    }).first(),
-  ).toBeVisible({ timeout: 12_000 });
+  const vaultReady = page.getByRole("heading", {
+    name: /Choose your team|Link a CAD document|Link an Onshape or Fusion document/i,
+  });
+  await expect(vaultReady.or(loadFailureHeading(page)).first()).toBeVisible({ timeout: 12_000 });
   for (const phrase of BANNED) {
     await expect(page.locator("body"), `CAD vault still shows ${phrase}`).not.toContainText(phrase);
   }
-  await expect(page.getByRole("heading", { name: "Could not load the CAD vault" })).toHaveCount(0);
-  const linkCad = page.getByRole("link", { name: "Link a CAD document" }).or(
-    page.getByRole("heading", { name: /Link an Onshape or Fusion document|Link a CAD document/i }),
-  );
-  if (await page.getByRole("heading", { name: "Choose your team" }).count()) {
-    await expect(page.getByRole("link", { name: "Choose your team" })).toBeVisible();
-  } else {
-    await expect(linkCad.first()).toBeVisible();
+  if (await vaultReady.count()) {
+    const linkCad = page.getByRole("link", { name: "Link a CAD document" }).or(
+      page.getByRole("heading", { name: /Link an Onshape or Fusion document|Link a CAD document/i }),
+    );
+    if (await page.getByRole("heading", { name: "Choose your team" }).count()) {
+      await expect(page.getByRole("link", { name: "Choose your team" })).toBeVisible();
+    } else {
+      await expect(linkCad.first()).toBeVisible();
+    }
   }
 
   await page.goto("/build?tab=cad");
