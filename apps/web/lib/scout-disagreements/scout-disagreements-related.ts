@@ -208,7 +208,7 @@ export function scoutDisagreementsNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before resolving conflicts.",
+          detail: "Choose your team before resolving conflicts.",
           href: "/workspace",
           primary: true,
         },

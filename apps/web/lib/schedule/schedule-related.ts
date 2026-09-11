@@ -77,7 +77,7 @@ export function scheduleNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before loading TBA rows.",
+          detail: "Choose your team before loading TBA rows.",
           href: "/workspace",
           primary: true,
         },

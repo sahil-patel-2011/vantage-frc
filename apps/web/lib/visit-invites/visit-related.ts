@@ -84,7 +84,7 @@ export function visitNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before scheduling shop tours.",
+          detail: "Choose your team before scheduling shop tours.",
           href: "/workspace",
           primary: true,
         },

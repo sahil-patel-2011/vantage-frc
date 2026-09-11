@@ -201,7 +201,7 @@ function logisticsShellNextActionCandidates(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before publishing hotels.",
+          detail: "Choose your team before publishing hotels.",
           href: "/workspace",
           primary: true,
         },

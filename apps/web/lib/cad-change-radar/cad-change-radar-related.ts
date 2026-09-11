@@ -194,7 +194,7 @@ export function cadChangeRadarNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before tracking parts.",
+          detail: "Choose your team before tracking parts.",
           href: "/workspace",
           primary: true,
         },

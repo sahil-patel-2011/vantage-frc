@@ -47,6 +47,13 @@ describe("alumniShellCopy + next actions", () => {
     expectPlainCopy(alumniShellCopy("setup").description);
   });
 
+  it("setup without a team tells the reader to Choose your team", () => {
+    const actions = alumniNextActions({ orgId: null, shell: "setup" });
+    expect(actions[0]?.label).toBe("Choose your team");
+    expect(actions[0]?.detail).toMatch(/Choose your team/);
+    expect(actions[0]?.detail).not.toMatch(/\bPick a team\b/);
+  });
+
   it("points empty boards at add + alumni network without DEMO names", () => {
     const actions = alumniNextActions({ orgId: "org-1", shell: "empty", alumniCount: 0 });
     expect(actions.map((action) => action.id)).toEqual(expect.arrayContaining(["add", "alumni-network"]));
