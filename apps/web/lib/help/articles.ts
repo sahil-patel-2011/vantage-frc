@@ -1671,23 +1671,23 @@ export const HELP_ARTICLES: HelpArticle[] = [
     id: "analyze-video",
     slug: "analyze-video",
     category: "competition",
-    title: "Analyze a match or pit video",
-    summary: "Queue a video for the video Pi. You get a timeline with timestamps. Confirming saves it on Match notes as from-video evidence. Scouted cycle counts stay as the scouts entered them.",
+    title: "Paste a match or pit video",
+    summary: "Paste a video for the video Pi. You get a timeline with timestamps. Confirming saves it on Match notes as from-video evidence. Scouted cycle counts stay as the scouts entered them.",
     keywords: ["video", "match video", "pit camera", "youtube"],
     relatedHref: "/video-analysis",
     sections: [
       {
         heading: "What you see",
         body: [
-          "Paste a YouTube, TBA, uploaded file, or pit camera link. Jobs show queued, running, or finished, and how many minutes behind live they are.",
-          "Each event is labelled with a confidence. Confirming it puts those events on Match notes as From video. Scouted numbers stay as the scouts entered them.",
+          "Paste a YouTube, Blue Alliance, file, or pit camera link. Videos show Waiting, Watching, or Ready to confirm, and how many minutes behind live they are.",
+          "Each event is labelled from video. Confirming it puts those events on Match notes as From video. Scouted numbers stay as the scouts entered them.",
         ],
       },
       {
         heading: "What to do",
         body: [
-          "Pair a Pi with the video role first (Team → AI relays). Then queue a video from Competition → Analyze video. After it is ready, confirm it so Match notes can show the events.",
-          "If no Pi is paired, the job stays queued and the page says so.",
+          "Pair a Pi with the video role first (Team → AI relays). Then paste a video from Competition → Video. After it is ready, confirm it so Match notes can show the events.",
+          "If no Pi is paired, the video stays Waiting and the page says so.",
         ],
       },
     ],

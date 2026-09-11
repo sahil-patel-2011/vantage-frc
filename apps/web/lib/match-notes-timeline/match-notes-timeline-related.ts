@@ -248,7 +248,7 @@ export function matchNotesTimelineNextActions(input: {
       },
       {
         id: "video-analysis",
-        label: "Analyze a match video",
+        label: "Open Video",
         detail: "Confirmed video events show here as from-video evidence. Scouted cycle counts stay as the scouts entered them.",
         href: withOrgHref("/video-analysis", orgId),
       },

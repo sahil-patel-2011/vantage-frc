@@ -261,18 +261,18 @@ export const SECTION_HELP: SectionHelpEntry[] = [
     id: "competition.video-analysis",
     hub: "competition",
     tab: "video-analysis",
-    title: "Analyze video",
-    what: "Queue a match or pit video for the video Pi. You get a timeline with timestamps and confidence. Scouted numbers do not change until a person confirms.",
+    title: "Video",
+    what: "Paste a match or pit video for the video Pi. You get a timeline with timestamps. Scouted numbers do not change until a person confirms.",
     why: "Film review should land on the match notes as 'from video', not silently rewrite what a scout typed.",
     when: "Competition day and the night after, as soon as match video exists.",
     moments: ["comp-day", "after"],
     how: [
       "Pair a Pi with the video role at Team → AI relays.",
       "Paste a YouTube, TBA, uploaded file, or pit camera link.",
-      "Wait for the timeline. Each event shows its confidence.",
+      "Wait for the timeline. Each event is labelled from video.",
       "Tap Confirm to keep it as video evidence. That does not overwrite scout counts.",
     ],
-    tips: ["If no video Pi is online the job stays queued and the page says so."],
+    tips: ["If no video Pi is online the video stays Waiting and the page says so."],
     related: [
       { label: "AI relays", href: "/team/relays" },
       { label: "Match notes", href: "/match-notes-timeline" },
@@ -703,7 +703,7 @@ export const SECTION_HELP: SectionHelpEntry[] = [
     ],
     related: [
       { label: "Connectors", href: "/connectors" },
-      { label: "Analyze video", href: "/video-analysis" },
+      { label: "Video", href: "/video-analysis" },
     ],
   },
   {

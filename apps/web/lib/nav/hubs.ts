@@ -116,7 +116,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         { id: "match-notes-timeline", label: "Match notes", legacyHref: "/match-notes-timeline" },
         { id: "match-delta-watcher", label: "Match delta", legacyHref: "/match-delta-watcher" },
         { id: "match-video-index", label: "Match video", legacyHref: "/match-video-index" },
-        { id: "video-analysis", label: "Analyze video", legacyHref: "/video-analysis" },
+        { id: "video-analysis", label: "Video", legacyHref: "/video-analysis" },
         { id: "epa-trend-alerts", label: "EPA alerts", legacyHref: "/epa-trend-alerts" },
         { id: "overnight-intel", label: "Overnight intel", legacyHref: "/overnight-intel" },
         { id: "district-advancement", label: "Districts", legacyHref: "/district-advancement" },

@@ -1,92 +1,61 @@
 "use client";
 
-import { useCallback, useEffect, useState, type FormEvent } from "react";
-import { EmptyState, PageHeader, Panel } from "../../components/ui";
+import { useCallback, useState, type FormEvent } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { Button } from "../../components/ui/button";
+import { EmptyState, PageHeader, Button } from "../../components/ui";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { useOfflineSnapshot } from "../../lib/offline/use-offline-snapshot";
+import {
+  VIDEO_PAGE_DESCRIPTION,
+  classifyVideoAnalysisShell,
+  pendingVideoConfirmCount,
+  videoAnalysisNextActions,
+  videoAnalysisShellCopy,
+  type VideoAnalysisSnapshot,
+  type VideoSourceKind,
+} from "../../lib/video-analysis/video-analysis-related";
+import { VideoAnalysisShell, VideoNextActionsPanel, VideoRelatedStrip } from "./video-analysis-chrome";
+import { VideoPasteForm, VideoQueueList } from "./video-analysis-queue";
 
-type VideoEvent = {
-  tSec?: number;
-  kind?: string;
-  teamKey?: string;
-  label?: string;
-  confidence?: number;
-};
-
-type VideoResult = {
-  summary?: string;
-  events?: VideoEvent[];
-  cyclesByTeam?: Array<{ teamKey: string; cycles: number; confidence: number }>;
-};
-
-type Job = {
-  id: string;
-  sourceKind: string;
-  sourceRef: string;
-  matchKey: string | null;
-  status: string;
-  minutesBehind: number | null;
-  error: string | null;
-  createdAt: string;
-  result: VideoResult | null;
-  confirmed: boolean;
-};
-
-type Snapshot = { jobs: Job[] };
-
-function labelVideoJobStatus(status: string, confirmed: boolean): string {
-  switch (status) {
-    case "queued":
-      return "Waiting";
-    case "running":
-      return "Watching";
-    case "completed":
-      return confirmed ? "Saved as evidence" : "Ready to confirm";
-    case "failed":
-      return "Could not read this video";
-    case "cancelled":
-      return "Stopped";
-    case "skipped":
-      return "Skipped — no video model";
-    default:
-      return status.replaceAll("_", " ");
-  }
-}
-
-function labelVideoSourceKind(kind: string): string {
-  switch (kind) {
-    case "youtube":
-      return "YouTube";
-    case "upload":
-      return "File";
-    case "pit_camera":
-      return "Pit camera";
-    default:
-      return kind.replaceAll("_", " ");
-  }
-}
-
-export default function VideoAnalysisClient() {
-  const [orgId, setOrgId] = useState("");
+export default function VideoAnalysisClient({ orgId }: { orgId: string }) {
   const [sourceRef, setSourceRef] = useState("");
-  const [sourceKind, setSourceKind] = useState("youtube");
+  const [sourceKind, setSourceKind] = useState<VideoSourceKind>("youtube");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [fetchFailed, setFetchFailed] = useState(false);
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
 
-  useEffect(() => {
-    setOrgId(new URLSearchParams(window.location.search).get("orgId") ?? "");
-  }, []);
-
-  const fetchJobs = useCallback(async (): Promise<Snapshot> => {
-    const response = await fetch(`/api/video-analysis?orgId=${encodeURIComponent(orgId)}`);
-    const data = (await response.json()) as { jobs?: Job[]; error?: string };
-    if (!response.ok) throw new Error(data.error ?? "Could not load video jobs.");
+  const fetchJobs = useCallback(async (): Promise<VideoAnalysisSnapshot> => {
+    setFetchFailed(false);
+    setErrorStatus(null);
+    const response = await fetch(`/api/video-analysis?orgId=${encodeURIComponent(orgId)}`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+    });
+    const data = (await response.json()) as VideoAnalysisSnapshot & { error?: string };
+    if (!response.ok) {
+      setFetchFailed(true);
+      setErrorStatus(response.status);
+      throw new Error(data.error ?? "Could not load videos.");
+    }
     return { jobs: data.jobs ?? [] };
   }, [orgId]);
 
-  const snapshot = useOfflineSnapshot<Snapshot>("video-analysis", orgId, fetchJobs);
+  const snapshot = useOfflineSnapshot<VideoAnalysisSnapshot>("video-analysis", orgId, fetchJobs);
   const jobs = snapshot.data?.jobs ?? [];
+  const shell = classifyVideoAnalysisShell({
+    loading: snapshot.loading && jobs.length === 0,
+    fetchFailed: fetchFailed && jobs.length === 0,
+    orgId,
+    jobCount: jobs.length,
+  });
+  const shellCopy = videoAnalysisShellCopy(shell);
+  const nextActions = videoAnalysisNextActions({
+    orgId,
+    shell,
+    jobCount: jobs.length,
+    pendingConfirmCount: pendingVideoConfirmCount(jobs),
+  });
 
   async function queue(event: FormEvent) {
     event.preventDefault();
@@ -97,15 +66,18 @@ export default function VideoAnalysisClient() {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ orgId, sourceKind, sourceRef }),
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
       const data = (await response.json()) as { error?: string };
       if (!response.ok) {
-        setMessage(data.error ?? "Could not queue that video.");
+        setMessage(data.error ?? "Could not start that video.");
         return;
       }
       setSourceRef("");
       setMessage("");
       await snapshot.refresh();
+    } catch {
+      setMessage("Could not start that video.");
     } finally {
       setBusy(false);
     }
@@ -119,105 +91,72 @@ export default function VideoAnalysisClient() {
         method: "PATCH",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ orgId, id, action: "confirm" }),
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
-      const data = (await response.json()) as { error?: string; mergedIntoScouting?: boolean };
+      const data = (await response.json()) as { error?: string };
       if (!response.ok) {
         setMessage(data.error ?? "Could not confirm that timeline.");
         return;
       }
       setMessage("Saved as video evidence. Scouted numbers were not changed.");
       await snapshot.refresh();
+    } catch {
+      setMessage("Could not confirm that timeline.");
     } finally {
       setBusy(false);
     }
   }
 
+  if (shell === "loading" || shell === "error" || shell === "setup") {
+    return (
+      <VideoAnalysisShell
+        orgId={orgId}
+        shell={shell}
+        error={shell === "error" ? shellCopy.description : undefined}
+        errorStatus={errorStatus}
+        onRetry={() => void snapshot.refresh()}
+      >
+        <OfflineBanner feature="Video" fromCache={Boolean(snapshot.cachedAt)} cachedAt={snapshot.cachedAt} />
+      </VideoAnalysisShell>
+    );
+  }
+
   return (
-    <div className="app-page">
+    <div className="app-page video-analysis-page">
       <PageHeader
-        title="Analyze video"
-        description="Paste a match or pit video. The video Pi writes a timeline with timestamps. Confirm keeps it as video evidence — it does not overwrite what a scout typed."
-      />
+        breadcrumbs="Competition / Video"
+        title="Video"
+        description={VIDEO_PAGE_DESCRIPTION}
+      >
+        <VideoRelatedStrip orgId={orgId} />
+      </PageHeader>
       {snapshot.offline ? (
-        <OfflineBanner feature="Analyze video" fromCache={Boolean(snapshot.cachedAt)} cachedAt={snapshot.cachedAt} />
+        <OfflineBanner feature="Video" fromCache={Boolean(snapshot.cachedAt)} cachedAt={snapshot.cachedAt} />
       ) : null}
-      {!orgId ? (
+      {shell === "ready" ? <VideoNextActionsPanel actions={nextActions} /> : null}
+      <VideoPasteForm
+        sourceKind={sourceKind}
+        sourceRef={sourceRef}
+        busy={busy}
+        message={message}
+        onSourceKind={setSourceKind}
+        onSourceRef={setSourceRef}
+        onQueue={(event) => void queue(event)}
+      />
+      {shell === "empty" ? (
         <EmptyState
-          title="Pick a team first"
-          description="Open this page from Competition so Vantage knows which team the video belongs to."
-        />
+          soft
+          badge={shellCopy.badge}
+          badgeTone="setup"
+          title={shellCopy.title}
+          description={shellCopy.description}
+        >
+          <Button as="a" variant="primary" href="#video-paste">
+            Analyze this video
+          </Button>
+        </EmptyState>
       ) : (
-        <>
-          <Panel>
-            <form onSubmit={(event) => void queue(event)}>
-              <label>
-                Where is the video?
-                <select value={sourceKind} onChange={(event) => setSourceKind(event.target.value)}>
-                  <option value="youtube">YouTube</option>
-                  <option value="tba">The Blue Alliance</option>
-                  <option value="upload">Uploaded file</option>
-                  <option value="pit_stream">Pit camera</option>
-                </select>
-              </label>
-              <label>
-                Link or file id
-                <input
-                  value={sourceRef}
-                  onChange={(event) => setSourceRef(event.target.value)}
-                  placeholder="https://www.youtube.com/watch?v=…"
-                  required
-                />
-              </label>
-              <Button type="submit" variant="primary" disabled={busy}>
-                {busy ? "Starting…" : "Analyze this video"}
-              </Button>
-            </form>
-            {message ? <p className="app-muted">{message}</p> : null}
-          </Panel>
-          {snapshot.loading && jobs.length === 0 ? (
-            <p className="app-muted">Loading video jobs…</p>
-          ) : jobs.length === 0 ? (
-            <EmptyState
-              title="No video jobs yet"
-              description="Queue a match video. Analysis stays off until a Pi with the video role is paired and online."
-            >
-              <Button as="a" href="/team/relays" variant="secondary">
-                Pair a video Pi
-              </Button>
-            </EmptyState>
-          ) : (
-            <ul>
-              {jobs.map((job) => (
-                <li key={job.id}>
-                  <strong>{labelVideoSourceKind(job.sourceKind)}</strong> · {labelVideoJobStatus(job.status, job.confirmed)}
-                  {job.minutesBehind != null ? ` · ${job.minutesBehind} min behind` : ""}
-                  {job.confirmed ? " · confirmed as video evidence" : ""}
-                  <div>{job.sourceRef}</div>
-                  {job.error ? <div>{job.error}</div> : null}
-                  {job.result?.summary ? <p>{job.result.summary}</p> : null}
-                  {job.result?.events?.length ? (
-                    <ol>
-                      {job.result.events.slice(0, 24).map((event, index) => (
-                        <li key={`${job.id}-${index}`}>
-                          {event.tSec != null ? `${event.tSec}s · ` : ""}
-                          {event.label ?? event.kind}
-                          {typeof event.confidence === "number"
-                            ? ` · from video (confidence ${event.confidence.toFixed(1)})`
-                            : ""}
-                        </li>
-                      ))}
-                    </ol>
-                  ) : null}
-                  {job.status === "completed" && !job.confirmed ? (
-                    <Button type="button" variant="secondary" disabled={busy} onClick={() => void confirm(job.id)}>
-                      Confirm — keep as video evidence
-                    </Button>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
-          )}
-        </>
+        <VideoQueueList jobs={jobs} busy={busy} onConfirm={(id) => void confirm(id)} />
       )}
     </div>
   );

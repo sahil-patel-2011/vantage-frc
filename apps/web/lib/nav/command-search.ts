@@ -83,9 +83,8 @@ const KEYWORDS: Record<string, string[]> = {
   "competition:match-delta-watcher": ["delta", "changes", "what changed", "diff"],
   "competition:match-video-index": ["video", "film", "footage", "rewatch", "clips"],
   "competition:video-analysis": [
-    "analyze video",
-    "video analysis",
-    "match video",
+    "video",
+    "paste video",
     "pit camera",
     "youtube",
     "timeline",
