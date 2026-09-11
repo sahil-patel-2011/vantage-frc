@@ -230,10 +230,10 @@ export default function MyKitClient() {
         setup={
           <EmptyState
             soft
-            badge="Setup required"
+            badge="Needs setup"
             badgeTone="setup"
             title={view?.status === "setup_required" ? view.message : "Choose your team"}
-            description="My Kit reads only your own rows inside one team."
+            description="My Kit shows only your assignments on this team."
           >
             {view?.status === "setup_required" && view.steps[0] ? (
               <Button as="a" variant="primary" href={view.steps[0].href}>

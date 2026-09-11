@@ -9,9 +9,10 @@ Living record of the master engineering brief. Update this file at the end of ev
 **Date opened:** 2026-09-11.
 **This revision:** leftover student chrome not in open PRs #2–#40. Last-snapshot clients remaining on main minus those diffs are skip-list, flow-only, public-token, or multi-fetch. Files layout, Drive-team tags, usage-cutoff banner, share-link, Account profile, Help search, and phone-code setup no longer use native `app-button` / **Pairwise 2.0** / **Hard cut-off** / **subscription bridge** / **Twilio OTP env** copy. Proof this session: `npm run typecheck --workspace=@vantage/web` clean; targeted vitest **6 files / 30 passed**; Playwright `files-tags-cutoff-chrome.spec.ts` **1 passed / 1** (9.7s) on :3310 + local `vantage_ci` (127.0.0.1, not production DATABASE_*). No season ±3 claim — fixture MAE **89.7** / band ±90 unchanged. Master brief is **not** done.
 =======
-**Branch:** `cursor/vercel-ignore-preview-c0b5` off `origin/main`.
+**Branch:** `cursor/leftover-schema-oauth-chrome-c0b5` off `origin/main` at `dc016b44`.
 **Date opened:** 2026-09-11.
->>>>>>> origin/cursor/vercel-ignore-preview-c0b5
+**This revision:** leftover student chrome not in open PRs #2–#41. Last-snapshot clients remaining on main minus those diffs are skip-list, flow-only, public-token, or multi-fetch. Form builder, Chemistry, Inventory, Inspection Copilot, Learning, My Kit, and Kickoff intelligence no longer say **Setup required** / **schemas** / **TBA/Statbotics** / **Onshape OAuth**. CAD `/api/cad` and `/api/cad/agent` tell students to connect Onshape in CAD Connections. Master brief is **not** done.
+>>>>>>> d8dd3966 (Stop leftover student chrome from saying schemas and Onshape OAuth)
 
 ## Decisions the owner should know
 

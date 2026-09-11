@@ -124,7 +124,7 @@ function ChemistryShell({
       <PageHeader
         breadcrumbs="Competition / Chemistry"
         title="Alliance chemistry"
-        description="Score how well 2–3 robots complement each other from synced TBA/Statbotics seats."
+        description="Score how well 2–3 robots complement each other from synced event seats."
       >
         <ChemistryRelatedStrip orgId={orgId} />
       </PageHeader>
@@ -133,7 +133,7 @@ function ChemistryShell({
       <EmptyState
         soft
         className="chem-empty"
-        badge={failure ? undefined : copy.badge}
+        badge={failure ? undefined : shell === "setup" ? "Needs setup" : copy.badge}
         badgeTone="setup"
         title={failure ? failure.title : copy.title}
         description={failure ? failure.description : error ?? copy.description}

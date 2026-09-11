@@ -133,7 +133,7 @@ export function IntelligenceSection({
         }
         if (data.code === "setup_required" || data.status === "setup_required") {
           setProviderSetup({
-            message: data.message || data.error || "Configure an AI provider key before generating intelligence.",
+            message: data.message || data.error || "Ask a mentor to connect team AI before generating a kickoff summary.",
             steps: Array.isArray(data.steps) ? data.steps : [],
           });
           setError("");
@@ -194,9 +194,9 @@ export function IntelligenceSection({
       {providerSetup ? (
         <EmptyState
           soft
-          badge="Setup required"
+          badge="Needs setup"
           badgeTone="setup"
-          title="AI provider not configured"
+          title="Team AI isn't connected yet"
           description={providerSetup.message}
         >
           {providerSetup.steps[0] ? (
@@ -279,7 +279,7 @@ export function IntelligenceSection({
             {busyKey === "intel-analyze" ? "Generating…" : "Generate summary → Strategy seeds → CAD"}
           </Button>
           <span className="app-muted">
-            Seeds priorities + opens a CAD brief when generation succeeds. Hard usage cutoffs apply.
+            Seeds priorities and opens a CAD brief when generation succeeds. Chat pauses if the team is at its limit.
           </span>
         </div>
       </form>
@@ -298,9 +298,7 @@ export function IntelligenceSection({
             <div>
               <span className="kick-chip kick-phase-auto">{selected.adviceLabel}</span>
               <h3>{selected.title}</h3>
-              <p className="app-muted">
-                {selected.provider}/{selected.model}
-              </p>
+              <p className="app-muted">From your team&apos;s AI</p>
             </div>
             <div className="kick-intel-result-actions">
               {records.length > 1 ? (

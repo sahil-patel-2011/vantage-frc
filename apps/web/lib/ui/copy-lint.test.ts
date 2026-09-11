@@ -194,6 +194,7 @@ function isCopyFile(entry: string): boolean {
   if (entry === "next-match-copy.ts") return true;
   if (entry === "dashboard-home-model.ts") return true;
   if (entry === "snapshot.ts") return true;
+  if (entry === "form-builder.ts") return true;
   return false;
 }
 

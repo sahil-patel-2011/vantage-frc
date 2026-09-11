@@ -60,7 +60,7 @@ export const ANSWER_KIND_OPTIONS: Array<{
   {
     kind: "robot_image",
     label: "Robot images",
-    hint: "Upload or capture pit photos (org-isolated storage)",
+    hint: "Upload or capture pit photos for this team",
   },
   {
     kind: "counter",
@@ -921,7 +921,7 @@ export function formBuilderSetupSteps(orgId?: string | null): FormBuilderSetupSt
     {
       id: "workspace",
       label: "Choose your team",
-      detail: "Choose your team — published schemas stay your team's.",
+      detail: "Choose your team — published forms stay your team's.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -933,7 +933,7 @@ export function formBuilderSetupSteps(orgId?: string | null): FormBuilderSetupSt
     {
       id: "scouting",
       label: "Open Scouting",
-      detail: "Live entry uses the published schema after sync.",
+      detail: "Live entry uses the published form after sync.",
       href: hubHref("/competition", "scouting", orgId),
     },
     {
@@ -973,7 +973,7 @@ export function formBuilderShellCopy(
         kind,
         title: "Loading form builder…",
         description:
-          "Checking workspace, active event, and published schemas.",
+          "Checking your team, the active event, and published forms.",
       };
     case "error":
       return {
@@ -981,15 +981,15 @@ export function formBuilderShellCopy(
         badge: "Unavailable",
         title: "Could not load form builder",
         description:
-          "A network or server issue blocked schemas. Retry, or open Scouting / Coverage while it reloads.",
+          "A network or server issue blocked the form builder. Retry, or open Scouting / Coverage while it reloads.",
       };
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
-          "Form builder is org- and season-scoped. Choose your team and set an active TBA event so the publish year is known.",
+          "Choose your team and set the active event so match and pit forms publish for the right season.",
       };
     case "empty":
       return {
@@ -997,14 +997,14 @@ export function formBuilderShellCopy(
         badge: "Not published",
         title: `No ${typeLabel} form published yet`,
         description:
-          `Draft questions stay local until you publish a ${typeLabel} schema. Scouts and Coverage stay blank until a real version exists.`,
+          `Draft questions stay local until you publish a ${typeLabel} form. Scouts and Coverage stay blank until a real version exists.`,
       };
     default:
       return {
         kind: "ready",
         title: "Scouting form builder",
         description:
-          "Edit required fields, preview, and publish versioned match or pit schemas.",
+          "Edit required fields, preview, and publish match or pit forms.",
       };
   }
 }
@@ -1029,14 +1029,14 @@ export function formBuilderNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Choose your team before publishing schemas.",
+          detail: "Choose your team before publishing forms.",
           href: "/workspace",
           primary: true,
         },
         {
           id: "scouting",
           label: "Open Scouting",
-          detail: "Live entry stays blank until a real schema publishes.",
+          detail: "Live entry stays blank until a real form publishes.",
           href: hubHref("/competition", "scouting", null),
         },
         {
@@ -1087,20 +1087,20 @@ export function formBuilderNextActions(input: {
       {
         id: "retry",
         label: "Retry form builder",
-        detail: "Reload real schemas.",
+        detail: "Reload the form builder.",
         href: hubHref("/competition", "forms", orgId),
         primary: true,
       },
       {
         id: "scouting",
         label: "Open Scouting",
-        detail: "Scouting stays available while schemas reload.",
+        detail: "Scouting stays available while the form builder reloads.",
         href: hubHref("/competition", "scouting", orgId),
       },
       {
         id: "coverage",
         label: "Open Coverage",
-        detail: "Coverage stays available while schemas reload.",
+        detail: "Coverage stays available while the form builder reloads.",
         href: withOrgHref("/scouting/lineup", orgId),
       },
     ];
@@ -1112,7 +1112,7 @@ export function formBuilderNextActions(input: {
         id: "publish",
         label: input.canManageSchemas ? `Publish ${typeLabel} form` : "Ask an owner to publish",
         detail: input.canManageSchemas
-          ? `Publish a real ${typeLabel} schema so Scouting and Coverage can use it.`
+          ? `Publish a real ${typeLabel} form so Scouting and Coverage can use it.`
           : `Owners and admins publish ${typeLabel} forms — you can still preview the draft.`,
         href: hubHref("/competition", "forms", orgId),
         primary: true,

@@ -145,7 +145,7 @@ export default function LearningClient() {
           </>
         }
         title="Learning — Call Your Shot"
-        description="Every call a member commits on the engineering calculators lands here. Mentors see who is calibrating and who needs a hand; each member sees their own record. Nothing is scored below four graded calls."
+        description="Every call a member commits on Gearbox, Power budget, and Shooter table lands here. Mentors see who is calibrating and who needs a hand; each member sees their own record. Nothing is scored below four graded calls."
       />
       <nav className="intel-actions" aria-label="Related calculators">
         <a href="/gearbox">Gearbox</a>
@@ -174,7 +174,7 @@ export default function LearningClient() {
         )
       ) : view.status === "setup_required" ? (
         <EmptyState
-          badge="Setup required"
+          badge="Needs setup"
           badgeTone="setup"
           title="Choose your team"
           description={

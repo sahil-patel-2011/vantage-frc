@@ -116,7 +116,7 @@ async function shadedPngBase64For(
 }
 
 const NOT_CONNECTED =
-  "Connect Onshape with OAuth in CAD Connections before the CAD agent can drive a Part Studio. API keys alone are not a connected workspace.";
+  "Connect Onshape in CAD Connections before the CAD agent can open a Part Studio. A saved Onshape password on the server is not a connected team.";
 
 export async function GET(request: Request) {
   try {

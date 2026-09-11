@@ -12,7 +12,6 @@ import {
   inspectionCopilotShellCopy,
 } from "../../lib/inspection-copilot/inspection-copilot-related";
 import { hubHref } from "../../lib/nav/hubs";
-import { withOrgHref } from "../../lib/nav/product-nav";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { InspectionNextActionsPanel, InspectionShell } from "./inspection-chrome";
@@ -160,7 +159,7 @@ export default function InspectionCopilotClient() {
   const buildHref = hubHref("/build", "fmea", orgId);
   const batteriesHref = hubHref("/team", "batteries", orgId);
   const fmeaHref = hubHref("/build", "fmea", orgId);
-  const subsystemsHref = withOrgHref("/subsystems", orgId);
+  const weighInHref = hubHref("/build", "robot-weigh-in", orgId);
 
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
@@ -245,7 +244,7 @@ export default function InspectionCopilotClient() {
           </>
         }
         title="Inspection-Readiness Copilot"
-        description="Compare declared weight, frame/bumper, and wiring limits against measured robot values before you travel. Cross-check Batteries, FMEA, and Subsystems."
+        description="Compare declared weight, frame/bumper, and wiring limits against measured robot values before you travel. Cross-check Batteries, FMEA, and Weigh-in."
       >
         <div className="inspection-copilot-header-actions">
           {view.seasons.length > 0 ? (
@@ -317,7 +316,7 @@ export default function InspectionCopilotClient() {
               <p className="app-muted" style={{ marginTop: 8 }}>
                 Resolve critical flags from logged measurements first. Keep{" "}
                 <a href={batteriesHref}>Batteries</a>, <a href={fmeaHref}>FMEA</a>, and{" "}
-                <a href={subsystemsHref}>Subsystems</a> aligned with weigh-in rows.
+                <a href={weighInHref}>Weigh-in</a> aligned with those rows.
               </p>
             </Panel>
           </>

@@ -149,7 +149,7 @@ export async function GET(request: Request) {
         configured: hosted.configured,
         setupRequired: hosted.setupRequired,
         message: hosted.setupRequired
-          ? "Connect Onshape with OAuth in /cad/connections. Server API keys do not count as hosted CAD."
+          ? "Connect Onshape in CAD Connections. A saved Onshape password on the server does not count as connected."
           : onshapeSetupStatus().message,
       },
       onshapeConfigured: hosted.configured,
@@ -556,7 +556,7 @@ export async function POST(request: Request) {
           documents,
           configured: true,
           setupRequired: false,
-          message: `Onshape connected via ${onshape.via === "oauth" ? "OAuth" : "server API key"}.`,
+          message: `Onshape connected via ${onshape.via === "oauth" ? "your Onshape account" : "a saved team password"}.`,
           authPath: onshape.via,
         };
       }

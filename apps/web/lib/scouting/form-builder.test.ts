@@ -305,7 +305,10 @@ describe("form-builder", () => {
     }
     expect(formBuilderShellCopy("empty").badge).toBe("Not published");
     expectPlainCopy(formBuilderShellCopy("empty").description);
-    expect(formBuilderShellCopy("setup").badge).toBe("Setup required");
+    expect(formBuilderShellCopy("setup").badge).toBe("Needs setup");
+    expectPlainCopy(formBuilderShellCopy("setup").description);
+    expectPlainCopy(formBuilderShellCopy("loading").description);
+    expectPlainCopy(formBuilderShellCopy("error").description);
     expectPlainCopy(formBuilderShellCopy("ready").description);
     const actions = formBuilderNextActions({
       orgId: "org-1",
@@ -316,6 +319,15 @@ describe("form-builder", () => {
     expect(actions.some((a) => a.id === "scouting")).toBe(true);
     expect(actions.some((a) => a.id === "coverage")).toBe(true);
     expect(actions.every((a) => !/\bDEMO\b/.test(a.label))).toBe(true);
+    for (const action of actions) {
+      expectPlainCopy(action.detail);
+    }
+    for (const action of formBuilderNextActions({ orgId: null, shell: "setup" })) {
+      expectPlainCopy(action.detail);
+    }
+    for (const action of formBuilderNextActions({ orgId: "org-1", shell: "error" })) {
+      expectPlainCopy(action.detail);
+    }
   });
 });
 

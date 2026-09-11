@@ -105,7 +105,7 @@ export function FormBuilderShell({
       <PageHeader
         breadcrumbs="Competition / Form builder"
         title="Scouting form builder"
-        description="Publish versioned match or pit schemas. Scouts and Coverage stay blank until a real version exists."
+        description="Publish match or pit forms. Scouts and Coverage stay blank until a real version exists."
       >
         <FormBuilderRelatedStrip orgId={orgId} />
       </PageHeader>
@@ -115,7 +115,7 @@ export function FormBuilderShell({
         className="sfb-shell-empty"
         badge={
           shell === "setup"
-            ? "Setup required"
+            ? "Needs setup"
             : shell === "error"
               ? "Unavailable"
               : copy.badge
