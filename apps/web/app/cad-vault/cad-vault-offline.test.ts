@@ -12,5 +12,18 @@ describe("CAD Vault last snapshot stays on the phone", () => {
     expect(src).toMatch(/"cad-vault"/);
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
     expect(src).toMatch(/feature="CAD Vault"/);
+    expect(src).not.toMatch(/tessellation/i);
+    expect(src).not.toMatch(/magic numbers/i);
+  });
+
+  it("keeps related in the header and next-actions off setup", () => {
+    const chrome = readFileSync(join(DIR, "cad-vault-chrome.tsx"), "utf8");
+    expect(chrome).toMatch(/function CadVaultRelated/);
+    const emptyFn = chrome.slice(chrome.indexOf("function CadVaultEmptyCard"));
+    expect(emptyFn).not.toMatch(/CadVaultRelated/);
+    const src = readFileSync(join(DIR, "cad-vault-client.tsx"), "utf8");
+    const setup = src.slice(src.indexOf('view.status === "setup_required"'), src.indexOf("const documents"));
+    expect(setup).not.toMatch(/CadVaultNextActions/);
+    expect(setup).toMatch(/CadVaultEmptyCard shell="setup"/);
   });
 });

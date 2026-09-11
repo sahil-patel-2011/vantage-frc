@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   CAD_BUILD_RELATED_INCLUDE,
   CAD_COMPETITION_RELATED_INCLUDE,
+  CAD_HUB_RELATED_INCLUDE,
+  cadHubRelatedLinks,
   cadNextActions,
   formatTopologyEvidence,
   isMockTopologySummary,
@@ -11,6 +13,13 @@ describe("cad Soft-UI helpers", () => {
   it("focuses Build links on Kickoff + FMEA", () => {
     expect(CAD_BUILD_RELATED_INCLUDE).toEqual(["kickoff", "fmea"]);
     expect(CAD_COMPETITION_RELATED_INCLUDE).toEqual(["strategy"]);
+  });
+
+  it("names the CAD tab strip CAD vault / Learn CAD / Assembly manual", () => {
+    expect(CAD_HUB_RELATED_INCLUDE).toEqual(["cad-vault", "cad-learn", "assembly-manual"]);
+    const links = cadHubRelatedLinks("org-1", { include: [...CAD_HUB_RELATED_INCLUDE] });
+    expect(links.map((link) => link.label)).toEqual(["CAD vault", "Learn CAD", "Assembly manual"]);
+    expect(links.every((link) => !/analyze/i.test(link.label))).toBe(true);
   });
 
   it("labels mock topology as demo — never invents live geometry metrics", () => {

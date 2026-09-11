@@ -9,6 +9,43 @@ export const CAD_BUILD_RELATED_INCLUDE: BuildRelatedId[] = ["kickoff", "fmea"];
 /** Focused Soft-UI Competition strip for Strategy cross-links from CAD. */
 export const CAD_COMPETITION_RELATED_INCLUDE: CompetitionRelatedId[] = ["strategy"];
 
+export type CadHubRelatedId = "cad-vault" | "cad-learn" | "assembly-manual";
+
+export type CadHubRelatedLink = {
+  id: CadHubRelatedId;
+  label: string;
+  href: string;
+};
+
+/** Student CAD tab strip — vault / Learn CAD / assembly manual, not Analyze. */
+export const CAD_HUB_RELATED_INCLUDE: CadHubRelatedId[] = [
+  "cad-vault",
+  "cad-learn",
+  "assembly-manual",
+];
+
+const CAD_HUB_RELATED_LINKS: Array<{ id: CadHubRelatedId; label: string; path: string }> = [
+  { id: "cad-vault", label: "CAD vault", path: "/cad-vault" },
+  { id: "cad-learn", label: "Learn CAD", path: "/cad-learn" },
+  { id: "assembly-manual", label: "Assembly manual", path: "/assembly-manual" },
+];
+
+export function cadHubRelatedLinks(
+  orgId?: string | null,
+  options?: { active?: CadHubRelatedId; include?: CadHubRelatedId[] },
+): CadHubRelatedLink[] {
+  const include = options?.include ? new Set(options.include) : null;
+  return CAD_HUB_RELATED_LINKS.filter((link) => {
+    if (link.id === options?.active) return false;
+    if (include && !include.has(link.id)) return false;
+    return true;
+  }).map((link) => ({
+    id: link.id,
+    label: link.label,
+    href: withOrgHref(link.path, orgId),
+  }));
+}
+
 export type CadNextAction = {
   id: string;
   label: string;

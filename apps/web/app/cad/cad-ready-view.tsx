@@ -4,6 +4,7 @@ import type { Dispatch, MutableRefObject, RefObject, SetStateAction } from "reac
 import { Button } from "../../components/ui";
 import { UsageCutoffBanner } from "../../components/usage-cutoff-banner";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import { CAD_HUB_RELATED_INCLUDE, cadHubRelatedLinks } from "../../lib/cad/cad-related";
 import { completeDocumentRef, type ListedOnshapeEntities } from "../../lib/cad/list-entities";
 import type { ListedOnshapeAssembly } from "../../lib/cad/list-assembly";
 import type { ListedDocumentElements } from "../../lib/cad/list-document-elements";
@@ -183,7 +184,7 @@ export function CadReadyView({
               {!listedElements.elements.some(
                 (element) => element.id === workingTabId || element.id === boundElementId,
               ) ? (
-                <option value="">Select a listed tab</option>
+                <option value="">Choose a listed tab</option>
               ) : null}
               {listedElements.elements.map((element) => (
                 <option key={element.id} value={element.id}>
@@ -209,6 +210,13 @@ export function CadReadyView({
           ) : null}
         </div>
       </header>
+      <nav className="product-hub-related cad-related" aria-label="Related CAD tools">
+        {cadHubRelatedLinks(orgId, { include: [...CAD_HUB_RELATED_INCLUDE] }).map((link) => (
+          <Button as="a" variant="secondary" key={link.id} href={link.href}>
+            {link.label}
+          </Button>
+        ))}
+      </nav>
 
       {!state && loadFailure ? (
         (() => {
