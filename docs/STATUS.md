@@ -6,7 +6,7 @@ Living record of the master engineering brief. Update this file at the end of ev
 
 **Branch:** `cursor/fusion-cad-gui-edit-c0b5` off `origin/main` (`2f054166`).
 **Date opened:** 2026-09-11.
-**This revision:** Fusion 360 human-edit from the GUI (paste-link **Edit in Fusion** on vault, CAD setup, and CAD connections). Missing Fusion config is **Needs setup**. 401/403 is **Choose your team**. Did not rewrite the Onshape viewport. Union `feature-cache` / `shell-routes` / `sw.js` not shortened. Did not deploy. Master brief is **not** done.
+**This revision:** Fusion 360 human-edit from the GUI (paste-link **Edit in Fusion** on vault, CAD setup, and CAD connections). Missing Fusion config is **Needs setup**. 401/403 is **Choose your team**. Did not rewrite the Onshape viewport. Union `feature-cache` / `shell-routes` / `sw.js` not shortened. Did not deploy. Master brief is **not** done. This revision: `npm run typecheck` clean across workspaces. Targeted vitest **9 files / 31 passed** (0.45s). Fixture Playwright `fusion-cad-gui.spec.ts` **3 passed / 3** (9.6s) on `:3448` + local `vantage_ci` (127.0.0.1, not production DATABASE_*).
 
 ## Decisions the owner should know
 
@@ -62,7 +62,7 @@ See `docs/COMPETITIVE_NOTES.md`. That document is the brief for Tasks 2–4.
 | Route | What was wrong | Commit |
 |---|---|---|
 | `/video-analysis` Video | Title said Analyze video; empty said Pick a team first even when the header already had a team; extra Pair a video Pi CTA; "video jobs" / file id / confidence numbers. Now **Video**: session team from `/api/me` when the URL has no orgId, one Choose your team primary only when there is no team, related in the header (Match notes · Match video · Relays), Next-actions only after a video is queued, fetches abort at 8s. `/video` stays Match video. Fixture Playwright `video-analysis-shell.spec.ts`. | this commit |
-| Fusion CAD GUI human-edit | Onshape Edit-in-Onshape already on main. Fusion still said **Open in Fusion** and pairing-only. Students can paste an `a360.co` / Autodesk hub link and **Edit in Fusion** from CAD vault, `/cad/setup` (Fusion radio), and `/cad/connections` Fusion tile. Missing Fusion config → **Needs setup** (no env-var names). 401/403 → **Choose your team**. Onshape viewport untouched. Source lock: `fusion-cad-gui.test.ts`. | this commit |
+| Fusion CAD GUI human-edit | Onshape Edit-in-Onshape already on main. Fusion still said **Open in Fusion** and pairing-only. Students can paste an `a360.co` / Autodesk hub link and **Edit in Fusion** from CAD vault, `/cad/setup` (Fusion radio), and `/cad/connections` Fusion tile. Missing Fusion config → **Needs setup** (no env-var names). 401/403 → **Choose your team**. Onshape viewport untouched. Source lock: `fusion-cad-gui.test.ts`. Fixture Playwright `fusion-cad-gui.spec.ts` **3 passed / 3** (9.6s) on `:3448` + local `vantage_ci` (127.0.0.1, not production DATABASE_*). `npm run typecheck` clean across workspaces. Targeted vitest **9 files / 31 passed** (0.45s). | this commit |
 | `/competition` Event day | Duplicate page header when embedded in the hub; poll ran while the tab was hidden | this branch |
 | `/strategy` From our scouting | "pEPA" and "Private Edge" were jargon | this branch |
 | `/files` | "enforced by the database" | this branch |
