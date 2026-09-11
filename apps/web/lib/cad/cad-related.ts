@@ -106,16 +106,16 @@ export function cadNextActions(input: {
   if (!input.onshapeConfigured) {
     actions.push({
       id: "onshape-oauth",
-      label: "Configure Onshape OAuth",
-      detail: "Setup required — an admin must set ONSHAPE_OAUTH_* on the server before hosted CAD runs.",
+      label: "Connect Onshape",
+      detail: "Ask a mentor to finish Onshape setup, then connect in CAD Connections.",
       href: withOrgHref("/cad/connections", orgId),
       primary: actions.length === 0,
     });
   } else if (!input.onshapeConnected) {
     actions.push({
       id: "onshape-connect",
-      label: "Connect Onshape OAuth",
-      detail: "OAuth client is configured — connect your account in Connections before Run Onshape.",
+      label: "Connect Onshape",
+      detail: "Onshape is ready — connect your account in CAD Connections.",
       href: withOrgHref("/cad/connections", orgId),
       primary: actions.length === 0,
     });
@@ -124,8 +124,8 @@ export function cadNextActions(input: {
   if (!input.fusionRelayOnline) {
     actions.push({
       id: "fusion-relay",
-      label: "Pair Fusion desktop relay",
-      detail: "Fusion stays local — Vantage never hosts Autodesk. Pair vantage-cad on your machine to execute.",
+      label: "Pair Fusion desktop",
+      detail: "Fusion stays on this computer. Pair the desktop app when you need Autodesk jobs.",
       href: withOrgHref("/cad/setup", orgId),
       primary: actions.length === 0,
     });

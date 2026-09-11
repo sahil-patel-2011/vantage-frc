@@ -4,6 +4,7 @@ import { Button } from "../../../components/ui";
 import { useEffect, useMemo, useState } from "react";
 import {
   ONSHAPE_HOSTED_UNCONFIGURED_TITLE,
+  ONSHAPE_OAUTH_CTA,
   ONSHAPE_PLATFORM_HINT_CONFIGURED,
   ONSHAPE_PLATFORM_HINT_UNCONFIGURED,
   onshapeOauthCtaEnabled,
@@ -56,8 +57,8 @@ export default function CadSetupWizard({ orgId }: { orgId: string }) {
       setOnshapeSetupMessage(
         data.onshape?.setupRequired || !oauthReady
           ? oauthReady
-            ? String(data.onshape?.message ?? "Setup required — connect Onshape OAuth in CAD Connections.")
-            : "Setup required — set ONSHAPE_OAUTH_CLIENT_ID and ONSHAPE_OAUTH_CLIENT_SECRET on the server. Server API keys do not connect hosted CAD."
+            ? String(data.onshape?.message ?? "Connect Onshape in CAD Connections.")
+            : ONSHAPE_OAUTH_CTA.disabledDetail
           : "",
       );
     } else setMessage(data.error);
@@ -133,8 +134,7 @@ export default function CadSetupWizard({ orgId }: { orgId: string }) {
         <section className="cad-setup-panel">
           <h2>1. CAD platform</h2>
           <p className="app-muted" style={{ margin: 0 }}>
-            Onshape is the cross-platform live path. Use `vantage-cad login` on a laptop (no API keys), or
-            connect hosted Onshape OAuth in CAD Connections. Server keys are CLI last-resort only.
+            Onshape is the live path in the browser. Connect it in CAD Connections, or pair the desktop app on a laptop.
           </p>
           <label className="cad-choice">
             <input type="radio" name="cad" checked={cadTarget === "mock"} onChange={() => setCadTarget("mock")} />
@@ -265,7 +265,7 @@ export default function CadSetupWizard({ orgId }: { orgId: string }) {
               {cadTarget === "fusion360"
                 ? "Windows/macOS: install Fusion add-in via scripts/cad/install-fusion-addin.* then keep Fusion + vantage-cad start running. Linux: Fusion unavailable — use mock or Onshape."
                 : cadTarget === "onshape"
-                  ? "Run vantage-cad login, sign in yourself in Chromium, then keep the MCP session open. For hosted execution, connect Onshape OAuth in CAD Connections — server API keys are not a hosted connection."
+                  ? "Sign in to Onshape in the desktop app, then connect hosted Onshape in CAD Connections."
                   : "For mock path, keep using Deterministic mock in CAD Builder until you pair Fusion."}
             </li>
           </ol>

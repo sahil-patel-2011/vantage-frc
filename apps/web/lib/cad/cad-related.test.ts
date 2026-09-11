@@ -65,8 +65,8 @@ describe("cad Soft-UI helpers", () => {
       onshapeConnected: false,
       fusionRelayOnline: false,
     });
-    expect(actions.find((a) => a.id === "onshape-oauth")?.detail).toMatch(/Setup required/i);
-    expect(actions.find((a) => a.id === "fusion-relay")?.detail).toMatch(/never hosts/i);
+    expect(actions.find((a) => a.id === "onshape-oauth")?.detail).toMatch(/Ask a mentor/i);
+    expect(actions.find((a) => a.id === "fusion-relay")?.detail).toMatch(/this computer/i);
   });
 
   it("requires workspace when org is missing", () => {

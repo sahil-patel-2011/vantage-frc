@@ -165,6 +165,10 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/subsystem-signoff")).toBe(true);
     expect(pathnameIsOfflineShell("/prototype-tracker")).toBe(true);
     expect(pathnameIsOfflineShell("/equipment-maintenance")).toBe(true);
+    expect(pathnameIsOfflineShell("/start")).toBe(true);
+    expect(pathnameIsOfflineShell("/security")).toBe(true);
+    expect(pathnameIsOfflineShell("/notifications/preferences")).toBe(true);
+    expect(pathnameIsOfflineShell("/cad/connections")).toBe(true);
     expect(pathnameIsOfflineShell("/api/todos")).toBe(false);
   });
 
@@ -316,6 +320,10 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/subsystem-signoff")).toBe("Subsystem Sign-off");
     expect(offlineCapableLabel("/prototype-tracker")).toBe("Prototype-to-Decision Tracker");
     expect(offlineCapableLabel("/equipment-maintenance")).toBe("Equipment Maintenance");
+    expect(offlineCapableLabel("/start")).toBe("Your path");
+    expect(offlineCapableLabel("/security")).toBe("Security");
+    expect(offlineCapableLabel("/notifications/preferences")).toBe("Notification preferences");
+    expect(offlineCapableLabel("/cad/connections")).toBe("CAD connections");
   });
 
   it("keeps public/sw.js SHELL_ROUTES aligned with OFFLINE_SHELL_ROUTES", () => {
@@ -460,6 +468,10 @@ describe("offline shell routes", () => {
     expect(featureCacheKey("subsystem-signoff", "org-1", "2026")).toBe("subsystem-signoff:org-1:2026");
     expect(featureCacheKey("prototype-tracker", "org-1", "2026")).toBe("prototype-tracker:org-1:2026");
     expect(featureCacheKey("equipment-maintenance", "org-1")).toBe("equipment-maintenance:org-1");
+    expect(featureCacheKey("start", "org-1")).toBe("start:org-1");
+    expect(featureCacheKey("security", "_")).toBe("security:_");
+    expect(featureCacheKey("notification-prefs", "_")).toBe("notification-prefs:_");
+    expect(featureCacheKey("cad-connections", "org-1")).toBe("cad-connections:org-1");
     expect(featureCacheKey("schedule", "org-1")).toBe("schedule:org-1");
   });
 

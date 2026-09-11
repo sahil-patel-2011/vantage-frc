@@ -1,11 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { OfflineBanner } from "../../../components/offline-banner";
 import { EmptyState, PageHeader, Panel, Button } from "../../../components/ui";
+import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
 import {
   NOTIFICATION_RELATED_INCLUDE,
   notificationRelatedLinks,
 } from "../../../lib/notifications";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
+import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 import "../../product-hub.css";
 import "../notifications.css";
 
@@ -159,6 +163,33 @@ const DEFAULT_EMAIL: EmailPrefs = {
   memberOnboarding: true,
 };
 
+type PrefsView = {
+  status: "live";
+  notificationPrefs: InAppPrefs;
+  emailPrefs: EmailPrefs;
+  delivery: Delivery | null;
+};
+
+function isPrefsView(value: unknown): value is PrefsView {
+  if (!value || typeof value !== "object") return false;
+  const row = value as { status?: unknown; notificationPrefs?: unknown; emailPrefs?: unknown };
+  return row.status === "live" && row.notificationPrefs != null && row.emailPrefs != null;
+}
+
+function responseError(data: unknown): string {
+  return data && typeof data === "object" && "error" in data && typeof data.error === "string"
+    ? data.error
+    : "";
+}
+
+async function persistPrefsSnapshot(data: PrefsView): Promise<void> {
+  try {
+    await putFeatureSnapshot("notification-prefs", "_", data);
+  } catch {
+    // Live Notification preferences already painted; IndexedDB is best-effort.
+  }
+}
+
 function PrefsRelated() {
   const links = notificationRelatedLinks({
     include: [...NOTIFICATION_RELATED_INCLUDE],
@@ -166,6 +197,9 @@ function PrefsRelated() {
   });
   return (
     <nav className="product-hub-related notif-related" aria-label="Related account tools">
+      <Button as="a" variant="secondary" href="/notifications">
+        Inbox
+      </Button>
       {links.map((link) => (
         <Button as="a" variant="secondary" key={link.id} href={link.href}>
           {link.label}
@@ -176,39 +210,105 @@ function PrefsRelated() {
 }
 
 export default function NotificationPreferencesClient() {
+  const [view, setView] = useState<PrefsView | null>(null);
   const [inAppPrefs, setInAppPrefs] = useState<InAppPrefs>(DEFAULT_IN_APP);
   const [emailPrefs, setEmailPrefs] = useState<EmailPrefs>(DEFAULT_EMAIL);
   const [delivery, setDelivery] = useState<Delivery | null>(null);
   const [message, setMessage] = useState("");
   const [messageOk, setMessageOk] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [fetchFailed, setFetchFailed] = useState(false);
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<PrefsView | null>(null);
+  viewRef.current = view;
 
-  async function load() {
-    setLoading(true);
-    const response = await fetch("/api/notifications/preferences");
-    const data = (await response.json()) as {
-      error?: string;
-      notificationPrefs?: InAppPrefs;
-      emailPrefs?: EmailPrefs;
-      delivery?: Delivery;
-    };
-    if (!response.ok) {
-      setMessage(data.error ?? "Could not load preferences.");
-      setMessageOk(false);
-      setLoading(false);
-      return;
+  const applyView = useCallback((next: PrefsView) => {
+    setView(next);
+    setInAppPrefs(next.notificationPrefs);
+    setEmailPrefs(next.emailPrefs);
+    setDelivery(next.delivery);
+  }, []);
+
+  const load = useCallback(async () => {
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<PrefsView>("notification-prefs", "_");
+      if (!viewRef.current && cached?.data && isPrefsView(cached.data)) {
+        applyView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
     }
-    if (data.notificationPrefs) setInAppPrefs(data.notificationPrefs);
-    if (data.emailPrefs) setEmailPrefs(data.emailPrefs);
-    if (data.delivery) setDelivery(data.delivery);
-    setMessage("");
-    setLoading(false);
-  }
+    setFetchFailed(false);
+    setErrorStatus(null);
+    try {
+      const response = await fetch("/api/notifications/preferences", {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      const body: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setFetchFailed(true);
+        setErrorStatus(response.status);
+        setMessage(responseError(body) || "Could not load preferences.");
+        setMessageOk(false);
+        return;
+      }
+      if (!response.ok || !body || typeof body !== "object") {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setMessage("Could not refresh Notification preferences. Showing the last copy on this device.");
+          setMessageOk(false);
+          setFetchFailed(false);
+          return;
+        }
+        setFetchFailed(true);
+        setErrorStatus(response.status);
+        setMessage(responseError(body) || "Could not load preferences.");
+        setMessageOk(false);
+        return;
+      }
+      const row = body as {
+        notificationPrefs?: InAppPrefs;
+        emailPrefs?: EmailPrefs;
+        delivery?: Delivery;
+      };
+      const next: PrefsView = {
+        status: "live",
+        notificationPrefs: row.notificationPrefs ?? DEFAULT_IN_APP,
+        emailPrefs: row.emailPrefs ?? DEFAULT_EMAIL,
+        delivery: row.delivery ?? null,
+      };
+      applyView(next);
+      setFromCache(false);
+      setCachedAt(null);
+      setMessage("");
+      await persistPrefsSnapshot(next);
+    } catch {
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setMessage("Could not refresh Notification preferences. Showing the last copy on this device.");
+        setMessageOk(false);
+        setFetchFailed(false);
+        return;
+      }
+      setFetchFailed(true);
+      setMessage("Could not load preferences.");
+      setMessageOk(false);
+    }
+  }, [applyView]);
 
   useEffect(() => {
     void load();
-  }, []);
+  }, [load]);
 
   async function save() {
     setBusy(true);
@@ -234,6 +334,15 @@ export default function NotificationPreferencesClient() {
       }
       if (data.notificationPrefs) setInAppPrefs(data.notificationPrefs);
       if (data.emailPrefs) setEmailPrefs(data.emailPrefs);
+      const next: PrefsView = {
+        status: "live",
+        notificationPrefs: data.notificationPrefs ?? inAppPrefs,
+        emailPrefs: data.emailPrefs ?? emailPrefs,
+        delivery,
+      };
+      setView(next);
+      setFromCache(false);
+      await persistPrefsSnapshot(next);
       setMessage("Preferences saved. Opted-out categories stay out of your inbox and email.");
       setMessageOk(true);
     } finally {
@@ -241,50 +350,84 @@ export default function NotificationPreferencesClient() {
     }
   }
 
-  return (
-    <main className="module-page notif-prefs-page notif-page">
-      <PageHeader
-        breadcrumbs="Account / Notifications"
-        title="Notification preferences"
-        description="Choose which coach→member events land in your inbox, plus optional email opt-ins."
-      >
-        <div className="notif-header-actions">
-          <Button as="a" variant="secondary" href="/notifications">
-            Open inbox
-          </Button>
-          <Button as="a" variant="secondary" href="/whats-new">
-            What’s new
-          </Button>
-          <Button as="a" variant="secondary" href="/support">
-            Help & Support
-          </Button>
-          <Button as="a" variant="secondary" href="/account?tab=notifications">
-            Account
-          </Button>
-        </div>
-      </PageHeader>
+  const failure =
+    !view && fetchFailed
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus,
+            message,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message,
+          },
+        )
+      : null;
 
-      <PrefsRelated />
+  if (!view) {
+    return (
+      <main className="module-page notif-prefs-page notif-page">
+        <PageHeader
+          breadcrumbs="Account / Notifications"
+          title="Notification preferences"
+          description="Choose which events land in your inbox, plus optional email opt-ins."
+        >
+          <PrefsRelated />
+        </PageHeader>
+        <OfflineBanner feature="Notification preferences" fromCache={fromCache} cachedAt={cachedAt} />
+        <EmptyState
+          soft
+          title={failure ? failure.title : "Loading preferences…"}
+          description={failure ? failure.description : "Pulling your inbox and email opt-ins."}
+          aria-busy={!fetchFailed}
+        >
+          {failure?.primary ? (
+            <Button as="a" variant="primary" href={failure.primary.href}>
+              {failure.primary.label}
+            </Button>
+          ) : null}
+          {failure?.showRetry ? (
+            <Button variant="secondary" type="button" onClick={() => void load()}>
+              Retry
+            </Button>
+          ) : null}
+        </EmptyState>
+      </main>
+    );
+  }
 
-      {delivery ? (
-        <p className="telemetry-status" role="status">
-          <span className={`app-badge ${delivery.status === "available" ? "good" : "setup"}`}>
-            {delivery.status === "available" ? "Email ready" : "Setup required"}
-          </span>{" "}
-          {delivery.detail}
-        </p>
-      ) : null}
+  switch (view.status) {
+    case "live":
+      return (
+        <main className="module-page notif-prefs-page notif-page">
+          <PageHeader
+            breadcrumbs="Account / Notifications"
+            title="Notification preferences"
+            description="Choose which events land in your inbox, plus optional email opt-ins."
+          >
+            <PrefsRelated />
+          </PageHeader>
+          <OfflineBanner feature="Notification preferences" fromCache={fromCache} cachedAt={cachedAt} />
 
-      {message ? (
-        <p className={`telemetry-status${messageOk ? " success" : ""}`} role="status">
-          {message}
-        </p>
-      ) : null}
+          {delivery ? (
+            <p className="telemetry-status" role="status">
+              <span className={`app-badge ${delivery.status === "available" ? "good" : "setup"}`}>
+                {delivery.status === "available" ? "Email ready" : "Setup required"}
+              </span>{" "}
+              {delivery.detail}
+            </p>
+          ) : null}
 
-      {loading ? (
-        <EmptyState soft title="Loading preferences…" description="Pulling your inbox and email opt-ins." aria-busy />
-      ) : (
-        <>
+          {message ? (
+            <p className={`telemetry-status${messageOk ? " success" : ""}`} role="status">
+              {message}
+            </p>
+          ) : null}
+
           <Panel className="account-panel">
             <h2>In-app inbox</h2>
             <p className="app-muted">
@@ -341,12 +484,15 @@ export default function NotificationPreferencesClient() {
                 </li>
               ))}
             </ul>
-            <button className="primary-action" type="button" disabled={busy} onClick={() => void save()}>
+            <Button variant="primary" type="button" disabled={busy} onClick={() => void save()}>
               Save preferences
-            </button>
+            </Button>
           </Panel>
-        </>
-      )}
-    </main>
-  );
+        </main>
+      );
+    default: {
+      const _never: never = view;
+      return _never;
+    }
+  }
 }
