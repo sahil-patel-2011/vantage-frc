@@ -1,132 +1,341 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
-import type { StandupView } from "../../lib/standup";
+import { defaultDigestDate, type StandupView } from "../../lib/standup";
+import { hubHref } from "../../lib/nav/hubs";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { withOrgHref } from "../../lib/nav/product-nav";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 type LiveView = Extract<StandupView, { status: "live" }>;
 type EmptyView = Extract<StandupView, { status: "empty" }>;
 
-export default function StandupDigestClient() {
-  const [view, setView] = useState<StandupView | null>(null);
-  const [fetchFailed, setFetchFailed] = useState(false);
-  const [errorStatus, setErrorStatus] = useState<number | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [date, setDate] = useState<string | null>(null);
+function responseError(data: unknown): string {
+  return data && typeof data === "object" && "error" in data && typeof data.error === "string"
+    ? data.error
+    : "";
+}
 
-  const load = useCallback((dateOverride?: string) => {
-    setFetchFailed(false);
-    setErrorStatus(null);
-    setErrorMessage(null);
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const dateQuery = dateOverride ?? params.get("date");
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    if (dateQuery) query.set("date", dateQuery);
-    void fetch(`/api/standup-digest${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
-        const data = (await response.json()) as StandupView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setErrorStatus(response.status);
-          setErrorMessage("error" in data && data.error ? data.error : null);
-          setFetchFailed(true);
-          return;
-        }
-        setView(data);
-        setDate(data.digestDate);
-      })
-      .catch(() => setFetchFailed(true));
-  }, []);
+function isStandupView(value: unknown): value is StandupView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "empty" || status === "live";
+}
 
-  useEffect(() => {
-    load();
-  }, [load]);
+function standupCacheOrg(data: StandupView, orgHint: string): string {
+  switch (data.status) {
+    case "setup_required":
+      return orgHint;
+    case "empty":
+    case "live":
+      return data.orgId.trim() || orgHint;
+    default: {
+      data satisfies never;
+      return orgHint;
+    }
+  }
+}
 
-  const digestDate = date ?? (view && "digestDate" in view ? view.digestDate : "");
+async function persistStandupSnapshot(
+  orgHint: string,
+  dateHint: string,
+  data: StandupView,
+): Promise<void> {
+  const cacheOrg = standupCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  const dateKey = data.digestDate || dateHint;
+  try {
+    await putFeatureSnapshot("standup-digest", cacheOrg, data, dateHint || dateKey);
+    if (!orgHint) await putFeatureSnapshot("standup-digest", "_", data, dateHint || dateKey);
+  } catch {
+    // Live Morning standup already painted; IndexedDB is best-effort.
+  }
+}
 
+function StandupRelated({ orgId }: { orgId?: string | null }) {
   return (
-    <main className="module-page">
-      <PageHeader
-        breadcrumbs="Work / Standup"
-        title="Morning standup"
-        description="Yesterday's closed hours and task movement — compiled only from work that actually happened."
-      >
-        {view && view.status !== "setup_required" ? (
-          <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-            Date
-            <input
-              type="date"
-              value={digestDate}
-              onChange={(event) => {
-                const next = event.target.value;
-                setDate(next);
-                load(next);
-              }}
-            />
-          </label>
-        ) : null}
-      </PageHeader>
-
-      {fetchFailed ? (
-        <LoadFailure
-          status={errorStatus}
-          message={errorMessage}
-          onRetry={() => load()}
-        />
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking hours and work for this date." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          {view.steps[0] ? (
-            <Button as="a" variant="primary" href={view.steps[0].href}>
-              {view.steps[0].label}
-            </Button>
-          ) : null}
-        </EmptyState>
-      ) : view.status === "empty" ? (
-        <EmptyDigest view={view} />
-      ) : (
-        <LiveDigest view={view} />
-      )}
-    </main>
+    <nav className="product-hub-related" aria-label="Related team tools">
+      <Button as="a" variant="secondary" href={withOrgHref("/hours", orgId)}>
+        Hours
+      </Button>
+      <Button as="a" variant="secondary" href={hubHref("/team", "goals-tracker", orgId)}>
+        Season Goals
+      </Button>
+      <Button as="a" variant="secondary" href={hubHref("/team", "meeting-autopilot", orgId)}>
+        Meeting agenda
+      </Button>
+    </nav>
   );
 }
 
-function LoadFailure({
-  status,
-  message,
-  onRetry,
-}: {
-  status: number | null;
-  message: string | null;
-  onRetry: () => void;
-}) {
-  const copy = loadFailureCopy(
-    classifyLoadFailure({
-      status,
-      message,
-      online: typeof navigator === "undefined" ? true : navigator.onLine,
-    }),
+function StandupNextActions({ orgId }: { orgId: string }) {
+  const actions = [
     {
-      nextPath: typeof window === "undefined" ? null : `${window.location.pathname}${window.location.search}`,
-      message,
+      id: "hours",
+      label: "Clock hours",
+      detail: "Yesterday's digest is compiled from hours that actually closed.",
+      href: withOrgHref("/hours", orgId),
+      primary: true,
     },
-  );
+    {
+      id: "goals",
+      label: "Open Season Goals",
+      detail: "Season targets sit beside this morning summary.",
+      href: hubHref("/team", "goals-tracker", orgId),
+      primary: false,
+    },
+    {
+      id: "meeting",
+      label: "Open Meeting agenda",
+      detail: "Agenda and minutes attach to a calendar meeting.",
+      href: hubHref("/team", "meeting-autopilot", orgId),
+      primary: false,
+    },
+  ];
   return (
-    <EmptyState title={copy.title} description={copy.description}>
-      {copy.primary ? (
-        <Button as="a" variant="primary" href={copy.primary.href}>
-          {copy.primary.label}
-        </Button>
+    <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <Button as="a" variant="secondary" href={action.href}>
+              Open
+            </Button>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+export default function StandupDigestClient() {
+  const [view, setView] = useState<StandupView | null>(null);
+  const [error, setError] = useState("");
+  const [fetchFailed, setFetchFailed] = useState(false);
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [date, setDate] = useState<string | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<StandupView | null>(null);
+  viewRef.current = view;
+
+  const orgId = view && "orgId" in view ? view.orgId : null;
+
+  const load = useCallback(async (dateOverride?: string) => {
+    const params = new URLSearchParams(window.location.search);
+    const orgHint = params.get("orgId")?.trim() ?? "";
+    const dateQuery = dateOverride ?? params.get("date") ?? "";
+    const dateHint = dateQuery.trim() || defaultDigestDate();
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<StandupView>(
+        "standup-digest",
+        orgHint || "_",
+        dateHint,
+      );
+      if (!viewRef.current && cached?.data && isStandupView(cached.data)) {
+        setView(cached.data);
+        setDate(cached.data.digestDate);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
+    setFetchFailed(false);
+    setErrorStatus(null);
+    setErrorMessage("");
+    setError("");
+    try {
+      const query = new URLSearchParams();
+      if (orgHint) query.set("orgId", orgHint);
+      if (dateHint) query.set("date", dateHint);
+      const response = await fetch(
+        `/api/standup-digest${query.toString() ? `?${query.toString()}` : ""}`,
+        {
+          cache: "no-store",
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+        },
+      );
+      const data: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setFetchFailed(true);
+        setErrorStatus(response.status);
+        setErrorMessage(responseError(data));
+        return;
+      }
+      if (!response.ok || !isStandupView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Morning standup. Showing the last copy on this device.");
+          setFetchFailed(false);
+          return;
+        }
+        setFetchFailed(true);
+        setErrorStatus(response.status);
+        setErrorMessage(responseError(data));
+        return;
+      }
+      setView(data);
+      setDate(data.digestDate);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistStandupSnapshot(orgHint, dateHint || data.digestDate, data);
+    } catch {
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Morning standup. Showing the last copy on this device.");
+        setFetchFailed(false);
+        return;
+      }
+      setFetchFailed(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const digestDate = date ?? (view && "digestDate" in view ? view.digestDate : "");
+  const teamHref = orgId ? `/team?orgId=${encodeURIComponent(orgId)}` : "/team";
+  const header = (
+    <PageHeader
+      breadcrumbs={
+        <>
+          <a href={teamHref}>Team</a>
+          {" / Morning standup"}
+        </>
+      }
+      title="Morning standup"
+      description="Yesterday's closed hours and task movement — compiled only from work that actually happened."
+    >
+      {view && view.status !== "setup_required" ? (
+        <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          Date
+          <input
+            type="date"
+            value={digestDate}
+            onChange={(event) => {
+              const next = event.target.value;
+              setDate(next);
+              void load(next);
+            }}
+          />
+        </label>
       ) : null}
-      {copy.showRetry ? (
-        <Button variant="secondary" type="button" onClick={onRetry}>
-          Retry
-        </Button>
+      <StandupRelated orgId={orgId} />
+    </PageHeader>
+  );
+
+  if (!view) {
+    const failure = fetchFailed
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus,
+            message: errorMessage,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: errorMessage || "A network or server issue prevented loading. Try again.",
+          },
+        )
+      : null;
+    return (
+      <main className="module-page">
+        {header}
+        <OfflineBanner feature="Morning standup" fromCache={fromCache} cachedAt={cachedAt} />
+        <EmptyState
+          title={failure ? failure.title : "Loading…"}
+          description={failure ? failure.description : "Checking hours and work for this date."}
+          aria-busy={!fetchFailed}
+        >
+          {failure?.primary ? (
+            <Button as="a" variant="primary" href={failure.primary.href}>
+              {failure.primary.label}
+            </Button>
+          ) : null}
+          {failure?.showRetry ? (
+            <Button variant="secondary" type="button" onClick={() => void load()}>
+              Retry
+            </Button>
+          ) : null}
+        </EmptyState>
+      </main>
+    );
+  }
+
+  switch (view.status) {
+    case "setup_required":
+      return (
+        <main className="module-page">
+          {header}
+          <OfflineBanner feature="Morning standup" fromCache={fromCache} cachedAt={cachedAt} />
+          {error ? (
+            <p className="telemetry-status" role="alert">
+              {error}
+            </p>
+          ) : null}
+          <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
+            {view.steps[0] ? (
+              <Button as="a" variant="primary" href={view.steps[0].href}>
+                {view.steps[0].label}
+              </Button>
+            ) : null}
+          </EmptyState>
+        </main>
+      );
+    case "empty":
+      return (
+        <main className="module-page">
+          {header}
+          <OfflineBanner feature="Morning standup" fromCache={fromCache} cachedAt={cachedAt} />
+          {error ? (
+            <p className="telemetry-status" role="alert">
+              {error}
+            </p>
+          ) : null}
+          <EmptyDigest view={view} />
+        </main>
+      );
+    case "live":
+      break;
+    default: {
+      view satisfies never;
+      return null;
+    }
+  }
+
+  return (
+    <main className="module-page">
+      {header}
+      <OfflineBanner feature="Morning standup" fromCache={fromCache} cachedAt={cachedAt} />
+      {error ? (
+        <p className="telemetry-status" role="alert">
+          {error}
+        </p>
       ) : null}
-    </EmptyState>
+      <StandupNextActions orgId={view.orgId} />
+      <LiveDigest view={view} />
+    </main>
   );
 }
 

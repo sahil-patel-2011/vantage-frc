@@ -7,6 +7,7 @@ import {
   CAD_PAIR_DESCRIPTION,
   CAD_PAIR_FUSION,
   CAD_PAIR_ONSHAPE,
+  CAD_PAIR_TITLE,
 } from "../../../lib/cad/cad-setup-copy";
 
 export default function PairClient({
@@ -43,7 +44,7 @@ export default function PairClient({
       <form className="cad-pair-card" onSubmit={approve}>
         <div>
           <span className="breadcrumbs">CAD / Pair desktop</span>
-          <h1>Approve this computer</h1>
+          <h1>{CAD_PAIR_TITLE}</h1>
           <p className="app-muted" style={{ margin: "8px 0 0" }}>
             {CAD_PAIR_DESCRIPTION}
           </p>

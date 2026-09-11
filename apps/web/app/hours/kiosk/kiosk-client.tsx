@@ -1,5 +1,6 @@
 "use client";
 import { Button } from "../../../components/ui";
+import { OfflineBanner } from "../../../components/offline-banner";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -23,9 +24,34 @@ import {
   scanCodeProblemMessage,
   scanFeedbackMessage,
 } from "../../../lib/hours/scan-codes";
+import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 
 type Banner = { tone: "in" | "out" | "queued" | "error"; message: string } | null;
+
+function isKioskView(value: unknown): value is KioskView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "ready";
+}
+
+function kioskCacheOrg(data: KioskView, orgHint: string): string {
+  const fromContext = data.context.orgId?.trim();
+  if (fromContext) return fromContext;
+  return orgHint;
+}
+
+async function persistKioskSnapshot(orgHint: string, data: KioskView): Promise<void> {
+  const cacheOrg = kioskCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("hours-kiosk", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("hours-kiosk", "_", data);
+  } catch {
+    // Live Hours kiosk already painted; IndexedDB is best-effort.
+  }
+}
 
 function elapsedLabel(clockIn: string, now: number): string {
   const ms = now - new Date(clockIn).getTime();
@@ -59,6 +85,8 @@ export default function KioskClient() {
   const [rejected, setRejected] = useState<Array<{ clientId: string; displayName: string | null; reason: string }>>([]);
   const [sweep, setSweep] = useState("");
   const [panel, setPanel] = useState<"none" | "cards" | "policy">("none");
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
 
   const inputRef = useRef<HTMLInputElement | null>(null);
   const bannerTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -69,6 +97,8 @@ export default function KioskClient() {
    * buffered and processed in order — never dropped on a disabled field.
    */
   const chain = useRef<Promise<void>>(Promise.resolve());
+  const viewRef = useRef<KioskView | null>(null);
+  viewRef.current = view;
 
   /** Focus only. Does NOT clear: a queued scan may already be in the field. */
   const focusField = useCallback(() => {
@@ -100,23 +130,70 @@ export default function KioskClient() {
   }, []);
 
   const load = useCallback(async () => {
+    const params = new URLSearchParams(window.location.search);
+    const orgHint = params.get("orgId")?.trim() ?? "";
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<KioskView>("hours-kiosk", orgHint || "_");
+      if (!viewRef.current && cached?.data && isKioskView(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
     setFetchFailed(false);
     setErrorStatus(null);
-    const params = new URLSearchParams(window.location.search);
-    const orgId = params.get("orgId");
     try {
-      const response = await fetch(`/api/hours/kiosk${orgId ? `?orgId=${encodeURIComponent(orgId)}` : ""}`);
-      const data = (await response.json()) as KioskView | { error?: string };
-      if (!response.ok || !("status" in data)) {
-        setError("error" in data && data.error ? data.error : "Could not load the kiosk.");
+      const response = await fetch(`/api/hours/kiosk${orgHint ? `?orgId=${encodeURIComponent(orgHint)}` : ""}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      const data: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setError(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "Could not load the kiosk.",
+        );
+        setErrorStatus(response.status);
+        setFetchFailed(true);
+        return;
+      }
+      if (!response.ok || !isKioskView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Hours kiosk. Showing the last copy on this device.");
+          setFetchFailed(false);
+          return;
+        }
+        setError(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "Could not load the kiosk.",
+        );
         setErrorStatus(response.status);
         setFetchFailed(true);
         return;
       }
       setError("");
       setView(data);
+      setFromCache(false);
+      setCachedAt(null);
       setNow(Date.now());
+      await persistKioskSnapshot(orgHint, data);
     } catch {
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Hours kiosk. Showing the last copy on this device.");
+        setFetchFailed(false);
+        return;
+      }
       setFetchFailed(true);
     }
   }, []);
@@ -331,7 +408,7 @@ export default function KioskClient() {
     [board, view],
   );
 
-  if (fetchFailed || !view || view.status === "setup_required") {
+  if (!view) {
     return (
       <main className="module-page hours-page hours-kiosk">
         <header className="app-page-header">
@@ -340,16 +417,9 @@ export default function KioskClient() {
             <h1>Scan-in Kiosk</h1>
           </div>
         </header>
+        <OfflineBanner feature="Hours kiosk" fromCache={fromCache} cachedAt={cachedAt} />
         <div className="app-card hours-empty">
-          {view?.status === "setup_required" ? (
-            <>
-              <strong>Choose your team</strong>
-              <p className="app-muted">{view.message}</p>
-              <Button as="a" variant="primary" href="/workspace">
-                Choose your team
-              </Button>
-            </>
-          ) : fetchFailed ? (
+          {fetchFailed ? (
             (() => {
               const copy = loadFailureCopy(
                 classifyLoadFailure({
@@ -389,6 +459,27 @@ export default function KioskClient() {
     );
   }
 
+  if (view.status === "setup_required") {
+    return (
+      <main className="module-page hours-page hours-kiosk">
+        <header className="app-page-header">
+          <div>
+            <span className="breadcrumbs">Team / Build Hours / Kiosk</span>
+            <h1>Scan-in Kiosk</h1>
+          </div>
+        </header>
+        <OfflineBanner feature="Hours kiosk" fromCache={fromCache} cachedAt={cachedAt} />
+        <div className="app-card hours-empty">
+          <strong>Choose your team</strong>
+          <p className="app-muted">{view.message}</p>
+          <Button as="a" variant="primary" href="/workspace">
+            Choose your team
+          </Button>
+        </div>
+      </main>
+    );
+  }
+
   const { context, policy, openSessions, totals, scanCodes, unenrolledCount } = view;
   const canAdmin = context.role === "owner" || context.role === "admin";
   const nameById = new Map(totals.map((total) => [total.userId, total.name]));
@@ -412,6 +503,12 @@ export default function KioskClient() {
           </Button>
         </div>
       </header>
+      <OfflineBanner feature="Hours kiosk" fromCache={fromCache} cachedAt={cachedAt} />
+      {error && fromCache ? (
+        <p className="app-muted" role="status">
+          {error}
+        </p>
+      ) : null}
 
       <div className={online ? "kiosk-net" : "kiosk-net offline"} role="status">
         <span className="dot" aria-hidden="true" />

@@ -297,7 +297,7 @@ export default function FilesClient() {
         <div className="drive-layout-toggle" role="group" aria-label="Layout">
           <Button
             type="button"
-            variant={layout === "grid" ? "primary" : "secondary"}
+            variant="secondary"
             aria-pressed={layout === "grid"}
             onClick={() => setLayout("grid")}
           >
@@ -305,7 +305,7 @@ export default function FilesClient() {
           </Button>
           <Button
             type="button"
-            variant={layout === "list" ? "primary" : "secondary"}
+            variant="secondary"
             aria-pressed={layout === "list"}
             onClick={() => setLayout("list")}
           >

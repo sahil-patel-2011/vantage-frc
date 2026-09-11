@@ -23,6 +23,8 @@ export const CAD_SETUP_ONSHAPE_BLOCKED = CAD_SETUP_ASK_MENTOR;
 export const CAD_SETUP_FUSION =
   "Fusion stays on this computer. Pair the desktop app when you need Autodesk jobs.";
 
+export const CAD_PAIR_TITLE = "Pair this computer";
+
 export const CAD_PAIR_DESCRIPTION =
   "Only approve a code shown on a computer you control. Never type your Vantage password into the desktop app.";
 

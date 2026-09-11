@@ -1,15 +1,121 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
-import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import { hubHref } from "../../lib/nav/hubs";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { submissionStatusLabel } from "../../lib/scout-schema-negotiate";
 import type { ScoutSchemaNegotiateView } from "../../lib/scout-schema-negotiate/compute-scout-schema-negotiate";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 type LiveView = Extract<ScoutSchemaNegotiateView, { status: "live" }>;
 
 function pct(value: number): string {
   return `${Math.round(value * 100)}%`;
+}
+
+function isScoutSchemaNegotiateView(value: unknown): value is ScoutSchemaNegotiateView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function responseError(data: unknown): string {
+  return data && typeof data === "object" && "error" in data && typeof data.error === "string"
+    ? data.error
+    : "";
+}
+
+function schemaNegotiateCacheOrg(data: ScoutSchemaNegotiateView, orgHint: string): string {
+  switch (data.status) {
+    case "setup_required":
+      return (typeof data.orgId === "string" && data.orgId.trim()) || orgHint;
+    case "live":
+      return data.orgId.trim() || orgHint;
+    default: {
+      data satisfies never;
+      return orgHint;
+    }
+  }
+}
+
+async function persistSchemaNegotiateSnapshot(
+  orgHint: string,
+  data: ScoutSchemaNegotiateView,
+): Promise<void> {
+  const cacheOrg = schemaNegotiateCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("scout-schema-negotiate", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("scout-schema-negotiate", "_", data);
+  } catch {
+    // Live Schema sync already painted; IndexedDB is best-effort.
+  }
+}
+
+function SchemaSyncRelated({ orgId }: { orgId?: string | null }) {
+  return (
+    <nav className="product-hub-related" aria-label="Related scouting tools">
+      <Button as="a" variant="secondary" href={hubHref("/competition", "scouting", orgId)}>
+        Scouting
+      </Button>
+      <Button as="a" variant="secondary" href={hubHref("/competition", "scout-p2p-relay", orgId)}>
+        Pit mesh
+      </Button>
+      <Button as="a" variant="secondary" href={hubHref("/competition", "scouting-schema-ab", orgId)}>
+        Schema A/B
+      </Button>
+    </nav>
+  );
+}
+
+function SchemaSyncNextActions({ orgId }: { orgId: string }) {
+  const actions = [
+    {
+      id: "register",
+      label: "Register a form version",
+      detail: "Name the fields on the form this team is using so older tablets can still submit.",
+      href: "#schema-sync-register",
+      primary: true,
+    },
+    {
+      id: "scouting",
+      label: "Open Scouting",
+      detail: "Live match and pit entries are the rows this page keeps.",
+      href: hubHref("/competition", "scouting", orgId),
+      primary: false,
+    },
+    {
+      id: "mesh",
+      label: "Open Pit mesh",
+      detail: "Tablets share entries in the pit when venue Wi-Fi drops.",
+      href: hubHref("/competition", "scout-p2p-relay", orgId),
+      primary: false,
+    },
+  ];
+  return (
+    <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <Button as="a" variant="secondary" href={action.href}>
+              Open
+            </Button>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
 }
 
 export default function ScoutSchemaNegotiateClient() {
@@ -20,34 +126,84 @@ export default function ScoutSchemaNegotiateClient() {
   const [failureStatus, setFailureStatus] = useState<number | null>(null);
   const [failureMessage, setFailureMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<ScoutSchemaNegotiateView | null>(null);
+  viewRef.current = view;
 
   const orgId = view && "orgId" in view ? view.orgId : null;
 
-  const load = useCallback(() => {
+  const load = useCallback(async () => {
+    const params = new URLSearchParams(window.location.search);
+    const orgHint = params.get("orgId")?.trim() ?? "";
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<ScoutSchemaNegotiateView>(
+        "scout-schema-negotiate",
+        orgHint || "_",
+      );
+      if (!viewRef.current && cached?.data && isScoutSchemaNegotiateView(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
     setFetchFailed(false);
     setFailureStatus(null);
     setFailureMessage("");
     setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    void fetch(`/api/scout-schema-negotiate${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
-        const data = (await response.json()) as ScoutSchemaNegotiateView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setFailureStatus(response.status);
-          setFailureMessage("error" in data && data.error ? data.error : "");
-          setFetchFailed(true);
+    try {
+      const query = new URLSearchParams();
+      if (orgHint) query.set("orgId", orgHint);
+      const response = await fetch(
+        `/api/scout-schema-negotiate${query.toString() ? `?${query.toString()}` : ""}`,
+        {
+          cache: "no-store",
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+        },
+      );
+      const data: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setFetchFailed(true);
+        setFailureStatus(response.status);
+        setFailureMessage(responseError(data));
+        return;
+      }
+      if (!response.ok || !isScoutSchemaNegotiateView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Schema sync. Showing the last copy on this device.");
+          setFetchFailed(false);
           return;
         }
-        setView(data);
-      })
-      .catch(() => setFetchFailed(true));
+        setFetchFailed(true);
+        setFailureStatus(response.status);
+        setFailureMessage(responseError(data));
+        return;
+      }
+      setView(data);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistSchemaNegotiateSnapshot(orgHint, data);
+    } catch {
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Schema sync. Showing the last copy on this device.");
+        setFetchFailed(false);
+        return;
+      }
+      setFetchFailed(true);
+    }
   }, []);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   const mutate = useCallback(
@@ -60,13 +216,16 @@ export default function ScoutSchemaNegotiateClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
-        const data = (await response.json()) as ScoutSchemaNegotiateView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setError("error" in data && data.error ? data.error : "Something went wrong.");
+        const data: unknown = await response.json().catch(() => null);
+        if (!response.ok || !isScoutSchemaNegotiateView(data)) {
+          setError(responseError(data) || "Something went wrong.");
           return;
         }
         setView(data);
+        setFromCache(false);
+        void persistSchemaNegotiateSnapshot(orgId, data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -76,75 +235,107 @@ export default function ScoutSchemaNegotiateClient() {
     [orgId, busy],
   );
 
+  const competitionHref = orgId ? `/competition?orgId=${encodeURIComponent(orgId)}` : "/competition";
+  const header = (
+    <PageHeader
+      breadcrumbs={
+        <>
+          <a href={competitionHref}>Competition</a>
+          {" / Schema sync"}
+        </>
+      }
+      title="Schema sync"
+      description="Keep scout entries from an older tablet form instead of dropping them."
+    >
+      <SchemaSyncRelated orgId={orgId} />
+    </PageHeader>
+  );
+
+  if (!view) {
+    const failure = fetchFailed
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: failureStatus,
+            message: failureMessage,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: failureMessage || "A network or server issue prevented loading. Try again.",
+          },
+        )
+      : null;
+    return (
+      <main className="module-page">
+        {header}
+        <OfflineBanner feature="Schema sync" fromCache={fromCache} cachedAt={cachedAt} />
+        <EmptyState
+          title={failure ? failure.title : "Loading…"}
+          description={failure ? failure.description : "Checking your team."}
+          aria-busy={!fetchFailed}
+        >
+          {failure?.primary ? (
+            <Button as="a" variant="primary" href={failure.primary.href}>
+              {failure.primary.label}
+            </Button>
+          ) : null}
+          {failure?.showRetry ? (
+            <Button variant="secondary" type="button" onClick={() => void load()}>
+              Retry
+            </Button>
+          ) : null}
+        </EmptyState>
+      </main>
+    );
+  }
+
+  switch (view.status) {
+    case "setup_required":
+      return (
+        <main className="module-page">
+          {header}
+          <OfflineBanner feature="Schema sync" fromCache={fromCache} cachedAt={cachedAt} />
+          {error ? (
+            <p className="telemetry-status" role="alert">
+              {error}
+            </p>
+          ) : null}
+          <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
+            {view.steps[0] ? (
+              <Button as="a" variant="primary" href={view.steps[0].href}>
+                {view.steps[0].label}
+              </Button>
+            ) : null}
+          </EmptyState>
+        </main>
+      );
+    case "live":
+      break;
+    default: {
+      view satisfies never;
+      return null;
+    }
+  }
+
   return (
     <main className="module-page">
-      <PageHeader
-        breadcrumbs={
-          <>
-            <a href={orgId ? `/competition?orgId=${encodeURIComponent(orgId)}` : "/competition"}>Competition</a>
-            {" / Scout Schema Negotiate"}
-          </>
-        }
-        title="Scout Schema Negotiate"
-        description="Reconcile scouting submissions captured on an older tablet schema instead of silently dropping them."
-      />
-
+      {header}
+      <OfflineBanner feature="Schema sync" fromCache={fromCache} cachedAt={cachedAt} />
       {error ? (
         <p className="telemetry-status" role="alert">
           {error}
         </p>
       ) : null}
-
-      {fetchFailed ? (
-        (() => {
-          const copy = loadFailureCopy(
-            classifyLoadFailure({
-              status: failureStatus,
-              message: failureMessage,
-              online: typeof navigator === "undefined" ? true : navigator.onLine,
-            }),
-            {
-              nextPath:
-                typeof window === "undefined"
-                  ? null
-                  : `${window.location.pathname}${window.location.search}`,
-              message:
-                failureMessage || "A network or server issue prevented loading. Try again.",
-            },
-          );
-          return (
-            <EmptyState title={copy.title} description={copy.description}>
-              {copy.primary ? (
-                <Button as="a" variant="primary" href={copy.primary.href}>
-                  {copy.primary.label}
-                </Button>
-              ) : null}
-              {copy.showRetry ? (
-                <Button variant="secondary" type="button" onClick={() => load()}>
-                  Retry
-                </Button>
-              ) : null}
-            </EmptyState>
-          );
-        })()
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your team." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          {view.steps[0] ? (
-            <Button as="a" variant="primary" href={view.steps[0].href}>
-              {view.steps[0].label}
-            </Button>
-          ) : null}
-        </EmptyState>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <SummaryTiles view={view} />
-          <RegisterVersionForm busy={busy} mutate={mutate} />
-          <VersionsPanel view={view} />
-          <SubmissionsPanel view={view} busy={busy} mutate={mutate} />
-        </div>
-      )}
+      <SchemaSyncNextActions orgId={view.orgId} />
+      <div style={{ display: "grid", gap: 16 }}>
+        <SummaryTiles view={view} />
+        <RegisterVersionForm busy={busy} mutate={mutate} />
+        <VersionsPanel view={view} />
+        <SubmissionsPanel view={view} busy={busy} mutate={mutate} />
+      </div>
     </main>
   );
 }
@@ -286,6 +477,7 @@ function RegisterVersionForm({
 
   return (
     <Panel
+      id="schema-sync-register"
       as="form"
       onSubmit={(event) => {
         event.preventDefault();

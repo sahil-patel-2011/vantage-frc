@@ -1,7 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, PageHeader, Button } from "../../components/ui";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   WHATS_NEW_RELATED_INCLUDE,
@@ -196,6 +199,28 @@ function ReleaseCard({
   );
 }
 
+type WhatsNewView = { releases: Release[] };
+
+function isReleaseList(value: unknown): value is Release[] {
+  if (!Array.isArray(value)) return false;
+  return value.every(
+    (row) => row && typeof row === "object" && typeof (row as Release).id === "string",
+  );
+}
+
+function isWhatsNewView(value: unknown): value is WhatsNewView {
+  if (!value || typeof value !== "object") return false;
+  return isReleaseList((value as WhatsNewView).releases);
+}
+
+async function persistWhatsNewSnapshot(data: WhatsNewView): Promise<void> {
+  try {
+    await putFeatureSnapshot("whats-new", "_", data);
+  } catch {
+    // Live What’s new already painted; IndexedDB is best-effort.
+  }
+}
+
 export default function WhatsNewClient() {
   const [releases, setReleases] = useState<Release[]>([]);
   const [loading, setLoading] = useState(true);
@@ -203,29 +228,87 @@ export default function WhatsNewClient() {
   const [fetchFailed, setFetchFailed] = useState(false);
   // Kept so an expired session offers sign-in instead of a Retry that cannot work.
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const paintedRef = useRef(false);
 
   const load = useCallback(async () => {
-    setLoading(true);
+    let hadCache = paintedRef.current;
+    try {
+      const cached = await getFeatureSnapshot<WhatsNewView>("whats-new", "_");
+      if (!paintedRef.current && cached?.data && isWhatsNewView(cached.data)) {
+        setReleases(cached.data.releases);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        setLoading(false);
+        paintedRef.current = true;
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
     setFetchFailed(false);
     setErrorStatus(null);
+    if (!hadCache) setLoading(true);
     try {
-      const response = await fetch("/api/whats-new");
-      const data = (await response.json()) as { releases?: Release[]; error?: string };
-      if (!response.ok) {
-        setMessage(data.error ?? "Could not load What’s new.");
+      const response = await fetch("/api/whats-new", {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      const data: unknown = await response.json().catch(() => null);
+      const errorMessage =
+        data && typeof data === "object" && "error" in data && typeof data.error === "string"
+          ? data.error
+          : "";
+      if (response.status === 401 || response.status === 403) {
+        setReleases([]);
+        paintedRef.current = false;
+        setFromCache(false);
+        setCachedAt(null);
+        setMessage(errorMessage || "Could not load What’s new.");
+        setErrorStatus(response.status);
+        setFetchFailed(true);
+        setLoading(false);
+        return;
+      }
+      const next = isWhatsNewView(data)
+        ? data
+        : data && typeof data === "object" && isReleaseList((data as { releases?: unknown }).releases)
+          ? { releases: (data as { releases: Release[] }).releases }
+          : null;
+      if (!response.ok || !next) {
+        if (hadCache || paintedRef.current) {
+          setFromCache(true);
+          setMessage("Could not refresh What’s new. Showing the last copy on this device.");
+          setFetchFailed(false);
+          setLoading(false);
+          return;
+        }
+        setMessage(errorMessage || "Could not load What’s new.");
         setErrorStatus(response.status);
         setReleases([]);
         setFetchFailed(true);
+        setLoading(false);
         return;
       }
       setMessage("");
-      // Real published rows only — never invent DEMO release history client-side.
-      setReleases(Array.isArray(data.releases) ? data.releases : []);
+      setReleases(next.releases);
+      paintedRef.current = true;
+      setFromCache(false);
+      setCachedAt(null);
+      setLoading(false);
+      await persistWhatsNewSnapshot(next);
     } catch {
+      if (hadCache || paintedRef.current) {
+        setFromCache(true);
+        setMessage("Could not refresh What’s new. Showing the last copy on this device.");
+        setFetchFailed(false);
+        setLoading(false);
+        return;
+      }
       setMessage("Network error loading What’s new.");
       setReleases([]);
       setFetchFailed(true);
-    } finally {
       setLoading(false);
     }
   }, []);
@@ -283,6 +366,7 @@ export default function WhatsNewClient() {
       </PageHeader>
 
       <WhatsNewRelated />
+      <OfflineBanner feature="What’s new" fromCache={fromCache} cachedAt={cachedAt} />
 
       <BetaProgramCard />
 
@@ -291,28 +375,23 @@ export default function WhatsNewClient() {
       {loading ? (
         <EmptyState soft title="Loading releases…" description="Checking published notes for your plan." aria-busy />
       ) : failure ? (
-        <>
-          <EmptyState
-            title={failure.title}
-            description={failure.description}
-            badge="Unavailable"
-            badgeTone="setup"
-          >
-            <div className="whats-new-empty-actions">
-              {failure.primary ? (
-                <Button as="a" variant="primary" href={failure.primary.href}>
-                  {failure.primary.label}
-                </Button>
-              ) : null}
-              {failure.showRetry ? (
-                <Button variant="primary" type="button" onClick={() => void load()}>
-                  Retry
-                </Button>
-              ) : null}
-            </div>
-          </EmptyState>
-          <NextActions releaseCount={0} unreadCount={0} />
-        </>
+        <EmptyState
+          title={failure.title}
+          description={failure.description}
+          badge="Unavailable"
+          badgeTone="setup"
+        >
+          {failure.primary ? (
+            <Button as="a" variant="primary" href={failure.primary.href}>
+              {failure.primary.label}
+            </Button>
+          ) : null}
+          {failure.showRetry ? (
+            <Button variant="secondary" type="button" onClick={() => void load()}>
+              Retry
+            </Button>
+          ) : null}
+        </EmptyState>
       ) : releases.length === 0 ? (
         <>
           <EmptyState

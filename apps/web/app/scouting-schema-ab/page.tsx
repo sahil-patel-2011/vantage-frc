@@ -1,7 +1,7 @@
 import ScoutingSchemaAbClient from "./scouting-schema-ab-client";
 
 export const metadata = {
-  title: "Scouting Schema A/B",
+  title: "Schema A/B",
 };
 
 export default function ScoutingSchemaAbPage() {

@@ -1,12 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import {
   EmptyState,
-  ErrorState,
   PageHeader,
   Panel,
   SoftBlockSkeleton, Button } from "../../components/ui";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   albumItemCounts,
   collectFilterOptions,
@@ -38,6 +41,28 @@ import {
 import "./media-library.css";
 
 type LiveView = Extract<MediaLibraryView, { status: "live" }>;
+
+function isMediaLibraryView(value: unknown): value is MediaLibraryView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function mediaLibraryCacheOrg(data: MediaLibraryView, orgHint: string): string {
+  if (typeof data.orgId === "string" && data.orgId.trim()) return data.orgId;
+  return orgHint;
+}
+
+async function persistMediaLibrarySnapshot(orgHint: string, data: MediaLibraryView): Promise<void> {
+  const cacheOrg = mediaLibraryCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("media-library", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("media-library", "_", data);
+  } catch {
+    // Live Media Library already painted; IndexedDB is best-effort.
+  }
+}
 
 type UploadProgress = {
   key: string;
@@ -207,6 +232,9 @@ function formatDuration(seconds: number): string {
 export default function MediaLibraryClient() {
   const [view, setView] = useState<MediaLibraryView | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
   const [filter, setFilter] = useState<MediaFilter>({
     albumId: "all",
     kind: "all",
@@ -222,18 +250,69 @@ export default function MediaLibraryClient() {
   const [actionError, setActionError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
+  const viewRef = useRef<MediaLibraryView | null>(null);
+  viewRef.current = view;
 
   const refresh = useCallback(async () => {
+    const orgHint =
+      typeof window === "undefined" ? "" : new URLSearchParams(window.location.search).get("orgId")?.trim() ?? "";
+    let hadCache = Boolean(viewRef.current);
     try {
-      const orgId =
-        typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("orgId");
+      const cached = await getFeatureSnapshot<MediaLibraryView>("media-library", orgHint || "_");
+      if (!viewRef.current && cached?.data && isMediaLibraryView(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
+    setLoadError(null);
+    setErrorStatus(null);
+    try {
       const response = await fetch(
-        orgId ? `/api/media-library?orgId=${encodeURIComponent(orgId)}` : "/api/media-library",
+        orgHint ? `/api/media-library?orgId=${encodeURIComponent(orgHint)}` : "/api/media-library",
+        { cache: "no-store", signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS) },
       );
-      if (!response.ok) throw new Error(`Request failed (${response.status})`);
-      setView((await response.json()) as MediaLibraryView);
+      const data: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setErrorStatus(response.status);
+        setLoadError(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "Could not load the media library",
+        );
+        return;
+      }
+      if (!response.ok || !isMediaLibraryView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setLoadError("Could not refresh Media Library. Showing the last copy on this device.");
+          return;
+        }
+        setErrorStatus(response.status);
+        setLoadError(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "Could not load the media library",
+        );
+        return;
+      }
+      setView(data);
+      setFromCache(false);
+      setCachedAt(null);
       setLoadError(null);
+      await persistMediaLibrarySnapshot(orgHint, data);
     } catch (error) {
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setLoadError("Could not refresh Media Library. Showing the last copy on this device.");
+        return;
+      }
       setLoadError(error instanceof Error ? error.message : "Could not load the media library");
     }
   }, []);
@@ -405,11 +484,39 @@ export default function MediaLibraryClient() {
     [selected, postAction, refresh],
   );
 
-  if (loadError) {
+  if (loadError && !view) {
+    const failure = loadFailureCopy(
+      classifyLoadFailure({
+        status: errorStatus,
+        message: loadError,
+        online: typeof navigator === "undefined" ? true : navigator.onLine,
+      }),
+      {
+        nextPath:
+          typeof window === "undefined" ? null : `${window.location.pathname}${window.location.search}`,
+        message: loadError,
+      },
+    );
     return (
       <div className="ml-page">
         <PageHeader title="Media Library" description="Team photos and videos, in one place." />
-        <ErrorState message={loadError} onRetry={() => void refresh()} />
+        <OfflineBanner feature="Media Library" fromCache={fromCache} cachedAt={cachedAt} />
+        <EmptyState
+          soft
+          title={failure.title}
+          description={failure.description}
+        >
+          {failure.primary ? (
+            <Button as="a" variant="primary" href={failure.primary.href}>
+              {failure.primary.label}
+            </Button>
+          ) : null}
+          {failure.showRetry ? (
+            <Button variant="secondary" type="button" onClick={() => void refresh()}>
+              Retry
+            </Button>
+          ) : null}
+        </EmptyState>
       </div>
     );
   }
@@ -417,6 +524,7 @@ export default function MediaLibraryClient() {
     return (
       <div className="ml-page">
         <PageHeader title="Media Library" description="Team photos and videos, in one place." />
+        <OfflineBanner feature="Media Library" fromCache={fromCache} cachedAt={cachedAt} />
         <SoftBlockSkeleton />
       </div>
     );
@@ -425,6 +533,7 @@ export default function MediaLibraryClient() {
     return (
       <div className="ml-page">
         <PageHeader title="Media Library" description="Team photos and videos, in one place." />
+        <OfflineBanner feature="Media Library" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState badge="Setup required" badgeTone="setup" title="Choose your team" description={view.message}>
           {view.steps[0] ? (
             <Button as="a" variant="primary" href={view.steps[0].href}>
@@ -443,6 +552,12 @@ export default function MediaLibraryClient() {
         title="Media Library"
         description="Every team photo and video — uploads, pit-scouting shots, and business artwork — in one place."
       />
+      <OfflineBanner feature="Media Library" fromCache={fromCache} cachedAt={cachedAt} />
+      {loadError ? (
+        <p className="ml-error" role="status">
+          {loadError}
+        </p>
+      ) : null}
 
       <Panel className="ml-meter" aria-label="Storage meter">
         <strong>{live.meter.headline}</strong>

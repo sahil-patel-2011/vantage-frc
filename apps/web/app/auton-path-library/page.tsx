@@ -1,7 +1,7 @@
 import AutonPathLibraryClient from "./auton-path-library-client";
 
 export const metadata = {
-  title: "Autonomous Path Library",
+  title: "Auton paths",
 };
 
 export default function AutonPathLibraryPage() {

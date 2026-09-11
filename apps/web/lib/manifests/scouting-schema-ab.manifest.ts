@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "scouting-schema-ab",
-  title: "Scouting Schema A/B",
+  title: "Schema A/B",
   route: "/scouting-schema-ab",
   apiRoute: "/api/scouting-schema-ab",
   hub: "Competition",

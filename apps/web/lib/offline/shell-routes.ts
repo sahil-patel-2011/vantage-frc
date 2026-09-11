@@ -159,6 +159,87 @@ export const OFFLINE_SHELL_ROUTES = [
   "/parts-catalog",
   "/parts-relay",
   "/cad/setup",
+  "/account",
+  "/alumni-network",
+  "/auto-routines",
+  "/auton-path-library",
+  "/bom-cost-rollup",
+  "/bringup",
+  "/budget-reconciler",
+  "/bus-factor",
+  "/cad/connections",
+  "/checklist-library",
+  "/code-perf",
+  "/connectors",
+  "/cross-domain-alerts",
+  "/data-quality-scorecard",
+  "/decision-critic",
+  "/degraded-mode",
+  "/district-advancement",
+  "/doc-roles",
+  "/driver-tryouts",
+  "/exit-interview",
+  "/gearbox",
+  "/goals-tracker",
+  "/hours/kiosk",
+  "/incident-heatmap",
+  "/knowledge-drafts",
+  "/leadership",
+  "/media-library",
+  "/meeting-autopilot",
+  "/mentor-hours",
+  "/migrate",
+  "/mock-judging",
+  "/notebook",
+  "/notifications/preferences",
+  "/object-chat-bridge",
+  "/parents",
+  "/power-budget",
+  "/presence",
+  "/readiness-score",
+  "/reuse-advisor",
+  "/reviews",
+  "/roadmap",
+  "/safety-training",
+  "/scout-p2p-relay",
+  "/scout-schema-negotiate",
+  "/scout-training-mode",
+  "/scouting-schema-ab",
+  "/scouting/forms",
+  "/search",
+  "/season-rollover",
+  "/security",
+  "/shooter-table",
+  "/showcase",
+  "/skills-graph",
+  "/software-versions",
+  "/spares",
+  "/sponsor-tier-calculator",
+  "/standup-digest",
+  "/start",
+  "/subsystems",
+  "/support",
+  "/team/ai-bridge",
+  "/team/ai-keys",
+  "/team/ai-runs",
+  "/team/ai-usage",
+  "/team/alumni",
+  "/team/awards",
+  "/team/background",
+  "/team/discord",
+  "/team/getting-started",
+  "/team/grants/calendar",
+  "/team/profile",
+  "/team/prompts",
+  "/team/security",
+  "/team/slack",
+  "/team/storage",
+  "/troubleshoot",
+  "/tuning",
+  "/weight-budget",
+  "/whats-new",
+  "/wiring",
+  "/wiring-diagnoser",
 ] as const;
 
 export type OfflineShellRoute = (typeof OFFLINE_SHELL_ROUTES)[number];
@@ -177,7 +258,12 @@ export function pathnameIsOfflineShell(pathname: string): boolean {
 export function offlineCapableLabel(pathname: string): string | null {
   const bare = pathname.split("?")[0] ?? pathname;
   if (bare.startsWith("/scouting/lineup")) return "Lineup & coverage";
+  if (bare.startsWith("/scouting/forms")) return "Scout forms";
   if (bare.startsWith("/scouting-heat-signals")) return "Scouting Heat Signals";
+  if (bare.startsWith("/scouting-schema-ab")) return "Schema A/B";
+  if (bare.startsWith("/scout-schema-negotiate")) return "Schema sync";
+  if (bare.startsWith("/scout-p2p-relay")) return "Pit mesh";
+  if (bare.startsWith("/scout-training-mode")) return "Scout training mode";
   if (bare.startsWith("/scouting")) return "Scouting";
   if (bare.startsWith("/schedule")) return "Schedule";
   if (bare.startsWith("/offline-shell")) return "This phone";
@@ -191,7 +277,22 @@ export function offlineCapableLabel(pathname: string): string | null {
     return "Calendar";
   }
   if (bare.startsWith("/team/data")) return "Team Data";
+  if (bare.startsWith("/team/grants/calendar")) return "Grant calendar";
   if (bare.startsWith("/team/grants")) return "Grant writing";
+  if (bare.startsWith("/team/alumni")) return "Alumni";
+  if (bare.startsWith("/team/ai-bridge")) return "AI subscription bridge";
+  if (bare.startsWith("/team/ai-keys")) return "AI keys";
+  if (bare.startsWith("/team/ai-runs")) return "Ask AI history";
+  if (bare.startsWith("/team/ai-usage")) return "Your keys usage";
+  if (bare.startsWith("/team/awards")) return "Awards";
+  if (bare.startsWith("/team/background")) return "Team background";
+  if (bare.startsWith("/team/discord")) return "Discord";
+  if (bare.startsWith("/team/getting-started")) return "Getting started";
+  if (bare.startsWith("/team/profile")) return "Team profile";
+  if (bare.startsWith("/team/prompts")) return "Prompts";
+  if (bare.startsWith("/team/security")) return "Team security";
+  if (bare.startsWith("/team/slack")) return "Slack";
+  if (bare.startsWith("/team/storage")) return "Storage";
   if (bare === "/team") return "Team";
   if (bare.startsWith("/todos") || bare.startsWith("/tasks")) return "Todos";
   if (bare.startsWith("/logistics")) return "Logistics";
@@ -208,6 +309,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/strategy/draft")) return "Alliance board";
   if (bare.startsWith("/strategy")) return "Strategy";
   if (bare.startsWith("/hours-self-view")) return "My Hours";
+  if (bare.startsWith("/hours/kiosk")) return "Hours kiosk";
   if (bare.startsWith("/hours")) return "Hours";
   if (bare.startsWith("/messages")) return "Chat";
   if (bare.startsWith("/match-checklist")) return "Match checklist";
@@ -237,6 +339,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/rankings")) return "Rankings";
   if (bare.startsWith("/grant-report")) return "Grant Report";
   if (bare.startsWith("/media-kit")) return "Media Kit";
+  if (bare.startsWith("/media-library")) return "Media Library";
   if (bare.startsWith("/media")) return "Media";
   if (bare.startsWith("/sponsorship")) return "Sponsorship";
   if (bare.startsWith("/sponsor-suite")) return "Sponsor Suite";
@@ -273,6 +376,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/subsystem-signoff")) return "Subsystem Sign-off";
   if (bare.startsWith("/prototype-tracker")) return "Prototype-to-Decision Tracker";
   if (bare.startsWith("/equipment-maintenance")) return "Equipment Maintenance";
+  if (bare.startsWith("/cad/connections")) return "CAD connections";
   if (bare.startsWith("/cad/setup")) return "CAD setup";
   if (bare.startsWith("/spare-robot-kit")) return "Spare Robot Kit";
   if (bare.startsWith("/spare-forecast")) return "Spare Forecast";
@@ -290,6 +394,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/season-planning-workspace")) return "Season Planning";
   if (bare.startsWith("/retro")) return "Retro";
   if (bare.startsWith("/tuning-autopilot")) return "Tuning Autopilot";
+  if (bare === "/tuning" || bare.startsWith("/tuning/")) return "Tuning log";
   if (bare.startsWith("/assembly-manual")) return "Assembly manual";
   if (bare.startsWith("/packing")) return "Packing";
   if (bare.startsWith("/batteries")) return "Batteries";
@@ -312,11 +417,13 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/recognition")) return "Recognition";
   if (bare.startsWith("/budget")) return "Season budget";
   if (bare.startsWith("/subteams")) return "Subteam progress";
+  if (bare.startsWith("/safety-training")) return "Safety Training";
   if (bare.startsWith("/safety")) return "Safety";
   if (bare.startsWith("/writer")) return "Writer";
   if (bare.startsWith("/learning")) return "Learning";
   if (bare.startsWith("/training")) return "Training";
   if (bare.startsWith("/tool-checkout")) return "Tool checkout";
+  if (bare.startsWith("/goals-tracker")) return "Season Goals";
   if (bare.startsWith("/goals")) return "Goals";
   if (bare.startsWith("/reimbursements")) return "Reimbursements";
   if (bare.startsWith("/costs")) return "Season Costs";
@@ -328,12 +435,68 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/match-debrief")) return "Match debrief";
   if (bare.startsWith("/match-copilot")) return "Match Copilot";
   if (bare.startsWith("/event-readiness")) return "Event readiness";
+  if (bare.startsWith("/notifications/preferences")) return "Notification preferences";
   if (bare.startsWith("/notifications")) return "Notifications";
+  if (bare.startsWith("/forms/") && bare !== "/forms") return "Form";
   if (bare.startsWith("/forms")) return "Forms";
   if (bare.startsWith("/incidents")) return "Safety Incident Log";
   if (bare.startsWith("/roles")) return "Season roles";
   if (bare.startsWith("/parts-catalog")) return "Parts catalog";
   if (bare.startsWith("/parts-relay")) return "Parts Relay";
+  if (bare.startsWith("/account")) return "Account";
+  if (bare.startsWith("/alumni-network")) return "Alumni Network";
+  if (bare.startsWith("/auto-routines")) return "Auto routines";
+  if (bare.startsWith("/auton-path-library")) return "Auton paths";
+  if (bare.startsWith("/bom-cost-rollup")) return "BOM cost rollup";
+  if (bare.startsWith("/bringup")) return "Bring-up";
+  if (bare.startsWith("/budget-reconciler")) return "Budget check";
+  if (bare.startsWith("/bus-factor")) return "Bus-Factor";
+  if (bare.startsWith("/checklist-library")) return "Checklist Library";
+  if (bare.startsWith("/code-perf")) return "Code-vs-Match Detective";
+  if (bare.startsWith("/connectors")) return "Connectors";
+  if (bare.startsWith("/cross-domain-alerts")) return "Cross-domain alerts";
+  if (bare.startsWith("/data-quality-scorecard")) return "Data Quality Scorecard";
+  if (bare.startsWith("/decision-critic")) return "Decision critic";
+  if (bare.startsWith("/degraded-mode")) return "Data-source health";
+  if (bare.startsWith("/district-advancement")) return "District advancement";
+  if (bare.startsWith("/doc-roles")) return "Document roles";
+  if (bare.startsWith("/driver-tryouts")) return "Driver Tryouts";
+  if (bare.startsWith("/exit-interview")) return "Exit Interviews";
+  if (bare.startsWith("/gearbox")) return "Gearbox calculator";
+  if (bare.startsWith("/incident-heatmap")) return "Incident Heatmap";
+  if (bare.startsWith("/knowledge-drafts")) return "Knowledge drafts";
+  if (bare.startsWith("/leadership")) return "Leadership Continuity";
+  if (bare.startsWith("/meeting-autopilot")) return "Meeting-agenda autopilot";
+  if (bare.startsWith("/mentor-hours")) return "Mentor Hours";
+  if (bare.startsWith("/migrate")) return "Bring your season";
+  if (bare.startsWith("/mock-judging")) return "Mock Judging";
+  if (bare.startsWith("/notebook")) return "Engineering notebook";
+  if (bare.startsWith("/object-chat-bridge")) return "Object chat";
+  if (bare.startsWith("/parents")) return "Parent updates";
+  if (bare.startsWith("/power-budget")) return "Power budget";
+  if (bare.startsWith("/presence")) return "Presence";
+  if (bare.startsWith("/readiness-score")) return "Readiness Score";
+  if (bare.startsWith("/reuse-advisor")) return "Reuse Advisor";
+  if (bare.startsWith("/reviews")) return "Design Reviews";
+  if (bare.startsWith("/roadmap")) return "Season roadmap";
+  if (bare.startsWith("/search")) return "Search";
+  if (bare.startsWith("/season-rollover")) return "Season rollover";
+  if (bare.startsWith("/security")) return "Security";
+  if (bare.startsWith("/shooter-table")) return "Shooter table";
+  if (bare.startsWith("/showcase")) return "Showcase";
+  if (bare.startsWith("/skills-graph")) return "Skills & Mentorship";
+  if (bare.startsWith("/software-versions")) return "Software versions";
+  if (bare.startsWith("/spares")) return "Consumables";
+  if (bare.startsWith("/sponsor-tier-calculator")) return "Sponsor Tier Calculator";
+  if (bare.startsWith("/standup-digest")) return "Morning standup";
+  if (bare.startsWith("/start")) return "Your path";
+  if (bare.startsWith("/subsystems")) return "Subsystem specs";
+  if (bare.startsWith("/support")) return "Support";
+  if (bare.startsWith("/troubleshoot")) return "Get unstuck";
+  if (bare.startsWith("/weight-budget")) return "Weight budget";
+  if (bare.startsWith("/whats-new")) return "What’s new";
+  if (bare.startsWith("/wiring-diagnoser")) return "Wiring check";
+  if (bare === "/wiring" || bare.startsWith("/wiring/")) return "CAN-bus map";
   return null;
 }
 

@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { OfflineBanner } from "../../../components/offline-banner";
 import { Badge, EmptyState, PageHeader, Panel, Button } from "../../../components/ui";
 import type { FormInsight, QuestionSummary } from "../../../lib/forms/results";
 import {
@@ -11,6 +12,8 @@ import {
   type FormQuestion,
   type QuestionKind,
 } from "../../../lib/forms/types";
+import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
 
 type FormDetail = {
   id: string;
@@ -60,6 +63,23 @@ type View = {
 };
 
 type Mode = "build" | "answer" | "results";
+
+function isFormDetailView(value: unknown): value is View {
+  if (!value || typeof value !== "object") return false;
+  const form = (value as View).form;
+  return Boolean(form && typeof form === "object" && typeof form.id === "string" && form.id.trim());
+}
+
+async function persistFormDetailSnapshot(orgHint: string, formId: string, data: View): Promise<void> {
+  if (!formId.trim()) return;
+  const cacheOrg = orgHint.trim() || "_";
+  try {
+    await putFeatureSnapshot("form-detail", cacheOrg, data, formId);
+    if (!orgHint.trim()) await putFeatureSnapshot("form-detail", "_", data, formId);
+  } catch {
+    // Live form already painted; IndexedDB is best-effort.
+  }
+}
 
 /**
  * The workspace the shell sent us to. Without it the API resolves the caller's
@@ -284,34 +304,82 @@ export default function FormDetailClient({ formId }: { formId: string }) {
   const [newKind, setNewKind] = useState<QuestionKind>("short_text");
   const [copied, setCopied] = useState(false);
   const [duesResult, setDuesResult] = useState("");
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<View | null>(null);
+  viewRef.current = view;
 
   // Which workspace this form belongs to. Without it the API falls back to the
   // caller's alphabetically first membership, so a form in a second team is
   // unopenable — see formHref in ../forms-client.
-  const { readUrl, writeUrl } = useMemo(() => {
+  const { readUrl, writeUrl, orgHint } = useMemo(() => {
     const orgId =
       typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("orgId");
     const org = orgId ? `orgId=${encodeURIComponent(orgId)}` : "";
     return {
+      orgHint: orgId?.trim() ?? "",
       readUrl: `/api/forms?formId=${encodeURIComponent(formId)}${org ? `&${org}` : ""}`,
       writeUrl: org ? `/api/forms?${org}` : "/api/forms",
     };
   }, [formId]);
 
   const load = useCallback(async () => {
+    let hadCache = Boolean(viewRef.current);
     try {
-      const response = await fetch(readUrl);
-      const data = (await response.json()) as View & { error?: string };
-      if (!response.ok) {
-        setError(data.error ?? "Could not load this form.");
+      const cached = await getFeatureSnapshot<View>("form-detail", orgHint || "_", formId);
+      if (!viewRef.current && cached?.data && isFormDetailView(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
+    try {
+      const response = await fetch(readUrl, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      const data: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setError(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "Could not load this form.",
+        );
+        return;
+      }
+      if (!response.ok || !isFormDetailView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh this form. Showing the last copy on this device.");
+          return;
+        }
+        setError(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "Could not load this form.",
+        );
         return;
       }
       setView(data);
       setError("");
+      setFromCache(false);
+      setCachedAt(null);
+      await persistFormDetailSnapshot(orgHint, formId, data);
     } catch {
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh this form. Showing the last copy on this device.");
+        return;
+      }
       setError("Could not reach the server.");
     }
-  }, [readUrl]);
+  }, [formId, orgHint, readUrl]);
 
   useEffect(() => {
     void load();
@@ -332,11 +400,12 @@ export default function FormDetailClient({ formId }: { formId: string }) {
   async function act(body: Record<string, unknown>) {
     setBusy(true);
     try {
-      const response = await fetch(writeUrl, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(body),
-      });
+        const response = await fetch(writeUrl, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(body),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+        });
       const data = (await response.json()) as { error?: string };
       if (!response.ok) {
         setError(data.error ?? "That did not work.");
@@ -354,6 +423,7 @@ export default function FormDetailClient({ formId }: { formId: string }) {
     return (
       <main className="module-page forms-page">
         <PageHeader breadcrumbs="Team / Forms" title="Form" />
+        <OfflineBanner feature="Form" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState soft badge="Not available" badgeTone="setup" title="This form could not be opened" description={error}>
           <Button as="a" variant="primary" href={`/forms${orgParam().replace("&", "?")}`}>Back to forms</Button>
         </EmptyState>
@@ -365,6 +435,7 @@ export default function FormDetailClient({ formId }: { formId: string }) {
     return (
       <main className="module-page forms-page">
         <PageHeader breadcrumbs="Team / Forms" title="Form" />
+        <OfflineBanner feature="Form" fromCache={fromCache} cachedAt={cachedAt} />
         <Panel><p className="app-muted">Loading…</p></Panel>
       </main>
     );
@@ -438,6 +509,14 @@ export default function FormDetailClient({ formId }: { formId: string }) {
           ))}
         </nav>
       </PageHeader>
+
+      <OfflineBanner feature="Form" fromCache={fromCache} cachedAt={cachedAt} />
+
+      {error ? (
+        <p className="telemetry-status" role="alert">
+          {error}
+        </p>
+      ) : null}
 
       {canManage ? (
         <Panel className="forms-status-panel">

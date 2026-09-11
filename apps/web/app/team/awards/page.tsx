@@ -1,4 +1,4 @@
-import { Button } from "../../../components/ui";
+import { Button, EmptyState, PageHeader } from "../../../components/ui";
 import AwardsClient from "./awards-client";
 import "./awards.css";
 
@@ -15,42 +15,22 @@ export default async function AwardsPage({
   if (!orgId) {
     return (
       <main className="module-page awards-page">
-        <header className="app-page-header">
-          <div>
-            <span className="breadcrumbs">Business / Awards workbench</span>
-            <h1>Choose your team</h1>
-            <p className="app-muted">
-              Award submissions and essay prompts belong to one team. Choose your team to open the awards workbench.
-            </p>
-          </div>
-        </header>
-        <section className="app-card soft-panel edc-next-actions awards-next-actions" aria-label="Next actions">
-          <header>
-            <span className="biz-overline">Next actions</span>
-            <h2>Open your team</h2>
-            <p>Award essays and win status stay blank until this org starts real submissions.</p>
-          </header>
-          <ol>
-            <li className="primary">
-              <div>
-                <strong>Choose your team</strong>
-                <span>Choose your team before drafting FIRST award essays.</span>
-              </div>
-              <Button as="a" variant="secondary" href="/workspace">
-                Open
-              </Button>
-            </li>
-            <li>
-              <div>
-                <strong>Business hub</strong>
-                <span>Sponsors, Grants, and Awards &amp; evidence live under Business.</span>
-              </div>
-              <Button as="a" variant="secondary" href="/business">
-                Open
-              </Button>
-            </li>
-          </ol>
-        </section>
+        <PageHeader
+          breadcrumbs="Business / Awards"
+          title="Awards"
+          description="Award submissions and essay prompts belong to one team — choose your team first."
+        />
+        <EmptyState
+          soft
+          badge="Team needed"
+          badgeTone="setup"
+          title="Choose your team"
+          description="Award essays stay with one team. Choose your team to open them. Sponsors and Grants stay on Business."
+        >
+          <Button as="a" variant="primary" href="/workspace">
+            Choose your team
+          </Button>
+        </EmptyState>
       </main>
     );
   }

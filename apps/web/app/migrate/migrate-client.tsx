@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 // Subpath imports, not the package barrel: the barrel re-exports parsers that
 // use node:crypto, which must not be pulled into the browser bundle.
 import {
@@ -11,7 +11,10 @@ import {
 } from "@vantage/import/connectors";
 import type { ColumnSuggestion } from "@vantage/import/presets";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { OfflineBanner } from "../../components/offline-banner";
 import type { MigrateView } from "../../lib/migrate/compute-migrate";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { IMPORTED_FORM_DRAFT_KEY } from "../../lib/scouting/form-builder";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
@@ -74,6 +77,28 @@ const CATEGORY_ORDER: Array<ConnectorDescriptor["category"]> = [
   "people",
   "notes",
 ];
+
+function isMigrateView(value: unknown): value is MigrateView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function migrateCacheOrg(data: MigrateView, orgHint: string): string {
+  if (typeof data.orgId === "string" && data.orgId.trim()) return data.orgId;
+  return orgHint;
+}
+
+async function persistMigrateSnapshot(orgHint: string, data: MigrateView): Promise<void> {
+  const cacheOrg = migrateCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("migrate", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("migrate", "_", data);
+  } catch {
+    // Live Bring your season already painted; IndexedDB is best-effort.
+  }
+}
 
 /** Rows the parser declined, always shown — an import that drops rows silently is a bug. */
 function ReviewNotes({ skipped, errors }: { skipped?: Skip[]; errors?: Issue[] }) {
@@ -143,6 +168,10 @@ export default function MigrateClient() {
   const [loadFailed, setLoadFailed] = useState(false);
   // Kept so an expired session offers sign-in instead of a Retry that cannot work.
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<MigrateView | null>(null);
+  viewRef.current = view;
   const [busy, setBusy] = useState(false);
   const [connector, setConnector] = useState<ConnectorId | null>(null);
   const [icsUrl, setIcsUrl] = useState("");
@@ -162,30 +191,79 @@ export default function MigrateClient() {
   const [presetName, setPresetName] = useState("");
   const [columnMap, setColumnMap] = useState<Record<string, string>>({});
 
-  const load = useCallback(() => {
-    const orgId = new URLSearchParams(window.location.search).get("orgId");
-    const query = orgId ? `?orgId=${encodeURIComponent(orgId)}` : "";
-    void fetch(`/api/migrate${query}`)
-      .then(async (response) => {
-        const data = (await response.json()) as MigrateView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setError("error" in data && data.error ? data.error : "Could not load the switching kit.");
-          setErrorStatus(response.status);
-          setLoadFailed(true);
+  const load = useCallback(async () => {
+    const orgHint = new URLSearchParams(window.location.search).get("orgId")?.trim() ?? "";
+    const query = orgHint ? `?orgId=${encodeURIComponent(orgHint)}` : "";
+    let hadCache = false;
+    try {
+      const cached = await getFeatureSnapshot<MigrateView>("migrate", orgHint || "_");
+      if (!viewRef.current && cached?.data && isMigrateView(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      } else if (cached?.data && isMigrateView(cached.data)) {
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
+    setLoadFailed(false);
+    setErrorStatus(null);
+    try {
+      const response = await fetch(`/api/migrate${query}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      const data: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setErrorStatus(response.status);
+        setError(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "Could not load Bring your season.",
+        );
+        setLoadFailed(true);
+        return;
+      }
+      if (!response.ok || !isMigrateView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Bring your season. Showing the last copy on this device.");
           return;
         }
-        setErrorStatus(null);
-        setLoadFailed(false);
-        setView(data);
-      })
-      .catch(() => {
-        setError("Network error — please try again.");
+        setErrorStatus(response.status);
+        setError(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "Could not load Bring your season.",
+        );
         setLoadFailed(true);
-      });
+        return;
+      }
+      setError("");
+      setErrorStatus(null);
+      setLoadFailed(false);
+      setView(data);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistMigrateSnapshot(orgHint, data);
+    } catch {
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Bring your season. Showing the last copy on this device.");
+        return;
+      }
+      setError("Network error — please try again.");
+      setLoadFailed(true);
+    }
   }, []);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   const orgId = view && "orgId" in view ? view.orgId : null;
@@ -218,7 +296,10 @@ export default function MigrateClient() {
         setResult(null);
         return;
       }
-      if ("status" in data) setView(data);
+      if (isMigrateView(data)) {
+        setView(data);
+        void persistMigrateSnapshot(orgId, data);
+      }
       setResult(data);
       if (Array.isArray(data.drafts)) {
         setPreview(`${data.drafts.length} row${data.drafts.length === 1 ? "" : "s"} ready to import`);
@@ -289,7 +370,8 @@ export default function MigrateClient() {
         title="Bring your season"
         description="Pick one source, preview the rows, then import. Keep the old tool running until you have checked the result."
       />
-      {loadFailed ? (
+      <OfflineBanner feature="Bring your season" fromCache={fromCache} cachedAt={cachedAt} />
+      {loadFailed && !view ? (
         (() => {
           const copy = loadFailureCopy(
             classifyLoadFailure({
@@ -313,7 +395,7 @@ export default function MigrateClient() {
                 </Button>
               ) : null}
               {copy.showRetry ? (
-                <Button variant="secondary" type="button" onClick={() => load()}>
+                <Button variant="secondary" type="button" onClick={() => void load()}>
                   Retry
                 </Button>
               ) : null}
@@ -327,7 +409,17 @@ export default function MigrateClient() {
         </p>
       ) : null}
       {view?.status === "setup_required" ? (
-        <EmptyState title="Workspace required" description={view.message} />
+        <EmptyState
+          soft
+          badge="Team needed"
+          badgeTone="setup"
+          title="Choose your team"
+          description={view.message}
+        >
+          <Button as="a" variant="primary" href="/workspace">
+            Choose your team
+          </Button>
+        </EmptyState>
       ) : null}
       {view?.status === "live" ? (
         <>
@@ -824,14 +916,14 @@ export default function MigrateClient() {
               {connector === "notion" ? (
                 <>
                   {view.notionReady ? (
-                    <p>Notion OAuth is configured. You can still paste database JSON below to dual-run.</p>
+                    <p>Notion sign-in is ready. You can still paste exported pages below.</p>
                   ) : (
                     <EmptyState
-                      title="Notion OAuth is not configured"
-                      description="Set NOTION_CLIENT_ID to enable OAuth. Paste exported database JSON to preview and commit pages without inventing titles."
+                      title="Paste exported Notion pages"
+                      description="Paste exported Notion pages below. Titles stay as they were exported — nothing is invented."
                     />
                   )}
-                  <FormRow label="Paste Notion database JSON">
+                  <FormRow label="Paste exported Notion pages">
                     <textarea value={notionPaste} onChange={(event) => setNotionPaste(event.target.value)} rows={8} />
                   </FormRow>
                   <div className="migrate-actions">

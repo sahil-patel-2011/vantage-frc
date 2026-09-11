@@ -1,11 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
-import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { CHANGE_TYPES, SUBSYSTEMS, changeTypeLabel, subsystemLabel, verdictLabel } from "../../lib/code-perf";
 import type { CodePerfView } from "../../lib/code-perf/compute-code-perf";
 import type { ChangeType, CorrelationVerdict, Subsystem } from "../../lib/code-perf/types";
+import { hubHref } from "../../lib/nav/hubs";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 function verdictTone(verdict: CorrelationVerdict): string {
   if (verdict === "improved") return "good";
@@ -16,6 +20,106 @@ function verdictTone(verdict: CorrelationVerdict): string {
 
 type LiveView = Extract<CodePerfView, { status: "live" }>;
 
+function isCodePerfView(value: unknown): value is CodePerfView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function responseError(data: unknown): string {
+  return data && typeof data === "object" && "error" in data && typeof data.error === "string"
+    ? data.error
+    : "";
+}
+
+function codePerfCacheOrg(data: CodePerfView, orgHint: string): string {
+  switch (data.status) {
+    case "setup_required":
+      return (typeof data.orgId === "string" && data.orgId.trim()) || orgHint;
+    case "live":
+      return data.orgId.trim() || orgHint;
+    default: {
+      data satisfies never;
+      return orgHint;
+    }
+  }
+}
+
+async function persistCodePerfSnapshot(orgHint: string, seasonHint: string, data: CodePerfView): Promise<void> {
+  const cacheOrg = codePerfCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  const seasonKey = String(data.seasonYear);
+  try {
+    await putFeatureSnapshot("code-perf", cacheOrg, data, seasonHint || seasonKey);
+    if (!orgHint) await putFeatureSnapshot("code-perf", "_", data, seasonHint || seasonKey);
+  } catch {
+    // Live Code-vs-Match already painted; IndexedDB is best-effort.
+  }
+}
+
+function CodePerfRelated({ orgId }: { orgId?: string | null }) {
+  return (
+    <nav className="product-hub-related" aria-label="Related build tools">
+      <Button as="a" variant="secondary" href={hubHref("/build", "code", orgId)}>
+        Code Coach
+      </Button>
+      <Button as="a" variant="secondary" href={hubHref("/build", "code-deploy-log", orgId)}>
+        Deploy log
+      </Button>
+      <Button as="a" variant="secondary" href={hubHref("/build", "cad", orgId)}>
+        CAD
+      </Button>
+    </nav>
+  );
+}
+
+function CodePerfNextActions({ orgId }: { orgId: string }) {
+  const actions = [
+    {
+      id: "log",
+      label: "Log a change",
+      detail: "Record a commit, version bump, or tuning change beside match scores.",
+      href: "#code-perf-log",
+      primary: true,
+    },
+    {
+      id: "code",
+      label: "Open Code Coach",
+      detail: "Review robot code before you log a change here.",
+      href: hubHref("/build", "code", orgId),
+      primary: false,
+    },
+    {
+      id: "deploy",
+      label: "Open Deploy log",
+      detail: "Firmware deploys sit next to this match-linked detective.",
+      href: hubHref("/build", "code-deploy-log", orgId),
+      primary: false,
+    },
+  ];
+  return (
+    <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <Button as="a" variant="secondary" href={action.href}>
+              Open
+            </Button>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
 export default function CodePerfClient() {
   const [view, setView] = useState<CodePerfView | null>(null);
   const [error, setError] = useState("");
@@ -25,39 +129,84 @@ export default function CodePerfClient() {
   const [loadError, setLoadError] = useState("");
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<CodePerfView | null>(null);
+  viewRef.current = view;
 
   const orgId = view && "orgId" in view ? view.orgId : null;
 
-  const load = useCallback((seasonOverride?: number) => {
+  const load = useCallback(async (seasonOverride?: number) => {
+    const params = new URLSearchParams(window.location.search);
+    const orgHint = params.get("orgId")?.trim() ?? "";
+    const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
+    const seasonHint =
+      seasonQuery && Number.isFinite(seasonQuery) ? String(seasonQuery) : String(new Date().getFullYear());
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<CodePerfView>("code-perf", orgHint || "_", seasonHint);
+      if (!viewRef.current && cached?.data && isCodePerfView(cached.data)) {
+        setView(cached.data);
+        setSeason(cached.data.seasonYear);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
     setFetchFailed(false);
     setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    if (seasonQuery) query.set("season", String(seasonQuery));
-    void fetch(`/api/code-perf${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
-        const data = (await response.json()) as CodePerfView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setLoadStatus(response.status);
-          setLoadError("error" in data && data.error ? data.error : "");
-          setFetchFailed(true);
+    setLoadError("");
+    setLoadStatus(null);
+    try {
+      const query = new URLSearchParams();
+      if (orgHint) query.set("orgId", orgHint);
+      if (seasonQuery) query.set("season", String(seasonQuery));
+      const response = await fetch(`/api/code-perf${query.toString() ? `?${query.toString()}` : ""}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      const data: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setFetchFailed(true);
+        setLoadStatus(response.status);
+        setLoadError(responseError(data));
+        return;
+      }
+      if (!response.ok || !isCodePerfView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Code-vs-Match Detective. Showing the last copy on this device.");
+          setFetchFailed(false);
           return;
         }
-        setView(data);
-        setSeason(data.seasonYear);
-      })
-      .catch(() => {
-        setLoadStatus(null);
-        setLoadError("");
         setFetchFailed(true);
-      });
+        setLoadStatus(response.status);
+        setLoadError(responseError(data));
+        return;
+      }
+      setView(data);
+      setSeason(data.seasonYear);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistCodePerfSnapshot(orgHint, seasonHint, data);
+    } catch {
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Code-vs-Match Detective. Showing the last copy on this device.");
+        setFetchFailed(false);
+        return;
+      }
+      setFetchFailed(true);
+    }
   }, []);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   const mutate = useCallback(
@@ -70,14 +219,17 @@ export default function CodePerfClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, seasonYear: season ?? undefined, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
-        const data = (await response.json()) as CodePerfView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setError("error" in data && data.error ? data.error : "Something went wrong.");
+        const data: unknown = await response.json().catch(() => null);
+        if (!response.ok || !isCodePerfView(data)) {
+          setError(responseError(data) || "Something went wrong.");
           return;
         }
         setView(data);
         setSeason(data.seasonYear);
+        setFromCache(false);
+        void persistCodePerfSnapshot(orgId, String(data.seasonYear), data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -87,93 +239,127 @@ export default function CodePerfClient() {
     [orgId, season, busy],
   );
 
-  return (
-    <main className="module-page">
-      <PageHeader
-        breadcrumbs={
-          <>
-            <a href={orgId ? `/build?orgId=${encodeURIComponent(orgId)}` : "/build"}>Build</a>
-            {" / Code-vs-Match Detective"}
-          </>
-        }
-        title="Code-vs-Match Detective"
-        description="Log commits, software-version bumps, and tuning changes alongside match auto/teleop points — see whether a change actually moved on-field performance."
-      >
-        {view?.status === "live" && view.seasons.length > 0 ? (
-          <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-            Season
-            <select
-              value={season ?? view.seasonYear}
-              onChange={(event) => {
-                const next = Number(event.target.value);
-                setSeason(next);
-                load(next);
-              }}
-            >
-              {view.seasons.map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : null}
-      </PageHeader>
-
-      {error ? (
-        <p className="telemetry-status" role="alert">
-          {error}
-        </p>
+  const buildHref = orgId ? `/build?orgId=${encodeURIComponent(orgId)}` : "/build";
+  const header = (
+    <PageHeader
+      breadcrumbs={
+        <>
+          <a href={buildHref}>Build</a>
+          {" / Code-vs-Match Detective"}
+        </>
+      }
+      title="Code-vs-Match Detective"
+      description="Log commits, software-version bumps, and tuning changes alongside match auto/teleop points — see whether a change actually moved on-field performance."
+    >
+      <CodePerfRelated orgId={orgId} />
+      {view?.status === "live" && view.seasons.length > 0 ? (
+        <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          Season
+          <select
+            value={season ?? view.seasonYear}
+            onChange={(event) => {
+              const next = Number(event.target.value);
+              setSeason(next);
+              void load(next);
+            }}
+          >
+            {view.seasons.map((year) => (
+              <option key={year} value={year}>
+                {year}
+              </option>
+            ))}
+          </select>
+        </label>
       ) : null}
+    </PageHeader>
+  );
 
-      {fetchFailed ? (
-        (() => {
-          const kind = classifyLoadFailure({
+  if (!view) {
+    const failure = fetchFailed
+      ? loadFailureCopy(
+          classifyLoadFailure({
             status: loadStatus,
             message: loadError,
             online: typeof navigator === "undefined" ? true : navigator.onLine,
-          });
-          const copy = loadFailureCopy(kind, {
+          }),
+          {
             nextPath:
               typeof window === "undefined"
                 ? null
                 : `${window.location.pathname}${window.location.search}`,
             message: loadError || "A network or server issue prevented loading. Try again.",
-          });
-          return (
-            <EmptyState title={copy.title} description={copy.description}>
-              {copy.primary ? (
-                <Button as="a" variant="primary" href={copy.primary.href}>
-                  {copy.primary.label}
-                </Button>
-              ) : null}
-              {copy.showRetry ? (
-                <Button variant="secondary" type="button" onClick={() => load()}>
-                  Retry
-                </Button>
-              ) : null}
-            </EmptyState>
-          );
-        })()
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your team." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          {view.steps[0] ? (
-            <Button as="a" variant="primary" href={view.steps[0].href}>
-              {view.steps[0].label}
+          },
+        )
+      : null;
+    return (
+      <main className="module-page">
+        {header}
+        <OfflineBanner feature="Code-vs-Match Detective" fromCache={fromCache} cachedAt={cachedAt} />
+        <EmptyState
+          title={failure ? failure.title : "Loading…"}
+          description={failure ? failure.description : "Checking your team."}
+          aria-busy={!fetchFailed}
+        >
+          {failure?.primary ? (
+            <Button as="a" variant="primary" href={failure.primary.href}>
+              {failure.primary.label}
+            </Button>
+          ) : null}
+          {failure?.showRetry ? (
+            <Button variant="secondary" type="button" onClick={() => void load()}>
+              Retry
             </Button>
           ) : null}
         </EmptyState>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <SummaryTiles view={view} />
-          <LogChangeForm busy={busy} mutate={mutate} />
-          <LogMatchResultForm busy={busy} mutate={mutate} />
-          <ChangesList view={view} busy={busy} mutate={mutate} />
-          <MatchResultsList view={view} busy={busy} mutate={mutate} />
-        </div>
-      )}
+      </main>
+    );
+  }
+
+  switch (view.status) {
+    case "setup_required":
+      return (
+        <main className="module-page">
+          {header}
+          <OfflineBanner feature="Code-vs-Match Detective" fromCache={fromCache} cachedAt={cachedAt} />
+          {error ? (
+            <p className="telemetry-status" role="alert">
+              {error}
+            </p>
+          ) : null}
+          <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
+            {view.steps[0] ? (
+              <Button as="a" variant="primary" href={view.steps[0].href}>
+                {view.steps[0].label}
+              </Button>
+            ) : null}
+          </EmptyState>
+        </main>
+      );
+    case "live":
+      break;
+    default: {
+      view satisfies never;
+      return null;
+    }
+  }
+
+  return (
+    <main className="module-page">
+      {header}
+      <OfflineBanner feature="Code-vs-Match Detective" fromCache={fromCache} cachedAt={cachedAt} />
+      {error ? (
+        <p className="telemetry-status" role="alert">
+          {error}
+        </p>
+      ) : null}
+      <CodePerfNextActions orgId={view.orgId} />
+      <div style={{ display: "grid", gap: 16 }}>
+        <SummaryTiles view={view} />
+        <LogChangeForm busy={busy} mutate={mutate} />
+        <LogMatchResultForm busy={busy} mutate={mutate} />
+        <ChangesList view={view} busy={busy} mutate={mutate} />
+        <MatchResultsList view={view} busy={busy} mutate={mutate} />
+      </div>
     </main>
   );
 }
@@ -359,6 +545,7 @@ function LogChangeForm({
 
   return (
     <Panel
+      id="code-perf-log"
       as="form"
       onSubmit={(event) => {
         event.preventDefault();

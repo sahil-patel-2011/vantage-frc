@@ -19,7 +19,7 @@ export default async function TeamSecurityPage({
         <PageHeader
           breadcrumbs="Team / Security"
           title="Team security"
-          description="Access policy, hub access, and capabilities are set per team — pick the team first."
+          description="Access policy, hub access, and capabilities are set per team — choose your team first."
         />
         <EmptyState
           soft

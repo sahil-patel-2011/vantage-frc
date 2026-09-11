@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
-import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { alumniShellCopy } from "../../lib/alumni";
 import { alumniStatusLabel, mentorSlotStatusLabel } from "../../lib/alumni-network";
 import {
@@ -11,6 +11,11 @@ import {
   type AlumniNetworkView,
 } from "../../lib/alumni-network/compute-alumni-network";
 import type { AlumniStatus, MentorSlotStatus } from "../../lib/alumni-network/types";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 type LiveView = Extract<AlumniNetworkView, { status: "live" }>;
 
@@ -19,44 +24,185 @@ function pct(numerator: number, denominator: number): string {
   return `${Math.round((numerator / denominator) * 100)}%`;
 }
 
+function isAlumniNetworkView(value: unknown): value is AlumniNetworkView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function responseError(data: unknown): string {
+  return data && typeof data === "object" && "error" in data && typeof data.error === "string"
+    ? data.error
+    : "";
+}
+
+function alumniNetworkCacheOrg(data: AlumniNetworkView, orgHint: string): string {
+  switch (data.status) {
+    case "setup_required":
+      return (typeof data.orgId === "string" && data.orgId.trim()) || orgHint;
+    case "live":
+      return data.orgId.trim() || orgHint;
+    default: {
+      data satisfies never;
+      return orgHint;
+    }
+  }
+}
+
+async function persistAlumniNetworkSnapshot(orgHint: string, data: AlumniNetworkView): Promise<void> {
+  const cacheOrg = alumniNetworkCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("alumni-network", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("alumni-network", "_", data);
+  } catch {
+    // Live Alumni Network already painted; IndexedDB is best-effort.
+  }
+}
+
+function AlumniNetworkRelated({ orgId }: { orgId?: string | null }) {
+  return (
+    <nav className="product-hub-related" aria-label="Related people tools">
+      <Button as="a" variant="secondary" href={hubHref("/team", "exit-interview", orgId)}>
+        Exit interviews
+      </Button>
+      <Button as="a" variant="secondary" href={hubHref("/team", "mentor-hours", orgId)}>
+        Mentor hours
+      </Button>
+      <Button as="a" variant="secondary" href={withOrgHref("/team/alumni", orgId)}>
+        Team alumni
+      </Button>
+    </nav>
+  );
+}
+
+function AlumniNetworkNextActions({ orgId }: { orgId: string }) {
+  const actions = [
+    {
+      id: "add",
+      label: "Add an alumni profile",
+      detail: "Record a graduate who still wants to hear from the team.",
+      href: "#alumni-add-profile",
+      primary: true,
+    },
+    {
+      id: "exit",
+      label: "Open Exit interviews",
+      detail: "Graduation handoff pages become the alumni knowledge trail.",
+      href: hubHref("/team", "exit-interview", orgId),
+      primary: false,
+    },
+    {
+      id: "hours",
+      label: "Open Mentor hours",
+      detail: "Adult volunteer time is a separate ledger from student shop hours.",
+      href: hubHref("/team", "mentor-hours", orgId),
+      primary: false,
+    },
+  ];
+  return (
+    <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <Button as="a" variant="secondary" href={action.href}>
+              Open
+            </Button>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
 export default function AlumniNetworkClient() {
   const [view, setView] = useState<AlumniNetworkView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   // Kept so an expired session offers sign-in instead of a Retry that cannot work.
-  const [loadStatus, setLoadStatus] = useState<number | null>(null);
-  const [loadError, setLoadError] = useState("");
+  const [failureStatus, setFailureStatus] = useState<number | null>(null);
+  const [failureMessage, setFailureMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<AlumniNetworkView | null>(null);
+  viewRef.current = view;
 
   const orgId = view && "orgId" in view ? view.orgId : null;
 
-  const load = useCallback(() => {
-    setFetchFailed(false);
-    setError("");
+  const load = useCallback(async () => {
     const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    void fetch(`/api/alumni-network${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
-        const data = (await response.json()) as AlumniNetworkView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setLoadStatus(response.status);
-          setLoadError("error" in data && data.error ? data.error : "");
-          setFetchFailed(true);
+    const orgHint = params.get("orgId")?.trim() ?? "";
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<AlumniNetworkView>("alumni-network", orgHint || "_");
+      if (!viewRef.current && cached?.data && isAlumniNetworkView(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
+    setFetchFailed(false);
+    setFailureStatus(null);
+    setFailureMessage("");
+    setError("");
+    try {
+      const query = new URLSearchParams();
+      if (orgHint) query.set("orgId", orgHint);
+      const response = await fetch(`/api/alumni-network${query.toString() ? `?${query.toString()}` : ""}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      const data: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setFetchFailed(true);
+        setFailureStatus(response.status);
+        setFailureMessage(responseError(data));
+        return;
+      }
+      if (!response.ok || !isAlumniNetworkView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Alumni Network. Showing the last copy on this device.");
+          setFetchFailed(false);
           return;
         }
-        setView(data);
-      })
-      .catch(() => {
-        setLoadStatus(null);
-        setLoadError("");
         setFetchFailed(true);
-      });
+        setFailureStatus(response.status);
+        setFailureMessage(responseError(data));
+        return;
+      }
+      setView(data);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistAlumniNetworkSnapshot(orgHint, data);
+    } catch {
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Alumni Network. Showing the last copy on this device.");
+        setFetchFailed(false);
+        return;
+      }
+      setFetchFailed(true);
+    }
   }, []);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   const mutate = useCallback(
@@ -69,13 +215,16 @@ export default function AlumniNetworkClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
-        const data = (await response.json()) as AlumniNetworkView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setError("error" in data && data.error ? data.error : "Something went wrong.");
+        const data: unknown = await response.json().catch(() => null);
+        if (!response.ok || !isAlumniNetworkView(data)) {
+          setError(responseError(data) || "Something went wrong.");
           return;
         }
         setView(data);
+        setFromCache(false);
+        void persistAlumniNetworkSnapshot(orgId, data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -85,76 +234,111 @@ export default function AlumniNetworkClient() {
     [orgId, busy],
   );
 
+  const teamHref = orgId ? `/team?orgId=${encodeURIComponent(orgId)}` : "/team";
+  const header = (
+    <PageHeader
+      breadcrumbs={
+        <>
+          <a href={teamHref}>Team</a>
+          {" / Alumni Network"}
+        </>
+      }
+      title="Alumni Network"
+      description="Keep track of graduated members who stay reachable — and log the mentor availability windows they've offered back to the team."
+    >
+      <AlumniNetworkRelated orgId={orgId} />
+    </PageHeader>
+  );
+
+  if (!view) {
+    const failure = fetchFailed
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: failureStatus,
+            message: failureMessage,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: failureMessage || "A network or server issue prevented loading. Try again.",
+          },
+        )
+      : null;
+    return (
+      <main className="module-page">
+        {header}
+        <OfflineBanner feature="Alumni Network" fromCache={fromCache} cachedAt={cachedAt} />
+        <EmptyState
+          title={failure ? failure.title : "Loading…"}
+          description={failure ? failure.description : "Checking your team."}
+          aria-busy={!fetchFailed}
+        >
+          {failure?.primary ? (
+            <Button as="a" variant="primary" href={failure.primary.href}>
+              {failure.primary.label}
+            </Button>
+          ) : null}
+          {failure?.showRetry ? (
+            <Button variant="secondary" type="button" onClick={() => void load()}>
+              Retry
+            </Button>
+          ) : null}
+        </EmptyState>
+      </main>
+    );
+  }
+
+  switch (view.status) {
+    case "setup_required":
+      return (
+        <main className="module-page">
+          {header}
+          <OfflineBanner feature="Alumni Network" fromCache={fromCache} cachedAt={cachedAt} />
+          {error ? (
+            <p className="telemetry-status" role="alert">
+              {error}
+            </p>
+          ) : null}
+          <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
+            {view.steps[0] ? (
+              <Button as="a" variant="primary" href={view.steps[0].href}>
+                {view.steps[0].label}
+              </Button>
+            ) : null}
+          </EmptyState>
+        </main>
+      );
+    case "live":
+      break;
+    default: {
+      view satisfies never;
+      return null;
+    }
+  }
+
   return (
     <main className="module-page">
-      <PageHeader
-        breadcrumbs={
-          <>
-            <a href={orgId ? `/team?orgId=${encodeURIComponent(orgId)}` : "/team"}>Team</a>
-            {" / Alumni Network"}
-          </>
-        }
-        title="Alumni Network"
-        description="Keep track of graduated members who stay reachable — and log the mentor availability windows they've offered back to the team."
-      />
-
+      {header}
+      <OfflineBanner feature="Alumni Network" fromCache={fromCache} cachedAt={cachedAt} />
       {error ? (
         <p className="telemetry-status" role="alert">
           {error}
         </p>
       ) : null}
-
-      {fetchFailed ? (
-        (() => {
-          const kind = classifyLoadFailure({
-            status: loadStatus,
-            message: loadError,
-            online: typeof navigator === "undefined" ? true : navigator.onLine,
-          });
-          const copy = loadFailureCopy(kind, {
-            nextPath:
-              typeof window === "undefined"
-                ? null
-                : `${window.location.pathname}${window.location.search}`,
-            message: loadError || "A network or server issue prevented loading. Try again.",
-          });
-          return (
-            <EmptyState title={copy.title} description={copy.description}>
-              {copy.primary ? (
-                <Button as="a" variant="primary" href={copy.primary.href}>
-                  {copy.primary.label}
-                </Button>
-              ) : null}
-              {copy.showRetry ? (
-                <Button variant="secondary" type="button" onClick={() => load()}>
-                  Retry
-                </Button>
-              ) : null}
-            </EmptyState>
-          );
-        })()
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your team." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          {view.steps[0] ? (
-            <Button as="a" variant="primary" href={view.steps[0].href}>
-              {view.steps[0].label}
-            </Button>
-          ) : null}
-        </EmptyState>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <SummaryTiles view={view} />
-          {view.teamDirectory.length > 0 ? (
-            <TeamDirectoryImport view={view} busy={busy} mutate={mutate} />
-          ) : null}
-          <AddProfileForm busy={busy} mutate={mutate} />
-          {view.summary.totalAlumni > 0 ? <MentorSlotForm view={view} busy={busy} mutate={mutate} /> : null}
-          <ProfileList view={view} busy={busy} mutate={mutate} />
-          <MentorSlotList view={view} busy={busy} mutate={mutate} />
-        </div>
-      )}
+      <AlumniNetworkNextActions orgId={view.orgId} />
+      <div style={{ display: "grid", gap: 16 }}>
+        <SummaryTiles view={view} />
+        {view.teamDirectory.length > 0 ? (
+          <TeamDirectoryImport view={view} busy={busy} mutate={mutate} />
+        ) : null}
+        <AddProfileForm busy={busy} mutate={mutate} />
+        {view.summary.totalAlumni > 0 ? <MentorSlotForm view={view} busy={busy} mutate={mutate} /> : null}
+        <ProfileList view={view} busy={busy} mutate={mutate} />
+        <MentorSlotList view={view} busy={busy} mutate={mutate} />
+      </div>
     </main>
   );
 }
@@ -419,6 +603,7 @@ function AddProfileForm({
   return (
     <Panel
       as="form"
+      id="alumni-add-profile"
       onSubmit={(event) => {
         event.preventDefault();
         if (!form.fullName.trim()) return;

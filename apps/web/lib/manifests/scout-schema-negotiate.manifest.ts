@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "scout-schema-negotiate",
-  title: "Scout Schema Negotiate",
+  title: "Schema sync",
   route: "/scout-schema-negotiate",
   apiRoute: "/api/scout-schema-negotiate",
   hub: "Competition",

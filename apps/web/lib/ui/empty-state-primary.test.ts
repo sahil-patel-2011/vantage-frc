@@ -304,9 +304,7 @@ describe("empty-state R4 (one primary on the empty card)", () => {
   });
 
   it("empty and setup shells do not paint a Next-actions panel", () => {
-    const SKIP = new Set([
-      "chat-client.tsx", // Ask AI empty still owns a next-actions neighbor; not this Home pass
-    ]);
+    const SKIP = new Set<string>([]);
     const hits: string[] = [];
     for (const file of clients) {
       if (SKIP.has(file.split("/").pop() ?? "")) continue;

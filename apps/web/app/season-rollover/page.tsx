@@ -1,7 +1,7 @@
 import SeasonRolloverClient from "./season-rollover-client";
 
 export const metadata = {
-  title: "Season Rollover",
+  title: "Season rollover",
 };
 
 export default function SeasonRolloverPage() {

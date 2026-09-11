@@ -1,12 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { ExportButton, type CsvColumn } from "../../components/ui/export-button";
-import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { bomCategoryLabel, bomSourceLabel, bomStatusLabel } from "../../lib/bom-cost-rollup";
 import type { BomCostRollupView } from "../../lib/bom-cost-rollup/compute-bom-cost-rollup";
 import type { BomCategory, BomLineItem, BomStatus } from "../../lib/bom-cost-rollup/types";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 type LiveView = Extract<BomCostRollupView, { status: "live" }>;
 
@@ -41,46 +46,193 @@ function statusTone(status: BomStatus): string {
   return "good";
 }
 
+function isBomCostRollupView(value: unknown): value is BomCostRollupView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function responseError(data: unknown): string {
+  return data && typeof data === "object" && "error" in data && typeof data.error === "string"
+    ? data.error
+    : "";
+}
+
+function bomCostRollupCacheOrg(data: BomCostRollupView, orgHint: string): string {
+  switch (data.status) {
+    case "setup_required":
+      return (typeof data.orgId === "string" && data.orgId.trim()) || orgHint;
+    case "live":
+      return data.orgId.trim() || orgHint;
+    default: {
+      data satisfies never;
+      return orgHint;
+    }
+  }
+}
+
+async function persistBomCostRollupSnapshot(
+  orgHint: string,
+  seasonHint: string,
+  data: BomCostRollupView,
+): Promise<void> {
+  const cacheOrg = bomCostRollupCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  const seasonKey = String(data.seasonYear);
+  try {
+    await putFeatureSnapshot("bom-cost-rollup", cacheOrg, data, seasonHint || seasonKey);
+    if (!orgHint) await putFeatureSnapshot("bom-cost-rollup", "_", data, seasonHint || seasonKey);
+  } catch {
+    // Live BOM cost rollup already painted; IndexedDB is best-effort.
+  }
+}
+
+function BomCostRollupRelated({ orgId }: { orgId?: string | null }) {
+  return (
+    <nav className="product-hub-related" aria-label="Related build tools">
+      <Button as="a" variant="secondary" href={hubHref("/build", "budget-reconciler", orgId)}>
+        Budget check
+      </Button>
+      <Button as="a" variant="secondary" href={hubHref("/business", "costs", orgId)}>
+        Season costs
+      </Button>
+      <Button as="a" variant="secondary" href={withOrgHref("/inventory", orgId)}>
+        Inventory
+      </Button>
+    </nav>
+  );
+}
+
+function BomCostRollupNextActions({ orgId }: { orgId: string }) {
+  const actions = [
+    {
+      id: "add",
+      label: "Add a line item",
+      detail: "Log a purchased part so the season total is real.",
+      href: "#bom-cost-add",
+      primary: true,
+    },
+    {
+      id: "check",
+      label: "Open Budget check",
+      detail: "Weight and power drift sit next to this parts total.",
+      href: hubHref("/build", "budget-reconciler", orgId),
+      primary: false,
+    },
+    {
+      id: "costs",
+      label: "Open Season costs",
+      detail: "Event fees and subscriptions are a separate spend log.",
+      href: hubHref("/business", "costs", orgId),
+      primary: false,
+    },
+  ];
+  return (
+    <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <Button as="a" variant="secondary" href={action.href}>
+              Open
+            </Button>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
 export default function BomCostRollupClient() {
   const [view, setView] = useState<BomCostRollupView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   // Kept so an expired session offers sign-in instead of a Retry that cannot work.
-  const [loadStatus, setLoadStatus] = useState<number | null>(null);
-  const [loadError, setLoadError] = useState("");
+  const [failureStatus, setFailureStatus] = useState<number | null>(null);
+  const [failureMessage, setFailureMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<BomCostRollupView | null>(null);
+  viewRef.current = view;
 
   const orgId = view && "orgId" in view ? view.orgId : null;
 
-  const load = useCallback((seasonOverride?: number) => {
-    setFetchFailed(false);
-    setError("");
+  const load = useCallback(async (seasonOverride?: number) => {
     const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
+    const orgHint = params.get("orgId")?.trim() ?? "";
     const seasonQuery = seasonOverride != null ? String(seasonOverride) : params.get("seasonYear");
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    if (seasonQuery) query.set("seasonYear", seasonQuery);
-    void fetch(`/api/bom-cost-rollup${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
-        const data = (await response.json()) as BomCostRollupView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setLoadStatus(response.status);
-          setLoadError("error" in data && data.error ? data.error : "");
-          setFetchFailed(true);
+    const seasonHint = seasonQuery && Number.isFinite(Number(seasonQuery)) ? seasonQuery : String(new Date().getFullYear());
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<BomCostRollupView>("bom-cost-rollup", orgHint || "_", seasonHint);
+      if (!viewRef.current && cached?.data && isBomCostRollupView(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
+    setFetchFailed(false);
+    setFailureStatus(null);
+    setFailureMessage("");
+    setError("");
+    try {
+      const query = new URLSearchParams();
+      if (orgHint) query.set("orgId", orgHint);
+      if (seasonQuery) query.set("seasonYear", seasonQuery);
+      const response = await fetch(`/api/bom-cost-rollup${query.toString() ? `?${query.toString()}` : ""}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      const data: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setFetchFailed(true);
+        setFailureStatus(response.status);
+        setFailureMessage(responseError(data));
+        return;
+      }
+      if (!response.ok || !isBomCostRollupView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh BOM cost rollup. Showing the last copy on this device.");
+          setFetchFailed(false);
           return;
         }
-        setView(data);
-      })
-      .catch(() => {
-        setLoadStatus(null);
-        setLoadError("");
         setFetchFailed(true);
-      });
+        setFailureStatus(response.status);
+        setFailureMessage(responseError(data));
+        return;
+      }
+      setView(data);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistBomCostRollupSnapshot(orgHint, seasonHint, data);
+    } catch {
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh BOM cost rollup. Showing the last copy on this device.");
+        setFetchFailed(false);
+        return;
+      }
+      setFetchFailed(true);
+    }
   }, []);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   const mutate = useCallback(
@@ -94,13 +246,16 @@ export default function BomCostRollupClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, seasonYear, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
-        const data = (await response.json()) as BomCostRollupView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setError("error" in data && data.error ? data.error : "Something went wrong.");
+        const data: unknown = await response.json().catch(() => null);
+        if (!response.ok || !isBomCostRollupView(data)) {
+          setError(responseError(data) || "Something went wrong.");
           return;
         }
         setView(data);
+        setFromCache(false);
+        void persistBomCostRollupSnapshot(orgId, String(data.seasonYear), data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -110,22 +265,23 @@ export default function BomCostRollupClient() {
     [orgId, busy, view],
   );
 
-  return (
-    <main className="module-page">
-      <PageHeader
-        breadcrumbs={
-          <>
-            <a href={orgId ? `/build?orgId=${encodeURIComponent(orgId)}` : "/build"}>Build</a>
-            {" / BOM cost rollup"}
-          </>
-        }
-        title="BOM cost rollup"
-        description="Roll up bill-of-materials line items — logged manually or imported from CAD — against a season budget, broken down by subsystem and category."
-      >
+  const buildHref = orgId ? `/build?orgId=${encodeURIComponent(orgId)}` : "/build";
+  const header = (
+    <PageHeader
+      breadcrumbs={
+        <>
+          <a href={buildHref}>Build</a>
+          {" / BOM cost rollup"}
+        </>
+      }
+      title="BOM cost rollup"
+      description="Roll up bill-of-materials line items — logged by hand or imported from CAD — against a season budget, broken down by subsystem and category."
+    >
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
         {view?.status === "live" && view.seasons.length > 0 ? (
           <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
             Season
-            <select value={view.seasonYear} onChange={(event) => load(Number(event.target.value))}>
+            <select value={view.seasonYear} onChange={(event) => void load(Number(event.target.value))}>
               {view.seasons.map((season) => (
                 <option key={season} value={season}>
                   {season}
@@ -134,60 +290,95 @@ export default function BomCostRollupClient() {
             </select>
           </label>
         ) : null}
-      </PageHeader>
+        <BomCostRollupRelated orgId={orgId} />
+      </div>
+    </PageHeader>
+  );
 
+  if (!view) {
+    const failure = fetchFailed
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: failureStatus,
+            message: failureMessage,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: failureMessage || "A network or server issue prevented loading. Try again.",
+          },
+        )
+      : null;
+    return (
+      <main className="module-page">
+        {header}
+        <OfflineBanner feature="BOM cost rollup" fromCache={fromCache} cachedAt={cachedAt} />
+        <EmptyState
+          title={failure ? failure.title : "Loading…"}
+          description={failure ? failure.description : "Checking your team."}
+          aria-busy={!fetchFailed}
+        >
+          {failure?.primary ? (
+            <Button as="a" variant="primary" href={failure.primary.href}>
+              {failure.primary.label}
+            </Button>
+          ) : null}
+          {failure?.showRetry ? (
+            <Button variant="secondary" type="button" onClick={() => void load()}>
+              Retry
+            </Button>
+          ) : null}
+        </EmptyState>
+      </main>
+    );
+  }
+
+  switch (view.status) {
+    case "setup_required":
+      return (
+        <main className="module-page">
+          {header}
+          <OfflineBanner feature="BOM cost rollup" fromCache={fromCache} cachedAt={cachedAt} />
+          {error ? (
+            <p className="telemetry-status" role="alert">
+              {error}
+            </p>
+          ) : null}
+          <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
+            {view.steps[0] ? (
+              <Button as="a" variant="primary" href={view.steps[0].href}>
+                {view.steps[0].label}
+              </Button>
+            ) : null}
+          </EmptyState>
+        </main>
+      );
+    case "live":
+      break;
+    default: {
+      view satisfies never;
+      return null;
+    }
+  }
+
+  return (
+    <main className="module-page">
+      {header}
+      <OfflineBanner feature="BOM cost rollup" fromCache={fromCache} cachedAt={cachedAt} />
       {error ? (
         <p className="telemetry-status" role="alert">
           {error}
         </p>
       ) : null}
-
-      {fetchFailed ? (
-        (() => {
-          const kind = classifyLoadFailure({
-            status: loadStatus,
-            message: loadError,
-            online: typeof navigator === "undefined" ? true : navigator.onLine,
-          });
-          const copy = loadFailureCopy(kind, {
-            nextPath:
-              typeof window === "undefined"
-                ? null
-                : `${window.location.pathname}${window.location.search}`,
-            message: loadError || "A network or server issue prevented loading. Try again.",
-          });
-          return (
-            <EmptyState title={copy.title} description={copy.description}>
-              {copy.primary ? (
-                <Button as="a" variant="primary" href={copy.primary.href}>
-                  {copy.primary.label}
-                </Button>
-              ) : null}
-              {copy.showRetry ? (
-                <Button variant="secondary" type="button" onClick={() => load()}>
-                  Retry
-                </Button>
-              ) : null}
-            </EmptyState>
-          );
-        })()
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your team." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          {view.steps[0] ? (
-            <Button as="a" variant="primary" href={view.steps[0].href}>
-              {view.steps[0].label}
-            </Button>
-          ) : null}
-        </EmptyState>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <SummaryTiles view={view} busy={busy} mutate={mutate} />
-          <AddItemForm busy={busy} mutate={mutate} />
-          <ItemsTable view={view} busy={busy} mutate={mutate} />
-        </div>
-      )}
+      <BomCostRollupNextActions orgId={view.orgId} />
+      <div style={{ display: "grid", gap: 16 }}>
+        <SummaryTiles view={view} busy={busy} mutate={mutate} />
+        <AddItemForm busy={busy} mutate={mutate} />
+        <ItemsTable view={view} busy={busy} mutate={mutate} />
+      </div>
     </main>
   );
 }
@@ -279,7 +470,7 @@ function AddItemForm({
   const [unitCostUsd, setUnitCostUsd] = useState("");
 
   return (
-    <Panel>
+    <Panel id="bom-cost-add">
       <h2 style={{ marginTop: 0 }}>Add line item</h2>
       <form
         onSubmit={(event) => {

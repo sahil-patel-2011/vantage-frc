@@ -242,7 +242,7 @@ function LiveTags({
         <ul className="team-tags-actions">
           {view.nextActions.map((action) => (
             <li key={action.id}>
-              <Button as="a" variant={action.primary ? "primary" : "secondary"} href={action.href}>
+              <Button as="a" variant="secondary" href={action.href}>
                 {action.label}
               </Button>
               <span>{action.detail}</span>

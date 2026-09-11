@@ -1,7 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, PageHeader, Panel, ProgressMeter, Button } from "../../components/ui";
+import { hubHref } from "../../lib/nav/hubs";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import type { RoadmapView } from "../../lib/roadmap/load-roadmap";
 import {
   URGENCY_LABELS,
@@ -27,41 +31,185 @@ type LiveView = Extract<RoadmapView, { status: "live" }>;
 /** >=44px targets everywhere: a lead mentor works this list on a phone, standing up. */
 const TAP: CSSProperties = { minHeight: 44, padding: "10px 14px" };
 
+function isRoadmapView(value: unknown): value is RoadmapView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function responseError(data: unknown): string {
+  return data && typeof data === "object" && "error" in data && typeof data.error === "string"
+    ? data.error
+    : "";
+}
+
+function roadmapCacheOrg(data: RoadmapView, orgHint: string): string {
+  switch (data.status) {
+    case "setup_required":
+      return (typeof data.orgId === "string" && data.orgId.trim()) || orgHint;
+    case "live":
+      return data.orgId.trim() || orgHint;
+    default: {
+      data satisfies never;
+      return orgHint;
+    }
+  }
+}
+
+async function persistRoadmapSnapshot(orgHint: string, data: RoadmapView): Promise<void> {
+  const cacheOrg = roadmapCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("roadmap", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("roadmap", "_", data);
+  } catch {
+    // Live Season roadmap already painted; IndexedDB is best-effort.
+  }
+}
+
+function RoadmapRelated({ orgId }: { orgId?: string | null }) {
+  return (
+    <nav className="product-hub-related" aria-label="Related team tools">
+      <Button as="a" variant="secondary" href={hubHref("/team", "season-planning-workspace", orgId)}>
+        Season plan
+      </Button>
+      <Button as="a" variant="secondary" href={hubHref("/team", "goals", orgId)}>
+        Objectives
+      </Button>
+      <Button as="a" variant="secondary" href={hubHref("/team", "exit-interview", orgId)}>
+        Exit interviews
+      </Button>
+    </nav>
+  );
+}
+
+function RoadmapNextActions({ orgId }: { orgId: string }) {
+  const actions = [
+    {
+      id: "kickoff",
+      label: "Set your kickoff date",
+      detail: "Every window below turns into real dates from the Saturday you enter.",
+      href: "#roadmap-kickoff",
+      primary: true,
+    },
+    {
+      id: "plan",
+      label: "Open Season plan",
+      detail: "Milestones and dated work live beside this kickoff-to-event list.",
+      href: hubHref("/team", "season-planning-workspace", orgId),
+      primary: false,
+    },
+    {
+      id: "goals",
+      label: "Open Objectives",
+      detail: "Season goals stay a separate list from this checklist.",
+      href: hubHref("/team", "goals", orgId),
+      primary: false,
+    },
+  ];
+  return (
+    <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <Button as="a" variant="secondary" href={action.href}>
+              Open
+            </Button>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
 export default function RoadmapClient() {
   const [view, setView] = useState<RoadmapView | null>(null);
   const [kickoffInput, setKickoffInput] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [fetchFailed, setFetchFailed] = useState(false);
-  const [errorStatus, setErrorStatus] = useState<number | null>(null);
-  const [loadErrorMessage, setLoadErrorMessage] = useState("");
+  const [failureStatus, setFailureStatus] = useState<number | null>(null);
+  const [failureMessage, setFailureMessage] = useState("");
   const [openPhases, setOpenPhases] = useState<Record<string, boolean>>({});
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<RoadmapView | null>(null);
+  viewRef.current = view;
 
   const orgId = view && "orgId" in view ? view.orgId : null;
 
-  const load = useCallback(() => {
+  const load = useCallback(async () => {
+    const orgHint = new URLSearchParams(window.location.search).get("orgId")?.trim() ?? "";
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<RoadmapView>("roadmap", orgHint || "_");
+      if (!viewRef.current && cached?.data && isRoadmapView(cached.data)) {
+        setView(cached.data);
+        if (cached.data.status === "live") setKickoffInput(cached.data.roadmap.kickoffDate ?? "");
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
     setFetchFailed(false);
     setError("");
-    setErrorStatus(null);
-    setLoadErrorMessage("");
-    const urlOrg = new URLSearchParams(window.location.search).get("orgId");
-    void fetch(`/api/roadmap${urlOrg ? `?orgId=${encodeURIComponent(urlOrg)}` : ""}`)
-      .then(async (response) => {
-        const data = (await response.json()) as RoadmapView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setLoadErrorMessage("error" in data && data.error ? data.error : "");
-          setErrorStatus(response.status);
-          setFetchFailed(true);
+    setFailureStatus(null);
+    setFailureMessage("");
+    try {
+      const response = await fetch(`/api/roadmap${orgHint ? `?orgId=${encodeURIComponent(orgHint)}` : ""}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      const data: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setFetchFailed(true);
+        setFailureStatus(response.status);
+        setFailureMessage(responseError(data));
+        return;
+      }
+      if (!response.ok || !isRoadmapView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Season roadmap. Showing the last copy on this device.");
+          setFetchFailed(false);
           return;
         }
-        setView(data);
-        if (data.status === "live") setKickoffInput(data.roadmap.kickoffDate ?? "");
-      })
-      .catch(() => setFetchFailed(true));
+        setFetchFailed(true);
+        setFailureStatus(response.status);
+        setFailureMessage(responseError(data));
+        return;
+      }
+      setView(data);
+      if (data.status === "live") setKickoffInput(data.roadmap.kickoffDate ?? "");
+      setFromCache(false);
+      setCachedAt(null);
+      await persistRoadmapSnapshot(orgHint, data);
+    } catch {
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Season roadmap. Showing the last copy on this device.");
+        setFetchFailed(false);
+        return;
+      }
+      setFetchFailed(true);
+    }
   }, []);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   const post = useCallback(
@@ -74,14 +222,17 @@ export default function RoadmapClient() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ ...body, orgId }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
-        const data = (await response.json()) as RoadmapView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setError("error" in data && data.error ? data.error : "Could not save. Try again.");
+        const data: unknown = await response.json().catch(() => null);
+        if (!response.ok || !isRoadmapView(data)) {
+          setError(responseError(data) || "Could not save. Try again.");
           return;
         }
         setView(data);
         if (data.status === "live") setKickoffInput(data.roadmap.kickoffDate ?? "");
+        setFromCache(false);
+        void persistRoadmapSnapshot(orgId, data);
       } catch {
         setError("Could not reach the server. Your change was not saved.");
       } finally {
@@ -125,96 +276,126 @@ export default function RoadmapClient() {
     setOpenPhases((prev) => ({ ...prev, [phaseId]: !prev[phaseId] }));
   }, []);
 
-  const failure = fetchFailed
-    ? loadFailureCopy(
-        classifyLoadFailure({
-          status: errorStatus,
-          message: loadErrorMessage,
-          online: typeof navigator === "undefined" ? true : navigator.onLine,
-        }),
-        {
-          nextPath:
-            typeof window === "undefined" ? null : `${window.location.pathname}${window.location.search}`,
-          message: loadErrorMessage || "A network or server issue prevented loading. Try again.",
-        },
-      )
-    : null;
+  const teamHref = orgId ? `/team?orgId=${encodeURIComponent(orgId)}` : "/team";
+  const header = (
+    <PageHeader
+      breadcrumbs={
+        <>
+          <a href={teamHref}>Team</a>
+          {" / Season roadmap"}
+        </>
+      }
+      title="Season roadmap"
+      description="Kickoff to first event, in the order it actually has to happen. Every date is calculated from the kickoff date you enter."
+    >
+      <RoadmapRelated orgId={orgId} />
+    </PageHeader>
+  );
 
-  const teamHref = orgId ? `/team?tab=knowledge&orgId=${encodeURIComponent(orgId)}` : "/team?tab=knowledge";
+  if (!view) {
+    const failure = fetchFailed
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: failureStatus,
+            message: failureMessage,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined" ? null : `${window.location.pathname}${window.location.search}`,
+            message: failureMessage || "A network or server issue prevented loading. Try again.",
+          },
+        )
+      : null;
+    return (
+      <main className="module-page">
+        {header}
+        <OfflineBanner feature="Season roadmap" fromCache={fromCache} cachedAt={cachedAt} />
+        <EmptyState
+          title={failure ? failure.title : "Loading…"}
+          description={failure ? failure.description : "Checking your team."}
+          aria-busy={!fetchFailed}
+        >
+          {failure?.primary ? (
+            <Button as="a" variant="primary" style={TAP} href={failure.primary.href}>
+              {failure.primary.label}
+            </Button>
+          ) : null}
+          {failure?.showRetry ? (
+            <Button variant="secondary" type="button" style={TAP} onClick={() => void load()}>
+              Retry
+            </Button>
+          ) : null}
+        </EmptyState>
+      </main>
+    );
+  }
+
+  switch (view.status) {
+    case "setup_required":
+      return (
+        <main className="module-page">
+          {header}
+          <OfflineBanner feature="Season roadmap" fromCache={fromCache} cachedAt={cachedAt} />
+          {error ? (
+            <p className="telemetry-status" role="alert">
+              {error}
+            </p>
+          ) : null}
+          <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
+            {view.steps[0] ? (
+              <Button as="a" variant="primary" href={view.steps[0].href}>
+                {view.steps[0].label}
+              </Button>
+            ) : null}
+          </EmptyState>
+        </main>
+      );
+    case "live":
+      break;
+    default: {
+      view satisfies never;
+      return null;
+    }
+  }
 
   return (
     <main className="module-page">
-      <PageHeader
-        breadcrumbs={
-          <>
-            <a href={teamHref}>Team</a>
-            {" / Season roadmap"}
-          </>
-        }
-        title="Season roadmap"
-        description="Kickoff to first event, in the order it actually has to happen. Every date is calculated from the kickoff date you enter."
-      />
-
+      {header}
+      <OfflineBanner feature="Season roadmap" fromCache={fromCache} cachedAt={cachedAt} />
       {error ? (
         <p className="telemetry-status" role="alert">
           {error}
         </p>
       ) : null}
-
-      {failure ? (
-        <EmptyState title={failure.title} description={failure.description}>
-          {failure.primary ? (
-            <Button as="a" variant="primary" style={TAP} href={failure.primary.href}>
-              {failure.primary.label}
-            </Button>
-          ) : null}
-          {failure.showRetry ? (
-            <Button variant="secondary" type="button" style={TAP} onClick={() => load()}>
-              Retry
-            </Button>
-          ) : null}
-        </EmptyState>
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your team." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          {view.steps[0] ? (
-            <Button as="a" variant="primary" href={view.steps[0].href}>
-              {view.steps[0].label}
-            </Button>
-          ) : null}
-        </EmptyState>
-      ) : (
-        <>
-          <KickoffPanel
-            live={view}
-            value={kickoffInput}
-            onChange={setKickoffInput}
-            onSave={saveKickoff}
-            onClear={clearKickoff}
-            onToggleRookie={toggleRookie}
+      <RoadmapNextActions orgId={view.orgId} />
+      <KickoffPanel
+        live={view}
+        value={kickoffInput}
+        onChange={setKickoffInput}
+        onSave={saveKickoff}
+        onClear={clearKickoff}
+        onToggleRookie={toggleRookie}
+        busy={busy}
+      />
+      <DueNextPanel roadmap={view.roadmap} onSetTask={setTask} busy={busy} />
+      <div style={{ display: "grid", gap: 14 }}>
+        {view.roadmap.phases.map((phase) => (
+          <PhasePanel
+            key={phase.id}
+            phase={phase}
+            today={view.roadmap.today}
+            open={openPhases[phase.id] ?? phaseDefaultsOpen(phase)}
+            onToggle={() => togglePhase(phase.id)}
+            onSetTask={setTask}
             busy={busy}
           />
-          <DueNextPanel roadmap={view.roadmap} onSetTask={setTask} busy={busy} />
-          <div style={{ display: "grid", gap: 14 }}>
-            {view.roadmap.phases.map((phase) => (
-              <PhasePanel
-                key={phase.id}
-                phase={phase}
-                today={view.roadmap.today}
-                open={openPhases[phase.id] ?? phaseDefaultsOpen(phase)}
-                onToggle={() => togglePhase(phase.id)}
-                onSetTask={setTask}
-                busy={busy}
-              />
-            ))}
-          </div>
-          <ResourcesPanel />
-          <p className="app-muted" style={{ fontSize: 13, marginTop: 12 }}>
-            {view.roadmap.accuracyNote}
-          </p>
-        </>
-      )}
+        ))}
+      </div>
+      <ResourcesPanel />
+      <p className="app-muted" style={{ fontSize: 13, marginTop: 12 }}>
+        {view.roadmap.accuracyNote}
+      </p>
     </main>
   );
 }

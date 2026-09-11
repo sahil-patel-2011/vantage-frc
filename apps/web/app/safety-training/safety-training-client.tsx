@@ -1,12 +1,15 @@
 "use client";
 
 import type React from "react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { SAFETY_CATEGORIES, safetyCategoryLabel } from "../../lib/safety-training";
 import type { SafetyTrainingView } from "../../lib/safety-training/compute-safety-training";
 import type { SafetyCategory, SafetyCompletionStatus } from "../../lib/safety-training/types";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 
 function statusTone(status: SafetyCompletionStatus): string {
   if (status === "current") return "good";
@@ -26,6 +29,36 @@ function pct(value: number): string {
 
 type LiveView = Extract<SafetyTrainingView, { status: "live" }>;
 
+function isSafetyTrainingView(value: unknown): value is SafetyTrainingView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function safetyTrainingCacheOrg(data: SafetyTrainingView, orgHint: string): string {
+  switch (data.status) {
+    case "live":
+      return data.orgId.trim() || orgHint;
+    case "setup_required":
+      return data.orgId?.trim() || orgHint;
+    default: {
+      data satisfies never;
+      return orgHint;
+    }
+  }
+}
+
+async function persistSafetyTrainingSnapshot(orgHint: string, data: SafetyTrainingView): Promise<void> {
+  const cacheOrg = safetyTrainingCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("safety-training", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("safety-training", "_", data);
+  } catch {
+    // Live Safety Training already painted; IndexedDB is best-effort.
+  }
+}
+
 export default function SafetyTrainingClient() {
   const [view, setView] = useState<SafetyTrainingView | null>(null);
   const [error, setError] = useState("");
@@ -34,34 +67,89 @@ export default function SafetyTrainingClient() {
   const [failureStatus, setFailureStatus] = useState<number | null>(null);
   const [failureMessage, setFailureMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<SafetyTrainingView | null>(null);
+  viewRef.current = view;
 
   const orgId = view && "orgId" in view ? view.orgId : null;
 
-  const load = useCallback(() => {
+  const load = useCallback(async () => {
+    const params = new URLSearchParams(window.location.search);
+    const orgHint = params.get("orgId")?.trim() ?? "";
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<SafetyTrainingView>("safety-training", orgHint || "_");
+      if (!viewRef.current && cached?.data && isSafetyTrainingView(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
     setFetchFailed(false);
     setFailureStatus(null);
     setFailureMessage("");
     setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    void fetch(`/api/safety-training${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
-        const data = (await response.json()) as SafetyTrainingView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setFailureStatus(response.status);
-          setFailureMessage("error" in data && data.error ? data.error : "");
-          setFetchFailed(true);
+    try {
+      const query = new URLSearchParams();
+      if (orgHint) query.set("orgId", orgHint);
+      const response = await fetch(
+        `/api/safety-training${query.toString() ? `?${query.toString()}` : ""}`,
+        {
+          cache: "no-store",
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+        },
+      );
+      const data: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setFailureStatus(response.status);
+        setFailureMessage(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "",
+        );
+        setFetchFailed(true);
+        return;
+      }
+      if (!response.ok || !isSafetyTrainingView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Safety Training. Showing the last copy on this device.");
+          setFetchFailed(false);
           return;
         }
-        setView(data);
-      })
-      .catch(() => setFetchFailed(true));
+        setFailureStatus(response.status);
+        setFailureMessage(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "",
+        );
+        setFetchFailed(true);
+        return;
+      }
+      setView(data);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistSafetyTrainingSnapshot(orgHint, data);
+    } catch {
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Safety Training. Showing the last copy on this device.");
+        setFetchFailed(false);
+        return;
+      }
+      setFetchFailed(true);
+    }
   }, []);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   const mutate = useCallback(
@@ -74,13 +162,20 @@ export default function SafetyTrainingClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
-        const data = (await response.json()) as SafetyTrainingView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setError("error" in data && data.error ? data.error : "Something went wrong.");
+        const data: unknown = await response.json().catch(() => null);
+        if (!response.ok || !isSafetyTrainingView(data)) {
+          setError(
+            data && typeof data === "object" && "error" in data && typeof data.error === "string"
+              ? data.error
+              : "Something went wrong.",
+          );
           return;
         }
         setView(data);
+        setFromCache(false);
+        void persistSafetyTrainingSnapshot(orgId, data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -103,63 +198,82 @@ export default function SafetyTrainingClient() {
         description="Track shop safety modules and per-member certification. Compliance uses only what you record."
       />
 
+      <OfflineBanner feature="Safety Training" fromCache={fromCache} cachedAt={cachedAt} />
+
       {error ? (
         <p className="telemetry-status" role="alert">
           {error}
         </p>
       ) : null}
 
-      {fetchFailed ? (
+      {!view ? (
         (() => {
-          const copy = loadFailureCopy(
-            classifyLoadFailure({
-              status: failureStatus,
-              message: failureMessage,
-              online: typeof navigator === "undefined" ? true : navigator.onLine,
-            }),
-            {
-              nextPath:
-                typeof window === "undefined"
-                  ? null
-                  : `${window.location.pathname}${window.location.search}`,
-              message:
-                failureMessage || "A network or server issue prevented loading. Try again.",
-            },
-          );
+          const copy = fetchFailed
+            ? loadFailureCopy(
+                classifyLoadFailure({
+                  status: failureStatus,
+                  message: failureMessage,
+                  online: typeof navigator === "undefined" ? true : navigator.onLine,
+                }),
+                {
+                  nextPath:
+                    typeof window === "undefined"
+                      ? null
+                      : `${window.location.pathname}${window.location.search}`,
+                  message:
+                    failureMessage || "A network or server issue prevented loading. Try again.",
+                },
+              )
+            : null;
           return (
-            <EmptyState title={copy.title} description={copy.description}>
-              {copy.primary ? (
+            <EmptyState
+              title={copy ? copy.title : "Loading…"}
+              description={copy ? copy.description : "Checking your team."}
+              aria-busy={!fetchFailed}
+            >
+              {copy?.primary ? (
                 <Button as="a" variant="primary" href={copy.primary.href}>
                   {copy.primary.label}
                 </Button>
               ) : null}
-              {copy.showRetry ? (
-                <Button variant="secondary" type="button" onClick={() => load()}>
+              {copy?.showRetry ? (
+                <Button variant="secondary" type="button" onClick={() => void load()}>
                   Retry
                 </Button>
               ) : null}
             </EmptyState>
           );
         })()
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your team." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          {view.steps[0] ? (
-            <Button as="a" variant="primary" href={view.steps[0].href}>
-              {view.steps[0].label}
-            </Button>
-          ) : null}
-        </EmptyState>
       ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <SummaryPanel view={view} />
-          <CreateModuleForm busy={busy} mutate={mutate} />
-          <ModulesList view={view} busy={busy} mutate={mutate} />
-          <RecordCompletionForm view={view} busy={busy} mutate={mutate} />
-          <CoverageTable view={view} />
-          <CompletionsList view={view} busy={busy} mutate={mutate} />
-        </div>
+        (() => {
+          switch (view.status) {
+            case "setup_required":
+              return (
+                <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
+                  {view.steps[0] ? (
+                    <Button as="a" variant="primary" href={view.steps[0].href}>
+                      {view.steps[0].label}
+                    </Button>
+                  ) : null}
+                </EmptyState>
+              );
+            case "live":
+              return (
+                <div style={{ display: "grid", gap: 16 }}>
+                  <SummaryPanel view={view} />
+                  <CreateModuleForm busy={busy} mutate={mutate} />
+                  <ModulesList view={view} busy={busy} mutate={mutate} />
+                  <RecordCompletionForm view={view} busy={busy} mutate={mutate} />
+                  <CoverageTable view={view} />
+                  <CompletionsList view={view} busy={busy} mutate={mutate} />
+                </div>
+              );
+            default: {
+              const data: never = view;
+              return data satisfies never;
+            }
+          }
+        })()
       )}
     </main>
   );

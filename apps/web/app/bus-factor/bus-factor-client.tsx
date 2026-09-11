@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import {
   Badge,
   EmptyState,
@@ -32,6 +33,7 @@ import type { BusFactorArea, RiskLevel } from "../../lib/bus-factor/types";
 import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./bus-factor.css";
 
 function riskTone(level: RiskLevel): BadgeTone {
@@ -45,6 +47,36 @@ function pct(value: number): string {
 }
 
 type LiveView = Extract<BusFactorView, { status: "live" }>;
+
+function isBusFactorView(value: unknown): value is BusFactorView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function busFactorCacheOrg(data: BusFactorView, orgHint: string): string {
+  switch (data.status) {
+    case "live":
+      return data.orgId.trim() || orgHint;
+    case "setup_required":
+      return data.orgId?.trim() || orgHint;
+    default: {
+      data satisfies never;
+      return orgHint;
+    }
+  }
+}
+
+async function persistBusFactorSnapshot(orgHint: string, data: BusFactorView): Promise<void> {
+  const cacheOrg = busFactorCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("bus-factor", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("bus-factor", "_", data);
+  } catch {
+    // Live Bus-Factor already painted; IndexedDB is best-effort.
+  }
+}
 
 function BusFactorRelatedStrip({ orgId }: { orgId?: string | null }) {
   const links = busFactorRelatedLinks(orgId, {
@@ -96,12 +128,16 @@ function BusFactorShell({
   shell,
   error,
   onRetry,
+  fromCache = false,
+  cachedAt = null,
 }: {
   description: string;
   orgId?: string | null;
   shell: BusFactorShellKind;
   error?: string;
   onRetry?: () => void;
+  fromCache?: boolean;
+  cachedAt?: string | null;
 }) {
   const actions = busFactorNextActions({ orgId, shell });
   const copy = busFactorShellCopy(shell);
@@ -122,6 +158,7 @@ function BusFactorShell({
       >
         <BusFactorRelatedStrip orgId={orgId} />
       </PageHeader>
+      <OfflineBanner feature="Bus-Factor" fromCache={fromCache} cachedAt={cachedAt} />
       {shell === "loading" ? (
         <div style={{ display: "grid", gap: 16 }} aria-busy="true" aria-label="Loading bus-factor">
           <StatRowSkeleton count={5} />
@@ -158,30 +195,72 @@ export default function BusFactorClient() {
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [windowWeeks, setWindowWeeks] = useState<number | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<BusFactorView | null>(null);
+  viewRef.current = view;
 
   const load = useCallback((weeksOverride?: number) => {
-    setFetchFailed(false);
-    setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const weeksQuery = weeksOverride ?? (params.get("weeks") ? Number(params.get("weeks")) : null);
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    if (weeksQuery) query.set("weeks", String(weeksQuery));
-    void fetch(`/api/bus-factor${query.toString() ? `?${query.toString()}` : ""}`, {
-      cache: "no-store",
-      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
-    })
-      .then(async (response) => {
-        const data = (await response.json()) as BusFactorView | { error?: string };
-        if (!response.ok || !("status" in data)) {
+    void (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const orgHint = params.get("orgId")?.trim() ?? "";
+      const weeksQuery = weeksOverride ?? (params.get("weeks") ? Number(params.get("weeks")) : null);
+      let hadCache = Boolean(viewRef.current);
+      try {
+        const cached = await getFeatureSnapshot<BusFactorView>("bus-factor", orgHint || "_");
+        if (!viewRef.current && cached?.data && isBusFactorView(cached.data)) {
+          setView(cached.data);
+          setWindowWeeks(cached.data.windowWeeks);
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          hadCache = true;
+        }
+      } catch {
+        // IndexedDB missing or blocked; live fetch still runs.
+      }
+      setFetchFailed(false);
+      setError("");
+      const query = new URLSearchParams();
+      if (orgHint) query.set("orgId", orgHint);
+      if (weeksQuery) query.set("weeks", String(weeksQuery));
+      try {
+        const response = await fetch(`/api/bus-factor${query.toString() ? `?${query.toString()}` : ""}`, {
+          cache: "no-store",
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+        });
+        const data: unknown = await response.json().catch(() => null);
+        if (response.status === 401 || response.status === 403) {
+          setView(null);
+          setFromCache(false);
+          setCachedAt(null);
+          setFetchFailed(true);
+          return;
+        }
+        if (!response.ok || !isBusFactorView(data)) {
+          if (hadCache || viewRef.current) {
+            setFromCache(true);
+            setError("Could not refresh Bus-Factor. Showing the last copy on this device.");
+            setFetchFailed(false);
+            return;
+          }
           setFetchFailed(true);
           return;
         }
         setView(data);
         setWindowWeeks(data.windowWeeks);
-      })
-      .catch(() => setFetchFailed(true));
+        setFromCache(false);
+        setCachedAt(null);
+        await persistBusFactorSnapshot(orgHint, data);
+      } catch {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Bus-Factor. Showing the last copy on this device.");
+          setFetchFailed(false);
+          return;
+        }
+        setFetchFailed(true);
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -194,7 +273,7 @@ export default function BusFactorClient() {
 
   const shell = classifyBusFactorShell({
     loading: view == null && !fetchFailed,
-    fetchFailed,
+    fetchFailed: fetchFailed && view == null,
     status: view?.status ?? null,
     orgId: view?.status === "live" ? view.orgId : view?.status === "setup_required" ? view.orgId : null,
     entryCount,
@@ -224,13 +303,19 @@ export default function BusFactorClient() {
           body: JSON.stringify({ orgId, windowWeeks: windowWeeks ?? undefined, ...payload }),
           signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
-        const data = (await response.json()) as BusFactorView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setError("error" in data && data.error ? data.error : "Something went wrong.");
+        const data: unknown = await response.json().catch(() => null);
+        if (!response.ok || !isBusFactorView(data)) {
+          setError(
+            data && typeof data === "object" && "error" in data && typeof data.error === "string"
+              ? data.error
+              : "Something went wrong.",
+          );
           return;
         }
         setView(data);
         setWindowWeeks(data.windowWeeks);
+        setFromCache(false);
+        void persistBusFactorSnapshot(orgId, data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -241,7 +326,15 @@ export default function BusFactorClient() {
   );
 
   if (shell === "loading") {
-    return <BusFactorShell description={shellCopy.description} orgId={null} shell="loading" />;
+    return (
+      <BusFactorShell
+        description={shellCopy.description}
+        orgId={null}
+        shell="loading"
+        fromCache={fromCache}
+        cachedAt={cachedAt}
+      />
+    );
   }
 
   if (shell === "error") {
@@ -252,6 +345,8 @@ export default function BusFactorClient() {
         shell="error"
         error={error || shellCopy.description}
         onRetry={() => load()}
+        fromCache={fromCache}
+        cachedAt={cachedAt}
       />
     );
   }
@@ -262,12 +357,22 @@ export default function BusFactorClient() {
         description={view?.status === "setup_required" ? view.message : shellCopy.description}
         orgId={orgId}
         shell="setup"
+        fromCache={fromCache}
+        cachedAt={cachedAt}
       />
     );
   }
 
   if (view?.status !== "live") {
-    return <BusFactorShell description={shellCopy.description} orgId={orgId} shell="setup" />;
+    return (
+      <BusFactorShell
+        description={shellCopy.description}
+        orgId={orgId}
+        shell="setup"
+        fromCache={fromCache}
+        cachedAt={cachedAt}
+      />
+    );
   }
 
   return (
@@ -308,13 +413,15 @@ export default function BusFactorClient() {
         </div>
       </PageHeader>
 
+      <OfflineBanner feature="Bus-Factor" fromCache={fromCache} cachedAt={cachedAt} />
+
       {error ? (
         <p className="telemetry-status" role="alert">
           {error}
         </p>
       ) : null}
 
-      <BusFactorNextActionsPanel actions={nextActions} />
+      {shell === "ready" ? <BusFactorNextActionsPanel actions={nextActions} /> : null}
 
       {showTiles ? <SummaryTiles view={view} /> : null}
 

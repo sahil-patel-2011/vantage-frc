@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { type EntryType, type FormResetBehavior, type SchemaDefinition, type ScoutSchema } from "@vantage/scouting";
 import "../scouting.css";
+import { OfflineBanner } from "../../../components/offline-banner";
 import { EmptyState, FormRow, PageHeader, Panel, ToolStrip, Button } from "../../../components/ui";
 import {
   ANSWER_KIND_OPTIONS,
@@ -32,11 +33,29 @@ import {
   type StrategyFieldRole,
 } from "../../../lib/scouting/form-builder";
 import { hubHref } from "../../../lib/nav/hubs";
+import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
 import { FormBuilderNextActionsPanel, FormBuilderRelatedStrip, FormBuilderShell } from "./forms-chrome";
 import { defaultQuestions, type FormBuilderMode, type SchemasPayload } from "./forms-model";
 import { OptionEditor } from "./forms-option-editor";
 import { PreviewField } from "./forms-preview";
 import { StudioSettingsEditor } from "./forms-settings-editor";
+
+function isSchemasPayload(value: unknown): value is SchemasPayload {
+  if (!value || typeof value !== "object") return false;
+  const body = value as SchemasPayload;
+  return Array.isArray(body.schemas) && typeof body.canManageSchemas === "boolean";
+}
+
+async function persistScoutFormsSnapshot(orgId: string, data: SchemasPayload): Promise<void> {
+  const cacheOrg = orgId.trim();
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("scout-forms", cacheOrg, data);
+  } catch {
+    // Live scout forms already painted; IndexedDB is best-effort.
+  }
+}
 
 export default function FormsClient({ orgId }: { orgId: string; embedded?: boolean }) {
   const [payload, setPayload] = useState<SchemasPayload | null>(null);
@@ -52,6 +71,10 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
   const [message, setMessage] = useState("");
   const [acknowledgeBudget, setAcknowledgeBudget] = useState(false);
   const [published, setPublished] = useState<{ id: string; version: number } | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const payloadRef = useRef<SchemasPayload | null>(null);
+  payloadRef.current = payload;
 
   const validation = useMemo(() => validateDraft(title, questions, type), [title, questions, type]);
 
@@ -91,24 +114,71 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
   }, []);
 
   const load = useCallback(async () => {
+    let hadCache = Boolean(payloadRef.current);
+    try {
+      const cached = await getFeatureSnapshot<SchemasPayload>("scout-forms", orgId || "_");
+      if (!payloadRef.current && cached?.data && isSchemasPayload(cached.data)) {
+        setPayload(cached.data);
+        if (cached.data.year != null) setYear(cached.data.year);
+        const active = cached.data.schemas.find((schema) => schema.type === type);
+        loadSchemaIntoDraft(active, type);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
     setLoadError("");
     setLoadErrorStatus(null);
     try {
       const response = await fetch(`/api/scouting/schemas?orgId=${encodeURIComponent(orgId)}`, {
         cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
-      const body = (await response.json()) as SchemasPayload & { error?: string };
-      if (!response.ok) {
+      const body: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        setPayload(null);
+        setFromCache(false);
+        setCachedAt(null);
         setLoadErrorStatus(response.status);
-        setLoadError(body.error ?? "Could not load scouting schemas.");
+        setLoadError(
+          body && typeof body === "object" && "error" in body && typeof body.error === "string"
+            ? body.error
+            : "Could not load scout forms.",
+        );
+        return;
+      }
+      if (!response.ok || !isSchemasPayload(body)) {
+        if (hadCache || payloadRef.current) {
+          setFromCache(true);
+          setMessage("Could not refresh scout forms. Showing the last copy on this device.");
+          setLoadError("");
+          return;
+        }
+        setLoadErrorStatus(response.status);
+        setLoadError(
+          body && typeof body === "object" && "error" in body && typeof body.error === "string"
+            ? body.error
+            : "Could not load scout forms.",
+        );
         return;
       }
       setPayload(body);
       if (body.year != null) setYear(body.year);
       const active = body.schemas.find((schema) => schema.type === type);
       loadSchemaIntoDraft(active, type);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistScoutFormsSnapshot(orgId, body);
     } catch {
-      setLoadError("Could not reach the schemas API.");
+      if (hadCache || payloadRef.current) {
+        setFromCache(true);
+        setMessage("Could not refresh scout forms. Showing the last copy on this device.");
+        setLoadError("");
+        return;
+      }
+      setLoadError("Could not load scout forms.");
     }
   }, [orgId, type, loadSchemaIntoDraft]);
 
@@ -216,12 +286,18 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
         error={loadError}
         errorStatus={loadErrorStatus}
         onRetry={() => void load()}
-      />
+      >
+        <OfflineBanner feature="Scout forms" fromCache={fromCache} cachedAt={cachedAt} />
+      </FormBuilderShell>
     );
   }
 
   if (!payload) {
-    return <FormBuilderShell orgId={orgId} shell="loading" entryType={type} />;
+    return (
+      <FormBuilderShell orgId={orgId} shell="loading" entryType={type}>
+        <OfflineBanner feature="Scout forms" fromCache={fromCache} cachedAt={cachedAt} />
+      </FormBuilderShell>
+    );
   }
 
   const currentSchema = payload.schemas.find((schema) => schema.type === type);
@@ -263,6 +339,7 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
   if (shell === "setup") {
     return (
       <FormBuilderShell orgId={orgId} shell="setup" entryType={type}>
+        <OfflineBanner feature="Scout forms" fromCache={fromCache} cachedAt={cachedAt} />
         {!payload.canManageSchemas ? (
           <EmptyState
             badge="Coach role"
@@ -289,6 +366,8 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
           </Button>
         </div>
       </PageHeader>
+
+      <OfflineBanner feature="Scout forms" fromCache={fromCache} cachedAt={cachedAt} />
 
       {shell === "empty" ? (
         <EmptyState

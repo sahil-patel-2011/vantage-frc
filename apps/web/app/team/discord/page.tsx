@@ -19,7 +19,16 @@ export default async function TeamDiscordPage({
           breadcrumbs="Team / Discord"
           title="Discord"
           description="Link a guild and channel for announcements and an optional object-linked chat bridge."
-        />
+        >
+          <nav className="product-hub-related" aria-label="Related team tools">
+            <Button as="a" variant="secondary" href="/team?tab=messages">
+              Messages
+            </Button>
+            <Button as="a" variant="secondary" href="/team">
+              Team
+            </Button>
+          </nav>
+        </PageHeader>
         <TeamOpsNav active="admin" />
         <EmptyState
           soft
@@ -31,14 +40,6 @@ export default async function TeamDiscordPage({
           <Button as="a" variant="primary" href="/workspace">
             Choose your team
           </Button>
-          <nav className="product-hub-related" aria-label="Related team tools" style={{ marginTop: 12 }}>
-            <Button as="a" variant="secondary" href="/team?tab=messages">
-              Messages
-            </Button>
-            <Button as="a" variant="secondary" href="/team">
-              Team
-            </Button>
-          </nav>
         </EmptyState>
       </main>
     );

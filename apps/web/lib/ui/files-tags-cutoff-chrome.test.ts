@@ -41,3 +41,22 @@ describe("leftover Files / tags / cutoff student chrome", () => {
     expect(src).not.toMatch(/Twilio SMS is configured/);
   });
 });
+
+describe("Files and Drive-team tags keep one primary", () => {
+  it("Files header Upload is the only primary; Grid/List stay secondary", () => {
+    const src = readFileSync(join(WEB, "app/files/files-client.tsx"), "utf8");
+    const header = src.slice(src.indexOf("drive-layout-toggle"), src.indexOf("Upload files") + 120);
+    expect(header).toMatch(/variant="secondary"/);
+    expect(header).not.toMatch(/layout === "grid" \? "primary"/);
+    expect(src).toMatch(/Upload files/);
+    expect(src).toMatch(/variant="primary" type="button"/);
+  });
+
+  it("live Tag robot is the only primary; next-actions stay secondary", () => {
+    const src = readFileSync(join(WEB, "app/team-tags/team-tags-client.tsx"), "utf8");
+    const live = src.slice(src.indexOf("function LiveTags"));
+    expect(live).toMatch(/<Button variant="primary"/);
+    expect(live).not.toMatch(/action.primary \? "primary"/);
+    expect(live).toMatch(/variant="secondary" href=\{action.href\}/);
+  });
+});

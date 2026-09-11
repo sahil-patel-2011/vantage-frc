@@ -1,31 +1,18 @@
 "use client";
-import { Button } from "../../../components/ui";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { OfflineBanner } from "../../../components/offline-banner";
+import { Button, EmptyState, PageHeader } from "../../../components/ui";
 import {
-  CONNECTIONS_RELATED_INCLUDE,
-  connectionsRelatedLinks,
-} from "../../../lib/account";
-import {
-  ONSHAPE_LOCAL_PLAYWRIGHT_HINT,
   ONSHAPE_OAUTH_CTA,
   onshapeAccountLabel,
   onshapeHostedBadge,
   onshapeOauthCtaEnabled,
-  withLocalPlaywrightHint,
 } from "../../../lib/cad/onshape-setup-strings";
-import { hubHref } from "../../../lib/nav/hubs";
+import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
 import { withOrgHref } from "../../../lib/nav/product-nav";
-
-const install = `npm install
-npm run build --workspace=@vantage/cad-cli
-npm install -g ./packages/vantage-cad-cli
-vantage-cad setup
-
-# Or use install scripts:
-# Windows one-shot: powershell -ExecutionPolicy Bypass -File .\\scripts\\cad\\install-windows.ps1
-# Windows CLI only: powershell -File .\\scripts\\cad\\install-cli.ps1
-# macOS/Linux: bash scripts/cad/install-cli.sh`;
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
+import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 
 type Device = {
   id: string;
@@ -37,60 +24,219 @@ type Device = {
   revokedAt: string | null;
 };
 
-type OsRow = {
-  os: string;
-  vantageCadCli: string;
-  fusion360Addin: string;
-  fusion360Autodesk: string;
-  onshapeHosted: string;
-  notes: string;
+type OnshapeConnection = {
+  id: string;
+  status: string;
+  label: string;
+  externalAccountRef?: string | null;
 };
 
-export default function CadConnections({ orgId }: { orgId: string }) {
-  const [devices, setDevices] = useState<Device[]>([]);
-  const [message, setMessage] = useState("");
-  const [onshapeOauthReady, setOnshapeOauthReady] = useState(false);
-  const [onshapeConnections, setOnshapeConnections] = useState<
-    Array<{ id: string; status: string; label: string; externalAccountRef?: string | null }>
-  >([]);
-  const [onshapeSetupMessage, setOnshapeSetupMessage] = useState("");
-  const [onshapeCallbackUrl, setOnshapeCallbackUrl] = useState("");
-  const [osSupport, setOsSupport] = useState<OsRow[]>([]);
-  const [busy, setBusy] = useState(false);
-  const related = connectionsRelatedLinks(orgId, {
-    active: "cad",
-    include: [...CONNECTIONS_RELATED_INCLUDE],
-  });
+type CadConnectionsView = {
+  status: "live";
+  orgId: string;
+  devices: Device[];
+  onshapeOauthReady: boolean;
+  onshapeConnections: OnshapeConnection[];
+  onshapeSetupMessage: string;
+};
 
-  async function load() {
-    const r = await fetch(`/api/cad?orgId=${encodeURIComponent(orgId)}`);
-    const d = await r.json();
-    if (r.ok) {
-      setDevices(d.devices ?? []);
-      const oauthReady = onshapeOauthCtaEnabled(d.onshape);
-      setOnshapeOauthReady(oauthReady);
-      setOnshapeConnections(d.onshapeConnections ?? []);
-      setOnshapeCallbackUrl(String(d.onshape?.callbackUrl ?? ""));
-      setOnshapeSetupMessage(
-        d.onshape?.setupRequired || !oauthReady
-          ? withLocalPlaywrightHint(
-              oauthReady
-                ? String(d.onshape?.message ?? "Setup required — connect Onshape OAuth in CAD Connections.")
-                : ONSHAPE_OAUTH_CTA.disabledDetail,
-            )
-          : "",
-      );
-      setOsSupport(d.osSupport ?? []);
-    } else setMessage(d.error);
+function isCadConnectionsView(value: unknown): value is CadConnectionsView {
+  if (!value || typeof value !== "object") return false;
+  const row = value as { status?: unknown; orgId?: unknown; devices?: unknown };
+  return row.status === "live" && typeof row.orgId === "string" && Array.isArray(row.devices);
+}
+
+function responseError(data: unknown): string {
+  return data && typeof data === "object" && "error" in data && typeof data.error === "string"
+    ? data.error
+    : "";
+}
+
+async function persistCadConnectionsSnapshot(orgHint: string, data: CadConnectionsView): Promise<void> {
+  const cacheOrg = data.orgId.trim() || orgHint;
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("cad-connections", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("cad-connections", "_", data);
+  } catch {
+    // Live CAD connections already painted; IndexedDB is best-effort.
   }
+}
+
+export function CadConnectionsRelated({ orgId }: { orgId: string | null }) {
+  return (
+    <nav className="product-hub-related" aria-label="Related CAD tools">
+      <Button as="a" variant="secondary" href={withOrgHref("/cad", orgId)}>
+        CAD
+      </Button>
+      <Button as="a" variant="secondary" href={withOrgHref("/cad-vault", orgId)}>
+        CAD Vault
+      </Button>
+      <Button as="a" variant="secondary" href={withOrgHref("/cad-learn", orgId)}>
+        Learn CAD
+      </Button>
+    </nav>
+  );
+}
+
+function CadConnectionsNextActions({
+  orgId,
+  onshapeConnected,
+  hasDesktop,
+}: {
+  orgId: string;
+  onshapeConnected: boolean;
+  hasDesktop: boolean;
+}) {
+  const actions = [
+    !onshapeConnected
+      ? {
+          id: "onshape",
+          label: "Connect Onshape",
+          detail: "Authorize in the browser. Never type your password in a terminal.",
+          href: "#onshape",
+          primary: true as const,
+        }
+      : {
+          id: "cad",
+          label: "Open CAD",
+          detail: "Pick a document after Onshape is connected.",
+          href: withOrgHref("/cad", orgId),
+          primary: true as const,
+        },
+    {
+      id: "desktop",
+      label: hasDesktop ? "Review paired desktops" : "Pair Fusion desktop",
+      detail: "Fusion stays on this computer. Pair it here when you need the desktop app.",
+      href: withOrgHref("/cad/pair", orgId),
+    },
+  ];
+  return (
+    <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <Button as="a" variant="secondary" href={action.href}>
+              Open
+            </Button>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+export default function CadConnections({ orgId }: { orgId: string }) {
+  const [view, setView] = useState<CadConnectionsView | null>(null);
+  const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [fetchFailed, setFetchFailed] = useState(false);
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<CadConnectionsView | null>(null);
+  viewRef.current = view;
+
+  const load = useCallback(async () => {
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<CadConnectionsView>("cad-connections", orgId || "_");
+      if (!viewRef.current && cached?.data && isCadConnectionsView(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
+    setFetchFailed(false);
+    setErrorStatus(null);
+    try {
+      const response = await fetch(`/api/cad?orgId=${encodeURIComponent(orgId)}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      const body: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setFetchFailed(true);
+        setErrorStatus(response.status);
+        setMessage(responseError(body) || "Could not load CAD connections.");
+        return;
+      }
+      if (!response.ok || !body || typeof body !== "object") {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setMessage("Could not refresh CAD connections. Showing the last copy on this device.");
+          setFetchFailed(false);
+          return;
+        }
+        setFetchFailed(true);
+        setErrorStatus(response.status);
+        setMessage(responseError(body) || "Could not load CAD connections.");
+        return;
+      }
+      const row = body as {
+        devices?: Device[];
+        onshape?: {
+          configured?: boolean;
+          redirectUri?: string | null;
+          scopes?: unknown[] | null;
+          setupRequired?: boolean;
+          message?: string;
+        };
+        onshapeConnections?: OnshapeConnection[];
+        error?: string;
+      };
+      const oauthReady = onshapeOauthCtaEnabled(row.onshape);
+      const next: CadConnectionsView = {
+        status: "live",
+        orgId,
+        devices: Array.isArray(row.devices) ? row.devices : [],
+        onshapeOauthReady: oauthReady,
+        onshapeConnections: Array.isArray(row.onshapeConnections) ? row.onshapeConnections : [],
+        onshapeSetupMessage:
+          row.onshape?.setupRequired || !oauthReady
+            ? oauthReady
+              ? String(row.onshape?.message ?? "Connect Onshape in the browser to run hosted CAD jobs.")
+              : ONSHAPE_OAUTH_CTA.disabledDetail
+            : "",
+      };
+      setView(next);
+      setFromCache(false);
+      setCachedAt(null);
+      setMessage("");
+      await persistCadConnectionsSnapshot(orgId, next);
+    } catch {
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setMessage("Could not refresh CAD connections. Showing the last copy on this device.");
+        setFetchFailed(false);
+        return;
+      }
+      setFetchFailed(true);
+      setMessage("Could not load CAD connections.");
+    }
+  }, [orgId]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get("onshape") === "connected") setMessage("Onshape OAuth connected.");
+    if (params.get("onshape") === "connected") setMessage("Onshape connected.");
     if (params.get("onshape") === "denied") setMessage("Onshape authorization was denied.");
-    if (params.get("onshape") === "error") setMessage(params.get("error") || "Onshape OAuth failed.");
+    if (params.get("onshape") === "error") setMessage(params.get("error") || "Onshape connection failed.");
     void load();
-  }, [orgId]);
+  }, [load]);
 
   async function revoke(deviceId: string) {
     if (!confirm("Revoke this CAD desktop? It will immediately lose job access.")) return;
@@ -112,7 +258,7 @@ export default function CadConnections({ orgId }: { orgId: string }) {
       });
       const data = await response.json();
       if (!response.ok) {
-        setMessage(data.error ?? "Could not start Onshape OAuth");
+        setMessage(data.error ?? "Could not start Onshape");
         return;
       }
       window.location.href = data.url;
@@ -122,8 +268,7 @@ export default function CadConnections({ orgId }: { orgId: string }) {
   }
 
   async function disconnectOnshape() {
-    if (!confirm("Disconnect Onshape? Vantage forgets the stored token and hosted CAD jobs stop until you reconnect."))
-      return;
+    if (!confirm("Disconnect Onshape? Hosted CAD jobs stop until you reconnect.")) return;
     setBusy(true);
     try {
       const response = await fetch("/api/cad/onshape", {
@@ -139,213 +284,168 @@ export default function CadConnections({ orgId }: { orgId: string }) {
     }
   }
 
-  // Connected only when a real cad_connections row reports status=connected — never keys, never DEMO.
-  const onshapeConnected = onshapeConnections.some((c) => c.status === "connected");
+  const failure =
+    !view && fetchFailed
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus,
+            message,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message,
+          },
+        )
+      : null;
+
+  if (!view) {
+    return (
+      <main className="module-page cad-connections-page">
+        <PageHeader
+          breadcrumbs="CAD / Connections"
+          title="CAD connections"
+          description="Connect Onshape in the browser, or pair the Fusion desktop app."
+        >
+          <CadConnectionsRelated orgId={orgId} />
+        </PageHeader>
+        <OfflineBanner feature="CAD connections" fromCache={fromCache} cachedAt={cachedAt} />
+        <EmptyState
+          soft
+          title={failure ? failure.title : "Loading CAD connections…"}
+          description={failure ? failure.description : "Checking Onshape and paired desktops."}
+          aria-busy={!fetchFailed}
+        >
+          {failure?.primary ? (
+            <Button as="a" variant="primary" href={failure.primary.href}>
+              {failure.primary.label}
+            </Button>
+          ) : null}
+          {failure?.showRetry ? (
+            <Button variant="secondary" type="button" onClick={() => void load()}>
+              Retry
+            </Button>
+          ) : null}
+        </EmptyState>
+      </main>
+    );
+  }
+
+  const onshapeConnected = view.onshapeConnections.some((c) => c.status === "connected");
   const hostedBadge = onshapeHostedBadge({
     sessionConnected: onshapeConnected,
-    oauthCtaEnabled: onshapeOauthReady,
+    oauthCtaEnabled: view.onshapeOauthReady,
   });
-
+  const desktopOnline = view.devices.some((d) => !d.revokedAt && d.lastSeenAt);
   return (
-    <main className="module-page cad-connections-page">
-      <header className="app-page-header">
-        <div>
-          <p className="breadcrumbs">CAD / Connections</p>
-          <h1>Connect engineering tools safely</h1>
-          <p>Pair in the browser. Never type your Vantage password in a terminal. Fusion stays local — never hosted on Vercel.</p>
-        </div>
-        <nav className="cad-header-actions">
-          <Button as="a" variant="secondary" href={withOrgHref("/cad", orgId)}>
-            ← CAD Builder
-          </Button>
-          <Button as="a" variant="secondary" href={withOrgHref("/cad/setup", orgId)}>
-            Setup wizard
-          </Button>
-          <Button as="a" variant="secondary" href={withOrgHref("/cad/pair", orgId)}>
-            Pair desktop
-          </Button>
-        </nav>
-      </header>
-      <nav className="product-hub-related" aria-label="Related connection tools">
-        {related.map((link) => (
-          <Button as="a" variant="secondary" key={link.id} href={link.href}>
-            {link.label}
-          </Button>
-        ))}
-      </nav>
-      <nav className="intel-actions" aria-label="Connect paths" style={{ marginBottom: 12 }}>
-        <a href={withOrgHref("/cad/setup", orgId)}>Guided setup</a>
-        <a href="#onshape">Onshape OAuth</a>
-        <a href="#fusion">Fusion relay</a>
-        <a href={hubHref("/ai", "budgets", orgId)}>Budgets</a>
-      </nav>
-      {message ? (
-        <p role="status" className="telemetry-status">
-          {message}
-        </p>
-      ) : null}
-
-      {onshapeSetupMessage ? (
-        <aside className="cad-setup-required" role="status">
-          <strong>Setup required · Onshape OAuth</strong>
-          <p>{onshapeSetupMessage}</p>
-        </aside>
-      ) : null}
-
-      <section className="cad-connection-strip">
-        <article className="app-card cad-connection-tile" id="onshape">
-          <div>
-            <span className="path-number">01</span>
-            <span className={`app-badge ${hostedBadge.kind === "connected" ? "good" : "setup"}`}>
-              {hostedBadge.label}
-            </span>
-            <h2>Onshape hosted</h2>
-            <p className="app-muted">
-              Authorize least-privilege Onshape OAuth in the browser, then select a document, workspace, and element. The
-              Vantage server runs approved jobs. {ONSHAPE_LOCAL_PLAYWRIGHT_HINT}
+        <main className="module-page cad-connections-page">
+          <PageHeader
+            breadcrumbs="CAD / Connections"
+            title="CAD connections"
+            description="Connect Onshape in the browser. Fusion stays on this computer."
+          >
+            <CadConnectionsRelated orgId={orgId} />
+          </PageHeader>
+          <OfflineBanner feature="CAD connections" fromCache={fromCache} cachedAt={cachedAt} />
+          {message ? (
+            <p role="status" className="telemetry-status">
+              {message}
             </p>
-          </div>
-          {onshapeOauthReady ? (
-            <>
-              <div className="cad-connection-actions">
-                <button type="button" className="primary-action" disabled={busy} onClick={() => void connectOnshape()}>
-                  {onshapeConnected ? ONSHAPE_OAUTH_CTA.reconnect : ONSHAPE_OAUTH_CTA.connect}
-                </button>
-                {onshapeConnected ? (
-                  <Button variant="secondary" type="button" disabled={busy} onClick={() => void disconnectOnshape()}>
-                    Disconnect
-                  </Button>
-                ) : null}
-              </div>
-              <small className="app-muted">
-                {onshapeConnected
-                  ? `Connected as ${
-                      onshapeAccountLabel(onshapeConnections[0]?.externalAccountRef) ??
-                      onshapeConnections[0]?.label ??
-                      "Onshape"
-                    }. Pick document refs in CAD Builder.`
-                  : "OAuth client configured — click to authorize."}
-              </small>
-            </>
-          ) : (
-            <>
-              <button type="button" className="primary-action" disabled title={ONSHAPE_OAUTH_CTA.disabledTitle}>
-                {ONSHAPE_OAUTH_CTA.connect}
-              </button>
-              <small className="app-muted">{ONSHAPE_OAUTH_CTA.disabledDetail}</small>
-              {onshapeCallbackUrl ? (
-                <small className="app-muted">
-                  Register this exact callback URL on the Onshape OAuth application (dev-portal.onshape.com):{" "}
-                  <code>{onshapeCallbackUrl}</code>
-                </small>
-              ) : null}
-            </>
-          )}
-        </article>
-        <article className="app-card cad-connection-tile" id="fusion">
-          <div>
-            <span className="path-number">02</span>
-            <span className={`app-badge ${devices.some((d) => !d.revokedAt && d.lastSeenAt) ? "good" : "setup"}`}>
-              Local relay
-            </span>
-            <h2>Fusion 360 local</h2>
-            <p className="app-muted">
-              Fusion runs in your Autodesk desktop session (Windows/macOS only). The paired relay claims signed jobs;
-              Vercel never runs Fusion.
-            </p>
-            <ol>
-              <li>Install Autodesk Fusion 360 and sign in.</li>
-              <li>
-              Windows: <code>scripts/cad/install-windows.ps1</code> (CLI + add-in). macOS:{" "}
-              <code>scripts/cad/install-fusion-addin.sh</code>.
-              </li>
-              <li>In Fusion: Utilities → Add-Ins → run VantageCadRelay.</li>
-              <li>
-                <code>vantage-cad setup</code> then <code>vantage-cad start</code>.
-              </li>
-            </ol>
-            <small className="app-muted">Linux: Fusion is unavailable — use Onshape or VANTAGE_CAD_MOCK=1 for protocol tests.</small>
-          </div>
-          <Button as="a" variant="secondary" href={withOrgHref("/cad/pair", orgId)}>
-            Pair desktop
-          </Button>
-        </article>
-      </section>
-
-      <section className="app-card">
-        <h2>OS support matrix</h2>
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>OS</th>
-              <th>CLI</th>
-              <th>Fusion add-in</th>
-              <th>Onshape</th>
-              <th>Notes</th>
-            </tr>
-          </thead>
-          <tbody>
-            {osSupport.map((row) => (
-              <tr key={row.os}>
-                <td>{row.os}</td>
-                <td>{row.vantageCadCli}</td>
-                <td>{row.fusion360Addin}</td>
-                <td>{row.onshapeHosted}</td>
-                <td>{row.notes}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
-
-      <section className="app-card">
-        <div className="panel-heading">
-          <div>
-            <span className="eyebrow">LOCAL PACKAGE · NOT PUBLISHED TO NPM</span>
-            <h2>Install the Vantage CAD CLI</h2>
-          </div>
-          <Button variant="secondary" type="button" onClick={async () => { try { await navigator.clipboard.writeText(install); setMessage("Install commands copied."); } catch { setMessage("Couldn't copy — copy it manually."); } }}>
-            Copy commands
-          </Button>
-        </div>
-        <pre className="install-command">{install}</pre>
-      </section>
-
-      <section className="app-card">
-        <h2>Paired desktops</h2>
-        {devices.length === 0 ? (
-          <p className="app-muted">No desktop is paired.</p>
-        ) : (
-          devices.map((device) => (
-            <article className="saved-board" key={device.id}>
+          ) : null}
+          {view.onshapeSetupMessage ? (
+            <aside className="cad-setup-required" role="status">
+              <strong>Onshape setup</strong>
+              <p>{view.onshapeSetupMessage}</p>
+            </aside>
+          ) : null}
+          <section className="cad-connection-strip">
+            <article className="app-card cad-connection-tile" id="onshape">
               <div>
-                <strong>{device.machineName}</strong>
-                <small>
-                  {device.platform} · CLI {device.cliVersion ?? "unknown"} ·{" "}
-                  {device.lastSeenAt ? `last seen ${new Date(device.lastSeenAt).toLocaleString()}` : "never seen"} ·{" "}
-                  {device.revokedAt ? "revoked" : device.status}
-                </small>
+                <span className={`app-badge ${hostedBadge.kind === "connected" ? "good" : "setup"}`}>
+                  {hostedBadge.label}
+                </span>
+                <h2>Onshape</h2>
+                <p className="app-muted">
+                  Authorize in the browser, then pick a document in CAD. Never type your Vantage password in a
+                  terminal.
+                </p>
               </div>
-              {!device.revokedAt && (
-                <Button variant="secondary" type="button" onClick={() => void revoke(device.id)}>
-                  Revoke
-                </Button>
+              {view.onshapeOauthReady ? (
+                <>
+                  <div className="cad-connection-actions">
+                    <Button variant="primary" type="button" disabled={busy} onClick={() => void connectOnshape()}>
+                      {onshapeConnected ? ONSHAPE_OAUTH_CTA.reconnect : ONSHAPE_OAUTH_CTA.connect}
+                    </Button>
+                    {onshapeConnected ? (
+                      <Button variant="secondary" type="button" disabled={busy} onClick={() => void disconnectOnshape()}>
+                        Disconnect
+                      </Button>
+                    ) : null}
+                  </div>
+                  <small className="app-muted">
+                    {onshapeConnected
+                      ? `Connected as ${
+                          onshapeAccountLabel(view.onshapeConnections[0]?.externalAccountRef) ??
+                          view.onshapeConnections[0]?.label ??
+                          "Onshape"
+                        }. Pick documents in CAD.`
+                      : "Ready — tap Connect Onshape to authorize."}
+                  </small>
+                </>
+              ) : (
+                <p className="app-muted">{ONSHAPE_OAUTH_CTA.disabledDetail}</p>
               )}
             </article>
-          ))
-        )}
-      </section>
-
-      <section className="app-card">
-        <h2>AI provider truth</h2>
-        <ul>
-          <li>Vantage managed API: billed through plan / credits.</li>
-          <li>Team / personal keys: official provider API keys only.</li>
-          <li>Terminal / local CLI (`key_source=local_cli`): no Vantage model charge.</li>
-          <li>ChatGPT / Claude consumer subscriptions are not API credentials.</li>
-        </ul>
-      </section>
-    </main>
-  );
+            <article className="app-card cad-connection-tile" id="fusion">
+              <div>
+                <span className={`app-badge ${desktopOnline ? "good" : "setup"}`}>
+                  {desktopOnline ? "Paired" : "Not paired"}
+                </span>
+                <h2>Fusion desktop</h2>
+                <p className="app-muted">
+                  Fusion stays on this computer. Pair the desktop app when you need Autodesk jobs — Vantage never runs
+                  Fusion in the cloud.
+                </p>
+              </div>
+              <Button as="a" variant="secondary" href={withOrgHref("/cad/pair", orgId)}>
+                Pair desktop
+              </Button>
+            </article>
+          </section>
+          <section className="app-card">
+            <h2>Paired desktops</h2>
+            {view.devices.length === 0 ? (
+              <p className="app-muted">No desktop is paired.</p>
+            ) : (
+              view.devices.map((device) => (
+                <article className="saved-board" key={device.id}>
+                  <div>
+                    <strong>{device.machineName}</strong>
+                    <small>
+                      {device.platform}
+                      {device.lastSeenAt
+                        ? ` · last seen ${new Date(device.lastSeenAt).toLocaleString()}`
+                        : " · never seen"}
+                      {device.revokedAt ? " · revoked" : ""}
+                    </small>
+                  </div>
+                  {!device.revokedAt ? (
+                    <Button variant="secondary" type="button" onClick={() => void revoke(device.id)}>
+                      Revoke
+                    </Button>
+                  ) : null}
+                </article>
+              ))
+            )}
+          </section>
+          <CadConnectionsNextActions
+            orgId={orgId}
+            onshapeConnected={onshapeConnected}
+            hasDesktop={view.devices.some((d) => !d.revokedAt)}
+          />
+        </main>
+      );
 }
-

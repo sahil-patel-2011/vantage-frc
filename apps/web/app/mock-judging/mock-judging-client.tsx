@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
-import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   MOCK_JUDGING_AWARD_CATEGORIES,
   mockJudgingAwardCategoryLabel,
@@ -10,6 +10,10 @@ import {
 } from "../../lib/mock-judging";
 import type { MockJudgingView } from "../../lib/mock-judging/compute-mock-judging";
 import type { MockJudgingAwardCategory, MockJudgingCriterion } from "../../lib/mock-judging/types";
+import { hubHref } from "../../lib/nav/hubs";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 function scoreTone(score: number): string {
   if (score >= 4) return "good";
@@ -23,43 +27,197 @@ function pct(value: number): string {
 
 type LiveView = Extract<MockJudgingView, { status: "live" }>;
 
+function isMockJudgingView(value: unknown): value is MockJudgingView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function responseError(data: unknown): string {
+  return data && typeof data === "object" && "error" in data && typeof data.error === "string"
+    ? data.error
+    : "";
+}
+
+function mockJudgingCacheOrg(data: MockJudgingView, orgHint: string): string {
+  switch (data.status) {
+    case "setup_required":
+      return (typeof data.orgId === "string" && data.orgId.trim()) || orgHint;
+    case "live":
+      return data.orgId.trim() || orgHint;
+    default: {
+      data satisfies never;
+      return orgHint;
+    }
+  }
+}
+
+async function persistMockJudgingSnapshot(
+  orgHint: string,
+  seasonHint: string,
+  data: MockJudgingView,
+): Promise<void> {
+  const cacheOrg = mockJudgingCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  const seasonKey = String(data.seasonYear);
+  try {
+    await putFeatureSnapshot("mock-judging", cacheOrg, data, seasonHint || seasonKey);
+    if (!orgHint) await putFeatureSnapshot("mock-judging", "_", data, seasonHint || seasonKey);
+  } catch {
+    // Live Mock Judging already painted; IndexedDB is best-effort.
+  }
+}
+
+function MockJudgingRelated({ orgId }: { orgId?: string | null }) {
+  return (
+    <nav className="product-hub-related" aria-label="Related judging tools">
+      <Button as="a" variant="secondary" href={hubHref("/business", "judge-sim", orgId)}>
+        Judge pitch
+      </Button>
+      <Button as="a" variant="secondary" href={hubHref("/business", "impact-essay", orgId)}>
+        Impact essay
+      </Button>
+      <Button as="a" variant="secondary" href={hubHref("/competition", "district-advancement", orgId)}>
+        Districts
+      </Button>
+    </nav>
+  );
+}
+
+function MockJudgingNextActions({ orgId }: { orgId: string }) {
+  const actions = [
+    {
+      id: "session",
+      label: "Run a mock judging round",
+      detail: "Answer a judging question and get a rubric-scored breakdown.",
+      href: "#mock-judging-session",
+      primary: true,
+    },
+    {
+      id: "pitch",
+      label: "Open Judge pitch",
+      detail: "Timed pitch practice uses the same award prep as this board.",
+      href: hubHref("/business", "judge-sim", orgId),
+      primary: false,
+    },
+    {
+      id: "essay",
+      label: "Open Impact essay",
+      detail: "Written award drafts sit next to these practice sessions.",
+      href: hubHref("/business", "impact-essay", orgId),
+      primary: false,
+    },
+  ];
+  return (
+    <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <Button as="a" variant="secondary" href={action.href}>
+              Open
+            </Button>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
 export default function MockJudgingClient() {
   const [view, setView] = useState<MockJudgingView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   // Kept so an expired session offers sign-in instead of a Retry that cannot work.
-  const [errorStatus, setErrorStatus] = useState<number | null>(null);
+  const [failureStatus, setFailureStatus] = useState<number | null>(null);
+  const [failureMessage, setFailureMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<MockJudgingView | null>(null);
+  viewRef.current = view;
 
   const orgId = view && "orgId" in view ? view.orgId : null;
 
-  const load = useCallback((seasonOverride?: number) => {
-    setFetchFailed(false);
-    setErrorStatus(null);
-    setError("");
+  const load = useCallback(async (seasonOverride?: number) => {
     const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
+    const orgHint = params.get("orgId")?.trim() ?? "";
     const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    if (seasonQuery) query.set("season", String(seasonQuery));
-    void fetch(`/api/mock-judging${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
-        const data = (await response.json()) as MockJudgingView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setErrorStatus(response.status);
-          setFetchFailed(true);
+    const seasonHint =
+      seasonQuery && Number.isFinite(seasonQuery) ? String(seasonQuery) : String(new Date().getFullYear());
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<MockJudgingView>("mock-judging", orgHint || "_", seasonHint);
+      if (!viewRef.current && cached?.data && isMockJudgingView(cached.data)) {
+        setView(cached.data);
+        setSeason(cached.data.seasonYear);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
+    setFetchFailed(false);
+    setFailureStatus(null);
+    setFailureMessage("");
+    setError("");
+    try {
+      const query = new URLSearchParams();
+      if (orgHint) query.set("orgId", orgHint);
+      if (seasonQuery) query.set("season", String(seasonQuery));
+      const response = await fetch(`/api/mock-judging${query.toString() ? `?${query.toString()}` : ""}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      const data: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setFetchFailed(true);
+        setFailureStatus(response.status);
+        setFailureMessage(responseError(data));
+        return;
+      }
+      if (!response.ok || !isMockJudgingView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Mock Judging. Showing the last copy on this device.");
+          setFetchFailed(false);
           return;
         }
-        setView(data);
-        setSeason(data.seasonYear);
-      })
-      .catch(() => setFetchFailed(true));
+        setFetchFailed(true);
+        setFailureStatus(response.status);
+        setFailureMessage(responseError(data));
+        return;
+      }
+      setView(data);
+      setSeason(data.seasonYear);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistMockJudgingSnapshot(orgHint, seasonHint, data);
+    } catch {
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Mock Judging. Showing the last copy on this device.");
+        setFetchFailed(false);
+        return;
+      }
+      setFetchFailed(true);
+    }
   }, []);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   const mutate = useCallback(
@@ -72,14 +230,17 @@ export default function MockJudgingClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, seasonYear: season ?? undefined, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
-        const data = (await response.json()) as MockJudgingView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setError("error" in data && data.error ? data.error : "Something went wrong.");
+        const data: unknown = await response.json().catch(() => null);
+        if (!response.ok || !isMockJudgingView(data)) {
+          setError(responseError(data) || "Something went wrong.");
           return;
         }
         setView(data);
         setSeason(data.seasonYear);
+        setFromCache(false);
+        void persistMockJudgingSnapshot(orgId, String(data.seasonYear), data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -89,95 +250,129 @@ export default function MockJudgingClient() {
     [orgId, season, busy],
   );
 
+  const businessHref = orgId ? `/business?orgId=${encodeURIComponent(orgId)}` : "/business";
+  const header = (
+    <PageHeader
+      breadcrumbs={
+        <>
+          <a href={businessHref}>Business</a>
+          {" / Mock Judging"}
+        </>
+      }
+      title="Mock Judging"
+      description="Run practice judging sessions with a rubric scored from your own prep notes — substance, specificity, evidence, clarity, and confidence before you are in front of real judges."
+    >
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
+        {view?.status === "live" && view.seasons.length > 0 ? (
+          <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+            Season
+            <select
+              value={season ?? view.seasonYear}
+              onChange={(event) => {
+                const next = Number(event.target.value);
+                setSeason(next);
+                void load(next);
+              }}
+            >
+              {view.seasons.map((year) => (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
+        <MockJudgingRelated orgId={orgId} />
+      </div>
+    </PageHeader>
+  );
+
+  if (!view) {
+    const failure = fetchFailed
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: failureStatus,
+            message: failureMessage,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: failureMessage || "A network or server issue prevented loading. Try again.",
+          },
+        )
+      : null;
+    return (
+      <main className="module-page">
+        {header}
+        <OfflineBanner feature="Mock Judging" fromCache={fromCache} cachedAt={cachedAt} />
+        <EmptyState
+          title={failure ? failure.title : "Loading…"}
+          description={failure ? failure.description : "Checking your team."}
+          aria-busy={!fetchFailed}
+        >
+          {failure?.primary ? (
+            <Button as="a" variant="primary" href={failure.primary.href}>
+              {failure.primary.label}
+            </Button>
+          ) : null}
+          {failure?.showRetry ? (
+            <Button variant="secondary" type="button" onClick={() => void load()}>
+              Retry
+            </Button>
+          ) : null}
+        </EmptyState>
+      </main>
+    );
+  }
+
+  switch (view.status) {
+    case "setup_required":
+      return (
+        <main className="module-page">
+          {header}
+          <OfflineBanner feature="Mock Judging" fromCache={fromCache} cachedAt={cachedAt} />
+          {error ? (
+            <p className="telemetry-status" role="alert">
+              {error}
+            </p>
+          ) : null}
+          <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
+            {view.steps[0] ? (
+              <Button as="a" variant="primary" href={view.steps[0].href}>
+                {view.steps[0].label}
+              </Button>
+            ) : null}
+          </EmptyState>
+        </main>
+      );
+    case "live":
+      break;
+    default: {
+      view satisfies never;
+      return null;
+    }
+  }
+
   return (
     <main className="module-page">
-      <PageHeader
-        breadcrumbs={
-          <>
-            <a href={orgId ? `/team?orgId=${encodeURIComponent(orgId)}` : "/team"}>Team</a>
-            {" / Mock Judging"}
-          </>
-        }
-        title="Mock Judging"
-        description="Run practice judging sessions with a rubric judge computed from your own prep notes — feedback on substance, specificity, evidence grounding, clarity, and confidence before you're in front of real judges."
-      >
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
-          {view?.status === "live" && view.seasons.length > 0 ? (
-            <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-              Season
-              <select
-                value={season ?? view.seasonYear}
-                onChange={(event) => {
-                  const next = Number(event.target.value);
-                  setSeason(next);
-                  load(next);
-                }}
-              >
-                {view.seasons.map((year) => (
-                  <option key={year} value={year}>
-                    {year}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) : null}
-        </div>
-      </PageHeader>
-
+      {header}
+      <OfflineBanner feature="Mock Judging" fromCache={fromCache} cachedAt={cachedAt} />
       {error ? (
         <p className="telemetry-status" role="alert">
           {error}
         </p>
       ) : null}
-
-      {fetchFailed ? (
-        (() => {
-          const kind = classifyLoadFailure({
-            status: errorStatus,
-            message: error,
-            online: typeof navigator === "undefined" ? true : navigator.onLine,
-          });
-          const copy = loadFailureCopy(kind, {
-            nextPath:
-              typeof window === "undefined"
-                ? null
-                : `${window.location.pathname}${window.location.search}`,
-            message: error,
-          });
-          return (
-            <EmptyState title={copy.title} description={copy.description}>
-              {copy.primary ? (
-                <Button as="a" variant="primary" href={copy.primary.href}>
-                  {copy.primary.label}
-                </Button>
-              ) : null}
-              {copy.showRetry ? (
-                <Button variant="secondary" type="button" onClick={() => load()}>
-                  Retry
-                </Button>
-              ) : null}
-            </EmptyState>
-          );
-        })()
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your team." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          {view.steps[0] ? (
-            <Button as="a" variant="primary" href={view.steps[0].href}>
-              {view.steps[0].label}
-            </Button>
-          ) : null}
-        </EmptyState>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <ReadinessPanel view={view} />
-          <RunSessionForm busy={busy} mutate={mutate} />
-          <SessionsList view={view} busy={busy} mutate={mutate} />
-          <PrepNoteForm busy={busy} mutate={mutate} />
-          <PrepNotesList view={view} busy={busy} mutate={mutate} />
-        </div>
-      )}
+      <MockJudgingNextActions orgId={view.orgId} />
+      <div style={{ display: "grid", gap: 16 }}>
+        <ReadinessPanel view={view} />
+        <RunSessionForm busy={busy} mutate={mutate} />
+        <SessionsList view={view} busy={busy} mutate={mutate} />
+        <PrepNoteForm busy={busy} mutate={mutate} />
+        <PrepNotesList view={view} busy={busy} mutate={mutate} />
+      </div>
     </main>
   );
 }
@@ -232,6 +427,7 @@ function RunSessionForm({
 
   return (
     <Panel
+      id="mock-judging-session"
       as="form"
       onSubmit={(event) => {
         event.preventDefault();

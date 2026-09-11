@@ -12,7 +12,9 @@ npm run dev                       # http://localhost:3001
 ```
 
 The app boots without a database; product screens show their setup states. For real behaviour you
-need a local PostgreSQL:
+need Postgres. **Preferred hosted path:** create a Neon project and follow
+[docs/NEON.md](docs/NEON.md) (`npm run db:map-neon`, `npm run db:migrate`,
+`npm run db:neon-preflight`). **Local Postgres:**
 
 1. Create a UTF-8 database and apply every migration:
    `DATABASE_ADMIN_URL=postgres://… node scripts/run-migrations.mjs`
@@ -103,3 +105,8 @@ contain junctions into the main `node_modules`; remove them with `git worktree r
 
 Open a GitHub issue. For anything security-related, see
 [SECURITY_OPERATIONS.md](SECURITY_OPERATIONS.md) for how to report it privately.
+
+## License
+
+By contributing you agree the work is released under the MIT License in
+[`LICENSE`](LICENSE).

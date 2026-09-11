@@ -17,32 +17,32 @@
  * here invents documents, STL/STEP/GLTF exports, or live geometry.
  */
 
-export const ONSHAPE_HOSTED_UNCONFIGURED_TITLE = "Hosted Onshape is not configured";
+export const ONSHAPE_HOSTED_UNCONFIGURED_TITLE = "Onshape isn't ready yet";
 
 export const ONSHAPE_LOCAL_PLAYWRIGHT_HINT =
-  "The local path still works: run `vantage-cad login` and use the CAD tools through the Playwright Onshape window without API keys.";
+  "On a laptop, the desktop CAD app can still sign in to Onshape in a browser window without API keys.";
 
 export const ONSHAPE_NO_INVENTED_EXPORTS =
   "Onshape documents and STL, STEP, or GLTF exports appear only after a real connected run. Empty CAD stays empty until then.";
 
 export const ONSHAPE_PLATFORM_HINT_UNCONFIGURED =
-  "Run `vantage-cad login` for the local Playwright path (no API keys). Hosted CAD needs Onshape OAuth — server keys are not a hosted connection.";
+  "Ask a mentor to finish Onshape setup for this team, then connect in CAD Connections.";
 
 export const ONSHAPE_PLATFORM_HINT_CONFIGURED =
-  "Connect Onshape OAuth in CAD Connections for hosted jobs. On a laptop, `vantage-cad login` uses the local Playwright window without API keys.";
+  "Connect Onshape in CAD Connections. Hosted jobs run after you authorize in the browser.";
 
 export const ONSHAPE_HOSTED_BADGE = {
   connected: "Connected",
-  oauthReady: "OAuth ready",
-  adminSetup: "Admin setup",
+  oauthReady: "Ready to connect",
+  adminSetup: "Ask a mentor",
 } as const;
 
 export const ONSHAPE_OAUTH_CTA = {
-  connect: "Connect Onshape OAuth",
-  reconnect: "Reconnect Onshape OAuth",
-  disabledTitle: "Configure Onshape OAuth environment credentials first",
+  connect: "Connect Onshape",
+  reconnect: "Reconnect Onshape",
+  disabledTitle: "Onshape isn't ready yet",
   disabledDetail:
-    "Setup required — admin must set ONSHAPE_OAUTH_CLIENT_ID and ONSHAPE_OAUTH_CLIENT_SECRET on Vercel, then redeploy.",
+    "Ask a mentor to finish Onshape setup for this team, then come back to connect.",
 } as const;
 
 export type OnshapeHostedReason = "missing_env" | "missing_session" | "oauth_ready" | "connected";
@@ -66,13 +66,13 @@ export type HostedOnshapeFlags = {
 };
 
 export const MISSING_ENV_MESSAGE =
-  "Setup required — set ONSHAPE_OAUTH_CLIENT_ID and ONSHAPE_OAUTH_CLIENT_SECRET as deployment environment variables (Vercel → Project → Settings → Environment Variables), then redeploy. The callback URL to register on the Onshape OAuth application is shown on CAD Connections. Server API keys are CLI last-resort only and do not connect hosted CAD.";
+  "Onshape isn't ready for this team yet. Ask a mentor to finish CAD setup, then connect in CAD Connections.";
 
 export const MISSING_SESSION_MESSAGE =
-  "Setup required — connect Onshape OAuth in CAD Connections (/cad/connections) before hosted CAD can edit a Part Studio.";
+  "Connect Onshape in CAD Connections before hosted CAD jobs can run.";
 
 export const OAUTH_READY_MESSAGE =
-  "Onshape OAuth client is configured. Users can connect in CAD Connections. Hosted calls spend the annual API allowance.";
+  "Onshape is ready to connect in CAD Connections.";
 
 export const CONNECTED_MESSAGE = "Onshape is connected for this team member.";
 
@@ -102,8 +102,8 @@ export function blocked(
     setupRequired: true,
     status: "setup_required",
     reason,
-    message: `${message} ${ONSHAPE_LOCAL_PLAYWRIGHT_HINT}`,
-    bannerTitle: reason === "missing_env" ? ONSHAPE_HOSTED_UNCONFIGURED_TITLE : "Connect Onshape OAuth",
+    message,
+    bannerTitle: reason === "missing_env" ? ONSHAPE_HOSTED_UNCONFIGURED_TITLE : "Connect Onshape",
     localPlaywrightAvailable: true,
     connectCtaEnabled,
   };
@@ -147,6 +147,6 @@ export function onshapeAccountLabel(ref: string | null | undefined): string | nu
 export function withLocalPlaywrightHint(message: string): string {
   const trimmed = message.trim();
   if (!trimmed) return ONSHAPE_LOCAL_PLAYWRIGHT_HINT;
-  if (/vantage-cad login|Playwright/i.test(trimmed)) return trimmed;
+  if (/vantage-cad login|Playwright|desktop CAD app/i.test(trimmed)) return trimmed;
   return `${trimmed} ${ONSHAPE_LOCAL_PLAYWRIGHT_HINT}`;
 }

@@ -1,9 +1,10 @@
-import CadConnections from "./connections-client";
+import CadConnections, { CadConnectionsRelated } from "./connections-client";
+import { Button, EmptyState, PageHeader } from "../../../components/ui";
 import "../cad-setup.css";
 
 export const metadata = {
-  title: "CAD Connections",
-  description: "Connect Onshape OAuth or pair a Fusion desktop relay — password never enters the terminal.",
+  title: "CAD connections",
+  description: "Connect Onshape in the browser, or pair the Fusion desktop app.",
 };
 
 export default async function CadConnectionsPage({
@@ -14,17 +15,25 @@ export default async function CadConnectionsPage({
   const { orgId } = await searchParams;
   if (!orgId) {
     return (
-      <main className="module-page">
-        <header className="app-page-header">
-          <div>
-            <span className="breadcrumbs">CAD / Connections</span>
-            <h1>Choose your team</h1>
-            <p className="app-muted">Connections belong to a team. Choose your team to link CAD accounts and devices.</p>
-          </div>
-          <a className="primary-action" href="/workspace">
-            Choose your team →
-          </a>
-        </header>
+      <main className="module-page cad-connections-page">
+        <PageHeader
+          breadcrumbs="CAD / Connections"
+          title="CAD connections"
+          description="Connections belong to a team."
+        >
+          <CadConnectionsRelated orgId={null} />
+        </PageHeader>
+        <EmptyState
+          soft
+          badge="Setup required"
+          badgeTone="setup"
+          title="Choose your team"
+          description="Choose your team to link Onshape and paired desktops."
+        >
+          <Button as="a" variant="primary" href="/workspace">
+            Choose your team
+          </Button>
+        </EmptyState>
       </main>
     );
   }

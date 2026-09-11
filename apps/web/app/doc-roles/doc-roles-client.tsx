@@ -1,28 +1,109 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { Badge, EmptyState, PageHeader, Panel, Button } from "../../components/ui";
 import type { DocRolesView } from "../../lib/doc-roles/compute-doc-roles";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+
+function isDocRolesView(value: unknown): value is DocRolesView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "ready";
+}
+
+function docRolesCacheOrg(data: DocRolesView, orgHint: string): string {
+  if (typeof data.orgId === "string" && data.orgId.trim()) return data.orgId;
+  return orgHint;
+}
+
+async function persistDocRolesSnapshot(orgHint: string, data: DocRolesView): Promise<void> {
+  const cacheOrg = docRolesCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("doc-roles", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("doc-roles", "_", data);
+  } catch {
+    // Live Document roles already painted; IndexedDB is best-effort.
+  }
+}
+
+function orgHintFromWindow(): string {
+  if (typeof window === "undefined") return "";
+  return new URLSearchParams(window.location.search).get("orgId")?.trim() ?? "";
+}
 
 export default function DocRolesClient() {
   const [view, setView] = useState<DocRolesView | null>(null);
   const [error, setError] = useState("");
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
   const [grantUserId, setGrantUserId] = useState("");
   const [confirmGrant, setConfirmGrant] = useState(false);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<DocRolesView | null>(null);
+  viewRef.current = view;
 
   const load = useCallback(async () => {
+    const orgHint = orgHintFromWindow();
+    let hadCache = Boolean(viewRef.current);
     try {
-      const response = await fetch("/api/doc-roles");
-      const data = (await response.json()) as DocRolesView & { error?: string };
-      if (!response.ok) {
-        setError((data as { error?: string }).error ?? "Could not load document roles.");
+      const cached = await getFeatureSnapshot<DocRolesView>("doc-roles", orgHint || "_");
+      if (!viewRef.current && cached?.data && isDocRolesView(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
+    setError("");
+    setErrorStatus(null);
+    try {
+      const query = orgHint ? `?orgId=${encodeURIComponent(orgHint)}` : "";
+      const response = await fetch(`/api/doc-roles${query}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      const data: unknown = await response.json().catch(() => null);
+      const errorMessage =
+        data && typeof data === "object" && "error" in data && typeof data.error === "string"
+          ? data.error
+          : "";
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setErrorStatus(response.status);
+        setError(errorMessage || "Could not load document roles.");
+        return;
+      }
+      if (!response.ok || !isDocRolesView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Document roles. Showing the last copy on this device.");
+          return;
+        }
+        setErrorStatus(response.status);
+        setError(errorMessage || "Could not load document roles.");
         return;
       }
       setView(data);
+      setFromCache(false);
+      setCachedAt(null);
       setError("");
+      await persistDocRolesSnapshot(orgHint, data);
     } catch {
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Document roles. Showing the last copy on this device.");
+        return;
+      }
       setError("Could not reach the server.");
     }
   }, []);
@@ -40,14 +121,22 @@ export default function DocRolesClient() {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(body),
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
-      const data = (await response.json()) as DocRolesView & { error?: string };
-      if (!response.ok) {
-        setError((data as { error?: string }).error ?? "That did not work.");
+      const data: unknown = await response.json().catch(() => null);
+      if (!response.ok || !isDocRolesView(data)) {
+        const err =
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "That did not work.";
+        setError(err);
         return false;
       }
       setView(data);
+      setFromCache(false);
       setNotice(success);
+      const orgHint = orgHintFromWindow();
+      void persistDocRolesSnapshot(orgHint, data);
       return true;
     } catch {
       setError("Could not reach the server. Nothing was saved.");
@@ -58,13 +147,47 @@ export default function DocRolesClient() {
   }
 
   if (error && !view) {
+    const failure = loadFailureCopy(
+      classifyLoadFailure({
+        status: errorStatus,
+        message: error,
+        online: typeof navigator === "undefined" ? true : navigator.onLine,
+      }),
+      {
+        nextPath:
+          typeof window === "undefined" ? null : `${window.location.pathname}${window.location.search}`,
+        message: error,
+      },
+    );
     return (
       <main className="module-page doc-roles-page">
         <PageHeader breadcrumbs="Team / Playbook" title="Document roles" />
-        <EmptyState soft badge="Not available" badgeTone="setup" title="Document roles need a team" description={error}>
-          <Button as="a" variant="primary" href="/workspace">
-            Choose your team
-          </Button>
+        <OfflineBanner feature="Document roles" fromCache={fromCache} cachedAt={cachedAt} />
+        <EmptyState
+          soft
+          badge={
+            failure.kind === "auth"
+              ? "Signed out"
+              : failure.kind === "forbidden"
+                ? "No access"
+                : failure.kind === "offline"
+                  ? "Offline"
+                  : "Unavailable"
+          }
+          badgeTone="setup"
+          title={failure.title}
+          description={failure.description}
+        >
+          {failure.primary ? (
+            <Button as="a" variant="primary" href={failure.primary.href}>
+              {failure.primary.label}
+            </Button>
+          ) : null}
+          {failure.showRetry ? (
+            <Button variant="secondary" type="button" onClick={() => void load()}>
+              Retry
+            </Button>
+          ) : null}
         </EmptyState>
       </main>
     );
@@ -74,6 +197,7 @@ export default function DocRolesClient() {
     return (
       <main className="module-page doc-roles-page">
         <PageHeader breadcrumbs="Team / Playbook" title="Document roles" />
+        <OfflineBanner feature="Document roles" fromCache={fromCache} cachedAt={cachedAt} />
         <Panel>
           <p className="app-muted">Loading…</p>
         </Panel>
@@ -85,7 +209,14 @@ export default function DocRolesClient() {
     return (
       <main className="module-page doc-roles-page">
         <PageHeader breadcrumbs="Team / Playbook" title="Document roles" />
-        <EmptyState soft badge="Setup" badgeTone="setup" title="Not migrated yet" description={view.message} />
+        <OfflineBanner feature="Document roles" fromCache={fromCache} cachedAt={cachedAt} />
+        <EmptyState
+          soft
+          badge="Setup"
+          badgeTone="setup"
+          title="Document roles are not ready"
+          description={view.message}
+        />
       </main>
     );
   }
@@ -97,6 +228,7 @@ export default function DocRolesClient() {
         title="Document roles"
         description={`Who can write ${view.orgName}'s playbook pages — and who decides that.`}
       />
+      <OfflineBanner feature="Document roles" fromCache={fromCache} cachedAt={cachedAt} />
 
       <Panel>
         <h2>How this works</h2>
@@ -104,8 +236,7 @@ export default function DocRolesClient() {
           Everyone on the team can <strong>read</strong> the playbook. Creating and editing pages is
           a role. Owners and admins have it without a grant; anyone else needs one, and{" "}
           <strong>only the team owner can hand it out</strong>. Nobody — owner included — can grant
-          it to themselves; the database refuses a row where the giver and the receiver are the same
-          person.
+          it to themselves.
         </p>
         <p className="app-muted">
           You:{" "}

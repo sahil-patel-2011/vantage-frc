@@ -63,7 +63,7 @@ The full list of screens is in [docs/FEATURE_MAP.md](docs/FEATURE_MAP.md).
 ## How it is built
 
 - **Web app:** Next.js (App Router) in `apps/web`, deployed on Vercel. This is the only deployment.
-- **Database:** PostgreSQL (Neon for the hosted version). Postgres is the only datastore; tenancy is
+- **Database:** PostgreSQL (Neon for the hosted version — [docs/NEON.md](docs/NEON.md)). Postgres is the only datastore; tenancy is
   enforced by row-level security, and the schema is a numbered series of append-only SQL migrations.
 - **Desktop:** `apps/desktop`, an Electron shell around the hosted app with Windows (MSI, installer,
   portable) and macOS (DMG) builds.
@@ -92,7 +92,13 @@ and what is still owner-blocked is kept honestly in [docs/STATUS.md](docs/STATUS
 prediction accuracy, in particular, is reported in
 [docs/PREDICTION_RESULTS.md](docs/PREDICTION_RESULTS.md) and is not yet a validated claim.
 
-## License
+## License and community
 
-The source is public. A license file has not been added yet; until it is, please open an issue
-before reusing the code outside this project.
+Vantage is **[MIT licensed](LICENSE)** (SPDX `MIT`). The npm `"private": true` field only means
+this monorepo is not published to the npm registry; it does not block self-hosting.
+
+- [Contributing](CONTRIBUTING.md) — local run, Neon path, tenancy rules, how to help
+- [Code of Conduct](CODE_OF_CONDUCT.md)
+- [Security](SECURITY.md) — private reports; do not file public issues for secrets or RLS bugs
+- Issue templates: `.github/ISSUE_TEMPLATE/` · PR template: `.github/PULL_REQUEST_TEMPLATE.md`
+- Hosted Postgres path: [docs/NEON.md](docs/NEON.md)

@@ -442,7 +442,6 @@ export default function ChatClient({
 
       {shell === "empty" ? (
         <>
-          <NextActions orgId={orgId} shell={shell} />
           <section className="ch-scope" aria-label="Private versus team-shared channels">
             {AI_CHAT_SCOPE_CARDS.map((card) => (
               <article key={card.id} className="ch-scope-card soft-panel">

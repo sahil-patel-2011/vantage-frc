@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "scout-p2p-relay",
-  title: "Scout P2P Relay",
+  title: "Pit mesh",
   route: "/scout-p2p-relay",
   apiRoute: "/api/scout-p2p-relay",
   hub: "Competition",

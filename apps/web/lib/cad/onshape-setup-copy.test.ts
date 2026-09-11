@@ -39,9 +39,9 @@ describe("hosted Onshape setup copy", () => {
     expect(status.reason).toBe("missing_env");
     expect(status.connectCtaEnabled).toBe(false);
     expect(status.localPlaywrightAvailable).toBe(true);
-    expect(status.message).toMatch(/Setup required/i);
-    expect(status.message).toMatch(/ONSHAPE_OAUTH_CLIENT_ID/);
-    expect(status.message).toMatch(/vantage-cad login/);
+    expect(status.message).toMatch(/Onshape isn't ready/i);
+    expect(status.message).toMatch(/CAD Connections/);
+    expect(status.message).not.toMatch(/ONSHAPE_OAUTH_CLIENT_ID|vantage-cad login/);
     expect(status.bannerTitle).toBe(ONSHAPE_HOSTED_UNCONFIGURED_TITLE);
   });
 
@@ -69,9 +69,8 @@ describe("hosted Onshape setup copy", () => {
     expect(status.configured).toBe(false);
     expect(status.reason).toBe("missing_env");
     expect(status.connectCtaEnabled).toBe(false);
-    expect(status.message).toMatch(/Setup required/i);
-    expect(status.message).toMatch(/CLI last-resort/i);
-    expect(status.message).not.toMatch(/API keys are configured/i);
+    expect(status.message).toMatch(/Onshape isn't ready/i);
+    expect(status.message).not.toMatch(/CLI last-resort|API keys are configured/i);
   });
 
   it("treats whitespace-only OAuth env as missing", () => {
@@ -95,9 +94,9 @@ describe("hosted Onshape setup copy", () => {
     expect(status.status).toBe("setup_required");
     expect(status.reason).toBe("missing_session");
     expect(status.connectCtaEnabled).toBe(true);
-    expect(status.message).toMatch(/Setup required/i);
+    expect(status.message).toMatch(/Connect Onshape/);
     expect(status.message).toMatch(/CAD Connections/);
-    expect(status.message).toMatch(/vantage-cad login/);
+    expect(status.message).not.toMatch(/vantage-cad login|ONSHAPE_OAUTH/);
   });
 
   it("is ready for the hosted agent only when OAuth is configured and a session exists", () => {
@@ -145,9 +144,12 @@ describe("hosted Onshape setup copy", () => {
     expect(onshapeOauthCtaEnabled({ configured: true, scopes: ["OAuth2Read"] })).toBe(true);
   });
 
-  it("appends the Playwright hint once and never invents STL or documents", () => {
-    expect(withLocalPlaywrightHint("Setup required — set ONSHAPE_OAUTH_CLIENT_ID.")).toContain("vantage-cad login");
+  it("keeps student CAD copy free of env vars and never invents STL or documents", () => {
+    expect(withLocalPlaywrightHint("Ask a mentor to finish Onshape setup.")).toContain("desktop CAD app");
     expect(withLocalPlaywrightHint(ONSHAPE_LOCAL_PLAYWRIGHT_HINT)).toBe(ONSHAPE_LOCAL_PLAYWRIGHT_HINT);
+    expect(ONSHAPE_OAUTH_CTA.connect).toBe("Connect Onshape");
+    expect(ALL_COPY).not.toMatch(/ONSHAPE_OAUTH_CLIENT_ID|vantage-cad login|Vercel/);
+    expect(ALL_COPY).not.toMatch(/OAuth ready|Admin setup|Hosted Onshape is not configured/);
 
     const spoken = `${ALL_COPY} ${hostedOnshapeEnvStatus({}).message} ${
       hostedOnshapeAgentStatus({
@@ -158,6 +160,6 @@ describe("hosted Onshape setup copy", () => {
     }`;
     expect(spoken).not.toMatch(/demo stl|sample document|placeholder export|invented geometry/i);
     expect(ONSHAPE_NO_INVENTED_EXPORTS).toMatch(/appear only after a real connected run/i);
-    expect(ONSHAPE_LOCAL_PLAYWRIGHT_HINT).toMatch(/Playwright/);
+    expect(ONSHAPE_LOCAL_PLAYWRIGHT_HINT).toMatch(/desktop CAD app/);
   });
 });

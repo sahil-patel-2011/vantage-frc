@@ -1,7 +1,7 @@
 import ScoutSchemaNegotiateClient from "./scout-schema-negotiate-client";
 
 export const metadata = {
-  title: "Scout Schema Negotiate",
+  title: "Schema sync",
 };
 
 export default function ScoutSchemaNegotiatePage() {

@@ -1,0 +1,31 @@
+name: Feature
+description: A change a real FRC team would use (not a hypothetical catalog item).
+title: "[feat] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        New capabilities land in an existing hub or domain package
+        (`docs/ARCHITECTURE.md`). Do not invent metrics or demo data.
+  - type: textarea
+    id: job
+    attributes:
+      label: Who is this for, and what job does it do
+      description: Student, mentor, coach, parent? Which Saturday or build-season job?
+    validations:
+      required: true
+  - type: textarea
+    id: today
+    attributes:
+      label: What happens today
+      description: Empty state, setup_required, missing route, or a workaround.
+    validations:
+      required: true
+  - type: textarea
+    id: done
+    attributes:
+      label: How we will know it is done
+      description: A verifiable check, not "feels done."
+    validations:
+      required: true

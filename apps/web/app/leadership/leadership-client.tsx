@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
-import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { leadershipCategoryLabel, leadershipHandoffStatusLabel } from "../../lib/leadership";
 import {
   LEADERSHIP_CATEGORY_VALUES,
@@ -10,6 +10,10 @@ import {
   type LeadershipView,
 } from "../../lib/leadership/compute-leadership";
 import type { LeadershipCategory, LeadershipHandoffStatus, LeadershipTier } from "../../lib/leadership/types";
+import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 function tierTone(tier: LeadershipTier): string {
   if (tier === "resilient") return "good";
@@ -23,43 +27,198 @@ function pct(value: number): string {
 
 type LiveView = Extract<LeadershipView, { status: "live" }>;
 
+function isLeadershipView(value: unknown): value is LeadershipView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function leadershipCacheOrg(data: LeadershipView, orgHint: string): string {
+  switch (data.status) {
+    case "setup_required":
+      return data.orgId?.trim() || orgHint;
+    case "live":
+      return data.orgId.trim() || orgHint;
+    default: {
+      data satisfies never;
+      return orgHint;
+    }
+  }
+}
+
+async function persistLeadershipSnapshot(
+  orgHint: string,
+  seasonHint: string,
+  data: LeadershipView,
+): Promise<void> {
+  const cacheOrg = leadershipCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  const seasonKey = String(data.seasonYear);
+  try {
+    await putFeatureSnapshot("leadership", cacheOrg, data, seasonHint || seasonKey);
+    if (!orgHint) await putFeatureSnapshot("leadership", "_", data, seasonHint || seasonKey);
+  } catch {
+    // Live Leadership Continuity already painted; IndexedDB is best-effort.
+  }
+}
+
+function LeadershipRelated({ orgId }: { orgId?: string | null }) {
+  return (
+    <nav className="product-hub-related" aria-label="Related team tools">
+      <Button as="a" variant="secondary" href={hubHref("/team", "roles", orgId)}>
+        Season roles
+      </Button>
+      <Button as="a" variant="secondary" href={hubHref("/team", "skills-graph", orgId)}>
+        Skills
+      </Button>
+      <Button as="a" variant="secondary" href={hubHref("/team", "safety-training", orgId)}>
+        Safety
+      </Button>
+    </nav>
+  );
+}
+
+function LeadershipNextActions({ orgId }: { orgId: string }) {
+  const actions = [
+    {
+      id: "add-role",
+      label: "Add a leadership role",
+      detail: "Track who holds the role and who is next.",
+      href: "#add-role",
+      primary: true,
+    },
+    {
+      id: "roles",
+      label: "Open Season roles",
+      detail: "Season assignments for the people already on the team.",
+      href: hubHref("/team", "roles", orgId),
+      primary: false,
+    },
+    {
+      id: "skills",
+      label: "Open Skills",
+      detail: "Who can teach the next holder of each role.",
+      href: hubHref("/team", "skills-graph", orgId),
+      primary: false,
+    },
+  ];
+  return (
+    <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <Button as="a" variant="secondary" href={action.href}>
+              Open
+            </Button>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
 export default function LeadershipClient() {
   const [view, setView] = useState<LeadershipView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
-  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [loadError, setLoadError] = useState("");
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<LeadershipView | null>(null);
+  viewRef.current = view;
 
   const orgId = view && "orgId" in view ? view.orgId : null;
 
-  const load = useCallback((seasonOverride?: number) => {
-    setFetchFailed(false);
-    setErrorStatus(null);
-    setError("");
+  const load = useCallback(async (seasonOverride?: number) => {
     const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
+    const orgHint = params.get("orgId")?.trim() ?? "";
     const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    if (seasonQuery) query.set("season", String(seasonQuery));
-    void fetch(`/api/leadership${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
-        const data = (await response.json()) as LeadershipView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setErrorStatus(response.status);
-          setFetchFailed(true);
+    const seasonHint =
+      seasonQuery && Number.isFinite(seasonQuery) ? String(seasonQuery) : String(new Date().getFullYear());
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<LeadershipView>("leadership", orgHint || "_", seasonHint);
+      if (!viewRef.current && cached?.data && isLeadershipView(cached.data)) {
+        setView(cached.data);
+        setSeason(cached.data.seasonYear);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
+    setFetchFailed(false);
+    setError("");
+    setLoadError("");
+    setErrorStatus(null);
+    try {
+      const query = new URLSearchParams();
+      if (orgHint) query.set("orgId", orgHint);
+      if (seasonQuery) query.set("season", String(seasonQuery));
+      const response = await fetch(`/api/leadership${query.toString() ? `?${query.toString()}` : ""}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      const data: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setFetchFailed(true);
+        setErrorStatus(response.status);
+        setLoadError(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "",
+        );
+        return;
+      }
+      if (!response.ok || !isLeadershipView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Leadership Continuity. Showing the last copy on this device.");
+          setFetchFailed(false);
           return;
         }
-        setView(data);
-        setSeason(data.seasonYear);
-      })
-      .catch(() => setFetchFailed(true));
+        setFetchFailed(true);
+        setErrorStatus(response.status);
+        setLoadError(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "",
+        );
+        return;
+      }
+      setView(data);
+      setSeason(data.seasonYear);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistLeadershipSnapshot(orgHint, seasonHint, data);
+    } catch {
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Leadership Continuity. Showing the last copy on this device.");
+        setFetchFailed(false);
+        return;
+      }
+      setFetchFailed(true);
+    }
   }, []);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   const mutate = useCallback(
@@ -72,14 +231,21 @@ export default function LeadershipClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, seasonYear: season ?? undefined, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
-        const data = (await response.json()) as LeadershipView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setError("error" in data && data.error ? data.error : "Something went wrong.");
+        const data: unknown = await response.json().catch(() => null);
+        if (!response.ok || !isLeadershipView(data)) {
+          setError(
+            data && typeof data === "object" && "error" in data && typeof data.error === "string"
+              ? data.error
+              : "Something went wrong.",
+          );
           return;
         }
         setView(data);
         setSeason(data.seasonYear);
+        setFromCache(false);
+        void persistLeadershipSnapshot(orgId, String(data.seasonYear), data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -89,19 +255,112 @@ export default function LeadershipClient() {
     [orgId, season, busy],
   );
 
+  const teamHref = hubWorkbenchHref("team", "roles", orgId);
+
+  if (!view) {
+    const failure = fetchFailed
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus,
+            message: loadError,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: loadError || "A network or server issue prevented loading. Try again.",
+          },
+        )
+      : null;
+    return (
+      <main className="module-page">
+        <PageHeader
+          breadcrumbs={
+            <>
+              <a href={teamHref}>Team</a>
+              {" / Leadership Continuity"}
+            </>
+          }
+          title="Leadership Continuity"
+          description="Succession planning and role handoffs — track each role's holder, successor, and handoff status. Readiness uses only what you record."
+        >
+          <LeadershipRelated orgId={orgId} />
+        </PageHeader>
+        <OfflineBanner feature="Leadership Continuity" fromCache={fromCache} cachedAt={cachedAt} />
+        <EmptyState
+          title={failure ? failure.title : "Loading…"}
+          description={failure ? failure.description : "Checking your team."}
+          aria-busy={!fetchFailed}
+        >
+          {failure?.primary ? (
+            <Button as="a" variant="primary" href={failure.primary.href}>
+              {failure.primary.label}
+            </Button>
+          ) : null}
+          {failure?.showRetry ? (
+            <Button variant="secondary" type="button" onClick={() => void load()}>
+              Retry
+            </Button>
+          ) : null}
+        </EmptyState>
+      </main>
+    );
+  }
+
+  switch (view.status) {
+    case "setup_required":
+      return (
+        <main className="module-page">
+          <PageHeader
+            breadcrumbs={
+              <>
+                <a href={teamHref}>Team</a>
+                {" / Leadership Continuity"}
+              </>
+            }
+            title="Leadership Continuity"
+            description="Succession planning and role handoffs — track each role's holder, successor, and handoff status. Readiness uses only what you record."
+          >
+            <LeadershipRelated orgId={view.orgId} />
+          </PageHeader>
+          <OfflineBanner feature="Leadership Continuity" fromCache={fromCache} cachedAt={cachedAt} />
+          <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
+            {view.steps[0] ? (
+              <Button as="a" variant="primary" href={view.steps[0].href}>
+                {view.steps[0].label}
+              </Button>
+            ) : (
+              <Button as="a" variant="primary" href="/workspace">
+                Choose your team
+              </Button>
+            )}
+          </EmptyState>
+        </main>
+      );
+    case "live":
+      break;
+    default: {
+      view satisfies never;
+      return null;
+    }
+  }
+
   return (
     <main className="module-page">
       <PageHeader
         breadcrumbs={
           <>
-            <a href={orgId ? `/team?orgId=${encodeURIComponent(orgId)}` : "/team"}>Team</a>
+            <a href={teamHref}>Team</a>
             {" / Leadership Continuity"}
           </>
         }
         title="Leadership Continuity"
         description="Succession planning and role handoffs — track each role's holder, successor, and handoff status. Readiness uses only what you record."
       >
-        {view?.status === "live" && view.seasons.length > 0 ? (
+        <LeadershipRelated orgId={view.orgId} />
+        {view.seasons.length > 0 ? (
           <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
             Season
             <select
@@ -109,7 +368,7 @@ export default function LeadershipClient() {
               onChange={(event) => {
                 const next = Number(event.target.value);
                 setSeason(next);
-                load(next);
+                void load(next);
               }}
             >
               {view.seasons.map((year) => (
@@ -121,6 +380,7 @@ export default function LeadershipClient() {
           </label>
         ) : null}
       </PageHeader>
+      <OfflineBanner feature="Leadership Continuity" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -128,53 +388,13 @@ export default function LeadershipClient() {
         </p>
       ) : null}
 
-      {fetchFailed ? (
-        (() => {
-          const kind = classifyLoadFailure({
-            status: errorStatus,
-            message: error,
-            online: typeof navigator === "undefined" ? true : navigator.onLine,
-          });
-          const copy = loadFailureCopy(kind, {
-            nextPath:
-              typeof window === "undefined"
-                ? null
-                : `${window.location.pathname}${window.location.search}`,
-            message: error,
-          });
-          return (
-            <EmptyState title={copy.title} description={copy.description}>
-              {copy.primary ? (
-                <Button as="a" variant="primary" href={copy.primary.href}>
-                  {copy.primary.label}
-                </Button>
-              ) : null}
-              {copy.showRetry ? (
-                <Button variant="secondary" type="button" onClick={() => load()}>
-                  Retry
-                </Button>
-              ) : null}
-            </EmptyState>
-          );
-        })()
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your team." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          {view.steps[0] ? (
-            <Button as="a" variant="primary" href={view.steps[0].href}>
-              {view.steps[0].label}
-            </Button>
-          ) : null}
-        </EmptyState>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <ReadinessPanel view={view} />
-          <SummaryTiles view={view} />
-          <CreateRoleForm busy={busy} mutate={mutate} />
-          <RoleBoard view={view} busy={busy} mutate={mutate} />
-        </div>
-      )}
+      <div style={{ display: "grid", gap: 16 }}>
+        <ReadinessPanel view={view} />
+        <SummaryTiles view={view} />
+        <CreateRoleForm busy={busy} mutate={mutate} />
+        <RoleBoard view={view} busy={busy} mutate={mutate} />
+        <LeadershipNextActions orgId={view.orgId} />
+      </div>
     </main>
   );
 }
@@ -262,7 +482,11 @@ function RoleBoard({
         badgeTone="setup"
         title="Add your first leadership role"
         description="Officer positions, subsystem leads, mentors — track who holds each role and who's next."
-      />
+      >
+        <Button as="a" variant="primary" href="#add-role">
+          Add a role
+        </Button>
+      </EmptyState>
     );
   }
   return (
@@ -303,9 +527,10 @@ function RoleBoard({
                   </option>
                 ))}
               </select>
-              <button
+              <Button
                 type="button"
-                className="text-button"
+                variant="secondary"
+                size="sm"
                 disabled={busy}
                 onClick={() => {
                   if (window.confirm(`Delete "${role.roleTitle}"?`)) {
@@ -314,7 +539,7 @@ function RoleBoard({
                 }}
               >
                 Delete
-              </button>
+              </Button>
             </div>
           </li>
         ))}
@@ -349,6 +574,7 @@ function CreateRoleForm({
   return (
     <Panel
       as="form"
+      id="add-role"
       onSubmit={(event) => {
         event.preventDefault();
         if (!form.roleTitle.trim() || !form.holderName.trim()) return;

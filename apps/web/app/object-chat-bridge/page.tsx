@@ -1,7 +1,7 @@
 import ObjectChatBridgeClient from "./object-chat-bridge-client";
 
 export const metadata = {
-  title: "Object Chat Bridge",
+  title: "Object chat",
 };
 
 export default function ObjectChatBridgePage() {

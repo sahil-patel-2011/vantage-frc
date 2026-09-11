@@ -36,6 +36,9 @@ Request code is lint-blocked from importing the worker database client. Only wor
 
 ## Data and tenancy
 
+- **Host today:** Neon ([docs/NEON.md](NEON.md)). Local Postgres and a documented Supabase **Postgres host**
+  cutover ([docs/SUPABASE_CUTOVER.md](SUPABASE_CUTOVER.md)) use the same schema and roles. Identity is Better Auth, never
+  Neon Auth / Supabase Auth / Data API keys. We do not use the Neon Branches API or Neon-only extensions.
 - **Schema:** `packages/db/migrations/NNNN_slug.sql`, append-only, applied in numeric order by
   `scripts/run-migrations.mjs`. Never renumber or edit a shipped migration; add the next one.
 - **Roles:** `vantage_app` (requests), `vantage_worker` (background jobs, bypasses RLS), `vantage_auth`

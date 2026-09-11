@@ -1,10 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
-import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import type { DataQualityScorecardView } from "../../lib/data-quality-scorecard/compute-data-quality-scorecard";
 import type { DataQualityGrade } from "../../lib/data-quality-scorecard/types";
+import { hubHref } from "../../lib/nav/hubs";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 function gradeTone(grade: DataQualityGrade): string {
   if (grade === "excellent") return "good";
@@ -21,8 +26,12 @@ function gradeLabel(grade: DataQualityGrade): string {
       return "Solid";
     case "needs_attention":
       return "Needs attention";
-    default:
+    case "at_risk":
       return "At risk";
+    default: {
+      grade satisfies never;
+      return "At risk";
+    }
   }
 }
 
@@ -30,7 +39,111 @@ function pct(value: number): string {
   return `${Math.round(value * 100)}%`;
 }
 
+function responseError(data: unknown): string {
+  return data && typeof data === "object" && "error" in data && typeof data.error === "string"
+    ? data.error
+    : "";
+}
+
 type LiveView = Extract<DataQualityScorecardView, { status: "live" }>;
+
+function isDataQualityScorecardView(value: unknown): value is DataQualityScorecardView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function dataQualityCacheOrg(data: DataQualityScorecardView, orgHint: string): string {
+  switch (data.status) {
+    case "setup_required":
+      return (typeof data.orgId === "string" && data.orgId.trim()) || orgHint;
+    case "live":
+      return data.orgId.trim() || orgHint;
+    default: {
+      data satisfies never;
+      return orgHint;
+    }
+  }
+}
+
+async function persistDataQualitySnapshot(
+  orgHint: string,
+  seasonHint: string,
+  data: DataQualityScorecardView,
+): Promise<void> {
+  const cacheOrg = dataQualityCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  const seasonKey = String(data.seasonYear);
+  try {
+    await putFeatureSnapshot("data-quality-scorecard", cacheOrg, data, seasonHint || seasonKey);
+    if (!orgHint) await putFeatureSnapshot("data-quality-scorecard", "_", data, seasonHint || seasonKey);
+  } catch {
+    // Live Data Quality Scorecard already painted; IndexedDB is best-effort.
+  }
+}
+
+function DataQualityRelated({ orgId }: { orgId?: string | null }) {
+  return (
+    <nav className="product-hub-related" aria-label="Related scouting tools">
+      <Button as="a" variant="secondary" href={hubHref("/competition", "scouting", orgId)}>
+        Scouting
+      </Button>
+      <Button as="a" variant="secondary" href={hubHref("/competition", "scout-training-mode", orgId)}>
+        Training
+      </Button>
+      <Button as="a" variant="secondary" href={withOrgHref("/scouting/lineup", orgId)}>
+        Coverage
+      </Button>
+    </nav>
+  );
+}
+
+function DataQualityNextActions({ orgId }: { orgId: string }) {
+  const actions = [
+    {
+      id: "log",
+      label: "Log a quality check",
+      detail: "Record how complete a scouted match was, and whether a cross-check agreed.",
+      href: "#data-quality-log",
+      primary: true,
+    },
+    {
+      id: "scouting",
+      label: "Open Scouting",
+      detail: "Live match and pit entries are the rows this scorecard grades.",
+      href: hubHref("/competition", "scouting", orgId),
+      primary: false,
+    },
+    {
+      id: "training",
+      label: "Open Training",
+      detail: "New scouts practice on completed matches before they scout live.",
+      href: hubHref("/competition", "scout-training-mode", orgId),
+      primary: false,
+    },
+  ];
+  return (
+    <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <Button as="a" variant="secondary" href={action.href}>
+              Open
+            </Button>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
 
 export default function DataQualityScorecardClient() {
   const [view, setView] = useState<DataQualityScorecardView | null>(null);
@@ -41,37 +154,91 @@ export default function DataQualityScorecardClient() {
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<DataQualityScorecardView | null>(null);
+  viewRef.current = view;
 
   const orgId = view && "orgId" in view ? view.orgId : null;
 
-  const load = useCallback((seasonOverride?: number) => {
+  const load = useCallback(async (seasonOverride?: number) => {
+    const params = new URLSearchParams(window.location.search);
+    const orgHint = params.get("orgId")?.trim() ?? "";
+    const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
+    const seasonHint =
+      seasonQuery && Number.isFinite(seasonQuery) ? String(seasonQuery) : String(new Date().getFullYear());
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<DataQualityScorecardView>(
+        "data-quality-scorecard",
+        orgHint || "_",
+        seasonHint,
+      );
+      if (!viewRef.current && cached?.data && isDataQualityScorecardView(cached.data)) {
+        setView(cached.data);
+        setSeason(cached.data.seasonYear);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
     setFetchFailed(false);
     setError("");
     setLoadError("");
     setErrorStatus(null);
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    if (seasonQuery) query.set("season", String(seasonQuery));
-    void fetch(`/api/data-quality-scorecard${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
-        const data = (await response.json()) as DataQualityScorecardView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setFetchFailed(true);
-          setErrorStatus(response.status);
-          setLoadError("error" in data && data.error ? data.error : "");
+    try {
+      const query = new URLSearchParams();
+      if (orgHint) query.set("orgId", orgHint);
+      if (seasonQuery) query.set("season", String(seasonQuery));
+      const response = await fetch(
+        `/api/data-quality-scorecard${query.toString() ? `?${query.toString()}` : ""}`,
+        {
+          cache: "no-store",
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+        },
+      );
+      const data: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setFetchFailed(true);
+        setErrorStatus(response.status);
+        setLoadError(responseError(data));
+        return;
+      }
+      if (!response.ok || !isDataQualityScorecardView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Data Quality Scorecard. Showing the last copy on this device.");
+          setFetchFailed(false);
           return;
         }
-        setView(data);
-        setSeason(data.seasonYear);
-      })
-      .catch(() => setFetchFailed(true));
+        setFetchFailed(true);
+        setErrorStatus(response.status);
+        setLoadError(responseError(data));
+        return;
+      }
+      setView(data);
+      setSeason(data.seasonYear);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistDataQualitySnapshot(orgHint, seasonHint, data);
+    } catch {
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Data Quality Scorecard. Showing the last copy on this device.");
+        setFetchFailed(false);
+        return;
+      }
+      setFetchFailed(true);
+    }
   }, []);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   const mutate = useCallback(
@@ -84,14 +251,17 @@ export default function DataQualityScorecardClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, seasonYear: season ?? undefined, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
-        const data = (await response.json()) as DataQualityScorecardView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setError("error" in data && data.error ? data.error : "Something went wrong.");
+        const data: unknown = await response.json().catch(() => null);
+        if (!response.ok || !isDataQualityScorecardView(data)) {
+          setError(responseError(data) || "Something went wrong.");
           return;
         }
         setView(data);
         setSeason(data.seasonYear);
+        setFromCache(false);
+        void persistDataQualitySnapshot(orgId, String(data.seasonYear), data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -101,95 +271,127 @@ export default function DataQualityScorecardClient() {
     [orgId, season, busy],
   );
 
-  // Retry cannot fix an expired session, so the failure decides its own action.
-  const failure = fetchFailed
-    ? loadFailureCopy(
-        classifyLoadFailure({
-          status: errorStatus,
-          message: loadError,
-          online: typeof navigator === "undefined" ? true : navigator.onLine,
-        }),
-        {
-          nextPath:
-            typeof window === "undefined"
-              ? null
-              : `${window.location.pathname}${window.location.search}`,
-          message: loadError || "A network or server issue prevented loading. Try again.",
-        },
-      )
-    : null;
+  const competitionHref = orgId ? `/competition?orgId=${encodeURIComponent(orgId)}` : "/competition";
+  const header = (
+    <PageHeader
+      breadcrumbs={
+        <>
+          <a href={competitionHref}>Competition</a>
+          {" / Data Quality Scorecard"}
+        </>
+      }
+      title="Data Quality Scorecard"
+      description="Org scouting data-quality over the season — coverage against expected fields, cross-scout disagreement, and drift from consensus. Built only from what you log."
+    >
+      {view?.status === "live" && view.seasons.length > 0 ? (
+        <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          Season
+          <select
+            value={season ?? view.seasonYear}
+            onChange={(event) => {
+              const next = Number(event.target.value);
+              setSeason(next);
+              void load(next);
+            }}
+          >
+            {view.seasons.map((year) => (
+              <option key={year} value={year}>
+                {year}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
+      <DataQualityRelated orgId={orgId} />
+    </PageHeader>
+  );
+
+  if (!view) {
+    const failure = fetchFailed
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus,
+            message: loadError,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: loadError || "A network or server issue prevented loading. Try again.",
+          },
+        )
+      : null;
+    return (
+      <main className="module-page">
+        {header}
+        <OfflineBanner feature="Data Quality Scorecard" fromCache={fromCache} cachedAt={cachedAt} />
+        <EmptyState
+          title={failure ? failure.title : "Loading…"}
+          description={failure ? failure.description : "Checking your team."}
+          aria-busy={!fetchFailed}
+        >
+          {failure?.primary ? (
+            <Button as="a" variant="primary" href={failure.primary.href}>
+              {failure.primary.label}
+            </Button>
+          ) : null}
+          {failure?.showRetry ? (
+            <Button variant="secondary" type="button" onClick={() => void load()}>
+              Retry
+            </Button>
+          ) : null}
+        </EmptyState>
+      </main>
+    );
+  }
+
+  switch (view.status) {
+    case "setup_required":
+      return (
+        <main className="module-page">
+          {header}
+          <OfflineBanner feature="Data Quality Scorecard" fromCache={fromCache} cachedAt={cachedAt} />
+          {error ? (
+            <p className="telemetry-status" role="alert">
+              {error}
+            </p>
+          ) : null}
+          <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
+            {view.steps[0] ? (
+              <Button as="a" variant="primary" href={view.steps[0].href}>
+                {view.steps[0].label}
+              </Button>
+            ) : null}
+          </EmptyState>
+        </main>
+      );
+    case "live":
+      break;
+    default: {
+      view satisfies never;
+      return null;
+    }
+  }
 
   return (
     <main className="module-page">
-      <PageHeader
-        breadcrumbs={
-          <>
-            <a href={orgId ? `/competition?orgId=${encodeURIComponent(orgId)}` : "/competition"}>Competition</a>
-            {" / Data Quality Scorecard"}
-          </>
-        }
-        title="Data Quality Scorecard"
-        description="Org scouting data-quality over the season — coverage against expected fields, cross-scout disagreement, and drift from consensus. Built only from what you log."
-      >
-        {view?.status === "live" && view.seasons.length > 0 ? (
-          <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-            Season
-            <select
-              value={season ?? view.seasonYear}
-              onChange={(event) => {
-                const next = Number(event.target.value);
-                setSeason(next);
-                load(next);
-              }}
-            >
-              {view.seasons.map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : null}
-      </PageHeader>
-
+      {header}
+      <OfflineBanner feature="Data Quality Scorecard" fromCache={fromCache} cachedAt={cachedAt} />
       {error ? (
         <p className="telemetry-status" role="alert">
           {error}
         </p>
       ) : null}
-
-      {failure ? (
-        <EmptyState title={failure.title} description={failure.description}>
-          {failure.primary ? (
-            <Button as="a" variant="primary" href={failure.primary.href}>
-              {failure.primary.label}
-            </Button>
-          ) : null}
-          {failure.showRetry ? (
-            <Button variant="secondary" type="button" onClick={() => load()}>
-              Retry
-            </Button>
-          ) : null}
-        </EmptyState>
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your team." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          {view.steps[0] ? (
-            <Button as="a" variant="primary" href={view.steps[0].href}>
-              {view.steps[0].label}
-            </Button>
-          ) : null}
-        </EmptyState>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <ScorecardPanel view={view} />
-          <SummaryTiles view={view} />
-          <LogCheckForm busy={busy} mutate={mutate} />
-          {view.summary.totalChecks > 0 ? <Breakdowns view={view} /> : null}
-          <RecentChecks view={view} busy={busy} mutate={mutate} />
-        </div>
-      )}
+      <DataQualityNextActions orgId={view.orgId} />
+      <div style={{ display: "grid", gap: 16 }}>
+        <ScorecardPanel view={view} />
+        <SummaryTiles view={view} />
+        <LogCheckForm busy={busy} mutate={mutate} />
+        {view.summary.totalChecks > 0 ? <Breakdowns view={view} /> : null}
+        <RecentChecks view={view} busy={busy} mutate={mutate} />
+      </div>
     </main>
   );
 }
@@ -401,6 +603,7 @@ function LogCheckForm({
 
   return (
     <Panel
+      id="data-quality-log"
       as="form"
       onSubmit={(event) => {
         event.preventDefault();

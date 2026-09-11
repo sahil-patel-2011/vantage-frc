@@ -1,10 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { PageHeader } from "../../../components/ui/page-header";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { OfflineBanner } from "../../../components/offline-banner";
+import { EmptyState, PageHeader, Button } from "../../../components/ui";
 import { TeamOpsNav } from "../../../components/team-ops-nav";
+import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
 import { withOrgHref } from "../../../lib/nav/product-nav";
-import { surfaceOnboardingLinks } from "../../../lib/onboarding-workflow";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
+import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 
 type Signals = {
   members: number;
@@ -47,7 +50,7 @@ function buildTasks(data: Data, orgId: string): Task[] {
       title: "Add team location",
       detail:
         s.hasLocation === true
-          ? "City and state are on the org profile for sponsorships and partners."
+          ? "City and state are on the team profile for sponsorships and partners."
           : "Owners/admins: add city and state so one-pagers know where you compete from.",
       done: s.hasLocation === true,
       href: `/team${q}`,
@@ -115,16 +118,16 @@ function buildTasks(data: Data, orgId: string): Task[] {
       cta: "Open assistant",
     },
     {
-      title: "Add your API keys",
+      title: "Add the team's keys",
       detail:
         s.byokKeysConfigured == null
-          ? "Free workspaces use the OpenRouter free pool, or your own OpenAI / Anthropic / Google / OpenRouter key (or a local relay). Paid uses hosted Anthropic."
+          ? "An owner can paste the team's own keys, or a local relay, so Ask AI can run."
           : s.byokKeysConfigured
             ? "At least one encrypted provider key or custom relay is on file."
-            : "Paste OpenAI / Anthropic / Google under AI API keys — or upgrade for Vantage-hosted AI.",
+            : "Paste OpenAI, Anthropic, or Google under AI keys — or use a local relay.",
       done: s.byokKeysConfigured === true,
       href: `/team/ai-keys${q}`,
-      cta: "Add your API keys",
+      cta: "Add the team's keys",
       adminOnly: true,
     },
     {
@@ -166,65 +169,232 @@ function buildTasks(data: Data, orgId: string): Task[] {
   ];
 }
 
-export default function GettingStartedClient({ orgId }: { orgId: string }) {
-  const [data, setData] = useState<Data | null>(null);
-  const [message, setMessage] = useState("");
-  const [loading, setLoading] = useState(true);
+type GettingStartedView = Data & { status: "ready"; orgId: string };
 
-  useEffect(() => {
-    let active = true;
-    async function load() {
-      setLoading(true);
-      const response = await fetch(`/api/team/getting-started?orgId=${orgId}`);
-      const body = await response.json();
-      if (!active) return;
-      if (!response.ok) setMessage(body.error ?? "Unable to load getting-started");
-      else {
-        setMessage("");
-        setData(body);
+function isGettingStartedView(value: unknown): value is GettingStartedView {
+  if (!value || typeof value !== "object") return false;
+  const row = value as { status?: unknown; orgId?: unknown; orgName?: unknown; signals?: unknown };
+  return (
+    row.status === "ready" &&
+    typeof row.orgId === "string" &&
+    typeof row.orgName === "string" &&
+    row.signals != null &&
+    typeof row.signals === "object"
+  );
+}
+
+function responseError(data: unknown): string {
+  return data && typeof data === "object" && "error" in data && typeof data.error === "string"
+    ? data.error
+    : "";
+}
+
+async function persistGettingStartedSnapshot(orgHint: string, data: GettingStartedView): Promise<void> {
+  const cacheOrg = data.orgId.trim() || orgHint;
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("getting-started", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("getting-started", "_", data);
+  } catch {
+    // Live Getting started already painted; IndexedDB is best-effort.
+  }
+}
+
+function GettingStartedRelated({ orgId }: { orgId: string }) {
+  return (
+    <nav className="product-hub-related" aria-label="Related team tools">
+      <Button as="a" variant="secondary" href={withOrgHref("/start", orgId)}>
+        Your path
+      </Button>
+      <Button as="a" variant="secondary" href={withOrgHref("/team/knowledge", orgId)}>
+        Playbook
+      </Button>
+      <Button as="a" variant="secondary" href={withOrgHref("/team/calendar", orgId)}>
+        Calendar
+      </Button>
+    </nav>
+  );
+}
+
+function GettingStartedNextActions({ orgId }: { orgId: string }) {
+  const actions = [
+    {
+      id: "path",
+      label: "Open Your path",
+      detail: "Personal first-week steps for your role, not the whole team.",
+      href: withOrgHref("/start", orgId),
+      primary: true,
+    },
+    {
+      id: "playbook",
+      label: "Open Playbook",
+      detail: "Team Knowledge is what Ask AI reads on every chat.",
+      href: withOrgHref("/team/knowledge", orgId),
+    },
+    {
+      id: "background",
+      label: "Open Team background",
+      detail: "Mission, location, and funding facts used by grants and sponsor drafts.",
+      href: withOrgHref("/team/background", orgId),
+    },
+  ];
+  return (
+    <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <Button as="a" variant="secondary" href={action.href}>
+              Open
+            </Button>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+export default function GettingStartedClient({ orgId }: { orgId: string }) {
+  const [view, setView] = useState<GettingStartedView | null>(null);
+  const [message, setMessage] = useState("");
+  const [fetchFailed, setFetchFailed] = useState(false);
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<GettingStartedView | null>(null);
+  viewRef.current = view;
+
+  const load = useCallback(async () => {
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<GettingStartedView>("getting-started", orgId || "_");
+      if (!viewRef.current && cached?.data && isGettingStartedView(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
       }
-      setLoading(false);
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
     }
-    void load();
-    return () => {
-      active = false;
-    };
+    setFetchFailed(false);
+    setErrorStatus(null);
+    try {
+      const response = await fetch(`/api/team/getting-started?orgId=${encodeURIComponent(orgId)}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      const body: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setFetchFailed(true);
+        setErrorStatus(response.status);
+        setMessage(responseError(body) || "Unable to load getting-started");
+        return;
+      }
+      if (!response.ok || !body || typeof body !== "object") {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setMessage("Could not refresh Getting started. Showing the last copy on this device.");
+          setFetchFailed(false);
+          return;
+        }
+        setFetchFailed(true);
+        setErrorStatus(response.status);
+        setMessage(responseError(body) || "Unable to load getting-started");
+        return;
+      }
+      const data = body as Data;
+      const next: GettingStartedView = { status: "ready", orgId, ...data };
+      setView(next);
+      setFromCache(false);
+      setCachedAt(null);
+      setMessage("");
+      await persistGettingStartedSnapshot(orgId, next);
+    } catch {
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setMessage("Could not refresh Getting started. Showing the last copy on this device.");
+        setFetchFailed(false);
+        return;
+      }
+      setFetchFailed(true);
+    }
   }, [orgId]);
 
-  const tasks = data ? buildTasks(data, orgId).filter((t) => data.isAdmin || !t.adminOnly) : [];
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const tasks = view ? buildTasks(view, orgId).filter((t) => view.isAdmin || !t.adminOnly) : [];
   const done = tasks.filter((t) => t.done).length;
   const pct = tasks.length ? Math.round((done / tasks.length) * 100) : 0;
-  const crossLinks = surfaceOnboardingLinks("getting_started", orgId);
+
+  const failure =
+    !view && fetchFailed
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus,
+            message,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message,
+          },
+        )
+      : null;
 
   return (
     <main className="module-page start-page getting-started-page">
       <PageHeader
         navPath="/team/getting-started"
-        title={data ? `Team setup · ${data.orgName}` : "Team setup"}
-        description="Org-wide workspace checklist — invites, knowledge, budgets. For your personal role path, open Your path."
+        title={view ? `Team setup · ${view.orgName}` : "Team setup"}
+        description="Team setup checklist — invites, knowledge, and budgets. For your personal role path, open Your path."
       >
-        <div className="start-actions">
-          <a className="start-btn primary" href={withOrgHref("/start", orgId)}>
-            Your path
-          </a>
-          {crossLinks.map((link) => (
-            <a key={link.href} className="start-btn" href={link.href}>
-              {link.label}
-            </a>
-          ))}
-        </div>
+        <GettingStartedRelated orgId={orgId} />
       </PageHeader>
 
       <TeamOpsNav orgId={orgId} />
+      <OfflineBanner feature="Getting started" fromCache={fromCache} cachedAt={cachedAt} />
 
       {message ? (
         <p className="start-warn" role="status">
           {message}
         </p>
       ) : null}
-      {loading ? <p className="start-meta">Loading…</p> : null}
 
-      {!loading && data ? (
+      {!view ? (
+        <EmptyState
+          soft
+          title={failure ? failure.title : "Loading…"}
+          description={failure ? failure.description : "Checking this team's setup."}
+          aria-busy={!fetchFailed}
+        >
+          {failure?.primary ? (
+            <Button as="a" variant="primary" href={failure.primary.href}>
+              {failure.primary.label}
+            </Button>
+          ) : null}
+          {failure?.showRetry ? (
+            <Button variant="secondary" type="button" onClick={() => void load()}>
+              Retry
+            </Button>
+          ) : null}
+        </EmptyState>
+      ) : (
         <>
           <section className="start-progress" aria-label="Setup progress">
             <strong>
@@ -254,8 +424,9 @@ export default function GettingStartedClient({ orgId }: { orgId: string }) {
               this). 2 · Say what you want to do. 3 · Describe the result you expect.
             </p>
           </section>
+          <GettingStartedNextActions orgId={orgId} />
         </>
-      ) : null}
+      )}
     </main>
   );
 }

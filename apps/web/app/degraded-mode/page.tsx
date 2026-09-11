@@ -1,7 +1,7 @@
 import DegradedModeClient from "./degraded-mode-client";
 
 export const metadata = {
-  title: "Data-source degraded mode",
+  title: "Data-source health",
 };
 
 export default function DegradedModePage() {

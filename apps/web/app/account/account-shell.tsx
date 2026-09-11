@@ -76,21 +76,16 @@ export function OrgContextCard({ org }: { org: OrgContext }) {
         soft
         badge="Setup required"
         badgeTone="setup"
-        title="No team selected"
+        title="Choose your team"
         description={
           org.workspaceCount > 0
-            ? "Your profile prefs still apply to this login. Pick an active team for billing, AI usage, and connectors."
+            ? "Your profile prefs still apply to this login. Choose your team for billing, AI usage, and connectors."
             : "You are signed in, but you are not on a team yet. Ask an owner to send you an invite."
         }
       >
-        <div className="account-empty-actions">
-          <Button as="a" variant="primary" href="/workspace">
-            Choose your team
-          </Button>
-          <Button as="a" variant="secondary" href="/support">
-            Help & Support
-          </Button>
-        </div>
+        <Button as="a" variant="primary" href="/workspace">
+          Choose your team
+        </Button>
       </EmptyState>
     );
   }
@@ -107,7 +102,7 @@ export function OrgContextCard({ org }: { org: OrgContext }) {
           {org.planCode?.trim() ? (
             <span className="app-badge good">{org.planCode.trim()}</span>
           ) : (
-            <span className="app-badge setup">Plan unset</span>
+            <span className="app-badge setup">No plan yet</span>
           )}
         </div>
       </div>

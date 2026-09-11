@@ -1,7 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, ModelProvenance, PageHeader, Panel, Button } from "../../components/ui";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import type {
   PriorSession,
@@ -11,6 +14,28 @@ import type {
 import type { TroubleshootAnswer, TroubleshootCheck } from "../../lib/troubleshoot/symptom-tree";
 
 type LiveView = Extract<TroubleshootView, { status: "live" }>;
+
+function isTroubleshootView(value: unknown): value is TroubleshootView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function troubleshootCacheOrg(data: TroubleshootView, orgHint: string): string {
+  if (typeof data.orgId === "string" && data.orgId.trim()) return data.orgId;
+  return orgHint;
+}
+
+async function persistTroubleshootSnapshot(orgHint: string, data: TroubleshootView): Promise<void> {
+  const cacheOrg = troubleshootCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("troubleshoot", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("troubleshoot", "_", data);
+  } catch {
+    // Live Get unstuck already painted; IndexedDB is best-effort.
+  }
+}
 
 /** >=44px targets everywhere: this page gets used on a phone, in a pit, under stress. */
 const TAP: CSSProperties = { minHeight: 44, padding: "10px 14px" };
@@ -34,31 +59,83 @@ export default function TroubleshootClient() {
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [loadErrorMessage, setLoadErrorMessage] = useState("");
   const [closed, setClosed] = useState<"resolved" | "stuck" | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<TroubleshootView | null>(null);
+  viewRef.current = view;
 
   const orgId = view && "orgId" in view ? view.orgId : null;
 
-  const load = useCallback(() => {
+  const load = useCallback(async () => {
+    const urlOrg = new URLSearchParams(window.location.search).get("orgId")?.trim() ?? "";
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<TroubleshootView>("troubleshoot", urlOrg || "_");
+      if (!viewRef.current && cached?.data && isTroubleshootView(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
     setFetchFailed(false);
     setError("");
     setErrorStatus(null);
     setLoadErrorMessage("");
-    const urlOrg = new URLSearchParams(window.location.search).get("orgId");
-    void fetch(`/api/troubleshoot${urlOrg ? `?orgId=${encodeURIComponent(urlOrg)}` : ""}`)
-      .then(async (response) => {
-        const data = (await response.json()) as TroubleshootView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setLoadErrorMessage("error" in data && data.error ? data.error : "");
-          setErrorStatus(response.status);
-          setFetchFailed(true);
+    try {
+      const response = await fetch(`/api/troubleshoot${urlOrg ? `?orgId=${encodeURIComponent(urlOrg)}` : ""}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      const data: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setFetchFailed(true);
+        setErrorStatus(response.status);
+        setLoadErrorMessage(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "",
+        );
+        return;
+      }
+      if (!response.ok || !isTroubleshootView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Get unstuck. Showing the last copy on this device.");
+          setFetchFailed(false);
           return;
         }
-        setView(data);
-      })
-      .catch(() => setFetchFailed(true));
+        setLoadErrorMessage(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "",
+        );
+        setErrorStatus(response.status);
+        setFetchFailed(true);
+        return;
+      }
+      setView(data);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistTroubleshootSnapshot(urlOrg, data);
+    } catch {
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Get unstuck. Showing the last copy on this device.");
+        setFetchFailed(false);
+        return;
+      }
+      setFetchFailed(true);
+    }
   }, []);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   const post = useCallback(
@@ -71,6 +148,7 @@ export default function TroubleshootClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as TroubleshootSessionView | { error?: string };
         if (!response.ok || !("walk" in data)) {
@@ -201,7 +279,9 @@ export default function TroubleshootClient() {
         </p>
       ) : null}
 
-      {failure ? (
+      <OfflineBanner feature="Get unstuck" fromCache={fromCache} cachedAt={cachedAt} />
+
+      {failure && !view ? (
         <EmptyState title={failure.title} description={failure.description}>
           {failure.primary ? (
             <Button as="a" variant="primary" style={TAP} href={failure.primary.href}>
@@ -209,7 +289,7 @@ export default function TroubleshootClient() {
             </Button>
           ) : null}
           {failure.showRetry ? (
-            <Button variant="secondary" type="button" style={TAP} onClick={() => load()}>
+            <Button variant="secondary" type="button" style={TAP} onClick={() => void load()}>
               Retry
             </Button>
           ) : null}

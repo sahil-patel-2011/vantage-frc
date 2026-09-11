@@ -174,6 +174,8 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         // needs it is new to the TEAM, not to the robot.
         { id: "dev-setup", label: "Programming setup", legacyHref: "/dev-setup", featured: true },
         { id: "onboarding-buddy", label: "Onboarding buddy", legacyHref: "/onboarding-buddy" },
+        { id: "getting-started", label: "Team setup", legacyHref: "/team/getting-started" },
+        { id: "team-background", label: "Team background", legacyHref: "/team/background" },
         { id: "alumni-network", label: "Alumni", legacyHref: "/alumni-network" },
         { id: "skills-graph", label: "Skills", legacyHref: "/skills-graph" },
         // Learning sits next to Skills because its predictions feed the skills graph;
@@ -296,6 +298,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
       ...nest("grants", [
         // The "Grants" workbench root already links /team/grants; a second nested
         // entry for the same route showed the page twice in the inner TabBar.
+        { id: "grant-calendar", label: "Grant calendar", legacyHref: "/team/grants/calendar", featured: true },
         { id: "grant-report", label: "Reports", legacyHref: "/grant-report" },
         { id: "grant-eligibility-matcher", label: "Eligibility", legacyHref: "/grant-eligibility-matcher" },
       ]),
@@ -307,6 +310,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         { id: "awards-workbench", label: "Awards", legacyHref: "/team/awards" },
         { id: "impact-essay", label: "Impact essay", legacyHref: "/impact-essay" },
         { id: "judge-sim", label: "Judge pitch", legacyHref: "/judge-sim" },
+        { id: "mock-judging", label: "Mock judging", legacyHref: "/mock-judging" },
         { id: "media-kit", label: "Media kit", legacyHref: "/media?tab=kit" },
         { id: "outreach-calendar", label: "Outreach calendar", legacyHref: "/outreach-calendar" },
         // The former Media hub, now tools of Outreach. Same pages, one fewer
@@ -388,6 +392,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         { id: "spare-robot-kit", label: "Spare kit", legacyHref: "/spare-robot-kit" },
         { id: "bin-shelf-locator", label: "Bin locator", legacyHref: "/bin-shelf-locator" },
         { id: "budget-reconciler", label: "Budget check", legacyHref: "/budget-reconciler" },
+        { id: "bom-cost-rollup", label: "BOM cost", legacyHref: "/bom-cost-rollup" },
         { id: "battery-health-forecast", label: "Pack health", legacyHref: "/battery-health-forecast" },
         { id: "cross-domain-alerts", label: "Cross-domain", legacyHref: "/cross-domain-alerts" },
         { id: "decision-critic", label: "Decision critic", legacyHref: "/decision-critic" },
