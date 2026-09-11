@@ -148,6 +148,7 @@ export const OFFLINE_SHELL_ROUTES = [
   "/costs",
   "/duties",
   "/announcements",
+  "/account",
   "/risks",
   "/subsystem-signoff",
   "/prototype-tracker",
@@ -314,6 +315,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/costs")) return "Season Costs";
   if (bare.startsWith("/duties")) return "Duties";
   if (bare.startsWith("/announcements")) return "Announcements";
+  if (bare.startsWith("/account")) return "Account";
   if (bare.startsWith("/match-delta-watcher")) return "Match-delta watcher";
   if (bare.startsWith("/match-video-index")) return "Match video index";
   if (bare.startsWith("/match-strategy-cards")) return "Match strategy cards";

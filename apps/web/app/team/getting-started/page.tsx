@@ -18,7 +18,7 @@ export default async function TeamGettingStartedPage({
         <PageHeader
           breadcrumbs="Team / Getting started"
           title="Getting started"
-          description="The setup checklist tracks one team’s real progress — pick the team first."
+          description="The setup checklist tracks one team’s real progress. Choose your team to open it."
         />
         <EmptyState
           soft

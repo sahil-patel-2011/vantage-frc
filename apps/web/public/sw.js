@@ -166,6 +166,7 @@ const SHELL_ROUTES = [
   "/costs",
   "/duties",
   "/announcements",
+  "/account",
   "/risks",
   "/subsystem-signoff",
   "/prototype-tracker",

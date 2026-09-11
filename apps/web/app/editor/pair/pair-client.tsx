@@ -303,7 +303,7 @@ export default function PairClient({
                 spellCheck={false}
               />
             </FormRow>
-            <FormRow label="Organization / workspace">
+            <FormRow label="Team">
               <select value={orgId} onChange={(e) => setOrgId(e.target.value)} required>
                 {organizations.map((org) => (
                   <option value={org.id} key={org.id}>
@@ -335,11 +335,7 @@ export default function PairClient({
               badgeTone="setup"
               title="No paired devices yet"
               description="Device rows appear only after a real approval."
-            >
-              <Button as="a" variant="secondary" href={hubHref("/ai", "chat", orgId)}>
-                Open AI chat
-              </Button>
-            </EmptyState>
+            />
           ) : (
             <ul className="pair-device-list">
               {devices.map((device) => (

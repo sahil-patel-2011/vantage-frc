@@ -142,7 +142,7 @@ export function accountNextActions(input: {
     actions.push({
       id: "email-setup",
       label: "Email delivery not configured",
-      detail: "Opt-in emails need Resend on this deployment. In-app prefs still save; transactional mail stays setup-required.",
+      detail: "Email from Vantage is not set up on this site yet. In-app notification prefs still save.",
       href: "/account?tab=notifications",
       primary: actions.length === 0,
     });
@@ -162,7 +162,7 @@ export function accountNextActions(input: {
     actions.push({
       id: "google",
       label: "Google sign-in setup",
-      detail: "This deployment is missing Google OAuth env — use email OTP until an admin configures it.",
+      detail: "Google sign-in is not set up here yet. Use the email code until a mentor configures it.",
       href: "/connectors",
     });
   }

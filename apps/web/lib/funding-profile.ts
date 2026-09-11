@@ -105,7 +105,7 @@ export function parseFundingProfileSave(body: unknown): FundingProfileInput {
   }
   const raw = body as Record<string, unknown>;
   if (!isFundingAffiliation(raw.teamAffiliation)) {
-    throw new Error("Select whether your team is a private school, public school, or community team.");
+    throw new Error("Choose whether your team is a private school, public school, or community team.");
   }
   let fundingModel: FundingModel;
   let schoolFunded: boolean;
@@ -122,7 +122,7 @@ export function parseFundingProfileSave(body: unknown): FundingProfileInput {
     outsideGrants = Boolean(raw.outsideGrants);
     sponsorsAllowed = Boolean(raw.sponsorsAllowed);
     if (!fundingPathsReady({ schoolFunded, outsideGrants, sponsorsAllowed })) {
-      throw new Error("Select how the team is funded: ourselves, the school, sponsors, or both.");
+      throw new Error("Choose how the team is funded: ourselves, the school, sponsors, or both.");
     }
     fundingModel = fundingModelFromFlags({ schoolFunded, sponsorsAllowed });
   }

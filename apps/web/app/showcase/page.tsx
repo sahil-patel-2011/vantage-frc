@@ -23,7 +23,7 @@ export default async function ShowcasePage({
           // to name. Spelled out, like every other org-gated screen.
           breadcrumbs="Media / Showcase"
           title="Showcase"
-          description="A shareable season showcase for one team — pick the team first."
+          description="A shareable season showcase for one team. Choose your team to open it."
         />
         <EmptyState
           soft

@@ -104,7 +104,7 @@
 | Finance-in-AI | `/ai?tab=finance` | Admin redaction consent toggle + honest empty/off; cross-links to Governance / Chat / Budgets / Memory|
 | Connections | `/account?tab=integrations` (also `/cad/connections`) | TBA / Onshape / Google / Discord / Slack / GitHub setup_required + empty shells; Connected only from real rows; cross-links to Account / CAD / Discord / Slack|
 | Team chat | `/team?tab=messages` · `/messages` | Org-scoped team channel + DMs; inbox notifications (`teamChat`); optional Slack bridge (`/team/slack`)|
-| Account profile | `/account` | Display + legal name, DOB, recovery email, phone OTP (Twilio setup_required until env); notification prefs including team chat |
+| Account profile | `/account` | Display + legal name, DOB, recovery email, phone OTP until env is set; notification prefs including team chat. Last snapshot stays on this phone when venue Wi-Fi dies. Empty/setup keeps one **Choose your team** primary. |
 | Bring your season | `/migrate` (Team More tools, featured) | ICS inbound + paste + pull; scout CSV commit with identity lock; hours CSV → attendance; Notion JSON → calendar/knowledge/tasks; OAuth stays setup_required until `NOTION_CLIENT_ID`|
 | Claim team | `/claim` | Self-serve org via `claim_frc_team_workspace` (verified email, unused TBA team number in `teams_ref`); members still exact-email invite; STIMS remains official |
 | Shop hours | `/hours` (Team More tools, featured) | Clock in/out, kiosk scans, and last-snapshot when the shop Wi-Fi dies. Queued clock events upload when you are back online. |
@@ -116,7 +116,7 @@
 | Connectors | `/connectors` (Settings) | One page for Google, GitHub, TBA, Onshape, Discord, Slack, email, Stripe, storage node, Fusion relay, and the Pi free relay. Status is Connected only from a stored row. Missing env names the variables and the callback URL to register. |
 | AI relays | `/team/relays` (Team) | Pair a Raspberry Pi with a code. Chat / agent / video roles. Heartbeat shows online. Freebuff website cookies are refused. |
 | Analyze video | `/video-analysis` | Queue a match or pit video for the video Pi. Status is Waiting / Watching / Ready to confirm. Results are a timeline with confidence; a person confirms before scouted numbers change. |
-| Funding model | `/team/background` + onboarding | Four radios: self-funded, school-funded no sponsors, sponsored, school-related sponsored. Business hub hides sponsor tools when sponsors are not allowed; dues/fundraisers first for self-funded. |
+| Funding model | `/team/background` + onboarding | Four radios: self-funded, school-funded no sponsors, sponsored, school-related sponsored. Affiliation & funding last snapshot stays on this phone. Business hub hides sponsor tools when sponsors are not allowed; dues/fundraisers first for self-funded. |
 | Desktop shell | `/desktop` + `apps/desktop` | Same UI as the web. Windows NSIS + MSI + portable; macOS DMG on tag `desktop-v*`. Auto-update via `GET /api/desktop/release`. Unsigned until the owner pastes signing certs. |
 
 Team admin: `/team/admin`. Redirects: `apps/web/next.config.ts`.

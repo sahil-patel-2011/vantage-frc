@@ -161,6 +161,7 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/costs")).toBe(true);
     expect(pathnameIsOfflineShell("/duties")).toBe(true);
     expect(pathnameIsOfflineShell("/announcements")).toBe(true);
+    expect(pathnameIsOfflineShell("/account")).toBe(true);
     expect(pathnameIsOfflineShell("/risks")).toBe(true);
     expect(pathnameIsOfflineShell("/subsystem-signoff")).toBe(true);
     expect(pathnameIsOfflineShell("/prototype-tracker")).toBe(true);
@@ -311,6 +312,7 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/costs")).toBe("Season Costs");
     expect(offlineCapableLabel("/duties")).toBe("Duties");
     expect(offlineCapableLabel("/announcements")).toBe("Announcements");
+    expect(offlineCapableLabel("/account")).toBe("Account");
     expect(offlineCapableLabel("/risks")).toBe("Risk Register");
     expect(offlineCapableLabel("/risk-burndown")).toBe("Risk-Register Burndown");
     expect(offlineCapableLabel("/subsystem-signoff")).toBe("Subsystem Sign-off");
@@ -456,6 +458,8 @@ describe("offline shell routes", () => {
     expect(featureCacheKey("cad-review-queue", "org-1", "2026")).toBe("cad-review-queue:org-1:2026");
     expect(featureCacheKey("duties", "org-1")).toBe("duties:org-1");
     expect(featureCacheKey("announcements", "org-1")).toBe("announcements:org-1");
+    expect(featureCacheKey("account", "_")).toBe("account:_");
+    expect(featureCacheKey("funding-profile", "org-1")).toBe("funding-profile:org-1");
     expect(featureCacheKey("risks", "org-1", "2026")).toBe("risks:org-1:2026");
     expect(featureCacheKey("subsystem-signoff", "org-1", "2026")).toBe("subsystem-signoff:org-1:2026");
     expect(featureCacheKey("prototype-tracker", "org-1", "2026")).toBe("prototype-tracker:org-1:2026");

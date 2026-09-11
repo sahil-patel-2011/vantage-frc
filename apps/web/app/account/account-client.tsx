@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, PageHeader, Panel, ToolStrip, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { fetchProductSession } from "../../lib/nav/product-session";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { SettingsBar } from "../../components/settings-bar";
 import { signOutAndRedirect } from "../../lib/sign-out";
 import { AccountNotificationsPanel } from "./account-notifications-panel";
@@ -23,6 +25,38 @@ import {
 import AppearancePanel from "./appearance-panel";
 import "../product-hub.css";
 import "./account.css";
+
+type AccountOfflineCache = {
+  account: AccountView;
+  org: OrgContext;
+};
+
+function emptyOrg(): OrgContext {
+  return {
+    orgId: null,
+    orgName: null,
+    teamNumber: null,
+    role: null,
+    planCode: null,
+    workspaceCount: 0,
+  };
+}
+
+function isAccountCache(value: unknown): value is AccountOfflineCache {
+  if (!value || typeof value !== "object") return false;
+  const row = value as { account?: unknown; org?: unknown };
+  if (!row.account || typeof row.account !== "object") return false;
+  if (!row.org || typeof row.org !== "object") return false;
+  return "orgId" in (row.org as object);
+}
+
+async function persistAccountSnapshot(data: AccountOfflineCache): Promise<void> {
+  try {
+    await putFeatureSnapshot("account", "_", data);
+  } catch {
+    // Live Account already painted; IndexedDB is best-effort.
+  }
+}
 
 export default function AccountClient() {
   const [tab, setTab] = useState<Tab>("profile");
@@ -49,8 +83,12 @@ export default function AccountClient() {
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [fetchFailed, setFetchFailed] = useState(false);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
   // Kept so an expired session offers sign-in instead of a Retry that cannot work.
   const [loadStatus, setLoadStatus] = useState<number | null>(null);
+  const accountRef = useRef<AccountView | null>(null);
+  accountRef.current = account;
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -78,15 +116,55 @@ export default function AccountClient() {
     window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
   }
 
-  async function load() {
-    setLoading(true);
+  function applyAccount(data: AccountView) {
+    setAccount(data);
+    setDisplayName(data.displayName ?? data.name ?? "");
+    setFirstName(data.firstName ?? "");
+    setLastName(data.lastName ?? "");
+    setDateOfBirth(data.dateOfBirth ?? "");
+    setRecoveryEmail(data.recoveryEmail ?? "");
+    setPhoneE164(data.phoneE164 ?? "");
+    if (data.notificationPrefs) setPrefs(data.notificationPrefs);
+    if (data.emailPrefs) setEmailPrefs(data.emailPrefs);
+  }
+
+  const load = useCallback(async () => {
+    let hadCache = Boolean(accountRef.current);
+    try {
+      const cached = await getFeatureSnapshot<AccountOfflineCache>("account", "_");
+      if (!accountRef.current && cached?.data && isAccountCache(cached.data)) {
+        applyAccount(cached.data.account);
+        setOrg(cached.data.org);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+        setLoading(false);
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
     setFetchFailed(false);
     try {
       const response = await fetch("/api/account", {
         cache: "no-store",
         signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
+      if (response.status === 401 || response.status === 403) {
+        setMessage("");
+        setMessageOk(false);
+        setAccount(null);
+        setOrg(emptyOrg());
+        setFromCache(false);
+        setCachedAt(null);
+        setLoadStatus(response.status);
+        setFetchFailed(true);
+        return;
+      }
       if (!response.ok) {
+        if (hadCache || accountRef.current) {
+          setFromCache(true);
+          return;
+        }
         setMessage("");
         setMessageOk(false);
         setAccount(null);
@@ -96,42 +174,33 @@ export default function AccountClient() {
       }
       setLoadStatus(null);
       const data = (await response.json()) as AccountView;
-      setAccount(data);
-      setDisplayName(data.displayName ?? data.name ?? "");
-      setFirstName(data.firstName ?? "");
-      setLastName(data.lastName ?? "");
-      setDateOfBirth(data.dateOfBirth ?? "");
-      setRecoveryEmail(data.recoveryEmail ?? "");
-      setPhoneE164(data.phoneE164 ?? "");
-      if (data.notificationPrefs) setPrefs(data.notificationPrefs);
-      if (data.emailPrefs) setEmailPrefs(data.emailPrefs);
+      applyAccount(data);
       setMessage("");
 
       const me = await fetchProductSession();
-      if (me) {
-        setOrg({
-          orgId: me.orgId ?? null,
-          orgName: me.orgName ?? null,
-          teamNumber: me.teamNumber ?? null,
-          role: me.role ?? null,
-          planCode: typeof me.planCode === "string" ? me.planCode : null,
-          workspaceCount: Array.isArray(me.memberships)
-            ? me.memberships.length
-            : me.orgId
-              ? 1
-              : 0,
-        });
-      } else {
-        setOrg({
-          orgId: null,
-          orgName: null,
-          teamNumber: null,
-          role: null,
-          planCode: null,
-          workspaceCount: 0,
-        });
-      }
+      const nextOrg: OrgContext = me
+        ? {
+            orgId: me.orgId ?? null,
+            orgName: me.orgName ?? null,
+            teamNumber: me.teamNumber ?? null,
+            role: me.role ?? null,
+            planCode: typeof me.planCode === "string" ? me.planCode : null,
+            workspaceCount: Array.isArray(me.memberships)
+              ? me.memberships.length
+              : me.orgId
+                ? 1
+                : 0,
+          }
+        : emptyOrg();
+      setOrg(nextOrg);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistAccountSnapshot({ account: data, org: nextOrg });
     } catch {
+      if (hadCache || accountRef.current) {
+        setFromCache(true);
+        return;
+      }
       setMessage("");
       setMessageOk(false);
       setAccount(null);
@@ -140,11 +209,11 @@ export default function AccountClient() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
   useEffect(() => {
     void load();
-  }, []);
+  }, [load]);
 
   async function saveProfile(event: FormEvent) {
     event.preventDefault();
@@ -256,10 +325,9 @@ export default function AccountClient() {
   const googleReady = account?.integrations?.google.status === "available";
   const tbaReady = account?.integrations?.tba.status === "available";
   const showNextActions =
-    !loading &&
-    !fetchFailed &&
-    account != null &&
-    (!orgId || !hasProfile || !emailDeliveryReady || !googleReady || !tbaReady);
+    Boolean(account) &&
+    Boolean(orgId) &&
+    (!hasProfile || !emailDeliveryReady || !googleReady || !tbaReady);
 
   return (
     <main className="module-page account-page">
@@ -279,6 +347,8 @@ export default function AccountClient() {
         </div>
       </PageHeader>
 
+      <OfflineBanner feature="Account" fromCache={fromCache} cachedAt={cachedAt} />
+
       <SettingsBar
         role={org.role}
         orgId={org.orgId}
@@ -294,7 +364,7 @@ export default function AccountClient() {
         </p>
       ) : null}
 
-      {loading ? (
+      {loading && !account ? (
         <EmptyState
           soft
           badge="Loading"
@@ -305,58 +375,43 @@ export default function AccountClient() {
         />
       ) : null}
 
-      {fetchFailed ? (
-        <>
-          {(() => {
-            const kind = classifyLoadFailure({
-              status: loadStatus,
-              online: typeof navigator === "undefined" ? true : navigator.onLine,
-            });
-            const copy = loadFailureCopy(kind, {
-              nextPath:
-                typeof window === "undefined"
-                  ? null
-                  : `${window.location.pathname}${window.location.search}`,
-              message:
-                "A network or server issue prevented loading. Try again, or open Support if this keeps failing.",
-            });
-            return (
-              <EmptyState
-                soft
-                badge="Unavailable"
-                badgeTone="setup"
-                title={copy.title}
-                description={copy.description}
-              >
-                <div className="account-empty-actions">
-                  {copy.primary ? (
-                    <Button as="a" variant="primary" href={copy.primary.href}>
-                      {copy.primary.label}
-                    </Button>
-                  ) : null}
-                  {copy.showRetry ? (
-                    <Button variant="primary" type="button" onClick={() => void load()}>
-                      Retry
-                    </Button>
-                  ) : null}
-                  <Button as="a" variant="secondary" href="/support">
-                    Help & Support
-                  </Button>
-                </div>
-              </EmptyState>
-            );
-          })()}
-          <NextActions
-            orgId={null}
-            hasProfile={false}
-            emailDeliveryReady
-            googleReady
-            tbaReady
-          />
-        </>
+      {fetchFailed && !account ? (
+        (() => {
+          const kind = classifyLoadFailure({
+            status: loadStatus,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          });
+          const copy = loadFailureCopy(kind, {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message:
+              "A network or server issue prevented loading. Try again, or open Support if this keeps failing.",
+          });
+          return (
+            <EmptyState
+              soft
+              badge="Unavailable"
+              badgeTone="setup"
+              title={copy.title}
+              description={copy.description}
+            >
+              {copy.primary ? (
+                <Button as="a" variant="primary" href={copy.primary.href}>
+                  {copy.primary.label}
+                </Button>
+              ) : copy.showRetry ? (
+                <Button variant="primary" type="button" onClick={() => void load()}>
+                  Retry
+                </Button>
+              ) : null}
+            </EmptyState>
+          );
+        })()
       ) : null}
 
-      {!loading && !fetchFailed && account ? (
+      {account ? (
         <>
           <OrgContextCard org={org} />
 
