@@ -15,7 +15,10 @@ test("Account, Pair VS Code, and leftover no-org gates stay student-usable", asy
 
   await gotoReady(page, "/team/prompts");
   await expect(
-    page.getByRole("heading", { name: "Prompts" }).or(page.getByRole("heading", { name: "Choose your team" })),
+    page
+      .getByRole("heading", { name: "Prompts" })
+      .or(page.getByRole("heading", { name: "Choose your team" }))
+      .first(),
   ).toBeVisible();
   await expect(page.getByText("pick the team first")).toHaveCount(0);
 

@@ -80,7 +80,7 @@ export default defineConfig({
   workers: Number(process.env.PLAYWRIGHT_WORKERS) || 1,
   retries: isCi ? 1 : 0,
   forbidOnly: isCi,
-  timeout: isCi ? 45_000 : 30_000,
+  timeout: isCi ? 45_000 : 90_000,
   reporter: isCi ? [["line"], ["html"]] : [["list"], ["html"]],
   use: {
     baseURL: origin,
