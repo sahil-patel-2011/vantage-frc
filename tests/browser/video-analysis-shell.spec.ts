@@ -10,6 +10,11 @@ test("Video is a student paste page, not an engineering wall", async ({ page }) 
   await page.goto("/video-analysis");
   await expect(page.locator("body")).not.toContainText("Application error");
   await expect(page.getByRole("heading", { level: 1, name: "Video" })).toBeVisible();
+  const setup = page.getByRole("heading", { name: "Choose your team" });
+  const empty = page.getByRole("heading", { name: "Paste a match or pit video" });
+  const paste = page.getByLabel("Where is the video?");
+  const unavailable = page.getByRole("heading", { name: /Could not load Video|Your session ended/i });
+  await expect(setup.or(empty).or(paste).or(unavailable)).toBeVisible({ timeout: 15_000 });
   await expect(page.getByRole("heading", { name: "Setup steps" })).toHaveCount(0);
   await expect(page.getByText("org-scoped")).toHaveCount(0);
   await expect(page.getByText("video jobs")).toHaveCount(0);
@@ -19,9 +24,14 @@ test("Video is a student paste page, not an engineering wall", async ({ page }) 
   await expect(page.getByRole("navigation", { name: "Related competition tools" })).toContainText("Match notes");
   await expect(page.getByRole("navigation", { name: "Related competition tools" })).toContainText("Match video");
   await expect(page.getByRole("navigation", { name: "Related competition tools" })).toContainText("AI relays");
-  if (await page.getByRole("heading", { name: "Choose your team" }).isVisible()) {
+  if (await setup.isVisible()) {
     await expect(page.getByRole("heading", { name: "Next actions" })).toHaveCount(0);
     await expect(page.getByRole("link", { name: "Choose your team" })).toBeVisible();
+  } else if (await paste.isVisible()) {
+    await expect(page.getByRole("button", { name: "Pair a video Pi" })).toHaveCount(0);
+    if (await empty.isVisible()) {
+      await expect(page.getByRole("heading", { name: "Next actions" })).toHaveCount(0);
+    }
   }
-  await page.screenshot({ path: "/opt/cursor/artifacts/video-after-shell.png", fullPage: true });
+  await page.screenshot({ path: "/opt/cursor/artifacts/video-analysis-after-shell.png", fullPage: true });
 });

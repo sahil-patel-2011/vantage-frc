@@ -60,7 +60,7 @@ See `docs/COMPETITIVE_NOTES.md`. That document is the brief for Tasks 2–4.
 
 | Route | What was wrong | Commit |
 |---|---|---|
-| `/video-analysis` Video | Title said Analyze video; empty said Pick a team first; extra Pair a video Pi CTA; "video jobs" / file id / confidence numbers. Now **Video**: one Choose your team primary, related in the header (Match notes · Match video · Relays), Next-actions only after a video is queued, fetches abort at 8s. `/video` stays Match video. | this commit |
+| `/video-analysis` Video | Title said Analyze video; empty said Pick a team first even when the header already had a team; extra Pair a video Pi CTA; "video jobs" / file id / confidence numbers. Now **Video**: session team from `/api/me` when the URL has no orgId, one Choose your team primary only when there is no team, related in the header (Match notes · Match video · Relays), Next-actions only after a video is queued, fetches abort at 8s. `/video` stays Match video. Fixture Playwright `video-analysis-shell.spec.ts`. | this commit |
 | `/competition` Event day | Duplicate page header when embedded in the hub; poll ran while the tab was hidden | this branch |
 | `/strategy` From our scouting | "pEPA" and "Private Edge" were jargon | this branch |
 | `/files` | "enforced by the database" | this branch |

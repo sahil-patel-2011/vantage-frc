@@ -1,9 +1,14 @@
 "use client";
 
-import { useCallback, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, PageHeader, Button } from "../../components/ui";
-import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import {
+  FEATURE_API_TIMEOUT_MS,
+  fetchActiveOrgId,
+  persistOrgIdInUrl,
+  readOrgIdFromSearch,
+} from "../../lib/nav/resolve-org";
 import { useOfflineSnapshot } from "../../lib/offline/use-offline-snapshot";
 import {
   VIDEO_PAGE_DESCRIPTION,
@@ -17,7 +22,36 @@ import {
 import { VideoAnalysisShell, VideoNextActionsPanel, VideoRelatedStrip } from "./video-analysis-chrome";
 import { VideoPasteForm, VideoQueueList } from "./video-analysis-queue";
 
-export default function VideoAnalysisClient({ orgId }: { orgId: string }) {
+export default function VideoAnalysisClient() {
+  const [orgId, setOrgId] = useState("");
+  const [orgReady, setOrgReady] = useState(false);
+
+  useEffect(() => {
+    const fromUrl = readOrgIdFromSearch(window.location.search);
+    if (fromUrl) {
+      setOrgId(fromUrl);
+      setOrgReady(true);
+      return;
+    }
+    void fetchActiveOrgId().then((id) => {
+      if (id) {
+        persistOrgIdInUrl(id);
+        setOrgId(id);
+      }
+      setOrgReady(true);
+    });
+  }, []);
+
+  if (!orgReady) {
+    return <VideoAnalysisShell orgId={null} shell="loading" />;
+  }
+  if (!orgId) {
+    return <VideoAnalysisShell orgId={null} shell="setup" />;
+  }
+  return <VideoAnalysisLive orgId={orgId} />;
+}
+
+function VideoAnalysisLive({ orgId }: { orgId: string }) {
   const [sourceRef, setSourceRef] = useState("");
   const [sourceKind, setSourceKind] = useState<VideoSourceKind>("youtube");
   const [message, setMessage] = useState("");
