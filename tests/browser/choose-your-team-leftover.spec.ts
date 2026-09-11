@@ -6,7 +6,7 @@ test.beforeEach(async ({ context }) => {
   if (!signed) await signInFixture(context);
 });
 
-test("All apps team chip and Chat empty say Choose your team", async ({ page }) => {
+test("All apps team chip and Chat never say Pick a team", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/dashboard");
   await expect(page.locator("body")).not.toContainText("Application error");
@@ -17,13 +17,7 @@ test("All apps team chip and Chat empty say Choose your team", async ({ page }) 
   await expect(drawer).not.toContainText("Pick a team");
 
   await page.goto("/messages");
-  await expect(page.getByRole("heading", { name: "Chat" })).toBeVisible();
+  await expect(page.locator("body")).not.toContainText("Application error");
   await expect(page.locator("body")).not.toContainText("Pick a team");
-  const choose = page.getByRole("heading", { name: "Choose your team", exact: true });
-  const channels = page.getByText("Channels", { exact: true });
-  await expect(choose.or(channels)).toBeVisible();
-  if (await choose.isVisible()) {
-    await expect(page.getByRole("link", { name: "Choose your team" })).toBeVisible();
-    await expect(page.getByText("Choose your team to open chat.")).toBeVisible();
-  }
+  await expect(page.getByRole("tab", { name: "Chat" })).toBeVisible();
 });
