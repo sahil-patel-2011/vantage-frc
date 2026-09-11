@@ -6,7 +6,7 @@ Living record of the master engineering brief. Update this file at the end of ev
 
 **Branch:** `cursor/student-week-actions-c0b5` off `origin/main` at `3a41bef1`.
 **Date opened:** 2026-09-11.
-**This revision:** student-week action path — Home What-to-do-now leads into My Day / My Hours / Todos with live fixture data (clocked-in → hours); My Day hero **Scout this match**; Scouting list → form → Save this match/pit with gold last-snapshot; Match video featured under Event day with **Analyze this video**; CAD link-first from Build/Home without OAuth/env names; Event Day / CAD vault drop Connect TBA / Setup required. Proof this session: pending typecheck, vitest, and fixture Playwright. Master brief is **not** done.
+**This revision:** student-week action path — Home What-to-do-now leads into My Day / My Hours / Todos with live fixture data (clocked-in → hours); My Day hero **Scout this match**; Scouting list → form → Save this match/pit with gold last-snapshot; Match video featured under Event day with **Analyze this video**; CAD link-first from Build/Home without OAuth/env names; Event Day / CAD vault drop Connect TBA / Setup required; CAD vault 401/403 paints **Choose your team**, not a load error. Proof this session: `npm run typecheck` clean; targeted vitest **13 files / 106 passed**; fixture Playwright `tests/browser/student-week-actions.spec.ts` **1 passed (36.9s)** on `:3410` (`E2E_AUTH_FIXTURE=1`, `NODE_ENV=development`). Master brief is **not** done.
 
 ## Decisions the owner should know
 
