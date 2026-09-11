@@ -159,7 +159,7 @@ function AwardTrackerShell({
         soft
         badge={
           shell === "setup"
-            ? "Setup required"
+            ? "Needs setup"
             : shell === "error"
               ? "Unavailable"
               : shell === "empty"
@@ -416,7 +416,7 @@ export default function AwardTrackerClient() {
         </p>
       ) : null}
 
-      <AwardTrackerNextActionsPanel actions={nextActions} />
+      <AwardTrackerNextActionsPanel actions={shell === "ready" ? nextActions : []} />
 
       {shouldShowAwardTrackerSummaryTiles(submissionCount) ? (
         <section className="award-tracker-stats" aria-label="Award submission counts">

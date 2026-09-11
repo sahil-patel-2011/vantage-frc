@@ -153,7 +153,7 @@ export function outreachCalendarShellCopy(kind: OutreachCalendarShellKind): Outr
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Choose your team and schedule real events before projecting hours.",

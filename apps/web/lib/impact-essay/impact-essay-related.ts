@@ -119,7 +119,7 @@ export function impactEssayShellCopy(kind: ImpactEssayShellKind): ImpactEssayEmp
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Choose your team and log real outreach before drafting.",
@@ -164,7 +164,7 @@ export function impactEssayNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before logging outreach.",
+          detail: "Choose your team before logging outreach.",
           href: "/workspace",
           primary: true,
         },

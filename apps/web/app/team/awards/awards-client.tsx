@@ -439,9 +439,10 @@ export default function AwardsClient({ orgId }: { orgId: string }) {
         <EmptyState soft title="Loading awards…" description="Opening this team’s FIRST submissions." aria-busy />
       ) : (
         <>
-          <AwardsNextActions actions={nextActions} />
+          {submissions.length > 0 ? <AwardsNextActions actions={nextActions} /> : null}
 
-          <section className="app-card soft-panel awards-stats" aria-label="Awards season summary">
+          {submissions.length > 0 ? (
+            <section className="app-card soft-panel awards-stats" aria-label="Awards season summary">
             <header className="biz-card-head">
               <div>
                 <span className="biz-overline">Tracked submissions</span>
@@ -467,6 +468,7 @@ export default function AwardsClient({ orgId }: { orgId: string }) {
               </div>
             </div>
           </section>
+          ) : null}
 
           {submissions.length === 0 ? (
             <EmptyState
@@ -475,11 +477,15 @@ export default function AwardsClient({ orgId }: { orgId: string }) {
               badgeTone="setup"
               title="No FIRST award submissions yet"
               description="Pick an award from the FIRST catalog to pre-load essay prompts. Wins you already earned can be logged on Business · Awards & evidence."
-            />
+            >
+              <Button as="a" variant="primary" href="#awards-start">
+                Start a catalog award
+              </Button>
+            </EmptyState>
           ) : null}
 
           <div className="awards-grid">
-            <form className="app-card soft-panel awards-form" onSubmit={addSubmission}>
+            <form id="awards-start" className="app-card soft-panel awards-form" onSubmit={addSubmission}>
               <span className="biz-overline">Start a submission</span>
               <h2>Catalog award</h2>
               <div className="awards-fields">
