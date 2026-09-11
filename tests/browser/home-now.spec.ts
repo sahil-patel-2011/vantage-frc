@@ -17,5 +17,10 @@ test("Home shows one What to do now primary without TBA jargon", async ({ page }
   await expect(page.getByText("Connect TBA")).toHaveCount(0);
   await expect(page.getByText("The Blue Alliance")).toHaveCount(0);
   await expect(page.getByText("Student focus")).toHaveCount(0);
-  await page.screenshot({ path: "/opt/cursor/artifacts/home-now-after.png", fullPage: true });
+  const cta = now.getByRole("link").first();
+  await expect(cta).toBeVisible();
+  await cta.click();
+  await waitForLoadingGone(page);
+  await expect(page.locator("body")).not.toContainText("Application error");
+  await expect(page).not.toHaveURL(/\/dashboard$/);
 });

@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { waitForLoadingGone } from "./ready";
 import { signInAs, signInFixture } from "./session";
 
 test.beforeEach(async ({ context }) => {
@@ -28,6 +29,10 @@ test("student this week can walk Event day packing/checklist → My Hours clock-
     await expect(related.getByRole("link", { name: "Match checklist" })).toBeVisible();
     await expect(related.getByRole("link", { name: "Tool checkout" })).toBeVisible();
     await expect(related.getByRole("link", { name: "Inspection" })).toBeVisible();
+    await related.getByRole("link", { name: "Packing" }).click();
+    await waitForLoadingGone(page);
+    await expect(page).toHaveURL(/\/packing/);
+    await expect(page.locator("body")).not.toContainText("Application error");
   }
 
   await page.goto("/packing");
