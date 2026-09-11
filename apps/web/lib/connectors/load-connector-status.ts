@@ -22,6 +22,7 @@ import { onshapeAccountLabel } from "../cad/onshape-setup-strings";
 import {
   CONNECTORS,
   describeConnector,
+  type ConnectorAudience,
   type ConnectorId,
   type ConnectorLinkProof,
   type ConnectorStatus,
@@ -66,9 +67,9 @@ export async function loadConnectorProofs(
     // Any non-disabled row, whatever its status: a row in `error` is a link
     // whose token GitHub refused, and reporting that as "Not connected" sends
     // the reader off to create a second OAuth App instead of reconnecting.
-    safeRows<{ login: string | null; repo: string | null; status: string; authMethod: string }>(
+    safeRows<{ login: string | null; repo: string | null; status: string }>(
       client,
-      `SELECT github_login AS login, default_repo_full_name AS repo, status, auth_method AS "authMethod"
+      `SELECT github_login AS login, default_repo_full_name AS repo, status
        FROM github_connections
        WHERE org_id=$1::uuid AND disabled_at IS NULL
        LIMIT 1`,
@@ -133,15 +134,15 @@ export async function loadConnectorProofs(
       account: githubRow.login,
       expiresAt: 1,
       refreshable: false,
-      note: `GitHub refused the stored credential for @${githubRow.login ?? "this account"}. A revoked token, an expired fine-grained PAT, or an OAuth App the account de-authorised all look like this. Disconnect and connect again to issue a new one.`,
+      note: `GitHub refused the stored credential for @${githubRow.login ?? "this account"}. Disconnect and connect again to issue a new one.`,
     };
   } else if (githubRow?.status === "connected") {
     proofs.github = {
       linked: true,
       account: githubRow.login,
       note: githubRow.repo
-        ? `Linked via ${githubRow.authMethod === "pat" ? "an encrypted personal access token" : "OAuth"}; the deploy log and code review read ${githubRow.repo}.`
-        : `Linked via ${githubRow.authMethod === "pat" ? "an encrypted personal access token" : "OAuth"}, but no default repository is chosen — the deploy log and calendar milestones stay empty until one is set on /team/admin.`,
+        ? `The deploy log and code review read ${githubRow.repo}.`
+        : "GitHub is linked, but no default repository is chosen — the deploy log and calendar milestones stay empty until one is set in Team admin.",
     };
   }
 
@@ -158,7 +159,7 @@ export async function loadConnectorProofs(
       account: discordWebhookOk ? "a channel webhook" : `channel ${discordRow!.channelId}`,
       note: discordWebhookOk
         ? `Announcements post to the saved channel webhook.${discordRow?.bridge ? " The team-chat bridge is on." : " The team-chat bridge is off — turn it on at /team/discord."}`
-        : "A channel id is saved but no webhook. Bot posts also need DISCORD_BOT_TOKEN set on the deployment; without it nothing posts.",
+        : "A channel id is saved but no webhook. Add a webhook on Discord settings before posts work.",
     };
   }
 
@@ -168,7 +169,7 @@ export async function loadConnectorProofs(
       linked: true,
       account: "an incoming webhook",
       note: slackRow.bridge
-        ? "Team chat mirrors to the saved Slack webhook. Replies come back only when SLACK_SIGNING_SECRET is set and the Request URL below is registered."
+        ? "Team chat mirrors to the saved Slack webhook. Replies come back after the Slack request URL is registered."
         : "The Slack webhook is saved but the chat bridge is off — turn it on at /team/slack.",
     };
   }
@@ -219,7 +220,7 @@ export async function loadConnectorProofs(
       account: freeRelayRow.name,
       note: freeRelayRow.lastHeartbeatAt
         ? `Paired and last heard from at ${freeRelayRow.lastHeartbeatAt}.`
-        : "Paired, but it has never sent a heartbeat — start vantage-relay@chat on the Pi.",
+        : "Paired, but it has never sent a heartbeat — start the Pi relay.",
     };
   }
 
@@ -230,8 +231,9 @@ export async function loadConnectorProofs(
 export function buildConnectorStatuses(
   env: Record<string, string | undefined>,
   proofs: ConnectorProofs,
+  audience: ConnectorAudience = "operator",
 ): ConnectorStatus[] {
-  return CONNECTORS.map((def) => describeConnector(def, env, proofs[def.id] ?? {}));
+  return CONNECTORS.map((def) => describeConnector(def, env, proofs[def.id] ?? {}, audience));
 }
 
 /** One line for the page header: "3 connected · 2 need setup". Never a fake total. */

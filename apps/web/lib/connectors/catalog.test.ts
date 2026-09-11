@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   CONNECTORS,
+  STUDENT_CONNECTOR_LEAK,
+  connectorAudienceFromRole,
   connectorById,
   connectorCallbackUrl,
   connectorStatusLine,
@@ -325,5 +327,44 @@ describe("describeConnector", () => {
         expect(def.requiredEnv.length, `${def.id} claimed Connected with nothing set`).toBe(0);
       }
     }
+  });
+});
+
+describe("student connector cards", () => {
+  it("treats owners and admins as operators, everyone else as students", () => {
+    expect(connectorAudienceFromRole(true)).toBe("operator");
+    expect(connectorAudienceFromRole(false)).toBe("student");
+  });
+
+  it("does not name Onshape OAuth, env vars, Resend, or Vercel on any student card", () => {
+    for (const def of CONNECTORS as ConnectorDefinition[]) {
+      const status = describeConnector(def, BASE, {}, "student");
+      expect(status.label, def.id).not.toMatch(/Resend|OAuth/i);
+      expect(status.statusLine, def.id).not.toMatch(STUDENT_CONNECTOR_LEAK);
+      expect(status.detail, def.id).not.toMatch(STUDENT_CONNECTOR_LEAK);
+      expect(status.missingEnv, def.id).toEqual([]);
+      expect(status.callbackUrl, def.id).toBeNull();
+      expect(status.permissions, def.id).toEqual([]);
+    }
+  });
+
+  it("asks a mentor when Onshape is not ready, and still names env vars for operators", () => {
+    const student = describeConnector(connectorById("onshape"), BASE, {}, "student");
+    expect(student.statusLine).toBe("Ask a mentor to finish setup");
+    expect(student.detail).toMatch(/Ask a mentor to finish Onshape/);
+    const operator = describeConnector(connectorById("onshape"), BASE);
+    expect(operator.statusLine).toContain("ONSHAPE_OAUTH_CLIENT_ID");
+    expect(operator.missingEnv).toEqual(["ONSHAPE_OAUTH_CLIENT_ID", "ONSHAPE_OAUTH_CLIENT_SECRET"]);
+  });
+
+  it("drops a leaky stored note on the student card instead of printing it", () => {
+    const status = describeConnector(
+      connectorById("github"),
+      BASE,
+      { note: "Linked via OAuth; set GITHUB_OAUTH_CLIENT_ID." },
+      "student",
+    );
+    expect(status.detail).not.toMatch(STUDENT_CONNECTOR_LEAK);
+    expect(status.detail).toMatch(/Ask a mentor to finish GitHub/);
   });
 });
