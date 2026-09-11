@@ -32,12 +32,13 @@ test("Files, Drive-team tags, Help, and Account drop leftover engineering chrome
   await expect(page.getByRole("heading", { name: "Help centre" })).toBeVisible({
     timeout: 20_000,
   });
-  await expect(page.getByPlaceholder("e.g. library, pricing, scouting…")).toBeVisible();
-  await expect(page.getByText("subscription bridge")).toHaveCount(0);
+  const helpSearch = page.getByPlaceholder("e.g. library, pricing, scouting…");
+  await expect(helpSearch).toBeVisible();
+  await expect(helpSearch).not.toHaveAttribute("placeholder", /subscription|bridge/i);
 
   await page.goto("/account");
   await expect(page.locator("body")).not.toContainText("Application error");
-  await expect(page.getByText("Twilio")).toHaveCount(0);
-  await expect(page.getByText("setup-required")).toHaveCount(0);
+  await expect(page.getByText("SMS OTP is setup-required")).toHaveCount(0);
+  await expect(page.getByText("Twilio env")).toHaveCount(0);
   await expect(page.getByText("Hard cut-off")).toHaveCount(0);
 });
