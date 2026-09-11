@@ -1,6 +1,6 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { describe, expect, it, vi } from "vitest";
-import { computeHoursSelfViewView } from "./compute-hours-self-view";
+import { computeHoursSelfViewView, clockSelfIn, clockSelfOut } from "./compute-hours-self-view";
 import { evaluateBiometricGate, summarizeHoursSelfEntries, summarizeWhoIsHere } from ".";
 
 const ORG = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
@@ -162,5 +162,38 @@ describe("evaluateBiometricGate", () => {
   it("allows adults unconditionally", () => {
     const gate = evaluateBiometricGate({ isMinor: false, status: "pending", guardianName: null, recordedAt: null });
     expect(gate.allowed).toBe(true);
+  });
+});
+
+describe("clockSelfIn / clockSelfOut", () => {
+  it("inserts a shop session when none is open", async () => {
+    const queries: string[] = [];
+    const client = makeClient((sql) => {
+      queries.push(sql);
+      if (sql.includes("clock_out IS NULL") && sql.includes("SELECT")) {
+        return { rows: [], rowCount: 0 };
+      }
+      return { rows: [], rowCount: 1 };
+    });
+    await clockSelfIn(client, { orgId: ORG, userId: USER, kind: "build" });
+    expect(queries.some((sql) => sql.includes("INSERT INTO hour_logs"))).toBe(true);
+  });
+
+  it("refuses a second clock-in while a session is open", async () => {
+    const client = makeClient((sql) => {
+      if (sql.includes("SELECT 1 FROM hour_logs")) return { rows: [{}], rowCount: 1 };
+      return { rows: [], rowCount: 0 };
+    });
+    await expect(clockSelfIn(client, { orgId: ORG, userId: USER })).rejects.toThrow(
+      /already clocked in/i,
+    );
+  });
+
+  it("closes the open session on clock-out", async () => {
+    const client = makeClient((sql) => {
+      if (sql.includes("UPDATE hour_logs")) return { rows: [], rowCount: 1 };
+      return { rows: [], rowCount: 0 };
+    });
+    await clockSelfOut(client, { orgId: ORG, userId: USER });
   });
 });

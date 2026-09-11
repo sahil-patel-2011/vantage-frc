@@ -242,7 +242,8 @@ export type OfflineFeature =
   | "whats-new"
   | "wiring"
   | "wiring-diagnoser"
-  | "scouting";
+  | "scouting"
+  | "pick-desk";
 
 const DB_NAME = "vantage-feature-cache";
 const DB_VERSION = 1;

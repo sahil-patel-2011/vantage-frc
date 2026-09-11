@@ -12,19 +12,26 @@ import {
 } from "./event-day-related";
 
 describe("eventDayRelatedLinks", () => {
-  it("builds My Day / Schedule / Strategy / Logistics via hubHref / withOrgHref", () => {
+  it("builds Packing / Match checklist / Tool checkout / Inspection via hubHref / withOrgHref", () => {
     const links = eventDayRelatedLinks("org-1", {
       include: [...EVENT_DAY_RELATED_INCLUDE],
     });
-    expect(links.map((l) => l.id)).toEqual(["my-day", "schedule", "strategy", "logistics"]);
-    expect(links.find((l) => l.id === "my-day")?.href).toBe(
-      "/competition?tab=my-day&orgId=org-1",
+    expect(links.map((l) => l.id)).toEqual([
+      "packing",
+      "match-checklist",
+      "tool-checkout",
+      "inspection",
+    ]);
+    expect(links.find((l) => l.id === "packing")?.href).toBe("/packing?orgId=org-1");
+    expect(links.find((l) => l.id === "match-checklist")?.href).toBe(
+      "/competition?tab=match-checklist&orgId=org-1",
     );
-    expect(links.find((l) => l.id === "schedule")?.href).toBe("/schedule?orgId=org-1");
-    expect(links.find((l) => l.id === "strategy")?.href).toBe(
-      "/competition?tab=strategy&orgId=org-1",
+    expect(links.find((l) => l.id === "tool-checkout")?.href).toBe(
+      "/tool-checkout?orgId=org-1",
     );
-    expect(links.find((l) => l.id === "logistics")?.href).toBe("/logistics?orgId=org-1");
+    expect(links.find((l) => l.id === "inspection")?.href).toBe(
+      "/inspection-copilot?orgId=org-1",
+    );
   });
 
   it("never uses DEMO labels or hrefs", () => {
@@ -35,14 +42,14 @@ describe("eventDayRelatedLinks", () => {
 });
 
 describe("eventDaySetupSteps", () => {
-  it("keeps team + schedule sync + scouting; My Day / Schedule / Strategy / Logistics live on the related strip", () => {
+  it("no-org setup is only Choose your team", () => {
+    expect(eventDaySetupSteps(null).map((s) => s.id)).toEqual(["workspace"]);
+  });
+
+  it("keeps Set the event; packing / checklist / tools / inspection live on the related strip", () => {
     const steps = eventDaySetupSteps("org-1");
-    expect(steps.map((s) => s.id)).toEqual(["workspace", "team-data", "scouting"]);
-    expect(steps.find((s) => s.id === "workspace")?.href).toBe("/workspace?orgId=org-1");
-    expect(steps.find((s) => s.id === "team-data")?.href).toBe("/team/data?orgId=org-1");
-    expect(steps.find((s) => s.id === "scouting")?.href).toBe(
-      "/competition?tab=scouting&orgId=org-1",
-    );
+    expect(steps.map((s) => s.id)).toEqual(["team-data"]);
+    expect(steps[0]?.href).toBe("/team/data?orgId=org-1");
     expect(steps.every((s) => !/\bDEMO\b/.test(s.label))).toBe(true);
     expect(steps.every((s) => !/demo/i.test(s.href))).toBe(true);
   });
@@ -120,7 +127,7 @@ describe("eventDayShellCopy", () => {
     expect(eventDayShellCopy("empty").badge).toBe("No matches");
     expect(eventDayShellCopy("empty").description).not.toMatch(/TBA|Blue Alliance/i);
     expect(eventDayShellCopy("setup").description).not.toMatch(/TBA|Blue Alliance/i);
-    expect(eventDayShellCopy("setup").badge).toBe("Setup");
+    expect(eventDayShellCopy("setup").badge).toBe("Needs setup");
     expect(eventDayShellCopy("ready").description.length).toBeLessThan(80);
   });
 });
@@ -130,15 +137,16 @@ describe("eventDayShellNextActions", () => {
     const actions = eventDayShellNextActions({ orgId: null, shell: "setup" });
     expect(actions[0]?.id).toBe("workspace");
     expect(actions[0]?.primary).toBe(true);
-    expect(actions.map((a) => a.id)).toEqual(["workspace", "team-data", "scouting"]);
+    expect(actions.map((a) => a.id)).toEqual(["workspace"]);
   });
 
-  it("points empty boards at scouting; Schedule lives on the related strip", () => {
+  it("points empty boards at schedule sync then scouting", () => {
     const actions = eventDayShellNextActions({
       orgId: "org-1",
       shell: "empty",
     });
-    expect(actions.map((a) => a.id)).toEqual(["scouting"]);
+    expect(actions.map((a) => a.id)).toEqual(["schedule", "scouting"]);
+    expect(actions[0]?.primary).toBe(true);
     expect(actions.every((a) => !/\bDEMO\b/.test(`${a.label} ${a.detail}`))).toBe(true);
     expect(actions.every((a) => !/demo/i.test(a.href))).toBe(true);
     expect(actions.find((a) => a.id === "scouting")?.href).toBe(

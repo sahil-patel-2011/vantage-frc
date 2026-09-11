@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import {
-  Badge,
   Button,
   EmptyState,
   ErrorState,
@@ -28,9 +27,16 @@ import {
   type HoursSelfViewNextAction,
   type HoursSelfViewShellKind,
 } from "../../lib/hours-self-view/hours-self-view-related";
-import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
+import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
-import { clearFeatureSnapshot, getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import {
+  QUEUED_ON_DEVICE,
+  clearFeatureSnapshot,
+  getFeatureSnapshot,
+  isBrowserOffline,
+  putFeatureSnapshot,
+  queueProductWrite,
+} from "../../lib/offline";
 import "./hours-self-view.css";
 
 type LiveView = Extract<HoursSelfViewView, { status: "live" }>;
@@ -158,9 +164,6 @@ function HoursShell({
               {setup.label}
             </Button>
           ) : null}
-          {shell === "empty" ? (
-            <Button as="a" variant="primary" href={hubHref("/team", "attendance", orgId)}>Open Attendance</Button>
-          ) : null}
         </EmptyState>
       )}
       {shell === "ready" ? <NextActionsPanel actions={actions} /> : null}
@@ -260,7 +263,7 @@ export default function HoursSelfViewClient() {
   const shellCopy = hoursSelfViewShellCopy(shell);
   const nextActions = hoursSelfViewNextActions({
     orgId,
-    shell: shell === "empty" ? "ready" : shell,
+    shell,
     entryCount,
     kioskCount,
   });
@@ -271,6 +274,16 @@ export default function HoursSelfViewClient() {
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
       if (!orgId || busy) return;
+      const action = typeof payload.action === "string" ? payload.action : "";
+      if (isBrowserOffline() && (action === "clock_in" || action === "clock_out")) {
+        await queueProductWrite({
+          feature: "hours_clock",
+          orgId,
+          payload: { orgId, action, kind: payload.kind ?? "build" },
+        });
+        setError(QUEUED_ON_DEVICE);
+        return;
+      }
       setBusy(true);
       setError("");
       try {
@@ -288,6 +301,15 @@ export default function HoursSelfViewClient() {
         setView(data);
         void persistHoursSelfViewSnapshot(orgId, data);
       } catch {
+        if (action === "clock_in" || action === "clock_out") {
+          await queueProductWrite({
+            feature: "hours_clock",
+            orgId,
+            payload: { orgId, action, kind: payload.kind ?? "build" },
+          });
+          setError(QUEUED_ON_DEVICE);
+          return;
+        }
         setError("Network error — please try again.");
       } finally {
         setBusy(false);
@@ -325,6 +347,47 @@ export default function HoursSelfViewClient() {
       >
         <OfflineBanner feature="My Hours" fromCache={fromCache} cachedAt={cachedAt} />
       </HoursShell>
+    );
+  }
+
+  if (shell === "empty") {
+    return (
+      <main className="module-page hsv-page soft-gate">
+        <PageHeader
+          breadcrumbs={
+            <>
+              <a href={teamHref}>Team</a>
+              {" / My Hours"}
+            </>
+          }
+          title="My Hours"
+          description={shellCopy.description}
+        >
+          <RelatedStrip orgId={orgId} />
+        </PageHeader>
+        <OfflineBanner feature="My Hours" fromCache={fromCache} cachedAt={cachedAt} />
+        {error ? (
+          <p className="telemetry-status" role="alert">
+            {error}
+          </p>
+        ) : null}
+        <EmptyState
+          soft
+          badge={shellCopy.badge}
+          badgeTone="setup"
+          title={shellCopy.title}
+          description={shellCopy.description}
+        >
+          <Button
+            variant="primary"
+            type="button"
+            disabled={busy}
+            onClick={() => void mutate({ action: "clock_in", kind: "build" })}
+          >
+            {busy ? "Clocking in…" : "Clock in"}
+          </Button>
+        </EmptyState>
+      </main>
     );
   }
 
@@ -376,62 +439,32 @@ export default function HoursSelfViewClient() {
         </Panel>
       ) : null}
 
+      <Panel className="hsv-panel" id="hours-clock" aria-label="Clock in or out">
+        {view.summary.openEntry ? (
+          <Button
+            variant="primary"
+            type="button"
+            disabled={busy}
+            onClick={() => void mutate({ action: "clock_out" })}
+          >
+            {busy ? "Clocking out…" : "Clock out"}
+          </Button>
+        ) : (
+          <Button
+            variant="primary"
+            type="button"
+            disabled={busy}
+            onClick={() => void mutate({ action: "clock_in", kind: "build" })}
+          >
+            {busy ? "Clocking in…" : "Clock in"}
+          </Button>
+        )}
+      </Panel>
+
       <PresencePanel view={view} />
-      <BiometricGatePanel view={view} busy={busy} mutate={mutate} />
-      <KioskPanel view={view} />
       <EntriesList view={view} />
       <NextActionsPanel actions={nextActions} />
     </main>
-  );
-}
-
-function BiometricGatePanel({
-  view,
-  busy,
-  mutate,
-}: {
-  view: LiveView;
-  busy: boolean;
-  mutate: (payload: Record<string, unknown>) => void;
-}) {
-  const { biometricConsent, biometricGate } = view;
-  return (
-    <Panel className="hsv-panel" aria-label="Biometric consent gate">
-      <header className="hsv-bio-header">
-        <div>
-          <Badge tone={biometricGate.allowed ? "good" : "setup"}>
-            {biometricGate.allowed ? "Biometrics allowed" : "Biometrics blocked"}
-          </Badge>
-          <SectionHeading title="Biometric consent gate" />
-          <small className="app-muted">{biometricGate.reason}</small>
-        </div>
-      </header>
-      {biometricConsent ? (
-        <p className="app-muted">
-          {biometricConsent.isMinor ? "Minor" : "Adult"} · status: {biometricConsent.status}
-          {biometricConsent.guardianName ? ` · guardian: ${biometricConsent.guardianName}` : ""}
-        </p>
-      ) : (
-        <p className="app-muted">No consent record on file yet.</p>
-      )}
-      {!biometricConsent || biometricConsent.status !== "granted" ? (
-        <div>
-          <Button
-            variant="secondary"
-            disabled={busy}
-            onClick={() =>
-              mutate({
-                action: "record-biometric-consent",
-                isMinor: true,
-                status: "pending",
-              })
-            }
-          >
-            Request guardian consent
-          </Button>
-        </div>
-      ) : null}
-    </Panel>
   );
 }
 
@@ -443,7 +476,7 @@ function PresencePanel({ view }: { view: LiveView }) {
         badge="Shop floor"
         badgeTone="setup"
         title="Nobody clocked in"
-        description="Open hour_logs sessions appear here."
+        description="People who are in the shop show up here after they clock in."
       />
     );
   }
@@ -467,36 +500,6 @@ function PresencePanel({ view }: { view: LiveView }) {
   );
 }
 
-function KioskPanel({ view }: { view: LiveView }) {
-  if (view.kioskSessions.length === 0) {
-    return (
-      <EmptyState
-        soft
-        badge="No kiosk devices"
-        badgeTone="setup"
-        title="No locked kiosk devices registered"
-        description="An owner or admin can register a shop-floor kiosk for supervised clock-in/out."
-      />
-    );
-  }
-  return (
-    <Panel id="hours-self-kiosks" className="hsv-panel">
-      <SectionHeading title="Kiosk devices" />
-      <ul className="hsv-kiosk-list">
-        {view.kioskSessions.map((kiosk) => (
-          <li key={kiosk.id} className="hsv-kiosk-row">
-            <span>{kiosk.deviceLabel}</span>
-            <small className="app-muted">
-              {kiosk.isLocked ? "Locked" : "Unlocked"}
-              {kiosk.lastActiveAt ? ` · last active ${fmtDateTime(kiosk.lastActiveAt)}` : ""}
-            </small>
-          </li>
-        ))}
-      </ul>
-    </Panel>
-  );
-}
-
 function EntriesList({ view }: { view: LiveView }) {
   if (view.entries.length === 0) {
     return (
@@ -505,7 +508,7 @@ function EntriesList({ view }: { view: LiveView }) {
         badge="No hours yet"
         badgeTone="setup"
         title="No logged hours yet"
-        description="Clock in from Attendance to start building your record."
+        description="Clock in on this page to start your record."
       />
     );
   }

@@ -33,18 +33,18 @@ describe("hoursSelfViewNextActions", () => {
   it("gates on workspace when org is missing", () => {
     const actions = hoursSelfViewNextActions({ orgId: null, shell: "setup" });
     expect(actions[0]?.href).toBe("/workspace");
-    expect(actions.some((a) => a.id === "attendance")).toBe(true);
+    expect(actions).toHaveLength(1);
   });
 
-  it("points empty boards at Attendance + Consent", () => {
+  it("points empty boards at Clock in on this page", () => {
     const actions = hoursSelfViewNextActions({
       orgId: "org-1",
       shell: "empty",
       entryCount: 0,
     });
-    expect(actions[0]?.id).toBe("attendance");
-    expect(actions.some((a) => a.id === "consent")).toBe(true);
-    expect(actions.every((a) => !a.href.toLowerCase().includes("demo"))).toBe(true);
+    expect(actions[0]?.id).toBe("clock-in");
+    expect(actions[0]?.label).toBe("Clock in");
+    expect(actions).toHaveLength(1);
   });
 
   it("ready boards review sessions without DEMO metrics", () => {

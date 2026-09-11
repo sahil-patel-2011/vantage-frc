@@ -72,18 +72,18 @@ export function InspectionShell({
   children?: ReactNode;
 }) {
   const copy = inspectionCopilotShellCopy(shell);
-  const buildHref = hubHref("/build", "fmea", orgId);
+  const competitionHref = hubHref("/competition", "command", orgId);
 
   return (
     <main className="module-page inspection-copilot-page soft-gate">
       <PageHeader
         breadcrumbs={
           <>
-            <a href={buildHref}>Build</a>
-            {" / Inspection Copilot"}
+            <a href={competitionHref}>Competition</a>
+            {" / Inspection"}
           </>
         }
-        title="Inspection-Readiness Copilot"
+        title="Inspection"
         description={description}
       >
         <InspectionRelatedStrip orgId={orgId} />

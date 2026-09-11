@@ -277,16 +277,16 @@ export function myDayNextActions(input: {
       primary: true,
     },
     {
+      id: "hours",
+      label: "Clock in",
+      detail: "Open My Hours to start or stop your shop session.",
+      href: withOrgHref("/hours-self-view", orgId),
+    },
+    {
       id: "command",
       label: "Open Event Day",
       detail: "Pit queues and readiness share this next-match context.",
       href: hubHref("/competition", "command", orgId),
-    },
-    {
-      id: "schedule",
-      label: "Open Schedule",
-      detail: "Countdowns and the full board use the same event matches.",
-      href: withOrgHref("/schedule", orgId),
     },
     {
       id: "strategy",

@@ -120,7 +120,7 @@ export function inspectionCopilotShellCopy(kind: InspectionCopilotShellKind): In
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Choose your team before comparing limits to measured robot values.",
@@ -233,7 +233,7 @@ function inspectionCopilotNextActionCandidates(input: {
     return [
       {
         id: "retry",
-        label: "Retry Inspection Copilot",
+        label: "Retry Inspection",
         detail: "Reload real readiness checks.",
         href: withOrgHref("/inspection-copilot", orgId),
         primary: true,

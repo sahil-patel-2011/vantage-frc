@@ -263,3 +263,39 @@ export async function deleteKioskSession(
     input.orgId,
   ]);
 }
+
+/** Student clock-in on My Hours — one open session per member. Never invents totals. */
+export async function clockSelfIn(
+  client: PoolClient,
+  input: { orgId: string; userId: string; kind?: HourLogKind },
+): Promise<void> {
+  const kind = input.kind && isHourLogKind(input.kind) ? input.kind : "build";
+  const open = await client.query(
+    `SELECT 1 FROM hour_logs WHERE org_id = $1::uuid AND user_id = $2 AND clock_out IS NULL`,
+    [input.orgId, input.userId],
+  );
+  if (open.rowCount) {
+    throw new Error("You are already clocked in");
+  }
+  await client.query(
+    `INSERT INTO hour_logs (org_id, user_id, kind, note, created_by)
+     VALUES ($1::uuid, $2, $3, $4, $2)`,
+    [input.orgId, input.userId, kind, ""],
+  );
+}
+
+/** Student clock-out on My Hours — closes this member's open session. */
+export async function clockSelfOut(
+  client: PoolClient,
+  input: { orgId: string; userId: string },
+): Promise<void> {
+  const updated = await client.query(
+    `UPDATE hour_logs
+     SET clock_out = now(), closed_by = $2
+     WHERE org_id = $1::uuid AND user_id = $2 AND clock_out IS NULL`,
+    [input.orgId, input.userId],
+  );
+  if (!updated.rowCount) {
+    throw new Error("You are not clocked in");
+  }
+}

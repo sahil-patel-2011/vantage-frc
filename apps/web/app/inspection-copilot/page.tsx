@@ -1,7 +1,7 @@
 import InspectionCopilotClient from "./inspection-copilot-client";
 
 export const metadata = {
-  title: "Inspection-Readiness Copilot",
+  title: "Inspection",
 };
 
 export default function InspectionCopilotPage() {

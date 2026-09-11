@@ -10,6 +10,7 @@ import {
   getFeatureSnapshot,
   isBrowserOffline,
   putFeatureSnapshot,
+  clearFeatureSnapshot,
   queueProductWrite,
 } from "../../lib/offline";
 import { checklistItemLabel, formatElapsed } from "../../lib/match-checklist";
@@ -64,6 +65,8 @@ export default function MatchChecklistClient(_props: { embedded?: boolean } = {}
           setView(null);
           setErrorStatus(response.status);
           setFetchFailed(true);
+          void clearFeatureSnapshot("match-checklist", urlOrg || "_");
+          if (urlOrg) void clearFeatureSnapshot("match-checklist", urlOrg);
           return;
         }
         if (!response.ok || !("status" in data)) {
@@ -134,7 +137,16 @@ export default function MatchChecklistClient(_props: { embedded?: boolean } = {}
     [orgId, busy],
   );
 
-  const relatedOrg = orgId ?? undefined;
+  const urlOrg =
+    typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("orgId");
+  const relatedOrg = orgId ?? urlOrg ?? undefined;
+  const relatedStrip = (
+    <CompetitionHubRelated
+      orgId={relatedOrg}
+      active="match-checklist"
+      include={[...MATCH_CHECKLIST_RELATED_INCLUDE]}
+    />
+  );
   const nextActions = matchChecklistNextActions({
     orgId,
     runs: view?.status === "live" ? view.runs : [],
@@ -169,7 +181,9 @@ export default function MatchChecklistClient(_props: { embedded?: boolean } = {}
           }
           title="Pre-match checklist"
           description="One-tap timed checklist per match — bumpers, battery strap, SB50 lock, tether, code — so pit crews hang the correct set and don't lose power. Progress comes only from real checks."
-        />
+        >
+          {relatedStrip}
+        </PageHeader>
         <OfflineBanner feature="Match checklist" fromCache={fromCache} cachedAt={cachedAt} />
         {copy ? (
           <EmptyState soft title={copy.title} description={copy.description}>
@@ -204,18 +218,10 @@ export default function MatchChecklistClient(_props: { embedded?: boolean } = {}
         }
         title="Pre-match checklist"
         description="One-tap timed checklist per match — bumpers, battery strap, SB50 lock, tether, code — so pit crews hang the correct set and don't lose power. Progress comes only from real checks."
-      />
+      >
+        {relatedStrip}
+      </PageHeader>
       <OfflineBanner feature="Match checklist" fromCache={fromCache} cachedAt={cachedAt} />
-
-      {orgId ? (
-        <div className="mcl-related">
-          <CompetitionHubRelated
-            orgId={relatedOrg}
-            active="match-checklist"
-            include={[...MATCH_CHECKLIST_RELATED_INCLUDE]}
-          />
-        </div>
-      ) : null}
 
       {error ? (
         <p className="mcl-alert" role="alert">
@@ -234,7 +240,7 @@ export default function MatchChecklistClient(_props: { embedded?: boolean } = {}
       ) : (
         <div className="mcl-stack">
           {shouldShowSummaryTiles(view.summary) ? <SummaryTiles view={view} /> : null}
-          <NextActionsPanel actions={nextActions} />
+          {view.runs.length > 0 ? <NextActionsPanel actions={nextActions} /> : null}
           <StartRunForm
             busy={busy}
             mutate={mutate}
@@ -350,8 +356,8 @@ function StartRunForm({
         </p>
         {next ? (
           <p className={`mcl-bumper-cue ${next.bumperColor}`} role="status">
-            Next from TBA: hang <strong>{next.bumperColor.toUpperCase()} bumpers</strong> for {next.label}. Color stays
-            blank until the alliance lists are in cache.
+            Next match: hang <strong>{next.bumperColor.toUpperCase()} bumpers</strong> for {next.label}. Color stays
+            blank until the alliance lists are in.
           </p>
         ) : (
           <p className="mcl-start-hint">
@@ -360,7 +366,7 @@ function StartRunForm({
         )}
       </div>
       {upcomingMatches.length > 0 ? (
-        <div className="mcl-upcoming" aria-label="Upcoming matches from TBA">
+        <div className="mcl-upcoming" aria-label="Upcoming matches">
           {upcomingMatches.map((match) => (
             <button
               key={match.matchKey}

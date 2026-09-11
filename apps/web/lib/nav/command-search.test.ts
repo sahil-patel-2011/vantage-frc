@@ -53,7 +53,7 @@ describe("searchCommands ranking", () => {
     expect(hrefs("bumpers")).toContain("/competition?tab=match-checklist");
     expect(hrefs("onshape")).toContain("/build?tab=cad");
     expect(hrefs("wpilib")).toContain("/build?tab=code");
-    expect(hrefs("clock in")).toContain("/hours");
+    expect(hrefs("clock in")).toContain("/hours-self-view");
     expect(hrefs("dark mode")).toContain("/account?tab=appearance");
     expect(hrefs("who is coming")).toContain("/team?tab=attendance");
   });
@@ -83,7 +83,7 @@ describe("searchCommands ranking", () => {
   it("ranks the verb above the destination for action phrasing", () => {
     const first = searchCommands("clock in", catalog)[0];
     expect(first?.kind).toBe("action");
-    expect(first?.href).toBe("/hours");
+    expect(first?.href).toBe("/hours-self-view");
   });
 
   it("returns nothing for a query that matches no tool", () => {
@@ -154,7 +154,7 @@ describe("searchCommands multi-word and stemming (audit regressions)", () => {
   });
 
   it("ignores filler words in a natural-language query", () => {
-    expect(hrefs("how do i log my hours", 8)).toContain("/hours");
+    expect(hrefs("how do i log my hours", 8)).toContain("/hours-self-view");
     expect(hrefs("what is the budget", 8)).toContain("/business?tab=budget");
   });
 

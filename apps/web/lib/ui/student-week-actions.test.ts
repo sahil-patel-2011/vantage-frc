@@ -90,7 +90,9 @@ describe("student-week action path", () => {
     expect(hubFeaturedMoreTabs(hubById("competition")).map((tab) => tab.id)).toEqual([
       "briefing",
       "video-analysis",
+      "packing",
       "alliance-selection-desk",
+      "picks",
     ]);
     expect(hubById("competition").tabs.find((tab) => tab.id === "video-analysis")?.label).toBe(
       "Match video",

@@ -2,13 +2,14 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { Button } from "../../components/ui";
+import { Button, EmptyState } from "../../components/ui";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import {
   QUEUED_ON_DEVICE,
   getFeatureSnapshot,
   isBrowserOffline,
   putFeatureSnapshot,
+  clearFeatureSnapshot,
   queueProductWrite,
   syncOutbox,
 } from "../../lib/offline";
@@ -360,6 +361,8 @@ export default function PackingClient() {
         setError("error" in data && data.error ? data.error : "Could not load packing lists.");
         setErrorStatus(response.status);
         setFetchFailed(true);
+        void clearFeatureSnapshot("packing", urlOrg || "_");
+        if (urlOrg) void clearFeatureSnapshot("packing", urlOrg);
         return;
       }
       if (!response.ok || !isPackingView(data)) {
@@ -528,13 +531,17 @@ export default function PackingClient() {
           </div>
         </header>
         <OfflineBanner feature="Packing" fromCache={fromCache} cachedAt={cachedAt} />
-        <div className="app-card pack-empty">
-          <strong>Choose your team</strong>
-          <p className="app-muted">{view.message}</p>
+        <EmptyState
+          soft
+          badge="Needs setup"
+          badgeTone="setup"
+          title="Choose your team"
+          description={view.message}
+        >
           <Button as="a" variant="primary" href="/workspace">
             Choose your team
           </Button>
-        </div>
+        </EmptyState>
       </main>
     );
   }

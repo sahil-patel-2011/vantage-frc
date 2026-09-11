@@ -416,7 +416,7 @@ const STANDALONE: CommandEntry[] = [
 /** Verbs. These answer "I want to DO x" rather than "take me to x". */
 const ACTIONS: Array<Omit<CommandEntry, "kind">> = [
   { id: "action-scout", label: "Scout the next match", context: "Action", href: "/competition?tab=scouting", keywords: ["scout now", "start scouting", "new entry", "record match"], featured: true },
-  { id: "action-clock-in", label: "Clock in to the shop", context: "Action", href: "/hours", keywords: ["clock in", "sign in", "log hours", "start hours"], featured: true },
+  { id: "action-clock-in", label: "Clock in to the shop", context: "Action", href: "/hours-self-view", keywords: ["clock in", "sign in", "log hours", "start hours", "my hours"], featured: true },
   { id: "action-message", label: "Message the team", context: "Action", href: "/team?tab=messages", keywords: ["send message", "post", "tell everyone", "announce"], featured: true },
   { id: "action-task", label: "Add a task", context: "Action", href: "/team?tab=todos", keywords: ["new task", "add todo", "assign work"], featured: true },
   { id: "action-ask-ai", label: "Ask the AI assistant", context: "Action", href: "/ai?tab=chat", keywords: ["ask ai", "question", "help me", "chat"], featured: true },

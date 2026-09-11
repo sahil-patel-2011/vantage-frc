@@ -9,7 +9,10 @@ export const EVENT_DAY_RELATED_LINKS = [
   { id: "strategy", label: "Strategy", kind: "hub" as const, tab: "strategy" },
   { id: "scouting", label: "Scouting", kind: "hub" as const, tab: "scouting" },
   { id: "logistics", label: "Logistics", kind: "path" as const, path: "/logistics" },
+  { id: "packing", label: "Packing", kind: "path" as const, path: "/packing" },
   { id: "match-checklist", label: "Match checklist", kind: "hub" as const, tab: "match-checklist" },
+  { id: "tool-checkout", label: "Tool checkout", kind: "path" as const, path: "/tool-checkout" },
+  { id: "inspection", label: "Inspection", kind: "path" as const, path: "/inspection-copilot" },
   { id: "team-data", label: "Team Data", kind: "path" as const, path: "/team/data" },
 ] as const;
 
@@ -21,12 +24,12 @@ export type EventDayRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — My Day · Schedule · Strategy · Logistics. */
+/** Focused Soft-UI strip — Packing · Match checklist · Tool checkout · Inspection. */
 export const EVENT_DAY_RELATED_INCLUDE: EventDayRelatedId[] = [
-  "my-day",
-  "schedule",
-  "strategy",
-  "logistics",
+  "packing",
+  "match-checklist",
+  "tool-checkout",
+  "inspection",
 ];
 
 /**
@@ -97,42 +100,22 @@ export type EventDaySetupStep = {
 };
 
 export function eventDaySetupSteps(orgId?: string | null): EventDaySetupStep[] {
+  if (!orgId) {
+    return [
+      {
+        id: "workspace",
+        label: "Choose your team",
+        detail: "Choose your team to open Event Day Command.",
+        href: "/workspace",
+      },
+    ];
+  }
   return dropRelatedStripDuplicates(orgId, [
     {
-      id: "workspace",
-      label: "Choose your team",
-      detail: "Choose your team to open Event Day Command.",
-      href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
-    },
-    {
       id: "team-data",
-      label: "Sync Team Data",
+      label: "Set the event you’re at",
       detail: "Pull the match schedule for the event you’re at.",
       href: withOrgHref("/team/data", orgId),
-    },
-    {
-      id: "my-day",
-      label: "Open My Day",
-      detail: "Personal next-match glance shares this event context.",
-      href: hubHref("/competition", "my-day", orgId),
-    },
-    {
-      id: "schedule",
-      label: "Open Schedule",
-      detail: "Full event board stays blank until matches are saved.",
-      href: withOrgHref("/schedule", orgId),
-    },
-    {
-      id: "strategy",
-      label: "Open Strategy",
-      detail: "Alliance prep uses the same event.",
-      href: hubHref("/competition", "strategy", orgId),
-    },
-    {
-      id: "scouting",
-      label: "Open Scouting",
-      detail: "Coverage queues stay empty until real partners/opponents post.",
-      href: hubHref("/competition", "scouting", orgId),
     },
   ]);
 }
@@ -209,7 +192,7 @@ export function eventDayShellCopy(kind: EventDayShellKind): EventDayEmptyCopy {
     case "setup":
       return {
         kind,
-        badge: "Setup",
+        badge: "Needs setup",
         title: "Set an active event",
         description: "Set the event you’re at so Command can follow it.",
       };

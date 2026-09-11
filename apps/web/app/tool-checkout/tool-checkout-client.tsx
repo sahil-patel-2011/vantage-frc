@@ -36,7 +36,7 @@ import {
 } from "../../lib/tool-checkout/tool-checkout-related";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
-import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { getFeatureSnapshot, putFeatureSnapshot, clearFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./tool-checkout.css";
 
 type LiveView = Extract<ToolCheckoutView, { status: "live" }>;
@@ -222,6 +222,8 @@ export default function ToolCheckoutClient() {
         setFromCache(false);
         setCachedAt(null);
         setFetchFailed(true);
+        void clearFeatureSnapshot("tool-checkout", orgHint || "_");
+        if (orgHint) void clearFeatureSnapshot("tool-checkout", orgHint);
         return;
       }
       if (!response.ok || !isToolCheckoutView(data)) {

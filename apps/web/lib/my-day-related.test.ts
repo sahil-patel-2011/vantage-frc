@@ -127,7 +127,7 @@ describe("myDayNextActions", () => {
     expect(actions[0]?.id).toBe("scouting");
     expect(actions[0]?.primary).toBe(true);
     expect(actions.map((a) => a.id)).toEqual(
-      expect.arrayContaining(["scouting", "command", "schedule", "strategy"]),
+      expect.arrayContaining(["scouting", "hours", "command", "strategy"]),
     );
     expect(JSON.stringify(actions)).not.toMatch(/Blue Alliance|TBA/);
   });

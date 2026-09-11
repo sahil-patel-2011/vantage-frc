@@ -125,7 +125,7 @@ test.describe("workflow handoffs", () => {
   test("inspection copilot hands off to weigh-in", async ({ page }) => {
     await page.goto("/inspection-copilot");
     await expect(
-      page.getByRole("heading", { level: 1, name: "Inspection-Readiness Copilot" }),
+      page.getByRole("heading", { level: 1, name: "Inspection" }),
     ).toBeVisible();
     const links = await bodyLinks(page);
     expect(

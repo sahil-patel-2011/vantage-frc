@@ -140,7 +140,7 @@ export function EventDayShell({
       <EmptyState
         soft
         className="edc-empty"
-        badge={shell === "setup" ? "Setup" : copy.badge}
+        badge={shell === "setup" ? "Needs setup" : copy.badge}
         badgeTone="setup"
         title={eventDayEmptyTitle({ shell, orgId, hasActiveEvent })}
         description={error ?? copy.description}
@@ -200,7 +200,14 @@ export function CommandReadyHeader({
     </div>
   );
 
-  if (embedded) return actions;
+  if (embedded) {
+    return (
+      <>
+        <EventDayRelatedStrip orgId={orgId} />
+        {actions}
+      </>
+    );
+  }
 
   return (
     <PageHeader
@@ -216,6 +223,7 @@ export function CommandReadyHeader({
         </>
       }
     >
+      <EventDayRelatedStrip orgId={orgId} />
       {actions}
     </PageHeader>
   );

@@ -76,6 +76,9 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         // it belongs beside the day-of surfaces, not in a settings corner.
         { id: "event-readiness", label: "Event readiness", legacyHref: "/event-readiness" },
         { id: "video-analysis", label: "Match video", legacyHref: "/video-analysis", featured: true },
+        { id: "packing", label: "Packing", legacyHref: "/packing", featured: true },
+        { id: "tool-checkout", label: "Tool checkout", legacyHref: "/tool-checkout" },
+        { id: "inspection-copilot", label: "Inspection", legacyHref: "/inspection-copilot" },
       ]),
       { id: "scouting", label: "Scouting", legacyHref: "/scouting" },
       ...nest("scouting", [
@@ -99,6 +102,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
       { id: "strategy", label: "Strategy", legacyHref: "/strategy" },
       ...nest("strategy", [
         { id: "alliance-selection-desk", label: "Alliance desk", legacyHref: "/alliance-selection-desk", featured: true },
+        { id: "picks", label: "Pick desk", legacyHref: "/strategy?tab=picks", featured: true },
         { id: "pick-clock", label: "Pick clock", legacyHref: "/pick-clock" },
         { id: "chemistry", label: "Chemistry", legacyHref: "/chemistry" },
         { id: "pairwise", label: "Pairwise", legacyHref: "/pairwise" },
@@ -166,7 +170,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         // One presence record: RSVP → roll call → hours, so "who is coming tonight"
         // has a single answer instead of three half-answers.
         { id: "presence", label: "Presence", legacyHref: "/presence" },
-        { id: "hours-self-view", label: "My hours", legacyHref: "/hours-self-view" },
+        { id: "hours-self-view", label: "My hours", legacyHref: "/hours-self-view", featured: true },
         { id: "my-kit", label: "My kit", legacyHref: "/my-kit" },
         { id: "mentor-hours", label: "Mentor hours", legacyHref: "/mentor-hours" },
         // The programming subteam's setup track. Sits with the other

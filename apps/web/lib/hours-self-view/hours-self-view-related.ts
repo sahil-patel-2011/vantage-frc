@@ -72,26 +72,8 @@ export function hoursSelfViewSetupSteps(orgId?: string | null): HoursSelfViewSet
     {
       id: "workspace",
       label: "Choose your team",
-      detail: "Choose your team to open hour logs.",
+      detail: "Choose your team to open My Hours.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
-    },
-    {
-      id: "attendance",
-      label: "Open Attendance",
-      detail: "Clock in from attendance / build-hours so this self-view has real sessions.",
-      href: hubHref("/team", "attendance", orgId),
-    },
-    {
-      id: "consent",
-      label: "Open Consent",
-      detail: "Guardian biometric consent stays blank until recorded.",
-      href: withOrgHref("/consent", orgId),
-    },
-    {
-      id: "mentor-hours",
-      label: "Open Mentor Hours",
-      detail: "Mentor engagement sits beside student self-view totals.",
-      href: hubHref("/team", "mentor-hours", orgId),
     },
   ];
 }
@@ -139,7 +121,7 @@ export function hoursSelfViewShellCopy(kind: HoursSelfViewShellKind): HoursSelfV
       return {
         kind,
         title: "Loading My Hours…",
-        description: "Checking which team you are on and your hour logs.",
+        description: "Checking which team you are on and your sessions.",
       };
     case "error":
       return {
@@ -165,18 +147,22 @@ export function hoursSelfViewShellCopy(kind: HoursSelfViewShellKind): HoursSelfV
         description:
           "Shop, meeting, and outreach sessions appear here after real clock-ins.",
       };
-    default:
+    case "ready":
       return {
-        kind: "ready",
+        kind,
         title: "Your logged hours",
         description: "Sessions from your clock-ins only.",
       };
+    default: {
+      const _never: never = kind;
+      return _never;
+    }
   }
 }
 
 /**
  * Soft-UI next actions for My Hours empty/setup shells.
- * Points at Attendance / Consent / Mentor Hours — never invents DEMO hour totals.
+ * Clock in lives on this board — never invents DEMO hour totals.
  */
 export function hoursSelfViewNextActions(input: {
   orgId?: string | null;
@@ -186,51 +172,16 @@ export function hoursSelfViewNextActions(input: {
 }): HoursSelfViewNextAction[] {
   const orgId = input.orgId ?? null;
   const entryCount = input.entryCount ?? 0;
-  const kioskCount = input.kioskCount ?? 0;
 
   if (!orgId || input.shell === "setup") {
-    if (!orgId) {
-      return [
-        {
-          id: "workspace",
-          label: "Choose your team",
-          detail: "Choose your team before reading your sessions.",
-          href: "/workspace",
-          primary: true,
-        },
-        {
-          id: "attendance",
-          label: "Open Attendance",
-          detail: "Clock-ins stay blank until attendance is configured.",
-          href: hubHref("/team", "attendance", null),
-        },
-        {
-          id: "mentor-hours",
-          label: "Open Mentor Hours",
-          detail: "Mentor engagement stays empty until mentors log time.",
-          href: hubHref("/team", "mentor-hours", null),
-        },
-      ];
-    }
+    const step = hoursSelfViewSetupSteps(orgId)[0]!;
     return [
       {
-        id: "workspace",
-        label: "Choose your team",
-        detail: "Finish membership setup so My Hours can load.",
-        href: withOrgHref("/workspace", orgId),
+        id: step.id,
+        label: step.label,
+        detail: step.detail,
+        href: step.href,
         primary: true,
-      },
-      {
-        id: "attendance",
-        label: "Open Attendance",
-        detail: "Clock in so this self-view has real sessions.",
-        href: hubHref("/team", "attendance", orgId),
-      },
-      {
-        id: "consent",
-        label: "Open Consent",
-        detail: "Biometric gates stay honest until guardian consent is recorded.",
-        href: withOrgHref("/consent", orgId),
       },
     ];
   }
@@ -240,21 +191,9 @@ export function hoursSelfViewNextActions(input: {
       {
         id: "retry",
         label: "Retry My Hours",
-        detail: "Reload your real hour logs.",
+        detail: "Reload your hours.",
         href: withOrgHref("/hours-self-view", orgId),
         primary: true,
-      },
-      {
-        id: "attendance",
-        label: "Open Attendance",
-        detail: "Attendance stays available while My Hours reloads.",
-        href: hubHref("/team", "attendance", orgId),
-      },
-      {
-        id: "team-health-dashboard",
-        label: "Open Team Health",
-        detail: "Team Health stays available while My Hours reloads.",
-        href: hubHref("/team", "team-health-dashboard", orgId),
       },
     ];
   }
@@ -262,23 +201,11 @@ export function hoursSelfViewNextActions(input: {
   if (input.shell === "empty" || entryCount === 0) {
     return [
       {
-        id: "attendance",
-        label: "Clock in from Attendance",
-        detail: "Sessions stay blank until you log a real clock-in.",
-        href: hubHref("/team", "attendance", orgId),
+        id: "clock-in",
+        label: "Clock in",
+        detail: "Start a shop session on this board.",
+        href: "#hours-clock",
         primary: true,
-      },
-      {
-        id: "consent",
-        label: "Open Consent",
-        detail: "Guardian biometric consent stays blank until recorded.",
-        href: withOrgHref("/consent", orgId),
-      },
-      {
-        id: "mentor-hours",
-        label: "Open Mentor Hours",
-        detail: "Mentor engagement sits beside student self-view.",
-        href: hubHref("/team", "mentor-hours", orgId),
       },
     ];
   }
@@ -290,27 +217,6 @@ export function hoursSelfViewNextActions(input: {
       detail: `${entryCount} session${entryCount === 1 ? "" : "s"} from your clock-ins.`,
       href: "#hours-self-entries",
       primary: true,
-    },
-    {
-      id: "attendance",
-      label: "Open Attendance",
-      detail: "Clock in or out for the next session.",
-      href: hubHref("/team", "attendance", orgId),
-    },
-    {
-      id: kioskCount > 0 ? "review-kiosks" : "team-health",
-      label: kioskCount > 0 ? "Review kiosk devices" : "Open Team Health",
-      detail:
-        kioskCount > 0
-          ? `${kioskCount} kiosk device${kioskCount === 1 ? "" : "s"} registered.`
-          : "Season health sits beside your personal hours.",
-      href: kioskCount > 0 ? "#hours-self-kiosks" : hubHref("/team", "team-health-dashboard", orgId),
-    },
-    {
-      id: "mentor-hours",
-      label: "Open Mentor Hours",
-      detail: "Cross-check mentor engagement beside student hours.",
-      href: hubHref("/team", "mentor-hours", orgId),
     },
   ];
 }

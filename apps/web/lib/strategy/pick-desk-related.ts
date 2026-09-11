@@ -149,8 +149,7 @@ export function pickDeskShellCopy(kind: PickDeskShellKind): PickDeskEmptyCopy {
       return {
         kind,
         title: "Loading pick desk…",
-        description:
-          "Checking which team you are on and synced event numbers.",
+        description: "Checking which team you are on and who you can rank.",
       };
     case "error":
       return {
@@ -158,7 +157,7 @@ export function pickDeskShellCopy(kind: PickDeskShellKind): PickDeskEmptyCopy {
         badge: "Unavailable",
         title: "Could not load pick desk",
         description:
-          "A network or server issue blocked the desk. Retry, or open Strategy / Scouting / Coverage while it reloads.",
+          "A network or server issue blocked the desk. Retry, or open Strategy / Scouting while it reloads.",
       };
     case "setup":
       return {
@@ -166,23 +165,27 @@ export function pickDeskShellCopy(kind: PickDeskShellKind): PickDeskEmptyCopy {
         badge: "Needs setup",
         title: "Choose your team",
         description:
-          "Choose your team and the event this alliance is at before pick ranks appear.",
+          "Choose your team and the event this alliance is at before you rank picks.",
       };
     case "empty":
       return {
         kind,
-        badge: "No event metrics yet",
-        title: "Waiting on synced team metrics",
+        badge: "No teams yet",
+        title: "No teams to rank yet",
         description:
-          "First / second / third pick tiers stay blank until event numbers land for this event. Cross-check Strategy, Scouting, and Coverage.",
+          "Scout a few matches, or wait until the event list is in. Ranks stay blank until then.",
       };
-    default:
+    case "ready":
       return {
-        kind: "ready",
-        title: "First / second / third pick desk",
+        kind,
+        title: "Rank, pick, and lock",
         description:
-          "Ranks use only synced event metrics and this team’s scout notes.",
+          "Move teams into first / second / third, then lock the list. Numbers come from your scouting and the event list — never invented.",
       };
+    default: {
+      const _never: never = kind;
+      return _never;
+    }
   }
 }
 
@@ -210,27 +213,9 @@ export function pickDeskNextActions(input: {
       {
         id: "retry",
         label: "Retry pick desk",
-        detail: "Reload real event metrics and saved lists.",
-        href: hubHref("/competition", "strategy", orgId),
+        detail: "Reload the list of teams you can rank.",
+        href: hubHref("/competition", "picks", orgId),
         primary: true,
-      },
-      {
-        id: "strategy",
-        label: "Open Strategy",
-        detail: "Event strategy stays available while the desk reloads.",
-        href: hubHref("/competition", "strategy", orgId),
-      },
-      {
-        id: "scouting",
-        label: "Open Scouting",
-        detail: "Scout rows stay available while the desk reloads.",
-        href: hubHref("/competition", "scouting", orgId),
-      },
-      {
-        id: "coverage",
-        label: "Open Coverage",
-        detail: "Coverage stays available while the desk reloads.",
-        href: withOrgHref("/scouting/lineup", orgId),
       },
     ];
   }
@@ -238,29 +223,11 @@ export function pickDeskNextActions(input: {
   if (input.shell === "empty" || candidateCount === 0) {
     return [
       {
-        id: "team-data",
-        label: "Sync event metrics",
-        detail: "Sync the event’s team list from The Blue Alliance — pick tiers stay blank until then.",
-        href: withOrgHref("/team/data", orgId),
-        primary: true,
-      },
-      {
-        id: "strategy",
-        label: "Open Strategy",
-        detail: "Win/loss waits on the same reference rows.",
-        href: hubHref("/competition", "strategy", orgId),
-      },
-      {
         id: "scouting",
         label: "Open Scouting",
-        detail: "Add match notes so explainability lands once metrics sync.",
+        detail: "Scout a few matches so you have notes to rank from.",
         href: hubHref("/competition", "scouting", orgId),
-      },
-      {
-        id: "coverage",
-        label: "Open Coverage",
-        detail: "Confirm scout depth before trusting first-pick ranks.",
-        href: withOrgHref("/scouting/lineup", orgId),
+        primary: true,
       },
     ];
   }
@@ -268,31 +235,19 @@ export function pickDeskNextActions(input: {
   return [
     {
       id: "lists",
-      label: listCount > 0 ? "Review saved pick lists" : "Arrange tiers, then save",
+      label: listCount > 0 ? "Lock this list" : "Rank teams, then lock",
       detail:
         listCount > 0
-          ? `${formatPickDeskMetric(listCount, true)} saved list${listCount === 1 ? "" : "s"} use real event teams only.`
-          : "Drop teams from the synced pool into first / second / third — empty tiers stay empty.",
-      href: hubHref("/competition", "strategy", orgId),
+          ? `${formatPickDeskMetric(listCount, true)} saved list${listCount === 1 ? "" : "s"} from real event teams.`
+          : "Move teams into first / second / third, then lock the list.",
+      href: hubHref("/competition", "picks", orgId),
       primary: true,
     },
     {
       id: "scouting",
       label: "Open Scouting",
-      detail: "Deepen pick explainability with this team’s scout notes.",
+      detail: "Add match notes so picks have a why.",
       href: hubHref("/competition", "scouting", orgId),
-    },
-    {
-      id: "coverage",
-      label: "Open Coverage",
-      detail: "Cross-check which matches still need scouts before alliance selection.",
-      href: withOrgHref("/scouting/lineup", orgId),
-    },
-    {
-      id: "draft",
-      label: "Open Draft board",
-      detail: "Run draft day on the same real event pool.",
-      href: withOrgHref("/strategy/draft", orgId),
     },
   ];
 }

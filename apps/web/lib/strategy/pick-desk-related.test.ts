@@ -90,7 +90,7 @@ describe("pickDeskShellCopy", () => {
       const copy = pickDeskShellCopy(kind);
       expect(copy.title).not.toMatch(/\bDEMO\b/);
     }
-    expect(pickDeskShellCopy("empty").badge).toBe("No event metrics yet");
+    expect(pickDeskShellCopy("empty").badge).toBe("No teams yet");
     expectPlainCopy(pickDeskShellCopy("empty").description);
     expect(pickDeskShellCopy("setup").badge).toBe("Needs setup");
   });
@@ -112,18 +112,16 @@ describe("pickDeskNextActions", () => {
     expect(actions.every((a) => !/demo/i.test(a.href))).toBe(true);
   });
 
-  it("empty shell points at Team Data / Strategy / Scouting / Coverage", () => {
+  it("empty shell points at Scouting so a student can add notes", () => {
     const actions = pickDeskNextActions({
       orgId: "org-1",
       shell: "empty",
       candidateCount: 0,
     });
-    expect(actions[0]?.id).toBe("team-data");
-    expect(actions.map((a) => a.id)).toEqual(
-      expect.arrayContaining(["team-data", "strategy", "scouting", "coverage"]),
-    );
-    expect(actions.every((a) => !a.href.toLowerCase().includes("demo"))).toBe(true);
-    expect(actions.every((a) => !/\bDEMO\b/.test(a.label))).toBe(true);
+    expect(actions[0]?.id).toBe("scouting");
+    expect(actions[0]?.primary).toBe(true);
+    expect(actions).toHaveLength(1);
+    expect(JSON.stringify(actions)).not.toMatch(/Blue Alliance|TBA|EPA/);
   });
 
   it("ready prioritizes lists without DEMO picks", () => {
@@ -134,9 +132,9 @@ describe("pickDeskNextActions", () => {
       listCount: 2,
     });
     expect(actions[0]?.id).toBe("lists");
+    expect(actions[0]?.label).toBe("Lock this list");
     expect(actions[0]?.detail).toMatch(/2 saved/);
     expect(actions.some((a) => a.id === "scouting")).toBe(true);
-    expect(actions.some((a) => a.id === "coverage")).toBe(true);
-    expect(actions.every((a) => !/\bDEMO\b/.test(a.label))).toBe(true);
+    expect(JSON.stringify(actions)).not.toMatch(/Blue Alliance|TBA|EPA/);
   });
 });

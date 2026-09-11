@@ -160,7 +160,9 @@ describe("product hubs", () => {
       // The one pre-match briefing is the drive team's front door on event day.
       "briefing",
       "video-analysis",
+      "packing",
       "alliance-selection-desk",
+      "picks",
     ]);
     expect(hubFeaturedMoreTabs(hubById("team")).map((tab) => tab.id)).toContain(
       "season-planning-workspace",

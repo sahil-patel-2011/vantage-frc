@@ -53,7 +53,7 @@ export function matchChecklistNextActions(input: {
     actions.push({
       id: "hang-bumpers",
       label: `Hang ${nextHang.bumperColor.toUpperCase()} bumpers for ${nextHang.label}`,
-      detail: "Color comes from TBA alliance lists — start the checklist once the correct set is on.",
+      detail: "Hang the color for this match from the alliance list — start the checklist once that set is on.",
       href: hubHref("/competition", "match-checklist", orgId),
       primary: true,
     });

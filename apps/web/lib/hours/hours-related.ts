@@ -139,7 +139,7 @@ export function hoursShellCopy(kind: HoursShellKind): HoursEmptyCopy {
     case "setup":
       return {
         kind,
-        badge: "Setup",
+        badge: "Needs setup",
         title: "Choose your team",
         description: "Choose your team before clocking in.",
       };

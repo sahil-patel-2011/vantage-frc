@@ -13,7 +13,7 @@ import {
 } from "../../lib/inspection-copilot/inspection-copilot-related";
 import { hubHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
-import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { getFeatureSnapshot, putFeatureSnapshot, clearFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { InspectionNextActionsPanel, InspectionShell } from "./inspection-chrome";
 import { ChecksList } from "./inspection-checks-list";
 import { NewCheckForm } from "./inspection-new-check-form";
@@ -93,6 +93,15 @@ export default function InspectionCopilotClient() {
           },
         );
         const data = (await response.json()) as InspectionCopilotView | { error?: string };
+        if (response.status === 401 || response.status === 403) {
+          setView(null);
+          setFromCache(false);
+          setCachedAt(null);
+          setFetchFailed(true);
+          void clearFeatureSnapshot("inspection-copilot", urlOrg || "_", seasonHint);
+          if (urlOrg) void clearFeatureSnapshot("inspection-copilot", urlOrg, seasonHint);
+          return;
+        }
         if (!response.ok || !isInspectionCopilotView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
@@ -156,7 +165,7 @@ export default function InspectionCopilotClient() {
   const relatedLinks = inspectionCopilotRelatedLinks(orgId, {
     include: [...INSPECTION_COPILOT_RELATED_INCLUDE],
   });
-  const buildHref = hubHref("/build", "fmea", orgId);
+  const competitionHref = hubHref("/competition", "command", orgId);
   const batteriesHref = hubHref("/team", "batteries", orgId);
   const fmeaHref = hubHref("/build", "fmea", orgId);
   const weighInHref = hubHref("/build", "robot-weigh-in", orgId);
@@ -239,11 +248,11 @@ export default function InspectionCopilotClient() {
       <PageHeader
         breadcrumbs={
           <>
-            <a href={buildHref}>Build</a>
-            {" / Inspection Copilot"}
+            <a href={competitionHref}>Competition</a>
+            {" / Inspection"}
           </>
         }
-        title="Inspection-Readiness Copilot"
+        title="Inspection"
         description="Compare declared weight, frame/bumper, and wiring limits against measured robot values before you travel. Cross-check Batteries, FMEA, and Weigh-in."
       >
         <div className="inspection-copilot-header-actions">
@@ -282,7 +291,7 @@ export default function InspectionCopilotClient() {
         </p>
       ) : null}
 
-      <InspectionNextActionsPanel actions={nextActions} />
+      {shell === "ready" ? <InspectionNextActionsPanel actions={nextActions} /> : null}
 
       <SummaryTiles
         checkCount={checkCount}

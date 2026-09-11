@@ -3,17 +3,27 @@ import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import {
   computeHoursSelfViewView,
+  clockSelfIn,
+  clockSelfOut,
   deleteKioskSession,
   recordBiometricConsent,
   registerKioskSession,
   setKioskLock,
   type HoursSelfViewView,
 } from "../../../lib/hours-self-view/compute-hours-self-view";
-import type { BiometricConsentStatus } from "../../../lib/hours-self-view/types";
+import type { BiometricConsentStatus, HourLogKind } from "../../../lib/hours-self-view/types";
 
 export type { HoursSelfViewView };
 
 const CONSENT_STATUSES: BiometricConsentStatus[] = ["pending", "granted", "denied"];
+const HOUR_KINDS: HourLogKind[] = ["build", "meeting", "outreach", "competition", "other"];
+type HoursSelfViewAction =
+  | "clock_in"
+  | "clock_out"
+  | "record-biometric-consent"
+  | "register-kiosk-session"
+  | "set-kiosk-lock"
+  | "delete-kiosk-session";
 
 function oneOf<T extends string>(allowed: T[], value: unknown): T | null {
   return typeof value === "string" && (allowed as string[]).includes(value) ? (value as T) : null;
@@ -27,6 +37,20 @@ function trimmedOrNull(value: unknown, max = 2000): string | null {
 
 function toBool(value: unknown, fallback: boolean): boolean {
   return typeof value === "boolean" ? value : fallback;
+}
+
+function parseHoursSelfViewAction(value: string): HoursSelfViewAction | null {
+  switch (value) {
+    case "clock_in":
+    case "clock_out":
+    case "record-biometric-consent":
+    case "register-kiosk-session":
+    case "set-kiosk-lock":
+    case "delete-kiosk-session":
+      return value;
+    default:
+      return null;
+  }
 }
 
 export async function GET(request: Request) {
@@ -45,9 +69,9 @@ export async function GET(request: Request) {
     return Response.json(
       {
         status: "setup_required",
-        message: "Could not load your hours. Choose your team and confirm database access.",
+        message: "Could not load your hours. Choose your team.",
         steps: [
-          { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
+          { id: "workspace", label: "Choose your team", detail: "Choose which FRC team you are working as.", href: "/workspace" },
         ],
         orgId: null,
       } satisfies HoursSelfViewView,
@@ -81,7 +105,19 @@ export async function POST(request: Request) {
       ]);
       if (!member.rowCount) throw new Error("forbidden");
 
-      switch (action) {
+      const parsed = parseHoursSelfViewAction(action);
+      if (!parsed) throw new Error("Unknown action");
+
+      switch (parsed) {
+        case "clock_in": {
+          const kind = oneOf<HourLogKind>(HOUR_KINDS, body.kind) ?? "build";
+          await clockSelfIn(client, { orgId, userId, kind });
+          break;
+        }
+        case "clock_out": {
+          await clockSelfOut(client, { orgId, userId });
+          break;
+        }
         case "record-biometric-consent": {
           const subjectUserId = trimmedOrNull(body.subjectUserId, 64) ?? userId;
           const status = oneOf<BiometricConsentStatus>(CONSENT_STATUSES, body.status) ?? "pending";
@@ -113,8 +149,10 @@ export async function POST(request: Request) {
           await deleteKioskSession(client, { orgId, kioskId });
           break;
         }
-        default:
-          throw new Error("Unknown action");
+        default: {
+          const _never: never = parsed;
+          throw new Error(`Unhandled hours action: ${_never}`);
+        }
       }
 
       return computeHoursSelfViewView(client, { userId, requestedOrg: orgId });

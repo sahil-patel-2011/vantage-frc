@@ -1,9 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { PickCandidate, PickTier } from "@vantage/prediction-strategy";
 import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, Button } from "../../components/ui";
+import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import {
@@ -19,6 +21,7 @@ import {
   type PickDeskShellKind,
 } from "../../lib/strategy/pick-desk-related";
 import type { PickDeskEntry, PickDeskList, PickDeskView } from "../../lib/strategy/pick-desk";
+import { getFeatureSnapshot, putFeatureSnapshot, clearFeatureSnapshot } from "../../lib/offline/feature-cache";
 import {
   heatmapCellGrid,
   heatmapCellIntensity,
@@ -70,11 +73,17 @@ function PositionHeatPanel({ heatmaps }: { heatmaps: FieldPositionHeatmap[] }) {
   );
 }
 
+function isPickDeskView(value: unknown): value is PickDeskView {
+  if (!value || typeof value !== "object") return false;
+  const row = value as { orgId?: unknown; candidates?: unknown; pickLists?: unknown };
+  return typeof row.orgId === "string" && Array.isArray(row.candidates) && Array.isArray(row.pickLists);
+}
+
 const TIERS: Array<{ id: PickTier; label: string; hint: string }> = [
-  { id: "first", label: "First picks", hint: "Alliance anchors / top partners" },
-  { id: "second", label: "Second picks", hint: "Complementary scorers & specialists" },
-  { id: "third", label: "Third picks", hint: "Depth, defense, climb insurance" },
-  { id: "watch", label: "Watch", hint: "Track if metrics improve" },
+  { id: "first", label: "First picks", hint: "Alliance captains / first partners" },
+  { id: "second", label: "Second picks", hint: "Partners who fill the gaps" },
+  { id: "third", label: "Third picks", hint: "Backup, defense, climb" },
+  { id: "watch", label: "Watch", hint: "Keep an eye on these" },
 ];
 
 function teamLabel(entry: { teamKey: string; teamNumber?: number | null; nickname?: string | null }) {
@@ -83,21 +92,16 @@ function teamLabel(entry: { teamKey: string; teamNumber?: number | null; nicknam
 }
 
 function metricLine(candidate: PickCandidate | undefined) {
-  if (!candidate) return "No event metrics linked";
+  if (!candidate) return "No numbers yet";
   const parts = [
-    candidate.epa != null ? `EPA ${candidate.epa.toFixed(1)}` : null,
     candidate.pepa != null ? `Our scouting ${candidate.pepa.toFixed(1)}` : null,
     candidate.record,
-    candidate.rank != null ? `rank ${candidate.rank}` : null,
-    candidate.source,
+    candidate.rank != null ? `event rank ${candidate.rank}` : null,
     candidate.scoutSample > 0
-      ? `scout n=${candidate.scoutSample}${candidate.reliability != null ? ` · rel ${Math.round(candidate.reliability)}%` : ""}`
-      : null,
-    (candidate.tbaConflictCount ?? 0) > 0
-      ? `Score conflict×${candidate.tbaConflictCount}${candidate.tbaConflictFields?.length ? ` (${candidate.tbaConflictFields.slice(0, 3).join(", ")})` : ""}`
+      ? `scouted ${candidate.scoutSample} match${candidate.scoutSample === 1 ? "" : "es"}`
       : null,
   ].filter(Boolean);
-  return parts.join(" · ") || "Metrics incomplete";
+  return parts.join(" · ") || "No numbers yet";
 }
 
 function PickDeskRelatedStrip({ orgId }: { orgId?: string | null }) {
@@ -162,7 +166,7 @@ function PickDeskShell({
   const actions = pickDeskNextActions({ orgId, shell });
   const copy = pickDeskShellCopy(shell);
   const setup = shell === "setup" ? pickDeskSetupSteps(orgId)[0] : null;
-  const teamDataHref = withOrgHref("/team/data", orgId);
+  const scoutingHref = hubHref("/competition", "scouting", orgId);
 
   return (
     <section
@@ -171,9 +175,9 @@ function PickDeskShell({
     >
       <header className="pick-desk-heading">
         <div>
-          <h2 style={{ marginTop: 0 }}>Event pick desk</h2>
+          <h2 style={{ marginTop: 0 }}>Pick desk</h2>
           <p className="app-muted">
-            First / second / third pick tiers from synced event numbers and scout depth.
+            Rank teams into first / second / third, then lock the list.
           </p>
         </div>
         <PickDeskRelatedStrip orgId={orgId} />
@@ -188,7 +192,7 @@ function PickDeskShell({
             : shell === "error"
               ? "Unavailable"
               : shell === "empty"
-                ? "No event metrics yet"
+                ? "No teams yet"
                 : copy.badge
         }
         badgeTone="setup"
@@ -207,8 +211,8 @@ function PickDeskShell({
           </Button>
         ) : null}
         {shell === "empty" ? (
-          <Button as="a" variant="primary" href={teamDataHref}>
-            Sync event metrics
+          <Button as="a" variant="primary" href={scoutingHref}>
+            Open Scouting
           </Button>
         ) : null}
       </EmptyState>
@@ -238,47 +242,110 @@ export function PickListWorkbench({
   const [saving, setSaving] = useState(false);
   const [seating, setSeating] = useState(false);
   const [filter, setFilter] = useState("");
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const deskRef = useRef<PickDeskView | null>(null);
+  deskRef.current = desk;
+
+  const applyDesk = useCallback((view: PickDeskView) => {
+    setDesk(view);
+    setSetupMessage("");
+    setSetupOrgId(view.orgId);
+    setSetupEventKey(view.eventKey);
+    setActiveListId((currentId) => {
+      const preferred = view.pickLists.find((list) => list.id === currentId) ?? view.pickLists[0];
+      if (preferred) {
+        setDraftName(preferred.name);
+        setEntries(preferred.entries);
+        return preferred.id;
+      }
+      setEntries([]);
+      return null;
+    });
+  }, []);
 
   const load = useCallback(() => {
-    const qs = orgId ? `?orgId=${encodeURIComponent(orgId)}` : "";
-    setLoading(true);
-    setFetchFailed(false);
-    void fetch(`/api/strategy/pick-desk${qs}`, {
-      cache: "no-store",
-      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
-    })
-      .then(async (response) => {
+    void (async () => {
+      const cacheOrg = orgId?.trim() || "_";
+      let hadCache = Boolean(deskRef.current);
+      try {
+        const cached = await getFeatureSnapshot<PickDeskView>("pick-desk", cacheOrg);
+        if (!deskRef.current && cached?.data && isPickDeskView(cached.data)) {
+          applyDesk(cached.data);
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          setLoading(false);
+          hadCache = true;
+        }
+      } catch {
+        // IndexedDB missing or blocked; live fetch still runs.
+      }
+      setFetchFailed(false);
+      const qs = orgId ? `?orgId=${encodeURIComponent(orgId)}` : "";
+      try {
+        const response = await fetch(`/api/strategy/pick-desk${qs}`, {
+          cache: "no-store",
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+        });
         const data = await response.json();
-        if (data.status === "setup_required") {
+        if (response.status === 401 || response.status === 403) {
           setDesk(null);
-          setSetupMessage(data.message ?? "Needs setup");
+          setFromCache(false);
+          setCachedAt(null);
+          setSetupMessage("");
+          setFetchFailed(true);
+          void clearFeatureSnapshot("pick-desk", cacheOrg);
+          if (orgId) void clearFeatureSnapshot("pick-desk", orgId);
+          return;
+        }
+        if (data.status === "setup_required") {
+          if (hadCache || deskRef.current) {
+            setFromCache(true);
+            setStatus("Could not refresh Pick desk. Showing the last copy on this device.");
+            return;
+          }
+          setDesk(null);
+          setSetupMessage(typeof data.message === "string" ? data.message : "Needs setup");
           setSetupOrgId(typeof data.orgId === "string" ? data.orgId : orgId);
           setSetupEventKey(typeof data.eventKey === "string" ? data.eventKey : null);
           return;
         }
-        const view = data as PickDeskView;
-        setDesk(view);
-        setSetupMessage("");
-        setSetupOrgId(view.orgId);
-        setSetupEventKey(view.eventKey);
-        setActiveListId((currentId) => {
-          const preferred = view.pickLists.find((list) => list.id === currentId) ?? view.pickLists[0];
-          if (preferred) {
-            setDraftName(preferred.name);
-            setEntries(preferred.entries);
-            return preferred.id;
+        if (!response.ok || !isPickDeskView(data)) {
+          if (hadCache || deskRef.current) {
+            setFromCache(true);
+            setStatus("Could not refresh Pick desk. Showing the last copy on this device.");
+            return;
           }
-          setEntries([]);
-          return null;
-        });
-      })
-      .catch(() => {
+          setFetchFailed(true);
+          return;
+        }
+        const view = data as PickDeskView;
+        applyDesk(view);
+        setFromCache(false);
+        setCachedAt(null);
+        const persistOrg = view.orgId || orgId;
+        if (persistOrg) {
+          try {
+            await putFeatureSnapshot("pick-desk", persistOrg, view);
+            if (!orgId) await putFeatureSnapshot("pick-desk", "_", view);
+          } catch {
+            // Live desk already painted; IndexedDB is best-effort.
+          }
+        }
+      } catch {
+        if (hadCache || deskRef.current) {
+          setFromCache(true);
+          setStatus("Could not refresh Pick desk. Showing the last copy on this device.");
+          return;
+        }
         setDesk(null);
         setSetupMessage("");
         setFetchFailed(true);
-      })
-      .finally(() => setLoading(false));
-  }, [orgId]);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [applyDesk, orgId]);
 
   useEffect(() => {
     load();
@@ -471,12 +538,14 @@ export function PickListWorkbench({
           shell === "error"
             ? "Could not load pick desk."
             : shell === "setup" && setupMessage
-              ? `${setupMessage} Pick ranks stay empty until real event metrics exist.`
+              ? setupMessage
               : undefined
         }
         onRetry={shell === "error" ? () => load() : undefined}
         embedded={embedded}
-      />
+      >
+        <OfflineBanner feature="Pick desk" fromCache={fromCache} cachedAt={cachedAt} />
+      </PickDeskShell>
     );
   }
 
@@ -495,49 +564,35 @@ export function PickListWorkbench({
     listCount: desk.pickLists.length,
   });
   const coverageHref = withOrgHref("/scouting/lineup", desk.orgId);
-  const pickClockHref = withOrgHref("/pick-clock", desk.orgId);
-  const draftHref = withOrgHref("/strategy/draft", desk.orgId);
 
   return (
     <section
       className={`strategy-pick-desk pick-desk-workbench${embedded ? " embedded" : ""}`}
       aria-label="Pick list workbench"
     >
+      <OfflineBanner feature="Pick desk" fromCache={fromCache} cachedAt={cachedAt} />
       <DataSourceDegradedBanner health={desk.dataSourceHealth} compact />
       <header className="pick-desk-heading">
         <div>
           {desk.pickMode === "low_data_tba" ? (
-            <span className="app-badge setup">Low-data rankings</span>
+            <span className="app-badge setup">Need more scouting</span>
           ) : (
-            <span className="app-badge good">Real event inputs</span>
+            <span className="app-badge good">From our scouting</span>
           )}
-          <h2 style={{ marginTop: 8 }}>First / second / third pick desk</h2>
+          <h2 style={{ marginTop: 8 }}>Rank, pick, and lock</h2>
           <p className="app-muted">
             {desk.eventName ?? desk.eventKey}
-            {desk.sources.length ? ` · ${desk.sources.join(" + ")}` : " · no metrics synced yet"}
             {" · "}
-            {formatPickDeskMetric(desk.candidates.length, true)} teams with reference rows
-            {desk.pickMode === "low_data_tba" && desk.pickModeReason ? ` · ${desk.pickModeReason}` : ""}
-            {desk.epaDrifts?.length
-              ? ` · ${formatPickDeskMetric(desk.epaDrifts.length, true)} EPA-drift callout${desk.epaDrifts.length === 1 ? "" : "s"}`
+            {formatPickDeskMetric(desk.candidates.length, true)} teams
+            {desk.scoutedTeams > 0
+              ? ` · ${formatPickDeskMetric(desk.scoutedTeams, true)} with our notes`
               : ""}
           </p>
         </div>
         <div className="strategy-pick-actions">
           <PickDeskRelatedStrip orgId={desk.orgId} />
-          <Button as="a" variant="secondary" href={pickClockHref}>
-            Pick clock
-          </Button>
-          <Button as="a" variant="secondary" href={draftHref}>
-            Open draft day
-          </Button>
-          {desk.canEdit ? (
-            <Button variant="secondary" type="button" onClick={() => void seatTopScouts()} disabled={seating}>
-              {seating ? "Seating…" : "Seat top scouts"}
-            </Button>
-          ) : null}
-          <Button variant="secondary" type="button" onClick={saveList} disabled={saving}>
-            {saving ? "Saving…" : "Save pick list"}
+          <Button variant="primary" type="button" onClick={saveList} disabled={saving}>
+            {saving ? "Locking…" : "Lock this list"}
           </Button>
         </div>
       </header>
@@ -573,6 +628,11 @@ export function PickListWorkbench({
           <small>
             Top calibrated scouts rotate into this pick-desk conversation so they see their product used.
           </small>
+          {desk.canEdit ? (
+            <Button variant="secondary" type="button" onClick={() => void seatTopScouts()} disabled={seating}>
+              {seating ? "Seating…" : "Seat top scouts"}
+            </Button>
+          ) : null}
         </header>
         {(desk.strategySeats ?? []).length ? (
           <ul>
@@ -625,7 +685,7 @@ export function PickListWorkbench({
             ))}
           </div>
         ) : (
-          <p className="app-muted">No saved lists yet — arrange tiers below, then save.</p>
+          <p className="app-muted">No saved lists yet — rank teams below, then lock.</p>
         )}
         {!desk.canEdit ? (
           <p className="telemetry-status" role="status">
@@ -706,15 +766,14 @@ export function PickListWorkbench({
         <header>
           <h3>Event pool</h3>
           <small>
-            Only teams with synced event numbers. Suggestions use public ratings plus your
-            scouting when you have it.
+            Only teams at this event. Suggestions use your scouting when you have it.
           </small>
         </header>
         {!pool.length ? (
           <p className="app-muted">
             {desk.candidates.length
               ? "All listed teams are already on this pick list, or the filter hid them."
-              : "No event numbers for this event yet — sync rankings under Team → Data."}
+              : "No teams for this event yet — scout a few matches or wait for the event list."}
           </p>
         ) : (
           <ul>
@@ -726,7 +785,7 @@ export function PickListWorkbench({
                   {candidate.suggestedTier ? (
                     <em className="strategy-suggest">Suggested {candidate.suggestedTier}</em>
                   ) : (
-                    <em className="strategy-suggest muted">No EPA — no suggestion</em>
+                    <em className="strategy-suggest muted">No suggestion yet</em>
                   )}
                 </div>
                 <div className="strategy-pick-row-actions">

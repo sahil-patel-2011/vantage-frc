@@ -14,7 +14,6 @@ import { predictionWinDisplay } from "../../lib/strategy/prediction-display";
 import {
   CommandReadyHeader,
   EventDayNextActionsPanel,
-  EventDayRelatedStrip,
 } from "./command-chrome";
 import { pct, teamLabel, type CommandHrefs, type Me } from "./command-model";
 
@@ -110,8 +109,6 @@ export function CommandReadyView({
       />
       <OfflineBanner feature="Competition" fromCache={fromCache} cachedAt={cachedAt} />
       <VenueShortcutCheatsheet open={cheatOpen} onClose={onCloseCheatsheet} shortcuts={shortcuts} />
-
-      {embedded ? null : <EventDayRelatedStrip orgId={orgId || null} />}
 
       {error ? <p className="edc-banner error">{error}</p> : null}
       {eventMessage ? <p className="edc-banner ok">{eventMessage}</p> : null}

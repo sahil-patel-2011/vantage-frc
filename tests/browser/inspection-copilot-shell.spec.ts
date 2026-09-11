@@ -9,7 +9,7 @@ test.beforeEach(async ({ context }) => {
 
 test("Inspection Copilot still loads after the panel split", async ({ page }) => {
   await page.goto("/inspection-copilot");
-  await expect(page.getByRole("heading", { name: "Inspection-Readiness Copilot" })).toBeVisible({
+  await expect(page.getByRole("heading", { name: "Inspection" })).toBeVisible({
     timeout: 20_000,
   });
   await expect(page.locator("body")).not.toContainText("Application error");
