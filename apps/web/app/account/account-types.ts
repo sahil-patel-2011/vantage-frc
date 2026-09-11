@@ -118,13 +118,13 @@ export const PREF_LABELS: { key: keyof NotificationPrefs; title: string; detail:
     title: "Calendar events",
     detail: "Inbox when your subteam (or whole team) gets a new or updated event.",
   },
-  { key: "matchAlerts", title: "Match alerts", detail: "Upcoming match reminders when live TBA data is available." },
+  { key: "matchAlerts", title: "Match alerts", detail: "Upcoming match reminders when the schedule is synced." },
   { key: "scoutReminders", title: "Scout reminders", detail: "Assigned scouting form nudges for your team." },
-  { key: "syncFailures", title: "Sync failures", detail: "Notify when TBA/reference ingest health degrades." },
+  { key: "syncFailures", title: "Sync failures", detail: "Tell me when team data stops updating." },
   { key: "productUpdates", title: "In-app product notes", detail: "Release notes and product updates in the inbox (on by default)." },
   {
     key: "sponsorReminders",
-    title: "Sponsor CRM reminders",
+    title: "Sponsor reminders",
     detail: "Thank-you, renewal, and overdue follow-up nudges for your team's sponsors.",
   },
   {
@@ -158,7 +158,7 @@ export const EMAIL_PREF_LABELS: { key: keyof EmailPrefs; title: string; detail: 
   {
     key: "sponsorReminders",
     title: "Sponsor reminders",
-    detail: "Opt-in email for thank-you / renewal / overdue follow-up CRM nudges (never emails sponsors).",
+    detail: "Opt-in email for thank-you, renewal, and overdue follow-up reminders (never emails sponsors).",
   },
   {
     key: "performanceDigest",

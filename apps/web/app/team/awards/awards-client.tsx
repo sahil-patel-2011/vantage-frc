@@ -14,7 +14,7 @@ import {
 import { buildAwardExportPayload } from "../../../lib/awards/export";
 import { AWARDS_RELATED_INCLUDE } from "../../../lib/business/business-related";
 import { awardsNextActions } from "../../../lib/business/awards-next-actions";
-import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
+import { FEATURE_API_TIMEOUT_MS, fetchActiveOrgId, persistOrgIdInUrl, readOrgIdFromSearch } from "../../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 import "./awards.css";
@@ -100,7 +100,67 @@ async function persistAwardsSnapshot(orgId: string, data: { submissions: Submiss
   }
 }
 
-export default function AwardsClient({ orgId }: { orgId: string }) {
+export default function AwardsClient() {
+  const [orgId, setOrgId] = useState("");
+  const [orgReady, setOrgReady] = useState(false);
+
+  useEffect(() => {
+    const fromUrl = readOrgIdFromSearch(window.location.search);
+    if (fromUrl) {
+      setOrgId(fromUrl);
+      setOrgReady(true);
+      return;
+    }
+    void fetchActiveOrgId().then((id) => {
+      if (id) {
+        persistOrgIdInUrl(id);
+        setOrgId(id);
+      }
+      setOrgReady(true);
+    });
+  }, []);
+
+  if (!orgReady) {
+    return (
+      <main className="module-page awards-page">
+        <PageHeader breadcrumbs="Business / Awards" title="Awards" description="Checking which team you are on." />
+        <EmptyState soft title="Loading awards…" description="Checking your team." aria-busy />
+      </main>
+    );
+  }
+  if (!orgId) {
+    return (
+      <main className="module-page awards-page">
+        <PageHeader
+          breadcrumbs="Business / Awards"
+          title="Awards"
+          description="Award submissions and essay prompts belong to one team — choose your team first."
+        >
+          <BusinessRelated
+            orgId={null}
+            active="awards"
+            include={AWARDS_RELATED_INCLUDE}
+            ariaLabel="Related awards and impact tools"
+          />
+        </PageHeader>
+        <EmptyState
+          soft
+          badge="Needs setup"
+          badgeTone="setup"
+          title="Choose your team"
+          description="Award essays stay with one team. Choose your team to open them."
+        >
+          <Button as="a" variant="primary" href="/workspace">
+            Choose your team
+          </Button>
+        </EmptyState>
+      </main>
+    );
+  }
+  return <AwardsLive orgId={orgId} />;
+}
+
+function AwardsLive({ orgId }: { orgId: string }) {
   const seasonYear = new Date().getFullYear();
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -439,9 +499,10 @@ export default function AwardsClient({ orgId }: { orgId: string }) {
         <EmptyState soft title="Loading awards…" description="Opening this team’s FIRST submissions." aria-busy />
       ) : (
         <>
-          <AwardsNextActions actions={nextActions} />
+          {submissions.length > 0 ? <AwardsNextActions actions={nextActions} /> : null}
 
-          <section className="app-card soft-panel awards-stats" aria-label="Awards season summary">
+          {submissions.length > 0 ? (
+            <section className="app-card soft-panel awards-stats" aria-label="Awards season summary">
             <header className="biz-card-head">
               <div>
                 <span className="biz-overline">Tracked submissions</span>
@@ -467,6 +528,7 @@ export default function AwardsClient({ orgId }: { orgId: string }) {
               </div>
             </div>
           </section>
+          ) : null}
 
           {submissions.length === 0 ? (
             <EmptyState
@@ -475,11 +537,15 @@ export default function AwardsClient({ orgId }: { orgId: string }) {
               badgeTone="setup"
               title="No FIRST award submissions yet"
               description="Pick an award from the FIRST catalog to pre-load essay prompts. Wins you already earned can be logged on Business · Awards & evidence."
-            />
+            >
+              <Button as="a" variant="primary" href="#awards-start">
+                Start a catalog award
+              </Button>
+            </EmptyState>
           ) : null}
 
           <div className="awards-grid">
-            <form className="app-card soft-panel awards-form" onSubmit={addSubmission}>
+            <form id="awards-start" className="app-card soft-panel awards-form" onSubmit={addSubmission}>
               <span className="biz-overline">Start a submission</span>
               <h2>Catalog award</h2>
               <div className="awards-fields">

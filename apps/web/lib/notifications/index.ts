@@ -2,6 +2,7 @@ export {
   notificationBody,
   notificationHref,
   notificationTitle,
+  notificationTypeLabel,
 } from "./format";
 export {
   NOTIFICATION_RELATED_INCLUDE,

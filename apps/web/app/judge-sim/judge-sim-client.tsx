@@ -142,7 +142,7 @@ function JudgeSimShell({
         soft
         badge={
           shell === "setup"
-            ? "Setup required"
+            ? "Needs setup"
             : shell === "error"
               ? "Unavailable"
               : shell === "empty"
@@ -399,7 +399,7 @@ export default function JudgeSimClient() {
         </p>
       ) : null}
 
-      <JudgeSimNextActionsPanel actions={nextActions} />
+      <JudgeSimNextActionsPanel actions={shell === "ready" ? nextActions : []} />
 
       {shouldShowJudgeSimSummaryTiles(sessionCount) ? (
         <section className="judge-sim-stats" aria-label="Judge-Pitch counts">
@@ -444,8 +444,8 @@ export default function JudgeSimClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <Button as="a" variant="primary" href={impactHref}>
-            Open Community Impact
+          <Button as="a" variant="primary" href="#judge-sim-evidence">
+            Log evidence
           </Button>
         </EmptyState>
       ) : null}

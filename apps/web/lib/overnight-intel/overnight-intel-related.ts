@@ -7,7 +7,7 @@ export const OVERNIGHT_INTEL_RELATED_LINKS = [
   { id: "command", label: "Event Day", tab: "command" },
   { id: "strategy", label: "Strategy", tab: "strategy" },
   { id: "scouting", label: "Scouting", tab: "scouting" },
-  { id: "epa-trend-alerts", label: "EPA alerts", tab: "epa-trend-alerts" },
+  { id: "epa-trend-alerts", label: "Rating alerts", tab: "epa-trend-alerts" },
 ] as const;
 
 export type OvernightIntelRelatedId = (typeof OVERNIGHT_INTEL_RELATED_LINKS)[number]["id"];
@@ -182,7 +182,7 @@ export function overnightIntelShellCopy(kind: OvernightIntelShellKind): Overnigh
     case "setup":
       return {
         kind,
-        badge: "Setup",
+        badge: "Needs setup",
         title: "Choose your team",
         description: "Choose your team and set the event you are at before this morning brief can run.",
       };
@@ -248,7 +248,7 @@ export function overnightIntelNextActions(input: {
         },
         {
           id: "epa-trend-alerts",
-          label: "Open EPA alerts",
+          label: "Open rating alerts",
           detail: "Watch longer season-score swings beside overnight movers.",
           href: hubHref("/competition", "epa-trend-alerts", orgId),
         },

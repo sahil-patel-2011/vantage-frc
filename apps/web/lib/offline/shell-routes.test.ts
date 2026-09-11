@@ -74,6 +74,7 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/team-tags")).toBe(true);
     expect(pathnameIsOfflineShell("/shift-balancer")).toBe(true);
     expect(pathnameIsOfflineShell("/counter-book")).toBe(true);
+    expect(pathnameIsOfflineShell("/intel")).toBe(true);
     expect(pathnameIsOfflineShell("/overnight-intel")).toBe(true);
     expect(pathnameIsOfflineShell("/alliance-partner-brief")).toBe(true);
     expect(pathnameIsOfflineShell("/picklist-justifier")).toBe(true);
@@ -254,6 +255,7 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/team-tags")).toBe("Drive-team tags");
     expect(offlineCapableLabel("/shift-balancer")).toBe("Scout shift balancer");
     expect(offlineCapableLabel("/counter-book")).toBe("Counter-book");
+    expect(offlineCapableLabel("/intel")).toBe("Research");
     expect(offlineCapableLabel("/overnight-intel")).toBe("Overnight brief");
     expect(offlineCapableLabel("/alliance-partner-brief")).toBe("Alliance-Partner Brief");
     expect(offlineCapableLabel("/picklist-justifier")).toBe("Pick-list Justifier");
@@ -440,6 +442,7 @@ describe("offline shell routes", () => {
     expect(featureCacheKey("team-tags", "org-1")).toBe("team-tags:org-1");
     expect(featureCacheKey("shift-balancer", "org-1")).toBe("shift-balancer:org-1");
     expect(featureCacheKey("counter-book", "org-1")).toBe("counter-book:org-1");
+    expect(featureCacheKey("intel", "org-1")).toBe("intel:org-1");
     expect(featureCacheKey("overnight-intel", "org-1")).toBe("overnight-intel:org-1");
     expect(featureCacheKey("alliance-brief", "org-1", "1")).toBe("alliance-brief:org-1:1");
     expect(featureCacheKey("picklist-justifier", "org-1", "list-1")).toBe("picklist-justifier:org-1:list-1");

@@ -173,7 +173,7 @@ function OutreachShell({
         soft
         badge={
           shell === "setup"
-            ? "Setup required"
+            ? "Needs setup"
             : shell === "error"
               ? "Unavailable"
               : shell === "empty"
@@ -417,7 +417,7 @@ export default function OutreachCalendarClient() {
         </p>
       ) : null}
 
-      <OutreachNextActionsPanel actions={nextActions} />
+      <OutreachNextActionsPanel actions={shell === "ready" ? nextActions : []} />
 
       {shouldShowOutreachCalendarSummaryTiles(eventCount) ? (
         <section className="outreach-calendar-stats" aria-label="Outreach plan summary">

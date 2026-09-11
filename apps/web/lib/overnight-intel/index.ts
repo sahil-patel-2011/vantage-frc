@@ -113,10 +113,10 @@ export function buildOvernightSummaryText(input: {
     const top = epaMovers[0]!;
     const direction = (top.deltaEpa ?? 0) >= 0 ? "up" : "down";
     parts.push(
-      `${epaMovers.length} team(s) moved on EPA; the largest swing is ${teamLabel(top.teamKey, top.teamNumber)} ${direction} ${Math.abs(top.deltaEpa ?? 0)} to ${top.currentEpa}.`,
+      `${epaMovers.length} team(s) moved on season rating; the largest swing is ${teamLabel(top.teamKey, top.teamNumber)} ${direction} ${Math.abs(top.deltaEpa ?? 0)} to ${top.currentEpa}.`,
     );
   } else {
-    parts.push("No material EPA movement detected.");
+    parts.push("No material season-rating movement detected.");
   }
 
   if (scoutingHighlights.length > 0) {

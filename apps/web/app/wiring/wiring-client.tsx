@@ -344,7 +344,7 @@ export default function WiringClient({ orgId }: { orgId: string | null }) {
             <WiringRelated orgId={orgId} />
           </PageHeader>
           <OfflineBanner feature="CAN-bus map" fromCache={fromCache} cachedAt={cachedAt} />
-          <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
+          <EmptyState badge="Needs setup" badgeTone="setup" title={view.message}>
             <Button as="a" variant="primary" href="/workspace">
               Choose your team
             </Button>

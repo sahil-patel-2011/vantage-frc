@@ -13,9 +13,19 @@ import {
   PageHeader,
   Panel,
 } from "../../components/ui";
-import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
+import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import {
+  PARENTS_RELATED_INCLUDE,
+  classifyParentsShell,
+  parentsNextActions,
+  parentsRelatedLinks,
+  parentsSetupSteps,
+  parentsShellCopy,
+  type ParentsNextAction,
+  type ParentsShellKind,
+} from "../../lib/parents/parents-related";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import type {
   ParentContactView,
@@ -108,45 +118,23 @@ function formFor(contact: ParentContactView): ContactForm {
 }
 
 function ParentsRelated({ orgId }: { orgId?: string | null }) {
+  const links = parentsRelatedLinks(orgId, {
+    include: [...PARENTS_RELATED_INCLUDE],
+  });
+  if (!links.length) return null;
   return (
     <nav className="product-hub-related" aria-label="Related team tools">
-      <Button as="a" variant="secondary" href={hubHref("/team", "calendar", orgId)}>
-        Calendar
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/team", "attendance", orgId)}>
-        People
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/team", "team-forms", orgId)}>
-        Forms
-      </Button>
+      {links.map((link) => (
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
+          {link.label}
+        </Button>
+      ))}
     </nav>
   );
 }
 
-function ParentsNextActions({ orgId }: { orgId: string }) {
-  const actions = [
-    {
-      id: "add-contact",
-      label: "Add a parent contact",
-      detail: "Each family gets a private view link and the weekly digest.",
-      href: "#parent-contact",
-      primary: true,
-    },
-    {
-      id: "calendar",
-      label: "Open Calendar",
-      detail: "The digest is built from whole-team events in the next 7 days.",
-      href: hubHref("/team", "calendar", orgId),
-      primary: false,
-    },
-    {
-      id: "forms",
-      label: "Open Forms",
-      detail: "Permission slips and other family paperwork live here.",
-      href: hubHref("/team", "team-forms", orgId),
-      primary: false,
-    },
-  ];
+function NextActionsPanel({ actions }: { actions: ParentsNextAction[] }) {
+  if (!actions.length) return null;
   return (
     <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
       <header>
@@ -332,6 +320,17 @@ export default function ParentsClient() {
   }, []);
 
   const peopleHref = hubWorkbenchHref("team", "parents", orgId);
+  const contactCount = view?.status === "ready" ? view.contacts.length : 0;
+  const shell: ParentsShellKind = classifyParentsShell({
+    loading: view == null && !fetchFailed,
+    fetchFailed,
+    status: view?.status ?? null,
+    orgId,
+    contactCount,
+  });
+  const copy = parentsShellCopy(shell);
+  const actions = parentsNextActions({ orgId, shell, contactCount });
+  const setup = shell === "setup" ? parentsSetupSteps(orgId)[0] : null;
   const header = (
     <PageHeader
       breadcrumbs={
@@ -341,7 +340,7 @@ export default function ParentsClient() {
         </>
       }
       title="Parent updates"
-      description="One-way weekly updates to parent contacts."
+      description={copy.description}
     >
       <ParentsRelated orgId={orgId} />
     </PageHeader>
@@ -360,28 +359,28 @@ export default function ParentsClient() {
               typeof window === "undefined"
                 ? null
                 : `${window.location.pathname}${window.location.search}`,
-            message: loadError || "A network or server issue prevented loading. Try again.",
+            message: loadError || copy.description,
           },
         )
       : null;
+    const primary = failure?.primary ?? (setup ? { label: setup.label, href: setup.href } : null);
     return (
       <>
         {header}
         <OfflineBanner feature="Parent updates" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
-          title={failure ? failure.title : "Parent updates"}
-          description={failure ? failure.description : "Loading parent contacts…"}
-          badge={failure ? "Unavailable" : undefined}
-          badgeTone={failure ? "setup" : undefined}
+          title={failure ? failure.title : copy.title}
+          description={failure ? failure.description : copy.description}
+          badge={failure ? failure.kind === "unknown" ? "Unavailable" : copy.badge : copy.badge}
+          badgeTone="setup"
           aria-busy={!fetchFailed}
         >
-          {failure?.primary ? (
-            <Button as="a" variant="primary" href={failure.primary.href}>
-              {failure.primary.label}
+          {primary ? (
+            <Button as="a" variant="primary" href={primary.href}>
+              {primary.label}
             </Button>
-          ) : null}
-          {failure?.showRetry ? (
-            <Button variant="secondary" type="button" onClick={() => void load()}>
+          ) : failure?.showRetry ? (
+            <Button variant="primary" type="button" onClick={() => void load()}>
               Retry
             </Button>
           ) : null}
@@ -397,30 +396,40 @@ export default function ParentsClient() {
           {header}
           <OfflineBanner feature="Parent updates" fromCache={fromCache} cachedAt={cachedAt} />
           <EmptyState
-            title="Parent updates"
-            badge="Setup required"
+            title={copy.title}
+            badge={copy.badge}
             badgeTone="setup"
-            description={view.message}
+            description={view.message || copy.description}
           >
-            <Button as="a" variant="primary" href="/workspace">
-              Choose your team
-            </Button>
+            {setup ? (
+              <Button as="a" variant="primary" href={setup.href}>
+                {setup.label}
+              </Button>
+            ) : null}
           </EmptyState>
         </>
       );
-    case "restricted":
+    case "restricted": {
+      const restrictedPrimary = actions[0];
       return (
         <>
           {header}
           <OfflineBanner feature="Parent updates" fromCache={fromCache} cachedAt={cachedAt} />
           <EmptyState
-            title="Parent updates"
-            badge="Owners and admins only"
+            title={copy.title}
+            badge={copy.badge}
             badgeTone="setup"
-            description={view.message}
-          />
+            description={view.message || copy.description}
+          >
+            {restrictedPrimary ? (
+              <Button as="a" variant="primary" href={restrictedPrimary.href}>
+                {restrictedPrimary.label}
+              </Button>
+            ) : null}
+          </EmptyState>
         </>
       );
+    }
     case "ready":
       break;
     default: {
@@ -443,19 +452,19 @@ export default function ParentsClient() {
           </>
         }
         title="Parent updates"
-        description={`One-way updates from ${ready.orgName} to parent contacts: a weekly schedule digest and a read-only view link per family. No chat, no reply path, no roster exposure.`}
+        description={copy.description}
       >
         <ParentsRelated orgId={ready.orgId} />
       </PageHeader>
       <OfflineBanner feature="Parent updates" fromCache={fromCache} cachedAt={cachedAt} />
 
-      {!ready.emailConfigured ? (
+      {!ready.emailConfigured && shell === "ready" ? (
         <EmptyState
           soft
-          title="Configure email delivery"
-          badge="Setup required"
+          title="Ask a mentor to finish email delivery"
+          badge="Needs setup"
           badgeTone="setup"
-          description="Email sending is not configured yet, so weekly digests cannot go out. Sends will be marked as needing setup until a mentor finishes email delivery."
+          description="Weekly updates cannot go out until team email is connected. Sends wait until a mentor finishes email delivery."
         >
           <Button as="a" variant="primary" href="/connectors">
             Open Connectors
@@ -583,7 +592,7 @@ export default function ParentsClient() {
         )}
       </Panel>
 
-      <Panel>
+      <Panel id="parent-digest">
         <h2>This week&apos;s digest</h2>
         <p className="app-muted">
           The exact text below goes to every active, subscribed contact — translated per family&apos;s
@@ -667,7 +676,7 @@ export default function ParentsClient() {
         )}
       </Panel>
 
-      <ParentsNextActions orgId={ready.orgId} />
+      {shell === "ready" ? <NextActionsPanel actions={actions} /> : null}
     </>
   );
 }

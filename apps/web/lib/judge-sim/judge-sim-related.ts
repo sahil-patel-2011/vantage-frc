@@ -116,7 +116,7 @@ export function judgeSimShellCopy(kind: JudgeSimShellKind): JudgeSimEmptyCopy {
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Choose your team and log real evidence before grading answers.",
@@ -159,7 +159,7 @@ export function judgeSimNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before logging evidence.",
+          detail: "Choose your team before logging evidence.",
           href: "/workspace",
           primary: true,
         },
