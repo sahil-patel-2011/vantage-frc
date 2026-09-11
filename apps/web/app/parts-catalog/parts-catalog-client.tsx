@@ -1,7 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { PageHeader, Button } from "../../components/ui";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import {
   CATALOG_CATEGORY_LABELS,
   inventoryCategoryFor,
@@ -11,6 +14,29 @@ import {
   type CatalogPart,
 } from "../../lib/parts-catalog/catalog";
 import "./parts-catalog.css";
+
+type PartsCatalogOverlay = {
+  status: "ready";
+  orgId: string | null;
+  names: string[];
+};
+
+function isPartsCatalogOverlay(value: unknown): value is PartsCatalogOverlay {
+  if (!value || typeof value !== "object") return false;
+  const rec = value as { status?: unknown; names?: unknown };
+  return rec.status === "ready" && Array.isArray(rec.names);
+}
+
+async function persistPartsCatalogSnapshot(orgHint: string, data: PartsCatalogOverlay): Promise<void> {
+  const cacheOrg = data.orgId?.trim() || orgHint;
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("parts-catalog", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("parts-catalog", "_", data);
+  } catch {
+    // Catalog itself is local; IndexedDB is best-effort for in-stock overlay.
+  }
+}
 
 /**
  * The parts FRC teams actually buy, with what you need to know to pick between
@@ -29,29 +55,78 @@ export default function PartsCatalogClient() {
   const [busy, setBusy] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const overlayRef = useRef<PartsCatalogOverlay | null>(null);
 
   // Which team, and what it already stocks. Both come from the inventory API
   // so "In stock" here means the same thing it means on the Inventory page.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    void fetch(`/api/inventory${urlOrg ? `?orgId=${encodeURIComponent(urlOrg)}` : ""}`)
-      .then(async (r) => {
-        const data = (await r.json()) as {
+    const orgHint = params.get("orgId")?.trim() ?? "";
+    let cancelled = false;
+    void (async () => {
+      let hadCache = Boolean(overlayRef.current);
+      try {
+        const cached = await getFeatureSnapshot<PartsCatalogOverlay>("parts-catalog", orgHint || "_");
+        if (!cancelled && cached?.data && isPartsCatalogOverlay(cached.data)) {
+          overlayRef.current = cached.data;
+          setOrgId(cached.data.orgId);
+          setExisting(new Set(cached.data.names));
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          hadCache = true;
+        }
+      } catch {
+        // IndexedDB missing or blocked; live fetch still runs.
+      }
+      try {
+        const response = await fetch(
+          `/api/inventory${orgHint ? `?orgId=${encodeURIComponent(orgHint)}` : ""}`,
+          { cache: "no-store", signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS) },
+        );
+        const data = (await response.json()) as {
           context?: { orgId?: string | null };
           items?: Array<{ name: string; partNumber?: string | null }>;
+          status?: string;
         };
-        if (data.context?.orgId) setOrgId(data.context.orgId);
-        const names = new Set<string>();
-        for (const item of data.items ?? []) {
-          names.add(item.name.trim().toLowerCase());
-          if (item.partNumber) names.add(item.partNumber.trim().toLowerCase());
+        if (cancelled) return;
+        if (response.status === 401 || response.status === 403) {
+          overlayRef.current = null;
+          setOrgId(null);
+          setExisting(new Set());
+          setFromCache(false);
+          setCachedAt(null);
+          return;
         }
-        setExisting(names);
-      })
-      .catch(() => {
-        /* the catalog is still useful read-only */
-      });
+        if (!response.ok) {
+          if (hadCache || overlayRef.current) {
+            setFromCache(true);
+            return;
+          }
+          return;
+        }
+        const nextOrg = data.context?.orgId ?? null;
+        const names: string[] = [];
+        for (const item of data.items ?? []) {
+          names.push(item.name.trim().toLowerCase());
+          if (item.partNumber) names.push(item.partNumber.trim().toLowerCase());
+        }
+        const overlay: PartsCatalogOverlay = { status: "ready", orgId: nextOrg, names };
+        overlayRef.current = overlay;
+        setOrgId(nextOrg);
+        setExisting(new Set(names));
+        setFromCache(false);
+        setCachedAt(null);
+        await persistPartsCatalogSnapshot(orgHint, overlay);
+      } catch {
+        if (cancelled) return;
+        if (hadCache || overlayRef.current) setFromCache(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const results = useMemo(() => searchCatalog(query, category || null), [query, category]);
@@ -95,7 +170,14 @@ export default function PartsCatalogClient() {
         setError(data.error ?? "Could not add to inventory.");
         return;
       }
-      setExisting((prev) => new Set([...prev, p.name.toLowerCase()]));
+      setExisting((prev) => {
+        const next = new Set([...prev, p.name.toLowerCase()]);
+        if (p.sku) next.add(p.sku.toLowerCase());
+        const overlay: PartsCatalogOverlay = { status: "ready", orgId, names: [...next] };
+        overlayRef.current = overlay;
+        void persistPartsCatalogSnapshot(orgId, overlay);
+        return next;
+      });
       setNotice(`Added "${p.name}" to inventory at 0 on hand${p.suggestedMin ? `, reorder at ${p.suggestedMin}` : ""}. Set the real count on the Inventory page.`);
     } catch {
       setError("Could not reach the server.");
@@ -117,6 +199,7 @@ export default function PartsCatalogClient() {
         title="Parts catalog"
         description="The COTS parts FRC teams actually buy, with the spec you need to pick between them. Add one to inventory, or send a part request to a mentor."
       />
+      <OfflineBanner feature="Parts catalog" fromCache={fromCache} cachedAt={cachedAt} />
 
       <div className="pc-toolbar">
         <input

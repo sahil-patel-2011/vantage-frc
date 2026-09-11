@@ -1,7 +1,8 @@
 "use client";
-import { Button } from "../../components/ui";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
+import { Button, EmptyState, PageHeader } from "../../components/ui";
 import { incidentCategoryLabel, incidentSeverityLabel, incidentStatusLabel } from "../../lib/incidents";
 import {
   INCIDENT_CATEGORIES,
@@ -11,11 +12,48 @@ import {
 } from "../../lib/incidents/compute-incidents";
 import type { IncidentCategory, IncidentEvaluation, IncidentSeverity, IncidentStatus } from "../../lib/incidents/types";
 import { hubHref } from "../../lib/nav/hubs";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 type LiveView = Extract<IncidentsView, { status: "live" }>;
 type Mutate = (payload: Record<string, unknown>) => void;
+
+function isIncidentsView(value: unknown): value is IncidentsView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function incidentsCacheOrg(data: IncidentsView, orgHint: string): string {
+  switch (data.status) {
+    case "live":
+      return data.orgId.trim() || orgHint;
+    case "setup_required":
+      return data.orgId?.trim() || orgHint;
+    default: {
+      data satisfies never;
+      return orgHint;
+    }
+  }
+}
+
+async function persistIncidentsSnapshot(
+  orgHint: string,
+  seasonHint: string,
+  data: IncidentsView,
+): Promise<void> {
+  const cacheOrg = incidentsCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  const seasonKey = String(data.seasonYear);
+  try {
+    await putFeatureSnapshot("incidents", cacheOrg, data, seasonHint || seasonKey);
+    if (!orgHint) await putFeatureSnapshot("incidents", "_", data, seasonHint || seasonKey);
+  } catch {
+    // Live Safety Incident Log already painted; IndexedDB is best-effort.
+  }
+}
 
 const SEVERITY_COLOR: Record<IncidentSeverity, string> = {
   minor: "#2f9e57",
@@ -30,37 +68,95 @@ export default function IncidentsClient() {
   const [fetchFailed, setFetchFailed] = useState(false);
   // Kept so an expired session offers sign-in instead of a Retry that cannot work.
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
+  const [loadError, setLoadError] = useState("");
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<IncidentsView | null>(null);
+  viewRef.current = view;
 
   const orgId = view && "orgId" in view ? view.orgId : null;
 
-  const load = useCallback((seasonOverride?: number) => {
+  const load = useCallback(async (seasonOverride?: number) => {
+    const params = new URLSearchParams(window.location.search);
+    const orgHint = params.get("orgId")?.trim() ?? "";
+    const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
+    const seasonHint =
+      seasonQuery && Number.isFinite(seasonQuery) ? String(seasonQuery) : String(new Date().getFullYear());
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<IncidentsView>("incidents", orgHint || "_", seasonHint);
+      if (!viewRef.current && cached?.data && isIncidentsView(cached.data)) {
+        setView(cached.data);
+        setSeason(cached.data.seasonYear);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
     setFetchFailed(false);
     setErrorStatus(null);
+    setLoadError("");
     setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    if (seasonQuery) query.set("season", String(seasonQuery));
-    void fetch(`/api/incidents${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
-        const data = (await response.json()) as IncidentsView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setErrorStatus(response.status);
-          setFetchFailed(true);
+    try {
+      const query = new URLSearchParams();
+      if (orgHint) query.set("orgId", orgHint);
+      if (seasonQuery) query.set("season", String(seasonQuery));
+      const response = await fetch(`/api/incidents${query.toString() ? `?${query.toString()}` : ""}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      const data: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setFetchFailed(true);
+        setErrorStatus(response.status);
+        setLoadError(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "",
+        );
+        return;
+      }
+      if (!response.ok || !isIncidentsView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Safety Incident Log. Showing the last copy on this device.");
+          setFetchFailed(false);
           return;
         }
-        setView(data);
-        setSeason(data.seasonYear);
-      })
-      .catch(() => setFetchFailed(true));
+        setFetchFailed(true);
+        setErrorStatus(response.status);
+        setLoadError(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "",
+        );
+        return;
+      }
+      setView(data);
+      setSeason(data.seasonYear);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistIncidentsSnapshot(orgHint, seasonHint, data);
+    } catch {
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Safety Incident Log. Showing the last copy on this device.");
+        setFetchFailed(false);
+        return;
+      }
+      setFetchFailed(true);
+    }
   }, []);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   const mutate = useCallback<Mutate>(
@@ -72,15 +168,18 @@ export default function IncidentsClient() {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ orgId, seasonYear: season ?? undefined, ...payload }),
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       })
         .then(async (response) => {
           const data = (await response.json()) as IncidentsView | { error?: string };
-          if (!response.ok || !("status" in data)) {
+          if (!response.ok || !isIncidentsView(data)) {
             setError("error" in data && data.error ? data.error : "Something went wrong.");
             return;
           }
           setView(data);
           setSeason(data.seasonYear);
+          setFromCache(false);
+          void persistIncidentsSnapshot(orgId, String(data.seasonYear), data);
         })
         .catch(() => setError("Network error — please try again."))
         .finally(() => setBusy(false));
@@ -88,29 +187,102 @@ export default function IncidentsClient() {
     [orgId, season, busy],
   );
 
+  const related = (
+    <nav className="product-hub-related" aria-label="Related safety tools">
+      <Button as="a" variant="secondary" href={withOrgHref("/safety", orgId)}>
+        Safety log
+      </Button>
+      <Button as="a" variant="secondary" href={hubHref("/build", "fmea", orgId)}>
+        FMEA
+      </Button>
+    </nav>
+  );
+
+  if (!view) {
+    const copy = fetchFailed
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus,
+            message: loadError,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: loadError || "A network or server issue prevented loading. Try again.",
+          },
+        )
+      : null;
+    return (
+      <main className="module-page">
+        <PageHeader
+          breadcrumbs="Team / Safety Incidents"
+          title="Safety Incident Log"
+          description="Log injuries, near-misses, and shop hazards, assign a corrective action, and track it to closure."
+        >
+          {related}
+        </PageHeader>
+        <OfflineBanner feature="Safety Incident Log" fromCache={fromCache} cachedAt={cachedAt} />
+        <EmptyState
+          soft
+          title={copy ? copy.title : "Loading…"}
+          description={copy ? copy.description : "Checking your team."}
+          aria-busy={!fetchFailed}
+        >
+          {copy?.primary ? (
+            <Button as="a" variant="primary" href={copy.primary.href}>
+              {copy.primary.label}
+            </Button>
+          ) : copy?.showRetry ? (
+            <Button variant="primary" type="button" onClick={() => void load()}>
+              Retry
+            </Button>
+          ) : null}
+        </EmptyState>
+      </main>
+    );
+  }
+
+  switch (view.status) {
+    case "setup_required":
+      return (
+        <main className="module-page">
+          <PageHeader
+            breadcrumbs="Team / Safety Incidents"
+            title="Safety Incident Log"
+            description="Log injuries, near-misses, and shop hazards, assign a corrective action, and track it to closure."
+          >
+            {related}
+          </PageHeader>
+          <OfflineBanner feature="Safety Incident Log" fromCache={fromCache} cachedAt={cachedAt} />
+          <EmptyState soft badge="Setup required" badgeTone="setup" title={view.message}>
+            {view.steps[0] ? (
+              <Button as="a" variant="primary" href={view.steps[0].href}>
+                {view.steps[0].label}
+              </Button>
+            ) : null}
+          </EmptyState>
+        </main>
+      );
+    case "live":
+      break;
+    default: {
+      const data: never = view;
+      return data satisfies never;
+    }
+  }
+
   return (
     <main className="module-page">
-      <header className="app-page-header">
-        <div>
-          <span className="breadcrumbs">Team / Safety Incidents</span>
-          <h1>Safety Incident Log</h1>
-          <p>
-            Log injuries, near-misses, and shop hazards, assign a corrective action, and track it to closure. A near-miss
-            recorded today is an injury prevented tomorrow — and it&apos;s exactly what safety judges want to see.
-          </p>
-          {/* An incident that stops at this log is an incident nobody designed
-              out. The two places the corrective action actually lands: the daily
-              safety log, and the FMEA row for the mechanism that hurt someone. */}
-          <nav className="product-hub-related" aria-label="Related safety tools">
-            <Button as="a" variant="secondary" href={withOrgHref("/safety", orgId)}>
-              Safety log
-            </Button>
-            <Button as="a" variant="secondary" href={hubHref("/build", "fmea", orgId)}>
-              FMEA
-            </Button>
-          </nav>
-        </div>
-        {view?.status === "live" && view.seasons.length > 0 ? (
+      <PageHeader
+        breadcrumbs="Team / Safety Incidents"
+        title="Safety Incident Log"
+        description="Log injuries, near-misses, and shop hazards, assign a corrective action, and track it to closure. A near-miss recorded today is an injury prevented tomorrow."
+      >
+        {related}
+        {view.seasons.length > 0 ? (
           <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
             Season
             <select
@@ -118,7 +290,7 @@ export default function IncidentsClient() {
               onChange={(event) => {
                 const next = Number(event.target.value);
                 setSeason(next);
-                load(next);
+                void load(next);
               }}
             >
               {view.seasons.map((year) => (
@@ -129,7 +301,9 @@ export default function IncidentsClient() {
             </select>
           </label>
         ) : null}
-      </header>
+      </PageHeader>
+
+      <OfflineBanner feature="Safety Incident Log" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -137,56 +311,12 @@ export default function IncidentsClient() {
         </p>
       ) : null}
 
-      {fetchFailed ? (
-        (() => {
-          const kind = classifyLoadFailure({
-            status: errorStatus,
-            message: error,
-            online: typeof navigator === "undefined" ? true : navigator.onLine,
-          });
-          const copy = loadFailureCopy(kind, {
-            nextPath:
-              typeof window === "undefined"
-                ? null
-                : `${window.location.pathname}${window.location.search}`,
-            message: error,
-          });
-          return (
-            <section className="app-card soft-panel">
-              <h2>{copy.title}</h2>
-              <p className="app-muted">{copy.description}</p>
-              {copy.primary ? (
-                <Button as="a" variant="primary" href={copy.primary.href}>
-                  {copy.primary.label}
-                </Button>
-              ) : null}
-              {copy.showRetry ? (
-                <Button variant="secondary" type="button" onClick={() => load()}>
-                  Retry
-                </Button>
-              ) : null}
-            </section>
-          );
-        })()
-      ) : view == null ? (
-        <section className="app-card soft-panel">
-          <h2>Loading…</h2>
-          <p className="app-muted">Checking your team.</p>
-        </section>
-      ) : view.status === "setup_required" ? (
-        <section className="app-card soft-panel">
-          <span className="app-badge setup">Setup required</span>
-          <h2>{view.message}</h2>
-          
-        </section>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <SummaryTiles view={view} />
-          {view.summary.overdue.length > 0 || view.summary.priority.length > 0 ? <Attention view={view} /> : null}
-          <AddIncidentForm busy={busy} mutate={mutate} />
-          <IncidentList view={view} busy={busy} mutate={mutate} />
-        </div>
-      )}
+      <div style={{ display: "grid", gap: 16 }}>
+        <SummaryTiles view={view} />
+        {view.summary.overdue.length > 0 || view.summary.priority.length > 0 ? <Attention view={view} /> : null}
+        <AddIncidentForm busy={busy} mutate={mutate} />
+        <IncidentList view={view} busy={busy} mutate={mutate} />
+      </div>
     </main>
   );
 }
