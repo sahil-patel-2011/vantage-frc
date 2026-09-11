@@ -219,6 +219,7 @@ export const OFFLINE_SHELL_ROUTES = [
   "/start",
   "/subsystems",
   "/support",
+  "/team/admin",
   "/team/ai-bridge",
   "/team/ai-keys",
   "/team/ai-runs",
@@ -280,6 +281,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/team/grants/calendar")) return "Grant calendar";
   if (bare.startsWith("/team/grants")) return "Grant writing";
   if (bare.startsWith("/team/alumni")) return "Alumni";
+  if (bare.startsWith("/team/admin")) return "Team admin";
   if (bare.startsWith("/team/ai-bridge")) return "AI subscription bridge";
   if (bare.startsWith("/team/ai-keys")) return "AI keys";
   if (bare.startsWith("/team/ai-runs")) return "Ask AI history";

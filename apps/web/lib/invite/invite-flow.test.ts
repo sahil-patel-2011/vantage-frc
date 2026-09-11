@@ -13,6 +13,11 @@ import {
 } from "./invite-flow";
 
 describe("invite Soft-UI flow helpers", () => {
+  it("tells people without an invite they are on the waitlist", () => {
+    expect(inviteEmptyCopy("auth_required").description).toMatch(/waitlist/);
+    expect(inviteEmptyCopy("missing_token").description).toMatch(/waitlist/);
+  });
+
   it("formats clear team identity and roles", () => {
     expect(formatInviteRole("admin")).toBe("Admin");
     expect(formatInviteRole("scout")).toBe("Scout");

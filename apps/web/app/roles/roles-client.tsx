@@ -8,7 +8,7 @@ import { SUBTEAMS, type RolesView } from "../../lib/roles/compute-roles";
 import type { Subteam, TeamRole } from "../../lib/roles/types";
 import { hubHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
-import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { clearFeatureSnapshot, getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
@@ -109,6 +109,8 @@ export default function RolesClient() {
             ? data.error
             : "",
         );
+        void clearFeatureSnapshot("roles", orgHint || "_", seasonHint);
+        if (orgHint) void clearFeatureSnapshot("roles", orgHint, seasonHint);
         return;
       }
       if (!response.ok || !isRolesView(data)) {
@@ -248,7 +250,7 @@ export default function RolesClient() {
             {related}
           </PageHeader>
           <OfflineBanner feature="Season roles" fromCache={fromCache} cachedAt={cachedAt} />
-          <EmptyState soft badge="Setup required" badgeTone="setup" title={view.message}>
+          <EmptyState soft badge="Needs setup" badgeTone="setup" title={view.message}>
             {view.steps[0] ? (
               <Button as="a" variant="primary" href={view.steps[0].href}>
                 {view.steps[0].label}
@@ -460,7 +462,7 @@ function UnlinkedHolders({ view }: { view: LiveView }) {
     <section className="app-card soft-panel" style={{ borderLeft: "3px solid #b26a00" }}>
       <h2 style={{ marginTop: 0 }}>Holders not linked to a member</h2>
       <p className="app-muted">
-        These names do not match exactly one person on the roster, so Vantage will not link them.
+        These names do not match exactly one person on the roster, so they stay unlinked.
         Retype the name the way it appears on the roster, or leave it if the holder is a mentor,
         parent volunteer, or alum.
       </p>

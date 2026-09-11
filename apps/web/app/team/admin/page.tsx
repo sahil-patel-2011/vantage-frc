@@ -13,7 +13,7 @@ import "../team-admin.css";
 export const metadata = {
   title: "Team admin",
   description:
-    "Membership, invites, GitHub robot-code context, and provider settings.",
+    "Invite teammates by exact email. People without an invite go to the waitlist.",
 };
 
 export default async function TeamAdminPage({
@@ -33,7 +33,7 @@ export default async function TeamAdminPage({
         <PageHeader
           breadcrumbs="Team / Admin"
           title="Team admin"
-          description="Membership, invites, and GitHub context belong to one team. Choose your team to continue."
+          description="Invite teammates by exact email. People without an invite go to the waitlist."
         >
           <nav className="product-hub-related team-admin-related" aria-label="Related account tools">
             {related.map((link) => (
@@ -48,7 +48,7 @@ export default async function TeamAdminPage({
           soft
           title={copy.title}
           description={copy.description}
-          badge="Setup required"
+          badge="Needs setup"
           badgeTone="setup"
         >
           <Button as="a" variant="primary" href={setup?.href ?? "/workspace"}>
@@ -57,7 +57,7 @@ export default async function TeamAdminPage({
         </EmptyState>
         <p className="app-muted" style={{ marginTop: "1rem" }}>
           After you choose your team, open{" "}
-          <a href={withOrgHref("/team/admin", null)}>Team admin</a> again to manage real members and invites.
+          <a href={withOrgHref("/team/admin", null)}>Team admin</a> again to invite people by exact email.
         </p>
       </main>
     );

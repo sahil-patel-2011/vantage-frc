@@ -237,6 +237,7 @@ const SHELL_ROUTES = [
   "/start",
   "/subsystems",
   "/support",
+  "/team/admin",
   "/team/ai-bridge",
   "/team/ai-keys",
   "/team/ai-runs",

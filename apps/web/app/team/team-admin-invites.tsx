@@ -1,7 +1,7 @@
 "use client";
 
 import { type FormEvent } from "react";
-import { EmptyState, Panel } from "../../components/ui";
+import { EmptyState, Panel, Button } from "../../components/ui";
 import { formatInviteRowMeta, inviteDeliveryBanner } from "../../lib/team/team-invites";
 import type { AdminTenure, Invite, InviteNotice } from "./team-admin-model";
 
@@ -45,7 +45,7 @@ export function TeamAdminInvitesPanel({
         <h2>Add a teammate</h2>
         <p>
           Send an invite to one email. They sign in with that address and accept the link. Team
-          numbers never grant access.
+          numbers never grant access. People without an invite go to the waitlist.
         </p>
         {adminTenure?.inviteHint ? (
           <p className="app-muted team-admin-tenure-hint" role="note">
@@ -80,9 +80,9 @@ export function TeamAdminInvitesPanel({
             <option value="viewer">Viewer</option>
           </select>
         </label>
-        <button className="primary-action" type="submit" disabled={inviteBusy}>
+        <Button variant="primary" type="submit" disabled={inviteBusy}>
           {inviteBusy ? "Sending…" : "Send invite"}
-        </button>
+        </Button>
         {inviteNotice ? (
           <p className={`team-invite-notice ${inviteNotice.tone}`} role="status">
             {inviteNotice.message}

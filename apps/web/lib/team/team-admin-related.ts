@@ -7,7 +7,7 @@ export const TEAM_ADMIN_RELATED_LINKS = [
   { id: "discord", label: "Discord", kind: "path" as const, path: "/team/discord" },
   {
     id: "connections",
-    label: "Account Connections",
+    label: "Connectors",
     kind: "account" as const,
     path: "/connectors",
   },
@@ -23,7 +23,7 @@ export type TeamAdminRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — Account · Discord · Connections. */
+/** Focused Soft-UI strip — Account · Discord · Connectors. */
 export const TEAM_ADMIN_RELATED_INCLUDE: TeamAdminRelatedId[] = [
   "account",
   "discord",
@@ -108,7 +108,7 @@ export function teamAdminSetupSteps(orgId?: string | null): TeamAdminSetupStep[]
     steps.push({
       id: "invite",
       label: "Invite an exact email",
-      detail: "Team numbers never grant access — send a real invite; the ledger stays blank until then.",
+      detail: "Team numbers never grant access — send a real invite to that address.",
       href: withOrgHref("/team/admin", orgId) + "#membership",
     });
   }
@@ -121,8 +121,8 @@ export function teamAdminSetupSteps(orgId?: string | null): TeamAdminSetupStep[]
     },
     {
       id: "connections",
-      label: "Account Connections",
-      detail: "Honest connector status for TBA, Onshape, Discord, and GitHub.",
+      label: "Connectors",
+      detail: "Honest connector status for GitHub, CAD, Discord, and Slack.",
       href: "/connectors",
     },
   );
@@ -173,7 +173,7 @@ export function teamAdminShellCopy(kind: TeamAdminShellKind): TeamAdminEmptyCopy
         kind,
         title: "Loading membership…",
         description:
-          "Checking which team you are on and real invites.",
+          "Checking which team you are on and whether invites are waiting.",
       };
     case "error":
       return {
@@ -181,30 +181,30 @@ export function teamAdminShellCopy(kind: TeamAdminShellKind): TeamAdminEmptyCopy
         badge: "Unavailable",
         title: "Could not load membership",
         description:
-          "A network or server issue blocked the members ledger. Retry, or open Account / Discord / Connections while it reloads.",
+          "A network or server issue blocked the members list. Retry, or open Account / Discord / Connectors while it reloads.",
       };
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
-          "Choose your team before managing access.",
+          "Choose your team before inviting people. People without an invite go to the waitlist.",
       };
     case "empty":
       return {
         kind,
         badge: "No members yet",
-        title: "Membership stays blank until real people join",
+        title: "Invite someone by exact email",
         description:
-          "The members list and invite ledger stay empty until real people join. Cross-check Account, Discord, and Connections.",
+          "Closed membership: only the email you invite can join. Everyone else lands on the waitlist.",
       };
     case "ready":
       return {
         kind,
         title: "Members and invites",
         description:
-          "Only real membership rows and invites appear here.",
+          "Invite exact emails. People without an invite stay on the waitlist.",
       };
     default: {
       const _never: never = kind;
@@ -251,24 +251,6 @@ function teamAdminNextActionCandidates(input: {
         href: "#invite-form",
         primary: true,
       },
-      {
-        id: "account",
-        label: "Account profile",
-        detail: "Confirm the admin identity that will send invites.",
-        href: "/account?tab=profile",
-      },
-      {
-        id: "discord",
-        label: "Open Discord",
-        detail: "Announce access policy in a linked channel after membership exists.",
-        href: withOrgHref("/team/discord", orgId),
-      },
-      {
-        id: "connections",
-        label: "Account Connections",
-        detail: "Team connectors stay honest until linked.",
-        href: "/connectors",
-      },
     ];
   }
 
@@ -287,18 +269,6 @@ function teamAdminNextActionCandidates(input: {
         detail: "Exact-email invites still work alongside access requests.",
         href: "#membership",
       },
-      {
-        id: "discord",
-        label: "Open Discord",
-        detail: "Optional guild announcements after you approve real members.",
-        href: withOrgHref("/team/discord", orgId),
-      },
-      {
-        id: "connections",
-        label: "Account Connections",
-        detail: "Confirm connectors for the team these members will use.",
-        href: "/connectors",
-      },
     ];
   }
 
@@ -307,27 +277,9 @@ function teamAdminNextActionCandidates(input: {
       {
         id: "ledger",
         label: "Review pending invites",
-        detail: `${pendingInvites} real invitation${pendingInvites === 1 ? "" : "s"} in the ledger — resend or revoke.`,
+        detail: `${pendingInvites} invitation${pendingInvites === 1 ? "" : "s"} waiting — resend or revoke.`,
         href: "#invitation-ledger",
         primary: true,
-      },
-      {
-        id: "account",
-        label: "Account profile",
-        detail: "Notification prefs control invite-related emails for this login.",
-        href: "/account?tab=profile",
-      },
-      {
-        id: "discord",
-        label: "Open Discord",
-        detail: "Bridge stays blank until a webhook or bot is configured.",
-        href: withOrgHref("/team/discord", orgId),
-      },
-      {
-        id: "connections",
-        label: "Account Connections",
-        detail: "Honest TBA / Onshape / Discord / GitHub status for this team.",
-        href: "/connectors",
       },
     ];
   }
@@ -336,33 +288,15 @@ function teamAdminNextActionCandidates(input: {
     {
       id: "invite",
       label: "Invite another teammate",
-      detail: "Exact emails only — the ledger grows from real sends.",
+      detail: "Exact emails only — people without an invite stay on the waitlist.",
       href: "#membership",
       primary: true,
     },
     {
-      id: "security",
-      label: "Security & delegation",
-      detail: "Delegate manage_members or other capabilities without inventing roles.",
-      href: withOrgHref("/team/security", orgId),
-    },
-    {
-      id: "discord",
-      label: "Open Discord",
-      detail: "Guild / chat bridge for announcements after membership is set.",
-      href: withOrgHref("/team/discord", orgId),
-    },
-    {
-      id: "connections",
-      label: "Account Connections",
-      detail: "Team connectors stay Connected only from real rows.",
-      href: "/connectors",
-    },
-    {
-      id: "account",
-      label: "Account profile",
-      detail: "Personal prefs for the admin managing this roster.",
-      href: "/account?tab=profile",
+      id: "roles",
+      label: "Who can do what",
+      detail: "Season roles in plain language for people already on this team.",
+      href: withOrgHref("/roles", orgId),
     },
   ];
 }

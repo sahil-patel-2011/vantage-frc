@@ -178,22 +178,10 @@ export function attendanceNextActions(input: {
       id: "first-roll",
       label: input.canManage ? "Create the first roll call" : "Ask an admin for a roll call",
       detail: input.canManage
-        ? "Add a practice or meeting with an occurred_on date — the board stays empty until you mark people."
-        : "Owners and admins create attendance events; presence stays blank until someone logs marks.",
+        ? "Add a practice or meeting with the date it happened — the board stays empty until you mark people."
+        : "Owners and admins create roll calls; presence stays blank until someone logs marks.",
       href: attendanceEventHref(orgId),
       primary: true,
-    });
-    actions.push({
-      id: "calendar",
-      label: "Schedule on Calendar",
-      detail: "Quick-add a shop night — practices can open a linked roll call for that date.",
-      href: attendanceCalendarHref(orgId),
-    });
-    actions.push({
-      id: "practice",
-      label: "Open Practice",
-      detail: "Log drive sessions after the block — link roll calls by occurred_on, never by invented %.",
-      href: attendancePracticeHref(orgId),
     });
     return actions;
   }

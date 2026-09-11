@@ -16,6 +16,7 @@ const JOIN_OR_PICK_FILES = [
   "lib/build-burndown/build-burndown-related.ts",
   "lib/cross-team-scrim/cross-team-scrim-related.ts",
   "lib/editor/pair-related.ts",
+  "lib/github/github-related.ts",
   "lib/team/team-admin-related.ts",
   "app/team/admin/page.tsx",
   "lib/ai-chat/ai-chat-related.ts",

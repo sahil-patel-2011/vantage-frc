@@ -47,7 +47,7 @@ export function inviteSendResultCopy(input: {
       tone: "warn",
       message:
         input.emailError?.trim() ||
-        "Invite created, but email could not be sent. Copy the link and share it, or configure Resend.",
+        "Invite created, but email could not be sent. Copy the link and share it.",
     };
   }
   if (input.emailSent) {
@@ -79,7 +79,7 @@ export function inviteDeliveryBanner(mode: InviteDeliveryMode | null | undefined
     return {
       tone: "info",
       title: "Local invites do not email",
-      detail: "After you send, copy the invite link and share it. Resend is used in production.",
+      detail: "After you send, copy the invite link and share it.",
     };
   }
   return null;

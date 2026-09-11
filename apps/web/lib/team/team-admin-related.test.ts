@@ -92,7 +92,9 @@ describe("teamAdminShellCopy", () => {
     expectPlainCopy(teamAdminShellCopy("empty").description);
     expectPlainCopy(teamAdminShellCopy("setup").description);
     expect(teamAdminShellCopy("setup").description).not.toMatch(/pick a team/i);
-    expect(teamAdminShellCopy("setup").badge).toBe("Setup required");
+    expect(teamAdminShellCopy("setup").badge).toBe("Needs setup");
+    expect(teamAdminShellCopy("empty").title).toBe("Invite someone by exact email");
+    expect(teamAdminShellCopy("empty").description).toMatch(/waitlist/);
   });
 });
 
@@ -124,8 +126,8 @@ describe("teamAdminNextActions", () => {
       pendingAccessCount: 0,
     });
     expect(actions[0]?.id).toBe("invite");
-    expect(actions.map((a) => a.id)).toEqual(["invite", "security"]);
-    expect(actions.find((a) => a.id === "security")?.href).toBe("/team/security?orgId=org-1");
+    expect(actions.map((a) => a.id)).toEqual(["invite", "roles"]);
+    expect(actions.find((a) => a.id === "roles")?.href).toBe("/roles?orgId=org-1");
   });
 
   it("does not repeat header related-strip destinations as next actions", () => {
