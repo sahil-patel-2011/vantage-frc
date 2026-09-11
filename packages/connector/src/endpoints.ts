@@ -6,7 +6,7 @@
  *  - `pairStart` / `pairPoll` / `heartbeat` are the CONNECTOR endpoints. They follow the
  *    canonical device-pairing wire contract from packages/db/migrations/0486_ai_bridge.sql
  *    (8-char user code, poll token, sha256-hashed device token) but do NOT exist server-side
- *    yet — wiring them is the deployment owner's step (see docs/CONNECTOR.md).
+ *    yet — wiring them is the deployment owner's step (see docs/LOCAL_RELAY.md).
  *  - The remaining paths are the endpoints that already exist today, one per consolidated
  *    service. A config adopted from ~/.vantage/ai-bridge.json keeps working against
  *    `aiBridgeJobs`/`aiBridgeHeartbeat` with its existing device token.

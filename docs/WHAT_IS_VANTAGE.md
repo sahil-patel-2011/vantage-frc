@@ -1,116 +1,135 @@
-# What Vantage is, and who it helps
+# What Vantage is
 
-A plain-language overview for someone opening this repo for the first time. Engineering depth lives in
-`README.md`, `docs/ARCHITECTURE.md`, `docs/FEATURE_MAP.md`, and `FRC_WORKFLOW.md`; this page is the
-"why does this exist" layer above those.
+*For anyone meeting Vantage for the first time — students, mentors, parents, sponsors. No
+engineering background needed. Last reviewed September 2026.*
 
-## The one-line version
+## In one sentence
 
-**Vantage is the operations platform for an FRC robotics team's whole season** — scouting, match
-strategy, event-day command, build-season CAD/code/robot work, team calendar/chat/hours, business and
-fundraising, and a metered AI layer on top — delivered as one Next.js app (`apps/web`) with a Windows
-desktop shell and a CAD CLI around it.
-
-Marketing headline on the landing page: *"Your FRC team, in one place."*
+Vantage is one place for everything a FIRST Robotics Competition team does — learning, building,
+competing and running the team as an organization — with AI as a helper that shows its work.
 
 ## The problem it solves
 
-A FIRST Robotics Competition (FRC) team is a small organization run mostly by high-school students and
-volunteer mentors, on a brutal calendar:
+An FRC team is a small organization run mostly by high-school students and volunteer mentors, on a
+demanding calendar:
 
 | Phase | What the team is juggling |
 |---|---|
-| Preseason (Sep–Dec) | Recruiting, training, shop hours, sponsors, grants, inventory |
-| Kickoff (early Jan) | Reading a new game manual, scoring every action, picking a strategy, planning 6–8 weeks |
-| Build season | CAD iterations, BOM vs stock, tasks per subteam, engineering notebook, safety |
-| Pre-competition | Self-inspection, weigh-ins, drive practice, packing the trailer, batteries |
-| Competition day | Match schedule, scouting every match, rankings, predictions, pick lists, pit repairs |
-| Off-season | Awards, outreach, season report, graduating seniors handing off knowledge |
+| Preseason (Sep–Dec) | Recruiting, training new members, shop hours, sponsors, grants, inventory |
+| Kickoff (January) | Reading a brand-new game, scoring every action, choosing a strategy, planning six weeks |
+| Build season | CAD iterations, parts and orders, tasks per subteam, the engineering notebook, safety |
+| Pre-competition | Self-inspection, weigh-ins, drive practice, packing, batteries |
+| Competition | Match schedule, scouting every match, rankings, predictions, pick lists, pit repairs |
+| Off-season | Awards, outreach, the season report, seniors handing off what they know |
 
-Today most teams glue this together out of Google Sheets, Discord, Notion, paper scouting forms, a
-spreadsheet of batteries, and someone's memory. Vantage gives each team **one org-scoped workspace** that
-already knows the FRC calendar, pulls real event data from The Blue Alliance / Statbotics, and refuses to
-show fake numbers when real data isn't there yet.
+Most teams run this on Google Sheets, Discord, a shared drive, paper scouting forms and someone's
+memory. New members need five accounts before they can help. Vantage gives the team one login that
+already knows the FRC season, pulls real event data automatically, and works in a pit with no Wi-Fi.
 
-## Who it helps
+## Who it is for
 
-The product is built around the roles found on a real FRC team. Every member belongs to one
-**organization** (the team) with an `org_role` of `owner`, `admin`, `scout`, or `viewer`, and onboarding
-asks who you are (`student | mentor | coach | parent | other`), a focus track (`competition | build |
-business | leadership`), and a subteam (mechanical, electrical, programming, CAD, drive team, scouting,
-business, safety — `apps/web/lib/role-onboarding/assign.ts`). The public `/for-teams` page frames it as four
-audiences: **Mentors & coaches · Drive & strategy · Scouts & pit · Business leads**.
+Everyone on the team signs in to the same place and sees what is relevant to them.
 
-| Person | What they get from Vantage |
+| Person | What Vantage does for them |
 |---|---|
-| **Students** (build, CAD, code, business, media crews) | Team calendar with real match times, team chat, task board, shop-hours clock-in, knowledge wiki/playbook, Onshape CAD agent, Code Coach + Bugbot for robot code |
-| **Scouts** | Offline-capable scouting forms (QR / P2P relay / outbox sync), pit scouting defaults, voice notes, shift balancer, pairwise ranking, drive-team tags |
-| **Drive team & strategy lead** | Match predictions, pick-list desk, alliance-selection board, match strategy cards, defense planner, one-tap drive-coach briefing, match debrief |
-| **Pit crew** | Match checklist (bumpers, SB50, DS laptop…), pit repair triage with FMEA, battery rotation, spare forecast, inspection copilot, weigh-in log |
-| **Mentors / coaches (owners, admins)** | Roster + invites, role/hub access control, attendance, travel/lodging logistics, packing lists, risk register, readiness score, AI spend caps |
-| **Business / outreach students & parents** | Budget, purchase orders, sponsor CRM, grant pipeline + AI-assisted grant writing, fundraisers, impact/awards log, media calendar |
-| **Team leadership across seasons** | Season playbook, decision log, exit interviews → wiki handoff, season report, "Bring your season" importer (ICS / CSV / Notion) |
-| **Platform operators (Vantage staff)** | `/admin` Global Team Manager: provision teams, connectors, model catalog, plans, partners, support, audit — gated by a `platform_admins` row |
+| **New members** | Learning tracks (laptop setup, Git and WPILib, Onshape basics), the team playbook, and a Home dashboard that shows what to do next |
+| **Students on build, CAD, code and business crews** | Tasks, calendar, chat, shop-hours clock-in, files, CAD tools, code help and Bugbot, the parts catalog |
+| **Scouts** | Forms that work offline, QR hand-off between tablets, coverage and data-quality views |
+| **Drive team and strategy** | Match predictions with their reasoning, match strategy cards, alliance selection, opponent watchlist, a 20-second pre-match briefing |
+| **Pit crew** | Match checklist, repair triage, battery rotation, inspection help |
+| **Mentors and coaches** | Roster and invites, attendance, hours, duties, logistics, budget approvals, readiness — and the same views students see |
+| **Business and outreach** | Budget and purchases, sponsors, grants, outreach hours by person, awards, the impact record |
 
-Teams are **provisioned, not self-signup**: a platform admin creates the org and a verified owner; owners and
-admins then invite exact emails. Everyone else lands on a waitlist. (A verified-email `/claim` path exists
-for an unused TBA team number.)
+### Roles and access
 
-## The six hubs
+A team is an *organization* in Vantage. Each member has a role — **owner**, **admin**, **scout** or
+**viewer** — and owners and admins decide who can do what. Onboarding also asks each person who they
+are (student, mentor, coach, parent) and which subteam they are on, so Home starts out useful.
 
-The UI is organized as jobs, not a feature catalog (`apps/web/lib/nav/hubs.ts`):
+Access is by invitation: an owner or admin invites members by email. A team is set up by the Vantage
+platform team; anyone else who signs up joins a waitlist.
 
-| Hub | Route | Inner tabs |
-|---|---|---|
-| **Competition** | `/competition` | Event day · Scouting · Strategy · Pit |
-| **Team** | `/team` | Calendar · Chat · People · Work · Playbook |
-| **Build** | `/build` | Kickoff · CAD · Code · Robot |
-| **Business** | `/business` | Overview · Money · Sponsors · Grants · Outreach |
-| **AI** | `/ai` | Chat · Writer · Agent · Controls · Notes |
-| **Media / Logistics** | `/media`, `/logistics` | Content calendar; travel, packing, duties |
+### Every kind of team
 
-`docs/FEATURE_MAP.md` lists every route with its data-honesty rule (e.g. "never DEMO win rates").
+Onboarding asks how the team is funded — self-funded, school-funded with no sponsors, sponsored, or
+school-related and sponsored — and the Business workspace adapts. A school team that cannot take
+sponsors never sees sponsor tools; a self-funded team sees dues and fundraisers first.
 
-## What makes it different (the rules the code actually enforces)
+## How the app is organized
 
-1. **No invented metrics, ever.** Every widget shows a setup/empty state until real rows exist. The
-   feature map repeats "never DEMO …" on nearly every line, and tests assert it.
-2. **Tenancy is the security model.** Every request goes through `withRls({ userId, orgId })`, Postgres
-   row-level security does the filtering, and product code is lint-blocked from the worker DB role.
-3. **AI is metered and grounded.** Every model call goes through `meteredAI` → billing ledger → spend caps.
-   Teams bring their own keys (OpenAI / Anthropic / Google / OpenRouter / local Ollama) or use hosted plans.
-   AI features only reason over the team's own data plus the TBA cache.
-4. **TBA is a shared cache, not a per-team poller.** One ingest worker refreshes platform reference tables
-   (events, teams, matches, OPRs, rankings, Statbotics EPA); every team reads from Postgres.
-5. **Works offline at the event.** Scouting has a service-worker shell, IndexedDB outbox, QR hand-off, and a
-   BroadcastChannel pit mesh because venue Wi-Fi is unreliable.
-6. **Honest degradation.** Integrations that need env vars (Onshape, Stripe, Resend, GitHub OAuth, Twilio,
-   Notion, TBA key) show a "configure X" state instead of crashing.
+Signed in, you land on **Home** — a dashboard you arrange yourself from a library of widgets (next
+match prediction, tasks due, files, hours, budget, and more), with sensible defaults for students and
+for mentors. From there, four workspaces:
+
+| Workspace | Sections |
+|---|---|
+| **Competition** | Event day · Scouting · Strategy · Pit |
+| **Team** | Calendar · Chat · People · Work · Playbook |
+| **Build** | Kickoff · CAD · Code · Robot |
+| **Business** | Overview · Money · Sponsors · Grants · Outreach |
+
+Related tools live as tabs inside each section, so nothing is more than two clicks from a workspace.
+**Ask AI** is a single button on every page. **Files**, **Logistics** and **Settings** are in the
+menu.
+
+## What makes it different
+
+**It works when the Wi-Fi does not.** Competition venues have unreliable networks. Every page keeps
+the last thing it loaded on the device and shows it the moment you open it, with the time it was
+saved. Things you change while offline — a scouting entry, a ticked task, a clock-in — wait in a queue
+and upload when the connection comes back.
+
+**It never invents a number.** If a screen has no real data yet, it says what is missing and what to
+do about it. There are no placeholder statistics anywhere, and tests enforce that.
+
+**Your team's data is yours.** Every team's rows are separated by the database itself (Postgres
+row-level security), not just by the app. Everything can be exported.
+
+**AI is a helper, not the product.** Ask AI answers from your team's own data and public event data,
+shows what it read, and says when it does not know. It runs, in order of preference, on hardware the
+team owns (a paired Raspberry Pi relay), then on the team's own model keys, then on a hosted key —
+and it always tells you which one answered. AI usage is metered and capped so a team is never
+surprised.
+
+**It knows the FRC calendar.** Match schedules, results, rankings and team statistics come from
+The Blue Alliance and Statbotics through one shared cache, refreshed for everyone, so no team hammers
+those services.
 
 ## Integrations
 
-| System | Role in Vantage |
+| Service | What it does in Vantage |
 |---|---|
-| The Blue Alliance + Statbotics | Official event/match/ranking data and EPA ratings (read into the shared cache) |
-| Onshape (OAuth / API keys) & Fusion 360 (local add-in) | CAD agent: sketch/extrude features from chat; Claude Code MCP via `npx vantage-cad` |
-| GitHub (PAT or OAuth) | Read-only robot-code context for Bugbot / Code Coach; due dates on the calendar |
-| Google | Sign-in (Better Auth) |
-| Resend | Email OTP / 2FA / password reset transport |
-| Stripe | Subscriptions + hosted credit packs |
-| Anthropic / OpenAI / Google / OpenRouter / Ollama | Configurable AI routing, BYO keys encrypted per org (KMS envelope) |
-| Slack / Discord | Optional team-chat bridge |
-| Notion / ICS / CSV | "Bring your season" import |
+| The Blue Alliance, Statbotics | Event, match, ranking and team statistics |
+| Onshape | CAD vault, design tools, the assembly manual; works with a pasted link or a full account connection |
+| Fusion 360 | CAD tools through a relay that runs on the team's own laptop |
+| GitHub | Robot-code repository for Bugbot, code help and calendar milestones |
+| Google | Sign-in with a school or personal Google account |
+| Discord, Slack | Announcements and a team-chat bridge |
+| Email (Resend) | Sign-in codes, invitations, reminders |
+| Stripe | Billing, when a deployment enables paid plans |
+| Team storage node, Pi relay, Fusion relay | Optional hardware the team owns, paired with a code |
 
-## Pricing (defaults in `packages/billing/src/catalog.ts`)
+Every integration works in a reduced form without credentials — for example, Onshape documents can
+be added by link before an account is connected — and the app says exactly what to set up to unlock
+the rest.
 
-Free · Access $69 · Individual Pro $109 · Individual Max $159 · Team Pro $299 · Team Max $549 per month,
-plus pay-as-you-go credit packs and a one-week team trial. Plans bundle an included AI allowance; usage is
-an append-only ledger, not a counter.
+## Platforms
 
-## Where to look next
+- **Web:** any modern browser, on a laptop or a phone.
+- **Desktop:** Windows (MSI, installer or portable) and macOS (DMG). The desktop app is the same
+  product in a native window, always in sync with the web, with the Fusion 360 relay built in.
+- **Offline:** the web app installs as a progressive web app and keeps working without a connection.
 
-- Run it: `npm run dev` → http://localhost:3001 (no DB → setup/empty states everywhere, still boots).
-- Season walkthrough: `FRC_WORKFLOW.md`.
-- Every route and its honesty rule: `docs/FEATURE_MAP.md`.
-- Engineering constraints: `CLAUDE.md`, `docs/ARCHITECTURE.md`, `SECURITY_OPERATIONS.md`.
-- Health of the codebase and what to do next: `docs/CODEBASE_PLAN.md`.
+## Cost
+
+The hosted version at https://vantage-frc-web.vercel.app is free to use. Teams that want to run
+their own copy can; the code is public. Plan and credit definitions exist in the codebase for
+deployments that choose to enable billing (see [PRICING.md](PRICING.md)).
+
+## Where to go next
+
+- The season, phase by phase: [SEASON_WORKFLOW.md](SEASON_WORKFLOW.md)
+- Every screen: [FEATURE_MAP.md](FEATURE_MAP.md)
+- The desktop app: [DESKTOP.md](DESKTOP.md)
+- Running your own copy: [SELF_HOSTING.md](SELF_HOSTING.md)
+- How it is built: [ARCHITECTURE.md](ARCHITECTURE.md)

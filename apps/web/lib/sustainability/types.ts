@@ -1,6 +1,6 @@
 // Sustainability early-warning domain types. Pure data shapes — no I/O.
 //
-// Evidence (docs/COMMUNITY_DEMAND_RND.md): "~50% of dead rookie teams had exactly one sponsor
+// Evidence (docs/archive/COMMUNITY_DEMAND_RND.md): "~50% of dead rookie teams had exactly one sponsor
 // vs a median of 3-4 for survivors; teams most commonly die 2 years after rookie season, when
 // rookie grants expire." Teams are on a statistically documented death track and nobody tells
 // them while there is still time to act.

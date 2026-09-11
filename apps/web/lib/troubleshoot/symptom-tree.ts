@@ -3,7 +3,7 @@
  *
  * WHY THIS IS DATA AND NOT A PROMPT
  * ---------------------------------
- * Community research (docs/COMMUNITY_DEMAND_RND.md) rates "get-unstuck help for
+ * Community research (docs/archive/COMMUNITY_DEMAND_RND.md) rates "get-unstuck help for
  * control-system plumbing — imaging roboRIOs, deploying code, driver station comms"
  * as a constant blocker, and records the community's #1 objection to LLM help:
  * staleness ("recommends deprecated classes", "wrong about 80% of the time").

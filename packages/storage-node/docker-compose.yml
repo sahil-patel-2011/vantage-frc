@@ -11,7 +11,7 @@
 # Reachability: this exposes port 8788 on the NAS — fine for the LAN, but the
 # hosted app is https and browsers cannot call plain-http LAN addresses (mixed
 # content). Give the node an https URL with Cloudflare Tunnel or Tailscale and
-# paste it into /team/storage — docs/NAS_HOSTING.md has working configs,
+# paste it into /team/storage — docs/STORAGE_NODE.md has working configs,
 # including a cloudflared sidecar you can uncomment below.
 
 services:
@@ -36,7 +36,7 @@ services:
 
   # Optional: Cloudflare Tunnel sidecar — gives the node a stable public https
   # URL with no port forwarding. Create the tunnel + token in the Cloudflare
-  # Zero Trust dashboard (see docs/NAS_HOSTING.md), then uncomment:
+  # Zero Trust dashboard (see docs/STORAGE_NODE.md), then uncomment:
   #
   # cloudflared:
   #   image: cloudflare/cloudflared:latest

@@ -136,14 +136,14 @@ are verified only by manual use against Neon.
 ### Later (product)
 9. The season workflow (`FRC_WORKFLOW.md`) is the best onboarding doc — link it from `/help` and the empty
    dashboard so a new team knows which hub to open in which month.
-10. `docs/VANTAGE_FEATURE_ROADMAP.md` still lists items that now ship (Bugbot Ultra, desktop shell); prune it.
+10. `docs/archive/VANTAGE_FEATURE_ROADMAP.md` still lists items that now ship (Bugbot Ultra, desktop shell); prune it.
 11. `apps/marketing` is a redirect shim — schedule its Vercel project for deletion once analytics confirm
     zero hits on the old origin.
 
 ## 4b. UI simplification
 
 A separate audit of all 219 product routes, 326 API handlers and the design system produced
-`docs/UI_SIMPLIFICATION_PLAN.md`. Headline: there are **no stub APIs and no pages faking data** — the
+`docs/archive/UI_SIMPLIFICATION_PLAN.md`. Headline: there are **no stub APIs and no pages faking data** — the
 defect class is ~45 fully-working routes that no menu reached, plus navigation depth and three competing
 CSS token sets. That document carries the design rules, what shipped, and the prioritized remainder.
 

@@ -1,6 +1,6 @@
 # UI simplification — diagnosis, rules, and plan
 
-Written 2026-08-23. Companion to `docs/WHAT_IS_VANTAGE.md` (what/who) and `docs/CODEBASE_PLAN.md`
+Written 2026-08-23. Companion to `docs/WHAT_IS_VANTAGE.md` (what/who) and `docs/archive/CODEBASE_PLAN.md`
 (repo health). This file is about making the product simpler to use.
 
 ## 1. The diagnosis — it is not what it looks like
@@ -101,7 +101,7 @@ All changes are additive; no working route was deleted, and every folded URL sti
   asserts R6, and that the route tree still has >200 routes (the mass deletion that happened earlier this
   session would now fail a test). **Currently reports zero unreachable routes.**
 - `apps/web/lib/ui/css-integrity.test.ts` — balanced braces and no declaration outside a rule, across all
-  166 stylesheets. This is the exact bug that 500'd four hubs (see `docs/CODEBASE_PLAN.md` §2.3) and that
+  166 stylesheets. This is the exact bug that 500'd four hubs (see `docs/archive/CODEBASE_PLAN.md` §2.3) and that
   neither typecheck nor any unit test could see.
 - `apps/web/lib/nav/hubs.test.ts` — no duplicate tab id or `legacyHref` within a hub, every nested tab
   resolves to a real workbench root, and the previously-orphaned routes stay registered.

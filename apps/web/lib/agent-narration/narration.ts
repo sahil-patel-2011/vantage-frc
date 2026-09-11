@@ -1,8 +1,8 @@
 /**
  * Agent narration — "show your work".
  *
- * Product principle (docs/AI_MENTOR_CONCEPT.md): "the agent narrates every operation it performs;
- * work done silently is work nobody learned from." Community research (docs/COMMUNITY_DEMAND_RND.md)
+ * Product principle (docs/archive/AI_MENTOR_CONCEPT.md): "the agent narrates every operation it performs;
+ * work done silently is work nobody learned from." Community research (docs/archive/COMMUNITY_DEMAND_RND.md)
  * found the loudest unmet demand is knowledge transfer, and zero demand for AI that quietly does the
  * work. So: teach visibly, automate quietly.
  *

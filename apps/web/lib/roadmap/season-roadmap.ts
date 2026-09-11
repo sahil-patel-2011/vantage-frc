@@ -3,7 +3,7 @@
  *
  * WHY THIS IS CODE AND NOT ROWS
  * -----------------------------
- * docs/COMMUNITY_DEMAND_RND.md, demand #8: "A rookie-season survival roadmap: a dated
+ * docs/archive/COMMUNITY_DEMAND_RND.md, demand #8: "A rookie-season survival roadmap: a dated
  * kickoff-to-first-event checklist covering registration, inspection, funding, and the
  * administrative things no one tells you", for "rookie coaches and de facto lead mentors
  * who 'know nothing of the strategy, the competitions, organizing'". The evidence also

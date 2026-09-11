@@ -5,7 +5,7 @@ could not be confirmed on an official page is marked **UNVERIFIED** — do not t
 settled.
 
 Companion to `docs/SUPABASE_CUTOVER.md` (how to move), `docs/STORAGE_NODE.md` (self-hosted
-tier), and `docs/NAS_HOSTING.md` (running that tier on a NAS).
+tier), and `docs/STORAGE_NODE.md` (running that tier on a NAS).
 
 ## Decision
 

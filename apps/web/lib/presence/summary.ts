@@ -6,7 +6,7 @@
  * either case the figure is `null` WITH A NAMED REASON — never 0%, which reads
  * as "nobody came" and is the single most damaging thing this screen could say.
  *
- * There is also no hours leaderboard here, on purpose (docs/COMMUNITY_DEMAND_RND.md:
+ * There is also no hours leaderboard here, on purpose (docs/archive/COMMUNITY_DEMAND_RND.md:
  * hour leaderboards get gamed and demoralize). Per-member totals are reported
  * against the team's OWN hour_policies goal, alphabetically, never ranked.
  *

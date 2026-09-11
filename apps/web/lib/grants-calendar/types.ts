@@ -1,7 +1,7 @@
 // Grant calendar domain types. Pure data shapes — no I/O.
 //
 // Evidence: mentors ask "Is there a way to sign up for an email notification when the Boeing
-// grant opens?" (docs/COMMUNITY_DEMAND_RND.md). The product is the maintained calendar plus
+// grant opens?" (docs/archive/COMMUNITY_DEMAND_RND.md). The product is the maintained calendar plus
 // eligibility filtering that is HONEST about what it does not know.
 
 /** Rules stored on `grant_calendar_opportunities.eligibility` (jsonb). Every key optional. */

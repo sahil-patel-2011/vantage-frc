@@ -10,7 +10,7 @@
 
 Linux teams use **Onshape** for real CAD, or `VANTAGE_CAD_MOCK=1` to exercise the signed Fusion relay protocol without Autodesk.
 
-Public compatibility matrix (no auth): `GET /api/cad/compatibility?cliVersion=0.1.0&protocol=2026-07-1&platform=windows`. CI/release notes: [`docs/cad-release.md`](docs/cad-release.md). Workflow examples: `scripts/cad/ci/*.yml.example`.
+Public compatibility matrix (no auth): `GET /api/cad/compatibility?cliVersion=0.1.0&protocol=2026-07-1&platform=windows`. CI/release notes: [`docs/cad-release.md`](archive/cad-release.md). Workflow examples: `scripts/cad/ci/*.yml.example`.
 
 ## Install (cross-platform)
 
@@ -46,7 +46,7 @@ GitHub Actions: `.github/workflows/cad-package.yml` builds Linux + macOS artifac
 
 Browser setup wizard: `/cad/setup?orgId=…` (pick CAD → AI brain → copy commands → verify heartbeat).
 
-Commands: `setup`, `start`, `status`, `doctor` (alias `diagnose`), `update`, `logout`, plus **Claude Code CAD**: `claude`, `mcp`, `onshape`, `fusion`. See [`docs/CLAUDE_CODE_CAD.md`](docs/CLAUDE_CODE_CAD.md).
+Commands: `setup`, `start`, `status`, `doctor` (alias `diagnose`), `update`, `logout`, plus **Claude Code CAD**: `claude`, `mcp`, `onshape`, `fusion`. See [`docs/CLAUDE_CODE_CAD.md`](CLAUDE_CODE_CAD.md).
 
 ### Doctor
 

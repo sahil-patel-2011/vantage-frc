@@ -8,7 +8,7 @@
  * environment access (network, processes, filesystem, clock) is an injected port so the
  * core is fully unit-testable. Real Node adapters: `@vantage/connector/node`.
  *
- * See docs/CONNECTOR.md for the host-integration and server-wiring contract.
+ * See docs/LOCAL_RELAY.md for the host-integration and server-wiring contract.
  */
 
 export { CONNECTOR_VERSION, CANONICAL_BASE_URL, defaultBaseUrl } from "./version.js";

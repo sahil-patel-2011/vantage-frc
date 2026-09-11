@@ -1,6 +1,6 @@
 // Grant deadline alert worker: 30 / 14 / 3 days before a WATCHED grant closes.
 //
-// Evidence (docs/COMMUNITY_DEMAND_RND.md): mentors ask "Is there a way to sign up for an email
+// Evidence (docs/archive/COMMUNITY_DEMAND_RND.md): mentors ask "Is there a way to sign up for an email
 // notification when the Boeing grant opens?" — the answer today is to lurk in a forum thread.
 // This is that sign-up.
 //

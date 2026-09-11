@@ -1,6 +1,6 @@
 // Calibration signals: "Call Your Shot" prediction accuracy feeding the skills graph.
 //
-// Per docs/AI_MENTOR_CONCEPT.md, per-concept prediction-error rows
+// Per docs/archive/AI_MENTOR_CONCEPT.md, per-concept prediction-error rows
 // (learning_predictions, 0452) feed compute-skills-graph.ts — as EVIDENCE.
 // A calibration signal never changes anyone's proficiency by itself: under
 // "every mastery claim is a draft until a human countersigns", a strong signal

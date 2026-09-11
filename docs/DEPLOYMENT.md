@@ -3,7 +3,8 @@
 > **Before you self-host:** the recommended way to use Vantage is the hosted version at
 > **https://vantage-frc-web.vercel.app**. It is free, already set up end to end (database, sign-in,
 > integrations, scheduled jobs), and needs nothing installed. This runbook is for teams that
-> specifically want to run their own copy on their own accounts.
+> specifically want to run their own copy on their own accounts — start with the shorter
+> [SELF_HOSTING.md](SELF_HOSTING.md) and come here for every variable and connector.
 
 How to take this repo to a real Vercel + Neon (or Supabase Postgres host) production deployment.
 Everything below is verified against code in this repo — file paths are cited so you can re-check.

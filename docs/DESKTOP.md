@@ -154,7 +154,7 @@ Hostile `VANTAGE_URL` values are ignored and production is used.
 npm run desktop:dist
 ```
 
-Outputs under `apps/desktop/release/` (NSIS setup + portable exe). Windows SmartScreen will warn until Authenticode certs exist. Fusion CAD still uses `vantage-cad` on the machine (`CAD_RELAY.md`).
+Outputs under `apps/desktop/release/` (NSIS setup + portable exe). Windows SmartScreen will warn until Authenticode certs exist. Fusion CAD still uses `vantage-cad` on the machine (`docs/CAD_RELAY.md`).
 
 Tagged builds (`desktop-v*`) also publish those exes to GitHub Releases. Marketing copy lives at `/desktop`.
 

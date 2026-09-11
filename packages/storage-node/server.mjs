@@ -5,7 +5,7 @@
  * A single-file, stdlib-only Node.js service (Node 20+) a team runs on a Raspberry Pi, shop PC,
  * or NAS (Docker images ship next to this file) to extend their Vantage storage: large binary
  * items live here, only metadata lives in the hosted database. Full guide: docs/STORAGE_NODE.md
- * and docs/NAS_HOSTING.md in the Vantage repo.
+ * and docs/STORAGE_NODE.md in the Vantage repo.
  *
  *   Pair once :  node server.mjs --setup --cloud https://your-vantage-host [--name pi-shop]
  *   Run       :  node server.mjs [--dir /var/lib/vantage-storage] [--port 8788] [--quota-gb 20]
@@ -31,7 +31,7 @@
  * is only reachable if you give it a public URL (Cloudflare Tunnel or Tailscale) and paste
  * that URL into /team/storage. The cloud cannot magically reach a NATed device — and a browser
  * on the https app cannot call a plain-http LAN address (mixed content), so in practice you
- * want an https URL even for shop use. docs/NAS_HOSTING.md walks through both options.
+ * want an https URL even for shop use. docs/STORAGE_NODE.md walks through both options.
  */
 
 import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";

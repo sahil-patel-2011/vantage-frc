@@ -7,7 +7,7 @@
 //      a team at risk; it is a team we know nothing about, and saying otherwise is exactly
 //      the fabrication this community dogpiles.
 //   3. The thresholds trace to the Chief Delphi mortality analyses summarized in
-//      docs/COMMUNITY_DEMAND_RND.md: single-sponsor dependence (~50% of dead rookie teams had
+//      docs/archive/COMMUNITY_DEMAND_RND.md: single-sponsor dependence (~50% of dead rookie teams had
 //      exactly one sponsor vs a median of 3-4 for survivors) and the year-2-to-3 grant cliff.
 
 import type {

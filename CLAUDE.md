@@ -1,7 +1,7 @@
 # CLAUDE.md
 
-Operational guide for working in this repo. Depth lives in `README.md`, `SECURITY_OPERATIONS.md`,
-and `docs/FEATURE_MAP.md` (nav pillars / where UI features live);
+Operational guide for working in this repo. Depth lives in `README.md`, `CONTRIBUTING.md`, `SECURITY_OPERATIONS.md`,
+`docs/README.md` (the documentation index) and `docs/FEATURE_MAP.md` (where UI features live);
 this file is the distilled "how to not break things" for an agent making changes.
 
 ## What this is

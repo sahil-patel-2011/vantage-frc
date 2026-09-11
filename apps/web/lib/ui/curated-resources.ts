@@ -3,7 +3,7 @@
  *
  * WHY THIS EXISTS
  * ---------------
- * docs/COMMUNITY_DEMAND_RND.md is emphatic on two points:
+ * docs/archive/COMMUNITY_DEMAND_RND.md is emphatic on two points:
  *
  *   - "CAD curriculum or training content. FRCDesign.org is free, canonical, and adored
  *     ('the single best course someone has made for FRC'); Onshape ships assignment tracking.

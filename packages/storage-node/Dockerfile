@@ -10,7 +10,7 @@
 # NAS share permissions: the process runs as PUID:PGID (default 1000:1000 — the
 # image's "node" user). Rebuild with --build-arg PUID/PGID, or override at run
 # time with docker's --user, to match the owner of the mounted data folder.
-# Full per-platform walkthroughs: docs/NAS_HOSTING.md.
+# Full per-platform walkthroughs: docs/STORAGE_NODE.md.
 
 FROM node:22-alpine
 

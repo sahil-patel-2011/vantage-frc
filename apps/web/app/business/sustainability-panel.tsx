@@ -2,7 +2,7 @@
 
 // Sustainability early-warning panel for the Business overview.
 //
-// Evidence (docs/COMMUNITY_DEMAND_RND.md): single-sponsor dependence and the year-2-to-3 grant
+// Evidence (docs/archive/COMMUNITY_DEMAND_RND.md): single-sponsor dependence and the year-2-to-3 grant
 // cliff are the statistically documented death track for FRC teams, and nobody tells a team it
 // is on that track while there is still time to act. This panel is that sentence.
 //
