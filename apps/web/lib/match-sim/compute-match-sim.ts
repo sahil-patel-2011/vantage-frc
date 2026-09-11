@@ -35,8 +35,8 @@ function setupView(message: string, orgId: string | null): MatchSimView {
     status: "setup_required",
     message,
     steps: [
-      { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
-      { id: "reference", label: "Sync reference data", detail: "Confirm TBA/Statbotics EPA sync has run for your event", href: "/rankings" },
+      { id: "workspace", label: "Choose your team", detail: "Choose which FRC team you are working as.", href: "/workspace" },
+      { id: "reference", label: "Sync rankings", detail: "Confirm event numbers have synced for your event.", href: "/rankings" },
     ],
     orgId,
   };

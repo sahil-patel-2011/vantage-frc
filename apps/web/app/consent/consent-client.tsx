@@ -115,11 +115,11 @@ export default function ConsentClient({ orgId }: { orgId: string | null }) {
       <main className="intel-app">
         <header className="intel-header">
           <div>
-            <span className="eyebrow">VANTAGE / FORMS</span>
+            <span className="eyebrow">FORMS</span>
             <h1>Forms &amp; consent</h1>
           </div>
         </header>
-        <EmptyState badge="Setup required" badgeTone="setup" soft title="Choose your team" description={view.message}>
+        <EmptyState badge="Needs setup" badgeTone="setup" soft title="Choose your team" description={view.message}>
           <Button as="a" variant="primary" href="/workspace">
             Choose your team
           </Button>
@@ -134,7 +134,7 @@ export default function ConsentClient({ orgId }: { orgId: string | null }) {
   return (
     <main className="intel-app">
       <header className="intel-header">
-        <div><span className="eyebrow">VANTAGE / FORMS</span><h1>Forms &amp; consent — {seasonYear}</h1></div>
+        <div><span className="eyebrow">FORMS</span><h1>Forms &amp; consent — {seasonYear}</h1></div>
         <nav className="intel-actions"><a href="/workspace">Your team →</a></nav>
       </header>
       {message && <p className="telemetry-status">{message}</p>}
@@ -148,16 +148,16 @@ export default function ConsentClient({ orgId }: { orgId: string | null }) {
 
       <section className="admin-grid">
         <form className="intel-panel" onSubmit={addForm}>
-          <span className="eyebrow">DEFINE A REQUIRED FORM</span>
+          <span className="eyebrow">Add a required form</span>
           <label>Name<input required value={formForm.name} onChange={(e) => setFormForm({ ...formForm, name: e.target.value })} placeholder="2027 Medical Release" /></label>
           <label>Type<select value={formForm.formType} onChange={(e) => setFormForm({ ...formForm, formType: e.target.value })}>{FORM_TYPES.map((t) => <option key={t} value={t}>{FORM_TYPE_LABEL[t]}</option>)}</select></label>
           <label>Link to blank form (optional)<input type="url" value={formForm.documentUrl} onChange={(e) => setFormForm({ ...formForm, documentUrl: e.target.value })} /></label>
           <label className="check-field"><input type="checkbox" checked={formForm.required} onChange={(e) => setFormForm({ ...formForm, required: e.target.checked })} /> Required for every participant</label>
-          <button className="primary-action">Add form</button>
+          <Button variant="primary" type="submit">Add form</Button>
         </form>
 
         <form className="intel-panel" onSubmit={addRecord}>
-          <span className="eyebrow">LOG A SUBMISSION</span>
+          <span className="eyebrow">Log a submission</span>
           <label>Form<select value={recordForm.formId} onChange={(e) => setRecordForm({ ...recordForm, formId: e.target.value })}>{view.forms.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}</select></label>
           <label>Participant<input required value={recordForm.personName} onChange={(e) => setRecordForm({ ...recordForm, personName: e.target.value })} /></label>
           <div className="budget-fields">
@@ -165,7 +165,7 @@ export default function ConsentClient({ orgId }: { orgId: string | null }) {
             <label>Signed on<input type="date" value={recordForm.signedOn} onChange={(e) => setRecordForm({ ...recordForm, signedOn: e.target.value })} /></label>
           </div>
           <label>Status<select value={recordForm.status} onChange={(e) => setRecordForm({ ...recordForm, status: e.target.value })}><option value="submitted">Submitted</option><option value="verified">Verified</option><option value="pending">Pending</option></select></label>
-          <button className="primary-action">Log submission</button>
+          <Button variant="primary" type="submit">Log submission</Button>
         </form>
       </section>
 
@@ -181,14 +181,14 @@ export default function ConsentClient({ orgId }: { orgId: string | null }) {
                 <small>{FORM_TYPE_LABEL[f.formType]} · {stat?.submitted ?? 0}/{view.summary.peopleTracked} submitted · {stat?.verified ?? 0} verified{f.documentUrl ? "" : ""}</small>
                 {f.documentUrl && <div><a href={f.documentUrl} target="_blank" rel="noreferrer">Blank form ↗</a></div>}
               </div>
-              {view.context.role !== "viewer" && <button onClick={() => void post({ action: "delete_form", id: f.id }, "Form removed.")}>Delete</button>}
+              {view.context.role !== "viewer" && <Button variant="ghost" type="button" onClick={() => void post({ action: "delete_form", id: f.id }, "Form removed.")}>Delete</Button>}
             </article>
           );
         })}
       </section>
 
       <section className="intel-panel invite-list">
-        <span className="eyebrow">BY PARTICIPANT</span>
+        <span className="eyebrow">By participant</span>
         {people.length === 0 && <p>No submissions logged yet.</p>}
         {people.map((person) => {
           const missing = missingFormsFor(person, view.forms, view.records);
@@ -202,9 +202,9 @@ export default function ConsentClient({ orgId }: { orgId: string | null }) {
               </div>
               <div>
                 {theirRecords.filter((r) => NEXT_STATUS[r.status]).slice(0, 1).map((r) => (
-                  <button key={r.id} onClick={() => void post({ action: "set_record_status", id: r.id, status: NEXT_STATUS[r.status] }, "Updated.")}>
+                  <Button key={r.id} variant="secondary" type="button" onClick={() => void post({ action: "set_record_status", id: r.id, status: NEXT_STATUS[r.status] }, "Updated.")}>
                     Advance {formName(r.formId)}
-                  </button>
+                  </Button>
                 ))}
                 {missing.length > 0 && <b>{missing.length} missing</b>}
               </div>
