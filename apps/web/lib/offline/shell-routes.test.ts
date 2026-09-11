@@ -165,6 +165,12 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/subsystem-signoff")).toBe(true);
     expect(pathnameIsOfflineShell("/prototype-tracker")).toBe(true);
     expect(pathnameIsOfflineShell("/equipment-maintenance")).toBe(true);
+    expect(pathnameIsOfflineShell("/power-budget")).toBe(true);
+    expect(pathnameIsOfflineShell("/shooter-table")).toBe(true);
+    expect(pathnameIsOfflineShell("/subsystems")).toBe(true);
+    expect(pathnameIsOfflineShell("/wiring")).toBe(true);
+    expect(pathnameIsOfflineShell("/tuning")).toBe(true);
+    expect(pathnameIsOfflineShell("/software-versions")).toBe(true);
     expect(pathnameIsOfflineShell("/api/todos")).toBe(false);
   });
 
@@ -316,6 +322,14 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/subsystem-signoff")).toBe("Subsystem Sign-off");
     expect(offlineCapableLabel("/prototype-tracker")).toBe("Prototype-to-Decision Tracker");
     expect(offlineCapableLabel("/equipment-maintenance")).toBe("Equipment Maintenance");
+    expect(offlineCapableLabel("/power-budget")).toBe("Power budget");
+    expect(offlineCapableLabel("/shooter-table")).toBe("Shooter table");
+    expect(offlineCapableLabel("/subsystems")).toBe("Subsystem specs");
+    expect(offlineCapableLabel("/wiring")).toBe("CAN-bus map");
+    expect(offlineCapableLabel("/wiring-diagnoser")).not.toBe("CAN-bus map");
+    expect(offlineCapableLabel("/tuning")).toBe("Tuning log");
+    expect(offlineCapableLabel("/tuning-autopilot")).toBe("Tuning Autopilot");
+    expect(offlineCapableLabel("/software-versions")).toBe("Software versions");
   });
 
   it("keeps public/sw.js SHELL_ROUTES aligned with OFFLINE_SHELL_ROUTES", () => {
@@ -460,6 +474,12 @@ describe("offline shell routes", () => {
     expect(featureCacheKey("subsystem-signoff", "org-1", "2026")).toBe("subsystem-signoff:org-1:2026");
     expect(featureCacheKey("prototype-tracker", "org-1", "2026")).toBe("prototype-tracker:org-1:2026");
     expect(featureCacheKey("equipment-maintenance", "org-1")).toBe("equipment-maintenance:org-1");
+    expect(featureCacheKey("power-budget", "org-1", "2026")).toBe("power-budget:org-1:2026");
+    expect(featureCacheKey("shooter-table", "org-1", "2026")).toBe("shooter-table:org-1:2026");
+    expect(featureCacheKey("subsystems", "org-1", "2026")).toBe("subsystems:org-1:2026");
+    expect(featureCacheKey("wiring", "org-1", "2026")).toBe("wiring:org-1:2026");
+    expect(featureCacheKey("tuning", "org-1", "2026")).toBe("tuning:org-1:2026");
+    expect(featureCacheKey("software-versions", "org-1", "2026")).toBe("software-versions:org-1:2026");
     expect(featureCacheKey("schedule", "org-1")).toBe("schedule:org-1");
   });
 
