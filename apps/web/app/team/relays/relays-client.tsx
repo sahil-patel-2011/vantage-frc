@@ -119,7 +119,16 @@ export default function RelaysClient() {
           </Button>
         </Panel>
       ) : (
-        <EmptyState title="Pick a team first" description="Open this page from Team so Vantage knows which shop the Pi belongs to." />
+        <EmptyState
+          badge="Setup required"
+          badgeTone="setup"
+          title="Choose your team"
+          description="Open this page from Team so Vantage knows which shop the Pi belongs to."
+        >
+          <Button as="a" variant="primary" href="/workspace">
+            Choose your team
+          </Button>
+        </EmptyState>
       )}
       {nodes.length ? (
         <Panel>

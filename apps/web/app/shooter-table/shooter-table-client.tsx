@@ -1,5 +1,5 @@
 "use client";
-import { Button } from "../../components/ui";
+import { Button, EmptyState } from "../../components/ui";
 import { useCallback, useEffect, useState } from "react";
 import { CallYourShot } from "../../lib/learning/call-your-shot";
 import { buildShooterCall } from "../../lib/learning/surfaces";
@@ -70,7 +70,21 @@ export default function ShooterTableClient({ orgId }: { orgId: string | null }) 
     );
   }
   if (view.status === "setup_required") {
-    return <main className="intel-app"><header className="intel-header"><div><span className="eyebrow">VANTAGE / SHOOTER</span><h1>Shooter table</h1></div></header><p className="telemetry-status">{view.message}</p></main>;
+    return (
+      <main className="intel-app">
+        <header className="intel-header">
+          <div>
+            <span className="eyebrow">VANTAGE / SHOOTER</span>
+            <h1>Shooter table</h1>
+          </div>
+        </header>
+        <EmptyState badge="Setup required" badgeTone="setup" soft title="Choose your team" description={view.message}>
+          <Button as="a" variant="primary" href="/workspace">
+            Choose your team
+          </Button>
+        </EmptyState>
+      </main>
+    );
   }
 
   const queryFt = Number(query);

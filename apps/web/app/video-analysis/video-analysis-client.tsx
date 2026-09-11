@@ -143,9 +143,15 @@ export default function VideoAnalysisClient() {
       ) : null}
       {!orgId ? (
         <EmptyState
-          title="Pick a team first"
+          badge="Setup required"
+          badgeTone="setup"
+          title="Choose your team"
           description="Open this page from Competition so Vantage knows which team the video belongs to."
-        />
+        >
+          <Button as="a" variant="primary" href="/workspace">
+            Choose your team
+          </Button>
+        </EmptyState>
       ) : (
         <>
           <Panel>
