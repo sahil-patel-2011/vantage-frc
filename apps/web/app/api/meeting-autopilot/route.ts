@@ -160,6 +160,6 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    return failMeteredAi(error, "Meeting-agenda autopilot request failed");
+    return failMeteredAi(error, "Meeting agenda request failed");
   }
 }

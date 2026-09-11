@@ -251,10 +251,10 @@ export default function MeetingAutopilotClient() {
       breadcrumbs={
         <>
           <a href={teamHref}>Team</a>
-          {" / Meeting-agenda autopilot"}
+          {" / Meeting agenda"}
         </>
       }
-      title="Meeting-agenda autopilot"
+      title="Meeting agenda"
       description="Agenda and minutes persist against a calendar meeting. The page stays empty until a meeting exists."
     >
       {seasons.length > 0 ? (
@@ -300,7 +300,7 @@ export default function MeetingAutopilotClient() {
     return (
       <main className="module-page">
         {header}
-        <OfflineBanner feature="Meeting-agenda autopilot" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Meeting agenda" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           title={failure ? failure.title : "Loading…"}
           description={failure ? failure.description : "Checking your team."}
@@ -327,7 +327,7 @@ export default function MeetingAutopilotClient() {
       return (
         <main className="module-page">
           {header}
-          <OfflineBanner feature="Meeting-agenda autopilot" fromCache={fromCache} cachedAt={cachedAt} />
+          <OfflineBanner feature="Meeting agenda" fromCache={fromCache} cachedAt={cachedAt} />
           {error ? (
             <p className="telemetry-status" role="alert">
               {error}
@@ -347,7 +347,7 @@ export default function MeetingAutopilotClient() {
   return (
     <main className="module-page">
       {header}
-      <OfflineBanner feature="Meeting-agenda autopilot" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Meeting agenda" fromCache={fromCache} cachedAt={cachedAt} />
       {error ? (
         <p className="telemetry-status" role="alert">
           {error}
@@ -366,7 +366,7 @@ export default function MeetingAutopilotClient() {
 function SetupOrEmpty({ view }: { view: Extract<MeetingAutopilotView, { status: "setup_required" | "empty" }> }) {
   return (
     <EmptyState
-      badge={view.status === "empty" ? "No meetings yet" : "Setup required"}
+      badge={view.status === "empty" ? "No meetings yet" : "Needs setup"}
       badgeTone="setup"
       title={view.message}
       description={
