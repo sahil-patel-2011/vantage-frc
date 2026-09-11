@@ -20,7 +20,7 @@ test("CAD setup is a student wizard without CLI or env-var dumps", async ({ page
 test("CAD pair is student copy without OAuth or CLI dumps", async ({ page }) => {
   await page.goto("/cad/pair");
   await expect(page.locator("body")).not.toContainText("Application error");
-  await expect(page.getByRole("heading", { level: 1, name: /Approve this computer/i })).toBeVisible({
+  await expect(page.getByRole("heading", { level: 1, name: /Pair this computer/i })).toBeVisible({
     timeout: 20_000,
   });
   await expect(page.getByText("VANTAGE /")).toHaveCount(0);
