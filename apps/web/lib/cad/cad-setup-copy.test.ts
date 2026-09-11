@@ -59,6 +59,8 @@ describe("CAD setup student copy", () => {
     const pairPage = readFileSync(join(webRoot, "app/cad/pair/page.tsx"), "utf8");
     expect(pair).toMatch(/CAD_PAIR_TITLE/);
     expect(pair).not.toMatch(/Approve this computer/);
+    expect(pairPage).not.toMatch(/redirect\(\s*["']\/signin/);
+    expect(pair).toMatch(/<h1>\{CAD_PAIR_TITLE\}<\/h1>/);
     for (const src of [wizard, pair, page, pairPage]) {
       expect(src).not.toMatch(/ONSHAPE_OAUTH_CLIENT_ID|vantage-cad login|install-windows|vantage-cad setup|vantage-cad start|Copy commands|key_source=local_cli/);
       expect(src).not.toMatch(/Vercel never runs Fusion|Terminal \/ local CLI|AI brain/);

@@ -1,7 +1,6 @@
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
-import { redirect } from "next/navigation";
 import PairClient from "./pair-client";
 import "../cad-setup.css";
 
@@ -14,8 +13,14 @@ export const metadata = {
 };
 
 export default async function PairPage({ searchParams }: { searchParams: Promise<{ code?: string }> }) {
+  const code = (await searchParams).code ?? "";
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) redirect("/signin?next=%2Fcad%2Fpair");
+  // Proxy already requires a session (or the local E2E fixture cookie). Do not
+  // bounce a fixture walk to /signin — that cookie then redirects to /dashboard
+  // and the student heading never appears. Empty teams still render Pair this computer.
+  if (!session) {
+    return <PairClient initialCode={code} organizations={[]} />;
+  }
   const orgs = await withRls({ userId: session.user.id }, async (client) =>
     (
       await client.query<{ id: string; name: string; role: string }>(
@@ -28,5 +33,5 @@ export default async function PairPage({ searchParams }: { searchParams: Promise
       )
     ).rows,
   );
-  return <PairClient initialCode={(await searchParams).code ?? ""} organizations={orgs} />;
+  return <PairClient initialCode={code} organizations={orgs} />;
 }
