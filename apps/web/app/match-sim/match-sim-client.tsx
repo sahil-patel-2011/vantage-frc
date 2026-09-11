@@ -139,6 +139,56 @@ export default function MatchSimClient() {
     [orgId, busy],
   );
 
+  if (!view) {
+    const copy = fetchFailed
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus,
+            message: error,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: error,
+          },
+        )
+      : null;
+    return (
+      <main className="module-page">
+        <PageHeader
+          breadcrumbs={
+            <>
+              <a href="/competition">Competition</a>
+              {" / Match Simulator"}
+            </>
+          }
+          title="Match Simulator"
+          description="Full-field score timeline from synced event numbers — plus the highest-leverage lever. Nothing here is guessed."
+        />
+        <OfflineBanner feature="Match Simulator" fromCache={fromCache} cachedAt={cachedAt} />
+        {copy ? (
+          <EmptyState title={copy.title} description={copy.description}>
+            {copy.primary ? (
+              <Button as="a" variant="primary" href={copy.primary.href}>
+                {copy.primary.label}
+              </Button>
+            ) : null}
+            {copy.showRetry ? (
+              <Button variant="secondary" type="button" onClick={() => load()}>
+                Retry
+              </Button>
+            ) : null}
+          </EmptyState>
+        ) : (
+          <EmptyState title="Loading…" description="Checking your team." aria-busy />
+        )}
+      </main>
+    );
+  }
+
   return (
     <main className="module-page">
       <PageHeader
@@ -149,7 +199,7 @@ export default function MatchSimClient() {
           </>
         }
         title="Match Simulator"
-        description="Deterministic full-field score timeline from real, synced EPA capability data — plus the single highest-leverage lever to pull. Nothing here is guessed."
+        description="Full-field score timeline from synced event numbers — plus the highest-leverage lever. Nothing here is guessed."
       />
       <OfflineBanner feature="Match Simulator" fromCache={fromCache} cachedAt={cachedAt} />
 
@@ -159,39 +209,8 @@ export default function MatchSimClient() {
         </p>
       ) : null}
 
-      {fetchFailed ? (
-        (() => {
-          const kind = classifyLoadFailure({
-            status: errorStatus,
-            message: error,
-            online: typeof navigator === "undefined" ? true : navigator.onLine,
-          });
-          const copy = loadFailureCopy(kind, {
-            nextPath:
-              typeof window === "undefined"
-                ? null
-                : `${window.location.pathname}${window.location.search}`,
-            message: error,
-          });
-          return (
-            <EmptyState title={copy.title} description={copy.description}>
-              {copy.primary ? (
-                <Button as="a" variant="primary" href={copy.primary.href}>
-                  {copy.primary.label}
-                </Button>
-              ) : null}
-              {copy.showRetry ? (
-                <Button variant="secondary" type="button" onClick={() => load()}>
-                  Retry
-                </Button>
-              ) : null}
-            </EmptyState>
-          );
-        })()
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your team." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
+      {view.status === "setup_required" ? (
+        <EmptyState badge="Needs setup" badgeTone="setup" title={view.message}>
           {view.steps[0] ? (
             <Button as="a" variant="primary" href={view.steps[0].href}>
               {view.steps[0].label}

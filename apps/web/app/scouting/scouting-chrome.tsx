@@ -114,7 +114,7 @@ export function ScoutingShell({
         className="scout-shell-empty"
         badge={
           shell === "setup"
-            ? "Setup required"
+            ? "Needs setup"
             : shell === "error"
               ? "Unavailable"
               : shell === "empty"

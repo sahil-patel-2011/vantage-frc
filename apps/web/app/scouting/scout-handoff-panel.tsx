@@ -117,7 +117,7 @@ function QrHandoffShell({
         className="scout-qr-empty"
         badge={
           shell === "setup"
-            ? "Setup required"
+            ? "Needs setup"
             : shell === "error"
               ? "Unavailable"
               : shell === "empty"

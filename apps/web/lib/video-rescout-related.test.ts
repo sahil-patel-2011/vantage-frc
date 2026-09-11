@@ -96,7 +96,7 @@ describe("videoRescoutShellCopy", () => {
       expect(copy.title).not.toMatch(/\bDEMO\b/);
     }
     expectPlainCopy(videoRescoutShellCopy("empty").description);
-    expect(videoRescoutShellCopy("setup").badge).toBe("Setup required");
+    expect(videoRescoutShellCopy("setup").badge).toBe("Needs setup");
   });
 });
 

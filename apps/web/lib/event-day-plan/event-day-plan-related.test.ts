@@ -108,5 +108,6 @@ describe("classifyEventDayPlanShell + helpers", () => {
       const copy = eventDayPlanShellCopy(kind);
       expectPlainCopy(`${copy.title} ${copy.description}`);
     }
+    expect(eventDayPlanShellCopy("setup").badge).toBe("Needs setup");
   });
 });

@@ -86,6 +86,10 @@ describe("computeMatchSimView", () => {
     if (view.status === "setup_required") {
       expect(view.orgId).toBeNull();
       expect(view.steps.length).toBeGreaterThan(0);
+      for (const step of view.steps) {
+        expect(step.detail).not.toMatch(/TBA\/Statbotics/);
+        expect(step.label).not.toMatch(/reference data/i);
+      }
     }
   });
 

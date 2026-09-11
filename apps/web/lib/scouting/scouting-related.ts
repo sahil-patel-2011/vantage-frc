@@ -188,7 +188,7 @@ export function scoutingShellCopy(kind: ScoutingShellKind): ScoutingEmptyCopy {
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Choose your team and the event you are at before match and pit forms load.",

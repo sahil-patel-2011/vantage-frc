@@ -92,7 +92,7 @@ describe("pickDeskShellCopy", () => {
     }
     expect(pickDeskShellCopy("empty").badge).toBe("No event metrics yet");
     expectPlainCopy(pickDeskShellCopy("empty").description);
-    expect(pickDeskShellCopy("setup").badge).toBe("Setup required");
+    expect(pickDeskShellCopy("setup").badge).toBe("Needs setup");
   });
 });
 

@@ -93,7 +93,7 @@ describe("competition-related Soft-UI helpers", () => {
     expect(pickSurfaceSetupMessage({ orgId: "o" })).toMatch(/active event/i);
     expect(
       pickSurfaceSetupMessage({ orgId: "o", eventKey: "2026a", tbaConfigured: false, hasMetrics: false }),
-    ).toMatch(/Connect The Blue Alliance/i);
+    ).toMatch(/Sync rankings/i);
     expect(
       pickSurfaceSetupMessage({ orgId: "o", eventKey: "2026a", tbaConfigured: true, hasMetrics: false }),
     ).toMatch(/Team → Data/i);

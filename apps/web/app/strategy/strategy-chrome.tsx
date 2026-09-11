@@ -36,7 +36,7 @@ export function StrategyNextActionsPanel({ actions }: { actions: StrategyShellNe
     <Panel className="strategy-next-actions-panel">
       <header>
         <h2>Next actions</h2>
-        <p>Connect The Blue Alliance, then scout. This list stays empty until then.</p>
+        <p>Sync match results, then scout. This list stays empty until then.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -62,7 +62,7 @@ export function TbaKeyHint({ view }: { view: StrategyView }) {
     <div className="strategy-reference-hints">
       {access && !access.tbaConfigured ? (
         <p className="telemetry-status" role="status">
-          The Blue Alliance is not connected. Open Team → Data, connect it, and pick this event.
+          Match results are not connected. Open Team → Data, connect match results, and pick this event.
           Strategy stays empty until that schedule is in.
         </p>
       ) : null}
@@ -110,7 +110,7 @@ export function StrategyShell({
       <PageHeader
         breadcrumbs="Competition / Strategy"
         title="Strategy"
-        description="Win/loss and pick lists use The Blue Alliance, Statbotics, and your scout notes."
+        description="Win/loss and pick lists use synced event numbers and your scout notes."
       >
         <div className="strategy-header-actions">
           <StrategyRelatedStrip orgId={orgId} />
@@ -124,7 +124,7 @@ export function StrategyShell({
         className="strategy-shell-empty"
         badge={
           shell === "setup"
-            ? "Setup required"
+            ? "Needs setup"
             : shell === "error"
               ? "Unavailable"
               : shell === "empty"

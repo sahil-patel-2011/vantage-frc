@@ -356,10 +356,6 @@ export default function ChatClient({
   const usageHref = hubHref("/ai", "usage", orgId);
   const runsHref = withOrgHref("/team/ai-runs", orgId);
   const promptsHref = withOrgHref("/team/prompts", orgId);
-  const relatedExtra = aiChatRelatedLinks(orgId, {
-    include: ["usage", "scouting", "knowledge", "governance", "code"],
-  });
-
   const shell = classifyAiChatShell({
     loading,
     status: httpStatus,
@@ -499,25 +495,9 @@ export default function ChatClient({
                   : "Private chats stay yours. Team channels are visible to every member."}
               </p>
               <div className="ch-empty-actions">
-                <button type="button" className="primary-action" onClick={() => void newThread("private")}>
+                <Button variant="primary" type="button" onClick={() => void newThread("private")}>
                   New private chat
-                </button>
-                <Button as="a" variant="secondary" href={budgetsHref}>
-                  Budgets
                 </Button>
-                <Button as="a" variant="secondary" href={memoryHref}>
-                  Memory
-                </Button>
-                <Button as="a" variant="secondary" href={strategyHref}>
-                  Strategy
-                </Button>
-                {relatedExtra
-                  .filter((link) => link.id === "scouting" || link.id === "knowledge")
-                  .map((link) => (
-                    <Button as="a" variant="secondary" key={link.id} href={link.href}>
-                      {link.label}
-                    </Button>
-                  ))}
               </div>
             </div>
           ) : (
@@ -639,9 +619,9 @@ export default function ChatClient({
                   placeholder="Ask about team 254 scouting, qual 42 strategy…"
                 />
                 <div className="ch-composer-foot">
-                  <button type="submit" className="primary-action">
+                  <Button variant="primary" type="submit">
                     Send
-                  </button>
+                  </Button>
                   {status ? (
                     <p className="ch-status" role="status">
                       {status}

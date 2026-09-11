@@ -150,7 +150,7 @@ export function pickDeskShellCopy(kind: PickDeskShellKind): PickDeskEmptyCopy {
         kind,
         title: "Loading pick desk…",
         description:
-          "Checking which team you are on and TBA/Statbotics event metrics.",
+          "Checking which team you are on and synced event numbers.",
       };
     case "error":
       return {
@@ -163,7 +163,7 @@ export function pickDeskShellCopy(kind: PickDeskShellKind): PickDeskEmptyCopy {
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Choose your team and the event this alliance is at before pick ranks appear.",
@@ -174,7 +174,7 @@ export function pickDeskShellCopy(kind: PickDeskShellKind): PickDeskEmptyCopy {
         badge: "No event metrics yet",
         title: "Waiting on synced team metrics",
         description:
-          "First / second / third pick tiers stay blank until TBA/Statbotics rows land for this event. Cross-check Strategy, Scouting, and Coverage.",
+          "First / second / third pick tiers stay blank until event numbers land for this event. Cross-check Strategy, Scouting, and Coverage.",
       };
     default:
       return {

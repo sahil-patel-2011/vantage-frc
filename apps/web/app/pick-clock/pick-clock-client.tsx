@@ -538,8 +538,8 @@ export default function PickClockClient({
 
       {readyView.pickMode === "low_data_tba" ? (
         <p className="pck-mode-banner" role="status">
-          <span className="app-badge setup">Low-data TBA</span>
-          {readyView.pickModeReason ?? "Ranking from TBA/Statbotics until scouting coverage improves."}
+          <span className="app-badge setup">Low-data rankings</span>
+          {readyView.pickModeReason ?? "Ranking from synced event numbers until scouting coverage improves."}
         </p>
       ) : null}
 

@@ -364,7 +364,7 @@ export default function BusinessClient() {
 
       {view?.status === "setup_required" ? (
         <EmptyState
-          badge="Setup required"
+          badge="Needs setup"
           badgeTone="setup"
           title="Choose your team"
           description="Choose your team, then come back to start this season’s money plan."

@@ -101,9 +101,9 @@ export function buildPickReasons(
 
   if (pickMode === "low_data_tba" && !listHint) {
     const epaText = formatEpa(candidate.epa);
-    headline = epaText ? `TBA quick pick · EPA ${epaText}` : "TBA quick pick";
+    headline = epaText ? `Quick pick · season score ${epaText}` : "Quick pick";
     reasons.push({
-      label: "Low scout coverage — TBA/Statbotics order",
+      label: "Low scout coverage — ranking from event numbers",
       tone: "caution",
     });
   }
@@ -169,7 +169,7 @@ export function buildPickReasons(
 
   if (pickMode === "full") {
     if (candidate.scoutSample === 0) {
-      reasons.push({ label: "No scout sample yet — reference metrics only", tone: "caution" });
+      reasons.push({ label: "No scout sample yet — event numbers only", tone: "caution" });
     } else if (candidate.scoutSample > 0 && candidate.scoutSample < 3) {
       reasons.push({ label: `Thin scout sample (${candidate.scoutSample})`, tone: "caution" });
     }
