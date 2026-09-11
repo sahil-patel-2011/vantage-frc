@@ -178,6 +178,15 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
           signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as FmeaView | { error?: string };
+        if (response.status === 401 || response.status === 403) {
+          setView(null);
+          setFromCache(false);
+          setCachedAt(null);
+          setFetchFailed(true);
+          setErrorStatus(response.status);
+          setLoadError("error" in data && data.error ? data.error : "");
+          return;
+        }
         if (!response.ok || !isFmeaView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);

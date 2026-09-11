@@ -183,6 +183,13 @@ export default function EventReadinessClient() {
           },
         );
         const data = (await response.json()) as EventReadinessView | { error?: string };
+        if (response.status === 401 || response.status === 403) {
+          setView(null);
+          setFromCache(false);
+          setCachedAt(null);
+          setFetchFailed(true);
+          return;
+        }
         if (!response.ok || !isEventReadinessView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);

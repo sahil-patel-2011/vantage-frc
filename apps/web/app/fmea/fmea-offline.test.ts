@@ -12,6 +12,7 @@ describe("FMEA last snapshot stays on the phone", () => {
     expect(src).toMatch(/"fmea"/);
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
     expect(src).toMatch(/feature="FMEA"/);
+    expect(src).toMatch(/status === 401 \|\| response.status === 403/);
     expect(src).not.toMatch(/fetchFailed \|\| !view/);
     expect(src).not.toMatch(/fetchFailed \|\| view == null/);
   });

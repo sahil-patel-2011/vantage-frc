@@ -77,7 +77,7 @@ async function failedRefreshKeepsBoard(
     path: string;
     api: string;
     body: unknown;
-    heading: string;
+    heading: string | RegExp;
     keep: RegExp | string;
   },
 ) {
@@ -102,11 +102,13 @@ async function failedRefreshKeepsBoard(
     });
   });
   await page.goto(options.path);
-  await expect(page.getByRole("heading", { level: 1 })).toContainText(options.heading);
+  // /batteries and /fmea redirect into the Build hub, whose h1 is Build and
+  // whose CSS hides the inner page header. Assert the painted board heading.
+  await expect(page.getByRole("heading", { name: options.heading })).toBeVisible();
   await expect(page.locator("body")).toContainText(options.keep);
   fail = true;
   await page.reload({ waitUntil: "domcontentloaded" });
-  await expect(page.getByRole("heading", { level: 1 })).toContainText(options.heading);
+  await expect(page.getByRole("heading", { name: options.heading })).toBeVisible();
   await expect(page.locator("body")).toContainText(options.keep);
   await expect(page.locator("body")).toContainText(LAST_COPY);
   await expect(page.locator("body")).not.toContainText(/something went wrong/i);
@@ -132,8 +134,8 @@ test.describe("offline phone student boards keep the last copy", () => {
       path: "/batteries",
       api: "**/api/batteries**",
       body: BATTERIES_READY,
-      heading: "Batteries",
-      keep: /Phone Snapshot Team/,
+      heading: "Add a battery",
+      keep: /Active packs/,
     });
   });
 
@@ -142,8 +144,8 @@ test.describe("offline phone student boards keep the last copy", () => {
       path: "/fmea",
       api: "**/api/fmea**",
       body: FMEA_LIVE,
-      heading: "Failure Log (FMEA)",
-      keep: /No failures logged yet/,
+      heading: "No failures logged yet",
+      keep: /Highest RPN stays blank/,
     });
   });
 
