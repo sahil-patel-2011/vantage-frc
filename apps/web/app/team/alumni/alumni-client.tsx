@@ -337,9 +337,9 @@ export default function AlumniClient({ orgId }: { orgId: string }) {
                 />
               </label>
             )}
-            <button className="primary-action" type="submit">
+            <Button type="submit" variant="primary">
               Add to network
-            </button>
+            </Button>
           </form>
 
           <section className="intel-panel">
@@ -438,9 +438,9 @@ export default function AlumniClient({ orgId }: { orgId: string }) {
                 />
               </label>
               <div className="intel-actions" style={{ marginTop: "0.5rem" }}>
-                <button type="button" className="primary-action" disabled={!webhookUrl} onClick={() => void discordAction("save")}>
+                <Button type="button" variant="primary" disabled={!webhookUrl} onClick={() => void discordAction("save")}>
                   {discord?.configured ? "Update connection" : "Connect Discord"}
-                </button>
+                </Button>
                 {discord?.configured && (
                   <button type="button" onClick={() => void discordAction("test")}>
                     Send test message
@@ -474,9 +474,9 @@ export default function AlumniClient({ orgId }: { orgId: string }) {
                     }}
                   />
                 </label>
-                <button type="button" className="primary-action" disabled={!announce.trim()} onClick={() => void discordAction("announce")}>
+                <Button type="button" variant="primary" disabled={!announce.trim()} onClick={() => void discordAction("announce")}>
                   Post announcement
-                </button>
+                </Button>
               </div>
             )}
           </div>
