@@ -70,9 +70,11 @@ and build are intentionally credential-free; RLS integration tests need a real P
 
 - **Windows / PowerShell** dev box. The Bash tool is Git Bash (POSIX); prefer forward slashes and `$VAR`.
 - Database is Postgres (`DATABASE_AUTH_URL` / `DATABASE_URL` app role, `DATABASE_ADMIN_URL` worker,
-  `MARKETING_DATABASE_URL`). Production today is Neon; a Supabase **Postgres host** cutover is documented in
-  `docs/SUPABASE_CUTOVER.md`. Identity stays Better Auth + `withRls` — never Supabase Auth, never the Data API
-  `anon`/`service_role` keys for product data. Each team's rows stay behind `org_id` RLS.
+  `MARKETING_DATABASE_URL`). Production today is Neon — contributor copy-paste is `docs/NEON.md`
+  (`npm run db:map-neon`, `npm run db:migrate`, `npm run db:neon-preflight`). A Supabase **Postgres host**
+  cutover is documented in `docs/SUPABASE_CUTOVER.md`. Identity stays Better Auth + `withRls` — never
+  Supabase Auth, never the Data API `anon`/`service_role` keys for product data. Each team's rows stay
+  behind `org_id` RLS. The repo is MIT (`LICENSE`) and freely hostable on Neon or local Postgres.
 - Product routes need a real DB; without it they return `setup_required`/`empty` states rather than crashing.
 - Many integrations are **setup-required by design** (Onshape OAuth, Stripe, Resend email 2FA, TBA key):
   code must degrade to a clear "configure X" state, never a hard failure, when env vars are absent.

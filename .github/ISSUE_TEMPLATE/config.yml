@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Run Vantage on Neon
+    url: https://github.com/sahil-patel-2011/vantage-frc/blob/main/docs/NEON.md
+    about: Create a Neon project, map DATABASE_* URLs, migrate, and verify.
+  - name: Contributing guide
+    url: https://github.com/sahil-patel-2011/vantage-frc/blob/main/CONTRIBUTING.md
+    about: How to run locally, how to help, and the tenancy rules.

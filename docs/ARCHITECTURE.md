@@ -2,12 +2,33 @@
 
 Single deploy: `apps/web`. Domain logic lives in `packages/*`. Request code uses `withRls` and parameterized SQL. Workers use `dbAdmin` via cron HTTP — not a second service.
 
+## System of record: Postgres
+
+Postgres is required, not optional. Every org’s membership, scouting, billing ledger, Better Auth
+sessions, and TBA/Statbotics reference cache is a row in one database. There is no parallel
+application datastore for product data.
+
+- **Host today:** Neon (`docs/NEON.md`). Local Postgres and a documented Supabase **Postgres host**
+  cutover (`docs/SUPABASE_CUTOVER.md`) use the same schema and roles. Identity is Better Auth, never
+  Neon Auth / Supabase Auth / Data API keys.
+- **Roles:** `vantage_app` (request path, RLS), `vantage_worker` (migrations + workers, typically
+  `BYPASSRLS`), plus least-privilege roles created by early migrations (`0001_roles_and_rls.sql`).
+- **Tenancy:** `withRls({ userId, orgId? })` in `packages/db/src/index.ts` runs `BEGIN`,
+  `SET LOCAL app.user_id` / `app.org_id`, the work, then `COMMIT`. Request code must not import
+  `@vantage/db/admin`.
+- **Migrations:** append-only `packages/db/migrations/NNNN_slug.sql`, applied in filename order by
+  `npm run db:migrate` → `scripts/run-migrations.mjs`, keyed by full filename in `schema_migrations`.
+- **Pooling:** `DATABASE_URL` is the Neon **pooled** URL (request `withRls` is already a
+  transaction). `DATABASE_ADMIN_URL` is the Neon **direct** URL. We do not use the Neon Branches
+  API or Neon-only extensions (`pgcrypto` is stock Postgres).
+
 ## Kernel
 
-- `@vantage/db` — RLS, migrations (append-only; next file is the next free `NNNN`); Neon or Supabase Postgres host (`docs/SUPABASE_CUTOVER.md`)
+- `@vantage/db` — RLS, `withRls`, worker-only `dbAdmin`, Drizzle schema, migrations (append-only; next
+  file is the next free `NNNN`). Neon serverless driver on `*.neon.tech`; `pg` elsewhere.
 - `@vantage/core` — Better Auth, invites, `claim_frc_team_workspace`, hub access
 - `@vantage/billing` — `meteredAI`, ledger, Stripe
-- `@vantage/reference` — TBA, Statbotics, Nexus clients; Neon cache; no per-org TBA pollers
+- `@vantage/reference` — TBA, Statbotics, Nexus clients; Postgres/Neon cache; no per-org TBA pollers
 
 ## Domain packages
 

@@ -1,6 +1,7 @@
 {
   "name": "vantage",
   "private": true,
+  "license": "MIT",
   "version": "0.2.0",
   "workspaces": [
     "apps/*",
@@ -21,6 +22,8 @@
     "deploy:preflight": "node scripts/deploy-preflight.mjs",
     "db:generate": "drizzle-kit generate --config packages/db/drizzle.config.ts",
     "db:migrate": "node scripts/run-migrations.mjs",
+    "db:map-neon": "node scripts/map-neon-env.mjs",
+    "db:neon-preflight": "node scripts/neon-preflight.mjs",
     "cad:package": "node scripts/cad/package-relay.mjs",
     "cad:package:linux": "bash scripts/cad/package-linux.sh",
     "cad:package:macos": "bash scripts/cad/package-macos.sh",

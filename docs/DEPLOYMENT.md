@@ -57,6 +57,10 @@ Auth and product data never uses the Supabase Data API.
 
 ## 2. Neon (Postgres) and migrations
 
+Contributor copy-paste path (create a Neon project, map `DATABASE_*`, migrate, verify):
+[`docs/NEON.md`](NEON.md). Commands: `npm run db:map-neon`, `npm run db:migrate`,
+`npm run db:neon-preflight`.
+
 Migrations are plain SQL under `packages/db/migrations/`, applied by `scripts/run-migrations.mjs`,
 which records each **filename** in a `schema_migrations` table and applies files in lexicographic
 order, one transaction each. On failure it stops, logs to `scripts/migration-failures.log`, and exits 1.

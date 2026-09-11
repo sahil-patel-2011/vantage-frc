@@ -4,6 +4,15 @@ Vantage is a multi-tenant operations platform for FRC teams. This repository con
 foundation plus competition-ready scouting, Intel/Research, closed membership, configurable AI routing,
 pricing controls, and durable private/team agent context.
 
+**License:** [MIT License](LICENSE) (SPDX `MIT`). The source is public and **freely hostable** on
+your own Postgres or on [Neon](docs/NEON.md). The npm `"private": true` field only means this
+monorepo is not published to the npm registry; it is not a proprietary-source flag.
+
+**Postgres is the system of record** — not an optional add-on. Auth sessions, org membership, RLS
+tenancy, scouting, billing ledgers, and TBA/Statbotics reference caches all live in one Postgres
+database. Production today is Neon. How to build against it: [`docs/NEON.md`](docs/NEON.md).
+How to contribute: [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
 ## Repository map
 
 - `apps/web` — the single public deployment: marketing, legal/pricing/waitlist, Better Auth, and every
@@ -34,10 +43,12 @@ second app. See `archive/business-portal-legacy/README.md`.
 2. Copy `.env.example` to `.env.local`. Do not commit it.
 3. The unified app runs on `http://localhost:3001` with `npm run dev`; waitlist persistence and rate limiting
    use in-memory development stores when cloud credentials are absent.
-4. For product auth and SQL integration, create Postgres databases/roles and run all migration files in
-   numeric order as the schema owner. Set `DATABASE_URL` to an RLS-enforced app-role URL,
-   `DATABASE_ADMIN_URL` to the worker role, `DATABASE_AUTH_URL` to the identity-only role, and
-   `MARKETING_DATABASE_URL` to the least-privilege marketing role.
+4. For product auth and SQL integration you need Postgres. **Preferred hosted path:** create a
+   Neon project and follow [`docs/NEON.md`](docs/NEON.md) (copy pooled + direct URLs into
+   `DATABASE_URL` / `DATABASE_AUTH_URL` / `DATABASE_ADMIN_URL` / `MARKETING_DATABASE_URL`, then
+   `npm run db:migrate` and `npm run db:neon-preflight`). **Local Postgres** uses the same roles
+   (`vantage_app`, `vantage_worker`) and the same `scripts/run-migrations.mjs` runner. The npm
+   `"private"` field does not block self-hosting.
 5. Public routes include `/`, `/desktop`, `/pricing`, `/privacy`, and `/terms`. Product routes redirect to
    `/signin?next=...` and successful authentication continues to the requested route or `/dashboard`.
 
@@ -55,11 +66,16 @@ platform connectors/models/commercial settings, or cross-org admin APIs. Access 
 row (or re-run bootstrap for `PLATFORM_OWNER_EMAIL`) using the admin database role. Org Team Admin under
 `/team` is separate and stays limited to that org's owner/admin. See `SECURITY_OPERATIONS.md`.
 
-**Database:** Auth and product data use Postgres (`DATABASE_AUTH_URL` / `DATABASE_URL` as `vantage_app`,
-`DATABASE_ADMIN_URL` as `vantage_worker`). Production today is **Neon**; a **Supabase Postgres host** cutover
-(same Better Auth + `withRls` org isolation, Data API off) is in `docs/SUPABASE_CUTOVER.md`. Do not put
-`anon` / `service_role` keys in the web app. Resend is only the email transport for OTP / forgot-password /
-default email 2FA; it does not replace Google OAuth or Postgres.
+**Database (Postgres, required):** Auth and product data use Postgres. Request code goes through
+`withRls` (`SET LOCAL app.user_id` / `app.org_id`) as `vantage_app` (`DATABASE_URL` /
+`DATABASE_AUTH_URL`). Workers and `npm run db:migrate` use `vantage_worker`
+(`DATABASE_ADMIN_URL`, **unpooled**). Migrations are append-only SQL in `packages/db/migrations/`,
+applied by `scripts/run-migrations.mjs`. Production today is **Neon** — copy-paste setup, pooling,
+and verify commands are in [`docs/NEON.md`](docs/NEON.md). We do not use Neon-only extensions or
+the Neon Branches API. A **Supabase Postgres host** cutover (same Better Auth + `withRls`, Data API
+off) is in `docs/SUPABASE_CUTOVER.md`. Do not put `anon` / `service_role` keys in the web app.
+Resend is only the email transport for OTP / forgot-password / default email 2FA; it does not
+replace Google OAuth or Postgres.
 
 **TBA shared cache:** Platform-global TBA/Statbotics reference tables in Neon are the shared cache. One ingest
 worker uses `TBA_AUTH_KEY` (or an encrypted platform credential) with ETag/`If-None-Match`, in-flight dedupe,
@@ -200,3 +216,11 @@ npm run test:browser
 
 Database RLS integration tests require a running Postgres instance provisioned with the migration roles and
 are intentionally separate from credential-free unit/build verification.
+
+## License and community
+
+- [MIT License](LICENSE)
+- [Contributing](CONTRIBUTING.md) — local run, Neon path, tenancy rules, how to help
+- [Code of Conduct](CODE_OF_CONDUCT.md)
+- [Security](SECURITY.md) — private reports; do not file public issues for secrets or RLS bugs
+- Issue templates: `.github/ISSUE_TEMPLATE/` · PR template: `.github/PULL_REQUEST_TEMPLATE.md`
