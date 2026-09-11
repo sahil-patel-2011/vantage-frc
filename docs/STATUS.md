@@ -7,6 +7,8 @@ Living record of the master engineering brief. Update this file at the end of ev
 **Branch:** `cursor/keep-pit-checklists-on-phone-c0b5` off `origin/main` at `dc016b44`.
 **Date opened:** 2026-09-11.
 
+This revision: `npm run typecheck` clean across workspaces. Targeted vitest **9 files / 20 tests passed** (462ms) for the five `*-offline.test.ts` plus `shell-routes`, `empty-state-primary`, `feature-map-routes`, `default-target-honesty-contract`. `copy-lint` + `tsx-line-limit` **10 passed / 10** (2.91s). Fixture Playwright `pit-checklist-snapshot-shell.spec.ts` **5 passed / 5** (5.8s) on :3310. Local DB host `127.0.0.1:5432` (not production). Master brief is **not** done.
+
 ## Decisions the owner should know
 
 1. **Stale remotes were not merged.** Every `origin/{fn,ui,feat,build,pi-freebuff-layer,…}` branch has **no merge-base** with current `main` (unrelated histories after a rewrite). They are 641 commits behind. Unique subjects from those tips (Drive, assembly manual, email spine, budget/roles, desktop shell, visual system) are already on `main` by commit message. Merging them would import an alternate universe of the repo.
