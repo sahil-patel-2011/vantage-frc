@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { expectReadyOr, waitForLoadingGone } from "./ready";
 import { signInAs, signInFixture } from "./session";
 
 test.beforeEach(async ({ context }) => {
@@ -14,7 +15,7 @@ test("student this week can walk Home → My Day/Scout → Video paste → CAD l
   test.setTimeout(120_000);
 
   await page.goto("/dashboard");
-  await expect(page.locator("body")).not.toContainText("Application error");
+  await waitForLoadingGone(page);
   const now = page.getByTestId("dash-now");
   await expect(now).toBeVisible();
   await expect(now.getByText("What to do now")).toBeVisible();
@@ -29,7 +30,7 @@ test("student this week can walk Home → My Day/Scout → Video paste → CAD l
   }
 
   await homeCta.click();
-  await expect(page.locator("body")).not.toContainText("Application error");
+  await waitForLoadingGone(page);
   for (const phrase of BANNED) {
     await expect(page.locator("body"), `after Home CTA still shows ${phrase}`).not.toContainText(
       phrase,
@@ -44,11 +45,7 @@ test("student this week can walk Home → My Day/Scout → Video paste → CAD l
   }
 
   await page.goto("/scouting");
-  await expect(page.locator("body")).not.toContainText("Application error");
-  await page
-    .getByRole("heading", { name: /Loading scouting/i })
-    .waitFor({ state: "hidden", timeout: 12_000 })
-    .catch(() => undefined);
+  await waitForLoadingGone(page);
   for (const phrase of BANNED) {
     await expect(page.locator("body"), `Scouting still shows ${phrase}`).not.toContainText(phrase);
   }
@@ -72,33 +69,24 @@ test("student this week can walk Home → My Day/Scout → Video paste → CAD l
   }
 
   await page.goto("/video-analysis");
-  await expect(page.locator("body")).not.toContainText("Application error");
-  await page
-    .getByRole("heading", { name: "Loading Video…" })
-    .waitFor({ state: "hidden", timeout: 12_000 })
-    .catch(() => undefined);
+  await waitForLoadingGone(page);
   for (const phrase of BANNED) {
     await expect(page.locator("body"), `Video still shows ${phrase}`).not.toContainText(phrase);
   }
   const paste = page.getByRole("region", { name: "Paste a video" });
-  if (await paste.count()) {
-    await expect(paste).toBeVisible();
+  const chooseTeam = page.getByRole("link", { name: "Choose your team" });
+  const onPaste = await expectReadyOr(page, paste, chooseTeam);
+  if (onPaste) {
     await expect(page.getByRole("button", { name: "Analyze this video" })).toBeVisible();
     const field = paste.getByLabel("Video link");
     if (await field.count()) {
       await field.fill("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
       await expect(page.getByRole("button", { name: "Analyze this video" })).toBeVisible();
     }
-  } else {
-    await expect(page.getByRole("link", { name: "Choose your team" })).toBeVisible();
   }
 
   await page.goto("/cad-vault");
-  await expect(page.locator("body")).not.toContainText("Application error");
-  await page
-    .getByRole("heading", { name: /Loading the vault/i })
-    .waitFor({ state: "hidden", timeout: 12_000 })
-    .catch(() => undefined);
+  await waitForLoadingGone(page);
   await expect(
     page.getByRole("heading", {
       name: /Choose your team|Link a CAD document|Link an Onshape or Fusion document/i,
@@ -118,7 +106,7 @@ test("student this week can walk Home → My Day/Scout → Video paste → CAD l
   }
 
   await page.goto("/build?tab=cad");
-  await expect(page.locator("body")).not.toContainText("Application error");
+  await waitForLoadingGone(page);
   for (const phrase of ["OAuth", "ONSHAPE_", "Setup required"]) {
     await expect(page.locator("body"), `CAD tab still shows ${phrase}`).not.toContainText(phrase);
   }

@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { waitForLoadingGone } from "./ready";
 import { signInAs, signInFixture } from "./session";
 
 test.beforeEach(async ({ context }) => {
@@ -9,9 +10,10 @@ test.beforeEach(async ({ context }) => {
 test("Files, CAD, Print Farm, Event Day, and Logistics drop leftover engineering copy", async ({
   page,
 }) => {
+  test.setTimeout(90_000);
   for (const path of ["/files", "/cad", "/print-farm", "/command", "/logistics"]) {
     await page.goto(path);
-    await expect(page.locator("body")).not.toContainText("Application error");
+    await waitForLoadingGone(page);
     await expect(page.getByText("object storage")).toHaveCount(0);
     await expect(page.getByText("setup required")).toHaveCount(0);
     await expect(page.getByText("shaded-view PNG")).toHaveCount(0);

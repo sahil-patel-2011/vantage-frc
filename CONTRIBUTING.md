@@ -71,7 +71,14 @@ npm run typecheck                        # every workspace
 npm run lint
 npm test                                 # ~8,600 tests in about 90 seconds
 npm run build --workspace=@vantage/web   # zero warnings — a warning once hid eleven dead media queries
+npx playwright install chromium          # once per machine
+npm run test:browser                     # Playwright vs http://127.0.0.1:3310 (E2E_AUTH_FIXTURE=1, local vantage_ci)
 ```
+
+If `:3310` is taken, `PLAYWRIGHT_PORT=3510 npm run test:browser`. To attach to a server you already
+started: `E2E_AUTH_FIXTURE=1 NODE_ENV=development npm run dev:test --workspace=@vantage/web`, then
+`PLAYWRIGHT_BASE_URL=http://127.0.0.1:3310 npm run test:browser:attach`. Never point Playwright at
+production `DATABASE_*`.
 
 For a screen change, load it in a browser on a local database and write down what you saw. For a
 database change, run `scripts/rls-proof.mjs` against a local Postgres as a non-superuser login. For a

@@ -1,27 +1,40 @@
+import path from "node:path";
 import { defineConfig, devices } from "@playwright/test";
+import {
+  assertLocalFixtureDatabase,
+  cookieDomain,
+  playwrightOrigin,
+  playwrightPort,
+} from "./tests/browser/origin";
+
+assertLocalFixtureDatabase();
 
 const isCi = Boolean(process.env.CI);
+const origin = playwrightOrigin();
+const port = playwrightPort();
+const hostname = cookieDomain(origin);
+
+// session.ts reads PLAYWRIGHT_BASE_URL for the fixture cookie URL.
+process.env.PLAYWRIGHT_BASE_URL = origin;
 
 export default defineConfig({
   testDir: "./tests/browser",
-  // Two workers keep Next's dev compiler responsive on the Windows CI/dev box.
-  // On ubuntu-latest GHA, two workers starve Next 16's compiler and abort
-  // navigations (net::ERR_ABORTED / detached frames). One worker + one retry
-  // is the CI contract. Signed-in specs still skip when signInAs cannot reach
-  // Postgres — this job does not start a database.
-  workers: isCi ? 1 : 2,
+  // One worker is the GHA contract: two starve Next 16's compiler
+  // (net::ERR_ABORTED / detached frames). Override with PLAYWRIGHT_WORKERS.
+  workers: Number(process.env.PLAYWRIGHT_WORKERS) || 1,
   retries: isCi ? 1 : 0,
   forbidOnly: isCi,
   timeout: isCi ? 45_000 : 30_000,
+  reporter: isCi ? [["line"], ["html"]] : [["list"], ["html"]],
   use: {
-    baseURL: "http://localhost:3310",
+    baseURL: origin,
     trace: "retain-on-failure",
     storageState: {
       cookies: [
         {
           name: "vantage-analytics-consent",
           value: "denied.1",
-          domain: "localhost",
+          domain: hostname,
           path: "/",
           expires: -1,
           httpOnly: false,
@@ -33,21 +46,25 @@ export default defineConfig({
     },
   },
   webServer: {
-    command: "npm run dev:test --workspace=@vantage/web",
-    url: "http://localhost:3310",
+    command: `npx next dev --port ${port} --hostname 127.0.0.1`,
+    cwd: path.join(__dirname, "apps/web"),
+    url: origin,
     env: {
       ...process.env,
+      NODE_ENV: "development",
       E2E_AUTH_FIXTURE: "1",
+      PLAYWRIGHT_BASE_URL: origin,
       AUTH_TRUSTED_ORIGINS: [
         process.env.AUTH_TRUSTED_ORIGINS,
-        "http://localhost:3310",
-        "http://127.0.0.1:3310",
+        origin,
+        `http://localhost:${port}`,
+        `http://127.0.0.1:${port}`,
       ]
         .filter(Boolean)
         .join(","),
     },
     reuseExistingServer: !process.env.CI,
-    timeout: 120_000
+    timeout: 180_000,
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }]
+  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
 });

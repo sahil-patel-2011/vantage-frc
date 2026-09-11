@@ -1,14 +1,15 @@
 import type { BrowserContext, Cookie } from "@playwright/test";
+import { playwrightOrigin } from "./origin";
 
 /**
  * Every spec used to hardcode `url: "http://localhost:3310"` on its auth cookie.
  * Run the suite against any other origin — a second dev server on a free port,
  * a preview deploy — and Playwright silently dropped the cookie, so the run
  * turned into a wall of "redirected to /signin" failures that looked like
- * product bugs. Derive the cookie origin from the config's baseURL instead.
+ * product bugs. Derive the cookie origin from PLAYWRIGHT_BASE_URL / port.
  */
 export function baseOrigin(): string {
-  return process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3310";
+  return playwrightOrigin();
 }
 
 type CookieSpec = Pick<Cookie, "name" | "value"> & Partial<Cookie>;

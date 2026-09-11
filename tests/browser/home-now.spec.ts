@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { waitForLoadingGone } from "./ready";
 import { signInAs, signInFixture } from "./session";
 
 test.beforeEach(async ({ context }) => {
@@ -8,7 +9,7 @@ test.beforeEach(async ({ context }) => {
 
 test("Home shows one What to do now primary without TBA jargon", async ({ page }) => {
   await page.goto("/dashboard");
-  await expect(page.locator("body")).not.toContainText("Application error");
+  await waitForLoadingGone(page);
   const now = page.getByTestId("dash-now");
   await expect(now).toBeVisible();
   await expect(now.getByText("What to do now")).toBeVisible();
