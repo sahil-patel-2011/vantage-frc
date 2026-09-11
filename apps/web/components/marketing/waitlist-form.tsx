@@ -102,7 +102,11 @@ export function WaitlistForm({
 
   if (state === "unavailable") {
     return (
-      <div className="confirmation waitlist-confirmation waitlist-unavailable" role="status">
+      <div
+        className="confirmation waitlist-confirmation waitlist-unavailable"
+        role="status"
+        data-testid="waitlist-unavailable"
+      >
         <h3>{unavailable.title}</h3>
         <p>{unavailable.body}</p>
         <p>
@@ -114,7 +118,12 @@ export function WaitlistForm({
 
   if (state === "success") {
     return (
-      <div className="confirmation waitlist-confirmation" role="status" aria-live="polite">
+      <div
+        className="confirmation waitlist-confirmation"
+        role="status"
+        aria-live="polite"
+        data-testid="waitlist-success"
+      >
         <h3>You’re on the list.</h3>
         <p>We&apos;ll email when access opens. Joining the waitlist does not create a Vantage account.</p>
       </div>
@@ -126,6 +135,7 @@ export function WaitlistForm({
       className={`waitlist-form soft-waitlist-form ${compact ? "compact-form" : ""}`}
       onSubmit={submit}
       aria-label="Join the Vantage waitlist"
+      data-testid="waitlist-form"
     >
       <div className="field">
         <label htmlFor={`${prefix}-email`}>Email</label>
@@ -199,7 +209,7 @@ export function WaitlistForm({
       />
 
       {state === "error" && !consentError ? (
-        <p className="form-error form-status form-status-error" role="alert">
+        <p className="form-error form-status form-status-error" role="alert" data-testid="waitlist-error">
           {message}
         </p>
       ) : null}

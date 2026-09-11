@@ -29,13 +29,11 @@ test("CAD hub viewport is a picture pane, not an Onshape embed", async ({ page }
   await page.goto("/build?tab=cad");
   await waitForLoadingGone(page);
   await expect(page.locator("body")).not.toContainText("Application error");
+  await expect(page.getByRole("tab", { name: "CAD" })).toBeVisible({ timeout: 20_000 });
   await expect(page.locator("iframe[src*='onshape.com']")).toHaveCount(0);
-  const viewport = page.getByRole("region", { name: "CAD viewport" });
-  const gate = page.getByRole("heading", { name: /choose (a|your) team/i });
-  await expect(viewport.or(gate).or(page.getByRole("tab", { name: "CAD" }))).toBeVisible({
-    timeout: 20_000,
-  });
+  const viewport = page.getByTestId("cad-viewport");
   if (await viewport.count()) {
+    await expect(viewport).toBeVisible();
     await expect(viewport.locator("iframe")).toHaveCount(0);
   }
 });

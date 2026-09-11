@@ -101,13 +101,22 @@ describe("admin waitlist tools", () => {
 
 describe("createWaitlistStore", () => {
   const previousCi = process.env.CI;
+  const previousFixture = process.env.E2E_AUTH_FIXTURE;
   afterEach(() => {
     if (previousCi === undefined) delete process.env.CI;
     else process.env.CI = previousCi;
+    if (previousFixture === undefined) delete process.env.E2E_AUTH_FIXTURE;
+    else process.env.E2E_AUTH_FIXTURE = previousFixture;
   });
 
   it("uses the in-memory store on CI so the public form does not need Postgres", () => {
     process.env.CI = "true";
+    expect(createWaitlistStore()).toBeInstanceOf(MemoryWaitlistStore);
+  });
+
+  it("uses the in-memory store under the Playwright auth fixture", () => {
+    delete process.env.CI;
+    process.env.E2E_AUTH_FIXTURE = "1";
     expect(createWaitlistStore()).toBeInstanceOf(MemoryWaitlistStore);
   });
 
