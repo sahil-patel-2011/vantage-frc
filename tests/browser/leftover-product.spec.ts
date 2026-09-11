@@ -17,7 +17,7 @@ const LEAVES = [
   { path: "/help", heading: "Help centre" },
   { path: "/whats-new", heading: "What’s new" },
   { path: "/print-farm", heading: "Print farm" },
-  { path: "/team/knowledge", heading: "Playbook" },
+  { path: "/team/knowledge", heading: /Playbook|Team|Choose your team/ },
   { path: "/inspection", heading: /Inspection|Robot Inspection/ },
   { path: "/scout-accuracy", heading: /Scout Accuracy|Choose your team/ },
 ] as const;
