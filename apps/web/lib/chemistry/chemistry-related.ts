@@ -174,7 +174,7 @@ export function chemistryShellCopy(kind: ChemistryShellKind): ChemistryEmptyCopy
     case "setup":
       return {
         kind,
-        badge: "Setup",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Choose your team and the event this alliance is at before partner-fit scores appear.",
@@ -254,8 +254,8 @@ export function chemistryNextActions(input: {
       return dropRelatedStripDuplicates(orgId, [
         {
           id: "team-data",
-          label: "Sync event metrics",
-          detail: "Pull match and ranking rows from The Blue Alliance. Partner-fit stays blank until those rows exist.",
+          label: "Sync Team Data",
+          detail: "Load match and ranking rows for this event. Partner-fit stays blank until then.",
           href: withOrgHref("/team/data", orgId),
           primary: true,
         },

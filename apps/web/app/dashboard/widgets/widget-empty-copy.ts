@@ -243,3 +243,12 @@ export function emptyHintFor(type: string): EmptyHint {
     }
   );
 }
+
+const WIDGET_ENGINEERING_COPY =
+  /\b(EPA|TBA|Statbotics|The Blue Alliance|setup_required|reference tables|team_event_metrics)\b/i;
+
+/** API payload messages can name TBA/EPA. Students see the catalog hint instead. */
+export function studentWidgetDescription(message: string | undefined, hint: EmptyHint): string {
+  if (!message || WIDGET_ENGINEERING_COPY.test(message)) return hint.body;
+  return message;
+}

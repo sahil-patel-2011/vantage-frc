@@ -38,7 +38,7 @@ export type PickClockRecommendation = {
   reliability: number | null;
   foulRate: number | null;
   scoutSample: number;
-  /** Present when last-3 alliance share diverges from season EPA. */
+  /** Present when last-3 alliance share diverges from season rating. */
   epaDrift: PickAssistDrift | null;
 };
 
@@ -75,8 +75,8 @@ function formatEpa(value: number | null): string | null {
 
 /**
  * Build glanceable "why" lines from pick-desk signals only — never invent metrics.
- * Prefers pick-list position, then EPA tier / reliability / foul risk / event rank.
- * Surfaces EPA-drift and low-data TBA mode when provided.
+ * Prefers pick-list position, then rating tier / reliability / foul risk / event rank.
+ * Surfaces rating-drift and low-data event mode when provided.
  */
 export function buildPickReasons(
   candidate: PickCandidate,
@@ -111,11 +111,11 @@ export function buildPickReasons(
   const tier = tierLabel(candidate.suggestedTier);
   const epaText = formatEpa(candidate.epa);
   if (tier && epaText) {
-    const line = `${tier} · EPA ${epaText}`;
+    const line = `${tier} · Rating ${epaText}`;
     if (!headline) headline = line;
     reasons.push({ label: line, tone: candidate.suggestedTier === "first" ? "strong" : "neutral" });
   } else if (epaText) {
-    const line = `EPA ${epaText}`;
+    const line = `Rating ${epaText}`;
     if (!headline) headline = line;
     reasons.push({ label: line, tone: "neutral" });
   } else if (tier) {
@@ -126,8 +126,8 @@ export function buildPickReasons(
   if (drift?.divergent) {
     const short =
       drift.delta > 0
-        ? `EPA lag · recent ~${drift.recentAverage.toFixed(0)} > EPA ${drift.seasonEpa.toFixed(0)}`
-        : `EPA lag · recent ~${drift.recentAverage.toFixed(0)} < EPA ${drift.seasonEpa.toFixed(0)}`;
+        ? `Rating lag · recent ~${drift.recentAverage.toFixed(0)} > rating ${drift.seasonEpa.toFixed(0)}`
+        : `Rating lag · recent ~${drift.recentAverage.toFixed(0)} < rating ${drift.seasonEpa.toFixed(0)}`;
     reasons.unshift({ label: short, tone: "caution" });
     if (!listHint && pickMode !== "low_data_tba") {
       headline = short;
@@ -177,7 +177,7 @@ export function buildPickReasons(
 
   const endgame = formatEpa(candidate.endgameEpa);
   if (endgame && (candidate.endgameEpa ?? 0) >= 8) {
-    reasons.push({ label: `Endgame EPA ${endgame}`, tone: "neutral" });
+    reasons.push({ label: `Endgame rating ${endgame}`, tone: "neutral" });
   }
 
   // Cap to what fits on a glance screen; keep drift first when present.
@@ -218,7 +218,7 @@ function toRecommendation(
 /**
  * Next best pick for the 45-second clock.
  * Prefer the highest remaining pick-list entry; otherwise the top ranked
- * pick-desk candidate (EPA tier + reliability/foul adjustments already applied).
+ * pick-desk candidate (rating tier + reliability/foul adjustments already applied).
  */
 export function recommendNextPick(input: {
   candidates: PickCandidate[];

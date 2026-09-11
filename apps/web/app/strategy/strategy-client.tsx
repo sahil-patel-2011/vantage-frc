@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
 import { OfflineBanner } from "../../components/offline-banner";
 import { PageHeader, ToolStrip, Button } from "../../components/ui";
@@ -13,7 +13,7 @@ import {
   strategyNextActions,
   strategyShellSetupSteps,
 } from "../../lib/strategy/strategy-related";
-import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { clearFeatureSnapshot, getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import type { StrategyView } from "../../lib/strategy/types";
 import { PickListWorkbench } from "./pick-list-workbench";
 import {
@@ -36,6 +36,8 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
   const [recomputing, setRecomputing] = useState(false);
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<StrategyView | null>(null);
+  viewRef.current = view;
   const previewOrgId = (view && "orgId" in view ? view.orgId : null) ?? urlOrgId;
   const { cheatOpen, setCheatOpen, shortcuts } = useVenueShortcuts(previewOrgId);
 
@@ -44,33 +46,52 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
   }, []);
 
   const loadStrategy = useCallback(() => {
-    setFetchFailed(false);
-    setError("");
-    setLoading(true);
-    const params = new URLSearchParams(window.location.search);
-    const orgId = params.get("orgId");
-    const requestedTab = params.get("tab");
-    if (requestedTab === "picks") setTab("picks");
-    void fetch(`/api/strategy${orgId ? `?orgId=${encodeURIComponent(orgId)}` : ""}`, {
-      cache: "no-store",
-      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
-    })
-      .then(async (response) => {
+    void (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const orgId = params.get("orgId");
+      const cacheOrg = orgId?.trim() || "_";
+      const requestedTab = params.get("tab");
+      if (requestedTab === "picks") setTab("picks");
+      let hadCache = Boolean(viewRef.current);
+      try {
+        const cached = await getFeatureSnapshot<StrategyView>("strategy", cacheOrg);
+        if (!viewRef.current && cached?.data && "status" in cached.data) {
+          setView(cached.data);
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          setLoading(false);
+          hadCache = true;
+        }
+      } catch {
+        // IndexedDB missing or blocked; live fetch still runs.
+      }
+      setFetchFailed(false);
+      setError("");
+      try {
+        const response = await fetch(`/api/strategy${orgId ? `?orgId=${encodeURIComponent(orgId)}` : ""}`, {
+          cache: "no-store",
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+        });
         const data = (await response.json()) as StrategyView | { error?: string };
+        if (response.status === 401 || response.status === 403) {
+          setView(null);
+          setFromCache(false);
+          setCachedAt(null);
+          setFetchFailed(true);
+          void clearFeatureSnapshot("strategy", cacheOrg);
+          if (orgId) void clearFeatureSnapshot("strategy", orgId);
+          return;
+        }
         if (!response.ok || !("status" in data)) {
-          const message = "error" in data ? data.error : undefined;
-          if (orgId) {
-            const row = await getFeatureSnapshot<StrategyView>("strategy", orgId);
-            if (row) {
-              setView(row.data);
-              setFromCache(true);
-              setCachedAt(row.cachedAt);
-              return;
-            }
+          if (hadCache || viewRef.current) {
+            setFromCache(true);
+            setError("Could not refresh Strategy. Showing the last copy on this device.");
+            setFetchFailed(false);
+            return;
           }
+          const message = "error" in data ? data.error : undefined;
           if (!message) {
             setFetchFailed(true);
-            setView(null);
             return;
           }
           setError(message);
@@ -94,25 +115,25 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
         setView(data);
         setFromCache(false);
         setCachedAt(new Date().toISOString());
-        const persistOrg = "orgId" in data && data.orgId ? data.orgId : orgId;
-        if (persistOrg) await putFeatureSnapshot("strategy", persistOrg, data);
-      })
-      .catch(async () => {
-        if (orgId) {
-          const row = await getFeatureSnapshot<StrategyView>("strategy", orgId);
-          if (row) {
-            setView(row.data);
-            setFromCache(true);
-            setCachedAt(row.cachedAt);
-            return;
-          }
+        const persistOrg = "orgId" in data && data.orgId ? data.orgId : cacheOrg;
+        try {
+          await putFeatureSnapshot("strategy", persistOrg, data);
+          if (!orgId) await putFeatureSnapshot("strategy", "_", data);
+        } catch {
+          // Live Strategy already painted; IndexedDB is best-effort.
+        }
+      } catch {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Strategy. Showing the last copy on this device.");
+          setFetchFailed(false);
+          return;
         }
         setFetchFailed(true);
-        setView(null);
-      })
-      .finally(() => {
+      } finally {
         setLoading(false);
-      });
+      }
+    })();
   }, []);
 
   useEffect(() => {

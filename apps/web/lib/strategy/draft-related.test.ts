@@ -124,7 +124,7 @@ describe("draftShellCopy", () => {
     }
     expect(draftShellCopy("empty").badge).toBe("No draft board yet");
     expectPlainCopy(draftShellCopy("empty").description);
-    expect(draftShellCopy("setup").badge).toBe("Setup required");
+    expect(draftShellCopy("setup").badge).toBe("Needs setup");
     expectPlainCopy(draftShellCopy("ready").description);
     expect(draftShellCopy("ready").description).toMatch(/this team/i);
   });

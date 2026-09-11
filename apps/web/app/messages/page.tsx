@@ -29,7 +29,7 @@ export default async function MessagesPage({
         <EmptyState
           title="Choose your team"
           description="Choose your team to open chat."
-          badge="Setup"
+          badge="Needs setup"
           badgeTone="setup"
         >
           <Button as="a" variant="primary" href="/workspace">

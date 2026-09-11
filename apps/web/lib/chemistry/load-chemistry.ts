@@ -255,7 +255,7 @@ export async function loadAllianceChemistry(
     .map((s) => ({
       teamKey: s.teamKey,
       teamNumber: Number(/^frc(\d+)$/i.exec(s.teamKey)?.[1] ?? 0) || null,
-      reason: `Event EPA ${Math.round((s.epaTotal ?? 0) * 10) / 10} — try as a third seat`,
+      reason: `Event rating ${Math.round((s.epaTotal ?? 0) * 10) / 10} — try as a third seat`,
     }));
 
   return {

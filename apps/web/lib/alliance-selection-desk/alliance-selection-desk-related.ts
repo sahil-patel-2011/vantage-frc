@@ -168,7 +168,7 @@ export function allianceSelectionDeskShellCopy(
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Choose your team before creating a live board.",
@@ -186,7 +186,7 @@ export function allianceSelectionDeskShellCopy(
         kind: "ready",
         title: "Live alliance selection board",
         description:
-          "Shared slots, scout evidence, and TBA conflict flags.",
+          "Shared slots, scout evidence, and ranking conflict flags.",
       };
   }
 }
@@ -262,7 +262,7 @@ export function allianceSelectionDeskNextActions(input: {
       {
         id: "conflicts",
         label: "Resolve conflict flags",
-        detail: `${conflictCount} conflict flag${conflictCount === 1 ? "" : "s"} from TBA/scout overlap.`,
+        detail: `${conflictCount} conflict flag${conflictCount === 1 ? "" : "s"} from ranking and scout overlap.`,
         href: "#alliance-desk-board",
         primary: true,
       },

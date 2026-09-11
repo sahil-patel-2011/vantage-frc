@@ -317,9 +317,9 @@ export function strategyNextActions(input: {
       needsReferenceData
         ? {
             id: "team-data",
-            label: "Sync event metrics",
+            label: "Sync Team Data",
             detail:
-              "Load synced event numbers for this event. Win chance stays blank until then.",
+              "Load event numbers for this event. Win chance stays blank until then.",
             href: withOrgHref("/team/data", orgId),
             primary: true,
           }
@@ -333,7 +333,7 @@ export function strategyNextActions(input: {
       {
         id: "pick-desk",
         label: "Open Pick desk",
-        detail: "Pick tiers wait on the same reference rows.",
+        detail: "Pick tiers wait on the same event numbers.",
         href: withOrgHref("/strategy?tab=picks", orgId),
       },
       {

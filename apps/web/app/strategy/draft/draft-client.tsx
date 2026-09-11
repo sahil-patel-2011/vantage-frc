@@ -6,7 +6,7 @@ import { EmptyState, PageHeader, Button } from "../../../components/ui";
 import { hubHref } from "../../../lib/nav/hubs";
 import { withOrgHref } from "../../../lib/nav/product-nav";
 import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
-import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
+import { clearFeatureSnapshot, getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 import {
   DRAFT_RELATED_INCLUDE,
@@ -225,7 +225,7 @@ function DraftShell({
         className="draft-empty"
         badge={
           shell === "setup"
-            ? "Setup required"
+            ? "Needs setup"
             : shell === "error"
               ? "Unavailable"
               : shell === "empty"
@@ -252,9 +252,9 @@ function DraftShell({
             {setup.label}
           </Button>
         ) : null}
-        {shell === "empty" ? (
+        {shell === "empty" && !primary ? (
           <Button as="a" variant="primary" href={teamDataHref}>
-            Sync event metrics
+            Sync Team Data
           </Button>
         ) : null}
       </EmptyState>
@@ -292,7 +292,7 @@ export default function DraftClient() {
       if (isDraftSetupCache(payload)) {
         setData(null);
         setState(null);
-        setSetupMessage(payload.message ?? "Setup required");
+        setSetupMessage(payload.message ?? "Needs setup");
         setSetupOrgId(typeof payload.orgId === "string" ? payload.orgId : orgId);
         setSetupEventKey(null);
         return;
@@ -334,6 +334,19 @@ export default function DraftClient() {
           signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const payload = await response.json();
+        if (response.status === 401 || response.status === 403) {
+          setData(null);
+          setState(null);
+          setSetupMessage("");
+          setFromCache(false);
+          setCachedAt(null);
+          setErrorStatus(response.status);
+          setErrorMessage(typeof payload?.error === "string" ? payload.error : null);
+          setFetchFailed(true);
+          void clearFeatureSnapshot("draft", urlOrg || "_");
+          if (urlOrg) void clearFeatureSnapshot("draft", urlOrg);
+          return;
+        }
         if (!response.ok) {
           if (hadCache || paintedRef.current) {
             setFromCache(true);
@@ -353,7 +366,7 @@ export default function DraftClient() {
         if (payload.status === "setup_required") {
           const setup: DraftSetupCache = {
             status: "setup_required",
-            message: payload.message ?? "Setup required",
+            message: payload.message ?? "Needs setup",
             orgId: typeof payload.orgId === "string" ? payload.orgId : urlOrg || undefined,
           };
           applyDraftView(setup);
@@ -555,8 +568,8 @@ export default function DraftClient() {
         error={
           failure
             ? failure.description
-            : shell === "setup" && setupMessage
-              ? `${setupMessage} Alliance slots stay empty until real event metrics exist.`
+              : shell === "setup" && setupMessage
+              ? `${setupMessage} Alliance slots stay empty until this event has a team list.`
               : shell === "empty" && data?.message
                 ? `${data.message} Cross-check Strategy, Pick desk, and Scouting.`
                 : undefined
@@ -596,7 +609,7 @@ export default function DraftClient() {
       <PageHeader
         breadcrumbs="Competition / Strategy / Draft"
         title="Draft day alliance board"
-        description={`${data.eventName ?? data.eventKey} · captains then first picks, then reverse second picks. Only teams with synced event metrics appear in the pool. Mentor share links only open for this team.`}
+        description={`${data.eventName ?? data.eventKey} · captains then first picks, then reverse second picks. Only teams on this event’s list appear in the pool. Mentor share links only open for this team.`}
       >
         <div className="strategy-pick-actions">
           <DraftRelatedStrip orgId={data.orgId} />
@@ -645,7 +658,7 @@ export default function DraftClient() {
           <header>
             <div>
               {data.pickAssist.pickMode === "low_data_tba" ? (
-                <span className="app-badge setup">Low-data TBA</span>
+                <span className="app-badge setup">Low-data event</span>
               ) : (
                 <span className="app-badge good">Scout-weighted</span>
               )}
@@ -697,7 +710,7 @@ export default function DraftClient() {
           ) : null}
           {data.pickAssist.epaDrifts.length ? (
             <div className="strategy-draft-drifts">
-              <h3>EPA-drift callouts</h3>
+              <h3>Rating drift</h3>
               <ul>
                 {data.pickAssist.epaDrifts.map((drift) => (
                   <li key={drift.teamKey}>
@@ -809,10 +822,10 @@ export default function DraftClient() {
       <section className="app-card strategy-draft-pool">
         <header>
           <h2>Available teams</h2>
-          <small>{formatDraftMetric(available.length, true)} remaining with event metrics</small>
+          <small>{formatDraftMetric(available.length, true)} remaining with event numbers</small>
         </header>
         {!available.length ? (
-          <p className="app-muted">Pool empty — sync more event metrics or clear a slot.</p>
+          <p className="app-muted">Pool empty — sync more event numbers or clear a slot.</p>
         ) : (
           <ul>
             {available.map((teamKey) => {
@@ -820,7 +833,7 @@ export default function DraftClient() {
               return (
                 <li key={teamKey} title={drift?.label}>
                   <strong>{teamNumber(teamKey)}</strong>
-                  {drift ? <span className="strategy-draft-pool-drift">EPA lag</span> : null}
+                  {drift ? <span className="strategy-draft-pool-drift">Rating lag</span> : null}
                   <Button variant="secondary" type="button" disabled={!data.canEdit} onClick={() => assignTeam(teamKey)}>
                     Draft
                   </Button>

@@ -164,7 +164,7 @@ function DeskShell({
       ) : (
         <EmptyState
           soft
-          badge={shell === "setup" ? "Setup required" : copy.badge}
+          badge={shell === "setup" ? "Needs setup" : copy.badge}
           badgeTone="setup"
           title={copy.title}
           description={error ?? copy.description}
@@ -212,8 +212,8 @@ function SlotRow({
         <strong>{pickSlotLabel(slot.pickSlot)}</strong>
         {/* One pick list: this is the team's place on the SAME list the team ranked together. */}
         {slot.pickListRank != null ? <Badge tone="info">Pick list #{slot.pickListRank}</Badge> : null}
-        {slot.tbaRank != null ? <Badge tone="neutral">TBA #{slot.tbaRank}</Badge> : null}
-        {slot.tbaEpa != null ? <Badge tone="neutral">EPA {slot.tbaEpa.toFixed(1)}</Badge> : null}
+        {slot.tbaRank != null ? <Badge tone="neutral">Rank #{slot.tbaRank}</Badge> : null}
+        {slot.tbaEpa != null ? <Badge tone="neutral">Rating {slot.tbaEpa.toFixed(1)}</Badge> : null}
         {slot.matchScoutCount > 0 ? <Badge tone="good">{slot.matchScoutCount} match scout</Badge> : null}
         {slot.pitScoutCount > 0 ? <Badge tone="good">{slot.pitScoutCount} pit scout</Badge> : null}
         {slot.conflicts.map((c) => (
@@ -505,7 +505,7 @@ export default function AllianceSelectionDeskClient() {
           </>
         }
         title="Alliance selection desk"
-        description="Live pick board with shared slots, scout evidence attach, TBA conflict flags, and drive-team export. Cross-check Strategy, Collaborative pick list, and Pick clock."
+        description="Live pick board with shared slots, scout evidence attach, ranking conflict flags, and drive-team export. Cross-check Strategy, Collaborative pick list, and Pick clock."
       >
         <div className="alliance-desk-header-actions">
           {view?.status === "live" ? (

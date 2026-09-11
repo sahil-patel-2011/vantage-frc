@@ -457,12 +457,16 @@ export default function ChatClient({
             <h2>Your threads</h2>
           </div>
           <div className="ch-thread-actions">
+            {shell !== "empty" ? (
+              <>
             <button type="button" onClick={() => void newThread("private")}>
               + Private chat
             </button>
             <button type="button" onClick={() => void newThread("team")}>
               + Team-shared chat
             </button>
+              </>
+            ) : null}
           </div>
           <ul className="ch-thread-list">
             {threads.map((item) => (

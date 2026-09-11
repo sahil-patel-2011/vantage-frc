@@ -6,7 +6,7 @@ import { setupActionsFrom } from "../setup-actions";
 export const MATCH_STRATEGY_CARDS_RELATED_LINKS = [
   { id: "strategy", label: "Strategy", tab: "strategy" },
   { id: "match-checklist", label: "Match checklist", tab: "match-checklist" },
-  { id: "command", label: "Command", tab: "command" },
+  { id: "command", label: "Event day", tab: "command" },
   { id: "briefing", label: "Briefing", tab: "briefing" },
   { id: "defense-planner", label: "Defense Planner", tab: "defense-planner" },
   { id: "drive-team-signals", label: "Drive-Team Signals", tab: "drive-team-signals" },
@@ -21,7 +21,7 @@ export type MatchStrategyCardsRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — Strategy / Checklist / Command. */
+/** Focused Soft-UI strip — Strategy / Checklist / Event day. */
 export const MATCH_STRATEGY_CARDS_RELATED_INCLUDE: MatchStrategyCardsRelatedId[] = [
   "strategy",
   "match-checklist",
@@ -30,7 +30,7 @@ export const MATCH_STRATEGY_CARDS_RELATED_INCLUDE: MatchStrategyCardsRelatedId[]
 ];
 
 /**
- * Soft-UI cross-links from Match Strategy Cards → Strategy / Checklist / Command.
+ * Soft-UI cross-links from Match Strategy Cards → Strategy / Checklist / Event day.
  * Build with hubHref — never broken JSX href templates.
  */
 export function matchStrategyCardsRelatedLinks(
@@ -109,7 +109,7 @@ export function matchStrategyCardsSetupSteps(
     {
       id: "team-data",
       label: "Sync Team Data",
-      detail: "Pull the match schedule from The Blue Alliance so cards can appear.",
+      detail: "Load this event’s match schedule so cards can appear.",
       href: withOrgHref("/team/data", orgId),
     },
   ]);
@@ -161,12 +161,12 @@ export function matchStrategyCardsShellCopy(
         badge: "Unavailable",
         title: "Could not load Match Strategy Cards",
         description:
-          "A network or server issue blocked the schedule. Retry, or open Strategy / Command while it reloads.",
+          "A network or server issue blocked the schedule. Retry, or open Strategy / Event day while it reloads.",
       };
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Choose your team and active event before drafting plans.",
@@ -230,8 +230,8 @@ export function matchStrategyCardsNextActions(input: {
       },
       {
         id: "command",
-        label: "Open Command",
-        detail: "Command stays available while cards reload.",
+        label: "Open Event day",
+        detail: "Event day stays available while cards reload.",
         href: hubHref("/competition", "command", orgId),
       },
     ];
@@ -248,7 +248,7 @@ export function matchStrategyCardsNextActions(input: {
       },
       {
         id: "command",
-        label: "Open Command",
+        label: "Open Event day",
         detail: "Confirm the active event and next match.",
         href: hubHref("/competition", "command", orgId),
       },
@@ -267,7 +267,7 @@ export function matchStrategyCardsNextActions(input: {
         id: "auto-coord",
         label: "Agree autos with partners",
         detail:
-          "TBA listed alliance partners and Auto assignment is still blank — fill the spoken path plan before you queue.",
+          "Alliance partners are listed and Auto assignment is still blank — fill the spoken path plan before you queue.",
         href: "#match-strategy-cards-list",
         primary: true,
       },

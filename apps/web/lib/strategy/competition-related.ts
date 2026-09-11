@@ -131,8 +131,8 @@ export function strategySetupNextActions(ctx: StrategySetupContext): StrategyNex
     },
     {
       id: "forms",
-      label: "Publish form schema",
-      detail: "Custom fields flow into strategy tools after publish.",
+      label: "Open form builder",
+      detail: "Match and pit forms feed Strategy after you publish them.",
       href: hubHref("/competition", "forms", orgId),
     },
     {
@@ -174,7 +174,7 @@ export function pickSurfaceSetupMessage(ctx: StrategySetupContext): string {
     return "Set your active event on Event Day. Rankings stay blank until then.";
   }
   if (ctx.tbaConfigured === false && ctx.hasMetrics === false) {
-    return "Sync rankings under Team → Data before pick lists fill in.";
+    return "Ask a mentor to connect match results, then sync under Team → Data.";
   }
   if (ctx.hasMetrics === false) {
     return "No team numbers for this event yet. Sync under Team → Data before ranking picks.";

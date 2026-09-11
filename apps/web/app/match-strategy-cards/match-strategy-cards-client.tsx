@@ -139,7 +139,7 @@ function CardsShell({
       ) : (
         <EmptyState
           soft
-          badge={shell === "setup" ? "Setup required" : copy.badge}
+          badge={shell === "setup" ? "Needs setup" : copy.badge}
           badgeTone="setup"
           title={copy.title}
           description={error ?? copy.description}
@@ -374,7 +374,7 @@ export default function MatchStrategyCardsClient() {
           </>
         }
         title="Match strategy cards"
-        description="Printable game plan for our next TBA match — roles, auto, defense, threats. Auto / backup / deploy cues come from written text only."
+        description="Printable game plan for our next match — roles, auto, defense, threats. Auto / backup / deploy cues come from written text only."
       >
         <div className="msc-header-actions">
           {relatedLinks.map((link) => (
@@ -408,7 +408,7 @@ export default function MatchStrategyCardsClient() {
             {view.eventName ?? view.eventKey} · Team {view.teamNumber} ·{" "}
             {view.nextMatchKey
               ? `next ${view.nextMatchKey}`
-              : `${view.cards.length} scheduled match(es) — no upcoming TBA match`}
+              : `${view.cards.length} scheduled match(es) — no upcoming match`}
           </span>
         </Panel>
         {view.cards.map((card) => (

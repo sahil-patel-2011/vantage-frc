@@ -220,31 +220,23 @@ export function aiChatNextActions(input: {
       {
         id: "strategy",
         label: "Open Strategy",
-        detail: "Match prep without Chat — real scout and TBA rows only.",
+        detail: "Match prep without Chat — use Strategy and your scout notes.",
         href: strategyHref,
       },
     ];
   }
 
-  const actions: AiChatNextAction[] = [];
-
   if (input.shell === "empty") {
-    actions.push({
-      id: "new-private",
-      label: "Start a private chat",
-      detail: "Create a private channel in the sidebar.",
-      href: "#ch-channels",
-      primary: true,
-    });
+    return [];
   }
 
-  actions.push(
+  return [
     {
       id: "budgets",
       label: "Open Budgets",
       detail: "Metered Chat enforces org spend/token caps — UsageCutoffBanner deep-links here.",
       href: budgetsHref,
-      primary: !actions.some((a) => a.primary),
+      primary: true,
     },
     {
       id: "memory",
@@ -255,12 +247,10 @@ export function aiChatNextActions(input: {
     {
       id: "strategy",
       label: "Open Strategy",
-      detail: "Ground match prep in real scout/TBA rows the assistant can cite.",
+      detail: "Ask about matchups from this team's scout notes.",
       href: strategyHref,
     },
-  );
-
-  return actions;
+  ];
 }
 
 /** Private vs team-shared clarity for Soft-UI Chat. */

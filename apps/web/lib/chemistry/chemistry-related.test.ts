@@ -114,7 +114,7 @@ describe("chemistryShellCopy", () => {
     }
     expect(chemistryShellCopy("empty").badge).toBe("No chemistry score yet");
     expectPlainCopy(chemistryShellCopy("empty").description);
-    expect(chemistryShellCopy("setup").badge).toBe("Setup");
+    expect(chemistryShellCopy("setup").badge).toBe("Needs setup");
     expectPlainCopy(chemistryShellCopy("setup").description);
     expectPlainCopy(chemistryShellCopy("ready").description);
   });

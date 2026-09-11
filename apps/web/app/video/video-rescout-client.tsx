@@ -41,7 +41,6 @@ import {
   type NoteTag,
 } from "../../lib/video-review";
 import { hubHref } from "../../lib/nav/hubs";
-import { withOrgHref } from "../../lib/nav/product-nav";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 
@@ -950,9 +949,7 @@ export default function VideoRescoutClient() {
         Also see{" "}
         <a href={hubHref("/competition", "scouting", orgId)}>Scouting</a>
         {" · "}
-        <a href={withOrgHref("/scout-accuracy", orgId)}>Accuracy</a>
-        {" · "}
-        <a href={withOrgHref("/scout-disagreements", orgId)}>Disagreements</a>
+        <a href={hubHref("/competition", "command", orgId)}>Event day</a>
       </p>
     </main>
   );

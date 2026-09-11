@@ -106,7 +106,7 @@ describe("pickClockShellCopy", () => {
     }
     expect(pickClockShellCopy("empty").badge).toBe("No teams left to recommend");
     expectPlainCopy(pickClockShellCopy("empty").description);
-    expect(pickClockShellCopy("setup").badge).toBe("Setup");
+    expect(pickClockShellCopy("setup").badge).toBe("Needs setup");
     expectPlainCopy(pickClockShellCopy("setup").description);
     expectPlainCopy(pickClockShellCopy("ready").description);
   });

@@ -19,7 +19,7 @@ type AllianceBlob = {
 
 /**
  * Last scored matches → per-team alliance-share proxies (alliance score / alliance size).
- * Comparable-ish to season EPA for lag detection; never invents rows without TBA scores.
+ * Comparable-ish to season rating for lag detection; never invents rows without match results.
  */
 export async function loadRecentAllianceShares(
   client: PoolClient,
@@ -95,7 +95,7 @@ export function buildEpaDriftCallouts(
       recentAverage: drift.recentAverage,
       delta: drift.delta,
       divergent: true,
-      label: `EPA may lag — last-${recent.length} share ~${recentText} (${deltaText}) ${direction} EPA ${epaText}`,
+      label: `Rating may lag — last-${recent.length} share ~${recentText} (${deltaText}) ${direction} rating ${epaText}`,
     });
   }
   return callouts.sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta) || a.teamKey.localeCompare(b.teamKey));
@@ -113,7 +113,7 @@ export function driftByTeamKey(drifts: PickAssistDrift[]): Map<string, PickAssis
   return new Map(drifts.map((row) => [row.teamKey, row]));
 }
 
-/** Attach drift metadata used by pick-clock / draft without inventing EPA. */
+/** Attach drift metadata used by pick-clock / draft without inventing ratings. */
 export function candidateWithDrift(
   candidate: PickCandidate,
   drift: PickAssistDrift | undefined,

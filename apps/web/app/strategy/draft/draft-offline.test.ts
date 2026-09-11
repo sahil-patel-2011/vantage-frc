@@ -12,5 +12,8 @@ describe("Alliance board last snapshot stays on the phone", () => {
     expect(src).toMatch(/"draft"/);
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
     expect(src).toMatch(/feature="Alliance board"/);
+    expect(src).toMatch(/response\.status === 401 \|\| response\.status === 403/);
+    expect(src).toMatch(/putFeatureSnapshot\("draft", "_"/);
+    expect(src).toMatch(/clearFeatureSnapshot\("draft"/);
   });
 });

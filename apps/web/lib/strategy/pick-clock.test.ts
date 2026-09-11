@@ -154,11 +154,11 @@ describe("pick-clock", () => {
         recentAverage: 80,
         delta: 20,
         divergent: true,
-        label: "EPA may lag — last-3 share ~80 (+20.0) above EPA 60",
+        label: "Rating may lag — last-3 share ~80 (+20.0) above rating 60",
       },
     });
     expect(headline).toMatch(/Quick pick/);
-    expect(reasons.some((r) => /EPA lag/.test(r.label))).toBe(true);
+    expect(reasons.some((r) => /Rating lag/.test(r.label))).toBe(true);
     expect(reasons.some((r) => /Low scout coverage/.test(r.label))).toBe(true);
 
     const result = recommendNextPick({
@@ -171,7 +171,7 @@ describe("pick-clock", () => {
           recentAverage: 80,
           delta: 20,
           divergent: true,
-          label: "EPA may lag",
+          label: "Rating may lag",
         },
       ],
     });

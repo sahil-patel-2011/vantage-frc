@@ -173,7 +173,7 @@ export function draftShellCopy(kind: DraftShellKind): DraftEmptyCopy {
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Choose your team and the event this alliance is at before alliance slots appear.",
@@ -184,7 +184,7 @@ export function draftShellCopy(kind: DraftShellKind): DraftEmptyCopy {
         badge: "No draft board yet",
         title: "Waiting on a real event board",
         description:
-          "Alliance slots stay blank until an owner/admin opens Draft day with synced event metrics. Cross-check Strategy, Pick desk, and Scouting.",
+          "Alliance slots stay blank until an owner/admin opens Draft day with this event’s team list. Cross-check Strategy, Pick desk, and Scouting."
       };
     default:
       return {
@@ -250,16 +250,16 @@ export function draftNextActions(input: {
     return [
       {
         id: "team-data",
-        label: "Sync event metrics",
+        label: "Sync Team Data",
         detail:
-          "Sync the event’s team list from The Blue Alliance — the draft pool stays blank until then.",
+          "Load the event’s team list. Alliance slots stay blank until then.",
         href: withOrgHref("/team/data", orgId),
         primary: true,
       },
       {
         id: "strategy",
         label: "Open Strategy",
-        detail: "Win/loss waits on the same reference rows.",
+        detail: "Win/loss waits on the same event numbers."
         href: hubHref("/competition", "strategy", orgId),
       },
       {

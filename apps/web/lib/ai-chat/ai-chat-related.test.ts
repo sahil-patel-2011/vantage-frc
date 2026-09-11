@@ -88,14 +88,9 @@ describe("aiChatNextActions", () => {
     expect(actions[0]?.detail).not.toMatch(/pick a team/i);
   });
 
-  it("points empty at Budgets / Memory / Strategy", () => {
+  it("empty Chat keeps next-actions off — the card has one New private chat", () => {
     const actions = aiChatNextActions({ orgId: "org-1", shell: "empty" });
-    expect(actions[0]?.id).toBe("new-private");
-    expect(actions.some((a) => a.id === "budgets")).toBe(true);
-    expect(actions.some((a) => a.id === "memory")).toBe(true);
-    expect(actions.some((a) => a.id === "strategy")).toBe(true);
-    expect(actions.find((a) => a.id === "budgets")?.href).toContain("tab=budgets");
-    expect(actions.find((a) => a.id === "strategy")?.href).toContain("tab=strategy");
+    expect(actions).toEqual([]);
   });
 
   it("points setup at Team Admin + Budgets/Memory", () => {

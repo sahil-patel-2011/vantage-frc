@@ -12,5 +12,7 @@ describe("Alliance chemistry last snapshot stays on the phone", () => {
     expect(src).toMatch(/"chemistry"/);
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
     expect(src).toMatch(/feature="Chemistry"/);
+    expect(src).toMatch(/response\.status === 401 \|\| response\.status === 403/);
+    expect(src).toMatch(/id \|\| "_"/);
   });
 });

@@ -20,7 +20,8 @@ test("Video is a student paste page, not an engineering wall", async ({ page }) 
   await expect(page.getByRole("navigation", { name: "Related competition tools" })).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Related competition tools" })).toContainText("Match notes");
   await expect(page.getByRole("navigation", { name: "Related competition tools" })).toContainText("Match video");
-  await expect(page.getByRole("navigation", { name: "Related competition tools" })).toContainText("AI relays");
+  await expect(page.getByRole("navigation", { name: "Related competition tools" })).toContainText("Event day");
+  await expect(page.getByRole("navigation", { name: "Related competition tools" })).not.toContainText("AI relays");
 
   const setup = page.getByRole("heading", { name: "Choose your team" });
   const paste = page.getByRole("region", { name: "Paste a video" });

@@ -346,7 +346,7 @@ export async function loadDashboardSnapshot(
         return;
       }
     }
-    // No event metrics yet — fall back to year EPA from Neon Statbotics cache (never invent).
+    // No event numbers yet — fall back to year ratings from the event cache (never invent).
     const year = new Date().getFullYear();
     const yearMetrics = await client.query<{
       epaTotal: number | null;
@@ -502,7 +502,7 @@ export async function loadDashboardSnapshot(
         "setup_required",
         "sync_status",
         undefined,
-        "The Blue Alliance is not connected. Save a key under Team Data before match and ranking cards can fill in.",
+        "Ask a mentor to connect match results so cards can fill in.",
       );
       return;
     }

@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { expectPlainCopy } from "../../../lib/ui/copy-assertions";
 import { DASHBOARD_WIDGET_TYPES } from "../../../lib/dashboard/catalog";
-import { emptyHintFor, WIDGET_EMPTY_COPY } from "./widget-empty-copy";
+import { emptyHintFor, studentWidgetDescription, WIDGET_EMPTY_COPY } from "./widget-empty-copy";
 
-const ENGINEERING = /\b(EPA|org|workspace|Statbotics|TBA sync|setup_required|reference tables)\b/i;
+const ENGINEERING = /\b(EPA|org|workspace|Statbotics|TBA sync|The Blue Alliance|setup_required|reference tables)\b/i;
 
 describe("Home widget empty copy", () => {
   it("tells the reader to finish team setup, not a workspace", () => {
@@ -26,5 +26,18 @@ describe("Home widget empty copy", () => {
       }
     }
     expect(Object.keys(WIDGET_EMPTY_COPY).length).toBeGreaterThan(20);
+  });
+
+  it("does not paint TBA / Blue Alliance payload messages on empty cards", () => {
+    const hint = emptyHintFor("sync_status");
+    expect(
+      studentWidgetDescription(
+        "The Blue Alliance is not connected. Save a key under Team Data before match and ranking cards can fill in.",
+        hint,
+      ),
+    ).toBe(hint.body);
+    expect(studentWidgetDescription("Ask a mentor to connect match results so cards can fill in.", hint)).toBe(
+      "Ask a mentor to connect match results so cards can fill in.",
+    );
   });
 });

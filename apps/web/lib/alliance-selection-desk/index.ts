@@ -75,7 +75,7 @@ export function detectDeskConflicts(input: {
         id: `missing-tba-${slot.id}`,
         severity: "warn",
         code: "missing_tba_metrics",
-        message: `${slot.teamKey} has no TBA/Statbotics metrics for this event — confirm they are attending.`,
+        message: `${slot.teamKey} has no event ratings for this event — confirm they are attending.`,
         teamKey: slot.teamKey,
         allianceSeed: slot.allianceSeed,
         pickSlot: slot.pickSlot,

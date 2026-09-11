@@ -13,17 +13,16 @@ import {
 import { expectPlainCopy } from "./ui/copy-assertions";
 
 describe("videoRescoutRelatedLinks", () => {
-  it("builds Scouting / Accuracy / Disagreements via hubHref / withOrgHref", () => {
+  it("builds Scouting / Event Day via hubHref / withOrgHref", () => {
     const links = videoRescoutRelatedLinks("org-1", {
       include: [...VIDEO_RESCOUT_RELATED_INCLUDE],
     });
-    expect(links.map((l) => l.id)).toEqual(["scouting", "accuracy", "disagreements"]);
+    expect(links.map((l) => l.id)).toEqual(["scouting", "command"]);
     expect(links.find((l) => l.id === "scouting")?.href).toBe(
       "/competition?tab=scouting&orgId=org-1",
     );
-    expect(links.find((l) => l.id === "accuracy")?.href).toBe("/scout-accuracy?orgId=org-1");
-    expect(links.find((l) => l.id === "disagreements")?.href).toBe(
-      "/scout-disagreements?orgId=org-1",
+    expect(links.find((l) => l.id === "command")?.href).toBe(
+      "/competition?tab=command&orgId=org-1",
     );
   });
 
@@ -35,7 +34,7 @@ describe("videoRescoutRelatedLinks", () => {
 });
 
 describe("videoRescoutSetupSteps", () => {
-  it("keeps Set active event; Scouting / Accuracy / Disagreements live on the related strip", () => {
+  it("keeps Set active event; Scouting / Event Day live on the related strip", () => {
     const steps = videoRescoutSetupSteps("org-1");
     expect(steps.map((s) => s.id)).toEqual(["command"]);
     expect(steps[0]?.href).toBe("/competition?tab=command&orgId=org-1");

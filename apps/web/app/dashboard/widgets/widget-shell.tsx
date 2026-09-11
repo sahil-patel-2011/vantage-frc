@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import type { WidgetPayload } from "../../../lib/dashboard/snapshot";
 import { Icon, type IconName } from "../../../components/icon";
 import { Badge, EmptyState } from "../../../components/ui";
-import { type EmptyHint } from "./widget-empty-copy";
+import { type EmptyHint, studentWidgetDescription } from "./widget-empty-copy";
 
 export type { EmptyHint } from "./widget-empty-copy";
 export { emptyHintFor } from "./widget-empty-copy";
@@ -81,7 +81,7 @@ function WidgetEmptyState({
     orgId ? `${path}${path.includes("?") ? "&" : "?"}orgId=${encodeURIComponent(orgId)}` : path;
   const ctaHref = hint.ctaHref ? withOrg(hint.ctaHref) : href;
   return (
-    <EmptyState compact title={hint.title} description={message || hint.body}>
+    <EmptyState compact title={hint.title} description={studentWidgetDescription(message, hint)}>
       {ctaHref && hint.ctaLabel ? (
         <a className="dash-empty-cta" href={ctaHref}>
           {hint.ctaLabel}

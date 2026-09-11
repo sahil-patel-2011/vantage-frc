@@ -157,7 +157,7 @@ function setupSteps(orgId: string | null, eventKey: string | null): DeskSetupSte
     {
       id: "event",
       label: "Set active event",
-      detail: "Alliance selection needs a TBA event context",
+      detail: "Alliance selection needs the event you are at.",
       href: hubHref("/competition", "command", orgId),
       done: Boolean(eventKey),
     },

@@ -8,7 +8,7 @@ export const VIDEO_RESCOUT_RELATED_LINKS = [
   { id: "accuracy", label: "Accuracy", kind: "path" as const, path: "/scout-accuracy" },
   { id: "disagreements", label: "Disagreements", kind: "path" as const, path: "/scout-disagreements" },
   { id: "coverage", label: "Coverage", kind: "path" as const, path: "/scouting/lineup" },
-  { id: "command", label: "Event Day", kind: "hub" as const, tab: "command" },
+  { id: "command", label: "Event day", kind: "hub" as const, tab: "command" },
 ] as const;
 
 export type VideoRescoutRelatedId = (typeof VIDEO_RESCOUT_RELATED_LINKS)[number]["id"];
@@ -19,15 +19,14 @@ export type VideoRescoutRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — Scouting · Accuracy · Disagreements. */
+/** Focused Soft-UI strip — Scouting · Event day. */
 export const VIDEO_RESCOUT_RELATED_INCLUDE: VideoRescoutRelatedId[] = [
   "scouting",
-  "accuracy",
-  "disagreements",
+  "command",
 ];
 
 /**
- * Soft-UI cross-links from Video Re-Scout → Scouting / Accuracy / Disagreements.
+ * Soft-UI cross-links from Video Re-Scout → Scouting / Event day.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function videoRescoutRelatedLinks(
@@ -99,14 +98,14 @@ export function videoRescoutSetupSteps(orgId?: string | null): VideoRescoutSetup
       },
     ];
   }
-  return dropRelatedStripDuplicates(orgId, [
+  return [
     {
       id: "command",
       label: "Set active event",
       detail: "Pick the event these clips belong to — reviews stay blank until it is set.",
       href: hubHref("/competition", "command", orgId),
     },
-  ]);
+  ];
 }
 
 /** Real counts only — never invent DEMO totals. */
@@ -252,7 +251,7 @@ export function videoRescoutNextActions(input: {
       {
         id: "accuracy",
         label: "Open Accuracy",
-        detail: "Cross-check TBA-verified ranks before re-scouting disputed totals.",
+        detail: "Cross-check scout ranks before re-scouting disputed totals.",
         href: withOrgHref("/scout-accuracy", orgId),
       },
       {
@@ -287,7 +286,7 @@ export function videoRescoutNextActions(input: {
     {
       id: "accuracy",
       label: "Open Accuracy",
-      detail: "Prefer TBA-accurate scouts when re-scouting disputed totals.",
+      detail: "Prefer accurate scouts when re-scouting disputed totals.",
       href: withOrgHref("/scout-accuracy", orgId),
     },
     {

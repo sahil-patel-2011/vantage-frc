@@ -25,7 +25,7 @@ import {
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { fetchProductSession } from "../../lib/nav/product-session";
 import { FEATURE_API_TIMEOUT_MS, readOrgIdFromSearch } from "../../lib/nav/resolve-org";
-import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { clearFeatureSnapshot, getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./pick-clock.css";
 
 type PickClockView =
@@ -213,7 +213,7 @@ function PickClockShell({
         ) : null}
         {shell === "empty" ? (
           <Button as="a" variant="primary" href={teamDataHref}>
-            Sync event metrics
+            Sync Team Data
           </Button>
         ) : null}
       </EmptyState>
@@ -268,7 +268,7 @@ export default function PickClockClient({
     }
     let hadCache = Boolean(viewRef.current);
     try {
-      const cached = await getFeatureSnapshot<PickClockView>("pick-clock", id);
+      const cached = await getFeatureSnapshot<PickClockView>("pick-clock", id || "_");
       if (!viewRef.current && cached?.data && isPickClockView(cached.data)) {
         setView(cached.data);
         setFromCache(true);
@@ -290,6 +290,18 @@ export default function PickClockClient({
         signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
       const data = (await response.json()) as PickClockView | { error?: string };
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setFetchFailed(true);
+        setError("error" in data && data.error ? data.error : "Could not load pick clock.");
+        setErrorStatus(response.status);
+        void clearFeatureSnapshot("pick-clock", id || "_");
+        if (id) void clearFeatureSnapshot("pick-clock", id);
+        setLoading(false);
+        return;
+      }
       if (!response.ok || !("status" in data) || !isPickClockView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
@@ -313,7 +325,8 @@ export default function PickClockClient({
       if (data.status === "ready" && data.orgId) setOrgId(data.orgId);
       if (data.status === "setup_required" && data.orgId) setOrgId(data.orgId);
       try {
-        await putFeatureSnapshot("pick-clock", id, data);
+        await putFeatureSnapshot("pick-clock", id || "_", data);
+        if (!id) await putFeatureSnapshot("pick-clock", "_", data);
       } catch {
         // Live Pick clock already painted; IndexedDB is best-effort.
       }
@@ -671,7 +684,7 @@ export default function PickClockClient({
           Signals: {readyView.sources.join(" · ")}
           {readyView.pickMode === "low_data_tba" ? " · quick-pick mode" : " · pick-desk scoring"}
           {readyView.epaDrifts.length
-            ? ` · ${readyView.epaDrifts.length} EPA-drift callout${readyView.epaDrifts.length === 1 ? "" : "s"}`
+            ? ` · ${readyView.epaDrifts.length} rating-drift callout${readyView.epaDrifts.length === 1 ? "" : "s"}`
             : ""}
         </p>
       ) : null}

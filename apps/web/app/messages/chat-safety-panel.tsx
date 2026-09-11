@@ -191,7 +191,7 @@ export default function ChatSafetyPanel({ orgId }: { orgId: string }) {
         <EmptyState
           title="Message settings unavailable"
           description={error ?? "Could not load chat safety settings."}
-          badge="Setup"
+          badge="Unavailable"
           badgeTone="setup"
         >
           <Button variant="secondary" type="button" onClick={() => void load()}>

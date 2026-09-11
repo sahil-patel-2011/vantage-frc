@@ -33,16 +33,18 @@ function job(partial: Partial<VideoAnalysisJob>): VideoAnalysisJob {
 }
 
 describe("videoAnalysisRelatedLinks", () => {
-  it("builds Match notes / Match video / Relays via withOrgHref", () => {
+  it("builds Event day / Match notes / Match video via hubHref / withOrgHref", () => {
     const links = videoAnalysisRelatedLinks("org-1", {
       include: [...VIDEO_ANALYSIS_RELATED_INCLUDE],
     });
-    expect(links.map((l) => l.id)).toEqual(["match-notes", "match-video", "relays"]);
+    expect(links.map((l) => l.id)).toEqual(["command", "match-notes", "match-video"]);
+    expect(links.find((l) => l.id === "command")?.href).toBe(
+      "/competition?tab=command&orgId=org-1",
+    );
     expect(links.find((l) => l.id === "match-notes")?.href).toBe(
       "/match-notes-timeline?orgId=org-1",
     );
     expect(links.find((l) => l.id === "match-video")?.href).toBe("/video?orgId=org-1");
-    expect(links.find((l) => l.id === "relays")?.href).toBe("/team/relays?orgId=org-1");
   });
 
   it("never uses DEMO labels or hrefs", () => {
@@ -104,6 +106,7 @@ describe("videoAnalysisShellCopy", () => {
       expect(copy.title).not.toMatch(/\bDEMO\b/);
       expectPlainCopy(copy.description);
     }
+    expect(videoAnalysisShellCopy("setup").badge).toBe("Needs setup");
     expect(videoAnalysisShellCopy("setup").title).toBe("Choose your team");
     expect(videoAnalysisShellCopy("empty").title).toBe("Paste a match or pit video");
   });
@@ -124,7 +127,7 @@ describe("student labels", () => {
     expect(labelVideoStatus("running", false)).toBe("Watching");
     expect(labelVideoStatus("completed", false)).toBe("Ready to confirm");
     expect(labelVideoStatus("completed", true)).toBe("Saved as evidence");
-    expect(labelVideoStatus("skipped", false)).toBe("Skipped — this Pi cannot watch video");
+    expect(labelVideoStatus("skipped", false)).toBe("Skipped — this computer cannot watch video");
   });
 
   it("never prints a raw confidence number", () => {

@@ -12,5 +12,7 @@ describe("Pick clock last snapshot stays on the phone", () => {
     expect(src).toMatch(/"pick-clock"/);
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
     expect(src).toMatch(/feature="Pick clock"/);
+    expect(src).toMatch(/response\.status === 401 \|\| response\.status === 403/);
+    expect(src).toMatch(/id \|\| "_"/);
   });
 });

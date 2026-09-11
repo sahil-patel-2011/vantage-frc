@@ -174,7 +174,7 @@ export function pickClockShellCopy(kind: PickClockShellKind): PickClockEmptyCopy
     case "setup":
       return {
         kind,
-        badge: "Setup",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Choose your team and the event this alliance is at before pick recommendations appear.",
@@ -185,14 +185,14 @@ export function pickClockShellCopy(kind: PickClockShellKind): PickClockEmptyCopy
         badge: "No teams left to recommend",
         title: "Waiting on a real pick pool",
         description:
-          "Recommendations stay blank until synced event metrics (and free draft slots) exist. Cross-check Strategy, Pick desk, and Chemistry.",
+          "Recommendations stay blank until this event has a team list and free draft slots. Cross-check Strategy, Pick desk, and Chemistry.",
       };
     case "ready":
       return {
         kind,
         title: "45-second pick clock",
         description:
-          "Next best available team from synced event metrics and this team’s scout notes.",
+          "Next best available team from this event’s numbers and this team’s scout notes."
       };
     default: {
       const _exhaustive: never = kind;
@@ -238,7 +238,7 @@ export function pickClockNextActions(input: {
       return dropRelatedStripDuplicates(orgId, [
         {
           id: "team-data",
-          label: "Sync event metrics",
+          label: "Sync Team Data"
           detail:
             excludedCount > 0
               ? `${formatPickClockMetric(excludedCount, true)} team${excludedCount === 1 ? "" : "s"} already taken on the draft board. Sync or clear slots.`

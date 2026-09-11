@@ -4,6 +4,7 @@ import { withOrgHref } from "../nav/product-nav";
 
 /** Related surfaces for Video (never DEMO video counts). */
 export const VIDEO_ANALYSIS_RELATED_LINKS = [
+  { id: "command", label: "Event day", kind: "hub" as const, tab: "command" },
   { id: "match-notes", label: "Match notes", kind: "path" as const, path: "/match-notes-timeline" },
   { id: "match-video", label: "Match video", kind: "path" as const, path: "/video" },
   { id: "relays", label: "AI relays", kind: "path" as const, path: "/team/relays" },
@@ -17,15 +18,15 @@ export type VideoAnalysisRelatedLink = {
   href: string;
 };
 
-/** Focused header strip — Match notes · Match video · Relays. */
+/** Focused header strip — Event day · Match notes · Match video. */
 export const VIDEO_ANALYSIS_RELATED_INCLUDE: VideoAnalysisRelatedId[] = [
+  "command",
   "match-notes",
   "match-video",
-  "relays",
 ];
 
 /**
- * Cross-links from Video → Match notes / Match video / Relays.
+ * Cross-links from Video → Event day / Match notes / Match video.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function videoAnalysisRelatedLinks(
@@ -37,11 +38,12 @@ export function videoAnalysisRelatedLinks(
     if (link.id === options?.active) return false;
     if (include && !include.has(link.id)) return false;
     return true;
-  }).map((link) => ({
-    id: link.id,
-    label: link.label,
-    href: withOrgHref(link.path, orgId),
-  }));
+  }).map((link) => {
+    if (link.kind === "hub") {
+      return { id: link.id, label: link.label, href: hubHref("/competition", link.tab, orgId) };
+    }
+    return { id: link.id, label: link.label, href: withOrgHref(link.path, orgId) };
+  });
 }
 
 export type VideoAnalysisShellKind = "loading" | "error" | "setup" | "empty" | "ready";
@@ -100,7 +102,7 @@ export type VideoAnalysisJob = {
 export type VideoAnalysisSnapshot = { jobs: VideoAnalysisJob[] };
 
 export const VIDEO_PAGE_DESCRIPTION =
-  "Paste a match or pit video. The video Pi writes a timeline with timestamps. Confirm keeps it as video evidence — it does not overwrite what a scout typed.";
+  "Paste a match or pit video. Confirm keeps the timeline as video evidence — it does not overwrite what a scout typed.";
 
 function videoAnalysisRelatedHrefs(orgId?: string | null): Set<string> {
   return new Set(
@@ -181,7 +183,7 @@ export function videoAnalysisShellCopy(kind: VideoAnalysisShellKind): VideoAnaly
     case "setup":
       return {
         kind,
-        badge: "Setup",
+        badge: "Needs setup",
         title: "Choose your team",
         description: "Choose your team before pasting a match or pit video.",
       };
@@ -191,7 +193,7 @@ export function videoAnalysisShellCopy(kind: VideoAnalysisShellKind): VideoAnaly
         badge: "No videos yet",
         title: "Paste a match or pit video",
         description:
-          "Paste a YouTube, Blue Alliance, file, or pit camera link. The timeline stays blank until the video Pi watches it.",
+          "Paste a YouTube, Blue Alliance, file, or pit camera link. The timeline stays blank until this video is watched.",
       };
     case "ready":
       return {
@@ -235,7 +237,7 @@ export function labelVideoStatus(status: string, confirmed: boolean): string {
     case "cancelled":
       return "Stopped";
     case "skipped":
-      return "Skipped — this Pi cannot watch video";
+      return "Skipped — this computer cannot watch video";
     default:
       return "In progress";
   }

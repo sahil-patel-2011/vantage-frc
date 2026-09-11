@@ -21,7 +21,7 @@ import {
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { fetchProductSession } from "../../lib/nav/product-session";
 import { FEATURE_API_TIMEOUT_MS, readOrgIdFromSearch } from "../../lib/nav/resolve-org";
-import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { clearFeatureSnapshot, getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./chemistry.css";
 
 function isChemistryView(value: unknown): value is ChemistryView {
@@ -156,7 +156,7 @@ function ChemistryShell({
         ) : null}
         {shell === "empty" ? (
           <Button as="a" variant="primary" href={teamDataHref}>
-            Sync event metrics
+            Sync Team Data
           </Button>
         ) : null}
       </EmptyState>
@@ -214,7 +214,7 @@ export default function ChemistryClient({
       const list = (teams ?? draft).trim();
       let hadCache = Boolean(viewRef.current);
       try {
-        const cached = await getFeatureSnapshot<ChemistryView>("chemistry", id, list);
+        const cached = await getFeatureSnapshot<ChemistryView>("chemistry", id || "_", list);
         if (!viewRef.current && cached?.data && isChemistryView(cached.data)) {
           setView(cached.data);
           setFromCache(true);
@@ -238,6 +238,18 @@ export default function ChemistryClient({
         });
         if (!response.ok) {
           const body = await response.json().catch(() => ({}));
+          if (response.status === 401 || response.status === 403) {
+            setView(null);
+            setFromCache(false);
+            setCachedAt(null);
+            setError(typeof body.error === "string" ? body.error : "Could not load alliance chemistry.");
+            setErrorStatus(response.status);
+            setFetchFailed(true);
+            void clearFeatureSnapshot("chemistry", id || "_", list);
+            if (id) void clearFeatureSnapshot("chemistry", id, list);
+            setLoading(false);
+            return;
+          }
           if (hadCache || viewRef.current) {
             setFromCache(true);
             setError("Could not refresh alliance chemistry. Showing the last copy on this device.");
@@ -265,7 +277,8 @@ export default function ChemistryClient({
         setFromCache(false);
         setCachedAt(null);
         try {
-          await putFeatureSnapshot("chemistry", id, data, list);
+          await putFeatureSnapshot("chemistry", id || "_", data, list);
+          if (!id) await putFeatureSnapshot("chemistry", "_", data, list);
         } catch {
           // Live chemistry already painted; IndexedDB is best-effort.
         }
@@ -445,7 +458,7 @@ export default function ChemistryClient({
             <strong>
               {chemistry.totalEpa != null ? String(Math.round(chemistry.totalEpa * 10) / 10) : "—"}
             </strong>
-            <small>total EPA</small>
+            <small>event rating</small>
           </article>
         </div>
       ) : null}
@@ -515,7 +528,7 @@ export default function ChemistryClient({
             <div className="chem-metrics">
               <div>
                 <strong>{chemistry.totalEpa ?? "—"}</strong>
-                <span>Total EPA</span>
+                <span>Event rating</span>
               </div>
               <div>
                 <strong>{chemistry.complementarity ?? "—"}</strong>
@@ -558,7 +571,7 @@ export default function ChemistryClient({
                 </span>
                 <div>
                   <h2>Roles</h2>
-                  <p>Primary phase lean from event EPA shares</p>
+                  <p>Primary phase lean from event ratings</p>
                 </div>
               </div>
             </header>
@@ -628,7 +641,7 @@ export default function ChemistryClient({
           }
         >
           <Button as="a" variant="primary" href={withOrgHref("/team/data", orgId)}>
-            Sync event metrics
+            Sync Team Data
           </Button>
         </EmptyState>
       )}
@@ -644,7 +657,7 @@ export default function ChemistryClient({
                   {team.nickname ? ` · ${team.nickname}` : ""}
                 </strong>
                 <p className="edc-muted">
-                  EPA {team.epaTotal != null ? Math.round(team.epaTotal * 10) / 10 : "—"}
+                  Rating {team.epaTotal != null ? Math.round(team.epaTotal * 10) / 10 : "—"}
                   {team.source ? ` · ${team.source}` : ""}
                 </p>
                 <p className="edc-muted">
@@ -667,7 +680,7 @@ export default function ChemistryClient({
 
       {view?.suggestions.length ? (
         <section className="chem-suggest">
-          <h2>Try high-EPA seats</h2>
+          <h2>Teams to try</h2>
           <p className="edc-muted">
             Event metrics you can add to the scorer, or promote straight onto the same pick list
             the pick desk and Draft board read.

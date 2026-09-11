@@ -7,7 +7,7 @@ describe("pick-assist", () => {
     const callouts = buildEpaDriftCallouts([{ teamKey: "frc2337", epa: 60 }], recent);
     expect(callouts).toHaveLength(1);
     expect(callouts[0]?.divergent).toBe(true);
-    expect(callouts[0]?.label).toMatch(/EPA may lag/);
+    expect(callouts[0]?.label).toMatch(/Rating may lag/);
   });
 
   it("skips teams without EPA or enough recent scores", () => {

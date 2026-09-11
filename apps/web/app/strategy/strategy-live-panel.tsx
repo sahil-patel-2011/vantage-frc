@@ -49,7 +49,7 @@ function TeamChip({
   return (
     <li>
       <strong>{teamKey.replace(/^frc/, "")}</strong>
-      <span>{epa != null ? `EPA ${epa.toFixed(1)}` : "EPA —"}</span>
+      <span>{epa != null ? `Rating ${epa.toFixed(1)}` : "Rating —"}</span>
       <small>
         {record ?? "no record"}
         {source ? ` · ${source}` : ""}
@@ -149,7 +149,7 @@ export function PrivateEdgePanel({ view }: { view: Extract<StrategyView, { statu
       ) : null}
       {edge.calibrations.length ? (
         <p className="app-muted">
-          Scout calibration vs TBA:{" "}
+          Scout calibration vs results:{" "}
           {edge.calibrations.slice(0, 4).map((row) => (
             <span key={`${row.scoutUserId}-${row.fieldKey}`} className="app-badge setup">
               {row.fieldKey} {Math.round(row.agreementRate * 100)}% (n={row.nSamples})
@@ -302,7 +302,7 @@ export function LivePanel({ view }: { view: Extract<StrategyView, { status: "liv
               confidence · sample {view.prediction.effectiveSampleSize}
             </small>
           ) : (
-            <small>No grounded prediction — recompute after TBA/Statbotics cache is live.</small>
+            <small>No grounded prediction — recompute after match results are connected.</small>
           )}
         </div>
         {redWinDisplay ? (
@@ -372,12 +372,12 @@ export function LivePanel({ view }: { view: Extract<StrategyView, { status: "liv
             </div>
             <h3>Cited match results</h3>
             {view.allianceBreakdown.citations.length === 0 ? (
-              <p className="app-muted">No completed TBA match results for these alliances yet.</p>
+              <p className="app-muted">No completed match results for these alliances yet.</p>
             ) : (
               <ul className="strategy-citations">
                 {view.allianceBreakdown.citations.map((citation) => (
                   <li key={citation.matchKey}>
-                    <span className="app-badge good">TBA</span>
+                    <span className="app-badge good">Event</span>
                     <span>{citation.summary.replace(/^FACT\s*/, "")}</span>
                   </li>
                 ))}
@@ -453,7 +453,7 @@ export function LivePanel({ view }: { view: Extract<StrategyView, { status: "liv
                     ) : null}
                     <span>
                       {ref.entryType} · {ref.influence}
-                      {ref.influence === "tba_conflict_excluded" ? " (TBA contradicted — excluded)" : ""}
+                      {ref.influence === "tba_conflict_excluded" ? " (results contradicted — excluded)" : ""}
                       {ref.videoAtSeconds != null ? ` @${ref.videoAtSeconds}s` : ""}
                     </span>
                   </li>

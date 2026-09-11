@@ -58,7 +58,7 @@ function MessagesLoadError({
     },
   );
   return (
-    <EmptyState title={copy.title} description={copy.description} badge="Setup" badgeTone="setup">
+    <EmptyState title={copy.title} description={copy.description} badge="Needs setup" badgeTone="setup">
       {copy.primary ? (
         <Button as="a" variant="primary" href={copy.primary.href}>
           {copy.primary.label}
