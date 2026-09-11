@@ -31,6 +31,13 @@ import type {
 } from "./types";
 import { computePrivateEdgeView } from "./compute-private-edge";
 import { projectScoutEntriesForEngine } from "./scout-engine-payload";
+import {
+  EMPTY_PREDICTION_COPY,
+  EMPTY_PREDICTION_NO_RATINGS_COPY,
+  EMPTY_PREDICTION_NO_SCHEDULE_COPY,
+  EMPTY_PREDICTION_NO_SCHEDULE_SETUP_COPY,
+  EMPTY_PREDICTION_SETUP_COPY,
+} from "./prediction-empty-copy";
 import { resolveActiveSeasonYear } from "@vantage/agent";
 import { VANTAGE_PRODUCT_VERSION } from "../product-version";
 
@@ -536,8 +543,8 @@ export async function computeStrategyView(
   const upcoming = match.rows[0];
   if (!upcoming) {
     const message = !access.tbaConfigured
-      ? "No match schedule saved yet, and The Blue Alliance is not connected. Open Connectors, then Team → Data to sync."
-      : "No prediction yet — need a match schedule for your team at this event from TBA, plus team metrics.";
+      ? EMPTY_PREDICTION_NO_SCHEDULE_SETUP_COPY
+      : EMPTY_PREDICTION_NO_SCHEDULE_COPY;
     return setupPayload(access, {
       status: access.tbaConfigured ? "empty" : "setup_required",
       message,
@@ -561,7 +568,7 @@ export async function computeStrategyView(
   if (red.length < 1 || blue.length < 1) {
     return setupPayload(access, {
       status: "empty",
-      message: "Match alliances are incomplete in the synced schedule. Wait for TBA sync or pick another match.",
+      message: "Match alliances are incomplete in the synced schedule. Wait for a sync or pick another match.",
       steps: baseSteps,
       orgId: row.orgId,
       eventKey: row.eventKey,
@@ -671,9 +678,9 @@ export async function computeStrategyView(
       status: hasAnyReference ? "empty" : "setup_required",
       message: hasAnyReference
         ? access.statbotics.cacheHasMetrics
-          ? "No prediction yet — need event/year EPA covering enough alliance robots (and optional scouting) before the model can run."
-          : "No prediction yet — Statbotics numbers are missing. Sync under Team → Data, or wait for The Blue Alliance numbers."
-        : "Team numbers are missing and The Blue Alliance is not connected. Open Connectors, then sync the event.",
+          ? EMPTY_PREDICTION_COPY
+          : EMPTY_PREDICTION_NO_RATINGS_COPY
+        : EMPTY_PREDICTION_SETUP_COPY,
       steps: baseSteps,
       orgId: row.orgId,
       eventKey: row.eventKey,

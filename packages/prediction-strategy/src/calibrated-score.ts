@@ -99,7 +99,7 @@ function allianceTotal(side: TeamScoreFeatures[]): { total: number | null; missi
     const teleop = team.teleopEpa;
     const endgame = team.endgameEpa;
     if (auto == null && teleop == null && endgame == null && team.opr == null) {
-      missing.push(`${team.teamKey} has no EPA or OPR`);
+      missing.push(`${team.teamKey} has no rating yet`);
       continue;
     }
     const epa = (auto ?? 0) + (teleop ?? 0) + (endgame ?? 0);
@@ -112,7 +112,7 @@ function allianceTotal(side: TeamScoreFeatures[]): { total: number | null; missi
     counted += 1;
   }
   if (counted < 2) {
-    missing.push("Alliance is missing EPA/OPR for at least two robots");
+    missing.push("This alliance is missing ratings for at least two robots");
     return { total: null, missing };
   }
   return { total, missing };

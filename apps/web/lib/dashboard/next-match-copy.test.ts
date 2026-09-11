@@ -1,9 +1,10 @@
+import { FIXTURE_ERROR_BAND } from "@vantage/prediction-strategy";
 import { describe, expect, it } from "vitest";
 import { nextMatchDriverLines, nextMatchScoreLine } from "./next-match-copy";
 
 describe("nextMatchScoreLine", () => {
   it("prints two alliance totals, not a dash range", () => {
-    expect(nextMatchScoreLine({ redPredicted: 94.4, bluePredicted: 81.2, errorBand: 90 })).toBe(
+    expect(nextMatchScoreLine({ redPredicted: 94.4, bluePredicted: 81.2, errorBand: FIXTURE_ERROR_BAND })).toBe(
       "Red 94 · Blue 81 · typical error ±90 (last measured set)",
     );
   });
