@@ -44,7 +44,7 @@ test("student this week can walk Home widgets and remaining Strategy boards", as
   }
 });
 
-test("student this week can walk Match video, Event day, and Chat", async ({ page }) => {
+test("student this week can walk Match video", async ({ page }) => {
   test.setTimeout(90_000);
 
   await openStudentPage(page, "/video-analysis");
@@ -59,6 +59,10 @@ test("student this week can walk Match video, Event day, and Chat", async ({ pag
     await expect(related).not.toContainText("AI relays");
   }
   await expect(page.getByText("Setup required")).toHaveCount(0);
+});
+
+test("student this week can walk Event day and Chat", async ({ page }) => {
+  test.setTimeout(90_000);
 
   await openStudentPage(page, "/command");
   for (const phrase of BANNED) {
