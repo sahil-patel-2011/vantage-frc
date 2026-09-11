@@ -610,13 +610,12 @@ export function PickListWorkbench({
           />
         </label>
         {desk.pickLists.length ? (
-          <div className="strategy-pick-list-switch" role="tablist" aria-label="Saved pick lists">
+          <div className="strategy-pick-list-switch" role="group" aria-label="Saved pick lists">
             {desk.pickLists.map((list) => (
               <button
                 key={list.id}
                 type="button"
-                role="tab"
-                aria-selected={list.id === activeListId}
+                aria-pressed={list.id === activeListId}
                 className={list.id === activeListId ? "active" : undefined}
                 onClick={() => selectList(list)}
               >

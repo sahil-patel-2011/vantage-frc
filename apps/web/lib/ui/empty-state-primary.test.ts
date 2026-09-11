@@ -222,4 +222,10 @@ describe("empty-state R4 (one primary on the empty card)", () => {
     }
     expect(hits, hits.join("\n")).toEqual([]);
   });
+
+  it("pick-list workbench does not nest a tablist under Strategy", () => {
+    const src = readFileSync(join(APP_ROOT, "strategy/pick-list-workbench.tsx"), "utf8");
+    expect(src).not.toMatch(/role="tablist"/);
+    expect(src).toMatch(/role="group"/);
+  });
 });

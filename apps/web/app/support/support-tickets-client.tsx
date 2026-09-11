@@ -1,7 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, PageHeader, Button } from "../../components/ui";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   SUPPORT_RELATED_INCLUDE,
@@ -15,6 +18,28 @@ import {
   type SupportTicketMemberView,
 } from "../../lib/support-tickets";
 import "../product-hub.css";
+
+function isSupportTicketMemberView(value: unknown): value is SupportTicketMemberView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return (status === "live" || status === "setup_required") && Array.isArray((value as { tickets?: unknown }).tickets);
+}
+
+function supportCacheOrg(data: SupportTicketMemberView, orgHint: string): string {
+  if (typeof data.orgId === "string" && data.orgId.trim()) return data.orgId;
+  return orgHint;
+}
+
+async function persistSupportSnapshot(orgHint: string, data: SupportTicketMemberView): Promise<void> {
+  const cacheOrg = supportCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("support-tickets", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("support-tickets", "_", data);
+  } catch {
+    // Live Support already painted; IndexedDB is best-effort.
+  }
+}
 
 function SupportRelated({ orgId }: { orgId?: string | null }) {
   const links = supportRelatedLinks(orgId, { include: [...SUPPORT_RELATED_INCLUDE] });
@@ -72,29 +97,84 @@ export default function SupportTicketsClient() {
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [message, setMessage] = useState("");
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<SupportTicketMemberView | null>(null);
+  viewRef.current = view;
 
   const load = useCallback(() => {
-    setError("");
-    setErrorStatus(null);
-    setFetchFailed(false);
-    const params = new URLSearchParams(window.location.search);
-    const orgId = params.get("orgId");
-    const query = orgId ? `?orgId=${encodeURIComponent(orgId)}` : "";
-    void fetch(`/api/tickets${query}`)
-      .then(async (response) => {
-        const data = (await response.json()) as SupportTicketMemberView & { error?: string };
-        if (!response.ok) {
+    void (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const orgHint = params.get("orgId")?.trim() ?? "";
+      let hadCache = Boolean(viewRef.current);
+      try {
+        const cached = await getFeatureSnapshot<SupportTicketMemberView>(
+          "support-tickets",
+          orgHint || "_",
+        );
+        if (!viewRef.current && cached?.data && isSupportTicketMemberView(cached.data)) {
+          setView(cached.data);
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          hadCache = true;
+        }
+      } catch {
+        // IndexedDB missing or blocked; live fetch still runs.
+      }
+      setError("");
+      setErrorStatus(null);
+      setFetchFailed(false);
+      const query = orgHint ? `?orgId=${encodeURIComponent(orgHint)}` : "";
+      try {
+        const response = await fetch(`/api/tickets${query}`, {
+          cache: "no-store",
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+        });
+        const data: unknown = await response.json().catch(() => null);
+        if (response.status === 401 || response.status === 403) {
+          setView(null);
+          setFromCache(false);
+          setCachedAt(null);
           setFetchFailed(true);
           setErrorStatus(response.status);
-          setError(data.error ?? "Could not load tickets");
+          setError(
+            data && typeof data === "object" && "error" in data && typeof data.error === "string"
+              ? data.error
+              : "Could not load tickets",
+          );
+          return;
+        }
+        if (!response.ok || !isSupportTicketMemberView(data)) {
+          if (hadCache || viewRef.current) {
+            setFromCache(true);
+            setError("Could not refresh Support. Showing the last copy on this device.");
+            setFetchFailed(false);
+            return;
+          }
+          setFetchFailed(true);
+          setErrorStatus(response.status);
+          setError(
+            data && typeof data === "object" && "error" in data && typeof data.error === "string"
+              ? data.error
+              : "Could not load tickets",
+          );
           return;
         }
         setView(data);
-      })
-      .catch(() => {
+        setFromCache(false);
+        setCachedAt(null);
+        await persistSupportSnapshot(orgHint, data);
+      } catch {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Support. Showing the last copy on this device.");
+          setFetchFailed(false);
+          return;
+        }
         setFetchFailed(true);
         setError("Network error — please try again.");
-      });
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -112,16 +192,22 @@ export default function SupportTicketsClient() {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ orgId: view.orgId, subject, body }),
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
-      const data = (await response.json()) as SupportTicketMemberView & { error?: string };
-      if (!response.ok) {
-        setError(data.error ?? "Could not submit ticket");
+      const data: unknown = await response.json().catch(() => null);
+      if (!response.ok || !isSupportTicketMemberView(data)) {
+        setError(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "Could not submit ticket",
+        );
         return;
       }
       setView(data);
       setSubject("");
       setBody("");
       setMessage("Ticket sent. We’ll follow up here when there’s a reply.");
+      void persistSupportSnapshot(view.orgId ?? "", data);
     } catch {
       setError("Network error — please try again.");
     } finally {
@@ -129,7 +215,7 @@ export default function SupportTicketsClient() {
     }
   }
 
-  if (fetchFailed || view == null) {
+  if (!view) {
     const failure = fetchFailed
       ? loadFailureCopy(
           classifyLoadFailure({
@@ -153,6 +239,7 @@ export default function SupportTicketsClient() {
           title="Support"
           description="Tell the Vantage platform owner when something breaks."
         />
+        <OfflineBanner feature="Support" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
           title={failure ? failure.title : "Loading support…"}
@@ -182,6 +269,7 @@ export default function SupportTicketsClient() {
           title="Support"
           description="Platform tickets need an active team. Legacy /help redirects here."
         />
+        <OfflineBanner feature="Support" fromCache={fromCache} cachedAt={cachedAt} />
         <SupportRelated orgId={view.orgId} />
         <NextActions orgId={view.orgId} ticketCount={0} awaitingReply={0} />
         <EmptyState
@@ -228,6 +316,8 @@ export default function SupportTicketsClient() {
           </Button>
         </div>
       </PageHeader>
+
+      <OfflineBanner feature="Support" fromCache={fromCache} cachedAt={cachedAt} />
 
       <SupportRelated orgId={view.orgId} />
 

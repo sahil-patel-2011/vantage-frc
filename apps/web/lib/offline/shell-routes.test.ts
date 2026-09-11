@@ -165,6 +165,9 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/subsystem-signoff")).toBe(true);
     expect(pathnameIsOfflineShell("/prototype-tracker")).toBe(true);
     expect(pathnameIsOfflineShell("/equipment-maintenance")).toBe(true);
+    expect(pathnameIsOfflineShell("/team/discord")).toBe(true);
+    expect(pathnameIsOfflineShell("/support")).toBe(true);
+    expect(pathnameIsOfflineShell("/connectors")).toBe(true);
     expect(pathnameIsOfflineShell("/api/todos")).toBe(false);
   });
 
@@ -316,6 +319,10 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/subsystem-signoff")).toBe("Subsystem Sign-off");
     expect(offlineCapableLabel("/prototype-tracker")).toBe("Prototype-to-Decision Tracker");
     expect(offlineCapableLabel("/equipment-maintenance")).toBe("Equipment Maintenance");
+    expect(offlineCapableLabel("/hours/kiosk")).toBe("Hours kiosk");
+    expect(offlineCapableLabel("/team/discord")).toBe("Discord");
+    expect(offlineCapableLabel("/support")).toBe("Support");
+    expect(offlineCapableLabel("/connectors")).toBe("Connectors");
   });
 
   it("keeps public/sw.js SHELL_ROUTES aligned with OFFLINE_SHELL_ROUTES", () => {
@@ -460,6 +467,10 @@ describe("offline shell routes", () => {
     expect(featureCacheKey("subsystem-signoff", "org-1", "2026")).toBe("subsystem-signoff:org-1:2026");
     expect(featureCacheKey("prototype-tracker", "org-1", "2026")).toBe("prototype-tracker:org-1:2026");
     expect(featureCacheKey("equipment-maintenance", "org-1")).toBe("equipment-maintenance:org-1");
+    expect(featureCacheKey("discord", "org-1")).toBe("discord:org-1");
+    expect(featureCacheKey("support-tickets", "org-1")).toBe("support-tickets:org-1");
+    expect(featureCacheKey("hours-kiosk", "org-1")).toBe("hours-kiosk:org-1");
+    expect(featureCacheKey("connectors", "org-1")).toBe("connectors:org-1");
     expect(featureCacheKey("schedule", "org-1")).toBe("schedule:org-1");
   });
 

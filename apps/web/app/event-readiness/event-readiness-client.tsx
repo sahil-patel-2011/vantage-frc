@@ -246,18 +246,17 @@ export default function EventReadinessClient() {
     [orgId, busy, eventKey],
   );
 
-  if (view == null && !fetchFailed) {
-    return (
-      <Shell orgId={null}>
-        <OfflineBanner feature="Event readiness" fromCache={fromCache} cachedAt={cachedAt} />
-        <div aria-busy="true" aria-label="Loading event readiness">
-          <SoftBlockSkeleton lines={4} />
-        </div>
-      </Shell>
-    );
-  }
-
-  if (fetchFailed || view == null) {
+  if (!view) {
+    if (!fetchFailed) {
+      return (
+        <Shell orgId={null}>
+          <OfflineBanner feature="Event readiness" fromCache={fromCache} cachedAt={cachedAt} />
+          <div aria-busy="true" aria-label="Loading event readiness">
+            <SoftBlockSkeleton lines={4} />
+          </div>
+        </Shell>
+      );
+    }
     return (
       <Shell orgId={orgId}>
         <OfflineBanner feature="Event readiness" fromCache={fromCache} cachedAt={cachedAt} />

@@ -1,6 +1,7 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import { OfflineBanner } from "../../../components/offline-banner";
 import { EmptyState, PageHeader, Button } from "../../../components/ui";
 import { TeamOpsNav } from "../../../components/team-ops-nav";
 import {
@@ -13,6 +14,8 @@ import {
   discordRelatedLinks,
   formatBridgePostCount,
 } from "../../../lib/discord-related";
+import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
 import { withOrgHref } from "../../../lib/nav/product-nav";
 import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 import "./discord.css";
@@ -48,6 +51,35 @@ const emptyForm = {
   enabled: true,
   chatBridgeEnabled: false,
 };
+
+function isDiscordView(value: unknown): value is DiscordView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "empty" || status === "setup_required" || status === "live";
+}
+
+function formFromView(data: DiscordView): typeof emptyForm {
+  return {
+    webhookUrl: "",
+    channelLabel: data.channelLabel ?? "",
+    guildId: data.guildId ?? "",
+    guildName: data.guildName ?? "",
+    channelId: data.channelId ?? "",
+    enabled: data.enabled ?? true,
+    chatBridgeEnabled: data.chatBridgeEnabled ?? false,
+  };
+}
+
+async function persistDiscordSnapshot(orgHint: string, data: DiscordView): Promise<void> {
+  const cacheOrg = data.orgId.trim() || orgHint;
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("discord", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("discord", "_", data);
+  } catch {
+    // Live Discord already painted; IndexedDB is best-effort.
+  }
+}
 
 function DiscordRelated({ orgId }: { orgId: string }) {
   const links = discordRelatedLinks(orgId, { include: [...DISCORD_RELATED_INCLUDE] });
@@ -133,68 +165,127 @@ export default function TeamDiscordClient({ orgId }: { orgId: string }) {
   const [fetchFailed, setFetchFailed] = useState(false);
   // Kept so an expired session offers sign-in instead of a Retry that cannot work.
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<DiscordView | null>(null);
+  viewRef.current = view;
 
-  async function load() {
-    setFetchFailed(false);
-    const response = await fetch(`/api/team/discord?orgId=${encodeURIComponent(orgId)}`);
-    const data = await response.json();
-    if (!response.ok) {
-      setOk(false);
-      setStatus(data.error ?? "Unable to load Discord settings");
-      setErrorStatus(response.status);
-      setView(null);
-      setFetchFailed(true);
-      return;
+  const load = useCallback(async () => {
+    const orgHint = orgId.trim();
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<DiscordView>("discord", orgHint || "_");
+      if (!viewRef.current && cached?.data && isDiscordView(cached.data)) {
+        setView(cached.data);
+        setForm(formFromView(cached.data));
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
     }
+    setFetchFailed(false);
     setErrorStatus(null);
-    setView(data as DiscordView);
-    setForm({
-      webhookUrl: "",
-      channelLabel: data.channelLabel ?? "",
-      guildId: data.guildId ?? "",
-      guildName: data.guildName ?? "",
-      channelId: data.channelId ?? "",
-      enabled: data.enabled ?? true,
-      chatBridgeEnabled: data.chatBridgeEnabled ?? false,
-    });
-    setOk(true);
-    setStatus("");
-  }
+    try {
+      const response = await fetch(`/api/team/discord?orgId=${encodeURIComponent(orgHint)}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      const data: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setFetchFailed(true);
+        setErrorStatus(response.status);
+        setOk(false);
+        setStatus(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "Unable to load Discord settings",
+        );
+        return;
+      }
+      if (!response.ok || !isDiscordView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setOk(false);
+          setStatus("Could not refresh Discord. Showing the last copy on this device.");
+          setFetchFailed(false);
+          return;
+        }
+        setOk(false);
+        setStatus(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "Unable to load Discord settings",
+        );
+        setErrorStatus(response.status);
+        setFetchFailed(true);
+        return;
+      }
+      setErrorStatus(null);
+      setView(data);
+      setForm(formFromView(data));
+      setFromCache(false);
+      setCachedAt(null);
+      setOk(true);
+      setStatus("");
+      await persistDiscordSnapshot(orgHint, data);
+    } catch {
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setOk(false);
+        setStatus("Could not refresh Discord. Showing the last copy on this device.");
+        setFetchFailed(false);
+        return;
+      }
+      setFetchFailed(true);
+    }
+  }, [orgId]);
 
   useEffect(() => {
     void load();
-  }, [orgId]);
+  }, [load]);
 
   async function run(action: string, extra: Record<string, unknown> = {}) {
     setBusy(true);
-    const response = await fetch("/api/team/discord", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ orgId, action, ...extra }),
-    });
-    const data = await response.json();
-    setBusy(false);
-    setOk(response.ok);
-    if (!response.ok) {
-      setStatus(data.error ?? "Request failed");
-      return;
+    try {
+      const response = await fetch("/api/team/discord", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ orgId, action, ...extra }),
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      const data = await response.json().catch(() => ({ error: "Request failed" }));
+      setOk(response.ok);
+      if (!response.ok) {
+        setStatus(data.error ?? "Request failed");
+        return;
+      }
+      setStatus(
+        action === "save"
+          ? "Discord connection saved."
+          : action === "test"
+            ? "Test message posted to Discord."
+            : action === "announce"
+              ? "Announcement posted to Discord."
+              : action === "disconnect"
+                ? "Discord disconnected."
+                : action === "set-bridge"
+                  ? extra.chatBridgeEnabled
+                    ? "Chat bridge enabled."
+                    : "Chat bridge disabled."
+                  : "Done.",
+      );
+      await load();
+    } catch {
+      setOk(false);
+      setStatus("Network error — please try again.");
+    } finally {
+      setBusy(false);
     }
-    setStatus(
-      action === "save"
-        ? "Discord connection saved."
-        : action === "test"
-          ? "Test message posted to Discord."
-          : action === "announce"
-            ? "Announcement posted to Discord."
-            : action === "disconnect"
-              ? "Discord disconnected."
-              : action === "set-bridge"
-                ? extra.chatBridgeEnabled
-                  ? "Chat bridge enabled."
-                  : "Chat bridge disabled."
-                : "Done.",
-    );
-    await load();
   }
 
   function onSave(event: FormEvent) {
@@ -210,7 +301,7 @@ export default function TeamDiscordClient({ orgId }: { orgId: string }) {
     });
   }
 
-  if (fetchFailed || view == null) {
+  if (!view) {
     const failure = fetchFailed
       ? loadFailureCopy(
           classifyLoadFailure({
@@ -235,6 +326,7 @@ export default function TeamDiscordClient({ orgId }: { orgId: string }) {
           description="Link a guild and channel, post announcements, and optionally bridge object-linked team messages."
         />
         <TeamOpsNav orgId={orgId} active="admin" />
+        <OfflineBanner feature="Discord" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
           title={failure ? failure.title : "Loading Discord…"}
@@ -278,6 +370,7 @@ export default function TeamDiscordClient({ orgId }: { orgId: string }) {
         </div>
       </PageHeader>
       <TeamOpsNav orgId={orgId} active="admin" />
+      <OfflineBanner feature="Discord" fromCache={fromCache} cachedAt={cachedAt} />
       <DiscordRelated orgId={orgId} />
 
       {showEmptyShell ? (

@@ -65,6 +65,10 @@ and build are intentionally credential-free; RLS integration tests need a real P
   `proxy.ts` auto-protects every non-public route — new `app/<feature>` pages need no extra auth gate.
 - **Never invent demo/placeholder metrics.** Feature logic skips rows without real data and shows
   setup/empty states instead of fabricated numbers (see `packages/prediction-strategy`, `apps/web/lib/impact`).
+- **TSX files stay at or under 1000 lines.** `apps/web/lib/ui/tsx-line-limit.test.ts` fails if any
+  `apps/web/**/*.tsx` exceeds 1000 lines. Split chrome / model / ready-view instead of growing a hub shell.
+- **Exhaustive switches.** In `switch` statements over discriminated unions or enums, use a `never` check
+  in the `default` case so newly added variants cause compile-time failures until handled.
 
 ## Environment gotchas
 

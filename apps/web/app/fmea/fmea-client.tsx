@@ -234,7 +234,7 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
     [orgId, season, busy],
   );
 
-  if (fetchFailed || view == null) {
+  if (!view) {
     // Retry cannot fix an expired session, so the failure decides its own action.
     const failure = fetchFailed
       ? loadFailureCopy(

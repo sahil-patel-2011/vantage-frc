@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { Badge, Button, EmptyState, PageHeader } from "../../components/ui";
 import {
   connectorBadge,
@@ -8,6 +9,8 @@ import {
   connectorDisconnectEndpoint,
   type ConnectorStatusView,
 } from "../../lib/connectors/actions";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./connectors.css";
 
 type ConnectorsView = {
@@ -38,32 +41,100 @@ function CopyableUrl({ label, url }: { label: string; url: string }) {
   );
 }
 
+function isConnectorsView(value: unknown): value is ConnectorsView {
+  if (!value || typeof value !== "object") return false;
+  return Array.isArray((value as { connectors?: unknown }).connectors);
+}
+
+function connectorsCacheOrg(data: ConnectorsView, orgHint: string): string {
+  if (typeof data.orgId === "string" && data.orgId.trim()) return data.orgId;
+  return orgHint;
+}
+
+async function persistConnectorsSnapshot(orgHint: string, data: ConnectorsView): Promise<void> {
+  const cacheOrg = connectorsCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("connectors", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("connectors", "_", data);
+  } catch {
+    // Live Connectors already painted; IndexedDB is best-effort.
+  }
+}
+
 export default function ConnectorsClient() {
   const [view, setView] = useState<ConnectorsView | null>(null);
-  const [loading, setLoading] = useState(true);
   const [fetchFailed, setFetchFailed] = useState(false);
   const [message, setMessage] = useState("");
   const [messageOk, setMessageOk] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<ConnectorsView | null>(null);
+  viewRef.current = view;
 
   const load = useCallback(async () => {
+    const params = new URLSearchParams(window.location.search);
+    const orgHint = params.get("orgId")?.trim() ?? "";
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<ConnectorsView>("connectors", orgHint || "_");
+      if (!viewRef.current && cached?.data && isConnectorsView(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
     setFetchFailed(false);
     try {
-      const response = await fetch("/api/connectors");
-      const data = (await response.json()) as ConnectorsView & { error?: string };
-      if (!response.ok) {
-        setFetchFailed(true);
-        setMessage(data.error ?? "Could not load connector status.");
+      const response = await fetch("/api/connectors", {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      const data: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
         setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setFetchFailed(true);
+        setMessage(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "Could not load connector status.",
+        );
+        return;
+      }
+      if (!response.ok || !isConnectorsView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setMessage("Could not refresh Connectors. Showing the last copy on this device.");
+          setFetchFailed(false);
+          return;
+        }
+        setFetchFailed(true);
+        setMessage(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "Could not load connector status.",
+        );
         return;
       }
       setView(data);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistConnectorsSnapshot(orgHint, data);
     } catch {
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setMessage("Could not refresh Connectors. Showing the last copy on this device.");
+        setFetchFailed(false);
+        return;
+      }
       setFetchFailed(true);
       setMessage("Could not load connector status.");
-      setView(null);
-    } finally {
-      setLoading(false);
     }
   }, []);
 
@@ -127,7 +198,7 @@ export default function ConnectorsClient() {
     }
   }
 
-  if (loading) {
+  if (!view) {
     return (
       <main className="module-page connectors-page">
         <PageHeader
@@ -135,26 +206,28 @@ export default function ConnectorsClient() {
           title="Connectors"
           description="Checking what this deployment has configured and what this team has linked."
         />
-        <EmptyState soft badge="Loading" badgeTone="setup" title="Loading connectors" description="Reading deployment configuration and stored links." />
-      </main>
-    );
-  }
-
-  if (fetchFailed || !view) {
-    return (
-      <main className="module-page connectors-page">
-        <PageHeader breadcrumbs="Settings / Connectors" title="Connectors" description="Every service Vantage talks to." />
-        <EmptyState
-          soft
-          badge="Unavailable"
-          badgeTone="setup"
-          title="Could not load connector status"
-          description={message || "A network or server issue prevented loading. Retry, or open Support if this keeps failing."}
-        >
-          <Button variant="primary" type="button" onClick={() => { setLoading(true); void load(); }}>
-            Retry
-          </Button>
-        </EmptyState>
+        <OfflineBanner feature="Connectors" fromCache={fromCache} cachedAt={cachedAt} />
+        {fetchFailed ? (
+          <EmptyState
+            soft
+            badge="Unavailable"
+            badgeTone="setup"
+            title="Could not load connector status"
+            description={message || "A network or server issue prevented loading. Retry, or open Support if this keeps failing."}
+          >
+            <Button variant="primary" type="button" onClick={() => void load()}>
+              Retry
+            </Button>
+          </EmptyState>
+        ) : (
+          <EmptyState
+            soft
+            badge="Loading"
+            badgeTone="setup"
+            title="Loading connectors"
+            description="Reading deployment configuration and stored links."
+          />
+        )}
       </main>
     );
   }
@@ -168,6 +241,7 @@ export default function ConnectorsClient() {
         title="Connectors"
         description={`Every service Vantage talks to, what it is missing, and the exact URL to register with the provider. ${view.summary}.`}
       />
+      <OfflineBanner feature="Connectors" fromCache={fromCache} cachedAt={cachedAt} />
 
       {view.degraded ? (
         <p className="connector-banner" role="status">
