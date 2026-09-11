@@ -61,9 +61,11 @@ export type CadVaultShellCopy = {
 export function classifyCadVaultShell(input: {
   loading?: boolean;
   fetchFailed?: boolean;
+  authBlocked?: boolean;
   status?: "setup_required" | "empty" | "ready" | null;
 }): CadVaultShellKind {
   if (input.loading) return "loading";
+  if (input.authBlocked) return "setup";
   if (input.fetchFailed) return "error";
   if (input.status === "setup_required") return "setup";
   if (input.status === "empty") return "empty";

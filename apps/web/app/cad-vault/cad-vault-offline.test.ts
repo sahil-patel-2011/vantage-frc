@@ -9,9 +9,12 @@ describe("CAD Vault last snapshot stays on the phone", () => {
     const src = readFileSync(join(DIR, "cad-vault-client.tsx"), "utf8");
     expect(src).toMatch(/getFeatureSnapshot/);
     expect(src).toMatch(/putFeatureSnapshot/);
+    expect(src).toMatch(/clearFeatureSnapshot/);
     expect(src).toMatch(/"cad-vault"/);
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
     expect(src).toMatch(/feature="CAD Vault"/);
+    expect(src).toMatch(/response\.status === 401 \|\| response\.status === 403/);
+    expect(src).toMatch(/authBlocked/);
     expect(src).not.toMatch(/tessellation/i);
     expect(src).not.toMatch(/magic numbers/i);
   });

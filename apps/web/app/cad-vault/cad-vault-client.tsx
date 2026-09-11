@@ -16,9 +16,13 @@ import {
   type CadDocumentKind,
   type CadVaultView,
 } from "../../lib/cad-vault/view";
-import { cadVaultHasLiveLink } from "../../lib/cad-vault/cad-vault-related";
+import { cadVaultHasLiveLink, classifyCadVaultShell } from "../../lib/cad-vault/cad-vault-related";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
-import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import {
+  clearFeatureSnapshot,
+  getFeatureSnapshot,
+  putFeatureSnapshot,
+} from "../../lib/offline/feature-cache";
 import "../cad/cad-setup.css";
 import { CadVaultEmptyCard, CadVaultHeader, CadVaultNextActions } from "./cad-vault-chrome";
 import { DocumentCard } from "./cad-vault-document-card";
@@ -44,7 +48,7 @@ async function persistCadVaultSnapshot(orgHint: string, seasonHint: string, data
   const seasonKey = String(data.seasonYear);
   try {
     await putFeatureSnapshot("cad-vault", cacheOrg, data, seasonHint || seasonKey);
-    if (!orgHint) await putFeatureSnapshot("cad-vault", "_", data, seasonHint || seasonKey);
+    await putFeatureSnapshot("cad-vault", "_", data, seasonHint || seasonKey);
   } catch {
     // Live CAD Vault already painted; IndexedDB is best-effort.
   }
@@ -84,6 +88,7 @@ type PendingUpload = {
 export default function CadVaultClient() {
   const [view, setView] = useState<CadVaultView | null>(null);
   const [fetchFailed, setFetchFailed] = useState(false);
+  const [authBlocked, setAuthBlocked] = useState(false);
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
   const [seasonYear, setSeasonYear] = useState<number | null>(null);
@@ -123,6 +128,7 @@ export default function CadVaultClient() {
       // IndexedDB missing or blocked; live fetch still runs.
     }
     setFetchFailed(false);
+    setAuthBlocked(false);
     setError("");
     try {
       const query = new URLSearchParams();
@@ -134,10 +140,14 @@ export default function CadVaultClient() {
       });
       const data: unknown = await response.json().catch(() => null);
       if (response.status === 401 || response.status === 403) {
+        await clearFeatureSnapshot("cad-vault", orgHint || "_", seasonHint);
+        await clearFeatureSnapshot("cad-vault", "_", seasonHint);
+        if (orgHint) await clearFeatureSnapshot("cad-vault", orgHint, seasonHint);
         setView(null);
         setFromCache(false);
         setCachedAt(null);
-        setFetchFailed(true);
+        setAuthBlocked(true);
+        setFetchFailed(false);
         return;
       }
       if (!response.ok || !isCadVaultView(data)) {
@@ -326,13 +336,14 @@ export default function CadVaultClient() {
   );
 
   if (!view) {
+    const shell = classifyCadVaultShell({ authBlocked, fetchFailed });
     return (
       <main className="module-page cad-vault-page">
         <CadVaultHeader orgId={null} />
         <OfflineBanner feature="CAD Vault" fromCache={fromCache} cachedAt={cachedAt} />
         <CadVaultEmptyCard
-          shell={fetchFailed ? "error" : "loading"}
-          onRetry={fetchFailed ? () => void load(seasonYear) : undefined}
+          shell={shell}
+          onRetry={shell === "error" ? () => void load(seasonYear) : undefined}
         />
       </main>
     );

@@ -27,6 +27,7 @@ const THIS_WEEK = [
   "app/hours-self-view/hours-self-view-client.tsx",
   "app/todos/todos-client.tsx",
   "lib/cad-vault/cad-vault-related.ts",
+  "app/cad-vault/cad-vault-client.tsx",
   "components/product-hub.tsx",
 ] as const;
 
@@ -103,6 +104,9 @@ describe("student-week action path", () => {
     const todos = readFileSync(join(WEB, "app/todos/todos-client.tsx"), "utf8");
     expect(todos).toMatch(/badge="Needs setup"/);
     expect(todos).not.toMatch(/Setup required/);
+    const vault = readFileSync(join(WEB, "app/cad-vault/cad-vault-client.tsx"), "utf8");
+    expect(vault).toMatch(/classifyCadVaultShell\(\{ authBlocked, fetchFailed \}\)/);
+    expect(vault).toMatch(/clearFeatureSnapshot\("cad-vault"/);
   });
 
   it("does not print leftover Setup required / TBA / OAuth on this week's boards", () => {

@@ -42,6 +42,8 @@ describe("cadVaultShellCopy", () => {
   it("uses Choose your team and link-first empty copy", () => {
     expect(classifyCadVaultShell({ loading: true })).toBe("loading");
     expect(classifyCadVaultShell({ fetchFailed: true })).toBe("error");
+    expect(classifyCadVaultShell({ authBlocked: true })).toBe("setup");
+    expect(classifyCadVaultShell({ authBlocked: true, fetchFailed: true })).toBe("setup");
     expect(classifyCadVaultShell({ status: "setup_required" })).toBe("setup");
     expect(classifyCadVaultShell({ status: "empty" })).toBe("empty");
     expect(classifyCadVaultShell({ status: "ready" })).toBe("ready");
