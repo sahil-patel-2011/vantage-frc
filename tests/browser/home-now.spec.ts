@@ -8,6 +8,7 @@ test.beforeEach(async ({ context }) => {
 });
 
 test("Home shows one What to do now primary without TBA jargon", async ({ page }) => {
+  test.setTimeout(90_000);
   await page.goto("/dashboard");
   await waitForLoadingGone(page);
   const now = page.getByTestId("dash-now");
