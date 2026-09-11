@@ -82,6 +82,11 @@ describe("CAD connectors GUI student chrome", () => {
     expect(pairShellCopy("setup").title).toBe("Choose your team");
     expect(vsPair).not.toMatch(/Organization \/ workspace/);
     expect(cadPair).not.toMatch(/Organization \/ workspace/);
+    const connections = read("app/cad/connections/connections-client.tsx");
+    const connectionsPage = read("app/cad/connections/page.tsx");
+    expect(connections).toMatch(/Pair this computer/);
+    expect(connectionsPage).toMatch(/badge="Needs setup"/);
+    expect(connectionsPage).not.toMatch(/Setup required/);
   });
 
   it("does not dump OAuth or env names on this slice", () => {

@@ -107,7 +107,7 @@ function CadConnectionsNextActions({
         },
     {
       id: "desktop",
-      label: hasDesktop ? "Review paired desktops" : "Pair Fusion desktop",
+      label: hasDesktop ? "Review paired computers" : "Pair this computer",
       detail: "Fusion stays on this computer. Pair it here when you need the desktop app.",
       href: withOrgHref("/cad/pair", orgId),
     },
@@ -416,7 +416,7 @@ export default function CadConnections({ orgId }: { orgId: string }) {
                 </p>
               </div>
               <Button as="a" variant="secondary" href={withOrgHref("/cad/pair", orgId)}>
-                Pair desktop
+                Pair this computer
               </Button>
             </article>
           </section>

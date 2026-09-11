@@ -27,7 +27,7 @@ export const CAD_DOCUMENT_OPEN = "Open CAD";
 export const CAD_DOCUMENT_CONNECT_FIRST = "Connect Onshape before picking a document.";
 
 export const CAD_DOCUMENT_LIST_EMPTY =
-  "No documents came back. Paste an Onshape link instead — nothing is invented here.";
+  "No documents came back. Paste an Onshape link instead.";
 
 export const CAD_DOCUMENT_LIST_FAILED =
   "Could not list documents. Paste an Onshape link to continue.";
