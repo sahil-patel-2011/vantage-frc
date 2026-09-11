@@ -5,7 +5,7 @@ import { AiHubRelated } from "../../components/ai-hub-related";
 import { MeteredAiCutoffBanner } from "../../components/metered-ai-cutoff-banner";
 import { SponsoredPromoBanner } from "../../components/sponsored-promo-banner";
 import { resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
-import { ModelProvenance, Button } from "../../components/ui";
+import { ModelProvenance, Button, EmptyState } from "../../components/ui";
 import {
   AI_CHAT_RELATED_INCLUDE,
   AI_CHAT_SCOPE_CARDS,
@@ -78,6 +78,45 @@ function ChatRelatedStrip({ orgId }: { orgId: string }) {
       ))}
     </nav>
   );
+}
+
+function ChatStatusPrimary({
+  shell,
+  onRetry,
+  adminHref,
+}: {
+  shell: AiChatShellKind;
+  onRetry: () => void;
+  adminHref: string;
+}) {
+  switch (shell) {
+    case "error":
+      return (
+        <Button variant="primary" type="button" onClick={onRetry}>
+          Retry
+        </Button>
+      );
+    case "auth_required":
+      return (
+        <Button as="a" variant="primary" href="/signin">
+          Sign in
+        </Button>
+      );
+    case "setup":
+      return (
+        <Button as="a" variant="primary" href={adminHref}>
+          Open Team Admin
+        </Button>
+      );
+    case "loading":
+    case "empty":
+    case "ready":
+      return null;
+    default: {
+      const _exhaustive: never = shell;
+      return _exhaustive;
+    }
+  }
 }
 
 function NextActions({ orgId, shell }: { orgId: string; shell: AiChatShellKind }) {
@@ -184,7 +223,7 @@ export default function ChatClient({
         action: "thread",
         orgId,
         scope: nextScope,
-        title: nextScope === "team" ? "Team strategy channel" : "Private workspace",
+        title: nextScope === "team" ? "Team strategy channel" : "Private chat",
       }),
     });
     const data = await response.json();
@@ -193,7 +232,7 @@ export default function ChatClient({
       if (cutoff) setCutoffCode(cutoff);
       if (data.code === "setup_required" || data.status === "setup_required") {
         setProviderSetup({
-          message: data.message ?? data.error ?? "Configure an AI provider key before chatting.",
+          message: data.message ?? data.error ?? "Ask a mentor to add a key before chatting.",
           steps: Array.isArray(data.steps) ? data.steps : [],
         });
       }
@@ -204,7 +243,7 @@ export default function ChatClient({
     setProviderSetup(null);
     const value = {
       id: data.threadId,
-      title: nextScope === "team" ? "Team strategy channel" : "Private workspace",
+      title: nextScope === "team" ? "Team strategy channel" : "Private chat",
       scope: nextScope,
     };
     setThread(value);
@@ -216,7 +255,7 @@ export default function ChatClient({
   async function send(event: React.FormEvent) {
     event.preventDefault();
     if (!thread || !text.trim()) return;
-    setStatus("Looking up authorized tools…");
+        setStatus("Looking up tools…");
     setCutoffCode(null);
     setProviderSetup(null);
     const response = await fetch("/api/agent", {
@@ -237,7 +276,7 @@ export default function ChatClient({
       if (cutoff) setCutoffCode(cutoff);
       if (data.code === "setup_required" || data.status === "setup_required") {
         setProviderSetup({
-          message: data.message ?? data.error ?? "Configure an AI provider key before chatting.",
+          message: data.message ?? data.error ?? "Ask a mentor to add a key before chatting.",
           steps: Array.isArray(data.steps) ? data.steps : [],
         });
       }
@@ -369,16 +408,17 @@ export default function ChatClient({
   const lastAssistant = [...messages]
     .reverse()
     .find((item) => item.role === "assistant" && Boolean(item.model));
-  const blocked = shell === "auth_required" || shell === "error";
+  const blocked = shell === "auth_required" || shell === "error" || shell === "setup" || shell === "loading";
   const showStatusShell =
     shell === "setup" || shell === "loading" || shell === "auth_required" || shell === "error";
+  const adminHref = withOrgHref("/team/admin", orgId);
 
   return (
     <main className="module-page ch-page">
       <header className="app-page-header">
         <div>
-          <span className="breadcrumbs">AI / Assistant</span>
-          <h1>FRC Assistant</h1>
+          <span className="breadcrumbs">Ask AI / Chat</span>
+          <h1>Chat</h1>
           <p>
             Ask about teams, matchups, and scout evidence. Tools run when you mention a team or a match, and
             answer from what your team has actually recorded.
@@ -388,53 +428,52 @@ export default function ChatClient({
           <span className={`app-badge ${thread?.scope === "team" ? "setup" : "good"}`}>
             {thread?.scope === "team" ? "Team shared" : thread ? "Private" : "No channel"}
           </span>
-          <Button variant="secondary" type="button" className="ch-context-toggle" aria-expanded={contextOpen} onClick={() => setContextOpen((v) => !v)}>
-            {contextOpen ? "Hide context" : "Context controls"}
-          </Button>
+          {shell === "ready" ? (
+            <Button variant="secondary" type="button" className="ch-context-toggle" aria-expanded={contextOpen} onClick={() => setContextOpen((v) => !v)}>
+              {contextOpen ? "Hide context" : "Context controls"}
+            </Button>
+          ) : null}
         </div>
       </header>
 
       <AiHubRelated orgId={orgId} active="chat" />
       <ChatRelatedStrip orgId={orgId} />
 
-      <nav className="ch-gov" aria-label="AI governance">
-        <span className="ch-cache">
-          Prompt caching{" "}
-          <strong>{promptCachingEnabled ? "On" : "Off"}</strong>
-        </span>
-        <a href={`${budgetsHref}#prompt-caching`}>Manage caching</a>
-        <a href={budgetsHref}>Budgets</a>
-        <a href={memoryHref}>Memory</a>
-        {/* Saved prompts had exactly one way in — the /team/ai-hub launcher,
-            which LEGACY_HUB_REDIRECTS made unreachable and which is now
-            deleted. The assistant is where you reach for a saved ask, so the
-            link belongs beside Memory rather than on a grid nobody could open. */}
-        <a href={promptsHref}>Prompts</a>
-        <a href={strategyHref}>Strategy</a>
-        <a href={usageHref}>Usage</a>
-        <a href={runsHref}>AI runs</a>
-        <a href={knowledgeHref}>Knowledge</a>
-      </nav>
+      {shell === "ready" ? (
+        <nav className="ch-gov" aria-label="AI governance">
+          <span className="ch-cache">
+            Prompt caching{" "}
+            <strong>{promptCachingEnabled ? "On" : "Off"}</strong>
+          </span>
+          <a href={`${budgetsHref}#prompt-caching`}>Manage caching</a>
+          <a href={budgetsHref}>Chat limits</a>
+          <a href={memoryHref}>Memory</a>
+          <a href={promptsHref}>Prompts</a>
+          <a href={strategyHref}>Strategy</a>
+          <a href={usageHref}>Usage</a>
+          <a href={runsHref}>AI runs</a>
+          <a href={knowledgeHref}>Knowledge</a>
+        </nav>
+      ) : null}
 
       <MeteredAiCutoffBanner orgId={orgId} errorCode={cutoffCode} compact />
       <SponsoredPromoBanner orgId={orgId} />
 
       {showStatusShell ? (
-        <section className="app-card soft-panel product-hub-setup" role="status" aria-busy={shell === "loading"}>
-          {shellCopy.badge ? <span className="app-badge setup">{shellCopy.badge}</span> : null}
-          <h2>{shellCopy.title}</h2>
-          <p className="app-muted">
-            {providerSetup?.message && shell === "setup" ? providerSetup.message : shellCopy.description}
-          </p>
-          
-          {shell === "error" ? (
-            <Button variant="secondary" type="button" onClick={() => void load()}>
-              Retry
-            </Button>
-          ) : null}
-          {shell !== "loading" ? <NextActions orgId={orgId} shell={shell} /> : null}
-        </section>
+        <EmptyState
+          soft
+          className="product-hub-setup"
+          badge={shellCopy.badge}
+          badgeTone="setup"
+          title={shellCopy.title}
+          description={shellCopy.description}
+          aria-busy={shell === "loading"}
+        >
+          <ChatStatusPrimary shell={shell} onRetry={() => void load()} adminHref={adminHref} />
+        </EmptyState>
       ) : null}
+
+      {shell === "ready" ? <NextActions orgId={orgId} shell={shell} /> : null}
 
       {shell === "empty" ? (
         <>
@@ -459,12 +498,12 @@ export default function ChatClient({
           <div className="ch-thread-actions">
             {shell !== "empty" ? (
               <>
-            <button type="button" onClick={() => void newThread("private")}>
+            <Button variant="secondary" type="button" onClick={() => void newThread("private")}>
               + Private chat
-            </button>
-            <button type="button" onClick={() => void newThread("team")}>
+            </Button>
+            <Button variant="secondary" type="button" onClick={() => void newThread("team")}>
               + Team-shared chat
-            </button>
+            </Button>
               </>
             ) : null}
           </div>
@@ -585,9 +624,9 @@ export default function ChatClient({
                         </>
                       ) : null}
                       {item.role === "user" && thread.scope === "private" ? (
-                        <button type="button" className="ch-promote" onClick={() => void promote(item.id)}>
+                        <Button variant="ghost" type="button" className="ch-promote" onClick={() => void promote(item.id)}>
                           Promote to team memory
-                        </button>
+                        </Button>
                       ) : null}
                     </article>
                   );
@@ -637,6 +676,7 @@ export default function ChatClient({
           )}
         </section>
 
+        {shell === "ready" ? (
         <aside className={`ch-context${contextOpen ? " open" : ""}`} aria-label="Context controls">
           <div>
             <span className="eyebrow">Context</span>
@@ -654,12 +694,12 @@ export default function ChatClient({
               </span>
             </div>
             <div className="ch-actions">
-              <button type="button" onClick={() => void setPrivateInjection(true)}>
+              <Button variant="secondary" type="button" onClick={() => void setPrivateInjection(true)}>
                 Enable
-              </button>
-              <button type="button" className="secondary" onClick={() => void setPrivateInjection(false)}>
+              </Button>
+              <Button variant="secondary" type="button" onClick={() => void setPrivateInjection(false)}>
                 Disable
-              </button>
+              </Button>
             </div>
             <form className="ch-budget" onSubmit={savePrivateBudget}>
               <label>
@@ -686,12 +726,12 @@ export default function ChatClient({
               </span>
             </div>
             <div className="ch-actions">
-              <button type="button" onClick={() => void setTeamInjection(true)}>
+              <Button variant="secondary" type="button" onClick={() => void setTeamInjection(true)}>
                 Enable team
-              </button>
-              <button type="button" className="secondary" onClick={() => void setTeamInjection(false)}>
+              </Button>
+              <Button variant="secondary" type="button" onClick={() => void setTeamInjection(false)}>
                 Disable team
-              </button>
+              </Button>
             </div>
             <form className="ch-budget" onSubmit={saveTeamBudget}>
               <label>
@@ -709,7 +749,7 @@ export default function ChatClient({
               </Button>
             </form>
             <a href={memoryHref} style={{ fontSize: 12, fontWeight: 700, color: "var(--accent)" }}>
-              Open AI memory governance →
+              Open Memory →
             </a>
           </div>
 
@@ -732,15 +772,16 @@ export default function ChatClient({
                   <article>
                     <small>{item.kind}</small>
                     <p>{item.content}</p>
-                    <button type="button" className="ch-promote" onClick={() => void removeMemory(item.id)}>
+                    <Button variant="ghost" type="button" className="ch-promote" onClick={() => void removeMemory(item.id)}>
                       Delete
-                    </button>
+                    </Button>
                   </article>
                 </li>
               ))}
             </ul>
           </div>
         </aside>
+        ) : null}
       </div>
       ) : null}
     </main>

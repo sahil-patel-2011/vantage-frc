@@ -1,4 +1,4 @@
-/* FRC Assistant — Soft-UI, .ch-* prefixed + shared app tokens. Avoid soft-ui.css. */
+/* Chat — .ch-* prefixed + shared app tokens. Avoid leftover soft-ui.css. */
 .ch-page {
   display: grid;
   gap: 14px;

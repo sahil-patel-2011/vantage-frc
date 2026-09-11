@@ -111,9 +111,9 @@ export function aiChatShellCopy(kind: AiChatShellKind): AiChatEmptyCopy {
       return {
         kind,
         badge: "Needs setup",
-        title: "AI provider not configured",
+        title: "Ask AI needs a key",
         description:
-          "Configure a platform or your own keys before messaging. Chat stays empty until a key is set; rankings and scouting stay empty until those exist.",
+          "A mentor or owner adds a platform or your own key under Team Admin. Chat stays empty until then.",
       };
     case "empty":
       return {
@@ -121,28 +121,32 @@ export function aiChatShellCopy(kind: AiChatShellKind): AiChatEmptyCopy {
         badge: "Start here",
         title: "Pick or create a channel",
         description:
-          "Private chats stay yours. Team-shared channels are visible to members. Tools only run when authorized.",
+          "Private chats stay yours. Team-shared channels are visible to teammates. Tools run when you ask about a team or a match.",
       };
     case "error":
       return {
         kind,
         badge: "Unavailable",
         title: "Could not load Chat",
-        description: "A network or server issue blocked channels. Retry, or check Budgets if AI is cut off.",
+        description: "A network or server issue blocked channels. Retry, or check Chat limits if Chat is paused.",
       };
-    default:
+    case "ready":
       return {
-        kind: "ready",
-        title: "FRC Assistant",
+        kind,
+        title: "Chat",
         description:
-          "Ask about teams, matchups, and scout evidence. Authorized tools cite real rows only.",
+          "Ask about teams, matchups, and scout evidence. Tools cite what this team has actually recorded.",
       };
+    default: {
+      const _exhaustive: never = kind;
+      return _exhaustive;
+    }
   }
 }
 
 /**
- * Soft-UI next actions for empty / setup Chat.
- * Points at Budgets · Memory · Strategy — never invents DEMO replies.
+ * Next actions for ready Chat. Empty / setup / error / auth keep them off —
+ * those shells keep one EmptyState primary (or New private chat on empty).
  */
 export function aiChatNextActions(input: {
   orgId?: string | null;
@@ -158,90 +162,29 @@ export function aiChatNextActions(input: {
         href: "/workspace",
         primary: true,
       },
-      {
-        id: "account",
-        label: "Open Account",
-        detail: "Confirm membership, then return from the AI hub.",
-        href: withOrgHref("/account", null),
-      },
     ];
   }
 
   const budgetsHref = hubHref("/ai", "budgets", orgId);
   const memoryHref = hubHref("/ai", "memory", orgId);
   const strategyHref = hubHref("/competition", "strategy", orgId);
-  const adminHref = withOrgHref("/team/admin", orgId);
 
-  if (input.shell === "auth_required") {
-    return [
-      {
-        id: "signin",
-        label: "Sign in",
-        detail: "Closed membership — Google or email OTP, then reopen AI · Chat.",
-        href: "/signin",
-        primary: true,
-      },
-    ];
-  }
-
-  if (input.shell === "setup") {
-    return [
-      {
-        id: "admin",
-        label: "Open Team Admin",
-        detail: "Owners/admins add a platform or your own provider key for metered Chat.",
-        href: adminHref,
-        primary: true,
-      },
-      {
-        id: "budgets",
-        label: "Open Budgets",
-        detail: "Hard spend/token caps and prompt caching live next to Chat.",
-        href: budgetsHref,
-      },
-      {
-        id: "memory",
-        label: "Open Memory",
-        detail: "Team injection is separate from provider keys — optional after setup.",
-        href: memoryHref,
-      },
-    ];
-  }
-
-  if (input.shell === "error") {
-    return [
-      {
-        id: "budgets",
-        label: "Check Chat limits",
-        detail: "Pause Chat or a spend limit can block the assistant before a channel loads.",
-        href: budgetsHref,
-        primary: true,
-      },
-      {
-        id: "strategy",
-        label: "Open Strategy",
-        detail: "Match prep without Chat — use Strategy and your scout notes.",
-        href: strategyHref,
-      },
-    ];
-  }
-
-  if (input.shell === "empty") {
+  if (input.shell !== "ready") {
     return [];
   }
 
   return [
     {
       id: "budgets",
-      label: "Open Budgets",
-      detail: "Metered Chat enforces org spend/token caps — UsageCutoffBanner deep-links here.",
+      label: "Open Chat limits",
+      detail: "Spend and token limits live next to Chat. Pause Chat if the team is at the cap.",
       href: budgetsHref,
       primary: true,
     },
     {
       id: "memory",
       label: "Open Memory",
-      detail: "Admins opt in to team-shared injection; private prefs stay in Chat context.",
+      detail: "Admins choose what the team remembers. Private notes stay yours.",
       href: memoryHref,
     },
     {
@@ -263,6 +206,6 @@ export const AI_CHAT_SCOPE_CARDS = [
   {
     id: "team" as const,
     title: "Team-shared channel",
-    body: "Every message is visible to org members before send. Promote useful replies into Memory only when you choose.",
+    body: "Every message is visible to teammates before send. Promote useful replies into Memory only when you choose.",
   },
 ] as const;

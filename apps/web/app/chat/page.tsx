@@ -3,8 +3,8 @@ import ChatClient from "./chat-client";
 import "./chat.css";
 
 export const metadata = {
-  title: "FRC Assistant",
-  description: "Ask about teams, matchups, and scout evidence with authorized tools.",
+  title: "Chat",
+  description: "Ask about teams, matchups, and scout evidence from what this team has recorded.",
 };
 
 export default async function ChatPage({
@@ -18,7 +18,7 @@ export default async function ChatPage({
       <main className="module-page ch-page">
         <EmptyState
           soft
-          badge="Setup"
+          badge="Needs setup"
           badgeTone="setup"
           title="Choose your team"
           description="Each team has its own channels and memory. Choose your team, then return from Ask AI."

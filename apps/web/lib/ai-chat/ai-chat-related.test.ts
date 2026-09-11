@@ -73,8 +73,9 @@ describe("classifyAiChatShell + copy", () => {
       const copy = aiChatShellCopy(kind);
       expect(copy.title).not.toMatch(/\bDEMO\b/);
     }
-    expectPlainCopy(aiChatShellCopy("empty").description);
-    expectPlainCopy(aiChatShellCopy("setup").description);
+    expect(aiChatShellCopy("setup").badge).toBe("Needs setup");
+    expect(aiChatShellCopy("setup").title).not.toMatch(/AI provider not configured/);
+    expect(aiChatShellCopy("ready").title).toBe("Chat");
   });
 });
 
@@ -88,16 +89,22 @@ describe("aiChatNextActions", () => {
     expect(actions[0]?.detail).not.toMatch(/pick a team/i);
   });
 
-  it("empty Chat keeps next-actions off — the card has one New private chat", () => {
-    const actions = aiChatNextActions({ orgId: "org-1", shell: "empty" });
-    expect(actions).toEqual([]);
+  it("empty and setup Chat keep next-actions off — one primary each", () => {
+    expect(aiChatNextActions({ orgId: "org-1", shell: "empty" })).toEqual([]);
+    expect(aiChatNextActions({ orgId: "org-1", shell: "setup" })).toEqual([]);
+    expect(aiChatNextActions({ orgId: "org-1", shell: "error" })).toEqual([]);
+    expect(aiChatNextActions({ orgId: "org-1", shell: "auth_required" })).toEqual([]);
   });
 
-  it("points setup at Team Admin + Budgets/Memory", () => {
-    const actions = aiChatNextActions({ orgId: "org-1", shell: "setup" });
-    expect(actions[0]?.id).toBe("admin");
-    expect(actions.some((a) => a.id === "budgets")).toBe(true);
+  it("ready Chat points at Chat limits, Memory, and Strategy", () => {
+    const actions = aiChatNextActions({ orgId: "org-1", shell: "ready" });
+    expect(actions[0]?.id).toBe("budgets");
+    expect(actions[0]?.label).toBe("Open Chat limits");
     expect(actions.some((a) => a.id === "memory")).toBe(true);
+    expect(actions.some((a) => a.id === "strategy")).toBe(true);
+    for (const action of actions) {
+      expectPlainCopy(action.detail);
+    }
   });
 });
 
