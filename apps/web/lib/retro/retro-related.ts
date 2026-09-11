@@ -162,7 +162,7 @@ export function retroShellCopy(kind: RetroShellKind): RetroEmptyCopy {
         badge: "Setup required",
         title: "Choose your team",
         description:
-          "Join or pick a team before collecting start/stop/continue feedback.",
+          "Choose your team before collecting start/stop/continue feedback.",
       };
     case "empty":
       return {

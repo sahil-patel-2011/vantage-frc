@@ -74,7 +74,7 @@ export function PreviewField({ question }: { question: DraftQuestion }) {
   }
   if (question.kind === "robot_image") {
     return (
-      <FormRow label={label} hint="Camera or gallery — stored per organization">
+      <FormRow label={label} hint="Camera or gallery — stored with this team">
         <div className="sfb-robot-image-preview">
           <div className="sfb-robot-image-actions">
             <span className="app-button secondary" aria-disabled>

@@ -189,7 +189,7 @@ export function teamAdminShellCopy(kind: TeamAdminShellKind): TeamAdminEmptyCopy
         badge: "Setup required",
         title: "Choose your team",
         description:
-          "Join or pick a team before managing access.",
+          "Choose your team before managing access.",
       };
     case "empty":
       return {

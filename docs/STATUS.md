@@ -1,11 +1,12 @@
 # Vantage status
 
-*Working log of what is done, what is in progress, and what only the owner can unblock. Last updated 2026-09-10.*
+*Working log of what is done, what is in progress, and what only the owner can unblock. Last updated 2026-09-11.*
 
 Living record of the master engineering brief. Update this file at the end of every task. Numbers are from commands that were actually run, not memory.
 
-**Branch:** `cursor/vantage-master-brief-c0b5` off `origin/main` at `1a5a9048`.
-**Date opened:** 2026-09-10.
+**Branch:** `cursor/join-or-pick-leftover-c0b5` off `origin/main` at `dc016b44`.
+**Date opened:** 2026-09-11.
+**This revision:** leftover **Join or pick a team** setup copy not in open PRs #2–#33. Last-snapshot remaining clients are skip-list only. Master brief is **not** done.
 
 ## Decisions the owner should know
 
@@ -191,6 +192,7 @@ See `docs/COMPETITIVE_NOTES.md`. That document is the brief for Tasks 2–4.
 | Season Costs / CAD Review Queue / Duties / Announcements last snapshot | Four more student boards went blank when venue Wi-Fi dropped. Each now restores the last IndexedDB copy (`feature: "costs"` / `"cad-review-queue"` / `"duties"` / `"announcements"`). Season Costs and CAD Review Queue key the cache by season. Costs setup no longer paints a Next-actions wall. Duties setup keeps one **Choose your team** primary; My Day stays in the header. Announcements and Duties error no longer paint Choose your team on a network failure. `/cad-review-queue` is labeled CAD Review Queue, not CAD Change Radar. Those routes are on the service-worker shell list. Source locks: `costs-offline.test.ts`, `cad-review-queue-offline.test.ts`, `duties-offline.test.ts`, `announcements-offline.test.ts`. Playwright offline those four not run this revision. | this commit |
 | Localhost Google after Vercel env | `next dev` used production `BETTER_AUTH_URL` after a Vercel env pull, so Google callbacks left localhost. Local runtime now keeps `http://localhost:3001` unless `BETTER_AUTH_URL_LOCAL` says otherwise. Preview Vercel builds skip unless the branch is `main`. | this commit |
 | Risks / Subsystem Sign-off / Prototypes / Equipment Maintenance last snapshot | Four more student boards went blank when venue Wi-Fi dropped. Each now restores the last IndexedDB copy (`feature: "risks"` / `"subsystem-signoff"` / `"prototype-tracker"` / `"equipment-maintenance"`). Risks, Subsystem Sign-off, and Prototypes key the cache by season. Risks, Sign-off, and Prototypes setup no longer paint a Next-actions wall. `/risks` is labeled Risk Register; `/risk-burndown` stays Risk-Register Burndown. Those routes are on the service-worker shell list. Source locks: `risks-offline.test.ts`, `subsystem-signoff-offline.test.ts`, `prototype-tracker-offline.test.ts`, `equipment-maintenance-offline.test.ts`. Playwright offline those four not run this revision. | this commit |
+| Leftover Join or pick a team chrome | Open PRs #2–#33 already own last-snapshot gold, Join-or-select (`cad-vault/view.ts` #11, reimbursements + command #12), leftover **Pick a team** titles (#4/#12/#33), GitHub OAuth/PAT (#12), and connector student copy (#30). Remaining last-snapshot clients are skip-list only. Files **not** in those PRs still said **Join or pick a team** on Retro, Build Burndown, Cross-team scrim, Pair VS Code, and Team admin setup; Ask AI no-org next-action said **per org — pick a team first**; Team admin helper said **After you pick a team**; scout attach/voice said **pick a team** when they meant the FRC robot; form preview photos said **stored per organization**. Each org-picker now says **Choose your team**. Scout refuse copy says **choose which robot you are scouting**. Preview hint says **stored with this team**. Source lock: `leftover-join-or-pick.test.ts`. copy-lint does not globally ban **Pick a team** — #4/#12/#33 still own other occurrences. Duties still say **Pick a teammate**. | this commit |
 
 ---
 

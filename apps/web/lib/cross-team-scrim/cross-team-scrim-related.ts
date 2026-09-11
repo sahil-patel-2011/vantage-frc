@@ -163,7 +163,7 @@ export function crossTeamScrimShellCopy(kind: CrossTeamScrimShellKind): CrossTea
         badge: "Setup required",
         title: "Choose your team",
         description:
-          "Join or pick a team before proposing nearby partners.",
+          "Choose your team before proposing nearby partners.",
       };
     case "empty":
       return {

@@ -90,6 +90,8 @@ describe("teamAdminShellCopy", () => {
       expect(copy.title).not.toMatch(/\bDEMO\b/);
     }
     expectPlainCopy(teamAdminShellCopy("empty").description);
+    expectPlainCopy(teamAdminShellCopy("setup").description);
+    expect(teamAdminShellCopy("setup").description).not.toMatch(/pick a team/i);
     expect(teamAdminShellCopy("setup").badge).toBe("Setup required");
   });
 });
