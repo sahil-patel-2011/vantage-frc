@@ -60,7 +60,7 @@ export async function GET(request: Request) {
     return Response.json(
       {
         status: "setup_required",
-        message: "Could not load Code-vs-Match Detective. Choose your team and confirm database access.",
+        message: "Could not load Code vs match. Choose your team and try again.",
         steps: [
           { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
         ],
@@ -166,6 +166,6 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    return failMeteredAi(error, "Code-vs-Match Detective request failed");
+    return failMeteredAi(error, "Code vs match request failed");
   }
 }

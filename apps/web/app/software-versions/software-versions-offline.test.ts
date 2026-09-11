@@ -20,5 +20,6 @@ describe("Software versions last snapshot stays on the phone", () => {
     expect(src).not.toMatch(/fetchFailed \|\| !view/);
     expect(src).not.toMatch(/fetchFailed \|\| view == null/);
     expect(src).not.toMatch(/VANTAGE \/ SOFTWARE/);
+    expect(src).not.toMatch(/Setup required/);
   });
 });

@@ -4,7 +4,7 @@ import { withOrgHref } from "../nav/product-nav";
 /** Soft-UI related surfaces for Code Deploy Log (never DEMO firmware trails). */
 export const CODE_DEPLOY_LOG_RELATED_LINKS = [
   { id: "code", label: "Code Coach", tab: "code" },
-  { id: "code-perf", label: "Code-vs-Match", tab: "code-perf" },
+  { id: "code-perf", label: "Code vs match", tab: "code-perf" },
   { id: "cad", label: "CAD", tab: "cad" },
   { id: "readiness-score", label: "Readiness Score", tab: "readiness-score" },
 ] as const;
@@ -17,7 +17,7 @@ export type CodeDeployLogRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — Code / Code-vs-Match / CAD. */
+/** Focused related strip — Code / Code vs match / CAD. */
 export const CODE_DEPLOY_LOG_RELATED_INCLUDE: CodeDeployLogRelatedId[] = [
   "code",
   "code-perf",
@@ -84,8 +84,8 @@ export function codeDeployLogSetupSteps(orgId?: string | null): CodeDeployLogSet
     },
     {
       id: "code-perf",
-      label: "Open Code-vs-Match",
-      detail: "Match-linked deploys pair with performance detective later.",
+      label: "Open Code vs match",
+      detail: "Match-linked deploys pair with Code vs match later.",
       href: hubHref("/build", "code-perf", orgId),
     },
     {
@@ -222,8 +222,8 @@ export function codeDeployLogNextActions(input: {
       },
       {
         id: "code-perf",
-        label: "Open Code-vs-Match",
-        detail: "Match-linked deploys pair with performance detective later.",
+        label: "Open Code vs match",
+        detail: "Match-linked deploys pair with Code vs match later.",
         href: hubHref("/build", "code-perf", orgId),
       },
     ];
@@ -246,8 +246,8 @@ export function codeDeployLogNextActions(input: {
       },
       {
         id: "code-perf",
-        label: "Open Code-vs-Match",
-        detail: "Perf detective stays available while the log reloads.",
+        label: "Open Code vs match",
+        detail: "Code vs match stays available while the log reloads.",
         href: hubHref("/build", "code-perf", orgId),
       },
     ];
@@ -270,7 +270,7 @@ export function codeDeployLogNextActions(input: {
       },
       {
         id: "code-perf",
-        label: "Open Code-vs-Match",
+        label: "Open Code vs match",
         detail: "Link match keys once deploys exist.",
         href: hubHref("/build", "code-perf", orgId),
       },
@@ -290,7 +290,7 @@ export function codeDeployLogNextActions(input: {
     },
     {
       id: "code-perf",
-      label: "Open Code-vs-Match",
+      label: "Open Code vs match",
       detail: "Trace match behavior back to firmware versions.",
       href: hubHref("/build", "code-perf", orgId),
     },

@@ -11,7 +11,7 @@ const LEAVES = [
   { path: "/scout-p2p-relay", heading: "Pit mesh" },
   { path: "/scout-schema-negotiate", heading: "Schema sync" },
   { path: "/scouting-schema-ab", heading: "Schema A/B" },
-  { path: "/code-perf", heading: "Code-vs-Match Detective" },
+  { path: "/code-perf", heading: "Code vs match" },
   { path: "/degraded-mode", heading: "Data-source health" },
 ] as const;
 

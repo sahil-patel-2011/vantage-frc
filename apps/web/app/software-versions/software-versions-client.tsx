@@ -326,7 +326,7 @@ export default function SoftwareVersionsClient({ orgId }: { orgId: string | null
             <SoftwareVersionsRelated orgId={orgId} />
           </PageHeader>
           <OfflineBanner feature="Software versions" fromCache={fromCache} cachedAt={cachedAt} />
-          <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
+          <EmptyState badge="Needs setup" badgeTone="setup" title={view.message}>
             <Button as="a" variant="primary" href="/workspace">
               Choose your team
             </Button>
