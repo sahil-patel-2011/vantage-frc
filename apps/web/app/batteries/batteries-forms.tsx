@@ -33,6 +33,7 @@ export function BatteriesForms({
   return (
         <aside className="batt-panel batt-forms">
           <form
+            id="batt-add-pack"
             className="batt-form app-card soft-panel"
             onSubmit={(event) => {
               event.preventDefault();

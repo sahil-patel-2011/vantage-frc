@@ -210,7 +210,7 @@ export function codeDeployLogNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Finish membership setup so Code Deploy Log can resolve your organization.",
+        detail: "Finish membership setup so Code Deploy Log can load.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
       },

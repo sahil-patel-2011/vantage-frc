@@ -166,8 +166,7 @@ function SponsorSuiteShell({
           <Button as="a" variant="primary" href={hubHref("/business", "sponsors", orgId)}>Open Sponsor CRM</Button>
         ) : null}
       </EmptyState>
-      
-      <SponsorSuiteNextActionsPanel actions={actions} />
+      {shell === "ready" ? <SponsorSuiteNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }

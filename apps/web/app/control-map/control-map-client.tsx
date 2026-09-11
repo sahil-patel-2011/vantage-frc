@@ -211,7 +211,7 @@ function ControlMapShell({
           <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
         ) : null}
       </EmptyState>
-      <ControlMapNextActionsPanel actions={actions} />
+      {shell === "ready" ? <ControlMapNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }

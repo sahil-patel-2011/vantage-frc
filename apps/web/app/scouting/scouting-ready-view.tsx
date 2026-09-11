@@ -16,10 +16,9 @@ import type { QuarantinedItem } from "../../lib/scout-offline";
 import {
   formatScoutingMetric,
   shouldShowScoutingRecentEntries,
-  type ScoutingNextAction,
   type ScoutingShellKind,
 } from "../../lib/scouting/scouting-related";
-import { ScoutingNextActionsPanel, ScoutingRelatedStrip } from "./scouting-chrome";
+import { ScoutingRelatedStrip } from "./scouting-chrome";
 import { Field } from "./scouting-field";
 import {
   SCOUT_ENTRY_CSV_COLUMNS,
@@ -57,7 +56,6 @@ export type ScoutingReadyViewProps = {
   schema: ScoutSchema | undefined;
   formFields: ScoutSchema["definition"]["fields"];
   schemaBudget: SchemaBudget | null;
-  formEmptyActions: ScoutingNextAction[];
   matchOptions: MatchOption[];
   matchKey: string;
   teamKey: string;
@@ -128,7 +126,6 @@ export function ScoutingReadyView({
   schema,
   formFields,
   schemaBudget,
-  formEmptyActions,
   matchOptions,
   matchKey,
   teamKey,
@@ -238,21 +235,15 @@ return (
           }
         >
           {data?.canManageSchemas ? (
-            <div className="scout-empty-actions">
-              <Button variant="primary" type="button" onClick={() => void createStarterForms()}>
-                Create starter forms
-              </Button>
-              <Button as="a" variant="secondary" href={hubHref("/competition", "forms", orgId)}>
-                Custom form builder
-              </Button>
-            </div>
+            <Button variant="primary" type="button" onClick={() => void createStarterForms()}>
+              Create starter forms
+            </Button>
           ) : (
             <Button as="a" variant="primary" href={hubHref("/competition", "forms", orgId)}>
               Open Form builder
             </Button>
           )}
         </EmptyState>
-        <ScoutingNextActionsPanel actions={formEmptyActions} />
       </>
     ) : null}
 

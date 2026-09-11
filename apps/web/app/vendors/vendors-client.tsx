@@ -172,7 +172,7 @@ function VendorsShell({
           <Button as="a" variant="primary" href={ordersHref}>Open Orders</Button>
         ) : null}
       </EmptyState>
-      <VendorsNextActionsPanel actions={actions} />
+      {shell === "ready" ? <VendorsNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }

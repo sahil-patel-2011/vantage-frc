@@ -98,7 +98,6 @@ function QrHandoffShell({
   const copy = qrHandoffShellCopy(shell);
   const setup = shell === "setup" ? qrHandoffSetupSteps(orgId)[0] : null;
   const scoutingHref = hubHref("/competition", "scouting", orgId);
-  const offlineHref = withOrgHref("/offline", orgId);
 
   return (
     <div className="scout-workbench scout-qr-workbench soft-gate">
@@ -141,17 +140,12 @@ function QrHandoffShell({
           </Button>
         ) : null}
         {shell === "empty" ? (
-          <>
-            <Button as="a" variant="primary" href={scoutingHref}>
-              Save a scout entry
-            </Button>
-            <Button as="a" variant="secondary" href={offlineHref}>
-              Open Offline
-            </Button>
-          </>
+          <Button as="a" variant="primary" href={scoutingHref}>
+            Save a scout entry
+          </Button>
         ) : null}
       </EmptyState>
-      <QrHandoffNextActionsPanel actions={actions} />
+      {shell === "ready" ? <QrHandoffNextActionsPanel actions={actions} /> : null}
     </div>
   );
 }

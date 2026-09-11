@@ -183,7 +183,7 @@ function RuleImpactShell({
           <Button as="a" variant="primary" href="#rule-impact-log-change">Log a rule change</Button>
         ) : null}
       </EmptyState>
-      <RuleImpactNextActionsPanel actions={actions} />
+      {shell === "ready" ? <RuleImpactNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }

@@ -41,7 +41,6 @@ import { prepareScoutMediaFile, scoutMediaKind } from "../../lib/scouting/prepar
 import { nextMatchKey } from "../../lib/scouting/form-builder";
 import {
   classifyScoutingShell,
-  scoutingNextActions,
   scoutingOfflineBannerDetail,
 } from "../../lib/scouting/scouting-related";
 import { asMediaFile, downscaleImageInBrowser } from "./scouting-media-browser";
@@ -618,17 +617,6 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
     pendingMedia: counts.media,
   });
 
-  const formEmptyActions =
-    shell === "empty"
-      ? scoutingNextActions({
-          orgId,
-          shell: "empty",
-          eventKey: data?.eventKey,
-          canManageSchemas: data?.canManageSchemas,
-          entryType: type,
-        })
-      : [];
-
   if (shell === "loading" || shell === "error" || shell === "setup") {
     return (
       <ScoutingShell
@@ -667,7 +655,6 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
       schema={schema}
       formFields={formFields}
       schemaBudget={schemaBudget}
-      formEmptyActions={formEmptyActions}
       matchOptions={matchOptions}
       matchKey={matchKey}
       teamKey={teamKey}

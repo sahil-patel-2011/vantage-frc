@@ -339,7 +339,7 @@ export function AllocateSpend({ orgId, seasonYear }: { orgId: string; seasonYear
                 setNotice("");
               }}
             >
-              <option value="">Select a grant</option>
+              <option value="">Choose a grant</option>
               {applications.map((app) => (
                 <option key={app.id} value={app.id}>
                   {app.label}
@@ -350,7 +350,7 @@ export function AllocateSpend({ orgId, seasonYear }: { orgId: string; seasonYear
           <label className="gwe-field">
             <span>Named expense</span>
             <select required value={financeTransactionId} onChange={(event) => selectExpense(event.target.value)}>
-              <option value="">Select an expense</option>
+              <option value="">Choose an expense</option>
               {expenses.map((expense) => (
                 <option key={expense.id} value={expense.id}>
                   {expense.label} · {moneyLabel(expense.amountUsd)}

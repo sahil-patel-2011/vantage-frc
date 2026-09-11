@@ -174,7 +174,7 @@ function RiskBurndownShell({
           <Button as="a" variant="primary" href={risksHref}>Open Risks</Button>
         ) : null}
       </EmptyState>
-      <RiskBurndownNextActionsPanel actions={actions} />
+      {shell === "ready" ? <RiskBurndownNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }

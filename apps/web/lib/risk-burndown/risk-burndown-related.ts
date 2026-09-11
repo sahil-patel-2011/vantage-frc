@@ -175,7 +175,7 @@ export function riskBurndownNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Finish membership setup so Risk Burndown can resolve your organization.",
+        detail: "Finish membership setup so Risk Burndown can load.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
       },

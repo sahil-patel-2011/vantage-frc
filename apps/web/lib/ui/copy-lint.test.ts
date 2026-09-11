@@ -161,9 +161,29 @@ const RULES: readonly Rule[] = [
     why: 'say "Choose a run"',
   },
   {
-    label: "Select a preset",
-    pattern: /\bSelect a preset\b/,
-    why: 'say "Choose a preset"',
+    label: "Select a repository",
+    pattern: /\bSelect a repository\b/,
+    why: 'say "Choose a repository"',
+  },
+  {
+    label: "Select a grant",
+    pattern: /\bSelect a grant\b/,
+    why: 'say "Choose a grant"',
+  },
+  {
+    label: "Select an expense",
+    pattern: /\bSelect an expense\b/,
+    why: 'say "Choose an expense"',
+  },
+  {
+    label: "pick your organization",
+    pattern: /\bpick your organization\b/i,
+    why: 'say "choose your team"',
+  },
+  {
+    label: "your organization team number",
+    pattern: /\byour organization(?:'s)? team number\b/i,
+    why: 'say "your team\'s number"',
   },
   {
     // "Set the real build-season window — no sample timelines." The em-dash
@@ -264,6 +284,9 @@ const SELECT_RULES = RULES.filter((rule) =>
     "Select a page",
     "Select a run",
     "Select a preset",
+    "Select a repository",
+    "Select a grant",
+    "Select an expense",
   ].includes(
     rule.label,
   ),

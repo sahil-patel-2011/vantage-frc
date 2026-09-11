@@ -11,7 +11,6 @@ import {
   type BatteryNextAction,
 } from "../../lib/battery/battery-related";
 import type { LoadFailureCopy } from "../../lib/ui/load-failure";
-import { withOrgHref } from "../../lib/nav/product-nav";
 import { batteryCrumbs, type HubEmbed, type ReadyView } from "./batteries-model";
 
 export function BatteriesRelated({ orgId }: { orgId: string }) {
@@ -62,13 +61,11 @@ export function BatteriesSetupShell({
   message,
   fromCache,
   cachedAt,
-  actions,
 }: {
   embed: HubEmbed | null;
   message: string;
   fromCache: boolean;
   cachedAt: string | null;
-  actions: BatteryNextAction[];
 }) {
   return (
     <main className="module-page batt-page">
@@ -84,7 +81,6 @@ export function BatteriesSetupShell({
           Choose your team
         </Button>
       </EmptyState>
-      <BatteriesNextActions actions={actions} />
     </main>
   );
 }
@@ -152,24 +148,14 @@ export function BatteriesReadyHeader({
           </>
         }
       >
-        <div className="batt-header-actions">
-          <Button as="a" variant="secondary" href={withOrgHref("/pit", orgId)}>
-            Pit Command
-          </Button>
-          <Button as="a" variant="secondary" href={withOrgHref("/battery-rotation", orgId)}>
-            Rotation
-          </Button>
-          <Button as="a" variant="secondary" href={withOrgHref("/battery-health-forecast", orgId)}>
-            Health forecast
-          </Button>
-          <Button as="a" variant="secondary" href={withOrgHref("/inventory", orgId)}>
-            Inventory
-          </Button>
-        </div>
+        {!embed ? (
+          <div className="batt-header-actions">
+            <BatteriesRelated orgId={orgId} />
+          </div>
+        ) : null}
       </PageHeader>
       <OfflineBanner feature="Batteries" fromCache={fromCache} cachedAt={cachedAt} />
       {!embed ? <TeamOpsNav orgId={orgId} active="batteries" /> : null}
-      {!embed ? <BatteriesRelated orgId={orgId} /> : null}
       {error ? (
         <p className="batt-alert" role="alert">
           {error}

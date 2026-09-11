@@ -136,8 +136,8 @@ export async function loadEventDayCommand(
       setupSteps: [
         {
           id: "workspace",
-          label: "Join or select a team",
-          detail: "Open Home and pick your organization.",
+          label: "Join or choose a team",
+          detail: "Open Home and choose your team.",
           href: "/dashboard",
         },
       ],
@@ -218,7 +218,7 @@ export async function loadEventDayCommand(
       status: "setup_required",
       message: !row.eventKey
         ? "Set your active event to turn Event Day Command into your field-side OS."
-        : "Set your organization team number so we can filter your match queue.",
+        : "Set your team's number so we can filter your match queue.",
       matches: [],
       scoutQueue: [],
       briefs: [],

@@ -161,7 +161,7 @@ function ImpactEssayShell({
           <Button as="a" variant="primary" href={impactHref}>Open Community Impact</Button>
         ) : null}
       </EmptyState>
-      <ImpactEssayNextActionsPanel actions={actions} />
+      {shell === "ready" ? <ImpactEssayNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }

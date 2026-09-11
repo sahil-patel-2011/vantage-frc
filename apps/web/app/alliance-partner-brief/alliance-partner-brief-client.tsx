@@ -173,7 +173,7 @@ function BriefShell({
           <Button as="a" variant="primary" href={allianceBoardHref}>Open Alliance board</Button>
         ) : null}
       </EmptyState>
-      <BriefNextActionsPanel actions={actions} />
+      {shell === "ready" ? <BriefNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }

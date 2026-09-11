@@ -72,7 +72,7 @@ export function inviteDeliveryBanner(mode: InviteDeliveryMode | null | undefined
       tone: "setup",
       title: "Email sending is not configured",
       detail:
-        "Invites still work — copy the link after you send. Production email needs RESEND_API_KEY and AUTH_EMAIL_FROM.",
+        "Invites still work — copy the link after you send. Email sending is not configured on this deployment.",
     };
   }
   if (mode === "local") {

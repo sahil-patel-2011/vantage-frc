@@ -156,7 +156,7 @@ export function TeamAdminGitHubPanel({
               <label>
                 Repository
                 <select value={defaultRepo} onChange={(e) => setDefaultRepo(e.target.value)} required>
-                  <option value="">Select a repository…</option>
+                  <option value="">Choose a repository…</option>
                   {githubRepos.map((repo) => (
                     <option key={repo.fullName} value={repo.fullName}>
                       {repo.fullName}

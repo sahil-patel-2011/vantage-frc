@@ -187,7 +187,7 @@ export function judgeSimNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Finish membership setup so Judge-Pitch can resolve your organization.",
+        detail: "Finish membership setup so Judge-Pitch can load.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
       },

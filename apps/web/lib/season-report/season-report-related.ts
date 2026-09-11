@@ -180,7 +180,7 @@ export function seasonReportNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Finish membership setup so Season Report can resolve your organization.",
+        detail: "Finish membership setup so Season Report can load.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
       },

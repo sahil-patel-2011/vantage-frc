@@ -231,7 +231,7 @@ export function CodeBugbotPanel({
                   }}
                   aria-label="GitHub repository"
                 >
-                  {!selectedRepo ? <option value="">Select a repository</option> : null}
+                  {!selectedRepo ? <option value="">Choose a repository</option> : null}
                   {repos.map((repo) => (
                     <option key={repo.fullName} value={repo.fullName}>
                       {repo.fullName}

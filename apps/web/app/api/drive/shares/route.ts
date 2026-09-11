@@ -162,7 +162,7 @@ export async function POST(request: Request) {
         email = {
           status: "setup_required",
           reason:
-            "Email delivery needs RESEND_API_KEY and AUTH_EMAIL_FROM. The links below are live — copy them and send them yourself.",
+            "Email delivery is not configured. The links below are live — copy them and send them yourself.",
           sent: 0,
           failed: [],
         };

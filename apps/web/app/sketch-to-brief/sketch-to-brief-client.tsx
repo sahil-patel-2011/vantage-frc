@@ -163,7 +163,7 @@ function SketchShell({
           <Button as="a" variant="primary" href="#sketch-to-brief-log-sketch">Log a sketch</Button>
         ) : null}
       </EmptyState>
-      <SketchNextActionsPanel actions={actions} />
+      {shell === "ready" ? <SketchNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }

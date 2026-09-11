@@ -224,7 +224,7 @@ export function grantEligibilityMatcherNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Finish membership setup so eligibility matching can resolve your organization.",
+        detail: "Finish membership setup so eligibility matching can load.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
       },

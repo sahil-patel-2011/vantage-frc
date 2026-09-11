@@ -173,7 +173,7 @@ function DecisionSearchShell({
           {error}
         </p>
       ) : null}
-      <DecisionSearchNextActionsPanel actions={actions} />
+      {shell === "ready" ? <DecisionSearchNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }

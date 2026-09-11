@@ -410,7 +410,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
             ? `Save a Blue Alliance Read API key below, or ask whoever set up this site to add one in deployment settings. Create a key at thebluealliance.com → Account → Read API Keys.${needsEvent ? " You will also need to pick an active event before anything syncs." : ""}`
             : needsEvent
               ? "Team Data syncs only for a real team event — Schedule, Event Day, and Strategy stay empty until then."
-              : "Finish team setup so TBA sync can resolve your organization."
+              : "Finish team setup so TBA sync can load this team."
         }
         orgId={orgId}
         shell="setup"

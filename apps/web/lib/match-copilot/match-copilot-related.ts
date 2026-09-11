@@ -178,7 +178,7 @@ export function matchCopilotNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Finish membership setup so Match Copilot can resolve your organization.",
+        detail: "Finish membership setup so Match Copilot can load.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
       },

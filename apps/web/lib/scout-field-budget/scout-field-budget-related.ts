@@ -208,7 +208,7 @@ export function scoutFieldBudgetNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Finish membership setup so Field-Count Budget can resolve your organization.",
+        detail: "Finish membership setup so Field-Count Budget can load.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
       },

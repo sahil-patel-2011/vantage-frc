@@ -191,7 +191,7 @@ function SeasonReportShell({
           {error}
         </p>
       ) : null}
-      <SeasonReportNextActionsPanel actions={actions} />
+      {shell === "ready" ? <SeasonReportNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }

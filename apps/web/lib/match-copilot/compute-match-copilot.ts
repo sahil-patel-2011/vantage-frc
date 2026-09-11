@@ -348,7 +348,7 @@ async function buildContext(
   if (!org.teamNumber) {
     return {
       setup: setupRequired(
-        "Set your organization's team number so Match Copilot can find your next match.",
+        "Set your team's number so Match Copilot can find your next match.",
         setupStepsFor(org.orgId, "team"),
         org.orgId,
       ),

@@ -361,7 +361,7 @@ export default function GrantsClient({ orgId: orgIdProp }: { orgId?: string }) {
             <span className="breadcrumbs">Business / Grants</span>
             <h1>Grant writing</h1>
             <p className="app-muted">
-              Guided need · impact · budget · timeline narratives from THIS organization&apos;s profile and impact log
+              Guided need · impact · budget · timeline narratives from this team&apos;s profile and impact log
               only.
             </p>
           </div>
@@ -497,8 +497,8 @@ function GrantWritingWorkspace({
           <span className="breadcrumbs">Business / Grants</span>
           <h1>Grant writing</h1>
           <p className="app-muted">
-            Compose org-isolated grant narratives from guided fields — onboarding location, team description, and
-            Community Impact evidence for {teamLabel}. Asks and awards stay blank until you enter amounts.
+            Compose grant narratives from this team&apos;s profile and Community Impact log for {teamLabel}. Asks and
+            awards stay blank until you enter amounts.
           </p>
         </div>
         <div className="gwe-toolbar">
@@ -543,7 +543,7 @@ function GrantWritingWorkspace({
         </p>
       ) : null}
 
-      {nextActions.length ? (
+      {view.drafts.length && nextActions.length ? (
         <section className="app-card soft-panel gwe-next-actions-panel" aria-label="Next actions">
           <header>
             <span className="eyebrow">Next actions</span>
@@ -617,7 +617,7 @@ function GrantWritingWorkspace({
           </ul>
         </aside>
 
-        <section className="gwe-editor app-card soft-panel">
+        <section id="gwe-editor" className="gwe-editor app-card soft-panel">
           <span className="eyebrow">Guided fields</span>
           <h2>{activeTemplate?.label ?? "Narrative"}</h2>
           {activeTemplate ? <p className="app-muted">{activeTemplate.summary}</p> : null}
@@ -742,19 +742,11 @@ function GrantWritingWorkspace({
                 soft
                 className="gwe-empty"
                 title="No drafts yet"
-                description="Compose from the editor or open Writer for a metered grant answer. Amounts stay empty until you type them."
+                description="Compose from the editor. Amounts stay empty until you type them. Writer, Grants, and Fundraisers stay in the header."
               >
-                <div className="gwe-links">
-                  <Button as="a" variant="secondary" href={businessGrantsHref(view.orgId)}>
-                    Business · Grants
-                  </Button>
-                  <Button as="a" variant="secondary" href={`/writer${orgQuery(view.orgId)}`}>
-                    Writer
-                  </Button>
-                  <Button as="a" variant="secondary" href={`/fundraisers${orgQuery(view.orgId)}`}>
-                    Fundraisers
-                  </Button>
-                </div>
+                <Button as="a" variant="primary" href="#gwe-editor">
+                  Compose a draft
+                </Button>
               </EmptyState>
             ) : (
               view.drafts.map((draft) => (
