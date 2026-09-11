@@ -154,11 +154,11 @@ export function CadOperationComposer({
     <details className="cad-operation-studio" open>
       <summary>
         <div>
-          <span className="eyebrow">MANIPULATION STUDIO</span>
+          <span className="eyebrow">OPERATIONS</span>
           <strong>Native Onshape operations</strong>
         </div>
         <span className={`app-badge ${platform === "onshape" ? "good" : "setup"}`}>
-          {platform === "onshape" ? "Onshape OAuth" : platform === "fusion360" ? "Local add-in" : "Demo adapter"}
+          {platform === "onshape" ? "Onshape" : platform === "fusion360" ? "This computer" : "Practice"}
         </span>
       </summary>
       <div className="cad-operation-body">
@@ -167,7 +167,7 @@ export function CadOperationComposer({
             ? "Typed millimetre fields match what the paired Fusion add-in can run. Execution stays on your desktop."
             : platform === "onshape"
               ? "Edit millimetres and IDs the way Onshape's feature dialog does. Empty fields stay empty."
-              : "Plan native operations with typed millimetre fields. Mock adapters do not create production geometry."}
+              : "Practice mode does not change a real part."}
         </p>
         <div role="group" aria-label="Native operations">
           {operations.map((item) => (

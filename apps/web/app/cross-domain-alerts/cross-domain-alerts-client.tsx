@@ -1,60 +1,157 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
-import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
+import {
+  Badge,
+  type BadgeTone,
+  EmptyState,
+  FormGrid,
+  FormRow,
+  PageHeader,
+  Panel,
+  Button,
+} from "../../components/ui";
 import { SUBSYSTEM_EVENT_DOMAINS, subsystemEventDomainLabel } from "../../lib/cross-domain-alerts";
 import type { CrossDomainAlertsView } from "../../lib/cross-domain-alerts/compute-cross-domain-alerts";
 import type { CrossDomainAlertSeverity, SubsystemEventDomain } from "../../lib/cross-domain-alerts/types";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
-const SEVERITY_STYLE: Record<CrossDomainAlertSeverity, { color: string; background: string; label: string }> = {
-  critical: { color: "#7a1f1f", background: "#fde2e2", label: "Critical" },
-  warning: { color: "#7a5520", background: "#fff1df", label: "Warning" },
-  info: { color: "#7a5b16", background: "#fff6d8", label: "Info" },
+const SEVERITY_TONE: Record<CrossDomainAlertSeverity, { tone: BadgeTone; label: string }> = {
+  critical: { tone: "danger", label: "Critical" },
+  warning: { tone: "setup", label: "Warning" },
+  info: { tone: "neutral", label: "Info" },
 };
 
 type LiveView = Extract<CrossDomainAlertsView, { status: "live" }>;
+
+function isCrossDomainAlertsView(value: unknown): value is CrossDomainAlertsView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function crossDomainCacheOrg(data: CrossDomainAlertsView, orgHint: string): string {
+  if (typeof data.orgId === "string" && data.orgId.trim()) return data.orgId;
+  return orgHint;
+}
+
+async function persistCrossDomainAlertsSnapshot(
+  orgHint: string,
+  seasonHint: string,
+  data: CrossDomainAlertsView,
+): Promise<void> {
+  const cacheOrg = crossDomainCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  const seasonKey = String(data.seasonYear);
+  try {
+    await putFeatureSnapshot("cross-domain-alerts", cacheOrg, data, seasonHint || seasonKey);
+    if (!orgHint) await putFeatureSnapshot("cross-domain-alerts", "_", data, seasonHint || seasonKey);
+  } catch {
+    // Live Cross-domain alerts already painted; IndexedDB is best-effort.
+  }
+}
 
 export default function CrossDomainAlertsClient() {
   const [view, setView] = useState<CrossDomainAlertsView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
-  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
   const [loadError, setLoadError] = useState("");
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<CrossDomainAlertsView | null>(null);
+  viewRef.current = view;
 
   const orgId = view && "orgId" in view ? view.orgId : null;
 
-  const load = useCallback((seasonOverride?: number) => {
+  const load = useCallback(async (seasonOverride?: number) => {
+    const params = new URLSearchParams(window.location.search);
+    const orgHint = params.get("orgId")?.trim() ?? "";
+    const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
+    const seasonHint =
+      seasonQuery && Number.isFinite(seasonQuery) ? String(seasonQuery) : String(new Date().getFullYear());
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<CrossDomainAlertsView>(
+        "cross-domain-alerts",
+        orgHint || "_",
+        seasonHint,
+      );
+      if (!viewRef.current && cached?.data && isCrossDomainAlertsView(cached.data)) {
+        setView(cached.data);
+        setSeason(cached.data.seasonYear);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
     setFetchFailed(false);
     setError("");
     setLoadError("");
     setErrorStatus(null);
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    if (seasonQuery) query.set("season", String(seasonQuery));
-    void fetch(`/api/cross-domain-alerts${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
-        const data = (await response.json()) as CrossDomainAlertsView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setFetchFailed(true);
-          setErrorStatus(response.status);
-          setLoadError("error" in data && data.error ? data.error : "");
+    try {
+      const query = new URLSearchParams();
+      if (orgHint) query.set("orgId", orgHint);
+      if (seasonQuery) query.set("season", String(seasonQuery));
+      const response = await fetch(
+        `/api/cross-domain-alerts${query.toString() ? `?${query.toString()}` : ""}`,
+        { cache: "no-store", signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS) },
+      );
+      const data: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setFetchFailed(true);
+        setErrorStatus(response.status);
+        setLoadError(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "",
+        );
+        return;
+      }
+      if (!response.ok || !isCrossDomainAlertsView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Cross-domain alerts. Showing the last copy on this device.");
+          setFetchFailed(false);
           return;
         }
-        setView(data);
-        setSeason(data.seasonYear);
-      })
-      .catch(() => setFetchFailed(true));
+        setFetchFailed(true);
+        setErrorStatus(response.status);
+        setLoadError(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "",
+        );
+        return;
+      }
+      setView(data);
+      setSeason(data.seasonYear);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistCrossDomainAlertsSnapshot(orgHint, seasonHint, data);
+    } catch {
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Cross-domain alerts. Showing the last copy on this device.");
+        setFetchFailed(false);
+        return;
+      }
+      setFetchFailed(true);
+    }
   }, []);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   const mutate = useCallback(
@@ -67,14 +164,21 @@ export default function CrossDomainAlertsClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, seasonYear: season ?? undefined, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
-        const data = (await response.json()) as CrossDomainAlertsView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setError("error" in data && data.error ? data.error : "Something went wrong.");
+        const data: unknown = await response.json().catch(() => null);
+        if (!response.ok || !isCrossDomainAlertsView(data)) {
+          setError(
+            data && typeof data === "object" && "error" in data && typeof data.error === "string"
+              ? data.error
+              : "Something went wrong.",
+          );
           return;
         }
         setView(data);
         setSeason(data.seasonYear);
+        setFromCache(false);
+        void persistCrossDomainAlertsSnapshot(orgId, String(data.seasonYear), data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -84,23 +188,23 @@ export default function CrossDomainAlertsClient() {
     [orgId, season, busy],
   );
 
-  // Retry cannot fix an expired session, so the failure decides its own action.
-  const failure = fetchFailed
-    ? loadFailureCopy(
-        classifyLoadFailure({
-          status: errorStatus,
-          message: loadError,
-          online: typeof navigator === "undefined" ? true : navigator.onLine,
-        }),
-        {
-          nextPath:
-            typeof window === "undefined"
-              ? null
-              : `${window.location.pathname}${window.location.search}`,
-          message: loadError || "A network or server issue prevented loading. Try again.",
-        },
-      )
-    : null;
+  const failure =
+    fetchFailed && !view
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus,
+            message: loadError,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: loadError || "A network or server issue prevented loading. Try again.",
+          },
+        )
+      : null;
 
   return (
     <main className="module-page">
@@ -123,7 +227,7 @@ export default function CrossDomainAlertsClient() {
                 onChange={(event) => {
                   const next = Number(event.target.value);
                   setSeason(next);
-                  load(next);
+                  void load(next);
                 }}
               >
                 {view.seasons.map((year) => (
@@ -135,14 +239,14 @@ export default function CrossDomainAlertsClient() {
             </label>
           ) : null}
           {orgId ? (
-            <>
-              <Button as="a" variant="secondary" href={`/design-reviews?orgId=${encodeURIComponent(orgId)}`}>
-                Design reviews
-              </Button>
-            </>
+            <Button as="a" variant="secondary" href={`/design-reviews?orgId=${encodeURIComponent(orgId)}`}>
+              Design reviews
+            </Button>
           ) : null}
         </div>
       </PageHeader>
+
+      <OfflineBanner feature="Cross-domain alerts" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -158,7 +262,7 @@ export default function CrossDomainAlertsClient() {
             </Button>
           ) : null}
           {failure.showRetry ? (
-            <Button variant="secondary" type="button" onClick={() => load()}>
+            <Button variant="secondary" type="button" onClick={() => void load()}>
               Retry
             </Button>
           ) : null}
@@ -166,7 +270,7 @@ export default function CrossDomainAlertsClient() {
       ) : view == null ? (
         <EmptyState title="Loading…" description="Checking your team." aria-busy />
       ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
+        <EmptyState badge="Setup required" badgeTone="setup" title="Choose your team" description={view.message}>
           {view.steps[0] ? (
             <Button as="a" variant="primary" href={view.steps[0].href}>
               {view.steps[0].label}
@@ -233,32 +337,27 @@ function AlertsPanel({
       <h2 style={{ marginTop: 0 }}>Active alerts</h2>
       <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 10 }}>
         {view.alerts.map((alert) => {
-          const tone = SEVERITY_STYLE[alert.severity];
+          const severity = SEVERITY_TONE[alert.severity];
           return (
             <li
               key={alert.key}
               style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}
             >
               <div>
-                <span
-                  className="app-badge"
-                  style={{ color: tone.color, background: tone.background, marginBottom: 4, display: "inline-block" }}
-                >
-                  {tone.label}
-                </span>
+                <Badge tone={severity.tone}>{severity.label}</Badge>
                 <strong style={{ display: "block" }}>{alert.title}</strong>
                 <small className="app-muted" style={{ display: "block" }}>
                   {alert.detail}
                 </small>
               </div>
-              <button
+              <Button
+                variant="secondary"
                 type="button"
-                className="text-button"
                 disabled={busy}
                 onClick={() => mutate({ action: "acknowledge-alert", alertKey: alert.key })}
               >
                 Acknowledge
-              </button>
+              </Button>
             </li>
           );
         })}

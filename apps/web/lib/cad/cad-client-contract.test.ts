@@ -42,6 +42,7 @@ describe("cad-client mounts CadViewport and CadOperationComposer", () => {
     expect(client).toContain("entities={listedEntities}");
     expect(client).toContain("features={explainedFeatures}");
     expect(composer).toContain("features={features}");
+    expect(composer).not.toMatch(/Onshape OAuth|MANIPULATION STUDIO|Demo adapter/);
   });
 
   it("disables composer, feature tree, and variables until Onshape is bound", () => {

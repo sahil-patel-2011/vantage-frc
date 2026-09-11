@@ -152,6 +152,10 @@ export const OFFLINE_SHELL_ROUTES = [
   "/subsystem-signoff",
   "/prototype-tracker",
   "/equipment-maintenance",
+  "/cross-domain-alerts",
+  "/decision-critic",
+  "/season-rollover",
+  "/object-chat-bridge",
 ] as const;
 
 export type OfflineShellRoute = (typeof OFFLINE_SHELL_ROUTES)[number];
@@ -253,7 +257,9 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/cad-change-radar")) return "CAD Change Radar";
   if (bare.startsWith("/code-deploy-log")) return "Code Deploy Log";
   if (bare.startsWith("/control-map")) return "Control Map";
+  if (bare.startsWith("/cross-domain-alerts")) return "Cross-domain alerts";
   if (bare.startsWith("/cross-team-scrim")) return "Cross-Team Scrims";
+  if (bare.startsWith("/decision-critic")) return "Decision critic";
   if (bare.startsWith("/decision-search")) return "Decision Search";
   if (bare.startsWith("/decisions")) return "Decision Log";
   if (bare.startsWith("/failure-patterns")) return "Repeat Failure Patterns";
@@ -279,6 +285,8 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/scout-accuracy")) return "Scout Accuracy";
   if (bare.startsWith("/scout-crossval")) return "Scout Cross-Validation";
   if (bare.startsWith("/rule-impact")) return "Rule Impact Analyzer";
+  if (bare.startsWith("/season-rollover")) return "Season rollover";
+  if (bare.startsWith("/object-chat-bridge")) return "Object chat";
   if (bare.startsWith("/season-planning-workspace")) return "Season Planning";
   if (bare.startsWith("/retro")) return "Retro";
   if (bare.startsWith("/tuning-autopilot")) return "Tuning Autopilot";

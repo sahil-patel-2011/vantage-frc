@@ -1,6 +1,6 @@
 # Vantage feature map
 
-*Reference: every screen and route. Tests and the route walker read this file, so keep the table format. Last updated 2026-09-10.*
+*Reference: every screen and route. Tests and the route walker read this file, so keep the table format. Last updated 2026-09-11.*
 
 | Hub | Route | Tabs |
 |---|---|---|
@@ -114,6 +114,10 @@
 | District Advancement | `/district-advancement` | Wires `district-trajectory-sim` compute to a Competition page; EPA cache only|
 | Ranking Projection | `/ranking-projection` | Current TBA rank + remaining quals from `matches_ref` — never a invented future rank |
 | Connectors | `/connectors` (Settings) | One page for Google, GitHub, TBA, Onshape, Discord, Slack, email, Stripe, storage node, Fusion relay, and the Pi free relay. Status is Connected only from a stored row. Missing env names the variables and the callback URL to register. |
+| Cross-domain alerts | `/cross-domain-alerts` (Build More tools) | Flags when a CAD/subsystem change lands on a subsystem with an open design review, and firmware/software mismatches. Empty keeps one **Choose your team** primary. Last snapshot stays on this phone. |
+| Decision critic | `/decision-critic` (Build More tools) | Second opinion on a design decision from logged FMEA, weight/power headroom, and prior outcomes. Empty keeps one **Choose your team** primary. Last snapshot stays on this phone. |
+| Season rollover | `/season-rollover` (Team More tools) | Archive a completed season and track roster, config, and scouting-schema items to carry forward. Empty keeps one **Choose your team** primary. Last snapshot stays on this phone. |
+| Object chat | `/object-chat-bridge` (Team › Playbook) | Link a chat thread to a subsystem, order, or incident so the right subteam gets notified. Empty keeps one **Choose your team** primary. Last snapshot stays on this phone. |
 | AI relays | `/team/relays` (Team) | Pair a Raspberry Pi with a code. Chat / agent / video roles. Heartbeat shows online. Freebuff website cookies are refused. |
 | Analyze video | `/video-analysis` | Queue a match or pit video for the video Pi. Status is Waiting / Watching / Ready to confirm. Results are a timeline with confidence; a person confirms before scouted numbers change. |
 | Funding model | `/team/background` + onboarding | Four radios: self-funded, school-funded no sponsors, sponsored, school-related sponsored. Business hub hides sponsor tools when sponsors are not allowed; dues/fundraisers first for self-funded. |

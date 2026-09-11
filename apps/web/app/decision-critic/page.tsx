@@ -1,7 +1,7 @@
 import DecisionCriticClient from "./decision-critic-client";
 
 export const metadata = {
-  title: "Decision Critic",
+  title: "Decision critic",
 };
 
 export default function DecisionCriticPage() {

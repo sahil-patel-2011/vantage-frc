@@ -165,6 +165,10 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/subsystem-signoff")).toBe(true);
     expect(pathnameIsOfflineShell("/prototype-tracker")).toBe(true);
     expect(pathnameIsOfflineShell("/equipment-maintenance")).toBe(true);
+    expect(pathnameIsOfflineShell("/cross-domain-alerts")).toBe(true);
+    expect(pathnameIsOfflineShell("/decision-critic")).toBe(true);
+    expect(pathnameIsOfflineShell("/season-rollover")).toBe(true);
+    expect(pathnameIsOfflineShell("/object-chat-bridge")).toBe(true);
     expect(pathnameIsOfflineShell("/api/todos")).toBe(false);
   });
 
@@ -316,6 +320,10 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/subsystem-signoff")).toBe("Subsystem Sign-off");
     expect(offlineCapableLabel("/prototype-tracker")).toBe("Prototype-to-Decision Tracker");
     expect(offlineCapableLabel("/equipment-maintenance")).toBe("Equipment Maintenance");
+    expect(offlineCapableLabel("/cross-domain-alerts")).toBe("Cross-domain alerts");
+    expect(offlineCapableLabel("/decision-critic")).toBe("Decision critic");
+    expect(offlineCapableLabel("/season-rollover")).toBe("Season rollover");
+    expect(offlineCapableLabel("/object-chat-bridge")).toBe("Object chat");
   });
 
   it("keeps public/sw.js SHELL_ROUTES aligned with OFFLINE_SHELL_ROUTES", () => {
@@ -460,6 +468,10 @@ describe("offline shell routes", () => {
     expect(featureCacheKey("subsystem-signoff", "org-1", "2026")).toBe("subsystem-signoff:org-1:2026");
     expect(featureCacheKey("prototype-tracker", "org-1", "2026")).toBe("prototype-tracker:org-1:2026");
     expect(featureCacheKey("equipment-maintenance", "org-1")).toBe("equipment-maintenance:org-1");
+    expect(featureCacheKey("cross-domain-alerts", "org-1", "2026")).toBe("cross-domain-alerts:org-1:2026");
+    expect(featureCacheKey("decision-critic", "org-1", "2026")).toBe("decision-critic:org-1:2026");
+    expect(featureCacheKey("season-rollover", "org-1", "2027")).toBe("season-rollover:org-1:2027");
+    expect(featureCacheKey("object-chat-bridge", "org-1", "2026")).toBe("object-chat-bridge:org-1:2026");
     expect(featureCacheKey("schedule", "org-1")).toBe("schedule:org-1");
   });
 

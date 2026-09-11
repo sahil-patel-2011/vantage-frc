@@ -1,11 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
-import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { SEASON_ROLLOVER_CATEGORIES, seasonRolloverCategoryLabel } from "../../lib/season-rollover";
 import type { SeasonRolloverView } from "../../lib/season-rollover/compute-season-rollover";
 import type { SeasonRolloverCategory } from "../../lib/season-rollover/types";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 function pct(value: number): string {
   return `${Math.round(value * 100)}%`;
@@ -13,43 +16,129 @@ function pct(value: number): string {
 
 type LiveView = Extract<SeasonRolloverView, { status: "live" }>;
 
+function isSeasonRolloverView(value: unknown): value is SeasonRolloverView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function seasonRolloverCacheOrg(data: SeasonRolloverView, orgHint: string): string {
+  if (typeof data.orgId === "string" && data.orgId.trim()) return data.orgId;
+  return orgHint;
+}
+
+async function persistSeasonRolloverSnapshot(
+  orgHint: string,
+  seasonHint: string,
+  data: SeasonRolloverView,
+): Promise<void> {
+  const cacheOrg = seasonRolloverCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  const seasonKey = String(data.toSeasonYear);
+  try {
+    await putFeatureSnapshot("season-rollover", cacheOrg, data, seasonHint || seasonKey);
+    if (!orgHint) await putFeatureSnapshot("season-rollover", "_", data, seasonHint || seasonKey);
+  } catch {
+    // Live Season rollover already painted; IndexedDB is best-effort.
+  }
+}
+
 export default function SeasonRolloverClient() {
   const [view, setView] = useState<SeasonRolloverView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
-  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
   const [failureStatus, setFailureStatus] = useState<number | null>(null);
   const [failureMessage, setFailureMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<SeasonRolloverView | null>(null);
+  viewRef.current = view;
 
   const orgId = view && "orgId" in view ? view.orgId : null;
 
-  const load = useCallback((toSeasonYearOverride?: number) => {
+  const load = useCallback(async (toSeasonYearOverride?: number) => {
+    const params = new URLSearchParams(window.location.search);
+    const orgHint = params.get("orgId")?.trim() ?? "";
+    const seasonHint =
+      toSeasonYearOverride && Number.isFinite(toSeasonYearOverride)
+        ? String(toSeasonYearOverride)
+        : String(new Date().getFullYear() + 1);
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<SeasonRolloverView>(
+        "season-rollover",
+        orgHint || "_",
+        seasonHint,
+      );
+      if (!viewRef.current && cached?.data && isSeasonRolloverView(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
     setFetchFailed(false);
     setFailureStatus(null);
     setFailureMessage("");
     setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    if (toSeasonYearOverride) query.set("toSeasonYear", String(toSeasonYearOverride));
-    void fetch(`/api/season-rollover${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
-        const data = (await response.json()) as SeasonRolloverView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setFailureStatus(response.status);
-          setFailureMessage("error" in data && data.error ? data.error : "");
-          setFetchFailed(true);
+    try {
+      const query = new URLSearchParams();
+      if (orgHint) query.set("orgId", orgHint);
+      if (toSeasonYearOverride) query.set("toSeasonYear", String(toSeasonYearOverride));
+      const response = await fetch(`/api/season-rollover${query.toString() ? `?${query.toString()}` : ""}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      const data: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setFetchFailed(true);
+        setFailureStatus(response.status);
+        setFailureMessage(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "",
+        );
+        return;
+      }
+      if (!response.ok || !isSeasonRolloverView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Season rollover. Showing the last copy on this device.");
+          setFetchFailed(false);
           return;
         }
-        setView(data);
-      })
-      .catch(() => setFetchFailed(true));
+        setFetchFailed(true);
+        setFailureStatus(response.status);
+        setFailureMessage(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "",
+        );
+        return;
+      }
+      setView(data);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistSeasonRolloverSnapshot(orgHint, seasonHint, data);
+    } catch {
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Season rollover. Showing the last copy on this device.");
+        setFetchFailed(false);
+        return;
+      }
+      setFetchFailed(true);
+    }
   }, []);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   const mutate = useCallback(
@@ -62,13 +151,20 @@ export default function SeasonRolloverClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
-        const data = (await response.json()) as SeasonRolloverView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setError("error" in data && data.error ? data.error : "Something went wrong.");
+        const data: unknown = await response.json().catch(() => null);
+        if (!response.ok || !isSeasonRolloverView(data)) {
+          setError(
+            data && typeof data === "object" && "error" in data && typeof data.error === "string"
+              ? data.error
+              : "Something went wrong.",
+          );
           return;
         }
         setView(data);
+        setFromCache(false);
+        void persistSeasonRolloverSnapshot(orgId, String(data.toSeasonYear), data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -78,18 +174,38 @@ export default function SeasonRolloverClient() {
     [orgId, busy],
   );
 
+  const failure =
+    fetchFailed && !view
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: failureStatus,
+            message: failureMessage,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: failureMessage || "A network or server issue prevented loading. Try again.",
+          },
+        )
+      : null;
+
   return (
     <main className="module-page">
       <PageHeader
         breadcrumbs={
           <>
             <a href={orgId ? `/team?orgId=${encodeURIComponent(orgId)}` : "/team"}>Team</a>
-            {" / Season Rollover"}
+            {" / Season rollover"}
           </>
         }
-        title="Season Rollover"
+        title="Season rollover"
         description="Archive a completed season and track the roster, config, and scouting-schema items you carry forward into the next season year."
       />
+
+      <OfflineBanner feature="Season rollover" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -97,42 +213,23 @@ export default function SeasonRolloverClient() {
         </p>
       ) : null}
 
-      {fetchFailed ? (
-        (() => {
-          const copy = loadFailureCopy(
-            classifyLoadFailure({
-              status: failureStatus,
-              message: failureMessage,
-              online: typeof navigator === "undefined" ? true : navigator.onLine,
-            }),
-            {
-              nextPath:
-                typeof window === "undefined"
-                  ? null
-                  : `${window.location.pathname}${window.location.search}`,
-              message:
-                failureMessage || "A network or server issue prevented loading. Try again.",
-            },
-          );
-          return (
-            <EmptyState title={copy.title} description={copy.description}>
-              {copy.primary ? (
-                <Button as="a" variant="primary" href={copy.primary.href}>
-                  {copy.primary.label}
-                </Button>
-              ) : null}
-              {copy.showRetry ? (
-                <Button variant="secondary" type="button" onClick={() => load()}>
-                  Retry
-                </Button>
-              ) : null}
-            </EmptyState>
-          );
-        })()
+      {failure ? (
+        <EmptyState title={failure.title} description={failure.description}>
+          {failure.primary ? (
+            <Button as="a" variant="primary" href={failure.primary.href}>
+              {failure.primary.label}
+            </Button>
+          ) : null}
+          {failure.showRetry ? (
+            <Button variant="secondary" type="button" onClick={() => void load()}>
+              Retry
+            </Button>
+          ) : null}
+        </EmptyState>
       ) : view == null ? (
         <EmptyState title="Loading…" description="Checking your team." aria-busy />
       ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
+        <EmptyState badge="Setup required" badgeTone="setup" title="Choose your team" description={view.message}>
           {view.steps[0] ? (
             <Button as="a" variant="primary" href={view.steps[0].href}>
               {view.steps[0].label}
