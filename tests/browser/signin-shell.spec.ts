@@ -12,5 +12,7 @@ test("Sign-in still loads after the panel split", async ({ page }) => {
   await expect(page.getByText("setup_required")).toHaveCount(0);
   await expect(page.getByText("DEPLOYMENT.md")).toHaveCount(0);
   await expect(page.getByText("Setup required")).toHaveCount(0);
-  await page.screenshot({ path: "/opt/cursor/artifacts/signin-after-split.png", fullPage: true });
+  await page.getByRole("link", { name: "Join the waitlist" }).click();
+  await expect(page).toHaveURL(/waitlist|#waitlist|\/$/);
+  await expect(page.getByText("Setup required")).toHaveCount(0);
 });
