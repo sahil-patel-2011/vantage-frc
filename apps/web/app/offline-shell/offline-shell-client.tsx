@@ -180,8 +180,7 @@ export default function OfflineShellClient() {
 
       {fetchFailed ? (
         <EmptyState soft title={shellCopy.title} description={shellCopy.description}>
-          <NextActions orgId={orgId} shell="error" />
-          <Button variant="secondary" type="button" onClick={() => load()}>
+          <Button variant="primary" type="button" onClick={() => load()}>
             Retry
           </Button>
         </EmptyState>
@@ -189,8 +188,9 @@ export default function OfflineShellClient() {
         <EmptyState soft title={shellCopy.title} description={shellCopy.description} aria-busy />
       ) : view.status === "setup_required" ? (
         <EmptyState soft badge={shellCopy.badge} badgeTone="setup" title={shellCopy.title} description={shellCopy.description}>
-          <NextActions orgId={null} shell="setup" />
-          
+          <Button as="a" variant="primary" href="/workspace">
+            Choose your team
+          </Button>
         </EmptyState>
       ) : (
         <div className="offline-shell-stack">

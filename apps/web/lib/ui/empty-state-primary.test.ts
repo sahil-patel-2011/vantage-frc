@@ -11,6 +11,13 @@ import { isPrimaryControl } from "./primary-control";
 const APP_ROOT = join(__dirname, "..", "..", "app");
 const EMPTY_OPEN = '{shell === "empty" ? (';
 const SETUP_OPEN = '{shell === "setup" ? (';
+const HUB_EMPTY_FILES = [
+  join(APP_ROOT, "business/fundraising-glance.tsx"),
+  join(APP_ROOT, "business/sponsor-pipeline-panel.tsx"),
+  join(APP_ROOT, "business/partner-placements-panel.tsx"),
+  join(APP_ROOT, "business/business-panels.tsx"),
+  join(__dirname, "..", "..", "components", "product-hub.tsx"),
+];
 
 function collectClients(dir: string, acc: string[] = []): string[] {
   let entries: string[];
@@ -67,6 +74,62 @@ function matchingParen(src: string, openIdx: number): number | null {
   return null;
 }
 
+function matchingBrace(src: string, openIdx: number): number | null {
+  let depth = 0;
+  let i = openIdx;
+  while (i < src.length) {
+    const c = src[i];
+    if (c === '"' || c === "'" || c === "`") {
+      i = skipString(src, i);
+      continue;
+    }
+    if (c === "{") depth += 1;
+    else if (c === "}") {
+      depth -= 1;
+      if (depth === 0) return i;
+    }
+    i += 1;
+  }
+  return null;
+}
+
+/** `<NextActions>` and `<FooNextActions>` — not a `fooNextActions(` helper call. */
+const NEXT_ACTIONS_TAG = /<(?:[A-Z][A-Za-z0-9]*)?NextActions\b/;
+
+function setupRequiredIfBlocks(src: string): string[] {
+  const marker = 'status === "setup_required"';
+  const blocks: string[] = [];
+  let from = 0;
+  while (true) {
+    const at = src.indexOf(marker, from);
+    if (at < 0) break;
+    const after = at + marker.length;
+    let i = after;
+    let kind: "if" | "ternary" | null = null;
+    while (i < src.length && i - after < 200) {
+      const c = src[i] ?? "";
+      if (c === "?" && src[i + 1] !== ".") {
+        kind = "ternary";
+        break;
+      }
+      if (c === "{") {
+        kind = "if";
+        break;
+      }
+      i += 1;
+    }
+    if (kind !== "if" || src[i] !== "{") {
+      from = after;
+      continue;
+    }
+    const close = matchingBrace(src, i);
+    if (close == null) break;
+    blocks.push(src.slice(i + 1, close));
+    from = close + 1;
+  }
+  return blocks;
+}
+
 const CONTROL = /<(a|button|Button)\b[\s\S]*?<\/\1>/g;
 
 function topLevelControls(inner: string): string[] | null {
@@ -112,7 +175,7 @@ function parenBlocks(src: string, marker: string): string[] {
   return blocks;
 }
 
-const clients = collectClients(APP_ROOT);
+const clients = [...collectClients(APP_ROOT), ...HUB_EMPTY_FILES];
 
 describe("empty-state R4 (one primary on the empty card)", () => {
   it("finds product clients", () => {
@@ -211,8 +274,21 @@ describe("empty-state R4 (one primary on the empty card)", () => {
     for (const file of clients) {
       const src = readFileSync(file, "utf8");
       for (const inner of parenBlocks(src, marker)) {
-        if (/<[A-Z][A-Za-z0-9]*NextActions\b/.test(inner)) {
+        if (NEXT_ACTIONS_TAG.test(inner)) {
           hits.push(`${file} setup_required paints a Next-actions panel`);
+        }
+      }
+    }
+    expect(hits, hits.join("\n")).toEqual([]);
+  });
+
+  it("setup_required if-blocks do not paint a Next-actions panel", () => {
+    const hits: string[] = [];
+    for (const file of clients) {
+      const src = readFileSync(file, "utf8");
+      for (const inner of setupRequiredIfBlocks(src)) {
+        if (NEXT_ACTIONS_TAG.test(inner)) {
+          hits.push(`${file} setup_required if-block paints a Next-actions panel`);
         }
       }
     }

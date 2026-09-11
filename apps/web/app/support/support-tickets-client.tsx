@@ -181,24 +181,19 @@ export default function SupportTicketsClient() {
           navPath="/support"
           title="Support"
           description="Platform tickets need an active team. Legacy /help redirects here."
-        />
-        <SupportRelated orgId={view.orgId} />
-        <NextActions orgId={view.orgId} ticketCount={0} awaitingReply={0} />
+        >
+          {view.orgId ? <SupportRelated orgId={view.orgId} /> : null}
+        </PageHeader>
         <EmptyState
           soft
           badge="Setup required"
           badgeTone="setup"
-          title={view.message ?? "Choose your team first."}
-          description="Choose the organization you need help for, then return here to submit a real ticket."
+          title={view.message ?? "Choose your team"}
+          description="Choose your team, then return here to submit a real ticket."
         >
-          <div className="support-tickets-header-actions">
-            <Button as="a" variant="primary" href="/workspace">
-              Choose your team
-            </Button>
-            <Button as="a" variant="secondary" href="/account">
-              Account
-            </Button>
-          </div>
+          <Button as="a" variant="primary" href="/workspace">
+            Choose your team
+          </Button>
         </EmptyState>
       </main>
     );

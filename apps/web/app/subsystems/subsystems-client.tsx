@@ -1,5 +1,5 @@
 "use client";
-import { Button } from "../../components/ui";
+import { Button, EmptyState } from "../../components/ui";
 import { useCallback, useEffect, useState } from "react";
 import { MOTORS, SUBSYSTEM_CATEGORIES, computeFreeSpeedFps, motorFreeRpm, motorLabel, type SubsystemCategory } from "../../lib/subsystems";
 
@@ -70,7 +70,21 @@ export default function SubsystemsClient({ orgId }: { orgId: string | null }) {
     );
   }
   if (view.status === "setup_required") {
-    return <main className="intel-app"><header className="intel-header"><div><span className="eyebrow">VANTAGE / SUBSYSTEMS</span><h1>Subsystem specs</h1></div></header><p className="telemetry-status">{view.message}</p></main>;
+    return (
+      <main className="intel-app">
+        <header className="intel-header">
+          <div>
+            <span className="eyebrow">VANTAGE / SUBSYSTEMS</span>
+            <h1>Subsystem specs</h1>
+          </div>
+        </header>
+        <EmptyState badge="Setup required" badgeTone="setup" soft title="Choose your team" description={view.message}>
+          <Button as="a" variant="primary" href="/workspace">
+            Choose your team
+          </Button>
+        </EmptyState>
+      </main>
+    );
   }
 
   // Live preview of the free-speed calc for the form as it's filled in.
