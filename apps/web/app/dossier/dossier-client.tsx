@@ -388,7 +388,7 @@ export default function DossierClient() {
           label="Team number"
           hint={
             <>
-              <a href={intelHref}>Intel</a>
+              <a href={intelHref}>Research</a>
               {" · "}
               <a href={strategyHref}>Strategy</a>
               {" · "}

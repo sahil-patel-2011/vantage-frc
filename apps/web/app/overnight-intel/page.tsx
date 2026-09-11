@@ -1,7 +1,7 @@
 import OvernightIntelClient from "./overnight-intel-client";
 
 export const metadata = {
-  title: "Overnight Event-Intel Brief",
+  title: "Overnight brief",
 };
 
 export default function OvernightIntelPage() {

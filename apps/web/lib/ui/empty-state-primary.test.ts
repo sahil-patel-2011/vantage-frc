@@ -222,4 +222,19 @@ describe("empty-state R4 (one primary on the empty card)", () => {
     }
     expect(hits, hits.join("\n")).toEqual([]);
   });
+
+  it("empty and setup shells do not paint a Next-actions panel", () => {
+    const hits: string[] = [];
+    for (const file of clients) {
+      const src = readFileSync(file, "utf8");
+      for (const marker of [EMPTY_OPEN, SETUP_OPEN]) {
+        for (const inner of parenBlocks(src, marker)) {
+          if (/<[A-Z][A-Za-z0-9]*NextActions\b/.test(inner)) {
+            hits.push(`${file} ${marker.trim()} paints a Next-actions panel`);
+          }
+        }
+      }
+    }
+    expect(hits, hits.join("\n")).toEqual([]);
+  });
 });

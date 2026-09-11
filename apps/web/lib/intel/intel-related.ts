@@ -2,7 +2,7 @@ import { hubHref } from "../nav/hubs";
 import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Team Intel / research (never DEMO research). */
+/** Related surfaces for Research (never DEMO research). */
 export const INTEL_RELATED_LINKS = [
   { id: "strategy", label: "Strategy", kind: "hub" as const, tab: "strategy" },
   { id: "dossier", label: "Team Dossier", kind: "path" as const, path: "/dossier" },
@@ -20,11 +20,11 @@ export type IntelRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — Strategy · Dossier · Scouting. */
+/** Focused header strip — Strategy · Dossier · Scouting. */
 export const INTEL_RELATED_INCLUDE: IntelRelatedId[] = ["strategy", "dossier", "scouting"];
 
 /**
- * Soft-UI cross-links from Team Intel → Strategy / Dossier / Scouting.
+ * Cross-links from Research → Strategy / Dossier / Scouting.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function intelRelatedLinks(
@@ -73,13 +73,38 @@ export type IntelEmptyCopy = {
   description: string;
 };
 
-/** Soft-UI setup steps — hubHref / withOrgHref only; never DEMO research. */
 export type IntelSetupStep = {
   id: string;
   label: string;
   detail: string;
   href: string;
 };
+
+export type IntelScoutNote = {
+  payload: Record<string, unknown>;
+  confidence: "high" | "normal" | "low";
+  matchKey?: string;
+};
+
+export type IntelScoutNoteLine = {
+  id: string;
+  title: string;
+  detail: string;
+};
+
+export type IntelActiveEvent = {
+  eventKey: string;
+  eventName: string | null;
+};
+
+const NOTE_STRING_KEYS = ["notes", "comments", "comment", "note", "observation"] as const;
+const NOTE_NUMBER_LABELS: ReadonlyArray<readonly [string, string]> = [
+  ["cycles", "cycles"],
+  ["gamePieces", "game pieces"],
+  ["totalPoints", "points"],
+  ["score", "score"],
+  ["fouls", "fouls"],
+];
 
 function intelRelatedHrefs(orgId?: string | null): Set<string> {
   return new Set(
@@ -101,7 +126,7 @@ export function intelSetupSteps(orgId?: string | null): IntelSetupStep[] {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Choose your team to open Intel and research.",
+        detail: "Choose your team to look up other FRC teams.",
         href: "/workspace",
       },
     ];
@@ -109,8 +134,8 @@ export function intelSetupSteps(orgId?: string | null): IntelSetupStep[] {
   return dropRelatedStripDuplicates(orgId, [
     {
       id: "team-data",
-      label: "Sync Team Data",
-      detail: "Pull team identity and season numbers from The Blue Alliance and Statbotics.",
+      label: "Sync season scores",
+      detail: "Pull match and ranking rows so season scores can appear.",
       href: withOrgHref("/team/data", orgId),
     },
   ]);
@@ -124,12 +149,12 @@ export function formatIntelMetric(value: unknown, loaded: boolean): string {
   return Math.floor(n).toLocaleString();
 }
 
-/** True when no team is selected — Soft-UI empty until lookup. */
+/** True when no team is looked up — empty until search. */
 export function isIntelLookupEmpty(hasSelectedTeam: boolean): boolean {
   return !hasSelectedTeam;
 }
 
-/** Classify Team Intel Soft-UI shell — never invents DEMO research. */
+/** Classify Research shell — never invents DEMO research. */
 export function classifyIntelShell(input: {
   loading?: boolean;
   fetchFailed?: boolean;
@@ -143,46 +168,44 @@ export function classifyIntelShell(input: {
   return "ready";
 }
 
-/** Soft-UI empty / setup / error copy — never DEMO research. */
+/** Empty / setup / error copy — never DEMO research, never TBA/org jargon. */
 export function intelShellCopy(kind: IntelShellKind): IntelEmptyCopy {
   switch (kind) {
     case "loading":
       return {
         kind,
-        title: "Loading Team Intel…",
-        description:
-          "Checking which team you are on and the global team index.",
+        title: "Loading Research…",
+        description: "Checking which team you are on so you can look up another FRC team.",
       };
     case "error":
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Team Intel",
+        title: "Could not load Research",
         description:
-          "A network or server issue blocked the lookup. Retry, or open Strategy / Dossier / Scouting while it reloads.",
+          "A network or server issue blocked the lookup. Retry, or open Strategy while it reloads.",
       };
     case "setup":
       return {
         kind,
         badge: "Setup",
         title: "Choose your team",
-        description:
-          "Choose your team and sync event ratings before metrics or findings appear.",
+        description: "Choose your team before looking up another FRC team.",
       };
     case "empty":
       return {
         kind,
         badge: "Look up a team",
-        title: "Search the global team index",
+        title: "Look up a team",
         description:
-          "Search by number or name to open metrics, research, and dossier links. Empty cells mean the cache has no data yet. Cross-check Strategy, Dossier, and Scouting.",
+          "Type a team number or name. Season scores, our scouting, and public notes stay blank until they are on file.",
       };
     case "ready":
       return {
         kind,
-        title: "Team Intel",
+        title: "Research",
         description:
-          "TBA/Statbotics metrics and source-linked research only. Verify before locking picks.",
+          "Season scores and public notes stay blank until they exist. Check Strategy before locking a pick.",
       };
     default: {
       const _exhaustive: never = kind;
@@ -192,14 +215,15 @@ export function intelShellCopy(kind: IntelShellKind): IntelEmptyCopy {
 }
 
 /**
- * Soft-UI next actions for Team Intel empty/setup shells.
- * Points at Strategy / Dossier / Scouting — never invents DEMO research.
+ * Next actions for Research. Empty/setup keep one EmptyState primary;
+ * the panel paints only on ready and never repeats the header strip.
  */
 export function intelNextActions(input: {
   orgId?: string | null;
   shell: IntelShellKind;
   teamNumber?: number | null;
   findingCount?: number;
+  scoutNoteCount?: number;
 }): IntelNextAction[] {
   const orgId = input.orgId ?? null;
 
@@ -209,31 +233,85 @@ export function intelNextActions(input: {
 
   switch (input.shell) {
     case "loading":
-    case "ready":
-      return [];
-    case "error":
-      return dropRelatedStripDuplicates(orgId, [
-        {
-          id: "retry",
-          label: "Retry Intel",
-          detail: "Reload the global team index.",
-          href: withOrgHref("/intel", orgId),
-          primary: true,
-        },
-      ]);
     case "empty":
+    case "error":
+      return [];
+    case "ready": {
+      const teamNumber = input.teamNumber ?? null;
+      const findingCount = input.findingCount ?? 0;
+      const scoutNoteCount = input.scoutNoteCount ?? 0;
+      const pickDetail =
+        teamNumber != null
+          ? `Add team ${teamNumber} to this event's pick list when you are ready.`
+          : "Open the pick list for this event.";
+      const chemistryDetail =
+        findingCount + scoutNoteCount > 0
+          ? "Score how these robots complement each other from scores and our notes."
+          : "Score how these robots complement each other once season scores are on file.";
       return dropRelatedStripDuplicates(orgId, [
         {
-          id: "team-data",
-          label: "Sync season metrics",
-          detail: "Pull match and ranking rows from The Blue Alliance. Intel stays blank until those rows exist.",
-          href: withOrgHref("/team/data", orgId),
+          id: "pick-desk",
+          label: "Open pick desk",
+          detail: pickDetail,
+          href: withOrgHref("/strategy?tab=picks", orgId),
           primary: true,
         },
+        {
+          id: "chemistry",
+          label: "Open Alliance Chemistry",
+          detail: chemistryDetail,
+          href: withOrgHref("/chemistry", orgId),
+        },
       ]);
+    }
     default: {
       const _exhaustive: never = input.shell;
       return _exhaustive;
     }
+  }
+}
+
+/** Lines from real scout payloads only — skip empty notes, never invent scores. */
+export function intelScoutNoteLines(notes: IntelScoutNote[]): IntelScoutNoteLine[] {
+  return notes.map((note, index) => {
+    const title = note.matchKey ? `Match ${note.matchKey}` : "Pit notes";
+    const parts: string[] = [];
+    for (const [key, label] of NOTE_NUMBER_LABELS) {
+      const value = note.payload[key];
+      if (typeof value === "number" && Number.isFinite(value)) {
+        parts.push(`${label} ${value}`);
+      }
+    }
+    for (const key of NOTE_STRING_KEYS) {
+      const value = note.payload[key];
+      if (typeof value === "string" && value.trim()) {
+        parts.push(value.trim());
+        break;
+      }
+    }
+    return {
+      id: `${note.matchKey ?? "pit"}-${index}`,
+      title,
+      detail: parts.join(" · ") || "Logged from our scouting.",
+    };
+  });
+}
+
+export function intelSourceTypeLabel(sourceType: string): string {
+  switch (sourceType) {
+    case "cd_post":
+      return "Chief Delphi";
+    case "social":
+      return "Social";
+    case "news":
+      return "News";
+    case "reveal_video":
+      return "Reveal video";
+    case "team_site":
+      return "Team site";
+    case "other":
+      return "Source";
+    default:
+      return sourceType.replaceAll("_", " ");
   }
 }

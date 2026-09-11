@@ -435,7 +435,7 @@ export function LivePanel({ view }: { view: Extract<StrategyView, { status: "liv
         ) : (
           <p className="app-muted">
             No pick ranks yet. Use the Pick lists tab or{" "}
-            <a href={withOrgHref("/intel", view.orgId)}>Intel</a>.
+            <a href={withOrgHref("/intel", view.orgId)}>Research</a>.
           </p>
         )}
         {view.scoutProvenance.length > 0 || view.operations.some((op) => (op.pitNotes?.length ?? 0) > 0) ? (

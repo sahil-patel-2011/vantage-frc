@@ -1,4 +1,4 @@
-/* Soft-UI Team Intel — never DEMO research. */
+/* Research — look up another FRC team. */
 .intel-heading{
   display:flex;
   flex-wrap:wrap;
@@ -14,28 +14,40 @@
   justify-content:flex-end;
 }
 .intel-next-actions{margin:0}
-.intel-setup-steps{
-  list-style:none;
-  margin:0;
-  padding:0;
-  display:grid;
-  gap:10px;
-}
-.intel-setup-steps li{
-  display:flex;
-  flex-wrap:wrap;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  padding:10px 0;
-  border-bottom:1px solid var(--line);
-}
-.intel-setup-steps li:last-child{border-bottom:0}
-.intel-setup-steps p{margin:4px 0 0}
 .intel-empty{
   margin:0;
   padding:14px;
   border-radius:var(--radius-sm);
   border:1px dashed var(--line);
+  background:var(--surface);
+  color:var(--ink);
 }
 .intel-panel{min-height:auto}
+.intel-hero-head{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:space-between;
+  gap:12px;
+  align-items:flex-start;
+}
+.intel-primary-actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+.intel-lookup-row{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+.intel-lookup-row input{flex:1;min-width:12rem}
+.intel-metric-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(8rem,1fr));
+  gap:12px;
+}
+.intel-panels{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(16rem,1fr));
+  gap:12px;
+}

@@ -7,12 +7,12 @@ test.beforeEach(async ({ context }) => {
   if (!signed) await signInFixture(context);
 });
 
-test("Intel still loads after the Saturday shell pass", async ({ page }) => {
+test("Research is a student lookup, not an engineering wall", async ({ page }) => {
   await page.goto("/intel");
   await expect(page.locator("body")).not.toContainText("Application error");
 
-  const lookup = page.getByRole("heading", { name: /Search the global team index|Team Intel/i });
-  const setup = page.getByRole("heading", { name: /Choose your team|Choose your team/i });
+  const lookup = page.getByRole("heading", { name: /Look up a team|Research/i });
+  const setup = page.getByRole("heading", { name: /Choose your team/i });
   const unavailable = loadFailureHeading(page);
   if (!(await expectHubReadyOrGate(page, lookup, setup.or(unavailable)))) {
     await page.screenshot({ path: "/opt/cursor/artifacts/intel-after-shell.png", fullPage: true });
@@ -21,5 +21,30 @@ test("Intel still loads after the Saturday shell pass", async ({ page }) => {
 
   await expect(page.getByRole("heading", { name: "Setup steps" })).toHaveCount(0);
   await expect(page.getByText("org-scoped")).toHaveCount(0);
+  await expect(page.getByText("global team index")).toHaveCount(0);
+  await expect(page.getByText("Statbotics")).toHaveCount(0);
+  if (await lookup.isVisible()) {
+    await expect(page.getByRole("heading", { name: "Next actions" })).toHaveCount(0);
+  }
   await page.screenshot({ path: "/opt/cursor/artifacts/intel-after-shell.png", fullPage: true });
+});
+
+test("Overnight brief keeps one primary and related in the header", async ({ page }) => {
+  await page.goto("/overnight-intel");
+  await expect(page.locator("body")).not.toContainText("Application error");
+
+  const heading = page.getByRole("heading", {
+    name: /Overnight brief|Choose your team|Save tonight's brief|What changed overnight/i,
+  });
+  const unavailable = loadFailureHeading(page);
+  if (!(await expectHubReadyOrGate(page, heading, unavailable))) {
+    await page.screenshot({ path: "/opt/cursor/artifacts/overnight-brief-shell.png", fullPage: true });
+    return;
+  }
+
+  await expect(page.getByRole("heading", { name: "Setup steps" })).toHaveCount(0);
+  await expect(page.getByText("org-scoped")).toHaveCount(0);
+  await expect(page.getByText("Grounding path")).toHaveCount(0);
+  await expect(page.getByRole("navigation", { name: "Related competition tools" })).toBeVisible();
+  await page.screenshot({ path: "/opt/cursor/artifacts/overnight-brief-shell.png", fullPage: true });
 });

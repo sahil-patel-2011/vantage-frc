@@ -10,17 +10,18 @@ export async function GET(request: Request) {
     return Response.json(
       await withIntelRequest(orgId, async (client) => {
         const repository = new IntelResearchRepository(client);
+        const activeEvent = await repository.getActiveEvent(orgId!);
         if (Number.isInteger(teamNumber) && teamNumber > 0) {
           const intel = await repository.getTeamIntel(orgId!, teamNumber);
-          if (!intel) return { team: null };
+          if (!intel) return { team: null, activeEvent };
           const [observations, similarTeams] = await Promise.all([
             repository.getScoutObservations(orgId!, intel.team.teamKey),
             repository.getSimilarTeams(intel.team.teamKey),
           ]);
-          return { team: intel, scoutObservations: observations, similarTeams };
+          return { team: intel, scoutObservations: observations, similarTeams, activeEvent };
         }
-        if (!query) return { teams: [] };
-        return { teams: await repository.searchTeams(orgId!, query) };
+        if (!query) return { teams: [], activeEvent };
+        return { teams: await repository.searchTeams(orgId!, query), activeEvent };
       }),
     );
   } catch (error) {
