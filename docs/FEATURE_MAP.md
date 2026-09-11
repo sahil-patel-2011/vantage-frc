@@ -116,7 +116,7 @@
 | Ranking Projection | `/ranking-projection` | Current TBA rank + remaining quals from `matches_ref` — never a invented future rank |
 | Connectors | `/connectors` (Settings) | One page for Google, GitHub, TBA, Onshape, Discord, Slack, email, Stripe, storage node, Fusion relay, and the Pi free relay. Status is Connected only from a stored row. Missing env names the variables and the callback URL to register. |
 | AI relays | `/team/relays` (Team) | Pair a Raspberry Pi with a code. Chat / agent / video roles. Heartbeat shows online. Freebuff website cookies are refused. |
-| Analyze video | `/video-analysis` | Queue a match or pit video for the video Pi. Status is Waiting / Watching / Ready to confirm. Results are a timeline with confidence; a person confirms before scouted numbers change. |
+| Video | `/video-analysis` | Paste a match or pit video. Status is Waiting / Watching / Ready to confirm. Results are a timestamped timeline. Confirm keeps it as video evidence — scouted numbers do not change. Related: Match notes · Match video · Relays. Next-actions only after a video is queued. `/video` stays Match video. |
 | Funding model | `/team/background` + onboarding | Four radios: self-funded, school-funded no sponsors, sponsored, school-related sponsored. Business hub hides sponsor tools when sponsors are not allowed; dues/fundraisers first for self-funded. |
 | Desktop shell | `/desktop` + `apps/desktop` | Same UI as the web. Windows NSIS + MSI + portable; macOS DMG on tag `desktop-v*`. Auto-update via `GET /api/desktop/release`. Unsigned until the owner pastes signing certs. |
 

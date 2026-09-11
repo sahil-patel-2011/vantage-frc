@@ -1,7 +1,7 @@
 import VideoAnalysisClient from "./video-analysis-client";
 
 export const metadata = {
-  title: "Analyze video",
+  title: "Video",
 };
 
 export default function VideoAnalysisPage() {

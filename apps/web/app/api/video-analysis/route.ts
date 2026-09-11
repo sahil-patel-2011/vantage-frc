@@ -14,7 +14,7 @@ export async function GET(request: Request) {
   try {
     const session = await requireSession();
     const orgId = new URL(request.url).searchParams.get("orgId") ?? "";
-    if (!orgId) throw new Error("orgId is required");
+    if (!orgId) throw new Error("Choose your team.");
     const rows = await withRls({ userId: session.user.id, orgId }, async (client) => {
       const result = await client.query<{
         id: string;
@@ -49,7 +49,7 @@ export async function GET(request: Request) {
     return Response.json({ jobs: rows });
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Could not load video jobs" },
+      { error: error instanceof Error ? error.message : "Could not load videos" },
       { status: error instanceof Error && error.message.includes("Authentication") ? 401 : 400 },
     );
   }
@@ -67,9 +67,9 @@ export async function POST(request: Request) {
     const orgId = String(body.orgId ?? "");
     const sourceKind = String(body.sourceKind ?? "");
     const sourceRef = String(body.sourceRef ?? "").trim();
-    if (!orgId) throw new Error("orgId is required");
+    if (!orgId) throw new Error("Choose your team.");
     if (!SOURCE_KINDS.has(sourceKind)) throw new Error("Pick a video source: TBA, YouTube, an uploaded file, or a pit camera.");
-    if (!sourceRef) throw new Error("Paste a video URL or file id.");
+    if (!sourceRef) throw new Error("Paste a video link.");
     if (sourceRef.length > 2000) throw new Error("That video link is too long.");
 
     const row = await withRls({ userId: session.user.id, orgId }, async (client) => {
@@ -84,7 +84,7 @@ export async function POST(request: Request) {
     return Response.json({ id: row?.id, queued: true }, { status: 201 });
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Could not queue video analysis" },
+      { error: error instanceof Error ? error.message : "Could not start that video" },
       { status: error instanceof Error && error.message.includes("Authentication") ? 401 : 400 },
     );
   }
@@ -96,8 +96,8 @@ export async function PATCH(request: Request) {
     const body = (await request.json()) as { orgId?: string; id?: string; action?: string };
     const orgId = String(body.orgId ?? "");
     const id = String(body.id ?? "");
-    if (!orgId) throw new Error("orgId is required");
-    if (!id) throw new Error("Pick a video job to confirm.");
+    if (!orgId) throw new Error("Choose your team.");
+    if (!id) throw new Error("Pick a video to confirm.");
     if (body.action !== "confirm") throw new Error("The only action is confirm — that keeps the timeline as video evidence.");
 
     const updated = await withRls({ userId: session.user.id, orgId }, async (client) => {
@@ -115,11 +115,11 @@ export async function PATCH(request: Request) {
       );
       return result.rows[0];
     });
-    if (!updated) throw new Error("That job is not finished yet, or it is not yours to confirm.");
+    if (!updated) throw new Error("That video is not finished yet, or it is not yours to confirm.");
     return Response.json({ id: updated.id, confirmed: true, mergedIntoScouting: false });
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Could not confirm video analysis" },
+      { error: error instanceof Error ? error.message : "Could not confirm that timeline" },
       { status: error instanceof Error && error.message.includes("Authentication") ? 401 : 400 },
     );
   }
