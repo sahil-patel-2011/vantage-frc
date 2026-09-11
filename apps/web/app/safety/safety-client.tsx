@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { Button, EmptyState } from "../../components/ui";
+import { Button, EmptyState, PageHeader } from "../../components/ui";
 import {
   CERT_TYPE_LABEL,
   CERT_TYPES,
@@ -14,8 +14,10 @@ import {
   type Treatment,
 } from "../../lib/safety";
 import { canDeleteSafetyIncident } from "../../lib/safety/authorization";
+import { hubHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { withOrgHref } from "../../lib/nav/product-nav";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 type Incident = {
@@ -57,6 +59,37 @@ function todayIso() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function SafetyRelated({ orgId }: { orgId?: string | null }) {
+  return (
+    <nav className="product-hub-related" aria-label="Related safety tools">
+      <Button as="a" variant="secondary" href={withOrgHref("/incidents", orgId)}>
+        Safety Incident Log
+      </Button>
+      <Button as="a" variant="secondary" href={hubHref("/team", "safety-training", orgId)}>
+        Safety training
+      </Button>
+    </nav>
+  );
+}
+
+function SafetyHeader({ orgId }: { orgId?: string | null }) {
+  const teamHref = orgId ? `/team?orgId=${encodeURIComponent(orgId)}` : "/team";
+  return (
+    <PageHeader
+      breadcrumbs={
+        <>
+          <a href={teamHref}>Team</a>
+          {" / Safety log"}
+        </>
+      }
+      title="Safety log"
+      description="Incidents, near-misses, and who is cleared on which tools."
+    >
+      <SafetyRelated orgId={orgId} />
+    </PageHeader>
+  );
+}
+
 export default function SafetyClient({ orgId }: { orgId: string | null }) {
   const [view, setView] = useState<View | null>(null);
   const [message, setMessage] = useState("");
@@ -91,7 +124,20 @@ export default function SafetyClient({ orgId }: { orgId: string | null }) {
         cache: "no-store",
         signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
-      const data = (await response.json()) as View & { error?: string };
+      const data: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setFailureStatus(response.status);
+        setLoadFailed(true);
+        setMessage(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "Failed to load safety data",
+        );
+        return;
+      }
       if (!response.ok || !isSafetyView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
@@ -100,7 +146,11 @@ export default function SafetyClient({ orgId }: { orgId: string | null }) {
         } else {
           setFailureStatus(response.status);
           setLoadFailed(true);
-          setMessage("error" in data && data.error ? data.error : "Failed to load safety data");
+          setMessage(
+            data && typeof data === "object" && "error" in data && typeof data.error === "string"
+              ? data.error
+              : "Failed to load safety data",
+          );
         }
         return;
       }
@@ -166,12 +216,13 @@ export default function SafetyClient({ orgId }: { orgId: string | null }) {
         )
       : null;
     return (
-      <main className="intel-app">
+      <main className="module-page">
+        <SafetyHeader orgId={orgId} />
         <OfflineBanner feature="Safety" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
           title={failure ? failure.title : "Loading safety…"}
-          description={failure ? failure.description : undefined}
+          description={failure ? failure.description : "Checking your team."}
           aria-busy={!loadFailed}
         >
           {failure?.primary ? (
@@ -184,28 +235,33 @@ export default function SafetyClient({ orgId }: { orgId: string | null }) {
       </main>
     );
   }
-  if (view.status === "setup_required") {
-    return (
-      <main className="intel-app">
-        <header className="intel-header"><div><span className="eyebrow">VANTAGE / SAFETY</span><h1>Safety log</h1></div></header>
-        <OfflineBanner feature="Safety" fromCache={fromCache} cachedAt={cachedAt} />
-        <EmptyState badge="Setup required" badgeTone="setup" soft title="Choose your team" description={view.message}>
-          <Button as="a" variant="primary" href="/workspace">Choose your team</Button>
-        </EmptyState>
-      </main>
-    );
+
+  switch (view.status) {
+    case "setup_required":
+      return (
+        <main className="module-page">
+          <SafetyHeader orgId={orgId} />
+          <OfflineBanner feature="Safety" fromCache={fromCache} cachedAt={cachedAt} />
+          <EmptyState badge="Needs setup" badgeTone="setup" soft title="Choose your team" description={view.message}>
+            <Button as="a" variant="primary" href="/workspace">Choose your team</Button>
+          </EmptyState>
+        </main>
+      );
+    case "ready":
+      break;
+    default: {
+      const data: never = view;
+      return data satisfies never;
+    }
   }
 
   const canDeleteIncidents = canDeleteSafetyIncident(view.context.role);
 
   return (
-    <main className="intel-app">
-      <header className="intel-header">
-        <div><span className="eyebrow">VANTAGE / SAFETY</span><h1>Safety log &amp; tool certifications</h1></div>
-        <nav className="intel-actions"><a href={`/inventory${orgId ? `?orgId=${orgId}` : ""}`}>Inventory</a><a href={`/pit${orgId ? `?orgId=${orgId}` : ""}`}>Pit</a><a href="/workspace">Your team →</a></nav>
-      </header>
+    <main className="module-page">
+      <SafetyHeader orgId={view.context.orgId} />
       <OfflineBanner feature="Safety" fromCache={fromCache} cachedAt={cachedAt} />
-      {message && <p className="telemetry-status">{message}</p>}
+      {message ? <p className="telemetry-status" role="status">{message}</p> : null}
 
       <section className="metric-grid">
         <article><span>Days since last incident</span><strong>{view.summary.daysSinceLastIncident ?? "—"}</strong></article>
@@ -229,7 +285,7 @@ export default function SafetyClient({ orgId }: { orgId: string | null }) {
           <label>Person involved<input value={incidentForm.injuredPerson} onChange={(e) => setIncidentForm({ ...incidentForm, injuredPerson: e.target.value })} /></label>
           <label>Description<input value={incidentForm.description} onChange={(e) => setIncidentForm({ ...incidentForm, description: e.target.value })} /></label>
           <label>Corrective action<input value={incidentForm.correctiveAction} onChange={(e) => setIncidentForm({ ...incidentForm, correctiveAction: e.target.value })} placeholder="Added guard, retrained team" /></label>
-          <button className="primary-action">Log incident</button>
+          <Button variant="primary" type="submit">Log incident</Button>
         </form>
 
         <form className="intel-panel" onSubmit={addCert}>
@@ -241,7 +297,7 @@ export default function SafetyClient({ orgId }: { orgId: string | null }) {
             <label>Expires (optional)<input type="date" value={certForm.expiresOn} onChange={(e) => setCertForm({ ...certForm, expiresOn: e.target.value })} /></label>
           </div>
           <label>Notes<input value={certForm.notes} onChange={(e) => setCertForm({ ...certForm, notes: e.target.value })} /></label>
-          <button className="primary-action">Record certification</button>
+          <Button variant="primary" type="submit">Record certification</Button>
         </form>
       </section>
 
@@ -256,9 +312,18 @@ export default function SafetyClient({ orgId }: { orgId: string | null }) {
               {i.correctiveAction && <small>Action: {i.correctiveAction}</small>}
             </div>
             <div>
-              {NEXT_STATUS[i.status] && <button onClick={() => void post({ action: "set_incident_status", id: i.id, status: NEXT_STATUS[i.status] }, "Incident updated.")}>Mark {NEXT_STATUS[i.status]}</button>}
+              {NEXT_STATUS[i.status] ? (
+                <Button
+                  variant="secondary"
+                  type="button"
+                  onClick={() => void post({ action: "set_incident_status", id: i.id, status: NEXT_STATUS[i.status] }, "Incident updated.")}
+                >
+                  Mark {NEXT_STATUS[i.status]}
+                </Button>
+              ) : null}
               {canDeleteIncidents ? (
-                <button
+                <Button
+                  variant="danger"
                   type="button"
                   onClick={() => {
                     if (!window.confirm("Delete this incident? The log entry cannot be recovered.")) return;
@@ -266,7 +331,7 @@ export default function SafetyClient({ orgId }: { orgId: string | null }) {
                   }}
                 >
                   Delete
-                </button>
+                </Button>
               ) : null}
               {(i.severity === "serious" || i.severity === "moderate") && i.status !== "closed" && <b>REVIEW</b>}
             </div>

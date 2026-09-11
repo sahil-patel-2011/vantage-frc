@@ -117,9 +117,9 @@ export async function computeLeadershipView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Choose your team to plan leadership succession and role handoffs.",
+      message: "Choose your team to plan who holds each role and who is next.",
       steps: [
-        { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
+        { id: "workspace", label: "Choose your team", detail: "Choose your team to open Leadership.", href: "/workspace" },
       ],
       orgId: null,
       seasonYear,

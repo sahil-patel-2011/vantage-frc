@@ -100,27 +100,26 @@ describe("business-related Soft-UI helpers", () => {
     expect(links.find((l) => l.id === "budget")?.href).toBe("/business?tab=budget&orgId=org-1");
   });
 
-  it("builds Community Impact Soft-UI cross-links to awards, grants, and sponsors", () => {
+  it("builds Community Impact Soft-UI cross-links to Awards, Outreach, and Writer", () => {
     const links = businessRelatedLinks("org-1", {
       active: "impact",
       include: IMPACT_RELATED_INCLUDE,
     });
-    expect(links.map((l) => l.id)).toEqual(["sponsors", "grants", "evidence", "awards", "grant-workbench"]);
+    expect(links.map((l) => l.id)).toEqual(["evidence", "awards", "writer"]);
     expect(links.find((l) => l.id === "awards")?.href).toBe("/team/awards?orgId=org-1");
     expect(links.find((l) => l.id === "evidence")?.href).toBe("/business?tab=evidence&orgId=org-1");
-    expect(links.find((l) => l.id === "grants")?.href).toBe("/business?tab=grants&orgId=org-1");
-    expect(links.find((l) => l.id === "sponsors")?.href).toBe("/business?tab=sponsors&orgId=org-1");
+    expect(links.find((l) => l.id === "writer")?.href).toBe("/writer?orgId=org-1");
   });
 
-  it("builds Awards workbench Soft-UI cross-links to impact, grants, and sponsors", () => {
+  it("builds Awards workbench Soft-UI cross-links to impact, outreach, and writer", () => {
     const links = businessRelatedLinks("org-1", {
       active: "awards",
       include: AWARDS_RELATED_INCLUDE,
     });
-    expect(links.map((l) => l.id)).toEqual(["sponsors", "grants", "evidence", "impact", "writer"]);
+    expect(links.map((l) => l.id)).toEqual(["evidence", "impact", "writer"]);
     expect(links.find((l) => l.id === "impact")?.href).toBe("/impact?orgId=org-1");
     expect(links.find((l) => l.id === "evidence")?.href).toBe("/business?tab=evidence&orgId=org-1");
-    expect(links.find((l) => l.id === "grants")?.href).toBe("/business?tab=grants&orgId=org-1");
+    expect(links.find((l) => l.id === "writer")?.href).toBe("/writer?orgId=org-1");
   });
 
   it("never uses DEMO labels", () => {

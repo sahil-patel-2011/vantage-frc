@@ -9,9 +9,10 @@ import {
 import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("notifications Soft-UI helpers", () => {
-  it("builds What’s new / Support / Account / prefs cross-links", () => {
+  it("builds What’s new / Support / Account / Preferences cross-links", () => {
     const links = notificationRelatedLinks({ include: [...NOTIFICATION_RELATED_INCLUDE] });
     expect(links.map((l) => l.id)).toEqual(["whats-new", "support", "account", "preferences"]);
+    expect(links.find((l) => l.id === "preferences")?.label).toBe("Preferences");
     expect(links.find((l) => l.id === "whats-new")?.href).toBe("/whats-new");
     expect(links.find((l) => l.id === "support")?.href).toBe("/support");
     expect(links.find((l) => l.id === "account")?.href).toBe("/account");
@@ -27,33 +28,20 @@ describe("notifications Soft-UI helpers", () => {
     expect(links.map((l) => l.id)).toEqual(["whats-new", "support", "account"]);
   });
 
-  it("asks for real events when empty — never DEMO notifications", () => {
-    const actions = notificationNextActions({ itemCount: 0, unreadCount: 0 });
-    expect(actions[0]?.id).toBe("empty");
-    expect(actions[0]?.primary).toBe(true);
-    expect(actions.map((a) => a.id)).toContain("preferences");
-    expect(actions.map((a) => a.id)).toContain("whats-new");
-    expect(actions.map((a) => a.id)).toContain("support");
-    expect(actions.every((a) => !/\bDEMO\b/.test(a.label))).toBe(true);
-    actions.forEach((a) => expectPlainCopy(a.detail));
-  });
-
-  it("clarifies unread-empty vs all-empty", () => {
-    const unreadEmpty = notificationNextActions({
-      itemCount: 0,
-      unreadCount: 0,
-      filter: "unread",
-    });
-    expect(unreadEmpty[0]?.id).toBe("caught-up");
-    expect(unreadEmpty.every((a) => !/\bDEMO\b/.test(a.label))).toBe(true);
+  it("keeps next-actions off empty so EmptyState can hold the one primary", () => {
+    expect(notificationNextActions({ itemCount: 0, unreadCount: 0 })).toEqual([]);
+    expect(
+      notificationNextActions({ itemCount: 0, unreadCount: 0, filter: "unread" }),
+    ).toEqual([]);
   });
 
   it("prioritizes mark-as-read when unread exists", () => {
     const actions = notificationNextActions({ itemCount: 4, unreadCount: 2 });
+    expect(actions).toHaveLength(1);
     expect(actions[0]?.id).toBe("mark-read");
     expect(actions[0]?.label).toMatch(/Mark 2 as read/);
     expect(actions[0]?.primary).toBe(true);
-    expect(actions.every((a) => !/\bDEMO\b/.test(a.label))).toBe(true);
+    expectPlainCopy(actions[0]?.detail);
   });
 
   it("maps read labels and tones without DEMO", () => {

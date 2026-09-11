@@ -12,10 +12,10 @@ import {
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   NOTIFICATION_RELATED_INCLUDE,
-  notificationNextActions,
   notificationReadLabel,
   notificationReadTone,
   notificationRelatedLinks,
+  notificationTypeLabel,
 } from "../../lib/notifications";
 import "../product-hub.css";
 import "./notifications.css";
@@ -68,45 +68,6 @@ function InboxRelated() {
         </Button>
       ))}
     </nav>
-  );
-}
-
-function NextActions({
-  itemCount,
-  unreadCount,
-  filter,
-}: {
-  itemCount: number;
-  unreadCount: number;
-  filter: InboxFilter;
-}) {
-  // `mark-read` is dropped, not rendered as a second button: the toolbar above
-  // this list already carries "Mark all as read", with the same enabled state
-  // and the same effect. The row's own reason is still visible up there as the
-  // unread badge.
-  const actions = notificationNextActions({ itemCount, unreadCount, filter }).filter(
-    (action) => action.id !== "mark-read",
-  );
-  return (
-    <section className="notif-next-actions app-card soft-panel" aria-label="Next actions">
-      <header>
-        <h2>Next actions</h2>
-        <p>Each one opens the page where you finish the work.</p>
-      </header>
-      <ol>
-        {actions.map((action) => (
-          <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
-              <strong>{action.label}</strong>
-              <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
-          </li>
-        ))}
-      </ol>
-    </section>
   );
 }
 
@@ -276,16 +237,17 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
         <PageHeader
           breadcrumbs="Account / Inbox"
           title="Notifications"
-          description="Real alerts for your signed-in account."
-        />
-        <InboxRelated />
+          description="Todos, duties, chat, and team news for your signed-in account."
+        >
+          <InboxRelated />
+        </PageHeader>
         <OfflineBanner feature="Notifications" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
           badge={copy ? "Unavailable" : undefined}
           badgeTone={copy ? "setup" : undefined}
           title={copy ? copy.title : "Loading inbox…"}
-          description={copy ? copy.description : "Fetching notifications for your account."}
+          description={copy ? copy.description : "Loading your inbox."}
           aria-busy={!fetchFailed}
         >
           {copy?.primary ? (
@@ -310,7 +272,7 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
       <PageHeader
         breadcrumbs="Account / Inbox"
         title="Notifications"
-        description="Real alerts for your signed-in account."
+        description="Todos, duties, chat, and team news for your signed-in account."
       >
         <div className="notif-header-actions">
           {unreadCount >= 1 ? (
@@ -319,9 +281,9 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
             <span className="app-badge good">Inbox clear</span>
           )}
         </div>
+        <InboxRelated />
       </PageHeader>
 
-      <InboxRelated />
       <OfflineBanner feature="Notifications" fromCache={fromCache} cachedAt={cachedAt} />
 
       {message ? (
@@ -353,8 +315,6 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
         </div>
       </div>
 
-      <NextActions itemCount={items.length} unreadCount={unreadCount} filter={filter} />
-
       {items.length === 0 ? (
         <EmptyState
           soft
@@ -363,10 +323,16 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
           title={filter === "unread" ? "No unread notifications" : "No notifications yet"}
           description={
             filter === "unread"
-              ? "You’re caught up. Switch to All for history, or wait for the next real todo, duty, calendar, or release alert."
-              : "When a coach assigns a todo or duty, schedules a calendar event, a release ships, or teammates message you, they appear here with a real timestamp."
+              ? "You’re caught up. Switch to All for history, or wait for the next todo, duty, calendar, or release alert."
+              : "When a coach assigns a todo or duty, schedules a calendar event, a release ships, or teammates message you, they appear here."
           }
-        />
+        >
+          {filter === "unread" ? (
+            <Button variant="primary" type="button" onClick={() => setFilter("all")}>
+              Show all
+            </Button>
+          ) : null}
+        </EmptyState>
       ) : (
         <ul className="notif-list" id="notif-inbox-list" aria-label="Inbox">
           {items.map((item) => {
@@ -378,7 +344,7 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
                   <div>
                     <strong>{item.title}</strong>
                     <small>
-                      {item.type.replaceAll("_", " ")} · {new Date(item.createdAt).toLocaleString()}
+                      {notificationTypeLabel(item.type)} · {new Date(item.createdAt).toLocaleString()}
                     </small>
                   </div>
                   <span className={`app-badge${readTone ? ` ${readTone}` : ""}`}>

@@ -113,23 +113,11 @@ export const SEASON_FINANCE_RELATED_INCLUDE: BusinessRelatedId[] = [
   "finance-ai",
 ];
 
-/** Community Impact Soft-UI strip (`/impact`) — awards, grants, sponsors. */
-export const IMPACT_RELATED_INCLUDE: BusinessRelatedId[] = [
-  "awards",
-  "evidence",
-  "grants",
-  "sponsors",
-  "grant-workbench",
-];
+/** Community Impact Soft-UI strip (`/impact`) — Awards · Outreach · Writer. */
+export const IMPACT_RELATED_INCLUDE: BusinessRelatedId[] = ["awards", "evidence", "writer"];
 
-/** Awards workbench Soft-UI strip (`/team/awards`) — impact, grants, sponsors. */
-export const AWARDS_RELATED_INCLUDE: BusinessRelatedId[] = [
-  "impact",
-  "evidence",
-  "grants",
-  "sponsors",
-  "writer",
-];
+/** Awards workbench Soft-UI strip (`/team/awards`) — Community Impact · Outreach · Writer. */
+export const AWARDS_RELATED_INCLUDE: BusinessRelatedId[] = ["impact", "evidence", "writer"];
 
 /** Cross-links for Business Soft-UI (never DEMO placeholders). */
 export function businessRelatedLinks(

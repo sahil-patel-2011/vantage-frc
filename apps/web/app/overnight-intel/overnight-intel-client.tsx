@@ -167,23 +167,22 @@ export default function OvernightIntelClient() {
     }
   }, [orgId, busy]);
 
-  if (shell === "loading") {
+  if (!view) {
+    if (fetchFailed) {
+      return (
+        <OvernightIntelShell
+          description={shellCopy.description}
+          orgId={orgId}
+          shell="error"
+          error={error || shellCopy.description}
+          onRetry={() => load()}
+        >
+          <OfflineBanner feature="Overnight brief" fromCache={fromCache} cachedAt={cachedAt} />
+        </OvernightIntelShell>
+      );
+    }
     return (
       <OvernightIntelShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Overnight brief" fromCache={fromCache} cachedAt={cachedAt} />
-      </OvernightIntelShell>
-    );
-  }
-
-  if (shell === "error") {
-    return (
-      <OvernightIntelShell
-        description={shellCopy.description}
-        orgId={orgId}
-        shell="error"
-        error={error || shellCopy.description}
-        onRetry={() => load()}
-      >
         <OfflineBanner feature="Overnight brief" fromCache={fromCache} cachedAt={cachedAt} />
       </OvernightIntelShell>
     );

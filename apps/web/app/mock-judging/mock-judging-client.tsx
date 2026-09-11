@@ -339,7 +339,7 @@ export default function MockJudgingClient() {
               {error}
             </p>
           ) : null}
-          <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
+          <EmptyState badge="Needs setup" badgeTone="setup" title={view.message}>
             {view.steps[0] ? (
               <Button as="a" variant="primary" href={view.steps[0].href}>
                 {view.steps[0].label}
@@ -365,9 +365,9 @@ export default function MockJudgingClient() {
           {error}
         </p>
       ) : null}
-      <MockJudgingNextActions orgId={view.orgId} />
+      {view.readiness.totalSessions > 0 ? <MockJudgingNextActions orgId={view.orgId} /> : null}
       <div style={{ display: "grid", gap: 16 }}>
-        <ReadinessPanel view={view} />
+        {view.readiness.totalSessions > 0 ? <ReadinessPanel view={view} /> : null}
         <RunSessionForm busy={busy} mutate={mutate} />
         <SessionsList view={view} busy={busy} mutate={mutate} />
         <PrepNoteForm busy={busy} mutate={mutate} />

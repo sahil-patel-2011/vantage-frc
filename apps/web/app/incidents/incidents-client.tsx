@@ -192,6 +192,9 @@ export default function IncidentsClient() {
       <Button as="a" variant="secondary" href={withOrgHref("/safety", orgId)}>
         Safety log
       </Button>
+      <Button as="a" variant="secondary" href={hubHref("/team", "safety-training", orgId)}>
+        Safety training
+      </Button>
       <Button as="a" variant="secondary" href={hubHref("/build", "fmea", orgId)}>
         FMEA
       </Button>
@@ -257,7 +260,13 @@ export default function IncidentsClient() {
             {related}
           </PageHeader>
           <OfflineBanner feature="Safety Incident Log" fromCache={fromCache} cachedAt={cachedAt} />
-          <EmptyState soft badge="Setup required" badgeTone="setup" title={view.message}>
+          <EmptyState
+            soft
+            badge="Needs setup"
+            badgeTone="setup"
+            title="Choose your team"
+            description={view.message}
+          >
             {view.steps[0] ? (
               <Button as="a" variant="primary" href={view.steps[0].href}>
                 {view.steps[0].label}

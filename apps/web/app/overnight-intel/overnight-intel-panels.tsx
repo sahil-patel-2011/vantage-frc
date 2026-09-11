@@ -145,7 +145,7 @@ export function OvernightEpaPanel({ view }: { view: LiveView }) {
         badge="No score movement"
         badgeTone="setup"
         title="No material season-score movement"
-        description="No team at this event moved enough on season EPA since last night to report."
+        description="No team at this event moved enough on season rating since last night to report."
       />
     );
   }

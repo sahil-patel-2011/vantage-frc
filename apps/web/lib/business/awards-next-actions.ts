@@ -37,21 +37,27 @@ export function awardsNextActions(ctx: AwardsNextActionContext): AwardsNextActio
   }
 
   const awardsHref = withOrgHref("/team/awards", orgId);
-  const actions: AwardsNextAction[] = [];
   const submissions = ctx.submissionCount ?? 0;
+
+  if (submissions === 0) {
+    return [
+      {
+        id: "start",
+        label: "Start a catalog award submission",
+        detail:
+          "Pick Impact, Engineering Inspiration, or another FIRST award to seed essay prompts — empty is not a placeholder scoreboard.",
+        href: awardsHref,
+        primary: true,
+      },
+    ];
+  }
+
+  const actions: AwardsNextAction[] = [];
   const incomplete = ctx.incompleteEssayCount ?? 0;
   const inProgress = ctx.inProgressCount ?? 0;
   const won = ctx.wonCount ?? 0;
 
-  if (submissions === 0) {
-    actions.push({
-      id: "start",
-      label: "Start a catalog award submission",
-      detail: "Pick Impact, Engineering Inspiration, or another FIRST award to seed essay prompts — empty is not a placeholder scoreboard.",
-      href: awardsHref,
-      primary: true,
-    });
-  } else if (incomplete > 0) {
+  if (incomplete > 0) {
     actions.push({
       id: "draft",
       label: `Finish ${incomplete} open essay item${incomplete === 1 ? "" : "s"}`,
@@ -63,7 +69,8 @@ export function awardsNextActions(ctx: AwardsNextActionContext): AwardsNextActio
     actions.push({
       id: "status",
       label: "Update submission status",
-      detail: "Set Won only when the team actually receives the award — that feeds Business evidence, not invented wins.",
+      detail:
+        "Set Won only when the team actually receives the award — that feeds Business evidence, not invented wins.",
       href: awardsHref,
       primary: true,
     });
@@ -82,20 +89,6 @@ export function awardsNextActions(ctx: AwardsNextActionContext): AwardsNextActio
     label: "Business · Awards & evidence",
     detail: "Record wins once for reuse in grant writing.",
     href: hubHref("/business", "evidence", orgId),
-  });
-
-  actions.push({
-    id: "grants",
-    label: "Open Grants",
-    detail: "Pair award essays with grant applications tracked for this team only.",
-    href: hubHref("/business", "grants", orgId),
-  });
-
-  actions.push({
-    id: "sponsors",
-    label: "Open sponsor CRM",
-    detail: "Sponsor cash you recorded funds the season story next to award evidence.",
-    href: hubHref("/business", "sponsors", orgId),
   });
 
   return actions.slice(0, 5);

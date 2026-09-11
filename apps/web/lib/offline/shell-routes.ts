@@ -61,6 +61,7 @@ export const OFFLINE_SHELL_ROUTES = [
   "/team-tags",
   "/shift-balancer",
   "/counter-book",
+  "/intel",
   "/overnight-intel",
   "/alliance-partner-brief",
   "/picklist-justifier",
@@ -333,6 +334,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/team-tags")) return "Drive-team tags";
   if (bare.startsWith("/shift-balancer")) return "Scout shift balancer";
   if (bare.startsWith("/counter-book")) return "Counter-book";
+  if (bare === "/intel" || bare.startsWith("/intel/")) return "Research";
   if (bare.startsWith("/overnight-intel")) return "Overnight brief";
   if (bare.startsWith("/alliance-partner-brief")) return "Alliance-Partner Brief";
   if (bare.startsWith("/picklist-justifier")) return "Pick-list Justifier";
