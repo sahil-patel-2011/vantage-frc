@@ -35,7 +35,7 @@ The official published SDK/API, used **on hardware the team owns** against an en
 
 ### Connect your own relay
 
-Settings → Connectors → Free relay. Paste the relay base URL and a token. The token is stored KMS-encrypted (same envelope as Onshape). Vantage never stores a Freebuff website cookie.
+Team → AI relays. Paste the token the Pi installer prints. The token is stored KMS-encrypted (same envelope as Onshape). The relay URL lives on the Pi — hosted Vantage cannot call the LAN. Vantage never stores a Freebuff website cookie. Do not install a browser extension or a bookmarklet.
 
 ### Roles and instances
 
@@ -67,7 +67,7 @@ Chat goes to the least-loaded online chat instance. Agent/video jobs go to those
 
 ### Account linking
 
-Allowed: paste/authorize **your relay endpoint + token**.
+Allowed: paste **your own relay token** (the URL lives on the Pi).
 
 Not allowed: a Freebuff website session, a browser extension, a bookmarklet, a scraper, or sending a student's prompt to freebuff.com.
 
@@ -75,5 +75,5 @@ Not allowed: a Freebuff website session, a browser extension, a bookmarklet, a s
 
 1. Install the unit on each Pi (`scripts/pi/install-free-relay.sh`).
 2. Set `FREE_RELAY_BASE_URL`, `FREE_RELAY_API_KEY`, `FREE_RELAY_MODEL=deepseek-v4-flash` on the Pi.
-3. Pair the node from `/team/relays` (same human code flow as `/team/storage`).
+3. Paste the token the installer prints at `/team/relays` (owner/admin). Students never paste a Freebuff website cookie.
 4. Confirm DeepSeek V4 Flash on that endpoint accepts images before relying on the video role for vision. If it does not, set a vision model on the video instance and say so on the relays page.
