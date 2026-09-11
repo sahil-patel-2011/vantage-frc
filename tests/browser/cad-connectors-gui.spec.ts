@@ -1,5 +1,4 @@
 import { expect, test } from "@playwright/test";
-import { loadFailureHeading } from "./hub-org-gate";
 import { signInAs, signInFixture } from "./session";
 
 test.beforeEach(async ({ context }) => {
@@ -10,9 +9,7 @@ test.beforeEach(async ({ context }) => {
 test("Connectors, CAD connections, and pair pages stay student-usable", async ({ page }) => {
   await page.goto("/connectors");
   await expect(page.locator("body")).not.toContainText("Application error");
-  const connectorsHeading = page.getByRole("heading", { level: 1, name: "Connectors" });
-  const connectorsTeam = page.getByRole("heading", { name: "Choose your team", exact: true });
-  await expect(connectorsHeading.or(connectorsTeam).or(loadFailureHeading(page))).toBeVisible({
+  await expect(page.getByRole("heading", { level: 1, name: "Connectors" })).toBeVisible({
     timeout: 20_000,
   });
   await expect(page.getByText("Onshape OAuth")).toHaveCount(0);
@@ -21,9 +18,7 @@ test("Connectors, CAD connections, and pair pages stay student-usable", async ({
 
   await page.goto("/cad/connections");
   await expect(page.locator("body")).not.toContainText("Application error");
-  const connectionsHeading = page.getByRole("heading", { level: 1, name: "CAD connections" });
-  const connectionsTeam = page.getByRole("heading", { name: "Choose your team", exact: true });
-  await expect(connectionsHeading.or(connectionsTeam).or(loadFailureHeading(page))).toBeVisible({
+  await expect(page.getByRole("heading", { level: 1, name: "CAD connections" })).toBeVisible({
     timeout: 20_000,
   });
   await expect(page.getByText("Onshape OAuth")).toHaveCount(0);
@@ -38,7 +33,7 @@ test("Connectors, CAD connections, and pair pages stay student-usable", async ({
   await expect(page.getByText("Organization / workspace")).toHaveCount(0);
   await expect(page.getByText("OAuth")).toHaveCount(0);
   await expect(
-    page.locator("label", { hasText: /^Team$/ }).or(page.getByRole("link", { name: "Choose your team" })),
+    page.getByRole("combobox", { name: "Team" }).or(page.getByRole("link", { name: "Choose your team" })),
   ).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Approve pairing" }).or(page.getByRole("link", { name: "Choose your team" })),
@@ -50,7 +45,7 @@ test("Connectors, CAD connections, and pair pages stay student-usable", async ({
   await expect(page.getByText("Organization / workspace")).toHaveCount(0);
   await expect(
     page
-      .locator("label", { hasText: /^Team$/ })
+      .getByRole("combobox", { name: "Team" })
       .or(page.getByRole("heading", { name: "Choose your team" }))
       .or(page.getByRole("link", { name: "Choose your team" })),
   ).toBeVisible();
