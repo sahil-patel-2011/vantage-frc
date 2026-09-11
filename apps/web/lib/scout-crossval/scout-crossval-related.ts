@@ -216,7 +216,7 @@ export function scoutCrossvalNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before TBA checks run.",
+          detail: "Choose your team before TBA checks run.",
           href: "/workspace",
           primary: true,
         },

@@ -188,7 +188,7 @@ export function matchingGiftFinderNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before adding contacts.",
+          detail: "Choose your team before adding contacts.",
           href: "/workspace",
           primary: true,
         },

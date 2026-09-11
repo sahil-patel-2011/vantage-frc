@@ -131,7 +131,7 @@ export function alumniNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Pick a team before recording graduates.",
+        detail: "Choose your team before recording graduates.",
         href: "/workspace",
         primary: true,
       },

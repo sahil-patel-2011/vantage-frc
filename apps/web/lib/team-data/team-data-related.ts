@@ -75,7 +75,7 @@ export function teamDataNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before connecting credentials or an event.",
+          detail: "Choose your team before connecting credentials or an event.",
           href: "/workspace",
           primary: true,
         },

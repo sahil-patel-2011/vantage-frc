@@ -245,7 +245,7 @@ export function scoutAccuracyNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before ranking scouts.",
+          detail: "Choose your team before ranking scouts.",
           href: "/workspace",
           primary: true,
         },

@@ -162,7 +162,7 @@ export async function computeTuningAutopilotView(
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before logging gain sets.",
+          detail: "Choose your team before logging gain sets.",
           href: "/workspace",
         },
         {

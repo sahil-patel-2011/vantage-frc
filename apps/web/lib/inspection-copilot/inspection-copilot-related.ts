@@ -180,7 +180,7 @@ export function inspectionSetupSteps(orgId?: string | null): InspectionCopilotSe
     {
       id: "workspace",
       label: "Choose your team",
-      detail: "Pick a team before logging readiness checks.",
+      detail: "Choose your team before logging readiness checks.",
       href: inspectionCopilotCardPrimaryHref(orgId),
     },
     {

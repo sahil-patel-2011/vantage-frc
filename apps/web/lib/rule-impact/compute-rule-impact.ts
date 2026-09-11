@@ -189,7 +189,7 @@ export async function computeRuleImpactView(
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before logging game-manual deltas.",
+          detail: "Choose your team before logging game-manual deltas.",
           href: "/workspace",
         },
         {

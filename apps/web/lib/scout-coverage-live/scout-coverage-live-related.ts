@@ -217,7 +217,7 @@ export function scoutCoverageLiveNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before watching live gaps.",
+          detail: "Choose your team before watching live gaps.",
           href: "/workspace",
           primary: true,
         },

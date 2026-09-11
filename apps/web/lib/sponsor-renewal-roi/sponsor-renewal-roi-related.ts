@@ -188,7 +188,7 @@ export function sponsorRenewalRoiNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before scoring sponsors.",
+          detail: "Choose your team before scoring sponsors.",
           href: "/workspace",
           primary: true,
         },

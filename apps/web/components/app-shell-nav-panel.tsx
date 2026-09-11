@@ -161,7 +161,7 @@ export function AppShellNavPanel({
               <Icon name="users" />
               <div>
                 <strong>{orgLabel}</strong>
-                <span>{orgId ? rolePlanCue : "Pick a team"}</span>
+                <span>{orgId ? rolePlanCue : "Choose your team"}</span>
               </div>
               <span className={`soft-nav-caret${workspaceOpen ? " open" : ""}`} aria-hidden="true">
                 <Icon name="chevron" />

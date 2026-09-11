@@ -28,7 +28,7 @@ export default async function MessagesPage({
         <PageHeader breadcrumbs="Team / Chat" title="Chat" />
         <EmptyState
           title="Choose your team"
-          description="Pick a team to open chat."
+          description="Choose your team to open chat."
           badge="Setup"
           badgeTone="setup"
         >

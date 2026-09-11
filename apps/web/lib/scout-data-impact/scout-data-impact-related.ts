@@ -217,7 +217,7 @@ export function scoutDataImpactNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before logging picks.",
+          detail: "Choose your team before logging picks.",
           href: "/workspace",
           primary: true,
         },

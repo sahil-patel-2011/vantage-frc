@@ -181,7 +181,7 @@ export function binShelfLocatorNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before mapping bins.",
+          detail: "Choose your team before mapping bins.",
           href: "/workspace",
           primary: true,
         },

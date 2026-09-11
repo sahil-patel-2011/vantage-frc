@@ -262,7 +262,7 @@ export function qrHandoffNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before sharing outbox rows.",
+          detail: "Choose your team before sharing outbox rows.",
           href: "/workspace",
           primary: true,
         },

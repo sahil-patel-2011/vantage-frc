@@ -43,6 +43,8 @@ describe("inspectionCopilotNextActions", () => {
     expect(actions.map((a) => a.id)).toEqual(["workspace"]);
     expect(actions[0]?.href).toBe("/workspace");
     expect(actions[0]?.primary).toBe(true);
+    expect(actions[0]?.detail).toMatch(/Choose your team/);
+    expect(actions[0]?.detail).not.toMatch(/\bPick a team\b/);
   });
 
   it("setup with org derives from inspectionSetupSteps", () => {

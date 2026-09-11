@@ -350,7 +350,7 @@ export function PreferencesForm({
             <strong>After approval: connect GitHub for AI code context.</strong>
             <span>
               {" "}Owners/admins link the robot-code repo under{" "}
-              <a href={githubConnectionHref(state.workspaceOrgId)}>Team → GitHub</a> (OAuth or encrypted PAT).
+              <a href={githubConnectionHref(state.workspaceOrgId)}>Team → GitHub</a>.
             </span>
           </p>
         </div>
