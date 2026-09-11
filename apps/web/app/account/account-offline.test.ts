@@ -16,7 +16,8 @@ describe("Account last snapshot stays on the phone", () => {
 
   it("keeps one EmptyState primary on a failed load", () => {
     const src = readFileSync(join(DIR, "account-client.tsx"), "utf8");
-    expect(src).not.toMatch(/Help & Support/);
+    const fail = src.slice(src.indexOf("fetchFailed && !account"));
+    expect(fail).not.toMatch(/href="\/support"/);
     expect(src).not.toMatch(/<NextActions[\s\S]*orgId=\{null\}/);
   });
 });
