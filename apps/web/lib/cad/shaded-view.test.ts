@@ -169,7 +169,7 @@ describe("refreshShadedPngBase64", () => {
 
 describe("CadViewport", () => {
   const png = TINY_PNG_BYTES.toString("base64");
-  const onshapeUrl = "https://cad.onshape.com/documents/abc/w/def/e/ghi";
+  const onshapeUrl = "https://cad.onshape.com/documents/aaa111/w/bbb222/e/ccc333";
 
   function html(props: { pngBase64?: string | null; openUrl?: string | null; setupRequired?: boolean }) {
     return renderToStaticMarkup(createElement(CadViewport, props));

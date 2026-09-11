@@ -32,7 +32,7 @@ describe("cad-client mounts CadViewport and CadOperationComposer", () => {
     expect(client).toContain('import { CadViewport } from "./cad-viewport"');
     expect(client).toContain("<CadViewport");
     expect(client).toContain("pngBase64={state?.shadedPngBase64}");
-    expect(client).toContain("openUrl={state?.openUrl}");
+    expect(client).toContain("openUrl={state?.openUrl || url}");
     expect(client).toContain("setupRequired={!onshapeOk}");
     expect(client).not.toMatch(/<CadViewport[\s\S]{0,400}iframeUrl/);
   });
