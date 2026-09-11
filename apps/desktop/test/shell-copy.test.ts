@@ -130,7 +130,7 @@ describe("bundled shell pages", () => {
     expect(update).toContain(UPDATE_STATUS_UNAVAILABLE_TITLE);
     expect(update).toContain(UPDATE_STATUS_UNAVAILABLE_BODY);
     expect(update).toContain(UPDATE_PORTABLE_NOTE);
-    expect(update).toContain(UPDATE_SAFETY);
+    expect(visibleText(update)).toContain(UPDATE_SAFETY);
     expect(visibleText(update)).not.toMatch(SHELL_LEAK);
     expect(update).not.toMatch(/portable build/i);
     expect(update).not.toMatch(/Last attempt:/);
