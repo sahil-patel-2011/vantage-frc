@@ -330,7 +330,7 @@ function LivePairwise({
 
       <ToolStrip
         aria-label="Qualitative criteria"
-        value={view.criterionId}
+        value={view.criterionId ?? ""}
         onChange={onCriterion}
         visibleCount={8}
         items={view.criteria.map((criterion) => ({
