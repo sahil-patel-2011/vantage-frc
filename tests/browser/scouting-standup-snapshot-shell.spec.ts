@@ -11,7 +11,7 @@ const LEAVES = [
   { path: "/scout-training-mode", heading: "Scout training mode" },
   { path: "/data-quality-scorecard", heading: "Data Quality Scorecard" },
   { path: "/standup-digest", heading: "Morning standup" },
-  { path: "/meeting-autopilot", heading: "Meeting-agenda autopilot" },
+  { path: "/meeting-autopilot", heading: "Meeting agenda" },
   { path: "/goals-tracker", heading: "Season Goals" },
 ] as const;
 
