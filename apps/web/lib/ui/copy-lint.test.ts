@@ -166,6 +166,11 @@ const RULES: readonly Rule[] = [
     why: 'say "Choose a preset"',
   },
   {
+    label: "Choose the organization",
+    pattern: /\bChoose the organization\b/,
+    why: 'say "Choose your team"',
+  },
+  {
     // "Set the real build-season window — no sample timelines." The em-dash
     // clause is the tell: everything before it is the instruction, everything
     // after it is the product promising it did not make the data up. Lower-case

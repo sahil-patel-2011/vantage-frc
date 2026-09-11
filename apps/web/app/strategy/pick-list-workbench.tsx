@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { PickCandidate, PickTier } from "@vantage/prediction-strategy";
 import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
-import { EmptyState, Button } from "../../components/ui";
+import { EmptyState, Button, ToolStrip } from "../../components/ui";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import {
@@ -610,20 +610,18 @@ export function PickListWorkbench({
           />
         </label>
         {desk.pickLists.length ? (
-          <div className="strategy-pick-list-switch" role="tablist" aria-label="Saved pick lists">
-            {desk.pickLists.map((list) => (
-              <button
-                key={list.id}
-                type="button"
-                role="tab"
-                aria-selected={list.id === activeListId}
-                className={list.id === activeListId ? "active" : undefined}
-                onClick={() => selectList(list)}
-              >
-                {list.name}
-              </button>
-            ))}
-          </div>
+          <ToolStrip
+            aria-label="Saved pick lists"
+            value={activeListId ?? ""}
+            onChange={(id) => {
+              const list = desk.pickLists.find((item) => item.id === id);
+              if (list) selectList(list);
+            }}
+            items={desk.pickLists.map((list) => ({
+              id: list.id,
+              label: list.name,
+            }))}
+          />
         ) : (
           <p className="app-muted">No saved lists yet — arrange tiers below, then save.</p>
         )}

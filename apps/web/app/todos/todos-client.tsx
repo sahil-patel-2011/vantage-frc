@@ -331,29 +331,26 @@ export default function TodosClient({ embedded = false }: { embedded?: boolean }
           title={failure.title}
           description={failure.description}
         >
-          <div className="soft-btn-row">
-            {failure.primary ? (
-              <Button as="a" variant="primary" href={failure.primary.href}>
-                {failure.primary.label}
-              </Button>
-            ) : null}
-            {failure.showRetry ? (
-              <Button variant="secondary" type="button" onClick={() => load()}>
-                Retry
-              </Button>
-            ) : null}
-            <Button as="a" variant="secondary" href="/workspace">
-              Choose your team
+          {failure.primary ? (
+            <Button as="a" variant="primary" href={failure.primary.href}>
+              {failure.primary.label}
             </Button>
-          </div>
-          <NextActions orgId={orgId} todoCount={0} mineOpen={0} overdue={0} />
+          ) : null}
+          {failure.showRetry ? (
+            <Button variant="secondary" type="button" onClick={() => load()}>
+              Retry
+            </Button>
+          ) : null}
         </EmptyState>
       ) : view == null ? (
         <EmptyState soft title="Loading…" description="Checking your team for real todos." aria-busy />
       ) : view.status === "setup_required" ? (
         <EmptyState soft badge="Setup required" badgeTone="setup" title={view.message}>
-          
-          <NextActions orgId={view.orgId} todoCount={0} mineOpen={0} overdue={0} />
+          {view.steps[0] ? (
+            <Button as="a" variant="primary" href={view.steps[0].href}>
+              {view.steps[0].label}
+            </Button>
+          ) : null}
         </EmptyState>
       ) : (
         <div style={{ display: "grid", gap: 16 }}>

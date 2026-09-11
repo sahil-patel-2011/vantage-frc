@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
+import { ToolStrip } from "../../components/ui";
 import {
   CAD_COMMUNITY_LINKS,
   CAD_REFERENCE,
@@ -118,20 +119,15 @@ function MethodTabs({ methods }: { methods: NonNullable<Lesson["methods"]> }) {
   return (
     <div className="cl-methods">
       {methods.length > 1 ? (
-        <div className="cl-method-tabs" role="tablist">
-          {methods.map((method, index) => (
-            <button
-              key={method.label}
-              type="button"
-              role="tab"
-              aria-selected={index === Math.min(active, methods.length - 1)}
-              className={index === Math.min(active, methods.length - 1) ? "cl-method-tab active" : "cl-method-tab"}
-              onClick={() => setActive(index)}
-            >
-              {method.label}
-            </button>
-          ))}
-        </div>
+        <ToolStrip
+          aria-label="How to do this"
+          value={String(Math.min(active, methods.length - 1))}
+          onChange={(id) => setActive(Number(id))}
+          items={methods.map((method, index) => ({
+            id: String(index),
+            label: method.label,
+          }))}
+        />
       ) : null}
       <ol className="cl-method-lines">
         {current.lines.map((line, index) => (

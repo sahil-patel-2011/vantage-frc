@@ -56,7 +56,9 @@ row (or re-run bootstrap for `PLATFORM_OWNER_EMAIL`) using the admin database ro
 `/team` is separate and stays limited to that org's owner/admin. See `SECURITY_OPERATIONS.md`.
 
 **Database:** Auth and product data use Postgres (`DATABASE_AUTH_URL` / `DATABASE_URL` as `vantage_app`,
-`DATABASE_ADMIN_URL` as `vantage_worker`). Production today is **Neon**; a **Supabase Postgres host** cutover
+`DATABASE_ADMIN_URL` as `vantage_worker`). Production today is **Neon**. If Neon’s open-source grant/award
+lands, keep using this same Postgres — the owner pastes the pooled + direct URLs into Vercel Production
+and gitignored `.env.local`; identity stays Better Auth + `withRls`. A **Supabase Postgres host** cutover
 (same Better Auth + `withRls` org isolation, Data API off) is in `docs/SUPABASE_CUTOVER.md`. Do not put
 `anon` / `service_role` keys in the web app. Resend is only the email transport for OTP / forgot-password /
 default email 2FA; it does not replace Google OAuth or Postgres.

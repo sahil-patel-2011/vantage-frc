@@ -357,7 +357,7 @@ export default function BusinessClient() {
       ) : null}
 
       {view?.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message} description="Choose the organization for this team, then return here to start the season business plan.">
+        <EmptyState badge="Setup required" badgeTone="setup" title={view.message} description="Choose your team, then return here to start the season business plan.">
           <Button as="a" variant="primary" href="/workspace">
             Choose your team
           </Button>

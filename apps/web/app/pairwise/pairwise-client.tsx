@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, PageHeader, Panel, ToolStrip, Button } from "../../components/ui";
 import type { PairwiseView } from "../../lib/pairwise/compute-pairwise";
 import type { PairwisePromoteResult } from "../../lib/pairwise/promote-to-pick-list";
 import { pairwiseRelatedLinks } from "../../lib/pairwise/pairwise-related";
@@ -328,21 +328,16 @@ function LivePairwise({
         </ul>
       </section>
 
-      <div className="pairwise-criteria" role="tablist" aria-label="Qualitative criteria">
-        {view.criteria.map((criterion) => (
-          <button
-            key={criterion.id}
-            type="button"
-            role="tab"
-            aria-selected={criterion.id === view.criterionId}
-            className={criterion.id === view.criterionId ? "app-button" : "app-button secondary"}
-            onClick={() => onCriterion(criterion.id)}
-          >
-            {criterion.name}
-            <small> {criterion.comparisonCount}</small>
-          </button>
-        ))}
-      </div>
+      <ToolStrip
+        aria-label="Qualitative criteria"
+        value={view.criterionId}
+        onChange={onCriterion}
+        visibleCount={8}
+        items={view.criteria.map((criterion) => ({
+          id: criterion.id,
+          label: `${criterion.name} (${criterion.comparisonCount})`,
+        }))}
+      />
 
       <Panel>
         <p className="app-muted">

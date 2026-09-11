@@ -1,5 +1,5 @@
 "use client";
-import { Button } from "../../components/ui";
+import { Button, ToolStrip } from "../../components/ui";
 
 import { useEffect, useMemo, useState } from "react";
 
@@ -264,34 +264,22 @@ export default function ExportCenter({ orgId }: { orgId: string }) {
       <div className="export-layout">
         <section className="app-card soft-panel export-panel">
           <h2>Choose data</h2>
-          <div className="export-tabs" role="tablist" aria-label="Export scope">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={scope === "team"}
-              onClick={() => {
-                setScope("team");
-                setSelected([]);
-              }}
-            >
-              Team-shared
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={scope === "private"}
-              onClick={() => {
-                setScope("private");
-                setSelected([]);
-              }}
-            >
-              My private AI data
-            </button>
-          </div>
+          <ToolStrip
+            aria-label="Export scope"
+            value={scope}
+            onChange={(id) => {
+              setScope(id as "team" | "private");
+              setSelected([]);
+            }}
+            items={[
+              { id: "team", label: "Team-shared" },
+              { id: "private", label: "My private AI data" },
+            ]}
+          />
 
           {scope === "private" ? (
             <p className="app-muted">
-              Only your private conversations and memory appear here. Organization administrators cannot silently export
+              Only your private conversations and memory appear here. Team owners and admins cannot silently export
               them.
             </p>
           ) : null}
