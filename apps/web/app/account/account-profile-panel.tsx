@@ -138,7 +138,7 @@ export function AccountProfilePanel({
             ? "This phone number is confirmed."
             : account.phoneOtp?.configured
               ? "Save the number, then send a code to confirm it."
-              : "Phone codes need text messaging set up on this team. Email sign-in still works."}
+              : "Text messaging isn't set up for phone codes yet. Email sign-in still works."}
         </p>
         <div className="account-actions">
           <Button variant="secondary" type="button" disabled={busy} onClick={() => void onSendPhoneOtp()}>

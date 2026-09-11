@@ -16,7 +16,7 @@ export function PricingStrip({ headingId }: { headingId: string }) {
           <p className="lux-eyebrow">Pricing</p>
           <h2 id={headingId}>Cost should never decide which teams get it.</h2>
           <p>
-            {pricingTeaserLede()} Hosted usage stops at a hard cutoff — there is no silent overage on a booster
+            {pricingTeaserLede()} Hosted usage stops when the allowance is used — there is no silent overage on a booster
             club&rsquo;s card.
           </p>
         </header>

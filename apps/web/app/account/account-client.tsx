@@ -305,7 +305,7 @@ export default function AccountClient() {
         setMessage(data.error ?? "Could not verify phone.");
         return;
       }
-      setMessage("Phone verified for OTP.");
+      setMessage("Phone number confirmed.");
       setMessageOk(true);
       setOtpCode("");
       await load();

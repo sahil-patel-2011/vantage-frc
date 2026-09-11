@@ -2,9 +2,16 @@ import { expect, test } from "@playwright/test";
 
 test("a visitor can join the waitlist", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "One place for everything your team does." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "One login a student can use without help." })).toBeVisible();
   const finalForm = page.locator("#waitlist");
   await finalForm.scrollIntoViewIfNeeded();
+  await expect(finalForm.getByRole("heading", { name: "Join the waitlist." })).toBeVisible();
+  const unavailable = finalForm.getByRole("heading", { name: /isn't taking names/i });
+  if (await unavailable.count()) {
+    await expect(unavailable).toBeVisible();
+    await expect(finalForm.getByText("Setup required")).toHaveCount(0);
+    return;
+  }
   await finalForm.getByLabel("Email").fill(`browser-${Date.now()}@example.com`);
   await finalForm.getByLabel("FRC team number").fill("254");
   const join = finalForm.getByRole("button", { name: "Join the waitlist" });

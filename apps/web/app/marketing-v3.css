@@ -52,6 +52,11 @@
   max-width:34rem;font-size:var(--m-step-1);line-height:1.55;
 }
 .marketing-lux .lux-hero .actions{margin-top:30px;gap:14px}
+.marketing-lux .lux-hero .actions .text-link,
+.marketing-lux .lux-route-hero .actions .text-link,
+.marketing-lux .pricing-preview-actions .text-link{
+  display:inline-flex;align-items:center;min-height:44px;font-weight:600;text-decoration:none;
+}
 .marketing-lux .lux-hero-note{font-size:13px!important;max-width:36rem}
 
 /* â”€â”€ Hero visual: the agent-teaching panel â”€â”€ */

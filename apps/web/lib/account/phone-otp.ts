@@ -35,7 +35,7 @@ export function phoneOtpSetupStatus(): { configured: boolean; message: string } 
   }
   return {
     configured: false,
-    message: "Phone codes need text messaging set up on this team. Email sign-in still works.",
+    message: "Text messaging isn't set up for phone codes yet. Email sign-in still works.",
   };
 }
 

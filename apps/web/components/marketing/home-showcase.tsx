@@ -8,6 +8,7 @@ import {
   MARKETING_LEARN,
   MARKETING_PROBLEMS,
   MARKETING_SEASON,
+  MARKETING_STUDENT_PATH,
   MARKETING_TRUST,
 } from "../../lib/marketing/product-story";
 import { MIcon } from "./marketing-icons";
@@ -59,12 +60,30 @@ export function HomeShowcase() {
         </div>
       </section>
 
+      <section className="lux-pillars" aria-labelledby="lux-student-path">
+        <div className="lux-content">
+          <header className="lux-section-head" data-reveal>
+            <p className="lux-eyebrow">What you open first</p>
+            <h2 id="lux-student-path">Four things a student can do on day one.</h2>
+            <p>No extra accounts. Mentors invite you; then this is the path.</p>
+          </header>
+          <ul className="lux-feature-grid lux-feature-grid-4" data-reveal>
+            {MARKETING_STUDENT_PATH.map((item) => (
+              <li key={item.title}>
+                <strong>{item.title}</strong>
+                <span>{item.copy}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
       <section className="lux-runs" aria-labelledby="lux-runs-title">
         <div className="lux-content">
           <header className="lux-section-head" data-reveal>
             <p className="lux-eyebrow">One workspace</p>
             <h2 id="lux-runs-title">Four places. Everything is inside one of them.</h2>
-            <p>Team, Build, Competition and Business — plus Home. No sixth app to remember.</p>
+            <p>Team, Build, Competition and Business — plus Home. Search finds the rest.</p>
           </header>
           <ul className="mk-pillars" data-reveal>
             {MARKETING_HUBS.map((hub) => (
@@ -73,7 +92,6 @@ export function HomeShowcase() {
                   <span className="lux-card-icon">
                     <MIcon name={hub.icon} />
                   </span>
-                  <span className="mk-tag">{hub.route}</span>
                   <strong>{hub.title}</strong>
                   <span className="mk-pillar-copy">{hub.promise}</span>
                   <span className="mk-pillar-mods">
@@ -94,13 +112,13 @@ export function HomeShowcase() {
             ))}
           </ul>
           <p className="mk-related-links" data-reveal>
-            Deep dives: <a href="/features">Every workspace and tool</a>
+            Deep dives: <a href="/features">Every tool</a>
             {" · "}
-            <a href="/features/strategy">Strategy and match prediction</a>
+            <a href="/workflow">How it works</a>
             {" · "}
-            <a href="/features/cad">CAD and the assembly manual</a>
+            <a href="/pricing">Pricing</a>
             {" · "}
-            <a href="/features/code">Robot code</a>
+            <a href="/signin">Sign in</a>
           </p>
         </div>
       </section>

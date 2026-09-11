@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { MemoryWaitlistStore, createWaitlistStore, waitlistSchema } from "./waitlist";
+import { MemoryWaitlistStore, WaitlistUnavailableError, createWaitlistStore, waitlistSchema } from "./waitlist";
+import { waitlistUnavailableCopy } from "./waitlist-copy";
 
 describe("waitlist validation", () => {
   it("normalizes valid input", () => {
@@ -108,5 +109,15 @@ describe("createWaitlistStore", () => {
   it("uses the in-memory store on CI so the public form does not need Postgres", () => {
     process.env.CI = "true";
     expect(createWaitlistStore()).toBeInstanceOf(MemoryWaitlistStore);
+  });
+
+  it("paints a human empty state when the waitlist cannot save", () => {
+    const copy = waitlistUnavailableCopy();
+    expect(copy.title).toMatch(/isn't taking names/i);
+    expect(copy.body).toMatch(/email/i);
+    expect(`${copy.title} ${copy.body}`).not.toMatch(/Setup required|setup_required|DATABASE_/i);
+    const error = new WaitlistUnavailableError();
+    expect(error.status).toBe("setup_required");
+    expect(error.message).toBe(copy.body);
   });
 });

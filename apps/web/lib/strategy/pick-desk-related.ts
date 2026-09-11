@@ -180,7 +180,7 @@ export function pickDeskShellCopy(kind: PickDeskShellKind): PickDeskEmptyCopy {
         kind,
         title: "Rank, pick, and lock",
         description:
-          "Move teams into first / second / third, then lock the list. Numbers come from your scouting and the event list — never invented.",
+          "Move teams into first / second / third, then lock the list. Numbers come from your scouting and the event list.",
       };
     default: {
       const _never: never = kind;

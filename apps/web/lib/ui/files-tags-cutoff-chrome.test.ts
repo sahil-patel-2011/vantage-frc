@@ -36,7 +36,7 @@ describe("leftover Files / tags / cutoff student chrome", () => {
 
   it("phone setup copy never names Twilio or env vars", () => {
     const src = readFileSync(join(WEB, "lib/account/phone-otp.ts"), "utf8");
-    expect(src).toMatch(/Phone codes need text messaging set up on this team/);
+    expect(src).toMatch(/Text messaging isn't set up for phone codes yet/);
     expect(src).not.toMatch(/Phone OTP send needs TWILIO_/);
     expect(src).not.toMatch(/Twilio SMS is configured/);
   });

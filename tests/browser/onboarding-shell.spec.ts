@@ -12,13 +12,17 @@ test("Onboarding still loads after the panel split", async ({ page }) => {
 
   // Complete profiles leave /onboarding for Home. Fixture/GHA without a
   // Better Auth session stay on the signed-in-session gate. Neither path
-  // mounts a nested TabBar.
+  // mounts a nested TabBar. Wait for a ready heading — not the loading fallback —
+  // before asserting banned phrases are gone.
   const flow = page.getByRole("heading", {
-    name: /Loading your secure session|Onboarding needs a signed-in session|Set up Vantage around your role|Your profile is ready|You're in/,
+    name: /Sign in to continue|Set up Vantage around your role|Your profile is ready|You're in/,
   });
   const home = page.getByRole("heading", { level: 1, name: /Good (morning|afternoon|evening)/i });
   const signIn = page.getByRole("heading", { name: /Sign in/i });
   await expect(flow.or(home).or(signIn)).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByText("Getting your steps ready")).toHaveCount(0);
+  await expect(page.getByText("Setup required")).toHaveCount(0);
+  await expect(page.getByText("SECURE ONBOARDING")).toHaveCount(0);
   if (new URL(page.url()).pathname === "/onboarding") {
     await expect(page.getByRole("tab")).toHaveCount(0);
   }

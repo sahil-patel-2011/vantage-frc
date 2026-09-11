@@ -144,20 +144,20 @@ export function onboardingLoadCopy(kind: OnboardingLoadKind, detail?: string | n
   if (kind === "loading") {
     return {
       kind,
-      eyebrow: "SECURE ONBOARDING",
-      title: "Loading your secure session…",
-      description: "Restoring saved progress. Team access stays closed until an owner or invitation approves you.",
+      eyebrow: "YOUR STEPS",
+      title: "Getting your steps ready…",
+      description: "Restoring saved progress. You need an invite or a team owner’s approval before you can open the team.",
     };
   }
   if (kind === "setup_required") {
     return {
       kind,
-      eyebrow: "SETUP REQUIRED",
-      title: "Onboarding needs a signed-in session",
+      eyebrow: "SIGN IN",
+      title: "Sign in to continue",
       description:
         detail?.trim() ||
-        "Sign in again to continue. A team number never grants membership — you need an invite or owner approval.",
-      badge: "Setup required",
+        "Sign in with Google or an email code. A team number never lets you in by itself — you need an invite or owner approval.",
+      badge: "Needs setup",
     };
   }
   return {
@@ -166,7 +166,7 @@ export function onboardingLoadCopy(kind: OnboardingLoadKind, detail?: string | n
     title: "Could not load onboarding",
     description:
       detail?.trim() ||
-      "A network or server issue prevented loading.",
+      "Check your connection and try again.",
     badge: "Retry",
   };
 }
@@ -197,11 +197,11 @@ export function onboardingMembershipNote(
   if (!options?.preferredTeamNumber) {
     return {
       title: "No team number yet",
-      body: "You can finish without a team number. If you later enter a number for a team that already has Vantage, that team must specifically approve you. You cannot join someone else's workspace automatically.",
+      body: "You can finish without a team number. If you later enter a number for a team that already has Vantage, that team must specifically approve you. You cannot join someone else's team automatically.",
     };
   }
   return {
     title: "Closed membership",
-    body: "Entering a team number only requests that team's approval. If the team already exists, their owners decide — members still also join by exact-email invite. Team heads can claim an unused TBA number at /claim.",
+    body: "Entering a team number only requests that team's approval. If the team already exists, their owners decide — members still also join by exact-email invite. Mentors can claim an unused team number.",
   };
 }

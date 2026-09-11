@@ -2,6 +2,7 @@ import { z } from "zod";
 import { LEGAL_DOC_VERSION } from "@vantage/core";
 import { createSqlPool } from "@vantage/db/pool";
 import { resolveMarketingDatabaseUrl } from "@vantage/db/postgres-url";
+import { waitlistUnavailableMessage } from "./waitlist-copy";
 
 export const DISCLOSURE_VERSION = `waitlist-${LEGAL_DOC_VERSION}`;
 
@@ -15,7 +16,7 @@ export const waitlistSchema = z.object({
   teamNumber: z.coerce.number().int().min(1).max(99999),
   phone: z.string().trim().max(20).optional().default("").refine(
     (value) => value === "" || /^\+[1-9]\d{7,14}$/.test(value),
-    "Use E.164 format, such as +12025550123",
+    "Use a phone number with country code, like +12025550123",
   ),
   smsConsent: z.boolean().optional().default(false),
   termsAccepted: z.literal(true),
@@ -258,18 +259,46 @@ export class NeonWaitlistStore implements WaitlistStore {
 
 const globalStore = globalThis as typeof globalThis & { vantageWaitlist?: MemoryWaitlistStore };
 
+export type WaitlistBackend = "memory" | "postgres" | "unavailable";
+
+export { waitlistUnavailableCopy } from "./waitlist-copy";
+export { waitlistUnavailableMessage };
+
+/**
+ * How the public form persists names. Production without a marketing database
+ * is `unavailable` — never a thrown 500 on the landing page.
+ */
+export function waitlistBackend(): WaitlistBackend {
+  if (process.env.CI === "true") return "memory";
+  if (resolveMarketingDatabaseUrl()) return "postgres";
+  if (process.env.NODE_ENV === "production") return "unavailable";
+  return "memory";
+}
+
+export class WaitlistUnavailableError extends Error {
+  readonly status = "setup_required" as const;
+  constructor() {
+    super(waitlistUnavailableMessage());
+    this.name = "WaitlistUnavailableError";
+  }
+}
+
 export function createWaitlistStore(): WaitlistStore {
   const memory = (globalStore.vantageWaitlist ??= new MemoryWaitlistStore());
-  // GHA Playwright has no Postgres. A DATABASE_URL leftover (or a Neon host
-  // the runner cannot reach) must not 500 the public waitlist form.
-  if (process.env.CI === "true") return memory;
-  const url = resolveMarketingDatabaseUrl();
-  if (url) {
-    return new NeonWaitlistStore(url);
+  const backend = waitlistBackend();
+  switch (backend) {
+    case "memory":
+      return memory;
+    case "postgres": {
+      const url = resolveMarketingDatabaseUrl();
+      return url ? new NeonWaitlistStore(url) : memory;
+    }
+    case "unavailable":
+      throw new WaitlistUnavailableError();
+    default: {
+      const _never: never = backend;
+      throw new Error(`Unhandled waitlist backend: ${String(_never)}`);
+    }
   }
-  if (process.env.NODE_ENV === "production") {
-    throw new Error("MARKETING_DATABASE_URL or DATABASE_URL is required in production");
-  }
-  return memory;
 }
 

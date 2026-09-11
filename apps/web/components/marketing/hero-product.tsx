@@ -4,12 +4,11 @@
  */
 
 const rail = ["Home", "Compete", "Team", "Build"] as const;
-const tabs = ["Today", "Learn", "Files", "Ask AI"] as const;
 
 const today: readonly { label: string; value: string }[] = [
-  { label: "Next meeting", value: "Tue 6 pm · build night" },
-  { label: "Due this week", value: "2 tasks · 1 part request" },
-  { label: "Learn CAD", value: "Lesson 5 of 14 · Name things" },
+  { label: "What to do now", value: "Scout this match" },
+  { label: "CAD", value: "Paste an Onshape link" },
+  { label: "Match video", value: "Confirm the timeline" },
 ] as const;
 
 export function HeroProductPanel() {
@@ -27,14 +26,6 @@ export function HeroProductPanel() {
 
       <div className="mk-mock-body">
         <div className="mk-mock-main">
-          <div className="mk-mock-tabs">
-            {tabs.map((tab) => (
-              <span className={tab === "Today" ? "is-active" : undefined} key={tab}>
-                {tab}
-              </span>
-            ))}
-          </div>
-
           <article className="mk-mock-card">
             <header>
               <strong>Good evening</strong>
@@ -49,20 +40,9 @@ export function HeroProductPanel() {
               ))}
             </dl>
             <p className="mk-mock-empty">
-              Calendar, tasks, files, chat, the learning track and the team&rsquo;s own docs — all here, nothing to
-              install and no second account.
+              Scouting, a CAD link, match video, and team ops — the same sign-in, nothing extra to install.
             </p>
           </article>
-
-          <div className="hero-teach-shot mk-mock-shot">
-            <span className="hero-teach-shot-tag">Ask AI</span>
-            <p>Strategy, match predictions, design help, writing — from your team&rsquo;s own data and the public record.</p>
-            <div className="hero-teach-chips">
-              <span>Predict our next match</span>
-              <span className="is-picked">Find a time for mechanical</span>
-            </div>
-            <em>It shows what it used, and says plainly when there is not enough to answer.</em>
-          </div>
         </div>
 
         <div className="mk-mock-rail">

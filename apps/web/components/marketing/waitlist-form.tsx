@@ -1,11 +1,23 @@
 "use client";
 
-import { type FormEvent, useId, useState } from "react";
+import { type FormEvent, useEffect, useId, useState } from "react";
 import { LegalAgreementCheckbox } from "../legal-agreement-checkbox";
 import { legalConsentComplete, legalConsentMessage } from "../../lib/legal";
 import { track } from "../../lib/marketing/analytics";
+import { waitlistUnavailableCopy } from "../../lib/marketing/waitlist-copy";
 
-type FormState = "idle" | "sending" | "success" | "error";
+type FormState = "idle" | "sending" | "success" | "error" | "unavailable";
+
+type WaitlistResponse = {
+  ok?: boolean;
+  status?: string;
+  message?: string;
+};
+
+function isUnavailablePayload(payload: WaitlistResponse | null, httpStatus: number): boolean {
+  if (httpStatus === 503) return true;
+  return payload?.status === "setup_required";
+}
 
 export function WaitlistForm({
   idPrefix = "waitlist",
@@ -27,6 +39,21 @@ export function WaitlistForm({
   // A missing-consent error belongs next to the boxes; anything else (network,
   // server rejection) belongs in the form-level status line.
   const consentError = state === "error" && !legalConsentComplete(consent) ? message : null;
+  const unavailable = waitlistUnavailableCopy();
+
+  useEffect(() => {
+    let active = true;
+    void fetch("/api/waitlist", { cache: "no-store" })
+      .then(async (response) => {
+        const payload = (await response.json().catch(() => null)) as WaitlistResponse | null;
+        if (!active) return;
+        if (isUnavailablePayload(payload, response.status)) setState("unavailable");
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, []);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -56,9 +83,13 @@ export function WaitlistForm({
           website: form.get("website"),
         }),
       });
-      const result = (await response.json()) as { ok: boolean; message?: string };
-      if (!response.ok || !result.ok) {
-        throw new Error(result.message ?? "Submission failed");
+      const result = (await response.json().catch(() => null)) as WaitlistResponse | null;
+      if (isUnavailablePayload(result, response.status)) {
+        setState("unavailable");
+        return;
+      }
+      if (!response.ok || !result?.ok) {
+        throw new Error(result?.message ?? "Submission failed");
       }
       setState("success");
       setMessage("You're on the waitlist. We'll email launch news.");
@@ -67,6 +98,18 @@ export function WaitlistForm({
       setState("error");
       setMessage(error instanceof Error ? error.message : "Please try again.");
     }
+  }
+
+  if (state === "unavailable") {
+    return (
+      <div className="confirmation waitlist-confirmation waitlist-unavailable" role="status">
+        <h3>{unavailable.title}</h3>
+        <p>{unavailable.body}</p>
+        <p>
+          <a href="mailto:sahiljpatel2011@gmail.com">Email Sahil</a>
+        </p>
+      </div>
+    );
   }
 
   if (state === "success") {
@@ -119,7 +162,7 @@ export function WaitlistForm({
           name="phone"
           type="tel"
           autoComplete="tel"
-          placeholder="+12025550123"
+          placeholder="Optional — for launch texts"
           value={phone}
           onChange={(event) => setPhone(event.target.value)}
           disabled={state === "sending"}

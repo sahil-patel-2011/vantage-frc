@@ -144,7 +144,7 @@ export function lookupTeamNumber(input: TeamLookupInput): TeamLookupResult {
       kind: "locked",
       tone: "good",
       teamNumber: parsed,
-      title: `${input.lockedOrgName ?? "That workspace"} · Team ${parsed}`,
+      title: `${input.lockedOrgName ?? "That team"} · Team ${parsed}`,
       body: "This account is already tied to that team through an invitation or an open request, so the number can't change here.",
       ok: true,
       action: null,
@@ -171,7 +171,7 @@ export function lookupTeamNumber(input: TeamLookupInput): TeamLookupResult {
       tone: "info",
       teamNumber: parsed,
       title: `Team ${parsed}'s owners are reviewing you`,
-      body: "That workspace exists and your request is already with them. Only they can let you in.",
+      body: "That team exists and your request is already with them. Only they can let you in.",
       ok: true,
       action: null,
     };
@@ -195,7 +195,7 @@ export function lookupTeamNumber(input: TeamLookupInput): TeamLookupResult {
       kind: "no_workspace",
       tone: "warn",
       teamNumber: parsed,
-      title: `No Vantage workspace for Team ${parsed} yet`,
+      title: `Team ${parsed} isn't on Vantage yet`,
       body: input.adult
         ? "Nobody has set this team up. As a mentor, coach, or parent you can claim the number and become its first owner."
         : "Nobody has set this team up yet. Ask a mentor or coach to claim it — students can't create a team.",
@@ -209,7 +209,7 @@ export function lookupTeamNumber(input: TeamLookupInput): TeamLookupResult {
     tone: "info",
     teamNumber: parsed,
     title: `This requests Team ${parsed}'s approval`,
-    body: "Every owner and admin of that team gets a notification when you submit. Vantage looks the team up then — if no workspace exists yet, it will say so.",
+    body: "Every owner and admin of that team gets a notification when you submit. Vantage looks the team up then — if nobody has set the team up yet, it will say so.",
     ok: true,
     action: null,
   };

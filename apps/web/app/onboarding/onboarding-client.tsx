@@ -101,8 +101,8 @@ export default function OnboardingClient() {
   const approvedDestination = useCallback(
     (data: OnboardingState) => {
       const nextParam = searchParams.get("next");
-      if (nextParam) return safeAppPath(nextParam, "/workspace");
-      if (data.workspaceOrgId) return `/start?orgId=${encodeURIComponent(data.workspaceOrgId)}`;
+      if (nextParam) return safeAppPath(nextParam, "/dashboard");
+      if (data.workspaceOrgId) return `/dashboard?orgId=${encodeURIComponent(data.workspaceOrgId)}`;
       return data.platformAdmin ? "/admin" : "/workspace";
     },
     [searchParams],
@@ -139,14 +139,14 @@ export default function OnboardingClient() {
       .then(async (response) => {
         if (response.status === 401) {
           setLoadStatus("setup_required");
-          setLoadError("Sign in again to continue secure onboarding.");
+          setLoadError("Sign in to finish setting up your profile.");
           setState(null);
           return null;
         }
         if (!response.ok) {
           const data = (await response.json().catch(() => ({}))) as { error?: string };
           setLoadStatus("error");
-          setLoadError(data.error ?? "Could not load your secure onboarding session.");
+          setLoadError(data.error ?? "Could not load your onboarding steps.");
           setState(null);
           return null;
         }
@@ -352,7 +352,7 @@ export default function OnboardingClient() {
     try {
       const response = await fetch("/api/onboarding", { cache: "no-store" });
       if (response.status === 401) {
-        setMessage("Your onboarding session ended. If your team approved you, use the secure sign-in link in your email.");
+        setMessage("Your session ended. Sign in again to continue.");
         return;
       }
       const data = (await response.json()) as OnboardingState & { error?: string };
@@ -401,17 +401,17 @@ export default function OnboardingClient() {
   const setupStep = step === "pending" || step === "done" ? null : step;
   const headerCopy =
     step === "done"
-      ? { eyebrow: "SETUP COMPLETE", title: "You're in.", sub: "Here's the shortest path to being useful this week." }
+      ? { eyebrow: "YOU'RE IN", title: "You're in.", sub: "Home shows what to do now. Open it when you are ready." }
       : step === "pending"
         ? {
-            eyebrow: "SECURE ACCESS REQUEST",
+            eyebrow: "WAITING ON YOUR TEAM",
             title: "Your profile is ready. Team access is next.",
-            sub: "A team number never grants access by itself. A team owner or administrator must approve this verified account.",
+            sub: "A team number never lets you in by itself. A team owner or administrator must approve this account.",
           }
         : {
             eyebrow: "WELCOME TO VANTAGE",
             title: "Set up Vantage around your role.",
-            sub: "Three short steps. Nothing is shared with a team until they approve you.",
+            sub: "Name, team, and role — three short steps. Nothing is shared with a team until they approve you.",
           };
 
   return (

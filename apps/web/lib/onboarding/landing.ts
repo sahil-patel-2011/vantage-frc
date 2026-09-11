@@ -165,13 +165,13 @@ export function buildOnboardingLanding(input: {
   const primary = input.platformAdmin && !input.orgId
     ? { href: "/admin", label: "Open platform admin" }
     : input.orgId
-      ? { href: withOrg("/start", input.orgId), label: "Open your full path" }
+      ? { href: withOrg("/dashboard", input.orgId), label: "Open Home" }
       : { href: "/workspace", label: "Choose your team" };
 
   const secondary = input.orgId
     ? {
-        href: withOrg(role === "student" ? "/team/calendar" : "/team/getting-started", input.orgId),
-        label: role === "student" ? "Join a subteam calendar" : "Team setup checklist",
+        href: withOrg(role === "student" ? "/start" : "/team/getting-started", input.orgId),
+        label: role === "student" ? "Your path this week" : "Team setup checklist",
       }
     : null;
 
