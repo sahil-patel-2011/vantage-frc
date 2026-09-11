@@ -3,6 +3,9 @@
 import dynamic from "next/dynamic";
 import { HubLegacyRedirect, HubOrgGate, ProductHubShell } from "../../components/product-hub";
 import "../product-hub.css";
+import "../scouting/scouting.css";
+import "../scouting/forms/forms.css";
+import "../my-day/my-day.css";
 
 const CommandClient = dynamic(() => import("../command/command-client"), { ssr: false });
 const MyDayClient = dynamic(() => import("../my-day/my-day-client"), { ssr: false });

@@ -1,6 +1,4 @@
-import dynamic from "next/dynamic";
-
-const CompetitionHub = dynamic(() => import("./competition-hub"));
+import CompetitionHub from "./competition-hub";
 
 export const metadata = {
   title: "Competition",

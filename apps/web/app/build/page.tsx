@@ -1,6 +1,4 @@
-import dynamic from "next/dynamic";
-
-const BuildHub = dynamic(() => import("./build-hub"));
+import BuildHub from "./build-hub";
 
 export const metadata = {
   title: "Build",

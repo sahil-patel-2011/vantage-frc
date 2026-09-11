@@ -3,12 +3,9 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   PLAYWRIGHT_NEXT_HEAP_MB,
-  PLAYWRIGHT_ON_DEMAND_MAX_INACTIVE_AGE_MS,
-  PLAYWRIGHT_ON_DEMAND_PAGES_BUFFER,
   PLAYWRIGHT_SHARD_TOTAL,
   isPlaywrightNextDev,
   nextDevMemoryExperimental,
-  playwrightOnDemandEntries,
   withMaxOldSpaceSize,
 } from "./next-dev-memory";
 
@@ -34,24 +31,19 @@ describe("next-dev memory", () => {
     expect(interactive.memoryBasedWorkersCount).toBe(true);
     expect(interactive.devMemoryThresholdRestart).toBeUndefined();
     expect(interactive.cpus).toBeUndefined();
-    expect(playwrightOnDemandEntries({})).toBeUndefined();
 
     const fixture = nextDevMemoryExperimental({ E2E_AUTH_FIXTURE: "1" });
     expect(isPlaywrightNextDev({ E2E_AUTH_FIXTURE: "1" })).toBe(true);
     expect(fixture.preloadEntriesOnStart).toBe(false);
     expect(fixture.devMemoryThresholdRestart).toBe(false);
     expect(fixture.cpus).toBe(1);
-    expect(playwrightOnDemandEntries({ E2E_AUTH_FIXTURE: "1" })).toEqual({
-      maxInactiveAge: PLAYWRIGHT_ON_DEMAND_MAX_INACTIVE_AGE_MS,
-      pagesBufferLength: PLAYWRIGHT_ON_DEMAND_PAGES_BUFFER,
-    });
   });
 
   it("wires the helper into next.config", () => {
     const src = readFileSync(join(WEB_ROOT, "next.config.ts"), "utf8");
     expect(src).toMatch(/nextDevMemoryExperimental/);
     expect(src).toMatch(/experimental:\s*nextDevMemoryExperimental\(\)/);
-    expect(src).toMatch(/playwrightOnDemandEntries/);
+    expect(src).not.toMatch(/playwrightOnDemandEntries/);
     expect(src).toMatch(/distDir:\s*process\.env\.NEXT_DIST_DIR/);
   });
 

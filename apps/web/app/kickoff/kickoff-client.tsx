@@ -1,6 +1,5 @@
 "use client";
 
-import "./kickoff.css";
 import { packForYear } from "@vantage/game-year";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BuildHubRelated } from "../../components/build-hub-related";

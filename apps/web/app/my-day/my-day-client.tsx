@@ -1,6 +1,5 @@
 "use client";
 
-import "./my-day.css";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { Button, EmptyState, PageHeader, Panel } from "../../components/ui";

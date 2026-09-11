@@ -1,6 +1,5 @@
 "use client";
 
-import "./team-calendar.css";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "../../../components/ui";
 import { OfflineBanner } from "../../../components/offline-banner";

@@ -19,7 +19,6 @@ import {
   useState,
   type DragEvent,
 } from "react";
-import "./files.css";
 import { PageHeader, Panel, Button } from "../../components/ui";
 import { OfflineBanner } from "../../components/offline-banner";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";

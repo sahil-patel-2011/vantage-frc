@@ -1,6 +1,4 @@
-import dynamic from "next/dynamic";
-
-const PrintFarmClient = dynamic(() => import("./print-farm-client"));
+import PrintFarmClient from "./print-farm-client";
 
 export const metadata = {
   title: "Print farm",

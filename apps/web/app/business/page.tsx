@@ -1,6 +1,5 @@
-import dynamic from "next/dynamic";
-
-const BusinessClient = dynamic(() => import("./business-client"));
+import BusinessClient from "./business-client";
+import "./business.css";
 
 export const metadata = {
   title: "Business",

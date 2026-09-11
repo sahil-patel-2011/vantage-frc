@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { type EntryType, type FormResetBehavior, type SchemaDefinition, type ScoutSchema } from "@vantage/scouting";
 import "../scouting.css";
-import "./forms.css";
 import { OfflineBanner } from "../../../components/offline-banner";
 import { EmptyState, FormRow, PageHeader, Panel, ToolStrip, Button } from "../../../components/ui";
 import {

@@ -1,6 +1,4 @@
-import dynamic from "next/dynamic";
-
-const WriterClient = dynamic(() => import("./writer-client"));
+import WriterClient from "./writer-client";
 
 export const metadata = {
   title: "Writer",

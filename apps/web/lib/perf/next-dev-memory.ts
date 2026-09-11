@@ -5,15 +5,13 @@
  * server (connection-refused for the rest of the suite).
  *
  * Keep the fixture heap at 4 GB so GitHub Actions' 7 GB runner is not OS-killed
- * (8 GB was). `--shard=1/4` still compiled ~76 tests into one next and died;
- * eight shards plus `onDemandEntries` keep one compiler from holding the catalog.
- * `preloadEntriesOnStart: false` is the other half of route-compile.
+ * (8 GB was). Hub `next/dynamic` plus 12s `onDemandEntries` did not keep shard
+ * 1/8 alive and regressed student chrome, so this ships webServer/memory only:
+ * owned compiler, 4 GB heap, no preload, no 80% restart, eight CI shards.
  */
 
 export const PLAYWRIGHT_NEXT_HEAP_MB = 4096;
 export const PLAYWRIGHT_SHARD_TOTAL = 8;
-export const PLAYWRIGHT_ON_DEMAND_MAX_INACTIVE_AGE_MS = 12_000;
-export const PLAYWRIGHT_ON_DEMAND_PAGES_BUFFER = 2;
 
 export function playwrightNextDistDir(port: number): string {
   return `.next-pw-${port}`;
@@ -29,19 +27,6 @@ export function withMaxOldSpaceSize(existing: string | undefined, mb: number): s
     .split(/\s+/)
     .filter((flag) => flag.length > 0 && !/^--max[-_]old-space-size=/i.test(flag));
   return [...kept, `--max-old-space-size=${mb}`].join(" ");
-}
-
-export function playwrightOnDemandEntries(env: NodeJS.Dict<string> = process.env):
-  | {
-      maxInactiveAge: number;
-      pagesBufferLength: number;
-    }
-  | undefined {
-  if (!isPlaywrightNextDev(env)) return undefined;
-  return {
-    maxInactiveAge: PLAYWRIGHT_ON_DEMAND_MAX_INACTIVE_AGE_MS,
-    pagesBufferLength: PLAYWRIGHT_ON_DEMAND_PAGES_BUFFER,
-  };
 }
 
 export function nextDevMemoryExperimental(env: NodeJS.Dict<string> = process.env): {

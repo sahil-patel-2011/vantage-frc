@@ -1,6 +1,4 @@
-import dynamic from "next/dynamic";
-
-const AiHub = dynamic(() => import("./ai-hub"));
+import AiHub from "./ai-hub";
 
 export const metadata = {
   title: "AI",

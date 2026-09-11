@@ -1,6 +1,5 @@
-import dynamic from "next/dynamic";
-
-const FilesClient = dynamic(() => import("./files-client"));
+import FilesClient from "./files-client";
+import "./files.css";
 
 export const metadata = {
   title: "Files",

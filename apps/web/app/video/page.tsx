@@ -1,6 +1,5 @@
-﻿import dynamic from "next/dynamic";
-
-const VideoRescoutClient = dynamic(() => import("./video-rescout-client"));
+﻿import VideoRescoutClient from "./video-rescout-client";
+import "./video-rescout.css";
 
 export const metadata = {
   title: "Match video",
