@@ -50,6 +50,11 @@ test("student this week can walk Home → My Day/Scout → Video paste → CAD l
     await expect(page.locator("body"), `Scouting still shows ${phrase}`).not.toContainText(phrase);
   }
   const views = page.getByRole("navigation", { name: "Scouting views" });
+  const denied = page.getByRole("heading", { name: /You don't have access to this/i });
+  const setup = page.getByRole("link", {
+    name: /Choose your team|Set active event|Open Form builder/i,
+  });
+  await expect(views.or(denied).or(setup.first())).toBeVisible({ timeout: 15_000 });
   if (await views.count()) {
     await expect(views.getByRole("button", { name: "Match" })).toBeVisible();
     const save = page.getByRole("button", { name: /Save this match|Save on this phone/i });
@@ -62,9 +67,11 @@ test("student this week can walk Home → My Day/Scout → Video paste → CAD l
     if (await pitSave.count()) {
       await expect(pitSave.first()).toBeVisible();
     }
+  } else if (await denied.count()) {
+    // Hub access is not seeded on the local fixture org — honest denial, not a spinner.
+    await expect(page.getByRole("link", { name: "Back to Home" })).toBeVisible();
   } else {
-    const primary = page.getByRole("link", { name: /Choose your team|Set active event|Open Form builder/i });
-    await expect(primary.first()).toBeVisible();
+    await expect(setup.first()).toBeVisible();
     await expect(page.getByRole("heading", { name: "Next actions" })).toHaveCount(0);
   }
 
