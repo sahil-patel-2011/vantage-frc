@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "code-perf",
-  title: "Code-vs-Match Detective",
+  title: "Code vs match",
   route: "/code-perf",
   apiRoute: "/api/code-perf",
   hub: "Build",

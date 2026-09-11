@@ -462,7 +462,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/budget-reconciler")) return "Budget check";
   if (bare.startsWith("/bus-factor")) return "Bus-Factor";
   if (bare.startsWith("/checklist-library")) return "Checklist Library";
-  if (bare.startsWith("/code-perf")) return "Code-vs-Match Detective";
+  if (bare.startsWith("/code-perf")) return "Code vs match";
   if (bare.startsWith("/connectors")) return "Connectors";
   if (bare.startsWith("/cross-domain-alerts")) return "Cross-domain alerts";
   if (bare.startsWith("/data-quality-scorecard")) return "Data Quality Scorecard";

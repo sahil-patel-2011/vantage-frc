@@ -53,7 +53,7 @@ async function persistCodePerfSnapshot(orgHint: string, seasonHint: string, data
     await putFeatureSnapshot("code-perf", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("code-perf", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Code-vs-Match already painted; IndexedDB is best-effort.
+    // Live Code vs match already painted; IndexedDB is best-effort.
   }
 }
 
@@ -92,7 +92,7 @@ function CodePerfNextActions({ orgId }: { orgId: string }) {
     {
       id: "deploy",
       label: "Open Deploy log",
-      detail: "Firmware deploys sit next to this match-linked detective.",
+      detail: "Firmware deploys sit next to this match-linked board.",
       href: hubHref("/build", "code-deploy-log", orgId),
       primary: false,
     },
@@ -180,7 +180,7 @@ export default function CodePerfClient() {
       if (!response.ok || !isCodePerfView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Code-vs-Match Detective. Showing the last copy on this device.");
+          setError("Could not refresh Code vs match. Showing the last copy on this device.");
           setFetchFailed(false);
           return;
         }
@@ -197,7 +197,7 @@ export default function CodePerfClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Code-vs-Match Detective. Showing the last copy on this device.");
+        setError("Could not refresh Code vs match. Showing the last copy on this device.");
         setFetchFailed(false);
         return;
       }
@@ -245,10 +245,10 @@ export default function CodePerfClient() {
       breadcrumbs={
         <>
           <a href={buildHref}>Build</a>
-          {" / Code-vs-Match Detective"}
+          {" / Code vs match"}
         </>
       }
-      title="Code-vs-Match Detective"
+      title="Code vs match"
       description="Log commits, software-version bumps, and tuning changes alongside match auto/teleop points — see whether a change actually moved on-field performance."
     >
       <CodePerfRelated orgId={orgId} />
@@ -294,7 +294,7 @@ export default function CodePerfClient() {
     return (
       <main className="module-page">
         {header}
-        <OfflineBanner feature="Code-vs-Match Detective" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Code vs match" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           title={failure ? failure.title : "Loading…"}
           description={failure ? failure.description : "Checking your team."}
@@ -320,13 +320,13 @@ export default function CodePerfClient() {
       return (
         <main className="module-page">
           {header}
-          <OfflineBanner feature="Code-vs-Match Detective" fromCache={fromCache} cachedAt={cachedAt} />
+          <OfflineBanner feature="Code vs match" fromCache={fromCache} cachedAt={cachedAt} />
           {error ? (
             <p className="telemetry-status" role="alert">
               {error}
             </p>
           ) : null}
-          <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
+          <EmptyState badge="Needs setup" badgeTone="setup" title={view.message}>
             {view.steps[0] ? (
               <Button as="a" variant="primary" href={view.steps[0].href}>
                 {view.steps[0].label}
@@ -346,7 +346,7 @@ export default function CodePerfClient() {
   return (
     <main className="module-page">
       {header}
-      <OfflineBanner feature="Code-vs-Match Detective" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Code vs match" fromCache={fromCache} cachedAt={cachedAt} />
       {error ? (
         <p className="telemetry-status" role="alert">
           {error}
@@ -483,7 +483,7 @@ function MatchResultsList({
         badge="No match results yet"
         badgeTone="setup"
         title="Log auto/teleop points from your matches"
-        description="Match results are the ground truth the detective correlates changes against."
+        description="Match results are the ground truth this board correlates changes against."
       />
     );
   }
