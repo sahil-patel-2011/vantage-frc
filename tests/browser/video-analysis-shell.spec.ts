@@ -29,9 +29,13 @@ test("Video is a student paste page, not an engineering wall", async ({ page }) 
   const onSetup = await expectReadyOr(page, setup, paste);
   if (onSetup) {
     await expect(page.getByRole("heading", { name: "Next actions" })).toHaveCount(0);
-    await expect(page.getByRole("link", { name: "Choose your team" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Choose your team" })).toHaveCount(1);
+    await expect(page.getByRole("button", { name: "Analyze this video" })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "Analyze this video" })).toHaveCount(0);
   } else {
     await expect(page.getByRole("button", { name: "Pair a video Pi" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Analyze this video" })).toHaveCount(1);
+    await expect(page.getByRole("link", { name: "Analyze this video" })).toHaveCount(0);
     if (await page.getByRole("heading", { name: "Paste a match or pit video" }).isVisible()) {
       await expect(page.getByRole("heading", { name: "Next actions" })).toHaveCount(0);
     }

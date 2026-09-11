@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, PageHeader, Button } from "../../components/ui";
+import { EmptyState, PageHeader } from "../../components/ui";
 import {
   FEATURE_API_TIMEOUT_MS,
   fetchActiveOrgId,
@@ -184,11 +184,7 @@ function VideoAnalysisLive({ orgId }: { orgId: string }) {
           badgeTone="setup"
           title={shellCopy.title}
           description={shellCopy.description}
-        >
-          <Button as="a" variant="primary" href="#video-paste">
-            Analyze this video
-          </Button>
-        </EmptyState>
+        />
       ) : (
         <VideoQueueList jobs={jobs} busy={busy} onConfirm={(id) => void confirm(id)} />
       )}

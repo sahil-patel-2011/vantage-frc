@@ -1,9 +1,10 @@
 "use client";
 
 import { type FormEvent } from "react";
-import { Panel, Button } from "../../components/ui";
+import { FormRow, Panel, Button } from "../../components/ui";
 import {
   VIDEO_SOURCE_KINDS,
+  formatVideoSourceRef,
   labelVideoSourceKind,
   labelVideoStatus,
   videoEventSureLabel,
@@ -31,8 +32,7 @@ export function VideoPasteForm({
   return (
     <Panel id="video-paste" aria-label="Paste a video">
       <form onSubmit={onQueue}>
-        <label>
-          Where is the video?
+        <FormRow label="Where is the video?">
           <select
             value={sourceKind}
             onChange={(event) => onSourceKind(event.target.value as VideoSourceKind)}
@@ -43,16 +43,15 @@ export function VideoPasteForm({
               </option>
             ))}
           </select>
-        </label>
-        <label>
-          Video link
+        </FormRow>
+        <FormRow label="Video link">
           <input
             value={sourceRef}
             onChange={(event) => onSourceRef(event.target.value)}
             placeholder="https://www.youtube.com/watch?v=…"
             required
           />
-        </label>
+        </FormRow>
         <Button type="submit" variant="primary" disabled={busy}>
           {busy ? "Starting…" : "Analyze this video"}
         </Button>
@@ -80,8 +79,7 @@ export function VideoQueueList({
             <strong>{labelVideoSourceKind(job.sourceKind)}</strong>
             {" · "}
             {labelVideoStatus(job.status, job.confirmed)}
-            {job.minutesBehind != null ? ` · ${job.minutesBehind} min behind` : ""}
-            <div>{job.sourceRef}</div>
+            <div>{formatVideoSourceRef(job.sourceKind, job.sourceRef)}</div>
             {job.error ? <div>{job.error}</div> : null}
             {job.result?.summary ? <p>{job.result.summary}</p> : null}
             {job.result?.events?.length ? (

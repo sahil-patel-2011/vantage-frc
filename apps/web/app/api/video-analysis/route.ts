@@ -68,7 +68,11 @@ export async function POST(request: Request) {
     const sourceKind = String(body.sourceKind ?? "");
     const sourceRef = String(body.sourceRef ?? "").trim();
     if (!orgId) throw new Error("Choose your team.");
-    if (!SOURCE_KINDS.has(sourceKind)) throw new Error("Pick a video source: TBA, YouTube, an uploaded file, or a pit camera.");
+    if (!SOURCE_KINDS.has(sourceKind)) {
+      throw new Error(
+        "Pick a video source: YouTube, The Blue Alliance, an uploaded file, or a pit camera.",
+      );
+    }
     if (!sourceRef) throw new Error("Paste a video link.");
     if (sourceRef.length > 2000) throw new Error("That video link is too long.");
 

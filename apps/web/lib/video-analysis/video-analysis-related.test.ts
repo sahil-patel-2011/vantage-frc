@@ -3,6 +3,7 @@ import {
   VIDEO_ANALYSIS_RELATED_INCLUDE,
   classifyVideoAnalysisShell,
   formatVideoAnalysisMetric,
+  formatVideoSourceRef,
   isVideoAnalysisQueueEmpty,
   labelVideoSourceKind,
   labelVideoStatus,
@@ -136,6 +137,18 @@ describe("student labels", () => {
     expect(videoEventSureLabel(0.6)).toBe("from video · looks likely");
     expect(videoEventSureLabel(0.2)).toBe("from video · unsure");
     expect(videoEventSureLabel(0.91)).not.toMatch(/0\.91/);
+  });
+
+  it("never prints an upload file id", () => {
+    expect(formatVideoSourceRef("upload", "9c1e0b2a-3d4f-5a67-8b9c-0d1e2f3a4b5c")).toBe(
+      "Uploaded file",
+    );
+    expect(formatVideoSourceRef("upload", "https://files.example/clip.mp4")).toBe("Uploaded file");
+    expect(formatVideoSourceRef("youtube", "https://youtu.be/abc")).toBe("https://youtu.be/abc");
+    expect(formatVideoSourceRef("tba", "2026miket_qm12")).toBe("2026miket_qm12");
+    expect(formatVideoSourceRef("pit_stream", "aaaaaaaa-1111-4111-8111-bbbbbbbbbbbb")).toBe(
+      "Pit camera",
+    );
   });
 });
 

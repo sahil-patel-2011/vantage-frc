@@ -255,8 +255,33 @@ export function videoEventSureLabel(confidence: number | null | undefined): stri
 }
 
 /**
- * Next actions for Video. Empty/setup keep one EmptyState primary;
- * the panel paints only on ready and never repeats the header strip.
+ * Student-facing source line. Upload file ids stay "Uploaded file".
+ * Bare UUIDs never print.
+ */
+export function formatVideoSourceRef(kind: string, sourceRef: string): string {
+  const trimmed = sourceRef.trim();
+  const opaqueId =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      trimmed,
+    );
+  switch (kind) {
+    case "upload":
+      return "Uploaded file";
+    case "pit_stream":
+    case "pit_camera":
+      return opaqueId || !trimmed ? "Pit camera" : trimmed;
+    case "youtube":
+    case "tba":
+      return trimmed && !opaqueId ? trimmed : labelVideoSourceKind(kind);
+    default:
+      return trimmed && !opaqueId ? trimmed : "Video";
+  }
+}
+
+/**
+ * Next actions for Video. Empty keeps the paste submit as the one primary;
+ * setup keeps Choose your team. The panel paints only on ready and never
+ * repeats the header strip.
  */
 export function videoAnalysisNextActions(input: {
   orgId?: string | null;
