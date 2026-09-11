@@ -4,9 +4,14 @@
 
 Living record of the master engineering brief. Update this file at the end of every task. Numbers are from commands that were actually run, not memory.
 
+<<<<<<< HEAD
 **Branch:** `cursor/files-tags-cutoff-chrome-c0b5` off `origin/main` at `dc016b44`.
 **Date opened:** 2026-09-11.
 **This revision:** leftover student chrome not in open PRs #2–#40. Last-snapshot clients remaining on main minus those diffs are skip-list, flow-only, public-token, or multi-fetch. Files layout, Drive-team tags, usage-cutoff banner, share-link, Account profile, Help search, and phone-code setup no longer use native `app-button` / **Pairwise 2.0** / **Hard cut-off** / **subscription bridge** / **Twilio OTP env** copy. Proof this session: `npm run typecheck --workspace=@vantage/web` clean; targeted vitest **6 files / 30 passed**; Playwright `files-tags-cutoff-chrome.spec.ts` **1 passed / 1** (9.7s) on :3310 + local `vantage_ci` (127.0.0.1, not production DATABASE_*). No season ±3 claim — fixture MAE **89.7** / band ±90 unchanged. Master brief is **not** done.
+=======
+**Branch:** `cursor/vercel-ignore-preview-c0b5` off `origin/main`.
+**Date opened:** 2026-09-11.
+>>>>>>> origin/cursor/vercel-ignore-preview-c0b5
 
 ## Decisions the owner should know
 
@@ -14,7 +19,7 @@ Living record of the master engineering brief. Update this file at the end of ev
 2. **`origin/pi-freebuff-layer` “reuse the live official Freebuff session” was dropped on purpose.** Freebuff Terms of Service (effective 2026-09-02) forbid calling their inference “through scripts, custom clients, wrappers, integrations, or third-party software” and require a human to initiate each session. A browser extension that rides a logged-in Freebuff tab is also forbidden. Compliant path: a team pastes **their own relay endpoint + token** (KMS-encrypted), then the Pi uses the official SDK / BYO keys — never Freebuff’s free servers by proxy. Written in `docs/FREEBUFF.md`.
 3. **Connectors (Task 10) and copy sweep (Task 11) already landed on `main`** (`379aeada` / `6ec683a4` and follow-ups through `1a5a9048`). This brief still audits them, extends the catalog (free-relay pairing), and keeps `copy-lint.test.ts` green. It does not redo the 548-file merge.
 4. **AI path order is relay → team keys → hosted.** Hosted paid keys are never the assumption. Freebuff’s free product is 18+; FRC users are often minors, so team chats must not send student prompts to Freebuff’s hosted free product. The Pi runs DeepSeek via a **self-hosted or officially-licensed** endpoint the owner configures.
-5. **Preview Vercel builds are skipped.** Root `vercel.json` `ignoreCommand` exits 0 unless `VERCEL_GIT_COMMIT_REF` is `main`. This branch was burning Hobby build hours on every push. Production `main` still builds. Do not call `deploy_to_vercel` from this agent.
+5. **Preview Vercel builds are skipped before a build slot is claimed.** PR #9 showed Deployment **Error** (not Ignored) because Vercel failed at `Resource provisioning failed` — no build logs, ignoreCommand never ran. `git.deploymentEnabled` (`**` false, `main` true) skips previews without provisioning. `ignoreCommand` is now `node scripts/vercel-ignore-build.mjs` (exit 0 skip, exit 1 on `main`). Do not call `deploy_to_vercel` from this agent.
 
 ## Owner must do (cannot be done from this agent)
 
