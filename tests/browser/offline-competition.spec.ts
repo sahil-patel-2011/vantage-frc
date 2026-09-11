@@ -56,6 +56,46 @@ test.describe("offline Competition hub", () => {
     await context.setOffline(false);
   });
 
+  test("Team calendar still renders after the tab goes offline", async ({ page, context }) => {
+    await page.goto("/team/calendar");
+    await page.waitForLoadState("domcontentloaded");
+    await context.setOffline(true);
+    await page.reload({ waitUntil: "domcontentloaded" }).catch(() => undefined);
+    await expect(page.locator("body")).toBeVisible();
+    await expect(page.locator("body")).not.toContainText(/something went wrong/i);
+    await context.setOffline(false);
+  });
+
+  test("Inspection still renders after the tab goes offline", async ({ page, context }) => {
+    await page.goto("/inspection");
+    await page.waitForLoadState("domcontentloaded");
+    await context.setOffline(true);
+    await page.reload({ waitUntil: "domcontentloaded" }).catch(() => undefined);
+    await expect(page.locator("body")).toBeVisible();
+    await expect(page.locator("body")).not.toContainText(/something went wrong/i);
+    await context.setOffline(false);
+  });
+
+  test("Match video still renders after the tab goes offline", async ({ page, context }) => {
+    await page.goto("/video");
+    await page.waitForLoadState("domcontentloaded");
+    await context.setOffline(true);
+    await page.reload({ waitUntil: "domcontentloaded" }).catch(() => undefined);
+    await expect(page.locator("body")).toBeVisible();
+    await expect(page.locator("body")).not.toContainText(/something went wrong/i);
+    await context.setOffline(false);
+  });
+
+  test("Print Farm still renders after the tab goes offline", async ({ page, context }) => {
+    await page.goto("/print-farm");
+    await page.waitForLoadState("domcontentloaded");
+    await context.setOffline(true);
+    await page.reload({ waitUntil: "domcontentloaded" }).catch(() => undefined);
+    await expect(page.locator("body")).toBeVisible();
+    await expect(page.locator("body")).not.toContainText(/something went wrong/i);
+    await context.setOffline(false);
+  });
+
   test("Batteries still renders after the tab goes offline", async ({ page, context }) => {
     await page.goto("/batteries");
     await page.waitForLoadState("domcontentloaded");

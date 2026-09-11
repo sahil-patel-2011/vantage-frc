@@ -1,8 +1,9 @@
 "use client";
-import { Button } from "../../components/ui";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
+import { Button } from "../../components/ui";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import {
   QUEUED_ON_DEVICE,
   getFeatureSnapshot,
@@ -11,8 +12,6 @@ import {
   queueProductWrite,
   syncOutbox,
 } from "../../lib/offline";
-import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
-import { PACKING_RELATED_INCLUDE, packingRelatedLinks } from "../../lib/packing-related";
 import {
   applyPackingLocalWrite,
   groupPacking,
@@ -21,8 +20,27 @@ import {
   type PackingList,
   type PackingView,
 } from "../../lib/packing";
+import { PACKING_RELATED_INCLUDE, packingRelatedLinks } from "../../lib/packing-related";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 type ActionBody = Record<string, unknown> & { action: string; orgId: string };
+
+function isPackingView(value: unknown): value is PackingView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "ready";
+}
+
+async function persistPackingSnapshot(orgHint: string, data: PackingView): Promise<void> {
+  const cacheOrg = data.context.orgId?.trim() || orgHint;
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("packing", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("packing", "_", data);
+  } catch {
+    // Live packing list already painted; IndexedDB is best-effort.
+  }
+}
 
 function PackingRelatedStrip({ orgId }: { orgId?: string | null }) {
   const links = packingRelatedLinks(orgId, { include: [...PACKING_RELATED_INCLUDE] });
@@ -309,35 +327,66 @@ export default function PackingClient() {
   const [newTitle, setNewTitle] = useState("");
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<PackingView | null>(null);
+  viewRef.current = view;
 
   const load = useCallback(async () => {
+    const params = new URLSearchParams(window.location.search);
+    const urlOrg = params.get("orgId")?.trim() ?? "";
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<PackingView>("packing", urlOrg || "_");
+      if (!viewRef.current && cached?.data && isPackingView(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
     setFetchFailed(false);
     setErrorStatus(null);
-    const params = new URLSearchParams(window.location.search);
-    const orgId = params.get("orgId") ?? "";
-    const cached = orgId ? await getFeatureSnapshot<PackingView>("packing", orgId) : null;
-    if (cached?.data) {
-      setView(cached.data);
-      setFromCache(true);
-      setCachedAt(cached.cachedAt);
-    }
     try {
-      const response = await fetch(`/api/packing${orgId ? `?orgId=${encodeURIComponent(orgId)}` : ""}`);
+      const response = await fetch(`/api/packing${urlOrg ? `?orgId=${encodeURIComponent(urlOrg)}` : ""}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
       const data = (await response.json()) as PackingView | { error?: string };
-      if (!response.ok || !("status" in data)) {
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
         setError("error" in data && data.error ? data.error : "Could not load packing lists.");
         setErrorStatus(response.status);
-        if (!cached) setFetchFailed(true);
+        setFetchFailed(true);
+        return;
+      }
+      if (!response.ok || !isPackingView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Packing. Showing the last copy on this device.");
+          setFetchFailed(false);
+          return;
+        }
+        setError("error" in data && data.error ? data.error : "Could not load packing lists.");
+        setErrorStatus(response.status);
+        setFetchFailed(true);
         return;
       }
       setError("");
       setView(data);
       setFromCache(false);
       setCachedAt(null);
-      const cacheOrg = data.context.orgId || orgId;
-      if (cacheOrg) await putFeatureSnapshot("packing", cacheOrg, data);
+      await persistPackingSnapshot(urlOrg, data);
     } catch {
-      if (!cached) setFetchFailed(true);
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Packing. Showing the last copy on this device.");
+        setFetchFailed(false);
+        return;
+      }
+      setFetchFailed(true);
     }
   }, []);
 
@@ -364,7 +413,12 @@ export default function PackingClient() {
           orgId: body.orgId,
           payload: body,
         });
-        setView((current) => (current ? applyPackingLocalWrite(current, body, new Date().toISOString()) : current));
+        setView((current) => {
+          if (!current) return current;
+          const next = applyPackingLocalWrite(current, body, new Date().toISOString());
+          void persistPackingSnapshot(String(body.orgId), next);
+          return next;
+        });
         setError(QUEUED_ON_DEVICE);
         return;
       }
@@ -375,6 +429,7 @@ export default function PackingClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify(body),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as { error?: string; id?: string };
         if (!response.ok) {
@@ -391,7 +446,12 @@ export default function PackingClient() {
             orgId: body.orgId,
             payload: body,
           });
-          setView((current) => (current ? applyPackingLocalWrite(current, body, new Date().toISOString()) : current));
+          setView((current) => {
+            if (!current) return current;
+            const next = applyPackingLocalWrite(current, body, new Date().toISOString());
+            void persistPackingSnapshot(String(body.orgId), next);
+            return next;
+          });
           setError(QUEUED_ON_DEVICE);
           return;
         }
@@ -403,7 +463,7 @@ export default function PackingClient() {
     [load],
   );
 
-  if (fetchFailed || !view) {
+  if (!view) {
     return (
       <main className="module-page pack-page">
         <header className="app-page-header">
@@ -413,6 +473,7 @@ export default function PackingClient() {
             <PackingRelatedStrip />
           </div>
         </header>
+        <OfflineBanner feature="Packing" fromCache={fromCache} cachedAt={cachedAt} />
         <div className="app-card pack-empty">
           {fetchFailed ? (
             (() => {

@@ -81,6 +81,13 @@ export default function PrintFarmClient() {
           signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as PrintFarmView | { error?: string };
+        if (response.status === 401 || response.status === 403) {
+          setView(null);
+          setFromCache(false);
+          setCachedAt(null);
+          setFetchFailed(true);
+          return;
+        }
         if (!response.ok || !isPrintFarmView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
@@ -145,30 +152,30 @@ export default function PrintFarmClient() {
     <OfflineBanner feature="Print Farm" fromCache={fromCache} cachedAt={cachedAt} />
   );
 
-  if (view == null && !fetchFailed) {
+  if (!view) {
+    if (fetchFailed) {
+      return (
+        <FarmShell
+          description="Queue prints, report printer status, and track filament by hand."
+          orgId={orgId}
+          kind="error"
+          error="Could not load the Print Farm."
+          onRetry={() => load()}
+        >
+          {banner}
+        </FarmShell>
+      );
+    }
     return (
       <FarmShell description="Queue prints, report printer status, and track filament by hand." kind="loading">
         {banner}
       </FarmShell>
     );
   }
-  if (fetchFailed) {
+  if (view.status === "setup_required") {
     return (
       <FarmShell
-        description="Queue prints, report printer status, and track filament by hand."
-        orgId={orgId}
-        kind="error"
-        error="Could not load the Print Farm."
-        onRetry={() => load()}
-      >
-        {banner}
-      </FarmShell>
-    );
-  }
-  if (view == null || view.status !== "live") {
-    return (
-      <FarmShell
-        description={view?.status === "setup_required" ? view.message : "Choose your team to run the print farm."}
+        description={view.message}
         orgId={orgId}
         kind="setup"
       >
