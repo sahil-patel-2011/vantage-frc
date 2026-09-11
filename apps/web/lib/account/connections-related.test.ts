@@ -94,7 +94,22 @@ describe("connectionsNextActions", () => {
     });
     expect(actions.some((a) => a.id === "onshape")).toBe(true);
     expect(actions.find((a) => a.id === "onshape")?.href).toBe("/cad/connections?orgId=org-1");
+    expect(actions.find((a) => a.id === "onshape")?.detail).not.toMatch(/ONSHAPE_OAUTH|OAuth/i);
     expect(actions.find((a) => a.id === "discord")?.href).toBe("/team/discord?orgId=org-1");
+  });
+
+  it("asks a mentor when Onshape is not ready, without env-var names", () => {
+    const actions = connectionsNextActions({
+      orgId: "org-1",
+      googleReady: true,
+      tbaReady: true,
+      onshapeStatus: "setup_required",
+      discordStatus: "connected",
+      githubStatus: "connected",
+    });
+    expect(actions.find((a) => a.id === "onshape")?.label).toBe("Ask a mentor about Onshape");
+    expect(actions.find((a) => a.id === "onshape")?.detail).toMatch(/Ask a mentor/i);
+    expect(actions.find((a) => a.id === "onshape")?.detail).not.toMatch(/ONSHAPE_OAUTH|Vercel|vantage-cad/i);
   });
 });
 

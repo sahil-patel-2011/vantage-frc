@@ -1,9 +1,10 @@
-import CadSetupWizard from "./setup-client";
+import CadSetupWizard, { CadSetupRelated } from "./setup-client";
+import { Button, EmptyState, PageHeader } from "../../../components/ui";
 import "../cad-setup.css";
 
 export const metadata = {
-  title: "CAD Setup",
-  description: "Connect CAD and how AI may edit — shape changes wait for a person to approve.",
+  title: "CAD setup",
+  description: "Connect Onshape in the browser, or pair Fusion on this computer.",
 };
 
 export default async function CadSetupPage({
@@ -14,17 +15,25 @@ export default async function CadSetupPage({
   const { orgId } = await searchParams;
   if (!orgId) {
     return (
-      <main className="module-page">
-        <header className="app-page-header">
-          <div>
-            <span className="breadcrumbs">CAD / Setup</span>
-            <h1>Choose your team</h1>
-            <p className="app-muted">Connections belong to a team. Choose your team to run the setup wizard.</p>
-          </div>
-          <a className="primary-action" href="/workspace">
-            Choose your team →
-          </a>
-        </header>
+      <main className="module-page cad-setup-page">
+        <PageHeader
+          breadcrumbs="CAD / Setup"
+          title="CAD setup"
+          description="CAD connections belong to a team."
+        >
+          <CadSetupRelated orgId={null} />
+        </PageHeader>
+        <EmptyState
+          soft
+          badge="Setup required"
+          badgeTone="setup"
+          title="Choose your team"
+          description="Choose your team to connect Onshape or pair Fusion."
+        >
+          <Button as="a" variant="primary" href="/workspace">
+            Choose your team
+          </Button>
+        </EmptyState>
       </main>
     );
   }

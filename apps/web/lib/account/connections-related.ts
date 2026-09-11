@@ -210,11 +210,11 @@ export function connectionsNextActions(input: {
   if (input.onshapeStatus === "setup_required" || input.onshapeStatus === "empty") {
     actions.push({
       id: "onshape",
-      label: input.onshapeStatus === "setup_required" ? "Onshape OAuth setup" : "Connect Onshape",
+      label: input.onshapeStatus === "setup_required" ? "Ask a mentor about Onshape" : "Connect Onshape",
       detail:
         input.onshapeStatus === "setup_required"
-          ? "Setup required — an admin must set ONSHAPE_OAUTH_* before hosted CAD can authorize."
-          : "OAuth client is ready — authorize in CAD Connections. Connected only after a real OAuth row.",
+          ? "Ask a mentor to finish Onshape setup for this team, then connect in CAD Connections."
+          : "Connect Onshape in CAD Connections. Connected only after you authorize in the browser.",
       href: withOrgHref("/cad/connections", orgId),
       primary: actions.length === 0,
     });
@@ -263,7 +263,7 @@ export function connectionsNextActions(input: {
     {
       id: "cad",
       label: "Open CAD Connections",
-      detail: "Onshape OAuth and Fusion desktop relay live here — Fusion stays local, never hosted.",
+      detail: "Connect Onshape in the browser, or pair Fusion on this computer.",
       href: withOrgHref("/cad/connections", orgId),
       primary: actions.length === 0,
     },
@@ -337,7 +337,7 @@ export function buildConnectionConnectors(input: {
       id: "onshape",
       label: "Onshape",
       status: input.onshape?.status ?? (orgId ? "empty" : "setup_required"),
-      detail: input.onshape?.detail ?? "Checking Onshape OAuth…",
+      detail: input.onshape?.detail ?? "Checking Onshape…",
       href: orgId ? withOrgHref("/cad/connections", orgId) : "/workspace",
       cta: orgId ? "Open CAD Connections" : "Choose your team",
     },
