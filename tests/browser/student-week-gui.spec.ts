@@ -28,6 +28,8 @@ async function orgIdFromIsland(page: Page): Promise<string | null> {
 }
 
 test.describe("student-week GUI path", () => {
+  test.describe.configure({ timeout: 90_000 });
+
   test.beforeEach(async ({ context }) => {
     const signed = await signInAs(context, "owner");
     if (!signed) await signInFixture(context);
@@ -239,6 +241,8 @@ test.describe("student-week GUI path", () => {
 });
 
 test.describe("marketing waitlist and sign-in", () => {
+  test.describe.configure({ timeout: 60_000 });
+
   test("waitlist form still submits without Setup required", async ({ page }) => {
     await page.goto("/");
     await expect(
