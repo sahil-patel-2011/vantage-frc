@@ -1,6 +1,6 @@
 # Vantage feature map
 
-*Reference: every screen and route. Tests and the route walker read this file, so keep the table format. Last updated 2026-09-10.*
+*Reference: every screen and route. Tests and the route walker read this file, so keep the table format. Last updated 2026-09-11.*
 
 | Hub | Route | Tabs |
 |---|---|---|
@@ -61,13 +61,14 @@
 | Section access | `/team/security` | Owner/admin limit which hubs and tabs scouts and viewers can open (`membership_hub_access`); Hub access panel above capabilities; Help `/help/hub-access`; unrestricted when no rows |
 | Onboarding | `/onboarding` · `/start` · `/team/background` | Per-person role + crew + short “how you help” description; team number is optional; entering a number for a team that already has Vantage only requests **that team’s** approval — never auto-join. Team heads set affiliation + school funds / grants / sponsors_allowed; owners/admins can edit post-onboarding on Team Background (`/api/organizations/funding-profile`). Load/mutate/shell is `onboarding-client.tsx`; chrome, funding fields, step forms, pending, and landing live in sibling modules. No nested TabBar. |
 | Exports | `/exports` | Audited CSV/ZIP takeout; team AI chats/memory/artifacts are on this team; private AI is member-only; keys never included |
-| Desktop | `/desktop` · `apps/desktop` | Windows Electron shell around the hosted Vantage app; only Vantage and its sign-in/billing hosts open in the window; Fusion CAD still uses local `vantage-cad` — unsigned until certs |
+| Desktop | `/desktop` · `apps/desktop` | Windows Electron shell around the hosted Vantage app; only Vantage and its sign-in/billing hosts open in the window. Fusion jobs stay on this computer. Onshape connects in the browser. Unsigned until certs |
 | Postgres host | Neon today · Supabase-ready | Same RLS tenancy; `docs/SUPABASE_CUTOVER.md`; Data API locked down (`0432`) |
 | Business season finance | `/business?tab=finance` | Funding sources (school, fees, grants, sponsors, fundraisers) + purchase log + rollup of CRM / grants / fundraisers / orders / season costs; empty/setup + next actions|
 | Business CRM | `/business?tab=sponsors` · `/business?tab=placements` | pipeline / packages / placements; empty/setup + next actions; cross-links to fundraisers, grants, orders, Finance-in-AI; packageId on this team|
 | Business grants | `/business?tab=grants` · `/team/grants` | Pipeline + draft library + guided grant writing; empty/setup + next actions; metered AI hard-stop via UsageCutoffBanner; cross-links to sponsors / fundraisers / writer|
 | Business fundraisers | `/fundraisers` · Overview fundraising glance | events + goal progress from recorded deposits/goals only; empty/setup + next actions; cross-links to Sponsors / Grants / Orders|
-| Business impact & awards | `/impact` · `/team/awards` · Business · Awards | outreach log + readiness from recorded activities; award essays from catalog submissions; empty/setup + next actions; cross-links to Business hub / Grants / Sponsors|
+| Business impact & awards | `/impact` · `/team/awards` · Business · Awards | outreach log + readiness from recorded activities; award essays from catalog submissions; empty/setup + one **Choose your team** primary; last snapshot stays on this phone; cross-links to Business hub / Grants / Sponsors|
+| Showcase | `/showcase` · `/showcase/present` | Season story from My Kit. Students approve every claim. Empty keeps one **Create showcase** primary. Last snapshot stays on this phone. Presentation print view says Season showcase, not VANTAGE. |
 | Media workspace | `/media` (Media pillar) | TabBar: Calendar · Drafts · Reminders · Kit · Impact — content CRUD + metered caption drafts + due reminders; Business More tools Media Kit / Outreach deep-link here; Help `/help/media-workspace`; empty/setup|
 | Build | `/build` | Kickoff · CAD · Code · Robot (Bugbot under Code; FMEA / batteries / inspection under Robot) |
 | Readiness Score | `/readiness-score` (Build More tools) | Ship-readiness index from subsystems / checklist / FMEA / weight·power; empty/setup + next actions; UsageCutoffBanner on metered subsystem writes; FMEA / Inspection / Code via hubHref|

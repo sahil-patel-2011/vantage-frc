@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { OfflineBanner } from "../../../components/offline-banner";
+import { Button, EmptyState, PageHeader, Panel } from "../../../components/ui";
+import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
+import { withOrgHref } from "../../../lib/nav/product-nav";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
+import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 
 type Prompt = {
   id: string;
@@ -11,7 +17,35 @@ type Prompt = {
   updatedAt: string;
 };
 
-const CATEGORIES = ["general", "strategy", "scouting", "build", "outreach", "business", "cad"];
+type View = {
+  prompts: Prompt[];
+  viewerId: string | null;
+};
+
+const CATEGORIES = ["general", "strategy", "scouting", "build", "outreach", "business", "cad"] as const;
+
+function categoryLabel(category: string): string {
+  switch (category) {
+    case "general":
+      return "General";
+    case "strategy":
+      return "Strategy";
+    case "scouting":
+      return "Scouting";
+    case "build":
+      return "Build";
+    case "outreach":
+      return "Outreach";
+    case "business":
+      return "Business";
+    case "cad":
+      return "CAD";
+    default: {
+      const _exhaustive: string = category;
+      return _exhaustive;
+    }
+  }
+}
 
 const STARTERS: Array<{ title: string; category: string; body: string }> = [
   {
@@ -31,31 +65,105 @@ const STARTERS: Array<{ title: string; category: string; body: string }> = [
   },
 ];
 
+function isPromptsView(value: unknown): value is View {
+  if (!value || typeof value !== "object") return false;
+  const row = value as { prompts?: unknown };
+  return Array.isArray(row.prompts);
+}
+
+async function persistPromptsSnapshot(orgId: string, data: View): Promise<void> {
+  if (!orgId.trim()) return;
+  try {
+    await putFeatureSnapshot("prompts", orgId, data);
+  } catch {
+    // Live prompt library already painted; IndexedDB is best-effort.
+  }
+}
+
 export default function PromptsClient({ orgId }: { orgId: string }) {
-  const [prompts, setPrompts] = useState<Prompt[]>([]);
-  const [viewerId, setViewerId] = useState<string | null>(null);
+  const [view, setView] = useState<View | null>(null);
   const [form, setForm] = useState({ title: "", category: "general", body: "" });
   const [message, setMessage] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const [failureStatus, setFailureStatus] = useState<number | null>(null);
+  const viewRef = useRef<View | null>(null);
+  viewRef.current = view;
 
-  async function load() {
-    setLoading(true);
-    const response = await fetch(`/api/team/prompts?orgId=${orgId}`);
-    const data = await response.json();
-    if (response.ok) {
-      setPrompts(data.prompts ?? []);
-      setViewerId(data.viewerId ?? null);
-      setMessage("");
-    } else {
-      setMessage(data.error ?? "Unable to load prompts");
+  const load = useCallback(async () => {
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<View>("prompts", orgId);
+      if (!viewRef.current && cached?.data && isPromptsView(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
     }
-    setLoading(false);
-  }
+    setFailureStatus(null);
+    try {
+      const response = await fetch(`/api/team/prompts?orgId=${encodeURIComponent(orgId)}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      const data: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setFailureStatus(response.status);
+        setMessage(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "Could not load prompts.",
+        );
+        return;
+      }
+      const prompts =
+        data && typeof data === "object" && "prompts" in data && Array.isArray(data.prompts)
+          ? (data.prompts as Prompt[])
+          : [];
+      const viewerId =
+        data && typeof data === "object" && "viewerId" in data && typeof data.viewerId === "string"
+          ? data.viewerId
+          : null;
+      if (!response.ok) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setMessage("Could not refresh Prompts. Showing the last copy on this device.");
+          return;
+        }
+        setFailureStatus(response.status);
+        setMessage(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "Could not load prompts.",
+        );
+        return;
+      }
+      const next: View = { prompts, viewerId };
+      setView(next);
+      setFromCache(false);
+      setCachedAt(null);
+      setMessage("");
+      await persistPromptsSnapshot(orgId, next);
+    } catch {
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setMessage("Could not refresh Prompts. Showing the last copy on this device.");
+        return;
+      }
+      setMessage("Could not reach the server.");
+    }
+  }, [orgId]);
 
   useEffect(() => {
     void load();
-  }, [orgId]);
+  }, [load]);
 
   async function add(event: React.FormEvent) {
     event.preventDefault();
@@ -64,8 +172,8 @@ export default function PromptsClient({ orgId }: { orgId: string }) {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ orgId, ...form }),
     });
-    const data = await response.json();
-    setMessage(response.ok ? "Prompt saved to the library." : data.error);
+    const data = (await response.json()) as { error?: string };
+    setMessage(response.ok ? "Prompt saved to the library." : (data.error ?? "Could not save prompt."));
     if (response.ok) {
       setForm({ title: "", category: form.category, body: "" });
       await load();
@@ -74,9 +182,12 @@ export default function PromptsClient({ orgId }: { orgId: string }) {
 
   async function remove(id: string) {
     if (!confirm("Delete this prompt?")) return;
-    const response = await fetch(`/api/team/prompts?orgId=${orgId}&id=${id}`, { method: "DELETE" });
-    const data = await response.json();
-    setMessage(response.ok ? "Deleted." : data.error);
+    const response = await fetch(
+      `/api/team/prompts?orgId=${encodeURIComponent(orgId)}&id=${encodeURIComponent(id)}`,
+      { method: "DELETE" },
+    );
+    const data = (await response.json()) as { error?: string };
+    setMessage(response.ok ? "Deleted." : (data.error ?? "Could not delete."));
     if (response.ok) await load();
   }
 
@@ -84,130 +195,170 @@ export default function PromptsClient({ orgId }: { orgId: string }) {
     try {
       await navigator.clipboard.writeText(prompt.body);
       setCopiedId(prompt.id);
-      setTimeout(() => setCopiedId((c) => (c === prompt.id ? null : c)), 1500);
+      setTimeout(() => setCopiedId((current) => (current === prompt.id ? null : current)), 1500);
     } catch {
-      setMessage("Copy failed — select the text manually.");
+      setMessage("Copy failed — select the text yourself.");
     }
   }
 
-  const byCategory = prompts.reduce<Record<string, Prompt[]>>((acc, prompt) => {
+  if (message && !view) {
+    const failure = loadFailureCopy(
+      classifyLoadFailure({
+        status: failureStatus,
+        message,
+        online: typeof navigator === "undefined" ? true : navigator.onLine,
+      }),
+      {
+        nextPath:
+          typeof window === "undefined" ? null : `${window.location.pathname}${window.location.search}`,
+        message,
+      },
+    );
+    return (
+      <main className="module-page">
+        <PageHeader breadcrumbs="Team / Prompts" title="Prompts" />
+        <OfflineBanner feature="Prompts" fromCache={fromCache} cachedAt={cachedAt} />
+        <EmptyState
+          soft
+          badge={failure.kind === "auth" ? "Signed out" : failure.kind === "forbidden" ? "No access" : "Unavailable"}
+          badgeTone="setup"
+          title={failure.title}
+          description={failure.description}
+        >
+          {failure.primary ? (
+            <Button as="a" variant="primary" href={failure.primary.href}>
+              {failure.primary.label}
+            </Button>
+          ) : null}
+          {failure.showRetry ? (
+            <Button variant="secondary" type="button" onClick={() => void load()}>
+              Retry
+            </Button>
+          ) : null}
+        </EmptyState>
+      </main>
+    );
+  }
+
+  if (!view) {
+    return (
+      <main className="module-page">
+        <PageHeader breadcrumbs="Team / Prompts" title="Prompts" />
+        <OfflineBanner feature="Prompts" fromCache={fromCache} cachedAt={cachedAt} />
+        <Panel>
+          <p className="app-muted">Loading prompts…</p>
+        </Panel>
+      </main>
+    );
+  }
+
+  const byCategory = view.prompts.reduce<Record<string, Prompt[]>>((acc, prompt) => {
     (acc[prompt.category] ??= []).push(prompt);
     return acc;
   }, {});
 
   return (
-    <main className="intel-app">
-      <header className="intel-header">
-        <div>
-          <span className="eyebrow">VANTAGE / AI PROMPT LIBRARY</span>
-          <h1>Your team&apos;s best prompts, saved</h1>
-          <p className="app-muted">
-            Capture the ways of asking the assistant that work well so nobody re-invents them. A good prompt
-            gives <strong>context</strong>, says <strong>what you want</strong>, and describes the{" "}
-            <strong>result you expect</strong>. Copy one and paste it into the{" "}
-            <a href={`/chat?orgId=${orgId}`}>assistant</a>.
-          </p>
-        </div>
-        <nav className="intel-actions" aria-label="AI links">
-          <a href={`/chat?orgId=${orgId}`}>Assistant</a>
-          <a href={`/team/knowledge?orgId=${orgId}`}>Team knowledge</a>
-        </nav>
-      </header>
+    <main className="module-page">
+      <PageHeader
+        breadcrumbs="Team / Prompts"
+        title="Prompts"
+        description="Save the ways of asking that work, then copy one into Ask AI. A good prompt gives context, says what you want, and describes the result you expect."
+      >
+        <Button as="a" variant="secondary" href={withOrgHref("/ai?tab=chat", orgId)}>
+          Ask AI
+        </Button>
+        <Button as="a" variant="secondary" href={withOrgHref("/team/knowledge", orgId)}>
+          Playbook
+        </Button>
+      </PageHeader>
+      <OfflineBanner feature="Prompts" fromCache={fromCache} cachedAt={cachedAt} />
+      {message ? (
+        <p role="status" className="app-muted">
+          {message}
+        </p>
+      ) : null}
 
-      {message && <p role="status" className="telemetry-status">{message}</p>}
-      {loading && <p className="app-muted">Loading prompts…</p>}
-
-      {!loading && (
-        <section className="admin-grid">
-          <form className="intel-panel" onSubmit={add}>
-            <span className="eyebrow">ADD A PROMPT</span>
-            <label>
-              Title
-              <input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
-            </label>
-            <label>
-              Category
-              <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>
-                {CATEGORIES.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Prompt
-              <textarea
-                required
-                rows={6}
-                value={form.body}
-                onChange={(e) => setForm({ ...form, body: e.target.value })}
-                placeholder="Context: … · Do: … · Result: …"
-                style={{
-                  width: "100%",
-                  padding: "12px",
-                  color: "#edf3f5",
-                  background: "#091014",
-                  border: "1px solid #3a4b54",
-                  font: "13px/1.5 ui-monospace, monospace",
-                  resize: "vertical",
-                }}
-              />
-            </label>
-            <button className="primary-action" type="submit">
-              Save prompt
-            </button>
-            {!prompts.length && (
-              <div style={{ marginTop: "0.75rem" }}>
-                <small className="app-muted">Or start from an example:</small>
-                <div className="intel-actions" style={{ marginTop: "6px" }}>
-                  {STARTERS.map((s) => (
-                    <button
-                      type="button"
-                      key={s.title}
-                      onClick={() => setForm({ title: s.title, category: s.category, body: s.body })}
-                    >
-                      {s.title}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </form>
-
-          <section className="intel-panel">
-            <span className="eyebrow">LIBRARY · {prompts.length}</span>
-            {!prompts.length && <p className="app-muted">No saved prompts yet. Add your first from the form.</p>}
-            {Object.entries(byCategory).map(([category, list]) => (
-              <div key={category}>
-                <p className="eyebrow" style={{ marginTop: "1rem" }}>{category}</p>
-                {list.map((prompt) => (
-                  <article
-                    className="admin-org"
-                    style={{ display: "block", padding: "12px 0" }}
-                    key={prompt.id}
+      <section className="admin-grid">
+        <form className="intel-panel" onSubmit={add}>
+          <span className="eyebrow">Add a prompt</span>
+          <label>
+            Title
+            <input required value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} />
+          </label>
+          <label>
+            Category
+            <select value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })}>
+              {CATEGORIES.map((category) => (
+                <option key={category} value={category}>
+                  {categoryLabel(category)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Prompt
+            <textarea
+              required
+              rows={6}
+              value={form.body}
+              onChange={(event) => setForm({ ...form, body: event.target.value })}
+              placeholder="Context: … · Do: … · Result: …"
+            />
+          </label>
+          <Button variant="primary" type="submit">
+            Save prompt
+          </Button>
+          {!view.prompts.length ? (
+            <div style={{ marginTop: "0.75rem" }}>
+              <small className="app-muted">Or start from an example:</small>
+              <div className="intel-actions" style={{ marginTop: "6px" }}>
+                {STARTERS.map((starter) => (
+                  <Button
+                    variant="secondary"
+                    type="button"
+                    key={starter.title}
+                    onClick={() => setForm({ title: starter.title, category: starter.category, body: starter.body })}
                   >
-                    <strong>{prompt.title}</strong>
-                    <small style={{ whiteSpace: "pre-wrap", display: "block", margin: "4px 0 8px" }}>
-                      {prompt.body}
-                    </small>
-                    <div className="intel-actions">
-                      <button type="button" onClick={() => void copy(prompt)}>
-                        {copiedId === prompt.id ? "Copied!" : "Copy"}
-                      </button>
-                      {prompt.createdBy === viewerId && (
-                        <button type="button" onClick={() => void remove(prompt.id)}>
-                          Delete
-                        </button>
-                      )}
-                    </div>
-                  </article>
+                    {starter.title}
+                  </Button>
                 ))}
               </div>
-            ))}
-          </section>
+            </div>
+          ) : null}
+        </form>
+
+        <section className="intel-panel">
+          <span className="eyebrow">Library · {view.prompts.length}</span>
+          {!view.prompts.length ? (
+            <p className="app-muted">No saved prompts yet. Add your first from the form.</p>
+          ) : null}
+          {Object.entries(byCategory).map(([category, list]) => (
+            <div key={category}>
+              <p className="eyebrow" style={{ marginTop: "1rem" }}>
+                {categoryLabel(category)}
+              </p>
+              {list.map((prompt) => (
+                <article className="admin-org" style={{ display: "block", padding: "12px 0" }} key={prompt.id}>
+                  <strong>{prompt.title}</strong>
+                  <small style={{ whiteSpace: "pre-wrap", display: "block", margin: "4px 0 8px" }}>
+                    {prompt.body}
+                  </small>
+                  <div className="intel-actions">
+                    <Button variant="secondary" type="button" onClick={() => void copy(prompt)}>
+                      {copiedId === prompt.id ? "Copied" : "Copy"}
+                    </Button>
+                    {prompt.createdBy === view.viewerId ? (
+                      <Button variant="secondary" type="button" onClick={() => void remove(prompt.id)}>
+                        Delete
+                      </Button>
+                    ) : null}
+                  </div>
+                </article>
+              ))}
+            </div>
+          ))}
         </section>
-      )}
+      </section>
     </main>
   );
 }

@@ -160,8 +160,8 @@ export function CadActivityPanel({ orgId }: { orgId: string }) {
             <>No CAD sessions match this filter. Switch to Everyone / All to see the rest.</>
           ) : (
             <>
-              No CAD activity yet. Web agent sessions from this page and terminal sessions from{" "}
-              <code>vantage-cad</code> (Claude Code) will appear here once someone sketches or extrudes.
+              No CAD activity yet. Sessions from this page and from a paired computer will appear here once someone
+              sketches or extrudes.
             </>
           )}
         </p>

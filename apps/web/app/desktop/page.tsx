@@ -27,8 +27,8 @@ const facts = [
     copy: "Download an unsigned installer from GitHub Releases, or build it from the repo. SmartScreen warns until code-signing certs exist. No auto-update — install newer releases yourself.",
   },
   {
-    title: "CAD stays local",
-    copy: "Fusion jobs still run through the paired vantage-cad relay on your machine. Onshape stays hosted OAuth.",
+    title: "CAD stays on this computer",
+    copy: "Fusion jobs stay on this computer. Onshape connects in the browser. Pair this computer once, then keep working in the same window.",
   },
 ] as const;
 
@@ -59,9 +59,8 @@ export default function DesktopPage() {
             <header className="lux-section-head">
               <h2>What you install</h2>
               <p>
-                Tagged GitHub Releases (<code>desktop-v*</code>) publish unsigned NSIS and portable exes. From a
-                clone: <code>npm run desktop:dist</code> writes <code>apps/desktop/release/</code>. Details in{" "}
-                <a href="https://github.com/sahil-patel-2011/vantage-frc/blob/main/docs/DESKTOP.md">docs/DESKTOP.md</a>.
+                Tagged GitHub Releases publish unsigned Windows installers. SmartScreen may warn until the team
+                signs them. Install a newer release when one is posted.
               </p>
             </header>
             <ul className="lux-feature-grid">

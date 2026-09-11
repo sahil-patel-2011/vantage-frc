@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { OfflineBanner } from "../../../components/offline-banner";
 import { BusinessRelated } from "../../../components/business-related";
 import { EmptyState, PageHeader, Button } from "../../../components/ui";
 import {
@@ -13,6 +14,9 @@ import {
 import { buildAwardExportPayload } from "../../../lib/awards/export";
 import { AWARDS_RELATED_INCLUDE } from "../../../lib/business/business-related";
 import { awardsNextActions } from "../../../lib/business/awards-next-actions";
+import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
+import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 import "./awards.css";
 
 type Submission = {
@@ -82,6 +86,20 @@ function AwardsNextActions({
   );
 }
 
+function isAwardsListView(value: unknown): value is { submissions: Submission[] } {
+  if (!value || typeof value !== "object") return false;
+  return Array.isArray((value as { submissions?: unknown }).submissions);
+}
+
+async function persistAwardsSnapshot(orgId: string, data: { submissions: Submission[] }): Promise<void> {
+  if (!orgId.trim()) return;
+  try {
+    await putFeatureSnapshot("awards", orgId, data);
+  } catch {
+    // Live awards board already painted; IndexedDB is best-effort.
+  }
+}
+
 export default function AwardsClient({ orgId }: { orgId: string }) {
   const seasonYear = new Date().getFullYear();
   const [submissions, setSubmissions] = useState<Submission[]>([]);
@@ -90,6 +108,11 @@ export default function AwardsClient({ orgId }: { orgId: string }) {
   const [message, setMessage] = useState("");
   const [messageTone, setMessageTone] = useState<"ok" | "error">("ok");
   const [loading, setLoading] = useState(true);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const [failureStatus, setFailureStatus] = useState<number | null>(null);
+  const submissionsRef = useRef<Submission[]>([]);
+  submissionsRef.current = submissions;
   const [form, setForm] = useState({
     awardType: AWARD_CATALOG[0]!.slug,
     eventKey: "",
@@ -102,24 +125,89 @@ export default function AwardsClient({ orgId }: { orgId: string }) {
     setMessage(text);
   }
 
-  async function load() {
-    setLoading(true);
-    const response = await fetch(`/api/awards?orgId=${encodeURIComponent(orgId)}`);
-    const data = await response.json();
-    setSubmissions(data.submissions ?? []);
-    if (!response.ok) flash(false, data.error ?? "Unable to load award submissions");
-    else setMessage("");
-    setLoading(false);
-  }
+  const load = useCallback(async () => {
+    let hadCache = submissionsRef.current.length > 0;
+    try {
+      const cached = await getFeatureSnapshot<{ submissions: Submission[] }>("awards", orgId);
+      if (!submissionsRef.current.length && cached?.data && isAwardsListView(cached.data)) {
+        setSubmissions(cached.data.submissions);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+        setLoading(false);
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
+    setFailureStatus(null);
+    try {
+      const response = await fetch(`/api/awards?orgId=${encodeURIComponent(orgId)}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      const data: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        setSubmissions([]);
+        setFromCache(false);
+        setCachedAt(null);
+        setFailureStatus(response.status);
+        flash(
+          false,
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "Could not load award submissions.",
+        );
+        setLoading(false);
+        return;
+      }
+      const next =
+        data && typeof data === "object" && "submissions" in data && Array.isArray(data.submissions)
+          ? (data.submissions as Submission[])
+          : [];
+      if (!response.ok) {
+        if (hadCache || submissionsRef.current.length) {
+          setFromCache(true);
+          flash(false, "Could not refresh Awards. Showing the last copy on this device.");
+          setLoading(false);
+          return;
+        }
+        setFailureStatus(response.status);
+        flash(
+          false,
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "Could not load award submissions.",
+        );
+        setLoading(false);
+        return;
+      }
+      setSubmissions(next);
+      setFromCache(false);
+      setCachedAt(null);
+      setMessage("");
+      setLoading(false);
+      await persistAwardsSnapshot(orgId, { submissions: next });
+    } catch {
+      if (hadCache || submissionsRef.current.length) {
+        setFromCache(true);
+        flash(false, "Could not refresh Awards. Showing the last copy on this device.");
+        setLoading(false);
+        return;
+      }
+      flash(false, "Could not reach the server.");
+      setLoading(false);
+    }
+  }, [orgId]);
 
   useEffect(() => {
     void load();
-  }, [orgId]);
+  }, [load]);
 
   async function loadItems(submissionId: string) {
     setSelectedId(submissionId);
     const response = await fetch(
       `/api/awards/items?orgId=${encodeURIComponent(orgId)}&submissionId=${encodeURIComponent(submissionId)}`,
+      { cache: "no-store", signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS) },
     );
     const data = await response.json();
     setItems(data.items ?? []);
@@ -218,7 +306,7 @@ export default function AwardsClient({ orgId }: { orgId: string }) {
   async function copyAll() {
     if (!exportPayload) return;
     if (realItemCount === 0) {
-      flash(false, "Nothing to copy — write an essay answer first. Empty prompts and invented hours are omitted.");
+      flash(false, "Nothing to copy — write an essay answer first. Empty prompts are omitted.");
       return;
     }
     try {
@@ -232,7 +320,7 @@ export default function AwardsClient({ orgId }: { orgId: string }) {
   function printExport() {
     if (!exportPayload) return;
     if (realItemCount === 0) {
-      flash(false, "Nothing to print — write an essay answer first. Empty prompts and invented hours are omitted.");
+      flash(false, "Nothing to print — write an essay answer first. Empty prompts are omitted.");
       return;
     }
     const html = exportPayload.printableHtml.replace(
@@ -254,7 +342,7 @@ export default function AwardsClient({ orgId }: { orgId: string }) {
   function downloadExport(kind: "txt" | "html") {
     if (!exportPayload) return;
     if (realItemCount === 0) {
-      flash(false, "Nothing to download — write an essay answer first. Empty prompts and invented hours are omitted.");
+      flash(false, "Nothing to download — write an essay answer first. Empty prompts are omitted.");
       return;
     }
     if (kind === "html") {
@@ -281,18 +369,58 @@ export default function AwardsClient({ orgId }: { orgId: string }) {
     incompleteEssayCount,
   });
 
+  if (!submissions.length && failureStatus && !fromCache) {
+    const failure = loadFailureCopy(
+      classifyLoadFailure({
+        status: failureStatus,
+        message,
+        online: typeof navigator === "undefined" ? true : navigator.onLine,
+      }),
+      {
+        nextPath:
+          typeof window === "undefined" ? null : `${window.location.pathname}${window.location.search}`,
+        message,
+      },
+    );
+    return (
+      <main className="module-page awards-page">
+        <PageHeader breadcrumbs="Business / Awards" title="Awards" />
+        <OfflineBanner feature="Awards" fromCache={fromCache} cachedAt={cachedAt} />
+        <EmptyState
+          soft
+          badge={failure.kind === "auth" ? "Signed out" : failure.kind === "forbidden" ? "No access" : "Unavailable"}
+          badgeTone="setup"
+          title={failure.title}
+          description={failure.description}
+        >
+          {failure.primary ? (
+            <Button as="a" variant="primary" href={failure.primary.href}>
+              {failure.primary.label}
+            </Button>
+          ) : null}
+          {failure.showRetry ? (
+            <Button variant="secondary" type="button" onClick={() => void load()}>
+              Retry
+            </Button>
+          ) : null}
+        </EmptyState>
+      </main>
+    );
+  }
+
   return (
     <main className="module-page awards-page">
       <PageHeader
         breadcrumbs={
           <>
             <a href={`/business?orgId=${encodeURIComponent(orgId)}`}>Business</a>
-            {" / Awards workbench"}
+            {" / Awards"}
           </>
         }
-        title="FIRST award submissions"
-        description="Start a catalog award to seed essay prompts, draft responses here, then record wins in Business · Awards for grant writing. Empty means nothing started."
+        title="Awards"
+        description="Start a catalog award to seed essay prompts, draft responses here, then record wins in Business · Awards for grant writing."
       />
+      <OfflineBanner feature="Awards" fromCache={fromCache} cachedAt={cachedAt} />
 
       <BusinessRelated
         orgId={orgId}
@@ -346,7 +474,7 @@ export default function AwardsClient({ orgId }: { orgId: string }) {
               badge="Empty workbench"
               badgeTone="setup"
               title="No FIRST award submissions yet"
-              description="Pick an award from the FIRST catalog to pre-load essay prompts. Wins you already earned can be logged on Business · Awards & evidence without inventing history."
+              description="Pick an award from the FIRST catalog to pre-load essay prompts. Wins you already earned can be logged on Business · Awards & evidence."
             />
           ) : null}
 

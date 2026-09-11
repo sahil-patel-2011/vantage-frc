@@ -539,34 +539,25 @@ export default function AgentConfigClient() {
 
       <section className="agent-config-panel agent-config-howto" style={{ marginTop: 16 }} aria-label="How to use">
         <h2>How every member uses this</h2>
-        <h3>Claude Code (one command, run in your robot-code repo)</h3>
-        <pre>{`vantage-cad agent sync # writes .claude/agents, team rules + CLAUDE.md import, .mcp.json (vantage-* only)
-vantage-cad agent sync --dry-run # preview without writing`}</pre>
+        <h3>On this computer</h3>
         <p style={{ fontSize: 12, color: "var(--muted)" }}>
-          Requires one-time pairing via <code>vantage-cad setup</code>. Permissions are never auto-applied —
-          sync writes <code>.claude/vantage-permissions.suggested.json</code> for a human to review.
+          Pair CAD once (Build → CAD → Pair). Then a mentor syncs these team rules into Claude Code or Cursor
+          from the App manual. Permissions are never applied automatically — a person reviews them first.
         </p>
-        <h3>Cursor (same command, Cursor-native formats)</h3>
-        <pre>{`vantage-cad agent sync --agent cursor # rules → .cursor/rules/vantage/*.mdc, skills → .cursor/skills, MCP → .cursor/mcp.json
-vantage-cad agent sync --agent all # Claude Code + Cursor together`}</pre>
+        <h3>Cursor and Claude Code</h3>
         <p style={{ fontSize: 12, color: "var(--muted)" }}>
-          Without <code>--agent</code>, sync targets whatever the repo already uses (a <code>.cursor/</code>{" "}
-          folder enables Cursor). Rules without path scopes become always-on (<code>alwaysApply: true</code>);
-          a rule starting with a <code>globs:</code> frontmatter block becomes auto-attached to matching
-          files. Only files Vantage generated (inside <code>.cursor/rules/vantage/</code>, marked with a
-          banner) are ever updated or removed. Subagents and permissions have no Cursor equivalent and are
-          skipped.
+          Claude Code gets team rules, skills, and tool connections. Cursor gets the same rules and skills in its
+          own folders. Subagents and permissions have no Cursor equivalent, so they are skipped there. Only
+          files Vantage generated are updated or removed.
         </p>
-        <h3>Any custom agent (typed JSON export)</h3>
-        <pre>{`GET ${bundleUrl}
-GET ${bundleUrl}&format=cursor # same content materialized as Cursor-native files`}</pre>
+        <h3>Ask AI on Vantage</h3>
         <p style={{ fontSize: 12, color: "var(--muted)" }}>
-          The export is signed in as you: team-wide items, plus the items shared with you.
+          Valid rules items are included in every in-app Ask AI run automatically, labeled as team agent rules
+          in the run&apos;s sources.
         </p>
-        <h3>Vantage in-app agent</h3>
-        <p style={{ fontSize: 12, color: "var(--muted)" }}>
-          Valid <b>rules</b> items are injected into every in-app AI run automatically, labeled as
-          &quot;Team agent rules&quot; in the run&apos;s context sources.
+        <p className="app-muted" style={{ fontSize: 12 }}>
+          Mentors: the signed team-rules pack for a custom agent is{" "}
+          <a href={bundleUrl}>this team&apos;s rules pack</a>.
         </p>
       </section>
     </main>

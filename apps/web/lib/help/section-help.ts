@@ -1135,8 +1135,8 @@ export const SECTION_HELP: SectionHelpEntry[] = [
     how: [
       "Author items at /team/agent-config — invalid drafts still save, but are excluded from sync until fixed.",
       "Choose per item whether the entire team or only specific people see it.",
-      "Each member runs `vantage-cad agent sync` in the robot-code repo to write Claude Code and Cursor files.",
-      "Custom agents pull the same content as typed JSON from /api/agent-config/bundle.",
+      "Each member pairs CAD on their computer. A mentor then syncs team rules into Claude Code or Cursor from the App manual.",
+      "Custom agents use the same team rules pack from Team agent config.",
     ],
     tips: [
       "MCP entries refuse real credentials — use ${PLACEHOLDER} values each member sets locally.",

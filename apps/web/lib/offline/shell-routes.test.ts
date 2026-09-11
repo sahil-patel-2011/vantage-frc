@@ -165,6 +165,10 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/subsystem-signoff")).toBe(true);
     expect(pathnameIsOfflineShell("/prototype-tracker")).toBe(true);
     expect(pathnameIsOfflineShell("/equipment-maintenance")).toBe(true);
+    expect(pathnameIsOfflineShell("/showcase")).toBe(true);
+    expect(pathnameIsOfflineShell("/team/prompts")).toBe(true);
+    expect(pathnameIsOfflineShell("/team/awards")).toBe(true);
+    expect(pathnameIsOfflineShell("/team/ai-runs")).toBe(true);
     expect(pathnameIsOfflineShell("/api/todos")).toBe(false);
   });
 
@@ -316,6 +320,10 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/subsystem-signoff")).toBe("Subsystem Sign-off");
     expect(offlineCapableLabel("/prototype-tracker")).toBe("Prototype-to-Decision Tracker");
     expect(offlineCapableLabel("/equipment-maintenance")).toBe("Equipment Maintenance");
+    expect(offlineCapableLabel("/showcase")).toBe("Showcase");
+    expect(offlineCapableLabel("/team/prompts")).toBe("Prompts");
+    expect(offlineCapableLabel("/team/awards")).toBe("Awards");
+    expect(offlineCapableLabel("/team/ai-runs")).toBe("Ask AI history");
   });
 
   it("keeps public/sw.js SHELL_ROUTES aligned with OFFLINE_SHELL_ROUTES", () => {
