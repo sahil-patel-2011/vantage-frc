@@ -148,7 +148,12 @@ export type OfflineFeature =
   | "risks"
   | "subsystem-signoff"
   | "prototype-tracker"
-  | "equipment-maintenance";
+  | "equipment-maintenance"
+  | "district-advancement"
+  | "mock-judging"
+  | "team-profile"
+  | "bom-cost-rollup"
+  | "budget-reconciler";
 
 const DB_NAME = "vantage-feature-cache";
 const DB_VERSION = 1;

@@ -1,11 +1,124 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { OfflineBanner } from "../../../components/offline-banner";
 import { EmptyState, PageHeader, Panel, Button } from "../../../components/ui";
+import { hubHref } from "../../../lib/nav/hubs";
+import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
 import type { TeamDossierView } from "../../../lib/team-dossier/store";
+import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 import "./team-profile.css";
 
 type View = TeamDossierView & { orgId: string | null };
+
+function isTeamProfileView(value: unknown): value is View {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return (
+    status === "none" ||
+    status === "queued" ||
+    status === "running" ||
+    status === "ready" ||
+    status === "failed"
+  );
+}
+
+function responseError(data: unknown): string {
+  return data && typeof data === "object" && "error" in data && typeof data.error === "string"
+    ? data.error
+    : "";
+}
+
+function teamProfileCacheOrg(data: View, orgHint: string): string {
+  switch (data.status) {
+    case "none":
+      return (typeof data.orgId === "string" && data.orgId.trim()) || orgHint;
+    case "queued":
+    case "running":
+    case "ready":
+    case "failed":
+      return (typeof data.orgId === "string" && data.orgId.trim()) || orgHint;
+    default: {
+      data satisfies never;
+      return orgHint;
+    }
+  }
+}
+
+async function persistTeamProfileSnapshot(orgHint: string, data: View): Promise<void> {
+  const cacheOrg = teamProfileCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("team-profile", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("team-profile", "_", data);
+  } catch {
+    // Live Team profile already painted; IndexedDB is best-effort.
+  }
+}
+
+function TeamProfileRelated({ orgId }: { orgId?: string | null }) {
+  return (
+    <nav className="product-hub-related" aria-label="Related team tools">
+      <Button as="a" variant="secondary" href={hubHref("/competition", "district-advancement", orgId)}>
+        Districts
+      </Button>
+      <Button as="a" variant="secondary" href={hubHref("/business", "mock-judging", orgId)}>
+        Mock judging
+      </Button>
+      <Button as="a" variant="secondary" href={hubHref("/business", "award-tracker", orgId)}>
+        Award tracker
+      </Button>
+    </nav>
+  );
+}
+
+function TeamProfileNextActions({ orgId }: { orgId: string }) {
+  const actions = [
+    {
+      id: "districts",
+      label: "Open District advancement",
+      detail: "Remaining district points use the same public record this page shows.",
+      href: hubHref("/competition", "district-advancement", orgId),
+      primary: true,
+    },
+    {
+      id: "mock",
+      label: "Open Mock judging",
+      detail: "Practice award interviews with notes from this team's record.",
+      href: hubHref("/business", "mock-judging", orgId),
+      primary: false,
+    },
+    {
+      id: "awards",
+      label: "Open Award tracker",
+      detail: "Season award submissions sit next to the public awards list.",
+      href: hubHref("/business", "award-tracker", orgId),
+      primary: false,
+    },
+  ];
+  return (
+    <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <Button as="a" variant="secondary" href={action.href}>
+              Open
+            </Button>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
 
 /**
  * What the world already knows about this team.
@@ -22,36 +135,100 @@ type View = TeamDossierView & { orgId: string | null };
 export default function TeamProfileClient() {
   const [view, setView] = useState<View | null>(null);
   const [error, setError] = useState("");
+  const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [failureStatus, setFailureStatus] = useState<number | null>(null);
+  const [failureMessage, setFailureMessage] = useState("");
   const [building, setBuilding] = useState(false);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<View | null>(null);
+  viewRef.current = view;
+
+  const orgId = view && "orgId" in view ? view.orgId : null;
 
   const load = useCallback(async () => {
+    const params = new URLSearchParams(window.location.search);
+    const orgHint = params.get("orgId")?.trim() ?? "";
+    let hadCache = Boolean(viewRef.current);
     try {
-      const org = new URLSearchParams(window.location.search).get("orgId");
-      const response = await fetch(`/api/team/dossier${org ? `?orgId=${encodeURIComponent(org)}` : ""}`);
-      const data = (await response.json()) as View & { error?: string };
-      if (!response.ok) {
-        setError(data.error ?? "Could not load the team profile.");
+      const cached = await getFeatureSnapshot<View>("team-profile", orgHint || "_");
+      if (!viewRef.current && cached?.data && isTeamProfileView(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
+    setFetchFailed(false);
+    setFailureStatus(null);
+    setFailureMessage("");
+    setError("");
+    try {
+      const query = new URLSearchParams();
+      if (orgHint) query.set("orgId", orgHint);
+      const response = await fetch(`/api/team/dossier${query.toString() ? `?${query.toString()}` : ""}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      const data: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setFetchFailed(true);
+        setFailureStatus(response.status);
+        setFailureMessage(responseError(data));
+        return;
+      }
+      if (!response.ok || !isTeamProfileView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Team profile. Showing the last copy on this device.");
+          setFetchFailed(false);
+          return;
+        }
+        setFetchFailed(true);
+        setFailureStatus(response.status);
+        setFailureMessage(responseError(data));
         return;
       }
       setView(data);
-      setError("");
+      setFromCache(false);
+      setCachedAt(null);
+      await persistTeamProfileSnapshot(orgHint, data);
     } catch {
-      setError("Could not reach the server.");
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Team profile. Showing the last copy on this device.");
+        setFetchFailed(false);
+        return;
+      }
+      setFetchFailed(true);
     }
   }, []);
 
-  const build = useCallback(async (orgId: string) => {
+  const build = useCallback(async (nextOrgId: string) => {
     setBuilding(true);
     setError("");
     try {
       const response = await fetch("/api/team/dossier", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ orgId, action: "build" }),
+        body: JSON.stringify({ orgId: nextOrgId, action: "build" }),
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
-      const data = (await response.json()) as View & { error?: string };
-      if (!response.ok) setError(data.error ?? "Could not build the profile.");
-      else setView({ ...data, orgId });
+      const data: unknown = await response.json().catch(() => null);
+      if (!response.ok || !isTeamProfileView(data)) {
+        setError(responseError(data) || "Could not build the profile.");
+        return;
+      }
+      const next = { ...data, orgId: data.orgId ?? nextOrgId };
+      setView(next);
+      setFromCache(false);
+      void persistTeamProfileSnapshot(nextOrgId, next);
     } catch {
       setError("Could not reach the server.");
     } finally {
@@ -69,53 +246,112 @@ export default function TeamProfileClient() {
     if (view && view.status === "none" && view.canBuild && view.orgId && !building) void build(view.orgId);
   }, [view, building, build]);
 
+  const teamHref = orgId ? `/team?orgId=${encodeURIComponent(orgId)}` : "/team";
+  const title =
+    view && view.status !== "none" && "profile" in view && view.profile?.nickname
+      ? `${view.teamNumber} · ${view.profile.nickname}`
+      : "Team profile";
   const header = (
     <PageHeader
-      breadcrumbs="Team / Profile"
-      title={view && view.status !== "none" && view.profile?.nickname ? `${view.teamNumber} · ${view.profile.nickname}` : "Team profile"}
-      description="What The Blue Alliance and Statbotics have on record for this team. Vantage's AI features use these facts as context."
-    />
+      breadcrumbs={
+        <>
+          <a href={teamHref}>Team</a>
+          {" / Team profile"}
+        </>
+      }
+      title={title}
+      description="What The Blue Alliance and Statbotics have on record for this team. Ask AI uses these facts as context."
+    >
+      <TeamProfileRelated orgId={orgId} />
+    </PageHeader>
   );
 
   if (!view) {
+    const failure = fetchFailed
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: failureStatus,
+            message: failureMessage,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: failureMessage || "A network or server issue prevented loading. Try again.",
+          },
+        )
+      : null;
     return (
       <main className="module-page tp-page">
         {header}
-        {error ? <p className="tp-error" role="alert">{error}</p> : <p className="app-muted">Loading…</p>}
+        <OfflineBanner feature="Team profile" fromCache={fromCache} cachedAt={cachedAt} />
+        <EmptyState
+          title={failure ? failure.title : "Loading…"}
+          description={failure ? failure.description : "Checking your team."}
+          aria-busy={!fetchFailed}
+        >
+          {failure?.primary ? (
+            <Button as="a" variant="primary" href={failure.primary.href}>
+              {failure.primary.label}
+            </Button>
+          ) : null}
+          {failure?.showRetry ? (
+            <Button variant="secondary" type="button" onClick={() => void load()}>
+              Retry
+            </Button>
+          ) : null}
+        </EmptyState>
       </main>
     );
   }
 
-  if (view.status === "none" || view.status === "queued" || view.status === "running") {
-    return (
-      <main className="module-page tp-page">
-        {header}
-        {error ? <p className="tp-error" role="alert">{error}</p> : null}
-        <EmptyState
-          soft
-          badge={view.status === "none" ? "Not built yet" : "Building"}
-          badgeTone="setup"
-          title={view.status === "none" ? "No profile yet" : "Gathering the public record"}
-          description={
-            view.teamNumber
-              ? `Looking up team ${view.teamNumber} on The Blue Alliance and Statbotics. This takes a few seconds and happens once; it refreshes weekly after that.`
-              : "This team has no team number, so there is nothing to look up. Set it on the Team settings page."
-          }
-        >
-          {view.canBuild && view.orgId && view.status === "none" ? (
-            <Button variant="primary" type="button" disabled={building} onClick={() => void build(view.orgId!)}>
-              {building ? "Building…" : "Build it now"}
-            </Button>
-          ) : view.status !== "none" ? (
-            <Button variant="secondary" type="button" onClick={() => void load()}>
-              Refresh
-            </Button>
-          ) : (
-            <p className="app-muted">An owner or admin needs to open this page once to build it.</p>
-          )}
-        </EmptyState>
-      </main>
-    );
+  switch (view.status) {
+    case "none":
+    case "queued":
+    case "running":
+      return (
+        <main className="module-page tp-page">
+          {header}
+          <OfflineBanner feature="Team profile" fromCache={fromCache} cachedAt={cachedAt} />
+          {error ? (
+            <p className="tp-error" role="alert">
+              {error}
+            </p>
+          ) : null}
+          <EmptyState
+            soft
+            badge={view.status === "none" ? "Not built yet" : "Building"}
+            badgeTone="setup"
+            title={view.status === "none" ? "No profile yet" : "Gathering the public record"}
+            description={
+              view.teamNumber
+                ? `Looking up team ${view.teamNumber} on The Blue Alliance and Statbotics. This takes a few seconds and happens once; it refreshes weekly after that.`
+                : "This team has no team number, so there is nothing to look up. Set it on the Team settings page."
+            }
+          >
+            {view.canBuild && view.orgId && view.status === "none" ? (
+              <Button variant="primary" type="button" disabled={building} onClick={() => void build(view.orgId!)}>
+                {building ? "Building…" : "Build it now"}
+              </Button>
+            ) : view.status !== "none" ? (
+              <Button variant="secondary" type="button" onClick={() => void load()}>
+                Refresh
+              </Button>
+            ) : (
+              <p className="app-muted">An owner or admin needs to open this page once to build it.</p>
+            )}
+          </EmptyState>
+        </main>
+      );
+    case "failed":
+    case "ready":
+      break;
+    default: {
+      view satisfies never;
+      return null;
+    }
   }
 
   const p = view.profile;
@@ -128,6 +364,7 @@ export default function TeamProfileClient() {
   return (
     <main className="module-page tp-page">
       {header}
+      <OfflineBanner feature="Team profile" fromCache={fromCache} cachedAt={cachedAt} />
       {error ? <p className="tp-error" role="alert">{error}</p> : null}
 
       {view.status === "failed" ? (
@@ -135,6 +372,8 @@ export default function TeamProfileClient() {
           The last build failed: {view.error ?? "neither source answered"}.
         </p>
       ) : null}
+
+      {view.status === "ready" && view.orgId ? <TeamProfileNextActions orgId={view.orgId} /> : null}
 
       <div className="tp-grid">
         <Panel className="tp-card">

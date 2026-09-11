@@ -152,6 +152,11 @@ export const OFFLINE_SHELL_ROUTES = [
   "/subsystem-signoff",
   "/prototype-tracker",
   "/equipment-maintenance",
+  "/district-advancement",
+  "/mock-judging",
+  "/team/profile",
+  "/bom-cost-rollup",
+  "/budget-reconciler",
 ] as const;
 
 export type OfflineShellRoute = (typeof OFFLINE_SHELL_ROUTES)[number];
@@ -185,6 +190,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   }
   if (bare.startsWith("/team/data")) return "Team Data";
   if (bare.startsWith("/team/grants")) return "Grant writing";
+  if (bare.startsWith("/team/profile")) return "Team profile";
   if (bare === "/team") return "Team";
   if (bare.startsWith("/todos") || bare.startsWith("/tasks")) return "Todos";
   if (bare.startsWith("/logistics")) return "Logistics";
@@ -302,6 +308,8 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/my-kit")) return "My Kit";
   if (bare.startsWith("/part-requests")) return "Part requests";
   if (bare.startsWith("/recognition")) return "Recognition";
+  if (bare.startsWith("/budget-reconciler")) return "Budget check";
+  if (bare.startsWith("/bom-cost-rollup")) return "BOM cost rollup";
   if (bare.startsWith("/budget")) return "Season budget";
   if (bare.startsWith("/subteams")) return "Subteam progress";
   if (bare.startsWith("/safety")) return "Safety";
@@ -320,6 +328,8 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/match-debrief")) return "Match debrief";
   if (bare.startsWith("/match-copilot")) return "Match Copilot";
   if (bare.startsWith("/event-readiness")) return "Event readiness";
+  if (bare.startsWith("/district-advancement")) return "District advancement";
+  if (bare.startsWith("/mock-judging")) return "Mock Judging";
   return null;
 }
 

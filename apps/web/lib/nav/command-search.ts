@@ -207,6 +207,9 @@ const KEYWORDS: Record<string, string[]> = {
   "business:awards-workbench": ["awards", "essays", "submissions"],
   "business:impact-essay": ["essay", "impact essay", "write award"],
   "business:judge-sim": ["judges", "judging", "pitch", "presentation", "interview"],
+  "business:mock-judging": [
+    "mock judging", "practice judging", "rubric", "judge practice", "prep notes", "award interview",
+  ],
   "business:media-kit": ["media kit", "press", "brand", "logo pack"],
   "business:outreach-calendar": ["outreach calendar", "outreach", "community events", "demos", "volunteering"],
 
@@ -254,7 +257,10 @@ const KEYWORDS: Record<string, string[]> = {
   "build:spare-forecast": ["spares", "spare parts", "will we run out", "inventory forecast"],
   "build:spare-robot-kit": ["spare kit", "spare robot", "backup parts"],
   "build:bin-shelf-locator": ["where is it", "bin", "shelf", "find part", "storage"],
-  "build:budget-reconciler": ["budget check", "reconcile", "spend vs plan"],
+  "build:budget-reconciler": ["budget check", "reconcile", "spend vs plan", "weight drift", "power drift"],
+  "build:bom-cost-rollup": [
+    "bom", "bill of materials", "part cost", "line item", "cad import cost", "how much did parts cost",
+  ],
   "build:battery-health-forecast": ["battery health", "pack health", "dying batteries"],
   "build:cross-domain-alerts": ["alerts", "cross domain", "warnings"],
   "build:decision-critic": ["decision", "critic", "second opinion", "review decision"],

@@ -165,6 +165,11 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/subsystem-signoff")).toBe(true);
     expect(pathnameIsOfflineShell("/prototype-tracker")).toBe(true);
     expect(pathnameIsOfflineShell("/equipment-maintenance")).toBe(true);
+    expect(pathnameIsOfflineShell("/district-advancement")).toBe(true);
+    expect(pathnameIsOfflineShell("/mock-judging")).toBe(true);
+    expect(pathnameIsOfflineShell("/team/profile")).toBe(true);
+    expect(pathnameIsOfflineShell("/bom-cost-rollup")).toBe(true);
+    expect(pathnameIsOfflineShell("/budget-reconciler")).toBe(true);
     expect(pathnameIsOfflineShell("/api/todos")).toBe(false);
   });
 
@@ -316,6 +321,12 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/subsystem-signoff")).toBe("Subsystem Sign-off");
     expect(offlineCapableLabel("/prototype-tracker")).toBe("Prototype-to-Decision Tracker");
     expect(offlineCapableLabel("/equipment-maintenance")).toBe("Equipment Maintenance");
+    expect(offlineCapableLabel("/district-advancement")).toBe("District advancement");
+    expect(offlineCapableLabel("/mock-judging")).toBe("Mock Judging");
+    expect(offlineCapableLabel("/team/profile")).toBe("Team profile");
+    expect(offlineCapableLabel("/bom-cost-rollup")).toBe("BOM cost rollup");
+    expect(offlineCapableLabel("/budget-reconciler")).toBe("Budget check");
+    expect(offlineCapableLabel("/budget")).toBe("Season budget");
   });
 
   it("keeps public/sw.js SHELL_ROUTES aligned with OFFLINE_SHELL_ROUTES", () => {
@@ -460,6 +471,11 @@ describe("offline shell routes", () => {
     expect(featureCacheKey("subsystem-signoff", "org-1", "2026")).toBe("subsystem-signoff:org-1:2026");
     expect(featureCacheKey("prototype-tracker", "org-1", "2026")).toBe("prototype-tracker:org-1:2026");
     expect(featureCacheKey("equipment-maintenance", "org-1")).toBe("equipment-maintenance:org-1");
+    expect(featureCacheKey("district-advancement", "org-1", "2026")).toBe("district-advancement:org-1:2026");
+    expect(featureCacheKey("mock-judging", "org-1", "2026")).toBe("mock-judging:org-1:2026");
+    expect(featureCacheKey("team-profile", "org-1")).toBe("team-profile:org-1");
+    expect(featureCacheKey("bom-cost-rollup", "org-1", "2026")).toBe("bom-cost-rollup:org-1:2026");
+    expect(featureCacheKey("budget-reconciler", "org-1", "2026")).toBe("budget-reconciler:org-1:2026");
     expect(featureCacheKey("schedule", "org-1")).toBe("schedule:org-1");
   });
 
