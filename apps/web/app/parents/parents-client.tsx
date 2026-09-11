@@ -2,7 +2,8 @@
 
 // Mentor-side parent communications (owner/admin only). One-way by design:
 // contacts + weekly digest + read-only view links. No chat, no reply path.
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import {
   Badge,
   Button,
@@ -12,6 +13,9 @@ import {
   PageHeader,
   Panel,
 } from "../../components/ui";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import type {
   ParentContactView,
   ParentDigestLogView,
@@ -60,6 +64,30 @@ const LOG_STATUS_TONE: Record<ParentDigestLogView["status"], "good" | "setup" | 
   setup_required: "setup",
 };
 
+function isParentsView(value: unknown): value is ParentsView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "restricted" || status === "ready";
+}
+
+function parentsCacheOrg(data: ParentsView, orgHint: string): string {
+  if (data.status !== "setup_required" && typeof data.orgId === "string" && data.orgId.trim()) {
+    return data.orgId;
+  }
+  return orgHint;
+}
+
+async function persistParentsSnapshot(orgHint: string, data: ParentsView): Promise<void> {
+  const cacheOrg = parentsCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("parents", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("parents", "_", data);
+  } catch {
+    // Live Parent updates already painted; IndexedDB is best-effort.
+  }
+}
+
 function formFor(contact: ParentContactView): ContactForm {
   return {
     name: contact.name,
@@ -75,36 +103,95 @@ export default function ParentsClient() {
   const [view, setView] = useState<ParentsView | null>(null);
   const [fetchFailed, setFetchFailed] = useState(false);
   const [error, setError] = useState("");
+  const [loadError, setLoadError] = useState("");
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState<ContactForm>(EMPTY_FORM);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [note, setNote] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [sendSummary, setSendSummary] = useState<DigestSummary>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<ParentsView | null>(null);
+  viewRef.current = view;
 
   const orgId = view && view.status !== "setup_required" ? view.orgId : null;
 
-  const load = useCallback((previewNote?: string) => {
-    setFetchFailed(false);
+  const load = useCallback(async (previewNote?: string) => {
     const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
+    const orgHint = params.get("orgId")?.trim() ?? "";
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<ParentsView>("parents", orgHint || "_");
+      if (!viewRef.current && cached?.data && isParentsView(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
+    setFetchFailed(false);
+    setError("");
+    setLoadError("");
+    setErrorStatus(null);
     const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
+    if (orgHint) query.set("orgId", orgHint);
     if (previewNote) query.set("note", previewNote);
-    void fetch(`/api/parents${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
-        const data = (await response.json()) as ParentsView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setFetchFailed(true);
+    try {
+      const response = await fetch(`/api/parents${query.toString() ? `?${query.toString()}` : ""}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      const data: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setFetchFailed(true);
+        setErrorStatus(response.status);
+        setLoadError(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "",
+        );
+        return;
+      }
+      if (!response.ok || !isParentsView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Parent updates. Showing the last copy on this device.");
+          setFetchFailed(false);
           return;
         }
-        setView(data);
-      })
-      .catch(() => setFetchFailed(true));
+        setFetchFailed(true);
+        setErrorStatus(response.status);
+        setLoadError(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "",
+        );
+        return;
+      }
+      setView(data);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistParentsSnapshot(orgHint, data);
+    } catch {
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Parent updates. Showing the last copy on this device.");
+        setFetchFailed(false);
+        return;
+      }
+      setFetchFailed(true);
+    }
   }, []);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   const mutate = useCallback(
@@ -117,18 +204,23 @@ export default function ParentsClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
-        const data = (await response.json()) as
-          | (ParentsView & { digestSummary?: DigestSummary })
-          | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setError("error" in data && data.error ? data.error : "Something went wrong.");
+        const data: unknown = await response.json().catch(() => null);
+        if (!response.ok || !isParentsView(data)) {
+          setError(
+            data && typeof data === "object" && "error" in data && typeof data.error === "string"
+              ? data.error
+              : "Something went wrong.",
+          );
           return false;
         }
         setView(data);
+        setFromCache(false);
         if ("digestSummary" in data && data.digestSummary !== undefined) {
-          setSendSummary(data.digestSummary ?? null);
+          setSendSummary((data as { digestSummary?: DigestSummary }).digestSummary ?? null);
         }
+        void persistParentsSnapshot(orgId, data);
         return true;
       } catch {
         setError("Network error — please try again.");
@@ -168,32 +260,92 @@ export default function ParentsClient() {
     }
   }, []);
 
-  if (fetchFailed) {
-    return (
-      <EmptyState title="Parent updates" badge="Unavailable" badgeTone="setup"
-        description="Could not reach the server. Check your connection and try again.">
-        <Button onClick={() => load()}>Retry</Button>
-      </EmptyState>
-    );
-  }
-
   if (!view) {
+    const failure = fetchFailed
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus,
+            message: loadError,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: loadError || "A network or server issue prevented loading. Try again.",
+          },
+        )
+      : null;
     return (
-      <EmptyState title="Parent updates" aria-busy description="Loading parent contacts…" />
+      <>
+        <PageHeader
+          navPath="/parents"
+          title="Parent updates"
+          description="One-way weekly updates to parent contacts."
+        />
+        <OfflineBanner feature="Parent updates" fromCache={fromCache} cachedAt={cachedAt} />
+        <EmptyState
+          title={failure ? failure.title : "Parent updates"}
+          description={failure ? failure.description : "Loading parent contacts…"}
+          badge={failure ? "Unavailable" : undefined}
+          badgeTone={failure ? "setup" : undefined}
+          aria-busy={!fetchFailed}
+        >
+          {failure?.primary ? (
+            <Button as="a" variant="primary" href={failure.primary.href}>
+              {failure.primary.label}
+            </Button>
+          ) : null}
+          {failure?.showRetry ? (
+            <Button variant="secondary" type="button" onClick={() => void load()}>
+              Retry
+            </Button>
+          ) : null}
+        </EmptyState>
+      </>
     );
   }
 
   if (view.status === "setup_required") {
     return (
-      <EmptyState title="Parent updates" badge="Setup required" badgeTone="setup"
-        description={view.message} />
+      <>
+        <PageHeader
+          navPath="/parents"
+          title="Parent updates"
+          description="One-way weekly updates to parent contacts."
+        />
+        <OfflineBanner feature="Parent updates" fromCache={fromCache} cachedAt={cachedAt} />
+        <EmptyState
+          title="Parent updates"
+          badge="Setup required"
+          badgeTone="setup"
+          description={view.message}
+        >
+          <Button as="a" variant="primary" href="/workspace">
+            Choose your team
+          </Button>
+        </EmptyState>
+      </>
     );
   }
 
   if (view.status === "restricted") {
     return (
-      <EmptyState title="Parent updates" badge="Owners and admins only" badgeTone="setup"
-        description={view.message} />
+      <>
+        <PageHeader
+          navPath="/parents"
+          title="Parent updates"
+          description="One-way weekly updates to parent contacts."
+        />
+        <OfflineBanner feature="Parent updates" fromCache={fromCache} cachedAt={cachedAt} />
+        <EmptyState
+          title="Parent updates"
+          badge="Owners and admins only"
+          badgeTone="setup"
+          description={view.message}
+        />
+      </>
     );
   }
 
@@ -208,10 +360,20 @@ export default function ParentsClient() {
         title="Parent updates"
         description={`One-way updates from ${ready.orgName} to parent contacts: a weekly schedule digest and a read-only view link per family. No chat, no reply path, no roster exposure.`}
       />
+      <OfflineBanner feature="Parent updates" fromCache={fromCache} cachedAt={cachedAt} />
 
       {!ready.emailConfigured ? (
-        <EmptyState soft title="Configure email delivery" badge="Setup required" badgeTone="setup"
-          description="RESEND_API_KEY and AUTH_EMAIL_FROM are not set, so digests cannot be delivered. Sends will be recorded as “setup required” until email is configured." />
+        <EmptyState
+          soft
+          title="Configure email delivery"
+          badge="Setup required"
+          badgeTone="setup"
+          description="Email sending is not configured yet, so weekly digests cannot go out. Sends will be marked as needing setup until a mentor finishes email delivery."
+        >
+          <Button as="a" variant="primary" href="/connectors">
+            Open Connectors
+          </Button>
+        </EmptyState>
       ) : null}
 
       {error ? <p role="alert" className="app-muted">{error}</p> : null}
@@ -239,7 +401,7 @@ export default function ParentsClient() {
             <input maxLength={32} value={form.phone}
               onChange={(event) => setForm({ ...form, phone: event.target.value })} />
           </FormRow>
-          <FormRow label="Preferred language" hint="BCP-47 tag: en, es, zh-Hans, pt-BR…">
+          <FormRow label="Preferred language" hint="en, es, zh-Hans, pt-BR…">
             <input maxLength={12} value={form.preferredLanguage}
               onChange={(event) => setForm({ ...form, preferredLanguage: event.target.value })} />
           </FormRow>
@@ -344,7 +506,7 @@ export default function ParentsClient() {
             onChange={(event) => setNote(event.target.value)} />
         </FormRow>
         <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
-          <Button onClick={() => load(note)} disabled={busy}>Update preview</Button>
+          <Button onClick={() => void load(note)} disabled={busy}>Update preview</Button>
           <Button variant="primary" disabled={busy || !ready.preview || activeContacts.length === 0}
             onClick={() => void mutate({ action: "send_now", logisticsNotes: note || null })}>
             Send digest now

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { ToolStrip } from "../../components/ui";
 import {
   COMMAND_REFERENCE,
   DEV_SETUP_DONE_KEY,
@@ -64,10 +65,10 @@ function CommandBlock({ lines }: { lines: string[] }) {
 }
 
 /**
- * Alternative ways to do one step, each its own tab.
+ * Alternative ways to do one step, each its own option.
  *
- * Only the tabs for the reader's platform are shown, so a Windows student never
- * sees a Homebrew tab they cannot use — the point of tabs here is choice
+ * Only the options for the reader's platform are shown, so a Windows student never
+ * sees a Homebrew command they cannot use — the point of this switcher is choice
  * between real options, not a platform switch, which the page already has.
  */
 function MethodTabs({ methods, os }: { methods: NonNullable<Step["methods"]>; os: Os }) {
@@ -78,20 +79,15 @@ function MethodTabs({ methods, os }: { methods: NonNullable<Step["methods"]>; os
   return (
     <div className="ds-methods">
       {mine.length > 1 ? (
-        <div className="ds-method-tabs" role="tablist">
-          {mine.map((m, i) => (
-            <button
-              key={m.label}
-              type="button"
-              role="tab"
-              aria-selected={i === Math.min(active, mine.length - 1)}
-              className={i === Math.min(active, mine.length - 1) ? "ds-method-tab active" : "ds-method-tab"}
-              onClick={() => setActive(i)}
-            >
-              {m.label}
-            </button>
-          ))}
-        </div>
+        <ToolStrip
+          aria-label="How to do this"
+          value={String(Math.min(active, mine.length - 1))}
+          onChange={(id) => setActive(Number(id))}
+          items={mine.map((method, index) => ({
+            id: String(index),
+            label: method.label,
+          }))}
+        />
       ) : null}
       <CommandBlock lines={current.lines} />
       {current.note ? <p className="ds-method-note">{current.note}</p> : null}
