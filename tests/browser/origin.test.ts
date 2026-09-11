@@ -77,6 +77,7 @@ describe("playwrightWebServerEnv", () => {
     expect(env.DATABASE_URL).toBe(LOCAL_VANTAGE_CI_APP);
     expect(env.DATABASE_ADMIN_URL).toBe(LOCAL_VANTAGE_CI_ADMIN);
     expect(env.BETTER_AUTH_URL).toBe("http://127.0.0.1:3310");
+    expect(env.NODE_OPTIONS).toMatch(/max-old-space-size=4096/);
   });
 
   it("does not invent DATABASE_* on GitHub Actions", () => {
@@ -88,5 +89,6 @@ describe("playwrightWebServerEnv", () => {
     expect(env.DATABASE_URL).toBeUndefined();
     expect(env.E2E_AUTH_FIXTURE).toBe("1");
     expect(env.NODE_ENV).toBe("development");
+    expect(env.NODE_OPTIONS).toMatch(/max-old-space-size=4096/);
   });
 });

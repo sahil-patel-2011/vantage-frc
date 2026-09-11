@@ -88,6 +88,7 @@ export function playwrightWebServerEnv(origin: string, port: number): NodeJS.Pro
     NEXT_PUBLIC_APP_URL: origin,
     NEXT_PUBLIC_SITE_URL: origin,
     AUTH_TRUSTED_ORIGINS: trusted,
+    NODE_OPTIONS: [process.env.NODE_OPTIONS, "--max-old-space-size=4096"].filter(Boolean).join(" "),
   };
   // GitHub Actions browser job has no Postgres. Cursor/local boxes do —
   // fill vantage_ci when DATABASE_* is unset. `CI=true` is not enough:
