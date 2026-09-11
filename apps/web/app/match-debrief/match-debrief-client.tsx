@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { AIAttribution, Button, EmptyState } from "../../components/ui";
+import { AIAttribution, Button, EmptyState, PageHeader } from "../../components/ui";
 import {
   AI_EXPAND_IDLE,
   expandedDisplay,
@@ -10,6 +10,7 @@ import {
   type AiExpandState,
 } from "../../lib/ai-expand";
 import { MATCH_RESULTS, type Alliance, type MatchResult } from "../../lib/match-debrief";
+import { withOrgHref } from "../../lib/nav/product-nav";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
@@ -30,6 +31,23 @@ function isMatchDebriefView(value: unknown): value is View {
   if (!value || typeof value !== "object") return false;
   const status = (value as { status?: unknown }).status;
   return status === "setup_required" || status === "ready";
+}
+
+function MatchDebriefRelated({ orgId }: { orgId?: string | null }) {
+  const links = [
+    { id: "scouting", label: "Scouting", href: withOrgHref("/scouting", orgId) },
+    { id: "repairs", label: "Repairs", href: withOrgHref("/repairs", orgId) },
+    { id: "command", label: "Event day", href: withOrgHref("/command", orgId) },
+  ];
+  return (
+    <nav className="product-hub-related" aria-label="Related competition tools">
+      {links.map((link) => (
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
+          {link.label}
+        </Button>
+      ))}
+    </nav>
+  );
 }
 
 function matchDebriefCacheOrg(data: View, orgHint: string): string {
@@ -181,11 +199,20 @@ export default function MatchDebriefClient({ orgId }: { orgId: string | null }) 
   if (view.status === "setup_required") {
     return (
       <main className="intel-app">
-        <header className="intel-header">
-          <div><span className="eyebrow">VANTAGE / MATCH LOG</span><h1>Match debrief</h1></div>
-        </header>
+        <PageHeader
+          breadcrumbs={
+            <>
+              <a href={withOrgHref("/competition", orgId)}>Competition</a>
+              {" / Match debrief"}
+            </>
+          }
+          title="Match debrief"
+          description="Log how our robot performed each match — separate from scouting other teams."
+        >
+          <MatchDebriefRelated orgId={orgId} />
+        </PageHeader>
         <OfflineBanner feature="Match debrief" fromCache={fromCache} cachedAt={cachedAt} />
-        <EmptyState badge="Setup required" badgeTone="setup" soft title="Choose your team" description={view.message}>
+        <EmptyState badge="Needs setup" badgeTone="setup" soft title="Choose your team" description={view.message}>
           <Button as="a" variant="primary" href="/workspace">Choose your team</Button>
         </EmptyState>
       </main>
@@ -225,10 +252,18 @@ export default function MatchDebriefClient({ orgId }: { orgId: string | null }) 
 
   return (
     <main className="intel-app">
-      <header className="intel-header">
-        <div><span className="eyebrow">VANTAGE / MATCH LOG</span><h1>Our match debrief — {seasonYear}</h1></div>
-        <nav className="intel-actions"><a href={`/scouting${orgId ? `?orgId=${orgId}` : ""}`}>Scouting</a><a href={`/repairs${orgId ? `?orgId=${orgId}` : ""}`}>Repairs</a><a href="/workspace">Your team →</a></nav>
-      </header>
+        <PageHeader
+          breadcrumbs={
+            <>
+              <a href={withOrgHref("/competition", orgId)}>Competition</a>
+              {" / Match debrief"}
+            </>
+          }
+          title={`Our match debrief — ${seasonYear}`}
+          description="Log how our robot performed each match — separate from scouting other teams."
+        >
+          <MatchDebriefRelated orgId={orgId} />
+        </PageHeader>
       <OfflineBanner feature="Match debrief" fromCache={fromCache} cachedAt={cachedAt} />
       {message && <p className="telemetry-status">{message}</p>}
       <p className="telemetry-status">Log how <strong>our</strong> robot performed each match — separate from scouting other teams. Patterns here tell you what to fix before the next match.</p>
@@ -256,15 +291,14 @@ export default function MatchDebriefClient({ orgId }: { orgId: string | null }) 
           </>
         ) : (
           <div style={{ display: "grid", gap: 6, justifyItems: "start", marginTop: 8 }}>
-            <button
+            <Button
               type="button"
-              className="primary-action"
-              style={{ minHeight: 44 }}
+              variant="primary"
               disabled={coach.status === "loading" || view.summary.total === 0}
               onClick={() => void askCoach()}
             >
               {coach.status === "loading" ? "Expanding…" : "Expand with AI"}
-            </button>
+            </Button>
             {takeawaysDisplay.note ? <small>{takeawaysDisplay.note}</small> : null}
           </div>
         )}
@@ -289,7 +323,7 @@ export default function MatchDebriefClient({ orgId }: { orgId: string | null }) 
           <label>What worked<input value={form.whatWorked} onChange={(e) => setForm({ ...form, whatWorked: e.target.value })} /></label>
           <label>What broke<input value={form.whatBroke} onChange={(e) => setForm({ ...form, whatBroke: e.target.value })} /></label>
           <label>Action items before next match<input value={form.actionItems} onChange={(e) => setForm({ ...form, actionItems: e.target.value })} /></label>
-          <button className="primary-action">Save debrief</button>
+          <Button type="submit" variant="primary">Save debrief</Button>
         </form>
         <section className="intel-panel">
           <span className="eyebrow">OPEN ACTION ITEMS</span>

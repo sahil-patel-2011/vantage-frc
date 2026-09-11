@@ -201,7 +201,7 @@ export function pitShellCopy(kind: PitShellKind): PitEmptyCopy {
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Choose your team before logging batteries, issues, or maintenance.",

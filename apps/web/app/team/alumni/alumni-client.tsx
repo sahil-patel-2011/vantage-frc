@@ -2,8 +2,13 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../../components/offline-banner";
-import { EmptyState } from "../../../components/ui";
-import { alumniShellCopy, classifyAlumniShell } from "../../../lib/alumni";
+import { Button, EmptyState, PageHeader } from "../../../components/ui";
+import {
+  ALUMNI_RELATED_INCLUDE,
+  alumniRelatedLinks,
+  alumniShellCopy,
+  classifyAlumniShell,
+} from "../../../lib/alumni";
 import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
 
@@ -232,23 +237,30 @@ export default function AlumniClient({ orgId }: { orgId: string }) {
   const mentorCount = alumni.filter((a) => a.isMentor).length;
   const shown = mentorsOnly ? alumni.filter((a) => a.isMentor) : alumni;
   const emptyCopy = alumniShellCopy(classifyAlumniShell({ orgId, alumniCount: alumni.length }));
+  const related = alumniRelatedLinks(orgId, { include: [...ALUMNI_RELATED_INCLUDE], active: "team-alumni" });
 
   return (
     <main className="intel-app">
-      <header className="intel-header">
-        <div>
-          <span className="eyebrow">VANTAGE / ALUMNI NETWORK</span>
-          <h1>Keep your alumni connected</h1>
-          <p className="app-muted">
-            A shared directory of team alumni — where they are now and how to reach them — plus a one-click
-            connection to your team&apos;s Discord so you can rally the network with an announcement.
-          </p>
-        </div>
-        <nav className="intel-actions" aria-label="Team links">
-          <a href={`/team?orgId=${orgId}`}>Team admin</a>
-          <a href={`/team/knowledge?orgId=${orgId}`}>Team knowledge</a>
-        </nav>
-      </header>
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={`/team?orgId=${orgId}`}>Team</a>
+            {" / Alumni"}
+          </>
+        }
+        title="Keep your alumni connected"
+        description="A shared directory of team alumni — where they are now and how to reach them — plus a one-click connection to your team's Discord so you can rally the network with an announcement."
+      >
+        {related.length ? (
+          <nav className="product-hub-related" aria-label="Related team tools">
+            {related.map((link) => (
+              <Button as="a" variant="secondary" key={link.id} href={link.href}>
+                {link.label}
+              </Button>
+            ))}
+          </nav>
+        ) : null}
+      </PageHeader>
 
       <OfflineBanner feature="Alumni" fromCache={fromCache} cachedAt={cachedAt} />
 

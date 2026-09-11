@@ -89,6 +89,9 @@ export function playwrightWebServerEnv(origin: string, port: number): NodeJS.Pro
     NEXT_PUBLIC_SITE_URL: origin,
     AUTH_TRUSTED_ORIGINS: trusted,
     NODE_OPTIONS: [process.env.NODE_OPTIONS, "--max-old-space-size=4096"].filter(Boolean).join(" "),
+    // Isolated from a human `next dev` on `.next`. Full-suite shards evict
+    // this directory between processes so compiled routes do not accumulate.
+    NEXT_DIST_DIR: process.env.NEXT_DIST_DIR ?? ".next-pw",
   };
   // GitHub Actions browser job has no Postgres. Cursor/local boxes do —
   // fill vantage_ci when DATABASE_* is unset. `CI=true` is not enough:

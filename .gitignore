@@ -1,6 +1,9 @@
 node_modules/
 node_modules
 .next/
+.next-pw/
+.next-pw-*/
+apps/web/.next-pw*/
 dist/
 release/
 coverage/

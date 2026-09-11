@@ -196,7 +196,7 @@ export default function KickoffClient(_props: { embedded?: boolean } = {}) {
         />
         <BuildHubRelated active="kickoff" include={[...KICKOFF_BUILD_RELATED_INCLUDE]} />
         <OfflineBanner feature="Kickoff" fromCache={fromCache} cachedAt={cachedAt} />
-        <EmptyState badge="Setup required" badgeTone="setup" soft title="Choose your team" description={view.message}>
+        <EmptyState badge="Needs setup" badgeTone="setup" soft title="Choose your team" description={view.message}>
           <Button as="a" variant="primary" href="/workspace">
             Choose your team
           </Button>

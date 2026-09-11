@@ -47,7 +47,7 @@ export default async function PitCommandPage({
         </PageHeader>
         <EmptyState
           soft
-          badge="Setup required"
+          badge={copy.badge}
           badgeTone="setup"
           title={copy.title}
           description={copy.description}

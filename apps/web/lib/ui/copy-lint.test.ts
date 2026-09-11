@@ -468,6 +468,11 @@ describe("user-facing copy", () => {
         "app/chat/chat-client.tsx",
         "app/business/business-client.tsx",
         "app/cad/setup/page.tsx",
+        "app/match-debrief/match-debrief-client.tsx",
+        "app/team/alumni/alumni-client.tsx",
+        "app/kickoff/kickoff-client.tsx",
+        "app/pit/page.tsx",
+        "app/pit/pit-command-client.tsx",
       ] as const;
       const rules: readonly Rule[] = [
         {

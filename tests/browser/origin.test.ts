@@ -78,6 +78,19 @@ describe("playwrightWebServerEnv", () => {
     expect(env.DATABASE_ADMIN_URL).toBe(LOCAL_VANTAGE_CI_ADMIN);
     expect(env.BETTER_AUTH_URL).toBe("http://127.0.0.1:3310");
     expect(env.NODE_OPTIONS).toMatch(/max-old-space-size=4096/);
+    expect(env.NEXT_DIST_DIR).toBe(".next-pw");
+  });
+
+  it("honors an explicit NEXT_DIST_DIR for a leftover next cache", () => {
+    const previous = process.env.NEXT_DIST_DIR;
+    process.env.NEXT_DIST_DIR = ".next-pw-3598";
+    try {
+      const env = playwrightWebServerEnv("http://127.0.0.1:3310", 3310);
+      expect(env.NEXT_DIST_DIR).toBe(".next-pw-3598");
+    } finally {
+      if (previous === undefined) delete process.env.NEXT_DIST_DIR;
+      else process.env.NEXT_DIST_DIR = previous;
+    }
   });
 
   it("does not invent DATABASE_* on GitHub Actions", () => {
