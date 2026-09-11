@@ -400,9 +400,7 @@ export default function NotificationPreferencesClient() {
     );
   }
 
-  switch (view.status) {
-    case "live":
-      return (
+  return (
         <main className="module-page notif-prefs-page notif-page">
           <PageHeader
             breadcrumbs="Account / Notifications"
@@ -490,9 +488,4 @@ export default function NotificationPreferencesClient() {
           </Panel>
         </main>
       );
-    default: {
-      const _never: never = view;
-      return _never;
-    }
-  }
 }

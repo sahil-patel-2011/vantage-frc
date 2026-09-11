@@ -241,9 +241,7 @@ export default function SecurityClient({
     );
   }
 
-  switch (view.status) {
-    case "live":
-      return (
+  return (
         <main className="module-page security-page">
           <PageHeader
             breadcrumbs="Account / Security"
@@ -376,9 +374,4 @@ export default function SecurityClient({
           ) : null}
         </main>
       );
-    default: {
-      const _never: never = view;
-      return _never;
-    }
-  }
 }

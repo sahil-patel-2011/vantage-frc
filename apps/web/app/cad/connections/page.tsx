@@ -1,5 +1,5 @@
 import CadConnections, { CadConnectionsRelated } from "./connections-client";
-import { Button, EmptyState, PageHeader } from "../../components/ui";
+import { Button, EmptyState, PageHeader } from "../../../components/ui";
 import "../cad-setup.css";
 
 export const metadata = {

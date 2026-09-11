@@ -189,7 +189,13 @@ export default function CadConnections({ orgId }: { orgId: string }) {
       }
       const row = body as {
         devices?: Device[];
-        onshape?: { setupRequired?: boolean; message?: string };
+        onshape?: {
+          configured?: boolean;
+          redirectUri?: string | null;
+          scopes?: unknown[] | null;
+          setupRequired?: boolean;
+          message?: string;
+        };
         onshapeConnections?: OnshapeConnection[];
         error?: string;
       };
@@ -328,15 +334,13 @@ export default function CadConnections({ orgId }: { orgId: string }) {
     );
   }
 
-  switch (view.status) {
-    case "live": {
-      const onshapeConnected = view.onshapeConnections.some((c) => c.status === "connected");
-      const hostedBadge = onshapeHostedBadge({
-        sessionConnected: onshapeConnected,
-        oauthCtaEnabled: view.onshapeOauthReady,
-      });
-      const desktopOnline = view.devices.some((d) => !d.revokedAt && d.lastSeenAt);
-      return (
+  const onshapeConnected = view.onshapeConnections.some((c) => c.status === "connected");
+  const hostedBadge = onshapeHostedBadge({
+    sessionConnected: onshapeConnected,
+    oauthCtaEnabled: view.onshapeOauthReady,
+  });
+  const desktopOnline = view.devices.some((d) => !d.revokedAt && d.lastSeenAt);
+  return (
         <main className="module-page cad-connections-page">
           <PageHeader
             breadcrumbs="CAD / Connections"
@@ -444,10 +448,4 @@ export default function CadConnections({ orgId }: { orgId: string }) {
           />
         </main>
       );
-    }
-    default: {
-      const _never: never = view;
-      return _never;
-    }
-  }
 }
