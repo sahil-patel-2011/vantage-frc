@@ -25,6 +25,7 @@ import { createHash } from "node:crypto";
 import { createWriteStream, promises as fs } from "node:fs";
 import { basename, join } from "node:path";
 import { pipeline } from "node:stream/promises";
+import { studentUpdateError } from "./shell-copy";
 import {
   CHECK_INTERVAL_MS,
   FIRST_CHECK_DELAY_MS,
@@ -155,7 +156,7 @@ export class UpdateService {
       downloadReady: this.downloadedPath !== null,
       downloading: this.downloading,
       portable: isPortableBuild(),
-      lastError: this.lastError,
+      lastError: studentUpdateError(this.lastError),
     };
   }
 

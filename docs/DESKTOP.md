@@ -1,6 +1,6 @@
 # Vantage desktop
 
-*For anyone installing the desktop app, and contributors who build and release it. Last updated 2026-09-10.*
+*For anyone installing the desktop app, and contributors who build and release it. Last updated 2026-09-11.*
 
 Desktop app for Windows and macOS around the hosted Vantage web app (`https://vantage-frc-web.vercel.app`).
 It is not a second backend. Auth, RLS, billing, and CAD jobs stay on the web deployment.
@@ -27,7 +27,10 @@ admin invites your exact email; everyone else lands on the waitlist.
 - **Locked-down navigation.** An allowlist covers production Vantage, localhost dev,
   and the OAuth/checkout hosts the product actually uses (Google, Stripe, Onshape,
   GitHub); anything else opens in the system browser instead of the shell.
-- **Branded offline screen** with a retry button when the hosted app is unreachable.
+- **Offline screen** with a retry button when Vantage is unreachable. Copy is
+  student-readable (Wi-Fi / venue network / try again) — never a host name,
+  Chromium error code, or "desktop shell" sentence. Ctrl+R retries too; there
+  is no View menu.
 - **Deep links.** `vantage-frc://open/<path>` (e.g. `vantage-frc://open/build?tab=cad`)
   focuses the running window and routes into the app; signed out, the link is held
   until sign-in completes.
@@ -166,6 +169,10 @@ Google sign-in uses a Chromium user agent with the Electron token stripped so OA
 
 - `apps/desktop/src/allowlist.ts` — pure navigation/gate/deep-link policy (unit-tested in
   `apps/desktop/test/allowlist.test.ts`).
+- `apps/desktop/src/shell-copy.ts` — student-facing offline / update sentences and
+  Chromium load-error mapping (unit-tested in `apps/desktop/test/shell-copy.test.ts`).
+  The bundled HTML pages keep the same strings so the window never prints a host
+  name or an engineering error.
 - `apps/desktop/src/window-state.ts` — pure bounds sanitizing/clamping.
 - `apps/desktop/src/main.ts` — wiring: cookie-jar session check
   (Better Auth `…session_token` cookie presence gates the shell; the server stays the

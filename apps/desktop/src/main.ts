@@ -32,6 +32,7 @@ import {
   serializeWindowState,
   type WindowState,
 } from "./window-state";
+import { NET_ERR, offlineReasonFromLoadError } from "./shell-copy";
 import { UpdateService, type UpdateStatus } from "./update-service";
 
 const PARTITION = "persist:vantage";
@@ -231,6 +232,14 @@ function startLinkFlow(window: BrowserWindow) {
   });
 }
 
+function installShellIpc() {
+  ipcMain.handle("desktop-shell:retry", (event) => {
+    if (!senderIsShellPage(event)) return;
+    const window = asWindow(BrowserWindow.fromWebContents(event.sender)) ?? mainWindow();
+    if (window) applyGate(window);
+  });
+}
+
 function installLinkIpc() {
   ipcMain.handle("desktop-link:start", (event) => {
     if (!senderIsShellPage(event)) return;
@@ -394,7 +403,8 @@ async function createWindow() {
   });
 
   window.webContents.on("did-fail-load", (_event, errorCode, _errorDescription, validatedURL, isMainFrame) => {
-    if (!isMainFrame || errorCode === -3) return;
+    if (!isMainFrame || errorCode === NET_ERR.ABORTED) return;
+    if (typeof validatedURL === "string" && validatedURL.startsWith("file:")) return;
     // A main-frame failure on the app origin while we are online is the shape a
     // deploy-under-us takes: the document the window held no longer resolves.
     // Let the updater try one hard reload before falling back to the offline
@@ -402,7 +412,7 @@ async function createWindow() {
     if (typeof validatedURL === "string" && validatedURL.startsWith(startOrigin)) {
       if (updates.noteBrokenPage()) return;
     }
-    loadShellPage(window, "offline.html");
+    loadShellPage(window, "offline.html", { reason: offlineReasonFromLoadError(errorCode, startOrigin) });
   });
 
   updates.trackWindow(window);
@@ -590,6 +600,7 @@ if (!gotLock) {
     });
 
     installMenu();
+    installShellIpc();
     installLinkIpc();
     installUpdateIpc();
     updates.watchSession(ses);
