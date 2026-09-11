@@ -10,6 +10,7 @@ import {
   deploymentBaseUrl,
   joinEnvNames,
   missingConnectorEnv,
+  studentPermissionsCopy,
   type ConnectorDefinition,
 } from "./catalog";
 
@@ -344,8 +345,15 @@ describe("student connector cards", () => {
       expect(status.detail, def.id).not.toMatch(STUDENT_CONNECTOR_LEAK);
       expect(status.missingEnv, def.id).toEqual([]);
       expect(status.callbackUrl, def.id).toBeNull();
-      expect(status.permissions, def.id).toEqual([]);
+      expect(status.permissions, def.id).toEqual([studentPermissionsCopy(def.id)]);
+      expect(status.permissions.join(" "), def.id).not.toMatch(STUDENT_CONNECTOR_LEAK);
     }
+  });
+
+  it("names Onshape document read/edit for students, not OAuth2Read", () => {
+    const student = describeConnector(connectorById("onshape"), BASE, {}, "student");
+    expect(student.permissions).toEqual(["Vantage can read and edit Onshape documents you pick."]);
+    expect(student.permissions.join(" ")).not.toMatch(/OAuth2Read|CLIENT_SECRET/i);
   });
 
   it("asks a mentor when Onshape is not ready, and still names env vars for operators", () => {

@@ -35,3 +35,6 @@ export const CAD_PAIR_FUSION =
   "Fusion stays on this computer. Pair it here when you need Autodesk jobs.";
 
 export const CAD_PAIR_APPROVED = "This computer is paired. Go back to the desktop app to continue.";
+
+export const ONSHAPE_STUDENT_PERMISSIONS_HINT =
+  "Vantage can read and edit Onshape documents you pick.";

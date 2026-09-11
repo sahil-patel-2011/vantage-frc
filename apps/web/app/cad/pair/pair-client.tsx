@@ -108,9 +108,15 @@ export default function PairClient({
         </fieldset>
 
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-          <Button variant="primary" type="submit" disabled={!orgId || organizations.length === 0}>
-            Approve pairing
-          </Button>
+          {organizations.length === 0 ? (
+            <Button as="a" variant="primary" href="/workspace">
+              Choose your team
+            </Button>
+          ) : (
+            <Button variant="primary" type="submit" disabled={!orgId}>
+              Approve pairing
+            </Button>
+          )}
           {orgId ? (
             <Button as="a" variant="secondary" href={`/cad/setup?orgId=${encodeURIComponent(orgId)}`}>
               CAD setup

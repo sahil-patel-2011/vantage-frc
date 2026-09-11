@@ -105,9 +105,7 @@ function PairShell({
       <EmptyState
         soft
         badge={
-          shell === "setup"
-            ? "Setup required"
-            : shell === "error"
+            shell === "error"
               ? "Unavailable"
               : shell === "empty"
                 ? "No editors paired yet"
@@ -276,11 +274,7 @@ export default function PairClient({
           title={shellCopy.title}
           description={shellCopy.description}
           className="product-hub-setup"
-        >
-          <Button as="a" variant="primary" href="#pair-approve">
-            Enter pairing code
-          </Button>
-        </EmptyState>
+        />
       ) : null}
 
       <div className="pair-layout">

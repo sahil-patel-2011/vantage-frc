@@ -12,5 +12,11 @@ describe("CAD connections last snapshot stays on the phone", () => {
     expect(src).toMatch(/"cad-connections"/);
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
     expect(src).toMatch(/feature="CAD connections"/);
+    expect(src).toMatch(/hadCache \|\| viewRef\.current/);
+    expect(src).toMatch(/Choose your team/);
+    expect(src).toMatch(/CadDocumentPicker/);
+    expect(src).toMatch(/ONSHAPE_STUDENT_PERMISSIONS/);
+    expect(src).not.toMatch(/fetchFailed \|\| !view/);
+    expect(src).not.toMatch(/CLIENT_SECRET|Onshape OAuth/);
   });
 });

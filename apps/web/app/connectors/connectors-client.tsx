@@ -9,6 +9,7 @@ import {
   connectorDisconnectEndpoint,
   type ConnectorStatusView,
 } from "../../lib/connectors/actions";
+import CadDocumentPicker from "../cad/connections/cad-document-picker";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./connectors.css";
@@ -65,6 +66,7 @@ async function persistConnectorsSnapshot(orgHint: string, data: ConnectorsView):
 export default function ConnectorsClient() {
   const [view, setView] = useState<ConnectorsView | null>(null);
   const [fetchFailed, setFetchFailed] = useState(false);
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [message, setMessage] = useState("");
   const [messageOk, setMessageOk] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -89,6 +91,7 @@ export default function ConnectorsClient() {
       // IndexedDB missing or blocked; live fetch still runs.
     }
     setFetchFailed(false);
+    setErrorStatus(null);
     try {
       const response = await fetch("/api/connectors", {
         cache: "no-store",
@@ -96,10 +99,17 @@ export default function ConnectorsClient() {
       });
       const data: unknown = await response.json().catch(() => null);
       if (response.status === 401 || response.status === 403) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setMessage("Could not refresh Connectors. Showing the last copy on this device.");
+          setFetchFailed(false);
+          return;
+        }
         setView(null);
         setFromCache(false);
         setCachedAt(null);
         setFetchFailed(true);
+        setErrorStatus(response.status);
         setMessage(
           data && typeof data === "object" && "error" in data && typeof data.error === "string"
             ? data.error
@@ -115,6 +125,7 @@ export default function ConnectorsClient() {
           return;
         }
         setFetchFailed(true);
+        setErrorStatus(response.status);
         setMessage(
           data && typeof data === "object" && "error" in data && typeof data.error === "string"
             ? data.error
@@ -198,6 +209,8 @@ export default function ConnectorsClient() {
     }
   }
 
+  const chooseTeam = fetchFailed && (errorStatus === 401 || errorStatus === 403);
+
   if (!view) {
     return (
       <main className="module-page connectors-page">
@@ -210,14 +223,24 @@ export default function ConnectorsClient() {
         {fetchFailed ? (
           <EmptyState
             soft
-            badge="Unavailable"
+            badge={chooseTeam ? "Needs setup" : "Unavailable"}
             badgeTone="setup"
-            title="Could not load connector status"
-            description={message || "A network or server issue prevented loading. Retry, or open Support if this keeps failing."}
+            title={chooseTeam ? "Choose your team" : "Could not load connector status"}
+            description={
+              chooseTeam
+                ? "Choose your team to see what this team has linked."
+                : message || "A network or server issue prevented loading. Retry, or open Support if this keeps failing."
+            }
           >
-            <Button variant="primary" type="button" onClick={() => void load()}>
-              Retry
-            </Button>
+            {chooseTeam ? (
+              <Button as="a" variant="primary" href="/workspace">
+                Choose your team
+              </Button>
+            ) : (
+              <Button variant="primary" type="button" onClick={() => void load()}>
+                Retry
+              </Button>
+            )}
           </EmptyState>
         ) : (
           <EmptyState
@@ -296,7 +319,9 @@ export default function ConnectorsClient() {
 
               {connector.permissions.length > 0 ? (
                 <p className="app-muted connector-permissions">
-                  Grant in the provider: {connector.permissions.join(", ")}.
+                  {canManage
+                    ? `Grant in the provider: ${connector.permissions.join(", ")}.`
+                    : connector.permissions[0]}
                 </p>
               ) : null}
 
@@ -317,6 +342,9 @@ export default function ConnectorsClient() {
                   Open settings
                 </Button>
               </div>
+              {connector.id === "onshape" && orgId ? (
+                <CadDocumentPicker orgId={orgId} connected={connector.state === "connected"} />
+              ) : null}
             </li>
           );
         })}
