@@ -4,6 +4,16 @@ Vantage is a multi-tenant operations platform for FRC teams. This repository con
 foundation plus competition-ready scouting, Intel/Research, closed membership, configurable AI routing,
 pricing controls, and durable private/team agent context.
 
+## Try the hosted version first (recommended)
+
+The easiest way to use Vantage is the version we already host: **https://vantage-frc-web.vercel.app**.
+It is free, and everything — database, sign-in, integrations, background jobs — is already set up, so
+there is nothing to install or configure. Sign up there and your team can start the same day.
+
+Self-hosting is for teams that want to run their own copy on their own accounts. It works, and the
+whole codebase is open source, but it means creating a Postgres database, a Vercel project, and the
+provider credentials yourself. If you go that route, follow [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+
 ## Repository map
 
 - `apps/web` — the single public deployment: marketing, legal/pricing/waitlist, Better Auth, and every
