@@ -39,6 +39,16 @@ export async function expectReadyOr(
  * directory should still run `npm run test:browser` — never fail the suite
  * because a screenshot path was missing.
  */
+export async function gotoReady(page: Page, path: string): Promise<void> {
+  await page.goto(path);
+  await waitForLoadingGone(page);
+  const missing = page.getByRole("heading", { name: "This page is not here" });
+  if (await missing.count()) {
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await waitForLoadingGone(page);
+  }
+}
+
 export async function artifactScreenshot(page: Page, filename: string): Promise<void> {
   const dir = process.env.PLAYWRIGHT_ARTIFACT_DIR ?? "/opt/cursor/artifacts";
   try {
