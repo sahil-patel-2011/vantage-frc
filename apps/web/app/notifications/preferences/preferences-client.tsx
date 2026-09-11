@@ -461,9 +461,8 @@ export default function NotificationPreferencesClient() {
           <Panel className="account-panel">
             <h2>In-app inbox</h2>
             <p className="app-muted">
-              Controls what Vantage may put in{" "}
-              <a href="/notifications">your notifications inbox</a>. Team todos, duties, and calendar alerts default
-              on so assignments are not missed — turn off any category you do not want.
+              Choose which todos, duties, chat, and team news land in your inbox. Assignments stay on
+              by default — turn off any category you do not want.
             </p>
             <ul className="account-prefs">
               {IN_APP_PREF_LABELS.map((item) => (
