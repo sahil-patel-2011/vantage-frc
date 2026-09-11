@@ -104,11 +104,11 @@ async function failedRefreshKeepsBoard(
   await page.goto(options.path);
   // /batteries and /fmea redirect into the Build hub, whose h1 is Build and
   // whose CSS hides the inner page header. Assert the painted board heading.
-  await expect(page.getByRole("heading", { name: options.heading })).toBeVisible();
+  await expect(page.getByRole("heading", { name: options.heading, exact: true })).toBeVisible();
   await expect(page.locator("body")).toContainText(options.keep);
   fail = true;
   await page.reload({ waitUntil: "domcontentloaded" });
-  await expect(page.getByRole("heading", { name: options.heading })).toBeVisible();
+  await expect(page.getByRole("heading", { name: options.heading, exact: true })).toBeVisible();
   await expect(page.locator("body")).toContainText(options.keep);
   await expect(page.locator("body")).toContainText(LAST_COPY);
   await expect(page.locator("body")).not.toContainText(/something went wrong/i);
@@ -121,7 +121,7 @@ test.describe("offline phone student boards keep the last copy", () => {
 
   test("Hours keeps the last board after a failed refresh", async ({ page }) => {
     await failedRefreshKeepsBoard(page, {
-      path: "/hours",
+      path: "/hours?orgId=org-1",
       api: "**/api/hours**",
       body: HOURS_READY,
       heading: "Shop hours",
@@ -131,7 +131,7 @@ test.describe("offline phone student boards keep the last copy", () => {
 
   test("Batteries keeps the last board after a failed refresh", async ({ page }) => {
     await failedRefreshKeepsBoard(page, {
-      path: "/batteries",
+      path: "/batteries?orgId=org-1",
       api: "**/api/batteries**",
       body: BATTERIES_READY,
       heading: "Add a battery",
@@ -141,7 +141,7 @@ test.describe("offline phone student boards keep the last copy", () => {
 
   test("FMEA keeps the last board after a failed refresh", async ({ page }) => {
     await failedRefreshKeepsBoard(page, {
-      path: "/fmea",
+      path: "/fmea?orgId=org-1",
       api: "**/api/fmea**",
       body: FMEA_LIVE,
       heading: "No failures logged yet",
@@ -151,7 +151,7 @@ test.describe("offline phone student boards keep the last copy", () => {
 
   test("Event readiness keeps the last board after a failed refresh", async ({ page }) => {
     await failedRefreshKeepsBoard(page, {
-      path: "/event-readiness",
+      path: "/event-readiness?orgId=org-1",
       api: "**/api/event-readiness**",
       body: EVENT_READINESS_SETUP,
       heading: "Event Readiness",
