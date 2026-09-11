@@ -259,7 +259,7 @@ export function draftNextActions(input: {
       {
         id: "strategy",
         label: "Open Strategy",
-        detail: "Win/loss waits on the same event numbers."
+        detail: "Win/loss waits on the same event numbers.",
         href: hubHref("/competition", "strategy", orgId),
       },
       {

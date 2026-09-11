@@ -238,7 +238,7 @@ export function pickClockNextActions(input: {
       return dropRelatedStripDuplicates(orgId, [
         {
           id: "team-data",
-          label: "Sync Team Data"
+          label: "Sync Team Data",
           detail:
             excludedCount > 0
               ? `${formatPickClockMetric(excludedCount, true)} team${excludedCount === 1 ? "" : "s"} already taken on the draft board. Sync or clear slots.`
