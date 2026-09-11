@@ -1,11 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
-import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { trainingWinnerLabel } from "../../lib/scout-training-mode";
 import type { ScoutTrainingView } from "../../lib/scout-training-mode/compute-scout-training-mode";
 import type { PracticeMatch, TrainingWinner } from "../../lib/scout-training-mode/types";
+import { hubHref } from "../../lib/nav/hubs";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 const WINNER_OPTIONS: TrainingWinner[] = ["red", "blue", "tie"];
 
@@ -21,6 +26,105 @@ function accuracyTone(score: number): string {
 
 type LiveView = Extract<ScoutTrainingView, { status: "live" }>;
 
+function isScoutTrainingView(value: unknown): value is ScoutTrainingView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function responseError(data: unknown): string {
+  return data && typeof data === "object" && "error" in data && typeof data.error === "string"
+    ? data.error
+    : "";
+}
+
+function scoutTrainingCacheOrg(data: ScoutTrainingView, orgHint: string): string {
+  switch (data.status) {
+    case "setup_required":
+      return (typeof data.orgId === "string" && data.orgId.trim()) || orgHint;
+    case "live":
+      return data.orgId.trim() || orgHint;
+    default: {
+      data satisfies never;
+      return orgHint;
+    }
+  }
+}
+
+async function persistScoutTrainingSnapshot(orgHint: string, data: ScoutTrainingView): Promise<void> {
+  const cacheOrg = scoutTrainingCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("scout-training-mode", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("scout-training-mode", "_", data);
+  } catch {
+    // Live Scout training already painted; IndexedDB is best-effort.
+  }
+}
+
+function ScoutTrainingRelated({ orgId }: { orgId?: string | null }) {
+  return (
+    <nav className="product-hub-related" aria-label="Related scouting tools">
+      <Button as="a" variant="secondary" href={hubHref("/competition", "scouting", orgId)}>
+        Scouting
+      </Button>
+      <Button as="a" variant="secondary" href={hubHref("/competition", "data-quality-scorecard", orgId)}>
+        Data quality
+      </Button>
+      <Button as="a" variant="secondary" href={withOrgHref("/scouting/lineup", orgId)}>
+        Coverage
+      </Button>
+    </nav>
+  );
+}
+
+function ScoutTrainingNextActions({ orgId }: { orgId: string }) {
+  const actions = [
+    {
+      id: "practice",
+      label: "Practice a match",
+      detail: "Call the winner and scores on a completed match before you scout live.",
+      href: "#scout-training-practice",
+      primary: true,
+    },
+    {
+      id: "scouting",
+      label: "Open Scouting",
+      detail: "Live match and pit entries are logged on the scouting board.",
+      href: hubHref("/competition", "scouting", orgId),
+      primary: false,
+    },
+    {
+      id: "quality",
+      label: "Open Data quality",
+      detail: "Coverage and cross-scout checks sit beside this practice board.",
+      href: hubHref("/competition", "data-quality-scorecard", orgId),
+      primary: false,
+    },
+  ];
+  return (
+    <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <Button as="a" variant="secondary" href={action.href}>
+              Open
+            </Button>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
 export default function ScoutTrainingModeClient() {
   const [view, setView] = useState<ScoutTrainingView | null>(null);
   const [error, setError] = useState("");
@@ -29,34 +133,81 @@ export default function ScoutTrainingModeClient() {
   const [failureStatus, setFailureStatus] = useState<number | null>(null);
   const [failureMessage, setFailureMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<ScoutTrainingView | null>(null);
+  viewRef.current = view;
 
   const orgId = view && "orgId" in view ? view.orgId : null;
 
-  const load = useCallback(() => {
+  const load = useCallback(async () => {
+    const params = new URLSearchParams(window.location.search);
+    const orgHint = params.get("orgId")?.trim() ?? "";
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<ScoutTrainingView>("scout-training-mode", orgHint || "_");
+      if (!viewRef.current && cached?.data && isScoutTrainingView(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
     setFetchFailed(false);
     setFailureStatus(null);
     setFailureMessage("");
     setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    void fetch(`/api/scout-training-mode${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
-        const data = (await response.json()) as ScoutTrainingView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setFailureStatus(response.status);
-          setFailureMessage("error" in data && data.error ? data.error : "");
-          setFetchFailed(true);
+    try {
+      const query = new URLSearchParams();
+      if (orgHint) query.set("orgId", orgHint);
+      const response = await fetch(
+        `/api/scout-training-mode${query.toString() ? `?${query.toString()}` : ""}`,
+        {
+          cache: "no-store",
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+        },
+      );
+      const data: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setFetchFailed(true);
+        setFailureStatus(response.status);
+        setFailureMessage(responseError(data));
+        return;
+      }
+      if (!response.ok || !isScoutTrainingView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Scout training mode. Showing the last copy on this device.");
+          setFetchFailed(false);
           return;
         }
-        setView(data);
-      })
-      .catch(() => setFetchFailed(true));
+        setFetchFailed(true);
+        setFailureStatus(response.status);
+        setFailureMessage(responseError(data));
+        return;
+      }
+      setView(data);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistScoutTrainingSnapshot(orgHint, data);
+    } catch {
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Scout training mode. Showing the last copy on this device.");
+        setFetchFailed(false);
+        return;
+      }
+      setFetchFailed(true);
+    }
   }, []);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   const mutate = useCallback(
@@ -69,13 +220,16 @@ export default function ScoutTrainingModeClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
-        const data = (await response.json()) as ScoutTrainingView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setError("error" in data && data.error ? data.error : "Something went wrong.");
+        const data: unknown = await response.json().catch(() => null);
+        if (!response.ok || !isScoutTrainingView(data)) {
+          setError(responseError(data) || "Something went wrong.");
           return;
         }
         setView(data);
+        setFromCache(false);
+        void persistScoutTrainingSnapshot(orgId, data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -85,80 +239,106 @@ export default function ScoutTrainingModeClient() {
     [orgId, busy],
   );
 
+  const competitionHref = orgId ? `/competition?orgId=${encodeURIComponent(orgId)}` : "/competition";
+  const header = (
+    <PageHeader
+      breadcrumbs={
+        <>
+          <a href={competitionHref}>Competition</a>
+          {" / Scout training mode"}
+        </>
+      }
+      title="Scout training mode"
+      description="Practice scouting on real, already-completed matches and see how close your call was — the fast way to onboard new scouts before they scout live."
+    >
+      <ScoutTrainingRelated orgId={orgId} />
+    </PageHeader>
+  );
+
+  if (!view) {
+    const failure = fetchFailed
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: failureStatus,
+            message: failureMessage,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: failureMessage || "A network or server issue prevented loading. Try again.",
+          },
+        )
+      : null;
+    return (
+      <main className="module-page">
+        {header}
+        <OfflineBanner feature="Scout training mode" fromCache={fromCache} cachedAt={cachedAt} />
+        <EmptyState
+          title={failure ? failure.title : "Loading…"}
+          description={failure ? failure.description : "Checking your team."}
+          aria-busy={!fetchFailed}
+        >
+          {failure?.primary ? (
+            <Button as="a" variant="primary" href={failure.primary.href}>
+              {failure.primary.label}
+            </Button>
+          ) : null}
+          {failure?.showRetry ? (
+            <Button variant="secondary" type="button" onClick={() => void load()}>
+              Retry
+            </Button>
+          ) : null}
+        </EmptyState>
+      </main>
+    );
+  }
+
+  switch (view.status) {
+    case "setup_required":
+      return (
+        <main className="module-page">
+          {header}
+          <OfflineBanner feature="Scout training mode" fromCache={fromCache} cachedAt={cachedAt} />
+          {error ? (
+            <p className="telemetry-status" role="alert">
+              {error}
+            </p>
+          ) : null}
+          <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
+            {view.steps[0] ? (
+              <Button as="a" variant="primary" href={view.steps[0].href}>
+                {view.steps[0].label}
+              </Button>
+            ) : null}
+          </EmptyState>
+        </main>
+      );
+    case "live":
+      break;
+    default: {
+      view satisfies never;
+      return null;
+    }
+  }
+
   return (
     <main className="module-page">
-      <PageHeader
-        breadcrumbs={
-          <>
-            <a href={orgId ? `/competition?orgId=${encodeURIComponent(orgId)}` : "/competition"}>Competition</a>
-            {" / Scout Training Mode"}
-          </>
-        }
-        title="Scout training mode"
-        description="Practice scouting on real, already-completed matches and see how close your call was — the fast way to onboard new scouts before they scout live."
-      >
-        {orgId ? (
-          <Button as="a" variant="secondary" href={`/competition?orgId=${encodeURIComponent(orgId)}`}>
-            Back to Competition
-          </Button>
-        ) : null}
-      </PageHeader>
-
+      {header}
+      <OfflineBanner feature="Scout training mode" fromCache={fromCache} cachedAt={cachedAt} />
       {error ? (
         <p className="telemetry-status" role="alert">
           {error}
         </p>
       ) : null}
-
-      {fetchFailed ? (
-        (() => {
-          const copy = loadFailureCopy(
-            classifyLoadFailure({
-              status: failureStatus,
-              message: failureMessage,
-              online: typeof navigator === "undefined" ? true : navigator.onLine,
-            }),
-            {
-              nextPath:
-                typeof window === "undefined"
-                  ? null
-                  : `${window.location.pathname}${window.location.search}`,
-              message:
-                failureMessage || "A network or server issue prevented loading. Try again.",
-            },
-          );
-          return (
-            <EmptyState title={copy.title} description={copy.description}>
-              {copy.primary ? (
-                <Button as="a" variant="primary" href={copy.primary.href}>
-                  {copy.primary.label}
-                </Button>
-              ) : null}
-              {copy.showRetry ? (
-                <Button variant="secondary" type="button" onClick={() => load()}>
-                  Retry
-                </Button>
-              ) : null}
-            </EmptyState>
-          );
-        })()
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your team." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          {view.steps[0] ? (
-            <Button as="a" variant="primary" href={view.steps[0].href}>
-              {view.steps[0].label}
-            </Button>
-          ) : null}
-        </EmptyState>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <SummaryTiles view={view} />
-          <PracticeForm view={view} busy={busy} mutate={mutate} />
-          <RecentAttempts view={view} busy={busy} mutate={mutate} />
-        </div>
-      )}
+      <ScoutTrainingNextActions orgId={view.orgId} />
+      <div style={{ display: "grid", gap: 16 }}>
+        <SummaryTiles view={view} />
+        <PracticeForm view={view} busy={busy} mutate={mutate} />
+        <RecentAttempts view={view} busy={busy} mutate={mutate} />
+      </div>
     </main>
   );
 }
@@ -238,6 +418,7 @@ function PracticeForm({
 
   return (
     <Panel
+      id="scout-training-practice"
       as="form"
       onSubmit={(event) => {
         event.preventDefault();

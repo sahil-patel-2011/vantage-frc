@@ -165,6 +165,11 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/subsystem-signoff")).toBe(true);
     expect(pathnameIsOfflineShell("/prototype-tracker")).toBe(true);
     expect(pathnameIsOfflineShell("/equipment-maintenance")).toBe(true);
+    expect(pathnameIsOfflineShell("/scout-training-mode")).toBe(true);
+    expect(pathnameIsOfflineShell("/data-quality-scorecard")).toBe(true);
+    expect(pathnameIsOfflineShell("/standup-digest")).toBe(true);
+    expect(pathnameIsOfflineShell("/meeting-autopilot")).toBe(true);
+    expect(pathnameIsOfflineShell("/goals-tracker")).toBe(true);
     expect(pathnameIsOfflineShell("/api/todos")).toBe(false);
   });
 
@@ -316,6 +321,11 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/subsystem-signoff")).toBe("Subsystem Sign-off");
     expect(offlineCapableLabel("/prototype-tracker")).toBe("Prototype-to-Decision Tracker");
     expect(offlineCapableLabel("/equipment-maintenance")).toBe("Equipment Maintenance");
+    expect(offlineCapableLabel("/scout-training-mode")).toBe("Scout training mode");
+    expect(offlineCapableLabel("/data-quality-scorecard")).toBe("Data Quality Scorecard");
+    expect(offlineCapableLabel("/standup-digest")).toBe("Morning standup");
+    expect(offlineCapableLabel("/meeting-autopilot")).toBe("Meeting-agenda autopilot");
+    expect(offlineCapableLabel("/goals-tracker")).toBe("Season Goals");
   });
 
   it("keeps public/sw.js SHELL_ROUTES aligned with OFFLINE_SHELL_ROUTES", () => {
@@ -460,6 +470,11 @@ describe("offline shell routes", () => {
     expect(featureCacheKey("subsystem-signoff", "org-1", "2026")).toBe("subsystem-signoff:org-1:2026");
     expect(featureCacheKey("prototype-tracker", "org-1", "2026")).toBe("prototype-tracker:org-1:2026");
     expect(featureCacheKey("equipment-maintenance", "org-1")).toBe("equipment-maintenance:org-1");
+    expect(featureCacheKey("scout-training-mode", "org-1")).toBe("scout-training-mode:org-1");
+    expect(featureCacheKey("data-quality-scorecard", "org-1", "2026")).toBe("data-quality-scorecard:org-1:2026");
+    expect(featureCacheKey("standup-digest", "org-1", "2026-09-10")).toBe("standup-digest:org-1:2026-09-10");
+    expect(featureCacheKey("meeting-autopilot", "org-1", "2026")).toBe("meeting-autopilot:org-1:2026");
+    expect(featureCacheKey("goals-tracker", "org-1", "2026")).toBe("goals-tracker:org-1:2026");
     expect(featureCacheKey("schedule", "org-1")).toBe("schedule:org-1");
   });
 

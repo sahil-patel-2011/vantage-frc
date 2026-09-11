@@ -1,11 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
-import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { GOAL_CATEGORIES, GOAL_STATUSES, goalCategoryLabel, goalStatusLabel } from "../../lib/goals-tracker";
 import type { GoalsTrackerView } from "../../lib/goals-tracker/compute-goals-tracker";
 import type { GoalCategory, GoalStatus } from "../../lib/goals-tracker/types";
+import { hubHref } from "../../lib/nav/hubs";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 function pct(value: number): string {
   return `${Math.round(value * 100)}%`;
@@ -17,7 +21,111 @@ function statusTone(status: GoalStatus): string {
   return "setup";
 }
 
+function responseError(data: unknown): string {
+  return data && typeof data === "object" && "error" in data && typeof data.error === "string"
+    ? data.error
+    : "";
+}
+
 type LiveView = Extract<GoalsTrackerView, { status: "live" }>;
+
+function isGoalsTrackerView(value: unknown): value is GoalsTrackerView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function goalsTrackerCacheOrg(data: GoalsTrackerView, orgHint: string): string {
+  switch (data.status) {
+    case "setup_required":
+      return (typeof data.orgId === "string" && data.orgId.trim()) || orgHint;
+    case "live":
+      return data.orgId.trim() || orgHint;
+    default: {
+      data satisfies never;
+      return orgHint;
+    }
+  }
+}
+
+async function persistGoalsTrackerSnapshot(
+  orgHint: string,
+  seasonHint: string,
+  data: GoalsTrackerView,
+): Promise<void> {
+  const cacheOrg = goalsTrackerCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  const seasonKey = String(data.seasonYear);
+  try {
+    await putFeatureSnapshot("goals-tracker", cacheOrg, data, seasonHint || seasonKey);
+    if (!orgHint) await putFeatureSnapshot("goals-tracker", "_", data, seasonHint || seasonKey);
+  } catch {
+    // Live Season Goals already painted; IndexedDB is best-effort.
+  }
+}
+
+function GoalsTrackerRelated({ orgId }: { orgId?: string | null }) {
+  return (
+    <nav className="product-hub-related" aria-label="Related team tools">
+      <Button as="a" variant="secondary" href={hubHref("/team", "standup-digest", orgId)}>
+        Standup
+      </Button>
+      <Button as="a" variant="secondary" href={hubHref("/team", "meeting-autopilot", orgId)}>
+        Meeting agenda
+      </Button>
+      <Button as="a" variant="secondary" href={hubHref("/team", "season-planning-workspace", orgId)}>
+        Season plan
+      </Button>
+    </nav>
+  );
+}
+
+function GoalsTrackerNextActions({ orgId }: { orgId: string }) {
+  const actions = [
+    {
+      id: "goal",
+      label: "Set a goal",
+      detail: "Define a target, then log check-ins over the season to track real progress.",
+      href: "#goals-tracker-new",
+      primary: true,
+    },
+    {
+      id: "standup",
+      label: "Open Standup",
+      detail: "Yesterday's hours and task movement compile into the morning digest.",
+      href: hubHref("/team", "standup-digest", orgId),
+      primary: false,
+    },
+    {
+      id: "meeting",
+      label: "Open Meeting agenda",
+      detail: "Agenda and minutes attach to a calendar meeting.",
+      href: hubHref("/team", "meeting-autopilot", orgId),
+      primary: false,
+    },
+  ];
+  return (
+    <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <Button as="a" variant="secondary" href={action.href}>
+              Open
+            </Button>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
 
 export default function GoalsTrackerClient() {
   const [view, setView] = useState<GoalsTrackerView | null>(null);
@@ -28,37 +136,91 @@ export default function GoalsTrackerClient() {
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<GoalsTrackerView | null>(null);
+  viewRef.current = view;
 
   const orgId = view && "orgId" in view ? view.orgId : null;
 
-  const load = useCallback((seasonOverride?: number) => {
+  const load = useCallback(async (seasonOverride?: number) => {
+    const params = new URLSearchParams(window.location.search);
+    const orgHint = params.get("orgId")?.trim() ?? "";
+    const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
+    const seasonHint =
+      seasonQuery && Number.isFinite(seasonQuery) ? String(seasonQuery) : String(new Date().getFullYear());
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<GoalsTrackerView>(
+        "goals-tracker",
+        orgHint || "_",
+        seasonHint,
+      );
+      if (!viewRef.current && cached?.data && isGoalsTrackerView(cached.data)) {
+        setView(cached.data);
+        setSeason(cached.data.seasonYear);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
     setFetchFailed(false);
     setError("");
     setLoadError("");
     setErrorStatus(null);
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    if (seasonQuery) query.set("season", String(seasonQuery));
-    void fetch(`/api/goals-tracker${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
-        const data = (await response.json()) as GoalsTrackerView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setFetchFailed(true);
-          setErrorStatus(response.status);
-          setLoadError("error" in data && data.error ? data.error : "");
+    try {
+      const query = new URLSearchParams();
+      if (orgHint) query.set("orgId", orgHint);
+      if (seasonQuery) query.set("season", String(seasonQuery));
+      const response = await fetch(
+        `/api/goals-tracker${query.toString() ? `?${query.toString()}` : ""}`,
+        {
+          cache: "no-store",
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+        },
+      );
+      const data: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setFetchFailed(true);
+        setErrorStatus(response.status);
+        setLoadError(responseError(data));
+        return;
+      }
+      if (!response.ok || !isGoalsTrackerView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Season Goals. Showing the last copy on this device.");
+          setFetchFailed(false);
           return;
         }
-        setView(data);
-        setSeason(data.seasonYear);
-      })
-      .catch(() => setFetchFailed(true));
+        setFetchFailed(true);
+        setErrorStatus(response.status);
+        setLoadError(responseError(data));
+        return;
+      }
+      setView(data);
+      setSeason(data.seasonYear);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistGoalsTrackerSnapshot(orgHint, seasonHint, data);
+    } catch {
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Season Goals. Showing the last copy on this device.");
+        setFetchFailed(false);
+        return;
+      }
+      setFetchFailed(true);
+    }
   }, []);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   const mutate = useCallback(
@@ -71,14 +233,17 @@ export default function GoalsTrackerClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, seasonYear: season ?? undefined, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
-        const data = (await response.json()) as GoalsTrackerView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setError("error" in data && data.error ? data.error : "Something went wrong.");
+        const data: unknown = await response.json().catch(() => null);
+        if (!response.ok || !isGoalsTrackerView(data)) {
+          setError(responseError(data) || "Something went wrong.");
           return;
         }
         setView(data);
         setSeason(data.seasonYear);
+        setFromCache(false);
+        void persistGoalsTrackerSnapshot(orgId, String(data.seasonYear), data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -88,93 +253,125 @@ export default function GoalsTrackerClient() {
     [orgId, season, busy],
   );
 
-  // Retry cannot fix an expired session, so the failure decides its own action.
-  const failure = fetchFailed
-    ? loadFailureCopy(
-        classifyLoadFailure({
-          status: errorStatus,
-          message: loadError,
-          online: typeof navigator === "undefined" ? true : navigator.onLine,
-        }),
-        {
-          nextPath:
-            typeof window === "undefined"
-              ? null
-              : `${window.location.pathname}${window.location.search}`,
-          message: loadError || "A network or server issue prevented loading. Try again.",
-        },
-      )
-    : null;
+  const teamHref = orgId ? `/team?orgId=${encodeURIComponent(orgId)}` : "/team";
+  const header = (
+    <PageHeader
+      breadcrumbs={
+        <>
+          <a href={teamHref}>Team</a>
+          {" / Season Goals"}
+        </>
+      }
+      title="Season Goals"
+      description="Set goals for the season and track progress from real check-ins your team logs — never a guessed number."
+    >
+      {view?.status === "live" && view.seasons.length > 0 ? (
+        <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          Season
+          <select
+            value={season ?? view.seasonYear}
+            onChange={(event) => {
+              const next = Number(event.target.value);
+              setSeason(next);
+              void load(next);
+            }}
+          >
+            {view.seasons.map((year) => (
+              <option key={year} value={year}>
+                {year}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
+      <GoalsTrackerRelated orgId={orgId} />
+    </PageHeader>
+  );
+
+  if (!view) {
+    const failure = fetchFailed
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus,
+            message: loadError,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: loadError || "A network or server issue prevented loading. Try again.",
+          },
+        )
+      : null;
+    return (
+      <main className="module-page">
+        {header}
+        <OfflineBanner feature="Season Goals" fromCache={fromCache} cachedAt={cachedAt} />
+        <EmptyState
+          title={failure ? failure.title : "Loading…"}
+          description={failure ? failure.description : "Checking your team."}
+          aria-busy={!fetchFailed}
+        >
+          {failure?.primary ? (
+            <Button as="a" variant="primary" href={failure.primary.href}>
+              {failure.primary.label}
+            </Button>
+          ) : null}
+          {failure?.showRetry ? (
+            <Button variant="secondary" type="button" onClick={() => void load()}>
+              Retry
+            </Button>
+          ) : null}
+        </EmptyState>
+      </main>
+    );
+  }
+
+  switch (view.status) {
+    case "setup_required":
+      return (
+        <main className="module-page">
+          {header}
+          <OfflineBanner feature="Season Goals" fromCache={fromCache} cachedAt={cachedAt} />
+          {error ? (
+            <p className="telemetry-status" role="alert">
+              {error}
+            </p>
+          ) : null}
+          <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
+            {view.steps[0] ? (
+              <Button as="a" variant="primary" href={view.steps[0].href}>
+                {view.steps[0].label}
+              </Button>
+            ) : null}
+          </EmptyState>
+        </main>
+      );
+    case "live":
+      break;
+    default: {
+      view satisfies never;
+      return null;
+    }
+  }
 
   return (
     <main className="module-page">
-      <PageHeader
-        breadcrumbs={
-          <>
-            <a href={orgId ? `/team?orgId=${encodeURIComponent(orgId)}` : "/team"}>Team</a>
-            {" / Season Goals"}
-          </>
-        }
-        title="Season Goals"
-        description="Set goals for the season and track progress from real check-ins your team logs — never a guessed number."
-      >
-        {view?.status === "live" && view.seasons.length > 0 ? (
-          <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-            Season
-            <select
-              value={season ?? view.seasonYear}
-              onChange={(event) => {
-                const next = Number(event.target.value);
-                setSeason(next);
-                load(next);
-              }}
-            >
-              {view.seasons.map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : null}
-      </PageHeader>
-
+      {header}
+      <OfflineBanner feature="Season Goals" fromCache={fromCache} cachedAt={cachedAt} />
       {error ? (
         <p className="telemetry-status" role="alert">
           {error}
         </p>
       ) : null}
-
-      {failure ? (
-        <EmptyState title={failure.title} description={failure.description}>
-          {failure.primary ? (
-            <Button as="a" variant="primary" href={failure.primary.href}>
-              {failure.primary.label}
-            </Button>
-          ) : null}
-          {failure.showRetry ? (
-            <Button variant="secondary" type="button" onClick={() => load()}>
-              Retry
-            </Button>
-          ) : null}
-        </EmptyState>
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your team." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          {view.steps[0] ? (
-            <Button as="a" variant="primary" href={view.steps[0].href}>
-              {view.steps[0].label}
-            </Button>
-          ) : null}
-        </EmptyState>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <SummaryTiles view={view} />
-          <CreateGoalForm busy={busy} mutate={mutate} />
-          {view.summary.totalGoals > 0 ? <GoalsList view={view} busy={busy} mutate={mutate} /> : <NoGoalsEmptyState />}
-        </div>
-      )}
+      <GoalsTrackerNextActions orgId={view.orgId} />
+      <div style={{ display: "grid", gap: 16 }}>
+        <SummaryTiles view={view} />
+        <CreateGoalForm busy={busy} mutate={mutate} />
+        {view.summary.totalGoals > 0 ? <GoalsList view={view} busy={busy} mutate={mutate} /> : <NoGoalsEmptyState />}
+      </div>
     </main>
   );
 }
@@ -362,6 +559,7 @@ function CreateGoalForm({
 
   return (
     <Panel
+      id="goals-tracker-new"
       as="form"
       onSubmit={(event) => {
         event.preventDefault();
