@@ -118,13 +118,12 @@ function MethodTabs({ methods }: { methods: NonNullable<Lesson["methods"]> }) {
   return (
     <div className="cl-methods">
       {methods.length > 1 ? (
-        <div className="cl-method-tabs" role="tablist">
+        <div className="cl-method-tabs" role="group" aria-label="Ways to do this">
           {methods.map((method, index) => (
             <button
               key={method.label}
               type="button"
-              role="tab"
-              aria-selected={index === Math.min(active, methods.length - 1)}
+              aria-pressed={index === Math.min(active, methods.length - 1)}
               className={index === Math.min(active, methods.length - 1) ? "cl-method-tab active" : "cl-method-tab"}
               onClick={() => setActive(index)}
             >

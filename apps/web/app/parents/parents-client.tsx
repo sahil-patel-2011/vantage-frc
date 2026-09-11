@@ -185,8 +185,16 @@ export default function ParentsClient() {
 
   if (view.status === "setup_required") {
     return (
-      <EmptyState title="Parent updates" badge="Setup required" badgeTone="setup"
-        description={view.message} />
+      <EmptyState
+        title="Parent updates"
+        badge="Setup required"
+        badgeTone="setup"
+        description={view.message}
+      >
+        <Button as="a" variant="primary" href="/workspace">
+          Choose your team
+        </Button>
+      </EmptyState>
     );
   }
 
@@ -210,8 +218,17 @@ export default function ParentsClient() {
       />
 
       {!ready.emailConfigured ? (
-        <EmptyState soft title="Configure email delivery" badge="Setup required" badgeTone="setup"
-          description="RESEND_API_KEY and AUTH_EMAIL_FROM are not set, so digests cannot be delivered. Sends will be recorded as “setup required” until email is configured." />
+        <EmptyState
+          soft
+          title="Configure email delivery"
+          badge="Setup required"
+          badgeTone="setup"
+          description="Email sending is not configured yet, so weekly digests cannot go out. Sends will be marked as needing setup until a mentor finishes email delivery."
+        >
+          <Button as="a" variant="primary" href="/connectors">
+            Open Connectors
+          </Button>
+        </EmptyState>
       ) : null}
 
       {error ? <p role="alert" className="app-muted">{error}</p> : null}
@@ -239,7 +256,7 @@ export default function ParentsClient() {
             <input maxLength={32} value={form.phone}
               onChange={(event) => setForm({ ...form, phone: event.target.value })} />
           </FormRow>
-          <FormRow label="Preferred language" hint="BCP-47 tag: en, es, zh-Hans, pt-BR…">
+          <FormRow label="Preferred language" hint="en, es, zh-Hans, pt-BR…">
             <input maxLength={12} value={form.preferredLanguage}
               onChange={(event) => setForm({ ...form, preferredLanguage: event.target.value })} />
           </FormRow>

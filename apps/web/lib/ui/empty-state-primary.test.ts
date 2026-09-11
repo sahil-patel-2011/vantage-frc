@@ -222,4 +222,36 @@ describe("empty-state R4 (one primary on the empty card)", () => {
     }
     expect(hits, hits.join("\n")).toEqual([]);
   });
+
+  it("Chat setup/empty shells do not paint a Next-actions panel", () => {
+    const src = readFileSync(join(APP_ROOT, "chat/chat-client.tsx"), "utf8");
+    expect(src).not.toMatch(/<NextActions\b/);
+  });
+
+  it("Discord Next-actions only paint when the connection is live", () => {
+    const src = readFileSync(join(APP_ROOT, "team/discord/discord-client.tsx"), "utf8");
+    expect(src).toMatch(/view\.status === "live" \? <NextActions\b/);
+    expect(src).not.toMatch(/^\s*<NextActions orgId=\{orgId\} view=\{view\} \/>/m);
+  });
+
+  it("cad-learn, pairwise, exports, and dev-setup do not nest a tablist", () => {
+    const files = [
+      join(APP_ROOT, "cad-learn/cad-learn-client.tsx"),
+      join(APP_ROOT, "pairwise/pairwise-client.tsx"),
+      join(APP_ROOT, "exports/export-client.tsx"),
+      join(APP_ROOT, "dev-setup/dev-setup-client.tsx"),
+    ];
+    const hits: string[] = [];
+    for (const file of files) {
+      const src = readFileSync(file, "utf8");
+      if (src.includes('role="tablist"')) hits.push(file);
+    }
+    expect(hits, hits.join("\n")).toEqual([]);
+  });
+
+  it("parents-client does not print engineering env names", () => {
+    const src = readFileSync(join(APP_ROOT, "parents/parents-client.tsx"), "utf8");
+    expect(src).not.toMatch(/RESEND_API_KEY/);
+    expect(src).not.toMatch(/AUTH_EMAIL_FROM/);
+  });
 });

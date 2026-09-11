@@ -268,17 +268,9 @@ export default function TeamDiscordClient({ orgId }: { orgId: string }) {
         title="Discord"
         description="Link a server and channel, post announcements, and optionally mirror Team Messages into Discord."
       >
-        <div className="team-discord-header-actions">
-          <Button as="a" variant="secondary" href={withOrgHref("/team?tab=messages", orgId)}>
-            Messages
-          </Button>
-          <Button as="a" variant="secondary" href={withOrgHref("/team", orgId)}>
-            Team
-          </Button>
-        </div>
+        <DiscordRelated orgId={orgId} />
       </PageHeader>
       <TeamOpsNav orgId={orgId} active="admin" />
-      <DiscordRelated orgId={orgId} />
 
       {showEmptyShell ? (
         <EmptyState
@@ -288,10 +280,9 @@ export default function TeamDiscordClient({ orgId }: { orgId: string }) {
           title="No Discord channel linked"
           description={view.emptyReason ?? view.message}
         >
-          <p className="app-muted">
-            Paste a channel webhook below, or set guild + channel snowflake IDs once a bot token is on the server.
-            Bridge counts stay blank until a linked Team Message actually posts.
-          </p>
+          <Button as="a" variant="primary" href="#discord-form">
+            Link Discord
+          </Button>
         </EmptyState>
       ) : null}
 
@@ -318,10 +309,10 @@ export default function TeamDiscordClient({ orgId }: { orgId: string }) {
       {!view.platformConfigured && view.status === "live" ? (
         <section className="app-card soft-panel team-discord-banner">
           <span className="eyebrow">BOT OPTIONAL</span>
-          <h2>Platform Discord bot not configured</h2>
+          <h2>Discord bot not configured</h2>
           <p className="app-muted">
-            Webhook posting works. Set <code>DISCORD_BOT_TOKEN</code> (and optionally{" "}
-            <code>DISCORD_CLIENT_ID</code>) if you want bot posts by channel id.
+            Webhook posting still works. A mentor can add the bot token on the server if you also want posts by
+            channel id.
           </p>
           {view.inviteUrl ? (
             <Button as="a" variant="secondary" href={view.inviteUrl} target="_blank" rel="noreferrer">
@@ -331,10 +322,10 @@ export default function TeamDiscordClient({ orgId }: { orgId: string }) {
         </section>
       ) : null}
 
-      <NextActions orgId={orgId} view={view} />
+      {view.status === "live" ? <NextActions orgId={orgId} view={view} /> : null}
 
       <div className="team-discord-layout">
-        <form className="app-card soft-panel team-discord-panel" onSubmit={onSave}>
+        <form id="discord-form" className="app-card soft-panel team-discord-panel" onSubmit={onSave}>
           <span className="eyebrow">GUILD &amp; CHANNEL</span>
           <h2>{view.configured ? "Update connection" : "Link Discord"}</h2>
           <p className="app-muted">

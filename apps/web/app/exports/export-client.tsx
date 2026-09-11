@@ -264,11 +264,10 @@ export default function ExportCenter({ orgId }: { orgId: string }) {
       <div className="export-layout">
         <section className="app-card soft-panel export-panel">
           <h2>Choose data</h2>
-          <div className="export-tabs" role="tablist" aria-label="Export scope">
+          <div className="export-tabs" role="group" aria-label="Export scope">
             <button
               type="button"
-              role="tab"
-              aria-selected={scope === "team"}
+              aria-pressed={scope === "team"}
               onClick={() => {
                 setScope("team");
                 setSelected([]);
@@ -278,8 +277,7 @@ export default function ExportCenter({ orgId }: { orgId: string }) {
             </button>
             <button
               type="button"
-              role="tab"
-              aria-selected={scope === "private"}
+              aria-pressed={scope === "private"}
               onClick={() => {
                 setScope("private");
                 setSelected([]);

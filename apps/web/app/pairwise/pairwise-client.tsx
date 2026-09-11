@@ -328,13 +328,12 @@ function LivePairwise({
         </ul>
       </section>
 
-      <div className="pairwise-criteria" role="tablist" aria-label="Qualitative criteria">
+      <div className="pairwise-criteria" role="group" aria-label="Qualitative criteria">
         {view.criteria.map((criterion) => (
           <button
             key={criterion.id}
             type="button"
-            role="tab"
-            aria-selected={criterion.id === view.criterionId}
+            aria-pressed={criterion.id === view.criterionId}
             className={criterion.id === view.criterionId ? "app-button" : "app-button secondary"}
             onClick={() => onCriterion(criterion.id)}
           >

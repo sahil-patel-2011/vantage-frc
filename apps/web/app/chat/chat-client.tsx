@@ -5,15 +5,13 @@ import { AiHubRelated } from "../../components/ai-hub-related";
 import { MeteredAiCutoffBanner } from "../../components/metered-ai-cutoff-banner";
 import { SponsoredPromoBanner } from "../../components/sponsored-promo-banner";
 import { resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
-import { ModelProvenance, Button } from "../../components/ui";
+import { ModelProvenance, Button, EmptyState } from "../../components/ui";
 import {
   AI_CHAT_RELATED_INCLUDE,
   AI_CHAT_SCOPE_CARDS,
-  aiChatNextActions,
   aiChatRelatedLinks,
   aiChatShellCopy,
   classifyAiChatShell,
-  type AiChatShellKind,
 } from "../../lib/ai-chat/ai-chat-related";
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
@@ -77,32 +75,6 @@ function ChatRelatedStrip({ orgId }: { orgId: string }) {
         </Button>
       ))}
     </nav>
-  );
-}
-
-function NextActions({ orgId, shell }: { orgId: string; shell: AiChatShellKind }) {
-  const actions = aiChatNextActions({ orgId, shell });
-  if (!actions.length) return null;
-  return (
-    <section className="ch-next-actions app-card soft-panel edc-next-actions" aria-label="Next actions">
-      <header>
-        <h2>Next actions</h2>
-        <p>Each one opens the page where you finish the work.</p>
-      </header>
-      <ol>
-        {actions.map((action) => (
-          <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
-              <strong>{action.label}</strong>
-              <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
-          </li>
-        ))}
-      </ol>
-    </section>
   );
 }
 
@@ -424,25 +396,47 @@ export default function ChatClient({
       <SponsoredPromoBanner orgId={orgId} />
 
       {showStatusShell ? (
-        <section className="app-card soft-panel product-hub-setup" role="status" aria-busy={shell === "loading"}>
-          {shellCopy.badge ? <span className="app-badge setup">{shellCopy.badge}</span> : null}
-          <h2>{shellCopy.title}</h2>
-          <p className="app-muted">
-            {providerSetup?.message && shell === "setup" ? providerSetup.message : shellCopy.description}
-          </p>
-          
+        <EmptyState
+          soft
+          badge={shellCopy.badge}
+          badgeTone="setup"
+          title={shellCopy.title}
+          description={
+            providerSetup?.message && shell === "setup" ? providerSetup.message : shellCopy.description
+          }
+          aria-busy={shell === "loading"}
+        >
+          {shell === "setup" ? (
+            <Button as="a" variant="primary" href={withOrgHref("/team/admin", orgId)}>
+              Open Team Admin
+            </Button>
+          ) : null}
+          {shell === "auth_required" ? (
+            <Button as="a" variant="primary" href="/signin">
+              Sign in
+            </Button>
+          ) : null}
           {shell === "error" ? (
-            <Button variant="secondary" type="button" onClick={() => void load()}>
+            <Button variant="primary" type="button" onClick={() => void load()}>
               Retry
             </Button>
           ) : null}
-          {shell !== "loading" ? <NextActions orgId={orgId} shell={shell} /> : null}
-        </section>
+        </EmptyState>
       ) : null}
 
       {shell === "empty" ? (
         <>
-          <NextActions orgId={orgId} shell={shell} />
+          <EmptyState
+            soft
+            badge={shellCopy.badge}
+            badgeTone="setup"
+            title={shellCopy.title}
+            description={shellCopy.description}
+          >
+            <Button variant="primary" type="button" onClick={() => void newThread("private")}>
+              Start a private chat
+            </Button>
+          </EmptyState>
           <section className="ch-scope" aria-label="Private versus team-shared channels">
             {AI_CHAT_SCOPE_CARDS.map((card) => (
               <article key={card.id} className="ch-scope-card soft-panel">

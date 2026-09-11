@@ -1,11 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import {
   Badge,
   Button,
   EmptyState,
-  ErrorState,
   PageHeader,
   Panel,
   SoftBlockSkeleton,
@@ -26,11 +26,42 @@ import {
 } from "../../lib/presence/types";
 import { comingTonightLabel, isComingTonight } from "../../lib/presence/unify";
 import { hubHref } from "../../lib/nav/hubs";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import "./presence.css";
 
 type LiveView = Extract<PresenceView, { status: "live" }>;
 type Mutate = (payload: Record<string, unknown>) => void;
+
+function isPresenceView(value: unknown): value is PresenceView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function presenceCacheOrg(data: PresenceView, orgHint: string): string {
+  if (typeof data.orgId === "string" && data.orgId.trim()) return data.orgId;
+  return orgHint;
+}
+
+function presenceCacheDate(data: PresenceView, dateHint: string): string {
+  if (typeof data.presenceDate === "string" && data.presenceDate.trim()) return data.presenceDate;
+  return dateHint;
+}
+
+async function persistPresenceSnapshot(orgHint: string, dateHint: string, data: PresenceView): Promise<void> {
+  const cacheOrg = presenceCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  const dateKey = presenceCacheDate(data, dateHint);
+  try {
+    await putFeatureSnapshot("presence", cacheOrg, data, dateKey);
+    if (!orgHint) await putFeatureSnapshot("presence", "_", data, dateKey);
+  } catch {
+    // Live Presence already painted; IndexedDB is best-effort.
+  }
+}
 
 const PAGE_TITLE = "Presence";
 const PAGE_DESCRIPTION =
@@ -81,10 +112,14 @@ function Shell({
   orgId,
   children,
   headerExtra,
+  fromCache = false,
+  cachedAt = null,
 }: {
   orgId: string | null;
   children: ReactNode;
   headerExtra?: ReactNode;
+  fromCache?: boolean;
+  cachedAt?: string | null;
 }) {
   return (
     <main className="module-page prs-page">
@@ -100,6 +135,7 @@ function Shell({
       >
         {headerExtra}
       </PageHeader>
+      <OfflineBanner feature="Presence" fromCache={fromCache} cachedAt={cachedAt} />
       {children}
     </main>
   );
@@ -110,40 +146,94 @@ export default function PresenceClient() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [date, setDate] = useState<string>(todayIso());
   const [eventId, setEventId] = useState<string | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<PresenceView | null>(null);
+  viewRef.current = view;
 
   const load = useCallback(
     (overrides?: { date?: string; eventId?: string | null }) => {
-      setFetchFailed(false);
-      setError("");
-      const params = new URLSearchParams(window.location.search);
-      const urlOrg = params.get("orgId");
-      const query = new URLSearchParams();
-      if (urlOrg) query.set("orgId", urlOrg);
-      const nextDate = overrides?.date ?? date;
-      if (nextDate) query.set("date", nextDate);
-      const nextEvent = overrides && "eventId" in overrides ? overrides.eventId : eventId;
-      if (nextEvent) query.set("eventId", nextEvent);
-      void fetch(`/api/presence?${query.toString()}`)
-        .then(async (response) => {
-          const data = (await response.json()) as PresenceView | { error?: string };
-          if (!response.ok || !("status" in data)) {
+      void (async () => {
+        const params = new URLSearchParams(window.location.search);
+        const orgHint = params.get("orgId")?.trim() ?? "";
+        const nextDate = overrides?.date ?? date;
+        const dateHint = nextDate || todayIso();
+        const paintedDate =
+          viewRef.current && "presenceDate" in viewRef.current ? viewRef.current.presenceDate : "";
+        let hadCache = Boolean(viewRef.current && paintedDate === dateHint);
+        try {
+          const cached = await getFeatureSnapshot<PresenceView>("presence", orgHint || "_", dateHint);
+          if (cached?.data && isPresenceView(cached.data)) {
+            if (!viewRef.current || paintedDate !== dateHint) {
+              setView(cached.data);
+              setFromCache(true);
+              setCachedAt(cached.cachedAt);
+            }
+            hadCache = true;
+          }
+        } catch {
+          // IndexedDB missing or blocked; live fetch still runs.
+        }
+        setFetchFailed(false);
+        setError("");
+        setErrorStatus(null);
+        const query = new URLSearchParams();
+        if (orgHint) query.set("orgId", orgHint);
+        if (nextDate) query.set("date", nextDate);
+        const nextEvent = overrides && "eventId" in overrides ? overrides.eventId : eventId;
+        if (nextEvent) query.set("eventId", nextEvent);
+        try {
+          const response = await fetch(`/api/presence?${query.toString()}`, {
+            cache: "no-store",
+            signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+          });
+          const data: unknown = await response.json().catch(() => null);
+          if (response.status === 401 || response.status === 403) {
+            setView(null);
+            setFromCache(false);
+            setCachedAt(null);
             setFetchFailed(true);
+            setErrorStatus(response.status);
+            return;
+          }
+          if (!response.ok || !isPresenceView(data)) {
+            if (hadCache || (viewRef.current && viewRef.current.presenceDate === dateHint)) {
+              setFromCache(true);
+              setError("Could not refresh Presence. Showing the last copy on this device.");
+              setFetchFailed(false);
+              return;
+            }
+            setFetchFailed(true);
+            setErrorStatus(response.status);
             return;
           }
           setView(data);
+          setFromCache(false);
+          setCachedAt(null);
           if (data.status === "live") setEventId(data.selected?.eventId ?? null);
-        })
-        .catch(() => setFetchFailed(true));
+          await persistPresenceSnapshot(orgHint, dateHint, data);
+        } catch {
+          if (hadCache || (viewRef.current && viewRef.current.presenceDate === dateHint)) {
+            setFromCache(true);
+            setError("Could not refresh Presence. Showing the last copy on this device.");
+            setFetchFailed(false);
+            return;
+          }
+          setFetchFailed(true);
+        }
+      })();
     },
     [date, eventId],
   );
 
   useEffect(() => {
     load();
-     
+    // Date/event pickers call load(); do not restart the first paint on every picker render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only
   }, []);
 
   const orgId = view && "orgId" in view ? view.orgId : null;
@@ -166,8 +256,10 @@ export default function PresenceClient() {
             return;
           }
           setView(data);
+          setFromCache(false);
           if (data.status === "live") setEventId(data.selected?.eventId ?? null);
           setNotice("Saved.");
+          void persistPresenceSnapshot(orgId, date, data);
         })
         .catch(() => setError("Network error — please try again."))
         .finally(() => setBusy(false));
@@ -188,7 +280,7 @@ export default function PresenceClient() {
 
   if (view == null && !fetchFailed) {
     return (
-      <Shell orgId={null}>
+      <Shell orgId={null} fromCache={fromCache} cachedAt={cachedAt}>
         <div aria-busy="true" aria-label="Loading presence">
           <SoftBlockSkeleton lines={4} />
         </div>
@@ -196,17 +288,54 @@ export default function PresenceClient() {
     );
   }
 
-  if (fetchFailed || view == null) {
+  if (fetchFailed && view == null) {
+    const failure = loadFailureCopy(
+      classifyLoadFailure({
+        status: errorStatus,
+        message: error,
+        online: typeof navigator === "undefined" ? true : navigator.onLine,
+      }),
+      {
+        nextPath:
+          typeof window === "undefined" ? null : `${window.location.pathname}${window.location.search}`,
+        message: error || "Could not load presence.",
+      },
+    );
     return (
-      <Shell orgId={orgId}>
-        <ErrorState message="Could not load presence." onRetry={() => load()} />
+      <Shell orgId={orgId} fromCache={fromCache} cachedAt={cachedAt}>
+        <EmptyState
+          soft
+          title={failure.title}
+          description={failure.description}
+        >
+          {failure.primary ? (
+            <Button as="a" variant="primary" href={failure.primary.href}>
+              {failure.primary.label}
+            </Button>
+          ) : null}
+          {failure.showRetry ? (
+            <Button variant="secondary" type="button" onClick={() => load()}>
+              Retry
+            </Button>
+          ) : null}
+        </EmptyState>
+      </Shell>
+    );
+  }
+
+  if (view == null) {
+    return (
+      <Shell orgId={orgId} fromCache={fromCache} cachedAt={cachedAt}>
+        <div aria-busy="true" aria-label="Loading presence">
+          <SoftBlockSkeleton lines={4} />
+        </div>
       </Shell>
     );
   }
 
   if (view.status === "setup_required") {
     return (
-      <Shell orgId={orgId}>
+      <Shell orgId={orgId} fromCache={fromCache} cachedAt={cachedAt}>
         <EmptyState
           soft
           badge="Setup required"
@@ -231,6 +360,8 @@ export default function PresenceClient() {
       error={error}
       notice={notice}
       date={date}
+      fromCache={fromCache}
+      cachedAt={cachedAt}
       mutate={mutate}
       onPickDate={onPickDate}
       onPickEvent={onPickEvent}
@@ -244,6 +375,8 @@ function Live({
   error,
   notice,
   date,
+  fromCache,
+  cachedAt,
   mutate,
   onPickDate,
   onPickEvent,
@@ -253,6 +386,8 @@ function Live({
   error: string;
   notice: string;
   date: string;
+  fromCache: boolean;
+  cachedAt: string | null;
   mutate: Mutate;
   onPickDate: (date: string) => void;
   onPickEvent: (eventId: string) => void;
@@ -319,6 +454,7 @@ function Live({
           ) : null}
         </div>
       </PageHeader>
+      <OfflineBanner feature="Presence" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

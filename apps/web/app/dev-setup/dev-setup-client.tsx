@@ -78,13 +78,12 @@ function MethodTabs({ methods, os }: { methods: NonNullable<Step["methods"]>; os
   return (
     <div className="ds-methods">
       {mine.length > 1 ? (
-        <div className="ds-method-tabs" role="tablist">
+        <div className="ds-method-tabs" role="group" aria-label="Ways to do this step">
           {mine.map((m, i) => (
             <button
               key={m.label}
               type="button"
-              role="tab"
-              aria-selected={i === Math.min(active, mine.length - 1)}
+              aria-pressed={i === Math.min(active, mine.length - 1)}
               className={i === Math.min(active, mine.length - 1) ? "ds-method-tab active" : "ds-method-tab"}
               onClick={() => setActive(i)}
             >
