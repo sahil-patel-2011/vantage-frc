@@ -9,8 +9,19 @@ import {
   LEADERSHIP_STATUS_VALUES,
   type LeadershipView,
 } from "../../lib/leadership/compute-leadership";
+import {
+  LEADERSHIP_RELATED_INCLUDE,
+  classifyLeadershipShell,
+  leadershipNextActions,
+  leadershipRelatedLinks,
+  leadershipSetupSteps,
+  leadershipShellCopy,
+  shouldShowLeadershipSummaryTiles,
+  type LeadershipNextAction,
+  type LeadershipShellKind,
+} from "../../lib/leadership/leadership-related";
 import type { LeadershipCategory, LeadershipHandoffStatus, LeadershipTier } from "../../lib/leadership/types";
-import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
+import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
@@ -63,45 +74,23 @@ async function persistLeadershipSnapshot(
 }
 
 function LeadershipRelated({ orgId }: { orgId?: string | null }) {
+  const links = leadershipRelatedLinks(orgId, {
+    include: [...LEADERSHIP_RELATED_INCLUDE],
+  });
+  if (!links.length) return null;
   return (
     <nav className="product-hub-related" aria-label="Related team tools">
-      <Button as="a" variant="secondary" href={hubHref("/team", "roles", orgId)}>
-        Season roles
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/team", "skills-graph", orgId)}>
-        Skills
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/team", "safety-training", orgId)}>
-        Safety
-      </Button>
+      {links.map((link) => (
+        <Button as="a" variant="secondary" key={link.id} href={link.href}>
+          {link.label}
+        </Button>
+      ))}
     </nav>
   );
 }
 
-function LeadershipNextActions({ orgId }: { orgId: string }) {
-  const actions = [
-    {
-      id: "add-role",
-      label: "Add a leadership role",
-      detail: "Track who holds the role and who is next.",
-      href: "#add-role",
-      primary: true,
-    },
-    {
-      id: "roles",
-      label: "Open Season roles",
-      detail: "Season assignments for the people already on the team.",
-      href: hubHref("/team", "roles", orgId),
-      primary: false,
-    },
-    {
-      id: "skills",
-      label: "Open Skills",
-      detail: "Who can teach the next holder of each role.",
-      href: hubHref("/team", "skills-graph", orgId),
-      primary: false,
-    },
-  ];
+function NextActionsPanel({ actions }: { actions: LeadershipNextAction[] }) {
+  if (!actions.length) return null;
   return (
     <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
       <header>
@@ -255,7 +244,19 @@ export default function LeadershipClient() {
     [orgId, season, busy],
   );
 
-  const teamHref = hubWorkbenchHref("team", "roles", orgId);
+  const teamHref = hubWorkbenchHref("team", "leadership", orgId);
+  const roleCount = view?.status === "live" ? view.roles.length : 0;
+  const shell: LeadershipShellKind = classifyLeadershipShell({
+    loading: view == null && !fetchFailed,
+    fetchFailed,
+    status: view?.status ?? null,
+    orgId,
+    roleCount,
+  });
+  const copy = leadershipShellCopy(shell);
+  const actions = leadershipNextActions({ orgId, shell, roleCount });
+  const setup = shell === "setup" ? leadershipSetupSteps(orgId)[0] : null;
+  const showTiles = shouldShowLeadershipSummaryTiles(roleCount);
 
   if (!view) {
     const failure = fetchFailed
@@ -270,10 +271,11 @@ export default function LeadershipClient() {
               typeof window === "undefined"
                 ? null
                 : `${window.location.pathname}${window.location.search}`,
-            message: loadError || "A network or server issue prevented loading. Try again.",
+            message: loadError || copy.description,
           },
         )
       : null;
+    const primary = failure?.primary ?? (setup ? { label: setup.label, href: setup.href } : null);
     return (
       <main className="module-page">
         <PageHeader
@@ -284,23 +286,24 @@ export default function LeadershipClient() {
             </>
           }
           title="Leadership Continuity"
-          description="Succession planning and role handoffs — track each role's holder, successor, and handoff status. Readiness uses only what you record."
+          description={copy.description}
         >
           <LeadershipRelated orgId={orgId} />
         </PageHeader>
         <OfflineBanner feature="Leadership Continuity" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
-          title={failure ? failure.title : "Loading…"}
-          description={failure ? failure.description : "Checking your team."}
+          title={failure ? failure.title : copy.title}
+          description={failure ? failure.description : copy.description}
+          badge={copy.badge}
+          badgeTone="setup"
           aria-busy={!fetchFailed}
         >
-          {failure?.primary ? (
-            <Button as="a" variant="primary" href={failure.primary.href}>
-              {failure.primary.label}
+          {primary ? (
+            <Button as="a" variant="primary" href={primary.href}>
+              {primary.label}
             </Button>
-          ) : null}
-          {failure?.showRetry ? (
-            <Button variant="secondary" type="button" onClick={() => void load()}>
+          ) : failure?.showRetry ? (
+            <Button variant="primary" type="button" onClick={() => void load()}>
               Retry
             </Button>
           ) : null}
@@ -321,15 +324,15 @@ export default function LeadershipClient() {
               </>
             }
             title="Leadership Continuity"
-            description="Succession planning and role handoffs — track each role's holder, successor, and handoff status. Readiness uses only what you record."
+            description={copy.description}
           >
             <LeadershipRelated orgId={view.orgId} />
           </PageHeader>
           <OfflineBanner feature="Leadership Continuity" fromCache={fromCache} cachedAt={cachedAt} />
-          <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-            {view.steps[0] ? (
-              <Button as="a" variant="primary" href={view.steps[0].href}>
-                {view.steps[0].label}
+          <EmptyState badge="Needs setup" badgeTone="setup" title={copy.title} description={view.message || copy.description}>
+            {setup ? (
+              <Button as="a" variant="primary" href={setup.href}>
+                {setup.label}
               </Button>
             ) : (
               <Button as="a" variant="primary" href="/workspace">
@@ -357,7 +360,7 @@ export default function LeadershipClient() {
           </>
         }
         title="Leadership Continuity"
-        description="Succession planning and role handoffs — track each role's holder, successor, and handoff status. Readiness uses only what you record."
+        description={copy.description}
       >
         <LeadershipRelated orgId={view.orgId} />
         {view.seasons.length > 0 ? (
@@ -389,11 +392,11 @@ export default function LeadershipClient() {
       ) : null}
 
       <div style={{ display: "grid", gap: 16 }}>
-        <ReadinessPanel view={view} />
-        <SummaryTiles view={view} />
+        {showTiles ? <ReadinessPanel view={view} /> : null}
+        {showTiles ? <SummaryTiles view={view} /> : null}
         <CreateRoleForm busy={busy} mutate={mutate} />
         <RoleBoard view={view} busy={busy} mutate={mutate} />
-        <LeadershipNextActions orgId={view.orgId} />
+        {shell === "ready" ? <NextActionsPanel actions={actions} /> : null}
       </div>
     </main>
   );

@@ -254,7 +254,7 @@ export async function GET(request: Request) {
         status: "setup_required",
         orgId: null,
         message:
-          "Could not load parent contacts. Choose your team and confirm database access.",
+        message: "Could not load parent contacts. Choose your team and try again.",
       } satisfies ParentsView,
       { status: 200 },
     );
@@ -419,7 +419,7 @@ export async function POST(request: Request) {
       return Response.json({ error: error.message }, { status: error.status });
     }
     return Response.json(
-      { error: "Parent contacts are unavailable right now. Confirm database access." },
+      { error: "Parent contacts are unavailable right now. Try again in a moment." },
       { status: 500 },
     );
   }
