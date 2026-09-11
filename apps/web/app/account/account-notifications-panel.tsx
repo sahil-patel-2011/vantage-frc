@@ -1,6 +1,6 @@
 "use client";
 
-import { EmptyState, Panel } from "../../components/ui";
+import { EmptyState, Panel, Button } from "../../components/ui";
 import { PushDevicePanel } from "./account-push-panel";
 import {
   EMAIL_PREF_LABELS,
@@ -34,23 +34,22 @@ export function AccountNotificationsPanel({
       {account.emailDelivery?.status === "setup_required" ? (
         <EmptyState
           soft
-          badge="Setup required"
+          badge="Needs setup"
           badgeTone="setup"
-          title="Email delivery not configured"
+          title="Email is not ready yet"
           description={account.emailDelivery.detail}
         >
           <p className="app-muted">
-            In-app prefs still save. Opt-in email stays quiet until email is configured for this team.
+            Inbox switches still save. Opt-in email stays quiet until a mentor finishes email setup.
           </p>
         </EmptyState>
       ) : null}
       <h2>In-app notifications</h2>
       <p className="app-muted">
-        Controls what Vantage may put in your inbox — including coach→member todos, duties, and calendar events.
-        It does not create live competition data.{" "}
+        Choose which todos, duties, chat, and team news land in your inbox.{" "}
         <a href="/notifications">Open inbox</a>
         {" · "}
-        <a href="/notifications/preferences">Full preference center</a>
+        <a href="/notifications/preferences">Preferences</a>
         {" · "}
         <a href="/whats-new">What’s new</a>
       </p>
@@ -78,7 +77,7 @@ export function AccountNotificationsPanel({
       <h2 className="account-prefs-heading">Email opt-ins</h2>
       <p className="app-muted">
         Email stays off until you explicitly opt in. Auth codes and security notices are separate.{" "}
-        <a href="/notifications/preferences">Open email preference center</a>
+        <a href="/notifications/preferences">Open email preferences</a>
         {" · "}
         <a href="/support">Help & Support</a>
       </p>
@@ -102,9 +101,9 @@ export function AccountNotificationsPanel({
           </li>
         ))}
       </ul>
-      <button className="primary-action" type="button" disabled={busy} onClick={() => void onSave()}>
+      <Button variant="primary" type="button" disabled={busy} onClick={() => void onSave()}>
         Save preferences
-      </button>
+      </Button>
     </Panel>
   );
 }

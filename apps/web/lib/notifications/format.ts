@@ -1,7 +1,53 @@
+/** Student-readable inbox category — never a raw `todo_assigned` slug. */
+export function notificationTypeLabel(type: string): string {
+  switch (type) {
+    case "todo_assigned":
+    case "todo_completed":
+      return "Todo";
+    case "duty_assigned":
+      return "Duty";
+    case "calendar_event":
+    case "calendar_updated":
+      return "Calendar";
+    case "dm_message":
+    case "direct_message":
+    case "message_mention":
+    case "org_message":
+    case "message":
+      return "Chat";
+    case "match_alert":
+      return "Match";
+    case "scout_reminder":
+    case "scouting_coverage_gap":
+    case "scouting_disagreement_resolved":
+      return "Scouting";
+    case "product_update":
+      return "What’s new";
+    case "export_ready":
+      return "Export";
+    case "invite_accepted":
+      return "Team";
+    case "billing":
+    case "credit_low":
+      return "Billing";
+    case "sponsor_thank_you_due":
+    case "sponsor_renewal_due":
+    case "sponsor_followup_overdue":
+      return "Sponsors";
+    case "purchase_request_submitted":
+    case "purchase_request_approved":
+    case "purchase_request_rejected":
+    case "purchase_request_assigned":
+      return "Orders";
+    default:
+      return type.replaceAll("_", " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  }
+}
+
 export function notificationTitle(type: string, payload: Record<string, unknown> = {}) {
   const fromPayload = payload.title ?? payload.headline ?? payload.subject;
   if (typeof fromPayload === "string" && fromPayload.trim()) return fromPayload.trim();
-  return type.replaceAll("_", " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  return notificationTypeLabel(type);
 }
 
 export function notificationBody(payload: Record<string, unknown> = {}) {

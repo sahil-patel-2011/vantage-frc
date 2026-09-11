@@ -3,12 +3,17 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../../components/offline-banner";
 import { EmptyState, PageHeader, Panel, Button } from "../../../components/ui";
+import { studentEmailDelivery } from "../../../lib/account/account-api-related";
 import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
 import {
   NOTIFICATION_RELATED_INCLUDE,
   notificationRelatedLinks,
 } from "../../../lib/notifications";
-import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
+import {
+  clearFeatureSnapshot,
+  getFeatureSnapshot,
+  putFeatureSnapshot,
+} from "../../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 import "../../product-hub.css";
 import "../notifications.css";
@@ -63,7 +68,7 @@ const IN_APP_PREF_LABELS: { key: keyof InAppPrefs; title: string; detail: string
   {
     key: "matchAlerts",
     title: "Match alerts",
-    detail: "Upcoming match reminders when live TBA data is available.",
+    detail: "Upcoming match reminders when the schedule is synced.",
   },
   {
     key: "scoutReminders",
@@ -73,7 +78,7 @@ const IN_APP_PREF_LABELS: { key: keyof InAppPrefs; title: string; detail: string
   {
     key: "syncFailures",
     title: "Sync failures",
-    detail: "Notify when TBA/reference ingest health degrades.",
+    detail: "Tell me when team data stops updating.",
   },
   {
     key: "productUpdates",
@@ -82,7 +87,7 @@ const IN_APP_PREF_LABELS: { key: keyof InAppPrefs; title: string; detail: string
   },
   {
     key: "sponsorReminders",
-    title: "Sponsor CRM reminders",
+    title: "Sponsor reminders",
     detail: "Thank-you, renewal, and overdue follow-up nudges for your team's sponsors.",
   },
 ];
@@ -111,7 +116,7 @@ const EMAIL_PREF_LABELS: { key: keyof EmailPrefs; title: string; detail: string 
   {
     key: "sponsorReminders",
     title: "Sponsor reminders",
-    detail: "Opt-in email for thank-you / renewal / overdue follow-up CRM nudges (never emails sponsors).",
+    detail: "Opt-in email for thank-you, renewal, and overdue follow-up reminders (never emails sponsors).",
   },
   {
     key: "performanceDigest",
@@ -182,6 +187,18 @@ function responseError(data: unknown): string {
     : "";
 }
 
+function studentDelivery(delivery: Delivery | null): Delivery | null {
+  if (!delivery) return null;
+  return {
+    status: delivery.status,
+    detail: studentEmailDelivery({
+      status: delivery.status,
+      missingEnv: [],
+      detail: delivery.detail,
+    }).detail,
+  };
+}
+
 async function persistPrefsSnapshot(data: PrefsView): Promise<void> {
   try {
     await putFeatureSnapshot("notification-prefs", "_", data);
@@ -225,10 +242,11 @@ export default function NotificationPreferencesClient() {
   viewRef.current = view;
 
   const applyView = useCallback((next: PrefsView) => {
-    setView(next);
-    setInAppPrefs(next.notificationPrefs);
-    setEmailPrefs(next.emailPrefs);
-    setDelivery(next.delivery);
+    const sanitized = { ...next, delivery: studentDelivery(next.delivery) };
+    setView(sanitized);
+    setInAppPrefs(sanitized.notificationPrefs);
+    setEmailPrefs(sanitized.emailPrefs);
+    setDelivery(sanitized.delivery);
   }, []);
 
   const load = useCallback(async () => {
@@ -260,6 +278,11 @@ export default function NotificationPreferencesClient() {
         setErrorStatus(response.status);
         setMessage(responseError(body) || "Could not load preferences.");
         setMessageOk(false);
+        try {
+          await clearFeatureSnapshot("notification-prefs", "_");
+        } catch {
+          // Best-effort: painted board already dropped.
+        }
         return;
       }
       if (!response.ok || !body || typeof body !== "object") {
@@ -281,11 +304,21 @@ export default function NotificationPreferencesClient() {
         emailPrefs?: EmailPrefs;
         delivery?: Delivery;
       };
+      const rawDelivery = row.delivery ?? null;
       const next: PrefsView = {
         status: "live",
         notificationPrefs: row.notificationPrefs ?? DEFAULT_IN_APP,
         emailPrefs: row.emailPrefs ?? DEFAULT_EMAIL,
-        delivery: row.delivery ?? null,
+        delivery: rawDelivery
+          ? {
+              status: rawDelivery.status,
+              detail: studentEmailDelivery({
+                status: rawDelivery.status,
+                missingEnv: [],
+                detail: rawDelivery.detail,
+              }).detail,
+            }
+          : null,
       };
       applyView(next);
       setFromCache(false);
@@ -382,16 +415,15 @@ export default function NotificationPreferencesClient() {
         <EmptyState
           soft
           title={failure ? failure.title : "Loading preferences…"}
-          description={failure ? failure.description : "Pulling your inbox and email opt-ins."}
+          description={failure ? failure.description : "Loading your inbox and email opt-ins."}
           aria-busy={!fetchFailed}
         >
           {failure?.primary ? (
             <Button as="a" variant="primary" href={failure.primary.href}>
               {failure.primary.label}
             </Button>
-          ) : null}
-          {failure?.showRetry ? (
-            <Button variant="secondary" type="button" onClick={() => void load()}>
+          ) : failure?.showRetry ? (
+            <Button variant="primary" type="button" onClick={() => void load()}>
               Retry
             </Button>
           ) : null}
@@ -414,7 +446,7 @@ export default function NotificationPreferencesClient() {
           {delivery ? (
             <p className="telemetry-status" role="status">
               <span className={`app-badge ${delivery.status === "available" ? "good" : "setup"}`}>
-                {delivery.status === "available" ? "Email ready" : "Setup required"}
+                {delivery.status === "available" ? "Email ready" : "Needs setup"}
               </span>{" "}
               {delivery.detail}
             </p>
