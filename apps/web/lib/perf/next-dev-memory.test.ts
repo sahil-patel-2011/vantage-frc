@@ -68,7 +68,9 @@ describe("next-dev memory", () => {
   it("does not let Playwright load vitest origin.test.ts as a spec", () => {
     const config = readFileSync(join(WEB_ROOT, "..", "..", "playwright.config.ts"), "utf8");
     expect(config).toMatch(/testMatch:\s*["']\*\*\/\*\.spec\.ts["']/);
-    expect(config).toMatch(/isCi \? "" :/);
+    expect(config).toMatch(/playwrightOwnedPort/);
+    expect(config).toMatch(/playwrightOwnedOrigin/);
+    expect(config).not.toMatch(/explicitBase/);
     expect(config).toMatch(/--shard=1\/8/);
   });
 });

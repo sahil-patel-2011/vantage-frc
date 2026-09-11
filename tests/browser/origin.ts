@@ -14,12 +14,23 @@ import {
 export const DEFAULT_PLAYWRIGHT_PORT = 3310;
 export const DEFAULT_PLAYWRIGHT_HOST = "127.0.0.1";
 
+/** Port the default Playwright config starts. Ignores leftover PLAYWRIGHT_BASE_URL. */
+export function playwrightOwnedPort(): number {
+  const fromEnv = Number(process.env.PLAYWRIGHT_PORT);
+  if (Number.isFinite(fromEnv) && fromEnv > 0) return fromEnv;
+  return DEFAULT_PLAYWRIGHT_PORT;
+}
+
+/** Origin the default Playwright config starts. Attach uses playwright.fixture.config.ts. */
+export function playwrightOwnedOrigin(port = playwrightOwnedPort()): string {
+  return `http://${DEFAULT_PLAYWRIGHT_HOST}:${port}`;
+}
+
 export function playwrightOrigin(): string {
   if (process.env.PLAYWRIGHT_BASE_URL) {
     return process.env.PLAYWRIGHT_BASE_URL.replace(/\/$/, "");
   }
-  const port = process.env.PLAYWRIGHT_PORT ?? String(DEFAULT_PLAYWRIGHT_PORT);
-  return `http://${DEFAULT_PLAYWRIGHT_HOST}:${port}`;
+  return playwrightOwnedOrigin();
 }
 
 export function playwrightPort(): number {

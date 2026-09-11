@@ -76,12 +76,12 @@ npm run test:browser                     # Playwright vs http://127.0.0.1:3310 (
 npm run test:browser:batch              # one of eight shards — keeps next-dev from compiling every route
 ```
 
-If `:3310` is taken by this checkout's `next dev`, Playwright attaches to `.next/dev/lock`
-instead of failing. `PLAYWRIGHT_PORT=3510 npm run test:browser` still starts a server when
-no lock is live. To attach to a server you already started on another port:
-`PLAYWRIGHT_BASE_URL=http://127.0.0.1:3410 npm run test:browser:attach`. Never point
-Playwright at production `DATABASE_*`. A full 100+ spec walk against one `next dev`
-OOMs the compiler; CI runs `--shard=1/8` … `8/8` so each job is a fresh heap.
+If `:3310` is taken by this checkout's `next dev`, Playwright reuses `.next/dev/lock`
+via `webServer.reuseExistingServer`. `PLAYWRIGHT_PORT=3510 npm run test:browser` still
+starts a server when no lock is live. Leftover `PLAYWRIGHT_BASE_URL` does not skip
+webServer — attach with `PLAYWRIGHT_BASE_URL=http://127.0.0.1:3410 npm run test:browser:attach`.
+Never point Playwright at production `DATABASE_*`. A full 100+ spec walk against one
+`next dev` OOMs the compiler; CI runs `--shard=1/8` … `8/8` so each job is a fresh heap.
 
 For a screen change, load it in a browser on a local database and write down what you saw. For a
 database change, run `scripts/rls-proof.mjs` against a local Postgres as a non-superuser login. For a

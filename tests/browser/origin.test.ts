@@ -3,6 +3,8 @@ import {
   assertLocalFixtureDatabase,
   LOCAL_VANTAGE_CI_ADMIN,
   LOCAL_VANTAGE_CI_APP,
+  playwrightOwnedOrigin,
+  playwrightOwnedPort,
   playwrightWebServerEnv,
 } from "./origin";
 
@@ -13,6 +15,8 @@ const KEYS = [
   "CI",
   "GITHUB_ACTIONS",
   "BETTER_AUTH_SECRET",
+  "PLAYWRIGHT_BASE_URL",
+  "PLAYWRIGHT_PORT",
 ] as const;
 
 let snapshot: Record<string, string | undefined> = {};
@@ -92,5 +96,17 @@ describe("playwrightWebServerEnv", () => {
     expect(env.E2E_AUTH_FIXTURE).toBe("1");
     expect(env.NODE_ENV).toBe("development");
     expect(env.NODE_OPTIONS).toMatch(/max-old-space-size=4096/);
+  });
+});
+
+describe("playwrightOwnedOrigin", () => {
+  it("ignores leftover PLAYWRIGHT_BASE_URL so the default config can own webServer", () => {
+    process.env.PLAYWRIGHT_BASE_URL = "http://127.0.0.1:3560";
+    delete process.env.PLAYWRIGHT_PORT;
+    expect(playwrightOwnedPort()).toBe(3310);
+    expect(playwrightOwnedOrigin()).toBe("http://127.0.0.1:3310");
+    process.env.PLAYWRIGHT_PORT = "3588";
+    expect(playwrightOwnedPort()).toBe(3588);
+    expect(playwrightOwnedOrigin()).toBe("http://127.0.0.1:3588");
   });
 });
