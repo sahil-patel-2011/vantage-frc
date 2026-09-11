@@ -4,7 +4,7 @@
  * made-up plan.
  */
 
-import type { AllianceScorePrediction } from "./calibrated-score";
+import { typicalScoreErrorCopy, type AllianceScorePrediction } from "./calibrated-score";
 
 export type MatchPlan = {
   auto: string;
@@ -28,10 +28,11 @@ export function matchPlanFromPrediction(
     ?? "Climb if you can finish with 20+ seconds left. No climb rate is on this card.";
   const defend = prediction.drivers.find((line) => /defense/i.test(line))
     ?? "Do not assign a defender unless scouting marked one. Defense without a flag is a guess.";
+  const bandCopy = typicalScoreErrorCopy(band);
   const briefing = [
     ourAlliance
-      ? `You are ${ourAlliance}. Predicted ${us.toFixed(0)}–${them.toFixed(0)} (typical error ±${band}, last measured set).`
-      : `Predicted red ${prediction.redPredicted.toFixed(0)} / blue ${prediction.bluePredicted.toFixed(0)} (typical error ±${band}, last measured set). Alliance color is not set.`,
+      ? `You are ${ourAlliance}. Predicted ${us.toFixed(0)}–${them.toFixed(0)} · ${bandCopy}.`
+      : `Predicted red ${prediction.redPredicted.toFixed(0)} / blue ${prediction.bluePredicted.toFixed(0)} · ${bandCopy}. Alliance color is not set.`,
     margin != null
       ? margin >= 0
         ? `That is about ${margin} points in your favour — only worth a stretch play if it is bigger than the typical ±${band} error.`
@@ -40,7 +41,7 @@ export function matchPlanFromPrediction(
     ...prediction.drivers.slice(0, 3),
   ].join(" ");
   const pointDeltas = [
-    margin != null ? `Predicted margin ${margin > 0 ? "+" : ""}${margin} (typical error ±${band})` : `Typical error ±${band} points (last measured set)`,
+    margin != null ? `Predicted margin ${margin > 0 ? "+" : ""}${margin} · ${bandCopy}` : bandCopy,
     ...prediction.drivers.slice(0, 2),
   ];
   return { auto, defend, climb, briefing, pointDeltas };

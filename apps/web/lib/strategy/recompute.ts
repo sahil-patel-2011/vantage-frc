@@ -1,5 +1,6 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { computeStrategyView } from "./compute-strategy";
+import { EMPTY_PREDICTION_COPY } from "./prediction-empty-copy";
 import { strategyShellSetupSteps } from "./strategy-related";
 import type { StrategyView } from "./types";
 
@@ -7,9 +8,6 @@ import type { StrategyView } from "./types";
 export const STRATEGY_RECOMPUTE_ACTION = "recompute";
 
 const CACHED_EPA_SOURCES = new Set(["tba", "statbotics"]);
-
-const EMPTY_EPA_MESSAGE =
-  "No prediction yet — need event/year EPA covering enough alliance robots (and optional scouting) before the model can run.";
 
 export type StrategyRecomputeInput = {
   userId: string;
@@ -73,7 +71,7 @@ function toEmptyView(
 ): Extract<StrategyView, { status: "setup_required" | "empty" }> {
   return {
     status: "empty",
-    message: EMPTY_EPA_MESSAGE,
+    message: EMPTY_PREDICTION_COPY,
     steps: strategyShellSetupSteps(view.orgId),
     orgId: view.orgId,
     eventKey: view.eventKey,

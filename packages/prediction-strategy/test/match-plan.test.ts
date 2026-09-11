@@ -10,8 +10,8 @@ describe("match plan from a score prediction", () => {
     if (isScorePredictionSkip(prediction)) return;
     const plan = matchPlanFromPrediction(prediction, "red");
     expect(plan.briefing).toMatch(/You are red/);
-    expect(plan.briefing).toMatch(/typical error ±/);
-    expect(plan.pointDeltas[0]).toMatch(/typical error ±/);
+    expect(plan.briefing).toMatch(/typical error ±90 \(last measured set\)/);
+    expect(plan.pointDeltas[0]).toMatch(/typical error ±90 \(last measured set\)/);
     expect(plan.auto.length).toBeGreaterThan(10);
     expect(plan.climb.length).toBeGreaterThan(10);
   });
