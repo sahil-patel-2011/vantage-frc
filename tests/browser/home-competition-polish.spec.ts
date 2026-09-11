@@ -61,7 +61,7 @@ test("student this week can walk Match video", async ({ page }) => {
   await expect(page.getByText("Setup required")).toHaveCount(0);
 });
 
-test("student this week can walk Event day and Chat", async ({ page }) => {
+test("student this week can walk Event day", async ({ page }) => {
   test.setTimeout(90_000);
 
   await openStudentPage(page, "/command");
@@ -76,6 +76,10 @@ test("student this week can walk Event day and Chat", async ({ page }) => {
     await expect(eventRelated.getByRole("link", { name: "Inspection" })).toBeVisible();
   }
   await expect(page.getByText("Setup required")).toHaveCount(0);
+});
+
+test("student this week can walk Chat", async ({ page }) => {
+  test.setTimeout(90_000);
 
   await openStudentPage(page, "/chat");
   for (const phrase of BANNED) {
