@@ -78,7 +78,7 @@ export default function HelpClient({ sectionGuide }: HelpClientProps = {}) {
         title={hasGuide ? "App manual" : "Help centre"}
         description={
           hasGuide
-            ? "Two views of the same manual: searchable how-to articles, and a section-by-section walk of every workbench."
+            ? "Two views of the same manual: searchable how-to articles, and a section-by-section walk of every hub."
             : "Searchable how-to articles for every hub — getting started, scouting, AI keys, billing, and admin. Also available from Cmd+K."
         }
       >
@@ -115,7 +115,7 @@ export default function HelpClient({ sectionGuide }: HelpClientProps = {}) {
               id="help-search-input"
               type="search"
               value={query}
-              placeholder="e.g. library, subscription bridge, pricing, scouting…"
+              placeholder="e.g. library, pricing, scouting…"
               autoComplete="off"
               onChange={(event) => setQuery(event.target.value)}
             />
@@ -151,7 +151,7 @@ export default function HelpClient({ sectionGuide }: HelpClientProps = {}) {
           {searching ? (
             ranked.length === 0 ? (
               <p className="help-empty app-muted" role="status">
-                No topics match “{query.trim()}”. Try library, bridge, pricing, or scouting — or
+                No topics match “{query.trim()}”. Try library, pricing, or scouting — or
                 open Support tickets.
               </p>
             ) : (
@@ -196,7 +196,7 @@ export default function HelpClient({ sectionGuide }: HelpClientProps = {}) {
                 <p className="app-muted">
                   {hasGuide
                     ? "This Topics view and /help are the same searchable article index."
-                    : "The section-by-section guide walks every workbench — what it is, why, when in the season, and the steps."}
+                    : "The section-by-section guide walks every hub — what it is, why, when in the season, and the steps."}
                 </p>
               </div>
               <Button as="a" variant="secondary"

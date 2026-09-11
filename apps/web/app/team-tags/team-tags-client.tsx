@@ -210,7 +210,7 @@ export default function TeamTagsClient() {
       {!view && !error ? <p className="app-muted">Loading tags…</p> : null}
 
       {view?.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
+        <EmptyState badge="Needs setup" badgeTone="setup" title={view.message}>
           {view.steps[0] ? (
             <Button as="a" variant="primary" href={view.steps[0].href}>
               {view.steps[0].label}
@@ -242,9 +242,9 @@ function LiveTags({
         <ul className="team-tags-actions">
           {view.nextActions.map((action) => (
             <li key={action.id}>
-              <a className={action.primary ? "app-button" : "app-button secondary"} href={action.href}>
+              <Button as="a" variant={action.primary ? "primary" : "secondary"} href={action.href}>
                 {action.label}
-              </a>
+              </Button>
               <span>{action.detail}</span>
             </li>
           ))}
@@ -253,7 +253,7 @@ function LiveTags({
 
       <Panel>
         <p className="app-muted">
-          Pairwise 2.0’s tag board. Event {view.eventKey ?? "not set"} — teams in the picker come from the synced event
+          Tag robots as you watch. Event {view.eventKey ?? "not set"} — teams in the picker come from the synced event
           schedule.
         </p>
         <form className="team-tags-form" onSubmit={onSubmit}>
@@ -324,9 +324,9 @@ function LiveTags({
                 <li key={team.assignmentId}>
                   <strong>{team.teamNumber}</strong>
                   <span>{team.notes ?? (team.matchKey ? team.matchKey : "")}</span>
-                  <button type="button" className="danger" disabled={busy} onClick={() => onRemove(team.assignmentId)}>
+                  <Button type="button" variant="danger" disabled={busy} onClick={() => onRemove(team.assignmentId)}>
                     Remove
-                  </button>
+                  </Button>
                 </li>
               ))}
             </ul>

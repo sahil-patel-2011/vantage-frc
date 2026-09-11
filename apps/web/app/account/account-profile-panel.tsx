@@ -124,7 +124,7 @@ export function AccountProfilePanel({
           />
         </label>
         <label>
-          Phone number for OTP
+          Phone number for text codes
           <input
             type="tel"
             value={phoneE164}
@@ -135,10 +135,10 @@ export function AccountProfilePanel({
         </label>
         <p className="app-muted">
           {account.phoneVerified
-            ? "Phone is verified for OTP."
+            ? "This phone number is confirmed."
             : account.phoneOtp?.configured
-              ? "Save the number, then send a code to verify it."
-              : account.phoneOtp?.message ?? "SMS OTP is setup-required until Twilio env is set."}
+              ? "Save the number, then send a code to confirm it."
+              : "Phone codes need text messaging set up on this team. Email sign-in still works."}
         </p>
         <div className="account-actions">
           <Button variant="secondary" type="button" disabled={busy} onClick={() => void onSendPhoneOtp()}>
@@ -150,19 +150,19 @@ export function AccountProfilePanel({
             maxLength={6}
             inputMode="numeric"
             placeholder="6-digit code"
-            aria-label="Phone OTP code"
+            aria-label="Phone confirmation code"
           />
           <Button variant="secondary" type="button" disabled={busy || otpCode.length !== 6} onClick={() => void onVerifyPhoneOtp()}>
             Verify phone
           </Button>
         </div>
         <div className="account-actions">
-          <button className="primary-action" type="submit" disabled={busy}>
+          <Button variant="primary" type="submit" disabled={busy}>
             Save profile
-          </button>
-          <button className="danger-action" type="button" disabled={busy} onClick={() => void onSignOut()}>
+          </Button>
+          <Button variant="danger" type="button" disabled={busy} onClick={() => void onSignOut()}>
             Sign out
-          </button>
+          </Button>
         </div>
       </form>
     </Panel>

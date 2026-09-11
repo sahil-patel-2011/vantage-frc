@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Button } from "./ui";
 import { withOrgHref } from "../lib/nav/product-nav";
 
 type CopyShareLinkProps = {
@@ -12,13 +13,13 @@ type CopyShareLinkProps = {
 };
 
 /**
- * Copies an org-scoped deep link for the current hub surface.
- * Uses withOrgHref so shared URLs keep workspace context — never a DEMO seed path.
+ * Copies a team-scoped deep link for the current hub surface.
+ * Uses withOrgHref so shared URLs keep the active team.
  */
 export function CopyShareLink({
   orgId,
   pathWithSearch,
-  className = "app-button secondary",
+  className,
   label = "Copy share link",
 }: CopyShareLinkProps) {
   const [status, setStatus] = useState<"idle" | "copied" | "failed">("idle");
@@ -41,14 +42,15 @@ export function CopyShareLink({
   }
 
   return (
-    <button
+    <Button
       type="button"
+      variant="secondary"
       className={className}
       onClick={() => void copy()}
       aria-live="polite"
       title="Copy a link to this page for your team"
     >
       {status === "copied" ? "Link copied" : status === "failed" ? "Copy failed" : label}
-    </button>
+    </Button>
   );
 }

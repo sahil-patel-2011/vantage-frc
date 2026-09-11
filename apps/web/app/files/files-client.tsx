@@ -271,7 +271,7 @@ export default function FilesClient() {
         const response = await fetch(input, init);
         if (!response.ok) {
           const body = (await response.json().catch(() => ({}))) as { error?: string };
-          setNotice(body.error ?? `That did not work (HTTP ${response.status}).`);
+          setNotice(body.error ?? "That did not work. Try again.");
           return false;
         }
         if (successNotice) setNotice(successNotice);
@@ -295,22 +295,22 @@ export default function FilesClient() {
     >
       <div className="drive-header-actions">
         <div className="drive-layout-toggle" role="group" aria-label="Layout">
-          <button
+          <Button
             type="button"
-            className={`app-button ${layout === "grid" ? "" : "secondary"}`}
+            variant={layout === "grid" ? "primary" : "secondary"}
             aria-pressed={layout === "grid"}
             onClick={() => setLayout("grid")}
           >
             Grid
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
-            className={`app-button ${layout === "list" ? "" : "secondary"}`}
+            variant={layout === "list" ? "primary" : "secondary"}
             aria-pressed={layout === "list"}
             onClick={() => setLayout("list")}
           >
             List
-          </button>
+          </Button>
         </div>
         {canUpload ? (
           <Button variant="primary" type="button" onClick={() => fileInput.current?.click()}>
