@@ -57,6 +57,9 @@ describe("Impact / community remaining student chrome", () => {
     expect(awardTrackerShellCopy("setup").badge).toBe("Needs setup");
     expectPlainCopy(impactEssayShellCopy("setup").description);
     expectPlainCopy(judgeSimShellCopy("empty").description);
+    const awards = readFileSync(join(WEB, "app/team/awards/awards-client.tsx"), "utf8");
+    expect(awards).toMatch(/badge="Needs setup"/);
+    expect(awards).toMatch(/fetchActiveOrgId/);
   });
 
   it("Community Impact related strip is Awards · Outreach · Writer, not the funding hub", () => {
