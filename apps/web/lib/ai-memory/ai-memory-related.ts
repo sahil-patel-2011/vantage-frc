@@ -125,7 +125,7 @@ export function aiMemoryShellCopy(kind: AiMemoryShellKind): AiMemoryEmptyCopy {
         kind,
         badge: "Sign in",
         title: "Sign in to manage AI memory",
-        description: "Sign in, then reopen Memory from the AI hub.",
+        description: "Sign in, then reopen Memory from Ask AI.",
       };
     case "forbidden":
       return {
@@ -133,7 +133,7 @@ export function aiMemoryShellCopy(kind: AiMemoryShellKind): AiMemoryEmptyCopy {
         badge: "Admins only",
         title: "Team memory policy needs an admin",
         description:
-          "Owners and admins opt in to shared team memory. Your private Chat memories stay yours — they are never promoted automatically.",
+          "Owners and admins turn on shared team memory. Your private Chat memories stay yours until you promote them.",
       };
     case "empty":
       return {
@@ -141,30 +141,34 @@ export function aiMemoryShellCopy(kind: AiMemoryShellKind): AiMemoryEmptyCopy {
         badge: "Empty",
         title: "No team memory yet",
         description:
-          "Shared team memory stays empty until an admin enables injection and someone promotes a real Chat reply. Nothing is invented for empty rows.",
+          "Shared team memory stays empty until an admin turns it on and someone promotes a real Chat reply.",
       };
     case "setup":
       return {
         kind,
         badge: "Setup",
-        title: "Team injection is on — nothing shared yet",
+        title: "Team memory is on — nothing shared yet",
         description:
-          "Policy is enabled, but there are no active team memories. Promote useful private Chat replies, or leave the list empty.",
+          "Sharing is enabled, but there are no active team memories. Promote useful private Chat replies, or leave the list empty.",
       };
     case "error":
       return {
         kind,
         badge: "Unavailable",
         title: "Could not load team memory",
-        description: "A network or server issue blocked the team memory settings. Retry, or check Budgets if AI is cut off.",
+        description: "A network or server issue blocked the team memory settings. Retry, or check Chat limits if Chat is cut off.",
       };
-    default:
+    case "ready":
       return {
-        kind: "ready",
+        kind,
         title: "Team memory policy",
         description:
-          "Admins control whether shared memories inject into assistant prompts, how many tokens they may use, and how long they live.",
+          "Admins control whether shared memories show up in Chat answers, how much they may use, and how long they live.",
       };
+    default: {
+      const _exhaustive: never = kind;
+      return _exhaustive;
+    }
   }
 }
 
@@ -184,7 +188,7 @@ export function aiMemoryNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Team memory settings and counts are saved per org — pick a team first.",
+        detail: "Team memory settings are saved per team.",
         href: "/workspace",
         primary: true,
       },
@@ -212,35 +216,35 @@ export function aiMemoryNextActions(input: {
       {
         id: "chat-private",
         label: "Manage private memory in Chat",
-        detail: "Add preferences in the Chat context panel. Private memory never enters team memory automatically.",
+        detail: "Add preferences in the Chat context panel. Private memory stays yours until you promote it.",
         href: chatHref,
         primary: true,
-      },
-      {
-        id: "budgets",
-        label: "Open Budgets",
-        detail: "API spend caps and prompt caching live next to Chat — distinct from memory injection.",
-        href: budgetsHref,
       },
     ];
   }
 
   if (input.shell === "empty" || (!input.enabled && (input.activeCount ?? 0) === 0)) {
-    actions.push({
-      id: "enable",
-      label: "Enable team injection",
-      detail: "Opt in below so promoted memories can fill a limited slice of each assistant prompt.",
-      href: "#team-memory-policy",
-      primary: true,
-    });
-  } else if (input.shell === "setup" || ((input.activeCount ?? 0) === 0 && input.enabled)) {
-    actions.push({
-      id: "promote",
-      label: "Promote from Chat",
-      detail: "Open a private Chat reply and use Promote to team memory — only real messages are stored.",
-      href: chatHref,
-      primary: true,
-    });
+    return [
+      {
+        id: "enable",
+        label: "Turn on team memory",
+        detail: "Opt in below so promoted memories can help Chat answers for the whole team.",
+        href: "#team-memory-policy",
+        primary: true,
+      },
+    ];
+  }
+
+  if (input.shell === "setup" || ((input.activeCount ?? 0) === 0 && input.enabled)) {
+    return [
+      {
+        id: "promote",
+        label: "Promote from Chat",
+        detail: "Open a private Chat reply and use Promote to team memory — only real messages are stored.",
+        href: chatHref,
+        primary: true,
+      },
+    ];
   }
 
   actions.push(
@@ -249,12 +253,12 @@ export function aiMemoryNextActions(input: {
       label: "Open Chat",
       detail: "Private vs team-shared channels and per-user memory live on the assistant.",
       href: chatHref,
-      primary: !actions.some((a) => a.primary),
+      primary: true,
     },
     {
       id: "budgets",
-      label: "Open Budgets",
-      detail: "Token and spend limits are separate from memory injection budgets.",
+      label: "Open Chat limits",
+      detail: "Spend limits are separate from how much team memory Chat may use.",
       href: budgetsHref,
     },
   );
@@ -267,11 +271,11 @@ export const AI_MEMORY_SCOPE_CARDS = [
   {
     id: "private" as const,
     title: "Private (you)",
-    body: "Durable preferences and facts you save in Chat. Injected only for you, and never auto-promoted into team memory.",
+    body: "Preferences and facts you save in Chat. Used only for you, and not added to team memory unless you promote them.",
   },
   {
     id: "team" as const,
-    title: "Team-shared (org)",
-    body: "Only messages an author explicitly promotes. Admins must opt in before any shared memory is injected into prompts.",
+    title: "Team-shared",
+    body: "Only messages an author explicitly promotes. Admins must turn this on before any shared memory is used in Chat.",
   },
 ] as const;

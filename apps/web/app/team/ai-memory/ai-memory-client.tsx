@@ -1,5 +1,5 @@
 "use client";
-import { Button } from "../../../components/ui";
+import { Button, EmptyState, PageHeader } from "../../../components/ui";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AiHubRelated } from "../../../components/ai-hub-related";
@@ -78,6 +78,37 @@ function NextActions({
   );
 }
 
+function ShellPrimary({
+  orgId,
+  shell,
+  enabled,
+  activeCount,
+  onRetry,
+}: {
+  orgId: string;
+  shell: AiMemoryShellKind;
+  enabled: boolean;
+  activeCount: number;
+  onRetry?: () => void;
+}) {
+  if (shell === "error" && onRetry) {
+    return (
+      <Button variant="primary" type="button" onClick={onRetry}>
+        Retry
+      </Button>
+    );
+  }
+  const primary = aiMemoryNextActions({ orgId, shell, enabled, activeCount }).find(
+    (action) => action.primary,
+  );
+  if (!primary) return null;
+  return (
+    <Button as="a" variant="primary" href={primary.href}>
+      {primary.label}
+    </Button>
+  );
+}
+
 function JournalEntryCard({ entry }: { entry: DreamJournalEntry }) {
   const chips = sourceChips(entry.sourceCounts);
   const status = statusLine(entry);
@@ -110,7 +141,7 @@ function JournalEntryCard({ entry }: { entry: DreamJournalEntry }) {
         <p className="dream-body">{entry.content}</p>
       ) : entry.status === "ok" || entry.status === "no_ai_fallback" ? (
         <p className="dream-status app-muted">
-          This entry has expired under your retention window and is no longer injected into prompts.
+          This entry has expired under your retention window and is no longer used in Chat.
         </p>
       ) : null}
     </article>
@@ -288,31 +319,14 @@ export default function AiMemoryClient({ orgId }: { orgId: string }) {
 
   const chatHref = hubHref("/ai", "chat", orgId);
   const budgetsHref = hubHref("/ai", "budgets", orgId);
-  const governanceLinks = aiMemoryRelatedLinks(orgId);
 
   return (
     <main className="intel-app ai-memory-page">
-      <header className="intel-header">
-        <div>
-          <span className="eyebrow">AI / MEMORY</span>
-          <h1>What the assistant remembers</h1>
-          <p className="app-muted">
-            Private memories stay yours in Chat. Team-shared memory is admin opt-in only and fills prompts from
-            real promoted messages — if nothing has been saved, the assistant has nothing extra.
-          </p>
-        </div>
-        <nav className="intel-actions" aria-label="AI Memory shortcuts">
-          <a href={chatHref}>Chat</a>
-          <a href={budgetsHref}>Budgets</a>
-          {governanceLinks
-            .filter((link) => link.id === "prompt-caching" || link.id === "governance" || link.id === "knowledge")
-            .map((link) => (
-              <a key={link.id} href={link.href}>
-                {link.label}
-              </a>
-            ))}
-        </nav>
-      </header>
+      <PageHeader
+        breadcrumbs="Ask AI / Memory"
+        title="What the assistant remembers"
+        description="Private memories stay yours in Chat. Team-shared memory is admin opt-in only and uses real promoted messages — if nothing has been saved, Chat has nothing extra."
+      />
 
       <AiHubRelated orgId={orgId} active="memory" />
       <MemoryRelatedStrip orgId={orgId} />
@@ -331,22 +345,21 @@ export default function AiMemoryClient({ orgId }: { orgId: string }) {
       ) : null}
 
       {blocked ? (
-        <section className="app-card soft-panel product-hub-setup" role="status">
-          {shellCopy.badge ? <span className="app-badge setup">{shellCopy.badge}</span> : null}
-          <h2>{shellCopy.title}</h2>
-          <p className="app-muted">{shellCopy.description}</p>
-          <NextActions
+        <EmptyState
+          soft
+          badge={shellCopy.badge}
+          badgeTone="setup"
+          title={shellCopy.title}
+          description={shellCopy.description}
+        >
+          <ShellPrimary
             orgId={orgId}
             shell={shell}
             enabled={settings.enabled}
             activeCount={Number.isFinite(activeCount) ? activeCount : 0}
+            onRetry={() => void load()}
           />
-          {shell === "error" ? (
-            <Button variant="secondary" type="button" onClick={() => void load()}>
-              Retry
-            </Button>
-          ) : null}
-        </section>
+        </EmptyState>
       ) : null}
 
       {!loading && !blocked ? (
@@ -372,7 +385,7 @@ export default function AiMemoryClient({ orgId }: { orgId: string }) {
 
           <section className="metric-grid" aria-label="Team memory counts">
             <article>
-              <span>Injection</span>
+              <span>Team memory</span>
               <strong>{settings.enabled ? "On" : "Off"}</strong>
             </article>
             <article>
@@ -390,19 +403,28 @@ export default function AiMemoryClient({ orgId }: { orgId: string }) {
           </section>
 
           {showEmptyBanner ? (
-            <section className="app-card soft-panel product-hub-setup" role="status">
-              {shellCopy.badge ? <span className="app-badge setup">{shellCopy.badge}</span> : null}
-              <h2>{shellCopy.title}</h2>
-              <p className="app-muted">{shellCopy.description}</p>
-            </section>
-          ) : null}
-
-          <NextActions
-            orgId={orgId}
-            shell={shell}
-            enabled={settings.enabled}
-            activeCount={Number.isFinite(activeCount) ? activeCount : 0}
-          />
+            <EmptyState
+              soft
+              badge={shellCopy.badge}
+              badgeTone="setup"
+              title={shellCopy.title}
+              description={shellCopy.description}
+            >
+              <ShellPrimary
+                orgId={orgId}
+                shell={shell}
+                enabled={settings.enabled}
+                activeCount={Number.isFinite(activeCount) ? activeCount : 0}
+              />
+            </EmptyState>
+          ) : (
+            <NextActions
+              orgId={orgId}
+              shell={shell}
+              enabled={settings.enabled}
+              activeCount={Number.isFinite(activeCount) ? activeCount : 0}
+            />
+          )}
 
           <section className="app-card soft-panel dream-journal" aria-label="Team journal">
             <header className="dream-journal-header">
@@ -433,8 +455,7 @@ export default function AiMemoryClient({ orgId }: { orgId: string }) {
 
             {journalMeta?.memoryEnabled && !journalLoading && !journalMeta.lastRunAt ? (
               <p className="app-muted dream-status">
-                No nightly run has ever reached this team. If that is unexpected, the nightly trigger may not
-                be scheduled yet — see docs/DREAMING.md for the cron setup.
+                No nightly run has reached this team yet. Ask a mentor if that is unexpected.
               </p>
             ) : null}
 
@@ -486,7 +507,7 @@ export default function AiMemoryClient({ orgId }: { orgId: string }) {
           >
             <span className="eyebrow">ADMIN · TEAM MEMORY POLICY</span>
             <p className="app-muted ai-memory-policy-lead">
-              Opt-in controls for shared injection. Private per-user memory in Chat is unaffected when this is off.
+              Controls for shared team memory. Private Chat memories stay yours when this is off.
             </p>
             <label className="state-control">
               <input
@@ -495,9 +516,9 @@ export default function AiMemoryClient({ orgId }: { orgId: string }) {
                 onChange={(e) => setSettings({ ...settings, enabled: e.target.checked })}
               />
               <span>
-                <strong>Use team memory in assistant prompts</strong>
+                <strong>Use team memory in Chat answers</strong>
                 <small>
-                  When off, no shared team memory is injected. Empty lists stay empty.
+                  When off, Chat does not use shared team notes. Empty lists stay empty.
                 </small>
               </span>
             </label>
@@ -513,7 +534,7 @@ export default function AiMemoryClient({ orgId }: { orgId: string }) {
               <small>Promoted team memories are ignored once older than this. 1–3650 days.</small>
             </label>
             <label>
-              Per-prompt token budget
+              How much team memory each answer can use
               <input
                 type="number"
                 min={0}
@@ -522,7 +543,7 @@ export default function AiMemoryClient({ orgId }: { orgId: string }) {
                 onChange={(e) => setSettings({ ...settings, tokenBudget: Number(e.target.value) })}
               />
               <small>
-                Maximum tokens of team memory the assistant may add to any single prompt. Separate from API Budgets.
+                Maximum amount of team memory Chat may add to any single answer. Separate from Chat limits.
                 0–10000.
               </small>
             </label>
@@ -534,7 +555,7 @@ export default function AiMemoryClient({ orgId }: { orgId: string }) {
                 Open Chat
               </Button>
               <Button as="a" variant="secondary" href={budgetsHref}>
-                Open Budgets
+                Open Chat limits
               </Button>
             </div>
           </form>

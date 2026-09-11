@@ -226,9 +226,9 @@ export function aiBudgetsShellCopy(kind: AiBudgetsShellKind): AiBudgetsEmptyCopy
       return {
         kind,
         badge: "Setup",
-        title: "Finish budget setup",
+        title: "Finish Chat limits",
         description:
-          "Finish choosing a team or add a spend limit next to any model list. Chat, Pricing, and Account stay one hop away.",
+          "Add a spend limit next to any model list. Chat, Pricing, and Account stay one hop away.",
       };
     case "error":
       return {
@@ -236,15 +236,19 @@ export function aiBudgetsShellCopy(kind: AiBudgetsShellKind): AiBudgetsEmptyCopy
         badge: "Unavailable",
         title: "Could not load Chat limits",
         description:
-          "A network or server issue blocked budget policy. Retry, or open Chat / Pricing / Account while it reloads.",
+          "A network or server issue blocked Chat limits. Retry, or open Chat / Pricing / Account while it reloads.",
       };
-    default:
+    case "ready":
       return {
-        kind: "ready",
+        kind,
         title: "Chat limits",
         description:
           "Spend and token limits are checked before every Chat message. The included allowance stops unless you buy credits or turn on pay-as-you-go.",
       };
+    default: {
+      const _exhaustive: never = kind;
+      return _exhaustive;
+    }
   }
 }
 
@@ -262,21 +266,9 @@ export function aiBudgetsNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Chat limits are saved per team — pick a team first.",
+        detail: "Chat limits are saved per team.",
         href: "/workspace",
         primary: true,
-      },
-      {
-        id: "account",
-        label: "Open Account",
-        detail: "Confirm membership and plan access from Account.",
-        href: withOrgHref("/account", null),
-      },
-      {
-        id: "pricing",
-        label: "View pricing",
-        detail: "Included allowance and Usage Credits are listed on Pricing.",
-        href: withOrgHref("/pricing", null),
       },
     ];
   }
@@ -303,21 +295,9 @@ export function aiBudgetsNextActions(input: {
       {
         id: "chat",
         label: "Open Chat",
-        detail: "Members can still use the assistant under existing org caps.",
+        detail: "Members can still use the assistant under existing team limits.",
         href: chatHref,
         primary: true,
-      },
-      {
-        id: "pricing",
-        label: "View pricing",
-        detail: "Compare included allowance and Usage Credit packs.",
-        href: pricingHref,
-      },
-      {
-        id: "account",
-        label: "Open Account",
-        detail: "Check your role and which team you are on.",
-        href: accountHref,
       },
     ];
   }
@@ -325,30 +305,36 @@ export function aiBudgetsNextActions(input: {
   const actions: AiBudgetsNextAction[] = [];
 
   if (input.shell === "empty") {
-    actions.push({
-      id: "configure",
-      label: "Set first hard limit",
-      detail: "Add a daily or monthly spend / token cap in the organization form below.",
-      href: "#org-hard-limits",
-      primary: true,
-    });
-  } else if (input.shell === "setup") {
-    actions.push({
-      id: "finish",
-      label: "Add a spend or token cap",
-      detail: "A model list alone does not stop spend — set a dollar or token limit, or pause Chat.",
-      href: "#org-hard-limits",
-      primary: true,
-    });
+    return [
+      {
+        id: "configure",
+        label: "Set first spend limit",
+        detail: "Add a daily or monthly spend or token cap in the form below.",
+        href: "#org-hard-limits",
+        primary: true,
+      },
+    ];
+  }
+
+  if (input.shell === "setup") {
+    return [
+      {
+        id: "finish",
+        label: "Add a spend or token cap",
+        detail: "A model list alone does not stop spend — set a dollar or token limit, or pause Chat.",
+        href: "#org-hard-limits",
+        primary: true,
+      },
+    ];
   }
 
   actions.push(
     {
       id: "chat",
       label: "Open Chat",
-      detail: "Metered calls enforce these caps — test after saving.",
+      detail: "Chat uses these limits — test after saving.",
       href: chatHref,
-      primary: !actions.some((a) => a.primary),
+      primary: true,
     },
     {
       id: "pricing",
@@ -365,7 +351,7 @@ export function aiBudgetsNextActions(input: {
     {
       id: "usage",
       label: "Open AI usage",
-      detail: "See real metered calls and denials.",
+      detail: "See real Chat calls and refusals.",
       href: usageHref,
     },
   );
@@ -439,7 +425,7 @@ export function aiUsageShellCopy(kind: AiBudgetsShellKind): AiBudgetsEmptyCopy {
         badge: "Setup",
         title: "Choose your team and plan",
         description:
-          "Usage needs a team on a plan. Open Account or Pricing, then send a Chat message to record the first call.",
+          "Usage needs a team on a plan. Choose your team, then send a Chat message to record the first call.",
       };
     case "error":
       return {
@@ -447,15 +433,19 @@ export function aiUsageShellCopy(kind: AiBudgetsShellKind): AiBudgetsEmptyCopy {
         badge: "Unavailable",
         title: "Could not load AI usage",
         description:
-          "A network or server issue blocked the usage ledger. Retry, or open Chat / Budgets / Pricing.",
+          "A network or server issue blocked the usage log. Retry, or open Chat / Chat limits / Pricing.",
       };
-    default:
+    case "ready":
       return {
-        kind: "ready",
+        kind,
         title: "AI usage & activity",
         description:
-          "A transparent record of every metered AI call — model, feature, member, and which key funded it.",
+          "A record of every billed Chat call — model, feature, member, and which key funded it.",
       };
+    default: {
+      const _exhaustive: never = kind;
+      return _exhaustive;
+    }
   }
 }
 
@@ -473,21 +463,9 @@ export function aiUsageNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Pick a team first.",
+        detail: "Each team has its own AI usage log.",
         href: "/workspace",
         primary: true,
-      },
-      {
-        id: "account",
-        label: "Open Account",
-        detail: "Confirm membership from Account.",
-        href: withOrgHref("/account", null),
-      },
-      {
-        id: "pricing",
-        label: "View pricing",
-        detail: "Included allowance lives on Pricing.",
-        href: withOrgHref("/pricing", null),
       },
     ];
   }
@@ -514,27 +492,9 @@ export function aiUsageNextActions(input: {
       {
         id: "chat",
         label: "Open Chat",
-        detail: "Members can still use the assistant under existing Budgets caps.",
+        detail: "Members can still use the assistant under existing Chat limits.",
         href: chatHref,
         primary: true,
-      },
-      {
-        id: "budgets",
-        label: "Open Budgets",
-        detail: "Spend limits and Pause Chat live next to Usage under Ask AI.",
-        href: budgetsHref,
-      },
-      {
-        id: "pricing",
-        label: "View pricing",
-        detail: "Compare plans and Usage Credits.",
-        href: pricingHref,
-      },
-      {
-        id: "account",
-        label: "Open Account",
-        detail: "Check your role and which team you are on.",
-        href: accountHref,
       },
     ];
   }
@@ -542,30 +502,36 @@ export function aiUsageNextActions(input: {
   const actions: AiBudgetsNextAction[] = [];
 
   if (input.shell === "empty") {
-    actions.push({
-      id: "chat",
-      label: "Open Chat",
-      detail: "Send a real assistant message — the first metered call appears here.",
-      href: chatHref,
-      primary: true,
-    });
-  } else if (input.shell === "setup") {
-    actions.push({
-      id: "pricing",
-      label: "View pricing",
-      detail: "Confirm a plan entitlement, then return to Usage.",
-      href: pricingHref,
-      primary: true,
-    });
+    return [
+      {
+        id: "chat",
+        label: "Open Chat",
+        detail: "Send a real Chat message — the first billed call appears here.",
+        href: chatHref,
+        primary: true,
+      },
+    ];
+  }
+
+  if (input.shell === "setup") {
+    return [
+      {
+        id: "pricing",
+        label: "View pricing",
+        detail: "Confirm a plan, then return to Usage.",
+        href: pricingHref,
+        primary: true,
+      },
+    ];
   }
 
   actions.push(
     {
       id: "budgets",
-      label: "Open Budgets",
+      label: "Open Chat limits",
       detail: "Set spend and token limits before more Chat calls.",
       href: budgetsHref,
-      primary: !actions.some((a) => a.primary),
+      primary: true,
     },
     {
       id: "chat",
