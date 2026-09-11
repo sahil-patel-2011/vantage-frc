@@ -40,7 +40,7 @@ export default async function ScoutingLineupPage({
         </PageHeader>
         <EmptyState
           soft
-          badge="Setup required"
+          badge="Needs setup"
           badgeTone="setup"
           title={copy.title}
           description={copy.description}

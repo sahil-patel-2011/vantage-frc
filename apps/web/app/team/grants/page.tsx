@@ -22,7 +22,7 @@ export default async function GrantsPage({
         </header>
         <EmptyState
           soft
-          badge="Setup required"
+          badge="Needs setup"
           badgeTone="setup"
           title="Choose your team"
           description="Grant narratives belong to one team. Choose your team to open the writing workbench — award amounts stay blank until you record them."

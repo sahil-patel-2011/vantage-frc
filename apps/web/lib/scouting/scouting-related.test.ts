@@ -122,7 +122,7 @@ describe("scoutingShellCopy", () => {
     }
     expect(scoutingShellCopy("empty").badge).toBe("Forms required");
     expect(scoutingShellCopy("empty").description).not.toMatch(/DEMO/i);
-    expect(scoutingShellCopy("setup").badge).toBe("Setup required");
+    expect(scoutingShellCopy("setup").badge).toBe("Needs setup");
     expect(scoutingShellCopy("ready").description).not.toMatch(/DEMO/i);
   });
 });

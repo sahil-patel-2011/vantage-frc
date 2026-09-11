@@ -83,13 +83,13 @@ export function strategyShellSetupSteps(orgId?: string | null): StrategyShellSet
     {
       id: "command",
       label: "Set active event",
-      detail: "Event Day Command picks the TBA event Strategy and picks use.",
+      detail: "Event Day Command picks the event Strategy and picks use.",
       href: hubHref("/competition", "command", orgId),
     },
     {
       id: "team-data",
       label: "Sync Team Data",
-      detail: "Load The Blue Alliance and Statbotics rows for the event.",
+      detail: "Load synced event numbers and rankings for the event.",
       href: withOrgHref("/team/data", orgId),
     },
     {
@@ -154,7 +154,7 @@ export function strategyShellCopy(kind: StrategyShellKind): StrategyEmptyCopy {
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Choose your team, set the event you are at, then sync match data. This screen stays empty until then.",
@@ -171,7 +171,7 @@ export function strategyShellCopy(kind: StrategyShellKind): StrategyEmptyCopy {
       return {
         kind: "ready",
         title: "Strategy",
-        description: "Win/loss and pick lists use The Blue Alliance, Statbotics, and your scout notes.",
+        description: "Win/loss and pick lists use synced event numbers and your scout notes.",
       };
   }
 }
@@ -225,7 +225,7 @@ export function strategyNextActions(input: {
         {
           id: "command",
           label: "Set active event",
-          detail: "Event Day Command picks the TBA event Strategy and picks use.",
+          detail: "Event Day Command picks the event Strategy and picks use.",
           href: hubHref("/competition", "command", orgId),
           primary: true,
         },
@@ -244,7 +244,7 @@ export function strategyNextActions(input: {
         {
           id: "team-data",
           label: "Sync Team Data",
-          detail: "Load The Blue Alliance and Statbotics once an event is selected.",
+          detail: "Load synced event numbers once an event is selected.",
           href: withOrgHref("/team/data", orgId),
         },
       ];
@@ -253,7 +253,7 @@ export function strategyNextActions(input: {
       {
         id: "team-data",
         label: "Sync Team Data",
-        detail: "Strategy needs TBA/Statbotics rows before win probability can appear.",
+        detail: "Strategy needs synced event numbers before win probability can appear.",
         href: withOrgHref("/team/data", orgId),
         primary: true,
       },
@@ -283,7 +283,7 @@ export function strategyNextActions(input: {
       {
         id: "retry",
         label: "Retry strategy",
-        detail: "Reload real TBA/Statbotics match context.",
+        detail: "Reload synced match context.",
         href: hubHref("/competition", "strategy", orgId),
         primary: true,
       },
@@ -319,7 +319,7 @@ export function strategyNextActions(input: {
             id: "team-data",
             label: "Sync event metrics",
             detail:
-              "Load The Blue Alliance and Statbotics for this event. Win chance stays blank until then.",
+              "Load synced event numbers for this event. Win chance stays blank until then.",
             href: withOrgHref("/team/data", orgId),
             primary: true,
           }

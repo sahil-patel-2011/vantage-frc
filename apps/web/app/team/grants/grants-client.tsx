@@ -374,7 +374,7 @@ export default function GrantsClient({ orgId: orgIdProp }: { orgId?: string }) {
           />
         ) : null}
         <OfflineBanner feature="Grant writing" fromCache={fromCache} cachedAt={cachedAt} />
-        <EmptyState soft badge="Setup required" badgeTone="setup" title={view.message}>
+        <EmptyState soft badge="Needs setup" badgeTone="setup" title={view.message}>
           {nextActions[0] ? (
             <Button as="a" variant="primary" href={nextActions[0].href}>
               {nextActions[0].label}

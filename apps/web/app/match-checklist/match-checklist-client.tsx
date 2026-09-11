@@ -49,7 +49,7 @@ export default function MatchChecklistClient(_props: { embedded?: boolean } = {}
     const query = new URLSearchParams();
     if (urlOrg) query.set("orgId", urlOrg);
     void (async () => {
-      const cached = urlOrg ? await getFeatureSnapshot<MatchChecklistView>("match-checklist", urlOrg) : null;
+      const cached = await getFeatureSnapshot<MatchChecklistView>("match-checklist", urlOrg || "_");
       if (cached?.data) {
         setView(cached.data);
         setFromCache(true);
@@ -60,6 +60,12 @@ export default function MatchChecklistClient(_props: { embedded?: boolean } = {}
           signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as MatchChecklistView | { error?: string };
+        if (response.status === 401 || response.status === 403) {
+          setView(null);
+          setErrorStatus(response.status);
+          setFetchFailed(true);
+          return;
+        }
         if (!response.ok || !("status" in data)) {
           setErrorStatus(response.status);
           if (!cached) setFetchFailed(true);
@@ -135,6 +141,56 @@ export default function MatchChecklistClient(_props: { embedded?: boolean } = {}
     upcomingMatches: view?.status === "live" ? view.upcomingMatches : [],
   });
 
+  if (!view) {
+    const copy = fetchFailed
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus,
+            message: error,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: error,
+          },
+        )
+      : null;
+    return (
+      <main className="module-page mcl-page">
+        <PageHeader
+          breadcrumbs={
+            <>
+              <a href="/competition">Competition</a>
+              {" / Match checklist"}
+            </>
+          }
+          title="Pre-match checklist"
+          description="One-tap timed checklist per match — bumpers, battery strap, SB50 lock, tether, code — so pit crews hang the correct set and don't lose power. Progress comes only from real checks."
+        />
+        <OfflineBanner feature="Match checklist" fromCache={fromCache} cachedAt={cachedAt} />
+        {copy ? (
+          <EmptyState soft title={copy.title} description={copy.description}>
+            {copy.primary ? (
+              <Button as="a" variant="primary" href={copy.primary.href}>
+                {copy.primary.label}
+              </Button>
+            ) : null}
+            {copy.showRetry ? (
+              <Button variant="secondary" type="button" onClick={() => load()}>
+                Retry
+              </Button>
+            ) : null}
+          </EmptyState>
+        ) : (
+          <EmptyState soft title="Loading…" description="Checking your team." aria-busy />
+        )}
+      </main>
+    );
+  }
+
   return (
     <main className="module-page mcl-page">
       <PageHeader
@@ -167,39 +223,7 @@ export default function MatchChecklistClient(_props: { embedded?: boolean } = {}
         </p>
       ) : null}
 
-      {fetchFailed ? (
-        (() => {
-          const kind = classifyLoadFailure({
-            status: errorStatus,
-            message: error,
-            online: typeof navigator === "undefined" ? true : navigator.onLine,
-          });
-          const copy = loadFailureCopy(kind, {
-            nextPath:
-              typeof window === "undefined"
-                ? null
-                : `${window.location.pathname}${window.location.search}`,
-            message: error,
-          });
-          return (
-            <EmptyState
-          soft title={copy.title} description={copy.description}>
-              {copy.primary ? (
-                <Button as="a" variant="primary" href={copy.primary.href}>
-                  {copy.primary.label}
-                </Button>
-              ) : null}
-              {copy.showRetry ? (
-                <Button variant="secondary" type="button" onClick={() => load()}>
-                  Retry
-                </Button>
-              ) : null}
-            </EmptyState>
-          );
-        })()
-      ) : view == null ? (
-        <EmptyState soft title="Loading…" description="Checking your team." aria-busy />
-      ) : view.status === "setup_required" ? (
+      {view.status === "setup_required" ? (
         <EmptyState badge="Needs setup" badgeTone="setup" title={view.message}>
           {view.steps[0] ? (
             <Button as="a" variant="primary" href={view.steps[0].href}>

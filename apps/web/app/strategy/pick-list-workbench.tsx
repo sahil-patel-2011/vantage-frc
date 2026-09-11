@@ -94,7 +94,7 @@ function metricLine(candidate: PickCandidate | undefined) {
       ? `scout n=${candidate.scoutSample}${candidate.reliability != null ? ` · rel ${Math.round(candidate.reliability)}%` : ""}`
       : null,
     (candidate.tbaConflictCount ?? 0) > 0
-      ? `TBA conflict×${candidate.tbaConflictCount}${candidate.tbaConflictFields?.length ? ` (${candidate.tbaConflictFields.slice(0, 3).join(", ")})` : ""}`
+      ? `Score conflict×${candidate.tbaConflictCount}${candidate.tbaConflictFields?.length ? ` (${candidate.tbaConflictFields.slice(0, 3).join(", ")})` : ""}`
       : null,
   ].filter(Boolean);
   return parts.join(" · ") || "Metrics incomplete";
@@ -173,7 +173,7 @@ function PickDeskShell({
         <div>
           <h2 style={{ marginTop: 0 }}>Event pick desk</h2>
           <p className="app-muted">
-            First / second / third pick tiers from synced TBA/Statbotics rows and scout depth.
+            First / second / third pick tiers from synced event numbers and scout depth.
           </p>
         </div>
         <PickDeskRelatedStrip orgId={orgId} />
@@ -184,7 +184,7 @@ function PickDeskShell({
         className="pick-desk-empty"
         badge={
           shell === "setup"
-            ? "Setup required"
+            ? "Needs setup"
             : shell === "error"
               ? "Unavailable"
               : shell === "empty"
@@ -251,7 +251,7 @@ export function PickListWorkbench({
         const data = await response.json();
         if (data.status === "setup_required") {
           setDesk(null);
-          setSetupMessage(data.message ?? "Setup required");
+          setSetupMessage(data.message ?? "Needs setup");
           setSetupOrgId(typeof data.orgId === "string" ? data.orgId : orgId);
           setSetupEventKey(typeof data.eventKey === "string" ? data.eventKey : null);
           return;
@@ -507,7 +507,7 @@ export function PickListWorkbench({
       <header className="pick-desk-heading">
         <div>
           {desk.pickMode === "low_data_tba" ? (
-            <span className="app-badge setup">Low-data TBA</span>
+            <span className="app-badge setup">Low-data rankings</span>
           ) : (
             <span className="app-badge good">Real event inputs</span>
           )}
@@ -571,7 +571,7 @@ export function PickListWorkbench({
         <header>
           <h3>Strategy meeting seats</h3>
           <small>
-            Top TBA-accurate scouts rotate into this pick-desk conversation so they see their product used.
+            Top calibrated scouts rotate into this pick-desk conversation so they see their product used.
           </small>
         </header>
         {(desk.strategySeats ?? []).length ? (
@@ -706,7 +706,7 @@ export function PickListWorkbench({
         <header>
           <h3>Event pool</h3>
           <small>
-            Only teams with synced TBA/Statbotics rows. Suggestions use public ratings plus your
+            Only teams with synced event numbers. Suggestions use public ratings plus your
             scouting when you have it.
           </small>
         </header>
@@ -714,7 +714,7 @@ export function PickListWorkbench({
           <p className="app-muted">
             {desk.candidates.length
               ? "All listed teams are already on this pick list, or the filter hid them."
-              : "No team_event_metrics for this event yet — sync TBA/Statbotics under Team → Data."}
+              : "No event numbers for this event yet — sync rankings under Team → Data."}
           </p>
         ) : (
           <ul>

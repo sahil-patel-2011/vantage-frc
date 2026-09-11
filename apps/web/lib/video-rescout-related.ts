@@ -166,7 +166,7 @@ export function videoRescoutShellCopy(kind: VideoRescoutShellKind): VideoRescout
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description: "Choose your team before match reviews appear.",
       };

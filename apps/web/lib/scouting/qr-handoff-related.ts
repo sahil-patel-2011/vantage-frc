@@ -219,7 +219,7 @@ export function qrHandoffShellCopy(kind: QrHandoffShellKind): QrHandoffEmptyCopy
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Publish a scouting form first",
         description:
           "QR handoff merges into a published match or pit schema. Choose your team and publish a form before scanning.",

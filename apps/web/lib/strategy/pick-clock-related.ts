@@ -161,7 +161,7 @@ export function pickClockShellCopy(kind: PickClockShellKind): PickClockEmptyCopy
         kind,
         title: "Loading pick clock…",
         description:
-          "Checking which team you are on and TBA/Statbotics event metrics.",
+          "Checking which team you are on and synced event numbers.",
       };
     case "error":
       return {
@@ -242,7 +242,7 @@ export function pickClockNextActions(input: {
           detail:
             excludedCount > 0
               ? `${formatPickClockMetric(excludedCount, true)} team${excludedCount === 1 ? "" : "s"} already taken on the draft board. Sync or clear slots.`
-              : "Pull match and ranking rows from The Blue Alliance. Recommendations stay blank until those rows exist.",
+              : "Pull match and ranking rows from Team → Data. Recommendations stay blank until those rows exist.",
           href: withOrgHref("/team/data", orgId),
           primary: true,
         },

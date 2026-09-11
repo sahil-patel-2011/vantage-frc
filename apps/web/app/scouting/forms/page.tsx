@@ -42,7 +42,7 @@ export default async function ScoutingFormsPage({
         <EmptyState
           soft
           className="sfb-shell-empty"
-          badge="Setup required"
+          badge="Needs setup"
           badgeTone="setup"
           title={copy.title}
           description={copy.description}

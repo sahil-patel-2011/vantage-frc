@@ -582,7 +582,7 @@ export function LivePanel({ view }: { view: Extract<StrategyView, { status: "liv
           </>
         ) : (
           <EmptyState
-            badge={view.gameRules.status === "setup_required" ? "Setup required" : "Empty"}
+            badge={view.gameRules.status === "setup_required" ? "Needs setup" : "Empty"}
             badgeTone={view.gameRules.status === "setup_required" ? "setup" : ""}
             title={`No ${view.gameRules.seasonYear} game rules yet`}
             description={view.gameRules.message}

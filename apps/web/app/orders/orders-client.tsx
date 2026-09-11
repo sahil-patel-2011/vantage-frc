@@ -352,7 +352,7 @@ export default function OrdersClient({ embedded = false, seasonYear, orgId: orgI
           {related}
           <EmptyState
             soft
-            badge="Setup required"
+            badge="Needs setup"
             badgeTone="setup"
             title={view.message}
             description="Choose your team, then log what, why, when, and cost. The sheet stays empty until someone adds a real line."

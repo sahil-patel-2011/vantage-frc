@@ -193,7 +193,7 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
       <PageHeader
         breadcrumbs="Competition / Strategy"
         title="Strategy"
-        description="Win/loss and pick lists use The Blue Alliance, Statbotics, and your scout notes."
+        description="Win/loss and pick lists use synced event numbers and your scout notes."
       >
         <div className="strategy-header-actions">
           <StrategyRelatedStrip orgId={orgId} />

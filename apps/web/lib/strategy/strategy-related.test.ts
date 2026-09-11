@@ -85,7 +85,7 @@ describe("strategyShellCopy", () => {
     expect(strategyShellCopy("empty").badge).toBe("No prediction yet");
     expect(strategyShellCopy("empty").description).not.toMatch(/DEMO/i);
     expect(strategyShellCopy("empty").description).not.toMatch(/\d+%/);
-    expect(strategyShellCopy("setup").badge).toBe("Setup required");
+    expect(strategyShellCopy("setup").badge).toBe("Needs setup");
     expect(strategyShellCopy("ready").description).not.toMatch(/DEMO/i);
   });
 });

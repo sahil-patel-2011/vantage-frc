@@ -106,7 +106,7 @@ describe("lineupShellCopy", () => {
     expectPlainCopy(lineupShellCopy("empty").description);
     expectPlainCopy(lineupShellCopy("ready").description);
     expect(lineupShellCopy("ready").description).not.toMatch(/membership-bound/i);
-    expect(lineupShellCopy("setup").badge).toBe("Setup required");
+    expect(lineupShellCopy("setup").badge).toBe("Needs setup");
   });
 });
 

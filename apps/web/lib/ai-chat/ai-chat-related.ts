@@ -110,7 +110,7 @@ export function aiChatShellCopy(kind: AiChatShellKind): AiChatEmptyCopy {
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "AI provider not configured",
         description:
           "Configure a platform or your own keys before messaging. Chat stays empty until a key is set; rankings and scouting stay empty until those exist.",

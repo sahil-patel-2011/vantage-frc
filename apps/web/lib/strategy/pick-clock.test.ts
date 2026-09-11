@@ -157,7 +157,7 @@ describe("pick-clock", () => {
         label: "EPA may lag — last-3 share ~80 (+20.0) above EPA 60",
       },
     });
-    expect(headline).toMatch(/TBA quick pick/);
+    expect(headline).toMatch(/Quick pick/);
     expect(reasons.some((r) => /EPA lag/.test(r.label))).toBe(true);
     expect(reasons.some((r) => /Low scout coverage/.test(r.label))).toBe(true);
 

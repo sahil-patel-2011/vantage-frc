@@ -298,7 +298,7 @@ export function lineupShellCopy(kind: LineupShellKind): LineupEmptyCopy {
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Choose your team and the event this alliance is at before coverage gaps appear.",

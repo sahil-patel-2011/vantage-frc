@@ -95,7 +95,7 @@ export function strategySetupNextActions(ctx: StrategySetupContext): StrategyNex
     actions.push({
       id: "event",
       label: "Set active event",
-      detail: "Event Day Command picks the TBA event schedule Strategy and picks use.",
+      detail: "Event Day Command picks the event schedule Strategy and picks use.",
       href: withOrg("/command", orgId),
       primary: true,
     });
@@ -104,8 +104,8 @@ export function strategySetupNextActions(ctx: StrategySetupContext): StrategyNex
   if (ctx.tbaConfigured === false) {
     actions.push({
       id: "tba",
-      label: "Configure TBA sync",
-      detail: "Connect The Blue Alliance under Connectors, then sync under Team → Data.",
+      label: "Sync rankings",
+      detail: "Connect match results under Connectors, then sync under Team → Data.",
       href: withOrg("/team/data", orgId),
       primary: !ctx.eventKey ? false : true,
     });
@@ -114,8 +114,8 @@ export function strategySetupNextActions(ctx: StrategySetupContext): StrategyNex
   if (ctx.hasMetrics === false) {
     actions.push({
       id: "metrics",
-      label: "Sync reference metrics",
-      detail: "Pull rankings from The Blue Alliance and Statbotics.",
+      label: "Sync event numbers",
+      detail: "Pull rankings from the synced event cache.",
       href: withOrg("/team/data", orgId),
       primary: Boolean(ctx.eventKey) && ctx.tbaConfigured !== false,
     });
@@ -174,7 +174,7 @@ export function pickSurfaceSetupMessage(ctx: StrategySetupContext): string {
     return "Set your active event on Event Day. Rankings stay blank until then.";
   }
   if (ctx.tbaConfigured === false && ctx.hasMetrics === false) {
-    return "Connect The Blue Alliance, then sync under Team → Data.";
+    return "Sync rankings under Team → Data before pick lists fill in.";
   }
   if (ctx.hasMetrics === false) {
     return "No team numbers for this event yet. Sync under Team → Data before ranking picks.";

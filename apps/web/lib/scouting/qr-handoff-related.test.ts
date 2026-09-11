@@ -127,7 +127,7 @@ describe("qrHandoffShellCopy", () => {
     }
     expect(qrHandoffShellCopy("empty").badge).toBe("Queue clear");
     expectPlainCopy(qrHandoffShellCopy("empty").description);
-    expect(qrHandoffShellCopy("setup").badge).toBe("Setup required");
+    expect(qrHandoffShellCopy("setup").badge).toBe("Needs setup");
   });
 });
 
