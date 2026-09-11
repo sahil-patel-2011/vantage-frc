@@ -30,7 +30,7 @@ test("Video is a student paste page, not an engineering wall", async ({ page }) 
     await expect(page.getByRole("heading", { name: "Next actions" })).toHaveCount(0);
     await expect(page.getByRole("link", { name: "Choose your team" })).toBeVisible();
   } else {
-    await expect(page.getByText("Where is the video?", { exact: true })).toBeVisible();
+    await expect(page.getByRole("region", { name: "Paste a video" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Pair a video Pi" })).toHaveCount(0);
     if (await page.getByRole("heading", { name: "Paste a match or pit video" }).isVisible()) {
       await expect(page.getByRole("heading", { name: "Next actions" })).toHaveCount(0);
