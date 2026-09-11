@@ -43,6 +43,7 @@ describe("next-dev memory", () => {
     const src = readFileSync(join(WEB_ROOT, "next.config.ts"), "utf8");
     expect(src).toMatch(/nextDevMemoryExperimental/);
     expect(src).toMatch(/experimental:\s*nextDevMemoryExperimental\(\)/);
+    expect(src).toMatch(/distDir:\s*process\.env\.NEXT_DIST_DIR/);
   });
 
   it("shards the GitHub Actions Playwright job so one next-dev does not compile 117 tests", () => {

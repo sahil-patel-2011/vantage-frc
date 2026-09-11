@@ -7,6 +7,7 @@ const config: NextConfig = {
   // (IMMUTABLE_STATIC_PATCH_PREVIEW_COMMENTS). Restore the default after
   // Preview Comments are off on the project.
   supportsImmutableAssets: false,
+  distDir: process.env.NEXT_DIST_DIR || ".next",
   experimental: nextDevMemoryExperimental(),
   serverExternalPackages: ["pg"],
   transpilePackages: [

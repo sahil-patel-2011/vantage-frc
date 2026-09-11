@@ -79,6 +79,7 @@ describe("playwrightWebServerEnv", () => {
     expect(env.BETTER_AUTH_URL).toBe("http://127.0.0.1:3310");
     expect(env.NODE_OPTIONS).toMatch(/max-old-space-size=4096/);
     expect(env.NODE_OPTIONS).not.toMatch(/8192/);
+    expect(env.NEXT_DIST_DIR).toBe(".next-pw-3310");
   });
 
   it("does not invent DATABASE_* on GitHub Actions", () => {

@@ -12,6 +12,10 @@
 export const PLAYWRIGHT_NEXT_HEAP_MB = 4096;
 export const PLAYWRIGHT_SHARD_TOTAL = 4;
 
+export function playwrightNextDistDir(port: number): string {
+  return `.next-pw-${port}`;
+}
+
 export function isPlaywrightNextDev(env: NodeJS.Dict<string> = process.env): boolean {
   return env.E2E_AUTH_FIXTURE === "1";
 }
