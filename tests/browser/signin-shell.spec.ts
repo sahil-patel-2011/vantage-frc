@@ -15,4 +15,5 @@ test("Sign-in still loads after the panel split", async ({ page }) => {
   await page.getByRole("link", { name: "Join the waitlist" }).click();
   await expect(page).toHaveURL(/waitlist|#waitlist|\/$/);
   await expect(page.getByText("Setup required")).toHaveCount(0);
+  await expect(page.getByTestId("waitlist-form").or(page.getByTestId("waitlist-unavailable"))).toBeVisible();
 });
