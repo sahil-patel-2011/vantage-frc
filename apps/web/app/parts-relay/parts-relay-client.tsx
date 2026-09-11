@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { partsRelayCategoryLabel, partsRelayConditionLabel, deriveLoanStatus } from "../../lib/parts-relay";
@@ -17,8 +18,40 @@ import type {
   PartsRelayLoan,
   PartsRelayLoanDirection,
 } from "../../lib/parts-relay/types";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 
 type LiveView = Extract<PartsRelayView, { status: "live" }>;
+
+function isPartsRelayView(value: unknown): value is PartsRelayView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function partsRelayCacheOrg(data: PartsRelayView, orgHint: string): string {
+  switch (data.status) {
+    case "live":
+      return data.orgId.trim() || orgHint;
+    case "setup_required":
+      return data.orgId?.trim() || orgHint;
+    default: {
+      data satisfies never;
+      return orgHint;
+    }
+  }
+}
+
+async function persistPartsRelaySnapshot(orgHint: string, data: PartsRelayView): Promise<void> {
+  const cacheOrg = partsRelayCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("parts-relay", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("parts-relay", "_", data);
+  } catch {
+    // Live Parts Relay already painted; IndexedDB is best-effort.
+  }
+}
 
 function statusTone(status: string): string {
   if (status === "open" || status === "active") return "setup";
@@ -35,34 +68,86 @@ export default function PartsRelayClient() {
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [loadError, setLoadError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<PartsRelayView | null>(null);
+  viewRef.current = view;
 
   const orgId = view && "orgId" in view ? view.orgId : null;
 
-  const load = useCallback(() => {
+  const load = useCallback(async () => {
+    const params = new URLSearchParams(window.location.search);
+    const orgHint = params.get("orgId")?.trim() ?? "";
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<PartsRelayView>("parts-relay", orgHint || "_");
+      if (!viewRef.current && cached?.data && isPartsRelayView(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
     setFetchFailed(false);
     setErrorStatus(null);
     setLoadError("");
     setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    void fetch(`/api/parts-relay${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
-        const data = (await response.json()) as PartsRelayView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setErrorStatus(response.status);
-          setLoadError("error" in data && data.error ? data.error : "");
-          setFetchFailed(true);
+    try {
+      const query = new URLSearchParams();
+      if (orgHint) query.set("orgId", orgHint);
+      const response = await fetch(`/api/parts-relay${query.toString() ? `?${query.toString()}` : ""}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      const data: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setFetchFailed(true);
+        setErrorStatus(response.status);
+        setLoadError(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "",
+        );
+        return;
+      }
+      if (!response.ok || !isPartsRelayView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Parts Relay. Showing the last copy on this device.");
+          setFetchFailed(false);
           return;
         }
-        setView(data);
-      })
-      .catch(() => setFetchFailed(true));
+        setErrorStatus(response.status);
+        setLoadError(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "",
+        );
+        setFetchFailed(true);
+        return;
+      }
+      setView(data);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistPartsRelaySnapshot(orgHint, data);
+    } catch {
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Parts Relay. Showing the last copy on this device.");
+        setFetchFailed(false);
+        return;
+      }
+      setFetchFailed(true);
+    }
   }, []);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   const mutate = useCallback(
@@ -75,13 +160,16 @@ export default function PartsRelayClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as PartsRelayView | { error?: string };
-        if (!response.ok || !("status" in data)) {
+        if (!response.ok || !isPartsRelayView(data)) {
           setError("error" in data && data.error ? data.error : "Something went wrong.");
           return;
         }
         setView(data);
+        setFromCache(false);
+        void persistPartsRelaySnapshot(orgId, data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -90,6 +178,87 @@ export default function PartsRelayClient() {
     },
     [orgId, busy],
   );
+
+  if (!view) {
+    const copy = fetchFailed
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus,
+            message: loadError,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: loadError || "A network or server issue prevented loading. Try again.",
+          },
+        )
+      : null;
+    return (
+      <main className="module-page">
+        <PageHeader
+          breadcrumbs={
+            <>
+              <a href="/build">Build</a>
+              {" / Parts Relay"}
+            </>
+          }
+          title="Parts Relay"
+          description="Post what your team needs or can lend at an event, then track the hand-off — who has it, when it's due back, and whether it came home."
+        />
+        <OfflineBanner feature="Parts Relay" fromCache={fromCache} cachedAt={cachedAt} />
+        <EmptyState
+          title={copy ? copy.title : "Loading…"}
+          description={copy ? copy.description : "Checking your team."}
+          aria-busy={!fetchFailed}
+        >
+          {copy?.primary ? (
+            <Button as="a" variant="primary" href={copy.primary.href}>
+              {copy.primary.label}
+            </Button>
+          ) : copy?.showRetry ? (
+            <Button variant="primary" type="button" onClick={() => void load()}>
+              Retry
+            </Button>
+          ) : null}
+        </EmptyState>
+      </main>
+    );
+  }
+
+  switch (view.status) {
+    case "setup_required":
+      return (
+        <main className="module-page">
+          <PageHeader
+            breadcrumbs={
+              <>
+                <a href="/build">Build</a>
+                {" / Parts Relay"}
+              </>
+            }
+            title="Parts Relay"
+            description="Post what your team needs or can lend at an event, then track the hand-off — who has it, when it's due back, and whether it came home."
+          />
+          <OfflineBanner feature="Parts Relay" fromCache={fromCache} cachedAt={cachedAt} />
+          <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
+            {view.steps[0] ? (
+              <Button as="a" variant="primary" href={view.steps[0].href}>
+                {view.steps[0].label}
+              </Button>
+            ) : null}
+          </EmptyState>
+        </main>
+      );
+    case "live":
+      break;
+    default: {
+      const data: never = view;
+      return data satisfies never;
+    }
+  }
 
   return (
     <main className="module-page">
@@ -103,6 +272,7 @@ export default function PartsRelayClient() {
         title="Parts Relay"
         description="Post what your team needs or can lend at an event, then track the hand-off — who has it, when it's due back, and whether it came home."
       />
+      <OfflineBanner feature="Parts Relay" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -110,56 +280,13 @@ export default function PartsRelayClient() {
         </p>
       ) : null}
 
-      {fetchFailed ? (
-        (() => {
-          const copy = loadFailureCopy(
-            classifyLoadFailure({
-              status: errorStatus,
-              message: loadError,
-              online: typeof navigator === "undefined" ? true : navigator.onLine,
-            }),
-            {
-              nextPath:
-                typeof window === "undefined"
-                  ? null
-                  : `${window.location.pathname}${window.location.search}`,
-              message: loadError || "A network or server issue prevented loading. Try again.",
-            },
-          );
-          return (
-            <EmptyState title={copy.title} description={copy.description}>
-              {copy.primary ? (
-                <Button as="a" variant="primary" href={copy.primary.href}>
-                  {copy.primary.label}
-                </Button>
-              ) : null}
-              {copy.showRetry ? (
-                <Button variant="secondary" type="button" onClick={() => load()}>
-                  Retry
-                </Button>
-              ) : null}
-            </EmptyState>
-          );
-        })()
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your team." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          {view.steps[0] ? (
-            <Button as="a" variant="primary" href={view.steps[0].href}>
-              {view.steps[0].label}
-            </Button>
-          ) : null}
-        </EmptyState>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <SummaryTiles view={view} />
-          <ListingForm busy={busy} mutate={mutate} />
-          <Listings view={view} busy={busy} mutate={mutate} />
-          <LoanForm busy={busy} mutate={mutate} />
-          <Loans view={view} busy={busy} mutate={mutate} />
-        </div>
-      )}
+      <div style={{ display: "grid", gap: 16 }}>
+        <SummaryTiles view={view} />
+        <ListingForm busy={busy} mutate={mutate} />
+        <Listings view={view} busy={busy} mutate={mutate} />
+        <LoanForm busy={busy} mutate={mutate} />
+        <Loans view={view} busy={busy} mutate={mutate} />
+      </div>
     </main>
   );
 }

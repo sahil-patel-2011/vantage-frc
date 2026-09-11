@@ -1,8 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { Badge, EmptyState, PageHeader, Panel, type BadgeTone, Button } from "../../components/ui";
 import { PURPOSE_LABELS, type FormPurpose, type FormSummary } from "../../lib/forms/types";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 /**
  * Carry the team into the link.
@@ -24,6 +28,27 @@ type View = {
   canManage: boolean;
   forms: FormSummary[];
 };
+
+function isFormsView(value: unknown): value is View {
+  if (!value || typeof value !== "object") return false;
+  const rec = value as { status?: unknown; forms?: unknown; orgId?: unknown };
+  return rec.status === "ready" && typeof rec.orgId === "string" && Array.isArray(rec.forms);
+}
+
+function formsCacheOrg(data: View, orgHint: string): string {
+  return data.orgId.trim() || orgHint;
+}
+
+async function persistFormsSnapshot(orgHint: string, data: View): Promise<void> {
+  const cacheOrg = formsCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("forms", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("forms", "_", data);
+  } catch {
+    // Live Forms already painted; IndexedDB is best-effort.
+  }
+}
 
 /**
  * The purposes offered when starting a form.
@@ -66,21 +91,84 @@ function statusTone(status: FormSummary["status"]): BadgeTone {
 export default function FormsClient() {
   const [view, setView] = useState<View | null>(null);
   const [error, setError] = useState<string>("");
+  const [fetchFailed, setFetchFailed] = useState(false);
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [title, setTitle] = useState("");
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<View | null>(null);
+  viewRef.current = view;
+
   const load = useCallback(async () => {
+    const orgHint =
+      typeof window === "undefined"
+        ? ""
+        : (new URLSearchParams(window.location.search).get("orgId")?.trim() ?? "");
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<View>("forms", orgHint || "_");
+      if (!viewRef.current && cached?.data && isFormsView(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
+    setFetchFailed(false);
+    setErrorStatus(null);
     try {
       const query = orgParam();
-      const response = await fetch(`/api/forms${query ? `?${query}` : ""}`);
-      const data = (await response.json()) as View & { error?: string };
-      if (!response.ok) {
-        setError(data.error ?? "Could not load forms.");
+      const response = await fetch(`/api/forms${query ? `?${query}` : ""}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      const data: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setFetchFailed(true);
+        setErrorStatus(response.status);
+        setError(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "Could not load forms.",
+        );
+        return;
+      }
+      if (!response.ok || !isFormsView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Forms. Showing the last copy on this device.");
+          setFetchFailed(false);
+          return;
+        }
+        setError(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "Could not load forms.",
+        );
+        setErrorStatus(response.status);
+        setFetchFailed(true);
         return;
       }
       setView(data);
+      setFromCache(false);
+      setCachedAt(null);
       setError("");
+      await persistFormsSnapshot(orgHint, data);
     } catch {
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Forms. Showing the last copy on this device.");
+        setFetchFailed(false);
+        return;
+      }
       setError("Could not reach the server.");
+      setFetchFailed(true);
     }
   }, []);
 
@@ -105,6 +193,7 @@ export default function FormsClient() {
           // questions a team would have written anyway.
           useStarter: purpose !== "general",
         }),
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
       const data = (await response.json()) as { formId?: string; error?: string };
       if (!response.ok || !data.formId) {
@@ -117,22 +206,49 @@ export default function FormsClient() {
     }
   }
 
-  if (error && !view) {
-    return (
-      <main className="module-page forms-page">
-        <PageHeader breadcrumbs="Team / Forms" title="Forms" description="Ask your team something, and read what the answers mean." />
-        <EmptyState soft badge="Not available" badgeTone="setup" title="Forms need a team" description={error}>
-          <Button as="a" variant="primary" href="/workspace">Choose your team</Button>
-        </EmptyState>
-      </main>
-    );
-  }
-
   if (!view) {
+    const copy = fetchFailed
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus,
+            message: error,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: error || "Could not load forms.",
+          },
+        )
+      : null;
     return (
       <main className="module-page forms-page">
-        <PageHeader breadcrumbs="Team / Forms" title="Forms" description="Ask your team something, and read what the answers mean." />
-        <Panel><p className="app-muted">Loading forms…</p></Panel>
+        <PageHeader
+          breadcrumbs="Team / Forms"
+          title="Forms"
+          description="Ask your team something, and read what the answers mean."
+        />
+        <OfflineBanner feature="Forms" fromCache={fromCache} cachedAt={cachedAt} />
+        <EmptyState
+          soft
+          badge={copy ? "Not available" : undefined}
+          badgeTone={copy ? "setup" : undefined}
+          title={copy ? copy.title : "Loading forms…"}
+          description={copy ? copy.description : "Checking your team."}
+          aria-busy={!fetchFailed}
+        >
+          {copy?.primary ? (
+            <Button as="a" variant="primary" href={copy.primary.href}>
+              {copy.primary.label}
+            </Button>
+          ) : copy?.showRetry ? (
+            <Button variant="primary" type="button" onClick={() => void load()}>
+              Retry
+            </Button>
+          ) : null}
+        </EmptyState>
       </main>
     );
   }
@@ -144,6 +260,13 @@ export default function FormsClient() {
         title="Forms"
         description={`Ask ${view.orgName} something — intake, tryouts, dues, travel, safety, feedback — and read what the answers mean.`}
       />
+      <OfflineBanner feature="Forms" fromCache={fromCache} cachedAt={cachedAt} />
+
+      {error ? (
+        <p className="forms-error" role="status">
+          {error}
+        </p>
+      ) : null}
 
       {view.forms.length === 0 ? (
         <EmptyState

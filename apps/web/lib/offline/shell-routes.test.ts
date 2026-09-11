@@ -165,6 +165,12 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/subsystem-signoff")).toBe(true);
     expect(pathnameIsOfflineShell("/prototype-tracker")).toBe(true);
     expect(pathnameIsOfflineShell("/equipment-maintenance")).toBe(true);
+    expect(pathnameIsOfflineShell("/notifications")).toBe(true);
+    expect(pathnameIsOfflineShell("/forms")).toBe(true);
+    expect(pathnameIsOfflineShell("/incidents")).toBe(true);
+    expect(pathnameIsOfflineShell("/roles")).toBe(true);
+    expect(pathnameIsOfflineShell("/parts-catalog")).toBe(true);
+    expect(pathnameIsOfflineShell("/parts-relay")).toBe(true);
     expect(pathnameIsOfflineShell("/api/todos")).toBe(false);
   });
 
@@ -316,6 +322,12 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/subsystem-signoff")).toBe("Subsystem Sign-off");
     expect(offlineCapableLabel("/prototype-tracker")).toBe("Prototype-to-Decision Tracker");
     expect(offlineCapableLabel("/equipment-maintenance")).toBe("Equipment Maintenance");
+    expect(offlineCapableLabel("/notifications")).toBe("Notifications");
+    expect(offlineCapableLabel("/forms")).toBe("Forms");
+    expect(offlineCapableLabel("/incidents")).toBe("Safety Incident Log");
+    expect(offlineCapableLabel("/roles")).toBe("Season roles");
+    expect(offlineCapableLabel("/parts-catalog")).toBe("Parts catalog");
+    expect(offlineCapableLabel("/parts-relay")).toBe("Parts Relay");
   });
 
   it("keeps public/sw.js SHELL_ROUTES aligned with OFFLINE_SHELL_ROUTES", () => {
@@ -460,6 +472,12 @@ describe("offline shell routes", () => {
     expect(featureCacheKey("subsystem-signoff", "org-1", "2026")).toBe("subsystem-signoff:org-1:2026");
     expect(featureCacheKey("prototype-tracker", "org-1", "2026")).toBe("prototype-tracker:org-1:2026");
     expect(featureCacheKey("equipment-maintenance", "org-1")).toBe("equipment-maintenance:org-1");
+    expect(featureCacheKey("notifications", "org-1", "unread")).toBe("notifications:org-1:unread");
+    expect(featureCacheKey("forms", "org-1")).toBe("forms:org-1");
+    expect(featureCacheKey("incidents", "org-1", "2026")).toBe("incidents:org-1:2026");
+    expect(featureCacheKey("roles", "org-1", "2026")).toBe("roles:org-1:2026");
+    expect(featureCacheKey("parts-catalog", "org-1")).toBe("parts-catalog:org-1");
+    expect(featureCacheKey("parts-relay", "org-1")).toBe("parts-relay:org-1");
     expect(featureCacheKey("schedule", "org-1")).toBe("schedule:org-1");
   });
 

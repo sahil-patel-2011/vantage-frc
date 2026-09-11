@@ -1,14 +1,50 @@
 "use client";
-import { Button } from "../../components/ui";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
+import { Button, EmptyState, PageHeader } from "../../components/ui";
 import { isFilled, subteamLabel } from "../../lib/roles";
 import { SUBTEAMS, type RolesView } from "../../lib/roles/compute-roles";
 import type { Subteam, TeamRole } from "../../lib/roles/types";
+import { hubHref } from "../../lib/nav/hubs";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { withOrgHref } from "../../lib/nav/product-nav";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 type LiveView = Extract<RolesView, { status: "live" }>;
 type Mutate = (payload: Record<string, unknown>) => void;
+
+function isRolesView(value: unknown): value is RolesView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function rolesCacheOrg(data: RolesView, orgHint: string): string {
+  switch (data.status) {
+    case "live":
+      return data.orgId.trim() || orgHint;
+    case "setup_required":
+      return data.orgId?.trim() || orgHint;
+    default: {
+      data satisfies never;
+      return orgHint;
+    }
+  }
+}
+
+async function persistRolesSnapshot(orgHint: string, seasonHint: string, data: RolesView): Promise<void> {
+  const cacheOrg = rolesCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  const seasonKey = String(data.seasonYear);
+  try {
+    await putFeatureSnapshot("roles", cacheOrg, data, seasonHint || seasonKey);
+    if (!orgHint) await putFeatureSnapshot("roles", "_", data, seasonHint || seasonKey);
+  } catch {
+    // Live Season roles already painted; IndexedDB is best-effort.
+  }
+}
 
 function pct(value: number): string {
   return `${Math.round(value * 100)}%`;
@@ -23,37 +59,92 @@ export default function RolesClient() {
   const [failureMessage, setFailureMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<RolesView | null>(null);
+  viewRef.current = view;
 
   const orgId = view && "orgId" in view ? view.orgId : null;
 
-  const load = useCallback((seasonOverride?: number) => {
+  const load = useCallback(async (seasonOverride?: number) => {
+    const params = new URLSearchParams(window.location.search);
+    const orgHint = params.get("orgId")?.trim() ?? "";
+    const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
+    const seasonHint =
+      seasonQuery && Number.isFinite(seasonQuery) ? String(seasonQuery) : String(new Date().getFullYear());
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<RolesView>("roles", orgHint || "_", seasonHint);
+      if (!viewRef.current && cached?.data && isRolesView(cached.data)) {
+        setView(cached.data);
+        setSeason(cached.data.seasonYear);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
     setFetchFailed(false);
     setFailureStatus(null);
     setFailureMessage("");
     setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    if (seasonQuery) query.set("season", String(seasonQuery));
-    void fetch(`/api/roles${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
-        const data = (await response.json()) as RolesView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setFailureStatus(response.status);
-          setFailureMessage("error" in data && data.error ? data.error : "");
-          setFetchFailed(true);
+    try {
+      const query = new URLSearchParams();
+      if (orgHint) query.set("orgId", orgHint);
+      if (seasonQuery) query.set("season", String(seasonQuery));
+      const response = await fetch(`/api/roles${query.toString() ? `?${query.toString()}` : ""}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      const data: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setFetchFailed(true);
+        setFailureStatus(response.status);
+        setFailureMessage(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "",
+        );
+        return;
+      }
+      if (!response.ok || !isRolesView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Season roles. Showing the last copy on this device.");
+          setFetchFailed(false);
           return;
         }
-        setView(data);
-        setSeason(data.seasonYear);
-      })
-      .catch(() => setFetchFailed(true));
+        setFailureStatus(response.status);
+        setFailureMessage(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "",
+        );
+        setFetchFailed(true);
+        return;
+      }
+      setView(data);
+      setSeason(data.seasonYear);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistRolesSnapshot(orgHint, seasonHint, data);
+    } catch {
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Season roles. Showing the last copy on this device.");
+        setFetchFailed(false);
+        return;
+      }
+      setFetchFailed(true);
+    }
   }, []);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   const mutate = useCallback<Mutate>(
@@ -65,15 +156,18 @@ export default function RolesClient() {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ orgId, seasonYear: season ?? undefined, ...payload }),
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       })
         .then(async (response) => {
           const data = (await response.json()) as RolesView | { error?: string };
-          if (!response.ok || !("status" in data)) {
+          if (!response.ok || !isRolesView(data)) {
             setError("error" in data && data.error ? data.error : "Something went wrong.");
             return;
           }
           setView(data);
           setSeason(data.seasonYear);
+          setFromCache(false);
+          void persistRolesSnapshot(orgId, String(data.seasonYear), data);
         })
         .catch(() => setError("Network error — please try again."))
         .finally(() => setBusy(false));
@@ -81,18 +175,105 @@ export default function RolesClient() {
     [orgId, season, busy],
   );
 
+  const related = (
+    <nav className="product-hub-related" aria-label="Related people tools">
+      <Button as="a" variant="secondary" href={hubHref("/team", "attendance", orgId)}>
+        Attendance
+      </Button>
+      <Button as="a" variant="secondary" href={withOrgHref("/training", orgId)}>
+        Training
+      </Button>
+      <Button as="a" variant="secondary" href={withOrgHref("/subteams", orgId)}>
+        Subteams
+      </Button>
+    </nav>
+  );
+
+  if (!view) {
+    const copy = fetchFailed
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: failureStatus,
+            message: failureMessage,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: failureMessage || "A network or server issue prevented loading. Try again.",
+          },
+        )
+      : null;
+    return (
+      <main className="module-page">
+        <PageHeader
+          breadcrumbs="Team / Roles"
+          title="Roles & Responsibilities"
+          description="Map every role — leads and positions — to a person and what they own."
+        >
+          {related}
+        </PageHeader>
+        <OfflineBanner feature="Season roles" fromCache={fromCache} cachedAt={cachedAt} />
+        <EmptyState
+          soft
+          title={copy ? copy.title : "Loading…"}
+          description={copy ? copy.description : "Checking your team."}
+          aria-busy={!fetchFailed}
+        >
+          {copy?.primary ? (
+            <Button as="a" variant="primary" href={copy.primary.href}>
+              {copy.primary.label}
+            </Button>
+          ) : copy?.showRetry ? (
+            <Button variant="primary" type="button" onClick={() => void load()}>
+              Retry
+            </Button>
+          ) : null}
+        </EmptyState>
+      </main>
+    );
+  }
+
+  switch (view.status) {
+    case "setup_required":
+      return (
+        <main className="module-page">
+          <PageHeader
+            breadcrumbs="Team / Roles"
+            title="Roles & Responsibilities"
+            description="Map every role — leads and positions — to a person and what they own."
+          >
+            {related}
+          </PageHeader>
+          <OfflineBanner feature="Season roles" fromCache={fromCache} cachedAt={cachedAt} />
+          <EmptyState soft badge="Setup required" badgeTone="setup" title={view.message}>
+            {view.steps[0] ? (
+              <Button as="a" variant="primary" href={view.steps[0].href}>
+                {view.steps[0].label}
+              </Button>
+            ) : null}
+          </EmptyState>
+        </main>
+      );
+    case "live":
+      break;
+    default: {
+      const data: never = view;
+      return data satisfies never;
+    }
+  }
+
   return (
     <main className="module-page">
-      <header className="app-page-header">
-        <div>
-          <span className="breadcrumbs">Team / Roles</span>
-          <h1>Roles &amp; Responsibilities</h1>
-          <p>
-            Map every role — leads and positions — to a person and what they own. Coverage gaps are surfaced so no
-            responsibility falls through the cracks mid-season.
-          </p>
-        </div>
-        {view?.status === "live" && view.seasons.length > 0 ? (
+      <PageHeader
+        breadcrumbs="Team / Roles"
+        title="Roles & Responsibilities"
+        description="Map every role — leads and positions — to a person and what they own. Coverage gaps are surfaced so no responsibility falls through the cracks mid-season."
+      >
+        {related}
+        {view.seasons.length > 0 ? (
           <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
             Season
             <select
@@ -100,7 +281,7 @@ export default function RolesClient() {
               onChange={(event) => {
                 const next = Number(event.target.value);
                 setSeason(next);
-                load(next);
+                void load(next);
               }}
             >
               {view.seasons.map((year) => (
@@ -111,7 +292,9 @@ export default function RolesClient() {
             </select>
           </label>
         ) : null}
-      </header>
+      </PageHeader>
+
+      <OfflineBanner feature="Season roles" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -119,71 +302,24 @@ export default function RolesClient() {
         </p>
       ) : null}
 
-      {fetchFailed ? (
-        (() => {
-          const copy = loadFailureCopy(
-            classifyLoadFailure({
-              status: failureStatus,
-              message: failureMessage,
-              online: typeof navigator === "undefined" ? true : navigator.onLine,
-            }),
-            {
-              nextPath:
-                typeof window === "undefined"
-                  ? null
-                  : `${window.location.pathname}${window.location.search}`,
-              message:
-                failureMessage || "A network or server issue prevented loading. Try again.",
-            },
-          );
-          return (
-            <section className="app-card soft-panel">
-              <h2>{copy.title}</h2>
-              <p className="app-muted">{copy.description}</p>
-              {copy.primary ? (
-                <Button as="a" variant="primary" href={copy.primary.href}>
-                  {copy.primary.label}
-                </Button>
-              ) : null}
-              {copy.showRetry ? (
-                <Button variant="secondary" type="button" onClick={() => load()}>
-                  Retry
-                </Button>
-              ) : null}
-            </section>
-          );
-        })()
-      ) : view == null ? (
-        <section className="app-card soft-panel">
-          <h2>Loading…</h2>
-          <p className="app-muted">Checking your team.</p>
-        </section>
-      ) : view.status === "setup_required" ? (
-        <section className="app-card soft-panel">
-          <span className="app-badge setup">Setup required</span>
-          <h2>{view.message}</h2>
-          
-        </section>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <SummaryTiles view={view} />
-          {view.summary.openRoles.length > 0 ? <OpenRoles view={view} /> : null}
-          {view.unlinkedHolders.length > 0 ? <UnlinkedHolders view={view} /> : null}
-          {view.canManage ? (
-            <>
-              <AddRoleForm busy={busy} members={view.members} mutate={mutate} />
-              <RoleList view={view} busy={busy} mutate={mutate} />
-            </>
-          ) : (
-            <>
-              <p className="app-muted">
-                Roles are set by an owner or admin. You can see who holds what, but not change it.
-              </p>
-              <RoleList view={view} busy readOnly mutate={mutate} />
-            </>
-          )}
-        </div>
-      )}
+      <div style={{ display: "grid", gap: 16 }}>
+        <SummaryTiles view={view} />
+        {view.summary.openRoles.length > 0 ? <OpenRoles view={view} /> : null}
+        {view.unlinkedHolders.length > 0 ? <UnlinkedHolders view={view} /> : null}
+        {view.canManage ? (
+          <>
+            <AddRoleForm busy={busy} members={view.members} mutate={mutate} />
+            <RoleList view={view} busy={busy} mutate={mutate} />
+          </>
+        ) : (
+          <>
+            <p className="app-muted">
+              Roles are set by an owner or admin. You can see who holds what, but not change it.
+            </p>
+            <RoleList view={view} busy readOnly mutate={mutate} />
+          </>
+        )}
+      </div>
     </main>
   );
 }
