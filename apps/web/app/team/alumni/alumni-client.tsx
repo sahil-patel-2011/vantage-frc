@@ -1,8 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { OfflineBanner } from "../../../components/offline-banner";
 import { EmptyState } from "../../../components/ui";
 import { alumniShellCopy, classifyAlumniShell } from "../../../lib/alumni";
+import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
 
 type Alum = {
   id: string;
@@ -20,6 +23,26 @@ type Alum = {
 };
 
 type DiscordConfig = { configured: boolean; channelLabel: string | null; enabled: boolean; updatedAt: string | null };
+
+type AlumniSnapshot = {
+  alumni: Alum[];
+  viewerId: string | null;
+};
+
+function isAlumniSnapshot(value: unknown): value is AlumniSnapshot {
+  if (!value || typeof value !== "object") return false;
+  return Array.isArray((value as AlumniSnapshot).alumni);
+}
+
+async function persistAlumniSnapshot(orgId: string, data: AlumniSnapshot): Promise<void> {
+  const cacheOrg = orgId.trim();
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("alumni", cacheOrg, data);
+  } catch {
+    // Live Alumni already painted; IndexedDB is best-effort.
+  }
+}
 
 const blankForm = {
   fullName: "",
@@ -52,32 +75,104 @@ export default function AlumniClient({ orgId }: { orgId: string }) {
   const [message, setMessage] = useState("");
   const [mentorsOnly, setMentorsOnly] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const snapshotRef = useRef<AlumniSnapshot | null>(null);
 
-  async function load() {
-    setLoading(true);
-    const alumniResponse = await fetch(`/api/team/alumni?orgId=${orgId}`);
-    const alumniData = await alumniResponse.json();
-    if (alumniResponse.ok) {
-      setAlumni(alumniData.alumni ?? []);
-      setViewerId(alumniData.viewerId ?? null);
-    } else {
-      setMessage(alumniData.error ?? "Unable to load alumni");
+  const load = useCallback(async () => {
+    let hadCache = Boolean(snapshotRef.current);
+    try {
+      const cached = await getFeatureSnapshot<AlumniSnapshot>("alumni", orgId || "_");
+      if (!snapshotRef.current && cached?.data && isAlumniSnapshot(cached.data)) {
+        snapshotRef.current = cached.data;
+        setAlumni(cached.data.alumni);
+        setViewerId(cached.data.viewerId ?? null);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        setLoading(false);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
     }
-    // Discord GET returns 200 only for admins — use it as the admin signal.
-    const discordResponse = await fetch(`/api/team/discord?orgId=${orgId}`);
-    if (discordResponse.ok) {
-      setIsAdmin(true);
-      setDiscord(await discordResponse.json());
-    } else {
-      setIsAdmin(false);
-      setDiscord(null);
+    if (!snapshotRef.current) setLoading(true);
+    try {
+      const alumniResponse = await fetch(`/api/team/alumni?orgId=${encodeURIComponent(orgId)}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      const alumniData: unknown = await alumniResponse.json().catch(() => null);
+      if (alumniResponse.status === 401 || alumniResponse.status === 403) {
+        snapshotRef.current = null;
+        setAlumni([]);
+        setViewerId(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setMessage(
+          alumniData && typeof alumniData === "object" && "error" in alumniData && typeof alumniData.error === "string"
+            ? alumniData.error
+            : "Unable to load alumni",
+        );
+        setLoading(false);
+        return;
+      }
+      if (
+        !alumniResponse.ok ||
+        !alumniData ||
+        typeof alumniData !== "object" ||
+        !Array.isArray((alumniData as { alumni?: unknown }).alumni)
+      ) {
+        if (hadCache || snapshotRef.current) {
+          setFromCache(true);
+          setMessage("Could not refresh Alumni. Showing the last copy on this device.");
+        } else {
+          setMessage(
+            alumniData && typeof alumniData === "object" && "error" in alumniData && typeof alumniData.error === "string"
+              ? alumniData.error
+              : "Unable to load alumni",
+          );
+        }
+      } else {
+        const next: AlumniSnapshot = {
+          alumni: (alumniData as { alumni: Alum[] }).alumni,
+          viewerId: (alumniData as { viewerId?: string | null }).viewerId ?? null,
+        };
+        snapshotRef.current = next;
+        setAlumni(next.alumni);
+        setViewerId(next.viewerId);
+        setFromCache(false);
+        setCachedAt(null);
+        await persistAlumniSnapshot(orgId, next);
+      }
+    } catch {
+      if (hadCache || snapshotRef.current) {
+        setFromCache(true);
+        setMessage("Could not refresh Alumni. Showing the last copy on this device.");
+      } else {
+        setMessage("Unable to load alumni");
+      }
+    }
+    try {
+      const discordResponse = await fetch(`/api/team/discord?orgId=${encodeURIComponent(orgId)}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      if (discordResponse.ok) {
+        setIsAdmin(true);
+        setDiscord((await discordResponse.json()) as DiscordConfig);
+      } else {
+        setIsAdmin(false);
+        setDiscord(null);
+      }
+    } catch {
+      // Discord overlay is live-only; keep the alumni directory.
     }
     setLoading(false);
-  }
+  }, [orgId]);
 
   useEffect(() => {
     void load();
-  }, [orgId]);
+  }, [load]);
 
   async function addAlum(event: React.FormEvent) {
     event.preventDefault();
@@ -155,10 +250,12 @@ export default function AlumniClient({ orgId }: { orgId: string }) {
         </nav>
       </header>
 
-      {message && <p role="status" className="telemetry-status">{message}</p>}
-      {loading && <p className="app-muted">Loading alumni network…</p>}
+      <OfflineBanner feature="Alumni" fromCache={fromCache} cachedAt={cachedAt} />
 
-      {!loading && (
+      {message && <p role="status" className="telemetry-status">{message}</p>}
+      {loading && !snapshotRef.current && <p className="app-muted">Loading alumni network…</p>}
+
+      {(!loading || snapshotRef.current) && (
         <section className="admin-grid">
           <form id="alumni-add" className="intel-panel" onSubmit={addAlum}>
             <span className="eyebrow">ADD AN ALUM</span>
@@ -299,7 +396,7 @@ export default function AlumniClient({ orgId }: { orgId: string }) {
         </section>
       )}
 
-      {!loading && isAdmin && (
+      {(!loading || snapshotRef.current) && isAdmin && (
         <section className="intel-panel" style={{ marginTop: "1.5rem" }}>
           <span className="eyebrow">
             DISCORD CONNECTION {discord?.configured ? `· ${discord.enabled ? "active" : "off"}` : "· not connected"}

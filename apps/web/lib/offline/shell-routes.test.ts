@@ -165,11 +165,20 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/subsystem-signoff")).toBe(true);
     expect(pathnameIsOfflineShell("/prototype-tracker")).toBe(true);
     expect(pathnameIsOfflineShell("/equipment-maintenance")).toBe(true);
+    expect(pathnameIsOfflineShell("/forms")).toBe(true);
+    expect(pathnameIsOfflineShell("/forms/form-1")).toBe(true);
+    expect(pathnameIsOfflineShell("/scouting/forms")).toBe(true);
+    expect(pathnameIsOfflineShell("/team/alumni")).toBe(true);
+    expect(pathnameIsOfflineShell("/bus-factor")).toBe(true);
+    expect(pathnameIsOfflineShell("/driver-tryouts")).toBe(true);
+    expect(pathnameIsOfflineShell("/skills-graph")).toBe(true);
+    expect(pathnameIsOfflineShell("/safety-training")).toBe(true);
     expect(pathnameIsOfflineShell("/api/todos")).toBe(false);
   });
 
   it("labels offline-capable surfaces for banners", () => {
     expect(offlineCapableLabel("/scouting?orgId=x")).toBe("Scouting");
+    expect(offlineCapableLabel("/scouting/forms")).toBe("Scout forms");
     expect(offlineCapableLabel("/team/calendar")).toBe("Calendar");
     expect(offlineCapableLabel("/calendar")).toBe("Calendar");
     expect(offlineCapableLabel("/todos")).toBe("Todos");
@@ -316,6 +325,14 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/subsystem-signoff")).toBe("Subsystem Sign-off");
     expect(offlineCapableLabel("/prototype-tracker")).toBe("Prototype-to-Decision Tracker");
     expect(offlineCapableLabel("/equipment-maintenance")).toBe("Equipment Maintenance");
+    expect(offlineCapableLabel("/forms")).toBe("Forms");
+    expect(offlineCapableLabel("/forms/form-1")).toBe("Form");
+    expect(offlineCapableLabel("/scouting/forms")).toBe("Scout forms");
+    expect(offlineCapableLabel("/team/alumni")).toBe("Alumni");
+    expect(offlineCapableLabel("/bus-factor")).toBe("Bus-Factor");
+    expect(offlineCapableLabel("/driver-tryouts")).toBe("Driver Tryouts");
+    expect(offlineCapableLabel("/skills-graph")).toBe("Skills & Mentorship");
+    expect(offlineCapableLabel("/safety-training")).toBe("Safety Training");
   });
 
   it("keeps public/sw.js SHELL_ROUTES aligned with OFFLINE_SHELL_ROUTES", () => {
@@ -460,6 +477,13 @@ describe("offline shell routes", () => {
     expect(featureCacheKey("subsystem-signoff", "org-1", "2026")).toBe("subsystem-signoff:org-1:2026");
     expect(featureCacheKey("prototype-tracker", "org-1", "2026")).toBe("prototype-tracker:org-1:2026");
     expect(featureCacheKey("equipment-maintenance", "org-1")).toBe("equipment-maintenance:org-1");
+    expect(featureCacheKey("form-detail", "org-1", "form-1")).toBe("form-detail:org-1:form-1");
+    expect(featureCacheKey("scout-forms", "org-1")).toBe("scout-forms:org-1");
+    expect(featureCacheKey("alumni", "org-1")).toBe("alumni:org-1");
+    expect(featureCacheKey("bus-factor", "org-1")).toBe("bus-factor:org-1");
+    expect(featureCacheKey("driver-tryouts", "org-1", "2026")).toBe("driver-tryouts:org-1:2026");
+    expect(featureCacheKey("skills-graph", "org-1")).toBe("skills-graph:org-1");
+    expect(featureCacheKey("safety-training", "org-1")).toBe("safety-training:org-1");
     expect(featureCacheKey("schedule", "org-1")).toBe("schedule:org-1");
   });
 

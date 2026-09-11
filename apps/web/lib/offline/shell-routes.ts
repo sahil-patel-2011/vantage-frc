@@ -152,6 +152,13 @@ export const OFFLINE_SHELL_ROUTES = [
   "/subsystem-signoff",
   "/prototype-tracker",
   "/equipment-maintenance",
+  "/forms",
+  "/scouting/forms",
+  "/team/alumni",
+  "/bus-factor",
+  "/driver-tryouts",
+  "/skills-graph",
+  "/safety-training",
 ] as const;
 
 export type OfflineShellRoute = (typeof OFFLINE_SHELL_ROUTES)[number];
@@ -170,6 +177,7 @@ export function pathnameIsOfflineShell(pathname: string): boolean {
 export function offlineCapableLabel(pathname: string): string | null {
   const bare = pathname.split("?")[0] ?? pathname;
   if (bare.startsWith("/scouting/lineup")) return "Lineup & coverage";
+  if (bare.startsWith("/scouting/forms")) return "Scout forms";
   if (bare.startsWith("/scouting-heat-signals")) return "Scouting Heat Signals";
   if (bare.startsWith("/scouting")) return "Scouting";
   if (bare.startsWith("/schedule")) return "Schedule";
@@ -185,6 +193,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   }
   if (bare.startsWith("/team/data")) return "Team Data";
   if (bare.startsWith("/team/grants")) return "Grant writing";
+  if (bare.startsWith("/team/alumni")) return "Alumni";
   if (bare === "/team") return "Team";
   if (bare.startsWith("/todos") || bare.startsWith("/tasks")) return "Todos";
   if (bare.startsWith("/logistics")) return "Logistics";
@@ -266,6 +275,12 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/subsystem-signoff")) return "Subsystem Sign-off";
   if (bare.startsWith("/prototype-tracker")) return "Prototype-to-Decision Tracker";
   if (bare.startsWith("/equipment-maintenance")) return "Equipment Maintenance";
+  if (bare.startsWith("/forms/") && bare !== "/forms") return "Form";
+  if (bare.startsWith("/forms")) return "Forms";
+  if (bare.startsWith("/bus-factor")) return "Bus-Factor";
+  if (bare.startsWith("/driver-tryouts")) return "Driver Tryouts";
+  if (bare.startsWith("/skills-graph")) return "Skills & Mentorship";
+  if (bare.startsWith("/safety-training")) return "Safety Training";
   if (bare.startsWith("/spare-robot-kit")) return "Spare Robot Kit";
   if (bare.startsWith("/spare-forecast")) return "Spare Forecast";
   if (bare.startsWith("/sponsor-renewal-roi")) return "Sponsor Renewal ROI";
