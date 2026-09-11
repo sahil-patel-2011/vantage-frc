@@ -10,6 +10,7 @@ import type { SafetyTrainingView } from "../../lib/safety-training/compute-safet
 import type { SafetyCategory, SafetyCompletionStatus } from "../../lib/safety-training/types";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { withOrgHref } from "../../lib/nav/product-nav";
 
 function statusTone(status: SafetyCompletionStatus): string {
   if (status === "current") return "good";
@@ -73,6 +74,17 @@ export default function SafetyTrainingClient() {
   viewRef.current = view;
 
   const orgId = view && "orgId" in view ? view.orgId : null;
+
+  const related = (
+    <nav className="product-hub-related" aria-label="Related safety tools">
+      <Button as="a" variant="secondary" href={withOrgHref("/safety", orgId)}>
+        Safety log
+      </Button>
+      <Button as="a" variant="secondary" href={withOrgHref("/incidents", orgId)}>
+        Safety Incident Log
+      </Button>
+    </nav>
+  );
 
   const load = useCallback(async () => {
     const params = new URLSearchParams(window.location.search);
@@ -196,7 +208,9 @@ export default function SafetyTrainingClient() {
         }
         title="Safety Training"
         description="Track shop safety modules and per-member certification. Compliance uses only what you record."
-      />
+      >
+        {related}
+      </PageHeader>
 
       <OfflineBanner feature="Safety Training" fromCache={fromCache} cachedAt={cachedAt} />
 
@@ -249,7 +263,12 @@ export default function SafetyTrainingClient() {
           switch (view.status) {
             case "setup_required":
               return (
-                <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
+                <EmptyState
+                  badge="Needs setup"
+                  badgeTone="setup"
+                  title="Choose your team"
+                  description={view.message}
+                >
                   {view.steps[0] ? (
                     <Button as="a" variant="primary" href={view.steps[0].href}>
                       {view.steps[0].label}

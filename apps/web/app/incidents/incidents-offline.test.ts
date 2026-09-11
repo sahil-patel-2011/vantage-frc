@@ -14,6 +14,7 @@ describe("Safety Incident Log last snapshot stays on the phone", () => {
     expect(src).toMatch(/feature="Safety Incident Log"/);
     expect(src).toMatch(/AbortSignal\.timeout/);
     expect(src).toMatch(/if \(!view\)/);
+    expect(src).toMatch(/response\.status === 401 \|\| response\.status === 403/);
     expect(src).not.toMatch(/fetchFailed \|\| !view/);
     expect(src).not.toMatch(/fetchFailed \|\| view == null/);
   });
