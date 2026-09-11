@@ -485,7 +485,7 @@ function SummaryTiles({ view, loaded }: { view: LiveView; loaded: boolean }) {
       <StatTile
         label="Scouts credited"
         value={formatScoutDataImpactMetric(view.scoutSummaries.length, loaded)}
-        unit="membership-bound"
+        unit="signed-in scouts"
       />
       <StatTile
         label="Pick coverage"

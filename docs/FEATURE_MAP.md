@@ -1,6 +1,6 @@
 # Vantage feature map
 
-*Reference: every screen and route. Tests and the route walker read this file, so keep the table format. Last updated 2026-09-10.*
+*Reference: every screen and route. Tests and the route walker read this file, so keep the table format. Last updated 2026-09-11.*
 
 | Hub | Route | Tabs |
 |---|---|---|
@@ -19,7 +19,7 @@
 | Alliance Selection Desk 2.0 | `/alliance-selection-desk` (Competition More tools) | Live 8-alliance pick board with shared slots, scout evidence attach, TBA conflict flags vs `team_event_metrics`, drive-team export/print|
 | Collaborative pick list | `/picklist-collab` (Competition More tools) | Weighted votes + FAST-style EPA roles from cached `team_event_metrics` + CSV export (Pick List Maker share-out)|
 | Season Planning Workspace | `/season-planning-workspace` (Team More tools) | Goals → milestones → owners + ICS calendar hooks; progress from real attendance / build_tasks only|
-| Scouting | `/scouting` (also `/competition?tab=scouting`) | Main Scouting Hub empty/setup + next actions; Match / Pit / QR / Conflicts / Trust are a ToolStrip (not a second tab bar). Hub strip: **Forms · Coverage · Shifts · Pit mesh · Training · Field value · Data quality**. Accuracy, Cross-check, Disagreements, Data impact, Assisted count, Schema sync, Heat signals, and Schema A/B stay on their routes and in search — they are not strip chips. OfflineBanner from real outbox counts; cloud voice STT UsageCutoffBanner; empty state has one primary action |
+| Scouting | `/scouting` (also `/competition?tab=scouting`) | Main Scouting Hub empty/setup + next actions; Match / Pit / QR / Conflicts / Trust are a ToolStrip (not a second tab bar). Hub strip: **Forms · Coverage · Shifts · Pit mesh · Training · Field value · Data quality**. Accuracy, Cross-check, Disagreements, Data impact, Assisted count, Schema sync, Heat signals, and Schema A/B stay on their routes and in search — they are not strip chips. Scout Accuracy, Data impact, Lineup & coverage, and Match video student copy say **signed-in scouts**, not membership-bound. OfflineBanner from real outbox counts; cloud voice STT UsageCutoffBanner; empty state has one primary action |
 | Scouting forms | `/scouting/forms` (also `/competition?tab=forms`) | Form builder empty/setup + one primary; Match / Pit form type is a ToolStrip (not a second tab bar); custom schemas; **pit default** is drivetrain / language / driver experience / photos (CD: no claimed scoring); claimed-scoring lint on pit drafts. Load/mutate/shell is `forms-client.tsx`; chrome, option/settings editors, and preview live in sibling modules.|
 | Scout voice notes | `/competition?tab=scouting` (`#scout-voice`) | Opt-in voice STT notes + optional Apply-to-form; cloud STT metered with UsageCutoffBanner |
 | This phone | `/offline`, `/offline-shell` | Cold no-signal boot plus a page that shows whether Scouting is saved on this device. Last snapshots stay on Competition, Event Day, **My Day**, Schedule, Calendar, Files, Chat, Hours, Packing, Batteries, Pit, and Match notes. Writes queue on the device. |
