@@ -173,6 +173,7 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/parts-catalog")).toBe(true);
     expect(pathnameIsOfflineShell("/parts-relay")).toBe(true);
     expect(pathnameIsOfflineShell("/cad/setup")).toBe(true);
+    expect(pathnameIsOfflineShell("/cad/pair")).toBe(true);
     expect(pathnameIsOfflineShell("/cad/connections")).toBe(true);
     expect(pathnameIsOfflineShell("/presence")).toBe(true);
     expect(pathnameIsOfflineShell("/troubleshoot")).toBe(true);
@@ -361,6 +362,7 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/parts-catalog")).toBe("Parts catalog");
     expect(offlineCapableLabel("/parts-relay")).toBe("Parts Relay");
     expect(offlineCapableLabel("/cad/setup")).toBe("CAD setup");
+    expect(offlineCapableLabel("/cad/pair")).toBe("Pair this computer");
     expect(offlineCapableLabel("/cad/connections")).toBe("CAD connections");
     expect(offlineCapableLabel("/presence")).toBe("Presence");
     expect(offlineCapableLabel("/troubleshoot")).toBe("Get unstuck");

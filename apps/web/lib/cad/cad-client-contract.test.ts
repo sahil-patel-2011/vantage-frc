@@ -9,11 +9,11 @@ function read(relative: string): string {
 }
 
 /**
- * CAD agent page contract: the hosted client mounts a shaded-view PNG pane
- * (CadViewport), the native-op composer, the live feature tree, entity
- * listing, and feature-id memory. An Onshape iframe embed is not a
- * viewport — a future <iframe src="https://cad.onshape.com/…"> has to
- * break this test first.
+ * CAD agent page contract: the hosted client mounts CadViewport (official
+ * Onshape embed + Edit in Onshape, or a real picture), the native-op
+ * composer, the live feature tree, entity listing, and feature-id memory.
+ * The agent session still keeps iframeUrl null — the viewport builds the
+ * official cad.onshape.com embed from the document URL itself.
  */
 describe("cad-client mounts CadViewport and CadOperationComposer", () => {
   const client = [
@@ -21,7 +21,10 @@ describe("cad-client mounts CadViewport and CadOperationComposer", () => {
     read("app/cad/cad-session.ts"),
     read("app/cad/cad-ready-view.tsx"),
   ].join("\n");
-  const viewport = read("app/cad/cad-viewport.tsx");
+  const viewport = [
+    read("app/cad/cad-viewport.tsx"),
+    read("app/cad/onshape-edit-board.tsx"),
+  ].join("\n");
   const composer = read("app/cad/cad-operation-composer.tsx");
   const elements = read("lib/cad/list-document-elements.ts");
 
@@ -29,7 +32,7 @@ describe("cad-client mounts CadViewport and CadOperationComposer", () => {
     expect(client).toContain('import { CadViewport } from "./cad-viewport"');
     expect(client).toContain("<CadViewport");
     expect(client).toContain("pngBase64={state?.shadedPngBase64}");
-    expect(client).toContain("openUrl={state?.openUrl}");
+    expect(client).toContain("openUrl={state?.openUrl || url}");
     expect(client).toContain("setupRequired={!onshapeOk}");
     expect(client).not.toMatch(/<CadViewport[\s\S]{0,400}iframeUrl/);
   });
@@ -170,14 +173,16 @@ describe("cad-client mounts CadViewport and CadOperationComposer", () => {
     expect(client).not.toMatch(/<iframe\b/);
   });
 
-  it("never mounts an Onshape iframe in the client or the viewport", () => {
+  it("keeps the agent iframeUrl null and lets CadViewport embed the official document", () => {
     expect(client).not.toMatch(/<iframe\b/);
     expect(client).not.toMatch(/src=\{[^}]*iframeUrl/);
     expect(client).toContain("iframeUrl: null");
-    expect(viewport).not.toMatch(/<iframe\b/);
-    expect(viewport).toContain("Never an Onshape iframe");
-    expect(`${client}\n${viewport}\n${elements}`).not.toMatch(/<iframe[^>]*cad\.onshape\.com/i);
     expect(client).not.toMatch(/<iframe[\s\S]{0,200}cad\.onshape\.com/i);
     expect(client).not.toMatch(/src=["']https?:\/\/cad\.onshape\.com/i);
+    expect(viewport).toContain("<iframe");
+    expect(viewport).toContain("OnshapeDocumentEmbed");
+    expect(viewport).toContain("Edit in Onshape");
+    expect(viewport).toContain("Needs setup");
+    expect(viewport).not.toMatch(/src=\{[^}]*iframeUrl/);
   });
 });

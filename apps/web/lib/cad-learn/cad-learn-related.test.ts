@@ -7,6 +7,8 @@ import {
   cadLearnFactorLabel,
   cadLearnNextActions,
   cadLearnRelatedLinks,
+  cadLearnShellCopy,
+  classifyCadLearnShell,
 } from "./cad-learn-related";
 
 describe("cadLearnRelatedLinks", () => {
@@ -45,5 +47,14 @@ describe("cadLearn student copy", () => {
     );
     expect(cadLearnCheckNote("Look at the moment of inertia.")).toMatch(/how hard it is to spin/i);
     expectPlainCopy(CAD_LEARN_PAGE_DESCRIPTION);
+  });
+
+  it("401/403 is Choose your team with Needs setup", () => {
+    expect(classifyCadLearnShell({ authBlocked: true })).toBe("setup");
+    expect(classifyCadLearnShell({ fetchFailed: true })).toBe("error");
+    expect(classifyCadLearnShell({ ready: false })).toBe("loading");
+    expect(cadLearnShellCopy("setup").badge).toBe("Needs setup");
+    expect(cadLearnShellCopy("setup").title).toBe("Choose your team");
+    expectPlainCopy(cadLearnShellCopy("setup").description);
   });
 });

@@ -13,5 +13,9 @@ describe("CAD setup last snapshot stays on the phone", () => {
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
     expect(src).toMatch(/feature="CAD setup"/);
     expect(src).toMatch(/if \(!view\)/);
+    expect(src).toMatch(/clearFeatureSnapshot/);
+    expect(src).toMatch(/Choose your team/);
+    expect(src).toMatch(/OnshapeEditBoard/);
+    expect(src).toMatch(/Needs setup/);
   });
 });

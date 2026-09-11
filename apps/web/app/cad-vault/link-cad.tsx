@@ -3,7 +3,9 @@
 import { useMemo, useState } from "react";
 import { FormGrid, FormRow, Panel, Button } from "../../components/ui";
 import { parseCadExternalUrl } from "../../lib/cad-vault/cad-link";
+import { onshapeEditHref } from "../../lib/cad/onshape-edit-link";
 import { CAD_DOCUMENT_KINDS, cadKindLabel, type CadDocumentKind } from "../../lib/cad-vault/view";
+import { OnshapeDocumentEmbed, OnshapeEditButton } from "../cad/onshape-edit-board";
 
 /**
  * Drop in an Onshape or Fusion link and keep it by title.
@@ -74,6 +76,7 @@ export function LinkCadPanel({
   }
 
   const system = parsed?.ok ? (parsed.value.kind === "onshape" ? "Onshape" : "Fusion") : "CAD";
+  const onshapeHref = parsed?.ok && parsed.value.kind === "onshape" ? onshapeEditHref(parsed.value.url) : null;
 
   return (
     <Panel id="link-cad" aria-label="Link an Onshape or Fusion document" style={{ display: "grid", gap: 12 }}>
@@ -136,11 +139,18 @@ export function LinkCadPanel({
               {error}
             </p>
           ) : null}
-          <div>
-            <Button variant="primary" type="button" disabled={busy || saving || !title.trim()} onClick={() => void save()}>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {onshapeHref ? <OnshapeEditButton href={onshapeHref} title={title || null} /> : null}
+            <Button
+              variant={onshapeHref ? "secondary" : "primary"}
+              type="button"
+              disabled={busy || saving || !title.trim()}
+              onClick={() => void save()}
+            >
               {saving ? "Saving…" : `Keep this ${system} link`}
             </Button>
           </div>
+          {onshapeHref ? <OnshapeDocumentEmbed url={onshapeHref} title={title || null} /> : null}
           <small className="app-muted">
             Whether the link opens for someone is {system}&rsquo;s sharing setting, not Vantage&rsquo;s. Share the document
             with the team there too.

@@ -15,8 +15,9 @@ import {
 import { onshapeAccountLabel, onshapeOauthCtaEnabled } from "../../../lib/cad/onshape-setup-strings";
 import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
 import { withOrgHref } from "../../../lib/nav/product-nav";
-import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
+import { getFeatureSnapshot, putFeatureSnapshot, clearFeatureSnapshot } from "../../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
+import { OnshapeEditBoard } from "../onshape-edit-board";
 
 type CadTarget = "onshape" | "fusion360";
 type Step = 1 | 2 | 3;
@@ -198,6 +199,8 @@ export default function CadSetupWizard({ orgId }: { orgId: string }) {
       });
       const body: unknown = await response.json().catch(() => null);
       if (response.status === 401 || response.status === 403) {
+        await clearFeatureSnapshot("cad-setup", orgId);
+        await clearFeatureSnapshot("cad-setup", "_");
         setView(null);
         setFromCache(false);
         setCachedAt(null);
@@ -311,6 +314,8 @@ export default function CadSetupWizard({ orgId }: { orgId: string }) {
         )
       : null;
 
+  const chooseTeam = errorStatus === 401 || errorStatus === 403;
+
   if (!view) {
     return (
       <main className="module-page cad-setup-page">
@@ -324,16 +329,28 @@ export default function CadSetupWizard({ orgId }: { orgId: string }) {
         <OfflineBanner feature="CAD setup" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
-          title={failure ? failure.title : "Loading CAD setup…"}
-          description={failure ? failure.description : "Checking Onshape and paired computers."}
+          badge={chooseTeam ? "Needs setup" : undefined}
+          badgeTone={chooseTeam ? "setup" : undefined}
+          title={chooseTeam ? "Choose your team" : failure ? failure.title : "Loading CAD setup…"}
+          description={
+            chooseTeam
+              ? "Choose your team to connect Onshape or pair Fusion."
+              : failure
+                ? failure.description
+                : "Checking Onshape and paired computers."
+          }
           aria-busy={!fetchFailed}
         >
-          {failure?.primary ? (
+          {chooseTeam ? (
+            <Button as="a" variant="primary" href="/workspace">
+              Choose your team
+            </Button>
+          ) : failure?.primary ? (
             <Button as="a" variant="primary" href={failure.primary.href}>
               {failure.primary.label}
             </Button>
           ) : null}
-          {failure?.showRetry ? (
+          {failure?.showRetry && !chooseTeam ? (
             <Button variant="secondary" type="button" onClick={() => void load()}>
               Retry
             </Button>
@@ -360,10 +377,12 @@ export default function CadSetupWizard({ orgId }: { orgId: string }) {
 
       {!view.onshapeReady && cadTarget === "onshape" ? (
         <aside className="cad-setup-required" role="status">
-          <strong>Onshape isn't ready yet</strong>
+          <strong>Needs setup</strong>
           <p>{CAD_SETUP_ASK_MENTOR}</p>
         </aside>
       ) : null}
+
+      <OnshapeEditBoard />
 
       <ol className="cad-setup-steps" aria-label="CAD setup progress">
         {([1, 2, 3] as const).map((n) => (

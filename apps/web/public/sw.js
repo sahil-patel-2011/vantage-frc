@@ -178,6 +178,7 @@ const SHELL_ROUTES = [
   "/parts-catalog",
   "/parts-relay",
   "/cad/setup",
+  "/cad/pair",
   "/account",
   "/alumni-network",
   "/auto-routines",
