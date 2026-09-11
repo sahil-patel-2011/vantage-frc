@@ -31,7 +31,7 @@ describe("connection badges", () => {
   it("only marks Connected as good — never invents DEMO connected", () => {
     expect(connectionBadgeLabel("connected")).toBe("Connected");
     expect(connectionBadgeTone("connected")).toBe("good");
-    expect(connectionBadgeLabel("setup_required")).toBe("Setup required");
+    expect(connectionBadgeLabel("setup_required")).toBe("Needs setup");
     expect(connectionBadgeTone("empty")).toBe("setup");
     expect(connectionBadgeLabel("available")).toBe("Ready");
   });
@@ -69,7 +69,7 @@ describe("classifyConnectionsShell", () => {
 
 describe("connectionsEmptyCopy", () => {
   it("keeps setup / empty honest", () => {
-    expect(connectionsEmptyCopy("setup").badge).toBe("Setup required");
+    expect(connectionsEmptyCopy("setup").badge).toBe("Needs setup");
     expectPlainCopy(connectionsEmptyCopy("empty").description.toLowerCase());
     expect(connectionsEmptyCopy("empty").description).not.toMatch(/\bdemo\b/i);
   });

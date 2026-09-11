@@ -197,7 +197,7 @@ function ReadinessShell({
       ) : (
         <EmptyState
           soft
-          badge={shell === "setup" ? "Setup required" : shell === "empty" ? "No subsystems yet" : copy.badge}
+          badge={shell === "setup" ? "Needs setup" : shell === "empty" ? "No subsystems yet" : copy.badge}
           badgeTone="setup"
           title={copy.title}
           description={error ?? copy.description}

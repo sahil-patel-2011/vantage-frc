@@ -330,7 +330,7 @@ export default function SubsystemSignoffClient() {
           description="Clear design through field-test gates with an auditable trail — readiness % stays blank until real decisions exist."
         />
         <OfflineBanner feature="Subsystem Sign-off" fromCache={fromCache} cachedAt={cachedAt} />
-        <EmptyState soft badge="Setup required" badgeTone="setup" title={view.message}>
+        <EmptyState soft badge="Needs setup" badgeTone="setup" title={view.message}>
           {view.steps[0] ? (
             <Button as="a" variant="primary" href={view.steps[0].href}>
               {view.steps[0].label}

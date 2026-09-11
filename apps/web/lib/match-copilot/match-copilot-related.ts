@@ -107,7 +107,7 @@ export function matchCopilotShellCopy(kind: MatchCopilotShellKind): MatchCopilot
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Choose your team, set an active event, and confirm your next match before a brief appears.",

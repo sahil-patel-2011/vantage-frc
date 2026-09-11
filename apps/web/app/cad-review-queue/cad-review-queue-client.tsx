@@ -257,7 +257,7 @@ export default function CadReviewQueueClient() {
           <EmptyState title="Loading…" description="Checking your team." aria-busy />
         )
       ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
+        <EmptyState badge="Needs setup" badgeTone="setup" title={view.message}>
           
           {view.orgId ? <SubmitItemForm busy={busy} mutate={mutate} /> : null}
         </EmptyState>

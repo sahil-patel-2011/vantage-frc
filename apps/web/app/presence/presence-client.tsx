@@ -327,7 +327,7 @@ export default function PresenceClient() {
       <Shell orgId={orgId} fromCache={fromCache} cachedAt={cachedAt}>
         <EmptyState
           soft
-          badge="Setup required"
+          badge="Needs setup"
           badgeTone="setup"
           title="Nothing to reconcile yet"
           description={view.message}

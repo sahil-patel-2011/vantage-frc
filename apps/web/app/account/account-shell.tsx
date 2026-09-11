@@ -74,7 +74,7 @@ export function OrgContextCard({ org }: { org: OrgContext }) {
     return (
       <EmptyState
         soft
-        badge="Setup required"
+        badge="Needs setup"
         badgeTone="setup"
         title="Choose your team"
         description={

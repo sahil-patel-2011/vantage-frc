@@ -454,7 +454,7 @@ export default function RankingProjectionClient() {
       ) : null}
       {view?.status === "setup_required" ? (
         <EmptyState
-          badge="Setup required"
+          badge="Needs setup"
           badgeTone="setup"
           soft
           title="Rankings are not ready"

@@ -108,7 +108,7 @@ export function aiKeysShellCopy(kind: AiKeysShellKind, detail?: string | null): 
       description:
         detail?.trim() ||
         "This deployment cannot envelope-encrypt API keys yet (KMS / local vault missing). Keys are not accepted until encryption is configured — nothing crashes, and no plaintext is stored.",
-      badge: "Setup required",
+      badge: "Needs setup",
     };
   }
   if (kind === "forbidden") {

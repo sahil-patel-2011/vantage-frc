@@ -217,7 +217,7 @@ export default function RecognitionClient({ orgId }: { orgId: string | null }) {
         <OfflineBanner feature="Recognition" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
-          badge="Setup required"
+          badge="Needs setup"
           badgeTone="setup"
           title="Choose your team"
           description={view.message}

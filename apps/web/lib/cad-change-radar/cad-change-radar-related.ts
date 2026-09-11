@@ -149,7 +149,7 @@ export function cadChangeRadarShellCopy(kind: CadChangeRadarShellKind): CadChang
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Connect Onshape and select a workspace",
         description:
           "Change radar needs an org and CAD connection. Snapshots stay blank until a real revision is recorded.",

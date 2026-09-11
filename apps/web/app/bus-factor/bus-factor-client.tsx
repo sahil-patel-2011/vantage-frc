@@ -169,7 +169,7 @@ function BusFactorShell({
       ) : (
         <EmptyState
           soft
-          badge={shell === "setup" ? "Setup required" : shell === "empty" ? "No entries yet" : copy.badge}
+          badge={shell === "setup" ? "Needs setup" : shell === "empty" ? "No entries yet" : copy.badge}
           badgeTone="setup"
           title={copy.title}
           description={error ?? copy.description}

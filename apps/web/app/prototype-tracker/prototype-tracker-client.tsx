@@ -332,7 +332,7 @@ export default function PrototypeTrackerClient(_props: { embedded?: boolean } = 
           description="Log a prototype test — hypothesis, outcome, metric vs. target — then draft the design decision and notebook entry it informs, grounded only in what you recorded."
         />
         <OfflineBanner feature="Prototype-to-Decision Tracker" fromCache={fromCache} cachedAt={cachedAt} />
-        <EmptyState soft badge="Setup required" badgeTone="setup" title={view.message}>
+        <EmptyState soft badge="Needs setup" badgeTone="setup" title={view.message}>
           {view.steps[0] ? (
             <Button as="a" variant="primary" href={view.steps[0].href}>
               {view.steps[0].label}

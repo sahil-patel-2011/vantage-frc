@@ -92,7 +92,7 @@ export function writerShellCopy(kind: WriterShellKind): WriterShellCopy {
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Choose your team before composing. FRC Assistant needs a provider key; templates work without one.",
@@ -100,7 +100,7 @@ export function writerShellCopy(kind: WriterShellKind): WriterShellCopy {
     case "provider_setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "AI provider not configured",
         description:
           "Use Compose from template to draft from your team’s profile without a model key.",

@@ -109,7 +109,7 @@ describe("onboardingBuddyShellCopy", () => {
       expect(copy.title).not.toMatch(/\bDEMO\b/);
     }
     expectPlainCopy(onboardingBuddyShellCopy("empty").description);
-    expect(onboardingBuddyShellCopy("setup").badge).toBe("Setup required");
+    expect(onboardingBuddyShellCopy("setup").badge).toBe("Needs setup");
   });
 });
 

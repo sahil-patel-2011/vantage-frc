@@ -106,7 +106,7 @@ export function counterBookShellCopy(kind: CounterBookShellKind): CounterBookEmp
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Choose your team before generating reports.",

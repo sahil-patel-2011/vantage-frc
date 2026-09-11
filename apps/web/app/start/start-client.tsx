@@ -267,7 +267,7 @@ export default function StartClient({ orgId }: { orgId: string | null }) {
           ) : null}
           <EmptyState
             soft
-            badge="Setup required"
+            badge="Needs setup"
             badgeTone="setup"
             title="Choose your team"
             description="Personal checklists are assigned from your team role, primary focus, and the calendar subteams you join."

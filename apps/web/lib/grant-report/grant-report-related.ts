@@ -181,7 +181,7 @@ export function grantReportShellCopy(kind: GrantReportShellKind): GrantReportEmp
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Choose your team and mark real awards before generating.",

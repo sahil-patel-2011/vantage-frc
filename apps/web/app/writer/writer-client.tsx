@@ -311,7 +311,7 @@ export default function WriterClient({ orgId: orgIdProp }: { orgId?: string | nu
       ) : view.status === "setup_required" ? (
         <EmptyState
           soft
-          badge={setupCopy.badge ?? "Setup required"}
+          badge={setupCopy.badge ?? "Needs setup"}
           badgeTone="setup"
           title={view.message || setupCopy.title}
           description={setupCopy.description}
@@ -741,7 +741,7 @@ function Composer({
       {cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} compact /> : null}
       {providerSetup ? (
         <div className="product-hub-setup writer-provider-setup" role="status">
-          <span className="app-badge setup">{writerShellCopy("provider_setup").badge ?? "Setup required"}</span>
+          <span className="app-badge setup">{writerShellCopy("provider_setup").badge ?? "Needs setup"}</span>
           <p className="app-muted" style={{ margin: "8px 0" }}>
             {providerSetup.message}
           </p>

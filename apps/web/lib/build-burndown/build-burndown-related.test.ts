@@ -88,7 +88,7 @@ describe("buildBurndownShellCopy", () => {
     expectPlainCopy(buildBurndownShellCopy("empty").description);
     expectPlainCopy(buildBurndownShellCopy("setup").description);
     expect(buildBurndownShellCopy("setup").description).not.toMatch(/pick a team/i);
-    expect(buildBurndownShellCopy("setup").badge).toBe("Setup required");
+    expect(buildBurndownShellCopy("setup").badge).toBe("Needs setup");
   });
 });
 

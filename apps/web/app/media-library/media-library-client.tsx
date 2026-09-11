@@ -534,7 +534,7 @@ export default function MediaLibraryClient() {
       <div className="ml-page">
         <PageHeader title="Media Library" description="Team photos and videos, in one place." />
         <OfflineBanner feature="Media Library" fromCache={fromCache} cachedAt={cachedAt} />
-        <EmptyState badge="Setup required" badgeTone="setup" title="Choose your team" description={view.message}>
+        <EmptyState badge="Needs setup" badgeTone="setup" title="Choose your team" description={view.message}>
           {view.steps[0] ? (
             <Button as="a" variant="primary" href={view.steps[0].href}>
               {view.steps[0].label}
