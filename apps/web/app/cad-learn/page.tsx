@@ -4,7 +4,7 @@ import "./cad-learn.css";
 export const metadata = {
   title: "CAD learning track",
   description:
-    "Learn Onshape from the first sketch to a mated assembly — sketching, planes, extrude and revolve, fillets, Part Studios, in-context design, assemblies and mates — then have your part auto-graded on mass and moment of inertia against your team's reference.",
+    "Learn Onshape from the first sketch to a mated assembly. At the end you link your part and Vantage checks how heavy it is — and how hard it is to spin — against your team's reference.",
 };
 
 export default function CadLearnPage() {

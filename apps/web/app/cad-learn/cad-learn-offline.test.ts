@@ -13,4 +13,13 @@ describe("CAD Learn last snapshot stays on the phone", () => {
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
     expect(src).toMatch(/feature="CAD Learn"/);
   });
+
+  it("keeps related in the header and does not stack Vantage sibling CTAs in Stuck", () => {
+    const src = readFileSync(join(DIR, "cad-learn-client.tsx"), "utf8");
+    expect(src).toMatch(/CadLearnHeader/);
+    expect(src).toMatch(/CadLearnNextActions/);
+    expect(src).not.toMatch(/The CAD workbench/);
+    expect(src).not.toMatch(/Programming subteam\? Start here instead/);
+    expect(src).not.toMatch(/\bMOI\b/);
+  });
 });
