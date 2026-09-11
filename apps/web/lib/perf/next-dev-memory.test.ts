@@ -55,4 +55,9 @@ describe("next-dev memory", () => {
     expect(workflow).toMatch(/shard: \[1, 2, 3, 4\]/);
     expect(workflow).toMatch(/--shard=\$\{\{ matrix\.shard \}\}\/4/);
   });
+
+  it("does not let Playwright load vitest origin.test.ts as a spec", () => {
+    const config = readFileSync(join(WEB_ROOT, "..", "..", "playwright.config.ts"), "utf8");
+    expect(config).toMatch(/testMatch:\s*["']\*\*\/\*\.spec\.ts["']/);
+  });
 });

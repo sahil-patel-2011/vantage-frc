@@ -75,6 +75,7 @@ if (explicitBase) {
 
 export default defineConfig({
   testDir: "./tests/browser",
+  testMatch: "**/*.spec.ts",
   // One worker is the GHA contract: two starve Next 16's compiler
   // (net::ERR_ABORTED / detached frames). Override with PLAYWRIGHT_WORKERS.
   // Shard with --shard=1/4 so one next-dev does not compile the whole catalog.
