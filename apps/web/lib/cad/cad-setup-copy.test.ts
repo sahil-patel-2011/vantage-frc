@@ -15,6 +15,7 @@ import {
   CAD_SETUP_ONSHAPE_READY,
   CAD_SETUP_RECONNECT,
   CAD_SETUP_TITLE,
+  ONSHAPE_STUDENT_PERMISSIONS_HINT,
 } from "./cad-setup-copy";
 import { expectPlainCopy } from "../ui/copy-assertions";
 
@@ -32,6 +33,7 @@ const ALL_COPY = [
   CAD_PAIR_FUSION,
   CAD_PAIR_APPROVED,
   CAD_PAIR_TITLE,
+  ONSHAPE_STUDENT_PERMISSIONS_HINT,
 ].join(" ");
 
 const LEAK = /ONSHAPE_OAUTH|vantage-cad|Vercel|key_source|OAuth|CLI|BroadcastChannel|\bP2P\b|RESEND/i;
@@ -61,6 +63,8 @@ describe("CAD setup student copy", () => {
     expect(pair).not.toMatch(/Approve this computer/);
     expect(pairPage).not.toMatch(/redirect\(\s*["']\/signin/);
     expect(pair).toMatch(/<h1>\{CAD_PAIR_TITLE\}<\/h1>/);
+    expect(pair).toMatch(/<label>\s*Team\s*<select/s);
+    expect(pair).toMatch(/Choose your team/);
     for (const src of [wizard, pair, page, pairPage]) {
       expect(src).not.toMatch(/ONSHAPE_OAUTH_CLIENT_ID|vantage-cad login|install-windows|vantage-cad setup|vantage-cad start|Copy commands|key_source=local_cli/);
       expect(src).not.toMatch(/Vercel never runs Fusion|Terminal \/ local CLI|AI brain/);

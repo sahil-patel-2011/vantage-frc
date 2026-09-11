@@ -12,7 +12,8 @@ import {
 import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
 import { withOrgHref } from "../../../lib/nav/product-nav";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
-import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
+import { ONSHAPE_STUDENT_PERMISSIONS } from "../../../lib/cad/cad-document-picker";
+import CadDocumentPicker from "./cad-document-picker";
 
 type Device = {
   id: string;
@@ -167,6 +168,12 @@ export default function CadConnections({ orgId }: { orgId: string }) {
       });
       const body: unknown = await response.json().catch(() => null);
       if (response.status === 401 || response.status === 403) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setMessage("Could not refresh CAD connections. Showing the last copy on this device.");
+          setFetchFailed(false);
+          return;
+        }
         setView(null);
         setFromCache(false);
         setCachedAt(null);
@@ -284,23 +291,7 @@ export default function CadConnections({ orgId }: { orgId: string }) {
     }
   }
 
-  const failure =
-    !view && fetchFailed
-      ? loadFailureCopy(
-          classifyLoadFailure({
-            status: errorStatus,
-            message,
-            online: typeof navigator === "undefined" ? true : navigator.onLine,
-          }),
-          {
-            nextPath:
-              typeof window === "undefined"
-                ? null
-                : `${window.location.pathname}${window.location.search}`,
-            message,
-          },
-        )
-      : null;
+  const chooseTeam = !view && fetchFailed && (errorStatus === 401 || errorStatus === 403);
 
   if (!view) {
     return (
@@ -315,17 +306,30 @@ export default function CadConnections({ orgId }: { orgId: string }) {
         <OfflineBanner feature="CAD connections" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
-          title={failure ? failure.title : "Loading CAD connections…"}
-          description={failure ? failure.description : "Checking Onshape and paired desktops."}
+          badge={chooseTeam ? "Needs setup" : fetchFailed ? "Unavailable" : "Loading"}
+          badgeTone="setup"
+          title={
+            chooseTeam
+              ? "Choose your team"
+              : fetchFailed
+                ? "Could not load CAD connections"
+                : "Loading CAD connections…"
+          }
+          description={
+            chooseTeam
+              ? "Choose your team to link Onshape and paired desktops."
+              : fetchFailed
+                ? message || "A network or server issue prevented loading. Retry, or open Support if this keeps failing."
+                : "Checking Onshape and paired desktops."
+          }
           aria-busy={!fetchFailed}
         >
-          {failure?.primary ? (
-            <Button as="a" variant="primary" href={failure.primary.href}>
-              {failure.primary.label}
+          {chooseTeam ? (
+            <Button as="a" variant="primary" href="/workspace">
+              Choose your team
             </Button>
-          ) : null}
-          {failure?.showRetry ? (
-            <Button variant="secondary" type="button" onClick={() => void load()}>
+          ) : fetchFailed ? (
+            <Button variant="primary" type="button" onClick={() => void load()}>
               Retry
             </Button>
           ) : null}
@@ -369,9 +373,10 @@ export default function CadConnections({ orgId }: { orgId: string }) {
                 </span>
                 <h2>Onshape</h2>
                 <p className="app-muted">
-                  Authorize in the browser, then pick a document in CAD. Never type your Vantage password in a
+                  Authorize in the browser, then pick a document below. Never type your Vantage password in a
                   terminal.
                 </p>
+                <p className="app-muted">{ONSHAPE_STUDENT_PERMISSIONS}</p>
               </div>
               {view.onshapeOauthReady ? (
                 <>
@@ -415,6 +420,7 @@ export default function CadConnections({ orgId }: { orgId: string }) {
               </Button>
             </article>
           </section>
+          <CadDocumentPicker orgId={orgId} connected={onshapeConnected} />
           <section className="app-card">
             <h2>Paired desktops</h2>
             {view.devices.length === 0 ? (

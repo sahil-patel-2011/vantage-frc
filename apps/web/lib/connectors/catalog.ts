@@ -370,6 +370,41 @@ export function connectorAudienceFromRole(canManage: boolean): ConnectorAudience
   return canManage ? "operator" : "student";
 }
 
+/**
+ * What a student reads instead of OAuth2Read / env-var scopes.
+ * One sentence per connector — never client secrets or provider jargon.
+ */
+export function studentPermissionsCopy(id: ConnectorId): string {
+  switch (id) {
+    case "google":
+      return "Sign in with your school Google account.";
+    case "github":
+      return "Vantage can read your GitHub user and the robot-code repo.";
+    case "tba":
+      return "Match schedules and rankings for this team.";
+    case "onshape":
+      return "Vantage can read and edit Onshape documents you pick.";
+    case "discord":
+      return "Post announcements into the team Discord.";
+    case "slack":
+      return "Mirror team chat into Slack.";
+    case "email":
+      return "Send invites and team notices.";
+    case "stripe":
+      return "Team plan upgrades and usage credits.";
+    case "storage-node":
+      return "Keep large CAD and video files on a team machine.";
+    case "fusion-relay":
+      return "Fusion stays on this computer. Pair it from CAD Connections.";
+    case "free-relay":
+      return "Run Ask AI on the team's Raspberry Pi.";
+    default: {
+      const _exhaustive: never = id;
+      return _exhaustive;
+    }
+  }
+}
+
 function copyForAudience<T>(audience: ConnectorAudience, student: T, operator: T): T {
   switch (audience) {
     case "student":
@@ -562,7 +597,7 @@ export function describeConnector(
     callbackUrl: copyForAudience(audience, null, callbackUrl),
     callbackLabel: def.callbackLabel,
     providerConsole: def.providerConsole,
-    permissions: copyForAudience(audience, [] as string[], [...def.permissions]),
+    permissions: copyForAudience(audience, [studentPermissionsCopy(def.id)], [...def.permissions]),
     managePath: def.managePath,
     // Connect needs live platform credentials — offering it without them is
     // the "Connect button that reloads the page" this change removes.

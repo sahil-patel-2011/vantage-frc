@@ -25,7 +25,7 @@ export default async function CadConnectionsPage({
         </PageHeader>
         <EmptyState
           soft
-          badge="Setup required"
+          badge="Needs setup"
           badgeTone="setup"
           title="Choose your team"
           description="Choose your team to link Onshape and paired desktops."

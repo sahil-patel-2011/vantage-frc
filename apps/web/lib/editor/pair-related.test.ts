@@ -122,6 +122,8 @@ describe("pairShellCopy + metrics", () => {
     expectPlainCopy(pairShellCopy("empty").description);
     expectPlainCopy(pairShellCopy("setup").description);
     expect(pairShellCopy("setup").description).not.toMatch(/pick a team/i);
+    expect(pairShellCopy("setup").badge).toBe("Needs setup");
+    expect(pairShellCopy("setup").title).toBe("Choose your team");
   });
 
   it("formats real counts only and hides zeroed tiles", () => {

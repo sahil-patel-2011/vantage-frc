@@ -6,7 +6,6 @@ import { Badge, EmptyState, PageHeader, Panel, Button } from "../../components/u
 import type { DocRolesView } from "../../lib/doc-roles/compute-doc-roles";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
-import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 function isDocRolesView(value: unknown): value is DocRolesView {
   if (!value || typeof value !== "object") return false;
@@ -76,6 +75,11 @@ export default function DocRolesClient() {
           ? data.error
           : "";
       if (response.status === 401 || response.status === 403) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Document roles. Showing the last copy on this device.");
+          return;
+        }
         setView(null);
         setFromCache(false);
         setCachedAt(null);
@@ -147,47 +151,31 @@ export default function DocRolesClient() {
   }
 
   if (error && !view) {
-    const failure = loadFailureCopy(
-      classifyLoadFailure({
-        status: errorStatus,
-        message: error,
-        online: typeof navigator === "undefined" ? true : navigator.onLine,
-      }),
-      {
-        nextPath:
-          typeof window === "undefined" ? null : `${window.location.pathname}${window.location.search}`,
-        message: error,
-      },
-    );
+    const chooseTeam = errorStatus === 401 || errorStatus === 403;
     return (
       <main className="module-page doc-roles-page">
         <PageHeader breadcrumbs="Team / Playbook" title="Document roles" />
         <OfflineBanner feature="Document roles" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
-          badge={
-            failure.kind === "auth"
-              ? "Signed out"
-              : failure.kind === "forbidden"
-                ? "No access"
-                : failure.kind === "offline"
-                  ? "Offline"
-                  : "Unavailable"
-          }
+          badge={chooseTeam ? "Needs setup" : "Unavailable"}
           badgeTone="setup"
-          title={failure.title}
-          description={failure.description}
+          title={chooseTeam ? "Choose your team" : "Could not load document roles"}
+          description={
+            chooseTeam
+              ? "Choose your team before changing who can edit playbook documents."
+              : error
+          }
         >
-          {failure.primary ? (
-            <Button as="a" variant="primary" href={failure.primary.href}>
-              {failure.primary.label}
+          {chooseTeam ? (
+            <Button as="a" variant="primary" href="/workspace">
+              Choose your team
             </Button>
-          ) : null}
-          {failure.showRetry ? (
-            <Button variant="secondary" type="button" onClick={() => void load()}>
+          ) : (
+            <Button variant="primary" type="button" onClick={() => void load()}>
               Retry
             </Button>
-          ) : null}
+          )}
         </EmptyState>
       </main>
     );

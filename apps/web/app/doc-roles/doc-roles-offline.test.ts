@@ -12,6 +12,8 @@ describe("Document roles last snapshot stays on the phone", () => {
     expect(src).toMatch(/"doc-roles"/);
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
     expect(src).toMatch(/feature="Document roles"/);
+    expect(src).toMatch(/hadCache \|\| viewRef\.current/);
+    expect(src).toMatch(/Choose your team/);
     expect(src).not.toMatch(/the database refuses/);
     expect(src).not.toMatch(/Not migrated yet/);
   });
