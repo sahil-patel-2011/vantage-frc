@@ -21,7 +21,7 @@ describe("githubConnectionHref", () => {
 });
 
 describe("githubRelatedLinks", () => {
-  it("builds Pair VS Code / Code Coach / Account Connections via hubHref / withOrgHref", () => {
+  it("builds Pair VS Code / Code Coach / Connectors via hubHref / withOrgHref", () => {
     const links = githubRelatedLinks("org-1", {
       include: [...GITHUB_RELATED_INCLUDE],
     });
@@ -85,31 +85,28 @@ describe("githubShellCopy", () => {
       expect(copy.title).not.toMatch(/\bDEMO\b/);
     }
     expectPlainCopy(githubShellCopy("empty").description);
-    expect(githubShellCopy("setup").badge).toBe("Setup required");
+    expectPlainCopy(githubShellCopy("setup").description);
+    expect(githubShellCopy("setup").badge).toBe("Needs setup");
   });
 });
 
 describe("githubNextActions", () => {
   it("prioritizes workspace when no org", () => {
     const actions = githubNextActions({ orgId: null, shell: "setup" });
-    expect(actions[0]?.id).toBe("workspace");
-    expect(actions.some((a) => a.id === "connections")).toBe(true);
-    expect(actions.some((a) => a.id === "pair")).toBe(true);
-    expect(actions.some((a) => a.id === "code")).toBe(true);
+    expect(actions.map((a) => a.id)).toEqual(["workspace"]);
+    expect(actions[0]?.label).toBe("Choose your team");
   });
 
-  it("empty shell points at PAT connect + Pair / Code Coach / Connections", () => {
+  it("empty shell has one Connect GitHub / save-token primary", () => {
     const actions = githubNextActions({
       orgId: "org-1",
       shell: "empty",
       connected: false,
       oauthSetupRequired: true,
     });
-    expect(actions[0]?.id).toBe("connect");
-    expect(actions[0]?.label).toMatch(/PAT/i);
-    expect(actions.map((a) => a.id)).toEqual(
-      expect.arrayContaining(["code", "pair", "connections"]),
-    );
+    expect(actions.map((a) => a.id)).toEqual(["connect"]);
+    expect(actions[0]?.label).toBe("Save a GitHub token");
+    expect(JSON.stringify(actions)).not.toMatch(/OAuth|\bPAT\b/);
     expect(actions.every((a) => !/\bDEMO\b/.test(a.label))).toBe(true);
     expect(actions.every((a) => !/demo/i.test(a.href))).toBe(true);
   });

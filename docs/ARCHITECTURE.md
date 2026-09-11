@@ -140,7 +140,7 @@ npm test                                # ~8,600 unit tests, credential-free, ~9
 npm run build --workspace=@vantage/web  # must compile with zero warnings
 node scripts/deploy-preflight.mjs       # env and migration inventory
 node scripts/rls-proof.mjs              # needs a local Postgres and a non-superuser login
-npm run test:browser                    # Playwright
+npm run test:browser                    # Playwright vs http://127.0.0.1:3310 (E2E_AUTH_FIXTURE, local vantage_ci)
 ```
 
 See [../CONTRIBUTING.md](../CONTRIBUTING.md) for the local database recipe and the pull-request

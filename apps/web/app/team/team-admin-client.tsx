@@ -1,13 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { ConfirmDialog, EmptyState, PageHeader, Panel, Button } from "../../components/ui";
 import { TeamOpsNav } from "../../components/team-ops-nav";
+import { formatInviteRole } from "../../lib/invite/invite-flow";
 import {
   classifyGitHubShell,
   githubShellCopy,
 } from "../../lib/github/github-related";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import {
+  clearFeatureSnapshot,
+  getFeatureSnapshot,
+  putFeatureSnapshot,
+} from "../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   TEAM_ADMIN_RELATED_INCLUDE,
@@ -38,6 +46,7 @@ import {
   type Invite,
   type InviteNotice,
   type Member,
+  type TeamAdminSnapshot,
 } from "./team-admin-model";
 import { TeamAdminProvidersPanel } from "./team-admin-providers";
 import { TeamProfilePanel } from "./team-profile-panel";
@@ -45,7 +54,25 @@ import "./github-connection.css";
 import "./team-access-requests.css";
 import "./team-admin.css";
 
+function isTeamAdminSnapshot(value: unknown): value is TeamAdminSnapshot {
+  if (!value || typeof value !== "object") return false;
+  const row = value as TeamAdminSnapshot;
+  return Array.isArray(row.members) && Array.isArray(row.invites);
+}
+
+async function persistTeamAdminSnapshot(orgId: string, data: TeamAdminSnapshot): Promise<void> {
+  if (!orgId.trim()) return;
+  try {
+    await putFeatureSnapshot("team-admin", orgId, data);
+  } catch {
+    // Live membership already painted; IndexedDB is best-effort.
+  }
+}
+
 export default function TeamAdminClient({ orgId }: { orgId: string }) {
+  const [view, setView] = useState<TeamAdminSnapshot | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
   const [invites, setInvites] = useState<Invite[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [adminTenure, setAdminTenure] = useState<AdminTenure | null>(null);
@@ -81,93 +108,202 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
   const [githubErrorStatus, setGithubErrorStatus] = useState<number | null>(null);
   const [githubErrorMessage, setGithubErrorMessage] = useState("");
   const [defaultRepo, setDefaultRepo] = useState("");
+  const viewRef = useRef<TeamAdminSnapshot | null>(null);
+  viewRef.current = view;
 
-  async function load() {
+  const applySnapshot = useCallback((data: TeamAdminSnapshot) => {
+    setView(data);
+    setInvites(data.invites);
+    setMembers(data.members);
+    setAdminTenure(data.adminTenure);
+    setAccessRequests(data.accessRequests);
+    setProviders(data.providers);
+    setDeliveryMode(data.deliveryMode);
+    setGithubOAuthSetupRequired(data.githubOAuthSetupRequired);
+    setGithubOAuthMessage(data.githubOAuthMessage);
+    setGithubCredentialRejected(data.githubCredentialRejected);
+    setGithubConnection(data.githubConnection);
+    setGithubRepos(data.githubRepos);
+    setDefaultRepo(data.defaultRepo);
+    setMembersLoaded(true);
+  }, []);
+
+  const load = useCallback(async () => {
     setGithubLoading(true);
     setGithubFetchFailed(false);
     setMembershipLoading(true);
     setMembershipFetchFailed(false);
-
-    const response = await fetch(`/api/organizations/invites?orgId=${orgId}`);
-    const data = await response.json();
-    setInvites(data.invites ?? []);
-    if (data.adminTenure) setAdminTenure(data.adminTenure as AdminTenure);
-    if (data.delivery) setDeliveryMode(data.delivery as InviteDeliveryMode);
-    if (!response.ok) setMessage(data.error);
-
-    const membersResponse = await fetch(`/api/organizations/members?orgId=${encodeURIComponent(orgId)}`);
-    const membersData = await membersResponse.json();
-    if (membersResponse.ok) {
-      setMembers(Array.isArray(membersData.members) ? membersData.members : []);
-      if (membersData.adminTenure) setAdminTenure(membersData.adminTenure as AdminTenure);
-      setMembersLoaded(true);
-      setMembershipFetchFailed(false);
-      setMembershipErrorStatus(null);
-      setMembershipErrorMessage("");
-    } else {
-      setMembers([]);
-      setMembersLoaded(true);
-      setMembershipFetchFailed(true);
-      setMembershipErrorStatus(membersResponse.status);
-      setMembershipErrorMessage(membersData.error ?? "Could not load members");
-      setMessage(membersData.error ?? "Could not load members");
-    }
-
-    const accessResponse = await fetch(`/api/organizations/access-requests?orgId=${orgId}`);
-    const accessData = await accessResponse.json();
-    setAccessRequests(accessData.requests ?? []);
-    if (!accessResponse.ok) setMessage(accessData.error);
-
-    setMembershipLoading(false);
-
-    const providerResponse = await fetch(`/api/organizations/providers?orgId=${orgId}`);
-    const providerData = await providerResponse.json();
-    setProviders(providerData.providers ?? []);
-
-    const githubResponse = await fetch(`/api/github?orgId=${encodeURIComponent(orgId)}`);
-    const githubData = await githubResponse.json();
-    if (githubResponse.ok) {
-      // OAuth App missing ≠ feature blocked — PAT always works.
-      setGithubOAuthSetupRequired(
-        Boolean(githubData.oauthSetupRequired ?? (githubData.setupRequired && !githubData.patAvailable)),
-      );
-      setGithubOAuthMessage(typeof githubData.message === "string" ? githubData.message : "");
-      setGithubCredentialRejected(
-        githubData.credentialRejected ? { login: githubData.rejectedLogin ?? null } : null,
-      );
-      setGithubConnection(githubData.connection ?? null);
-      setDefaultRepo(githubData.connection?.defaultRepoFullName ?? "");
-      if (githubData.connection) {
-        const reposResponse = await fetch(`/api/github/repos?orgId=${encodeURIComponent(orgId)}`);
-        const reposData = await reposResponse.json();
-        if (reposResponse.ok) {
-          setGithubRepos(Array.isArray(reposData.repos) ? reposData.repos : []);
-        } else {
-          setGithubRepos([]);
-        }
-      } else {
-        setGithubRepos([]);
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<TeamAdminSnapshot>("team-admin", orgId);
+      if (!viewRef.current && cached?.data && isTeamAdminSnapshot(cached.data)) {
+        applySnapshot(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        setMembershipLoading(false);
+        setGithubLoading(false);
+        hadCache = true;
       }
-      setGithubFetchFailed(false);
-      setGithubErrorStatus(null);
-      setGithubErrorMessage("");
-    } else {
-      setGithubFetchFailed(true);
-      setGithubErrorStatus(githubResponse.status);
-      setGithubErrorMessage(githubData.error ?? "Could not load GitHub context");
-      setGithubConnection(null);
-      setGithubRepos([]);
-      setMessage(githubData.error ?? "Could not load GitHub context");
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
     }
-    setGithubLoading(false);
-  }
+
+    const timeout = { signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS), cache: "no-store" as const };
+
+    try {
+      const response = await fetch(`/api/organizations/invites?orgId=${orgId}`, timeout);
+      const data = await response.json();
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setMembershipFetchFailed(true);
+        setMembershipErrorStatus(response.status);
+        setMembershipErrorMessage(typeof data.error === "string" ? data.error : "");
+        setMembershipLoading(false);
+        setGithubLoading(false);
+        void clearFeatureSnapshot("team-admin", orgId);
+        return;
+      }
+      const nextInvites = Array.isArray(data.invites) ? data.invites : [];
+      const nextTenure = data.adminTenure ? (data.adminTenure as AdminTenure) : null;
+      const nextDelivery = data.delivery ? (data.delivery as InviteDeliveryMode) : null;
+      if (!response.ok) setMessage(data.error);
+
+      const membersResponse = await fetch(
+        `/api/organizations/members?orgId=${encodeURIComponent(orgId)}`,
+        timeout,
+      );
+      const membersData = await membersResponse.json();
+      if (membersResponse.status === 401 || membersResponse.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setMembershipFetchFailed(true);
+        setMembershipErrorStatus(membersResponse.status);
+        setMembershipErrorMessage(membersData.error ?? "Could not load members");
+        setMembershipLoading(false);
+        setGithubLoading(false);
+        void clearFeatureSnapshot("team-admin", orgId);
+        return;
+      }
+
+      let nextMembers: Member[] = [];
+      if (membersResponse.ok) {
+        nextMembers = Array.isArray(membersData.members) ? membersData.members : [];
+        setMembershipFetchFailed(false);
+        setMembershipErrorStatus(null);
+        setMembershipErrorMessage("");
+      } else if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setMessage("Could not refresh membership. Showing the last copy on this device.");
+        setMembershipFetchFailed(false);
+        setMembershipLoading(false);
+        setGithubLoading(false);
+        return;
+      } else {
+        setMembers([]);
+        setMembersLoaded(true);
+        setMembershipFetchFailed(true);
+        setMembershipErrorStatus(membersResponse.status);
+        setMembershipErrorMessage(membersData.error ?? "Could not load members");
+        setMessage(membersData.error ?? "Could not load members");
+        setMembershipLoading(false);
+        setGithubLoading(false);
+        return;
+      }
+
+      const accessResponse = await fetch(`/api/organizations/access-requests?orgId=${orgId}`, timeout);
+      const accessData = await accessResponse.json();
+      const nextAccess = Array.isArray(accessData.requests) ? accessData.requests : [];
+      if (!accessResponse.ok) setMessage(accessData.error);
+
+      const providerResponse = await fetch(`/api/organizations/providers?orgId=${orgId}`, timeout);
+      const providerData = await providerResponse.json();
+      const nextProviders = Array.isArray(providerData.providers) ? providerData.providers : [];
+
+      const githubResponse = await fetch(`/api/github?orgId=${encodeURIComponent(orgId)}`, timeout);
+      const githubData = await githubResponse.json();
+      let nextGithub: Pick<
+        TeamAdminSnapshot,
+        | "githubOAuthSetupRequired"
+        | "githubOAuthMessage"
+        | "githubCredentialRejected"
+        | "githubConnection"
+        | "githubRepos"
+        | "defaultRepo"
+      > = {
+        githubOAuthSetupRequired: false,
+        githubOAuthMessage: "",
+        githubCredentialRejected: null,
+        githubConnection: null,
+        githubRepos: [],
+        defaultRepo: "",
+      };
+      if (githubResponse.ok) {
+        nextGithub = {
+          githubOAuthSetupRequired: Boolean(
+            githubData.oauthSetupRequired ?? (githubData.setupRequired && !githubData.patAvailable),
+          ),
+          githubOAuthMessage: "",
+          githubCredentialRejected: githubData.credentialRejected
+            ? { login: githubData.rejectedLogin ?? null }
+            : null,
+          githubConnection: githubData.connection ?? null,
+          githubRepos: [],
+          defaultRepo: githubData.connection?.defaultRepoFullName ?? "",
+        };
+        if (githubData.connection) {
+          const reposResponse = await fetch(`/api/github/repos?orgId=${encodeURIComponent(orgId)}`, timeout);
+          const reposData = await reposResponse.json();
+          nextGithub.githubRepos = reposResponse.ok && Array.isArray(reposData.repos) ? reposData.repos : [];
+        }
+        setGithubFetchFailed(false);
+        setGithubErrorStatus(null);
+        setGithubErrorMessage("");
+      } else {
+        setGithubFetchFailed(true);
+        setGithubErrorStatus(githubResponse.status);
+        setGithubErrorMessage(githubData.error ?? "Could not load GitHub context");
+        setMessage(githubData.error ?? "Could not load GitHub context");
+      }
+
+      const snapshot: TeamAdminSnapshot = {
+        invites: nextInvites,
+        members: nextMembers,
+        adminTenure: nextTenure ?? (membersData.adminTenure as AdminTenure | undefined) ?? null,
+        accessRequests: nextAccess,
+        providers: nextProviders,
+        deliveryMode: nextDelivery,
+        ...nextGithub,
+      };
+      applySnapshot(snapshot);
+      setFromCache(false);
+      setCachedAt(null);
+      setMembershipLoading(false);
+      setGithubLoading(false);
+      await persistTeamAdminSnapshot(orgId, snapshot);
+    } catch {
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setMessage("Could not refresh membership. Showing the last copy on this device.");
+        setMembershipFetchFailed(false);
+        setMembershipLoading(false);
+        setGithubLoading(false);
+        return;
+      }
+      setMembershipFetchFailed(true);
+      setMembershipLoading(false);
+      setGithubLoading(false);
+    }
+  }, [applySnapshot, orgId]);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("github") === "connected") setMessage("GitHub connected for this team.");
     if (params.get("github") === "denied") setMessage("GitHub authorization was denied.");
     if (params.get("github") === "error") setMessage(params.get("error") || "Could not connect GitHub.");
     void load();
-  }, [orgId]);
+  }, [load, orgId]);
   async function copyInviteLink(id: string, url: string) {
     try {
       await navigator.clipboard.writeText(url);
@@ -464,12 +600,61 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
     inviteCount: invites.length,
   });
 
+  if (!view) {
+    const copy = membershipFailure
+      ? membershipFailure
+      : {
+          title: membershipCopy.title,
+          description: membershipCopy.description,
+          primary: null as { href: string; label: string } | null,
+          showRetry: membershipFetchFailed,
+        };
+    return (
+      <main className="module-page team-admin-page">
+        <PageHeader
+          breadcrumbs="Team / Admin"
+          title="Team admin"
+          description="Invite teammates by exact email. People without an invite go to the waitlist."
+        >
+          <nav className="product-hub-related team-admin-related" aria-label="Related account tools">
+            {membershipRelated.map((link) => (
+              <Button as="a" variant="secondary" key={link.id} href={link.href}>
+                {link.label}
+              </Button>
+            ))}
+          </nav>
+        </PageHeader>
+        <TeamOpsNav orgId={orgId} active="admin" />
+        <OfflineBanner feature="Team admin" fromCache={fromCache} cachedAt={cachedAt} />
+        <EmptyState
+          soft
+          badge={membershipFetchFailed ? "Unavailable" : undefined}
+          badgeTone="setup"
+          title={copy.title}
+          description={copy.description}
+          aria-busy={!membershipFetchFailed}
+        >
+          {copy.primary ? (
+            <Button as="a" variant="primary" href={copy.primary.href}>
+              {copy.primary.label}
+            </Button>
+          ) : null}
+          {copy.showRetry ? (
+            <Button variant="secondary" type="button" onClick={() => void load()}>
+              Retry
+            </Button>
+          ) : null}
+        </EmptyState>
+      </main>
+    );
+  }
+
   return (
     <main className="module-page team-admin-page">
       <PageHeader
         breadcrumbs="Team / Admin"
         title="Team admin"
-        description="Invite exact emails, manage real members, configure GitHub robot-code context, and your own model providers (API keys). Rosters and repo lists stay blank until real rows exist."
+        description="Invite teammates by exact email. People without an invite go to the waitlist."
       >
         <nav className="product-hub-related team-admin-related" aria-label="Related account tools">
           {membershipRelated.map((link) => (
@@ -480,6 +665,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         </nav>
       </PageHeader>
       <TeamOpsNav orgId={orgId} active="admin" />
+      <OfflineBanner feature="Team admin" fromCache={fromCache} cachedAt={cachedAt} />
 
       <TeamProfilePanel orgId={orgId} />
 
@@ -516,7 +702,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         </a>
         <a href={withOrgHref("/team/data", orgId)}>
           <strong>Live data</strong>
-          <span>TBA connectors</span>
+          <span>Public match results</span>
         </a>
         <a href={withOrgHref("/team/discord", orgId)}>
           <strong>Discord</strong>
@@ -535,8 +721,8 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
           <span>In-app and email opt-ins</span>
         </a>
         <a href="/connectors">
-          <strong>Account Connections</strong>
-          <span>TBA, Onshape, Discord, Slack, GitHub</span>
+          <strong>Connectors</strong>
+          <span>GitHub, CAD, Discord, Slack</span>
         </a>
       </nav>
 
@@ -636,7 +822,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
                 <div>
                   <strong>{member.name || member.email}</strong>
                   <small>
-                    {member.email} · {member.role}
+                    {member.email} · {formatInviteRole(member.role) ?? member.role}
                     {member.joinedAt
                       ? ` · joined ${new Date(member.joinedAt).toLocaleDateString()}`
                       : ""}

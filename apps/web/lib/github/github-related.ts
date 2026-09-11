@@ -7,7 +7,7 @@ export const GITHUB_RELATED_LINKS = [
   { id: "code", label: "Code Coach", kind: "build" as const, tab: "code" },
   {
     id: "connections",
-    label: "Account Connections",
+    label: "Connectors",
     kind: "account" as const,
     path: "/connectors",
   },
@@ -23,11 +23,11 @@ export type GitHubRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — Pair VS Code / Code Coach / Account Connections. */
+/** Focused Soft-UI strip — Pair VS Code / Code Coach / Connectors. */
 export const GITHUB_RELATED_INCLUDE: GitHubRelatedId[] = ["pair", "code", "connections"];
 
 /**
- * Canonical Soft-UI deep link to the GitHub PAT / OAuth panel.
+ * Canonical Soft-UI deep link to the GitHub connection panel.
  * Lives on Team admin — never `/team` hub (no `#github-connection` there).
  */
 export function githubConnectionHref(orgId?: string | null): string {
@@ -35,7 +35,7 @@ export function githubConnectionHref(orgId?: string | null): string {
 }
 
 /**
- * Soft-UI cross-links from GitHub context → Pair VS Code / Code Coach / Account Connections.
+ * Soft-UI cross-links from GitHub context → Pair VS Code / Code Coach / Connectors.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function githubRelatedLinks(
@@ -96,8 +96,8 @@ export function githubSetupSteps(orgId?: string | null): GitHubSetupStep[] {
     },
     {
       id: "pat",
-      label: "Save an encrypted PAT",
-      detail: "Fine-grained or classic token with Contents: Read.",
+      label: "Save a GitHub token",
+      detail: "A personal access token with Contents: Read.",
       href: githubConnectionHref(orgId),
     },
     {
@@ -167,15 +167,15 @@ export function githubShellCopy(kind: GitHubShellKind): GitHubEmptyCopy {
         badge: "Unavailable",
         title: "Could not load GitHub context",
         description:
-          "A network or server issue blocked the connection panel. Retry, or open Pair VS Code / Code Coach / Account Connections while it reloads.",
+          "A network or server issue blocked the connection panel. Retry, or open Pair VS Code / Code Coach / Connectors while it reloads.",
       };
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
-          "Join or pick a team before linking OAuth or a PAT.",
+          "Choose your team before linking GitHub.",
       };
     case "empty":
       return {
@@ -183,21 +183,25 @@ export function githubShellCopy(kind: GitHubShellKind): GitHubEmptyCopy {
         badge: "Not connected",
         title: "Link GitHub for this team",
         description:
-          "Repo context stays blank until an owner/admin connects OAuth or saves an encrypted PAT. Cross-check Pair VS Code, Code Coach, and Account Connections.",
+          "Code tools stay blank until an owner or admin connects GitHub. Pair VS Code, Code Coach, and Connectors stay nearby.",
       };
-    default:
+    case "ready":
       return {
-        kind: "ready",
+        kind,
         title: "GitHub robot-code context",
         description:
           "Only repos returned for the linked account appear here.",
       };
+    default: {
+      const _never: never = kind;
+      return _never;
+    }
   }
 }
 
 /**
  * Soft-UI next actions for GitHub empty/setup shells.
- * Points at Pair VS Code / Code Coach / Account Connections — never invents DEMO repos.
+ * Points at Pair VS Code / Code Coach / Connectors — never invents DEMO repos.
  */
 export function githubNextActions(input: {
   orgId?: string | null;
@@ -212,60 +216,13 @@ export function githubNextActions(input: {
   const repoCount = input.repoCount ?? 0;
 
   if (!orgId || input.shell === "setup") {
-    if (!orgId) {
-      return [
-        {
-          id: "workspace",
-          label: "Choose your team",
-          detail: "Pick a team before linking a PAT or OAuth.",
-          href: "/workspace",
-          primary: true,
-        },
-        {
-          id: "code",
-          label: "Open Code Coach",
-          detail: "Local pattern review stays blank until you paste source.",
-          href: hubHref("/build", "code", null),
-        },
-        {
-          id: "pair",
-          label: "Pair VS Code",
-          detail: "Editor pairing needs a team too.",
-          href: withOrgHref("/editor/pair", null),
-        },
-        {
-          id: "connections",
-          label: "Account Connections",
-          detail: "Honest connector status for TBA, Onshape, Discord, and GitHub.",
-          href: "/connectors",
-        },
-      ];
-    }
     return [
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Finish membership setup so GitHub context can load.",
-        href: withOrgHref("/workspace", orgId),
+        detail: "Choose your team before linking GitHub.",
+        href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
         primary: true,
-      },
-      {
-        id: "code",
-        label: "Open Code Coach",
-        detail: "Local pattern review stays blank until you paste real robot source.",
-        href: hubHref("/build", "code", orgId),
-      },
-      {
-        id: "pair",
-        label: "Pair VS Code",
-        detail: "Approve a real editor after linking.",
-        href: withOrgHref("/editor/pair", orgId),
-      },
-      {
-        id: "connections",
-        label: "Account Connections",
-        detail: "See GitHub among other workspace connectors — Connected only from real rows.",
-        href: "/connectors",
       },
     ];
   }
@@ -274,30 +231,12 @@ export function githubNextActions(input: {
     return [
       {
         id: "connect",
-        label: input.oauthSetupRequired ? "Encrypt and save a PAT" : "Connect GitHub",
+        label: input.oauthSetupRequired ? "Save a GitHub token" : "Connect GitHub",
         detail: input.oauthSetupRequired
-          ? "Signing in with GitHub is optional here — saving an encrypted access token works today."
-          : "Authorize OAuth or paste a fine-grained PAT with Contents: Read below.",
+          ? "GitHub sign-in is not set up here — save a personal access token instead."
+          : "Connect GitHub, or paste a personal access token with Contents: Read.",
         href: "#github-connection",
         primary: true,
-      },
-      {
-        id: "code",
-        label: "Open Code Coach",
-        detail: "Review pasted source locally without a linked repo.",
-        href: hubHref("/build", "code", orgId),
-      },
-      {
-        id: "pair",
-        label: "Pair VS Code",
-        detail: "Approve an editor device independently of GitHub context.",
-        href: withOrgHref("/editor/pair", orgId),
-      },
-      {
-        id: "connections",
-        label: "Account Connections",
-        detail: "GitHub stays Not connected on Account until a real link exists.",
-        href: "/connectors",
       },
     ];
   }
@@ -328,8 +267,8 @@ export function githubNextActions(input: {
       },
       {
         id: "connections",
-        label: "Account Connections",
-        detail: "Confirm GitHub shows Connected from the real workspace row.",
+        label: "Connectors",
+        detail: "Confirm GitHub shows Connected from the real team row.",
         href: "/connectors",
       },
     ];
@@ -351,7 +290,7 @@ export function githubNextActions(input: {
     },
     {
       id: "connections",
-      label: "Account Connections",
+      label: "Connectors",
       detail: "GitHub Connected reflects this team link.",
       href: "/connectors",
     },

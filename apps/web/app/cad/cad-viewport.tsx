@@ -53,7 +53,7 @@ export function CadViewport({ pngBase64, openUrl, setupRequired = false }: CadVi
   const openLink = href ? <OpenInOnshapeLink href={href} /> : null;
 
   return (
-    <section className="cad-agent-viewport" aria-label="CAD viewport">
+    <section className="cad-agent-viewport" aria-label="CAD viewport" data-testid="cad-viewport">
       <div className="cad-agent-col-head">
         Viewport
         {openLink ?? <span>Onshape</span>}

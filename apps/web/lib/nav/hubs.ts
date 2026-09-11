@@ -171,6 +171,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         // has a single answer instead of three half-answers.
         { id: "presence", label: "Presence", legacyHref: "/presence" },
         { id: "hours-self-view", label: "My hours", legacyHref: "/hours-self-view", featured: true },
+        { id: "team-admin", label: "Invites", legacyHref: "/team/admin", featured: true },
         { id: "my-kit", label: "My kit", legacyHref: "/my-kit" },
         { id: "mentor-hours", label: "Mentor hours", legacyHref: "/mentor-hours" },
         // The programming subteam's setup track. Sits with the other
@@ -186,7 +187,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         // the mentor "who is struggling" view is the same people list, one level in.
         { id: "learning", label: "Learning", legacyHref: "/learning" },
         { id: "training", label: "Training matrix", legacyHref: "/training" },
-        { id: "roles", label: "Season roles", legacyHref: "/roles" },
+        { id: "roles", label: "Season roles", legacyHref: "/roles", featured: true },
         { id: "driver-tryouts", label: "Driver tryouts", legacyHref: "/driver-tryouts" },
         { id: "exit-interview", label: "Exit interviews", legacyHref: "/exit-interview" },
         // Families are part of the roster in practice: contacts, the digest email, and

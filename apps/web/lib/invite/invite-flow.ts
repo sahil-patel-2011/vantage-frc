@@ -183,7 +183,7 @@ export function inviteEmptyCopy(kind: InviteFlowKind, detail?: string | null): I
       title: "This invitation link is incomplete",
       description:
         detail?.trim() ||
-        "Open the full link from your invite email or the copy your team admin shared.",
+        "Open the full link from your invite email or the copy your captain shared. People without an invite go to the waitlist.",
       badge: "Link missing",
     };
   }
@@ -194,7 +194,7 @@ export function inviteEmptyCopy(kind: InviteFlowKind, detail?: string | null): I
       title: "Sign in with the invited email",
       description:
         detail?.trim() ||
-        "This invite is for one specific address. Sign in with that email, then accept.",
+        "This invite is for one specific address. Sign in with that email, then accept. People without an invite go to the waitlist.",
       badge: "Sign in",
     };
   }

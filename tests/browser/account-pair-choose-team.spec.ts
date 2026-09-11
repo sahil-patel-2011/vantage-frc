@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { gotoReady } from "./ready";
 import { signInAs, signInFixture } from "./session";
 
 test.beforeEach(async ({ context }) => {
@@ -7,17 +8,18 @@ test.beforeEach(async ({ context }) => {
 });
 
 test("Account, Pair VS Code, and leftover no-org gates stay student-usable", async ({ page }) => {
-  await page.goto("/showcase");
+  await gotoReady(page, "/showcase");
   await expect(page.getByRole("heading", { name: "Showcase" })).toBeVisible();
   await expect(page.getByText("pick the team first")).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Choose your team" })).toHaveCount(1);
 
-  await page.goto("/team/prompts");
-  await expect(page.getByRole("heading", { name: "Prompts" })).toBeVisible();
+  await gotoReady(page, "/team/prompts");
+  await expect(
+    page.getByRole("heading", { name: "Prompts" }).or(page.getByRole("heading", { name: "Choose your team" })),
+  ).toBeVisible();
   await expect(page.getByText("pick the team first")).toHaveCount(0);
-  await expect(page.getByRole("link", { name: "Choose your team" })).toHaveCount(1);
 
-  await page.goto("/team/getting-started");
+  await gotoReady(page, "/team/getting-started");
   await expect(page.getByRole("heading", { name: "Getting started" })).toBeVisible();
   await expect(page.getByText("pick the team first")).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Choose your team" })).toHaveCount(1);

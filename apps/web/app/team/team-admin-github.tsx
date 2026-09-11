@@ -77,12 +77,9 @@ export function TeamAdminGitHubPanel({
       <div className="admin-grid">
         <section className="intel-panel">
           {githubOAuthSetupRequired ? (
-            // Was: "OAuth isn't configured on this server. Save a PAT
-            // instead." — true, and useless: it named no variable and gave no
-            // callback URL, so the admin could not act on it. The setup
-            // message from githubSetupStatus() names both.
+            // Server setup copy names what to paste; fall back to a student-readable line.
             <p className="app-muted github-oauth-note">
-              {githubOAuthMessage || "OAuth isn’t configured on this server. Save a PAT instead."}{" "}
+              {githubOAuthMessage || "GitHub sign-in isn’t set up here. Save a token instead."}{" "}
               <a href="/connectors">See all connectors</a>
             </p>
           ) : null}
@@ -109,18 +106,18 @@ export function TeamAdminGitHubPanel({
             </article>
           ) : null}
           <div className="intel-actions">
-            <button
+            <Button
+              variant={githubOAuthSetupRequired ? "secondary" : "primary"}
               type="button"
-              className={githubOAuthSetupRequired ? undefined : "primary-action"}
               disabled={githubBusy || githubOAuthSetupRequired || githubLoading}
               onClick={() => void onConnectOAuth()}
             >
               {githubOAuthSetupRequired
-                ? "Connect GitHub (OAuth unavailable)"
+                ? "GitHub sign-in unavailable"
                 : githubCredentialRejected
                   ? "Reconnect GitHub"
                   : "Connect GitHub"}
-            </button>
+            </Button>
             {/* A rejected credential leaves no `connection` (that loader wants
                 a spendable token), but the row and its dead token are still
                 there — so Disconnect has to stay reachable, or the only way to
@@ -134,7 +131,7 @@ export function TeamAdminGitHubPanel({
         </section>
         <section className="intel-panel">
           <form onSubmit={onSavePat}>
-            <span className="eyebrow">{githubOAuthSetupRequired ? "CONNECT WITH PAT" : "OR SAVE A PAT"}</span>
+            <span className="eyebrow">{githubOAuthSetupRequired ? "CONNECT WITH A TOKEN" : "OR SAVE A TOKEN"}</span>
             <label>
               Personal access token
               <input
@@ -146,9 +143,9 @@ export function TeamAdminGitHubPanel({
                 required
               />
             </label>
-            <button className="primary-action" disabled={githubBusy}>
+            <Button variant="primary" type="submit" disabled={githubBusy}>
               Save token
-            </button>
+            </Button>
           </form>
           {githubConnection ? (
             <form id="github-default-repo" onSubmit={onSetDefaultRepo} style={{ marginTop: "1.25rem" }}>
@@ -168,9 +165,9 @@ export function TeamAdminGitHubPanel({
               {!githubRepos.length ? (
                 <p className="app-muted">No repositories on this account yet.</p>
               ) : null}
-              <button className="primary-action" disabled={githubBusy || !defaultRepo}>
+              <Button variant="primary" type="submit" disabled={githubBusy || !defaultRepo}>
                 Set default repo
-              </button>
+              </Button>
             </form>
           ) : null}
         </section>

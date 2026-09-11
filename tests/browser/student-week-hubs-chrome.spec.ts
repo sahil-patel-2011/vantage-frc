@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { waitForLoadingGone } from "./ready";
 import { signInAs, signInFixture } from "./session";
 
 test.beforeEach(async ({ context }) => {
@@ -25,7 +26,7 @@ test("student-week hubs speak student chrome", async ({ page }) => {
   ];
   for (const route of routes) {
     await page.goto(route);
-    await expect(page.locator("body")).not.toContainText("Application error");
+    await waitForLoadingGone(page);
     for (const phrase of BANNED) {
       await expect(page.locator("body"), `${route} still shows ${phrase}`).not.toContainText(phrase);
     }

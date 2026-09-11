@@ -11,7 +11,7 @@ test("Match video still loads after the Saturday shell pass", async ({ page }) =
   await page.goto("/video");
   await expect(page.locator("body")).not.toContainText("Application error");
 
-  const title = page.getByRole("heading", { name: /Match video/i });
+  const title = page.getByRole("heading", { level: 1, name: "Match video" });
   const setup = page.getByRole("heading", { name: /Choose your team|Choose your team/i });
   const empty = page.getByRole("heading", { name: /No reviews yet|Add a match review|Waiting/i });
   const unavailable = loadFailureHeading(page);

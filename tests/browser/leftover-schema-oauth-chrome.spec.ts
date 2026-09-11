@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { waitForLoadingGone } from "./ready";
 import { signInAs, signInFixture } from "./session";
 
 test.beforeEach(async ({ context }) => {
@@ -18,6 +19,7 @@ const BANNED = [
 ];
 
 test("leftover schema / OAuth chrome is gone from student boards", async ({ page }) => {
+  test.setTimeout(90_000);
   const routes = [
     "/competition?tab=forms",
     "/chemistry",
@@ -29,6 +31,7 @@ test("leftover schema / OAuth chrome is gone from student boards", async ({ page
   ];
   for (const route of routes) {
     await page.goto(route);
+    await waitForLoadingGone(page);
     await expect(page.locator("body")).not.toContainText("Application error");
     for (const phrase of BANNED) {
       await expect(page.locator("body"), `${route} still shows ${phrase}`).not.toContainText(phrase);

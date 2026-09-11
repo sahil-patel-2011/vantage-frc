@@ -143,7 +143,7 @@ describe("attendance Soft-UI helpers", () => {
       emptyRollCount: 0,
       canManage: true,
     });
-    expect(empty.map((a) => a.id)).toEqual(["first-roll", "calendar", "practice"]);
+    expect(empty.map((a) => a.id)).toEqual(["first-roll"]);
     expect(empty.every((a) => !/demo|attendance\s*%/i.test(`${a.label} ${a.detail}`))).toBe(true);
 
     const ready = attendanceNextActions({

@@ -234,6 +234,7 @@ export type OfflineFeature =
   | "subsystems"
   | "support"
   | "support-tickets"
+  | "team-admin"
   | "team-background"
   | "team-profile"
   | "troubleshoot"

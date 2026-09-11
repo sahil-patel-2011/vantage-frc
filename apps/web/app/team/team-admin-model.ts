@@ -75,4 +75,20 @@ export type CustomProvider = {
 
 export type InviteNotice = { tone: "ok" | "warn" | "error"; message: string };
 
+/** Last IndexedDB copy of Team admin membership + GitHub — never invented counts. */
+export type TeamAdminSnapshot = {
+  invites: Invite[];
+  members: Member[];
+  adminTenure: AdminTenure | null;
+  accessRequests: AccessRequest[];
+  providers: CustomProvider[];
+  deliveryMode: InviteDeliveryMode | null;
+  githubOAuthSetupRequired: boolean;
+  githubOAuthMessage: string;
+  githubCredentialRejected: { login: string | null } | null;
+  githubConnection: GitHubConnection | null;
+  githubRepos: GitHubRepo[];
+  defaultRepo: string;
+};
+
 export type { InviteDeliveryMode };

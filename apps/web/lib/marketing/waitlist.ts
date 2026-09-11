@@ -270,6 +270,10 @@ export { waitlistUnavailableMessage };
  */
 export function waitlistBackend(): WaitlistBackend {
   if (process.env.CI === "true") return "memory";
+  // Playwright's next.dev child has E2E_AUTH_FIXTURE and a product
+  // vantage_ci URL. That URL is not a marketing database — do not INSERT
+  // waitlist rows there (it 500s the public form).
+  if (process.env.E2E_AUTH_FIXTURE === "1") return "memory";
   if (resolveMarketingDatabaseUrl()) return "postgres";
   if (process.env.NODE_ENV === "production") return "unavailable";
   return "memory";

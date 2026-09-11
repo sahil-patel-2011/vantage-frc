@@ -199,6 +199,7 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/whats-new")).toBe(true);
     expect(pathnameIsOfflineShell("/search")).toBe(true);
     expect(pathnameIsOfflineShell("/migrate")).toBe(true);
+    expect(pathnameIsOfflineShell("/team/admin")).toBe(true);
     expect(pathnameIsOfflineShell("/team/security")).toBe(true);
     expect(pathnameIsOfflineShell("/account")).toBe(true);
     expect(pathnameIsOfflineShell("/api/todos")).toBe(false);
@@ -374,6 +375,7 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/notifications/preferences")).toBe("Notification preferences");
     expect(offlineCapableLabel("/notifications")).toBe("Notifications");
     expect(offlineCapableLabel("/team/grants/calendar")).toBe("Grant calendar");
+    expect(offlineCapableLabel("/team/admin")).toBe("Team admin");
     expect(offlineCapableLabel("/team/security")).toBe("Team security");
     expect(offlineCapableLabel("/security")).toBe("Security");
     expect(offlineCapableLabel("/wiring-diagnoser")).toBe("Wiring check");
@@ -530,6 +532,7 @@ describe("offline shell routes", () => {
     expect(featureCacheKey("forms", "org-1")).toBe("forms:org-1");
     expect(featureCacheKey("incidents", "org-1", "2026")).toBe("incidents:org-1:2026");
     expect(featureCacheKey("roles", "org-1", "2026")).toBe("roles:org-1:2026");
+    expect(featureCacheKey("team-admin", "org-1")).toBe("team-admin:org-1");
     expect(featureCacheKey("parts-catalog", "org-1")).toBe("parts-catalog:org-1");
     expect(featureCacheKey("parts-relay", "org-1")).toBe("parts-relay:org-1");
     expect(featureCacheKey("cad-setup", "org-1")).toBe("cad-setup:org-1");
