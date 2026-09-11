@@ -1,5 +1,5 @@
 "use client";
-import { Button } from "../../components/ui";
+import { Button, EmptyState } from "../../components/ui";
 import { useCallback, useEffect, useState } from "react";
 import { COMMON_COMPONENTS, VERSION_CATEGORIES, VERSION_CATEGORY_LABEL, inspectionDsCue, inspectionRioImageCue, staleSeasonStackCue, vh109DipSwitchCue, vh109FirmwareCue, type VersionCategory, type VersionStatus } from "../../lib/software-versions";
 
@@ -71,7 +71,21 @@ export default function SoftwareVersionsClient({ orgId }: { orgId: string | null
     );
   }
   if (view.status === "setup_required") {
-    return <main className="intel-app"><header className="intel-header"><div><span className="eyebrow">VANTAGE / SOFTWARE</span><h1>Software versions</h1></div></header><p className="telemetry-status">{view.message}</p></main>;
+    return (
+      <main className="intel-app">
+        <header className="intel-header">
+          <div>
+            <span className="eyebrow">VANTAGE / SOFTWARE</span>
+            <h1>Software versions</h1>
+          </div>
+        </header>
+        <EmptyState badge="Setup required" badgeTone="setup" soft title="Choose your team" description={view.message}>
+          <Button as="a" variant="primary" href="/workspace">
+            Choose your team
+          </Button>
+        </EmptyState>
+      </main>
+    );
   }
 
   const existing = new Set(view.components.map((c) => c.component));
