@@ -49,7 +49,7 @@ test("student this week can walk Team hub People → Invites → Season roles", 
     .getByRole("link", { name: /Choose your team|Invite an exact email|Sign in again/i })
     .or(page.getByRole("button", { name: /Send invite|Retry/i }));
   await expect(adminPrimary.first()).toBeVisible({ timeout: 12_000 });
-  await expect(page.getByText("waitlist")).toBeVisible();
+  await expect(page.getByText(/waitlist/i).first()).toBeVisible();
 
   const islandTeam = page.getByTestId("soft-island").getByRole("link", { name: "Team", exact: true });
   if (await islandTeam.isVisible()) {
