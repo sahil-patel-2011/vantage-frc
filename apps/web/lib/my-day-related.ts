@@ -94,14 +94,14 @@ export function myDaySetupSteps(orgId?: string | null): MyDaySetupStep[] {
       },
     ];
   }
-  return dropRelatedStripDuplicates(orgId, [
+  return [
     {
       id: "command",
       label: "Set the event you’re at",
       detail: "Event Day picks the event so next-match times can show.",
       href: hubHref("/competition", "command", orgId),
     },
-  ]);
+  ];
 }
 
 /** Real match counts only — never invent DEMO totals. */
