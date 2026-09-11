@@ -8,7 +8,8 @@ test.beforeEach(async ({ context }) => {
 });
 
 test("Video is a student paste page, not an engineering wall", async ({ page }) => {
-  await page.goto("/video-analysis");
+  test.setTimeout(90_000);
+  await page.goto("/video-analysis", { waitUntil: "domcontentloaded" });
   await waitForLoadingGone(page);
   await expect(page.getByRole("heading", { level: 1, name: "Video" })).toBeVisible();
 

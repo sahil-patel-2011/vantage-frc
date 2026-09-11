@@ -11,13 +11,16 @@ const BANNED = ["Connect TBA", "The Blue Alliance", "TBA/Statbotics", "Setup req
 /** Video paste names The Blue Alliance as a source. That is not leftover chrome. */
 const BANNED_VIDEO = ["Connect TBA", "TBA/Statbotics", "Setup required", "OAuth", "ONSHAPE_"];
 
-test("student this week can walk Home widgets, Strategy boards, Match video, Event day, and Chat", async ({
-  page,
-}) => {
-  test.setTimeout(120_000);
-
-  await page.goto("/dashboard");
+async function openStudentPage(page: Parameters<typeof waitForLoadingGone>[0], path: string) {
+  await page.goto(path, { waitUntil: "domcontentloaded" });
   await waitForLoadingGone(page);
+  await expect(page.locator("body")).not.toContainText("Application error");
+}
+
+test("student this week can walk Home widgets and remaining Strategy boards", async ({ page }) => {
+  test.setTimeout(90_000);
+
+  await openStudentPage(page, "/dashboard");
   const now = page.getByTestId("dash-now");
   await expect(now).toBeVisible();
   await expect(now.getByText("What to do now")).toBeVisible();
@@ -33,18 +36,18 @@ test("student this week can walk Home widgets, Strategy boards, Match video, Eve
     "/alliance-selection-desk",
     "/match-strategy-cards",
   ]) {
-    await page.goto(route);
-    await waitForLoadingGone(page);
-    await expect(page.locator("body")).not.toContainText("Application error");
+    await openStudentPage(page, route);
     for (const phrase of BANNED) {
       await expect(page.locator("body"), `${route} still shows ${phrase}`).not.toContainText(phrase);
     }
     await expect(page.getByText("Setup required")).toHaveCount(0);
   }
+});
 
-  await page.goto("/video-analysis");
-  await waitForLoadingGone(page);
-  await expect(page.locator("body")).not.toContainText("Application error");
+test("student this week can walk Match video, Event day, and Chat", async ({ page }) => {
+  test.setTimeout(90_000);
+
+  await openStudentPage(page, "/video-analysis");
   for (const phrase of BANNED_VIDEO) {
     await expect(page.locator("body"), `Video still shows ${phrase}`).not.toContainText(phrase);
   }
@@ -57,9 +60,7 @@ test("student this week can walk Home widgets, Strategy boards, Match video, Eve
   }
   await expect(page.getByText("Setup required")).toHaveCount(0);
 
-  await page.goto("/command");
-  await waitForLoadingGone(page);
-  await expect(page.locator("body")).not.toContainText("Application error");
+  await openStudentPage(page, "/command");
   for (const phrase of BANNED) {
     await expect(page.locator("body"), `Event day still shows ${phrase}`).not.toContainText(phrase);
   }
@@ -72,9 +73,7 @@ test("student this week can walk Home widgets, Strategy boards, Match video, Eve
   }
   await expect(page.getByText("Setup required")).toHaveCount(0);
 
-  await page.goto("/chat");
-  await waitForLoadingGone(page);
-  await expect(page.locator("body")).not.toContainText("Application error");
+  await openStudentPage(page, "/chat");
   for (const phrase of BANNED) {
     await expect(page.locator("body"), `Chat still shows ${phrase}`).not.toContainText(phrase);
   }
@@ -86,9 +85,7 @@ test("student this week can walk Home widgets, Strategy boards, Match video, Eve
     await expect(page.getByRole("button", { name: "+ Team-shared chat" })).toHaveCount(0);
   }
 
-  await page.goto("/messages");
-  await waitForLoadingGone(page);
-  await expect(page.locator("body")).not.toContainText("Application error");
+  await openStudentPage(page, "/messages");
   for (const phrase of BANNED) {
     await expect(page.locator("body"), `Team chat still shows ${phrase}`).not.toContainText(phrase);
   }
