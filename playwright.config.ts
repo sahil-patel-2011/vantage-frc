@@ -78,6 +78,8 @@ if (explicitBase) {
 
 export default defineConfig({
   testDir: "./tests/browser",
+  // Vitest unit files live beside specs (`origin.test.ts`). Do not collect them.
+  testMatch: "**/*.spec.ts",
   // One worker is the GHA contract: two starve Next 16's compiler
   // (net::ERR_ABORTED / detached frames). Override with PLAYWRIGHT_WORKERS.
   workers: Number(process.env.PLAYWRIGHT_WORKERS) || 1,
