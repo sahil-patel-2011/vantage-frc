@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Badge,
   EmptyState,
@@ -12,6 +12,7 @@ import {
   StatTile,
   TableSkeleton,
   type BadgeTone, Button } from "../../components/ui";
+import { OfflineBanner } from "../../components/offline-banner";
 import { UsageCutoffBanner, resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 import {
   codeVersionStatusLabel,
@@ -37,6 +38,7 @@ import type {
 } from "../../lib/readiness-score/types";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./readiness-score.css";
 
 const CATEGORY_LABEL: Record<ReadinessFixCategory, string> = {
@@ -68,6 +70,41 @@ function pct(value: number): string {
 }
 
 type LiveView = Extract<ReadinessScoreView, { status: "live" }>;
+
+function isReadinessScoreView(value: unknown): value is ReadinessScoreView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function readinessScoreCacheOrg(data: ReadinessScoreView, orgHint: string): string {
+  switch (data.status) {
+    case "setup_required":
+      return (typeof data.orgId === "string" && data.orgId.trim()) || orgHint;
+    case "live":
+      return data.orgId.trim() || orgHint;
+    default: {
+      data satisfies never;
+      return orgHint;
+    }
+  }
+}
+
+async function persistReadinessScoreSnapshot(
+  orgHint: string,
+  seasonHint: string,
+  data: ReadinessScoreView,
+): Promise<void> {
+  const cacheOrg = readinessScoreCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  const seasonKey = String(data.seasonYear);
+  try {
+    await putFeatureSnapshot("readiness-score", cacheOrg, data, seasonHint || seasonKey);
+    if (!orgHint) await putFeatureSnapshot("readiness-score", "_", data, seasonHint || seasonKey);
+  } catch {
+    // Live Readiness Score already painted; IndexedDB is best-effort.
+  }
+}
 
 function ReadinessRelatedStrip({ orgId }: { orgId?: string | null }) {
   const links = readinessScoreRelatedLinks(orgId, {
@@ -119,12 +156,16 @@ function ReadinessShell({
   shell,
   error,
   onRetry,
+  fromCache = false,
+  cachedAt = null,
 }: {
   description: string;
   orgId?: string | null;
   shell: ReadinessScoreShellKind;
   error?: string;
   onRetry?: () => void;
+  fromCache?: boolean;
+  cachedAt?: string | null;
 }) {
   const actions = readinessScoreNextActions({ orgId, shell });
   const copy = readinessScoreShellCopy(shell);
@@ -145,6 +186,7 @@ function ReadinessShell({
       >
         <ReadinessRelatedStrip orgId={orgId} />
       </PageHeader>
+      <OfflineBanner feature="Readiness Score" fromCache={fromCache} cachedAt={cachedAt} />
       {shell === "loading" ? (
         <div style={{ display: "grid", gap: 16 }} aria-busy="true" aria-label="Loading readiness score">
           <StatRowSkeleton count={4} />
@@ -182,34 +224,80 @@ export default function ReadinessScoreClient() {
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
   const [cutoffCode, setCutoffCode] = useState<string | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<ReadinessScoreView | null>(null);
+  viewRef.current = view;
 
-  const load = useCallback((seasonOverride?: number) => {
+  const load = useCallback(async (seasonOverride?: number) => {
+    const params = new URLSearchParams(window.location.search);
+    const orgHint = params.get("orgId")?.trim() ?? "";
+    const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
+    const seasonHint =
+      seasonQuery && Number.isFinite(seasonQuery) ? String(seasonQuery) : String(new Date().getFullYear());
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<ReadinessScoreView>(
+        "readiness-score",
+        orgHint || "_",
+        seasonHint,
+      );
+      if (!viewRef.current && cached?.data && isReadinessScoreView(cached.data)) {
+        setView(cached.data);
+        setSeason(cached.data.seasonYear);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
     setFetchFailed(false);
     setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    if (seasonQuery) query.set("season", String(seasonQuery));
-    void fetch(`/api/readiness-score${query.toString() ? `?${query.toString()}` : ""}`, {
-      cache: "no-store",
-      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
-    })
-      .then(async (response) => {
-        const data = (await response.json()) as ReadinessScoreView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setFetchFailed(true);
+    try {
+      const query = new URLSearchParams();
+      if (orgHint) query.set("orgId", orgHint);
+      if (seasonQuery) query.set("season", String(seasonQuery));
+      const response = await fetch(`/api/readiness-score${query.toString() ? `?${query.toString()}` : ""}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      const data: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setFetchFailed(true);
+        return;
+      }
+      if (!response.ok || !isReadinessScoreView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Readiness Score. Showing the last copy on this device.");
+          setFetchFailed(false);
           return;
         }
-        setView(data);
-        setSeason(data.seasonYear);
-      })
-      .catch(() => setFetchFailed(true));
+        setFetchFailed(true);
+        return;
+      }
+      setView(data);
+      setSeason(data.seasonYear);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistReadinessScoreSnapshot(orgHint, seasonHint, data);
+    } catch {
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Readiness Score. Showing the last copy on this device.");
+        setFetchFailed(false);
+        return;
+      }
+      setFetchFailed(true);
+    }
   }, []);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   const orgId = view && "orgId" in view ? view.orgId : null;
@@ -218,7 +306,7 @@ export default function ReadinessScoreClient() {
 
   const shell = classifyReadinessScoreShell({
     loading: view == null && !fetchFailed,
-    fetchFailed,
+    fetchFailed: fetchFailed && !view,
     status: view?.status ?? null,
     orgId: view?.status === "live" ? view.orgId : view?.status === "setup_required" ? view.orgId : null,
     subsystemCount,
@@ -249,19 +337,25 @@ export default function ReadinessScoreClient() {
           body: JSON.stringify({ orgId, seasonYear: season ?? undefined, ...payload }),
           signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
-        const data = (await response.json()) as ReadinessScoreView | { error?: string };
-        if (!response.ok || !("status" in data)) {
+        const data: unknown = await response.json().catch(() => null);
+        if (!response.ok || !isReadinessScoreView(data)) {
           const cutoff = resolveCutoffErrorCode(response.status, data);
           if (cutoff) {
             setCutoffCode(cutoff);
             setError("AI usage limit reached — raise budgets or wait for the billing period to reset.");
             return;
           }
-          setError("error" in data && data.error ? data.error : "Something went wrong.");
+          setError(
+            data && typeof data === "object" && "error" in data && typeof data.error === "string"
+              ? data.error
+              : "Something went wrong.",
+          );
           return;
         }
         setView(data);
         setSeason(data.seasonYear);
+        setFromCache(false);
+        void persistReadinessScoreSnapshot(orgId, String(data.seasonYear), data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -272,7 +366,15 @@ export default function ReadinessScoreClient() {
   );
 
   if (shell === "loading") {
-    return <ReadinessShell description={shellCopy.description} orgId={null} shell="loading" />;
+    return (
+      <ReadinessShell
+        description={shellCopy.description}
+        orgId={null}
+        shell="loading"
+        fromCache={fromCache}
+        cachedAt={cachedAt}
+      />
+    );
   }
 
   if (shell === "error") {
@@ -282,7 +384,9 @@ export default function ReadinessScoreClient() {
         orgId={orgId}
         shell="error"
         error={error || shellCopy.description}
-        onRetry={() => load()}
+        onRetry={() => void load()}
+        fromCache={fromCache}
+        cachedAt={cachedAt}
       />
     );
   }
@@ -293,12 +397,22 @@ export default function ReadinessScoreClient() {
         description={view?.status === "setup_required" ? view.message : shellCopy.description}
         orgId={orgId}
         shell="setup"
+        fromCache={fromCache}
+        cachedAt={cachedAt}
       />
     );
   }
 
   if (view?.status !== "live") {
-    return <ReadinessShell description={shellCopy.description} orgId={orgId} shell="setup" />;
+    return (
+      <ReadinessShell
+        description={shellCopy.description}
+        orgId={orgId}
+        shell="setup"
+        fromCache={fromCache}
+        cachedAt={cachedAt}
+      />
+    );
   }
 
   return (
@@ -341,6 +455,8 @@ export default function ReadinessScoreClient() {
         </div>
       </PageHeader>
 
+      <OfflineBanner feature="Readiness Score" fromCache={fromCache} cachedAt={cachedAt} />
+
       {orgId && cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} compact /> : null}
 
       {error ? (
@@ -349,7 +465,7 @@ export default function ReadinessScoreClient() {
         </p>
       ) : null}
 
-      <ReadinessNextActionsPanel actions={nextActions} />
+      {shell === "ready" ? <ReadinessNextActionsPanel actions={nextActions} /> : null}
 
       {showTiles ? (
         <Panel className="readiness-score-panel" aria-label="Readiness counts">

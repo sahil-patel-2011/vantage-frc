@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
-import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   CHECKLIST_LIBRARY_CATEGORIES,
   checklistLibraryCategoryLabel,
@@ -10,6 +10,11 @@ import {
 } from "../../lib/checklist-library";
 import type { ChecklistLibraryView } from "../../lib/checklist-library/compute-checklist-library";
 import type { ChecklistLibraryCategory, ChecklistLibraryItem } from "../../lib/checklist-library/types";
+import { hubHref } from "../../lib/nav/hubs";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 type LiveView = Extract<ChecklistLibraryView, { status: "live" }>;
 
@@ -17,44 +22,189 @@ function pct(value: number): string {
   return `${Math.round(value * 100)}%`;
 }
 
+function isChecklistLibraryView(value: unknown): value is ChecklistLibraryView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function checklistLibraryCacheOrg(data: ChecklistLibraryView, orgHint: string): string {
+  switch (data.status) {
+    case "setup_required":
+      return (typeof data.orgId === "string" && data.orgId.trim()) || orgHint;
+    case "live":
+      return data.orgId.trim() || orgHint;
+    default: {
+      data satisfies never;
+      return orgHint;
+    }
+  }
+}
+
+async function persistChecklistLibrarySnapshot(
+  orgHint: string,
+  data: ChecklistLibraryView,
+): Promise<void> {
+  const cacheOrg = checklistLibraryCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("checklist-library", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("checklist-library", "_", data);
+  } catch {
+    // Live Checklist Library already painted; IndexedDB is best-effort.
+  }
+}
+
+function ChecklistLibraryRelated({ orgId }: { orgId?: string | null }) {
+  return (
+    <nav className="product-hub-related" aria-label="Related pit tools">
+      <Button as="a" variant="secondary" href={hubHref("/team", "tool-checkout", orgId)}>
+        Tool checkout
+      </Button>
+      <Button as="a" variant="secondary" href={hubHref("/team", "equipment-maintenance", orgId)}>
+        Equipment
+      </Button>
+      <Button as="a" variant="secondary" href={withOrgHref("/match-checklist", orgId)}>
+        Pit checklist
+      </Button>
+    </nav>
+  );
+}
+
+function ChecklistLibraryNextActions({ orgId }: { orgId: string }) {
+  const actions = [
+    {
+      id: "template",
+      label: "Create a checklist template",
+      detail: "Pit, transport, and load-in SOPs start as a named list of cues.",
+      href: "#checklist-library-new",
+      primary: true,
+    },
+    {
+      id: "pit",
+      label: "Open pit checklist",
+      detail: "Timed pre-queue runs live on Event Day, not as a second copy here.",
+      href: withOrgHref("/match-checklist", orgId),
+      primary: false,
+    },
+    {
+      id: "tools",
+      label: "Open Tool checkout",
+      detail: "Hand tools that leave the shop sit beside these SOPs.",
+      href: hubHref("/team", "tool-checkout", orgId),
+      primary: false,
+    },
+  ];
+  return (
+    <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <Button as="a" variant="secondary" href={action.href}>
+              Open
+            </Button>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
 export default function ChecklistLibraryClient() {
   const [view, setView] = useState<ChecklistLibraryView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
-  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
   const [loadStatus, setLoadStatus] = useState<number | null>(null);
   const [loadError, setLoadError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<ChecklistLibraryView | null>(null);
+  viewRef.current = view;
 
   const orgId = view && "orgId" in view ? view.orgId : null;
 
-  const load = useCallback(() => {
+  const load = useCallback(async () => {
+    const params = new URLSearchParams(window.location.search);
+    const orgHint = params.get("orgId")?.trim() ?? "";
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<ChecklistLibraryView>("checklist-library", orgHint || "_");
+      if (!viewRef.current && cached?.data && isChecklistLibraryView(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
     setFetchFailed(false);
     setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    void fetch(`/api/checklist-library${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
-        const data = (await response.json()) as ChecklistLibraryView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setLoadStatus(response.status);
-          setLoadError("error" in data && data.error ? data.error : "");
-          setFetchFailed(true);
+    setLoadStatus(null);
+    setLoadError("");
+    try {
+      const query = new URLSearchParams();
+      if (orgHint) query.set("orgId", orgHint);
+      const response = await fetch(`/api/checklist-library${query.toString() ? `?${query.toString()}` : ""}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      const data: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setFetchFailed(true);
+        setLoadStatus(response.status);
+        setLoadError(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "",
+        );
+        return;
+      }
+      if (!response.ok || !isChecklistLibraryView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Checklist Library. Showing the last copy on this device.");
+          setFetchFailed(false);
           return;
         }
-        setView(data);
-      })
-      .catch(() => {
-        setLoadStatus(null);
-        setLoadError("");
         setFetchFailed(true);
-      });
+        setLoadStatus(response.status);
+        setLoadError(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "",
+        );
+        return;
+      }
+      setView(data);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistChecklistLibrarySnapshot(orgHint, data);
+    } catch {
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Checklist Library. Showing the last copy on this device.");
+        setFetchFailed(false);
+        return;
+      }
+      setFetchFailed(true);
+    }
   }, []);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   const mutate = useCallback(
@@ -67,13 +217,20 @@ export default function ChecklistLibraryClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
-        const data = (await response.json()) as ChecklistLibraryView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setError("error" in data && data.error ? data.error : "Something went wrong.");
+        const data: unknown = await response.json().catch(() => null);
+        if (!response.ok || !isChecklistLibraryView(data)) {
+          setError(
+            data && typeof data === "object" && "error" in data && typeof data.error === "string"
+              ? data.error
+              : "Something went wrong.",
+          );
           return;
         }
         setView(data);
+        setFromCache(false);
+        void persistChecklistLibrarySnapshot(orgId, data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -83,74 +240,109 @@ export default function ChecklistLibraryClient() {
     [orgId, busy],
   );
 
-  return (
-    <main className="module-page">
-      <PageHeader
-        breadcrumbs={
-          <>
-            <a href={orgId ? `/team?orgId=${encodeURIComponent(orgId)}` : "/team"}>Team</a>
-            {" / Checklist Library"}
-          </>
-        }
-        title="Checklist Library"
-        description="Store the team's SOP here. Opening a pit/match checklist writes a timed run on Event Day — this page does not keep a second copy."
-      />
+  const teamHref = orgId ? `/team?orgId=${encodeURIComponent(orgId)}` : "/team";
+  const header = (
+    <PageHeader
+      breadcrumbs={
+        <>
+          <a href={teamHref}>Team</a>
+          {" / Checklist Library"}
+        </>
+      }
+      title="Checklist Library"
+      description="Store the team's SOP here. Opening a pit/match checklist writes a timed run on Event Day — this page does not keep a second copy."
+    >
+      <ChecklistLibraryRelated orgId={orgId} />
+    </PageHeader>
+  );
 
-      {error ? (
-        <p className="telemetry-status" role="alert">
-          {error}
-        </p>
-      ) : null}
-
-      {fetchFailed ? (
-        (() => {
-          const kind = classifyLoadFailure({
+  if (!view) {
+    const failure = fetchFailed
+      ? loadFailureCopy(
+          classifyLoadFailure({
             status: loadStatus,
             message: loadError,
             online: typeof navigator === "undefined" ? true : navigator.onLine,
-          });
-          const copy = loadFailureCopy(kind, {
+          }),
+          {
             nextPath:
               typeof window === "undefined"
                 ? null
                 : `${window.location.pathname}${window.location.search}`,
             message: loadError || "A network or server issue prevented loading. Try again.",
-          });
-          return (
-            <EmptyState title={copy.title} description={copy.description}>
-              {copy.primary ? (
-                <Button as="a" variant="primary" href={copy.primary.href}>
-                  {copy.primary.label}
-                </Button>
-              ) : null}
-              {copy.showRetry ? (
-                <Button variant="secondary" type="button" onClick={() => load()}>
-                  Retry
-                </Button>
-              ) : null}
-            </EmptyState>
-          );
-        })()
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your team." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          {view.steps[0] ? (
-            <Button as="a" variant="primary" href={view.steps[0].href}>
-              {view.steps[0].label}
+          },
+        )
+      : null;
+    return (
+      <main className="module-page">
+        {header}
+        <OfflineBanner feature="Checklist Library" fromCache={fromCache} cachedAt={cachedAt} />
+        <EmptyState
+          title={failure ? failure.title : "Loading…"}
+          description={failure ? failure.description : "Checking your team."}
+          aria-busy={!fetchFailed}
+        >
+          {failure?.primary ? (
+            <Button as="a" variant="primary" href={failure.primary.href}>
+              {failure.primary.label}
+            </Button>
+          ) : null}
+          {failure?.showRetry ? (
+            <Button variant="secondary" type="button" onClick={() => void load()}>
+              Retry
             </Button>
           ) : null}
         </EmptyState>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <SummaryTiles view={view} />
-          {view.lastPitInstantiation ? <PitOpenedNotice view={view} /> : null}
-          <PitChecklistPanel view={view} />
-          <NewTemplateForm busy={busy} mutate={mutate} />
-          <TemplatesPanel view={view} busy={busy} mutate={mutate} />
-          <RunsPanel view={view} busy={busy} mutate={mutate} />
-        </div>
-      )}
+      </main>
+    );
+  }
+
+  switch (view.status) {
+    case "setup_required":
+      return (
+        <main className="module-page">
+          {header}
+          <OfflineBanner feature="Checklist Library" fromCache={fromCache} cachedAt={cachedAt} />
+          {error ? (
+            <p className="telemetry-status" role="alert">
+              {error}
+            </p>
+          ) : null}
+          <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
+            {view.steps[0] ? (
+              <Button as="a" variant="primary" href={view.steps[0].href}>
+                {view.steps[0].label}
+              </Button>
+            ) : null}
+          </EmptyState>
+        </main>
+      );
+    case "live":
+      break;
+    default: {
+      view satisfies never;
+      return null;
+    }
+  }
+
+  return (
+    <main className="module-page">
+      {header}
+      <OfflineBanner feature="Checklist Library" fromCache={fromCache} cachedAt={cachedAt} />
+      {error ? (
+        <p className="telemetry-status" role="alert">
+          {error}
+        </p>
+      ) : null}
+      <ChecklistLibraryNextActions orgId={view.orgId} />
+      <div style={{ display: "grid", gap: 16 }}>
+        <SummaryTiles view={view} />
+        {view.lastPitInstantiation ? <PitOpenedNotice view={view} /> : null}
+        <PitChecklistPanel view={view} />
+        <NewTemplateForm busy={busy} mutate={mutate} />
+        <TemplatesPanel view={view} busy={busy} mutate={mutate} />
+        <RunsPanel view={view} busy={busy} mutate={mutate} />
+      </div>
     </main>
   );
 }
@@ -252,7 +444,11 @@ function TemplatesPanel({
         badgeTone="setup"
         title="Create your first checklist template"
         description="Pit setup, transport load-out, and competition load-in checklists all start as a named template with a list of items."
-      />
+      >
+        <Button as="a" variant="primary" href="#checklist-library-new">
+          Create template
+        </Button>
+      </EmptyState>
     );
   }
 
@@ -474,6 +670,7 @@ function NewTemplateForm({
   return (
     <Panel
       as="form"
+      id="checklist-library-new"
       onSubmit={(event) => {
         event.preventDefault();
         if (!form.name.trim() || items.length === 0) return;
