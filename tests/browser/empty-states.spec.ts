@@ -21,7 +21,7 @@ test.beforeEach(async ({ context }) => {
  */
 const NO_ORG_ROUTES = [
   { path: "/showcase", crumb: "Media / Showcase", heading: "Showcase" },
-  { path: "/team/ai-runs", crumb: "Team / AI Runs", heading: "AI Runs" },
+  { path: "/team/ai-runs", crumb: "Team / Ask AI history", heading: "Ask AI history" },
   { path: "/team/audit", crumb: "Team / Audit", heading: "Audit" },
   { path: "/team/getting-started", crumb: "Team / Getting started", heading: "Getting started" },
   { path: "/team/knowledge/history", crumb: "Knowledge / History", heading: "Knowledge history" },

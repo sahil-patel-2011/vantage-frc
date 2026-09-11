@@ -41,7 +41,7 @@ test("dashboard editor rearranges widgets with drag-and-drop", async ({ page }) 
   // assert it is a real enabled control rather than a legacy drag attribute.
   await expect(page.locator(".dash-widget-palette button").first()).toBeEnabled();
 
-  const snapshot = page.locator('[data-testid="dash-grid-item"][data-widget-type="competition_snapshot"]');
+  const snapshot = page.getByTestId("dash-grid-item").first();
   await expect(snapshot).toBeVisible();
   await snapshot.evaluate((node) => node.scrollIntoView({ block: "center" }));
   const before = `${await snapshot.getAttribute("data-widget-x")},${await snapshot.getAttribute("data-widget-y")}`;
