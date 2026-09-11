@@ -121,9 +121,9 @@ const faqs: Array<{ q: string; a: string }> = [
   },
 ];
 
-function Cta({ label = "Join early access", href = "/#waitlist" }: { label?: string; href?: string }) {
+function Cta({ label = "Join the waitlist", href = "/#waitlist" }: { label?: string; href?: string }) {
   return (
-    <a className="button primary" href={href}>
+    <a className="text-link" href={href}>
       {label}
     </a>
   );
@@ -166,14 +166,9 @@ export function PricingCatalog() {
                 key={plan.code}
                 plan={plan}
                 footer={
-                  <div className="pricing-card-actions">
-                    <a className="button primary" href="/team/ai-keys">
-                      Start free · add keys
-                    </a>
-                    <a className="button secondary" href="#credits">
-                      Buy AI credits
-                    </a>
-                  </div>
+                  <a className="text-link" href="/#waitlist">
+                    Join the waitlist
+                  </a>
                 }
               />
             ) : (

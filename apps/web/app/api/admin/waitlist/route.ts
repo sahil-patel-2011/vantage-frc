@@ -8,7 +8,8 @@ import {
 import { withRls } from "@vantage/db";
 import type { PoolClient } from "@neondatabase/serverless";
 import { headers } from "next/headers";
-import { createWaitlistStore } from "../../../../lib/marketing/waitlist";
+import { createWaitlistStore, waitlistBackend } from "../../../../lib/marketing/waitlist";
+import { waitlistUnavailableMessage } from "../../../../lib/marketing/waitlist-copy";
 
 async function runAdmin<T>(
   work: (ctx: { client: PoolClient; session: { user: { id: string } } }) => Promise<T>,
@@ -27,6 +28,12 @@ async function runAdmin<T>(
 
 export async function GET(request: Request) {
   try {
+    if (waitlistBackend() === "unavailable") {
+      return Response.json(
+        { error: waitlistUnavailableMessage(), status: "setup_required" },
+        { status: 503 },
+      );
+    }
     const q = new URL(request.url).searchParams.get("q") ?? undefined;
     const entries = await runAdmin(async () => createWaitlistStore().list({ q }));
     return Response.json({ entries });
@@ -42,6 +49,12 @@ export async function POST(request: Request) {
     const email = body.email?.trim().toLowerCase();
     if (!email || (action !== "mark_invited" && action !== "mark_converted")) {
       return Response.json({ error: "action and email are required" }, { status: 400 });
+    }
+    if (waitlistBackend() === "unavailable") {
+      return Response.json(
+        { error: waitlistUnavailableMessage(), status: "setup_required" },
+        { status: 503 },
+      );
     }
 
     const entry = await runAdmin(async ({ client, session }) => {

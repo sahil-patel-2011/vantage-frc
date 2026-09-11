@@ -124,12 +124,15 @@ describe("onboarding Soft-UI flow helpers", () => {
   });
 
   it("keeps closed-membership copy honest for empty/setup shells", () => {
-    expect(onboardingLoadCopy("loading").title).toMatch(/Loading/i);
+    expect(onboardingLoadCopy("loading").title).toMatch(/steps ready/i);
     expectPlainCopy(onboardingLoadCopy("error").description);
-    expect(onboardingLoadCopy("setup_required").badge).toBe("Setup required");
+    expect(onboardingLoadCopy("setup_required").badge).toBe("Needs setup");
+    expect(onboardingLoadCopy("setup_required").title).not.toMatch(/session/i);
     expect(onboardingLoadCopy("setup_required", "Sign in required.").description).toBe("Sign in required.");
     expect(onboardingMembershipNote("none").body).toMatch(/cannot join/i);
+    expect(onboardingMembershipNote("none").body).not.toMatch(/workspace/i);
     expect(onboardingMembershipNote("none", { preferredTeamNumber: 254 }).body).toMatch(/approval/i);
+    expect(onboardingMembershipNote("none", { preferredTeamNumber: 254 }).body).not.toMatch(/\bTBA\b|\/claim/);
     expect(onboardingMembershipNote("invited").body).toMatch(/invite/i);
     expect(onboardingMembershipNote("pending").body).toMatch(/owners|approve/i);
   });

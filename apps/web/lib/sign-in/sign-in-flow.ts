@@ -24,7 +24,7 @@ export type SignInSetupKind = "email_otp" | "google" | "password" | "database";
 
 export type SignInSetupCopy = {
   kind: SignInSetupKind;
-  badge: "setup_required";
+  badge: string;
   title: string;
   description: string;
 };
@@ -47,17 +47,17 @@ export type RaisedPriceItem = {
 export const SIGN_IN_RAISED_PRICES: RaisedPriceItem[] = catalogRaisedPricingStrip();
 
 export const WAITLIST_ONLY_MESSAGE =
-  "This account isn’t on a team yet. Join the waitlist, or sign in with an authorized email.";
+  "This account isn’t on a team yet. If you were invited, try the email on the invite. Otherwise join the waitlist.";
 
 export const SIGN_IN_FAILED_MESSAGE = "Couldn’t sign in. Check your email and try again.";
 
 const PUBLIC_EMAIL_UNAVAILABLE =
-  "Email code sign-in is temporarily unavailable. Use another enabled method or contact your team leader.";
+  "Email codes are off right now. Use Google, or ask the person who invited you.";
 
 const PUBLIC_PASSWORD_UNAVAILABLE =
-  "Password sign-in is temporarily unavailable. Use another enabled method or contact your team leader.";
+  "Password sign-in is off right now. Use Google or an email code.";
 
-const PUBLIC_GOOGLE_UNAVAILABLE = "Google isn’t set up yet. Use email instead.";
+const PUBLIC_GOOGLE_UNAVAILABLE = "Google isn’t ready yet. Use an email code instead.";
 
 /** Browser-safe copy — never surface env var names or provider secrets. */
 export function publicEmailUnavailableCopy(reason?: string | null): string {
@@ -94,38 +94,38 @@ export function signInSetupCopy(
   if (kind === "email_otp") {
     return {
       kind,
-      badge: "setup_required",
-      title: "Email codes need the mail provider",
+      badge: "Needs setup",
+      title: "Email codes are off right now",
       description: publicEmailUnavailableCopy(status?.emailOtpReason),
     };
   }
   if (kind === "google") {
     return {
       kind,
-      badge: "setup_required",
-      title: "Google is unavailable",
+      badge: "Needs setup",
+      title: "Google isn’t ready yet",
       description: PUBLIC_GOOGLE_UNAVAILABLE,
     };
   }
   if (kind === "password") {
     return {
       kind,
-      badge: "setup_required",
-      title: "Password sign-in is unavailable",
+      badge: "Needs setup",
+      title: "Password sign-in is off right now",
       description: publicPasswordUnavailableCopy(status?.passwordReason),
     };
   }
   return {
     kind: "database",
-    badge: "setup_required",
-    title: "Sign-in needs a configured database",
-    description: publicPasswordUnavailableCopy(status?.passwordReason),
+    badge: "Needs setup",
+    title: "Sign-in isn’t ready yet",
+    description: "Google and email codes are not available. Join the waitlist, or ask the person who invited you.",
   };
 }
 
 /** One line under the title — buttons do the rest. */
 export function signInSubtitle(_status?: Pick<SignInAuthStatus, "email2faEnforced" | "emailOtpAvailable">) {
-  return "Same sign-in for every team.";
+  return "Google or an email code. Invite-only.";
 }
 
 /**
@@ -142,25 +142,18 @@ export function signInUnavailableCopy(input: {
   if (input.google) {
     return {
       kind: "email_otp",
-      badge: "setup_required",
+      badge: "Needs setup",
       title: "Email codes are off right now",
       description:
-        "The mail provider isn’t reachable, so no code can be sent. Continue with Google instead.",
+        "A code cannot be sent right now. Continue with Google instead.",
     };
   }
-  // Deliberately names no environment variable. This page is public and signed
-  // out; the connector variables belong on /connectors and in
-  // docs/DEPLOYMENT.md, behind a session. A pointer to the setup guide is the
-  // most this page can honestly offer without turning a sign-in wall into a
-  // read-out of what the deployment is missing. (An existing test pins this.)
   return {
     kind: "email_otp",
-    badge: "setup_required",
-    title: "Sign-in isn’t configured on this deployment",
+    badge: "Needs setup",
+    title: "Sign-in isn’t ready yet",
     description:
-      "Neither email codes nor Google are available, so no one can sign in yet. Nothing you type here would be sent. " +
-      "Ask whoever set up this Vantage deployment to finish auth configuration — the exact variables, the redirect URI " +
-      "to register with Google, and the order to do them in are in the Connectors section of docs/DEPLOYMENT.md.",
+      "Google and email codes are not available, so nothing you type here would be sent. Join the waitlist, or ask the person who invited you.",
   };
 }
 
@@ -189,7 +182,7 @@ export function signInNextActions(): SignInNextAction[] {
     {
       id: "waitlist",
       label: "Join waitlist",
-      detail: "Request access — teams are provisioned, not self-served.",
+      detail: "If you have not been invited, we email when your team is set up.",
       href: "/#waitlist",
       primary: true,
     },

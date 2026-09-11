@@ -10,11 +10,11 @@ function faqAnchor(question: string) {
 const faqs = [
   {
     q: "What is Vantage?",
-    a: "One workspace for an FRC team: learning tracks for CAD and programming, calendar and tasks, files, chat, scouting, strategy, CAD, robot code, money and outreach. One login for every student and mentor.",
+    a: "Invite-only software for an FRC team: scouting, CAD from a pasteable link, match video, pit and shop ops, money and outreach. One Google or email-code login for every student and mentor.",
   },
   {
     q: "What does a new student see first?",
-    a: "Home, then a learning track: set up the laptop, learn Onshape from the first sketch to a graded part, learn Git and the robot code workflow — with an assistant in the guide that knows your team's own material. Nobody needs fifty accounts to start.",
+    a: "Home, then what to do now — scout a match, paste a CAD link, or open team ops. Mentors invite exact emails. If you were not invited, join the waitlist instead of creating an account.",
   },
   {
     q: "Where is everything?",
@@ -22,7 +22,7 @@ const faqs = [
   },
   {
     q: "What does the AI actually do?",
-    a: "It is a helper, not the product. Ask AI on any page answers from your team's data and the public record — match predictions, strategy questions, design help, writing — and says when it does not know. The team profile it starts from is built from The Blue Alliance and Statbotics the day you join.",
+    a: "It is a helper, not the product. Ask AI on any page answers from your team's data and the public FRC record — match predictions, strategy questions, design help, writing — and says when it does not know.",
   },
   {
     q: "Does scouting work offline?",
@@ -34,11 +34,11 @@ const faqs = [
   },
   {
     q: "How much does it cost?",
-    a: "Everything is included on every plan. Free uses your own AI keys or a small hosted allowance; Pro, Pro+ and Max add more hosted AI with a hard cutoff so there is never a surprise bill. Full prices are on the pricing page.",
+    a: "Everything is included on every plan. Free uses a small hosted allowance or the team's own AI; Pro, Pro+ and Max add more hosted AI. Usage stops when the allowance is used — no surprise bill. Full prices are on the pricing page.",
   },
   {
     q: "Is team data private?",
-    a: "Yes. Access is invite-only, each team sees only its own workspace, and a member's personal files are private even from mentors. You can export everything at any time.",
+    a: "Yes. Access is invite-only, each team sees only its own rows, and a member's personal files are private even from mentors. You can export everything at any time.",
   },
 ];
 

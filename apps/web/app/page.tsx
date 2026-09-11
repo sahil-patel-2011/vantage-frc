@@ -10,9 +10,9 @@ import { marketingPageMetadata, organizationSoftwareJsonLd } from "../lib/market
 import "./marketing-showcase.css";
 
 export const metadata: Metadata = marketingPageMetadata({
-  title: "Vantage — one place for everything your FRC team does",
+  title: "Vantage — one login an FRC student can use without help",
   description:
-    "Invite-only workspace for FIRST Robotics Competition teams: learn CAD and code, run the shop, scout offline, pick the alliance, keep the money straight — one login for every student and mentor, with AI that helps and shows its work.",
+    "Invite-only FRC software: scout matches, paste a CAD link, watch match video, and run the team — Google or an email code. Mentors invite exact emails. Everyone else joins the waitlist.",
   path: "/",
 });
 
@@ -30,28 +30,27 @@ export default function Home() {
           <div className="lux-hero-inner">
             <div className="lux-hero-copy">
               <p className="lux-kicker">For FRC teams · Invite-only</p>
-              <h1 id="lux-hero-title">One place for everything your team does.</h1>
+              <h1 id="lux-hero-title">One login a student can use without help.</h1>
               <p>
-                Learn CAD and code, run the shop, scout the event, pick the alliance, keep the money straight — one
-                login for every student and mentor, from a new member&rsquo;s first day to the last match. AI helps
-                with strategy, predictions and design, and shows its work.
+                Scout matches, paste a CAD link, watch match video, and run the shop — Google or a short email
+                code. Mentors invite exact emails. If you have not been invited, join the waitlist.
               </p>
               <div className="actions">
                 <a className="button primary" href="#waitlist">
-                  Request access
+                  Join the waitlist
                 </a>
-                <a className="button secondary" href="#how-it-works">
-                  See how it works
+                <a className="text-link" href="/signin">
+                  Already invited? Sign in
                 </a>
               </div>
               <ul className="mk-hero-proof">
-                <li>Teaches new members</li>
                 <li>Works in the pit, offline</li>
-                <li>Your data stays yours</li>
+                <li>Your team&rsquo;s data stays yours</li>
+                <li>No public signup</li>
               </ul>
               <p className="lux-hero-note">
-                Invite-only while we bring teams on one at a time. Write to{" "}
-                <a href="mailto:sahiljpatel2011@gmail.com">sahiljpatel2011@gmail.com</a> to ask for one.
+                We bring teams on one at a time. Questions?{" "}
+                <a href="mailto:sahiljpatel2011@gmail.com">sahiljpatel2011@gmail.com</a>
               </p>
             </div>
             <HeroProductPanel />
@@ -64,12 +63,15 @@ export default function Home() {
 
         <section className="lux-waitlist" id="waitlist">
           <div>
-            <p className="lux-eyebrow">Closed beta</p>
-            <h2>Request access.</h2>
-            <p>Invite-only. We email when your team is provisioned. Joining the waitlist does not create an account.</p>
+            <p className="lux-eyebrow">Closed membership</p>
+            <h2>Join the waitlist.</h2>
+            <p>
+              Invite-only. We email when your team is set up. Joining the waitlist does not create an account.
+            </p>
             <p className="lux-hero-note">
-              Questions, or want to talk about your team before you join?{" "}
-              <a href="mailto:sahiljpatel2011@gmail.com">sahiljpatel2011@gmail.com</a>
+              Already invited? <a href="/signin">Sign in</a>
+              {" · "}
+              Questions? <a href="mailto:sahiljpatel2011@gmail.com">sahiljpatel2011@gmail.com</a>
             </p>
           </div>
           <WaitlistForm idPrefix="hero" />

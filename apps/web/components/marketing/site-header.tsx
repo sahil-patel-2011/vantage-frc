@@ -78,7 +78,7 @@ export function SiteFooter() {
     <footer className="marketing-footer">
       <div className="marketing-footer-brand">
         <BrandLink />
-        <p>Competition operations software for FRC teams.</p>
+        <p>Competition operations for FRC teams. Invite-only.</p>
       </div>
       <div className="marketing-footer-cols">
         <nav className="marketing-footer-col" aria-label="Product">

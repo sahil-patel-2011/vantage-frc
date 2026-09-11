@@ -389,7 +389,7 @@ export function buildOnboardingPendingPlan(input: {
   if (input.accessStatus === "none" && input.teamNumber) {
     return {
       kind: "no_workspace",
-      eyebrow: "NO WORKSPACE YET",
+      eyebrow: "TEAM NOT SET UP YET",
       headline: `Nobody has set up Team ${input.teamNumber} on Vantage`,
       notified: "",
       stages: [
@@ -418,7 +418,7 @@ export function buildOnboardingPendingPlan(input: {
       stages: [
         { key: "profile", title: "Profile saved", detail: "Your role and crew are stored privately.", phase: "done" },
         { key: "team", title: "Join a team when you're ready", detail: "Use an invite link, or add a team number so their owners can approve you.", phase: "current" },
-        { key: "approve", title: "That team decides", detail: "Knowing a team number never opens someone else's workspace.", phase: "upcoming" },
+        { key: "approve", title: "That team decides", detail: "Knowing a team number never opens someone else's team.", phase: "upcoming" },
       ],
       meanwhile: MEANWHILE_BASE,
       primaryAction: { kind: "edit", label: "Add a team number" },

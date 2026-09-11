@@ -344,7 +344,7 @@ export function classifyOtpFailure(input: FailureInput): OtpFailure {
     return {
       kind: "unavailable",
       message:
-        "Email codes are unavailable right now — the mail provider isn’t reachable. Nothing was sent.",
+        "Email codes are off right now. Nothing was sent. Try Google, or ask the person who invited you.",
       keepDigits: true,
       needsNewCode: false,
     };

@@ -2,12 +2,19 @@ import { expect, test } from "@playwright/test";
 
 test("marketing navigation uses real routes and active tabs", async ({ page }) => {
   await page.goto("/");
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "One login a student can use without help." })).toBeVisible();
+  const hero = page.locator(".lux-hero");
+  await expect(hero.getByRole("link", { name: "Join the waitlist" })).toHaveCount(1);
+  await expect(hero.getByRole("link", { name: /Already invited/ })).toBeVisible();
+  await expect(page.getByText("Setup required")).toHaveCount(0);
+  await expect(page.getByText("AVAILABLE", { exact: true })).toHaveCount(0);
+
   await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link", { name: "Product" }).click();
   await expect(page).toHaveURL(/\/features$/);
   await expect(page.getByRole("link", { name: "Product", exact: true }).first()).toHaveAttribute("aria-current", "page");
   await expect(page.getByRole("heading", { name: "What you open after sign-in." })).toBeVisible();
   await expect(page.getByText("Setup required")).toHaveCount(0);
-  await expect(page.getByText("AVAILABLE", { exact: true })).toHaveCount(0);
 
   await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link", { name: "How it works" }).click();
   await expect(page).toHaveURL(/\/workflow$/);
@@ -22,6 +29,7 @@ test("marketing navigation uses real routes and active tabs", async ({ page }) =
 test("marketing header keeps mobile navigation and footer routes discoverable", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   await expect(page.locator("summary[aria-label='Open navigation']")).toBeVisible();
   await expect(page.getByRole("banner").getByRole("link", { name: "Sign in" })).toBeVisible();
   await page.getByRole("contentinfo").getByRole("link", { name: "How it works" }).click();

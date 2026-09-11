@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { NAV_HUBS, hubPrimaryTabs } from "../nav/hubs";
-import { MARKETING_HUBS } from "./product-story";
+import { MARKETING_HUBS, MARKETING_STUDENT_PATH } from "./product-story";
 
 describe("MARKETING_HUBS", () => {
   it("lists exactly the primary workspaces, with their routes and tab labels", () => {
@@ -22,5 +22,14 @@ describe("MARKETING_HUBS", () => {
   it("never sells a hidden hub as a place to go", () => {
     expect(MARKETING_HUBS.map((hub) => hub.id)).not.toContain("ai");
     expect(MARKETING_HUBS.map((hub) => hub.id)).not.toContain("media");
+  });
+
+  it("promises four student jobs without fake counts or engineering names", () => {
+    expect(MARKETING_STUDENT_PATH).toHaveLength(4);
+    const blob = JSON.stringify(MARKETING_STUDENT_PATH);
+    expect(blob).toMatch(/Scout/i);
+    expect(blob).toMatch(/CAD/i);
+    expect(blob).toMatch(/video/i);
+    expect(blob).not.toMatch(/OAuth|RLS|setup_required|DEMO/);
   });
 });

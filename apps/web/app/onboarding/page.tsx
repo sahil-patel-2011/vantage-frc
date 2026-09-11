@@ -13,10 +13,10 @@ export default function OnboardingPage() {
         <main className="onboarding-page onboarding-flow-page">
           <section className="onboarding-card onboarding-flow-card" aria-busy="true" aria-labelledby="onboarding-suspense-title">
             <header className="onboarding-flow-header">
-              <span>SECURE ONBOARDING</span>
-              <h1 id="onboarding-suspense-title">Loading your secure session…</h1>
+              <span>YOUR STEPS</span>
+              <h1 id="onboarding-suspense-title">Getting your steps ready…</h1>
               <p className="onboarding-sub">
-                Team access stays closed until an owner or invitation approves you. Team heads can claim an unused TBA number after verification.
+                You need an invite or a team owner’s approval before you can open the team.
               </p>
             </header>
             <div className="onboarding-load-shell loading">

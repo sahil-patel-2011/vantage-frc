@@ -42,17 +42,17 @@ export function rootMarketingMetadata(): Metadata {
   return {
     metadataBase: new URL(SITE_URL),
     title: {
-      default: "Vantage — one place for everything your FRC team does",
+      default: "Vantage — one login an FRC student can use without help",
       template: "%s — Vantage",
     },
     description:
-      "Vantage is operations software for FIRST Robotics Competition teams: scouting, event day, strategy, alliance selection, season planning, CAD, and team ops — with sourced facts and human-gated AI.",
+      "Invite-only FRC software: scouting, CAD from a pasteable link, match video, and team ops. Google or an email code. Mentors invite exact emails.",
     manifest: "/manifest.webmanifest",
     alternates: { canonical: "/" },
     openGraph: {
-      title: "Vantage — one place for everything your FRC team does",
+      title: "Vantage — one login an FRC student can use without help",
       description:
-        "Scouting, strategy, event day, alliance selection, season planning, CAD, and team ops in one invite-only workspace.",
+        "Scout, paste a CAD link, watch match video, and run the team. Invite-only — no public signup.",
       url: SITE_URL,
       type: "website",
       siteName: "Vantage",
@@ -60,9 +60,9 @@ export function rootMarketingMetadata(): Metadata {
     },
     twitter: {
       card: "summary_large_image",
-      title: "Vantage — one place for everything your FRC team does",
+      title: "Vantage — one login an FRC student can use without help",
       description:
-        "Operations software for FRC teams: offline scouting, event day, sourced strategy, human-gated AI.",
+        "Invite-only FRC software: offline scouting, CAD from a link, match video, and team ops.",
       images: [OG_IMAGE.url],
     },
     robots: { index: true, follow: true },

@@ -9,6 +9,26 @@
  * changes.
  */
 
+/** What a new student can do with one login — no dashboard dump, no fake counts. */
+export const MARKETING_STUDENT_PATH = [
+  {
+    title: "Scout a match",
+    copy: "Match and pit forms stay on the tablet when the venue Wi-Fi dies, then sync when you are back online.",
+  },
+  {
+    title: "Link CAD",
+    copy: "Paste an Onshape or Fusion link. Mentors handle the rest — students never set up a second account.",
+  },
+  {
+    title: "Watch match video",
+    copy: "Paste a match or pit video, confirm the timeline, and keep it as evidence. Scouted numbers do not change.",
+  },
+  {
+    title: "Run the team",
+    copy: "Hours, packing, pit checklists, and chat — the same sign-in a student can use without help.",
+  },
+] as const;
+
 export const MARKETING_HUBS = [
   {
     id: "team",
@@ -132,7 +152,7 @@ export const MARKETING_TRUST = [
   {
     icon: "lock" as const,
     title: "Invite-only, your data is yours",
-    copy: "Owners invite exact emails. Each team sees only its own workspace. Personal files are private even from mentors. Export everything, any time.",
+    copy: "Owners invite exact emails. Each team sees only its own rows. Personal files are private even from mentors. Export everything, any time.",
   },
   {
     icon: "wifi" as const,
@@ -157,7 +177,7 @@ export const MARKETING_MENU = [
   },
   {
     title: "Desktop",
-    copy: "A Windows app around the same workspace, with the local relay for Fusion CAD.",
+    copy: "A Windows app around the same Vantage, with the local relay for Fusion CAD.",
   },
 ] as const;
 
