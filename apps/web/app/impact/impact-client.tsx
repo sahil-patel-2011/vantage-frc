@@ -322,8 +322,8 @@ export default function ImpactClient() {
         </>
       ) : (
         <div style={{ display: "grid", gap: 16 }}>
-          <ImpactNextActions actions={nextActions} />
-          <ReadinessPanel view={view} />
+          {view.summary.totalEvents > 0 ? <ImpactNextActions actions={nextActions} /> : null}
+          {view.summary.totalEvents > 0 ? <ReadinessPanel view={view} /> : null}
           <SummaryTiles view={view} />
           <LogActivityForm busy={busy} mutate={mutate} members={view.members} currentUserId={view.currentUserId} />
           {view.summary.totalEvents > 0 ? <Breakdowns view={view} /> : null}

@@ -163,7 +163,7 @@ export function awardTrackerShellCopy(kind: AwardTrackerShellKind): AwardTracker
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Choose your team and log real submissions before tracking deadlines.",

@@ -40,21 +40,26 @@ export function impactNextActions(ctx: ImpactNextActionContext): ImpactNextActio
   const season = ctx.seasonYear;
   const withSeason = (href: string) =>
     season && Number.isFinite(season) ? `${href}${href.includes("?") ? "&" : "?"}season=${season}` : href;
+  const activities = ctx.activityCount ?? 0;
+
+  if (activities === 0) {
+    return [
+      {
+        id: "first-activity",
+        label: "Log your first outreach activity",
+        detail:
+          "STEM demos, mentoring, and community events create evidence — totals stay at zero until you record them.",
+        href: withSeason(impactHref),
+        primary: true,
+      },
+    ];
+  }
 
   const actions: ImpactNextAction[] = [];
-  const activities = ctx.activityCount ?? 0;
   const hours = ctx.totalHours ?? 0;
   const score = ctx.readinessScore ?? 0;
 
-  if (activities === 0) {
-    actions.push({
-      id: "first-activity",
-      label: "Log your first outreach activity",
-      detail: "STEM demos, mentoring, and community events create evidence — totals stay at zero until you record them.",
-      href: withSeason(impactHref),
-      primary: true,
-    });
-  } else if (hours <= 0) {
+  if (hours <= 0) {
     actions.push({
       id: "hours",
       label: "Add duration on logged activities",
@@ -88,25 +93,11 @@ export function impactNextActions(ctx: ImpactNextActionContext): ImpactNextActio
   });
 
   actions.push({
-    id: "grants",
-    label: "Open grant writing",
-    detail: "Impact hours and activities flow into grant provenance only after you log them here.",
-    href: withOrgHref("/team/grants", orgId),
-  });
-
-  actions.push({
-    id: "sponsors",
-    label: "Open sponsor CRM",
-    detail: "Pair community narrative with recorded sponsor cash in the same season.",
-    href: hubHref("/business", "sponsors", orgId),
-  });
-
-  actions.push({
     id: "first-dashboard",
     label: "Submit on FIRST Dashboard",
     detail: "Vantage stores evidence and essays. Awards still submit on FIRST's site — never a Vantage submit button.",
     href: "https://www.firstinspires.org/",
   });
 
-  return actions.slice(0, 6);
+  return actions.slice(0, 5);
 }

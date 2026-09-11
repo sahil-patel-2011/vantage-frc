@@ -8,25 +8,15 @@ describe("impactNextActions Soft-UI helpers", () => {
     expect(actions[0]).toMatchObject({ id: "workspace", href: "/workspace", primary: true });
   });
 
-  it("points empty impact log at first activity plus Awards / Grants / Sponsors", () => {
+  it("points empty impact log at the first activity only", () => {
     const actions = impactNextActions({ orgId: "org-1", activityCount: 0, seasonYear: 2026 });
-    expect(actions.map((a) => a.id)).toEqual([
-      "first-activity",
-      "awards",
-      "evidence",
-      "grants",
-      "sponsors",
-      "first-dashboard",
-    ]);
+    expect(actions).toHaveLength(1);
+    expect(actions[0]?.id).toBe("first-activity");
     expect(actions[0]?.href).toContain("/impact");
     expect(actions[0]?.href).toContain("orgId=org-1");
     expect(actions[0]?.href).toContain("season=2026");
-    expect(actions.find((a) => a.id === "awards")?.href).toBe("/team/awards?orgId=org-1");
-    expect(actions.find((a) => a.id === "evidence")?.href).toBe("/business?tab=evidence&orgId=org-1");
-    expect(actions.find((a) => a.id === "grants")?.href).toBe("/team/grants?orgId=org-1");
-    expect(actions.find((a) => a.id === "sponsors")?.href).toBe("/business?tab=sponsors&orgId=org-1");
     expect(actions.every((a) => !/\bDEMO\b/.test(a.label))).toBe(true);
-    expect(actions.some((a) => /never|zero until|not a DEMO/i.test(a.detail))).toBe(true);
+    expect(actions.some((a) => /zero until/i.test(a.detail))).toBe(true);
   });
 
   it("asks for duration when activities exist without hours", () => {
@@ -43,5 +33,7 @@ describe("impactNextActions Soft-UI helpers", () => {
       readinessScore: 0.2,
     });
     expect(actions[0]?.id).toBe("broaden");
+    expect(actions.map((a) => a.id)).not.toContain("grants");
+    expect(actions.map((a) => a.id)).not.toContain("sponsors");
   });
 });

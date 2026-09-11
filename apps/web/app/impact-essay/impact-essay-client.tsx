@@ -137,7 +137,7 @@ function ImpactEssayShell({
         soft
         badge={
           shell === "setup"
-            ? "Setup required"
+            ? "Needs setup"
             : shell === "error"
               ? "Unavailable"
               : shell === "empty"
@@ -408,7 +408,7 @@ export default function ImpactEssayClient() {
       ) : null}
       {orgId && cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} compact /> : null}
 
-      <ImpactEssayNextActionsPanel actions={nextActions} />
+      <ImpactEssayNextActionsPanel actions={shell === "ready" ? nextActions : []} />
 
       {shouldShowImpactEssaySummaryTiles(hasGroundedData) ? (
         <section className="impact-essay-stats" aria-label="Grounded record counts">
