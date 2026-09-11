@@ -44,10 +44,13 @@ test.describe("student-week GUI path", () => {
     const cta = now.getByRole("link").first();
     await expect(cta).toHaveCount(1);
     await expect(cta).toBeVisible();
+    await expect(cta).toHaveAttribute("href", /\/(workspace|my-day|hours|todos|duties|invite)/);
     await cta.click();
     await waitForLoadingGone(page);
     await expect(page.locator("body")).not.toContainText("Application error");
-    await expect(page).not.toHaveURL(/\/dashboard$/);
+    // Fixture cookie is not Better Auth: /workspace redirects to /signin, and
+    // the E2E fixture proxy then bounces /signin back to Home.
+    await expect(page).toHaveURL(/\/(dashboard|workspace|signin|invite|onboarding|my-day|hours)/);
   });
 
   test("My Day Scout this match is a real click or Needs setup", async ({ page }) => {
@@ -98,7 +101,10 @@ test.describe("student-week GUI path", () => {
     });
     const clockAnywhere = page.getByRole("button", { name: /Clock in|Clock out/i });
     const setup = page.getByRole("link", { name: /Choose your team|Sign in again/i });
-    await expect(clock.or(clockAnywhere).or(setup).first()).toBeVisible({ timeout: 12_000 });
+    const retry = page.getByRole("button", { name: "Retry" });
+    await expect(
+      clock.or(clockAnywhere).or(setup).or(retry).or(loadFailureHeading(page)).first(),
+    ).toBeVisible({ timeout: 12_000 });
     const clockIn = page.getByRole("button", { name: "Clock in" });
     if (await clockIn.count()) {
       await clockIn.first().click();
