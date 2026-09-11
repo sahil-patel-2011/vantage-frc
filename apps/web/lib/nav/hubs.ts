@@ -188,6 +188,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         { id: "learning", label: "Learning", legacyHref: "/learning" },
         { id: "training", label: "Training matrix", legacyHref: "/training" },
         { id: "roles", label: "Season roles", legacyHref: "/roles", featured: true },
+        { id: "leadership", label: "Leadership", legacyHref: "/leadership" },
         { id: "driver-tryouts", label: "Driver tryouts", legacyHref: "/driver-tryouts" },
         { id: "exit-interview", label: "Exit interviews", legacyHref: "/exit-interview" },
         // Families are part of the roster in practice: contacts, the digest email, and

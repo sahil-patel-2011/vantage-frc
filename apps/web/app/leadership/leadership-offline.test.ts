@@ -21,5 +21,8 @@ describe("Leadership Continuity last snapshot stays on the phone", () => {
     expect(src).not.toMatch(/if \(fetchFailed\) \{/);
     expect(src).not.toMatch(/fetchFailed \|\| !view/);
     expect(src).not.toMatch(/fetchFailed \|\| view == null/);
+    expect(src).toMatch(/Needs setup/);
+    expect(src).toMatch(/shell === "ready"/);
+    expect(src).toMatch(/shouldShowLeadershipSummaryTiles/);
   });
 });

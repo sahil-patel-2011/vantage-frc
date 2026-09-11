@@ -23,5 +23,7 @@ describe("Parent updates last snapshot stays on the phone", () => {
     expect(src).not.toMatch(/RESEND_API_KEY/);
     expect(src).not.toMatch(/AUTH_EMAIL_FROM/);
     expect(src).not.toMatch(/BCP-47/);
+    expect(src).toMatch(/Needs setup/);
+    expect(src).toMatch(/shell === "ready"/);
   });
 });

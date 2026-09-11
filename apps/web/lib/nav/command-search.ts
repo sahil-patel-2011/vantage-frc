@@ -323,6 +323,10 @@ const KEYWORDS: Record<string, string[]> = {
     "parents", "parent", "guardians", "guardian", "family", "families", "digest",
     "newsletter", "parent email", "email the parents", "translate", "contacts",
   ],
+  "team:leadership": [
+    "leadership", "successor", "succession", "handoff", "who is next", "captain next",
+    "continuity", "who holds the role",
+  ],
   "team:presence": [
     "who is coming", "whos coming", "roll call", "rsvp", "attendance", "presence",
     "tonight", "coming tonight", "head count", "check in",

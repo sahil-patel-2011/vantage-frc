@@ -271,6 +271,7 @@ describe("product hubs", () => {
   it("registers this wave's routes under the workbench that owns the job", () => {
     const expected: Array<[Parameters<typeof hubById>[0], string, string, string]> = [
       ["team", "attendance", "parents", "/parents"],
+      ["team", "attendance", "leadership", "/leadership"],
       ["team", "attendance", "presence", "/presence"],
       ["team", "attendance", "learning", "/learning"],
       ["team", "knowledge", "knowledge-drafts", "/knowledge-drafts"],

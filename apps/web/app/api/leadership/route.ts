@@ -52,9 +52,9 @@ export async function GET(request: Request) {
     return Response.json(
       {
         status: "setup_required",
-        message: "Could not load Leadership Continuity. Choose your team and confirm database access.",
+        message: "Could not load Leadership. Choose your team and try again.",
         steps: [
-          { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
+          { id: "workspace", label: "Choose your team", detail: "Choose your team to open Leadership.", href: "/workspace" },
         ],
         orgId: null,
         seasonYear: seasonYear ?? currentSeasonYear(),
