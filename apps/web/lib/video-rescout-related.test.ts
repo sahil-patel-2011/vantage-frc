@@ -140,5 +140,8 @@ describe("videoRescoutNextActions", () => {
     expect(actions.some((a) => a.id === "accuracy")).toBe(true);
     expect(actions.some((a) => a.id === "disagreements")).toBe(true);
     expect(actions.every((a) => !/\bDEMO\b/.test(a.label))).toBe(true);
+    const scouting = actions.find((a) => a.id === "scouting");
+    expect(scouting?.detail).not.toMatch(/membership-bound/i);
+    expectPlainCopy(scouting?.detail);
   });
 });

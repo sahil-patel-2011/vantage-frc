@@ -173,7 +173,7 @@ export type LineupAssignmentCountRow = {
   count: number;
 };
 
-/** One row per membership-bound match entry — never typed scout names. */
+/** One row per signed-in scout's match entry — never typed scout names. */
 export type LineupEntryScoutRow = {
   matchKey: string;
   teamKey: string;
@@ -316,7 +316,7 @@ export function lineupShellCopy(kind: LineupShellKind): LineupEmptyCopy {
         kind: "ready",
         title: "Live coverage gaps",
         description:
-          "Rates use only real assignments and membership-bound entries.",
+          "Rates use only real assignments and signed-in scout entries.",
       };
   }
 }
@@ -415,7 +415,7 @@ export function lineupNextActions(input: {
     {
       id: "scouting",
       label: "Open Scouting",
-      detail: "Fill match rows from membership-bound scout identity — never typed names.",
+      detail: "Fill match rows from signed-in scouts — never typed names.",
       href: hubHref("/competition", "scouting", orgId),
     },
     {

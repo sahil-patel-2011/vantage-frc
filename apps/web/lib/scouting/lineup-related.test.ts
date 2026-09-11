@@ -104,6 +104,8 @@ describe("lineupShellCopy", () => {
       expect(copy.title).not.toMatch(/\bDEMO\b/);
     }
     expectPlainCopy(lineupShellCopy("empty").description);
+    expectPlainCopy(lineupShellCopy("ready").description);
+    expect(lineupShellCopy("ready").description).not.toMatch(/membership-bound/i);
     expect(lineupShellCopy("setup").badge).toBe("Setup required");
   });
 });
@@ -252,5 +254,8 @@ describe("lineupNextActions", () => {
     expect(actions.some((a) => a.id === "strategy")).toBe(true);
     expect(actions.some((a) => a.id === "forms")).toBe(true);
     expect(actions.every((a) => !/\bDEMO\b/.test(a.label))).toBe(true);
+    const scouting = actions.find((a) => a.id === "scouting");
+    expect(scouting?.detail).not.toMatch(/membership-bound/i);
+    expectPlainCopy(scouting?.detail);
   });
 });

@@ -472,7 +472,7 @@ export default function LineupClient({ orgId }: { orgId: string }) {
           </>
         }
         title="Lineup & coverage"
-        description="Double-scouted vs unscouted robots for the live quals window. Attribution uses membership IDs — never typed scout names."
+        description="Double-scouted vs unscouted robots for the live quals window. Names come from signed-in scouts — never typed names."
       >
         <div className="lineup-header-meta">
           <span className="lineup-live-pill" aria-live="polite">
@@ -631,7 +631,7 @@ export default function LineupClient({ orgId }: { orgId: string }) {
         <div className="lineup-panel">
           <header>
             <h2>Double scouted</h2>
-            <p className="app-muted">More than one membership-bound entry for the same robot.</p>
+            <p className="app-muted">More than one signed-in scout logged this robot.</p>
           </header>
           {view.live.doubleSlots.length ? (
             <ul className="lineup-gap-list">

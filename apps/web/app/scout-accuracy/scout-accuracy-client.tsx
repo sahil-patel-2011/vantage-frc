@@ -477,7 +477,7 @@ function SummaryTiles({ view, loaded }: { view: LiveView; loaded: boolean }) {
       <article>
         <span>Scouts ranked</span>
         <strong>{formatScoutAccuracyMetric(summary.totalScouts, loaded)}</strong>
-        <small>membership-bound</small>
+        <small>signed-in scouts</small>
       </article>
       <article>
         <span>Avg accuracy</span>
@@ -489,7 +489,7 @@ function SummaryTiles({ view, loaded }: { view: LiveView; loaded: boolean }) {
       <article>
         <span>Suggested promotions</span>
         <strong>{formatScoutAccuracyMetric(summary.suggestedPromotions, loaded)}</strong>
-        <small>pick-desk ready</small>
+        <small>ready for pick desk</small>
       </article>
       {lastSnapshot ? (
         <p className="app-muted" style={{ gridColumn: "1 / -1", margin: 0 }}>

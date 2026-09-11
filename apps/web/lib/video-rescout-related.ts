@@ -281,7 +281,7 @@ export function videoRescoutNextActions(input: {
     {
       id: "scouting",
       label: "Open Scouting",
-      detail: "Committed re-scout rows land beside membership-bound match entries.",
+      detail: "Committed re-scout rows land beside this team's match entries.",
       href: hubHref("/competition", "scouting", orgId),
     },
     {
