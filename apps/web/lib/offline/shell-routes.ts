@@ -152,6 +152,11 @@ export const OFFLINE_SHELL_ROUTES = [
   "/subsystem-signoff",
   "/prototype-tracker",
   "/equipment-maintenance",
+  "/scout-p2p-relay",
+  "/scout-schema-negotiate",
+  "/scouting-schema-ab",
+  "/code-perf",
+  "/degraded-mode",
 ] as const;
 
 export type OfflineShellRoute = (typeof OFFLINE_SHELL_ROUTES)[number];
@@ -171,6 +176,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   const bare = pathname.split("?")[0] ?? pathname;
   if (bare.startsWith("/scouting/lineup")) return "Lineup & coverage";
   if (bare.startsWith("/scouting-heat-signals")) return "Scouting Heat Signals";
+  if (bare.startsWith("/scouting-schema-ab")) return "Schema A/B";
   if (bare.startsWith("/scouting")) return "Scouting";
   if (bare.startsWith("/schedule")) return "Schedule";
   if (bare.startsWith("/offline-shell")) return "This phone";
@@ -251,7 +257,11 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/cad-learn")) return "CAD Learn";
   if (bare.startsWith("/cad-review-queue")) return "CAD Review Queue";
   if (bare.startsWith("/cad-change-radar")) return "CAD Change Radar";
+  if (bare.startsWith("/code-perf")) return "Code-vs-Match Detective";
   if (bare.startsWith("/code-deploy-log")) return "Code Deploy Log";
+  if (bare.startsWith("/degraded-mode")) return "Data-source health";
+  if (bare.startsWith("/scout-p2p-relay")) return "Pit mesh";
+  if (bare.startsWith("/scout-schema-negotiate")) return "Schema sync";
   if (bare.startsWith("/control-map")) return "Control Map";
   if (bare.startsWith("/cross-team-scrim")) return "Cross-Team Scrims";
   if (bare.startsWith("/decision-search")) return "Decision Search";

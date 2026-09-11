@@ -39,9 +39,9 @@ test("strategy empty setup hides fabricated probabilities", async ({ page }) => 
   await expect(page.getByText("Deterministic demo")).toHaveCount(0);
 });
 
-test("scout P2P relay renders without invented mesh counts", async ({ page }) => {
+test("pit mesh renders without invented mesh counts", async ({ page }) => {
   await page.goto("/scout-p2p-relay");
-  await expect(page.getByRole("heading", { name: "Scout P2P Relay" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Pit mesh" })).toBeVisible();
   await expect(page.getByText("Deterministic demo")).toHaveCount(0);
 });
 

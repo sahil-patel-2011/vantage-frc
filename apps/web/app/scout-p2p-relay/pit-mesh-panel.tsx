@@ -58,7 +58,9 @@ export function PitMeshPanel({
   const [identity, setIdentity] = useState<DeviceIdentity>({ deviceId: "", deviceLabel: "", deviceRole: "scout" });
   const [joined, setJoined] = useState(false);
   const [peers, setPeers] = useState<Peer[]>([]);
-  const [status, setStatus] = useState("BroadcastChannel merges this origin's tabs. Paste an envelope for other tablets.");
+  const [status, setStatus] = useState(
+    "Tabs on this page share automatically. Paste a token from another tablet below.",
+  );
   const [paste, setPaste] = useState("");
   const [shareJson, setShareJson] = useState("");
   const channelRef = useRef<BroadcastChannel | null>(null);
@@ -118,7 +120,7 @@ export function PitMeshPanel({
   const broadcast = useCallback(async () => {
     const envelope = await buildEnvelope();
     if (!envelope) {
-      setStatus("Set a device label before joining the pit mesh.");
+      setStatus("Name this tablet before joining the pit mesh.");
       return;
     }
     writeIdentity({
@@ -128,7 +130,7 @@ export function PitMeshPanel({
     });
     setShareJson(JSON.stringify(envelope));
     channelRef.current?.postMessage(envelope);
-    setStatus(`Broadcast ${envelope.records.length} local outbox row(s) on this origin.`);
+    setStatus(`Shared ${envelope.records.length} local ${envelope.records.length === 1 ? "entry" : "entries"} with other tabs.`);
   }, [buildEnvelope]);
 
   useEffect(() => {
@@ -183,10 +185,10 @@ export function PitMeshPanel({
           </select>
         </FormRow>
         <Button variant="secondary" type="button" disabled={!identity.deviceLabel.trim()} onClick={() => { writeIdentity(identity); setJoined(true); void broadcast(); }}>
-          {joined ? "Broadcast now" : "Join pit mesh"}
+          {joined ? "Share now" : "Join pit mesh"}
         </Button>
-        <Button variant="primary" type="button" disabled={busy || !identity.deviceLabel.trim()} onClick={() => { void (async () => { const envelope = await buildEnvelope(); const contributed = envelope?.records.length ?? 0; mutate({ action: "log-entry", sessionId: session.id, deviceLabel: identity.deviceLabel, deviceRole: identity.deviceRole, entriesContributed: contributed, conflictsResolved: 0, uplinked: true, }); await syncOutbox(orgId); setStatus(`Uplinked ${contributed} local outbox row(s) to Vantage.`); })(); }}>
-          Uplink this device
+        <Button variant="primary" type="button" disabled={busy || !identity.deviceLabel.trim()} onClick={() => { void (async () => { const envelope = await buildEnvelope(); const contributed = envelope?.records.length ?? 0; mutate({ action: "log-entry", sessionId: session.id, deviceLabel: identity.deviceLabel, deviceRole: identity.deviceRole, entriesContributed: contributed, conflictsResolved: 0, uplinked: true, }); await syncOutbox(orgId); setStatus(`Sent ${contributed} local ${contributed === 1 ? "entry" : "entries"} to Vantage.`); })(); }}>
+          Send to Vantage
         </Button>
       </div>
       <p role="status" className="app-muted">
@@ -202,16 +204,16 @@ export function PitMeshPanel({
         </ul>
       ) : null}
       {shareJson ? (
-        <FormRow label="Share envelope">
+        <FormRow label="Share token">
           <textarea readOnly rows={3} value={shareJson} />
         </FormRow>
       ) : null}
-      <FormRow label="Accept peer envelope">
+      <FormRow label="Paste a token from another tablet">
         <textarea rows={3} value={paste} onChange={(event) => setPaste(event.target.value)} />
       </FormRow>
       <div>
         <Button variant="secondary" type="button" disabled={!acceptPaste} onClick={() => { if (!acceptPaste) return; void applyEnvelope(acceptPaste); setPaste(""); }}>
-          Merge pasted envelope
+          Merge pasted token
         </Button>
       </div>
     </div>

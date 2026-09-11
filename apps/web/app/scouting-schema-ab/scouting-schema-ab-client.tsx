@@ -1,15 +1,118 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
-import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import { hubHref } from "../../lib/nav/hubs";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import type { SchemaAbView } from "../../lib/scouting-schema-ab/compute-scouting-schema-ab";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 function pct(value: number): string {
   return `${Math.round(value * 100)}%`;
 }
 
 type LiveView = Extract<SchemaAbView, { status: "live" }>;
+
+function isSchemaAbView(value: unknown): value is SchemaAbView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function responseError(data: unknown): string {
+  return data && typeof data === "object" && "error" in data && typeof data.error === "string"
+    ? data.error
+    : "";
+}
+
+function schemaAbCacheOrg(data: SchemaAbView, orgHint: string): string {
+  switch (data.status) {
+    case "setup_required":
+      return (typeof data.orgId === "string" && data.orgId.trim()) || orgHint;
+    case "live":
+      return data.orgId.trim() || orgHint;
+    default: {
+      data satisfies never;
+      return orgHint;
+    }
+  }
+}
+
+async function persistSchemaAbSnapshot(orgHint: string, data: SchemaAbView): Promise<void> {
+  const cacheOrg = schemaAbCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("scouting-schema-ab", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("scouting-schema-ab", "_", data);
+  } catch {
+    // Live Schema A/B already painted; IndexedDB is best-effort.
+  }
+}
+
+function SchemaAbRelated({ orgId }: { orgId?: string | null }) {
+  return (
+    <nav className="product-hub-related" aria-label="Related scouting tools">
+      <Button as="a" variant="secondary" href={hubHref("/competition", "scouting", orgId)}>
+        Scouting
+      </Button>
+      <Button as="a" variant="secondary" href={hubHref("/competition", "scout-schema-negotiate", orgId)}>
+        Schema sync
+      </Button>
+      <Button as="a" variant="secondary" href={hubHref("/competition", "forms", orgId)}>
+        Forms
+      </Button>
+    </nav>
+  );
+}
+
+function SchemaAbNextActions({ orgId }: { orgId: string }) {
+  const actions = [
+    {
+      id: "add",
+      label: "Add a form to trial",
+      detail: "Register the two (or more) scouting forms you want to compare this season.",
+      href: "#schema-ab-add",
+      primary: true,
+    },
+    {
+      id: "scouting",
+      label: "Open Scouting",
+      detail: "Live match and pit entries are what these forms collect.",
+      href: hubHref("/competition", "scouting", orgId),
+      primary: false,
+    },
+    {
+      id: "sync",
+      label: "Open Schema sync",
+      detail: "Older tablet forms are kept here instead of being dropped.",
+      href: hubHref("/competition", "scout-schema-negotiate", orgId),
+      primary: false,
+    },
+  ];
+  return (
+    <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <Button as="a" variant="secondary" href={action.href}>
+              Open
+            </Button>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
 
 export default function ScoutingSchemaAbClient() {
   const [view, setView] = useState<SchemaAbView | null>(null);
@@ -21,40 +124,91 @@ export default function ScoutingSchemaAbClient() {
   const [busy, setBusy] = useState(false);
   const [compareA, setCompareA] = useState<string>("");
   const [compareB, setCompareB] = useState<string>("");
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<SchemaAbView | null>(null);
+  viewRef.current = view;
 
   const orgId = view && "orgId" in view ? view.orgId : null;
 
-  const load = useCallback((overrideA?: string, overrideB?: string) => {
+  const load = useCallback(async (overrideA?: string, overrideB?: string) => {
+    const params = new URLSearchParams(window.location.search);
+    const orgHint = params.get("orgId")?.trim() ?? "";
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<SchemaAbView>("scouting-schema-ab", orgHint || "_");
+      if (!viewRef.current && cached?.data && isSchemaAbView(cached.data)) {
+        setView(cached.data);
+        if (cached.data.status === "live" && cached.data.comparison) {
+          setCompareA(cached.data.comparison.a.candidateId);
+          setCompareB(cached.data.comparison.b.candidateId);
+        }
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
     setFetchFailed(false);
     setFailureStatus(null);
     setFailureMessage("");
     setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    if (overrideA) query.set("compareA", overrideA);
-    if (overrideB) query.set("compareB", overrideB);
-    void fetch(`/api/scouting-schema-ab${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
-        const data = (await response.json()) as SchemaAbView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setFailureStatus(response.status);
-          setFailureMessage("error" in data && data.error ? data.error : "");
-          setFetchFailed(true);
+    try {
+      const query = new URLSearchParams();
+      if (orgHint) query.set("orgId", orgHint);
+      if (overrideA) query.set("compareA", overrideA);
+      if (overrideB) query.set("compareB", overrideB);
+      const response = await fetch(
+        `/api/scouting-schema-ab${query.toString() ? `?${query.toString()}` : ""}`,
+        {
+          cache: "no-store",
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+        },
+      );
+      const data: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setFetchFailed(true);
+        setFailureStatus(response.status);
+        setFailureMessage(responseError(data));
+        return;
+      }
+      if (!response.ok || !isSchemaAbView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Schema A/B. Showing the last copy on this device.");
+          setFetchFailed(false);
           return;
         }
-        setView(data);
-        if (data.status === "live" && data.comparison) {
-          setCompareA(data.comparison.a.candidateId);
-          setCompareB(data.comparison.b.candidateId);
-        }
-      })
-      .catch(() => setFetchFailed(true));
+        setFetchFailed(true);
+        setFailureStatus(response.status);
+        setFailureMessage(responseError(data));
+        return;
+      }
+      setView(data);
+      if (data.status === "live" && data.comparison) {
+        setCompareA(data.comparison.a.candidateId);
+        setCompareB(data.comparison.b.candidateId);
+      }
+      setFromCache(false);
+      setCachedAt(null);
+      await persistSchemaAbSnapshot(orgHint, data);
+    } catch {
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Schema A/B. Showing the last copy on this device.");
+        setFetchFailed(false);
+        return;
+      }
+      setFetchFailed(true);
+    }
   }, []);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   const mutate = useCallback(
@@ -66,14 +220,22 @@ export default function ScoutingSchemaAbClient() {
         const response = await fetch("/api/scouting-schema-ab", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ orgId, compareA: compareA || undefined, compareB: compareB || undefined, ...payload }),
+          body: JSON.stringify({
+            orgId,
+            compareA: compareA || undefined,
+            compareB: compareB || undefined,
+            ...payload,
+          }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
-        const data = (await response.json()) as SchemaAbView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setError("error" in data && data.error ? data.error : "Something went wrong.");
+        const data: unknown = await response.json().catch(() => null);
+        if (!response.ok || !isSchemaAbView(data)) {
+          setError(responseError(data) || "Something went wrong.");
           return;
         }
         setView(data);
+        setFromCache(false);
+        void persistSchemaAbSnapshot(orgId, data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -83,95 +245,127 @@ export default function ScoutingSchemaAbClient() {
     [orgId, busy, compareA, compareB],
   );
 
+  const competitionHref = orgId ? `/competition?orgId=${encodeURIComponent(orgId)}` : "/competition";
+  const header = (
+    <PageHeader
+      breadcrumbs={
+        <>
+          <a href={competitionHref}>Competition</a>
+          {" / Schema A/B"}
+        </>
+      }
+      title="Schema A/B"
+      description="Trial two scouting forms and compare how complete and fast they are before you pick one for the season."
+    >
+      <SchemaAbRelated orgId={orgId} />
+    </PageHeader>
+  );
+
+  if (!view) {
+    const failure = fetchFailed
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: failureStatus,
+            message: failureMessage,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: failureMessage || "A network or server issue prevented loading. Try again.",
+          },
+        )
+      : null;
+    return (
+      <main className="module-page">
+        {header}
+        <OfflineBanner feature="Schema A/B" fromCache={fromCache} cachedAt={cachedAt} />
+        <EmptyState
+          title={failure ? failure.title : "Loading…"}
+          description={failure ? failure.description : "Checking your team."}
+          aria-busy={!fetchFailed}
+        >
+          {failure?.primary ? (
+            <Button as="a" variant="primary" href={failure.primary.href}>
+              {failure.primary.label}
+            </Button>
+          ) : null}
+          {failure?.showRetry ? (
+            <Button variant="secondary" type="button" onClick={() => void load()}>
+              Retry
+            </Button>
+          ) : null}
+        </EmptyState>
+      </main>
+    );
+  }
+
+  switch (view.status) {
+    case "setup_required":
+      return (
+        <main className="module-page">
+          {header}
+          <OfflineBanner feature="Schema A/B" fromCache={fromCache} cachedAt={cachedAt} />
+          {error ? (
+            <p className="telemetry-status" role="alert">
+              {error}
+            </p>
+          ) : null}
+          <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
+            {view.steps[0] ? (
+              <Button as="a" variant="primary" href={view.steps[0].href}>
+                {view.steps[0].label}
+              </Button>
+            ) : null}
+          </EmptyState>
+        </main>
+      );
+    case "live":
+      break;
+    default: {
+      view satisfies never;
+      return null;
+    }
+  }
+
   return (
     <main className="module-page">
-      <PageHeader
-        breadcrumbs={
-          <>
-            <a href={orgId ? `/competition?orgId=${encodeURIComponent(orgId)}` : "/competition"}>Competition</a>
-            {" / Scouting Schema A/B"}
-          </>
-        }
-        title="Scouting Schema A/B"
-        description="Trial two scouting form schemas side by side and compare real field-completion, error, and speed data before you pick the one to run for the season."
-      />
-
+      {header}
+      <OfflineBanner feature="Schema A/B" fromCache={fromCache} cachedAt={cachedAt} />
       {error ? (
         <p className="telemetry-status" role="alert">
           {error}
         </p>
       ) : null}
-
-      {fetchFailed ? (
-        (() => {
-          const copy = loadFailureCopy(
-            classifyLoadFailure({
-              status: failureStatus,
-              message: failureMessage,
-              online: typeof navigator === "undefined" ? true : navigator.onLine,
-            }),
-            {
-              nextPath:
-                typeof window === "undefined"
-                  ? null
-                  : `${window.location.pathname}${window.location.search}`,
-              message:
-                failureMessage || "A network or server issue prevented loading. Try again.",
-            },
-          );
-          return (
-            <EmptyState title={copy.title} description={copy.description}>
-              {copy.primary ? (
-                <Button as="a" variant="primary" href={copy.primary.href}>
-                  {copy.primary.label}
-                </Button>
-              ) : null}
-              {copy.showRetry ? (
-                <Button variant="secondary" type="button" onClick={() => load()}>
-                  Retry
-                </Button>
-              ) : null}
-            </EmptyState>
-          );
-        })()
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your team." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          {view.steps[0] ? (
-            <Button as="a" variant="primary" href={view.steps[0].href}>
-              {view.steps[0].label}
-            </Button>
-          ) : null}
-        </EmptyState>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <NewCandidateForm busy={busy} mutate={mutate} />
-          {view.candidates.length === 0 ? (
-            <EmptyState
-              badge="No candidates yet"
-              badgeTone="setup"
-              title="Add your first schema candidate"
-              description="Register the two (or more) form schemas you want to trial, then log samples as scouts use them."
+      <SchemaAbNextActions orgId={view.orgId} />
+      <div style={{ display: "grid", gap: 16 }}>
+        <NewCandidateForm busy={busy} mutate={mutate} />
+        {view.candidates.length === 0 ? (
+          <EmptyState
+            badge="No candidates yet"
+            badgeTone="setup"
+            title="Add your first schema candidate"
+            description="Register the two (or more) form schemas you want to trial, then log samples as scouts use them."
+          />
+        ) : (
+          <>
+            <RankingPanel view={view} busy={busy} mutate={mutate} />
+            <ComparisonPicker
+              view={view}
+              compareA={compareA}
+              compareB={compareB}
+              setCompareA={setCompareA}
+              setCompareB={setCompareB}
+              onCompare={() => void load(compareA, compareB)}
             />
-          ) : (
-            <>
-              <RankingPanel view={view} busy={busy} mutate={mutate} />
-              <ComparisonPicker
-                view={view}
-                compareA={compareA}
-                compareB={compareB}
-                setCompareA={setCompareA}
-                setCompareB={setCompareB}
-                onCompare={() => load(compareA, compareB)}
-              />
-              {view.comparison ? <ComparisonPanel comparison={view.comparison} /> : null}
-              <LogSampleForm view={view} busy={busy} mutate={mutate} />
-              <SamplesPanel view={view} busy={busy} mutate={mutate} />
-            </>
-          )}
-        </div>
-      )}
+            {view.comparison ? <ComparisonPanel comparison={view.comparison} /> : null}
+            <LogSampleForm view={view} busy={busy} mutate={mutate} />
+            <SamplesPanel view={view} busy={busy} mutate={mutate} />
+          </>
+        )}
+      </div>
     </main>
   );
 }
@@ -249,7 +443,7 @@ function ComparisonPicker({
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-end" }}>
         <FormRow label="Schema A">
           <select value={compareA} onChange={(event) => setCompareA(event.target.value)}>
-            <option value="">Select…</option>
+            <option value="">Choose…</option>
             {view.candidates.map((candidate) => (
               <option key={candidate.id} value={candidate.id}>
                 {candidate.label}
@@ -259,7 +453,7 @@ function ComparisonPicker({
         </FormRow>
         <FormRow label="Schema B">
           <select value={compareB} onChange={(event) => setCompareB(event.target.value)}>
-            <option value="">Select…</option>
+            <option value="">Choose…</option>
             {view.candidates.map((candidate) => (
               <option key={candidate.id} value={candidate.id}>
                 {candidate.label}
@@ -374,6 +568,7 @@ function NewCandidateForm({
 
   return (
     <Panel
+      id="schema-ab-add"
       as="form"
       onSubmit={(event) => {
         event.preventDefault();
@@ -458,7 +653,7 @@ function LogSampleForm({
       <FormGrid min={140}>
         <FormRow label="Candidate">
           <select value={form.candidateId} onChange={set("candidateId")} required>
-            <option value="">Select…</option>
+            <option value="">Choose…</option>
             {view.candidates.map((candidate) => (
               <option key={candidate.id} value={candidate.id}>
                 {candidate.label}

@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "degraded-mode",
-  title: "Data-Source Degraded Mode",
+  title: "Data-source health",
   route: "/degraded-mode",
   apiRoute: "/api/degraded-mode",
   hub: "Team",

@@ -165,6 +165,11 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/subsystem-signoff")).toBe(true);
     expect(pathnameIsOfflineShell("/prototype-tracker")).toBe(true);
     expect(pathnameIsOfflineShell("/equipment-maintenance")).toBe(true);
+    expect(pathnameIsOfflineShell("/scout-p2p-relay")).toBe(true);
+    expect(pathnameIsOfflineShell("/scout-schema-negotiate")).toBe(true);
+    expect(pathnameIsOfflineShell("/scouting-schema-ab")).toBe(true);
+    expect(pathnameIsOfflineShell("/code-perf")).toBe(true);
+    expect(pathnameIsOfflineShell("/degraded-mode")).toBe(true);
     expect(pathnameIsOfflineShell("/api/todos")).toBe(false);
   });
 
@@ -316,6 +321,11 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/subsystem-signoff")).toBe("Subsystem Sign-off");
     expect(offlineCapableLabel("/prototype-tracker")).toBe("Prototype-to-Decision Tracker");
     expect(offlineCapableLabel("/equipment-maintenance")).toBe("Equipment Maintenance");
+    expect(offlineCapableLabel("/scout-p2p-relay")).toBe("Pit mesh");
+    expect(offlineCapableLabel("/scout-schema-negotiate")).toBe("Schema sync");
+    expect(offlineCapableLabel("/scouting-schema-ab")).toBe("Schema A/B");
+    expect(offlineCapableLabel("/code-perf")).toBe("Code-vs-Match Detective");
+    expect(offlineCapableLabel("/degraded-mode")).toBe("Data-source health");
   });
 
   it("keeps public/sw.js SHELL_ROUTES aligned with OFFLINE_SHELL_ROUTES", () => {
@@ -460,6 +470,11 @@ describe("offline shell routes", () => {
     expect(featureCacheKey("subsystem-signoff", "org-1", "2026")).toBe("subsystem-signoff:org-1:2026");
     expect(featureCacheKey("prototype-tracker", "org-1", "2026")).toBe("prototype-tracker:org-1:2026");
     expect(featureCacheKey("equipment-maintenance", "org-1")).toBe("equipment-maintenance:org-1");
+    expect(featureCacheKey("scout-p2p-relay", "org-1", "2026")).toBe("scout-p2p-relay:org-1:2026");
+    expect(featureCacheKey("scout-schema-negotiate", "org-1")).toBe("scout-schema-negotiate:org-1");
+    expect(featureCacheKey("scouting-schema-ab", "org-1")).toBe("scouting-schema-ab:org-1");
+    expect(featureCacheKey("code-perf", "org-1", "2026")).toBe("code-perf:org-1:2026");
+    expect(featureCacheKey("degraded-mode", "org-1")).toBe("degraded-mode:org-1");
     expect(featureCacheKey("schedule", "org-1")).toBe("schedule:org-1");
   });
 
