@@ -1,10 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
-import { BusinessRelated } from "../../components/business-related";
 import PartnerPlacement from "../../components/partner-placement";
 import { EmptyState, Button } from "../../components/ui";
-import { PLACEMENTS_RELATED_INCLUDE } from "../../lib/business/business-related";
 import { sponsorCrmNextActions } from "../../lib/business/sponsor-crm-next-actions";
 
 type Program = {
@@ -250,18 +248,15 @@ export function PartnerPlacementsPanel({
   if (!program) {
     return (
       <div className="biz-stack">
-        <BusinessRelated orgId={orgId} active="placements" include={PLACEMENTS_RELATED_INCLUDE} />
-        <PlacementsNextActions orgId={orgId} canManage={canManage} program={null} migrationMissing={migrationMissing} />
         <EmptyState
           badge="Setup required"
           badgeTone="setup"
           title="Partner placements unavailable"
-          description={error || "Apply the partner storefront migration, then try again."}
+          description={error || "This section is not ready yet. Try again in a moment."}
         >
           <Button variant="primary" type="button" onClick={() => void load()}>
             Try again
           </Button>
-          <BusinessRelated orgId={orgId} include={["sponsors", "fundraisers", "finance-ai"]} ariaLabel="Setup related links" />
         </EmptyState>
       </div>
     );
@@ -269,13 +264,14 @@ export function PartnerPlacementsPanel({
 
   return (
     <div className="biz-stack placement-stack">
-      <BusinessRelated
-        orgId={orgId}
-        active="placements"
-        include={PLACEMENTS_RELATED_INCLUDE}
-        ariaLabel="Related fundraising tools"
-      />
-      <PlacementsNextActions orgId={orgId} canManage={canManage} program={program} />
+      {program.packages.length && program.sponsors.length ? (
+        <PlacementsNextActions
+          orgId={orgId}
+          canManage={canManage}
+          program={program}
+          migrationMissing={migrationMissing}
+        />
+      ) : null}
 
       {error ? (
         <div className="biz-alert danger">
@@ -321,9 +317,7 @@ export function PartnerPlacementsPanel({
           badge="Get started"
           title="No placement packages yet"
           description="Add a priced package with surfaces below. Totals only reflect packages you configure for this team."
-        >
-          <BusinessRelated orgId={orgId} include={["sponsors", "fundraisers", "orders"]} ariaLabel="Empty packages links" />
-        </EmptyState>
+        />
       ) : null}
 
       {!program.sponsors.length ? (
@@ -331,11 +325,11 @@ export function PartnerPlacementsPanel({
           soft
           badge="Setup"
           badgeTone="setup"
-          title="Add sponsors in CRM before attaching packages"
-          description="Campaigns bind org sponsors to org packages. Start in Sponsor CRM, then return here."
+          title="Add sponsors before attaching packages"
+          description="Add a sponsor first, then come back to attach a package."
         >
           <Button as="a" variant="primary" href={`/business?tab=sponsors&orgId=${encodeURIComponent(orgId)}`}>
-            Open Sponsor CRM
+            Open sponsors
           </Button>
         </EmptyState>
       ) : null}
@@ -497,7 +491,7 @@ export function PartnerPlacementsPanel({
                 </article>
               ))}
               {!program.assets.length ? (
-                <p className="biz-empty-inline">Upload a sponsor logo after their organization is in Sponsor CRM.</p>
+                <p className="biz-empty-inline">Upload a sponsor logo after you add them under Sponsors.</p>
               ) : null}
             </div>
           </article>

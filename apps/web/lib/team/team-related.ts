@@ -2,14 +2,14 @@ import { hubHref } from "../nav/hubs";
 
 /** Soft-UI related Team hub surfaces (never DEMO placeholders). */
 export const TEAM_HUB_RELATED_LINKS = [
-  { id: "calendar", label: "Calendar & subteams" },
+  { id: "calendar", label: "Calendar" },
   { id: "practice", label: "Practice" },
-  { id: "attendance", label: "Attendance" },
+  { id: "attendance", label: "People" },
   { id: "knowledge", label: "Playbook" },
-  { id: "messages", label: "Team chat" },
-  { id: "todos", label: "Todos" },
+  { id: "messages", label: "Chat" },
+  { id: "todos", label: "Work" },
   { id: "batteries", label: "Batteries" },
-  { id: "fmea", label: "FMEA" },
+  { id: "fmea", label: "Failure notes" },
 ] as const;
 
 export type TeamHubRelatedId = (typeof TEAM_HUB_RELATED_LINKS)[number]["id"];

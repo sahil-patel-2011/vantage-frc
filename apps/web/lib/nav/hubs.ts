@@ -58,7 +58,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
     href: "/competition",
     label: "Competition",
     title: "Competition",
-    description: "Event day, scouting, strategy, and pit — related tools live as tabs inside each.",
+    description: "Event day, scouting, strategy, and pit.",
     defaultTab: "command",
     tabs: [
       { id: "command", label: "Event day", legacyHref: "/command" },
@@ -81,7 +81,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         { id: "forms", label: "Forms", legacyHref: "/scouting/forms" },
         { id: "scout-coverage-live", label: "Coverage", legacyHref: "/scout-coverage-live" },
         { id: "shift-balancer", label: "Shifts", legacyHref: "/shift-balancer" },
-        { id: "scout-p2p-relay", label: "Pit mesh", legacyHref: "/scout-p2p-relay" },
+        { id: "scout-p2p-relay", label: "Pit link", legacyHref: "/scout-p2p-relay" },
         { id: "scout-training-mode", label: "Training", legacyHref: "/scout-training-mode" },
         { id: "scout-field-budget", label: "Field value", legacyHref: "/scout-field-budget" },
         { id: "data-quality-scorecard", label: "Data quality", legacyHref: "/data-quality-scorecard" },
@@ -138,7 +138,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
     href: "/team",
     label: "Team",
     title: "Team",
-    description: "",
+    description: "Calendar, chat, people, work, and the playbook.",
     defaultTab: "calendar",
     tabs: [
       { id: "calendar", label: "Calendar", legacyHref: "/team/calendar" },
@@ -205,7 +205,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         { id: "meeting-autopilot", label: "Meeting agenda", legacyHref: "/meeting-autopilot" },
         { id: "retro", label: "Retro", legacyHref: "/retro" },
         { id: "batteries", label: "Batteries", legacyHref: "/batteries" },
-        { id: "fmea", label: "FMEA", legacyHref: "/fmea" },
+        { id: "fmea", label: "Failure notes", legacyHref: "/fmea" },
         { id: "tool-checkout", label: "Tool checkout", legacyHref: "/tool-checkout" },
         { id: "equipment-maintenance", label: "Equipment", legacyHref: "/equipment-maintenance" },
         { id: "safety-training", label: "Safety", legacyHref: "/safety-training" },
@@ -259,7 +259,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
     href: "/business",
     label: "Business",
     title: "Business",
-    description: "Money, sponsors, grants, and outreach — related tools live as tabs inside each.",
+    description: "Money, sponsors, grants, and outreach.",
     defaultTab: "overview",
     tabs: [
       { id: "overview", label: "Overview" },
@@ -323,7 +323,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
     href: "/build",
     label: "Build",
     title: "Build",
-    description: "Kickoff, CAD, code, and robot — shop and inspection tools live as tabs inside each.",
+    description: "Kickoff, CAD, code, and the robot.",
     defaultTab: "kickoff",
     tabs: [
       { id: "kickoff", label: "Kickoff", legacyHref: "/kickoff" },

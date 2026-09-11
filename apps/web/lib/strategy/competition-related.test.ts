@@ -66,6 +66,13 @@ describe("competition-related Soft-UI helpers", () => {
     expect(actions.find((a) => a.id === "coverage")?.href).toContain("eventKey=2026casj");
   });
 
+  it("names Competition workbenches the same way the hub tabs do", () => {
+    const links = competitionRelatedLinks("org-1");
+    expect(links.find((link) => link.id === "command")?.label).toBe("Event day");
+    expect(links.find((link) => link.id === "forms")?.label).toBe("Forms");
+    expect(links.find((link) => link.id === "match-checklist")?.label).toBe("Pit");
+  });
+
   it("builds coverage explainability links without DEMO copy", () => {
     const links = strategyCoverageLinks("org-1", { eventKey: "2026ny" });
     expect(links.map((l) => l.id)).toEqual([

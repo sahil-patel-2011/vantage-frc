@@ -2,7 +2,7 @@ import CompetitionHub from "./competition-hub";
 
 export const metadata = {
   title: "Competition",
-  description: "Event day command, My Day, strategy, scouting, pick clock, and alliance chemistry.",
+  description: "Event day, scouting, strategy, and pit.",
 };
 
 export default function CompetitionPage() {

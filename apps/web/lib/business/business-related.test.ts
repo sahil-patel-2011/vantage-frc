@@ -117,4 +117,14 @@ describe("business-related Soft-UI helpers", () => {
     const links = businessRelatedLinks("org-1");
     expect(links.every((l) => !/demo/i.test(l.label))).toBe(true);
   });
+
+  it("uses student words instead of CRM or workbench", () => {
+    const links = businessRelatedLinks("org-1");
+    expect(links.find((link) => link.id === "sponsors")?.label).toBe("Sponsors");
+    expect(links.find((link) => link.id === "finance")?.label).toBe("Money");
+    expect(links.find((link) => link.id === "evidence")?.label).toBe("Outreach");
+    expect(links.find((link) => link.id === "grant-workbench")?.label).toBe("Grant writing");
+    expect(links.find((link) => link.id === "finance-ai")?.label).toBe("Ask AI about money");
+    expect(links.every((link) => !/\bCRM\b|workbench/i.test(link.label))).toBe(true);
+  });
 });

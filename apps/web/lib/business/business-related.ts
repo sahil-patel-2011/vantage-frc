@@ -3,20 +3,20 @@ import { withOrgHref } from "../nav/product-nav";
 
 /** Soft-UI related Business surfaces for sponsor CRM / placements / grant writing. */
 export const BUSINESS_RELATED_LINKS = [
-  { id: "finance", label: "Season finance", kind: "hub" as const, tab: "finance" },
-  { id: "sponsors", label: "Sponsor CRM", kind: "hub" as const, tab: "sponsors" },
-  { id: "placements", label: "Partner packages", kind: "hub" as const, tab: "placements" },
-  { id: "sponsorship", label: "Sponsorship one-pager", kind: "hub" as const, tab: "sponsorship" },
+  { id: "finance", label: "Money", kind: "hub" as const, tab: "finance" },
+  { id: "sponsors", label: "Sponsors", kind: "hub" as const, tab: "sponsors" },
+  { id: "placements", label: "Partners", kind: "hub" as const, tab: "placements" },
+  { id: "sponsorship", label: "Packages", kind: "hub" as const, tab: "sponsorship" },
   { id: "orders", label: "Orders", kind: "hub" as const, tab: "orders" },
   { id: "grants", label: "Grants", kind: "hub" as const, tab: "grants" },
-  { id: "evidence", label: "Awards & evidence", kind: "hub" as const, tab: "evidence" },
+  { id: "evidence", label: "Outreach", kind: "hub" as const, tab: "evidence" },
   { id: "fundraisers", label: "Fundraisers", kind: "path" as const, path: "/fundraisers" },
   { id: "costs", label: "Season Costs", kind: "path" as const, path: "/costs" },
   { id: "impact", label: "Community Impact", kind: "path" as const, path: "/impact" },
-  { id: "awards", label: "Awards workbench", kind: "path" as const, path: "/team/awards" },
-  { id: "writer", label: "Grant & sponsor writer", kind: "path" as const, path: "/writer" },
-  { id: "grant-workbench", label: "Grant writing workbench", kind: "path" as const, path: "/team/grants" },
-  { id: "finance-ai", label: "Finance in Ask AI", kind: "path" as const, path: "/ai?tab=finance" },
+  { id: "awards", label: "Awards", kind: "path" as const, path: "/team/awards" },
+  { id: "writer", label: "Writer", kind: "path" as const, path: "/writer" },
+  { id: "grant-workbench", label: "Grant writing", kind: "path" as const, path: "/team/grants" },
+  { id: "finance-ai", label: "Ask AI about money", kind: "path" as const, path: "/ai?tab=finance" },
   { id: "budget", label: "Budget", kind: "hub" as const, tab: "budget" },
 ] as const;
 
