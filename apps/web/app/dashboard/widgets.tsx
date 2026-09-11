@@ -7,6 +7,7 @@ import { withOrgHref } from "../../lib/nav/product-nav";
 import { AskAiWidget } from "./widgets/ask-ai";
 import { NextMatchLive } from "./widgets/next-match";
 import { emptyHintFor, WidgetShell as Shell } from "./widgets/widget-shell";
+import { OnboardingChecklistCard } from "./widgets/onboarding-card";
 import {
   FilesRecentLive,
   LearnProgressLive,
@@ -156,29 +157,7 @@ export const DashboardWidgetView = memo(function DashboardWidgetView({
           done: boolean;
           href: string;
         }> | undefined) ?? [];
-      return (
-        <Shell
-          type={type}
-          title="Setup checklist"
-          payload={payload}
-          emptyHint={emptyHintFor("onboarding_checklist")}
-          orgId={orgId}
-          preferChildren
-        >
-          <ol className="dash-setup-steps compact">
-            {steps.map((step, index) => (
-              <li key={step.key} className={step.done ? "done" : index === steps.findIndex((item) => !item.done) ? "current" : undefined}>
-                <b>{index + 1}</b>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                {!step.done ? <a href={withOrg(step.href)}>Open</a> : <em>Done</em>}
-              </li>
-            ))}
-          </ol>
-        </Shell>
-      );
+      return <OnboardingChecklistCard steps={steps} payload={payload} orgId={orgId} />;
     }
     default:
       return <ExtraWidgetView type={type} payload={payload} orgId={orgId} tbaConfigured={tbaConfigured} />;

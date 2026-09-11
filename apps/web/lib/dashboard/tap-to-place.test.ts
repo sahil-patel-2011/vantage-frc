@@ -6,7 +6,8 @@ describe("tap-to-place Home edit", () => {
   it("uses tap-to-place on coarse / touch pointers and drag on mouse", () => {
     expect(prefersTapToPlace({ pointerType: "touch" })).toBe(true);
     expect(prefersTapToPlace({ pointerType: "pen" })).toBe(true);
-    expect(prefersTapToPlace({ coarse: true })).toBe(true);
+    expect(prefersTapToPlace({ pointerType: "mouse", coarse: true })).toBe(true);
+    expect(prefersTapToPlace({ pointerType: "touch", coarse: false })).toBe(true);
     expect(prefersTapToPlace({ pointerType: "mouse" })).toBe(false);
     expect(prefersTapToPlace({})).toBe(false);
   });

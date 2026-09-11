@@ -243,7 +243,7 @@ export function useDashboardBoardOps(input: {
     }
     if (activateScope === "org" && !canShareOrg) {
       setMessageKind("error");
-      setMessage("Owner/admin access required for org-shared dashboards.");
+      setMessage("Ask a team admin to save a shared Home for the team.");
       return;
     }
     setSaving(true);
@@ -334,7 +334,7 @@ export function useDashboardBoardOps(input: {
     if (!orgId) return;
     if (createScope === "org" && !canShareOrg) {
       setMessageKind("error");
-      setMessage("Owner/admin access required for team boards.");
+      setMessage("Ask a team admin to create a shared Home for the team.");
       return;
     }
     const personalCount = boards.filter((item) => item.scope === "personal").length;
@@ -455,7 +455,7 @@ export function useDashboardBoardOps(input: {
     if (!target) return;
     if (target.scope === "org" && !canShareOrg) {
       setMessageKind("error");
-      setMessage("Owner/admin access required to delete team boards.");
+      setMessage("Ask a team admin to delete a shared Home.");
       return;
     }
     if (!window.confirm(`Delete “${target.name}”? This cannot be undone.`)) return;

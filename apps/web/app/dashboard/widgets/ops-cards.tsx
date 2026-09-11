@@ -5,10 +5,10 @@ import type { WidgetPayload } from "../../../lib/dashboard/snapshot";
 import { hubHref } from "../../../lib/nav/hubs";
 import { withOrgHref } from "../../../lib/nav/product-nav";
 import { parseYouTubeEmbed } from "../../../lib/youtube";
-import { Button } from "../../../components/ui";
 import { predictionWinDisplay } from "../../../lib/strategy/prediction-display";
 import { LiveCountdown } from "./live-countdown";
 import { emptyHintFor, WidgetShell as Shell } from "./widget-shell";
+import { OnboardingChecklistCard } from "./onboarding-card";
 
 function PitStreamEmbed({ title, embedUrl }: { title: string; embedUrl: string }) {
   const [play, setPlay] = useState(false);
@@ -33,18 +33,28 @@ function PitStreamEmbed({ title, embedUrl }: { title: string; embedUrl: string }
   );
 }
 
+function sourceLabel(source: string): string {
+  switch (source.toLowerCase()) {
+    case "tba":
+      return "match data";
+    case "statbotics":
+      return "season scores";
+    default:
+      return source;
+  }
+}
+
+/** Setup wall: one next step, never a laundry list of sibling CTAs. */
 function setupQuickActions(orgId: string, tbaConfigured?: boolean) {
-  const links: Array<{ href: string; label: string; detail: string }> = [];
   if (!orgId) {
-    links.push({ href: "/invite", label: "Invite", detail: "Open invite from email" });
-  } else {
-    links.push({ href: hubHref("/competition", "command", orgId), label: "Event", detail: "Set active event" });
-    links.push({ href: withOrgHref("/team/admin", orgId), label: "Members", detail: "Invite teammates" });
+    return [{ href: "/invite", label: "Open invite", detail: "Use the link sent to your email." }];
   }
   if (tbaConfigured === false) {
-    links.push({ href: withOrgHref("/team/data", orgId), label: "TBA", detail: "Connect TBA" });
+    return [{ href: withOrgHref("/team/data", orgId), label: "Connect TBA", detail: "Match data for this team." }];
   }
-  return links;
+  return [
+    { href: hubHref("/competition", "command", orgId), label: "Set active event", detail: "Competition cards need an event." },
+  ];
 }
 
 export function renderOpsWidget({
@@ -154,17 +164,9 @@ export function renderOpsWidget({
                 ))}
               </ul>
               <p className="app-muted">Showing the last stored result.</p>
-              <Button as="a" variant="secondary" href={withOrg("/strategy")}>
-                Recompute on Strategy
-              </Button>
             </>
           ) : payload?.status === "live" ? (
-            <>
-              <p className="app-muted">Last stored row is not a grounded prediction.</p>
-              <Button as="a" variant="secondary" href={withOrg("/strategy")}>
-                Recompute on Strategy
-              </Button>
-            </>
+            <p className="app-muted">Last stored row is not a grounded prediction. Open Strategy to compute one.</p>
           ) : null}
         </Shell>
       );
@@ -185,7 +187,7 @@ export function renderOpsWidget({
           >
             <div className="dash-empty calm">
               <strong>No new alerts</strong>
-              <p>You are clear — disagreements and live org alerts will show up here.</p>
+              <p>You are clear — disagreements and team alerts will show up here.</p>
             </div>
           </Shell>
         );
@@ -248,12 +250,12 @@ export function renderOpsWidget({
               <div>
                 <strong>{rankLabel}</strong>
                 <span>
-                  {scope === "year" ? "year EPA scope" : `rank · ${String(data.record ?? "")}`}
+                  {scope === "year" ? "this season" : `rank · ${String(data.record ?? "")}`}
                 </span>
               </div>
               <div>
                 <strong>{data.epaTotal != null ? Number(data.epaTotal).toFixed(1) : "—"}</strong>
-                <span>EPA ({String(data.source ?? "")})</span>
+                <span>season score{data.source ? ` · ${sourceLabel(String(data.source))}` : ""}</span>
               </div>
               <div>
                 <strong>
@@ -276,7 +278,7 @@ export function renderOpsWidget({
             <ul className="dash-checklist">
               {sources.map((source) => (
                 <li key={source.source} className={source.status === "ok" || source.status === "healthy" ? "done" : undefined}>
-                  <span>{source.source.toUpperCase()}</span>
+                  <span>{sourceLabel(source.source)}</span>
                   <b>
                     {source.status}
                     {source.lastSuccessAt ? ` · ${new Date(source.lastSuccessAt).toLocaleString()}` : ""}
@@ -547,29 +549,7 @@ export function renderOpsWidget({
           done: boolean;
           href: string;
         }> | undefined) ?? [];
-      return (
-        <Shell
-          type={type}
-          title="Setup checklist"
-          payload={payload}
-          emptyHint={emptyHintFor("onboarding_checklist")}
-          orgId={orgId}
-          preferChildren
-        >
-          <ol className="dash-setup-steps compact">
-            {steps.map((step, index) => (
-              <li key={step.key} className={step.done ? "done" : index === steps.findIndex((item) => !item.done) ? "current" : undefined}>
-                <b>{index + 1}</b>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                {!step.done ? <a href={withOrg(step.href)}>Open</a> : <em>Done</em>}
-              </li>
-            ))}
-          </ol>
-        </Shell>
-      );
+      return <OnboardingChecklistCard steps={steps} payload={payload} orgId={orgId} />;
     }
     default:
       return null;
