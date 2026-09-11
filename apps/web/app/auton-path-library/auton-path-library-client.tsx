@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
-import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   AUTON_PATH_RUN_OUTCOMES,
   AUTON_PATH_START_POSITIONS,
@@ -11,6 +11,10 @@ import {
 } from "../../lib/auton-path-library";
 import type { AutonPathLibraryView } from "../../lib/auton-path-library/compute-auton-path-library";
 import type { AutonPathRunOutcome, AutonPathStartPosition, AutonPathWithStats } from "../../lib/auton-path-library/types";
+import { hubHref } from "../../lib/nav/hubs";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 function pct(value: number | null): string {
   return value == null ? "—" : `${Math.round(value * 100)}%`;
@@ -25,48 +29,202 @@ function successTone(rate: number | null): string {
 
 type LiveView = Extract<AutonPathLibraryView, { status: "live" }>;
 
+function isAutonPathLibraryView(value: unknown): value is AutonPathLibraryView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function autonPathCacheOrg(data: AutonPathLibraryView, orgHint: string): string {
+  switch (data.status) {
+    case "setup_required":
+      return (typeof data.orgId === "string" && data.orgId.trim()) || orgHint;
+    case "live":
+      return data.orgId.trim() || orgHint;
+    default: {
+      data satisfies never;
+      return orgHint;
+    }
+  }
+}
+
+async function persistAutonPathSnapshot(
+  orgHint: string,
+  seasonHint: string,
+  data: AutonPathLibraryView,
+): Promise<void> {
+  const cacheOrg = autonPathCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  const seasonKey = String(data.seasonYear);
+  try {
+    await putFeatureSnapshot("auton-path-library", cacheOrg, data, seasonHint || seasonKey);
+    if (!orgHint) await putFeatureSnapshot("auton-path-library", "_", data, seasonHint || seasonKey);
+  } catch {
+    // Live Auton paths already painted; IndexedDB is best-effort.
+  }
+}
+
+function AutonPathRelated({ orgId }: { orgId?: string | null }) {
+  return (
+    <nav className="product-hub-related" aria-label="Related robot tools">
+      <Button as="a" variant="secondary" href={hubHref("/build", "tuning-log", orgId)}>
+        Tuning log
+      </Button>
+      <Button as="a" variant="secondary" href={hubHref("/build", "code-perf", orgId)}>
+        Code vs match
+      </Button>
+      <Button as="a" variant="secondary" href={hubHref("/build", "bringup", orgId)}>
+        Bring-up
+      </Button>
+    </nav>
+  );
+}
+
+function AutonPathNextActions({ orgId }: { orgId: string }) {
+  const actions = [
+    {
+      id: "add",
+      label: "Add a path",
+      detail: "Name each starting position so runs have somewhere to land.",
+      href: "#auton-path-form",
+      primary: true,
+    },
+    {
+      id: "tuning",
+      label: "Open Tuning log",
+      detail: "Constants that made a path work belong next to the success rate.",
+      href: hubHref("/build", "tuning-log", orgId),
+      primary: false,
+    },
+    {
+      id: "code",
+      label: "Open Code vs match",
+      detail: "Which deploy actually ran this path.",
+      href: hubHref("/build", "code-perf", orgId),
+      primary: false,
+    },
+  ];
+  return (
+    <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <Button as="a" variant="secondary" href={action.href}>
+              Open
+            </Button>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
 export default function AutonPathLibraryClient() {
   const [view, setView] = useState<AutonPathLibraryView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
-  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
   const [loadStatus, setLoadStatus] = useState<number | null>(null);
   const [loadError, setLoadError] = useState("");
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<AutonPathLibraryView | null>(null);
+  viewRef.current = view;
 
   const orgId = view && "orgId" in view ? view.orgId : null;
 
-  const load = useCallback((seasonOverride?: number) => {
+  const load = useCallback(async (seasonOverride?: number) => {
+    const params = new URLSearchParams(window.location.search);
+    const orgHint = params.get("orgId")?.trim() ?? "";
+    const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
+    const seasonHint =
+      seasonQuery && Number.isFinite(seasonQuery) ? String(seasonQuery) : String(new Date().getFullYear());
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<AutonPathLibraryView>(
+        "auton-path-library",
+        orgHint || "_",
+        seasonHint,
+      );
+      if (!viewRef.current && cached?.data && isAutonPathLibraryView(cached.data)) {
+        setView(cached.data);
+        setSeason(cached.data.seasonYear);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
     setFetchFailed(false);
     setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    if (seasonQuery) query.set("season", String(seasonQuery));
-    void fetch(`/api/auton-path-library${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
-        const data = (await response.json()) as AutonPathLibraryView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setLoadStatus(response.status);
-          setLoadError("error" in data && data.error ? data.error : "");
-          setFetchFailed(true);
+    setLoadStatus(null);
+    setLoadError("");
+    try {
+      const query = new URLSearchParams();
+      if (orgHint) query.set("orgId", orgHint);
+      if (seasonQuery) query.set("season", String(seasonQuery));
+      const response = await fetch(`/api/auton-path-library${query.toString() ? `?${query.toString()}` : ""}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      const data: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setFetchFailed(true);
+        setLoadStatus(response.status);
+        setLoadError(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "",
+        );
+        return;
+      }
+      if (!response.ok || !isAutonPathLibraryView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Auton paths. Showing the last copy on this device.");
+          setFetchFailed(false);
           return;
         }
-        setView(data);
-        setSeason(data.seasonYear);
-      })
-      .catch(() => {
-        setLoadStatus(null);
-        setLoadError("");
         setFetchFailed(true);
-      });
+        setLoadStatus(response.status);
+        setLoadError(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "",
+        );
+        return;
+      }
+      setView(data);
+      setSeason(data.seasonYear);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistAutonPathSnapshot(orgHint, seasonHint, data);
+    } catch {
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Auton paths. Showing the last copy on this device.");
+        setFetchFailed(false);
+        return;
+      }
+      setFetchFailed(true);
+    }
   }, []);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   const mutate = useCallback(
@@ -79,14 +237,21 @@ export default function AutonPathLibraryClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, seasonYear: season ?? undefined, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
-        const data = (await response.json()) as AutonPathLibraryView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setError("error" in data && data.error ? data.error : "Something went wrong.");
+        const data: unknown = await response.json().catch(() => null);
+        if (!response.ok || !isAutonPathLibraryView(data)) {
+          setError(
+            data && typeof data === "object" && "error" in data && typeof data.error === "string"
+              ? data.error
+              : "Something went wrong.",
+          );
           return;
         }
         setView(data);
         setSeason(data.seasonYear);
+        setFromCache(false);
+        void persistAutonPathSnapshot(orgId, String(data.seasonYear), data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -96,100 +261,134 @@ export default function AutonPathLibraryClient() {
     [orgId, season, busy],
   );
 
-  return (
-    <main className="module-page">
-      <PageHeader
-        breadcrumbs={
-          <>
-            <a href={orgId ? `/build?orgId=${encodeURIComponent(orgId)}` : "/build"}>Build</a>
-            {" / Autonomous Path Library"}
-          </>
-        }
-        title="Autonomous Path Library"
-        description="Track named autonomous paths and log every run to see real success rates per path — not a single subjective flag."
-      >
-        {view?.status === "live" && view.seasons.length > 0 ? (
-          <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-            Season
-            <select
-              value={season ?? view.seasonYear}
-              onChange={(event) => {
-                const next = Number(event.target.value);
-                setSeason(next);
-                load(next);
-              }}
-            >
-              {view.seasons.map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : null}
-      </PageHeader>
-
-      {error ? (
-        <p className="telemetry-status" role="alert">
-          {error}
-        </p>
+  const buildHref = orgId ? `/build?orgId=${encodeURIComponent(orgId)}` : "/build";
+  const header = (
+    <PageHeader
+      breadcrumbs={
+        <>
+          <a href={buildHref}>Build</a>
+          {" / Auton paths"}
+        </>
+      }
+      title="Auton paths"
+      description="Track named autonomous paths and log every run to see real success rates per path — not a single subjective flag."
+    >
+      <AutonPathRelated orgId={orgId} />
+      {view?.status === "live" && view.seasons.length > 0 ? (
+        <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          Season
+          <select
+            value={season ?? view.seasonYear}
+            onChange={(event) => {
+              const next = Number(event.target.value);
+              setSeason(next);
+              void load(next);
+            }}
+          >
+            {view.seasons.map((year) => (
+              <option key={year} value={year}>
+                {year}
+              </option>
+            ))}
+          </select>
+        </label>
       ) : null}
+    </PageHeader>
+  );
 
-      {fetchFailed ? (
-        (() => {
-          const kind = classifyLoadFailure({
+  if (!view) {
+    const failure = fetchFailed
+      ? loadFailureCopy(
+          classifyLoadFailure({
             status: loadStatus,
             message: loadError,
             online: typeof navigator === "undefined" ? true : navigator.onLine,
-          });
-          const copy = loadFailureCopy(kind, {
+          }),
+          {
             nextPath:
               typeof window === "undefined"
                 ? null
                 : `${window.location.pathname}${window.location.search}`,
             message: loadError || "A network or server issue prevented loading. Try again.",
-          });
-          return (
-            <EmptyState title={copy.title} description={copy.description}>
-              {copy.primary ? (
-                <Button as="a" variant="primary" href={copy.primary.href}>
-                  {copy.primary.label}
-                </Button>
-              ) : null}
-              {copy.showRetry ? (
-                <Button variant="secondary" type="button" onClick={() => load()}>
-                  Retry
-                </Button>
-              ) : null}
-            </EmptyState>
-          );
-        })()
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your team." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          {view.steps[0] ? (
-            <Button as="a" variant="primary" href={view.steps[0].href}>
-              {view.steps[0].label}
+          },
+        )
+      : null;
+    return (
+      <main className="module-page">
+        {header}
+        <OfflineBanner feature="Auton paths" fromCache={fromCache} cachedAt={cachedAt} />
+        <EmptyState
+          title={failure ? failure.title : "Loading…"}
+          description={failure ? failure.description : "Checking your team."}
+          aria-busy={!fetchFailed}
+        >
+          {failure?.primary ? (
+            <Button as="a" variant="primary" href={failure.primary.href}>
+              {failure.primary.label}
+            </Button>
+          ) : null}
+          {failure?.showRetry ? (
+            <Button variant="secondary" type="button" onClick={() => void load()}>
+              Retry
             </Button>
           ) : null}
         </EmptyState>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <SummaryTiles view={view} />
-          <CreatePathForm busy={busy} mutate={mutate} />
-          {view.summary.totalPaths > 0 ? (
-            <PathList view={view} busy={busy} mutate={mutate} />
-          ) : (
-            <EmptyState
-              badge="No paths yet"
-              badgeTone="setup"
-              title="Add your first autonomous path"
-              description="Name each starting position/route so you can log runs and see success rates build up over the season."
-            />
-          )}
-        </div>
-      )}
+      </main>
+    );
+  }
+
+  switch (view.status) {
+    case "setup_required":
+      return (
+        <main className="module-page">
+          {header}
+          <OfflineBanner feature="Auton paths" fromCache={fromCache} cachedAt={cachedAt} />
+          {error ? (
+            <p className="telemetry-status" role="alert">
+              {error}
+            </p>
+          ) : null}
+          <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
+            {view.steps[0] ? (
+              <Button as="a" variant="primary" href={view.steps[0].href}>
+                {view.steps[0].label}
+              </Button>
+            ) : null}
+          </EmptyState>
+        </main>
+      );
+    case "live":
+      break;
+    default: {
+      view satisfies never;
+      return null;
+    }
+  }
+
+  return (
+    <main className="module-page">
+      {header}
+      <OfflineBanner feature="Auton paths" fromCache={fromCache} cachedAt={cachedAt} />
+      {error ? (
+        <p className="telemetry-status" role="alert">
+          {error}
+        </p>
+      ) : null}
+      <AutonPathNextActions orgId={view.orgId} />
+      <div style={{ display: "grid", gap: 16 }}>
+        <SummaryTiles view={view} />
+        <CreatePathForm busy={busy} mutate={mutate} />
+        {view.summary.totalPaths > 0 ? (
+          <PathList view={view} busy={busy} mutate={mutate} />
+        ) : (
+          <EmptyState
+            badge="No paths yet"
+            badgeTone="setup"
+            title="Add your first autonomous path"
+            description="Name each starting position/route so you can log runs and see success rates build up over the season."
+          />
+        )}
+      </div>
     </main>
   );
 }
@@ -385,6 +584,7 @@ function CreatePathForm({
   return (
     <Panel
       as="form"
+      id="auton-path-form"
       onSubmit={(event) => {
         event.preventDefault();
         if (!form.name.trim()) return;

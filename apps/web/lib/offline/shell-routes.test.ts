@@ -165,6 +165,8 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/subsystem-signoff")).toBe(true);
     expect(pathnameIsOfflineShell("/prototype-tracker")).toBe(true);
     expect(pathnameIsOfflineShell("/equipment-maintenance")).toBe(true);
+    expect(pathnameIsOfflineShell("/incident-heatmap")).toBe(true);
+    expect(pathnameIsOfflineShell("/auton-path-library")).toBe(true);
     expect(pathnameIsOfflineShell("/api/todos")).toBe(false);
   });
 
@@ -298,6 +300,8 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/sponsorship")).toBe("Sponsorship");
     expect(offlineCapableLabel("/sponsor-suite")).toBe("Sponsor Suite");
     expect(offlineCapableLabel("/safety")).toBe("Safety");
+    expect(offlineCapableLabel("/incident-heatmap")).toBe("Incident Heatmap");
+    expect(offlineCapableLabel("/auton-path-library")).toBe("Auton paths");
     expect(offlineCapableLabel("/writer")).toBe("Writer");
     expect(offlineCapableLabel("/learning")).toBe("Learning");
     expect(offlineCapableLabel("/training")).toBe("Training");
@@ -460,6 +464,8 @@ describe("offline shell routes", () => {
     expect(featureCacheKey("subsystem-signoff", "org-1", "2026")).toBe("subsystem-signoff:org-1:2026");
     expect(featureCacheKey("prototype-tracker", "org-1", "2026")).toBe("prototype-tracker:org-1:2026");
     expect(featureCacheKey("equipment-maintenance", "org-1")).toBe("equipment-maintenance:org-1");
+    expect(featureCacheKey("incident-heatmap", "org-1", "2026")).toBe("incident-heatmap:org-1:2026");
+    expect(featureCacheKey("auton-path-library", "org-1", "2026")).toBe("auton-path-library:org-1:2026");
     expect(featureCacheKey("schedule", "org-1")).toBe("schedule:org-1");
   });
 
