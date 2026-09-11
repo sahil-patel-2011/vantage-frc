@@ -33,7 +33,7 @@ export function cookieDomain(origin = playwrightOrigin()): string {
 
 /**
  * Playwright must never inherit a hosted/production DATABASE_*. Local
- * fixture is vantage_ci (or another *test*/*ci* name) on the loopback.
+ * fixture is vantage_ci (or another test/ci database name) on the loopback.
  * GitHub Actions browser job has no DATABASE_* — that is allowed.
  */
 export function assertLocalFixtureDatabase(): void {
