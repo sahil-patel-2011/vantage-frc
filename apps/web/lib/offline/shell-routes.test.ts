@@ -165,6 +165,10 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/subsystem-signoff")).toBe(true);
     expect(pathnameIsOfflineShell("/prototype-tracker")).toBe(true);
     expect(pathnameIsOfflineShell("/equipment-maintenance")).toBe(true);
+    expect(pathnameIsOfflineShell("/whats-new")).toBe(true);
+    expect(pathnameIsOfflineShell("/doc-roles")).toBe(true);
+    expect(pathnameIsOfflineShell("/team/slack")).toBe(true);
+    expect(pathnameIsOfflineShell("/team/ai-keys")).toBe(true);
     expect(pathnameIsOfflineShell("/api/todos")).toBe(false);
   });
 
@@ -316,6 +320,10 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/subsystem-signoff")).toBe("Subsystem Sign-off");
     expect(offlineCapableLabel("/prototype-tracker")).toBe("Prototype-to-Decision Tracker");
     expect(offlineCapableLabel("/equipment-maintenance")).toBe("Equipment Maintenance");
+    expect(offlineCapableLabel("/whats-new")).toBe("What’s new");
+    expect(offlineCapableLabel("/doc-roles")).toBe("Document roles");
+    expect(offlineCapableLabel("/team/slack")).toBe("Slack");
+    expect(offlineCapableLabel("/team/ai-keys")).toBe("AI keys");
   });
 
   it("keeps public/sw.js SHELL_ROUTES aligned with OFFLINE_SHELL_ROUTES", () => {
@@ -460,6 +468,10 @@ describe("offline shell routes", () => {
     expect(featureCacheKey("subsystem-signoff", "org-1", "2026")).toBe("subsystem-signoff:org-1:2026");
     expect(featureCacheKey("prototype-tracker", "org-1", "2026")).toBe("prototype-tracker:org-1:2026");
     expect(featureCacheKey("equipment-maintenance", "org-1")).toBe("equipment-maintenance:org-1");
+    expect(featureCacheKey("whats-new", "_")).toBe("whats-new:_");
+    expect(featureCacheKey("doc-roles", "org-1")).toBe("doc-roles:org-1");
+    expect(featureCacheKey("slack", "org-1")).toBe("slack:org-1");
+    expect(featureCacheKey("ai-keys", "org-1")).toBe("ai-keys:org-1");
     expect(featureCacheKey("schedule", "org-1")).toBe("schedule:org-1");
   });
 

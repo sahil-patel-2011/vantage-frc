@@ -1,9 +1,12 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import { OfflineBanner } from "../../../components/offline-banner";
 import { EmptyState, PageHeader, Button } from "../../../components/ui";
 import { TeamOpsNav } from "../../../components/team-ops-nav";
 import { slackNextActions, slackRelatedLinks } from "../../../lib/slack-related";
+import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
 import { withOrgHref } from "../../../lib/nav/product-nav";
 import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 import "../discord/discord.css";
@@ -41,6 +44,35 @@ const emptyForm = {
   chatBridgeEnabled: true,
 };
 
+function isSlackView(value: unknown): value is SlackView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "empty" || status === "setup_required" || status === "live";
+}
+
+async function persistSlackSnapshot(orgId: string, data: SlackView): Promise<void> {
+  const cacheOrg = data.orgId.trim() || orgId;
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("slack", cacheOrg, data);
+  } catch {
+    // Live Slack already painted; IndexedDB is best-effort.
+  }
+}
+
+function formFromView(data: SlackView) {
+  return {
+    webhookUrl: "",
+    signingSecret: "",
+    channelLabel: data.channelLabel ?? "",
+    workspaceId: data.workspaceId ?? "",
+    workspaceName: data.workspaceName ?? "",
+    channelId: data.channelId ?? "",
+    enabled: data.enabled ?? true,
+    chatBridgeEnabled: data.chatBridgeEnabled ?? true,
+  };
+}
+
 export default function TeamSlackClient({ orgId }: { orgId: string }) {
   const [view, setView] = useState<SlackView | null>(null);
   const [form, setForm] = useState(emptyForm);
@@ -50,38 +82,88 @@ export default function TeamSlackClient({ orgId }: { orgId: string }) {
   const [fetchFailed, setFetchFailed] = useState(false);
   // Kept so an expired session offers sign-in instead of a Retry that cannot work.
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<SlackView | null>(null);
+  viewRef.current = view;
 
-  async function load() {
+  const load = useCallback(async () => {
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<SlackView>("slack", orgId);
+      if (!viewRef.current && cached?.data && isSlackView(cached.data)) {
+        setView(cached.data);
+        setForm(formFromView(cached.data));
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
     setFetchFailed(false);
-    const response = await fetch(`/api/team/slack?orgId=${encodeURIComponent(orgId)}`);
-    const data = await response.json();
-    if (!response.ok) {
+    setErrorStatus(null);
+    try {
+      const response = await fetch(`/api/team/slack?orgId=${encodeURIComponent(orgId)}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      const data: unknown = await response.json().catch(() => null);
+      const errorMessage =
+        data && typeof data === "object" && "error" in data && typeof data.error === "string"
+          ? data.error
+          : "";
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setOk(false);
+        setStatus(errorMessage || "Unable to load Slack settings");
+        setErrorStatus(response.status);
+        setFetchFailed(true);
+        return;
+      }
+      if (!response.ok || !isSlackView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setOk(false);
+          setStatus("Could not refresh Slack. Showing the last copy on this device.");
+          setFetchFailed(false);
+          return;
+        }
+        setOk(false);
+        setStatus(errorMessage || "Unable to load Slack settings");
+        setErrorStatus(response.status);
+        setView(null);
+        setFetchFailed(true);
+        return;
+      }
+      setErrorStatus(null);
+      setView(data);
+      setForm(formFromView(data));
+      setFromCache(false);
+      setCachedAt(null);
+      setOk(true);
+      setStatus("");
+      await persistSlackSnapshot(orgId, data);
+    } catch {
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setOk(false);
+        setStatus("Could not refresh Slack. Showing the last copy on this device.");
+        setFetchFailed(false);
+        return;
+      }
       setOk(false);
-      setStatus(data.error ?? "Unable to load Slack settings");
-      setErrorStatus(response.status);
+      setStatus("Unable to load Slack settings");
       setView(null);
       setFetchFailed(true);
-      return;
     }
-    setErrorStatus(null);
-    setView(data as SlackView);
-    setForm({
-      webhookUrl: "",
-      signingSecret: "",
-      channelLabel: data.channelLabel ?? "",
-      workspaceId: data.workspaceId ?? "",
-      workspaceName: data.workspaceName ?? "",
-      channelId: data.channelId ?? "",
-      enabled: data.enabled ?? true,
-      chatBridgeEnabled: data.chatBridgeEnabled ?? true,
-    });
-    setOk(true);
-    setStatus("");
-  }
+  }, [orgId]);
 
   useEffect(() => {
     void load();
-  }, [orgId]);
+  }, [load]);
 
   async function run(action: string, extra: Record<string, unknown> = {}) {
     setBusy(true);
@@ -89,6 +171,7 @@ export default function TeamSlackClient({ orgId }: { orgId: string }) {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ orgId, action, ...extra }),
+      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
     });
     const data = await response.json();
     setBusy(false);
@@ -160,6 +243,7 @@ export default function TeamSlackClient({ orgId }: { orgId: string }) {
         description="Keep Vantage team chat and Slack on the same thread. Messages stay on this team only."
       />
       <TeamOpsNav active="admin" />
+      <OfflineBanner feature="Slack" fromCache={fromCache} cachedAt={cachedAt} />
       <nav className="product-hub-related team-discord-related" aria-label="Related team tools">
         {related.map((link) => (
           <Button as="a" variant="secondary" key={link.id} href={link.href}>
@@ -168,7 +252,7 @@ export default function TeamSlackClient({ orgId }: { orgId: string }) {
         ))}
       </nav>
 
-      {failure ? (
+      {failure && !view ? (
         <EmptyState
           title={failure.title}
           description={failure.description}
@@ -211,6 +295,8 @@ export default function TeamSlackClient({ orgId }: { orgId: string }) {
         </EmptyState>
       ) : null}
 
+      {view ? (
+        <>
       <form className="app-card team-discord-panel" onSubmit={onSave}>
         <h2>Connect Slack</h2>
         <label>
@@ -220,7 +306,7 @@ export default function TeamSlackClient({ orgId }: { orgId: string }) {
             autoComplete="off"
             value={form.webhookUrl}
             onChange={(event) => setForm({ ...form, webhookUrl: event.target.value })}
-            placeholder={view?.hasWebhook ? "Saved — paste to replace" : "https://hooks.slack.com/services/…"}
+            placeholder={view.hasWebhook ? "Saved — paste to replace" : "https://hooks.slack.com/services/…"}
           />
         </label>
         <label>
@@ -254,7 +340,7 @@ export default function TeamSlackClient({ orgId }: { orgId: string }) {
             autoComplete="off"
             value={form.signingSecret}
             onChange={(event) => setForm({ ...form, signingSecret: event.target.value })}
-            placeholder={view?.hasSigningSecret ? "Saved — paste to replace" : "Slack app signing secret"}
+            placeholder={view.hasSigningSecret ? "Saved — paste to replace" : "Slack app signing secret"}
           />
         </label>
         <label className="account-check">
@@ -269,14 +355,14 @@ export default function TeamSlackClient({ orgId }: { orgId: string }) {
           <Button variant="primary" type="submit" disabled={busy}>
             Save Slack
           </Button>
-          <Button variant="secondary" type="button" disabled={busy || !view?.hasWebhook} onClick={() => void run("test")}>
+          <Button variant="secondary" type="button" disabled={busy || !view.hasWebhook} onClick={() => void run("test")}>
             Send test
           </Button>
-          <Button variant="secondary" type="button" disabled={busy || !view?.configured} onClick={() => void run("disconnect")}>
+          <Button variant="secondary" type="button" disabled={busy || !view.configured} onClick={() => void run("disconnect")}>
             Disconnect
           </Button>
         </div>
-        {view?.bridgePostLabel ? <p className="app-muted">Bridge: {view.bridgePostLabel}</p> : null}
+        {view.bridgePostLabel ? <p className="app-muted">Bridge: {view.bridgePostLabel}</p> : null}
         {status ? <p className={ok ? "team-discord-status ok" : "team-discord-status err"}>{status}</p> : null}
         {/* Was a relative path. Slack's Event Subscriptions field rejects one,
             so there was no way to finish inbound setup from what the page told
@@ -284,8 +370,8 @@ export default function TeamSlackClient({ orgId }: { orgId: string }) {
             deployment origin. */}
         <p className="app-muted">
           Event Request URL for Slack → Event Subscriptions:{" "}
-          <code className="slack-events-url">{view?.eventsUrl ?? "…"}</code>
-          {view && !view.inboundReady
+          <code className="slack-events-url">{view.eventsUrl ?? "…"}</code>
+          {!view.inboundReady
             ? " — inbound replies also need SLACK_SIGNING_SECRET on the deployment, or a per-team signing secret saved above."
             : null}{" "}
           Subscribe to <code>message.channels</code>; Vantage ignores bot messages so its own posts do not loop.
@@ -311,6 +397,8 @@ export default function TeamSlackClient({ orgId }: { orgId: string }) {
           ))}
         </ol>
       </section>
+        </>
+      ) : null}
     </main>
   );
 }

@@ -113,7 +113,7 @@ export async function computeDocRolesView(
     if (missingTable(error)) {
       return {
         status: "setup_required",
-        message: "Doc role migrations have not been applied yet. Run npm run db:migrate, then reload.",
+        message: "Document roles are not ready on this team yet. Ask a mentor to finish setup, then reload.",
         orgId,
       };
     }

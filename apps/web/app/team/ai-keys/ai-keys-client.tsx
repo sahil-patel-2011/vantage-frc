@@ -1,9 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { OfflineBanner } from "../../../components/offline-banner";
 import { PageHeader, SoftBlockSkeleton } from "../../../components/ui";
 import { SponsoredPromoBanner } from "../../../components/sponsored-promo-banner";
 import { hubHref } from "../../../lib/nav/hubs";
+import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
 import {
   aiKeysBillingNote,
   classifyAiKeysShell,
@@ -24,6 +27,21 @@ import {
 } from "./ai-keys-model";
 import { AiKeysReadyView } from "./ai-keys-ready-view";
 import "./ai-keys.css";
+
+function isAiKeysPayload(value: unknown): value is Payload {
+  if (!value || typeof value !== "object") return false;
+  const row = value as Payload;
+  return Array.isArray(row.keys) && typeof row.canManage === "boolean";
+}
+
+async function persistAiKeysSnapshot(orgId: string, data: Payload): Promise<void> {
+  if (!orgId.trim()) return;
+  try {
+    await putFeatureSnapshot("ai-keys", orgId, data);
+  } catch {
+    // Live AI keys already painted; IndexedDB is best-effort.
+  }
+}
 
 export default function AiKeysClient({ orgId }: { orgId: string | null }) {
   const [payload, setPayload] = useState<Payload | null>(null);
@@ -55,6 +73,10 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
   // Member preview of the shared selector — controlled locally; each product
   // surface persists its own choice, this shows the policy's effect live.
   const [myModelChoice, setMyModelChoice] = useState<string | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const payloadRef = useRef<Payload | null>(null);
+  payloadRef.current = payload;
 
   async function loadModelPolicy() {
     if (!orgId) {
@@ -64,6 +86,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
     try {
       const response = await fetch(
         `/api/organizations/model-policy?orgId=${encodeURIComponent(orgId)}`,
+        { cache: "no-store", signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS) },
       );
       if (!response.ok) {
         setModelPolicy(null);
@@ -77,43 +100,92 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
     }
   }
 
+  function applyPayload(data: Payload) {
+    setPayload(data);
+    if (data.localConnector?.baseUrl) {
+      setLocalDraft((prev) => ({
+        ...prev,
+        baseUrl: data.localConnector!.baseUrl ?? "",
+        model: data.localConnector!.model ?? "llama3.2",
+        apiKey: "",
+      }));
+    }
+    if (data.routing) {
+      setRoutingDraft(data.routing);
+    } else if (data.modelOptions?.length) {
+      setRoutingDraft({
+        mode: "automode",
+        fixedModelId: data.modelOptions[0]?.id ?? null,
+        enabledModelIds: data.modelOptions.map((m) => m.id),
+      });
+    }
+  }
+
   async function load() {
     if (!orgId) {
       setLoading(false);
       setPayload(null);
+      setFromCache(false);
+      setCachedAt(null);
       return;
     }
-    setLoading(true);
+    let hadCache = Boolean(payloadRef.current);
     try {
-      const response = await fetch(`/api/organizations/ai-keys?orgId=${encodeURIComponent(orgId)}`);
-      const data = (await response.json()) as Payload & { error?: string };
-      if (!response.ok) {
-        setMessage(data.error ?? "Could not load AI keys");
-        setErrorStatus(response.status);
-        setPayload(null);
-      } else {
-        setMessage("");
-        setErrorStatus(null);
-        setPayload(data);
-        if (data.localConnector?.baseUrl) {
-          setLocalDraft((prev) => ({
-            ...prev,
-            baseUrl: data.localConnector!.baseUrl ?? "",
-            model: data.localConnector!.model ?? "llama3.2",
-            apiKey: "",
-          }));
-        }
-        if (data.routing) {
-          setRoutingDraft(data.routing);
-        } else if (data.modelOptions?.length) {
-          setRoutingDraft({
-            mode: "automode",
-            fixedModelId: data.modelOptions[0]?.id ?? null,
-            enabledModelIds: data.modelOptions.map((m) => m.id),
-          });
-        }
+      const cached = await getFeatureSnapshot<Payload>("ai-keys", orgId);
+      if (!payloadRef.current && cached?.data && isAiKeysPayload(cached.data)) {
+        applyPayload(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        setLoading(false);
+        hadCache = true;
       }
     } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
+    if (!hadCache) setLoading(true);
+    try {
+      const response = await fetch(`/api/organizations/ai-keys?orgId=${encodeURIComponent(orgId)}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      const data: unknown = await response.json().catch(() => null);
+      const errorMessage =
+        data && typeof data === "object" && "error" in data && typeof data.error === "string"
+          ? data.error
+          : "";
+      if (response.status === 401 || response.status === 403) {
+        setPayload(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setMessage(errorMessage || "Could not load AI keys");
+        setErrorStatus(response.status);
+        return;
+      }
+      if (!response.ok || !isAiKeysPayload(data)) {
+        if (hadCache || payloadRef.current) {
+          setFromCache(true);
+          setMessage("Could not refresh AI keys. Showing the last copy on this device.");
+          setErrorStatus(null);
+          return;
+        }
+        setMessage(errorMessage || "Could not load AI keys");
+        setErrorStatus(response.status);
+        setPayload(null);
+        return;
+      }
+      setMessage("");
+      setErrorStatus(null);
+      applyPayload(data);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistAiKeysSnapshot(orgId, data);
+    } catch {
+      if (hadCache || payloadRef.current) {
+        setFromCache(true);
+        setMessage("Could not refresh AI keys. Showing the last copy on this device.");
+        setErrorStatus(null);
+        return;
+      }
       setMessage("Could not load AI keys");
       setErrorStatus(null);
       setPayload(null);
@@ -421,6 +493,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
 
       {orgId ? <RelatedStrip orgId={orgId} /> : null}
       {orgId ? <SponsoredPromoBanner orgId={orgId} /> : null}
+      <OfflineBanner feature="AI keys" fromCache={fromCache} cachedAt={cachedAt} />
 
       {shell === "loading" ? (
         <div aria-busy="true" aria-label="Loading AI API keys">
