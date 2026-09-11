@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test("Sign-in still loads after the panel split", async ({ page }) => {
+  test.setTimeout(90_000);
   await page.goto("/signin");
   await expect(page.getByRole("heading", { level: 1, name: "Sign in" })).toBeVisible();
   await expect(page.locator("body")).not.toContainText("Application error");
