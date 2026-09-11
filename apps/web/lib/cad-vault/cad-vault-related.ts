@@ -16,17 +16,11 @@ export const CAD_VAULT_RELATED_INCLUDE: CadVaultRelatedId[] = [
   "cad",
 ];
 
-const CAD_VAULT_RELATED_LINKS: Array<{
-  id: CadVaultRelatedId;
-  label: string;
-  kind: "path" | "build";
-  path?: string;
-  tab?: string;
-}> = [
-  { id: "cad-learn", label: "Learn CAD", kind: "path", path: "/cad-learn" },
-  { id: "assembly-manual", label: "Assembly manual", kind: "path", path: "/assembly-manual" },
-  { id: "cad", label: "CAD workbench", kind: "build", tab: "cad" },
-  { id: "robot", label: "Robot", kind: "path", path: "/robot" },
+const CAD_VAULT_RELATED_LINKS = [
+  { id: "cad-learn" as const, label: "Learn CAD", kind: "path" as const, path: "/cad-learn" },
+  { id: "assembly-manual" as const, label: "Assembly manual", kind: "path" as const, path: "/assembly-manual" },
+  { id: "cad" as const, label: "CAD workbench", kind: "build" as const, tab: "cad" },
+  { id: "robot" as const, label: "Robot", kind: "path" as const, path: "/robot" },
 ];
 
 /** Cross-links from CAD Vault — Learn CAD / Assembly manual / CAD workbench. */
@@ -43,7 +37,7 @@ export function cadVaultRelatedLinks(
     if (link.kind === "build") {
       return { id: link.id, label: link.label, href: hubHref("/build", link.tab, orgId) };
     }
-    return { id: link.id, label: link.label, href: withOrgHref(link.path ?? "/", orgId) };
+    return { id: link.id, label: link.label, href: withOrgHref(link.path, orgId) };
   });
 }
 

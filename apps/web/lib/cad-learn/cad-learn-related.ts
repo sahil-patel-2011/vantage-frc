@@ -15,17 +15,11 @@ export const CAD_LEARN_RELATED_INCLUDE: CadLearnRelatedId[] = [
   "assembly-manual",
 ];
 
-const CAD_LEARN_RELATED_LINKS: Array<{
-  id: CadLearnRelatedId;
-  label: string;
-  kind: "path" | "build";
-  path?: string;
-  tab?: string;
-}> = [
-  { id: "cad-vault", label: "CAD vault", kind: "path", path: "/cad-vault" },
-  { id: "cad", label: "CAD workbench", kind: "build", tab: "cad" },
-  { id: "assembly-manual", label: "Assembly manual", kind: "path", path: "/assembly-manual" },
-  { id: "dev-setup", label: "Programming setup", kind: "path", path: "/dev-setup" },
+const CAD_LEARN_RELATED_LINKS = [
+  { id: "cad-vault" as const, label: "CAD vault", kind: "path" as const, path: "/cad-vault" },
+  { id: "cad" as const, label: "CAD workbench", kind: "build" as const, tab: "cad" },
+  { id: "assembly-manual" as const, label: "Assembly manual", kind: "path" as const, path: "/assembly-manual" },
+  { id: "dev-setup" as const, label: "Programming setup", kind: "path" as const, path: "/dev-setup" },
 ];
 
 /** Cross-links from Learn CAD — vault / workbench / assembly manual. */
@@ -42,7 +36,7 @@ export function cadLearnRelatedLinks(
     if (link.kind === "build") {
       return { id: link.id, label: link.label, href: hubHref("/build", link.tab, orgId) };
     }
-    return { id: link.id, label: link.label, href: withOrgHref(link.path ?? "/", orgId) };
+    return { id: link.id, label: link.label, href: withOrgHref(link.path, orgId) };
   });
 }
 
