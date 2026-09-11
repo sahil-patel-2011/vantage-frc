@@ -165,6 +165,9 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/subsystem-signoff")).toBe(true);
     expect(pathnameIsOfflineShell("/prototype-tracker")).toBe(true);
     expect(pathnameIsOfflineShell("/equipment-maintenance")).toBe(true);
+    expect(pathnameIsOfflineShell("/bringup")).toBe(true);
+    expect(pathnameIsOfflineShell("/notebook")).toBe(true);
+    expect(pathnameIsOfflineShell("/auto-routines")).toBe(true);
     expect(pathnameIsOfflineShell("/api/todos")).toBe(false);
   });
 
@@ -316,6 +319,9 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/subsystem-signoff")).toBe("Subsystem Sign-off");
     expect(offlineCapableLabel("/prototype-tracker")).toBe("Prototype-to-Decision Tracker");
     expect(offlineCapableLabel("/equipment-maintenance")).toBe("Equipment Maintenance");
+    expect(offlineCapableLabel("/bringup")).toBe("Bring-up");
+    expect(offlineCapableLabel("/notebook")).toBe("Engineering notebook");
+    expect(offlineCapableLabel("/auto-routines")).toBe("Auto routines");
   });
 
   it("keeps public/sw.js SHELL_ROUTES aligned with OFFLINE_SHELL_ROUTES", () => {
@@ -460,6 +466,9 @@ describe("offline shell routes", () => {
     expect(featureCacheKey("subsystem-signoff", "org-1", "2026")).toBe("subsystem-signoff:org-1:2026");
     expect(featureCacheKey("prototype-tracker", "org-1", "2026")).toBe("prototype-tracker:org-1:2026");
     expect(featureCacheKey("equipment-maintenance", "org-1")).toBe("equipment-maintenance:org-1");
+    expect(featureCacheKey("bringup", "org-1", "2026")).toBe("bringup:org-1:2026");
+    expect(featureCacheKey("notebook", "org-1", "2026")).toBe("notebook:org-1:2026");
+    expect(featureCacheKey("auto-routines", "org-1", "2026")).toBe("auto-routines:org-1:2026");
     expect(featureCacheKey("schedule", "org-1")).toBe("schedule:org-1");
   });
 
