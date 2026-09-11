@@ -20,6 +20,9 @@ const isCi = Boolean(process.env.CI);
  * Next 16 refuses a second `next dev` from the same apps/web directory.
  * Sibling checkouts (or a human who already started :3410) leave
  * `.next/dev/lock`. Attach to that origin instead of crashing.
+ *
+ * CI always starts its own webServer. A leftover PLAYWRIGHT_BASE_URL used
+ * to skip the child next and attach to a dying compiler (117-test OOM).
  */
 function liveNextDevLock(): { origin: string; port: number } | null {
   const lockPath = path.join(__dirname, "apps/web/.next/dev/lock");
@@ -53,7 +56,7 @@ function liveNextDevLock(): { origin: string; port: number } | null {
   }
 }
 
-const explicitBase = process.env.PLAYWRIGHT_BASE_URL?.replace(/\/$/, "") || "";
+const explicitBase = isCi ? "" : process.env.PLAYWRIGHT_BASE_URL?.replace(/\/$/, "") || "";
 const lock = liveNextDevLock();
 const origin = explicitBase || lock?.origin || playwrightOrigin();
 const port = lock?.port ?? playwrightPort();
@@ -78,7 +81,7 @@ export default defineConfig({
   testMatch: "**/*.spec.ts",
   // One worker is the GHA contract: two starve Next 16's compiler
   // (net::ERR_ABORTED / detached frames). Override with PLAYWRIGHT_WORKERS.
-  // Shard with --shard=1/4 so one next-dev does not compile the whole catalog.
+  // Shard with --shard=1/8 so one next-dev does not compile the whole catalog.
   fullyParallel: false,
   workers: Number(process.env.PLAYWRIGHT_WORKERS) || 1,
   retries: isCi ? 1 : 0,
@@ -115,6 +118,7 @@ export default defineConfig({
           timeout: 180_000,
           // 4 GB heap + fixture `devMemoryThresholdRestart: false` in next.config.
           // Compiling every route in one process used to restart next at 80% of heap.
+          // CI ignores leftover PLAYWRIGHT_BASE_URL so this child always owns the compiler.
         },
       }
     : {}),

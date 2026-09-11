@@ -3,9 +3,12 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   PLAYWRIGHT_NEXT_HEAP_MB,
+  PLAYWRIGHT_ON_DEMAND_MAX_INACTIVE_AGE_MS,
+  PLAYWRIGHT_ON_DEMAND_PAGES_BUFFER,
   PLAYWRIGHT_SHARD_TOTAL,
   isPlaywrightNextDev,
   nextDevMemoryExperimental,
+  playwrightOnDemandEntries,
   withMaxOldSpaceSize,
 } from "./next-dev-memory";
 
@@ -14,7 +17,7 @@ const WEB_ROOT = join(__dirname, "..", "..");
 describe("next-dev memory", () => {
   it("caps the Playwright heap at 4 GB so the GitHub Actions runner is not OS-killed", () => {
     expect(PLAYWRIGHT_NEXT_HEAP_MB).toBe(4096);
-    expect(PLAYWRIGHT_SHARD_TOTAL).toBe(4);
+    expect(PLAYWRIGHT_SHARD_TOTAL).toBe(8);
     expect(withMaxOldSpaceSize(undefined, PLAYWRIGHT_NEXT_HEAP_MB)).toBe(
       "--max-old-space-size=4096",
     );
@@ -31,18 +34,24 @@ describe("next-dev memory", () => {
     expect(interactive.memoryBasedWorkersCount).toBe(true);
     expect(interactive.devMemoryThresholdRestart).toBeUndefined();
     expect(interactive.cpus).toBeUndefined();
+    expect(playwrightOnDemandEntries({})).toBeUndefined();
 
     const fixture = nextDevMemoryExperimental({ E2E_AUTH_FIXTURE: "1" });
     expect(isPlaywrightNextDev({ E2E_AUTH_FIXTURE: "1" })).toBe(true);
     expect(fixture.preloadEntriesOnStart).toBe(false);
     expect(fixture.devMemoryThresholdRestart).toBe(false);
     expect(fixture.cpus).toBe(1);
+    expect(playwrightOnDemandEntries({ E2E_AUTH_FIXTURE: "1" })).toEqual({
+      maxInactiveAge: PLAYWRIGHT_ON_DEMAND_MAX_INACTIVE_AGE_MS,
+      pagesBufferLength: PLAYWRIGHT_ON_DEMAND_PAGES_BUFFER,
+    });
   });
 
   it("wires the helper into next.config", () => {
     const src = readFileSync(join(WEB_ROOT, "next.config.ts"), "utf8");
     expect(src).toMatch(/nextDevMemoryExperimental/);
     expect(src).toMatch(/experimental:\s*nextDevMemoryExperimental\(\)/);
+    expect(src).toMatch(/playwrightOnDemandEntries/);
     expect(src).toMatch(/distDir:\s*process\.env\.NEXT_DIST_DIR/);
   });
 
@@ -52,12 +61,14 @@ describe("next-dev memory", () => {
       "utf8",
     );
     expect(workflow).toMatch(/NODE_OPTIONS: "--max-old-space-size=4096"/);
-    expect(workflow).toMatch(/shard: \[1, 2, 3, 4\]/);
-    expect(workflow).toMatch(/--shard=\$\{\{ matrix\.shard \}\}\/4/);
+    expect(workflow).toMatch(/shard: \[1, 2, 3, 4, 5, 6, 7, 8\]/);
+    expect(workflow).toMatch(/--shard=\$\{\{ matrix\.shard \}\}\/8/);
   });
 
   it("does not let Playwright load vitest origin.test.ts as a spec", () => {
     const config = readFileSync(join(WEB_ROOT, "..", "..", "playwright.config.ts"), "utf8");
     expect(config).toMatch(/testMatch:\s*["']\*\*\/\*\.spec\.ts["']/);
+    expect(config).toMatch(/isCi \? "" :/);
+    expect(config).toMatch(/--shard=1\/8/);
   });
 });

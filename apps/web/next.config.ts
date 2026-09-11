@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 import { expandLegacyRedirects } from "./lib/nav/legacy-redirects";
-import { nextDevMemoryExperimental } from "./lib/perf/next-dev-memory";
+import { nextDevMemoryExperimental, playwrightOnDemandEntries } from "./lib/perf/next-dev-memory";
+
+const onDemandEntries = playwrightOnDemandEntries();
 
 const config: NextConfig = {
   // Vercel Preview Comments cannot patch Next 16.3 immutable static output
@@ -9,6 +11,7 @@ const config: NextConfig = {
   supportsImmutableAssets: false,
   distDir: process.env.NEXT_DIST_DIR || ".next",
   experimental: nextDevMemoryExperimental(),
+  ...(onDemandEntries ? { onDemandEntries } : {}),
   serverExternalPackages: ["pg"],
   transpilePackages: [
     "@vantage/agent",
