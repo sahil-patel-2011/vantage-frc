@@ -152,6 +152,10 @@ export const OFFLINE_SHELL_ROUTES = [
   "/subsystem-signoff",
   "/prototype-tracker",
   "/equipment-maintenance",
+  "/parents",
+  "/leadership",
+  "/gearbox",
+  "/weight-budget",
 ] as const;
 
 export type OfflineShellRoute = (typeof OFFLINE_SHELL_ROUTES)[number];
@@ -320,6 +324,10 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/match-debrief")) return "Match debrief";
   if (bare.startsWith("/match-copilot")) return "Match Copilot";
   if (bare.startsWith("/event-readiness")) return "Event readiness";
+  if (bare.startsWith("/parents")) return "Parent updates";
+  if (bare.startsWith("/leadership")) return "Leadership Continuity";
+  if (bare.startsWith("/gearbox")) return "Gearbox calculator";
+  if (bare.startsWith("/weight-budget")) return "Weight budget";
   return null;
 }
 

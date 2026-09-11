@@ -165,6 +165,10 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/subsystem-signoff")).toBe(true);
     expect(pathnameIsOfflineShell("/prototype-tracker")).toBe(true);
     expect(pathnameIsOfflineShell("/equipment-maintenance")).toBe(true);
+    expect(pathnameIsOfflineShell("/parents")).toBe(true);
+    expect(pathnameIsOfflineShell("/leadership")).toBe(true);
+    expect(pathnameIsOfflineShell("/gearbox")).toBe(true);
+    expect(pathnameIsOfflineShell("/weight-budget")).toBe(true);
     expect(pathnameIsOfflineShell("/api/todos")).toBe(false);
   });
 
@@ -316,6 +320,10 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/subsystem-signoff")).toBe("Subsystem Sign-off");
     expect(offlineCapableLabel("/prototype-tracker")).toBe("Prototype-to-Decision Tracker");
     expect(offlineCapableLabel("/equipment-maintenance")).toBe("Equipment Maintenance");
+    expect(offlineCapableLabel("/parents")).toBe("Parent updates");
+    expect(offlineCapableLabel("/leadership")).toBe("Leadership Continuity");
+    expect(offlineCapableLabel("/gearbox")).toBe("Gearbox calculator");
+    expect(offlineCapableLabel("/weight-budget")).toBe("Weight budget");
   });
 
   it("keeps public/sw.js SHELL_ROUTES aligned with OFFLINE_SHELL_ROUTES", () => {
@@ -460,6 +468,10 @@ describe("offline shell routes", () => {
     expect(featureCacheKey("subsystem-signoff", "org-1", "2026")).toBe("subsystem-signoff:org-1:2026");
     expect(featureCacheKey("prototype-tracker", "org-1", "2026")).toBe("prototype-tracker:org-1:2026");
     expect(featureCacheKey("equipment-maintenance", "org-1")).toBe("equipment-maintenance:org-1");
+    expect(featureCacheKey("parents", "org-1")).toBe("parents:org-1");
+    expect(featureCacheKey("leadership", "org-1", "2026")).toBe("leadership:org-1:2026");
+    expect(featureCacheKey("gearbox", "org-1", "2026")).toBe("gearbox:org-1:2026");
+    expect(featureCacheKey("weight-budget", "org-1", "2026")).toBe("weight-budget:org-1:2026");
     expect(featureCacheKey("schedule", "org-1")).toBe("schedule:org-1");
   });
 
