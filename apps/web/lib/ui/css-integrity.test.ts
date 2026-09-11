@@ -370,9 +370,10 @@ describe("stylesheet integrity", () => {
   it("does not paint a second dark palette with #0f141a / #171d25", () => {
     // Dark mode is the designed tokens in system.css (#0c1118 / #151b24).
     // Sign-in, Event Day, and onboarding used competing wells
-    // (#0f141a / #171d25 / #111823 / #152036) that made those screens a different
-    // product at night.
-    const competing = /#0f141a|#171d25|#111823|#152036|#122a20|#2c1519|#2a2113|#33270f/i;
+    // (#0f141a / #171d25 / #111823 / #152036) and leftover cream/Apple paper
+    // (#f7f6f2 / #152033 / #fff8e8) that made those screens a different product.
+    const competing =
+      /#0f141a|#171d25|#111823|#152036|#122a20|#2c1519|#2a2113|#33270f|#f7f6f2|#152033|#1e3a5f|#fff8e8|#fff7df|#533d13/i;
     const offenders: string[] = [];
     for (const file of files) {
       const text = readFileSync(file, "utf8");
@@ -401,7 +402,26 @@ describe("stylesheet integrity", () => {
     expect(text).toContain("var(--accent)");
   });
 
-  it("does not reintroduce product html[data-theme=dark] counterparts", () => {
+  it("paints leftover sign-in chrome in soft-ui.css from canonical tokens", () => {
+    // sign-in-flow.css is additive. Leftover .signin-* in soft-ui.css still
+    // paints the page, onboarding, and invite — it must not keep a cream/Apple
+    // second palette that sign-in-flow never overrides.
+    const soft = files.find((file) => file.endsWith(`${sep}soft-ui.css`) || file.endsWith("/soft-ui.css"));
+    expect(soft).toBeDefined();
+    const text = readFileSync(soft!, "utf8");
+    const start = text.indexOf(".signin-page{");
+    const end = text.indexOf("/* Event Day Command");
+    expect(start).toBeGreaterThan(-1);
+    expect(end).toBeGreaterThan(start);
+    const block = text.slice(start, end);
+    expect(block).not.toMatch(/#f7f6f2|#152033|#6b7280|#1f2937|#1457d9|#ffffff\b|#fff\b|#e2e0da|#14243a/i);
+    expect(block).toContain("var(--bg)");
+    expect(block).toContain("var(--surface)");
+    expect(block).toContain("var(--ink)");
+    expect(block).toContain("var(--accent)");
+  });
+
+  it("does not reintroduce product html[data-theme] counterparts", () => {
     // Marketing/legal keep a separate copper palette on purpose. Product chrome
     // must follow tokens that already flip in system.css.
     const allow = /(?:^|[/\\])(?:marketing(?:-v3|-showcase)?|legal|system)\.css$/;
@@ -410,14 +430,14 @@ describe("stylesheet integrity", () => {
       if (allow.test(file)) continue;
       const text = scrub(readFileSync(file, "utf8"));
       text.split("\n").forEach((line, index) => {
-        if (/html\[data-theme=["']dark["']\]/.test(line)) {
+        if (/html\[data-theme=["'](?:dark|light)["']\]/.test(line)) {
           offenders.push(`${file}:${index + 1}: ${line.trim().slice(0, 80)}`);
         }
       });
     }
     expect(
       offenders,
-      `product dark counterparts (use tokens that already flip):\n  ${offenders.join("\n  ")}`,
+      `product theme counterparts (use tokens that already flip):\n  ${offenders.join("\n  ")}`,
     ).toEqual([]);
   });
 

@@ -46,19 +46,11 @@ export const SPACE_RAMP = [4, 8, 12, 16, 20, 24] as const;
 /**
  * Resolved spacing ramp for a density. `--space-1` … `--space-6`.
  * The CSS computes the same values with calc(); this is the testable mirror.
- * `--soft-space-*` aliases stay so an old inline style still resolves.
  */
 export function densityTokens(density: DensityPreference): Record<string, number> {
   const scale = DENSITY_SCALE[density];
   return Object.fromEntries(
-    SPACE_RAMP.flatMap((base, index) => {
-      const px = base * scale;
-      const n = index + 1;
-      return [
-        [`--space-${n}`, px],
-        [`--soft-space-${n}`, px],
-      ];
-    }),
+    SPACE_RAMP.map((base, index) => [`--space-${index + 1}`, base * scale]),
   );
 }
 
