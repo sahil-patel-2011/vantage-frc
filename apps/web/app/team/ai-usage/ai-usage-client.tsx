@@ -1,9 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { PageHeader, SoftBlockSkeleton, Button } from "../../../components/ui";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { OfflineBanner } from "../../../components/offline-banner";
+import { EmptyState, PageHeader, SoftBlockSkeleton, Button } from "../../../components/ui";
 import { hubHref } from "../../../lib/nav/hubs";
 import { withOrgHref } from "../../../lib/nav/product-nav";
+import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 import "./ai-usage.css";
 
@@ -40,59 +43,133 @@ type Payload = {
   error?: string;
 };
 
+const KEY_SOURCE_LABELS: Record<string, string> = {
+  platform: "Hosted",
+  byo: "Your key",
+  local: "This computer",
+  local_cli: "This computer",
+};
+
 function money(n: number) {
   if (!Number.isFinite(n) || n <= 0) return "$0.00";
   if (n < 0.01) return `$${n.toFixed(4)}`;
   return `$${n.toFixed(2)}`;
 }
 
+function keySourceLabel(key: string) {
+  return KEY_SOURCE_LABELS[key] ?? key;
+}
+
+function isUsagePayload(value: unknown): value is Payload {
+  if (!value || typeof value !== "object") return false;
+  const row = value as Payload;
+  return typeof row.windowDays === "number" && Boolean(row.summary) && Boolean(row.rates);
+}
+
+async function persistUsageSnapshot(orgId: string, data: Payload): Promise<void> {
+  try {
+    await putFeatureSnapshot("ai-usage", orgId, data);
+  } catch {
+    // Live usage already painted; IndexedDB is best-effort.
+  }
+}
+
 export default function AiUsageClient({ orgId }: { orgId: string | null }) {
   const [payload, setPayload] = useState<Payload | null>(null);
   const [loading, setLoading] = useState(Boolean(orgId));
   const [error, setError] = useState("");
-  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const paintedRef = useRef(false);
 
-  useEffect(() => {
+  const load = useCallback(async () => {
     if (!orgId) {
       setLoading(false);
       setPayload(null);
+      paintedRef.current = false;
       return;
     }
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      try {
-        const response = await fetch(
-          `/api/organizations/ai-usage?orgId=${encodeURIComponent(orgId)}&days=30`,
-        );
-        const data = (await response.json()) as Payload;
-        if (cancelled) return;
-        if (!response.ok) {
-          setError(data.error ?? "Could not load your key usage");
-          setErrorStatus(response.status);
-          setPayload(null);
-        } else {
-          setError("");
-          setErrorStatus(null);
-          setPayload(data);
+    let hadCache = paintedRef.current;
+    try {
+      const cached = await getFeatureSnapshot<Payload>("ai-usage", orgId);
+      if (cached?.data && isUsagePayload(cached.data)) {
+        if (!paintedRef.current) {
+          setPayload(cached.data);
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          setLoading(false);
+          paintedRef.current = true;
+          hadCache = true;
         }
-      } catch {
-        if (!cancelled) {
-          setError("Could not load your key usage");
-          setErrorStatus(null);
-          setPayload(null);
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
       }
-    })();
-    return () => {
-      cancelled = true;
-    };
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
+    if (!hadCache) setLoading(true);
+    setError("");
+    setErrorStatus(null);
+    try {
+      const response = await fetch(
+        `/api/organizations/ai-usage?orgId=${encodeURIComponent(orgId)}&days=30`,
+        { cache: "no-store", signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS) },
+      );
+      const data: unknown = await response.json().catch(() => null);
+      const errorMessage =
+        data && typeof data === "object" && "error" in data && typeof data.error === "string"
+          ? data.error
+          : "";
+      if (response.status === 401 || response.status === 403) {
+        paintedRef.current = false;
+        setPayload(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setError(errorMessage || "Could not load your key usage");
+        setErrorStatus(response.status);
+        setLoading(false);
+        return;
+      }
+      if (!response.ok || !isUsagePayload(data)) {
+        if (hadCache || paintedRef.current) {
+          setFromCache(true);
+          setError("");
+          setLoading(false);
+          return;
+        }
+        setError(errorMessage || "Could not load your key usage");
+        setErrorStatus(response.status);
+        setPayload(null);
+        setLoading(false);
+        return;
+      }
+      setError("");
+      setErrorStatus(null);
+      setPayload(data);
+      paintedRef.current = true;
+      setFromCache(false);
+      setCachedAt(null);
+      setLoading(false);
+      await persistUsageSnapshot(orgId, data);
+    } catch {
+      if (hadCache || paintedRef.current) {
+        setFromCache(true);
+        setError("");
+        setLoading(false);
+        return;
+      }
+      setError("Could not load your key usage");
+      setErrorStatus(null);
+      setPayload(null);
+      setLoading(false);
+    }
   }, [orgId]);
 
+  useEffect(() => {
+    void load();
+  }, [load]);
+
   const aiHub = hubHref("/ai", "chat", orgId);
+  const showError = Boolean(error) && !payload;
 
   return (
     <main className="module-page ai-usage-page soft-gate">
@@ -107,6 +184,7 @@ export default function AiUsageClient({ orgId }: { orgId: string | null }) {
         title="Your keys usage"
         description="Calls made with your own API keys or a local connector. Estimated $ from public list rates — not an invoice. Empty until those calls exist."
       />
+      <OfflineBanner fromCache={fromCache} cachedAt={cachedAt} feature="Your keys usage" />
 
       <nav className="product-hub-related" aria-label="Related">
         <Button as="a" variant="secondary" href={orgId ? withOrgHref("/team/ai-keys", orgId) : "/team/ai-keys"}>
@@ -121,22 +199,26 @@ export default function AiUsageClient({ orgId }: { orgId: string | null }) {
       </nav>
 
       {!orgId ? (
-        <section className="app-card soft-panel" role="status">
-          <h2>Choose your team</h2>
-          <p className="app-muted">Choose your team, then return here.</p>
+        <EmptyState
+          soft
+          badge="Setup"
+          badgeTone="setup"
+          title="Choose your team"
+          description="Choose your team, then return here."
+        >
           <Button as="a" variant="primary" href="/workspace">
             Choose your team
           </Button>
-        </section>
+        </EmptyState>
       ) : null}
 
-      {loading ? (
+      {loading && !payload ? (
         <div aria-busy="true">
           <SoftBlockSkeleton lines={4} />
         </div>
       ) : null}
 
-      {error
+      {showError
         ? (() => {
             const copy = loadFailureCopy(
               classifyLoadFailure({
@@ -153,61 +235,58 @@ export default function AiUsageClient({ orgId }: { orgId: string | null }) {
               },
             );
             return (
-              <section className="app-card soft-panel" role="alert">
-                <h2>{copy.title}</h2>
-                <p className="app-muted">{copy.description}</p>
+              <EmptyState badge="Error" badgeTone="setup" title={copy.title} description={copy.description}>
                 {copy.primary ? (
                   <Button as="a" variant="primary" href={copy.primary.href}>
                     {copy.primary.label}
                   </Button>
                 ) : null}
                 {copy.showRetry ? (
-                  <Button variant="secondary" type="button" onClick={() => window.location.reload()}>
+                  <Button variant="secondary" type="button" onClick={() => void load()}>
                     Retry
                   </Button>
                 ) : null}
-              </section>
+              </EmptyState>
             );
           })()
         : null}
 
-      {payload && !loading ? (
+      {payload && !(loading && !fromCache) ? (
         <>
           <section className="app-card soft-panel ai-usage-disclaimer" role="note">
-            <span className="eyebrow">ESTIMATE ONLY</span>
+            <span className="eyebrow">Estimate only</span>
             <p>{payload.rates.disclaimer}</p>
           </section>
 
           {payload.empty ? (
-            <section className="app-card soft-panel" role="status">
-              <h2>No calls with your keys yet</h2>
-              <p className="app-muted">
-                Nothing to show until your own API key or a local connector is used. Add a key under AI API keys,
-                then try Chat, Writer, or CAD.
-              </p>
-              <Button as="a" variant="primary" href={withOrgHref("/team/ai-keys", orgId)}>
+            <EmptyState
+              soft
+              title="No calls with your keys yet"
+              description="Nothing to show until your own API key or a local connector is used. Add a key under AI API keys, then try Chat, Writer, or CAD."
+            >
+              <Button as="a" variant="primary" href={withOrgHref("/team/ai-keys", orgId ?? "")}>
                 Open AI API keys
               </Button>
-            </section>
+            </EmptyState>
           ) : (
             <>
               <section className="ai-usage-summary" aria-label="Summary">
                 <article className="app-card soft-panel">
-                  <span className="eyebrow">CALLS · {payload.windowDays}D</span>
+                  <span className="eyebrow">Calls · {payload.windowDays}d</span>
                   <strong>{payload.summary.calls}</strong>
                 </article>
                 <article className="app-card soft-panel">
-                  <span className="eyebrow">TOKENS</span>
+                  <span className="eyebrow">Tokens</span>
                   <strong>{payload.summary.totalTokens.toLocaleString()}</strong>
                 </article>
                 <article className="app-card soft-panel">
-                  <span className="eyebrow">EST. LIST $</span>
+                  <span className="eyebrow">Estimated $</span>
                   <strong>{money(payload.summary.estimatedUsd)}</strong>
                 </article>
               </section>
 
               <section className="app-card soft-panel">
-                <span className="eyebrow">BY AI</span>
+                <span className="eyebrow">By model</span>
                 <ul className="ai-usage-list">
                   {payload.byModel.map((row) => (
                     <li key={`${row.provider}-${row.model}`}>
@@ -227,7 +306,7 @@ export default function AiUsageClient({ orgId }: { orgId: string | null }) {
               </section>
 
               <section className="app-card soft-panel">
-                <span className="eyebrow">RECENT</span>
+                <span className="eyebrow">Recent</span>
                 <ul className="ai-usage-list">
                   {payload.events.map((row) => (
                     <li key={row.id}>
@@ -236,7 +315,7 @@ export default function AiUsageClient({ orgId }: { orgId: string | null }) {
                           {row.feature} · {row.model}
                         </strong>
                         <span className="app-muted">
-                          {new Date(row.createdAt).toLocaleString()} · {row.keySource} ·{" "}
+                          {new Date(row.createdAt).toLocaleString()} · {keySourceLabel(row.keySource)} ·{" "}
                           {row.promptTokens + row.completionTokens} tokens
                         </span>
                       </div>

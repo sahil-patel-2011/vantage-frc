@@ -27,7 +27,7 @@ const BANNED: ReadonlyArray<readonly [RegExp, string]> = [
   [/\bkill\s+switch\b/i, 'billing internals — say "pause Chat"'],
   [/\ballowlist(?:s|ed)?\b/i, 'say what is allowed, not "allowlist"'],
   [
-    /\bopen your workspace\b|\bmore than one workspace\b|\bworkspace membership\b|\bteam workspaces\b|\bworkspace inventory\b|\b(connect|set|finish)\s+workspace\b|\bjoin workspace\b|\bopen workspace\b|\bin workspace\b|\bfrom workspace\b|\bcheck workspace\b|\bcross-check workspace\b|\bworkspace created\b|\bworkspace picks\b|\bworkspace\s*→|\bworkspace remembered\b|\bpick an org\b/i,
+    /\bopen your workspace\b|\bno workspace to search\b|\bmore than one workspace\b|\bworkspace membership\b|\bteam workspaces\b|\bworkspace inventory\b|\b(connect|set|finish)\s+workspace\b|\bjoin workspace\b|\bopen workspace\b|\bin workspace\b|\bfrom workspace\b|\bcheck workspace\b|\bcross-check workspace\b|\bworkspace created\b|\bworkspace picks\b|\bworkspace\s*→|\bworkspace remembered\b|\bpick an org\b/i,
     'say "team"',
   ],
   [

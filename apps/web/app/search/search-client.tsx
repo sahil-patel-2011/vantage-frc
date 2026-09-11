@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import {
   Badge,
   Button,
@@ -11,6 +12,9 @@ import {
   Toolbar,
   type BadgeTone,
 } from "../../components/ui";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import type {
   SearchResult,
   SearchSourceId,
@@ -21,7 +25,7 @@ type FetchState =
   | { kind: "idle" }
   | { kind: "loading" }
   | { kind: "loaded"; view: UnifiedSearchView }
-  | { kind: "error"; message: string };
+  | { kind: "error"; message: string; status: number | null };
 
 const SOURCE_TONE: Record<SearchSourceId, BadgeTone> = {
   help: "info",
@@ -47,6 +51,21 @@ function syncUrl(q: string, orgId: string | null) {
   const next = params.toString();
   const url = next ? `${window.location.pathname}?${next}` : window.location.pathname;
   window.history.replaceState(null, "", url);
+}
+
+function isSearchView(value: unknown): value is UnifiedSearchView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as UnifiedSearchView).status;
+  return status === "ready" || status === "setup_required";
+}
+
+async function persistSearchSnapshot(orgId: string, data: UnifiedSearchView): Promise<void> {
+  if (data.status !== "ready") return;
+  try {
+    await putFeatureSnapshot("search", orgId, data);
+  } catch {
+    // Live search already painted; IndexedDB is best-effort.
+  }
 }
 
 function ResultRow({ result }: { result: SearchResult }) {
@@ -82,34 +101,98 @@ export default function SearchClient() {
   const [orgId, setOrgId] = useState<string | null>(initial.current.orgId);
   const [activeSources, setActiveSources] = useState<Set<SearchSourceId>>(new Set());
   const [state, setState] = useState<FetchState>({ kind: "idle" });
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
   const requestId = useRef(0);
+  const paintedRef = useRef(false);
 
   const runSearch = useCallback((rawTerm: string, org: string | null) => {
     const q = rawTerm.trim();
     if (q.length < 2) {
       setState({ kind: "idle" });
+      setFromCache(false);
+      setCachedAt(null);
+      paintedRef.current = false;
       return;
     }
     const id = ++requestId.current;
-    setState({ kind: "loading" });
-    const query = new URLSearchParams();
-    query.set("q", q);
-    if (org) query.set("orgId", org);
-    void fetch(`/api/search?${query.toString()}`)
-      .then(async (response) => {
-        const data = (await response.json()) as UnifiedSearchView | { error?: string };
-        if (id !== requestId.current) return; // a newer keystroke won
-        if (!response.ok || !("status" in data)) {
-          setState({ kind: "error", message: (data as { error?: string }).error ?? "Search failed" });
+    const cacheOrg = org?.trim() || "_";
+    void (async () => {
+      let hadCache = paintedRef.current;
+      try {
+        const cached = await getFeatureSnapshot<UnifiedSearchView>("search", cacheOrg);
+        if (id !== requestId.current) return;
+        if (cached?.data && isSearchView(cached.data) && cached.data.status === "ready") {
+          if (!paintedRef.current || cached.data.query === q) {
+            setState({ kind: "loaded", view: cached.data });
+            setFromCache(true);
+            setCachedAt(cached.cachedAt);
+            paintedRef.current = true;
+            hadCache = true;
+          }
+        }
+      } catch {
+        // IndexedDB missing or blocked; live fetch still runs.
+      }
+      if (!hadCache) setState({ kind: "loading" });
+      try {
+        const query = new URLSearchParams();
+        query.set("q", q);
+        if (org) query.set("orgId", org);
+        const response = await fetch(`/api/search?${query.toString()}`, {
+          cache: "no-store",
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+        });
+        const data: unknown = await response.json().catch(() => null);
+        if (id !== requestId.current) return;
+        const errorMessage =
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "";
+        if (response.status === 401 || response.status === 403) {
+          paintedRef.current = false;
+          setFromCache(false);
+          setCachedAt(null);
+          setState({
+            kind: "error",
+            message: errorMessage || "Could not load search.",
+            status: response.status,
+          });
+          return;
+        }
+        if (!response.ok || !isSearchView(data)) {
+          if (hadCache || paintedRef.current) {
+            setFromCache(true);
+            return;
+          }
+          setState({
+            kind: "error",
+            message: errorMessage || "Search failed",
+            status: response.status,
+          });
           return;
         }
         if (data.status === "ready" && data.orgId) setOrgId(data.orgId);
         setState({ kind: "loaded", view: data });
-      })
-      .catch(() => {
+        paintedRef.current = data.status === "ready";
+        setFromCache(false);
+        setCachedAt(null);
+        if (data.status === "ready") {
+          await persistSearchSnapshot(data.orgId || cacheOrg, data);
+        }
+      } catch {
         if (id !== requestId.current) return;
-        setState({ kind: "error", message: "Could not reach search. Check your connection." });
-      });
+        if (hadCache || paintedRef.current) {
+          setFromCache(true);
+          return;
+        }
+        setState({
+          kind: "error",
+          message: "Could not reach search. Check your connection.",
+          status: null,
+        });
+      }
+    })();
   }, []);
 
   // Debounced search on term / org changes; also mirrors the URL.
@@ -137,12 +220,31 @@ export default function SearchClient() {
     });
   };
 
+  const failure =
+    state.kind === "error"
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: state.status,
+            message: state.message,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: state.message,
+          },
+        )
+      : null;
+
   return (
     <div className="app-page" style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
       <PageHeader
         title="Search"
         description="One box across help tutorials, build tasks, inventory, community impact, and team knowledge."
       />
+      <OfflineBanner fromCache={fromCache} cachedAt={cachedAt} feature="Search" />
 
       <Panel>
         <form
@@ -206,33 +308,41 @@ export default function SearchClient() {
         </Panel>
       ) : null}
 
-      {state.kind === "error" ? (
+      {failure ? (
         <EmptyState
-         
-          badge="Error"
+          badge={failure.kind === "auth" ? "Signed out" : "Error"}
           badgeTone="setup"
-          title="Search failed"
-          description={state.message}
+          title={failure.title}
+          description={failure.description}
         >
-          <Button variant="secondary" onClick={() => runSearch(term, orgId)}>
-            Try again
-          </Button>
+          {failure.primary ? (
+            <Button as="a" variant="primary" href={failure.primary.href}>
+              {failure.primary.label}
+            </Button>
+          ) : null}
+          {failure.showRetry ? (
+            <Button variant="secondary" onClick={() => runSearch(term, orgId)}>
+              Try again
+            </Button>
+          ) : null}
         </EmptyState>
       ) : null}
 
       {view?.status === "setup_required" ? (
         <EmptyState
-         
           badge="Setup"
           badgeTone="setup"
-          title="No workspace to search"
+          title="Choose your team"
           description={view.message}
-        />
+        >
+          <Button as="a" variant="primary" href="/workspace">
+            Choose your team
+          </Button>
+        </EmptyState>
       ) : null}
 
       {view?.status === "ready" && view.query && results.length === 0 ? (
         <EmptyState
-         
           soft
           title={`No matches for “${view.query}”`}
           description="Try a shorter or different term, or clear source filters."
@@ -254,7 +364,6 @@ export default function SearchClient() {
 
       {state.kind === "idle" && !view ? (
         <EmptyState
-         
           soft
           title="Start typing to search"
           description="Results span every team feature you have access to, ranked by recency."

@@ -1,7 +1,10 @@
 "use client";
-import { Button } from "../../../components/ui";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { OfflineBanner } from "../../../components/offline-banner";
+import { Button, EmptyState, PageHeader } from "../../../components/ui";
+import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
 
 type Org = { id: string; name: string; role: string };
 
@@ -32,8 +35,8 @@ type StatusPayload = {
 };
 
 const ENGINE_LABELS: Record<string, { name: string; plan: string }> = {
-  claude: { name: "Claude Code", plan: "Claude Pro/Max subscription" },
-  codex: { name: "Codex CLI", plan: "ChatGPT subscription (experimental)" },
+  claude: { name: "Claude", plan: "Claude Pro/Max" },
+  codex: { name: "ChatGPT", plan: "ChatGPT" },
 };
 
 function engineLine(id: string, report: EngineReport): string {
@@ -43,9 +46,29 @@ function engineLine(id: string, report: EngineReport): string {
     report.authenticated === true
       ? "signed in"
       : report.authenticated === false
-        ? "NOT signed in — run its login on that machine"
-        : "sign-in state unknown";
+        ? "not signed in on that computer"
+        : "sign-in unknown";
   return `${meta.name} ${report.version ?? ""} · ${auth}`;
+}
+
+function isStatusPayload(value: unknown): value is StatusPayload {
+  if (!value || typeof value !== "object") return false;
+  const row = value as StatusPayload;
+  return (
+    Array.isArray(row.devices) ||
+    Array.isArray(row.jobStats) ||
+    row.setupRequired === true ||
+    typeof row.error === "string"
+  );
+}
+
+async function persistBridgeSnapshot(orgId: string, data: StatusPayload): Promise<void> {
+  if (data.error) return;
+  try {
+    await putFeatureSnapshot("ai-bridge", orgId, data);
+  } catch {
+    // Live bridge already painted; IndexedDB is best-effort.
+  }
 }
 
 export default function AiBridgeClient({
@@ -66,20 +89,81 @@ export default function AiBridgeClient({
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState<StatusPayload | null>(null);
   const [loading, setLoading] = useState(true);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const paintedRef = useRef(false);
 
   const refresh = useCallback(async () => {
     if (!orgId) {
       setStatus(null);
       setLoading(false);
+      paintedRef.current = false;
       return;
     }
-    setLoading(true);
+    let hadCache = paintedRef.current;
     try {
-      const response = await fetch(`/api/ai-bridge/status?orgId=${encodeURIComponent(orgId)}`);
-      setStatus((await response.json()) as StatusPayload);
+      const cached = await getFeatureSnapshot<StatusPayload>("ai-bridge", orgId);
+      if (cached?.data && isStatusPayload(cached.data) && !cached.data.error) {
+        if (!paintedRef.current) {
+          setStatus(cached.data);
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          setLoading(false);
+          paintedRef.current = true;
+          hadCache = true;
+        }
+      }
     } catch {
-      setStatus({ error: "Bridge status could not be loaded. Check your connection and retry." });
-    } finally {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
+    if (!hadCache) setLoading(true);
+    try {
+      const response = await fetch(`/api/ai-bridge/status?orgId=${encodeURIComponent(orgId)}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      const data: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        paintedRef.current = false;
+        setStatus({
+          error:
+            data && typeof data === "object" && "error" in data && typeof data.error === "string"
+              ? data.error
+              : "Could not load the subscription bridge.",
+        });
+        setFromCache(false);
+        setCachedAt(null);
+        setLoading(false);
+        return;
+      }
+      if (!response.ok || !isStatusPayload(data) || data.error) {
+        if (hadCache || paintedRef.current) {
+          setFromCache(true);
+          setLoading(false);
+          return;
+        }
+        setStatus({
+          error:
+            data && typeof data === "object" && "error" in data && typeof data.error === "string"
+              ? data.error
+              : "Could not load the subscription bridge. Check your connection and retry.",
+        });
+        setLoading(false);
+        return;
+      }
+      setStatus(data);
+      paintedRef.current = true;
+      setFromCache(false);
+      setCachedAt(null);
+      setLoading(false);
+      await persistBridgeSnapshot(orgId, data);
+    } catch {
+      if (hadCache || paintedRef.current) {
+        setFromCache(true);
+        setLoading(false);
+        return;
+      }
+      setStatus({ error: "Could not load the subscription bridge. Check your connection and retry." });
       setLoading(false);
     }
   }, [orgId]);
@@ -98,7 +182,7 @@ export default function AiBridgeClient({
     const data = (await response.json()) as { machineName?: string; error?: string };
     setMessage(
       response.ok
-        ? `${data.machineName} is paired. Return to that machine's terminal — the bridge starts serving once it heartbeats.`
+        ? `${data.machineName} is paired. Return to that computer — the bridge starts serving once it checks in.`
         : (data.error ?? "Pairing approval failed"),
     );
     if (response.ok) {
@@ -124,23 +208,34 @@ export default function AiBridgeClient({
   const failedJobs =
     (status?.jobStats?.find((row) => row.state === "failed")?.count ?? 0) +
     (status?.jobStats?.find((row) => row.state === "expired")?.count ?? 0);
+  const showStatusError = Boolean(status?.error) && !fromCache && !(status?.devices?.length);
 
   return (
     <main className="module-page ai-bridge-page">
-      <header>
-        <span className="breadcrumbs">Team / AI subscription bridge</span>
-        <h1>AI subscription bridge</h1>
-        <p className="app-muted">
-          One mentor or member who already pays for Claude Pro/Max (Claude Code) or ChatGPT (Codex CLI) can serve the
-          team&apos;s AI from their own machine — interactive chat by default, or the entire platform if they choose —
-          and those turns cost the team $0 in API usage.
-        </p>
-      </header>
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href="/team">Team</a>
+            {" / AI subscription bridge"}
+          </>
+        }
+        title="AI subscription bridge"
+        description="One mentor or member who already pays for Claude or ChatGPT can run the team's AI from their own computer. Chat is the default; they can widen that. Those turns cost the team $0 in API usage."
+      />
+      <OfflineBanner fromCache={fromCache} cachedAt={cachedAt} feature="AI subscription bridge" />
 
       {organizations.length === 0 ? (
-        <p className="telemetry-status" role="status">
-          You aren&apos;t a member of any team yet — join or create one before pairing a bridge.
-        </p>
+        <EmptyState
+          soft
+          badge="Setup"
+          badgeTone="setup"
+          title="Choose your team"
+          description="Join or create a team before pairing a bridge."
+        >
+          <Button as="a" variant="primary" href="/workspace">
+            Choose your team
+          </Button>
+        </EmptyState>
       ) : (
         <>
           {organizations.length > 1 ? (
@@ -160,14 +255,8 @@ export default function AiBridgeClient({
             <form className="ai-bridge-card" onSubmit={approve}>
               <h2>Pair a machine</h2>
               <ol className="ai-bridge-steps">
-                <li>
-                  On the always-on computer, install the CLI you subscribe to and sign in (<code>claude auth login</code>{" "}
-                  or <code>codex login</code>).
-                </li>
-                <li>
-                  Run <code>node bridge.mjs --setup</code> (see <code>docs/AI_BRIDGE.md</code>) and it prints an 8-character
-                  code.
-                </li>
+                <li>On the always-on computer, sign in to Claude or ChatGPT.</li>
+                <li>Run the bridge app — it prints an 8-character code.</li>
                 <li>Enter that code here. Only approve a code shown on a computer you control.</li>
               </ol>
               <label>
@@ -181,9 +270,9 @@ export default function AiBridgeClient({
                   autoComplete="one-time-code"
                 />
               </label>
-              <button className="primary-action" type="submit" disabled={!orgId}>
+              <Button variant="primary" type="submit" disabled={!orgId}>
                 Approve pairing
-              </button>
+              </Button>
               {message ? (
                 <p role="status" className="telemetry-status">
                   {message}
@@ -193,14 +282,12 @@ export default function AiBridgeClient({
 
             <section className="ai-bridge-card" aria-label="Bridge status">
               <h2>Status</h2>
-              {loading ? (
+              {loading && !status ? (
                 <p className="app-muted">Loading bridge status…</p>
-              ) : status?.error ? (
-                <p className="telemetry-status">{status.error}</p>
+              ) : showStatusError ? (
+                <p className="telemetry-status">{status?.error}</p>
               ) : status?.setupRequired ? (
-                <p className="app-muted">
-                  The bridge tables aren&apos;t migrated on this deployment yet — run the 0486 migration first.
-                </p>
+                <p className="app-muted">This team isn&apos;t ready for a bridge yet. Ask a mentor to finish setup.</p>
               ) : !status?.devices?.length ? (
                 <p className="app-muted">No bridge paired yet. Chat keeps using the team&apos;s configured AI keys.</p>
               ) : (
@@ -215,8 +302,8 @@ export default function AiBridgeClient({
                       </div>
                       <p className="app-muted ai-bridge-meta">
                         {device.lastHeartbeatAt
-                          ? `Last heartbeat ${new Date(device.lastHeartbeatAt).toLocaleString()}`
-                          : "No heartbeat yet — start the bridge on that machine"}
+                          ? `Last heard ${new Date(device.lastHeartbeatAt).toLocaleString()}`
+                          : "Not heard from yet — start the bridge on that computer"}
                         {" · "}
                         {device.jobsServed} job{device.jobsServed === 1 ? "" : "s"} served
                         {device.bridgeVersion ? ` · bridge v${device.bridgeVersion}` : ""}
@@ -254,7 +341,7 @@ export default function AiBridgeClient({
                                 checked={device.coverage === "everything"}
                                 onChange={() => void patchDevice(device.id, { coverage: "everything" })}
                               />
-                              Everything — run ALL of Vantage&apos;s AI on this subscription
+                              Everything — run all of Vantage&apos;s AI on this subscription
                             </label>
                             {device.coverage === "everything" ? (
                               <p className="app-muted ai-bridge-meta">
@@ -288,8 +375,8 @@ export default function AiBridgeClient({
             <h2>Honest terms &amp; limits</h2>
             <ul>
               <li>
-                <strong>This uses the pairer&apos;s subscription on the pairer&apos;s machine.</strong> Every bridged turn
-                draws from that person&apos;s Claude Pro/Max or ChatGPT plan — not a team pool.
+                <strong>This uses the pairer&apos;s subscription on the pairer&apos;s computer.</strong> Every bridged turn
+                draws from that person&apos;s Claude or ChatGPT plan — not a team pool.
               </li>
               <li>
                 Subscription plans have <strong>usage windows and rate limits</strong>, and their own terms apply:{" "}
@@ -303,8 +390,8 @@ export default function AiBridgeClient({
                 . Review whether bridged team use fits your plan before pairing.
               </li>
               <li>
-                When the CLI reports a rate limit, Vantage shows the provider&apos;s message (including any reset time) and
-                the turn <strong>falls back to the team&apos;s configured AI keys</strong>. Nothing here is unlimited.
+                When the provider says you hit a limit, Vantage shows that message (including any reset time) and the
+                turn <strong>falls back to the team&apos;s configured AI keys</strong>. Nothing here is unlimited.
               </li>
               <li>
                 By default only interactive chat-class features use the bridge
@@ -313,7 +400,7 @@ export default function AiBridgeClient({
                 reports and nightly summaries, runs on their subscription while the bridge is online.
               </li>
               <li>
-                Prompts for bridged turns include team context and are executed on the pairer&apos;s machine. Revoke the
+                Prompts for bridged turns include team context and are executed on the pairer&apos;s computer. Revoke the
                 device here at any time to stop that immediately.
               </li>
             </ul>

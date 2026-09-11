@@ -7,7 +7,8 @@
 // >30 min = offline), disk numbers appear only after a real heartbeat, and items a node's own
 // scrub could not find are labelled missing. Nothing is simulated.
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { OfflineBanner } from "../../../components/offline-banner";
 import {
   Badge,
   type BadgeTone,
@@ -20,6 +21,9 @@ import {
   StatTile,
   relativeTime,
 } from "../../../components/ui";
+import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
+import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 import { LIVENESS_LABEL, formatBytes, type NodeLiveness } from "../../../lib/storage-node";
 import type {
   StorageNodeCard,
@@ -35,25 +39,31 @@ const LIVENESS_TONE: Record<NodeLiveness, BadgeTone> = {
 };
 
 const DESCRIPTION =
-  "Pair an always-on computer (a Raspberry Pi works well) that stores your team's large files itself — only metadata stays in the hosted database.";
+  "Pair an always-on computer (a Raspberry Pi works well) that keeps your team's large files. File names stay in Vantage; the files live on that computer.";
+
+function isStorageView(value: unknown): value is StorageNodeViewData {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as StorageNodeViewData).status;
+  return status === "live" || status === "setup_required";
+}
+
+async function persistStorageSnapshot(orgId: string, data: StorageNodeViewData): Promise<void> {
+  if (data.status !== "live") return;
+  try {
+    await putFeatureSnapshot("storage", orgId, data);
+  } catch {
+    // Live storage already painted; IndexedDB is best-effort.
+  }
+}
 
 function SetupInstructions() {
   return (
     <Panel className="stn-panel">
-      <h2>Run a storage node</h2>
+      <h2>Run a storage computer</h2>
       <p className="app-muted stn-note">
-        On the computer that will store files (Node.js 20+ required), download <code>server.mjs</code> from the
-        Vantage repo (<code>packages/storage-node</code>), then pair and start it:
-      </p>
-      <pre className="stn-code">
-        {`node server.mjs --setup --cloud ${typeof window !== "undefined" ? window.location.origin : "https://your-vantage-host"}
-node server.mjs # after pairing; add --quota-gb to change the 20 GB default`}
-      </pre>
-      <p className="app-muted stn-note">
-        The node prints an 8-character code — enter it below. On your shop/pit network the node serves files
-        directly. To reach it from anywhere, give it a public URL with Tailscale Funnel or cloudflared and save
-        that URL on the node card here. Without one, the cloud cannot reach a node behind your router — items
-        will honestly show as unreachable away from the LAN. Full guide: <code>docs/STORAGE_NODE.md</code>.
+        On the computer that will keep large files, run the storage app. It prints an 8-character code — enter
+        it below. On your shop or pit network it serves files directly. To reach it from anywhere, save a public
+        URL on the card for that computer. Without one, files stay on that network only.
       </p>
     </Panel>
   );
@@ -105,7 +115,7 @@ function StorageShell({
 
 function DiskLine({ node }: { node: StorageNodeCard }) {
   if (node.diskTotalBytes == null || node.diskFreeBytes == null) {
-    return <span className="app-muted">Disk: unknown until the node&apos;s first heartbeat</span>;
+    return <span className="app-muted">Disk: unknown until this computer first checks in</span>;
   }
   return (
     <span>
@@ -135,8 +145,8 @@ function NodeCard({
         </div>
         <span className="app-muted">
           {node.lastHeartbeatAt
-            ? `Last heartbeat ${relativeTime(node.lastHeartbeatAt)}`
-            : "No heartbeat received yet — start the node with `node server.mjs`"}
+            ? `Last heard ${relativeTime(node.lastHeartbeatAt)}`
+            : "Not heard from yet — start the storage app on that computer"}
         </span>
       </div>
 
@@ -211,26 +221,82 @@ export default function StorageNodesClient() {
   const [view, setView] = useState<StorageNodeViewData | null>(null);
   const [fetchFailed, setFetchFailed] = useState(false);
   const [error, setError] = useState("");
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
   const [pairCode, setPairCode] = useState("");
   const [pairName, setPairName] = useState("");
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const paintedRef = useRef(false);
 
   const load = useCallback(() => {
-    setFetchFailed(false);
     const params = new URLSearchParams(window.location.search);
     const urlOrg = params.get("orgId");
     const query = urlOrg ? `?orgId=${encodeURIComponent(urlOrg)}` : "";
-    void fetch(`/api/storage-node${query}`)
-      .then(async (response) => {
-        const data = (await response.json()) as StorageNodeViewData | { error?: string };
-        if (!response.ok || !("status" in data)) {
+    const cacheOrg = urlOrg?.trim() || "_";
+    void (async () => {
+      let hadCache = paintedRef.current;
+      try {
+        const cached = await getFeatureSnapshot<StorageNodeViewData>("storage", cacheOrg);
+        if (cached?.data && isStorageView(cached.data) && cached.data.status === "live") {
+          if (!paintedRef.current) {
+            setView(cached.data);
+            setFromCache(true);
+            setCachedAt(cached.cachedAt);
+            setFetchFailed(false);
+            paintedRef.current = true;
+            hadCache = true;
+          }
+        }
+      } catch {
+        // IndexedDB missing or blocked; live fetch still runs.
+      }
+      setFetchFailed(false);
+      setErrorStatus(null);
+      try {
+        const response = await fetch(`/api/storage-node${query}`, {
+          cache: "no-store",
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+        });
+        const data: unknown = await response.json().catch(() => null);
+        if (response.status === 401 || response.status === 403) {
+          paintedRef.current = false;
+          setView(null);
+          setFromCache(false);
+          setCachedAt(null);
+          setErrorStatus(response.status);
+          setFetchFailed(true);
+          return;
+        }
+        if (!response.ok || !isStorageView(data)) {
+          if (hadCache || paintedRef.current) {
+            setFromCache(true);
+            setFetchFailed(false);
+            return;
+          }
+          setErrorStatus(response.status);
           setFetchFailed(true);
           return;
         }
         setView(data);
-      })
-      .catch(() => setFetchFailed(true));
+        paintedRef.current = data.status === "live";
+        setFromCache(false);
+        setCachedAt(null);
+        setFetchFailed(false);
+        if (data.status === "live") {
+          await persistStorageSnapshot(data.orgId, data);
+          if (!urlOrg) await persistStorageSnapshot("_", data);
+        }
+      } catch {
+        if (hadCache || paintedRef.current) {
+          setFromCache(true);
+          setFetchFailed(false);
+          return;
+        }
+        setFetchFailed(true);
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -266,6 +332,7 @@ export default function StorageNodesClient() {
           return;
         }
         setView(data);
+        if (data.status === "live") await persistStorageSnapshot(data.orgId, data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -292,7 +359,7 @@ export default function StorageNodesClient() {
         return;
       }
       setNotice(
-        `Paired "${data.machineName ?? "storage node"}". The node picks up its token within a few seconds and sends its first heartbeat within a minute.`,
+        `Paired "${data.machineName ?? "storage computer"}". It checks in within a minute.`,
       );
       setPairCode("");
       setPairName("");
@@ -305,7 +372,29 @@ export default function StorageNodesClient() {
   }, [orgId, busy, pairCode, pairName, load]);
 
   if (view == null && !fetchFailed) return <StorageShell kind="loading" />;
-  if (fetchFailed) return <StorageShell kind="error" message="Could not load storage nodes." onRetry={load} />;
+  if (fetchFailed && (view == null || view.status !== "live")) {
+    const copy = loadFailureCopy(
+      classifyLoadFailure({
+        status: errorStatus,
+        message: "Could not load storage.",
+        online: typeof navigator === "undefined" ? true : navigator.onLine,
+      }),
+      {
+        nextPath:
+          typeof window === "undefined"
+            ? null
+            : `${window.location.pathname}${window.location.search}`,
+        message: "Could not load storage.",
+      },
+    );
+    return (
+      <StorageShell
+        kind="error"
+        message={copy.description}
+        onRetry={copy.showRetry ? load : undefined}
+      />
+    );
+  }
   if (view == null || view.status !== "live") {
     return <StorageShell kind="setup" message={view?.status === "setup_required" ? view.message : undefined} />;
   }
@@ -322,6 +411,7 @@ export default function StorageNodesClient() {
         title="Self-hosted storage"
         description={DESCRIPTION}
       />
+      <OfflineBanner fromCache={fromCache} cachedAt={cachedAt} feature="Storage" />
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -354,8 +444,8 @@ export default function StorageNodesClient() {
       <Panel className="stn-panel">
         <h2>Pair a node</h2>
         <p className="app-muted stn-note">
-          Run <code>node server.mjs --setup --cloud {typeof window !== "undefined" ? window.location.origin : "…"}</code>{" "}
-          on the node, then enter the 8-character code it prints. Owners and admins can approve pairings.
+          Run the storage app on that computer. It prints an 8-character code — paste it here. Owners and admins
+          can approve pairings.
         </p>
         <form
           className="stn-inline-form"
@@ -423,8 +513,8 @@ export default function StorageNodesClient() {
       ) : null}
 
       <p className="app-muted stn-note">
-        Liveness comes from the node&apos;s 60-second heartbeats: a gap over 5 minutes shows degraded, over 30
-        minutes offline. Disk numbers are what the node last reported — never an estimate.
+        Online / degraded / offline comes from how recently that computer checked in: over 5 minutes is degraded,
+        over 30 minutes is offline. Disk numbers are what it last reported.
       </p>
     </main>
   );

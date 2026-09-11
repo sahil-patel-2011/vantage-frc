@@ -152,6 +152,10 @@ export const OFFLINE_SHELL_ROUTES = [
   "/subsystem-signoff",
   "/prototype-tracker",
   "/equipment-maintenance",
+  "/search",
+  "/team/storage",
+  "/team/ai-usage",
+  "/team/ai-bridge",
 ] as const;
 
 export type OfflineShellRoute = (typeof OFFLINE_SHELL_ROUTES)[number];
@@ -185,6 +189,10 @@ export function offlineCapableLabel(pathname: string): string | null {
   }
   if (bare.startsWith("/team/data")) return "Team Data";
   if (bare.startsWith("/team/grants")) return "Grant writing";
+  if (bare.startsWith("/team/storage")) return "Storage";
+  if (bare.startsWith("/team/ai-usage")) return "Your keys usage";
+  if (bare.startsWith("/team/ai-bridge")) return "AI subscription bridge";
+  if (bare === "/search" || bare.startsWith("/search/")) return "Search";
   if (bare === "/team") return "Team";
   if (bare.startsWith("/todos") || bare.startsWith("/tasks")) return "Todos";
   if (bare.startsWith("/logistics")) return "Logistics";

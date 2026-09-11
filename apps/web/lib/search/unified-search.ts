@@ -303,7 +303,7 @@ export async function computeUnifiedSearch(
     }
     return {
       status: "setup_required",
-      message: "Join or select a team to search across your team's data. App manual topics still work from /docs.",
+      message: "Choose your team to search across your team's data. App manual topics still work from Help.",
       orgId: null,
       query: query ?? "",
     };
