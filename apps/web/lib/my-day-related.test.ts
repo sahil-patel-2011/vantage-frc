@@ -33,11 +33,12 @@ describe("myDayRelatedLinks", () => {
 });
 
 describe("myDaySetupSteps", () => {
-  it("keeps Sync the schedule; Event Day / Schedule / Strategy live on the related strip", () => {
+  it("keeps Set the event; Event Day / Schedule / Strategy live on the related strip", () => {
     const steps = myDaySetupSteps("org-1");
-    expect(steps.map((s) => s.id)).toEqual(["team-data"]);
-    expect(steps[0]?.href).toBe("/team/data?orgId=org-1");
+    expect(steps.map((s) => s.id)).toEqual(["command"]);
+    expect(steps[0]?.href).toBe("/competition?tab=command&orgId=org-1");
     expect(steps.every((s) => !/\bDEMO\b/.test(s.label))).toBe(true);
+    expect(JSON.stringify(steps)).not.toMatch(/Blue Alliance|TBA/);
   });
 
   it("no-org setup is only Choose your team", () => {
@@ -85,8 +86,11 @@ describe("myDayShellCopy", () => {
     expect(myDayShellCopy("empty", { emptyReason: "no_upcoming" }).badge).toBe(
       "No upcoming matches",
     );
-    expect(myDayShellCopy("setup").badge).toBe("Setup required");
+    expect(myDayShellCopy("setup").badge).toBe("Needs setup");
     expect(myDayShellCopy("ready").description).not.toMatch(/DEMO/i);
+    expect(myDayShellCopy("setup").description).not.toMatch(/Blue Alliance|TBA/);
+    expect(myDayShellCopy("empty").description).not.toMatch(/Blue Alliance|TBA/);
+    expect(myDayShellCopy("ready").description).not.toMatch(/Blue Alliance|TBA/);
   });
 });
 
@@ -118,11 +122,13 @@ describe("myDayNextActions", () => {
     );
   });
 
-  it("ready boards prioritize Event Day", () => {
+  it("ready boards prioritize Scout this match", () => {
     const actions = myDayNextActions({ orgId: "org-1", shell: "ready" });
-    expect(actions[0]?.id).toBe("command");
+    expect(actions[0]?.id).toBe("scouting");
+    expect(actions[0]?.primary).toBe(true);
     expect(actions.map((a) => a.id)).toEqual(
-      expect.arrayContaining(["command", "schedule", "strategy"]),
+      expect.arrayContaining(["scouting", "command", "schedule", "strategy"]),
     );
+    expect(JSON.stringify(actions)).not.toMatch(/Blue Alliance|TBA/);
   });
 });

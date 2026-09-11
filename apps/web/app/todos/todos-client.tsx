@@ -347,7 +347,7 @@ export default function TodosClient({ embedded = false }: { embedded?: boolean }
       ) : view == null ? (
         <EmptyState soft title="Loading…" description="Checking your team for real todos." aria-busy />
       ) : view.status === "setup_required" ? (
-        <EmptyState soft badge="Setup required" badgeTone="setup" title={view.message}>
+        <EmptyState soft badge="Needs setup" badgeTone="setup" title={view.message}>
           {view.steps[0] ? (
             <Button as="a" variant="primary" href={view.steps[0].href}>
               {view.steps[0].label}

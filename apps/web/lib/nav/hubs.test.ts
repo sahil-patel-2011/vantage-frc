@@ -159,6 +159,7 @@ describe("product hubs", () => {
     expect(hubFeaturedMoreTabs(hubById("competition")).map((tab) => tab.id)).toEqual([
       // The one pre-match briefing is the drive team's front door on event day.
       "briefing",
+      "video-analysis",
       "alliance-selection-desk",
     ]);
     expect(hubFeaturedMoreTabs(hubById("team")).map((tab) => tab.id)).toContain(

@@ -49,7 +49,7 @@ describe("cad Soft-UI helpers", () => {
     ).toBe("Human edit detected · review before resume");
   });
 
-  it("asks for first brief when the queue is empty", () => {
+  it("asks to link a CAD document first, then a brief when the queue is empty", () => {
     const actions = cadNextActions({
       orgId: "org-1",
       jobCount: 0,
@@ -57,16 +57,17 @@ describe("cad Soft-UI helpers", () => {
       onshapeConnected: true,
       fusionRelayOnline: true,
     });
-    expect(actions[0]?.id).toBe("first-brief");
+    expect(actions[0]?.id).toBe("link-cad");
     expect(actions[0]?.primary).toBe(true);
-    expect(actions.some((a) => a.id === "ai-keys")).toBe(true);
+    expect(actions.some((a) => a.id === "first-brief")).toBe(true);
     expect(actions.some((a) => a.id === "kickoff")).toBe(true);
     expect(actions.some((a) => a.id === "fmea")).toBe(true);
     expect(actions.some((a) => a.id === "strategy")).toBe(true);
+    expect(JSON.stringify(actions)).not.toMatch(/OAuth|ONSHAPE_|vantage-cad/);
     expect(actions.every((a) => !/demo geometry/i.test(a.label + a.detail))).toBe(true);
   });
 
-  it("surfaces Onshape OAuth setup_required when env is missing", () => {
+  it("does not name OAuth or env vars when Onshape is not connected", () => {
     const actions = cadNextActions({
       orgId: "org-1",
       jobCount: 1,
@@ -74,8 +75,10 @@ describe("cad Soft-UI helpers", () => {
       onshapeConnected: false,
       fusionRelayOnline: false,
     });
-    expect(actions.find((a) => a.id === "onshape-oauth")?.detail).toMatch(/Setup required/i);
-    expect(actions.find((a) => a.id === "fusion-relay")?.detail).toMatch(/never hosts/i);
+    expect(actions[0]?.id).toBe("link-cad");
+    expect(actions.find((a) => a.id === "onshape-connect")?.href).toBe("/cad/setup?orgId=org-1");
+    expect(actions.find((a) => a.id === "fusion-relay")?.label).toBe("Pair Fusion on this computer");
+    expect(JSON.stringify(actions)).not.toMatch(/OAuth|ONSHAPE_|Setup required|vantage-cad/);
   });
 
   it("requires workspace when org is missing", () => {

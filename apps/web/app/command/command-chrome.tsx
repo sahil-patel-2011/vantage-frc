@@ -121,7 +121,7 @@ export function EventDayShell({
       </Button>
     ) : (
       <Button as="a" variant="primary" href={orgId ? teamDataHref : workspaceHref}>
-        {orgId ? "Connect TBA" : "Choose your team"}
+        {orgId ? "Set the event you’re at" : "Choose your team"}
       </Button>
     );
 
@@ -131,7 +131,7 @@ export function EventDayShell({
         <PageHeader
           breadcrumbs="Competition / Event Day"
           title="Command"
-          description="Connect TBA and set an active event."
+          description="Set the event you’re at so match times can show."
         >
           {related}
         </PageHeader>
@@ -143,9 +143,7 @@ export function EventDayShell({
         badge={shell === "setup" ? "Setup" : copy.badge}
         badgeTone="setup"
         title={eventDayEmptyTitle({ shell, orgId, hasActiveEvent })}
-        description={
-          error ?? (shell === "setup" ? "Connect TBA and set the active event." : copy.description)
-        }
+        description={error ?? copy.description}
       >
         {shell === "setup" ? primarySetupCta : null}
         {shell === "empty" ? (

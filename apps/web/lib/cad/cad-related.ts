@@ -97,8 +97,8 @@ export function formatTopologyEvidence(input: {
 }
 
 /**
- * Readable Soft-UI next actions for the CAD workbench.
- * Points at Kickoff / FMEA / Strategy and real connector setup — never DEMO geometry metrics.
+ * Readable next actions for the CAD workbench.
+ * Student this week: paste a document link. Never name OAuth or env vars.
  */
 export function cadNextActions(input: {
   orgId?: string | null;
@@ -121,7 +121,15 @@ export function cadNextActions(input: {
     ];
   }
 
-  const actions: CadNextAction[] = [];
+  const actions: CadNextAction[] = [
+    {
+      id: "link-cad",
+      label: "Link a CAD document",
+      detail: "Paste an Onshape or Fusion link. No export needed.",
+      href: `${withOrgHref("/cad-vault", orgId)}#link-cad`,
+      primary: true,
+    },
+  ];
 
   if (input.jobCount === 0) {
     actions.push({
@@ -129,42 +137,24 @@ export function cadNextActions(input: {
       label: "Create your first engineering brief",
       detail: "Briefs stay empty until you cite intent — geometry checkpoints appear only after approved ops.",
       href: hubHref("/build", "cad", orgId),
-      primary: true,
     });
   }
 
-  actions.push({
-    id: "ai-keys",
-    label: "Connect an AI provider for CAD plans",
-    detail: "AI plan from brief is metered. Without a key, use the starter plan (no model) or add keys under Team → AI API keys.",
-    href: withOrgHref("/team/ai-keys", orgId),
-  });
-
-  if (!input.onshapeConfigured) {
-    actions.push({
-      id: "onshape-oauth",
-      label: "Configure Onshape OAuth",
-      detail: "Setup required — an admin must set ONSHAPE_OAUTH_* on the server before hosted CAD runs.",
-      href: withOrgHref("/cad/connections", orgId),
-      primary: actions.length === 0,
-    });
-  } else if (!input.onshapeConnected) {
+  if (!input.onshapeConnected) {
     actions.push({
       id: "onshape-connect",
-      label: "Connect Onshape OAuth",
-      detail: "OAuth client is configured — connect your account in Connections before Run Onshape.",
-      href: withOrgHref("/cad/connections", orgId),
-      primary: actions.length === 0,
+      label: "Connect Onshape",
+      detail: "Ask a mentor to connect Onshape in the browser if you need the CAD agent.",
+      href: withOrgHref("/cad/setup", orgId),
     });
   }
 
   if (!input.fusionRelayOnline) {
     actions.push({
       id: "fusion-relay",
-      label: "Pair Fusion desktop relay",
-      detail: "Fusion stays local — Vantage never hosts Autodesk. Pair vantage-cad on your machine to execute.",
+      label: "Pair Fusion on this computer",
+      detail: "Fusion stays on this computer. Pair it from CAD setup.",
       href: withOrgHref("/cad/setup", orgId),
-      primary: actions.length === 0,
     });
   }
 
@@ -173,7 +163,6 @@ export function cadNextActions(input: {
     label: "Ground in Kickoff priorities",
     detail: "Season priorities and rule citations can shape engineering briefs.",
     href: hubHref("/build", "kickoff", orgId),
-    primary: actions.length === 0,
   });
 
   actions.push({

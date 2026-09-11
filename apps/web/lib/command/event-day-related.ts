@@ -107,7 +107,7 @@ export function eventDaySetupSteps(orgId?: string | null): EventDaySetupStep[] {
     {
       id: "team-data",
       label: "Sync Team Data",
-      detail: "Pull the match schedule from The Blue Alliance.",
+      detail: "Pull the match schedule for the event you’re at.",
       href: withOrgHref("/team/data", orgId),
     },
     {
@@ -119,7 +119,7 @@ export function eventDaySetupSteps(orgId?: string | null): EventDaySetupStep[] {
     {
       id: "schedule",
       label: "Open Schedule",
-      detail: "Full event board stays blank until real TBA matches exist.",
+      detail: "Full event board stays blank until matches are saved.",
       href: withOrgHref("/schedule", orgId),
     },
     {
@@ -211,14 +211,14 @@ export function eventDayShellCopy(kind: EventDayShellKind): EventDayEmptyCopy {
         kind,
         badge: "Setup",
         title: "Set an active event",
-        description: "Connect TBA and pick the event Command should follow.",
+        description: "Set the event you’re at so Command can follow it.",
       };
     case "empty":
       return {
         kind,
         badge: "No matches",
         title: "No upcoming matches",
-        description: "Matches appear after TBA sync for this event.",
+        description: "Matches appear after the event schedule is saved.",
       };
     case "ready":
       return {
@@ -261,7 +261,7 @@ function eventDayShellNextActionCandidates(input: {
       {
         id: "retry",
         label: "Retry Event Day",
-        detail: "Reload real TBA schedule rows.",
+        detail: "Reload the event schedule.",
         href: withOrgHref("/command", orgId),
         primary: true,
       },
@@ -291,7 +291,7 @@ function eventDayShellNextActionCandidates(input: {
       {
         id: "schedule",
         label: "Check schedule sync",
-        detail: "Confirm TBA rows on the full board.",
+        detail: "Confirm posted matches on the full board.",
         href: withOrgHref("/schedule", orgId),
         primary: true,
       },

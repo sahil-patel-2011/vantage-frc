@@ -431,9 +431,7 @@ return (
             <span className="eyebrow">{SCOUT_IDENTITY_LOCK_COPY.eyebrow}</span>
             <strong>{data?.scoutIdentity?.displayName ?? "Signed-in member"}</strong>
             <small className="app-muted">
-              {SCOUT_IDENTITY_LOCK_COPY.title}
-              {data?.scoutIdentity?.userId ? ` · ${data.scoutIdentity.userId.slice(0, 8)}…` : ""}.{" "}
-              {SCOUT_IDENTITY_LOCK_COPY.detail}
+              {SCOUT_IDENTITY_LOCK_COPY.title}. {SCOUT_IDENTITY_LOCK_COPY.detail}
             </small>
           </div>
 
@@ -448,7 +446,7 @@ return (
               label="Assignment"
               hint={
                 !matchOptions.length
-                  ? "No assignments or synced matches yet — sync TBA after the schedule is published."
+                  ? "No assignments or synced matches yet — the list fills in after the event schedule is set."
                   : undefined
               }
             >
@@ -473,7 +471,7 @@ return (
               <input
                 value={teamKey}
                 onChange={(event) => setTeamKey(event.target.value)}
-                placeholder="frc254"
+                placeholder="254"
               />
             </FormRow>
           )}
@@ -574,7 +572,7 @@ return (
           ) : null}
 
           <Button variant="primary" type="button" onClick={() => void submit()}>
-            Save {online ? "& sync" : "offline"}
+            {online ? `Save this ${type}` : "Save on this phone"}
           </Button>
           {message ? (
             <p className="form-message" role="status">
@@ -592,8 +590,8 @@ return (
                 </strong>
                 <small className="app-muted">
                   {saveReceipt.offline
-                    ? "Stored in this device outbox (org-isolated). Identity stays locked to your membership."
-                    : "Queued for sync into your org’s scouting tables. Identity stays locked to your membership."}
+                    ? "Saved on this phone. It will upload when you have signal."
+                    : "Saved. You can scout the next one."}
                 </small>
               </div>
               <ul className="scout-save-next">
@@ -624,7 +622,7 @@ return (
           <Panel className="scout-activity" style={{ minHeight: "auto" }}>
             <h2 style={{ marginTop: 0 }}>Accuracy leaderboard</h2>
             <p className="app-muted">
-              Ranked by TBA-checked accuracy, not form volume. Full board lives under Trust &amp; coverage.
+              Ranked by official-score checks, not form volume. Full board lives under Trust &amp; coverage.
             </p>
             {trust?.leaderboard?.length ? (
               <ol className="scout-accuracy-mini">
@@ -634,7 +632,7 @@ return (
                     <div>
                       <strong>{scout.name}</strong>
                       <small className="app-muted">
-                        {scout.checks} TBA checks · {scout.entries} entries
+                        {scout.checks} official checks · {scout.entries} entries
                       </small>
                     </div>
                     <b>{scout.accuracy == null ? "—" : `${Math.round(scout.accuracy * 100)}%`}</b>
@@ -642,7 +640,7 @@ return (
                 ))}
               </ol>
             ) : (
-              <p className="app-muted">Accuracy ranks appear after TBA score breakdowns validate entries.</p>
+              <p className="app-muted">Accuracy ranks appear after official score breakdowns validate entries.</p>
             )}
           </Panel>
 

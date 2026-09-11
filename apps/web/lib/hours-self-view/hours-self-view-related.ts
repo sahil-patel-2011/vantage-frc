@@ -152,7 +152,7 @@ export function hoursSelfViewShellCopy(kind: HoursSelfViewShellKind): HoursSelfV
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Choose your team before reading your logged sessions.",
@@ -194,7 +194,7 @@ export function hoursSelfViewNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before reading your sessions.",
+          detail: "Choose your team before reading your sessions.",
           href: "/workspace",
           primary: true,
         },

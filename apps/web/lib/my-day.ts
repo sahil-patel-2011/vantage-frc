@@ -26,6 +26,7 @@ export type MyDayMatchLinks = {
   briefing: string;
   checklist: string;
   schedule: string;
+  scouting: string;
   scoutPartners: Array<{ teamKey: string; teamNumber: string; href: string }>;
   scoutOpponents: Array<{ teamKey: string; teamNumber: string; href: string }>;
 };
@@ -243,6 +244,7 @@ export function buildMyDayMatch(
       briefing: withOrg("/briefing", input.orgId, { matchKey: match.matchKey }),
       checklist: withOrg("/match-checklist", input.orgId),
       schedule: withOrg("/schedule", input.orgId),
+      scouting: withOrg("/scouting", input.orgId, { matchKey: match.matchKey }),
       scoutPartners: teamLinks(input.orgId, match.matchKey, partnerKeys, input.teamKey),
       scoutOpponents: teamLinks(input.orgId, match.matchKey, opponentKeys, input.teamKey),
     },

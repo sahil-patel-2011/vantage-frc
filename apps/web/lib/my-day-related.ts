@@ -96,10 +96,10 @@ export function myDaySetupSteps(orgId?: string | null): MyDaySetupStep[] {
   }
   return dropRelatedStripDuplicates(orgId, [
     {
-      id: "team-data",
-      label: "Sync the schedule",
-      detail: "Load The Blue Alliance schedule for this event.",
-      href: withOrgHref("/team/data", orgId),
+      id: "command",
+      label: "Set the event you’re at",
+      detail: "Event Day picks the event so next-match times can show.",
+      href: hubHref("/competition", "command", orgId),
     },
   ]);
 }
@@ -159,10 +159,10 @@ export function myDayShellCopy(
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
-          "Choose your team, set the event, and sync the schedule before a next match appears.",
+          "Choose your team and set the event you’re at before a next match appears.",
       };
     case "empty":
       if (options?.emptyReason === "no_upcoming") {
@@ -178,14 +178,13 @@ export function myDayShellCopy(
         kind,
         badge: "No matches yet",
         title: "Waiting on the event schedule",
-        description: "Matches appear after The Blue Alliance schedule syncs for this event.",
+        description: "Matches appear after the event schedule is set.",
       };
     default:
       return {
         kind,
         title: "My Day",
-        description:
-          "Next match, bumper color, partners, and opponents from The Blue Alliance.",
+        description: "Next match, bumper color, partners, and opponents.",
       };
   }
 }
@@ -211,7 +210,7 @@ export function myDayNextActions(input: {
       {
         id: "retry",
         label: "Retry My Day",
-        detail: "Reload real TBA next-match rows.",
+        detail: "Reload your next match.",
         href: withOrgHref("/my-day", orgId),
         primary: true,
       },
@@ -244,7 +243,7 @@ export function myDayNextActions(input: {
         label: noUpcoming ? "Open Schedule" : "Check Event Day sync",
         detail: noUpcoming
           ? "Confirm posted alliances on Event Day."
-          : "Matches appear after The Blue Alliance schedule syncs for this event.",
+          : "Matches appear after the event schedule is set.",
         href: noUpcoming
           ? withOrgHref("/schedule", orgId)
           : hubHref("/competition", "command", orgId),
@@ -266,27 +265,27 @@ export function myDayNextActions(input: {
         detail: "Prep alliance notes while you wait.",
         href: hubHref("/competition", "strategy", orgId),
       },
-      {
-        id: "team-data",
-        label: "Sync team data",
-        detail: "Pull the match schedule from The Blue Alliance when the event is posted.",
-        href: withOrgHref("/team/data", orgId),
-      },
     ].slice(0, 4);
   }
 
   return [
     {
+      id: "scouting",
+      label: "Scout this match",
+      detail: "Fill the match form for partners and opponents.",
+      href: hubHref("/competition", "scouting", orgId),
+      primary: true,
+    },
+    {
       id: "command",
       label: "Open Event Day",
       detail: "Pit queues and readiness share this next-match context.",
       href: hubHref("/competition", "command", orgId),
-      primary: true,
     },
     {
       id: "schedule",
       label: "Open Schedule",
-      detail: "Countdowns and the full board use the same TBA schedule rows.",
+      detail: "Countdowns and the full board use the same event matches.",
       href: withOrgHref("/schedule", orgId),
     },
     {
@@ -294,12 +293,6 @@ export function myDayNextActions(input: {
       label: "Open Strategy",
       detail: "Alliance prep for partners and opponents stays grounded in real data.",
       href: hubHref("/competition", "strategy", orgId),
-    },
-    {
-      id: "match-checklist",
-      label: "Open Match checklist",
-      detail: "Timed pit checks for this match — progress only from real item taps.",
-      href: hubHref("/competition", "match-checklist", orgId),
     },
   ].slice(0, 4);
 }

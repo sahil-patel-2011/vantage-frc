@@ -176,10 +176,10 @@ export async function loadEventDayCommand(
     },
     {
       id: "tba",
-      label: "Sync TBA schedule",
+      label: "Sync the event schedule",
       detail: tbaAccess.tbaConfigured
-        ? "TBA is configured — confirm sync freshness under Team → Data if matches are missing."
-        : "Add a The Blue Alliance key under Team → Data. Match times stay empty until then.",
+        ? "The schedule is connected — confirm freshness under Team → Data if matches are missing."
+        : "Ask a mentor to connect the event schedule under Team → Data. Match times stay empty until then.",
       href: links.teamData,
       done: tbaAccess.tbaConfigured,
     },
@@ -688,7 +688,7 @@ export async function loadEventDayCommand(
     status: matches.length || metric || scoutQueue.length ? "live" : "empty",
     message:
       matches.length === 0
-        ? "No upcoming matches for your team at this event yet. Confirm TBA sync and event selection."
+        ? "No upcoming matches for your team at this event yet. Confirm the event and schedule."
         : undefined,
     matches,
     scoutQueue,

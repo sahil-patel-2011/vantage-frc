@@ -52,9 +52,23 @@ import {
 } from "./scouting-model";
 import { ScoutingReadyView } from "./scouting-ready-view";
 import { ScoutingShell } from "./scouting-chrome";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { clearFeatureSnapshot, getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./scouting-qr.css";
 
+function scoutTeamLabel(teamKey: string): string {
+  return teamKey.replace(/^frc/i, "");
+}
 
+async function persistScoutingSnapshot(orgId: string, data: Bootstrap): Promise<void> {
+  if (!orgId) return;
+  try {
+    await putFeatureSnapshot("scouting", orgId, data);
+    await putFeatureSnapshot("scouting", "_", data);
+  } catch {
+    // Live Scouting already painted; IndexedDB is best-effort.
+  }
+}
 
 export default function ScoutingClient({ orgId, embedded = false }: { orgId: string; embedded?: boolean }) {
   const searchParams = useSearchParams();
@@ -131,7 +145,7 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
           : "";
         setMessage(
           conflictCount
-            ? `Synced ${entries.count} entries · ${conflictCount} TBA contradiction${conflictCount === 1 ? "" : "s"} flagged${attention}`
+            ? `Synced ${entries.count} entries · ${conflictCount} official-score disagreement${conflictCount === 1 ? "" : "s"} flagged${attention}`
             : `Synced ${entries.count} entries and ${media.synced} media files${attention}`,
         );
       }
@@ -163,33 +177,47 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
       setLoading(true);
       setFetchFailed(false);
       setBootstrapStatus(null);
-      const cached = await getCachedEvent<Bootstrap>(orgId);
+      const cachedEvent = await getCachedEvent<Bootstrap>(orgId);
+      const cachedSnap = await getFeatureSnapshot<Bootstrap>("scouting", orgId);
+      const cached = cachedEvent ?? cachedSnap?.data ?? null;
       if (cached) {
         setData(cached);
         setFromCache(true);
       }
       try {
-        const response = await fetch(`/api/scouting/bootstrap?orgId=${encodeURIComponent(orgId)}`);
-        if (response.ok) {
+        const response = await fetch(`/api/scouting/bootstrap?orgId=${encodeURIComponent(orgId)}`, {
+          cache: "no-store",
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+        });
+        if (response.status === 401 || response.status === 403) {
+          setData(null);
+          setFromCache(false);
+          setFetchFailed(true);
+          setBootstrapStatus(response.status);
+          setMessage("Could not load scouting");
+          void clearFeatureSnapshot("scouting", orgId);
+          void clearFeatureSnapshot("scouting", "_");
+        } else if (response.ok) {
           const fresh = (await response.json()) as Bootstrap;
           setData(fresh);
           setFromCache(false);
           setFetchFailed(false);
           await cacheEvent(orgId, fresh);
+          await persistScoutingSnapshot(orgId, fresh);
           await loadTrust(fresh.eventKey);
         } else if (cached) {
-          setMessage("Using cached event data — bootstrap unavailable");
+          setMessage("Using the last copy on this phone — could not refresh.");
         } else {
           setFetchFailed(true);
           setBootstrapStatus(response.status);
-          setMessage("Could not load scouting bootstrap");
+          setMessage("Could not load scouting");
         }
       } catch {
         if (cached) {
-          setMessage("Using cached event data");
+          setMessage("Using the last copy on this phone");
         } else {
           setFetchFailed(true);
-          setMessage("No cached event data available");
+          setMessage("Could not load scouting");
         }
       } finally {
         setLoading(false);
@@ -246,7 +274,7 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
       return data.assignments.map((assignment) => ({
         matchKey: assignment.matchKey,
         teamKey: assignment.teamKey,
-        label: `${assignment.compLevel.toUpperCase()} ${assignment.matchNumber} · ${assignment.teamKey}`,
+        label: `${assignment.compLevel.toUpperCase()} ${assignment.matchNumber} · ${scoutTeamLabel(assignment.teamKey)}`,
       }));
     }
     const options: Array<{ matchKey: string; teamKey: string; label: string }> = [];
@@ -260,7 +288,7 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
         options.push({
           matchKey: match.matchKey,
           teamKey: key,
-          label: `${comp} ${match.matchNumber} · ${key}`,
+          label: `${comp} ${match.matchNumber} · ${scoutTeamLabel(key)}`,
         });
       }
     }
@@ -377,8 +405,8 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
     });
     setMessage(
       online
-        ? "Saved on this device — queued for org sync"
-        : "Saved offline — will sync when you reconnect",
+        ? "Saved. You can scout the next one."
+        : "Saved on this phone. It will upload when you have signal.",
     );
     await refreshCounts();
     await sync();
@@ -469,8 +497,8 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
     await queueMedia({ clientId, orgId, metadata: queued.metadata, blob });
     setMessage(
       options?.fieldKey
-        ? "Robot image queued for org-isolated upload"
-        : "Media queued separately for bandwidth-safe upload",
+        ? "Robot photo queued to upload"
+        : "Photo queued to upload",
     );
     await refreshCounts();
     await sync();
@@ -590,13 +618,24 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
     setBootstrapStatus(null);
     void (async () => {
       try {
-        const response = await fetch(`/api/scouting/bootstrap?orgId=${encodeURIComponent(orgId)}`);
-        if (response.ok) {
+        const response = await fetch(`/api/scouting/bootstrap?orgId=${encodeURIComponent(orgId)}`, {
+          cache: "no-store",
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+        });
+        if (response.status === 401 || response.status === 403) {
+          setData(null);
+          setFromCache(false);
+          setFetchFailed(true);
+          setBootstrapStatus(response.status);
+          void clearFeatureSnapshot("scouting", orgId);
+          void clearFeatureSnapshot("scouting", "_");
+        } else if (response.ok) {
           const fresh = (await response.json()) as Bootstrap;
           setData(fresh);
           setFromCache(false);
           setFetchFailed(false);
           await cacheEvent(orgId, fresh);
+          await persistScoutingSnapshot(orgId, fresh);
           await loadTrust(fresh.eventKey);
         } else {
           setFetchFailed(true);

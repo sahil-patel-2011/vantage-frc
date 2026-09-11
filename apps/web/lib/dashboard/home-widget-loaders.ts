@@ -352,6 +352,15 @@ async function eventCountdown(client: PoolClient, ctx: HomeWidgetContext): Promi
 }
 
 async function hoursMonth(client: PoolClient, ctx: HomeWidgetContext): Promise<Loaded> {
+  const openRows = await query<{ open: boolean }>(
+    client,
+    `SELECT /* home-widget:hours_month-open */ EXISTS (
+            SELECT 1 FROM hour_logs
+             WHERE org_id = $1::uuid AND user_id = $2::uuid AND clock_out IS NULL
+          ) AS open`,
+    [ctx.orgId, ctx.userId],
+  );
+  const openSession = Boolean(openRows[0]?.open);
   const rows = await query<{ hours: string }>(
     client,
     `SELECT /* home-widget:hours_month */
@@ -363,8 +372,14 @@ async function hoursMonth(client: PoolClient, ctx: HomeWidgetContext): Promise<L
     [ctx.orgId, ctx.userId],
   );
   const hours = Number(rows[0]?.hours ?? 0);
-  if (!Number.isFinite(hours) || hours <= 0) return empty("No hours logged this month.");
-  return live({ hours: Math.round(hours * 10) / 10, href: "/hours" });
+  if ((!Number.isFinite(hours) || hours <= 0) && !openSession) {
+    return empty("No hours logged this month.");
+  }
+  return live({
+    hours: Number.isFinite(hours) && hours > 0 ? Math.round(hours * 10) / 10 : 0,
+    openSession,
+    href: "/hours-self-view",
+  });
 }
 
 async function calendarToday(client: PoolClient, ctx: HomeWidgetContext): Promise<Loaded> {
@@ -402,7 +417,7 @@ async function cadResources(client: PoolClient, ctx: HomeWidgetContext): Promise
     [ctx.orgId],
   );
   if (docs.length === 0) return empty("No CAD files or Onshape links yet.");
-  return live({ items: docs, href: "/cad" });
+  return live({ items: docs, href: "/cad-vault" });
 }
 
 async function codingResources(client: PoolClient, ctx: HomeWidgetContext): Promise<Loaded> {

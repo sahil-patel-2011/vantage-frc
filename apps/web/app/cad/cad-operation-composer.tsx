@@ -158,7 +158,7 @@ export function CadOperationComposer({
           <strong>Native Onshape operations</strong>
         </div>
         <span className={`app-badge ${platform === "onshape" ? "good" : "setup"}`}>
-          {platform === "onshape" ? "Onshape OAuth" : platform === "fusion360" ? "Local add-in" : "Demo adapter"}
+          {platform === "onshape" ? "Onshape" : platform === "fusion360" ? "Local add-in" : "Demo adapter"}
         </span>
       </summary>
       <div className="cad-operation-body">

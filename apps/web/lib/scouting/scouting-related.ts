@@ -89,7 +89,7 @@ export function scoutingSetupSteps(orgId?: string | null): ScoutingSetupStep[] {
     {
       id: "command",
       label: "Set active event",
-      detail: "Event Day Command picks the TBA event match and pit forms use.",
+      detail: "Event Day picks the event match and pit forms use.",
       href: hubHref("/competition", "command", orgId),
     },
     {
@@ -266,14 +266,14 @@ export function scoutingNextActions(input: {
         {
           id: "command",
           label: "Set active event",
-          detail: "Event Day Command picks the TBA event match and pit forms use.",
+          detail: "Event Day picks the event match and pit forms use.",
           href: hubHref("/competition", "command", orgId),
           primary: true,
         },
         {
           id: "forms",
           label: "Open Form builder",
-          detail: "Publish a schema so scouts can fill real rows once the event is set.",
+          detail: "Publish a form so scouts can fill real rows once the event is set.",
           href: hubHref("/competition", "forms", orgId),
         },
         {
@@ -303,14 +303,14 @@ export function scoutingNextActions(input: {
       {
         id: "retry",
         label: "Retry scouting",
-        detail: "Reload real event context and schemas.",
+        detail: "Reload the event and published forms.",
         href: hubHref("/competition", "scouting", orgId),
         primary: true,
       },
       {
         id: "forms",
         label: "Open Form builder",
-        detail: "Form schemas stay available while bootstrap reloads.",
+        detail: "Published forms stay available while scouting reloads.",
         href: hubHref("/competition", "forms", orgId),
       },
       {
@@ -370,7 +370,7 @@ export function scoutingNextActions(input: {
     {
       id: "forms",
       label: "Open Form builder",
-      detail: "Adjust the published schema if scouts need different fields.",
+      detail: "Adjust the published form if scouts need different fields.",
       href: hubHref("/competition", "forms", orgId),
       primary: true,
     },

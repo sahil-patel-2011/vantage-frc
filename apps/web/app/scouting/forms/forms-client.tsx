@@ -357,7 +357,7 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
       <PageHeader
         breadcrumbs="Competition / Form builder"
         title="Scouting form builder"
-        description="Configure required fields, preview, and publish versioned match or pit schemas."
+        description="Configure required fields, preview, and publish match or pit forms."
       >
         <div className="sfb-toolbar">
           <FormBuilderRelatedStrip orgId={orgId} />

@@ -10,7 +10,7 @@ import "./forms.css";
 export const metadata = {
   title: "Scouting form builder",
   description:
-    "Build and publish custom match and pit schemas. Scouts and Coverage stay blank until a real version exists.",
+    "Build and publish custom match and pit forms. Scouts and Coverage stay blank until a real version exists.",
 };
 
 export default async function ScoutingFormsPage({
@@ -29,7 +29,7 @@ export default async function ScoutingFormsPage({
         <PageHeader
           breadcrumbs="Competition / Form builder"
           title="Scouting form builder"
-          description="Publish versioned match or pit schemas. Scouts and Coverage stay blank until a real version exists."
+          description="Publish match or pit forms. Scouts and Coverage stay blank until a real version exists."
         >
           <nav className="product-hub-related sfb-related" aria-label="Related competition tools">
             {links.map((link) => (

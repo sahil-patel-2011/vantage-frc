@@ -1,0 +1,115 @@
+import { expect, test } from "@playwright/test";
+import { signInAs, signInFixture } from "./session";
+
+test.beforeEach(async ({ context }) => {
+  const signed = await signInAs(context, "owner");
+  if (!signed) await signInFixture(context);
+});
+
+const BANNED = ["Connect TBA", "The Blue Alliance", "TBA/Statbotics", "Setup required", "OAuth", "ONSHAPE_"];
+
+test("student this week can walk Home → My Day/Scout → Video paste → CAD link", async ({
+  page,
+}) => {
+  test.setTimeout(120_000);
+
+  await page.goto("/dashboard");
+  await expect(page.locator("body")).not.toContainText("Application error");
+  const now = page.getByTestId("dash-now");
+  await expect(now).toBeVisible();
+  await expect(now.getByText("What to do now")).toBeVisible();
+  for (const phrase of BANNED) {
+    await expect(page.locator("body"), `Home still shows ${phrase}`).not.toContainText(phrase);
+  }
+  const homeCta = now.getByRole("link").first();
+  await expect(homeCta).toBeVisible();
+  const emptyNow = await now.getByText("Nothing you have to do right now").count();
+  if (emptyNow) {
+    await expect(homeCta).toHaveText(/Open My Day/i);
+  }
+
+  await homeCta.click();
+  await expect(page.locator("body")).not.toContainText("Application error");
+  for (const phrase of BANNED) {
+    await expect(page.locator("body"), `after Home CTA still shows ${phrase}`).not.toContainText(
+      phrase,
+    );
+  }
+  if (page.url().includes("/my-day") || page.url().includes("tab=my-day")) {
+    const scout = page.getByRole("link", { name: "Scout this match" });
+    if (await scout.count()) {
+      await scout.first().click();
+      await expect(page.locator("body")).not.toContainText("Application error");
+    }
+  }
+
+  await page.goto("/scouting");
+  await expect(page.locator("body")).not.toContainText("Application error");
+  await page
+    .getByRole("heading", { name: /Loading scouting/i })
+    .waitFor({ state: "hidden", timeout: 12_000 })
+    .catch(() => undefined);
+  for (const phrase of BANNED) {
+    await expect(page.locator("body"), `Scouting still shows ${phrase}`).not.toContainText(phrase);
+  }
+  const views = page.getByRole("navigation", { name: "Scouting views" });
+  if (await views.count()) {
+    await expect(views.getByRole("button", { name: "Match" })).toBeVisible();
+    const save = page.getByRole("button", { name: /Save this match|Save on this phone/i });
+    if (await save.count()) {
+      await expect(save.first()).toBeVisible();
+    }
+    await views.getByRole("button", { name: "Pit" }).click();
+    await expect(views.getByRole("button", { name: "Pit" })).toHaveAttribute("aria-current", "page");
+    const pitSave = page.getByRole("button", { name: /Save this pit|Save on this phone/i });
+    if (await pitSave.count()) {
+      await expect(pitSave.first()).toBeVisible();
+    }
+  } else {
+    const primary = page.getByRole("link", { name: /Choose your team|Set active event|Open Form builder/i });
+    await expect(primary.first()).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Next actions" })).toHaveCount(0);
+  }
+
+  await page.goto("/video-analysis");
+  await expect(page.locator("body")).not.toContainText("Application error");
+  await page
+    .getByRole("heading", { name: "Loading Video…" })
+    .waitFor({ state: "hidden", timeout: 12_000 })
+    .catch(() => undefined);
+  for (const phrase of BANNED) {
+    await expect(page.locator("body"), `Video still shows ${phrase}`).not.toContainText(phrase);
+  }
+  const paste = page.getByRole("region", { name: "Paste a video" });
+  if (await paste.count()) {
+    await expect(paste).toBeVisible();
+    await expect(page.getByRole("button", { name: "Analyze this video" })).toBeVisible();
+    const field = paste.getByLabel("Video link");
+    if (await field.count()) {
+      await field.fill("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+      await expect(page.getByRole("button", { name: "Analyze this video" })).toBeVisible();
+    }
+  } else {
+    await expect(page.getByRole("link", { name: "Choose your team" })).toBeVisible();
+  }
+
+  await page.goto("/cad-vault");
+  await expect(page.locator("body")).not.toContainText("Application error");
+  for (const phrase of BANNED) {
+    await expect(page.locator("body"), `CAD vault still shows ${phrase}`).not.toContainText(phrase);
+  }
+  const linkCad = page.getByRole("link", { name: "Link a CAD document" }).or(
+    page.getByRole("heading", { name: /Link an Onshape or Fusion document|Link a CAD document/i }),
+  );
+  if (await page.getByRole("heading", { name: "Choose your team" }).count()) {
+    await expect(page.getByRole("link", { name: "Choose your team" })).toBeVisible();
+  } else {
+    await expect(linkCad.first()).toBeVisible();
+  }
+
+  await page.goto("/build?tab=cad");
+  await expect(page.locator("body")).not.toContainText("Application error");
+  for (const phrase of ["OAuth", "ONSHAPE_", "Setup required"]) {
+    await expect(page.locator("body"), `CAD tab still shows ${phrase}`).not.toContainText(phrase);
+  }
+});

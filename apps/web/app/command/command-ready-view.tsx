@@ -140,7 +140,7 @@ export function CommandReadyView({
               </span>
               <div>
                 <h2>Now / Next</h2>
-                <p>{next ? "Your upcoming match from TBA cache" : "Waiting for schedule"}</p>
+                <p>{next ? "Your upcoming match from the event schedule" : "Waiting for schedule"}</p>
               </div>
             </div>
             {next ? <span className="edc-pill">{countdown}</span> : null}
@@ -236,7 +236,7 @@ export function CommandReadyView({
           ) : (
             <div className="dash-empty">
               <strong>No upcoming match</strong>
-              <p>{snap?.message ?? "Sync TBA and select your event."}</p>
+              <p>{snap?.message ?? "Set the event you’re at."}</p>
               {snap?.myDay ? (
                 <ul className="edc-myday-strip" aria-label="Hotels and travel">
                   <li>
@@ -369,7 +369,7 @@ export function CommandReadyView({
           ) : (
             <div className="dash-empty calm">
               <strong>No prediction yet</strong>
-              <p>Needs an upcoming match plus TBA/Statbotics metrics.</p>
+              <p>Needs an upcoming match plus event numbers.</p>
               <a className="dash-empty-cta" href={strategyHref}>
                 Open Strategy
               </a>
@@ -427,7 +427,7 @@ export function CommandReadyView({
             <div className="dash-empty calm">
               <strong>No live match rows yet</strong>
               <p>
-                When TBA puts your next matches on the board, uncovered vs double-scouted robots appear here — never
+                When your next matches are on the board, uncovered vs double-scouted robots appear here — never
                 coverage zeros.
               </p>
               <a className="dash-empty-cta" href={scoutingHref}>
@@ -554,7 +554,7 @@ export function CommandReadyView({
           ) : (
             <div className="dash-empty calm">
               <strong>No event metrics yet</strong>
-              <p>Rank and EPA appear after TBA/Statbotics sync.</p>
+              <p>Rank and EPA appear after the event numbers sync.</p>
             </div>
           )}
         </article>

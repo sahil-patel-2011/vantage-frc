@@ -5,6 +5,7 @@ import { Button } from "../../components/ui";
 import { UsageCutoffBanner } from "../../components/usage-cutoff-banner";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { CAD_HUB_RELATED_INCLUDE, cadHubRelatedLinks } from "../../lib/cad/cad-related";
+import { withOrgHref } from "../../lib/nav/product-nav";
 import { completeDocumentRef, type ListedOnshapeEntities } from "../../lib/cad/list-entities";
 import type { ListedOnshapeAssembly } from "../../lib/cad/list-assembly";
 import type { ListedDocumentElements } from "../../lib/cad/list-document-elements";
@@ -283,15 +284,14 @@ export function CadReadyView({
           </div>
           {state && !state.onshapeConnected ? (
             <div className="cad-agent-setup">
-              <p>Connect Onshape, bind a disposable Part Studio, then specify the part in millimetres.</p>
-              <Button as="a" variant="primary" href={connectionsHref}>
-                Connect Onshape
+              <p>Paste an Onshape or Fusion link to keep the document with the team.</p>
+              <Button as="a" variant="primary" href={`${withOrgHref("/cad-vault", orgId)}#link-cad`}>
+                Link a CAD document
               </Button>
-              {!state?.onshapeConfigured ? (
-                <p className="cad-agent-hint">
-                  Connect Onshape is not set up on this deployment. Until then paste a document link or upload a STEP/STL.
-                </p>
-              ) : null}
+              <p className="cad-agent-hint">
+                Need the CAD agent? Ask a mentor to{" "}
+                <a href={connectionsHref}>connect Onshape</a> in the browser.
+              </p>
             </div>
           ) : null}
           <div className="cad-agent-log" ref={logRef}>

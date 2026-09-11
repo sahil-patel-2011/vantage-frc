@@ -54,7 +54,7 @@ export type RecentEntry = NonNullable<Bootstrap["recentEntries"]>[number];
  */
 export const SCOUT_ENTRY_CSV_COLUMNS: CsvColumn<RecentEntry>[] = [
   { key: "matchKey", header: "Match", hint: "Blank for pit entries", value: (entry) => entry.matchKey },
-  { key: "teamKey", header: "Team", hint: "TBA team key, e.g. frc1678", value: (entry) => entry.teamKey },
+  { key: "teamKey", header: "Team", hint: "Team number, e.g. 1678", value: (entry) => entry.teamKey },
   { key: "type", header: "Type", hint: "match or pit" },
   { key: "scoutName", header: "Scout", hint: "Who submitted it" },
   { key: "source", header: "Source", hint: "How it arrived (form, QR handoff, sync)" },

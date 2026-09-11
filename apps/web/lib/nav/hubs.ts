@@ -75,6 +75,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         // The dated pre-event flow (inspection prep, consent, packing, travel) —
         // it belongs beside the day-of surfaces, not in a settings corner.
         { id: "event-readiness", label: "Event readiness", legacyHref: "/event-readiness" },
+        { id: "video-analysis", label: "Match video", legacyHref: "/video-analysis", featured: true },
       ]),
       { id: "scouting", label: "Scouting", legacyHref: "/scouting" },
       ...nest("scouting", [
@@ -115,8 +116,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         { id: "match-sim", label: "Match sim", legacyHref: "/match-sim" },
         { id: "match-notes-timeline", label: "Match notes", legacyHref: "/match-notes-timeline" },
         { id: "match-delta-watcher", label: "Match delta", legacyHref: "/match-delta-watcher" },
-        { id: "match-video-index", label: "Match video", legacyHref: "/match-video-index" },
-        { id: "video-analysis", label: "Video", legacyHref: "/video-analysis" },
+        { id: "match-video-index", label: "Video index", legacyHref: "/match-video-index" },
         { id: "epa-trend-alerts", label: "EPA alerts", legacyHref: "/epa-trend-alerts" },
         { id: "overnight-intel", label: "Overnight brief", legacyHref: "/overnight-intel" },
         { id: "district-advancement", label: "Districts", legacyHref: "/district-advancement" },
@@ -335,7 +335,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
       ...nest("cad", [
         // The document vault (STL/STEP/DXF uploads, versions, subsystem links) — the
         // "where is the printable file" question, distinct from the live CAD model.
-        { id: "cad-vault", label: "CAD vault", legacyHref: "/cad-vault" },
+        { id: "cad-vault", label: "CAD vault", legacyHref: "/cad-vault", featured: true },
         // The build book generated from an Onshape assembly — steps, renders,
         // cut list, PDF. Featured because it is the surface that turns CAD into
         // something the person holding the wrench can use.

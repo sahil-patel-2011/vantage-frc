@@ -241,7 +241,8 @@ export type OfflineFeature =
   | "weight-budget"
   | "whats-new"
   | "wiring"
-  | "wiring-diagnoser";
+  | "wiring-diagnoser"
+  | "scouting";
 
 const DB_NAME = "vantage-feature-cache";
 const DB_VERSION = 1;

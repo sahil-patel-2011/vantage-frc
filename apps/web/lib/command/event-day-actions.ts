@@ -50,7 +50,7 @@ export function eventDayNextActions(
     actions.push({
       id: "event",
       label: "Set active event",
-      detail: "Pick the TBA event so match time, alliances, and bumper cues can load.",
+      detail: "Pick the event you’re at so match times, alliances, and bumper cues can load.",
       href: snap?.canSetEvent ? withOrgHref("/command", orgId) : withOrgHref("/workspace", orgId),
       primary: true,
     });
@@ -59,8 +59,8 @@ export function eventDayNextActions(
   if (snap?.tbaConfigured === false) {
     actions.push({
       id: "tba",
-      label: "Configure TBA sync",
-      detail: "Sync schedule under Team → Data. Event Day never fabricates match times.",
+      label: "Set the event schedule",
+      detail: "Sync the schedule under Team → Data. Event Day stays blank until matches exist.",
       href: snap?.links.teamData ?? withOrgHref("/team/data", orgId),
       primary: !snap?.eventKey ? false : true,
     });
@@ -71,7 +71,7 @@ export function eventDayNextActions(
     actions.push({
       id: "schedule",
       label: "Check schedule sync",
-      detail: "No upcoming match in saved rankings cache yet — refresh TBA after the event posts.",
+      detail: "No upcoming match on the board yet — refresh after the event posts.",
       href: snap.links.schedule ?? withOrgHref("/schedule", orgId),
       primary: snap.tbaConfigured !== false,
     });

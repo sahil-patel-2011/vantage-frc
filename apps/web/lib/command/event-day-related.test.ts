@@ -35,7 +35,7 @@ describe("eventDayRelatedLinks", () => {
 });
 
 describe("eventDaySetupSteps", () => {
-  it("keeps team + TBA + scouting; My Day / Schedule / Strategy / Logistics live on the related strip", () => {
+  it("keeps team + schedule sync + scouting; My Day / Schedule / Strategy / Logistics live on the related strip", () => {
     const steps = eventDaySetupSteps("org-1");
     expect(steps.map((s) => s.id)).toEqual(["workspace", "team-data", "scouting"]);
     expect(steps.find((s) => s.id === "workspace")?.href).toBe("/workspace?orgId=org-1");
@@ -118,7 +118,8 @@ describe("eventDayShellCopy", () => {
       expect(copy.description).not.toMatch(/\bDEMO\b/);
     }
     expect(eventDayShellCopy("empty").badge).toBe("No matches");
-    expect(eventDayShellCopy("empty").description).toMatch(/TBA/i);
+    expect(eventDayShellCopy("empty").description).not.toMatch(/TBA|Blue Alliance/i);
+    expect(eventDayShellCopy("setup").description).not.toMatch(/TBA|Blue Alliance/i);
     expect(eventDayShellCopy("setup").badge).toBe("Setup");
     expect(eventDayShellCopy("ready").description.length).toBeLessThan(80);
   });

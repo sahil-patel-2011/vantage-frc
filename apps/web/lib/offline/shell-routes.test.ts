@@ -543,6 +543,7 @@ describe("offline shell routes", () => {
     expect(featureCacheKey("hub-access", "org-1")).toBe("hub-access:org-1");
     expect(featureCacheKey("funding-profile", "org-1")).toBe("funding-profile:org-1");
     expect(featureCacheKey("schedule", "org-1")).toBe("schedule:org-1");
+    expect(featureCacheKey("scouting", "org-1")).toBe("scouting:org-1");
   });
 
   it("falls failed navigations back to the precached shell", () => {

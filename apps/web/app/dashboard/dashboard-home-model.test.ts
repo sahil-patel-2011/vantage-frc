@@ -73,6 +73,12 @@ describe("homeNowAction", () => {
       cta: "Open My Day",
     });
     expect(homeNowAction({ orgId: "org-1", dutyTitle: "Battery cart" }).title).toBe("You’re on duty");
+    expect(homeNowAction({ orgId: "org-1", clockedIn: true })).toEqual({
+      title: "You’re in the shop",
+      detail: "Your hours are still running.",
+      href: "/hours-self-view",
+      cta: "Open My Hours",
+    });
     expect(homeNowAction({ orgId: "org-1", openTodos: 3 }).title).toBe("3 things on your list");
     expect(homeNowAction({ orgId: "org-1" }).title).toBe("Nothing you have to do right now");
   });
@@ -91,9 +97,9 @@ describe("homeNowAction", () => {
     expect(
       homeNowFromWidgets({
         orgId: "org-1",
-        widgets: { a: { type: "team_todos", data: { items: [{ title: "Tape bumpers" }] } } },
+        widgets: { a: { type: "hours_month", data: { openSession: true } } },
       }).title,
-    ).toBe("One thing on your list");
+    ).toBe("You’re in the shop");
   });
 });
 

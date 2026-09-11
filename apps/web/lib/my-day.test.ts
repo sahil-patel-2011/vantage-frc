@@ -48,6 +48,8 @@ describe("buildMyDayMatch", () => {
     expect(built!.opponents).toEqual(["118", "148", "2056"]);
     expect(built!.links.command).toContain("/command?orgId=org-1");
     expect(built!.links.briefing).toContain("matchKey=2026casd_qm12");
+    expect(built!.links.scouting).toContain("/scouting?orgId=org-1");
+    expect(built!.links.scouting).toContain("matchKey=2026casd_qm12");
   });
 
   it("labels missing TBA time as Time TBD — never DEMO", () => {

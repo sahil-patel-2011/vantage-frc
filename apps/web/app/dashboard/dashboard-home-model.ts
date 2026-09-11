@@ -79,6 +79,7 @@ export function homeNowAction(input: {
   orgId: string;
   nextMatchLabel?: string | null;
   dutyTitle?: string | null;
+  clockedIn?: boolean;
   openTodos?: number;
 }): HomeNowAction {
   if (!input.orgId) {
@@ -105,6 +106,14 @@ export function homeNowAction(input: {
       detail: duty,
       href: "/my-day",
       cta: "See duties",
+    };
+  }
+  if (input.clockedIn) {
+    return {
+      title: "You’re in the shop",
+      detail: "Your hours are still running.",
+      href: "/hours-self-view",
+      cta: "Open My Hours",
     };
   }
   const todos = input.openTodos ?? 0;
@@ -141,10 +150,13 @@ export function homeNowFromWidgets(input: {
   const todoItems = Array.isArray(todoData?.items) ? todoData.items.length : 0;
   const openTodos =
     typeof todoData?.open === "number" && Number.isFinite(todoData.open) ? Number(todoData.open) : todoItems;
+  const hours = byType("hours_month");
+  const clockedIn = hours?.openSession === true;
   return homeNowAction({
     orgId: input.orgId,
     nextMatchLabel: matchLabel,
     dutyTitle,
+    clockedIn,
     openTodos,
   });
 }

@@ -37,7 +37,7 @@ export function CommandEventPicker({
             ×
           </Button>
         </header>
-        <p className="edc-muted">Only owners and admins can set the event. Empty list means sync TBA first.</p>
+        <p className="edc-muted">Only owners and admins can set the event. Empty list means the event list hasn’t been saved yet.</p>
         <input
           className="edc-search"
           value={query}
@@ -61,7 +61,7 @@ export function CommandEventPicker({
             ))
           ) : (
             <li className="edc-empty-events">
-              No events in cache for this year. <a href={teamDataHref}>Open Team → Data to sync TBA</a>
+              No events in cache for this year. <a href={teamDataHref}>Open Team → Data to load events</a>
             </li>
           )}
         </ul>

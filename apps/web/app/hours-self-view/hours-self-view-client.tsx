@@ -30,7 +30,7 @@ import {
 } from "../../lib/hours-self-view/hours-self-view-related";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
-import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { clearFeatureSnapshot, getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./hours-self-view.css";
 
 type LiveView = Extract<HoursSelfViewView, { status: "live" }>;
@@ -148,7 +148,7 @@ function HoursShell({
       ) : (
         <EmptyState
           soft
-          badge={shell === "setup" ? "Setup required" : copy.badge}
+          badge={copy.badge}
           badgeTone="setup"
           title={copy.title}
           description={error ?? copy.description}
@@ -207,6 +207,15 @@ export default function HoursSelfViewClient() {
           },
         );
         const data = (await response.json()) as HoursSelfViewView | { error?: string };
+        if (response.status === 401 || response.status === 403) {
+          setView(null);
+          setFromCache(false);
+          setCachedAt(null);
+          setFetchFailed(true);
+          void clearFeatureSnapshot("hours-self-view", urlOrg || "_");
+          if (urlOrg) void clearFeatureSnapshot("hours-self-view", urlOrg);
+          return;
+        }
         if (!response.ok || !isHoursSelfViewView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);

@@ -101,7 +101,10 @@ function MatchHero({ match, orgId }: { match: MyDayMatch; orgId?: string | null 
       <ScoutChips label="With" chips={match.links.scoutPartners} />
       <ScoutChips label="Vs" chips={match.links.scoutOpponents} />
       <nav className="myday-hero-links" aria-label="Match links">
-        <a className="myday-link primary" href={commandHref}>
+        <a className="myday-link primary" href={match.links.scouting}>
+          Scout this match
+        </a>
+        <a className="myday-link" href={commandHref}>
           Event Day
         </a>
         <a className="myday-link" href={scheduleHref}>
@@ -200,7 +203,7 @@ function MyDayShell({
       <PageHeader
         breadcrumbs="Competition / Live ops"
         title="My Day"
-        description="Your next match, bumper color, partners, and opponents from The Blue Alliance."
+        description="Your next match, bumper color, partners, and opponents."
       >
         <MyDayRelatedStrip orgId={orgId} />
       </PageHeader>
@@ -212,7 +215,7 @@ function MyDayShell({
         className="myday-empty"
         badge={
           shell === "setup"
-            ? "Setup required"
+            ? "Needs setup"
             : shell === "error"
               ? "Unavailable"
               : shell === "empty"
@@ -266,7 +269,7 @@ export default function MyDayClient({ embedded = false }: { embedded?: boolean }
   const load = useCallback(async () => {
     const params = new URLSearchParams(window.location.search);
     const orgId = params.get("orgId") ?? "";
-    const cached = orgId ? await getFeatureSnapshot<MyDayView>("my-day", orgId) : null;
+    const cached = await getFeatureSnapshot<MyDayView>("my-day", orgId || "_");
     if (!viewRef.current && cached?.data) {
       setView(cached.data);
       setFromCache(true);
@@ -280,6 +283,15 @@ export default function MyDayClient({ embedded = false }: { embedded?: boolean }
         signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
       const data = (await response.json()) as MyDayView | { error?: string };
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setFetchFailed(true);
+        setError("Could not load My Day.");
+        setErrorStatus(response.status);
+        return;
+      }
       if (!response.ok || !("status" in data)) {
         setError("error" in data && data.error ? data.error : "Could not load My Day.");
         setErrorStatus(response.status);
@@ -294,6 +306,7 @@ export default function MyDayClient({ embedded = false }: { embedded?: boolean }
       setCachedAt(null);
       const cacheOrg = data.context.orgId || orgId;
       if (cacheOrg) await putFeatureSnapshot("my-day", cacheOrg, data);
+      if (!orgId) await putFeatureSnapshot("my-day", "_", data);
     } catch {
       if (!viewRef.current && !cached) {
         setError("Could not load My Day.");
