@@ -152,6 +152,11 @@ export const OFFLINE_SHELL_ROUTES = [
   "/subsystem-signoff",
   "/prototype-tracker",
   "/equipment-maintenance",
+  "/alumni-network",
+  "/exit-interview",
+  "/mentor-hours",
+  "/reviews",
+  "/roadmap",
 ] as const;
 
 export type OfflineShellRoute = (typeof OFFLINE_SHELL_ROUTES)[number];
@@ -201,6 +206,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/strategy/draft")) return "Alliance board";
   if (bare.startsWith("/strategy")) return "Strategy";
   if (bare.startsWith("/hours-self-view")) return "My Hours";
+  if (bare.startsWith("/mentor-hours")) return "Mentor Hours";
   if (bare.startsWith("/hours")) return "Hours";
   if (bare.startsWith("/messages")) return "Chat";
   if (bare.startsWith("/match-checklist")) return "Match checklist";
@@ -320,6 +326,10 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/match-debrief")) return "Match debrief";
   if (bare.startsWith("/match-copilot")) return "Match Copilot";
   if (bare.startsWith("/event-readiness")) return "Event readiness";
+  if (bare.startsWith("/alumni-network")) return "Alumni Network";
+  if (bare.startsWith("/exit-interview")) return "Exit Interviews";
+  if (bare.startsWith("/reviews")) return "Design Reviews";
+  if (bare.startsWith("/roadmap")) return "Season roadmap";
   return null;
 }
 

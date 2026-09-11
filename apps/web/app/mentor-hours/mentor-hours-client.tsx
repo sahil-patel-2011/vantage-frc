@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
-import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { mentorHoursCategoryLabel, mentorHoursRoleLabel } from "../../lib/mentor-hours";
 import {
   MENTOR_HOURS_CATEGORIES,
@@ -10,6 +10,10 @@ import {
   type MentorHoursView,
 } from "../../lib/mentor-hours/compute-mentor-hours";
 import type { MentorHoursCategory, MentorHoursRole, MentorHoursTier } from "../../lib/mentor-hours/types";
+import { hubHref } from "../../lib/nav/hubs";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 const COMPONENT_LABEL: Record<string, string> = {
   volume: "Hours volume",
@@ -30,43 +34,198 @@ function pct(value: number): string {
 
 type LiveView = Extract<MentorHoursView, { status: "live" }>;
 
+function isMentorHoursView(value: unknown): value is MentorHoursView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "empty" || status === "live";
+}
+
+function responseError(data: unknown): string {
+  return data && typeof data === "object" && "error" in data && typeof data.error === "string"
+    ? data.error
+    : "";
+}
+
+function mentorHoursCacheOrg(data: MentorHoursView, orgHint: string): string {
+  switch (data.status) {
+    case "setup_required":
+      return (typeof data.orgId === "string" && data.orgId.trim()) || orgHint;
+    case "empty":
+    case "live":
+      return data.orgId.trim() || orgHint;
+    default: {
+      data satisfies never;
+      return orgHint;
+    }
+  }
+}
+
+async function persistMentorHoursSnapshot(
+  orgHint: string,
+  seasonHint: string,
+  data: MentorHoursView,
+): Promise<void> {
+  const cacheOrg = mentorHoursCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  const seasonKey = String(data.seasonYear);
+  try {
+    await putFeatureSnapshot("mentor-hours", cacheOrg, data, seasonHint || seasonKey);
+    if (!orgHint) await putFeatureSnapshot("mentor-hours", "_", data, seasonHint || seasonKey);
+  } catch {
+    // Live Mentor Hours already painted; IndexedDB is best-effort.
+  }
+}
+
+function MentorHoursRelated({ orgId }: { orgId?: string | null }) {
+  return (
+    <nav className="product-hub-related" aria-label="Related people tools">
+      <Button as="a" variant="secondary" href={hubHref("/team", "hours-self-view", orgId)}>
+        My hours
+      </Button>
+      <Button as="a" variant="secondary" href={hubHref("/team", "alumni-network", orgId)}>
+        Alumni Network
+      </Button>
+      <Button as="a" variant="secondary" href={hubHref("/team", "exit-interview", orgId)}>
+        Exit interviews
+      </Button>
+    </nav>
+  );
+}
+
+function MentorHoursNextActions({ orgId }: { orgId: string }) {
+  const actions = [
+    {
+      id: "log",
+      label: "Log mentor hours",
+      detail: "Adult volunteer time is the evidence trail for grant reporting.",
+      href: "#mentor-hours-log",
+      primary: true,
+    },
+    {
+      id: "my-hours",
+      label: "Open My hours",
+      detail: "Student shop hours stay on a separate clock.",
+      href: hubHref("/team", "hours-self-view", orgId),
+      primary: false,
+    },
+    {
+      id: "alumni",
+      label: "Open Alumni Network",
+      detail: "Alumni mentors who offered office hours live there.",
+      href: hubHref("/team", "alumni-network", orgId),
+      primary: false,
+    },
+  ];
+  return (
+    <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <Button as="a" variant="secondary" href={action.href}>
+              Open
+            </Button>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
 export default function MentorHoursClient() {
   const [view, setView] = useState<MentorHoursView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   // Kept so an expired session offers sign-in instead of a Retry that cannot work.
-  const [errorStatus, setErrorStatus] = useState<number | null>(null);
+  const [failureStatus, setFailureStatus] = useState<number | null>(null);
+  const [failureMessage, setFailureMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<MentorHoursView | null>(null);
+  viewRef.current = view;
 
   const orgId = view && "orgId" in view ? view.orgId : null;
 
-  const load = useCallback((seasonOverride?: number) => {
-    setFetchFailed(false);
-    setErrorStatus(null);
-    setError("");
+  const load = useCallback(async (seasonOverride?: number) => {
     const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
+    const orgHint = params.get("orgId")?.trim() ?? "";
     const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    if (seasonQuery) query.set("season", String(seasonQuery));
-    void fetch(`/api/mentor-hours${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
-        const data = (await response.json()) as MentorHoursView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setErrorStatus(response.status);
-          setFetchFailed(true);
+    const seasonHint =
+      seasonQuery && Number.isFinite(seasonQuery) ? String(seasonQuery) : String(new Date().getFullYear());
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<MentorHoursView>("mentor-hours", orgHint || "_", seasonHint);
+      if (!viewRef.current && cached?.data && isMentorHoursView(cached.data)) {
+        setView(cached.data);
+        setSeason(cached.data.seasonYear);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
+    setFetchFailed(false);
+    setFailureStatus(null);
+    setFailureMessage("");
+    setError("");
+    try {
+      const query = new URLSearchParams();
+      if (orgHint) query.set("orgId", orgHint);
+      if (seasonQuery) query.set("season", String(seasonQuery));
+      const response = await fetch(`/api/mentor-hours${query.toString() ? `?${query.toString()}` : ""}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      const data: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setFetchFailed(true);
+        setFailureStatus(response.status);
+        setFailureMessage(responseError(data));
+        return;
+      }
+      if (!response.ok || !isMentorHoursView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Mentor Hours. Showing the last copy on this device.");
+          setFetchFailed(false);
           return;
         }
-        setView(data);
-        setSeason(data.seasonYear);
-      })
-      .catch(() => setFetchFailed(true));
+        setFetchFailed(true);
+        setFailureStatus(response.status);
+        setFailureMessage(responseError(data));
+        return;
+      }
+      setView(data);
+      setSeason(data.seasonYear);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistMentorHoursSnapshot(orgHint, seasonHint, data);
+    } catch {
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Mentor Hours. Showing the last copy on this device.");
+        setFetchFailed(false);
+        return;
+      }
+      setFetchFailed(true);
+    }
   }, []);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   const mutate = useCallback(
@@ -79,14 +238,17 @@ export default function MentorHoursClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, seasonYear: season ?? undefined, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
-        const data = (await response.json()) as MentorHoursView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setError("error" in data && data.error ? data.error : "Something went wrong.");
+        const data: unknown = await response.json().catch(() => null);
+        if (!response.ok || !isMentorHoursView(data)) {
+          setError(responseError(data) || "Something went wrong.");
           return;
         }
         setView(data);
         setSeason(data.seasonYear);
+        setFromCache(false);
+        void persistMentorHoursSnapshot(orgId, String(data.seasonYear), data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -96,105 +258,150 @@ export default function MentorHoursClient() {
     [orgId, season, busy],
   );
 
-  return (
-    <main className="module-page">
-      <PageHeader
-        breadcrumbs={
-          <>
-            <a href={orgId ? `/team?orgId=${encodeURIComponent(orgId)}` : "/team"}>Team</a>
-            {" / Mentor Hours"}
-          </>
-        }
-        title="Mentor Hours & Engagement"
-        description="Log mentor time by role and activity — the evidence trail for grant reporting. Engagement readiness uses only what you record."
-      >
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
-          {(view?.status === "live" || view?.status === "empty") && view.seasons.length > 0 ? (
-            <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-              Season
-              <select
-                value={season ?? view.seasonYear}
-                onChange={(event) => {
-                  const next = Number(event.target.value);
-                  setSeason(next);
-                  load(next);
-                }}
-              >
-                {view.seasons.map((year) => (
-                  <option key={year} value={year}>
-                    {year}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) : null}
-        </div>
-      </PageHeader>
-
-      {error ? (
-        <p className="telemetry-status" role="alert">
-          {error}
-        </p>
+  const teamHref = orgId ? `/team?orgId=${encodeURIComponent(orgId)}` : "/team";
+  const header = (
+    <PageHeader
+      breadcrumbs={
+        <>
+          <a href={teamHref}>Team</a>
+          {" / Mentor Hours"}
+        </>
+      }
+      title="Mentor Hours & Engagement"
+      description="Log mentor time by role and activity — the evidence trail for grant reporting. Engagement readiness uses only what you record."
+    >
+      <MentorHoursRelated orgId={orgId} />
+      {(view?.status === "live" || view?.status === "empty") && view.seasons.length > 0 ? (
+        <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          Season
+          <select
+            value={season ?? view.seasonYear}
+            onChange={(event) => {
+              const next = Number(event.target.value);
+              setSeason(next);
+              void load(next);
+            }}
+          >
+            {view.seasons.map((year) => (
+              <option key={year} value={year}>
+                {year}
+              </option>
+            ))}
+          </select>
+        </label>
       ) : null}
+    </PageHeader>
+  );
 
-      {fetchFailed ? (
-        (() => {
-          const kind = classifyLoadFailure({
-            status: errorStatus,
-            message: error,
+  if (!view) {
+    const failure = fetchFailed
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: failureStatus,
+            message: failureMessage,
             online: typeof navigator === "undefined" ? true : navigator.onLine,
-          });
-          const copy = loadFailureCopy(kind, {
+          }),
+          {
             nextPath:
               typeof window === "undefined"
                 ? null
                 : `${window.location.pathname}${window.location.search}`,
-            message: error,
-          });
-          return (
-            <EmptyState title={copy.title} description={copy.description}>
-              {copy.primary ? (
-                <Button as="a" variant="primary" href={copy.primary.href}>
-                  {copy.primary.label}
-                </Button>
-              ) : null}
-              {copy.showRetry ? (
-                <Button variant="secondary" type="button" onClick={() => load()}>
-                  Retry
-                </Button>
-              ) : null}
-            </EmptyState>
-          );
-        })()
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your team." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          {view.steps[0] ? (
-            <Button as="a" variant="primary" href={view.steps[0].href}>
-              {view.steps[0].label}
+            message: failureMessage || "A network or server issue prevented loading. Try again.",
+          },
+        )
+      : null;
+    return (
+      <main className="module-page">
+        {header}
+        <OfflineBanner feature="Mentor Hours" fromCache={fromCache} cachedAt={cachedAt} />
+        <EmptyState
+          title={failure ? failure.title : "Loading…"}
+          description={failure ? failure.description : "Checking your team."}
+          aria-busy={!fetchFailed}
+        >
+          {failure?.primary ? (
+            <Button as="a" variant="primary" href={failure.primary.href}>
+              {failure.primary.label}
+            </Button>
+          ) : null}
+          {failure?.showRetry ? (
+            <Button variant="secondary" type="button" onClick={() => void load()}>
+              Retry
             </Button>
           ) : null}
         </EmptyState>
-      ) : view.status === "empty" ? (
-        <div style={{ display: "grid", gap: 16 }}>
+      </main>
+    );
+  }
+
+  switch (view.status) {
+    case "setup_required":
+      return (
+        <main className="module-page">
+          {header}
+          <OfflineBanner feature="Mentor Hours" fromCache={fromCache} cachedAt={cachedAt} />
+          {error ? (
+            <p className="telemetry-status" role="alert">
+              {error}
+            </p>
+          ) : null}
+          <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
+            {view.steps[0] ? (
+              <Button as="a" variant="primary" href={view.steps[0].href}>
+                {view.steps[0].label}
+              </Button>
+            ) : null}
+          </EmptyState>
+        </main>
+      );
+    case "empty":
+      return (
+        <main className="module-page">
+          {header}
+          <OfflineBanner feature="Mentor Hours" fromCache={fromCache} cachedAt={cachedAt} />
+          {error ? (
+            <p className="telemetry-status" role="alert">
+              {error}
+            </p>
+          ) : null}
           <EmptyState
             badge="No entries yet"
             badgeTone="setup"
             title={view.message}
             description="Adult volunteer time is a separate ledger from student shop hours. Totals stay empty until a mentor or parent logs minutes here — student clock-ins never fill this in."
-          />
+          >
+            <Button as="a" variant="primary" href="#mentor-hours-log">
+              Log hours
+            </Button>
+          </EmptyState>
           <LogEntryForm busy={busy} mutate={mutate} />
-        </div>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <EngagementPanel view={view} />
-          <SummaryTiles view={view} />
-          <LogEntryForm busy={busy} mutate={mutate} />
-          <Breakdowns view={view} />
-          <RecentEntries view={view} busy={busy} mutate={mutate} />
-        </div>
-      )}
+        </main>
+      );
+    case "live":
+      break;
+    default: {
+      view satisfies never;
+      return null;
+    }
+  }
+
+  return (
+    <main className="module-page">
+      {header}
+      <OfflineBanner feature="Mentor Hours" fromCache={fromCache} cachedAt={cachedAt} />
+      {error ? (
+        <p className="telemetry-status" role="alert">
+          {error}
+        </p>
+      ) : null}
+      <MentorHoursNextActions orgId={view.orgId} />
+      <div style={{ display: "grid", gap: 16 }}>
+        <EngagementPanel view={view} />
+        <SummaryTiles view={view} />
+        <LogEntryForm busy={busy} mutate={mutate} />
+        <Breakdowns view={view} />
+        <RecentEntries view={view} busy={busy} mutate={mutate} />
+      </div>
     </main>
   );
 }
@@ -395,6 +602,7 @@ function LogEntryForm({
   return (
     <Panel
       as="form"
+      id="mentor-hours-log"
       onSubmit={(event) => {
         event.preventDefault();
         if (!form.mentorName.trim() || !form.occurredOn || Number(form.durationMinutes) <= 0) return;

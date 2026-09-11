@@ -165,6 +165,11 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/subsystem-signoff")).toBe(true);
     expect(pathnameIsOfflineShell("/prototype-tracker")).toBe(true);
     expect(pathnameIsOfflineShell("/equipment-maintenance")).toBe(true);
+    expect(pathnameIsOfflineShell("/alumni-network")).toBe(true);
+    expect(pathnameIsOfflineShell("/exit-interview")).toBe(true);
+    expect(pathnameIsOfflineShell("/mentor-hours")).toBe(true);
+    expect(pathnameIsOfflineShell("/reviews")).toBe(true);
+    expect(pathnameIsOfflineShell("/roadmap")).toBe(true);
     expect(pathnameIsOfflineShell("/api/todos")).toBe(false);
   });
 
@@ -316,6 +321,11 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/subsystem-signoff")).toBe("Subsystem Sign-off");
     expect(offlineCapableLabel("/prototype-tracker")).toBe("Prototype-to-Decision Tracker");
     expect(offlineCapableLabel("/equipment-maintenance")).toBe("Equipment Maintenance");
+    expect(offlineCapableLabel("/alumni-network")).toBe("Alumni Network");
+    expect(offlineCapableLabel("/exit-interview")).toBe("Exit Interviews");
+    expect(offlineCapableLabel("/mentor-hours")).toBe("Mentor Hours");
+    expect(offlineCapableLabel("/reviews")).toBe("Design Reviews");
+    expect(offlineCapableLabel("/roadmap")).toBe("Season roadmap");
   });
 
   it("keeps public/sw.js SHELL_ROUTES aligned with OFFLINE_SHELL_ROUTES", () => {
@@ -460,6 +470,11 @@ describe("offline shell routes", () => {
     expect(featureCacheKey("subsystem-signoff", "org-1", "2026")).toBe("subsystem-signoff:org-1:2026");
     expect(featureCacheKey("prototype-tracker", "org-1", "2026")).toBe("prototype-tracker:org-1:2026");
     expect(featureCacheKey("equipment-maintenance", "org-1")).toBe("equipment-maintenance:org-1");
+    expect(featureCacheKey("alumni-network", "org-1")).toBe("alumni-network:org-1");
+    expect(featureCacheKey("exit-interview", "org-1", "2026")).toBe("exit-interview:org-1:2026");
+    expect(featureCacheKey("mentor-hours", "org-1", "2026")).toBe("mentor-hours:org-1:2026");
+    expect(featureCacheKey("reviews", "org-1", "2026")).toBe("reviews:org-1:2026");
+    expect(featureCacheKey("roadmap", "org-1")).toBe("roadmap:org-1");
     expect(featureCacheKey("schedule", "org-1")).toBe("schedule:org-1");
   });
 

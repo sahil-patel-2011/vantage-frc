@@ -170,6 +170,11 @@ const SHELL_ROUTES = [
   "/subsystem-signoff",
   "/prototype-tracker",
   "/equipment-maintenance",
+  "/alumni-network",
+  "/exit-interview",
+  "/mentor-hours",
+  "/reviews",
+  "/roadmap",
 ];
 
 function isShellPath(pathname) {
