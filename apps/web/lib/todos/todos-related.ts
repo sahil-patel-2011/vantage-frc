@@ -48,8 +48,9 @@ export type TodosNextAction = {
 };
 
 /**
- * Soft-UI next actions for empty/setup Todos.
+ * Next actions for a ready Todos board.
  * Points at Calendar / Messages / Practice — never invents DEMO task lists.
+ * Setup shells keep one EmptyState primary instead of this panel.
  */
 export function todosNextActions(input: {
   orgId?: string | null;
@@ -77,7 +78,7 @@ export function todosNextActions(input: {
     actions.push({
       id: "add-first",
       label: "Add the first real todo",
-      detail: "The list stays empty until someone on this org creates work.",
+      detail: "The list stays empty until someone on this team creates work.",
       href: hubHref("/team", "todos", orgId),
       primary: true,
     });
