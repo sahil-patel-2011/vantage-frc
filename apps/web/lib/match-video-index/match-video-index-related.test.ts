@@ -94,5 +94,6 @@ describe("classifyMatchVideoIndexShell + helpers", () => {
       const copy = matchVideoIndexShellCopy(kind);
       expectPlainCopy(`${copy.title} ${copy.description}`);
     }
+    expect(matchVideoIndexShellCopy("setup").badge).toBe("Needs setup");
   });
 });

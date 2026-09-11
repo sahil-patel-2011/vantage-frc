@@ -98,5 +98,6 @@ describe("classifyToolCheckoutShell + helpers", () => {
       const copy = toolCheckoutShellCopy(kind);
       expectPlainCopy(`${copy.title} ${copy.description}`);
     }
+    expect(toolCheckoutShellCopy("setup").badge).toBe("Needs setup");
   });
 });
