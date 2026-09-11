@@ -27,6 +27,10 @@ describe("playwright shards", () => {
     expect(playwrightShardCount(["chat-remaining"], {})).toBe(1);
     expect(playwrightShardCount(["--shard=2/4"], {})).toBe(1);
     expect(looksLikePlaywrightFileFilter(["--reporter=line"])).toBe(false);
+    expect(looksLikePlaywrightFileFilter(["--grep", "Match debrief"])).toBe(false);
+    expect(playwrightShardCount(["--grep", "Match debrief"], {})).toBe(
+      DEFAULT_PLAYWRIGHT_SHARDS,
+    );
   });
 
   it("evicts only a relative Next dist directory", () => {

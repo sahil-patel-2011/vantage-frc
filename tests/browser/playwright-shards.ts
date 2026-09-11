@@ -21,8 +21,32 @@ export function playwrightNextDistDir(env: NodeJS.Dict<string> = process.env): s
   return raw || DEFAULT_PLAYWRIGHT_NEXT_DIST;
 }
 
+const FLAGS_WITH_VALUES = new Set([
+  "--grep",
+  "-g",
+  "--reporter",
+  "--project",
+  "--workers",
+  "--repeat-each",
+  "--retries",
+  "--timeout",
+  "--output",
+  "--config",
+  "-c",
+  "--shard",
+]);
+
 export function looksLikePlaywrightFileFilter(args: readonly string[]): boolean {
-  return args.some((arg) => !arg.startsWith("-"));
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg.startsWith("-")) {
+      const name = arg.split("=", 1)[0];
+      if (FLAGS_WITH_VALUES.has(name) && !arg.includes("=")) index += 1;
+      continue;
+    }
+    return true;
+  }
+  return false;
 }
 
 export function playwrightShardCount(
