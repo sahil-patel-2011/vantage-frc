@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Pair CAD desktop",
-  description: "Approve a vantage-cad pairing code for Onshape or Fusion — password never enters the terminal.",
+  description: "Approve a pairing code for Onshape or Fusion on a computer you control.",
 };
 
 export default async function PairPage({ searchParams }: { searchParams: Promise<{ code?: string }> }) {

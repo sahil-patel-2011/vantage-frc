@@ -1536,7 +1536,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         heading: "What each unlocks",
         body: [
           "TBA/Statbotics: match schedules, rankings, EPA-based strategy — read from a shared, rate-limited reference cache.",
-          "Onshape OAuth: the CAD workbench and CAD agent. Fusion 360 stays on the local vantage-cad relay.",
+          "Onshape: the CAD workbench and CAD agent. Fusion stays on this computer.",
           "GitHub: Bugbot repo scans (read-only; never pushes) and code-linked calendar due dates.",
           "Slack (/team/slack) and Discord: optional bridges for team chat and notifications.",
         ],

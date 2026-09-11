@@ -1,7 +1,13 @@
 "use client";
-import { Button } from "../../../components/ui";
 
 import { useState } from "react";
+import { Button } from "../../../components/ui";
+import {
+  CAD_PAIR_APPROVED,
+  CAD_PAIR_DESCRIPTION,
+  CAD_PAIR_FUSION,
+  CAD_PAIR_ONSHAPE,
+} from "../../../lib/cad/cad-setup-copy";
 
 export default function PairClient({
   initialCode,
@@ -22,12 +28,14 @@ export default function PairClient({
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ code, orgId, platform }),
     });
-    const data = await response.json();
-    setMessage(
-      response.ok
-        ? `${data.machineName} is paired. Return to the terminal to continue setup.`
-        : data.error,
-    );
+    const data: unknown = await response.json().catch(() => null);
+    const machineName =
+      data && typeof data === "object" && "machineName" in data && typeof data.machineName === "string"
+        ? data.machineName
+        : "";
+    const error =
+      data && typeof data === "object" && "error" in data && typeof data.error === "string" ? data.error : "";
+    setMessage(response.ok ? (machineName ? `${machineName} is paired. Go back to the desktop app to continue.` : CAD_PAIR_APPROVED) : error);
   }
 
   return (
@@ -37,14 +45,13 @@ export default function PairClient({
           <span className="breadcrumbs">CAD / Pair desktop</span>
           <h1>Approve this computer</h1>
           <p className="app-muted" style={{ margin: "8px 0 0" }}>
-            Only approve a code shown on a computer you control. Your password is never entered in the terminal. Fusion
-            jobs stay local — never hosted on Vercel.
+            {CAD_PAIR_DESCRIPTION}
           </p>
         </div>
 
         <label>
           Pairing code
-          <small style={{ fontWeight: 500 }}>8–9 characters shown in your terminal (letters, numbers, dashes).</small>
+          <small style={{ fontWeight: 500 }}>8–9 characters shown on the computer you are pairing.</small>
           <input
             value={code}
             onChange={(e) => setCode(e.target.value.toUpperCase())}
@@ -56,11 +63,11 @@ export default function PairClient({
 
         {organizations.length === 0 ? (
           <p className="telemetry-status" role="status">
-            You aren&apos;t a member of any team yet — join or create one before pairing a device.
+            You aren&apos;t a member of any team yet — join or create one before pairing a computer.
           </p>
         ) : (
           <label>
-            Authorized organization
+            Team
             <select value={orgId} onChange={(e) => setOrgId(e.target.value)} required>
               {organizations.map((org) => (
                 <option value={org.id} key={org.id}>
@@ -72,7 +79,7 @@ export default function PairClient({
         )}
 
         <fieldset>
-          <legend>CAD platform</legend>
+          <legend>What you design in</legend>
           <label className="cad-choice" style={{ display: "grid", gridTemplateColumns: "20px 1fr" }}>
             <input
               type="radio"
@@ -81,10 +88,8 @@ export default function PairClient({
               onChange={() => setPlatform("onshape")}
             />
             <span>
-              <strong>Onshape hosted</strong>
-              <small style={{ display: "block", color: "var(--muted)", fontWeight: 500 }}>
-                Server-run OAuth jobs; CLI monitors and diagnoses
-              </small>
+              <strong>Onshape</strong>
+              <small style={{ display: "block", color: "var(--muted)", fontWeight: 500 }}>{CAD_PAIR_ONSHAPE}</small>
             </span>
           </label>
           <label className="cad-choice" style={{ display: "grid", gridTemplateColumns: "20px 1fr" }}>
@@ -95,26 +100,19 @@ export default function PairClient({
               onChange={() => setPlatform("fusion360")}
             />
             <span>
-              <strong>Fusion 360 local</strong>
-              <small style={{ display: "block", color: "var(--muted)", fontWeight: 500 }}>
-                Relay runs only on this desktop with Fusion
-              </small>
+              <strong>Fusion on this computer</strong>
+              <small style={{ display: "block", color: "var(--muted)", fontWeight: 500 }}>{CAD_PAIR_FUSION}</small>
             </span>
           </label>
         </fieldset>
 
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-          <button className="primary-action" type="submit" disabled={!orgId || organizations.length === 0}>
+          <Button variant="primary" type="submit" disabled={!orgId || organizations.length === 0}>
             Approve pairing
-          </button>
+          </Button>
           {orgId ? (
             <Button as="a" variant="secondary" href={`/cad/setup?orgId=${encodeURIComponent(orgId)}`}>
-              Setup wizard
-            </Button>
-          ) : null}
-          {orgId ? (
-            <Button as="a" variant="secondary" href={`/cad?orgId=${encodeURIComponent(orgId)}`}>
-              CAD Builder
+              CAD setup
             </Button>
           ) : null}
         </div>

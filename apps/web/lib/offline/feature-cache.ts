@@ -154,7 +154,8 @@ export type OfflineFeature =
   | "incidents"
   | "roles"
   | "parts-catalog"
-  | "parts-relay";
+  | "parts-relay"
+  | "cad-setup";
 
 const DB_NAME = "vantage-feature-cache";
 const DB_VERSION = 1;

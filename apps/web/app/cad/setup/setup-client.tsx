@@ -1,29 +1,25 @@
 "use client";
-import { Button } from "../../../components/ui";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { OfflineBanner } from "../../../components/offline-banner";
+import { Button, EmptyState, PageHeader } from "../../../components/ui";
 import {
-  ONSHAPE_HOSTED_UNCONFIGURED_TITLE,
-  ONSHAPE_PLATFORM_HINT_CONFIGURED,
-  ONSHAPE_PLATFORM_HINT_UNCONFIGURED,
-  onshapeOauthCtaEnabled,
-  withLocalPlaywrightHint,
-} from "../../../lib/cad/onshape-setup-strings";
+  CAD_SETUP_ASK_MENTOR,
+  CAD_SETUP_CONNECT,
+  CAD_SETUP_DESCRIPTION,
+  CAD_SETUP_FUSION,
+  CAD_SETUP_ONSHAPE_READY,
+  CAD_SETUP_RECONNECT,
+  CAD_SETUP_TITLE,
+} from "../../../lib/cad/cad-setup-copy";
+import { onshapeAccountLabel, onshapeOauthCtaEnabled } from "../../../lib/cad/onshape-setup-strings";
+import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
+import { withOrgHref } from "../../../lib/nav/product-nav";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
+import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 
-const install = `# Windows (recommended one-shot):
-# powershell -ExecutionPolicy Bypass -File .\\scripts\\cad\\install-windows.ps1
-
-# Or manual (all OS):
-npm install
-npm run build --workspace=@vantage/cad-cli
-npm install -g ./packages/vantage-cad-cli
-npx playwright install chromium
-vantage-cad setup
-vantage-cad login
-# Optional CI/demo without Fusion:
-# set VANTAGE_CAD_MOCK=1
-vantage-cad start
-# Update later: vantage-cad update`;
+type CadTarget = "onshape" | "fusion360";
+type Step = 1 | 2 | 3;
 
 type Device = {
   id: string;
@@ -35,112 +31,365 @@ type Device = {
   revokedAt: string | null;
 };
 
-type Step = 1 | 2 | 3 | 4;
+type OnshapeConnection = {
+  id: string;
+  status: string;
+  label: string;
+  externalAccountRef?: string | null;
+};
+
+type CadSetupView = {
+  status: "live";
+  orgId: string;
+  devices: Device[];
+  onshapeReady: boolean;
+  onshapeConnected: boolean;
+  onshapeAccount: string | null;
+};
+
+function isCadSetupView(value: unknown): value is CadSetupView {
+  if (!value || typeof value !== "object") return false;
+  const row = value as { status?: unknown; orgId?: unknown; devices?: unknown };
+  return row.status === "live" && typeof row.orgId === "string" && Array.isArray(row.devices);
+}
+
+function responseError(data: unknown): string {
+  return data && typeof data === "object" && "error" in data && typeof data.error === "string"
+    ? data.error
+    : "";
+}
+
+async function persistCadSetupSnapshot(orgHint: string, data: CadSetupView): Promise<void> {
+  const cacheOrg = data.orgId.trim() || orgHint;
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("cad-setup", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("cad-setup", "_", data);
+  } catch {
+    // Live CAD setup already painted; IndexedDB is best-effort.
+  }
+}
+
+function stepLabel(step: Step): string {
+  switch (step) {
+    case 1:
+      return "Where you design";
+    case 2:
+      return "Connect";
+    case 3:
+      return "Confirm";
+    default: {
+      const exhaustive: never = step;
+      return exhaustive;
+    }
+  }
+}
+
+function targetLabel(target: CadTarget): string {
+  switch (target) {
+    case "onshape":
+      return "Onshape";
+    case "fusion360":
+      return "Fusion";
+    default: {
+      const exhaustive: never = target;
+      return exhaustive;
+    }
+  }
+}
+
+export function CadSetupRelated({ orgId }: { orgId: string | null }) {
+  return (
+    <nav className="product-hub-related" aria-label="Related CAD tools">
+      <Button as="a" variant="secondary" href={withOrgHref("/cad", orgId)}>
+        CAD
+      </Button>
+      <Button as="a" variant="secondary" href={withOrgHref("/cad/connections", orgId)}>
+        CAD connections
+      </Button>
+      <Button as="a" variant="secondary" href={withOrgHref("/cad-vault", orgId)}>
+        CAD Vault
+      </Button>
+    </nav>
+  );
+}
+
+function CadSetupNextActions({
+  orgId,
+  onshapeConnected,
+  hasDesktop,
+}: {
+  orgId: string;
+  onshapeConnected: boolean;
+  hasDesktop: boolean;
+}) {
+  const actions = [
+    {
+      id: "cad",
+      label: "Open CAD",
+      detail: onshapeConnected
+        ? "Pick a document after Onshape is connected."
+        : "Open CAD after you connect Onshape or pair Fusion.",
+      href: withOrgHref("/cad", orgId),
+      primary: true as const,
+    },
+    {
+      id: "desktop",
+      label: hasDesktop ? "Review paired computers" : "Pair Fusion",
+      detail: CAD_SETUP_FUSION,
+      href: withOrgHref("/cad/pair", orgId),
+    },
+  ];
+  return (
+    <section className="app-card soft-panel edc-next-actions cad-next-actions" aria-label="Next actions">
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <Button as="a" variant="secondary" href={action.href}>
+              Open
+            </Button>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
 
 export default function CadSetupWizard({ orgId }: { orgId: string }) {
+  const [view, setView] = useState<CadSetupView | null>(null);
   const [step, setStep] = useState<Step>(1);
-  const [cadTarget, setCadTarget] = useState<"mock" | "fusion360" | "onshape">("onshape");
-  const [brain, setBrain] = useState<"mock" | "managed_api" | "terminal_cli" | "team_byok">("terminal_cli");
-  const [devices, setDevices] = useState<Device[]>([]);
+  const [cadTarget, setCadTarget] = useState<CadTarget>("onshape");
   const [message, setMessage] = useState("");
-  const [onshapeConfigured, setOnshapeConfigured] = useState(false);
-  const [onshapeSetupMessage, setOnshapeSetupMessage] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [fetchFailed, setFetchFailed] = useState(false);
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<CadSetupView | null>(null);
+  viewRef.current = view;
 
-  async function load() {
-    const response = await fetch(`/api/cad?orgId=${encodeURIComponent(orgId)}`);
-    const data = await response.json();
-    if (response.ok) {
-      setDevices(data.devices ?? []);
-      const oauthReady = onshapeOauthCtaEnabled(data.onshape);
-      setOnshapeConfigured(oauthReady);
-      setOnshapeSetupMessage(
-        data.onshape?.setupRequired || !oauthReady
-          ? oauthReady
-            ? String(data.onshape?.message ?? "Setup required — connect Onshape OAuth in CAD Connections.")
-            : "Setup required — set ONSHAPE_OAUTH_CLIENT_ID and ONSHAPE_OAUTH_CLIENT_SECRET on the server. Server API keys do not connect hosted CAD."
-          : "",
-      );
-    } else setMessage(data.error);
-  }
-
-  useEffect(() => {
-    void load();
-    const timer = setInterval(() => void load(), 4000);
-    return () => clearInterval(timer);
+  const load = useCallback(async () => {
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<CadSetupView>("cad-setup", orgId || "_");
+      if (!viewRef.current && cached?.data && isCadSetupView(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
+    setFetchFailed(false);
+    setErrorStatus(null);
+    try {
+      const response = await fetch(`/api/cad?orgId=${encodeURIComponent(orgId)}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      const body: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setFetchFailed(true);
+        setErrorStatus(response.status);
+        setMessage(responseError(body) || "Could not load CAD setup.");
+        return;
+      }
+      if (!response.ok || !body || typeof body !== "object") {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setMessage("Could not refresh CAD setup. Showing the last copy on this device.");
+          setFetchFailed(false);
+          return;
+        }
+        setFetchFailed(true);
+        setErrorStatus(response.status);
+        setMessage(responseError(body) || "Could not load CAD setup.");
+        return;
+      }
+      const row = body as {
+        devices?: Device[];
+        onshape?: {
+          configured?: boolean;
+          redirectUri?: string | null;
+          scopes?: unknown[] | null;
+        };
+        onshapeConnections?: OnshapeConnection[];
+      };
+      const onshapeReady = onshapeOauthCtaEnabled(row.onshape);
+      const connections = Array.isArray(row.onshapeConnections) ? row.onshapeConnections : [];
+      const connected = connections.find((item) => item.status === "connected");
+      const next: CadSetupView = {
+        status: "live",
+        orgId,
+        devices: Array.isArray(row.devices) ? row.devices : [],
+        onshapeReady,
+        onshapeConnected: Boolean(connected),
+        onshapeAccount: onshapeAccountLabel(connected?.externalAccountRef) ?? connected?.label ?? null,
+      };
+      setView(next);
+      setFromCache(false);
+      setCachedAt(null);
+      setMessage("");
+      await persistCadSetupSnapshot(orgId, next);
+    } catch {
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setMessage("Could not refresh CAD setup. Showing the last copy on this device.");
+        setFetchFailed(false);
+        return;
+      }
+      setFetchFailed(true);
+      setMessage("Could not load CAD setup.");
+    }
   }, [orgId]);
 
-  const online = useMemo(
-    () => devices.find((device) => !device.revokedAt && device.lastSeenAt),
-    [devices],
-  );
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("onshape") === "connected") setMessage("Onshape connected.");
+    if (params.get("onshape") === "denied") setMessage("Onshape authorization was denied.");
+    if (params.get("onshape") === "error") setMessage(params.get("error") || "Onshape connection failed.");
+    void load();
+    const timer = setInterval(() => {
+      if (document.visibilityState === "hidden") return;
+      void load();
+    }, 8000);
+    return () => clearInterval(timer);
+  }, [load]);
 
+  async function connectOnshape() {
+    setBusy(true);
+    try {
+      const response = await fetch("/api/cad/onshape", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ orgId, action: "authorize-url" }),
+      });
+      const data: unknown = await response.json().catch(() => null);
+      if (!response.ok) {
+        setMessage(responseError(data) || "Could not start Onshape.");
+        return;
+      }
+      const url =
+        data && typeof data === "object" && "url" in data && typeof data.url === "string" ? data.url : "";
+      if (!url) {
+        setMessage("Could not start Onshape.");
+        return;
+      }
+      window.location.href = url;
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const failure =
+    !view && fetchFailed
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus,
+            message,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message,
+          },
+        )
+      : null;
+
+  if (!view) {
+    return (
+      <main className="module-page cad-setup-page">
+        <PageHeader
+          breadcrumbs="CAD / Setup"
+          title={CAD_SETUP_TITLE}
+          description={CAD_SETUP_DESCRIPTION}
+        >
+          <CadSetupRelated orgId={orgId} />
+        </PageHeader>
+        <OfflineBanner feature="CAD setup" fromCache={fromCache} cachedAt={cachedAt} />
+        <EmptyState
+          soft
+          title={failure ? failure.title : "Loading CAD setup…"}
+          description={failure ? failure.description : "Checking Onshape and paired computers."}
+          aria-busy={!fetchFailed}
+        >
+          {failure?.primary ? (
+            <Button as="a" variant="primary" href={failure.primary.href}>
+              {failure.primary.label}
+            </Button>
+          ) : null}
+          {failure?.showRetry ? (
+            <Button variant="secondary" type="button" onClick={() => void load()}>
+              Retry
+            </Button>
+          ) : null}
+        </EmptyState>
+      </main>
+    );
+  }
+
+  const desktopOnline = view.devices.some((device) => !device.revokedAt && device.lastSeenAt);
   const q = `?orgId=${encodeURIComponent(orgId)}`;
 
   return (
     <main className="module-page cad-setup-page">
-      <header className="app-page-header">
-        <div>
-          <span className="breadcrumbs">CAD / Setup</span>
-          <h1>Connect CAD + AI brain</h1>
-          <p>
-            Pick a CAD path and how AI may edit. Shape changes wait for a person to approve. This is not
-            certified engineering software.
-          </p>
-        </div>
-        <nav className="cad-header-actions">
-          <Button as="a" variant="secondary" href={`/cad${q}`}>
-            ← CAD Builder
-          </Button>
-          <Button as="a" variant="secondary" href={`/cad/connections${q}`}>
-            Connections
-          </Button>
-          <Button as="a" variant="secondary" href={`/cad/pair${q}`}>
-            Pair desktop
-          </Button>
-        </nav>
-      </header>
-
+      <PageHeader breadcrumbs="CAD / Setup" title={CAD_SETUP_TITLE} description={CAD_SETUP_DESCRIPTION}>
+        <CadSetupRelated orgId={orgId} />
+      </PageHeader>
+      <OfflineBanner feature="CAD setup" fromCache={fromCache} cachedAt={cachedAt} />
       {message ? (
         <p className="telemetry-status" role="status">
           {message}
         </p>
       ) : null}
 
-      {onshapeSetupMessage && cadTarget === "onshape" ? (
+      {!view.onshapeReady && cadTarget === "onshape" ? (
         <aside className="cad-setup-required" role="status">
-          <strong>{ONSHAPE_HOSTED_UNCONFIGURED_TITLE}</strong>
-          <p>{withLocalPlaywrightHint(onshapeSetupMessage)}</p>
+          <strong>Onshape isn't ready yet</strong>
+          <p>{CAD_SETUP_ASK_MENTOR}</p>
         </aside>
       ) : null}
 
       <ol className="cad-setup-steps" aria-label="CAD setup progress">
-        {["CAD target", "AI brain", "Install & pair", "Verify"].map((label, index) => {
-          const n = (index + 1) as Step;
-          return (
-            <li
-              key={label}
-              className={n < step ? "active" : undefined}
-              aria-current={n === step ? "step" : undefined}
-            >
-              <b>{n}</b>
-              <span>{label}</span>
-            </li>
-          );
-        })}
+        {([1, 2, 3] as const).map((n) => (
+          <li key={n} className={n < step ? "active" : undefined} aria-current={n === step ? "step" : undefined}>
+            <b>{n}</b>
+            <span>{stepLabel(n)}</span>
+          </li>
+        ))}
       </ol>
 
       {step === 1 ? (
         <section className="cad-setup-panel">
-          <h2>1. CAD platform</h2>
+          <h2>1. Where you design</h2>
           <p className="app-muted" style={{ margin: 0 }}>
-            Onshape is the cross-platform live path. Use `vantage-cad login` on a laptop (no API keys), or
-            connect hosted Onshape OAuth in CAD Connections. Server keys are CLI last-resort only.
+            Onshape is the live path in the browser. Fusion stays on this computer.
           </p>
           <label className="cad-choice">
-            <input type="radio" name="cad" checked={cadTarget === "mock"} onChange={() => setCadTarget("mock")} />
+            <input
+              type="radio"
+              name="cad"
+              checked={cadTarget === "onshape"}
+              onChange={() => setCadTarget("onshape")}
+            />
             <span>
-              <strong>Mock (recommended first)</strong>
-              <small>CI / demo path with deterministic topology + render. No Autodesk or Onshape credentials.</small>
+              <strong>Onshape (recommended)</strong>
+              <small>{view.onshapeReady ? CAD_SETUP_ONSHAPE_READY : CAD_SETUP_ASK_MENTOR}</small>
             </span>
           </label>
           <label className="cad-choice">
@@ -151,30 +400,13 @@ export default function CadSetupWizard({ orgId }: { orgId: string }) {
               onChange={() => setCadTarget("fusion360")}
             />
             <span>
-              <strong>Fusion 360 local relay</strong>
-              <small>Jobs stay on your machine via vantage-cad + official connector. Vercel never runs Fusion.</small>
-            </span>
-          </label>
-          <label className="cad-choice">
-            <input
-              type="radio"
-              name="cad"
-              checked={cadTarget === "onshape"}
-              onChange={() => setCadTarget("onshape")}
-            />
-            <span>
-              <strong>Onshape live (recommended)</strong>
-              <small>
-                {onshapeConfigured ? ONSHAPE_PLATFORM_HINT_CONFIGURED : ONSHAPE_PLATFORM_HINT_UNCONFIGURED}
-              </small>
+              <strong>Fusion on this computer</strong>
+              <small>{CAD_SETUP_FUSION}</small>
             </span>
           </label>
           <div className="cad-setup-actions">
-            <button className="primary-action" type="button" onClick={() => setStep(2)}>
+            <Button variant="primary" type="button" onClick={() => setStep(2)}>
               Continue
-            </button>
-            <Button as="a" variant="secondary" href={`/cad/connections${q}`}>
-              Open Connections
             </Button>
           </div>
         </section>
@@ -182,123 +414,85 @@ export default function CadSetupWizard({ orgId }: { orgId: string }) {
 
       {step === 2 ? (
         <section className="cad-setup-panel">
-          <h2>2. AI brain / billing path</h2>
-          <label className="cad-choice">
-            <input
-              type="radio"
-              name="brain"
-              checked={brain === "terminal_cli"}
-              onChange={() => setBrain("terminal_cli")}
-            />
-            <span>
-              <strong>Terminal / local CLI</strong>
-              <small>
-                No Vantage model charge (`key_source=local_cli`). Uses Claude Code / Codex CLI / local OpenAI-compatible
-                via your official CLI login — not ChatGPT Plus / Claude Pro scrapes.
-              </small>
-            </span>
-          </label>
-          <label className="cad-choice">
-            <input
-              type="radio"
-              name="brain"
-              checked={brain === "managed_api"}
-              onChange={() => setBrain("managed_api")}
-            />
-            <span>
-              <strong>Vantage managed API</strong>
-              <small>Uses your team's Chat credits as usual. See Prompt caching under Chat limits.</small>
-            </span>
-          </label>
-          <label className="cad-choice">
-            <input type="radio" name="brain" checked={brain === "team_byok"} onChange={() => setBrain("team_byok")} />
-            <span>
-              <strong>Team / personal keys</strong>
-              <small>Official provider API keys only (encrypted in Admin). Consumer subscriptions are not keys.</small>
-            </span>
-          </label>
-          <label className="cad-choice">
-            <input type="radio" name="brain" checked={brain === "mock"} onChange={() => setBrain("mock")} />
-            <span>
-              <strong>Mock brain</strong>
-              <small>Deterministic brief/planner stubs for demos and CI.</small>
-            </span>
-          </label>
-          <div className="cad-setup-actions">
-            <Button variant="secondary" type="button" onClick={() => setStep(1)}>
-              Back
-            </Button>
-            <button className="primary-action" type="button" onClick={() => setStep(3)}>
-              Continue
-            </button>
-            {brain === "managed_api" ? (
-              <Button as="a" variant="secondary" href={`/team/budgets${q}#prompt-caching`}>
-                Prompt caching
-              </Button>
-            ) : null}
-          </div>
+          <h2>2. Connect {targetLabel(cadTarget)}</h2>
+          {cadTarget === "onshape" ? (
+            view.onshapeReady ? (
+              <>
+                <p className="app-muted" style={{ margin: 0 }}>
+                  {CAD_SETUP_ONSHAPE_READY}
+                </p>
+                <div className="cad-setup-actions">
+                  <Button variant="primary" type="button" disabled={busy} onClick={() => void connectOnshape()}>
+                    {view.onshapeConnected ? CAD_SETUP_RECONNECT : CAD_SETUP_CONNECT}
+                  </Button>
+                  <Button variant="secondary" type="button" onClick={() => setStep(1)}>
+                    Back
+                  </Button>
+                  <Button variant="secondary" type="button" onClick={() => setStep(3)}>
+                    Continue
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="app-muted" style={{ margin: 0 }}>
+                  {CAD_SETUP_ASK_MENTOR}
+                </p>
+                <div className="cad-setup-actions">
+                  <Button variant="primary" type="button" onClick={() => setStep(3)}>
+                    Continue
+                  </Button>
+                  <Button variant="secondary" type="button" onClick={() => setStep(1)}>
+                    Back
+                  </Button>
+                </div>
+              </>
+            )
+          ) : (
+            <>
+              <p className="app-muted" style={{ margin: 0 }}>
+                {CAD_SETUP_FUSION}
+              </p>
+              <div className="cad-setup-actions">
+                <Button as="a" variant="primary" href={`/cad/pair${q}`}>
+                  Pair this computer
+                </Button>
+                <Button variant="secondary" type="button" onClick={() => setStep(1)}>
+                  Back
+                </Button>
+                <Button variant="secondary" type="button" onClick={() => setStep(3)}>
+                  Continue
+                </Button>
+              </div>
+            </>
+          )}
         </section>
       ) : null}
 
       {step === 3 ? (
         <section className="cad-setup-panel">
-          <h2>3. Install & pair</h2>
-          <p style={{ margin: 0 }}>
-            Target: <strong>{cadTarget}</strong> · Brain: <strong>{brain}</strong>
-          </p>
-          <div className="cad-setup-actions" style={{ justifyContent: "space-between" }}>
-            <div>
-              <span className="eyebrow">Windows / macOS / Linux</span>
-              <h3 style={{ margin: "4px 0 0", fontSize: 15 }}>vantage-cad CLI</h3>
-            </div>
-            <Button variant="secondary" type="button" onClick={async () => { try { await navigator.clipboard.writeText(install); setMessage("Install commands copied."); } catch { setMessage("Couldn't copy — select the block manually."); } }}>
-              Copy commands
-            </Button>
-          </div>
-          <pre className="install-command">{install}</pre>
-          <ol style={{ margin: 0, paddingLeft: 18, color: "var(--muted)", fontSize: 13 }}>
-            <li>
-              Open <a href={`/cad/pair${q}`}>Pair desktop</a> after `vantage-cad setup` shows a code.
-            </li>
-            <li>Approve the desktop for this organization and CAD platform.</li>
-            <li>
-              {cadTarget === "fusion360"
-                ? "Windows/macOS: install Fusion add-in via scripts/cad/install-fusion-addin.* then keep Fusion + vantage-cad start running. Linux: Fusion unavailable — use mock or Onshape."
-                : cadTarget === "onshape"
-                  ? "Run vantage-cad login, sign in yourself in Chromium, then keep the MCP session open. For hosted execution, connect Onshape OAuth in CAD Connections — server API keys are not a hosted connection."
-                  : "For mock path, keep using Deterministic mock in CAD Builder until you pair Fusion."}
-            </li>
-          </ol>
-          <div className="cad-setup-actions">
-            <Button variant="secondary" type="button" onClick={() => setStep(2)}>
-              Back
-            </Button>
-            <button className="primary-action" type="button" onClick={() => setStep(4)}>
-              Continue to verify
-            </button>
-            <Button as="a" variant="secondary" href={`/cad/pair${q}`}>
-              Pair desktop
-            </Button>
-          </div>
-        </section>
-      ) : null}
-
-      {step === 4 ? (
-        <section className="cad-setup-panel">
-          <h2>4. Verify heartbeat</h2>
-          {online ? (
+          <h2>3. Confirm</h2>
+          {cadTarget === "onshape" ? (
             <p role="status" className="telemetry-status">
-              Paired desktop online: {online.machineName} · {online.platform} · last seen{" "}
-              {online.lastSeenAt ? new Date(online.lastSeenAt).toLocaleString() : "now"}
+              {view.onshapeConnected
+                ? `Onshape is connected${view.onshapeAccount ? ` as ${view.onshapeAccount}` : ""}.`
+                : view.onshapeReady
+                  ? "Onshape is ready — connect in the browser to finish."
+                  : CAD_SETUP_ASK_MENTOR}
+            </p>
+          ) : desktopOnline ? (
+            <p role="status" className="telemetry-status">
+              Paired computer online:{" "}
+              {view.devices.find((device) => !device.revokedAt && device.lastSeenAt)?.machineName ?? "this computer"}
             </p>
           ) : (
             <p role="status" className="telemetry-status">
-              Waiting for `vantage-cad start` heartbeat… Open the pair page if setup is unfinished.
+              Waiting for a paired computer. Open Pair this computer if setup is unfinished.
             </p>
           )}
           <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13 }}>
-            {devices.length === 0 ? <li>No devices paired yet.</li> : null}
-            {devices.map((device) => (
+            {view.devices.length === 0 ? <li>No computer is paired yet.</li> : null}
+            {view.devices.map((device) => (
               <li key={device.id}>
                 {device.machineName} · {device.platform} ·{" "}
                 {device.revokedAt
@@ -310,17 +504,22 @@ export default function CadSetupWizard({ orgId }: { orgId: string }) {
             ))}
           </ul>
           <div className="cad-setup-actions">
-            <Button variant="secondary" type="button" onClick={() => setStep(3)}>
+            <Button variant="secondary" type="button" onClick={() => setStep(2)}>
               Back
             </Button>
-            <a className="primary-action" href={`/cad${q}`}>
-              Open CAD Builder
-            </a>
-            <Button as="a" variant="secondary" href={`/cad/connections${q}`}>
-              Connections
+            <Button as="a" variant="primary" href={`/cad${q}`}>
+              Open CAD
             </Button>
           </div>
         </section>
+      ) : null}
+
+      {step === 3 ? (
+        <CadSetupNextActions
+          orgId={orgId}
+          onshapeConnected={view.onshapeConnected}
+          hasDesktop={view.devices.some((device) => !device.revokedAt)}
+        />
       ) : null}
     </main>
   );

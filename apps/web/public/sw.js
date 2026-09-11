@@ -176,6 +176,7 @@ const SHELL_ROUTES = [
   "/roles",
   "/parts-catalog",
   "/parts-relay",
+  "/cad/setup",
 ];
 
 function isShellPath(pathname) {

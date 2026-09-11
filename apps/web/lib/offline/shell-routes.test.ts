@@ -171,6 +171,7 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/roles")).toBe(true);
     expect(pathnameIsOfflineShell("/parts-catalog")).toBe(true);
     expect(pathnameIsOfflineShell("/parts-relay")).toBe(true);
+    expect(pathnameIsOfflineShell("/cad/setup")).toBe(true);
     expect(pathnameIsOfflineShell("/api/todos")).toBe(false);
   });
 
@@ -328,6 +329,7 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/roles")).toBe("Season roles");
     expect(offlineCapableLabel("/parts-catalog")).toBe("Parts catalog");
     expect(offlineCapableLabel("/parts-relay")).toBe("Parts Relay");
+    expect(offlineCapableLabel("/cad/setup")).toBe("CAD setup");
   });
 
   it("keeps public/sw.js SHELL_ROUTES aligned with OFFLINE_SHELL_ROUTES", () => {
@@ -478,6 +480,7 @@ describe("offline shell routes", () => {
     expect(featureCacheKey("roles", "org-1", "2026")).toBe("roles:org-1:2026");
     expect(featureCacheKey("parts-catalog", "org-1")).toBe("parts-catalog:org-1");
     expect(featureCacheKey("parts-relay", "org-1")).toBe("parts-relay:org-1");
+    expect(featureCacheKey("cad-setup", "org-1")).toBe("cad-setup:org-1");
     expect(featureCacheKey("schedule", "org-1")).toBe("schedule:org-1");
   });
 

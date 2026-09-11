@@ -1043,11 +1043,11 @@ export const SECTION_HELP: SectionHelpEntry[] = [
     moments: ["kickoff", "build"],
     how: [
       "Open CAD from your team so the agent stays scoped to the right org.",
-      "Connect Onshape under CAD → Setup — the surface says \"configure\" rather than failing when it is not connected.",
+      "Connect Onshape under CAD setup — the page says to ask a mentor when Onshape is not ready, rather than failing.",
       "Watch Change radar for edits that affect other subteams.",
       "Turn a sketch into a written brief when handing work to another student.",
     ],
-    tips: ["Onshape OAuth is setup-required by design; nothing here works around a missing connection."],
+    tips: ["If Onshape is not ready yet, ask a mentor — nothing here works around a missing connection."],
     related: [
       { label: "Change radar", href: "/cad-change-radar" },
       { label: "Sketch to brief", href: "/sketch-to-brief" },
