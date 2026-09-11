@@ -121,7 +121,7 @@ export function buildAttachMediaWire(input: AttachMediaWireInput): AttachMediaWi
   if (!eventKey || !teamKey) {
     return {
       ok: false,
-      reason: "Set your active event and pick a team before attaching media.",
+      reason: "Set your active event and choose which robot you are scouting before attaching media.",
       permanent: true,
     };
   }

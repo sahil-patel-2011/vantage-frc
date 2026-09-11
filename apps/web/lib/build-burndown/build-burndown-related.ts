@@ -168,7 +168,7 @@ export function buildBurndownShellCopy(kind: BuildBurndownShellKind): BuildBurnd
         badge: "Setup required",
         title: "Choose your team",
         description:
-          "Join or pick a team before charting remaining work.",
+          "Choose your team before charting remaining work.",
       };
     case "empty":
       return {

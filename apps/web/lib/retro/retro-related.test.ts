@@ -91,6 +91,8 @@ describe("retroShellCopy", () => {
       expect(copy.title).not.toMatch(/\bDEMO\b/);
     }
     expectPlainCopy(retroShellCopy("empty").description);
+    expectPlainCopy(retroShellCopy("setup").description);
+    expect(retroShellCopy("setup").description).not.toMatch(/pick a team/i);
     expect(retroShellCopy("setup").badge).toBe("Setup required");
   });
 });

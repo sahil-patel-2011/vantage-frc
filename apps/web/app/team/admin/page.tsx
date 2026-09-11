@@ -56,7 +56,7 @@ export default async function TeamAdminPage({
           </Button>
         </EmptyState>
         <p className="app-muted" style={{ marginTop: "1rem" }}>
-          After you pick a team, open{" "}
+          After you choose your team, open{" "}
           <a href={withOrgHref("/team/admin", null)}>Team admin</a> again to manage real members and invites.
         </p>
       </main>

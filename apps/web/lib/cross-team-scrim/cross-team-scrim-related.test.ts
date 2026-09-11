@@ -85,6 +85,8 @@ describe("crossTeamScrimShellCopy", () => {
       expect(copy.title).not.toMatch(/\bDEMO\b/);
     }
     expectPlainCopy(crossTeamScrimShellCopy("empty").description);
+    expectPlainCopy(crossTeamScrimShellCopy("setup").description);
+    expect(crossTeamScrimShellCopy("setup").description).not.toMatch(/pick a team/i);
     expect(crossTeamScrimShellCopy("setup").badge).toBe("Setup required");
   });
 });

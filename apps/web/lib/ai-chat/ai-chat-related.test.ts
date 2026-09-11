@@ -83,6 +83,9 @@ describe("aiChatNextActions", () => {
     const actions = aiChatNextActions({ shell: "empty" });
     expect(actions[0]?.id).toBe("workspace");
     expect(actions[0]?.primary).toBe(true);
+    expectPlainCopy(actions[0]?.detail);
+    expect(actions[0]?.detail).not.toMatch(/\borg\b/);
+    expect(actions[0]?.detail).not.toMatch(/pick a team/i);
   });
 
   it("points empty at Budgets / Memory / Strategy", () => {

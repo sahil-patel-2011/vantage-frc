@@ -55,7 +55,11 @@ describe("buildAttachMediaWire", () => {
       byteSize: 128,
     });
     expect(noEvent.ok).toBe(false);
-    if (!noEvent.ok) expectPlainCopy(noEvent.reason);
+    if (!noEvent.ok) {
+      expectPlainCopy(noEvent.reason);
+      expect(noEvent.reason).toMatch(/choose which robot you are scouting/i);
+      expect(noEvent.reason).not.toMatch(/pick a team/i);
+    }
     const noTeam = buildAttachMediaWire({
       eventKey: "2026mndu",
       entryClientId: "entry-local-1",
@@ -64,7 +68,11 @@ describe("buildAttachMediaWire", () => {
       byteSize: 128,
     });
     expect(noTeam.ok).toBe(false);
-    if (!noTeam.ok) expectPlainCopy(noTeam.reason);
+    if (!noTeam.ok) {
+      expectPlainCopy(noTeam.reason);
+      expect(noTeam.reason).toMatch(/choose which robot you are scouting/i);
+      expect(noTeam.reason).not.toMatch(/pick a team/i);
+    }
   });
 
   it("builds metadata that always carries the entry link and entry_client tag", () => {
