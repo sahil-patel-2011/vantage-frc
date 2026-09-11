@@ -73,13 +73,15 @@ npm test                                 # ~8,600 tests in about 90 seconds
 npm run build --workspace=@vantage/web   # zero warnings — a warning once hid eleven dead media queries
 npx playwright install chromium          # once per machine (`npm run test:browser:install`)
 npm run test:browser                     # Playwright vs http://127.0.0.1:3310 (E2E_AUTH_FIXTURE=1, local vantage_ci)
+npm run test:browser:batch              # one of four shards — keeps next-dev from compiling every route
 ```
 
 If `:3310` is taken by this checkout's `next dev`, Playwright attaches to `.next/dev/lock`
 instead of failing. `PLAYWRIGHT_PORT=3510 npm run test:browser` still starts a server when
 no lock is live. To attach to a server you already started on another port:
 `PLAYWRIGHT_BASE_URL=http://127.0.0.1:3410 npm run test:browser:attach`. Never point
-Playwright at production `DATABASE_*`.
+Playwright at production `DATABASE_*`. A full 100+ spec walk against one `next dev`
+OOMs the compiler; CI runs `--shard=1/4` … `4/4` so each job is a fresh heap.
 
 For a screen change, load it in a browser on a local database and write down what you saw. For a
 database change, run `scripts/rls-proof.mjs` against a local Postgres as a non-superuser login. For a

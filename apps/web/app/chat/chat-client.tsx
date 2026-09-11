@@ -1,5 +1,6 @@
 "use client";
 
+import "./chat.css";
 import { useEffect, useState } from "react";
 import { AiHubRelated } from "../../components/ai-hub-related";
 import { MeteredAiCutoffBanner } from "../../components/metered-ai-cutoff-banner";

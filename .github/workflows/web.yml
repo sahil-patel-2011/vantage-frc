@@ -40,17 +40,23 @@ jobs:
         run: npm run build --workspace=@vantage/web
 
   browser:
-    name: Playwright
+    name: Playwright (${{ matrix.shard }}/4)
     # Private-repo Actions minutes: skip Chromium on draft pushes.
     # Full suite runs when the PR is marked ready, or via workflow_dispatch.
+    # One next-dev compiling every spec OOMs; each shard is a fresh compiler.
     if: github.event_name == 'workflow_dispatch' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
     env:
       CI: "true"
       NODE_ENV: "development"
       E2E_AUTH_FIXTURE: "1"
       NEXT_TELEMETRY_DISABLED: "1"
+      NODE_OPTIONS: "--max-old-space-size=4096"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -71,12 +77,12 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
       - name: Run browser tests
-        run: npm run test:browser -- --reporter=line,html
+        run: npm run test:browser -- --reporter=line,html --shard=${{ matrix.shard }}/4
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.shard }}
           path: |
             playwright-report/
             test-results/

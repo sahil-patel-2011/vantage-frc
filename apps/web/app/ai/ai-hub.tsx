@@ -3,10 +3,7 @@
 import dynamic from "next/dynamic";
 import { AiSponsorBranding } from "../../components/ai-sponsor-branding";
 import { HubLegacyRedirect, HubOrgGate, ProductHubShell } from "../../components/product-hub";
-import { FinanceInAiPanel } from "./finance-in-ai-panel";
 import "../product-hub.css";
-import "../chat/chat.css";
-import "../code/code.css";
 
 const ChatClient = dynamic(() => import("../chat/chat-client"), { ssr: false });
 const BudgetClient = dynamic(() => import("../team/budgets/budget-client"), { ssr: false });
@@ -17,6 +14,10 @@ const AiMemoryClient = dynamic(() => import("../team/ai-memory/ai-memory-client"
 const AiPolicyClient = dynamic(() => import("../team/ai-policy/ai-policy-client"), { ssr: false });
 const AutonomousAgentPanel = dynamic(
   () => import("./autonomous-agent-panel").then((m) => m.AutonomousAgentPanel),
+  { ssr: false },
+);
+const FinanceInAiPanel = dynamic(
+  () => import("./finance-in-ai-panel").then((m) => m.FinanceInAiPanel),
   { ssr: false },
 );
 

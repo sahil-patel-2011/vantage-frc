@@ -6,12 +6,6 @@ import { EmptyState } from "../../components/ui";
 import { HubLegacyRedirect, HubOrgGate, ProductHubShell } from "../../components/product-hub";
 import { parseComposerLinkFromSearch, type MessageObjectLink } from "../../lib/messages/object-links";
 import "../product-hub.css";
-import "./calendar/team-calendar.css";
-import "../attendance/attendance.css";
-import "../practice/practice.css";
-import "./knowledge/knowledge.css";
-import "../batteries/batteries.css";
-import "../todos/todos.css";
 
 const TeamCalendarClient = dynamic(() => import("./calendar/team-calendar-client"), { ssr: false });
 const TodosClient = dynamic(() => import("../todos/todos-client"), { ssr: false });

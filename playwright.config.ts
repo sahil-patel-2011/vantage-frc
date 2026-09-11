@@ -77,6 +77,8 @@ export default defineConfig({
   testDir: "./tests/browser",
   // One worker is the GHA contract: two starve Next 16's compiler
   // (net::ERR_ABORTED / detached frames). Override with PLAYWRIGHT_WORKERS.
+  // Shard with --shard=1/4 so one next-dev does not compile the whole catalog.
+  fullyParallel: false,
   workers: Number(process.env.PLAYWRIGHT_WORKERS) || 1,
   retries: isCi ? 1 : 0,
   forbidOnly: isCi,
@@ -110,6 +112,8 @@ export default defineConfig({
           env: playwrightWebServerEnv(origin, port),
           reuseExistingServer: !process.env.CI,
           timeout: 180_000,
+          // 4 GB heap + fixture `devMemoryThresholdRestart: false` in next.config.
+          // Compiling every route in one process used to restart next at 80% of heap.
         },
       }
     : {}),

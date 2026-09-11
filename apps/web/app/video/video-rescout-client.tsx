@@ -1,5 +1,6 @@
 "use client";
 
+import "./video-rescout.css";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { VideoPlayer, type VideoPlayerHandle } from "../../components/video-player";

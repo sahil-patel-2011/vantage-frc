@@ -1,5 +1,6 @@
 "use client";
 
+import "./business.css";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { EmptyState, PageHeader, TabBar, ToolStrip, Button } from "../../components/ui";

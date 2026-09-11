@@ -1,5 +1,6 @@
 "use client";
 
+import "./code.css";
 import { useEffect, useMemo, useState } from "react";
 import { isBugbotScanPath } from "@vantage/agent/bugbot";
 import { buildDiffProposal, reviewFrcCode } from "@vantage/agent/coding-assistant";

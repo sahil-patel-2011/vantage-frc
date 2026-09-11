@@ -1,5 +1,6 @@
 "use client";
 
+import "./scouting.css";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import type { SyncEntry } from "@vantage/scouting";

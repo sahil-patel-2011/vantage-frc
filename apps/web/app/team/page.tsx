@@ -1,4 +1,6 @@
-import TeamHub from "./team-hub";
+import dynamic from "next/dynamic";
+
+const TeamHub = dynamic(() => import("./team-hub"));
 
 export const metadata = {
   title: "Team",
