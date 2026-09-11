@@ -84,6 +84,6 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    return failMeteredAi(error, "Overnight intel request failed");
+    return failMeteredAi(error, "Overnight brief request failed");
   }
 }

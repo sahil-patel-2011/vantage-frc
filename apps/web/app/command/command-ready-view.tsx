@@ -573,7 +573,7 @@ export function CommandReadyView({
         </a>
         <a href={intelHref}>
           <Icon name="stats" />
-          <strong>Intel</strong>
+          <strong>Research</strong>
           <span>Team lookup</span>
         </a>
         <a href={chemistryHref}>

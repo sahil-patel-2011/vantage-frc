@@ -12,9 +12,8 @@ import {
   type RawResearchFindingRow,
   type RawScoutingActivityRow,
 } from ".";
-import { hubHref } from "../nav/hubs";
-import { withOrgHref } from "../nav/product-nav";
-import type { OvernightIntelBrief, OvernightIntelSetupStep, OvernightIntelSignals } from "./types";
+import { overnightIntelSetupSteps, type OvernightIntelSetupStep } from "./overnight-intel-related";
+import type { OvernightIntelBrief, OvernightIntelSignals } from "./types";
 
 export const OVERNIGHT_INTEL_FEATURE = "overnight_intel";
 export const OVERNIGHT_INTEL_MODEL = "vantage-overnight-intel-v1";
@@ -39,52 +38,6 @@ export type OvernightIntelView =
       computedAt: string;
     };
 
-/** Soft-UI setup steps — hubHref / withOrgHref only; never DEMO overnight metrics. */
-function workspaceSetupSteps(orgId: string | null): OvernightIntelSetupStep[] {
-  return [
-    {
-      id: "workspace",
-      label: "Choose your team",
-      detail: "Choose your team to open Overnight Intel.",
-      href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
-    },
-    {
-      id: "command",
-      label: "Open Command",
-      detail: "Event Day stays blank until real schedule data exists.",
-      href: hubHref("/competition", "command", orgId),
-    },
-    {
-      id: "strategy",
-      label: "Open Strategy",
-      detail: "Pick lists stay empty until real metrics exist.",
-      href: hubHref("/competition", "strategy", orgId),
-    },
-  ];
-}
-
-function activeEventSetupSteps(orgId: string): OvernightIntelSetupStep[] {
-  return [
-    {
-      id: "active-event",
-      label: "Set active event",
-      detail: "Choose the event your team is competing at.",
-      href: withOrgHref("/team/data", orgId),
-    },
-    {
-      id: "command",
-      label: "Open Command",
-      detail: "Confirm schedule context once an active event is set.",
-      href: hubHref("/competition", "command", orgId),
-    },
-    {
-      id: "strategy",
-      label: "Open Strategy",
-      detail: "Event strategy stays available beside overnight digests.",
-      href: hubHref("/competition", "strategy", orgId),
-    },
-  ];
-}
 
 async function resolveOrg(
   client: PoolClient,
@@ -195,8 +148,8 @@ export async function computeOvernightIntelView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Choose your team to view the overnight event-intel brief.",
-      steps: workspaceSetupSteps(null),
+      message: "Choose your team to view the overnight brief.",
+      steps: overnightIntelSetupSteps(null),
       orgId: null,
     };
   }
@@ -205,8 +158,8 @@ export async function computeOvernightIntelView(
   if (!activeEvent) {
     return {
       status: "setup_required",
-      message: "Set your active event to compile an overnight intel brief.",
-      steps: activeEventSetupSteps(org.orgId),
+      message: "Set your event so this overnight brief can run.",
+      steps: overnightIntelSetupSteps(org.orgId, { needsActiveEvent: true }),
       orgId: org.orgId,
     };
   }
@@ -243,7 +196,7 @@ export async function generateOvernightIntelBrief(
   input: { orgId: string; userId: string; requestId: string },
 ): Promise<OvernightIntelBrief> {
   const activeEvent = await resolveActiveEvent(client, input.orgId);
-  if (!activeEvent) throw new Error("Set an active event before generating an overnight intel brief");
+  if (!activeEvent) throw new Error("Set your active event before saving tonight's brief");
 
   const lastBrief = await client.query<{ generatedAt: string }>(
     `SELECT created_at::text AS "generatedAt" FROM overnight_intel_briefs

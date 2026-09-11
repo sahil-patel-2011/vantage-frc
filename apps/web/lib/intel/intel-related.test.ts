@@ -3,11 +3,13 @@ import {
   INTEL_RELATED_INCLUDE,
   classifyIntelShell,
   formatIntelMetric,
-  isIntelLookupEmpty,
   intelNextActions,
   intelRelatedLinks,
+  intelScoutNoteLines,
   intelSetupSteps,
   intelShellCopy,
+  intelSourceTypeLabel,
+  isIntelLookupEmpty,
 } from "./intel-related";
 import { expectPlainCopy } from "../ui/copy-assertions";
 
@@ -42,7 +44,7 @@ describe("intelRelatedLinks", () => {
 });
 
 describe("intelSetupSteps", () => {
-  it("keeps Sync Team Data; Strategy / Dossier / Scouting live on the related strip", () => {
+  it("keeps season-score sync; Strategy / Dossier / Scouting live on the related strip", () => {
     const steps = intelSetupSteps("org-1");
     expect(steps.map((s) => s.id)).toEqual(["team-data"]);
     expect(steps[0]?.href).toBe("/team/data?orgId=org-1");
@@ -54,7 +56,7 @@ describe("intelSetupSteps", () => {
   });
 });
 
-describe("Intel Soft-UI metrics", () => {
+describe("Intel metrics", () => {
   it("formats real counts only", () => {
     expect(formatIntelMetric(8, true)).toBe("8");
     expect(formatIntelMetric(0, false)).toBe("…");
@@ -80,16 +82,21 @@ describe("classifyIntelShell", () => {
 });
 
 describe("intelShellCopy", () => {
-  it("refuses invented DEMO research in empty/setup copy", () => {
+  it("refuses invented DEMO research and engineering jargon in empty/setup copy", () => {
     for (const kind of ["loading", "error", "setup", "empty", "ready"] as const) {
       const copy = intelShellCopy(kind);
       expect(copy.title).not.toMatch(/\bDEMO\b/);
+      expectPlainCopy(copy.description);
+      expect(copy.description).not.toMatch(/\bTBA\b/i);
+      expect(copy.description).not.toMatch(/Statbotics/i);
+      expect(copy.description).not.toMatch(/\borg\b/i);
+      expect(copy.description).not.toMatch(/metered/i);
+      expect(copy.description).not.toMatch(/global team index/i);
     }
     expect(intelShellCopy("empty").badge).toBe("Look up a team");
-    expectPlainCopy(intelShellCopy("empty").description);
     expect(intelShellCopy("setup").badge).toBe("Setup");
-    expectPlainCopy(intelShellCopy("setup").description);
-    expectPlainCopy(intelShellCopy("ready").description);
+    expect(intelShellCopy("empty").title).toBe("Look up a team");
+    expect(intelShellCopy("ready").title).toBe("Research");
   });
 });
 
@@ -102,32 +109,61 @@ describe("intelNextActions", () => {
     expect(actions.some((a) => a.id === "strategy")).toBe(false);
   });
 
-  it("setup with a team is only Sync Team Data", () => {
+  it("setup with a team is only Sync season scores", () => {
     const actions = intelNextActions({ orgId: "org-1", shell: "setup" });
     expect(actions.map((a) => a.id)).toEqual(["team-data"]);
     expect(actions[0]?.primary).toBe(true);
     expect(actions[0]?.href).toBe("/team/data?orgId=org-1");
   });
 
-  it("empty shell points at Team Data only", () => {
-    const actions = intelNextActions({
-      orgId: "org-1",
-      shell: "empty",
-      teamNumber: null,
-      findingCount: 0,
-    });
-    expect(actions.map((a) => a.id)).toEqual(["team-data"]);
-    expect(actions[0]?.href).toBe("/team/data?orgId=org-1");
-  });
-
-  it("does not add a second guided list on a looked-up team", () => {
+  it("empty and error shells do not paint a next-actions wall", () => {
     expect(
       intelNextActions({
         orgId: "org-1",
-        shell: "ready",
-        teamNumber: 2337,
-        findingCount: 3,
+        shell: "empty",
+        teamNumber: null,
+        findingCount: 0,
       }),
     ).toEqual([]);
+    expect(intelNextActions({ orgId: "org-1", shell: "error" })).toEqual([]);
+  });
+
+  it("ready boards point at pick desk and chemistry, not the related strip", () => {
+    const actions = intelNextActions({
+      orgId: "org-1",
+      shell: "ready",
+      teamNumber: 2337,
+      findingCount: 3,
+      scoutNoteCount: 2,
+    });
+    expect(actions.map((a) => a.id)).toEqual(["pick-desk", "chemistry"]);
+    expect(actions[0]?.primary).toBe(true);
+    expect(actions.some((a) => a.id === "strategy")).toBe(false);
+    expect(actions.some((a) => a.id === "dossier")).toBe(false);
+    expect(actions.some((a) => a.id === "scouting")).toBe(false);
+    for (const action of actions) expectPlainCopy(action.detail);
+  });
+});
+
+describe("intelScoutNoteLines", () => {
+  it("prints only logged fields and never invents a score", () => {
+    const lines = intelScoutNoteLines([
+      { payload: { cycles: 9, notes: "Strong intake" }, confidence: "high", matchKey: "2026txho_qm1" },
+      { payload: {}, confidence: "normal" },
+    ]);
+    expect(lines[0]?.title).toBe("Match 2026txho_qm1");
+    expect(lines[0]?.detail).toContain("cycles 9");
+    expect(lines[0]?.detail).toContain("Strong intake");
+    expect(lines[1]?.title).toBe("Pit notes");
+    expect(lines[1]?.detail).toBe("Logged from our scouting.");
+    expect(JSON.stringify(lines)).not.toMatch(/DEMO/i);
+  });
+});
+
+describe("intelSourceTypeLabel", () => {
+  it("uses student-readable source names", () => {
+    expect(intelSourceTypeLabel("cd_post")).toBe("Chief Delphi");
+    expect(intelSourceTypeLabel("reveal_video")).toBe("Reveal video");
+    expect(intelSourceTypeLabel("other")).toBe("Source");
   });
 });

@@ -37,5 +37,5 @@ export function intelErrorResponse(error: unknown) {
   if (error instanceof IntelHttpError) {
     return Response.json({ error: error.message }, { status: error.status });
   }
-  return failMeteredAi(error, "Intel request failed");
+  return failMeteredAi(error, "Research request failed");
 }

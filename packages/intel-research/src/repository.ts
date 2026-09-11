@@ -120,6 +120,19 @@ export class IntelResearchRepository {
     return result.rows;
   }
 
+  async getActiveEvent(orgId: string): Promise<{ eventKey: string; eventName: string | null } | null> {
+    const result = await this.client.query<{ eventKey: string; eventName: string | null }>(
+      `SELECT c.active_event_key AS "eventKey", e.name AS "eventName"
+       FROM org_active_context c
+       LEFT JOIN events_ref e ON e.event_key = c.active_event_key
+       WHERE c.org_id = $1 AND c.active_event_key IS NOT NULL`,
+      [orgId],
+    );
+    const row = result.rows[0];
+    if (!row?.eventKey) return null;
+    return { eventKey: row.eventKey, eventName: row.eventName };
+  }
+
   async getScoutObservations(orgId: string, teamKey: string): Promise<ScoutObservation[]> {
     const result = await this.client.query<ScoutObservation>(
       `SELECT payload, confidence, match_key AS "matchKey" FROM match_scout_entries

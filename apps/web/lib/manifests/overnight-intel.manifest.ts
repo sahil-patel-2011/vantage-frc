@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "overnight-intel",
-  title: "Overnight Event-Intel Brief",
+  title: "Overnight brief",
   route: "/overnight-intel",
   apiRoute: "/api/overnight-intel",
   hub: "Competition",

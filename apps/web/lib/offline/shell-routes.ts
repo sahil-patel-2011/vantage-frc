@@ -218,7 +218,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/team-tags")) return "Drive-team tags";
   if (bare.startsWith("/shift-balancer")) return "Scout shift balancer";
   if (bare.startsWith("/counter-book")) return "Counter-book";
-  if (bare.startsWith("/overnight-intel")) return "Overnight Intel";
+  if (bare.startsWith("/overnight-intel")) return "Overnight brief";
   if (bare.startsWith("/alliance-partner-brief")) return "Alliance-Partner Brief";
   if (bare.startsWith("/picklist-justifier")) return "Pick-list Justifier";
   if (bare.startsWith("/opponent-watchlist")) return "Opponent Watchlist";

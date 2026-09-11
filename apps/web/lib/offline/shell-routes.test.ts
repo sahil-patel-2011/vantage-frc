@@ -216,7 +216,7 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/team-tags")).toBe("Drive-team tags");
     expect(offlineCapableLabel("/shift-balancer")).toBe("Scout shift balancer");
     expect(offlineCapableLabel("/counter-book")).toBe("Counter-book");
-    expect(offlineCapableLabel("/overnight-intel")).toBe("Overnight Intel");
+    expect(offlineCapableLabel("/overnight-intel")).toBe("Overnight brief");
     expect(offlineCapableLabel("/alliance-partner-brief")).toBe("Alliance-Partner Brief");
     expect(offlineCapableLabel("/picklist-justifier")).toBe("Pick-list Justifier");
     expect(offlineCapableLabel("/opponent-watchlist")).toBe("Opponent Watchlist");

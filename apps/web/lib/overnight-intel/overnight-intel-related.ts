@@ -1,12 +1,13 @@
 import { hubHref } from "../nav/hubs";
+import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Overnight Event-Intel Brief (never DEMO overnight metrics). */
+/** Related surfaces for Overnight brief (never DEMO overnight metrics). */
 export const OVERNIGHT_INTEL_RELATED_LINKS = [
-  { id: "command", label: "Command", tab: "command" },
+  { id: "command", label: "Event Day", tab: "command" },
   { id: "strategy", label: "Strategy", tab: "strategy" },
   { id: "scouting", label: "Scouting", tab: "scouting" },
-  { id: "epa-trend-alerts", label: "EPA Trend Alerts", tab: "epa-trend-alerts" },
+  { id: "epa-trend-alerts", label: "EPA alerts", tab: "epa-trend-alerts" },
 ] as const;
 
 export type OvernightIntelRelatedId = (typeof OVERNIGHT_INTEL_RELATED_LINKS)[number]["id"];
@@ -17,7 +18,7 @@ export type OvernightIntelRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — Command / Strategy / Scouting first. */
+/** Focused header strip — Event Day / Strategy / Scouting. */
 export const OVERNIGHT_INTEL_RELATED_INCLUDE: OvernightIntelRelatedId[] = [
   "command",
   "strategy",
@@ -25,7 +26,7 @@ export const OVERNIGHT_INTEL_RELATED_INCLUDE: OvernightIntelRelatedId[] = [
 ];
 
 /**
- * Soft-UI cross-links from Overnight Intel → Command / Strategy / Scouting.
+ * Cross-links from Overnight brief → Event Day / Strategy / Scouting.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function overnightIntelRelatedLinks(
@@ -61,6 +62,64 @@ export type OvernightIntelEmptyCopy = {
   description: string;
 };
 
+export type OvernightIntelSetupStep = {
+  id: string;
+  label: string;
+  detail: string;
+  href: string;
+};
+
+function overnightRelatedHrefs(orgId?: string | null): Set<string> {
+  return new Set(
+    overnightIntelRelatedLinks(orgId, { include: [...OVERNIGHT_INTEL_RELATED_INCLUDE] }).map(
+      (link) => link.href,
+    ),
+  );
+}
+
+function dropRelatedStripDuplicates<T extends { href: string }>(
+  orgId: string | null | undefined,
+  items: T[],
+): T[] {
+  const related = overnightRelatedHrefs(orgId);
+  return items.filter((item) => !related.has(item.href));
+}
+
+/** One setup primary — Event Day / Strategy / Scouting live on the related strip. */
+export function overnightIntelSetupSteps(
+  orgId?: string | null,
+  options?: { needsActiveEvent?: boolean },
+): OvernightIntelSetupStep[] {
+  if (!orgId) {
+    return [
+      {
+        id: "workspace",
+        label: "Choose your team",
+        detail: "Choose your team to open the overnight brief.",
+        href: "/workspace",
+      },
+    ];
+  }
+  if (options?.needsActiveEvent) {
+    return [
+      {
+        id: "active-event",
+        label: "Set active event",
+        detail: "Set the event you are at so this brief can show what changed overnight.",
+        href: withOrgHref("/team/data", orgId),
+      },
+    ];
+  }
+  return [
+    {
+      id: "workspace",
+      label: "Choose your team",
+      detail: "Choose your team to open the overnight brief.",
+      href: withOrgHref("/workspace", orgId),
+    },
+  ];
+}
+
 /** Real brief / signal counts only — never invent DEMO overnight totals. */
 export function formatOvernightIntelMetric(value: unknown, loaded: boolean): string {
   if (!loaded) return "…";
@@ -87,7 +146,7 @@ export function shouldShowOvernightIntelSummaryTiles(briefCount: number, signalC
   return briefCount > 0 || signalCount > 0;
 }
 
-/** Classify Overnight Intel Soft-UI shell — never invents DEMO overnight metrics. */
+/** Classify Overnight brief shell — never invents DEMO overnight metrics. */
 export function classifyOvernightIntelShell(input: {
   loading: boolean;
   fetchFailed?: boolean;
@@ -103,53 +162,55 @@ export function classifyOvernightIntelShell(input: {
   return "ready";
 }
 
-/** Soft-UI empty / setup / error copy — never DEMO overnight metrics. */
+/** Empty / setup / error copy — never DEMO overnight metrics, never org jargon. */
 export function overnightIntelShellCopy(kind: OvernightIntelShellKind): OvernightIntelEmptyCopy {
   switch (kind) {
     case "loading":
       return {
         kind,
-        title: "Loading Overnight Intel…",
-        description:
-          "Checking which team you are on and active event.",
+        title: "Loading overnight brief…",
+        description: "Checking which team you are on and the event you are at.",
       };
     case "error":
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Overnight Intel",
+        title: "Could not load overnight brief",
         description:
-          "A network or server issue blocked the brief. Retry, or open Command / Strategy while it reloads.",
+          "A network or server issue blocked the brief. Retry, or open Event Day while it reloads.",
       };
     case "setup":
       return {
         kind,
-        badge: "Setup required",
-        title: "Finish team and event setup",
-        description:
-          "Overnight Intel needs an org and active event. Choose your team and set your event.",
+        badge: "Setup",
+        title: "Choose your team",
+        description: "Choose your team and set the event you are at before this morning brief can run.",
       };
     case "empty":
       return {
         kind,
-        badge: "No overnight changes yet",
-        title: "Generate tonight's brief when ready",
+        badge: "Nothing new yet",
+        title: "Save tonight's brief when you are ready",
         description:
-          "Empty sections mean no research, EPA, or scouting changed since the last check-in. Cross-check Command, Strategy, and Scouting.",
+          "Empty sections mean no new public notes, season-score changes, or scouting since last night.",
       };
-    default:
+    case "ready":
       return {
-        kind: "ready",
+        kind,
         title: "What changed overnight",
         description:
-          "Briefs summarize only real research findings, EPA movers, and new scout rows.",
+          "This brief lists only new public notes, season-score movers, and new scout rows.",
       };
+    default: {
+      const _exhaustive: never = kind;
+      return _exhaustive;
+    }
   }
 }
 
 /**
- * Soft-UI next actions for Overnight Intel empty/setup shells.
- * Points at Command / Strategy / Scouting — never invents DEMO overnight metrics.
+ * Next actions for Overnight brief. Empty/setup keep one EmptyState primary;
+ * the panel paints only on ready and never repeats the header strip.
  */
 export function overnightIntelNextActions(input: {
   orgId?: string | null;
@@ -163,153 +224,38 @@ export function overnightIntelNextActions(input: {
   const signalCount = input.signalCount ?? 0;
 
   if (!orgId || input.shell === "setup") {
-    if (!orgId) {
-      return [
+    return setupActionsFrom(
+      overnightIntelSetupSteps(orgId, { needsActiveEvent: input.needsActiveEvent }),
+    );
+  }
+
+  switch (input.shell) {
+    case "loading":
+    case "empty":
+    case "error":
+      return [];
+    case "ready":
+      return dropRelatedStripDuplicates(orgId, [
         {
-          id: "workspace",
-          label: "Choose your team",
-          detail: "Pick a team before compiling digests.",
-          href: "/workspace",
+          id: briefCount > 0 ? "review-brief" : "generate",
+          label: briefCount > 0 ? "Review latest brief" : "Save tonight's brief",
+          detail:
+            briefCount > 0
+              ? `${briefCount} saved brief${briefCount === 1 ? "" : "s"} from real overnight changes.`
+              : `${signalCount} live change${signalCount === 1 ? "" : "s"} ready to save.`,
+          href: briefCount > 0 ? "#overnight-intel-summary" : "#overnight-intel-generate",
           primary: true,
         },
         {
-          id: "command",
-          label: "Open Command",
-          detail: "Event Day stays blank until real schedule data exists.",
-          href: hubHref("/competition", "command", null),
+          id: "epa-trend-alerts",
+          label: "Open EPA alerts",
+          detail: "Watch longer season-score swings beside overnight movers.",
+          href: hubHref("/competition", "epa-trend-alerts", orgId),
         },
-        {
-          id: "strategy",
-          label: "Open Strategy",
-          detail: "Pick lists stay empty until real metrics exist.",
-          href: hubHref("/competition", "strategy", null),
-        },
-      ];
+      ]);
+    default: {
+      const _exhaustive: never = input.shell;
+      return _exhaustive;
     }
-    if (input.needsActiveEvent) {
-      return [
-        {
-          id: "active-event",
-          label: "Set active event",
-          detail: "Choose the event you are competing at before generating overnight digests.",
-          href: withOrgHref("/team/data", orgId),
-          primary: true,
-        },
-        {
-          id: "command",
-          label: "Open Command",
-          detail: "Confirm schedule context once an active event is set.",
-          href: hubHref("/competition", "command", orgId),
-        },
-        {
-          id: "strategy",
-          label: "Open Strategy",
-          detail: "Event strategy stays available beside overnight digests.",
-          href: hubHref("/competition", "strategy", orgId),
-        },
-      ];
-    }
-    return [
-      {
-        id: "workspace",
-        label: "Choose your team",
-        detail: "Finish membership setup so Overnight Intel can resolve your organization.",
-        href: withOrgHref("/workspace", orgId),
-        primary: true,
-      },
-      {
-        id: "command",
-        label: "Open Command",
-        detail: "Confirm event-day context before compiling digests.",
-        href: hubHref("/competition", "command", orgId),
-      },
-      {
-        id: "strategy",
-        label: "Open Strategy",
-        detail: "Confirm pick context beside overnight signals.",
-        href: hubHref("/competition", "strategy", orgId),
-      },
-    ];
   }
-
-  if (input.shell === "error") {
-    return [
-      {
-        id: "retry",
-        label: "Retry Overnight Intel",
-        detail: "Reload real overnight signals.",
-        href: withOrgHref("/overnight-intel", orgId),
-        primary: true,
-      },
-      {
-        id: "command",
-        label: "Open Command",
-        detail: "Event Day stays available while the brief reloads.",
-        href: hubHref("/competition", "command", orgId),
-      },
-      {
-        id: "strategy",
-        label: "Open Strategy",
-        detail: "Strategy stays available while the brief reloads.",
-        href: hubHref("/competition", "strategy", orgId),
-      },
-    ];
-  }
-
-  if (input.shell === "empty" || (briefCount === 0 && signalCount === 0)) {
-    return [
-      {
-        id: "generate",
-        label: "Generate tonight's brief",
-        detail: "Snapshots stay blank until research, EPA, or scouting actually changes.",
-        href: "#overnight-intel-generate",
-        primary: true,
-      },
-      {
-        id: "scouting",
-        label: "Log scouting",
-        detail: "New match rows appear in the overnight digest once logged.",
-        href: hubHref("/competition", "scouting", orgId),
-      },
-      {
-        id: "command",
-        label: "Open Command",
-        detail: "Cross-check live event-day context beside overnight signals.",
-        href: hubHref("/competition", "command", orgId),
-      },
-    ].slice(0, 4);
-  }
-
-  const actions: OvernightIntelNextAction[] = [
-    {
-      id: briefCount > 0 ? "review-brief" : "generate",
-      label: briefCount > 0 ? "Review latest brief" : "Generate tonight's brief",
-      detail:
-        briefCount > 0
-          ? `${briefCount} saved brief${briefCount === 1 ? "" : "s"} from real overnight signals.`
-          : `${signalCount} live signal${signalCount === 1 ? "" : "s"} ready to snapshot.`,
-      href: briefCount > 0 ? "#overnight-intel-summary" : "#overnight-intel-generate",
-      primary: true,
-    },
-    {
-      id: "command",
-      label: "Open Command",
-      detail: "Carry overnight changes into event-day ops.",
-      href: hubHref("/competition", "command", orgId),
-    },
-    {
-      id: "strategy",
-      label: "Open Strategy",
-      detail: "Update picks from real EPA and scout movement only.",
-      href: hubHref("/competition", "strategy", orgId),
-    },
-    {
-      id: "epa-trend-alerts",
-      label: "Open EPA Trend Alerts",
-      detail: "Watch longer-horizon EPA swings beside overnight movers.",
-      href: hubHref("/competition", "epa-trend-alerts", orgId),
-    },
-  ];
-
-  return actions.slice(0, 5);
 }

@@ -7,7 +7,7 @@ export const DOSSIER_RELATED_LINKS = [
   { id: "strategy", label: "Strategy", kind: "hub" as const, tab: "strategy" },
   { id: "scouting", label: "Scouting", kind: "hub" as const, tab: "scouting" },
   { id: "pick-desk", label: "Pick desk", kind: "path" as const, path: "/strategy?tab=picks" },
-  { id: "intel", label: "Intel", kind: "path" as const, path: "/intel" },
+  { id: "intel", label: "Research", kind: "path" as const, path: "/intel" },
   { id: "pick-clock", label: "Pick clock", kind: "path" as const, path: "/pick-clock" },
   { id: "team-data", label: "Team Data", kind: "path" as const, path: "/team/data" },
 ] as const;
