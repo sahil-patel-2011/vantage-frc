@@ -36,8 +36,6 @@ function OnshapeCardPreview({
 }
 
 export function DocumentCard({
-
-export function DocumentCard({
   doc,
   subsystems,
   busy,
