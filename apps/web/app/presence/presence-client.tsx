@@ -232,8 +232,6 @@ export default function PresenceClient() {
 
   useEffect(() => {
     load();
-    // Date/event pickers call load(); do not restart the first paint on every picker render.
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only
   }, []);
 
   const orgId = view && "orgId" in view ? view.orgId : null;
