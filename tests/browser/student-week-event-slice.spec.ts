@@ -40,7 +40,7 @@ test("student this week can walk Event day packing/checklist → My Hours clock-
     await expect(page.locator("body"), `Packing still shows ${phrase}`).not.toContainText(phrase);
   }
   const packingPrimary = page
-    .getByRole("link", { name: /Choose your team|Create competition load-out/i })
+    .getByRole("link", { name: /Choose your team|Create competition load-out|Sign in again/i })
     .or(page.getByRole("button", { name: /Create competition load-out|New list/i }));
   await expect(packingPrimary.first()).toBeVisible({ timeout: 12_000 });
 
@@ -55,7 +55,7 @@ test("student this week can walk Event day packing/checklist → My Hours clock-
       phrase,
     );
   }
-  await expect(page.getByRole("heading", { name: "Pre-match checklist" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Pre-match checklist" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Next actions" })).toHaveCount(0);
 
   await page.goto("/tool-checkout");
@@ -83,8 +83,8 @@ test("student this week can walk Event day packing/checklist → My Hours clock-
     await expect(page.locator("body"), `My Hours still shows ${phrase}`).not.toContainText(phrase);
   }
   await expect(page.getByRole("heading", { name: "My Hours" })).toBeVisible();
-  const hoursPrimary = page.getByRole("button", { name: /Clock in|Clock out/i }).or(
-    page.getByRole("link", { name: "Choose your team" }),
+  const hoursPrimary = page.getByRole("button", { name: /Clock in|Clock out|Retry/i }).or(
+    page.getByRole("link", { name: /Choose your team|Sign in again/i }),
   );
   await expect(hoursPrimary.first()).toBeVisible({ timeout: 12_000 });
   await expect(page.getByText("hour_logs")).toHaveCount(0);
@@ -108,8 +108,8 @@ test("student this week can walk Event day packing/checklist → My Hours clock-
   });
   await expect(pickHeading.first()).toBeVisible({ timeout: 12_000 });
   const pickPrimary = page
-    .getByRole("button", { name: /Lock this list/i })
-    .or(page.getByRole("link", { name: /Open Scouting|Choose your team|Set active event/i }));
+    .getByRole("button", { name: /Lock this list|Retry/i })
+    .or(page.getByRole("link", { name: /Open Scouting|Choose your team|Set active event|Sign in again/i }));
   await expect(pickPrimary.first()).toBeVisible();
   if (await page.getByRole("button", { name: /Lock this list/i }).count()) {
     const firstAdd = page.getByRole("button", { name: /^\+ First/i }).first();
