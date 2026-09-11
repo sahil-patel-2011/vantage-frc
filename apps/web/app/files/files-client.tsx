@@ -109,7 +109,7 @@ export default function FilesClient() {
         }
         setListing({
           status: "error",
-          message: body.error ?? `Could not load your files (HTTP ${response.status}).`,
+          message: body.error ?? "Could not load your files. Try again.",
           detail: "",
         });
         return;
