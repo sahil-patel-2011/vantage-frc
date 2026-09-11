@@ -920,7 +920,7 @@ export default function MigrateClient() {
                   ) : (
                     <EmptyState
                       title="Paste exported Notion pages"
-                      description="Paste exported Notion pages below. Titles stay as they were exported — nothing is invented."
+                      description="Paste exported Notion pages below. Titles stay as they were exported."
                     />
                   )}
                   <FormRow label="Paste exported Notion pages">

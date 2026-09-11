@@ -94,7 +94,7 @@ prediction accuracy, in particular, is reported in
 
 ## License and community
 
-Vantage is **[MIT licensed](LICENSE)** (SPDX `MIT`). The npm `"private": true` field only means
+Vantage is **[MIT License](LICENSE)** (SPDX `MIT`). The npm `"private": true` field only means
 this monorepo is not published to the npm registry; it does not block self-hosting.
 
 - [Contributing](CONTRIBUTING.md) — local run, Neon path, tenancy rules, how to help
