@@ -62,16 +62,58 @@ export default function TeamHub() {
   return (
     <ProductHubShell hubId="team" embeddedTabs={EMBEDDED_TABS}>
       {({ tab, orgId }) => {
-        if (tab === "calendar") return <TeamCalendarClient embedded />;
-        if (tab === "todos") return <TodosClient embedded />;
-        if (tab === "practice") return <PracticeClient embedded />;
-        if (tab === "knowledge") return <KnowledgeClient embedded />;
-        if (tab === "attendance") return <AttendanceClient embedded />;
-        if (tab === "batteries") return <BatteriesClient embedded />;
-        if (tab === "fmea") return <FmeaClient embedded />;
+        if (tab === "calendar") {
+          return (
+            <HubOrgGate orgId={orgId} label="Calendar">
+              {() => <TeamCalendarClient embedded />}
+            </HubOrgGate>
+          );
+        }
+        if (tab === "todos") {
+          return (
+            <HubOrgGate orgId={orgId} label="Work">
+              {() => <TodosClient embedded />}
+            </HubOrgGate>
+          );
+        }
+        if (tab === "practice") {
+          return (
+            <HubOrgGate orgId={orgId} label="Practice">
+              {() => <PracticeClient embedded />}
+            </HubOrgGate>
+          );
+        }
+        if (tab === "knowledge") {
+          return (
+            <HubOrgGate orgId={orgId} label="Playbook">
+              {() => <KnowledgeClient embedded />}
+            </HubOrgGate>
+          );
+        }
+        if (tab === "attendance") {
+          return (
+            <HubOrgGate orgId={orgId} label="People">
+              {() => <AttendanceClient embedded />}
+            </HubOrgGate>
+          );
+        }
+        if (tab === "batteries") {
+          return (
+            <HubOrgGate orgId={orgId} label="Batteries">
+              {() => <BatteriesClient embedded />}
+            </HubOrgGate>
+          );
+        }
+        if (tab === "fmea") {
+          return (
+            <HubOrgGate orgId={orgId} label="Failure notes">
+              {() => <FmeaClient embedded />}
+            </HubOrgGate>
+          );
+        }
         if (tab === "messages") {
           return (
-            <HubOrgGate orgId={orgId} label="Team chat">
+            <HubOrgGate orgId={orgId} label="Chat">
               {(id) => <MessagesTab orgId={id} />}
             </HubOrgGate>
           );

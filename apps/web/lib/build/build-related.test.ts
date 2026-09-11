@@ -20,4 +20,8 @@ describe("build-related Soft-UI helpers", () => {
     const links = buildRelatedLinks("org-1");
     expect(links.every((l) => !/demo/i.test(l.label))).toBe(true);
   });
+
+  it("calls the Robot workbench Robot, not FMEA", () => {
+    expect(buildRelatedLinks("org-1").find((link) => link.id === "fmea")?.label).toBe("Robot");
+  });
 });

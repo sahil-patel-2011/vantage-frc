@@ -27,7 +27,7 @@ export default function CompetitionHub() {
       {({ tab, orgId }) => {
         if (tab === "command") {
           return (
-            <HubOrgGate orgId={orgId} label="Event Day">
+            <HubOrgGate orgId={orgId} label="Event day">
               {() => <CommandClient embedded />}
             </HubOrgGate>
           );
@@ -76,7 +76,7 @@ export default function CompetitionHub() {
         }
         if (tab === "forms") {
           return (
-            <HubOrgGate orgId={orgId} label="Form builder">
+            <HubOrgGate orgId={orgId} label="Forms">
               {(id) => <FormsClient orgId={id} embedded />}
             </HubOrgGate>
           );

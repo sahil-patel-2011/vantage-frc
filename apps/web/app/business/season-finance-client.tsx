@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
-import { BusinessRelated } from "../../components/business-related";
 import { Badge, EmptyState, StatTile, Button } from "../../components/ui";
 import { ExportButton, type CsvColumn } from "../../components/ui/export-button";
 import {
@@ -10,7 +9,6 @@ import {
   type UnifiedLedgerEntry,
 } from "../../lib/finance/balance";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
-import { SEASON_FINANCE_RELATED_INCLUDE } from "../../lib/business/business-related";
 import {
   FUNDING_KIND_LABELS,
   FUNDING_KINDS,
@@ -180,13 +178,6 @@ export default function SeasonFinanceClient({
 
   return (
     <div className={`biz-stack season-finance${embedded ? " embedded" : ""}`}>
-      <BusinessRelated
-        orgId={orgId}
-        active="finance"
-        include={SEASON_FINANCE_RELATED_INCLUDE}
-        ariaLabel="Related season finance tools"
-      />
-
       {error ? (
         <div className="biz-alert danger" role="alert">
           <strong>Couldn’t complete that.</strong>
@@ -244,7 +235,7 @@ export default function SeasonFinanceClient({
         : null}
 
       {view?.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message} description="Funding, purchases, and sponsorships stay empty until this team can read the finance tables.">
+        <EmptyState badge="Setup required" badgeTone="setup" title="Choose your team" description="Choose your team to open this season’s money plan.">
           {view.steps[0] ? (
             <Button as="a" variant="primary" href={view.steps[0].href}>
               {view.steps[0].label}
@@ -310,7 +301,7 @@ function LiveDesk({
 
       <section className="biz-kpis" aria-label="Season cash plan">
         <Kpi label="Planned income" value={hasPlan ? money(rollup.plannedIncomeCents) : "—"} detail="Funding lines, or fundraising goals if none yet" />
-        <Kpi label="Received" value={money(rollup.receivedIncomeCents)} detail={`${money(rollup.fundingReceivedCents)} on this desk + CRM / grants / fundraisers`} tone="good" />
+        <Kpi label="Received" value={money(rollup.receivedIncomeCents)} detail={`${money(rollup.fundingReceivedCents)} on this desk + sponsors / grants / fundraisers`} tone="good" />
         <Kpi
           label="Still to raise"
           value={rollup.plannedSpendCents > 0 ? money(rollup.remainingToRaiseCents) : "—"}

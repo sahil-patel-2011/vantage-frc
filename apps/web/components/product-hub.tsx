@@ -80,23 +80,28 @@ export function HubLegacyRedirect({
 
   if (!href) {
     return (
-      <section className="app-card soft-panel product-hub-setup">
-        <span className="app-badge setup">Unavailable</span>
-        <h2>This section is not available</h2>
-        <p className="app-muted">Pick another tab in {hub.label}, or open the feature from the app menu.</p>
-      </section>
+      <EmptyState
+        badge="Unavailable"
+        badgeTone="setup"
+        title="This section is not available"
+        description={`Pick another tab in ${hub.label}.`}
+        className="product-hub-setup"
+      />
     );
   }
 
   return (
-    <section className="app-card soft-panel product-hub-setup" aria-busy>
-      <span className="app-badge">Opening</span>
-      <h2>{def?.label ?? "Feature"}</h2>
-      <p className="app-muted">Taking you to the full page…</p>
+    <EmptyState
+      aria-busy
+      badge="Opening"
+      title={def?.label ?? "Feature"}
+      description="Taking you to the full page…"
+      className="product-hub-setup"
+    >
       <Button as="a" variant="secondary" href={href}>
         Continue
       </Button>
-    </section>
+    </EmptyState>
   );
 }
 
@@ -107,14 +112,17 @@ export function HubLegacyOpen({ label, href }: { label: string; href: string }) 
   }, [href]);
 
   return (
-    <section className="app-card soft-panel product-hub-setup" aria-busy>
-      <span className="app-badge">Opening</span>
-      <h2>{label}</h2>
-      <p className="app-muted">Taking you to the full page…</p>
+    <EmptyState
+      aria-busy
+      badge="Opening"
+      title={label}
+      description="Taking you to the full page…"
+      className="product-hub-setup"
+    >
       <Button as="a" variant="secondary" href={href}>
         Continue
       </Button>
-    </section>
+    </EmptyState>
   );
 }
 
@@ -193,7 +201,7 @@ export function ProductHubShell({
   if (access.ready && hubDenied) {
     return (
       <main className={`module-page product-hub product-hub--${hub.id} soft-gate`}>
-        <PageHeader breadcrumbs={breadcrumbs} title={hub.title}>
+        <PageHeader breadcrumbs={breadcrumbs} title={hub.title} description={hub.description || undefined}>
           {headerActions}
         </PageHeader>
         <EmptyState
@@ -217,7 +225,7 @@ export function ProductHubShell({
 
   return (
     <main className={`module-page product-hub product-hub--${hub.id}`}>
-      <PageHeader breadcrumbs={breadcrumbs} title={hub.title}>
+      <PageHeader breadcrumbs={breadcrumbs} title={hub.title} description={hub.description || undefined}>
         {headerActions}
       </PageHeader>
       <OfflineBanner feature={hub.label} />
@@ -262,7 +270,7 @@ export function ProductHubShell({
                 aria-busy
                 badge="Loading"
                 title="Opening your team"
-                description={`Loading ${hub.label} for your team.`}
+                description="This only takes a moment."
               />
             );
           }
@@ -288,16 +296,19 @@ export function HubOrgGate({
 }) {
   if (!orgId) {
     return (
-      <section className="app-card soft-panel product-hub-setup">
-        <span className="app-badge setup">Team needed</span>
-        <h2>Choose your team</h2>
-        <p className="app-muted">{label} needs a team selected.</p>
+      <EmptyState
+        badge="Setup required"
+        badgeTone="setup"
+        title="Choose your team"
+        description={`Choose your team to open ${label}.`}
+        className="product-hub-setup"
+      >
         <div className="product-hub-setup-actions">
           <Button as="a" variant="primary" href="/workspace">
             Choose your team
           </Button>
         </div>
-      </section>
+      </EmptyState>
     );
   }
   return <>{children(orgId)}</>;

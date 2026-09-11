@@ -31,14 +31,14 @@ export default function BuildHub() {
         }
         if (tab === "fmea") {
           return (
-            <HubOrgGate orgId={orgId} label="FMEA">
+            <HubOrgGate orgId={orgId} label="Robot">
               {() => <FmeaClient embedded />}
             </HubOrgGate>
           );
         }
         if (tab === "prototype") {
           return (
-            <HubOrgGate orgId={orgId} label="Prototype tracker">
+            <HubOrgGate orgId={orgId} label="Prototypes">
               {() => <PrototypeTrackerClient embedded />}
             </HubOrgGate>
           );

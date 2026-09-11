@@ -5,7 +5,7 @@ export const BUILD_RELATED_LINKS = [
   { id: "kickoff", label: "Kickoff", tab: "kickoff" },
   { id: "cad", label: "CAD", tab: "cad" },
   { id: "code", label: "Code", tab: "code" },
-  { id: "fmea", label: "FMEA", tab: "fmea" },
+  { id: "fmea", label: "Robot", tab: "fmea" },
   { id: "prototype", label: "Prototypes", tab: "prototype" },
   { id: "batteries", label: "Batteries", tab: "batteries" },
   { id: "competition", label: "Competition", href: "/competition" },
