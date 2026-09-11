@@ -33,6 +33,8 @@ describe("inbox remaining student chrome", () => {
       expect(src, rel).not.toMatch(/ingest health/);
       expect(src, rel).not.toMatch(/coach→member/);
       expect(src, rel).not.toMatch(/Notification prefs/);
+      expect(src, rel).not.toMatch(/Controls what Vantage/);
+      expect(src, rel).not.toMatch(/\bVantage may\b/);
     }
   });
 
@@ -53,6 +55,8 @@ describe("inbox remaining student chrome", () => {
     expect(prefs).not.toMatch(/fetchFailed \|\| !view/);
     expect(prefs).toMatch(/clearFeatureSnapshot/);
     expect(prefs).toMatch(/Needs setup/);
+    expect(prefs).not.toMatch(/\bVantage\b/);
+    expect(prefs).not.toMatch(/your notifications inbox/);
     const panel = readFileSync(join(WEB, "app/account/account-notifications-panel.tsx"), "utf8");
     expect(panel).toMatch(/variant="primary"/);
     expect(panel).toMatch(/Needs setup/);
