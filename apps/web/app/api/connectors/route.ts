@@ -16,6 +16,7 @@
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { connectorAudienceFromRole } from "../../../lib/connectors/catalog";
 import {
   buildConnectorStatuses,
   loadConnectorProofs,
@@ -44,6 +45,8 @@ export async function GET(request: Request) {
 
     const orgId = resolved?.orgId ?? null;
     const role = resolved?.role ?? null;
+    const canManage = role === "owner" || role === "admin";
+    const audience = connectorAudienceFromRole(canManage);
 
     const proofs = orgId
       ? await withRls({ userId: session.user.id, orgId }, (client) =>
@@ -53,20 +56,21 @@ export async function GET(request: Request) {
           loadConnectorProofs(client, { userId: session.user.id, orgId: null }),
         );
 
-    const connectors = buildConnectorStatuses(process.env, proofs);
+    const connectors = buildConnectorStatuses(process.env, proofs, audience);
 
     return Response.json({
       orgId,
       role,
       /** Only owners and admins may change a team-scoped link. */
-      canManage: role === "owner" || role === "admin",
+      canManage,
       summary: summarizeConnectors(connectors),
       connectors,
     });
   } catch {
     // A connectors page that 500s is the exact complaint. Answer with the
-    // environment-only view, which is still true and still actionable.
-    const connectors = buildConnectorStatuses(process.env, {});
+    // environment-only view. Role is unknown here, so student copy — env-var
+    // names stay on the owner/admin path above.
+    const connectors = buildConnectorStatuses(process.env, {}, "student");
     return Response.json({
       orgId: null,
       role: null,

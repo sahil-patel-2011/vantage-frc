@@ -43,7 +43,7 @@ export type ConnectorId =
  *
  * `platform` — one deployment-wide credential an operator sets in env.
  * `team`     — a row each team saves for itself (webhook, PAT, paired node).
- * `member`   — a row each person authorises for themselves (Onshape OAuth).
+ * `member`   — a row each person authorises for themselves (Onshape).
  *
  * The distinction matters on the page: a member looking at a `platform`
  * connector cannot fix it and should be told who can, rather than shown a
@@ -198,7 +198,7 @@ export const CONNECTORS: readonly ConnectorDefinition[] = [
   },
   {
     id: "email",
-    label: "Email (Resend)",
+    label: "Email",
     powers: "Invites, dues reminders, announcement digests and Drive share notices.",
     scope: "platform",
     requiredEnv: ["RESEND_API_KEY", "AUTH_EMAIL_FROM"],
@@ -357,30 +357,107 @@ export type ConnectorLinkProof = {
 };
 
 /**
+ * Who is reading the card.
+ *
+ * `operator` — an owner/admin who can set deployment variables. Cards name
+ *              the missing env and the callback URL to register.
+ * `student`  — everyone else. Cards never name env vars, OAuth, or Vercel.
+ */
+export type ConnectorAudience = "student" | "operator";
+
+/** Copy the Connectors API should send for this membership role. */
+export function connectorAudienceFromRole(canManage: boolean): ConnectorAudience {
+  return canManage ? "operator" : "student";
+}
+
+function copyForAudience<T>(audience: ConnectorAudience, student: T, operator: T): T {
+  switch (audience) {
+    case "student":
+      return student;
+    case "operator":
+      return operator;
+    default: {
+      const _exhaustive: never = audience;
+      return _exhaustive;
+    }
+  }
+}
+
+/**
+ * Env names, OAuth, Vercel, and CLI tokens must not reach a student card.
+ * Operator cards still name those on purpose.
+ */
+export const STUDENT_CONNECTOR_LEAK =
+  /OAuth|ONSHAPE_|GITHUB_OAUTH|RESEND_|AUTH_EMAIL_FROM|DISCORD_BOT|SLACK_SIGNING|TBA_AUTH|TWILIO_|vantage-cad|vantage-relay@|Vercel|STRIPE_|FUSION_RELAY|FREE_RELAY|\bPAT\b/i;
+
+function studentSafeNote(note: string | null | undefined, fallback: string): string {
+  const trimmed = note?.trim() ?? "";
+  if (!trimmed) return fallback;
+  if (STUDENT_CONNECTOR_LEAK.test(trimmed)) return fallback;
+  return trimmed;
+}
+
+/**
  * Status line, in the three shapes the settings page promises:
  *
  *   Connected as jane@team.org
  *   Not configured — set GITHUB_OAUTH_CLIENT_ID and GITHUB_OAUTH_CLIENT_SECRET
  *   Token expired — reconnect
+ *
+ * Students see "Ask a mentor to finish setup" instead of env-var names.
  */
 export function connectorStatusLine(input: {
   state: ConnectorState;
   account?: string | null;
   missingEnv?: readonly string[];
+  audience?: ConnectorAudience;
 }): string {
+  const audience = input.audience ?? "operator";
   switch (input.state) {
     case "connected":
       return input.account?.trim() ? `Connected as ${input.account.trim()}` : "Connected";
     case "token_expired":
       return "Token expired — reconnect";
     case "not_configured":
-      return input.missingEnv?.length
-        ? `Not configured — set ${joinEnvNames(input.missingEnv)}`
-        : "Not configured";
+      return copyForAudience(
+        audience,
+        "Ask a mentor to finish setup",
+        input.missingEnv?.length
+          ? `Not configured — set ${joinEnvNames(input.missingEnv)}`
+          : "Not configured",
+      );
     case "ready":
       return "Ready to connect";
-    default:
+    case "not_connected":
       return "Not connected";
+    default: {
+      const _exhaustive: never = input.state;
+      return _exhaustive;
+    }
+  }
+}
+
+function studentConnectorDetail(
+  def: ConnectorDefinition,
+  input: { state: ConnectorState; note?: string | null },
+): string {
+  const note = studentSafeNote(input.note, "");
+  if (note) return note;
+  switch (input.state) {
+    case "not_configured":
+      return `Ask a mentor to finish ${def.label} setup for this team.`;
+    case "token_expired":
+      return `This ${def.label} link expired. Disconnect and connect again.`;
+    case "connected":
+      return def.powers;
+    case "ready":
+      return `Connect ${def.label} to finish the link.`;
+    case "not_connected":
+      return def.powers;
+    default: {
+      const _exhaustive: never = input.state;
+      return _exhaustive;
+    }
   }
 }
 
@@ -390,8 +467,17 @@ export function connectorStatusLine(input: {
  */
 export function connectorDetail(
   def: ConnectorDefinition,
-  input: { state: ConnectorState; missingEnv: readonly string[]; callbackUrl: string | null; note?: string | null },
+  input: {
+    state: ConnectorState;
+    missingEnv: readonly string[];
+    callbackUrl: string | null;
+    note?: string | null;
+    audience?: ConnectorAudience;
+  },
 ): string {
+  const audience = input.audience ?? "operator";
+  if (audience === "student") return studentConnectorDetail(def, input);
+
   const register = input.callbackUrl
     ? ` Register this exact ${def.callbackLabel} on the provider (${def.providerConsole}): ${input.callbackUrl}`
     : ` Create the credential at ${def.providerConsole}.`;
@@ -406,21 +492,26 @@ export function connectorDetail(
 
   if (input.note?.trim()) return `${input.note.trim()}${envTail}`;
 
-  if (input.state === "not_configured") return setupSentence;
-
-  if (input.state === "token_expired") {
-    return `The stored token is past its expiry and could not be refreshed. Disconnect and connect again to issue a new one.${envTail || register}`;
+  switch (input.state) {
+    case "not_configured":
+      return setupSentence;
+    case "token_expired":
+      return `The stored token is past its expiry and could not be refreshed. Disconnect and connect again to issue a new one.${envTail || register}`;
+    case "connected": {
+      const base = input.callbackUrl
+        ? `${def.powers} Registered ${def.callbackLabel}: ${input.callbackUrl}`
+        : def.powers;
+      return `${base}${envTail}`;
+    }
+    case "ready":
+      return `Credentials are set on this deployment — finish the link on ${def.managePath}.${register}`;
+    case "not_connected":
+      return `${def.powers}${register}`;
+    default: {
+      const _exhaustive: never = input.state;
+      return _exhaustive;
+    }
   }
-  if (input.state === "connected") {
-    const base = input.callbackUrl
-      ? `${def.powers} Registered ${def.callbackLabel}: ${input.callbackUrl}`
-      : def.powers;
-    return `${base}${envTail}`;
-  }
-  if (input.state === "ready") {
-    return `Credentials are set on this deployment — finish the link on ${def.managePath}.${register}`;
-  }
-  return `${def.powers}${register}`;
 }
 
 /**
@@ -433,6 +524,7 @@ export function describeConnector(
   def: ConnectorDefinition,
   env: Record<string, string | undefined>,
   proof: ConnectorLinkProof = {},
+  audience: ConnectorAudience = "operator",
 ): ConnectorStatus {
   const missingEnv = missingConnectorEnv(def, env);
   const callbackUrl = connectorCallbackUrl(def, env);
@@ -464,13 +556,13 @@ export function describeConnector(
     powers: def.powers,
     scope: def.scope,
     state,
-    statusLine: connectorStatusLine({ state, account: proof.account, missingEnv }),
-    detail: connectorDetail(def, { state, missingEnv, callbackUrl, note: proof.note }),
-    missingEnv,
-    callbackUrl,
+    statusLine: connectorStatusLine({ state, account: proof.account, missingEnv, audience }),
+    detail: connectorDetail(def, { state, missingEnv, callbackUrl, note: proof.note, audience }),
+    missingEnv: copyForAudience(audience, [] as string[], missingEnv),
+    callbackUrl: copyForAudience(audience, null, callbackUrl),
     callbackLabel: def.callbackLabel,
     providerConsole: def.providerConsole,
-    permissions: [...def.permissions],
+    permissions: copyForAudience(audience, [] as string[], [...def.permissions]),
     managePath: def.managePath,
     // Connect needs live platform credentials — offering it without them is
     // the "Connect button that reloads the page" this change removes.

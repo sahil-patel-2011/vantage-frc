@@ -40,7 +40,7 @@ export function AccountNotificationsPanel({
           description={account.emailDelivery.detail}
         >
           <p className="app-muted">
-            In-app prefs still save. Opt-in email stays quiet until Resend is configured on this deployment.
+            In-app prefs still save. Opt-in email stays quiet until email is configured for this team.
           </p>
         </EmptyState>
       ) : null}

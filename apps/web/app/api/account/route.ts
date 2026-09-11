@@ -13,6 +13,15 @@ import { onshapeSetupStatus } from "@vantage/cad";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { z } from "zod";
+import {
+  ACCOUNT_GOOGLE_COPY,
+  ACCOUNT_TBA_COPY,
+  accountDiscordDetail,
+  accountGithubDetail,
+  accountOnshapeDetail,
+  studentEmailDelivery,
+  studentPhoneOtp,
+} from "../../../lib/account/account-api-related";
 import type { ConnectionConnectorStatus } from "../../../lib/account/connections-related";
 import { canPostViaDiscord } from "../../../lib/discord-related";
 import { discordSetupStatus, isValidDiscordWebhook } from "../../../lib/discord";
@@ -179,7 +188,7 @@ function onshapeIntegration(
   if (!setup.configured) {
     return {
       status: "setup_required",
-      detail: setup.message,
+      detail: accountOnshapeDetail({ configured: false, connected: false, orgId }),
       platformConfigured: false,
       connected: false,
     };
@@ -187,7 +196,7 @@ function onshapeIntegration(
   if (connected) {
     return {
       status: "connected",
-      detail: "Onshape OAuth is linked for your account in this workspace.",
+      detail: accountOnshapeDetail({ configured: true, connected: true, orgId }),
       platformConfigured: true,
       connected: true,
     };
@@ -195,14 +204,14 @@ function onshapeIntegration(
   if (!orgId) {
     return {
       status: "available",
-      detail: "Onshape OAuth client is configured. Select a workspace, then authorize in CAD Connections.",
+      detail: accountOnshapeDetail({ configured: true, connected: false, orgId: null }),
       platformConfigured: true,
       connected: false,
     };
   }
   return {
     status: "empty",
-    detail: "OAuth client is ready — authorize in CAD Connections. Connected only after a real OAuth row.",
+    detail: accountOnshapeDetail({ configured: true, connected: false, orgId }),
     platformConfigured: true,
     connected: false,
   };
@@ -227,9 +236,12 @@ function discordIntegration(
   if (canPost) {
     return {
       status: "connected",
-      detail: snapshot.discordHasWebhook
-        ? "Discord webhook (or bot + channel) can post for this team."
-        : "Discord bot + channel id can post for this team.",
+      detail: accountDiscordDetail({
+        canPost: true,
+        hasWebhook: snapshot.discordHasWebhook,
+        configured: setup.configured,
+        orgId,
+      }),
       platformConfigured: setup.configured,
       canPost: true,
     };
@@ -238,9 +250,12 @@ function discordIntegration(
   if (!orgId) {
     return {
       status: setup.configured ? "available" : "setup_required",
-      detail: setup.configured
-        ? "Discord bot token is on this deployment. Choose your team to add a webhook or channel."
-        : "Choose your team, then add a channel webhook (bot token optional) on Discord settings.",
+      detail: accountDiscordDetail({
+        canPost: false,
+        hasWebhook: snapshot.discordHasWebhook,
+        configured: setup.configured,
+        orgId: null,
+      }),
       platformConfigured: setup.configured,
       canPost: false,
     };
@@ -249,8 +264,12 @@ function discordIntegration(
   if (!snapshot.discordHasWebhook && !setup.configured) {
     return {
       status: "setup_required",
-      detail:
-        "Add a Discord channel webhook on Team → Discord, or set DISCORD_BOT_TOKEN for bot posts. Never shows Connected until one path works.",
+      detail: accountDiscordDetail({
+        canPost: false,
+        hasWebhook: false,
+        configured: false,
+        orgId,
+      }),
       platformConfigured: false,
       canPost: false,
     };
@@ -258,9 +277,12 @@ function discordIntegration(
 
   return {
     status: "empty",
-    detail: setup.configured
-      ? "Bot token is configured — add a webhook or channel id on Discord settings before posts work."
-      : "Webhook not saved for this team yet. Connected only after a valid webhook or bot+channel.",
+    detail: accountDiscordDetail({
+      canPost: false,
+      hasWebhook: snapshot.discordHasWebhook,
+      configured: setup.configured,
+      orgId,
+    }),
     platformConfigured: setup.configured,
     canPost: false,
   };
@@ -279,7 +301,7 @@ function githubIntegration(
   if (connected) {
     return {
       status: "connected",
-      detail: "GitHub is linked for this team (OAuth or encrypted PAT).",
+      detail: accountGithubDetail({ configured: setup.configured, connected: true, orgId }),
       oauthConfigured: setup.configured,
       connected: true,
     };
@@ -287,16 +309,14 @@ function githubIntegration(
   if (!orgId) {
     return {
       status: "available",
-      detail: setup.message,
+      detail: accountGithubDetail({ configured: setup.configured, connected: false, orgId: null }),
       oauthConfigured: setup.configured,
       connected: false,
     };
   }
   return {
     status: "empty",
-    detail: setup.configured
-      ? "No GitHub account linked yet. Owners/admins can Connect GitHub (OAuth) or save a PAT in Team admin."
-      : "No GitHub link yet. Save an encrypted PAT in Team admin (OAuth App credentials are optional on this deployment).",
+    detail: accountGithubDetail({ configured: setup.configured, connected: false, orgId }),
     oauthConfigured: setup.configured,
     connected: false,
   };
@@ -412,28 +432,26 @@ export async function GET() {
       recoveryEmail: profile.row?.recoveryEmail ?? null,
       phoneE164: profile.row?.phoneE164 ?? null,
       phoneVerified: Boolean(profile.row?.phoneVerifiedAt),
-      phoneOtp: phoneOtpSetupStatus(),
+      phoneOtp: studentPhoneOtp(phoneOtpSetupStatus()),
       themePreference: profile.row?.themePreference === "dark" ? "dark" : "light",
       notificationPrefs: mergePrefs(profile.row?.notificationPrefs),
       emailPrefs: profile.emailPrefs,
-      emailDelivery: emailNotificationsSetupStatus(),
+      emailDelivery: studentEmailDelivery(emailNotificationsSetupStatus()),
       unreadNotificationCount: profile.unreadCount,
       googleConnected: false,
       tbaConfigured: profile.tba.tbaConfigured,
       integrations: {
         google: {
           status: googleConfigured ? ("available" as const) : ("setup_required" as const),
-          detail: googleConfigured
-            ? "Google sign-in is configured for this deployment."
-            : "GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET are not set on this deployment.",
+          detail: googleConfigured ? ACCOUNT_GOOGLE_COPY.available : ACCOUNT_GOOGLE_COPY.setupRequired,
         },
         tba: {
           status: tbaReady || profile.tba.cacheHasSync ? ("available" as const) : ("setup_required" as const),
           detail: tbaReady
-            ? "Platform TBA Read API key (env or encrypted credential) is configured for reference ingest."
+            ? ACCOUNT_TBA_COPY.ready
             : profile.tba.cacheHasSync
-              ? "Saved rankings from an earlier sync. Connect The Blue Alliance to refresh."
-              : "Connect The Blue Alliance under Connectors, or ask an admin to set the platform key.",
+              ? ACCOUNT_TBA_COPY.cached
+              : ACCOUNT_TBA_COPY.setupRequired,
         },
         onshape,
         discord,
