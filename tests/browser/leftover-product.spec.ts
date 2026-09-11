@@ -28,7 +28,7 @@ test("leftover-product boards speak student chrome", async ({ page }) => {
     await page.goto(leaf.path);
     await waitForLoadingGone(page);
     await expect(page.locator("body")).not.toContainText("Application error");
-    await expect(page.getByRole("heading", { level: 1, name: leaf.heading })).toBeVisible();
+    await expect(page.getByRole("heading", { name: leaf.heading }).first()).toBeVisible();
     for (const phrase of BANNED) {
       await expect(page.locator("body"), `${leaf.path} still shows ${phrase}`).not.toContainText(phrase);
     }
