@@ -415,16 +415,15 @@ export default function AlumniClient({ orgId }: { orgId: string }) {
           </span>
           <h2>Post to your team&apos;s Discord</h2>
           <p className="app-muted">
-            In Discord: <strong>Server Settings → Integrations → Webhooks → New Webhook</strong>, pick the
-            channel, copy the URL, and paste it here. The URL is stored securely and never shown again.
+            Paste a Discord channel link here. The link is stored securely and never shown again.
           </p>
           <div className="admin-grid">
             <div>
               <label>
-                Webhook URL
+                Discord channel link
                 <input
                   type="url"
-                  placeholder="https://discord.com/api/webhooks/…"
+                  placeholder="Paste the Discord channel link"
                   value={webhookUrl}
                   onChange={(e) => setWebhookUrl(e.target.value)}
                 />
