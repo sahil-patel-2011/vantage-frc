@@ -179,12 +179,12 @@ export async function computeCadChangeRadarView(
   if (!connectionRow) {
     return {
       status: "setup_required",
-      message: "Connect an Onshape workspace to start tracking CAD release changes.",
+      message: "Connect Onshape to start tracking CAD release changes.",
       steps: [
         {
           id: "cad",
           label: "Connect Onshape",
-          detail: "The radar snapshots tracked parameters from your Onshape releases — connect a workspace first.",
+          detail: "The radar snapshots tracked parameters from your Onshape releases — connect Onshape first.",
           href: "/build?tab=cad",
         },
       ],

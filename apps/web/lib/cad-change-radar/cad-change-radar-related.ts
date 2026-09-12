@@ -79,7 +79,7 @@ export function cadChangeRadarSetupSteps(orgId?: string | null): CadChangeRadarS
     {
       id: "cad",
       label: "Open CAD",
-      detail: "Connect Onshape and confirm workspace context.",
+      detail: "Connect Onshape and confirm the document first.",
       href: hubHref("/build", "cad", orgId),
     },
     {
@@ -271,7 +271,7 @@ export function cadChangeRadarNextActions(input: {
       {
         id: "cad",
         label: "Open CAD",
-        detail: "Confirm Onshape workspace context before tracking parts.",
+        detail: "Confirm Onshape is connected before tracking parts.",
         href: hubHref("/build", "cad", orgId),
       },
       {
@@ -297,7 +297,7 @@ export function cadChangeRadarNextActions(input: {
     {
       id: "cad",
       label: "Open CAD",
-      detail: "Jump back to the Onshape workspace for the changed part.",
+      detail: "Jump back to Onshape for the changed part.",
       href: hubHref("/build", "cad", orgId),
     },
     {

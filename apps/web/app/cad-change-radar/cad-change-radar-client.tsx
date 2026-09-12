@@ -392,7 +392,7 @@ function ConnectionPanel({ view }: { view: LiveView }) {
       as="section"
       aria-label="Onshape connection"
       title={view.connection.label}
-      subtitle="Onshape workspace"
+      subtitle="Onshape document"
       actions={<Badge tone="good">{view.connection.status}</Badge>}
     >
       <p className="app-muted ccr-connection-meta">
