@@ -7,11 +7,14 @@ test.beforeEach(async ({ context }) => {
   if (!signed) await signInFixture(context);
 });
 
-test("leftover Usage / Chat limits / Files boards speak student chrome", async ({ page }) => {
+test("leftover Media / Help / What’s new / Print farm boards speak student chrome", async ({
+  page,
+}) => {
   test.setTimeout(90_000);
   await assertLeftoverProductBoards(page, [
-    { path: "/team/usage", heading: /Where the team's AI spend goes|Choose your team|Usage/ },
-    { path: "/team/budgets", heading: /Chat limits|Choose your team/ },
-    { path: "/files", heading: "Files" },
+    { path: "/media", heading: "Media" },
+    { path: "/help", heading: "Help centre" },
+    { path: "/whats-new", heading: "What’s new" },
+    { path: "/print-farm", heading: "Print farm" },
   ]);
 });
