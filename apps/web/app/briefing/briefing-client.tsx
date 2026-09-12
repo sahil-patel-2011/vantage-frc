@@ -928,18 +928,18 @@ export default function BriefingClient() {
               ) : null}
               {view.openRisks.length > 0 ? (
                 <div className="brief-subblock">
-                  <h3>Open FMEA risks</h3>
+                  <h3>Open failure risks</h3>
                   <ul className="brief-notes">
                     {view.openRisks.slice(0, 4).map((risk) => (
                       <li key={risk.id}>
-                        <i className="brief-tag">RPN {risk.rpn}</i>
+                        <i className="brief-tag">Priority {risk.rpn}</i>
                         <span className="brief-note-body">
                           <b>{risk.subsystemName}</b> — {risk.title}
                         </span>
                       </li>
                     ))}
                   </ul>
-                  <a href={withOrg("/fmea", orgId)}>Open FMEA</a>
+                  <a href={withOrg("/fmea", orgId)}>Open Failure log</a>
                 </div>
               ) : null}
               {view.batteries.length > 0 ? (
@@ -964,7 +964,7 @@ export default function BriefingClient() {
             <EmptyHint>
               No robot-health data yet — log repairs in{" "}
               <a href={withOrg("/pit-repair-triage", orgId)}>Repair triage</a>, risks in{" "}
-              <a href={withOrg("/fmea", orgId)}>FMEA</a>, or batteries in{" "}
+              <a href={withOrg("/fmea", orgId)}>Failure log</a>, or batteries in{" "}
               <a href={withOrg("/batteries", orgId)}>Batteries</a>
             </EmptyHint>
           )}

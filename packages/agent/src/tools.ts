@@ -1112,7 +1112,7 @@ export function createVantageToolRegistry(): AIToolRegistry {
       tool({
         name: "fmea.repeat",
         description:
-          "Detect subsystems that failed repeatedly this season (FMEA log, with pit robot_failures fallback). Returns empty when nothing repeats — never invents counts.",
+          "Detect subsystems that failed repeatedly this season (failure log, with pit robot_failures fallback). Returns empty when nothing repeats — never invents counts.",
         parseInput(value) {
           const input = object(value);
           const season = seasonInput({ seasonYear: input.seasonYear });
@@ -1512,7 +1512,7 @@ export function createVantageToolRegistry(): AIToolRegistry {
       tool({
         name: "fmea.open_risks",
         description:
-          "Read open / fixing FMEA failures ranked by RPN — CAD and strategy treat these as real reliability risks",
+          "Read open / fixing failure-log rows ranked by priority — CAD and strategy treat these as real reliability risks",
         parseInput(value) {
           const season = seasonInput(value);
           const input = object(value);
@@ -1548,7 +1548,7 @@ export function createVantageToolRegistry(): AIToolRegistry {
       tool({
         name: "cad.create_brief",
         description:
-          "Create a metered CAD engineering brief grounded in strategy.match, kickoff design priorities, FMEA risks, and knowledge (shared tool graph — no copy-paste)",
+          "Create a metered CAD engineering brief grounded in strategy.match, kickoff design priorities, failure-log risks, and knowledge (shared tool graph — no copy-paste)",
         parseInput(value) {
           const input = object(value);
           const request = String(input.request ?? input.proposal ?? "").trim();
@@ -1853,7 +1853,7 @@ export function createVantageToolRegistry(): AIToolRegistry {
       tool({
         name: "decision_critic.reviews",
         description:
-          "Read this org's logged design-decision second opinions for the active season, including the verdict (proceed, proceed with caution, or reconsider), concerns grounded in weight/power headroom and FMEA failure history, confidence, and recorded outcome.",
+          "Read this org's logged design-decision second opinions for the active season, including the verdict (proceed, proceed with caution, or reconsider), concerns grounded in weight/power headroom and failure-log history, confidence, and recorded outcome.",
         parseInput: seasonInput,
         parseOutput: objectOutput,
         async execute({ client, orgId, activeEventKey }, input) {
@@ -2189,7 +2189,7 @@ export function createVantageToolRegistry(): AIToolRegistry {
       tool({
         name: "meeting_autopilot.agenda",
         description:
-          "Read-only: the ranked meeting agenda grounded in open blockers, overdue tasks, unresolved decisions, and open FMEA for the org's active season.",
+          "Read-only: the ranked meeting agenda grounded in open blockers, overdue tasks, unresolved decisions, and open failure-log rows for the org's active season.",
         parseInput: seasonInput,
         parseOutput: objectOutput,
         async execute({ client, orgId, activeEventKey }, input) {
@@ -2404,7 +2404,7 @@ export function createVantageToolRegistry(): AIToolRegistry {
       tool({
         name: "pit_repair_triage.reports",
         description:
-          "Read this org's logged pit-repair failures for the active season, including the FMEA-history + spares-inventory + remaining-match-time triage decision (fix, swap, or monitor), confidence, and pre-stage recommendation.",
+          "Read this org's logged pit-repair failures for the active season, including the failure-log history + spares-inventory + remaining-match-time triage decision (fix, swap, or monitor), confidence, and pre-stage recommendation.",
         parseInput: seasonInput,
         parseOutput: objectOutput,
         async execute({ client, orgId, activeEventKey }, input) {
@@ -2466,7 +2466,7 @@ export function createVantageToolRegistry(): AIToolRegistry {
       tool({
         name: "readiness_score.index",
         description:
-          "Read this org's grounded ship-readiness index for the active season: subsystem wiring + code-version state, weight/power headroom against FRC budgets, bring-up checklist completion, open FMEA clearance, and the severity-ordered fix list.",
+          "Read this org's grounded ship-readiness index for the active season: subsystem wiring + code-version state, weight/power headroom against FRC budgets, bring-up checklist completion, open failure-log clearance, and the severity-ordered fix list.",
         parseInput: seasonInput,
         parseOutput: objectOutput,
         async execute({ client, orgId, activeEventKey }, input) {
@@ -2540,7 +2540,7 @@ export function createVantageToolRegistry(): AIToolRegistry {
       tool({
         name: "retro.postmortem",
         description:
-          "Read this org's auto-compiled season postmortem: counted decisions, risks, safety incidents, and FMEA failures, plus retro action-item follow-through, with a grounded narrative summary.",
+          "Read this org's auto-compiled season postmortem: counted decisions, risks, safety incidents, and failure-log rows, plus retro action-item follow-through, with a grounded narrative summary.",
         parseInput: seasonInput,
         parseOutput: objectOutput,
         async execute({ client, orgId, activeEventKey }, input) {
@@ -2565,7 +2565,7 @@ export function createVantageToolRegistry(): AIToolRegistry {
       tool({
         name: "reuse_advisor.assessments",
         description:
-          "Read this org's cross-season subsystem reuse assessments for the active design season, including the prior-season FMEA-failure-history + design-review-track-record grounded recommendation (reuse, modify, or avoid), confidence, and rationale.",
+          "Read this org's cross-season subsystem reuse assessments for the active design season, including the prior-season failure-log history + design-review-track-record grounded recommendation (reuse, modify, or avoid), confidence, and rationale.",
         parseInput: seasonInput,
         parseOutput: objectOutput,
         async execute({ client, orgId, activeEventKey }, input) {
@@ -2735,7 +2735,7 @@ export function createVantageToolRegistry(): AIToolRegistry {
       tool({
         name: "spare_robot_kit.checklists",
         description:
-          "Read this org's competition spare-parts kit checklists for the active season — candidate items derived from crossing inventory spare bins against FMEA repeat-failure history, with pack priority, recommended quantity, and pack status.",
+          "Read this org's competition spare-parts kit checklists for the active season — candidate items derived from crossing inventory spare bins against failure-log repeat-failure history, with pack priority, recommended quantity, and pack status.",
         parseInput: seasonInput,
         parseOutput: objectOutput,
         async execute({ client, orgId, activeEventKey }, input) {

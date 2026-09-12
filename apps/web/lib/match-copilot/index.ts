@@ -107,7 +107,7 @@ export function composeMatchCopilotCallouts(input: {
       priority: 1,
       category: "risk",
       headline: `Mitigate: ${topRisk.title}`,
-      detail: `${topRisk.subsystemName} — RPN ${topRisk.rpn} (O${topRisk.occurrence}/S${topRisk.severity}/D${topRisk.detection}). Confirm the fix or a workaround before this match.`,
+      detail: `${topRisk.subsystemName} — priority ${topRisk.rpn}. Confirm the fix or a workaround before this match.`,
       sourceRefs: [topRisk.id],
     });
   }

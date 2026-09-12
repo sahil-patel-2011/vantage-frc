@@ -61,7 +61,7 @@ function setupStepsFor(orgId: string | null, focus: "workspace" | "team" | "even
   };
   const fmea: MatchCopilotSetupStep = {
     id: "fmea",
-    label: "Open FMEA",
+    label: "Open Failure log",
     detail: "Risk callouts stay blank until real open failures exist.",
     href: hubHref("/team", "fmea", orgId),
   };

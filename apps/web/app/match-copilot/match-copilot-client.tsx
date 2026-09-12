@@ -43,7 +43,7 @@ async function persistMatchCopilotSnapshot(orgHint: string, data: MatchCopilotVi
 const CATEGORY_LABEL: Record<MatchCopilotCalloutCategory, string> = {
   opponent: "Opponent",
   strategy: "Strategy",
-  risk: "FMEA risk",
+  risk: "Failure risk",
   battery: "Battery",
 };
 
@@ -346,7 +346,7 @@ export default function MatchCopilotClient() {
           </>
         }
         title="Match Copilot"
-        description="A glanceable 60-second brief for your next match — fusing opponent rating, your stored strategy plan, open FMEA risks, and live battery health into prioritized do-this callouts. Cross-check Strategy, Command, and FMEA."
+        description="A glanceable 60-second brief for your next match — fusing opponent rating, your stored strategy plan, open failure risks, and live battery health into prioritized do-this callouts. Cross-check Strategy, Command, and Failure log."
       >
         <div className="match-copilot-header-actions">
           {relatedLinks.map((link) => (
@@ -403,7 +403,7 @@ export default function MatchCopilotClient() {
           <span className="eyebrow">Grounding path</span>
           <p className="app-muted" style={{ marginTop: 8 }}>
             Keep the next-match plan in <a href={strategyHref}>Strategy</a>, confirm the active event
-            in <a href={commandHref}>Command</a>, and log open failures in <a href={fmeaHref}>FMEA</a>
+            in <a href={commandHref}>Command</a>, and log open failures in <a href={fmeaHref}>Failure log</a>
           </p>
         </Panel>
       </div>
@@ -427,7 +427,7 @@ function SummaryTiles({
   const tiles = [
     { label: "Callouts", value: formatMatchCopilotMetric(calloutCount, loaded) },
     { label: "Opponents", value: formatMatchCopilotMetric(opponentCount, loaded) },
-    { label: "Open FMEA risks", value: formatMatchCopilotMetric(openRiskCount, loaded) },
+    { label: "Open failure risks", value: formatMatchCopilotMetric(openRiskCount, loaded) },
     { label: "Batteries tracked", value: formatMatchCopilotMetric(batteryCount, loaded) },
   ];
   return (
@@ -482,7 +482,7 @@ function CalloutsPanel({ view }: { view: LiveView }) {
         badge="No callouts yet"
         badgeTone="setup"
         title="Generate this match's brief"
-        description="Fuses opponent rating, your strategy plan, open FMEA risks, and battery health into up to 3 prioritized callouts."
+        description="Fuses opponent rating, your strategy plan, open failure risks, and battery health into up to 3 prioritized callouts."
       />
     );
   }
@@ -531,7 +531,7 @@ function OpponentsPanel({ view }: { view: LiveView }) {
 function RisksPanel({ view }: { view: LiveView }) {
   return (
     <Panel>
-      <h2 style={{ marginTop: 0 }}>Open FMEA risks</h2>
+      <h2 style={{ marginTop: 0 }}>Open failure risks</h2>
       {view.openRisks.length === 0 ? (
         <p className="app-muted">No open risks logged.</p>
       ) : (
@@ -540,7 +540,7 @@ function RisksPanel({ view }: { view: LiveView }) {
             <li key={risk.id}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
                 <span>{risk.title}</span>
-                <small className="app-muted">RPN {risk.rpn}</small>
+                <small className="app-muted">Priority {risk.rpn}</small>
               </div>
               <small className="app-muted">{risk.subsystemName}</small>
             </li>

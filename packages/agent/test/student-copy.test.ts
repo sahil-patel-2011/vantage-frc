@@ -22,6 +22,16 @@ const LEFTOVER = [
   /TBA scout conflicts/,
   /TBA contradiction/,
   /FIRST, TBA, Statbotics/,
+  /FMEA log/,
+  /FMEA failures/,
+  /FMEA risks/,
+  /FMEA failure history/,
+  /open FMEA/,
+  /FMEA-history/,
+  /open FMEA clearance/,
+  /FMEA-failure-history/,
+  /against FMEA/,
+  /ranked by RPN/,
 ];
 
 describe("Ask AI tool student-facing copy", () => {

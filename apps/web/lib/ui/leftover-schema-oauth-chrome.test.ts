@@ -27,6 +27,7 @@ const FILES = [
   "app/my-kit/my-kit-client.tsx",
   "app/kickoff/kickoff-intelligence.tsx",
   "app/api/cad/route.ts",
+  "app/api/cad/onshape/route.ts",
   "app/api/cad/agent/route.ts",
 ] as const;
 
@@ -72,11 +73,17 @@ describe("leftover schema / OAuth / Setup required student chrome", () => {
 
   it("CAD hosted routes tell students to connect Onshape, not OAuth", () => {
     const cad = readFileSync(join(WEB, "app/api/cad/route.ts"), "utf8");
+    const onshape = readFileSync(join(WEB, "app/api/cad/onshape/route.ts"), "utf8");
     const agent = readFileSync(join(WEB, "app/api/cad/agent/route.ts"), "utf8");
     expect(cad).toMatch(/Connect Onshape in CAD Connections/);
     expect(cad).toMatch(/your Onshape account/);
     expect(cad).toMatch(/saved team password/);
+    expect(cad).toMatch(/studentOnshapeApiSetup/);
+    expect(cad).not.toMatch(/\.\.\.onshapeSetupStatus\(\)/);
+    expect(onshape).toMatch(/studentOnshapeApiSetup/);
+    expect(onshape).not.toMatch(/\.\.\.onshapeSetupStatus\(\)/);
     expect(agent).toMatch(/Connect Onshape in CAD Connections/);
     expect(agent).toMatch(/saved Onshape password/);
+    expect(agent).not.toMatch(/\.\.\.onshapeSetupStatus\(\)/);
   });
 });

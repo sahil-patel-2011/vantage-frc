@@ -3,9 +3,9 @@ import {
   buildOnshapeAuthorizeUrl,
   createOnshapeOAuthState,
   getOnshapeOAuthConfig,
-  onshapeSetupStatus,
   cadOsSupportMatrix,
 } from "@vantage/cad";
+import { studentOnshapeApiSetup } from "../../../../lib/cad/onshape-setup-copy";
 import { createKms, encryptSecret } from "@vantage/billing";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
@@ -16,7 +16,7 @@ export async function GET(request: Request) {
     if (!session) return Response.json({ error: "Authentication required" }, { status: 401 });
     const orgId = new URL(request.url).searchParams.get("orgId");
     if (!orgId) return Response.json({ error: "orgId is required" }, { status: 400 });
-    const setup = onshapeSetupStatus();
+    const setup = studentOnshapeApiSetup();
     const connections = await withRls({ userId: session.user.id, orgId }, async (client) => {
       const member = await client.query(`SELECT 1 FROM memberships WHERE org_id=$1 AND user_id=$2`, [
         orgId,
@@ -80,8 +80,9 @@ export async function POST(request: Request) {
 
     const config = getOnshapeOAuthConfig();
     if (!config) {
+      const setup = studentOnshapeApiSetup();
       return Response.json(
-        { error: onshapeSetupStatus().message, ...onshapeSetupStatus() },
+        { error: setup.message, configured: false, setupRequired: true },
         { status: 503 },
       );
     }

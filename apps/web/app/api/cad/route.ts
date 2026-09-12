@@ -11,7 +11,6 @@ import {
   OnshapeHostedCadAdapter,
   parseCadActionPlan,
   createOnshapeApiTransport,
-  onshapeSetupStatus,
   cadOsSupportMatrix,
   listOnshapeDocuments,
   listOnshapeElements,
@@ -45,6 +44,7 @@ import {
 import { failMeteredAi } from "../../../lib/metered-ai-fail";
 import { hostedFusionSetup } from "../../../lib/cad/fusion-setup";
 import { hostedOnshapeEnvAuth, readHostedOnshapeEnvFlags } from "../../../lib/cad/hosted-auth";
+import { studentOnshapeApiSetup } from "../../../lib/cad/onshape-setup-copy";
 import { loadCadAgentOnshape } from "../../../lib/cad/onshape-tokens";
 import { refreshShadedPngBase64 } from "../../../lib/cad/shaded-view";
 
@@ -143,16 +143,17 @@ export async function GET(request: Request) {
       };
     });
     const hosted = hostedOnshapeEnvAuth(readHostedOnshapeEnvFlags());
+    const studentOnshape = studentOnshapeApiSetup();
     const fusion = hostedFusionSetup();
     return Response.json({
       ...data,
       onshape: {
-        ...onshapeSetupStatus(),
+        ...studentOnshape,
         configured: hosted.configured,
         setupRequired: hosted.setupRequired,
         message: hosted.setupRequired
           ? "Connect Onshape in CAD Connections. A saved Onshape password on the server does not count as connected."
-          : onshapeSetupStatus().message,
+          : studentOnshape.message,
       },
       onshapeConfigured: hosted.configured,
       fusion,

@@ -121,11 +121,15 @@ export function onshapeHostedBadge(input: {
 /** Enable the Connect OAuth button only when the OAuth client env is actually present. */
 export function onshapeOauthCtaEnabled(onshape: {
   configured?: boolean;
+  setupRequired?: boolean;
+  connectCtaEnabled?: boolean;
   redirectUri?: string | null;
   scopes?: unknown[] | null;
 } | null | undefined): boolean {
   if (!onshape) return false;
+  if (typeof onshape.connectCtaEnabled === "boolean") return onshape.connectCtaEnabled;
   if (typeof onshape.redirectUri === "string" && onshape.redirectUri.trim()) return true;
+  if (onshape.configured && onshape.setupRequired === false) return true;
   return Boolean(onshape.configured && Array.isArray(onshape.scopes) && onshape.scopes.length > 0);
 }
 

@@ -2,7 +2,6 @@ import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
 import { auth } from "@vantage/core";
 import {
-  onshapeSetupStatus,
   parseOnshapeDocumentUrl,
   resolveOnshapeBind,
 } from "@vantage/cad";
@@ -46,7 +45,7 @@ const fail = (error: unknown) => failMeteredAi(error, "CAD agent failed");
 
 function setupRequired(message: string) {
   return Response.json(
-    { ...onshapeSetupStatus(), error: message, message, code: "setup_required", status: "setup_required" },
+    { error: message, message, code: "setup_required", status: "setup_required", setupRequired: true },
     { status: 503 },
   );
 }
