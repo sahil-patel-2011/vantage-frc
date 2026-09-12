@@ -1030,9 +1030,9 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "Sync into Claude Code and Cursor",
         body: [
-          "Run `vantage-cad agent sync` in your repo. For Claude Code it writes .claude/agents, .claude/skills, a team-rules import inside marked lines of CLAUDE.md, and vantage-prefixed .mcp.json entries — idempotent, never touching your own files.",
-          "The same sync writes Cursor's native formats: .cursor/rules/vantage/*.mdc, .cursor/skills/vantage/, and vantage-prefixed .cursor/mcp.json entries. Subagents and permissions have no Cursor equivalent, so they are reported as skipped.",
-          "Permissions are a security change, so they land as a suggested file plus an instruction — never merged into settings automatically.",
+          "In the robot-code folder on this computer, sync Team agent config so Claude Code and Cursor pick up the team's rules and skills. It only writes Vantage's own files.",
+          "The same sync writes Cursor rules and skills. Helpers and permissions have no Cursor home and are skipped.",
+          "Permissions never apply themselves — a person reviews them.",
         ],
       },
       {
@@ -1040,8 +1040,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         body: [
           "Members can read; writing needs owner/admin unless the org enables member edits.",
           "Each item can be visible to the entire team or only to specific people you pick.",
-          "Every save is versioned with restorable history, and the Vantage in-app agent automatically injects the org's valid rules into its runs — recorded in run provenance.",
-          "Custom agents can pull everything as typed JSON from GET /api/agent-config/bundle.",
+          "Every save is versioned with restorable history, and the Vantage in-app agent automatically uses the team's valid rules.",
         ],
       },
     ],

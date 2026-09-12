@@ -1128,15 +1128,14 @@ export const SECTION_HELP: SectionHelpEntry[] = [
     hub: "build",
     tab: "agent-config",
     title: "Team agent config",
-    what: "Shared rules, subagent definitions, MCP servers, permission snippets, and skills for coding agents — synced into every member's Claude Code and Cursor with one command.",
+    what: "Shared rules and skills for coding agents, picked up by every member's Claude Code and Cursor.",
     why: "The team's agent conventions stop living on one student's laptop and start versioned where everyone can read them.",
     when: "Preseason to set up; whenever the team's coding conventions change.",
     moments: ["preseason", "build"],
     how: [
       "Author items at /team/agent-config — invalid drafts still save, but are excluded from sync until fixed.",
       "Choose per item whether the entire team or only specific people see it.",
-      "Each member runs `vantage-cad agent sync` in the robot-code repo to write Claude Code and Cursor files.",
-      "Custom agents pull the same content as typed JSON from /api/agent-config/bundle.",
+      "In the robot-code folder on this computer, sync Team agent config so Claude Code and Cursor pick up the team's rules and skills.",
     ],
     tips: [
       "MCP entries refuse real credentials — use ${PLACEHOLDER} values each member sets locally.",
