@@ -138,7 +138,7 @@ function VendorsShell({
             {" / Vendors"}
           </>
         }
-        title="Vendor Directory"
+        title="Vendor directory"
         description={description}
       >
         <VendorsRelatedStrip orgId={orgId} />
@@ -348,7 +348,7 @@ export default function VendorsClient() {
             {" / Vendors"}
           </>
         }
-        title="Vendor Directory"
+        title="Vendor directory"
         description="Your team's known suppliers — COTS, raw stock, tools, and services — with contacts, lead times, and ratings. Purchase orders pick a vendor from this directory. Cross-check Orders and Lead times."
       >
         <div className="vendors-header-actions">

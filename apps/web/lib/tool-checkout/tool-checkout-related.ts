@@ -2,7 +2,7 @@ import { hubHref } from "../nav/hubs";
 import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Tool Checkout (never DEMO loan ledgers). */
+/** Soft-UI related surfaces for Tool checkout (never DEMO loan ledgers). */
 export const TOOL_CHECKOUT_RELATED_LINKS = [
   { id: "equipment-maintenance", label: "Equipment", tab: "equipment-maintenance" },
   { id: "training", label: "Training matrix", tab: "training" },
@@ -119,14 +119,14 @@ export function toolCheckoutShellCopy(kind: ToolCheckoutShellKind): ToolCheckout
     case "loading":
       return {
         kind,
-        title: "Loading Tool Checkout…",
+        title: "Opening Tool checkout",
         description: "Checking which team you are on and tool loans.",
       };
     case "error":
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Tool Checkout",
+        title: "Could not load Tool checkout",
         description:
           "A network or server issue blocked the tool registry. Retry, or open Equipment while it reloads.",
       };
@@ -176,7 +176,7 @@ export function toolCheckoutNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Tool Checkout",
+        label: "Retry Tool checkout",
         detail: "Reload real tool loans.",
         href: withOrgHref("/tool-checkout", orgId),
         primary: true,

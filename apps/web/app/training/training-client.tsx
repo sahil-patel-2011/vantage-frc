@@ -201,10 +201,10 @@ export default function TrainingClient() {
         breadcrumbs={
           <>
             <a href={orgId ? `/team?orgId=${encodeURIComponent(orgId)}` : "/team"}>Team</a>
-            {" / Training Matrix"}
+            {" / Training matrix"}
           </>
         }
-        title="Training Matrix"
+        title="Training matrix"
         description="Who is certified on mill, lathe, wiring, drive, and safety — with sign-off and expiry. Coverage reflects only what you record."
       />
       <OfflineBanner feature="Training" fromCache={fromCache} cachedAt={cachedAt} />
@@ -230,7 +230,7 @@ export default function TrainingClient() {
           ) : null}
         </EmptyState>
         ) : (
-        <EmptyState title="Loading…" description="Checking your team." aria-busy />
+        <EmptyState title="Opening Training matrix" description="Checking your team." aria-busy />
         )
       ) : view.status === "setup_required" ? (
         <EmptyState badge="Needs setup" badgeTone="setup" title={view.message}>

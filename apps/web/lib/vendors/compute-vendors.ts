@@ -23,7 +23,7 @@ function setupStepsFor(orgId: string | null): VendorsSetupStep[] {
     {
       id: "workspace",
       label: "Choose your team",
-      detail: "Choose your team to open Vendor Directory.",
+      detail: "Choose your team to open Vendor directory.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {

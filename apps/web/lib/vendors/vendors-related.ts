@@ -1,7 +1,7 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Vendor Directory (never DEMO vendor metrics). */
+/** Soft-UI related surfaces for Vendor directory (never DEMO vendor metrics). */
 export const VENDORS_RELATED_LINKS = [
   { id: "orders", label: "Orders", kind: "business" as const, tab: "orders" },
   {
@@ -100,7 +100,7 @@ export function vendorsShellCopy(kind: VendorsShellKind): VendorsEmptyCopy {
     case "loading":
       return {
         kind,
-        title: "Loading Vendor Directory…",
+        title: "Opening Vendor directory",
         description:
           "Checking which team you are on and real supplier rows.",
       };
@@ -108,7 +108,7 @@ export function vendorsShellCopy(kind: VendorsShellKind): VendorsEmptyCopy {
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Vendor Directory",
+        title: "Could not load Vendor directory",
         description:
           "A network or server issue blocked the directory. Retry, or open Orders / Lead times while it reloads.",
       };
@@ -182,7 +182,7 @@ export function vendorsNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Finish membership setup so Vendor Directory can load.",
+        detail: "Finish membership setup so Vendor directory can load.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
       },
@@ -205,7 +205,7 @@ export function vendorsNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Vendor Directory",
+        label: "Retry Vendor directory",
         detail: "Reload real suppliers.",
         href: withOrgHref("/vendors", orgId),
         primary: true,

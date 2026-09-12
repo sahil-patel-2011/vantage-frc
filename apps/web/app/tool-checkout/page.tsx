@@ -1,7 +1,7 @@
 import ToolCheckoutClient from "./tool-checkout-client";
 
 export const metadata = {
-  title: "Tool Checkout",
+  title: "Tool checkout",
 };
 
 export default function ToolCheckoutPage() {
