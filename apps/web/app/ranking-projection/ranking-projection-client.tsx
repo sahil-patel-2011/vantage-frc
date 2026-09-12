@@ -436,8 +436,8 @@ export default function RankingProjectionClient() {
       {!view ? (
         <EmptyState
           soft
-          title={failure ? failure.title : "Loading ranking projection…"}
-          description={failure ? failure.description : undefined}
+          title={failure ? failure.title : "Opening Rank projection"}
+          description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >
           {failure?.primary ? (
