@@ -87,7 +87,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
   {
     id: "integrations",
     label: "Integrations & connectors",
-    blurb: "TBA, Onshape, GitHub, chat bridges, and self-hosted storage.",
+    blurb: "Official matches, Onshape, GitHub, chat bridges, and self-hosted storage.",
   },
   {
     id: "admin-owner",
@@ -189,7 +189,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "5 · First event",
         body: [
-          "Connect The Blue Alliance under Team → Data (/team/data) and pick your active event — schedules, rankings, and match cards stay empty until then.",
+          "Connect TBA under Team → Data (/team/data) and pick your active event — schedules, rankings, and match cards stay empty until then.",
           "Publish a scouting form (Competition → Scouting → Forms) before day one so scouts have something to fill.",
         ],
       },
@@ -342,7 +342,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         heading: "Your layout vs the team",
         body: [
           "Each member has their own Home. Teammates do not see your widget arrangement unless you open a team board on purpose.",
-          "Match scores, scouting coverage, and TBA data stay team-scoped. Only the layout is personal.",
+          "Match scores, scouting coverage, and official match data stay on your team. Only the layout is personal.",
         ],
       },
     ],
@@ -479,7 +479,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         heading: "Related tools",
         body: [
           "Match checklist, pit displays, and the pre-match briefing hang off the same event context.",
-          "If TBA is not connected, connect it under Team → Data before expecting live ranks or match times.",
+          "If official matches are not connected, Connect TBA under Team → Data before expecting live ranks or match times.",
         ],
       },
     ],
@@ -507,7 +507,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         heading: "Alliance Selection Desk",
         body: [
           "Open Alliance Selection Desk from Competition → Strategy → Alliance desk (/competition?tab=alliance-selection-desk).",
-          "Use the live 8-alliance pick board, attach scout evidence, and watch TBA conflict flags against real team_event_metrics.",
+          "Use the live 8-alliance pick board, attach scout evidence, and watch official-record conflict flags against real event numbers.",
           "Drive-team export/print is available when you have a real board — ranks come from that board.",
         ],
       },
@@ -562,7 +562,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
     slug: "team-profile",
     title: "Team profile — what the public record says about your team",
     summary:
-      "Built the first time an owner or admin opens it: where you are from, rookie year, seasons competed, awards, recent events, EPA and ranks — from The Blue Alliance and Statbotics.",
+      "Built the first time an owner or admin opens it: where you are from, rookie year, seasons competed, awards, recent events, season rating and ranks — from the official record.",
     category: "team",
     keywords: ["team profile", "dossier", "rookie year", "awards", "epa", "rank", "statbotics", "blue alliance", "history"],
     relatedHref: "/team/profile",
@@ -570,7 +570,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "What it knows, and from where",
         body: [
-          "Profile, seasons and awards come from The Blue Alliance. Career and per-season EPA and world / country / state ranks come from Statbotics.",
+          "Profile, seasons and awards come from official event records. Career and per-season rating and world / country / state ranks come from season ratings.",
           "Anything a source does not have reads 'not on record'. If one source did not answer, the page says which.",
           "Nobody scrapes your roster: no public source knows who is on your team. The people counts are your own memberships.",
         ],
@@ -765,7 +765,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "What it is for",
         body: [
-          "Strategy questions and match predictions from your scouting plus The Blue Alliance and Statbotics; design questions against your CAD and the parts catalog; writing for grants, sponsors and updates; and finding a meeting time from your attendance history.",
+          "Strategy questions and match predictions from your scouting plus official event numbers and season ratings; design questions against your CAD and the parts catalog; writing for grants, sponsors and updates; and finding a meeting time from your attendance history.",
           "It starts from the team profile, so it already knows where you are from, how long you have competed and how your seasons went.",
         ],
       },
@@ -1529,13 +1529,13 @@ export const HELP_ARTICLES: HelpArticle[] = [
         heading: "Where connections live",
         body: [
           "Settings → Connectors lists Google, GitHub, The Blue Alliance, Onshape, Discord, Slack, email, Stripe, storage, Fusion, and the shop Pi. “Connected” appears only when a working credential row exists.",
-          "The Blue Alliance is configured under Team → Data (/team/data); schedules, rankings, and match cards stay empty until it is connected and an active event is picked.",
+          "Connect TBA under Team → Data (/team/data); schedules, rankings, and match cards stay empty until it is connected and an active event is picked.",
         ],
       },
       {
         heading: "What each unlocks",
         body: [
-          "TBA/Statbotics: match schedules, rankings, EPA-based strategy — read from a shared, rate-limited reference cache.",
+          "Official event numbers: match schedules, rankings, season-rating strategy — read from a shared, rate-limited reference cache.",
           "Onshape: the CAD workbench and CAD agent. Fusion stays on this computer.",
           "GitHub: Bugbot repo scans (read-only; never pushes) and code-linked calendar due dates.",
           "Slack (/team/slack) and Discord: optional bridges for team chat and notifications.",

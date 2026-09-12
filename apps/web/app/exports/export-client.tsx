@@ -27,7 +27,7 @@ type Job = {
 const CATEGORY_ORDER = ["scouting", "reference", "strategy", "ai", "ops"] as const;
 const CATEGORY_LABELS: Record<string, string> = {
   scouting: "Scouting",
-  reference: "Official reference (TBA)",
+  reference: "Official reference",
   strategy: "Strategy & research",
   ai: "AI artifacts",
   ops: "Ops & billing",
@@ -252,7 +252,7 @@ export default function ExportCenter({ orgId }: { orgId: string }) {
         <a href={`/strategy?orgId=${encodeURIComponent(orgId)}`}>Strategy</a>
         <a href={`/business?orgId=${encodeURIComponent(orgId)}`}>Business</a>
         <a href={`/team/usage?orgId=${encodeURIComponent(orgId)}`}>AI usage</a>
-        <a href={`/team/data?orgId=${encodeURIComponent(orgId)}`}>Live TBA data</a>
+        <a href={`/team/data?orgId=${encodeURIComponent(orgId)}`}>Official matches</a>
       </nav>
 
       {message ? (

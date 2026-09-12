@@ -475,7 +475,7 @@ export default function AccountClient() {
                 </a>
                 <a href={withOrgHref("/connectors", orgId)}>
                   <strong>Connectors</strong>
-                  <span>Google, TBA, Onshape, GitHub, chat bridges</span>
+                  <span>Google, official matches, Onshape, GitHub, chat bridges</span>
                 </a>
                 <a href={withOrgHref("/team/security", orgId)}>
                   <strong>Team security</strong>
