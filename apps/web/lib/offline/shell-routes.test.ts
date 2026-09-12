@@ -249,7 +249,7 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/video")).toBe("Match video");
     expect(offlineCapableLabel("/inspection-copilot")).toBe("Inspection");
     expect(offlineCapableLabel("/inspection")).toBe("Inspection");
-    expect(offlineCapableLabel("/fmea")).toBe("FMEA");
+    expect(offlineCapableLabel("/fmea")).toBe("Failure log");
     expect(offlineCapableLabel("/match-sim")).toBe("Match Simulator");
     expect(offlineCapableLabel("/pit-map-planner")).toBe("Pit Map Planner");
     expect(offlineCapableLabel("/pairwise")).toBe("Pairwise ranking");

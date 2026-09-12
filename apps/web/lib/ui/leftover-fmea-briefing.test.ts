@@ -7,7 +7,7 @@ const WEB = join(__dirname, "..", "..");
 /**
  * Leftover student FMEA / RPN chrome on Pre-match briefing and Match Copilot
  * after the Chemistry / Ask AI gold. Route id `fmea` stays. Do not invent a
- * last-snapshot. The Failure Log board itself is a later family.
+ * last-snapshot. The Failure log board itself is leftover-fmea-board.
  */
 const FILES = [
   "app/briefing/briefing-client.tsx",

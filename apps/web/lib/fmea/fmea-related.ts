@@ -100,7 +100,7 @@ export function fmeaNextActions(input: {
     actions.push({
       id: "log-first",
       label: "Log the first failure",
-      detail: "RPN stays blank until someone scores a real O×S×D entry — nothing is pre-filled.",
+      detail: "Priority stays blank until someone scores how often, how bad, and how hard to notice — nothing is pre-filled.",
       href: hubHref("/team", "fmea", orgId),
       primary: true,
     });
@@ -130,7 +130,7 @@ export function fmeaNextActions(input: {
     actions.push({
       id: "needs-fix",
       label: `Record a fix (${input.needsFixCount} open)`,
-      detail: `${sample} still needs a corrective action — RPN ${input.highestRpn} is from logged scores only.`,
+      detail: `${sample} still needs a corrective action — priority ${input.highestRpn} is from logged scores only.`,
       href: hubHref("/team", "fmea", orgId),
       primary: true,
     });
@@ -138,7 +138,7 @@ export function fmeaNextActions(input: {
     actions.push({
       id: "review-top",
       label: input.topTitle ? `Review “${input.topTitle}”` : "Review open risks",
-      detail: `${input.activeCount} active · top RPN ${input.highestRpn} from real O×S×D.`,
+      detail: `${input.activeCount} active · top priority ${input.highestRpn} from how often, how bad, and how hard to notice.`,
       href: hubHref("/team", "fmea", orgId),
       primary: true,
     });
@@ -155,7 +155,7 @@ export function fmeaNextActions(input: {
   actions.push({
     id: "cad",
     label: "Check CAD for geometry risk",
-    detail: "Engineering briefs can include open FMEA risks as design constraints.",
+    detail: "Engineering briefs can include open failure risks as design constraints.",
     href: hubHref("/build", "cad", orgId),
   });
 
@@ -170,7 +170,7 @@ export function fmeaNextActions(input: {
     actions.push({
       id: "batteries",
       label: "Battery reliability signals",
-      detail: "Pack IR/cycle evidence can promote into FMEA when you confirm a mode.",
+      detail: "Pack IR/cycle evidence can promote into the failure log when you confirm a mode.",
       href: hubHref("/team", "batteries", orgId),
     });
   }
@@ -178,19 +178,19 @@ export function fmeaNextActions(input: {
   return actions.slice(0, 5);
 }
 
-/** Display RPN only when at least one scored failure exists — never a DEMO 0. */
+/** Display priority only when at least one scored failure exists — never a DEMO 0. */
 export function formatRpnDisplay(rpn: number, hasFailures: boolean): string {
   if (!hasFailures) return "—";
   return String(rpn);
 }
 
-/** Compact O×S×D evidence line from real factors only. */
+/** Compact how-often / how-bad / how-hard-to-notice line from real factors only. */
 export function formatOsdFactors(input: {
   occurrence: number;
   severity: number;
   detection: number;
 }): string {
-  return `O${input.occurrence} × S${input.severity} × D${input.detection}`;
+  return `How often ${input.occurrence} · How bad ${input.severity} · How hard to notice ${input.detection}`;
 }
 
 /** Risk-row meta from a real evaluation — empty fields omitted (no invented text). */
@@ -200,7 +200,7 @@ export function formatRiskRowMeta(evaluation: Pick<FmeaEvaluation, "failure" | "
     f.subsystemName.trim() || null,
     f.context,
     formatOsdFactors(f),
-    `RPN ${evaluation.rpn}`,
+    `Priority ${evaluation.rpn}`,
   ].filter(Boolean);
   return parts.join(" · ");
 }

@@ -327,7 +327,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/video")) return "Match video";
   if (bare.startsWith("/inspection-copilot")) return "Inspection";
   if (bare.startsWith("/inspection")) return "Inspection";
-  if (bare.startsWith("/fmea")) return "FMEA";
+  if (bare.startsWith("/fmea")) return "Failure log";
   if (bare.startsWith("/match-sim")) return "Match Simulator";
   if (bare.startsWith("/pit-map-planner")) return "Pit Map Planner";
   if (bare.startsWith("/pairwise")) return "Pairwise ranking";

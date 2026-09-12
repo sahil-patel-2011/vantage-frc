@@ -39,15 +39,19 @@ describe("fmea-related Soft-UI helpers", () => {
     });
     expect(emptyActions.every((a) => !/\bdemo\b/i.test(`${a.label} ${a.detail}`))).toBe(true);
     expect(emptyActions[0]?.id).toBe("log-first");
+    expect(emptyActions[0]?.detail).toContain("Priority stays blank");
+    expect(emptyActions[0]?.detail).not.toMatch(/\bRPN\b|O×S×D|\bFMEA\b/);
     expect(emptyActions.some((a) => a.id === "knowledge")).toBe(true);
     expect(emptyActions.some((a) => a.id === "cad")).toBe(true);
     expect(emptyActions.some((a) => a.id === "prototype")).toBe(true);
   });
 
-  it("hides numeric RPN when no failures are logged", () => {
+  it("hides numeric priority when no failures are logged", () => {
     expect(formatRpnDisplay(0, false)).toBe("—");
     expect(formatRpnDisplay(120, true)).toBe("120");
-    expect(formatOsdFactors({ occurrence: 3, severity: 8, detection: 4 })).toBe("O3 × S8 × D4");
+    expect(formatOsdFactors({ occurrence: 3, severity: 8, detection: 4 })).toBe(
+      "How often 3 · How bad 8 · How hard to notice 4",
+    );
   });
 
   it("formats risk-row meta from scored evaluations only", () => {
@@ -77,7 +81,9 @@ describe("fmea-related Soft-UI helpers", () => {
         recordedByName: null,
       },
     });
-    expect(meta).toBe("Intake · match · O3 × S8 × D4 · RPN 96");
+    expect(meta).toBe(
+      "Intake · match · How often 3 · How bad 8 · How hard to notice 4 · Priority 96",
+    );
     expect(meta).not.toMatch(/demo/i);
   });
 
@@ -109,9 +115,14 @@ describe("fmea-related Soft-UI helpers", () => {
       topTitle: "Intake jam",
     });
     expect(actions[0]?.id).toBe("needs-fix");
-    expect(actions[0]?.detail).toContain("210");
+    expect(actions[0]?.detail).toContain("priority 210");
     expect(actions[0]?.detail).not.toMatch(/demo/i);
+    expect(actions.every((a) => !/\bRPN\b|O×S×D|\bFMEA\b/.test(`${a.label} ${a.detail}`))).toBe(
+      true,
+    );
     expect(actions.some((a) => a.id === "knowledge")).toBe(true);
     expect(actions.some((a) => a.id === "cad")).toBe(true);
+    expect(actions.find((a) => a.id === "cad")?.detail).toContain("open failure risks");
+    expect(actions.find((a) => a.id === "batteries")?.detail).toContain("failure log");
   });
 });

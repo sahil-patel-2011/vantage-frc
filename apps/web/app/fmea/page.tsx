@@ -1,7 +1,7 @@
 import FmeaClient from "./fmea-client";
 
 export const metadata = {
-  title: "Failure Log (FMEA)",
+  title: "Failure log",
 };
 
 export default function FmeaPage() {
