@@ -14,7 +14,8 @@ const WEB = join(__dirname, "..", "..");
  * leftover-help FILES. leftover-product extras stay off these FILES.
  * leftover-ai-keys extras stay off these FILES. leftover-discord extras
  * stay off these FILES. leftover-opening extras stay off these FILES.
- * leftover-student-buttons extras stay off these FILES. leftover-admin
+ * leftover-student-buttons extras stay off these FILES. leftover-api extras
+ * stay off leftover-discord.ts and leftover-slack.ts. leftover-admin
  * skip-list Global Team Manager stays. leftover-my-day Loading My Day
  * stays.
  */

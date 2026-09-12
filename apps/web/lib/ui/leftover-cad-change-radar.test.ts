@@ -24,8 +24,8 @@ const WEB = join(__dirname, "..", "..");
  * leftover-student-buttons extras stay off these FILES. leftover-student-copy
  * extras stay. leftover-invites extras stay. leftover-pick-before Choose your
  * team stays. leftover-opening Opening Change radar stays off these FILES.
- * leftover-admin skip-list Global Team Manager stays. leftover-my-day Loading
- * My Day stays.
+ * leftover-api extras stay off leftover-cad-change-radar FILES. leftover-admin
+ * skip-list Global Team Manager stays. leftover-my-day Loading My Day stays.
  */
 const FILES = ["app/cad-change-radar/cad-change-radar-client.tsx"] as const;
 
