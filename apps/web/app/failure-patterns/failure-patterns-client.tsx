@@ -65,7 +65,7 @@ async function persistFailurePatternsSnapshot(
     await putFeatureSnapshot("failure-patterns", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("failure-patterns", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Repeat Failure Patterns already painted; IndexedDB is best-effort.
+    // Live Failure patterns already painted; IndexedDB is best-effort.
   }
 }
 
@@ -136,10 +136,10 @@ function PatternsShell({
         breadcrumbs={
           <>
             <a href={buildHref}>Build</a>
-            {" / Repeat Failure Patterns"}
+            {" / Failure patterns"}
           </>
         }
-        title="Repeat Failure Patterns"
+        title="Failure patterns"
         description={description}
       >
         <RelatedStrip orgId={orgId} />
@@ -227,7 +227,7 @@ export default function FailurePatternsClient() {
         if (!response.ok || !isFailurePatternsView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Repeat Failure Patterns. Showing the last copy on this device.");
+            setError("Could not refresh Failure patterns. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -242,7 +242,7 @@ export default function FailurePatternsClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Repeat Failure Patterns. Showing the last copy on this device.");
+          setError("Could not refresh Failure patterns. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -310,7 +310,7 @@ export default function FailurePatternsClient() {
   if (shell === "loading") {
     return (
       <PatternsShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Repeat Failure Patterns" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Failure patterns" fromCache={fromCache} cachedAt={cachedAt} />
       </PatternsShell>
     );
   }
@@ -323,7 +323,7 @@ export default function FailurePatternsClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Repeat Failure Patterns" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Failure patterns" fromCache={fromCache} cachedAt={cachedAt} />
       </PatternsShell>
     );
   }
@@ -334,7 +334,7 @@ export default function FailurePatternsClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Repeat Failure Patterns" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Failure patterns" fromCache={fromCache} cachedAt={cachedAt} />
       </PatternsShell>
     );
   }
@@ -345,10 +345,10 @@ export default function FailurePatternsClient() {
         breadcrumbs={
           <>
             <a href={buildHref}>Build</a>
-            {" / Repeat Failure Patterns"}
+            {" / Failure patterns"}
           </>
         }
-        title="Repeat Failure Patterns"
+        title="Failure patterns"
         description="Clusters Failure log and equipment incidents by subsystem. Cross-check Failure log and Spare Kit."
       >
         <div className="fp-header-actions">
@@ -375,7 +375,7 @@ export default function FailurePatternsClient() {
         </div>
       </PageHeader>
 
-      <OfflineBanner feature="Repeat Failure Patterns" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Failure patterns" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

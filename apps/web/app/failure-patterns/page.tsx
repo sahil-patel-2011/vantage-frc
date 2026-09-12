@@ -1,7 +1,7 @@
 import FailurePatternsClient from "./failure-patterns-client";
 
 export const metadata = {
-  title: "Repeat Failure Patterns",
+  title: "Failure patterns",
 };
 
 export default function FailurePatternsPage() {

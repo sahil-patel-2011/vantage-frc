@@ -13,7 +13,7 @@ const LEAVES = [
   { path: "/safety", heading: "Safety log" },
   { path: "/incidents", heading: "Safety Incident Log" },
   { path: "/safety-training", heading: "Safety Training" },
-  { path: "/incident-heatmap", heading: "Incident Heatmap" },
+  { path: "/incident-heatmap", heading: "Incidents" },
 ] as const;
 
 test("safety / incidents student boards say Needs setup with one primary", async ({ page }) => {

@@ -284,9 +284,9 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/season-report")).toBe("Season Report");
     expect(offlineCapableLabel("/media")).toBe("Media");
     expect(offlineCapableLabel("/media-kit")).toBe("Media kit");
-    expect(offlineCapableLabel("/battery-health-forecast")).toBe("Battery Health Forecast");
+    expect(offlineCapableLabel("/battery-health-forecast")).toBe("Pack health");
     expect(offlineCapableLabel("/vendor-lead-times")).toBe("Vendor Lead Times");
-    expect(offlineCapableLabel("/bin-shelf-locator")).toBe("Bin/Shelf Locator");
+    expect(offlineCapableLabel("/bin-shelf-locator")).toBe("Bin locator");
     expect(offlineCapableLabel("/build-burndown")).toBe("Build Burndown");
     expect(offlineCapableLabel("/build")).toBe("Build");
     expect(offlineCapableLabel("/cad-change-radar")).toBe("Change radar");
@@ -295,7 +295,7 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/cross-team-scrim")).toBe("Cross-Team Scrims");
     expect(offlineCapableLabel("/decision-search")).toBe("Decision Search");
     expect(offlineCapableLabel("/decisions")).toBe("Decision notes");
-    expect(offlineCapableLabel("/failure-patterns")).toBe("Repeat Failure Patterns");
+    expect(offlineCapableLabel("/failure-patterns")).toBe("Failure patterns");
     expect(offlineCapableLabel("/hours-self-view")).toBe("My hours");
     expect(offlineCapableLabel("/hours")).toBe("Hours");
     expect(offlineCapableLabel("/grant-eligibility-matcher")).toBe("Grant Eligibility Matcher");
@@ -318,7 +318,7 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/scout-disagreements")).toBe("Scout Disagreements");
     expect(offlineCapableLabel("/scout-accuracy")).toBe("Scout Accuracy");
     expect(offlineCapableLabel("/scout-crossval")).toBe("Scout Cross-Validation");
-    expect(offlineCapableLabel("/rule-impact")).toBe("Rule Impact Analyzer");
+    expect(offlineCapableLabel("/rule-impact")).toBe("Rule impact");
     expect(offlineCapableLabel("/season-planning-workspace")).toBe("Season Planning");
     expect(offlineCapableLabel("/retro")).toBe("Retro");
     expect(offlineCapableLabel("/team/data")).toBe("Team Data");

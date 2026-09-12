@@ -51,7 +51,7 @@ async function persistIncidentHeatmapSnapshot(
     await putFeatureSnapshot("incident-heatmap", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("incident-heatmap", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Incident Heatmap already painted; IndexedDB is best-effort.
+    // Live Incidents already painted; IndexedDB is best-effort.
   }
 }
 
@@ -185,7 +185,7 @@ export default function IncidentHeatmapClient() {
       if (!response.ok || !isIncidentHeatmapView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Incident Heatmap. Showing the last copy on this device.");
+          setError("Could not refresh Incidents. Showing the last copy on this device.");
           setFetchFailed(false);
           return;
         }
@@ -206,7 +206,7 @@ export default function IncidentHeatmapClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Incident Heatmap. Showing the last copy on this device.");
+        setError("Could not refresh Incidents. Showing the last copy on this device.");
         setFetchFailed(false);
         return;
       }
@@ -258,10 +258,10 @@ export default function IncidentHeatmapClient() {
       breadcrumbs={
         <>
           <a href={buildHref}>Build</a>
-          {" / Incident Heatmap"}
+          {" / Incidents"}
         </>
       }
-      title="Incident Heatmap"
+      title="Incidents"
       description="Log incidents by subsystem and time to spot hotspots — which subsystem keeps breaking, and when."
     >
       <IncidentHeatmapRelated orgId={orgId} />
@@ -307,7 +307,7 @@ export default function IncidentHeatmapClient() {
     return (
       <main className="module-page">
         {header}
-        <OfflineBanner feature="Incident Heatmap" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Incidents" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           title={failure ? failure.title : "Loading…"}
           description={failure ? failure.description : "Checking your team."}
@@ -333,7 +333,7 @@ export default function IncidentHeatmapClient() {
       return (
         <main className="module-page">
           {header}
-          <OfflineBanner feature="Incident Heatmap" fromCache={fromCache} cachedAt={cachedAt} />
+          <OfflineBanner feature="Incidents" fromCache={fromCache} cachedAt={cachedAt} />
           {error ? (
             <p className="telemetry-status" role="alert">
               {error}
@@ -364,7 +364,7 @@ export default function IncidentHeatmapClient() {
   return (
     <main className="module-page">
       {header}
-      <OfflineBanner feature="Incident Heatmap" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Incidents" fromCache={fromCache} cachedAt={cachedAt} />
       {error ? (
         <p className="telemetry-status" role="alert">
           {error}

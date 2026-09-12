@@ -11,7 +11,7 @@ import {
 import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("failurePatternsRelatedLinks", () => {
-  it("builds FMEA / Spare Kit / Incident Heatmap cross-links", () => {
+  it("builds Failure log / Spare Kit / Incidents cross-links", () => {
     const links = failurePatternsRelatedLinks("org-1", {
       include: [...FAILURE_PATTERNS_RELATED_INCLUDE],
     });

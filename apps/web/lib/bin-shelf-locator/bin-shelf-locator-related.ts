@@ -1,7 +1,7 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Bin/Shelf Locator (never DEMO inventory pins). */
+/** Soft-UI related surfaces for Bin locator (never DEMO inventory pins). */
 export const BIN_SHELF_LOCATOR_RELATED_LINKS = [
   { id: "spare-forecast", label: "Spares forecast", tab: "spare-forecast" },
   { id: "spare-robot-kit", label: "Spare Robot Kit", tab: "spare-robot-kit" },
@@ -25,7 +25,7 @@ export const BIN_SHELF_LOCATOR_RELATED_INCLUDE: BinShelfLocatorRelatedId[] = [
 ];
 
 /**
- * Soft-UI cross-links from Bin/Shelf Locator → Spares / CAD.
+ * Soft-UI cross-links from Bin locator → Spares / CAD.
  * Build with hubHref — never broken JSX href templates.
  */
 export function binShelfLocatorRelatedLinks(
@@ -104,7 +104,7 @@ export function shouldShowBinShelfLocatorSummaryTiles(locationCount: number): bo
   return locationCount > 0;
 }
 
-/** Classify Bin/Shelf Locator Soft-UI shell — never invents DEMO inventory pins. */
+/** Classify Bin locator Soft-UI shell — never invents DEMO inventory pins. */
 export function classifyBinShelfLocatorShell(input: {
   loading?: boolean;
   fetchFailed?: boolean;
@@ -125,14 +125,14 @@ export function binShelfLocatorShellCopy(kind: BinShelfLocatorShellKind): BinShe
     case "loading":
       return {
         kind,
-        title: "Loading Bin/Shelf Locator…",
+        title: "Opening Bin locator",
         description: "Checking which team you are on and mapped locations.",
       };
     case "error":
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Bin/Shelf Locator",
+        title: "Could not load Bin locator",
         description:
           "A network or server issue blocked location maps. Retry, or open Spares forecast while it reloads.",
       };
@@ -162,7 +162,7 @@ export function binShelfLocatorShellCopy(kind: BinShelfLocatorShellKind): BinShe
 }
 
 /**
- * Soft-UI next actions for Bin/Shelf Locator empty/setup shells.
+ * Soft-UI next actions for Bin locator empty/setup shells.
  * Points at Spares / CAD — never invents DEMO inventory pins.
  */
 export function binShelfLocatorNextActions(input: {
@@ -226,7 +226,7 @@ export function binShelfLocatorNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Bin/Shelf Locator",
+        label: "Retry Bin locator",
         detail: "Reload real locations.",
         href: withOrgHref("/bin-shelf-locator", orgId),
         primary: true,

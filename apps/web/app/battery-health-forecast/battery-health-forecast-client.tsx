@@ -47,7 +47,7 @@ async function persistBatteryHealthForecastSnapshot(
     await putFeatureSnapshot("battery-health-forecast", cacheOrg, data);
     if (!orgHint) await putFeatureSnapshot("battery-health-forecast", "_", data);
   } catch {
-    // Live Battery Health Forecast already painted; IndexedDB is best-effort.
+    // Live Pack health already painted; IndexedDB is best-effort.
   }
 }
 
@@ -131,10 +131,10 @@ function BatteryHealthForecastShell({
         breadcrumbs={
           <>
             <a href={buildHref}>Build</a>
-            {" / Battery Health Forecast"}
+            {" / Pack health"}
           </>
         }
-        title="Battery Health Forecast"
+        title="Pack health"
         description={description}
       >
         <BatteryHealthForecastRelatedStrip orgId={orgId} />
@@ -218,7 +218,7 @@ export default function BatteryHealthForecastClient() {
         if (!response.ok || !isBatteryHealthForecastView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Battery Health Forecast. Showing the last copy on this device.");
+            setError("Could not refresh Pack health. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -232,7 +232,7 @@ export default function BatteryHealthForecastClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Battery Health Forecast. Showing the last copy on this device.");
+          setError("Could not refresh Pack health. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -306,7 +306,7 @@ export default function BatteryHealthForecastClient() {
   if (shell === "loading") {
     return (
       <BatteryHealthForecastShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Battery Health Forecast" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Pack health" fromCache={fromCache} cachedAt={cachedAt} />
       </BatteryHealthForecastShell>
     );
   }
@@ -320,7 +320,7 @@ export default function BatteryHealthForecastClient() {
         error={error || shellCopy.description}
         onRetry={load}
       >
-        <OfflineBanner feature="Battery Health Forecast" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Pack health" fromCache={fromCache} cachedAt={cachedAt} />
       </BatteryHealthForecastShell>
     );
   }
@@ -332,7 +332,7 @@ export default function BatteryHealthForecastClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Battery Health Forecast" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Pack health" fromCache={fromCache} cachedAt={cachedAt} />
       </BatteryHealthForecastShell>
     );
   }
@@ -340,7 +340,7 @@ export default function BatteryHealthForecastClient() {
   if (view?.status !== "live") {
     return (
       <BatteryHealthForecastShell description={shellCopy.description} orgId={orgId} shell="setup">
-        <OfflineBanner feature="Battery Health Forecast" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Pack health" fromCache={fromCache} cachedAt={cachedAt} />
       </BatteryHealthForecastShell>
     );
   }
@@ -351,10 +351,10 @@ export default function BatteryHealthForecastClient() {
         breadcrumbs={
           <>
             <a href={buildHref}>Build</a>
-            {" / Battery Health Forecast"}
+            {" / Pack health"}
           </>
         }
-        title="Battery Health Forecast"
+        title="Pack health"
         description="Predict battery end-of-life from cycle count and internal-resistance history. Forecasts use only what you log."
       >
         <div className="battery-health-forecast-header-actions">
@@ -365,7 +365,7 @@ export default function BatteryHealthForecastClient() {
           ))}
         </div>
       </PageHeader>
-      <OfflineBanner feature="Battery Health Forecast" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Pack health" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

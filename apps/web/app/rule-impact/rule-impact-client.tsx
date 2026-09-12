@@ -73,7 +73,7 @@ async function persistRuleImpactSnapshot(
     await putFeatureSnapshot("rule-impact", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("rule-impact", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Rule Impact Analyzer already painted; IndexedDB is best-effort.
+    // Live Rule impact already painted; IndexedDB is best-effort.
   }
 }
 
@@ -146,10 +146,10 @@ function RuleImpactShell({
         breadcrumbs={
           <>
             <a href={buildHref}>Build</a>
-            {" / Rule Impact Analyzer"}
+            {" / Rule impact"}
           </>
         }
-        title="Rule Impact Analyzer"
+        title="Rule impact"
         description={description}
       >
         <RuleImpactRelatedStrip orgId={orgId} />
@@ -241,7 +241,7 @@ export default function RuleImpactClient() {
         if (!response.ok || !isRuleImpactView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Rule Impact Analyzer. Showing the last copy on this device.");
+            setError("Could not refresh Rule impact. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -256,7 +256,7 @@ export default function RuleImpactClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Rule Impact Analyzer. Showing the last copy on this device.");
+          setError("Could not refresh Rule impact. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -337,7 +337,7 @@ export default function RuleImpactClient() {
   if (shell === "loading") {
     return (
       <RuleImpactShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Rule Impact Analyzer" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Rule impact" fromCache={fromCache} cachedAt={cachedAt} />
       </RuleImpactShell>
     );
   }
@@ -351,7 +351,7 @@ export default function RuleImpactClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Rule Impact Analyzer" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Rule impact" fromCache={fromCache} cachedAt={cachedAt} />
       </RuleImpactShell>
     );
   }
@@ -363,7 +363,7 @@ export default function RuleImpactClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Rule Impact Analyzer" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Rule impact" fromCache={fromCache} cachedAt={cachedAt} />
       </RuleImpactShell>
     );
   }
@@ -371,7 +371,7 @@ export default function RuleImpactClient() {
   if (view?.status !== "live") {
     return (
       <RuleImpactShell description={shellCopy.description} orgId={orgId} shell="setup">
-        <OfflineBanner feature="Rule Impact Analyzer" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Rule impact" fromCache={fromCache} cachedAt={cachedAt} />
       </RuleImpactShell>
     );
   }
@@ -382,10 +382,10 @@ export default function RuleImpactClient() {
         breadcrumbs={
           <>
             <a href={buildHref}>Build</a>
-            {" / Rule Impact Analyzer"}
+            {" / Rule impact"}
           </>
         }
-        title="Rule Impact Analyzer"
+        title="Rule impact"
         description="Log this season's game-manual rule changes and diff them against your subsystem library — still-legal, rework, or blocked from logged rules only. Cross-check Kickoff, CAD, and Subsystems."
       >
         <div className="rule-impact-header-actions">
@@ -416,7 +416,7 @@ export default function RuleImpactClient() {
         </div>
       </PageHeader>
 
-      <OfflineBanner feature="Rule Impact Analyzer" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Rule impact" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -453,7 +453,7 @@ export default function RuleImpactClient() {
             badge="No subsystem history"
             badgeTone="setup"
             title="No prior-season subsystems on file"
-            description="Log robot subsystems so Rule Impact can diff them against logged rule changes — empty means nothing on file."
+            description="Log robot subsystems so Rule impact can diff them against logged rule changes — empty means nothing on file."
           >
             <Button as="a" variant="primary" href={subsystemsHref}>
               Open Subsystems
@@ -486,7 +486,7 @@ function SummaryTiles({ view, loaded }: { view: LiveView; loaded: boolean }) {
     { label: "Assessments", value: formatRuleImpactMetric(view.assessments.length, loaded) },
   ];
   return (
-    <Panel className="rule-impact-coverage" aria-label="Rule Impact summary">
+    <Panel className="rule-impact-coverage" aria-label="Rule impact summary">
       <div className="rule-impact-stats">
         <div>
           <span

@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "bin-shelf-locator",
-  title: "Bin/Shelf Locator",
+  title: "Bin locator",
   route: "/bin-shelf-locator",
   apiRoute: "/api/bin-shelf-locator",
   hub: "Build",

@@ -56,7 +56,7 @@ async function persistBinShelfLocatorSnapshot(orgHint: string, data: BinShelfLoc
     await putFeatureSnapshot("bin-shelf-locator", cacheOrg, data);
     if (!orgHint) await putFeatureSnapshot("bin-shelf-locator", "_", data);
   } catch {
-    // Live Bin/Shelf Locator already painted; IndexedDB is best-effort.
+    // Live Bin locator already painted; IndexedDB is best-effort.
   }
 }
 
@@ -127,10 +127,10 @@ function LocatorShell({
         breadcrumbs={
           <>
             <a href={buildHref}>Build</a>
-            {" / Bin/Shelf Locator"}
+            {" / Bin locator"}
           </>
         }
-        title="Bin/Shelf Locator"
+        title="Bin locator"
         description={description}
       >
         <RelatedStrip orgId={orgId} />
@@ -207,7 +207,7 @@ export default function BinShelfLocatorClient() {
         if (!response.ok || !isBinShelfLocatorView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Bin/Shelf Locator. Showing the last copy on this device.");
+            setError("Could not refresh Bin locator. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -221,7 +221,7 @@ export default function BinShelfLocatorClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Bin/Shelf Locator. Showing the last copy on this device.");
+          setError("Could not refresh Bin locator. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -293,7 +293,7 @@ export default function BinShelfLocatorClient() {
   if (shell === "loading") {
     return (
       <LocatorShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Bin/Shelf Locator" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Bin locator" fromCache={fromCache} cachedAt={cachedAt} />
       </LocatorShell>
     );
   }
@@ -307,7 +307,7 @@ export default function BinShelfLocatorClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Bin/Shelf Locator" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Bin locator" fromCache={fromCache} cachedAt={cachedAt} />
       </LocatorShell>
     );
   }
@@ -319,7 +319,7 @@ export default function BinShelfLocatorClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Bin/Shelf Locator" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Bin locator" fromCache={fromCache} cachedAt={cachedAt} />
       </LocatorShell>
     );
   }
@@ -327,7 +327,7 @@ export default function BinShelfLocatorClient() {
   if (shell === "empty" || view?.status !== "live") {
     return (
       <LocatorShell description={shellCopy.description} orgId={orgId} shell="empty">
-        <OfflineBanner feature="Bin/Shelf Locator" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Bin locator" fromCache={fromCache} cachedAt={cachedAt} />
         <div id="bin-shelf-locations">
           <CreateLocationForm busy={busy} mutate={mutate} />
         </div>
@@ -341,10 +341,10 @@ export default function BinShelfLocatorClient() {
         breadcrumbs={
           <>
             <a href={buildHref}>Build</a>
-            {" / Bin/Shelf Locator"}
+            {" / Bin locator"}
           </>
         }
-        title="Bin/Shelf Locator"
+        title="Bin locator"
         description="Assign put-away locations, print QR labels, and find parts. Cross-check Spares forecast and CAD."
       >
         <div className="bsl-header-actions">
@@ -355,7 +355,7 @@ export default function BinShelfLocatorClient() {
           ))}
         </div>
       </PageHeader>
-      <OfflineBanner feature="Bin/Shelf Locator" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Bin locator" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="app-muted" role="alert">
@@ -711,7 +711,7 @@ function ScanToFind({ orgId }: { orgId: string }) {
       const decoded = decodeLocatorPayload(raw);
       stopScan();
       if (!decoded || decoded.kind !== "item") {
-        setScanError("Scanned code isn't a Bin/Shelf Locator item label.");
+        setScanError("Scanned code isn't a Bin locator item label.");
         return;
       }
       const response = await fetch(`/api/bin-shelf-locator?orgId=${encodeURIComponent(orgId)}&findItem=${encodeURIComponent(decoded.id)}`,

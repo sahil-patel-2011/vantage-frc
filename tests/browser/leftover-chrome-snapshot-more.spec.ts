@@ -8,7 +8,7 @@ test.beforeEach(async ({ context }) => {
 });
 
 test("/incident-heatmap paints a heading instead of leftover VANTAGE chrome", async ({ page }) => {
-  await assertChromeSnapshotLeaf(page, { path: "/incident-heatmap", heading: "Incident Heatmap" });
+  await assertChromeSnapshotLeaf(page, { path: "/incident-heatmap", heading: "Incidents" });
 });
 
 test("/auton-path-library paints a heading instead of leftover VANTAGE chrome", async ({ page }) => {

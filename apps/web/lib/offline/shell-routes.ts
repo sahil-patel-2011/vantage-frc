@@ -363,9 +363,9 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/battery-rotation")) return "Charge plan";
   if (bare.startsWith("/vendors")) return "Vendors";
   if (bare.startsWith("/season-report")) return "Season Report";
-  if (bare.startsWith("/battery-health-forecast")) return "Battery Health Forecast";
+  if (bare.startsWith("/battery-health-forecast")) return "Pack health";
   if (bare.startsWith("/vendor-lead-times")) return "Vendor Lead Times";
-  if (bare.startsWith("/bin-shelf-locator")) return "Bin/Shelf Locator";
+  if (bare.startsWith("/bin-shelf-locator")) return "Bin locator";
   if (bare.startsWith("/cad-vault")) return "CAD Vault";
   if (bare.startsWith("/cad-learn")) return "CAD Learn";
   if (bare.startsWith("/cad-review-queue")) return "CAD Review Queue";
@@ -375,7 +375,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/cross-team-scrim")) return "Cross-Team Scrims";
   if (bare.startsWith("/decision-search")) return "Decision Search";
   if (bare.startsWith("/decisions")) return "Decision notes";
-  if (bare.startsWith("/failure-patterns")) return "Repeat Failure Patterns";
+  if (bare.startsWith("/failure-patterns")) return "Failure patterns";
   if (bare.startsWith("/grant-eligibility-matcher")) return "Grant Eligibility Matcher";
   if (bare.startsWith("/knowledge-gap")) return "Knowledge gaps";
   if (bare.startsWith("/matching-gift-finder")) return "Matching gifts";
@@ -400,7 +400,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/scout-disagreements")) return "Scout Disagreements";
   if (bare.startsWith("/scout-accuracy")) return "Scout Accuracy";
   if (bare.startsWith("/scout-crossval")) return "Scout Cross-Validation";
-  if (bare.startsWith("/rule-impact")) return "Rule Impact Analyzer";
+  if (bare.startsWith("/rule-impact")) return "Rule impact";
   if (bare.startsWith("/season-planning-workspace")) return "Season Planning";
   if (bare.startsWith("/retro")) return "Retro";
   if (bare.startsWith("/tuning-autopilot")) return "Tuning advisor";
@@ -473,7 +473,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/driver-tryouts")) return "Driver tryouts";
   if (bare.startsWith("/exit-interview")) return "Exit interviews";
   if (bare.startsWith("/gearbox")) return "Gearbox calculator";
-  if (bare.startsWith("/incident-heatmap")) return "Incident Heatmap";
+  if (bare.startsWith("/incident-heatmap")) return "Incidents";
   if (bare.startsWith("/knowledge-drafts")) return "Knowledge drafts";
   if (bare.startsWith("/leadership")) return "Leadership";
   if (bare.startsWith("/meeting-autopilot")) return "Meeting agenda";

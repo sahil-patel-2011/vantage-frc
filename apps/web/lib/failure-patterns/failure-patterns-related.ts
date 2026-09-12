@@ -1,11 +1,11 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Repeat Failure Patterns (never DEMO clusters). */
+/** Soft-UI related surfaces for Failure patterns (never DEMO clusters). */
 export const FAILURE_PATTERNS_RELATED_LINKS = [
   { id: "fmea", label: "Failure log", tab: "fmea" },
   { id: "spare-robot-kit", label: "Spare Kit", tab: "spare-robot-kit" },
-  { id: "incident-heatmap", label: "Incident Heatmap", tab: "incident-heatmap" },
+  { id: "incident-heatmap", label: "Incidents", tab: "incident-heatmap" },
   { id: "pit-repair-triage", label: "Pit Triage", hub: "/competition" as const, tab: "pit-repair-triage" },
 ] as const;
 
@@ -119,7 +119,7 @@ export function failurePatternsShellCopy(kind: FailurePatternsShellKind): Failur
     case "loading":
       return {
         kind,
-        title: "Loading Repeat Failure Patterns…",
+        title: "Opening Failure patterns",
         description: "Checking which team you are on and Failure log history.",
       };
     case "error":
@@ -203,7 +203,7 @@ export function failurePatternsNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Failure Patterns",
+        label: "Retry Failure patterns",
         detail: "Reload real Failure log clusters.",
         href: withOrgHref("/failure-patterns", orgId),
         primary: true,

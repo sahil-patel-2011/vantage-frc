@@ -1,7 +1,7 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Rule Impact Analyzer (never DEMO impact metrics). */
+/** Soft-UI related surfaces for Rule impact (never DEMO impact metrics). */
 export const RULE_IMPACT_RELATED_LINKS = [
   { id: "kickoff", label: "Kickoff", kind: "build" as const, tab: "kickoff" },
   { id: "cad", label: "CAD", kind: "build" as const, tab: "cad" },
@@ -104,7 +104,7 @@ export function ruleImpactShellCopy(kind: RuleImpactShellKind): RuleImpactEmptyC
     case "loading":
       return {
         kind,
-        title: "Loading rule impact…",
+        title: "Opening Rule impact",
         description:
           "Checking which team you are on and logged rule changes.",
       };
@@ -112,7 +112,7 @@ export function ruleImpactShellCopy(kind: RuleImpactShellKind): RuleImpactEmptyC
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load the Rule Impact Analyzer",
+        title: "Could not load Rule impact",
         description:
           "A network or server issue blocked rule changes. Retry, or open Kickoff / CAD / Subsystems while it reloads.",
       };
@@ -194,7 +194,7 @@ export function ruleImpactNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Finish membership setup so Rule Impact can load.",
+        detail: "Finish membership setup so Rule impact can load.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
       },
@@ -213,7 +213,7 @@ export function ruleImpactNextActions(input: {
       {
         id: "subsystems",
         label: "Open Subsystems",
-        detail: "Prior-season subsystem rows are the library Rule Impact diffs against.",
+        detail: "Prior-season subsystem rows are the library Rule impact diffs against.",
         href: withOrgHref("/subsystems", orgId),
       },
     ];
@@ -223,7 +223,7 @@ export function ruleImpactNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Rule Impact",
+        label: "Retry Rule impact",
         detail: "Reload real rule changes.",
         href: withOrgHref("/rule-impact", orgId),
         primary: true,
