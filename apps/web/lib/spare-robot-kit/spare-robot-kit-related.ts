@@ -131,7 +131,7 @@ export function spareRobotKitShellCopy(kind: SpareRobotKitShellKind): SpareRobot
     case "loading":
       return {
         kind,
-        title: "Loading Spare kit…",
+        title: "Opening Spare kit",
         description: "Checking which team you are on, spare bins, and Failure log history.",
       };
     case "error":

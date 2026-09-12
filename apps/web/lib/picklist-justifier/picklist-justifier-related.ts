@@ -97,7 +97,7 @@ export function picklistJustifierShellCopy(kind: PicklistJustifierShellKind): Pi
     case "loading":
       return {
         kind,
-        title: "Loading Justifier…",
+        title: "Opening Justifier",
         description:
           "Checking which team you are on and pick lists.",
       };

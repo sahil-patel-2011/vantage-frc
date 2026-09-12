@@ -164,7 +164,7 @@ export function inventoryShellCopy(kind: InventoryShellKind): InventoryEmptyCopy
     case "loading":
       return {
         kind,
-        title: "Loading Inventory…",
+        title: "Opening Inventory",
         description:
           "Checking which team you are on and real parts stock.",
       };

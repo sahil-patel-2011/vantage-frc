@@ -118,7 +118,7 @@ export function leadershipShellCopy(kind: LeadershipShellKind): LeadershipEmptyC
     case "loading":
       return {
         kind,
-        title: "Loading Leadership…",
+        title: "Opening Leadership",
         description: "Checking which team you are on and who holds each role.",
       };
     case "error":

@@ -108,7 +108,7 @@ export function spareForecastShellCopy(kind: SpareForecastShellKind): SpareForec
     case "loading":
       return {
         kind,
-        title: "Loading spare forecast…",
+        title: "Opening Spares forecast",
         description:
           "Checking which team you are on and real spare-category inventory.",
       };

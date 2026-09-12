@@ -145,7 +145,7 @@ export function connectionsEmptyCopy(shell: ConnectionsShellKind): ConnectionsEm
     return {
       badge: "Loading",
       badgeTone: "setup",
-      title: "Loading connections",
+      title: "Opening connections",
       description: "Checking deployment setup and workspace links — Connected only appears for real rows.",
     };
   }

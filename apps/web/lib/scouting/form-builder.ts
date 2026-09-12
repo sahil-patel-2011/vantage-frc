@@ -971,7 +971,7 @@ export function formBuilderShellCopy(
     case "loading":
       return {
         kind,
-        title: "Loading form builder…",
+        title: "Opening Forms",
         description:
           "Checking your team, the active event, and published forms.",
       };

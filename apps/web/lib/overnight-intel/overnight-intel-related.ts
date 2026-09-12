@@ -168,7 +168,7 @@ export function overnightIntelShellCopy(kind: OvernightIntelShellKind): Overnigh
     case "loading":
       return {
         kind,
-        title: "Loading overnight brief…",
+        title: "Opening Overnight brief",
         description: "Checking which team you are on and the event you are at.",
       };
     case "error":

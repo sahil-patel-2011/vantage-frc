@@ -170,7 +170,7 @@ export function videoAnalysisShellCopy(kind: VideoAnalysisShellKind): VideoAnaly
     case "loading":
       return {
         kind,
-        title: "Loading Video…",
+        title: "Opening Match video",
         description: "Checking which team you are on and videos already queued.",
       };
     case "error":

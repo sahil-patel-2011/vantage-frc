@@ -79,7 +79,7 @@ export function writerShellCopy(kind: WriterShellKind): WriterShellCopy {
     case "loading":
       return {
         kind,
-        title: "Loading writing assistant…",
+        title: "Opening Writer",
         description: "Checking your team and season profile.",
       };
     case "error":

@@ -154,7 +154,7 @@ export function dossierShellCopy(kind: DossierShellKind): DossierEmptyCopy {
     case "loading":
       return {
         kind,
-        title: "Loading season dossier…",
+        title: "Opening Team dossier",
         description:
           "Checking which team you are on and synced event numbers.",
       };

@@ -121,7 +121,7 @@ export function logisticsShellCopy(kind: LogisticsShellKind): LogisticsEmptyCopy
     case "loading":
       return {
         kind,
-        title: "Loading Logistics…",
+        title: "Opening Logistics",
         description: "Checking which team you are on and published trips.",
       };
     case "error":

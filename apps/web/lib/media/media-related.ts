@@ -152,7 +152,7 @@ export function mediaShellCopy(kind: MediaShellKind): MediaEmptyCopy {
     case "loading":
       return {
         kind,
-        title: "Loading Media team…",
+        title: "Opening Media",
         description:
           "Checking which team you are on and recorded press assets.",
       };

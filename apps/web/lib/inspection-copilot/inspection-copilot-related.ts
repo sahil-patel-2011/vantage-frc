@@ -105,7 +105,7 @@ export function inspectionCopilotShellCopy(kind: InspectionCopilotShellKind): In
     case "loading":
       return {
         kind,
-        title: "Loading inspection…",
+        title: "Opening Inspection",
         description:
           "Checking which team you are on and logged readiness checks.",
       };

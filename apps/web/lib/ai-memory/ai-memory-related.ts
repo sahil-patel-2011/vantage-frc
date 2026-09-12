@@ -117,7 +117,7 @@ export function aiMemoryShellCopy(kind: AiMemoryShellKind): AiMemoryEmptyCopy {
     case "loading":
       return {
         kind,
-        title: "Loading team memory…",
+        title: "Opening Memory",
         description: "Checking your team's memory settings for this team.",
       };
     case "auth_required":

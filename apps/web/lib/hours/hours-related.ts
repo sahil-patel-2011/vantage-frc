@@ -126,7 +126,7 @@ export function hoursShellCopy(kind: HoursShellKind): HoursEmptyCopy {
     case "loading":
       return {
         kind,
-        title: "Loading shop hours…",
+        title: "Opening Hours",
         description: "Checking which team you are on.",
       };
     case "error":

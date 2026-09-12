@@ -112,7 +112,7 @@ export function parentsShellCopy(kind: ParentsShellKind): ParentsEmptyCopy {
     case "loading":
       return {
         kind,
-        title: "Loading Parent updates…",
+        title: "Opening Parent updates",
         description: "Checking which team you are on and parent contacts.",
       };
     case "error":

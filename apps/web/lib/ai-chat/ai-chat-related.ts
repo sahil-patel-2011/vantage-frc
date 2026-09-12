@@ -97,7 +97,7 @@ export function aiChatShellCopy(kind: AiChatShellKind): AiChatEmptyCopy {
     case "loading":
       return {
         kind,
-        title: "Loading assistant…",
+        title: "Opening Chat",
         description: "Checking your team's channels and memory settings for this team.",
       };
     case "auth_required":

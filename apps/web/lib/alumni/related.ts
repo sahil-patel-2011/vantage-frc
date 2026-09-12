@@ -83,7 +83,7 @@ export function alumniShellCopy(kind: AlumniShellKind): AlumniEmptyCopy {
     case "loading":
       return {
         kind,
-        title: "Loading alumni…",
+        title: "Opening Alumni",
         description: "Checking which team you are on and persisted alumni rows.",
       };
     case "error":

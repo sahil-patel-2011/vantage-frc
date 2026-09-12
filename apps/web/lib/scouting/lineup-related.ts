@@ -283,7 +283,7 @@ export function lineupShellCopy(kind: LineupShellKind): LineupEmptyCopy {
     case "loading":
       return {
         kind,
-        title: "Loading lineup coverage…",
+        title: "Opening Coverage",
         description:
           "Checking which team you are on and live scouting slots.",
       };

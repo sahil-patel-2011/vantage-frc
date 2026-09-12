@@ -136,7 +136,7 @@ export function videoRescoutShellCopy(kind: VideoRescoutShellKind): VideoRescout
     case "loading":
       return {
         kind,
-        title: "Loading match video…",
+        title: "Opening Match video",
         description: "Checking which team you are on and saved match reviews.",
       };
     case "error":
