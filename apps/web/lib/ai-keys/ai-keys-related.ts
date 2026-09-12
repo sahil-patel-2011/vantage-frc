@@ -81,7 +81,7 @@ export function aiKeysShellCopy(kind: AiKeysShellKind, detail?: string | null): 
   if (kind === "loading") {
     return {
       eyebrow: "AI KEYS",
-      title: "Loading encrypted key status…",
+      title: "Opening API keys",
       description: "Checking which first-party providers are configured for this team.",
     };
   }
