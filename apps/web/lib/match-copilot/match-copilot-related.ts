@@ -92,7 +92,7 @@ export function matchCopilotShellCopy(kind: MatchCopilotShellKind): MatchCopilot
     case "loading":
       return {
         kind,
-        title: "Loading Briefing…",
+        title: "Opening Briefing",
         description:
           "Checking which team you are on and your next match.",
       };

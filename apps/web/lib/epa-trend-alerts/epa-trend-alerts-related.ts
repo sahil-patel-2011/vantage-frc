@@ -94,7 +94,7 @@ export function epaTrendAlertsShellCopy(kind: EpaTrendAlertsShellKind): EpaTrend
     case "loading":
       return {
         kind,
-        title: "Loading Rating alerts…",
+        title: "Opening Rating alerts",
         description:
           "Checking which team you are on and watched teams.",
       };

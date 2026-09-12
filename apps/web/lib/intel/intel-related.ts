@@ -174,7 +174,7 @@ export function intelShellCopy(kind: IntelShellKind): IntelEmptyCopy {
     case "loading":
       return {
         kind,
-        title: "Loading Research…",
+        title: "Opening Research",
         description: "Checking which team you are on so you can look up another FRC team.",
       };
     case "error":
