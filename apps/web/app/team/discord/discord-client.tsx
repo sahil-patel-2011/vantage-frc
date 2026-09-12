@@ -375,7 +375,7 @@ export default function TeamDiscordClient({ orgId }: { orgId: string }) {
           description={view.emptyReason ?? view.message}
         >
           <p className="app-muted">
-            Paste a channel webhook below, or set the server and channel IDs once a mentor has added the bot.
+            Paste a Discord channel link below, or set the server and channel once a mentor has added the bot.
             Bridge counts stay blank until a linked Team Message actually posts.
           </p>
         </EmptyState>
@@ -406,7 +406,7 @@ export default function TeamDiscordClient({ orgId }: { orgId: string }) {
           <span className="eyebrow">BOT OPTIONAL</span>
           <h2>Platform Discord bot not configured</h2>
           <p className="app-muted">
-            Webhook posting works. Ask a mentor to add the Discord bot on this deployment if you want
+            Channel-link posting works. Ask a mentor to add the Discord bot on this deployment if you want
             posts by channel id.
           </p>
           {view.inviteUrl ? (
@@ -424,7 +424,7 @@ export default function TeamDiscordClient({ orgId }: { orgId: string }) {
           <span className="eyebrow">GUILD &amp; CHANNEL</span>
           <h2>{view.configured ? "Update connection" : "Link Discord"}</h2>
           <p className="app-muted">
-            Paste a channel webhook and/or server and channel IDs (Developer Mode in Discord).
+            Paste a Discord channel link and/or the server and channel IDs.
           </p>
           <label>
             Guild (server) id
@@ -461,12 +461,12 @@ export default function TeamDiscordClient({ orgId }: { orgId: string }) {
             />
           </label>
           <label>
-            Channel webhook URL {view.hasWebhook ? "(leave blank to keep current)" : ""}
+            Discord channel link {view.hasWebhook ? "(leave blank to keep current)" : ""}
             <input
               type="url"
               value={form.webhookUrl}
               onChange={(e) => setForm({ ...form, webhookUrl: e.target.value })}
-              placeholder="https://discord.com/api/webhooks/…"
+              placeholder="Paste the Discord channel link"
               autoComplete="off"
             />
           </label>
@@ -524,7 +524,7 @@ export default function TeamDiscordClient({ orgId }: { orgId: string }) {
               <strong>{view.platformConfigured ? "configured" : "optional / unset"}</strong>
             </li>
             <li>
-              <span>Webhook</span>
+              <span>Channel link</span>
               <strong>{view.hasWebhook ? "saved" : "none"}</strong>
             </li>
             <li>
