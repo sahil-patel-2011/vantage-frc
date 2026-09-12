@@ -236,7 +236,7 @@ export default function CapabilitiesClient({ orgId }: { orgId: string }) {
         </p>
       ) : null}
       {loading ? (
-        <EmptyState soft title="Loading members…" description="Pulling roles and delegated capabilities." aria-busy />
+        <EmptyState soft title="Opening members" description="Pulling roles and delegated capabilities." aria-busy />
       ) : (
         <>
           <div className="invite-list" style={{ marginBottom: "1rem" }}>

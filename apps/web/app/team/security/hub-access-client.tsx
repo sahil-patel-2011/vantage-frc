@@ -253,7 +253,7 @@ export default function HubAccessClient({ orgId }: { orgId: string }) {
         </p>
       ) : null}
       {loading ? (
-        <EmptyState soft title="Loading hub access…" description="Loading members and which sections they can open." aria-busy />
+        <EmptyState soft title="Opening hub access" description="Opening members and which sections they can open." aria-busy />
       ) : (
         <>
           <div className="invite-list" style={{ marginBottom: "1rem" }}>
