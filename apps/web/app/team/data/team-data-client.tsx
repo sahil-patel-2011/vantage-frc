@@ -410,7 +410,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
           needsTba
             ? `Save a TBA Read API key below, or ask whoever set up this site to add one in deployment settings. Create a key at thebluealliance.com → Account → Read API Keys.${needsEvent ? " You will also need to pick an active event before anything syncs." : ""}`
             : needsEvent
-              ? "Team Data syncs only for a real team event — Schedule, Event Day, and Strategy stay empty until then."
+              ? "Team Data syncs only for a real team event — Schedule, Event day, and Strategy stay empty until then."
               : "Finish team setup so official matches can load this team."
         }
         orgId={orgId}
@@ -459,7 +459,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
           <h1>Team Data</h1>
           <p>
             Inventory counts for your team, shared official match cache health, and controlled sync for the active event.
-            Schedule, Event Day, and Strategy use this shared copy of official matches.
+            Schedule, Event day, and Strategy use this shared copy of official matches.
           </p>
         </div>
         <div className="team-data-header-actions">
@@ -536,7 +536,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
           <section className="app-card soft-panel team-data-panel">
             <h2>Sync active event</h2>
             <p className="app-muted">
-              Refreshes match and team data for the event selected on Event Day. Uses the platform key with
+              Refreshes match and team data for the event selected on Event day. Uses the platform key with
               your fallback credential when configured.
             </p>
             <Button variant="primary" type="button" disabled={busy || !hasActiveEvent} onClick={() => void syncActiveEvent()}>

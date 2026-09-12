@@ -4,7 +4,7 @@ import { withOrgHref } from "../nav/product-nav";
 /** Soft-UI related surfaces for Team Data / TBA sync (never DEMO metrics). */
 export const TEAM_DATA_RELATED_LINKS = [
   { id: "schedule", label: "Schedule", kind: "path" as const, path: "/schedule" },
-  { id: "command", label: "Event Day", kind: "competition" as const, tab: "command" },
+  { id: "command", label: "Event day", kind: "competition" as const, tab: "command" },
   { id: "strategy", label: "Strategy", kind: "path" as const, path: "/strategy" },
   { id: "exports", label: "Exports", kind: "path" as const, path: "/exports" },
   { id: "workspace", label: "Your team", kind: "path" as const, path: "/workspace" },
@@ -18,7 +18,7 @@ export type TeamDataRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — Schedule / Event Day / Strategy first. */
+/** Focused Soft-UI strip — Schedule / Event day / Strategy first. */
 export const TEAM_DATA_RELATED_INCLUDE: TeamDataRelatedId[] = [
   "schedule",
   "command",
@@ -55,7 +55,7 @@ export type TeamDataNextAction = {
 
 /**
  * Soft-UI next actions for Team Data empty/setup shells.
- * Points at real Schedule / Event Day / Strategy paths — never DEMO metrics.
+ * Points at real Schedule / Event day / Strategy paths — never DEMO metrics.
  */
 export function teamDataNextActions(input: {
   orgId?: string | null;
@@ -99,7 +99,7 @@ export function teamDataNextActions(input: {
         },
         {
           id: "command",
-          label: "Open Event Day",
+          label: "Open Event day",
           detail: "Confirm day-of context uses the same active event as official match sync.",
           href: hubHref("/competition", "command", orgId),
         },
@@ -146,7 +146,7 @@ export function teamDataNextActions(input: {
       },
       {
         id: "command",
-        label: "Open Event Day",
+        label: "Open Event day",
         detail: "Day-of command uses the same active event this page syncs.",
         href: hubHref("/competition", "command", orgId),
       },
@@ -200,7 +200,7 @@ export function teamDataNextActions(input: {
       },
       {
         id: "command",
-        label: "Open Event Day",
+        label: "Open Event day",
         detail: "Pit queue and coverage wait on the same official event cache.",
         href: hubHref("/competition", "command", orgId),
       },
@@ -223,7 +223,7 @@ export function teamDataNextActions(input: {
     },
     {
       id: "command",
-      label: "Open Event Day",
+      label: "Open Event day",
       detail: "Command center for pit ops tied to this event’s official schedule.",
       href: hubHref("/competition", "command", orgId),
     },

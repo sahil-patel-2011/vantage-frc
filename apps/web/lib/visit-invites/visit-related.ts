@@ -4,7 +4,7 @@ import { withOrgHref } from "../nav/product-nav";
 /** Soft-UI related surfaces for Visit Invites (never DEMO invites). */
 export const VISIT_RELATED_LINKS = [
   { id: "logistics", label: "Logistics", kind: "path" as const, path: "/logistics" },
-  { id: "command", label: "Event Day", kind: "competition" as const, tab: "command" },
+  { id: "command", label: "Event day", kind: "competition" as const, tab: "command" },
   { id: "calendar", label: "Calendar", kind: "team" as const, tab: "calendar" },
   { id: "my-day", label: "My Day", kind: "competition" as const, tab: "my-day" },
 ] as const;
@@ -17,7 +17,7 @@ export type VisitRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — Logistics / Event Day / Calendar first. */
+/** Focused Soft-UI strip — Logistics / Event day / Calendar first. */
 export const VISIT_RELATED_INCLUDE: VisitRelatedId[] = [
   "logistics",
   "command",
@@ -65,7 +65,7 @@ export function visitInvitesShareHref(orgId?: string | null, visitId?: string | 
 
 /**
  * Soft-UI next actions for Visit Invites empty/setup shells.
- * Points at real Logistics / Event Day / Calendar paths — never DEMO invites.
+ * Points at real Logistics / Event day / Calendar paths — never DEMO invites.
  */
 export function visitNextActions(input: {
   orgId?: string | null;
@@ -112,7 +112,7 @@ export function visitNextActions(input: {
       },
       {
         id: "command",
-        label: "Open Event Day",
+        label: "Open Event day",
         detail: "Day-of command uses competition context separately from outreach visits.",
         href: hubHref("/competition", "command", orgId),
       },
@@ -167,7 +167,7 @@ export function visitNextActions(input: {
         },
         {
           id: "command",
-          label: "Open Event Day",
+          label: "Open Event day",
           detail: "Competition day-of tools are next door when guests visit during an event.",
           href: hubHref("/competition", "command", orgId),
         },
@@ -227,14 +227,14 @@ export function visitNextActions(input: {
   actions.push({
     id: "logistics",
     label: "Open Logistics",
-    detail: "Hotels and travel legs stay on Logistics alongside Event Day ops.",
+    detail: "Hotels and travel legs stay on Logistics alongside Event day ops.",
     href: withOrgHref("/logistics", orgId),
   });
 
   if (actions.length < 4) {
     actions.push({
       id: "command",
-      label: "Open Event Day",
+      label: "Open Event day",
       detail: "Pit and command tools for competition days when visitors overlap an event.",
       href: hubHref("/competition", "command", orgId),
     });
@@ -317,7 +317,7 @@ export function visitShellCopy(kind: VisitShellKind): VisitEmptyCopy {
         badge: "Unavailable",
         title: "Could not load visit invites",
         description:
-          "A network or server issue blocked the board. Retry, or open Logistics / Event Day / Calendar while it reloads.",
+          "A network or server issue blocked the board. Retry, or open Logistics / Event day / Calendar while it reloads.",
       };
     case "setup":
       return {

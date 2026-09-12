@@ -5,7 +5,7 @@ import { withOrgHref } from "../nav/product-nav";
 export const STRATEGY_RELATED_LINKS = [
   { id: "pick-desk", label: "Pick desk", kind: "path" as const, path: "/strategy?tab=picks" },
   { id: "scouting", label: "Scouting", kind: "hub" as const, tab: "scouting" },
-  { id: "command", label: "Event Day", kind: "hub" as const, tab: "command" },
+  { id: "command", label: "Event day", kind: "hub" as const, tab: "command" },
   { id: "draft", label: "Draft board", kind: "path" as const, path: "/strategy/draft" },
   { id: "coverage", label: "Scout coverage", kind: "path" as const, path: "/scout-coverage-live" },
   { id: "team-data", label: "Team Data", kind: "path" as const, path: "/team/data" },
@@ -19,7 +19,7 @@ export type StrategyRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — Pick desk · Scouting · Event Day. */
+/** Focused Soft-UI strip — Pick desk · Scouting · Event day. */
 export const STRATEGY_RELATED_INCLUDE: StrategyRelatedId[] = [
   "pick-desk",
   "scouting",
@@ -27,7 +27,7 @@ export const STRATEGY_RELATED_INCLUDE: StrategyRelatedId[] = [
 ];
 
 /**
- * Soft-UI cross-links from Strategy → Pick desk / Scouting / Event Day.
+ * Soft-UI cross-links from Strategy → Pick desk / Scouting / Event day.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function strategyRelatedLinks(
@@ -83,7 +83,7 @@ export function strategyShellSetupSteps(orgId?: string | null): StrategyShellSet
     {
       id: "command",
       label: "Set active event",
-      detail: "Event Day Command picks the event Strategy and picks use.",
+      detail: "Event day picks the event Strategy and picks use.",
       href: hubHref("/competition", "command", orgId),
     },
     {
@@ -178,7 +178,7 @@ export function strategyShellCopy(kind: StrategyShellKind): StrategyEmptyCopy {
 
 /**
  * Soft-UI next actions for Strategy empty/setup shells.
- * Points at Pick desk / Scouting / Event Day — never invents DEMO win rates.
+ * Points at Pick desk / Scouting / Event day — never invents DEMO win rates.
  */
 export function strategyNextActions(input: {
   orgId?: string | null;
@@ -214,7 +214,7 @@ export function strategyNextActions(input: {
         },
         {
           id: "command",
-          label: "Open Event Day",
+          label: "Open Event day",
           detail: "Set the event you are at from Command.",
           href: hubHref("/competition", "command", null),
         },
@@ -225,7 +225,7 @@ export function strategyNextActions(input: {
         {
           id: "command",
           label: "Set active event",
-          detail: "Event Day Command picks the event Strategy and picks use.",
+          detail: "Event day picks the event Strategy and picks use.",
           href: hubHref("/competition", "command", orgId),
           primary: true,
         },
@@ -271,7 +271,7 @@ export function strategyNextActions(input: {
       },
       {
         id: "command",
-        label: "Open Event Day",
+        label: "Open Event day",
         detail: "Confirm the synced event context day-of ops share.",
         href: hubHref("/competition", "command", orgId),
       },
@@ -301,7 +301,7 @@ export function strategyNextActions(input: {
       },
       {
         id: "command",
-        label: "Open Event Day",
+        label: "Open Event day",
         detail: "Day-of command stays available while strategy reloads.",
         href: hubHref("/competition", "command", orgId),
       },
@@ -310,9 +310,9 @@ export function strategyNextActions(input: {
 
   if (input.shell === "empty") {
     const needsReferenceData = input.tbaConfigured === false || input.hasMetrics === false;
-    // When reference data is already loaded the primary action IS Event Day, so
-    // the trailing "Open Event Day" below would be the same id and the same href
-    // listed twice — "Check Event Day schedule" over "Open Event Day".
+    // When reference data is already loaded the primary action IS Event day, so
+    // the trailing "Open Event day" below would be the same id and the same href
+    // listed twice — "Check Event day schedule" over "Open Event day".
     return [
       needsReferenceData
         ? {
@@ -325,7 +325,7 @@ export function strategyNextActions(input: {
           }
         : {
             id: "command",
-            label: "Check Event Day schedule",
+            label: "Check Event day schedule",
             detail: "Confirm a scheduled match for your team.",
             href: hubHref("/competition", "command", orgId),
             primary: true,
@@ -346,7 +346,7 @@ export function strategyNextActions(input: {
         ? [
             {
               id: "command",
-              label: "Open Event Day",
+              label: "Open Event day",
               detail: "Confirm the active event and schedule sync status.",
               href: hubHref("/competition", "command", orgId),
             },
@@ -371,7 +371,7 @@ export function strategyNextActions(input: {
     },
     {
       id: "command",
-      label: "Open Event Day",
+      label: "Open Event day",
       detail: "Pit queues and readiness share this event context.",
       href: hubHref("/competition", "command", orgId),
     },

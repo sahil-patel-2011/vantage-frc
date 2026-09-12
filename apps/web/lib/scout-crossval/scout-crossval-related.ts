@@ -7,7 +7,7 @@ export const SCOUT_CROSSVAL_RELATED_LINKS = [
   { id: "coverage-live", label: "Coverage", kind: "path" as const, path: "/scout-coverage-live" },
   { id: "accuracy", label: "Accuracy", kind: "path" as const, path: "/scout-accuracy" },
   { id: "disagreements", label: "Disagreements", kind: "path" as const, path: "/scout-disagreements" },
-  { id: "command", label: "Event Day", kind: "hub" as const, tab: "command" },
+  { id: "command", label: "Event day", kind: "hub" as const, tab: "command" },
 ] as const;
 
 export type ScoutCrossvalRelatedId = (typeof SCOUT_CROSSVAL_RELATED_LINKS)[number]["id"];

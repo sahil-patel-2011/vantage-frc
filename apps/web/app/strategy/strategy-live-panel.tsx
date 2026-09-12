@@ -262,7 +262,7 @@ export function LivePanel({ view }: { view: Extract<StrategyView, { status: "liv
 
   return (
     <section className="strategy-workbench strategy-live-grid">
-      <nav className="strategy-coverage-links product-hub-related" aria-label="Pick desk, Scouting, Event Day">
+      <nav className="strategy-coverage-links product-hub-related" aria-label="Pick desk, Scouting, Event day">
         {relatedLinks.map((link) => (
           <Button as="a" variant="secondary" key={link.id} href={link.href}>
             {link.label}

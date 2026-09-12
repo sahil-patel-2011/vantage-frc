@@ -98,7 +98,7 @@ export function CommandReadyView({
       <CommandReadyHeader
         embedded={embedded}
         orgId={orgId || null}
-        title={snap.eventName ?? "Event Day Command"}
+        title={snap.eventName ?? "Event day"}
         orgName={snap.orgName ?? me.orgName ?? null}
         teamNumber={snap.teamNumber ?? me.teamNumber ?? null}
         eventKey={snap.eventKey ?? null}
@@ -108,7 +108,7 @@ export function CommandReadyView({
         onSelectEvent={onSelectEvent}
         onRefresh={onRefresh}
       />
-      <OfflineBanner feature="Competition" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Event day" fromCache={fromCache} cachedAt={cachedAt} />
       <VenueShortcutCheatsheet open={cheatOpen} onClose={onCloseCheatsheet} shortcuts={shortcuts} />
 
       {error ? <p className="edc-banner error">{error}</p> : null}

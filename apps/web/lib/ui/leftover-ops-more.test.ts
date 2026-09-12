@@ -10,7 +10,7 @@ const WEB = join(__dirname, "..", "..");
  * Burndown. leftover-ops-titles Lead times family, leftover-goals-kit
  * Goals, leftover-fmea Failure log, leftover-lxi How likely / How bad,
  * leftover-join-or-pick Choose your team, leftover-pick-before Choose
- * your team stay. Event Day stays for leftover-event-day-more. Routes
+ * your team stay. leftover-event-day-more Event day stays. Routes
  * stay. Do not invent a last-snapshot.
  */
 const FILES = [

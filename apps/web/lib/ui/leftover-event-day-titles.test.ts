@@ -8,8 +8,8 @@ const WEB = join(__dirname, "..", "..");
  * Leftover student Districts / Rank projection / Day plan /
  * Drive-team board / Charge plan titles after leftover-scout-titles.
  * Hub labels stay Districts, Rank projection, Day plan,
- * Drive-team board, and Charge plan. Routes stay. Do not invent a
- * last-snapshot.
+ * Drive-team board, and Charge plan. leftover-event-day-more Event day
+ * stays. Routes stay. Do not invent a last-snapshot.
  */
 const FILES = [
   "app/district-advancement/district-advancement-client.tsx",

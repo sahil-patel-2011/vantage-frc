@@ -171,7 +171,7 @@ export default function ScoutingTrustPanel({
     return (
       <EmptyState
         title="Set active event"
-        description="Trust checks and coverage are event-specific. Choose the event in Event Day first."
+        description="Trust checks and coverage are event-specific. Choose the event in Event day first."
       />
     );
   }

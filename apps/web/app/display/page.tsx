@@ -23,7 +23,7 @@ export default async function DisplayPage({
           description="Pit TV boards are saved per team. Choose your team before creating a display layout."
         >
           <Button as="a" variant="secondary" href="/competition?tab=command">
-            Event Day
+            Event day
           </Button>
           <Button as="a" variant="secondary" href="/competition?tab=strategy">
             Strategy

@@ -224,7 +224,7 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/pit")).toBe("Pit");
     expect(offlineCapableLabel("/my-day")).toBe("My Day");
     expect(offlineCapableLabel("/schedule")).toBe("Schedule");
-    expect(offlineCapableLabel("/command")).toBe("Event Day");
+    expect(offlineCapableLabel("/command")).toBe("Event day");
     expect(offlineCapableLabel("/chemistry")).toBe("Chemistry");
     expect(offlineCapableLabel("/pick-clock")).toBe("Pick clock");
     expect(offlineCapableLabel("/alliance-selection-desk")).toBe("Alliance desk");

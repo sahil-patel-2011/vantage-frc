@@ -224,7 +224,7 @@ export function matchDeltaWatcherNextActions(input: {
       {
         id: "command",
         label: "Open Command",
-        detail: "Event Day stays available while the watcher reloads.",
+        detail: "Event day stays available while the watcher reloads.",
         href: hubHref("/competition", "command", orgId),
       },
     ];

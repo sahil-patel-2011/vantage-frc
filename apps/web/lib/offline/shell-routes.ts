@@ -273,7 +273,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/schedule")) return "Schedule";
   if (bare.startsWith("/offline-shell")) return "This phone";
   if (bare === "/competition") return "Competition";
-  if (bare.startsWith("/command")) return "Event Day";
+  if (bare.startsWith("/command")) return "Event day";
   if (
     bare.startsWith("/team/calendar") ||
     bare === "/calendar" ||

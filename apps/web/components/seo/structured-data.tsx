@@ -54,7 +54,7 @@ const graph = {
         "Hard managed-AI usage cutoffs after included allowance",
         "Official match and season-rating reference data",
         "Win/loss prediction with confidence and tracked accuracy",
-        "Event Day command and My Day personal queue",
+        "Event day command and My Day personal queue",
         "Team knowledge/wiki and CAD↔strategy linkage",
         "AI CAD builder (Onshape / Fusion, approval-gated)",
         "FRC robot-code risk review as human-approved diffs",

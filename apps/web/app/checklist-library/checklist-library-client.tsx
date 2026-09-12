@@ -83,7 +83,7 @@ function ChecklistLibraryNextActions({ orgId }: { orgId: string }) {
     {
       id: "pit",
       label: "Open pit checklist",
-      detail: "Timed pre-queue runs live on Event Day, not as a second copy here.",
+      detail: "Timed pre-queue runs live on Event day, not as a second copy here.",
       href: withOrgHref("/match-checklist", orgId),
       primary: false,
     },
@@ -250,7 +250,7 @@ export default function ChecklistLibraryClient() {
         </>
       }
       title="Checklists"
-      description="Store the team's SOP here. Opening a pit/match checklist writes a timed run on Event Day — this page does not keep a second copy."
+      description="Store the team's SOP here. Opening a pit/match checklist writes a timed run on Event day — this page does not keep a second copy."
     >
       <ChecklistLibraryRelated orgId={orgId} />
     </PageHeader>
@@ -358,7 +358,7 @@ function PitOpenedNotice({ view }: { view: LiveView }) {
         {opened.unmappedCount > 0
           ? ` ${opened.unmappedCount} step${opened.unmappedCount === 1 ? "" : "s"} stayed on this SOP — they are not pit cues.`
           : null}{" "}
-        <a href={opened.href}>Open Event Day pit checklist</a>
+        <a href={opened.href}>Open Event day pit checklist</a>
       </p>
     </Panel>
   );
@@ -372,7 +372,7 @@ function PitChecklistPanel({ view }: { view: LiveView }) {
         <div>
           <h2 style={{ marginTop: 0, marginBottom: 4 }}>Pit / match checklists</h2>
           <p className="app-muted" style={{ margin: 0 }}>
-            Timed pre-queue runs live on Event Day. Instantiating an SOP opens a run there — this
+            Timed pre-queue runs live on Event day. Instantiating an SOP opens a run there — this
             library does not store a second pit ledger.
           </p>
         </div>
@@ -573,7 +573,7 @@ function RunsPanel({
         badge="No runs yet"
         badgeTone="setup"
         title="Start an SOP run from a template above"
-        description="Library runs are for transport and load-in practice. Pit/match execution opens on Event Day, not here."
+        description="Library runs are for transport and load-in practice. Pit/match execution opens on Event day, not here."
       />
     );
   }

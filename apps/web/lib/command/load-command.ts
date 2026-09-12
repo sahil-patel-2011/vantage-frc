@@ -132,11 +132,11 @@ export async function loadEventDayCommand(
   if (!row) {
     return emptySnapshot({
       computedAt,
-      message: "Join a team to open Event Day Command.",
+      message: "Choose your team to open Event day.",
       setupSteps: [
         {
           id: "workspace",
-          label: "Join or choose a team",
+          label: "Choose your team",
           detail: "Open Home and choose your team.",
           href: "/dashboard",
         },
@@ -217,7 +217,7 @@ export async function loadEventDayCommand(
       ...base,
       status: "setup_required",
       message: !row.eventKey
-        ? "Set your active event to turn Event Day Command into your field-side OS."
+        ? "Set your active event to turn Event day into your field-side OS."
         : "Set your team's number so we can filter your match queue.",
       matches: [],
       scoutQueue: [],

@@ -445,7 +445,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "event-day-command",
     slug: "event-day-command",
-    title: "Event Day and Command",
+    title: "Event day and Command",
     summary:
       "Field-side command for the active event. Surfaces stay empty until schedule and ops data are real.",
     category: "competition",
@@ -464,7 +464,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "Open Command",
         body: [
-          "Competition → Event day, or /command (Vantage Event Day).",
+          "Competition → Event day, or /command (Vantage Event day).",
           "Choose your team and active event first. Command stays blank until the schedule is saved.",
         ],
       },

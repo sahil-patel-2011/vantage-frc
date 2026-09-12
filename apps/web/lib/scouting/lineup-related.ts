@@ -9,7 +9,7 @@ export const LINEUP_RELATED_LINKS = [
   { id: "strategy", label: "Strategy", kind: "hub" as const, tab: "strategy" },
   { id: "forms", label: "Form builder", kind: "hub" as const, tab: "forms" },
   { id: "coverage-live", label: "Coverage", kind: "path" as const, path: "/scout-coverage-live" },
-  { id: "command", label: "Event Day", kind: "hub" as const, tab: "command" },
+  { id: "command", label: "Event day", kind: "hub" as const, tab: "command" },
 ] as const;
 
 export type LineupRelatedId = (typeof LINEUP_RELATED_LINKS)[number]["id"];

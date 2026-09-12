@@ -61,7 +61,7 @@ export async function GET(request: Request) {
       const eventKey = eventOverride ?? context.rows[0]?.eventKey ?? null;
       if (!eventKey) {
         return setupRequired(
-          "Set an active event in Event Day — reconciliation compares your scouting to that event's official score breakdowns.",
+          "Set an active event in Event day — reconciliation compares your scouting to that event's official score breakdowns.",
         );
       }
 
@@ -133,7 +133,7 @@ export async function GET(request: Request) {
     // No database (or schema not migrated yet): honest setup state, never a crash.
     return Response.json(
       setupRequired(
-        "Reconciliation needs the team database. Confirm the team is provisioned, then set an active event in Event Day.",
+        "Reconciliation needs the team database. Confirm the team is provisioned, then set an active event in Event day.",
       ),
       { status: 200, headers: { "Cache-Control": "private, no-store" } },
     );

@@ -12,7 +12,7 @@ export const PIT_RELATED_LINKS = [
     kind: "competition" as const,
     tab: "match-checklist",
   },
-  { id: "command", label: "Event Day", kind: "competition" as const, tab: "command" },
+  { id: "command", label: "Event day", kind: "competition" as const, tab: "command" },
   { id: "pit", label: "Pit Command", kind: "path" as const, path: "/pit" },
 ] as const;
 
@@ -24,7 +24,7 @@ export type PitRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — Batteries / Match checklist / Event Day first. */
+/** Focused Soft-UI strip — Batteries / Match checklist / Event day first. */
 export const PIT_RELATED_INCLUDE: PitRelatedId[] = [
   "batteries",
   "match-checklist",
@@ -32,7 +32,7 @@ export const PIT_RELATED_INCLUDE: PitRelatedId[] = [
 ];
 
 /**
- * Soft-UI cross-links from Pit Command → Batteries / Match checklist / Event Day.
+ * Soft-UI cross-links from Pit Command → Batteries / Match checklist / Event day.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function pitRelatedLinks(
@@ -105,7 +105,7 @@ export function pitSetupSteps(orgId?: string | null): PitSetupStep[] {
     },
     {
       id: "command",
-      label: "Open Event Day",
+      label: "Open Event day",
       detail: "Active event and match queues stay empty until official matches sync.",
       href: hubHref("/competition", "command", orgId),
     },
@@ -196,7 +196,7 @@ export function pitShellCopy(kind: PitShellKind): PitEmptyCopy {
         badge: "Unavailable",
         title: "Could not load Pit Command",
         description:
-          "A network or server issue blocked the release board. Retry, or open Batteries / Match checklist / Event Day while it reloads.",
+          "A network or server issue blocked the release board. Retry, or open Batteries / Match checklist / Event day while it reloads.",
       };
     case "setup":
       return {
@@ -212,7 +212,7 @@ export function pitShellCopy(kind: PitShellKind): PitEmptyCopy {
         badge: "No pit evidence yet",
         title: "Log the first battery, issue, or work item",
         description:
-          "Release gates, rack status, and work queues stay blank until you record real evidence. Cross-check Batteries, Match checklist, and Event Day.",
+          "Release gates, rack status, and work queues stay blank until you record real evidence. Cross-check Batteries, Match checklist, and Event day.",
       };
     default:
       return {
@@ -226,7 +226,7 @@ export function pitShellCopy(kind: PitShellKind): PitEmptyCopy {
 
 /**
  * Soft-UI next actions for Pit Command empty/setup shells.
- * Points at Batteries / Match checklist / Event Day — never invents DEMO metrics.
+ * Points at Batteries / Match checklist / Event day — never invents DEMO metrics.
  */
 export function pitNextActions(input: {
   orgId?: string | null;
@@ -274,8 +274,8 @@ export function pitNextActions(input: {
       },
       {
         id: "command",
-        label: "Open Event Day",
-        detail: "Event Day queues stay available while the release board reloads.",
+        label: "Open Event day",
+        detail: "Event day queues stay available while the release board reloads.",
         href: hubHref("/competition", "command", orgId),
       },
     ];
@@ -304,7 +304,7 @@ export function pitNextActions(input: {
       },
       {
         id: "command",
-        label: "Open Event Day",
+        label: "Open Event day",
         detail: "Confirm the active event so next-match context can appear on the board.",
         href: hubHref("/competition", "command", orgId),
       },
@@ -363,7 +363,7 @@ export function pitNextActions(input: {
     },
     {
       id: "command",
-      label: "Open Event Day",
+      label: "Open Event day",
       detail: "Match schedule and pit queues share the same event context.",
       href: hubHref("/competition", "command", orgId),
     },

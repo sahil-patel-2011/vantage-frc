@@ -11,7 +11,7 @@ import PitCommandClient from "./pit-command-client";
 export const metadata: Metadata = {
   title: "Pit Command — Vantage",
   description:
-    "Robot release board from logged issues, maintenance, and battery evidence. Links to Batteries, Match checklist, and Event Day.",
+    "Robot release board from logged issues, maintenance, and battery evidence. Links to Batteries, Match checklist, and Event day.",
 };
 
 export default async function PitCommandPage({

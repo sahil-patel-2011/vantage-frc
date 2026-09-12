@@ -7,7 +7,7 @@ export const SCOUT_COVERAGE_LIVE_RELATED_LINKS = [
   { id: "lineup", label: "Lineup", kind: "path" as const, path: "/scouting/lineup" },
   { id: "crossval", label: "Cross-Validation", kind: "path" as const, path: "/scout-crossval" },
   { id: "accuracy", label: "Accuracy", kind: "path" as const, path: "/scout-accuracy" },
-  { id: "command", label: "Event Day", kind: "hub" as const, tab: "command" },
+  { id: "command", label: "Event day", kind: "hub" as const, tab: "command" },
 ] as const;
 
 export type ScoutCoverageLiveRelatedId = (typeof SCOUT_COVERAGE_LIVE_RELATED_LINKS)[number]["id"];
@@ -185,7 +185,7 @@ export function scoutCoverageLiveShellCopy(kind: ScoutCoverageLiveShellKind): Sc
         badge: "No schedule yet",
         title: "Waiting on a real match schedule",
         description:
-          "The grid stays blank until the active event has synced match alliances. Cross-check Event Day, Scouting, and Lineup.",
+          "The grid stays blank until the active event has synced match alliances. Cross-check Event day, Scouting, and Lineup.",
       };
     default:
       return {

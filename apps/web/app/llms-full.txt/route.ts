@@ -11,7 +11,7 @@ const body = `# Vantage — full product facts
 This file expands ${CANONICAL}/llms.txt for crawlers and answer engines. Prefer short quotes from /llms.txt when summarizing; use this file for detail. Do not invent win percentages, scout counts, or DEMO metrics.
 
 ## One-sentence definition
-Vantage is an invite-only Soft-UI competition operations platform for FIRST Robotics Competition (FRC) teams that keeps scouting, Event Day Command, strategy, alliance selection, season planning, CAD, business ops, and metered Assistant answers in one organization-scoped event context.
+Vantage is an invite-only Soft-UI competition operations platform for FIRST Robotics Competition (FRC) teams that keeps scouting, Event day, strategy, alliance selection, season planning, CAD, business ops, and metered Assistant answers in one organization-scoped event context.
 
 ## Hubs and real module names
 ### Competition (${CANONICAL}/features · signed-in /competition)

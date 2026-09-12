@@ -7,7 +7,7 @@ export const SCOUT_ACCURACY_RELATED_LINKS = [
   { id: "coverage", label: "Coverage", kind: "path" as const, path: "/scouting/lineup" },
   { id: "strategy", label: "Strategy", kind: "hub" as const, tab: "strategy" },
   { id: "coverage-live", label: "Coverage", kind: "path" as const, path: "/scout-coverage-live" },
-  { id: "command", label: "Event Day", kind: "hub" as const, tab: "command" },
+  { id: "command", label: "Event day", kind: "hub" as const, tab: "command" },
 ] as const;
 
 export type ScoutAccuracyRelatedId = (typeof SCOUT_ACCURACY_RELATED_LINKS)[number]["id"];

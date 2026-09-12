@@ -8,7 +8,7 @@ export const SCOUTING_RELATED_LINKS = [
   { id: "strategy", label: "Strategy", kind: "hub" as const, tab: "strategy" },
   { id: "offline", label: "Offline", kind: "path" as const, path: "/offline" },
   { id: "offline-shell", label: "This phone", kind: "path" as const, path: "/offline-shell" },
-  { id: "command", label: "Event Day", kind: "hub" as const, tab: "command" },
+  { id: "command", label: "Event day", kind: "hub" as const, tab: "command" },
   { id: "handoff", label: "QR handoff", kind: "hub" as const, tab: "scouting" },
 ] as const;
 
@@ -89,7 +89,7 @@ export function scoutingSetupSteps(orgId?: string | null): ScoutingSetupStep[] {
     {
       id: "command",
       label: "Set active event",
-      detail: "Event Day picks the event match and pit forms use.",
+      detail: "Event day picks the event match and pit forms use.",
       href: hubHref("/competition", "command", orgId),
     },
     {
@@ -266,7 +266,7 @@ export function scoutingNextActions(input: {
         {
           id: "command",
           label: "Set active event",
-          detail: "Event Day picks the event match and pit forms use.",
+          detail: "Event day picks the event match and pit forms use.",
           href: hubHref("/competition", "command", orgId),
           primary: true,
         },
