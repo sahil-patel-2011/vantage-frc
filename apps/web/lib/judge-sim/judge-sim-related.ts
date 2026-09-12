@@ -1,7 +1,7 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Judge-Pitch Simulator (never DEMO judge metrics). */
+/** Soft-UI related surfaces for Judge pitch (never DEMO judge metrics). */
 export const JUDGE_SIM_RELATED_LINKS = [
   { id: "impact", label: "Community Impact", kind: "hub" as const, tab: "impact" },
   { id: "impact-essay", label: "Impact Essay", kind: "hub" as const, tab: "impact-essay" },
@@ -22,7 +22,7 @@ export type JudgeSimRelatedLink = {
 export const JUDGE_SIM_RELATED_INCLUDE: JudgeSimRelatedId[] = ["impact", "impact-essay", "evidence"];
 
 /**
- * Soft-UI cross-links from Judge-Pitch Simulator → Impact / Essay / Awards.
+ * Soft-UI cross-links from Judge pitch → Impact / Essay / Awards.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function judgeSimRelatedLinks(
@@ -80,7 +80,7 @@ export function shouldShowJudgeSimSummaryTiles(sessionCount: number): boolean {
   return sessionCount > 0;
 }
 
-/** Classify Judge-Pitch Soft-UI shell — never invents DEMO judge metrics. */
+/** Classify Judge pitch Soft-UI shell — never invents DEMO judge metrics. */
 export function classifyJudgeSimShell(input: {
   loading: boolean;
   fetchFailed?: boolean;
@@ -101,7 +101,7 @@ export function judgeSimShellCopy(kind: JudgeSimShellKind): JudgeSimEmptyCopy {
     case "loading":
       return {
         kind,
-        title: "Loading Judge-Pitch Simulator…",
+        title: "Opening Judge pitch",
         description:
           "Checking which team you are on and logged evidence.",
       };
@@ -109,9 +109,9 @@ export function judgeSimShellCopy(kind: JudgeSimShellKind): JudgeSimEmptyCopy {
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Judge-Pitch Simulator",
+        title: "Could not load Judge pitch",
         description:
-          "A network or server issue blocked the simulator. Retry, or open Community Impact / Impact Essay / Awards while it reloads.",
+          "A network or server issue blocked Judge pitch. Retry, or open Community Impact / Impact Essay / Awards while it reloads.",
       };
     case "setup":
       return {
@@ -140,7 +140,7 @@ export function judgeSimShellCopy(kind: JudgeSimShellKind): JudgeSimEmptyCopy {
 }
 
 /**
- * Soft-UI next actions for Judge-Pitch empty/setup shells.
+ * Soft-UI next actions for Judge pitch empty/setup shells.
  * Points at Impact / Essay / Awards — never invents DEMO judge metrics.
  */
 export function judgeSimNextActions(input: {
@@ -187,7 +187,7 @@ export function judgeSimNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Finish membership setup so Judge-Pitch can load.",
+        detail: "Finish membership setup so Judge pitch can load.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
       },
@@ -216,7 +216,7 @@ export function judgeSimNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Judge-Pitch",
+        label: "Retry Judge pitch",
         detail: "Reload real evidence and session rows.",
         href: withOrgHref("/judge-sim", orgId),
         primary: true,
@@ -224,19 +224,19 @@ export function judgeSimNextActions(input: {
       {
         id: "impact",
         label: "Open Community Impact",
-        detail: "Impact rows stay available while the simulator reloads.",
+        detail: "Impact rows stay available while Judge pitch reloads.",
         href: hubHref("/business", "impact", orgId),
       },
       {
         id: "impact-essay",
         label: "Open Impact Essay",
-        detail: "Essay drafts stay available while the simulator reloads.",
+        detail: "Essay drafts stay available while Judge pitch reloads.",
         href: hubHref("/business", "impact-essay", orgId),
       },
       {
         id: "evidence",
         label: "Open Awards",
-        detail: "Award evidence stays available while the simulator reloads.",
+        detail: "Award evidence stays available while Judge pitch reloads.",
         href: hubHref("/business", "evidence", orgId),
       },
     ];

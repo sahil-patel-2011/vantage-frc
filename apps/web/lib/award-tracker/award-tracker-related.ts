@@ -7,7 +7,7 @@ export const AWARD_TRACKER_RELATED_LINKS = [
   { id: "evidence", label: "Business · Awards", kind: "business" as const, tab: "evidence" },
   { id: "awards-workbench", label: "Awards workbench", kind: "path" as const, path: "/team/awards" },
   { id: "impact-essay", label: "Impact essay", kind: "business" as const, tab: "impact-essay" },
-  { id: "judge-sim", label: "Judge-Pitch", kind: "business" as const, tab: "judge-sim" },
+  { id: "judge-sim", label: "Judge pitch", kind: "business" as const, tab: "judge-sim" },
 ] as const;
 
 export type AwardTrackerRelatedId = (typeof AWARD_TRACKER_RELATED_LINKS)[number]["id"];

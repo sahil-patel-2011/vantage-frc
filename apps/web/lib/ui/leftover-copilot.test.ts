@@ -23,6 +23,7 @@ const FILES = [
   "app/match-copilot/page.tsx",
   "app/api/match-copilot/route.ts",
   "lib/manifests/match-copilot.manifest.ts",
+  "lib/manifests/inspection-copilot.manifest.ts",
   "lib/help/section-help.ts",
   "lib/offline/shell-routes.ts",
 ] as const;
@@ -34,6 +35,7 @@ describe("leftover student Copilot chrome", () => {
       expect(src, rel).not.toMatch(/Inspection Copilot/);
       expect(src, rel).not.toMatch(/Match Copilot/);
       expect(src, rel).not.toMatch(/Open Inspection Copilot/);
+      expect(src, rel).not.toMatch(/Inspection-Readiness Copilot/);
     }
     const inspection = readFileSync(join(WEB, "app/inspection-copilot/inspection-copilot-client.tsx"), "utf8");
     expect(inspection).toMatch(/feature="Inspection"/);

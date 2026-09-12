@@ -20,6 +20,7 @@ const FILES = [
   "app/match-sim/page.tsx",
   "lib/manifests/match-sim.manifest.ts",
   "lib/knowledge-gap/knowledge-gap-related.ts",
+  "lib/manifests/meeting-autopilot.manifest.ts",
   "lib/offline/shell-routes.ts",
 ] as const;
 
@@ -30,6 +31,7 @@ describe("leftover student Autopilot / Simulator chrome", () => {
       expect(src, rel).not.toMatch(/Tuning Autopilot/);
       expect(src, rel).not.toMatch(/tuning autopilot/i);
       expect(src, rel).not.toMatch(/Meeting Autopilot/);
+      expect(src, rel).not.toMatch(/Meeting-Agenda Autopilot/);
       expect(src, rel).not.toMatch(/Match Simulator/);
     }
     const tuning = readFileSync(join(WEB, "app/tuning-autopilot/tuning-autopilot-client.tsx"), "utf8");

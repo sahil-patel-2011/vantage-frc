@@ -7,7 +7,7 @@ export const IMPACT_ESSAY_RELATED_LINKS = [
   { id: "evidence", label: "Awards", kind: "business" as const, tab: "evidence" },
   { id: "writer", label: "Writer", kind: "ai" as const, tab: "writer" },
   { id: "award-tracker", label: "Award tracker", kind: "business" as const, tab: "award-tracker" },
-  { id: "judge-sim", label: "Judge-Pitch", kind: "business" as const, tab: "judge-sim" },
+  { id: "judge-sim", label: "Judge pitch", kind: "business" as const, tab: "judge-sim" },
 ] as const;
 
 export type ImpactEssayRelatedId = (typeof IMPACT_ESSAY_RELATED_LINKS)[number]["id"];

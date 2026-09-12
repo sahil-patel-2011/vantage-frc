@@ -1,7 +1,7 @@
 import JudgeSimClient from "./judge-sim-client";
 
 export const metadata = {
-  title: "Judge-Pitch Simulator",
+  title: "Judge pitch",
 };
 
 export default function JudgeSimPage() {

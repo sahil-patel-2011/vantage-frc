@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "meeting-autopilot",
-  title: "Meeting-Agenda Autopilot",
+  title: "Meeting agenda",
   route: "/meeting-autopilot",
   apiRoute: "/api/meeting-autopilot",
   hub: "Team",

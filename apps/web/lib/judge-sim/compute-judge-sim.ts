@@ -31,7 +31,7 @@ function setupStepsFor(orgId: string | null): JudgeSimSetupStep[] {
     {
       id: "workspace",
       label: "Choose your team",
-      detail: "Choose your team to open Judge-Pitch.",
+      detail: "Choose your team to open Judge pitch.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {

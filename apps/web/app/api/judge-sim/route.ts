@@ -61,7 +61,7 @@ export async function GET(request: Request) {
     return Response.json(
       {
         status: "setup_required",
-        message: "Could not load the judge-pitch simulator. Choose your team and confirm database access.",
+        message: "Could not load Judge pitch. Choose your team and confirm database access.",
         steps: [
           { id: "workspace", label: "Choose your team", detail: "Choose which FRC team you are working as.", href: "/workspace" },
         ],
@@ -153,6 +153,6 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    return failMeteredAi(error, "Judge-pitch simulator request failed");
+    return failMeteredAi(error, "Judge pitch request failed");
   }
 }

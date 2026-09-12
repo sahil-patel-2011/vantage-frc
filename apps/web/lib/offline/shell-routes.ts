@@ -354,7 +354,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/sponsor-wall")) return "Sponsor Wall";
   if (bare.startsWith("/outreach-calendar")) return "Outreach Calendar";
   if (bare.startsWith("/visit-invites")) return "Visit Invites";
-  if (bare.startsWith("/judge-sim")) return "Judge-Pitch Simulator";
+  if (bare.startsWith("/judge-sim")) return "Judge pitch";
   if (bare.startsWith("/impact-essay")) return "Impact Essay";
   if (bare.startsWith("/impact")) return "Community Impact";
   if (bare.startsWith("/fundraisers")) return "Fundraisers";

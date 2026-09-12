@@ -272,7 +272,7 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/sponsor-suite")).toBe("Sponsor Suite");
     expect(offlineCapableLabel("/outreach-calendar")).toBe("Outreach Calendar");
     expect(offlineCapableLabel("/visit-invites")).toBe("Visit Invites");
-    expect(offlineCapableLabel("/judge-sim")).toBe("Judge-Pitch Simulator");
+    expect(offlineCapableLabel("/judge-sim")).toBe("Judge pitch");
     expect(offlineCapableLabel("/impact-essay")).toBe("Impact Essay");
     expect(offlineCapableLabel("/impact")).toBe("Community Impact");
     expect(offlineCapableLabel("/fundraisers")).toBe("Fundraisers");
