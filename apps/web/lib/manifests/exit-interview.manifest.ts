@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "exit-interview",
-  title: "Graduation Exit Interviews",
+  title: "Exit interviews",
   route: "/exit-interview",
   apiRoute: "/api/exit-interview",
   hub: "Team",

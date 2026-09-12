@@ -1,7 +1,7 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Onboarding Buddy (never DEMO progress). */
+/** Soft-UI related surfaces for Onboarding buddy (never DEMO progress). */
 export const ONBOARDING_BUDDY_RELATED_LINKS = [
   { id: "workspace", label: "Your team", kind: "path" as const, path: "/workspace" },
   { id: "onboarding", label: "Onboarding", kind: "path" as const, path: "/onboarding" },
@@ -25,7 +25,7 @@ export const ONBOARDING_BUDDY_RELATED_INCLUDE: OnboardingBuddyRelatedId[] = [
 ];
 
 /**
- * Soft-UI cross-links from Onboarding Buddy → Workspace / Onboarding / Team Data.
+ * Soft-UI cross-links from Onboarding buddy → Workspace / Onboarding / Team Data.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function onboardingBuddyRelatedLinks(
@@ -129,7 +129,7 @@ export function isOnboardingBuddyBoardEmpty(input: { pairingCount: number }): bo
   return input.pairingCount === 0;
 }
 
-/** Classify Onboarding Buddy Soft-UI shell — never invents DEMO progress. */
+/** Classify Onboarding buddy Soft-UI shell — never invents DEMO progress. */
 export function classifyOnboardingBuddyShell(input: {
   loading?: boolean;
   fetchFailed?: boolean;
@@ -150,7 +150,7 @@ export function onboardingBuddyShellCopy(kind: OnboardingBuddyShellKind): Onboar
     case "loading":
       return {
         kind,
-        title: "Loading Onboarding Buddy…",
+        title: "Opening Onboarding buddy…",
         description:
           "Checking which team you are on and real buddy pairings.",
       };
@@ -158,7 +158,7 @@ export function onboardingBuddyShellCopy(kind: OnboardingBuddyShellKind): Onboar
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Onboarding Buddy",
+        title: "Could not load Onboarding buddy",
         description:
           "A network or server issue blocked buddy pairings. Retry, or open Your team / Onboarding / Team Data while it reloads.",
       };
@@ -189,7 +189,7 @@ export function onboardingBuddyShellCopy(kind: OnboardingBuddyShellKind): Onboar
 }
 
 /**
- * Soft-UI next actions for Onboarding Buddy empty/setup shells.
+ * Soft-UI next actions for Onboarding buddy empty/setup shells.
  * Points at Workspace / Onboarding / Team Data — never invents DEMO progress.
  */
 export function onboardingBuddyNextActions(input: {
@@ -231,7 +231,7 @@ export function onboardingBuddyNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Finish membership setup so Onboarding Buddy can load.",
+        detail: "Finish membership setup so Onboarding buddy can load.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
       },
@@ -254,7 +254,7 @@ export function onboardingBuddyNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Onboarding Buddy",
+        label: "Retry Onboarding buddy",
         detail: "Reload real memberships and pairings.",
         href: withOrgHref("/onboarding-buddy", orgId),
         primary: true,

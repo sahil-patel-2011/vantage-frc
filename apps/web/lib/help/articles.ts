@@ -1161,7 +1161,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "What changes in Vantage",
         body: [
-          "When Sponsors allowed is off, Business hub tabs and drawer links for Sponsor wall, Suite, Matching Gift Finder, and related tools stay hidden.",
+          "When Sponsors allowed is off, Business hub tabs and drawer links for Sponsor wall, Suite, Matching gifts, and related tools stay hidden.",
           "Grants, budget, awards, and Media stay available when those funding paths apply.",
         ],
       },

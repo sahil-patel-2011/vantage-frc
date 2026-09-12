@@ -44,7 +44,7 @@ describe("onboardingBuddySetupSteps", () => {
   });
 });
 
-describe("Onboarding Buddy Soft-UI metrics", () => {
+describe("Onboarding buddy Soft-UI metrics", () => {
   it("formats real counts only", () => {
     expect(formatOnboardingBuddyMetric(3, true)).toBe("3");
     expect(formatOnboardingBuddyMetric(0, false)).toBe("…");

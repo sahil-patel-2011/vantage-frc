@@ -43,7 +43,7 @@ async function persistOnboardingBuddySnapshot(
     await putFeatureSnapshot("onboarding-buddy", cacheOrg, data);
     if (!orgHint) await putFeatureSnapshot("onboarding-buddy", "_", data);
   } catch {
-    // Live Onboarding Buddy already painted; IndexedDB is best-effort.
+    // Live Onboarding buddy already painted; IndexedDB is best-effort.
   }
 }
 
@@ -117,10 +117,10 @@ function BuddyShell({
         breadcrumbs={
           <>
             <a href={teamHref}>Team</a>
-            {" / Onboarding Buddy"}
+            {" / Onboarding buddy"}
           </>
         }
-        title="Onboarding Buddy"
+        title="Onboarding buddy"
         description={description}
       >
         <BuddyRelatedStrip orgId={orgId} />
@@ -206,7 +206,7 @@ export default function OnboardingBuddyClient() {
         if (!response.ok || !isOnboardingBuddyView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Onboarding Buddy. Showing the last copy on this device.");
+            setError("Could not refresh Onboarding buddy. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -220,7 +220,7 @@ export default function OnboardingBuddyClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Onboarding Buddy. Showing the last copy on this device.");
+          setError("Could not refresh Onboarding buddy. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -294,7 +294,7 @@ export default function OnboardingBuddyClient() {
   if (shell === "loading") {
     return (
       <BuddyShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Onboarding Buddy" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Onboarding buddy" fromCache={fromCache} cachedAt={cachedAt} />
       </BuddyShell>
     );
   }
@@ -308,7 +308,7 @@ export default function OnboardingBuddyClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Onboarding Buddy" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Onboarding buddy" fromCache={fromCache} cachedAt={cachedAt} />
       </BuddyShell>
     );
   }
@@ -320,7 +320,7 @@ export default function OnboardingBuddyClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Onboarding Buddy" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Onboarding buddy" fromCache={fromCache} cachedAt={cachedAt} />
       </BuddyShell>
     );
   }
@@ -328,7 +328,7 @@ export default function OnboardingBuddyClient() {
   if (view?.status !== "live") {
     return (
       <BuddyShell description={shellCopy.description} orgId={orgId} shell="setup">
-        <OfflineBanner feature="Onboarding Buddy" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Onboarding buddy" fromCache={fromCache} cachedAt={cachedAt} />
       </BuddyShell>
     );
   }
@@ -339,10 +339,10 @@ export default function OnboardingBuddyClient() {
         breadcrumbs={
           <>
             <a href={teamHref}>Team</a>
-            {" / Onboarding Buddy"}
+            {" / Onboarding buddy"}
           </>
         }
-        title="Onboarding Buddy"
+        title="Onboarding buddy"
         description="Auto-pair new members with a tenured buddy and track a first-week plan. Suggestions use only real membership records. Cross-check Your team, Onboarding, and Team Data."
       >
         <div className="onboarding-buddy-header-actions">
@@ -354,7 +354,7 @@ export default function OnboardingBuddyClient() {
         </div>
       </PageHeader>
 
-      <OfflineBanner feature="Onboarding Buddy" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Onboarding buddy" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

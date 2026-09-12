@@ -1,7 +1,7 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Matching Gift Finder (never DEMO matches or pledges). */
+/** Soft-UI related surfaces for Matching gifts (never DEMO matches or pledges). */
 export const MATCHING_GIFT_FINDER_RELATED_LINKS = [
   { id: "sponsors", label: "Sponsor CRM", kind: "business" as const, tab: "sponsors" },
   { id: "sponsor-renewal-roi", label: "Sponsor Renewal ROI", kind: "business" as const, tab: "sponsor-renewal-roi" },
@@ -25,7 +25,7 @@ export const MATCHING_GIFT_FINDER_RELATED_INCLUDE: MatchingGiftFinderRelatedId[]
 ];
 
 /**
- * Soft-UI cross-links from Matching Gift Finder → CRM / Renewal / Impact.
+ * Soft-UI cross-links from Matching gifts → CRM / Renewal / Impact.
  * Build with hubHref — never broken JSX href templates.
  */
 export function matchingGiftFinderRelatedLinks(
@@ -110,7 +110,7 @@ export function shouldShowMatchingGiftFinderSummaryTiles(contactCount: number): 
   return contactCount > 0;
 }
 
-/** Classify Matching Gift Finder Soft-UI shell — never invents DEMO matches. */
+/** Classify Matching gifts Soft-UI shell — never invents DEMO matches. */
 export function classifyMatchingGiftFinderShell(input: {
   loading?: boolean;
   fetchFailed?: boolean;
@@ -131,14 +131,14 @@ export function matchingGiftFinderShellCopy(kind: MatchingGiftFinderShellKind): 
     case "loading":
       return {
         kind,
-        title: "Loading Matching Gift Finder…",
+        title: "Opening Matching gifts…",
         description: "Checking which team you are on and household contacts.",
       };
     case "error":
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Matching Gift Finder",
+        title: "Could not load Matching gifts",
         description:
           "A network or server issue blocked matching. Retry, or open Sponsor CRM while it reloads.",
       };
@@ -169,7 +169,7 @@ export function matchingGiftFinderShellCopy(kind: MatchingGiftFinderShellKind): 
 }
 
 /**
- * Soft-UI next actions for Matching Gift Finder empty/setup shells.
+ * Soft-UI next actions for Matching gifts empty/setup shells.
  * Points at CRM / Renewal / Impact — never invents DEMO matches.
  */
 export function matchingGiftFinderNextActions(input: {
@@ -233,7 +233,7 @@ export function matchingGiftFinderNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Matching Gift Finder",
+        label: "Retry Matching gifts",
         detail: "Reload real contacts and programs.",
         href: withOrgHref("/matching-gift-finder", orgId),
         primary: true,

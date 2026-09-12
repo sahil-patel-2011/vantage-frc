@@ -1,7 +1,7 @@
 import OnboardingBuddyClient from "./onboarding-buddy-client";
 
 export const metadata = {
-  title: "Onboarding Buddy",
+  title: "Onboarding buddy",
 };
 
 export default function OnboardingBuddyPage() {

@@ -5,7 +5,7 @@ import { withOrgHref } from "../nav/product-nav";
 /** Soft-UI related surfaces for Field Reset Timer (never DEMO drill times). */
 export const FIELD_RESET_TIMER_RELATED_LINKS = [
   { id: "practice", label: "Practice", hub: "/team" as const, tab: "practice" },
-  { id: "driver-tryouts", label: "Driver Tryouts", hub: "/team" as const, tab: "driver-tryouts" },
+  { id: "driver-tryouts", label: "Driver tryouts", hub: "/team" as const, tab: "driver-tryouts" },
   { id: "drive-team-signals", label: "Drive-Team Signals", hub: "/competition" as const, tab: "drive-team-signals" },
   { id: "hours-self-view", label: "My hours", hub: "/team" as const, tab: "hours-self-view" },
 ] as const;
@@ -201,7 +201,7 @@ export function fieldResetTimerNextActions(input: {
       },
       {
         id: "tryouts",
-        label: "Open Driver Tryouts",
+        label: "Open Driver tryouts",
         detail: "Tryout drills stay available while the timer reloads.",
         href: hubHref("/team", "driver-tryouts", orgId),
       },
@@ -251,7 +251,7 @@ export function fieldResetTimerNextActions(input: {
     },
     {
       id: "tryouts",
-      label: "Open Driver Tryouts",
+      label: "Open Driver tryouts",
       detail: "Compare tryout pacing with reset consistency.",
       href: hubHref("/team", "driver-tryouts", orgId),
     },

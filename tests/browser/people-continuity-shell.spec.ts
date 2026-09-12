@@ -9,8 +9,8 @@ test.beforeEach(async ({ context }) => {
 
 const LEAVES = [
   { path: "/alumni-network", heading: "Alumni Network" },
-  { path: "/exit-interview", heading: "Graduation Exit Interviews" },
-  { path: "/mentor-hours", heading: "Mentor Hours & Engagement" },
+  { path: "/exit-interview", heading: "Exit interviews" },
+  { path: "/mentor-hours", heading: "Mentor hours" },
   { path: "/reviews", heading: "Design Reviews" },
   { path: "/roadmap", heading: "Season roadmap" },
 ] as const;

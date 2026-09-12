@@ -47,6 +47,6 @@ test("scout P2P relay renders without invented mesh counts", async ({ page }) =>
 
 test("exit interviews render without invented wiki copy", async ({ page }) => {
   await page.goto("/exit-interview");
-  await expect(page.getByRole("heading", { name: "Graduation Exit Interviews" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Exit interviews" })).toBeVisible();
   await expect(page.getByText("Deterministic demo")).toHaveCount(0);
 });

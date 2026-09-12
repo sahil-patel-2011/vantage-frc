@@ -1,7 +1,7 @@
 import ExitInterviewClient from "./exit-interview-client";
 
 export const metadata = {
-  title: "Graduation Exit Interviews",
+  title: "Exit interviews",
 };
 
 export default function ExitInterviewPage() {

@@ -54,7 +54,7 @@ async function persistExitInterviewSnapshot(
     await putFeatureSnapshot("exit-interview", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("exit-interview", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Exit Interviews already painted; IndexedDB is best-effort.
+    // Live Exit interviews already painted; IndexedDB is best-effort.
   }
 }
 
@@ -185,7 +185,7 @@ export default function ExitInterviewClient() {
       if (!response.ok || !isExitInterviewView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Exit Interviews. Showing the last copy on this device.");
+          setError("Could not refresh Exit interviews. Showing the last copy on this device.");
           setFetchFailed(false);
           return;
         }
@@ -202,7 +202,7 @@ export default function ExitInterviewClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Exit Interviews. Showing the last copy on this device.");
+        setError("Could not refresh Exit interviews. Showing the last copy on this device.");
         setFetchFailed(false);
         return;
       }
@@ -250,10 +250,10 @@ export default function ExitInterviewClient() {
       breadcrumbs={
         <>
           <a href={teamHref}>Team</a>
-          {" / Exit Interviews"}
+          {" / Exit interviews"}
         </>
       }
-      title="Graduation Exit Interviews"
+      title="Exit interviews"
       description="Capture structured off-boarding prompts. Submitted interviews write a season-handoff wiki page."
     >
       <ExitInterviewRelated orgId={orgId} />
@@ -299,7 +299,7 @@ export default function ExitInterviewClient() {
     return (
       <main className="module-page">
         {header}
-        <OfflineBanner feature="Exit Interviews" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Exit interviews" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           title={failure ? failure.title : "Loading…"}
           description={failure ? failure.description : "Checking your team."}
@@ -325,7 +325,7 @@ export default function ExitInterviewClient() {
       return (
         <main className="module-page">
           {header}
-          <OfflineBanner feature="Exit Interviews" fromCache={fromCache} cachedAt={cachedAt} />
+          <OfflineBanner feature="Exit interviews" fromCache={fromCache} cachedAt={cachedAt} />
           {error ? (
             <p className="telemetry-status" role="alert">
               {error}
@@ -351,7 +351,7 @@ export default function ExitInterviewClient() {
   return (
     <main className="module-page">
       {header}
-      <OfflineBanner feature="Exit Interviews" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Exit interviews" fromCache={fromCache} cachedAt={cachedAt} />
       {error ? (
         <p className="telemetry-status" role="alert">
           {error}

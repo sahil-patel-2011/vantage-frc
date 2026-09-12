@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "onboarding-buddy",
-  title: "Onboarding Buddy",
+  title: "Onboarding buddy",
   route: "/onboarding-buddy",
   apiRoute: "/api/onboarding-buddy",
   hub: "Team",

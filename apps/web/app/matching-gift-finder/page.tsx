@@ -2,12 +2,12 @@ import { SponsorsFundingGate } from "../../components/hub-access-gate";
 import MatchingGiftFinderClient from "./matching-gift-finder-client";
 
 export const metadata = {
-  title: "Matching Gift Multiplier Finder",
+  title: "Matching gifts",
 };
 
 export default function MatchingGiftFinderPage() {
   return (
-    <SponsorsFundingGate breadcrumbs={<>Business / Matching Gift Finder</>}>
+    <SponsorsFundingGate breadcrumbs={<>Business / Matching gifts</>}>
       <MatchingGiftFinderClient />
     </SponsorsFundingGate>
   );

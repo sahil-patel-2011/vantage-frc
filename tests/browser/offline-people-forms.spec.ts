@@ -26,7 +26,7 @@ test.describe("offline student people and remaining form leaves", () => {
     await context.setOffline(false);
   });
 
-  test("Driver Tryouts still renders after the tab goes offline", async ({ page, context }) => {
+  test("Driver tryouts still renders after the tab goes offline", async ({ page, context }) => {
     await page.goto("/driver-tryouts");
     await page.waitForLoadState("domcontentloaded");
     await context.setOffline(true);

@@ -378,8 +378,8 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/failure-patterns")) return "Repeat Failure Patterns";
   if (bare.startsWith("/grant-eligibility-matcher")) return "Grant Eligibility Matcher";
   if (bare.startsWith("/knowledge-gap")) return "Knowledge gaps";
-  if (bare.startsWith("/matching-gift-finder")) return "Matching Gift Finder";
-  if (bare.startsWith("/onboarding-buddy")) return "Onboarding Buddy";
+  if (bare.startsWith("/matching-gift-finder")) return "Matching gifts";
+  if (bare.startsWith("/onboarding-buddy")) return "Onboarding buddy";
   if (bare.startsWith("/risk-burndown")) return "Risk-Register Burndown";
   if (bare.startsWith("/risks")) return "Risk Register";
   if (bare.startsWith("/subsystem-signoff")) return "Subsystem Sign-off";
@@ -470,14 +470,14 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/degraded-mode")) return "Data-source health";
   if (bare.startsWith("/district-advancement")) return "Districts";
   if (bare.startsWith("/doc-roles")) return "Document roles";
-  if (bare.startsWith("/driver-tryouts")) return "Driver Tryouts";
-  if (bare.startsWith("/exit-interview")) return "Exit Interviews";
+  if (bare.startsWith("/driver-tryouts")) return "Driver tryouts";
+  if (bare.startsWith("/exit-interview")) return "Exit interviews";
   if (bare.startsWith("/gearbox")) return "Gearbox calculator";
   if (bare.startsWith("/incident-heatmap")) return "Incident Heatmap";
   if (bare.startsWith("/knowledge-drafts")) return "Knowledge drafts";
   if (bare.startsWith("/leadership")) return "Leadership";
   if (bare.startsWith("/meeting-autopilot")) return "Meeting agenda";
-  if (bare.startsWith("/mentor-hours")) return "Mentor Hours";
+  if (bare.startsWith("/mentor-hours")) return "Mentor hours";
   if (bare.startsWith("/migrate")) return "Bring your season";
   if (bare.startsWith("/mock-judging")) return "Mock Judging";
   if (bare.startsWith("/notebook")) return "Engineering notebook";
