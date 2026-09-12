@@ -11,7 +11,7 @@ export const manifest = {
     {
       name: "tuning_autopilot.sessions",
       description:
-        "Read this org's logged PID/feedforward tuning sessions for the active season, including each iteration's gain set, observed test result (overshoot, settling time, steady-state error, oscillation), and the deterministic next-gain suggestion derived from that session's own logged trend.",
+        "Read this org's logged gain-set tuning sessions for the active season, including each iteration's gain set, observed test result (overshoot, settling time, steady-state error, oscillation), and the deterministic next-gain suggestion derived from that session's own logged trend.",
     },
   ],
   exportAdapters: [],

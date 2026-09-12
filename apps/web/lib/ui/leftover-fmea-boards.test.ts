@@ -20,6 +20,7 @@ const FILES = [
   "app/inspection-copilot/inspection-copilot-client.tsx",
   "app/meeting-autopilot/meeting-autopilot-client.tsx",
   "app/for-teams/page.tsx",
+  "app/robot/robot-client.tsx",
   "lib/troubleshoot/compute-troubleshoot.ts",
   "lib/troubleshoot/symptom-tree.ts",
   "lib/marketing/product-story.ts",
@@ -37,10 +38,14 @@ describe("leftover student FMEA board and Get unstuck chrome", () => {
       expect(src, rel).not.toMatch(/FMEA clearance/);
       expect(src, rel).not.toMatch(/, FMEA,/);
       expect(src, rel).not.toMatch(/ and FMEA/);
+      expect(src, rel).not.toMatch(/>FMEA</);
     }
     const unstuck = readFileSync(join(WEB, "lib/troubleshoot/compute-troubleshoot.ts"), "utf8");
     expect(unstuck).toMatch(/Your Failure log/);
     const story = readFileSync(join(WEB, "lib/marketing/product-story.ts"), "utf8");
     expect(story).toMatch(/Failure log/);
+    const burndown = readFileSync(join(WEB, "app/risk-burndown/risk-burndown-client.tsx"), "utf8");
+    expect(burndown).toMatch(/Failure log/);
+    expect(burndown).not.toMatch(/>FMEA</);
   });
 });

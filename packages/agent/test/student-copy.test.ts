@@ -32,6 +32,7 @@ const LEFTOVER = [
   /FMEA-failure-history/,
   /against FMEA/,
   /ranked by RPN/,
+  /PID\/feedforward/,
 ];
 
 describe("Ask AI tool student-facing copy", () => {

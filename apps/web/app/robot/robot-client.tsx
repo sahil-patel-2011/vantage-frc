@@ -515,7 +515,7 @@ export default function RobotClient() {
       </form>
 
       <nav className="intel-actions" aria-label="Robot systems of record">
-        <a href={withOrgHref("/fmea", orgId)}>FMEA</a>
+        <a href={withOrgHref("/fmea", orgId)}>Failure log</a>
         <a href={withOrgHref("/batteries", orgId)}>Batteries</a>
         <a href={withOrgHref("/robot-weigh-in", orgId)}>Weigh-in</a>
         <a href={withOrgHref("/inspection-copilot", orgId)}>Inspection</a>

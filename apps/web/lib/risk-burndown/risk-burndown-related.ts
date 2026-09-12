@@ -153,14 +153,14 @@ export function riskBurndownNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before logging season risks.",
+          detail: "Choose your team before logging season risks.",
           href: "/workspace",
           primary: true,
         },
         {
           id: "risks",
           label: "Open Risks",
-          detail: "Season L×I scores stay empty until you log them.",
+          detail: "Season how-likely and how-bad scores stay empty until you log them.",
           href: withOrgHref("/risks", null),
         },
         {
@@ -223,14 +223,14 @@ export function riskBurndownNextActions(input: {
       {
         id: "log-risk",
         label: "Log a season risk",
-        detail: "Title, L×I, and identified-on stay blank until you enter a real risk.",
+        detail: "Title, how likely, how bad, and identified-on stay blank until you enter a real risk.",
         href: "#risk-burndown-log-risk",
         primary: true,
       },
       {
         id: "risks",
         label: "Open Risks",
-        detail: "Season L×I scores stay empty until logged.",
+        detail: "Season how-likely and how-bad scores stay empty until logged.",
         href: withOrgHref("/risks", orgId),
       },
       {
@@ -264,7 +264,7 @@ export function riskBurndownNextActions(input: {
     actions.push({
       id: "register",
       label: "Review open risks",
-      detail: `${openRiskCount} open risk${openRiskCount === 1 ? "" : "s"} with real L×I.`,
+      detail: `${openRiskCount} open risk${openRiskCount === 1 ? "" : "s"} with real how-likely and how-bad scores.`,
       href: "#risk-burndown-register",
       primary: true,
     });

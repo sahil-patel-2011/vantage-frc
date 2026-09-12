@@ -370,7 +370,7 @@ export default function TuningAutopilotClient() {
           </>
         }
         title="Tuning Autopilot"
-        description="Log each PID/feedforward gain set you try and its test result. The next gain set is suggested from your own logged trend. Cross-check CAD, Failure log, and Practice."
+        description="Log each gain set you try and its test result. The next gain set is suggested from your own logged trend. Cross-check CAD, Failure log, and Practice."
       >
         <div className="tuning-autopilot-header-actions">
           {view.seasons.length > 0 ? (
@@ -444,7 +444,7 @@ export default function TuningAutopilotClient() {
               <span className="eyebrow">Before you converge</span>
               <p className="app-muted" style={{ marginTop: 8 }}>
                 Re-test suggested gains on the robot. Keep <a href={cadHref}>CAD</a>,{" "}
-                <a href={fmeaHref}>FMEA</a>, and <a href={practiceHref}>Practice</a> aligned with the
+                <a href={fmeaHref}>Failure log</a>, and <a href={practiceHref}>Practice</a> aligned with the
                 subsystem you’re tuning.
               </p>
             </Panel>

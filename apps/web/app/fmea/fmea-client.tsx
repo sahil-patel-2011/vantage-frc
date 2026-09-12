@@ -427,7 +427,7 @@ function BatteryReliabilitySignals({ view }: { view: LiveView }) {
           <li key={signal.id}>
             <strong>{signal.title}</strong>
             <span className="meta">
-              L{signal.likelihood} × I{signal.impact} · {signal.category}
+              How likely {signal.likelihood} · How bad {signal.impact} · {signal.category}
             </span>
             <span>{signal.detail}</span>
             <a href={signal.href}>Open Batteries</a>

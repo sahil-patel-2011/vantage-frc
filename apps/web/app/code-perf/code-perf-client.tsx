@@ -567,7 +567,7 @@ function LogChangeForm({
       <h2 style={{ margin: 0 }}>Log a code/tuning change</h2>
       <FormGrid min={160}>
         <FormRow label="Title">
-          <input value={form.title} onChange={set("title")} placeholder="Retune shooter PID" required />
+          <input value={form.title} onChange={set("title")} placeholder="Retune shooter gains" required />
         </FormRow>
         <FormRow label="Date">
           <input type="date" value={form.occurredOn} onChange={set("occurredOn")} required />

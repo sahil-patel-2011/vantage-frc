@@ -25,7 +25,7 @@ function setupStepsFor(orgId: string | null): RiskBurndownSetupStep[] {
     {
       id: "risks",
       label: "Open Risks",
-      detail: "Season L×I scores stay empty until logged.",
+      detail: "Season how-likely and how-bad scores stay empty until logged.",
       href: withOrgHref("/risks", orgId),
     },
     {

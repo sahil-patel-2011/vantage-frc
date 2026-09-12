@@ -90,7 +90,7 @@ export function risksNextActions(input: {
     actions.push({
       id: "add-first",
       label: "Add the first season risk",
-      detail: "Scores stay blank until someone enters a real likelihood × impact — nothing is pre-filled.",
+      detail: "Scores stay blank until someone enters how likely and how bad — nothing is pre-filled.",
       href: risksHref,
       primary: true,
     });
@@ -114,7 +114,7 @@ export function risksNextActions(input: {
     actions.push({
       id: "overdue",
       label: `Close overdue mitigations (${input.overdueCount})`,
-      detail: `${sample} still has a past-due mitigation — score ${input.highestScore} is from logged L×I only.`,
+      detail: `${sample} still has a past-due mitigation — score ${input.highestScore} is from logged how-likely × how-bad only.`,
       href: risksHref,
       primary: true,
     });
@@ -122,7 +122,7 @@ export function risksNextActions(input: {
     actions.push({
       id: "review-top",
       label: input.topTitle ? `Review “${input.topTitle}”` : "Review open risks",
-      detail: `${input.activeCount} active · top score ${input.highestScore} from real L×I.`,
+      detail: `${input.activeCount} active · top score ${input.highestScore} from how likely and how bad.`,
       href: risksHref,
       primary: true,
     });
@@ -147,7 +147,7 @@ export function risksNextActions(input: {
     actions.push({
       id: "batteries",
       label: "Battery reliability signals",
-      detail: "Pack IR/cycle evidence can become a season risk when the failure mode is season-relevant.",
+      detail: "Pack health evidence can become a season risk when the failure mode is season-relevant.",
       href: hubHref("/team", "batteries", orgId),
     });
   }
@@ -163,7 +163,7 @@ export function formatRiskScoreDisplay(score: number, hasActive: boolean): strin
 
 /** Compact L×I evidence line from real factors only. */
 export function formatLikelihoodImpact(input: { likelihood: number; impact: number }): string {
-  return `L${input.likelihood} × I${input.impact}`;
+  return `How likely ${input.likelihood} · How bad ${input.impact}`;
 }
 
 /** Risk-row meta from a real evaluation — empty fields omitted (no invented text). */

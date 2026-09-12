@@ -454,7 +454,7 @@ export default function ControlMapClient({ orgId: orgIdProp }: { orgId: string |
             Print this for the driver station so the drive team always knows which input does what.
             Cross-check{" "}
             <a href={subsystemsHref}>Subsystems</a> for mechanism names and{" "}
-            <a href={fmeaHref}>FMEA</a> for high-risk actuators.
+            <a href={fmeaHref}>Failure log</a> for high-risk actuators.
           </p>
         </Panel>
       </div>

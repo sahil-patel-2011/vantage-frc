@@ -432,8 +432,8 @@ export default function RiskBurndownClient() {
         <Panel className="risk-burndown-tip" aria-label="Risk burndown tip">
           <span className="eyebrow">Risk path</span>
           <p className="app-muted" style={{ marginTop: 8 }}>
-            Keep season L×I scores in <a href={risksHref}>Risks</a> and failure modes in{" "}
-            <a href={fmeaHref}>FMEA</a> aligned with closures here.
+            Keep season how-likely and how-bad scores in <a href={risksHref}>Risks</a> and failure
+            modes in <a href={fmeaHref}>Failure log</a> aligned with closures here.
           </p>
         </Panel>
       </div>
@@ -564,8 +564,8 @@ function RiskRegister({
               <strong>{item.title}</strong>
               <small className="app-muted" style={{ display: "block" }}>
                 {item.identifiedOn} · {riskCategoryLabel(item.category)} · {riskStatusLabel(item.status)}
-                {item.ownerName ? ` · ${item.ownerName}` : ""} · L{item.likelihood} × I{item.impact} ={" "}
-                {item.severity}
+                {item.ownerName ? ` · ${item.ownerName}` : ""} · How likely {item.likelihood} · How
+                bad {item.impact} = {item.severity}
               </small>
               {item.mitigationPlan ? (
                 <small className="app-muted" style={{ display: "block" }}>
@@ -663,7 +663,7 @@ function LogRiskForm({
     >
       <h2 style={{ margin: 0 }}>Log risk</h2>
       <p className="app-muted" style={{ margin: 0 }}>
-        Likelihood × impact come from real season judgment.
+        How likely and how bad come from real season judgment.
       </p>
       <FormGrid min={160}>
         <FormRow label="Title">
@@ -690,10 +690,10 @@ function LogRiskForm({
             ))}
           </select>
         </FormRow>
-        <FormRow label="Likelihood (1-5)">
+        <FormRow label="How likely (1–5)">
           <input type="number" min={1} max={5} value={form.likelihood} onChange={set("likelihood")} />
         </FormRow>
-        <FormRow label="Impact (1-5)">
+        <FormRow label="How bad (1–5)">
           <input type="number" min={1} max={5} value={form.impact} onChange={set("impact")} />
         </FormRow>
         <FormRow label="Owner (optional)">

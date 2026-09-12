@@ -37,6 +37,7 @@ describe("risks-related Soft-UI helpers", () => {
     });
     expect(emptyActions.every((a) => !/\bdemo\b/i.test(`${a.label} ${a.detail}`))).toBe(true);
     expect(emptyActions[0]?.id).toBe("add-first");
+    expect(emptyActions[0]?.detail).not.toMatch(/L×I/);
     expect(emptyActions.some((a) => a.id === "fmea")).toBe(true);
     expect(emptyActions.some((a) => a.id === "knowledge")).toBe(true);
   });
@@ -44,7 +45,9 @@ describe("risks-related Soft-UI helpers", () => {
   it("hides numeric scores when no active risks are logged", () => {
     expect(formatRiskScoreDisplay(0, false)).toBe("—");
     expect(formatRiskScoreDisplay(20, true)).toBe("20");
-    expect(formatLikelihoodImpact({ likelihood: 4, impact: 5 })).toBe("L4 × I5");
+    expect(formatLikelihoodImpact({ likelihood: 4, impact: 5 })).toBe(
+      "How likely 4 · How bad 5",
+    );
   });
 
   it("formats register meta from scored evaluations only", () => {
@@ -65,7 +68,7 @@ describe("risks-related Soft-UI helpers", () => {
         seasonYear: 2026,
       },
     });
-    expect(meta).toBe("technical · L4 × I5 · score 20 · Build lead");
+    expect(meta).toBe("technical · How likely 4 · How bad 5 · score 20 · Build lead");
     expect(meta).not.toMatch(/demo/i);
   });
 

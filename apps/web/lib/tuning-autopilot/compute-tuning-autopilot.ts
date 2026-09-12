@@ -394,7 +394,7 @@ export async function logIteration(
     metadata: {
       sessionId: input.sessionId,
       iterationCount: iterations.length,
-      note: "Deterministic PID/feedforward next-gain suggestion from the session's own logged trend — no external model call",
+      note: "Deterministic next-gain suggestion from the session's own logged trend — no external model call",
     },
     invoke: async () => ({
       value: suggestNextGains(iterations),

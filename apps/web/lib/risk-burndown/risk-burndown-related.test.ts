@@ -40,6 +40,8 @@ describe("riskBurndownNextActions", () => {
     const actions = riskBurndownNextActions({ orgId: null, shell: "setup" });
     expect(actions[0]?.href).toBe("/workspace");
     expect(actions[0]?.primary).toBe(true);
+    expect(actions[0]?.detail).toMatch(/Choose your team/);
+    expect(actions.every((a) => !/L×I/.test(`${a.label} ${a.detail}`))).toBe(true);
     expect(actions.some((a) => a.id === "risks")).toBe(true);
     expect(actions.some((a) => a.id === "fmea")).toBe(true);
   });
@@ -60,6 +62,7 @@ describe("riskBurndownNextActions", () => {
     });
     expect(actions.map((a) => a.id)).toEqual(expect.arrayContaining(["log-risk", "risks", "fmea"]));
     expect(actions[0]?.href).toBe("#risk-burndown-log-risk");
+    expect(actions.every((a) => !/L×I/.test(`${a.label} ${a.detail}`))).toBe(true);
     expect(actions.every((a) => !a.href.toLowerCase().includes("demo"))).toBe(true);
   });
 

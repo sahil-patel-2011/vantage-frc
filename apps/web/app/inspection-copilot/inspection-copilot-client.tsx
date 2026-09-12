@@ -324,7 +324,7 @@ export default function InspectionCopilotClient() {
               <span className="eyebrow">Before travel</span>
               <p className="app-muted" style={{ marginTop: 8 }}>
                 Resolve critical flags from logged measurements first. Keep{" "}
-                <a href={batteriesHref}>Batteries</a>, <a href={fmeaHref}>FMEA</a>, and{" "}
+                <a href={batteriesHref}>Batteries</a>, <a href={fmeaHref}>Failure log</a>, and{" "}
                 <a href={weighInHref}>Weigh-in</a> aligned with those rows.
               </p>
             </Panel>

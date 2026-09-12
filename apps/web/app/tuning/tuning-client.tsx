@@ -363,7 +363,7 @@ export default function TuningClient({ orgId }: { orgId: string | null }) {
         <StatTile label="Constants logged" value={view.summary.total} />
         <StatTile label="Subsystems" value={view.summary.subsystems} />
         <StatTile label="Encoder offsets" value={view.summary.byCategory.encoder_offset} />
-        <StatTile label="PID gain sets" value={view.summary.byCategory.pid} />
+        <StatTile label="Gain sets" value={view.summary.byCategory.pid} />
       </div>
 
       <Panel as="form" id="tuning-constant" onSubmit={saveConstant}>
