@@ -346,7 +346,7 @@ export default function GrantsClient({ orgId: orgIdProp }: { orgId?: string }) {
             <h1>Grant writing</h1>
           </div>
         </header>
-        <EmptyState soft title="Loading grant writing…" description="Opening this team’s narrative drafts." aria-busy />
+        <EmptyState soft title="Opening Grants" description="Opening this team’s narrative drafts." aria-busy />
       </main>
     );
   }
