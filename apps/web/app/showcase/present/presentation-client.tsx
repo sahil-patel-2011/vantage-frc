@@ -53,7 +53,7 @@ export default function ShowcasePresentation({
         return;
       }
       setView({
-        deck: { title: "Season Impact", subtitle: "Approved student evidence", isDemo: false },
+        deck: { title: "Season impact", subtitle: "Approved student evidence", isDemo: false },
         sections: (data.sections ?? [])
           .filter((section: { approvedAt: string | null }) => section.approvedAt)
           .map(
@@ -79,7 +79,7 @@ export default function ShowcasePresentation({
       <main className="showcase-present">
         <PageHeader
           breadcrumbs="Media / Showcase"
-          title="Season Impact"
+          title="Season impact"
           description="Present one team's approved season story. Choose your team or open a share link."
         />
         <EmptyState
@@ -87,7 +87,7 @@ export default function ShowcasePresentation({
           badge="Needs setup"
           badgeTone="setup"
           title="Choose your team"
-          description="A Season Impact deck belongs to one team. Choose your team, or open a share link from a mentor."
+          description="A Season impact deck belongs to one team. Choose your team, or open a share link from a mentor."
         >
           <Button as="a" variant="primary" href="/workspace">
             Choose your team
@@ -104,7 +104,7 @@ export default function ShowcasePresentation({
     const failure = presentFailure(error);
     return (
       <main className="showcase-present">
-        <PageHeader breadcrumbs="Media / Showcase" title="Season Impact" />
+        <PageHeader breadcrumbs="Media / Showcase" title="Season impact" />
         <EmptyState
           soft
           badge={
@@ -139,7 +139,7 @@ export default function ShowcasePresentation({
   if (!view) {
     return (
       <main className="showcase-present">
-        <PageHeader breadcrumbs="Media / Showcase" title="Season Impact" />
+        <PageHeader breadcrumbs="Media / Showcase" title="Season impact" />
         <p className="app-muted">Loading showcase…</p>
       </main>
     );
