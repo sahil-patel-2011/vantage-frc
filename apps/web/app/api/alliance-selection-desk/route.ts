@@ -31,7 +31,7 @@ function trimmedOrNull(value: unknown, max = 2000): string | null {
 const SETUP_FALLBACK: AllianceSelectionDeskView = {
   status: "setup_required",
   message: "Could not load Alliance Selection Desk. Choose your team and set an active event.",
-  steps: [{ id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" }],
+  steps: [{ id: "workspace", label: "Choose your team", detail: "Choose which FRC team you are working as.", href: "/workspace" }],
   orgId: null,
   eventKey: null,
 };

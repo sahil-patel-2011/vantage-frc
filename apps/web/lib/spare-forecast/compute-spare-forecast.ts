@@ -251,7 +251,7 @@ export async function computeSpareForecastView(
       status: "setup_required",
       message: "Choose your team to forecast spare-parts exhaustion.",
       steps: [
-        { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
+        { id: "workspace", label: "Choose your team", detail: "Choose which FRC team you are working as.", href: "/workspace" },
         {
           id: "inventory",
           label: "Stock spare parts",

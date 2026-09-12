@@ -146,7 +146,7 @@ export async function computeSpareRobotKitView(
       status: "setup_required",
       message: "Choose your team to generate a spare-robot-kit checklist.",
       steps: [
-        { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
+        { id: "workspace", label: "Choose your team", detail: "Choose which FRC team you are working as.", href: "/workspace" },
         {
           id: "inventory",
           label: "Stock spare parts",

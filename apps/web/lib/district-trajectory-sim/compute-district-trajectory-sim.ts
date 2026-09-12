@@ -35,7 +35,7 @@ export type TrajectoryView =
 function setupSteps(orgId: string | null): TrajectorySetupStep[] {
   const suffix = orgId ? `?orgId=${encodeURIComponent(orgId)}` : "";
   return [
-    { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
+    { id: "workspace", label: "Choose your team", detail: "Choose which FRC team you are working as.", href: "/workspace" },
     {
       id: "active-event",
       label: "Connect an event",

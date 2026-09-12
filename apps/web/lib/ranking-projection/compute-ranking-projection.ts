@@ -70,7 +70,7 @@ function setup(message: string, orgId: string | null): RankingProjectionView {
     message,
     orgId,
     steps: [
-      { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
+      { id: "workspace", label: "Choose your team", detail: "Choose which FRC team you are working as.", href: "/workspace" },
       {
         id: "event",
         label: "Set active event",

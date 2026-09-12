@@ -111,7 +111,7 @@ export async function computeMatchStrategyCardsView(
     {
       id: "workspace",
       label: "Choose your team",
-      detail: "Pick which FRC team you are working as.",
+      detail: "Choose which FRC team you are working as.",
       href: "/workspace",
       done: Boolean(context?.orgId),
     },

@@ -78,7 +78,7 @@ function setupRequiredView(orgId: string | null = null): ScoutingHeatSignalsView
     status: "setup_required",
     message: "Choose your team to track scouting heat signals.",
     steps: [
-      { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
+      { id: "workspace", label: "Choose your team", detail: "Choose which FRC team you are working as.", href: "/workspace" },
     ],
     orgId,
   };
