@@ -4,7 +4,7 @@
  * Hosted Vercel cannot accept 6–100 MB video: the function edge rejects
  * bodies above 4.5 MB with 413 before our code runs. The advertised cloud
  * cap is 4 MiB. Larger clips belong on a paired storage node (schema
- * ceiling 100 MB) or a YouTube link in the Match Video Index.
+ * ceiling 100 MB) or a YouTube link in the Video index.
  */
 
 import {
@@ -43,5 +43,5 @@ function formatCapBytes(bytes: number): string {
 /** Over-cap sentence that names the real size and the real cloud cap — never 100 MB on Vercel. */
 export function hostedVideoOversizeMessage(byteSize: number, env: CapEnv = process.env as CapEnv): string {
   const cap = hostedVideoCapBytes(env);
-  return `Video is ${formatCapBytes(byteSize)} — over the ${formatCapBytes(cap)} cloud upload limit. Bigger videos belong on a paired storage node or a YouTube link in the Match Video Index.`;
+  return `Video is ${formatCapBytes(byteSize)} — over the ${formatCapBytes(cap)} cloud upload limit. Bigger videos belong on a paired storage node or a YouTube link in the Video index.`;
 }

@@ -1566,7 +1566,7 @@ export const SECTION_HELP: SectionHelpEntry[] = [
     how: [
       "Upload photos (JPEG/PNG/WebP) and videos (MP4/WebM) — photos are downscaled in the browser first.",
       "Group items into albums and tag the event or subteam so filters work later.",
-      "Point larger videos at a paired storage node or YouTube via the Match Video Index.",
+      "Point larger videos at a paired storage node or YouTube via the Video index.",
     ],
     tips: ["Duplicates are caught by content hash; an over-cap upload is refused with the real size and cap named."],
     related: [

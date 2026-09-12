@@ -565,7 +565,7 @@ export default function MediaLibraryClient() {
         <span className="app-muted ml-meter-note">
           Photos are downscaled in your browser (~{formatMediaBytes(PHOTO_DB_CAP_BYTES)} cap). Videos up to{" "}
           {formatMediaBytes(VIDEO_DB_CAP_BYTES)} store in the database; bigger match footage belongs on a
-          storage node or as a YouTube link in the <a href="/match-video-index">Match Video Index</a>.
+          storage node or as a YouTube link in the <a href="/match-video-index">Video index</a>.
         </span>
       </Panel>
 

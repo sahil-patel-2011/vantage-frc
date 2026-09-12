@@ -1249,7 +1249,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         body: [
           "Photos (JPEG/PNG/WebP) are downscaled in the browser before upload and land under the 8 MB in-database cap; hosted-cloud videos (MP4/WebM) are capped at 4 MiB because Vercel rejects larger bodies. Pair a storage node (/team/storage) for clips up to the 100 MB schema ceiling.",
           "Thumbnails and video poster frames are generated on your device; duplicates are caught by content hash instead of stored twice.",
-          "Bigger videos belong on a paired storage node (/team/storage) or on YouTube via the Match Video Index.",
+          "Bigger videos belong on a paired storage node (/team/storage) or on YouTube via the Video index.",
         ],
       },
       {

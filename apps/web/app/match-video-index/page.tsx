@@ -1,7 +1,7 @@
 import MatchVideoIndexClient from "./match-video-index-client";
 
 export const metadata = {
-  title: "Match Video Index",
+  title: "Video index",
 };
 
 export default function MatchVideoIndexPage() {

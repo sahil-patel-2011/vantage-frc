@@ -2,10 +2,10 @@ import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 import { setupActionsFrom } from "../setup-actions";
 
-/** Soft-UI related surfaces for Match Video Index (never DEMO clip packs). */
+/** Soft-UI related surfaces for Video index (never DEMO clip packs). */
 export const MATCH_VIDEO_INDEX_RELATED_LINKS = [
   { id: "scouting", label: "Scouting", tab: "scouting" },
-  { id: "match-notes-timeline", label: "Match Notes", tab: "match-notes-timeline" },
+  { id: "match-notes-timeline", label: "Match notes", tab: "match-notes-timeline" },
   { id: "match-delta-watcher", label: "Match-Delta", tab: "match-delta-watcher" },
   { id: "opponent-watchlist", label: "Watchlist", tab: "opponent-watchlist" },
 ] as const;
@@ -131,14 +131,14 @@ export function matchVideoIndexShellCopy(kind: MatchVideoIndexShellKind): MatchV
     case "loading":
       return {
         kind,
-        title: "Loading Match Video Index…",
+        title: "Opening Video index",
         description: "Checking which team you are on and indexed clips.",
       };
     case "error":
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Match Video Index",
+        title: "Could not load Video index",
         description:
           "A network or server issue blocked the index. Retry, or open Scouting while it reloads.",
       };
@@ -182,7 +182,7 @@ export function matchVideoIndexNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Match Video Index",
+        label: "Retry Video index",
         detail: "Reload real indexed clips.",
         href: withOrgHref("/match-video-index", orgId),
         primary: true,
@@ -213,7 +213,7 @@ export function matchVideoIndexNextActions(input: {
       },
       {
         id: "notes",
-        label: "Open Match Notes",
+        label: "Open Match notes",
         detail: "Pair timeline notes with the same match keys.",
         href: hubHref("/competition", "match-notes-timeline", orgId),
       },

@@ -121,17 +121,17 @@ function IndexShell({
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Match Video Index"}
+            {" / Video index"}
           </>
         }
-        title="Match Video Index"
+        title="Video index"
         description={description}
       >
         <RelatedStrip orgId={orgId} />
       </PageHeader>
       {children}
       {shell === "loading" ? (
-        <div aria-busy="true" aria-label="Loading Match Video Index">
+        <div aria-busy="true" aria-label="Loading Video index">
           <SoftBlockSkeleton lines={4} />
         </div>
       ) : shell === "error" ? (
@@ -280,7 +280,7 @@ export default function MatchVideoIndexClient() {
   if (shell === "loading") {
     return (
       <IndexShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Match video index" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Video index" fromCache={fromCache} cachedAt={cachedAt} />
       </IndexShell>
     );
   }
@@ -293,7 +293,7 @@ export default function MatchVideoIndexClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Match video index" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Video index" fromCache={fromCache} cachedAt={cachedAt} />
       </IndexShell>
     );
   }
@@ -304,7 +304,7 @@ export default function MatchVideoIndexClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Match video index" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Video index" fromCache={fromCache} cachedAt={cachedAt} />
       </IndexShell>
     );
   }
@@ -315,16 +315,16 @@ export default function MatchVideoIndexClient() {
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Match Video Index"}
+            {" / Video index"}
           </>
         }
-        title="Match Video Index"
+        title="Video index"
         description="Auto-index your match videos by match key for quick review. Cross-check Scouting and Match Notes."
       >
         <RelatedStrip orgId={orgId} />
       </PageHeader>
 
-      <OfflineBanner feature="Match video index" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Video index" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">
