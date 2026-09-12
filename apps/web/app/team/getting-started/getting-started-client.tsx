@@ -160,7 +160,7 @@ function buildTasks(data: Data, orgId: string): Task[] {
           ? "An admin can link your Discord to broadcast alumni-network announcements."
           : s.discordConnected
             ? "Discord is connected."
-            : "Link a channel webhook to post announcements to your server.",
+            : "Paste a Discord channel link to post announcements to your server.",
       done: s.discordConnected === true,
       href: `/team/alumni${q}`,
       cta: "Connect Discord",
