@@ -207,7 +207,7 @@ export default function PairwiseClient() {
           </>
         }
         title="Pairwise ranking"
-        description="Tap who looked better. Ranks come from your taps — not from official rankings or EPA."
+        description="Tap who looked better. Ranks come from your taps — not from official rankings or season ratings."
       />
       <OfflineBanner feature="Pairwise ranking" fromCache={fromCache} cachedAt={cachedAt} />
 
@@ -434,7 +434,7 @@ function LivePairwise({
               ))}
               {!view.ranks.length ? (
                 <tr>
-                  <td colSpan={5}>No qualitative ranks yet. Strength is not EPA and is not filled in for you.</td>
+                  <td colSpan={5}>No qualitative ranks yet. Strength is not a season rating and is not filled in for you.</td>
                 </tr>
               ) : null}
             </tbody>

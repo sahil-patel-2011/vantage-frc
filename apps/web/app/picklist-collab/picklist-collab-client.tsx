@@ -349,7 +349,7 @@ export default function PicklistCollabClient() {
           </>
         }
         title="Collaborative pick list"
-        description="Build the pick list together — rank teams into tiers, see FAST-style EPA roles from the cached event field, and export CSV for the drive team."
+        description="Build the pick list together — rank teams into tiers, see FAST-style roles from the cached event field, and export CSV for the drive team."
       >
         <div className="picklist-collab-header-actions">
           {view?.status === "live" && view.lists.length > 0 ? (

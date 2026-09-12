@@ -109,7 +109,7 @@ export function partnerFitNotes(input: {
       extras.push(`role fit ${Math.round(input.fit.complementarity)}`);
     }
     if (input.fit?.totalEpa != null && Number.isFinite(input.fit.totalEpa)) {
-      extras.push(`EPA ${input.fit.totalEpa}`);
+      extras.push(`season rating ${input.fit.totalEpa}`);
     }
     parts.push(
       `Chemistry ${score}/100 partner fit${
