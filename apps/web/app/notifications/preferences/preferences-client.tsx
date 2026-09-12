@@ -414,8 +414,8 @@ export default function NotificationPreferencesClient() {
         <OfflineBanner feature="Notification preferences" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
-          title={failure ? failure.title : "Loading preferences…"}
-          description={failure ? failure.description : "Loading your inbox and email opt-ins."}
+          title={failure ? failure.title : "Opening Notification preferences"}
+          description={failure ? failure.description : "Checking your inbox and email opt-ins."}
           aria-busy={!fetchFailed}
         >
           {failure?.primary ? (

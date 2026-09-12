@@ -322,7 +322,7 @@ export default function TeamDiscordClient({ orgId }: { orgId: string }) {
         <OfflineBanner feature="Discord" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
-          title={failure ? failure.title : "Loading Discord…"}
+          title={failure ? failure.title : "Opening Discord"}
           description={failure ? failure.description : "Checking your team connection."}
           aria-busy={!fetchFailed}
         >

@@ -244,7 +244,7 @@ export default function SupportTicketsClient() {
         <OfflineBanner feature="Support" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
-          title={failure ? failure.title : "Loading support…"}
+          title={failure ? failure.title : "Opening Support"}
           description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >
