@@ -6,7 +6,7 @@ export const CODE_DEPLOY_LOG_RELATED_LINKS = [
   { id: "code", label: "Code", tab: "code" },
   { id: "code-perf", label: "Code vs match", tab: "code-perf" },
   { id: "cad", label: "CAD", tab: "cad" },
-  { id: "readiness-score", label: "Readiness Score", tab: "readiness-score" },
+  { id: "readiness-score", label: "Readiness", tab: "readiness-score" },
 ] as const;
 
 export type CodeDeployLogRelatedId = (typeof CODE_DEPLOY_LOG_RELATED_LINKS)[number]["id"];
@@ -302,7 +302,7 @@ export function codeDeployLogNextActions(input: {
     },
     {
       id: "readiness-score",
-      label: "Open Readiness Score",
+      label: "Open Readiness",
       detail: "Carry firmware confidence into robot readiness.",
       href: hubHref("/build", "readiness-score", orgId),
     },

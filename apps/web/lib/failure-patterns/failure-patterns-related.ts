@@ -82,7 +82,7 @@ export function failurePatternsSetupSteps(orgId?: string | null): FailurePattern
     },
     {
       id: "triage",
-      label: "Open Pit Repair Triage",
+      label: "Open Repair triage",
       detail: "Pit failures feed the same subsystem history.",
       href: hubHref("/competition", "pit-repair-triage", orgId),
     },
@@ -228,7 +228,7 @@ export function failurePatternsNextActions(input: {
       },
       {
         id: "triage",
-        label: "Open Pit Repair Triage",
+        label: "Open Repair triage",
         detail: "Log pit failures that feed subsystem history.",
         href: hubHref("/competition", "pit-repair-triage", orgId),
       },

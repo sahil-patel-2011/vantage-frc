@@ -7,7 +7,7 @@ export const SPONSOR_SUITE_RELATED_LINKS = [
   { id: "sponsors", label: "Sponsor CRM", kind: "business" as const, tab: "sponsors" },
   { id: "sponsorship", label: "Sponsorship", kind: "business" as const, tab: "sponsorship" },
   { id: "sponsor-wall", label: "Sponsor Wall", kind: "business" as const, tab: "sponsor-wall" },
-  { id: "media-kit", label: "Media Kit", kind: "business" as const, tab: "media-kit" },
+  { id: "media-kit", label: "Media kit", kind: "business" as const, tab: "media-kit" },
 ] as const;
 
 export type SponsorSuiteRelatedId = (typeof SPONSOR_SUITE_RELATED_LINKS)[number]["id"];
@@ -303,7 +303,7 @@ export function sponsorSuiteNextActions(input: {
     },
     {
       id: "media-kit",
-      label: "Open Media Kit",
+      label: "Open Media kit",
       detail: "Keep press assets grounded in recorded logos and bios.",
       href: hubHref("/business", "media-kit", orgId),
     },

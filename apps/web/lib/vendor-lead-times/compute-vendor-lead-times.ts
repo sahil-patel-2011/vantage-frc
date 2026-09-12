@@ -28,7 +28,7 @@ function setupStepsFor(orgId: string | null): VendorLeadTimesSetupStep[] {
     },
     {
       id: "spare-forecast",
-      label: "Open Spare Forecast",
+      label: "Open Spares forecast",
       detail: "Spare shortfalls stay blank until inventory + Failure log land.",
       href: hubHref("/build", "spare-forecast", orgId),
     },

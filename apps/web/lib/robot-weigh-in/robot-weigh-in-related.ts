@@ -197,7 +197,7 @@ export function robotWeighInNextActions(input: {
       },
       {
         id: "readiness",
-        label: "Open Readiness Score",
+        label: "Open Readiness",
         detail: "Readiness stays available while weigh-ins reload.",
         href: hubHref("/build", "readiness-score", orgId),
       },
@@ -221,7 +221,7 @@ export function robotWeighInNextActions(input: {
       },
       {
         id: "readiness",
-        label: "Open Readiness Score",
+        label: "Open Readiness",
         detail: "Readiness waits on real weight margin.",
         href: hubHref("/build", "readiness-score", orgId),
       },
@@ -274,7 +274,7 @@ export function robotWeighInNextActions(input: {
     },
     {
       id: "readiness",
-      label: "Open Readiness Score",
+      label: "Open Readiness",
       detail: "Cross-check weight margin with competition readiness.",
       href: hubHref("/build", "readiness-score", orgId),
     },

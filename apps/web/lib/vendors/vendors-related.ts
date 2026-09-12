@@ -11,7 +11,7 @@ export const VENDORS_RELATED_LINKS = [
     tab: "vendor-lead-times",
   },
   { id: "inventory", label: "Inventory", kind: "path" as const, path: "/inventory" },
-  { id: "spare-forecast", label: "Spare Forecast", kind: "build" as const, tab: "spare-forecast" },
+  { id: "spare-forecast", label: "Spares forecast", kind: "build" as const, tab: "spare-forecast" },
 ] as const;
 
 export type VendorsRelatedId = (typeof VENDORS_RELATED_LINKS)[number]["id"];

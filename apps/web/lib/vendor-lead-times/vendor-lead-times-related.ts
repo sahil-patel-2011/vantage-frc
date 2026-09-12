@@ -4,7 +4,7 @@ import { withOrgHref } from "../nav/product-nav";
 /** Soft-UI related surfaces for Vendor Lead Times (never DEMO reorder metrics). */
 export const VENDOR_LEAD_TIMES_RELATED_LINKS = [
   { id: "orders", label: "Orders", kind: "business" as const, tab: "orders" },
-  { id: "spare-forecast", label: "Spare Forecast", kind: "build" as const, tab: "spare-forecast" },
+  { id: "spare-forecast", label: "Spares forecast", kind: "build" as const, tab: "spare-forecast" },
   { id: "vendors", label: "Vendors", kind: "path" as const, path: "/vendors" },
   { id: "build-burndown", label: "Build burndown", kind: "build" as const, tab: "build-burndown" },
   { id: "inventory", label: "Inventory", kind: "path" as const, path: "/inventory" },
@@ -18,7 +18,7 @@ export type VendorLeadTimesRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — Orders / Spare Forecast / Vendors first. */
+/** Focused Soft-UI strip — Orders / Spares forecast / Vendors first. */
 export const VENDOR_LEAD_TIMES_RELATED_INCLUDE: VendorLeadTimesRelatedId[] = [
   "orders",
   "spare-forecast",
@@ -26,7 +26,7 @@ export const VENDOR_LEAD_TIMES_RELATED_INCLUDE: VendorLeadTimesRelatedId[] = [
 ];
 
 /**
- * Soft-UI cross-links from Vendor Lead Times → Orders / Spare Forecast / Vendors.
+ * Soft-UI cross-links from Vendor Lead Times → Orders / Spares forecast / Vendors.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function vendorLeadTimesRelatedLinks(
@@ -110,7 +110,7 @@ export function vendorLeadTimesShellCopy(kind: VendorLeadTimesShellKind): Vendor
         badge: "Unavailable",
         title: "Could not load Vendor Lead Times",
         description:
-          "A network or server issue blocked the tracker. Retry, or open Orders / Spare Forecast / Vendors while it reloads.",
+          "A network or server issue blocked the tracker. Retry, or open Orders / Spares forecast / Vendors while it reloads.",
       };
     case "setup":
       return {
@@ -126,7 +126,7 @@ export function vendorLeadTimesShellCopy(kind: VendorLeadTimesShellKind): Vendor
         badge: "No vendors yet",
         title: "Add a vendor before tracking reorders",
         description:
-          "Order-by dates stay blank until you log a real vendor lead time. Cross-check Orders, Spare Forecast, and Vendors.",
+          "Order-by dates stay blank until you log a real vendor lead time. Cross-check Orders, Spares forecast, and Vendors.",
       };
     default:
       return {
@@ -140,7 +140,7 @@ export function vendorLeadTimesShellCopy(kind: VendorLeadTimesShellKind): Vendor
 
 /**
  * Soft-UI next actions for Vendor Lead Times empty/setup shells.
- * Points at Orders / Spare Forecast / Vendors — never invents DEMO reorder metrics.
+ * Points at Orders / Spares forecast / Vendors — never invents DEMO reorder metrics.
  */
 export function vendorLeadTimesNextActions(input: {
   orgId?: string | null;
@@ -172,7 +172,7 @@ export function vendorLeadTimesNextActions(input: {
         },
         {
           id: "spare-forecast",
-          label: "Open Spare Forecast",
+          label: "Open Spares forecast",
           detail: "Spare shortfalls stay blank until inventory + Failure log land.",
           href: hubHref("/build", "spare-forecast", null),
         },
@@ -200,7 +200,7 @@ export function vendorLeadTimesNextActions(input: {
       },
       {
         id: "spare-forecast",
-        label: "Open Spare Forecast",
+        label: "Open Spares forecast",
         detail: "Projected spare shortfalls often drive the next reorder window.",
         href: hubHref("/build", "spare-forecast", orgId),
       },
@@ -230,7 +230,7 @@ export function vendorLeadTimesNextActions(input: {
       },
       {
         id: "spare-forecast",
-        label: "Open Spare Forecast",
+        label: "Open Spares forecast",
         detail: "Spare projections stay available while lead times reload.",
         href: hubHref("/build", "spare-forecast", orgId),
       },
@@ -260,7 +260,7 @@ export function vendorLeadTimesNextActions(input: {
       },
       {
         id: "spare-forecast",
-        label: "Open Spare Forecast",
+        label: "Open Spares forecast",
         detail: "See which spare bins may need a restock before you set needed-by dates.",
         href: hubHref("/build", "spare-forecast", orgId),
       },
@@ -310,7 +310,7 @@ export function vendorLeadTimesNextActions(input: {
     },
     {
       id: "spare-forecast",
-      label: "Open Spare Forecast",
+      label: "Open Spares forecast",
       detail: "Align restock windows with projected spare exhaustion.",
       href: hubHref("/build", "spare-forecast", orgId),
     },

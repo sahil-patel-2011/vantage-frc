@@ -6,7 +6,7 @@ import { setupActionsFrom } from "../setup-actions";
 export const EVENT_DAY_PLAN_RELATED_LINKS = [
   { id: "command", label: "Command", tab: "command" },
   { id: "battery-rotation", label: "Battery Rotation", tab: "battery-rotation" },
-  { id: "pit-repair-triage", label: "Pit Repair Triage", tab: "pit-repair-triage" },
+  { id: "pit-repair-triage", label: "Repair triage", tab: "pit-repair-triage" },
   { id: "shift-balancer", label: "Shift Balancer", tab: "shift-balancer" },
 ] as const;
 
@@ -212,7 +212,7 @@ export function eventDayPlanNextActions(input: {
       },
       {
         id: "pit-repair-triage",
-        label: "Open Pit Repair Triage",
+        label: "Open Repair triage",
         detail: "Pit work stays available while the planner reloads.",
         href: hubHref("/competition", "pit-repair-triage", orgId),
       },
@@ -268,7 +268,7 @@ export function eventDayPlanNextActions(input: {
     },
     {
       id: "pit-repair-triage",
-      label: "Open Pit Repair Triage",
+      label: "Open Repair triage",
       detail: "Fit repair windows around quals and logistics.",
       href: hubHref("/competition", "pit-repair-triage", orgId),
     },

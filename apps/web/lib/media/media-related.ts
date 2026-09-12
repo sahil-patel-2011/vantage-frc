@@ -5,7 +5,7 @@ import { isMediaWorkspaceEmpty } from ".";
 
 /** Soft-UI related surfaces for Media team (never DEMO metrics). */
 export const MEDIA_RELATED_LINKS = [
-  { id: "media-kit", label: "Media Kit", kind: "path" as const, path: "/media-kit" },
+  { id: "media-kit", label: "Media kit", kind: "path" as const, path: "/media-kit" },
   { id: "outreach-calendar", label: "Outreach Calendar", kind: "business" as const, tab: "outreach-calendar" },
   { id: "impact", label: "Community Impact", kind: "business" as const, tab: "impact" },
   { id: "sponsor-wall", label: "Sponsor Wall", kind: "business" as const, tab: "sponsor-wall" },
@@ -88,7 +88,7 @@ export function mediaSetupSteps(orgId?: string | null): MediaSetupStep[] {
     },
     {
       id: "media-kit",
-      label: "Build Media Kit",
+      label: "Build Media kit",
       detail: "Mission, bio, and logos stay blank until you record them.",
       href: orgId ? withOrgHref("/media-kit", orgId) : "/media-kit",
     },
@@ -162,7 +162,7 @@ export function mediaShellCopy(kind: MediaShellKind): MediaEmptyCopy {
         badge: "Unavailable",
         title: "Could not load Media",
         description:
-          "A network or server issue blocked the team. Retry, or open Media Kit / Outreach while it reloads.",
+          "A network or server issue blocked the team. Retry, or open Media kit / Outreach while it reloads.",
       };
     case "setup":
       return {
@@ -178,14 +178,14 @@ export function mediaShellCopy(kind: MediaShellKind): MediaEmptyCopy {
         badge: "No media yet",
         title: "Start your press and social toolkit",
         description:
-          "Assets, outreach dates, and media impact stay blank until you add them. Open Media Kit or Outreach.",
+          "Assets, outreach dates, and media impact stay blank until you add them. Open Media kit or Outreach.",
       };
     default:
       return {
         kind: "ready",
         title: "Media team",
         description:
-          "Counts reflect content items, Media Kit, outreach, impact, and sponsor visuals you recorded.",
+          "Counts reflect content items, Media kit, outreach, impact, and sponsor visuals you recorded.",
       };
   }
 }
@@ -222,7 +222,7 @@ export function mediaNextActions(input: {
       },
       {
         id: "media-kit",
-        label: "Open Media Kit",
+        label: "Open Media kit",
         detail: "Kit editor stays available while the team reloads.",
         href: withOrgHref("/media-kit", orgId),
       },
@@ -239,7 +239,7 @@ export function mediaNextActions(input: {
     return [
       {
         id: "media-kit",
-        label: "Build Media Kit",
+        label: "Build Media kit",
         detail: "Mission, bio, and logos stay blank until you enter them.",
         href: withOrgHref("/media-kit", orgId),
         primary: true,

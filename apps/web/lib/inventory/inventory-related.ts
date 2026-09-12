@@ -8,7 +8,7 @@ export const INVENTORY_RELATED_LINKS = [
   { id: "orders", label: "Orders", kind: "business" as const, tab: "orders" },
   {
     id: "spare-forecast",
-    label: "Spare Forecast",
+    label: "Spares forecast",
     kind: "build" as const,
     tab: "spare-forecast",
   },
@@ -23,7 +23,7 @@ export type InventoryRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — Vendors / Orders / Spare Forecast first. */
+/** Focused Soft-UI strip — Vendors / Orders / Spares forecast first. */
 export const INVENTORY_RELATED_INCLUDE: InventoryRelatedId[] = [
   "vendors",
   "orders",
@@ -31,7 +31,7 @@ export const INVENTORY_RELATED_INCLUDE: InventoryRelatedId[] = [
 ];
 
 /**
- * Soft-UI cross-links from Inventory → Vendors / Orders / Spare Forecast.
+ * Soft-UI cross-links from Inventory → Vendors / Orders / Spares forecast.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function inventoryRelatedLinks(
@@ -115,7 +115,7 @@ export function inventorySetupSteps(orgId?: string | null): InventorySetupStep[]
     },
     {
       id: "spare-forecast",
-      label: "Open Spare Forecast",
+      label: "Open Spares forecast",
       detail: "Exhaustion projections stay blank until spare bins exist.",
       href: hubHref("/build", "spare-forecast", orgId),
     },
@@ -174,7 +174,7 @@ export function inventoryShellCopy(kind: InventoryShellKind): InventoryEmptyCopy
         badge: "Unavailable",
         title: "Could not load Inventory",
         description:
-          "A network or server issue blocked parts stock. Retry, or open Vendors / Orders / Spare Forecast while it reloads.",
+          "A network or server issue blocked parts stock. Retry, or open Vendors / Orders / Spares forecast while it reloads.",
       };
     case "setup":
       return {
@@ -190,7 +190,7 @@ export function inventoryShellCopy(kind: InventoryShellKind): InventoryEmptyCopy
         badge: "No parts yet",
         title: "Add a part before tracking stock",
         description:
-          "Quantities, reorder thresholds, and on-hand value stay blank until you add a real item. Cross-check Vendors, Orders, and Spare Forecast.",
+          "Quantities, reorder thresholds, and on-hand value stay blank until you add a real item. Cross-check Vendors, Orders, and Spares forecast.",
       };
     case "ready":
       return {
@@ -263,7 +263,7 @@ function inventoryNextActionCandidates(input: {
       },
       {
         id: "spare-forecast",
-        label: "Open Spare Forecast",
+        label: "Open Spares forecast",
         detail: "Spare projections stay available while inventory reloads.",
         href: hubHref("/build", "spare-forecast", orgId),
       },
@@ -293,7 +293,7 @@ function inventoryNextActionCandidates(input: {
       },
       {
         id: "spare-forecast",
-        label: "Open Spare Forecast",
+        label: "Open Spares forecast",
         detail: "Once spare-category bins exist, project exhaustion from real stock.",
         href: hubHref("/build", "spare-forecast", orgId),
       },
@@ -314,7 +314,7 @@ function inventoryNextActionCandidates(input: {
     actions.push({
       id: "reorder",
       label: "Review low-stock parts",
-      detail: `${lowStockCount} part${lowStockCount === 1 ? "" : "s"} at or below reorder — open Orders or Spare Forecast.`,
+      detail: `${lowStockCount} part${lowStockCount === 1 ? "" : "s"} at or below reorder — open Orders or Spares forecast.`,
       href: "#inventory-stock",
       primary: true,
     });
@@ -343,7 +343,7 @@ function inventoryNextActionCandidates(input: {
     },
     {
       id: "spare-forecast",
-      label: "Open Spare Forecast",
+      label: "Open Spares forecast",
       detail: "Project which spare-category bins will exhaust before the season ends.",
       href: hubHref("/build", "spare-forecast", orgId),
     },

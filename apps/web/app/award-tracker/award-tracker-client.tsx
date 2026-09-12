@@ -379,7 +379,7 @@ export default function AwardTrackerClient() {
           </>
         }
         title="Award Tracker"
-        description="Track award submissions across events with deadlines. Cross-check Awards and Impact Essay."
+        description="Track award submissions across events with deadlines. Cross-check Awards and Impact essay."
       >
         <div className="award-tracker-header-actions">
           {view.seasons.length > 0 ? (
@@ -482,7 +482,7 @@ export default function AwardTrackerClient() {
           <p className="app-muted" style={{ marginTop: 8 }}>
             Keep packets in <a href={evidenceHref}>Awards</a>, review workbench uploads in{" "}
             <a href={awardsHref}>Awards workbench</a>, and draft narratives in{" "}
-            <a href={essayHref}>Impact Essay</a>
+            <a href={essayHref}>Impact essay</a>
           </p>
         </Panel>
       </div>

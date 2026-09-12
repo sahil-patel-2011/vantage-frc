@@ -163,7 +163,7 @@ function MediaShell({
           <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
         ) : null}
         {shell === "empty" ? (
-          <Button as="a" variant="primary" href={orgId ? withOrgHref("/media-kit", orgId) : "/media-kit"}>Build Media Kit</Button>
+          <Button as="a" variant="primary" href={orgId ? withOrgHref("/media-kit", orgId) : "/media-kit"}>Build Media kit</Button>
         ) : null}
       </EmptyState>
       {shell === "ready" ? <MediaNextActionsPanel actions={actions} /> : null}
@@ -431,7 +431,7 @@ export default function MediaClient() {
 
   return (
     <MediaShell
-      description="Content calendar, drafts, reminders, Media Kit, and impact."
+      description="Content calendar, drafts, reminders, Media kit, and impact."
       orgId={orgId}
       shell={shell === "ready" ? "empty" : shell}
       error={error || undefined}

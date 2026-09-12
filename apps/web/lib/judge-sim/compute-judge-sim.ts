@@ -42,7 +42,7 @@ function setupStepsFor(orgId: string | null): JudgeSimSetupStep[] {
     },
     {
       id: "impact-essay",
-      label: "Open Impact Essay",
+      label: "Open Impact essay",
       detail: "Essay drafts stay empty until real impact rows exist.",
       href: hubHref("/business", "impact-essay", orgId),
     },

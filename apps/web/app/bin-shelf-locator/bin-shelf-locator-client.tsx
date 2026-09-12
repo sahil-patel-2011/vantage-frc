@@ -345,7 +345,7 @@ export default function BinShelfLocatorClient() {
           </>
         }
         title="Bin/Shelf Locator"
-        description="Assign put-away locations, print QR labels, and find parts. Cross-check Spare Forecast and CAD."
+        description="Assign put-away locations, print QR labels, and find parts. Cross-check Spares forecast and CAD."
       >
         <div className="bsl-header-actions">
           {relatedLinks.map((link) => (

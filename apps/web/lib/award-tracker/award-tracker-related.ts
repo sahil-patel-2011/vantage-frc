@@ -93,7 +93,7 @@ export function awardTrackerSetupSteps(orgId?: string | null): AwardTrackerSetup
     },
     {
       id: "impact-essay",
-      label: "Open Impact Essay",
+      label: "Open Impact essay",
       detail: "Essay drafts stay blank until grounded outreach exists.",
       href: hubHref("/business", "impact-essay", orgId),
     },
@@ -158,7 +158,7 @@ export function awardTrackerShellCopy(kind: AwardTrackerShellKind): AwardTracker
         badge: "Unavailable",
         title: "Could not load Award Tracker",
         description:
-          "A network or server issue blocked the tracker. Retry, or open Awards / Impact Essay while it reloads.",
+          "A network or server issue blocked the tracker. Retry, or open Awards / Impact essay while it reloads.",
       };
     case "setup":
       return {
@@ -174,7 +174,7 @@ export function awardTrackerShellCopy(kind: AwardTrackerShellKind): AwardTracker
         badge: "No submissions yet",
         title: "Track your first award submission",
         description:
-          "Deadlines and status stay blank until you log an award, event, and due date. Cross-check Awards and Impact Essay.",
+          "Deadlines and status stay blank until you log an award, event, and due date. Cross-check Awards and Impact essay.",
       };
     default:
       return {
@@ -188,7 +188,7 @@ export function awardTrackerShellCopy(kind: AwardTrackerShellKind): AwardTracker
 
 /**
  * Soft-UI next actions for Award Tracker empty/setup shells.
- * Points at Awards / Impact Essay — never invents DEMO win rates.
+ * Points at Awards / Impact essay — never invents DEMO win rates.
  */
 export function awardTrackerNextActions(input: {
   orgId?: string | null;
@@ -224,7 +224,7 @@ export function awardTrackerNextActions(input: {
       },
       {
         id: "impact-essay",
-        label: "Open Impact Essay",
+        label: "Open Impact essay",
         detail: "Essay drafts stay available while the tracker reloads.",
         href: hubHref("/business", "impact-essay", orgId),
       },
@@ -248,7 +248,7 @@ export function awardTrackerNextActions(input: {
       },
       {
         id: "impact-essay",
-        label: "Open Impact Essay",
+        label: "Open Impact essay",
         detail: "Essay drafts stay empty until real outreach lands.",
         href: hubHref("/business", "impact-essay", orgId),
       },
@@ -280,7 +280,7 @@ export function awardTrackerNextActions(input: {
     },
     {
       id: "impact-essay",
-      label: "Open Impact Essay",
+      label: "Open Impact essay",
       detail: "Pair submission timelines with grounded essay drafts.",
       href: hubHref("/business", "impact-essay", orgId),
     },

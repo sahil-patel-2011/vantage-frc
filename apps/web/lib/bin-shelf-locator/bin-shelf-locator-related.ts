@@ -3,7 +3,7 @@ import { withOrgHref } from "../nav/product-nav";
 
 /** Soft-UI related surfaces for Bin/Shelf Locator (never DEMO inventory pins). */
 export const BIN_SHELF_LOCATOR_RELATED_LINKS = [
-  { id: "spare-forecast", label: "Spare Forecast", tab: "spare-forecast" },
+  { id: "spare-forecast", label: "Spares forecast", tab: "spare-forecast" },
   { id: "spare-robot-kit", label: "Spare Robot Kit", tab: "spare-robot-kit" },
   { id: "cad", label: "CAD", tab: "cad" },
   { id: "prototype", label: "Prototypes", tab: "prototype" },
@@ -84,7 +84,7 @@ export function binShelfLocatorSetupSteps(orgId?: string | null): BinShelfLocato
     },
     {
       id: "spare-forecast",
-      label: "Open Spare Forecast",
+      label: "Open Spares forecast",
       detail: "Pair shelf locations with spare-parts forecasts.",
       href: hubHref("/build", "spare-forecast", orgId),
     },
@@ -134,7 +134,7 @@ export function binShelfLocatorShellCopy(kind: BinShelfLocatorShellKind): BinShe
         badge: "Unavailable",
         title: "Could not load Bin/Shelf Locator",
         description:
-          "A network or server issue blocked location maps. Retry, or open Spare Forecast while it reloads.",
+          "A network or server issue blocked location maps. Retry, or open Spares forecast while it reloads.",
       };
     case "setup":
       return {
@@ -187,7 +187,7 @@ export function binShelfLocatorNextActions(input: {
         },
         {
           id: "spare-forecast",
-          label: "Open Spare Forecast",
+          label: "Open Spares forecast",
           detail: "Spare forecasts stay available without inventing locations.",
           href: hubHref("/build", "spare-forecast", null),
         },
@@ -209,7 +209,7 @@ export function binShelfLocatorNextActions(input: {
       },
       {
         id: "spare-forecast",
-        label: "Open Spare Forecast",
+        label: "Open Spares forecast",
         detail: "Pair shelf maps with spare-parts forecasts.",
         href: hubHref("/build", "spare-forecast", orgId),
       },
@@ -233,7 +233,7 @@ export function binShelfLocatorNextActions(input: {
       },
       {
         id: "spare-forecast",
-        label: "Open Spare Forecast",
+        label: "Open Spares forecast",
         detail: "Spare forecasts stay available while the map reloads.",
         href: hubHref("/build", "spare-forecast", orgId),
       },
@@ -257,7 +257,7 @@ export function binShelfLocatorNextActions(input: {
       },
       {
         id: "spare-forecast",
-        label: "Open Spare Forecast",
+        label: "Open Spares forecast",
         detail: "Forecasts pair with shelf maps once locations exist.",
         href: hubHref("/build", "spare-forecast", orgId),
       },
@@ -283,7 +283,7 @@ export function binShelfLocatorNextActions(input: {
     },
     {
       id: "spare-forecast",
-      label: "Open Spare Forecast",
+      label: "Open Spares forecast",
       detail: "Carry shelf locations into spare-parts planning.",
       href: hubHref("/build", "spare-forecast", orgId),
     },

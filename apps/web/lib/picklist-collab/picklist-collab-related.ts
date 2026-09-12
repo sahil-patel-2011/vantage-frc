@@ -7,7 +7,7 @@ export const PICKLIST_COLLAB_RELATED_LINKS = [
   { id: "strategy", label: "Strategy", tab: "strategy" },
   { id: "picklist-justifier", label: "Pick-list Justifier", tab: "picklist-justifier" },
   { id: "pick-clock", label: "Pick clock", tab: "pick-clock" },
-  { id: "alliance-selection-desk", label: "Alliance Selection Desk", tab: "alliance-selection-desk" },
+  { id: "alliance-selection-desk", label: "Alliance desk", tab: "alliance-selection-desk" },
   { id: "scouting", label: "Scouting", tab: "scouting" },
 ] as const;
 
@@ -301,7 +301,7 @@ export function picklistCollabNextActions(input: {
     },
     {
       id: "alliance-selection-desk",
-      label: "Open Alliance Selection Desk",
+      label: "Open Alliance desk",
       detail: "Carry consensus onto the live board.",
       href: hubHref("/competition", "alliance-selection-desk", orgId),
     },

@@ -5,7 +5,7 @@ import { withOrgHref } from "../nav/product-nav";
 /** Soft-UI related surfaces for Outreach Calendar (never DEMO reach metrics). */
 export const OUTREACH_CALENDAR_RELATED_LINKS = [
   { id: "impact", label: "Community Impact", kind: "business" as const, tab: "impact" },
-  { id: "media-kit", label: "Media Kit", kind: "business" as const, tab: "media-kit" },
+  { id: "media-kit", label: "Media kit", kind: "business" as const, tab: "media-kit" },
   { id: "fundraisers", label: "Fundraisers", kind: "business" as const, tab: "fundraisers" },
   { id: "sponsor-suite", label: "Sponsor Suite", kind: "business" as const, tab: "sponsor-suite" },
 ] as const;
@@ -18,7 +18,7 @@ export type OutreachCalendarRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — Impact / Media Kit / Fundraisers. */
+/** Focused Soft-UI strip — Impact / Media kit / Fundraisers. */
 export const OUTREACH_CALENDAR_RELATED_INCLUDE: OutreachCalendarRelatedId[] = [
   "impact",
   "media-kit",
@@ -26,7 +26,7 @@ export const OUTREACH_CALENDAR_RELATED_INCLUDE: OutreachCalendarRelatedId[] = [
 ];
 
 /**
- * Soft-UI cross-links from Outreach Calendar → Impact / Media Kit / Fundraisers.
+ * Soft-UI cross-links from Outreach Calendar → Impact / Media kit / Fundraisers.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function outreachCalendarRelatedLinks(
@@ -92,7 +92,7 @@ export function outreachCalendarSetupSteps(orgId?: string | null): OutreachCalen
     },
     {
       id: "media-kit",
-      label: "Open Media Kit",
+      label: "Open Media kit",
       detail: "Media assets stay blank until you record them.",
       href: hubHref("/business", "media-kit", orgId),
     },
@@ -148,7 +148,7 @@ export function outreachCalendarShellCopy(kind: OutreachCalendarShellKind): Outr
         badge: "Unavailable",
         title: "Could not load the Outreach Calendar",
         description:
-          "A network or server issue blocked the calendar. Retry, or open Community Impact / Media Kit while it reloads.",
+          "A network or server issue blocked the calendar. Retry, or open Community Impact / Media kit while it reloads.",
       };
     case "setup":
       return {
@@ -164,7 +164,7 @@ export function outreachCalendarShellCopy(kind: OutreachCalendarShellKind): Outr
         badge: "No events yet",
         title: "Schedule your first outreach event",
         description:
-          "Hours and reach stay blank until you schedule real events. Cross-check Community Impact and Media Kit.",
+          "Hours and reach stay blank until you schedule real events. Cross-check Community Impact and Media kit.",
       };
     default:
       return {
@@ -178,7 +178,7 @@ export function outreachCalendarShellCopy(kind: OutreachCalendarShellKind): Outr
 
 /**
  * Soft-UI next actions for Outreach Calendar empty/setup shells.
- * Points at schedule / Impact / Media Kit — never invents DEMO reach metrics.
+ * Points at schedule / Impact / Media kit — never invents DEMO reach metrics.
  */
 export function outreachCalendarNextActions(input: {
   orgId?: string | null;
@@ -212,8 +212,8 @@ export function outreachCalendarNextActions(input: {
       },
       {
         id: "media-kit",
-        label: "Open Media Kit",
-        detail: "Media Kit stays available while the calendar reloads.",
+        label: "Open Media kit",
+        detail: "Media kit stays available while the calendar reloads.",
         href: hubHref("/business", "media-kit", orgId),
       },
     ];
@@ -236,7 +236,7 @@ export function outreachCalendarNextActions(input: {
       },
       {
         id: "media-kit",
-        label: "Open Media Kit",
+        label: "Open Media kit",
         detail: "Pair outreach with real media assets.",
         href: hubHref("/business", "media-kit", orgId),
       },
@@ -259,7 +259,7 @@ export function outreachCalendarNextActions(input: {
     },
     {
       id: "media-kit",
-      label: "Open Media Kit",
+      label: "Open Media kit",
       detail: "Keep press assets grounded in recorded logos and bios.",
       href: hubHref("/business", "media-kit", orgId),
     },

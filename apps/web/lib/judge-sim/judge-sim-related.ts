@@ -4,10 +4,10 @@ import { withOrgHref } from "../nav/product-nav";
 /** Soft-UI related surfaces for Judge pitch (never DEMO judge metrics). */
 export const JUDGE_SIM_RELATED_LINKS = [
   { id: "impact", label: "Community Impact", kind: "hub" as const, tab: "impact" },
-  { id: "impact-essay", label: "Impact Essay", kind: "hub" as const, tab: "impact-essay" },
+  { id: "impact-essay", label: "Impact essay", kind: "hub" as const, tab: "impact-essay" },
   { id: "evidence", label: "Awards", kind: "hub" as const, tab: "evidence" },
   { id: "award-tracker", label: "Award tracker", kind: "hub" as const, tab: "award-tracker" },
-  { id: "media-kit", label: "Media Kit", kind: "hub" as const, tab: "media-kit" },
+  { id: "media-kit", label: "Media kit", kind: "hub" as const, tab: "media-kit" },
 ] as const;
 
 export type JudgeSimRelatedId = (typeof JUDGE_SIM_RELATED_LINKS)[number]["id"];
@@ -18,7 +18,7 @@ export type JudgeSimRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — Community Impact / Impact Essay / Awards first. */
+/** Focused Soft-UI strip — Community Impact / Impact essay / Awards first. */
 export const JUDGE_SIM_RELATED_INCLUDE: JudgeSimRelatedId[] = ["impact", "impact-essay", "evidence"];
 
 /**
@@ -111,7 +111,7 @@ export function judgeSimShellCopy(kind: JudgeSimShellKind): JudgeSimEmptyCopy {
         badge: "Unavailable",
         title: "Could not load Judge pitch",
         description:
-          "A network or server issue blocked Judge pitch. Retry, or open Community Impact / Impact Essay / Awards while it reloads.",
+          "A network or server issue blocked Judge pitch. Retry, or open Community Impact / Impact essay / Awards while it reloads.",
       };
     case "setup":
       return {
@@ -127,7 +127,7 @@ export function judgeSimShellCopy(kind: JudgeSimShellKind): JudgeSimEmptyCopy {
         badge: "No sessions yet",
         title: "Run your first judge Q&A",
         description:
-          "Graded sessions stay blank until you log evidence and answer a judging question. Cross-check Community Impact, Impact Essay, and Awards.",
+          "Graded sessions stay blank until you log evidence and answer a judging question. Cross-check Community Impact, Impact essay, and Awards.",
       };
     default:
       return {
@@ -171,7 +171,7 @@ export function judgeSimNextActions(input: {
         },
         {
           id: "impact-essay",
-          label: "Open Impact Essay",
+          label: "Open Impact essay",
           detail: "Essay drafts stay empty until real activities exist.",
           href: hubHref("/business", "impact-essay", null),
         },
@@ -199,7 +199,7 @@ export function judgeSimNextActions(input: {
       },
       {
         id: "impact-essay",
-        label: "Open Impact Essay",
+        label: "Open Impact essay",
         detail: "Draft award language from real impact rows.",
         href: hubHref("/business", "impact-essay", orgId),
       },
@@ -229,7 +229,7 @@ export function judgeSimNextActions(input: {
       },
       {
         id: "impact-essay",
-        label: "Open Impact Essay",
+        label: "Open Impact essay",
         detail: "Essay drafts stay available while Judge pitch reloads.",
         href: hubHref("/business", "impact-essay", orgId),
       },
@@ -270,7 +270,7 @@ export function judgeSimNextActions(input: {
       },
       {
         id: "impact-essay",
-        label: "Open Impact Essay",
+        label: "Open Impact essay",
         detail: "Award language stays grounded in real impact.",
         href: hubHref("/business", "impact-essay", orgId),
       },
@@ -309,7 +309,7 @@ export function judgeSimNextActions(input: {
     },
     {
       id: "impact-essay",
-      label: "Open Impact Essay",
+      label: "Open Impact essay",
       detail: "Turn backed claims into award language.",
       href: hubHref("/business", "impact-essay", orgId),
     },

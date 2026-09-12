@@ -339,7 +339,7 @@ export default function VendorLeadTimesClient() {
           </>
         }
         title="Vendor Lead Times"
-        description="Track real vendor shipping lead times and calculate the latest date to reorder parts so they still arrive in time. Cross-check Orders, Spare Forecast, and Vendors."
+        description="Track real vendor shipping lead times and calculate the latest date to reorder parts so they still arrive in time. Cross-check Orders, Spares forecast, and Vendors."
       >
         <div className="vendor-lead-times-header-actions">
           {relatedLinks.map((link) => (
@@ -388,7 +388,7 @@ export default function VendorLeadTimesClient() {
           <span className="eyebrow">Procurement path</span>
           <p className="app-muted" style={{ marginTop: 8 }}>
             Place due reorders through <a href={ordersHref}>Orders</a>, align restock windows with{" "}
-            <a href={spareHref}>Spare Forecast</a>, and keep contacts in <a href={vendorsHref}>Vendors</a>{" "}
+            <a href={spareHref}>Spares forecast</a>, and keep contacts in <a href={vendorsHref}>Vendors</a>{" "}
           </p>
         </Panel>
       </div>
