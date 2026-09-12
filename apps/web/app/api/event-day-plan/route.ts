@@ -148,6 +148,6 @@ export async function POST(request: Request) {
     // event not yet ingested from TBA raised a 23503 whose raw constraint text
     // went straight to the user. failDbWrite names the fix, and keeps the
     // previous behaviour for every other error.
-    return failDbWrite(error, "Event-day plan request failed");
+    return failDbWrite(error, "Day plan request failed");
   }
 }

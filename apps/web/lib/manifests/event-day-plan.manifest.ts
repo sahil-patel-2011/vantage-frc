@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "event-day-plan",
-  title: "Event-Day Stress Planner",
+  title: "Day plan",
   route: "/event-day-plan",
   apiRoute: "/api/event-day-plan",
   hub: "Competition",

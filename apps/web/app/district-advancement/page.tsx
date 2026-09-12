@@ -1,7 +1,7 @@
 import DistrictAdvancementClient from "./district-advancement-client";
 
 export const metadata = {
-  title: "District advancement",
+  title: "Districts",
   description: "District point trajectory from cached season ratings.",
 };
 

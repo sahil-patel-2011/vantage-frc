@@ -47,7 +47,7 @@ async function persistBatteryRotationSnapshot(orgHint: string, data: BatteryRota
     await putFeatureSnapshot("battery-rotation", cacheOrg, data);
     if (!orgHint) await putFeatureSnapshot("battery-rotation", "_", data);
   } catch {
-    // Live Battery Rotation already painted; IndexedDB is best-effort.
+    // Live Charge plan already painted; IndexedDB is best-effort.
   }
 }
 
@@ -127,7 +127,7 @@ function BatteryRotationShell({
             {" / Battery rotation"}
           </>
         }
-        title="Battery rotation & charge planner"
+        title="Charge plan"
         description={description}
       >
         <BatteryRotationRelatedStrip orgId={orgId} />
@@ -208,7 +208,7 @@ export default function BatteryRotationClient() {
         if (!response.ok || !isBatteryRotationView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Battery Rotation. Showing the last copy on this device.");
+            setError("Could not refresh Charge plan. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -222,7 +222,7 @@ export default function BatteryRotationClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Battery Rotation. Showing the last copy on this device.");
+          setError("Could not refresh Charge plan. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -292,7 +292,7 @@ export default function BatteryRotationClient() {
   if (shell === "loading") {
     return (
       <BatteryRotationShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Battery Rotation" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Charge plan" fromCache={fromCache} cachedAt={cachedAt} />
       </BatteryRotationShell>
     );
   }
@@ -306,7 +306,7 @@ export default function BatteryRotationClient() {
         error={error || shellCopy.description}
         onRetry={load}
       >
-        <OfflineBanner feature="Battery Rotation" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Charge plan" fromCache={fromCache} cachedAt={cachedAt} />
       </BatteryRotationShell>
     );
   }
@@ -318,7 +318,7 @@ export default function BatteryRotationClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Battery Rotation" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Charge plan" fromCache={fromCache} cachedAt={cachedAt} />
       </BatteryRotationShell>
     );
   }
@@ -326,7 +326,7 @@ export default function BatteryRotationClient() {
   if (view?.status !== "live") {
     return (
       <BatteryRotationShell description={shellCopy.description} orgId={orgId} shell="setup">
-        <OfflineBanner feature="Battery Rotation" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Charge plan" fromCache={fromCache} cachedAt={cachedAt} />
       </BatteryRotationShell>
     );
   }
@@ -340,7 +340,7 @@ export default function BatteryRotationClient() {
             {" / Battery rotation"}
           </>
         }
-        title="Battery rotation & charge planner"
+        title="Charge plan"
         description="Schedule which pack runs which match from internal-resistance trends vs. match cadence and charge time."
       >
         <div className="battery-rotation-header-actions">
@@ -351,7 +351,7 @@ export default function BatteryRotationClient() {
           ))}
         </div>
       </PageHeader>
-      <OfflineBanner feature="Battery Rotation" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Charge plan" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

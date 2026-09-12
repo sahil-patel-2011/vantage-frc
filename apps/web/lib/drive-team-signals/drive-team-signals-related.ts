@@ -2,7 +2,7 @@ import { hubHref } from "../nav/hubs";
 import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Drive-Team Signals (never DEMO cheat sheets). */
+/** Soft-UI related surfaces for Drive-team board (never DEMO cheat sheets). */
 export const DRIVE_TEAM_SIGNALS_RELATED_LINKS = [
   { id: "match-checklist", label: "Match Checklist", tab: "match-checklist" },
   { id: "match-strategy-cards", label: "Strategy Cards", tab: "match-strategy-cards" },
@@ -132,14 +132,14 @@ export function driveTeamSignalsShellCopy(kind: DriveTeamSignalsShellKind): Driv
     case "loading":
       return {
         kind,
-        title: "Loading Drive-Team Signals…",
+        title: "Opening Drive-team board",
         description: "Checking which team you are on and signal sheets.",
       };
     case "error":
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Drive-Team Signals",
+        title: "Could not load Drive-team board",
         description:
           "A network or server issue blocked the signal board. Retry, or open Match Checklist while it reloads.",
       };
@@ -162,7 +162,7 @@ export function driveTeamSignalsShellCopy(kind: DriveTeamSignalsShellKind): Driv
     default:
       return {
         kind: "ready",
-        title: "Drive-team signal board",
+        title: "Drive-team board",
         description: "Sheets and signals from your crew only.",
       };
   }
@@ -189,7 +189,7 @@ export function driveTeamSignalsNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Drive-Team Signals",
+        label: "Retry Drive-team board",
         detail: "Reload real signal sheets.",
         href: withOrgHref("/drive-team-signals", orgId),
         primary: true,

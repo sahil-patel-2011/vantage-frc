@@ -13,7 +13,7 @@ import {
 import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("batteryHealthForecastRelatedLinks", () => {
-  it("builds Battery Rotation / Batteries / Pit cross-links via hubHref / withOrgHref", () => {
+  it("builds Charge plan / Batteries / Pit cross-links via hubHref / withOrgHref", () => {
     const links = batteryHealthForecastRelatedLinks("org-1", {
       include: [...BATTERY_HEALTH_FORECAST_RELATED_INCLUDE],
     });
@@ -41,7 +41,7 @@ describe("batteryHealthForecastRelatedLinks", () => {
 });
 
 describe("batteryHealthForecastSetupSteps", () => {
-  it("points setup at Workspace + Battery Rotation / Batteries / Pit", () => {
+  it("points setup at Workspace + Charge plan / Batteries / Pit", () => {
     const steps = batteryHealthForecastSetupSteps("org-1");
     expect(steps.map((s) => s.id)).toEqual(["workspace", "battery-rotation", "batteries", "pit"]);
     expect(steps.find((s) => s.id === "battery-rotation")?.href).toBe(
@@ -62,7 +62,7 @@ describe("batteryHealthForecastNextActions", () => {
     expect(actions.some((a) => a.id === "pit")).toBe(true);
   });
 
-  it("setup with org points at Workspace + Battery Rotation / Batteries / Pit", () => {
+  it("setup with org points at Workspace + Charge plan / Batteries / Pit", () => {
     const actions = batteryHealthForecastNextActions({ orgId: "org-1", shell: "setup" });
     expect(actions[0]?.id).toBe("workspace");
     expect(actions.some((a) => a.id === "battery-rotation")).toBe(true);
@@ -71,7 +71,7 @@ describe("batteryHealthForecastNextActions", () => {
     expect(actions.every((a) => !/\bdemo\b/i.test(`${a.label} ${a.detail}`))).toBe(true);
   });
 
-  it("points empty boards at add-battery + Battery Rotation / Batteries / Pit", () => {
+  it("points empty boards at add-battery + Charge plan / Batteries / Pit", () => {
     const actions = batteryHealthForecastNextActions({
       orgId: "org-1",
       shell: "empty",

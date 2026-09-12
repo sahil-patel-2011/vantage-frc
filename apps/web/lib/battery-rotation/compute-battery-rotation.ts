@@ -136,7 +136,7 @@ export async function computeBatteryRotationView(
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Choose your team to open Battery Rotation.",
+          detail: "Choose your team to open Charge plan.",
           href: "/workspace",
         },
         {

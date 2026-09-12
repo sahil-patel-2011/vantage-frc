@@ -7,7 +7,7 @@ test.beforeEach(async ({ context }) => {
   if (!signed) await signInFixture(context);
 });
 
-test("leftover Setup required / VANTAGE Forms chrome is gone from Consent / Video index / Event-day plan", async ({
+test("leftover Setup required / VANTAGE Forms chrome is gone from Consent / Video index / Day plan", async ({
   page,
 }) => {
   test.setTimeout(90_000);

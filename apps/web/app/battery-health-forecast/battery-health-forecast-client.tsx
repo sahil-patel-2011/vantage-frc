@@ -165,7 +165,7 @@ function BatteryHealthForecastShell({
           <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
         ) : null}
         {shell === "empty" ? (
-          <Button as="a" variant="primary" href={rotationHref}>Open Battery Rotation</Button>
+          <Button as="a" variant="primary" href={rotationHref}>Open Charge plan</Button>
         ) : null}
       </EmptyState>
       {shell === "ready" ? <BatteryHealthForecastNextActionsPanel actions={actions} /> : null}
@@ -388,7 +388,7 @@ export default function BatteryHealthForecastClient() {
           description={shellCopy.description}
         >
           <Button as="a" variant="primary" href={rotationHref}>
-            Open Battery Rotation
+            Open Charge plan
           </Button>
         </EmptyState>
       ) : null}
@@ -400,7 +400,7 @@ export default function BatteryHealthForecastClient() {
         <Panel aria-label="Battery health forecast tip">
           <span className="eyebrow">Fleet path</span>
           <p className="app-muted" style={{ marginTop: 8 }}>
-            Schedule match packs in <a href={rotationHref}>Battery Rotation</a>, log IR on{" "}
+            Schedule match packs in <a href={rotationHref}>Charge plan</a>, log IR on{" "}
             <a href={batteriesHref}>Batteries</a>, and check event-day rack status in{" "}
             <a href={pitHref}>Pit Command</a>
           </p>

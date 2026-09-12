@@ -1,7 +1,7 @@
 import RankingProjectionClient from "./ranking-projection-client";
 
 export const metadata = {
-  title: "Ranking projection",
+  title: "Rank projection",
   description: "Remaining qualification matches against your cached official rank.",
 };
 

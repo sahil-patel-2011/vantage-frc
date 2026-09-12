@@ -9,7 +9,7 @@ import { expectPlainCopy } from "./copy-assertions";
 const WEB = join(__dirname, "..", "..");
 
 /**
- * Leftover student chrome on Rankings, Ranking projection, Pick-list Justifier,
+ * Leftover student chrome on Rankings, Rank projection, Pick-list Justifier,
  * Match Copilot, and Shift balancer. Do not invent a last-snapshot here.
  * Identifiers like epaTotal / tbaAvailable stay.
  */

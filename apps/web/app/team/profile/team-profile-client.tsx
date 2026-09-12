@@ -77,7 +77,7 @@ function TeamProfileNextActions({ orgId }: { orgId: string }) {
   const actions = [
     {
       id: "districts",
-      label: "Open District advancement",
+      label: "Open Districts",
       detail: "Remaining district points use the same public record this page shows.",
       href: hubHref("/competition", "district-advancement", orgId),
       primary: true,

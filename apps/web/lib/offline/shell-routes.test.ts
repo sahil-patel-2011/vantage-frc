@@ -234,9 +234,9 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/picklist-collab")).toBe("Pick list");
     expect(offlineCapableLabel("/dossier")).toBe("Dossier");
     expect(offlineCapableLabel("/pit-repair-triage")).toBe("Repair triage");
-    expect(offlineCapableLabel("/event-day-plan")).toBe("Event-day plan");
+    expect(offlineCapableLabel("/event-day-plan")).toBe("Day plan");
     expect(offlineCapableLabel("/field-reset-timer")).toBe("Field reset timer");
-    expect(offlineCapableLabel("/drive-team-signals")).toBe("Drive-team signals");
+    expect(offlineCapableLabel("/drive-team-signals")).toBe("Drive-team board");
     expect(offlineCapableLabel("/robot-weigh-in")).toBe("Robot weigh-in");
     expect(offlineCapableLabel("/match-delta-watcher")).toBe("Match-delta watcher");
     expect(offlineCapableLabel("/match-video-index")).toBe("Match video index");
@@ -279,7 +279,7 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/fundraisers")).toBe("Fundraisers");
     expect(offlineCapableLabel("/orders")).toBe("Orders");
     expect(offlineCapableLabel("/business")).toBe("Business");
-    expect(offlineCapableLabel("/battery-rotation")).toBe("Battery Rotation");
+    expect(offlineCapableLabel("/battery-rotation")).toBe("Charge plan");
     expect(offlineCapableLabel("/vendors")).toBe("Vendors");
     expect(offlineCapableLabel("/season-report")).toBe("Season Report");
     expect(offlineCapableLabel("/media")).toBe("Media");
@@ -331,7 +331,7 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/attendance")).toBe("Attendance");
     expect(offlineCapableLabel("/kickoff")).toBe("Kickoff");
     expect(offlineCapableLabel("/match-debrief")).toBe("Match debrief");
-    expect(offlineCapableLabel("/ranking-projection")).toBe("Ranking projection");
+    expect(offlineCapableLabel("/ranking-projection")).toBe("Rank projection");
     expect(offlineCapableLabel("/whiteboard")).toBe("Whiteboard");
     expect(offlineCapableLabel("/robot")).toBe("Robot");
     expect(offlineCapableLabel("/robot-weigh-in")).toBe("Robot weigh-in");

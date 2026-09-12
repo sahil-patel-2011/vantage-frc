@@ -343,7 +343,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/briefing")) return "Pre-match briefing";
   if (bare.startsWith("/award-tracker")) return "Award Tracker";
   if (bare.startsWith("/epa-trend-alerts")) return "Rating alerts";
-  if (bare.startsWith("/ranking-projection")) return "Ranking projection";
+  if (bare.startsWith("/ranking-projection")) return "Rank projection";
   if (bare.startsWith("/rankings")) return "Rankings";
   if (bare.startsWith("/grant-report")) return "Grant Report";
   if (bare.startsWith("/media-kit")) return "Media kit";
@@ -360,7 +360,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/fundraisers")) return "Fundraisers";
   if (bare.startsWith("/orders")) return "Orders";
   if (bare.startsWith("/business")) return "Business";
-  if (bare.startsWith("/battery-rotation")) return "Battery Rotation";
+  if (bare.startsWith("/battery-rotation")) return "Charge plan";
   if (bare.startsWith("/vendors")) return "Vendors";
   if (bare.startsWith("/season-report")) return "Season Report";
   if (bare.startsWith("/battery-health-forecast")) return "Battery Health Forecast";
@@ -417,9 +417,9 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/defense-planner")) return "Defense";
   if (bare.startsWith("/picklist-collab")) return "Pick list";
   if (bare.startsWith("/dossier")) return "Dossier";
-  if (bare.startsWith("/event-day-plan")) return "Event-day plan";
+  if (bare.startsWith("/event-day-plan")) return "Day plan";
   if (bare.startsWith("/field-reset-timer")) return "Field reset timer";
-  if (bare.startsWith("/drive-team-signals")) return "Drive-team signals";
+  if (bare.startsWith("/drive-team-signals")) return "Drive-team board";
   if (bare.startsWith("/robot-weigh-in")) return "Robot weigh-in";
   if (bare.startsWith("/robot")) return "Robot";
   if (bare.startsWith("/my-kit")) return "My Kit";
@@ -468,7 +468,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/data-quality-scorecard")) return "Data quality";
   if (bare.startsWith("/decision-critic")) return "Decision critic";
   if (bare.startsWith("/degraded-mode")) return "Data-source health";
-  if (bare.startsWith("/district-advancement")) return "District advancement";
+  if (bare.startsWith("/district-advancement")) return "Districts";
   if (bare.startsWith("/doc-roles")) return "Document roles";
   if (bare.startsWith("/driver-tryouts")) return "Driver Tryouts";
   if (bare.startsWith("/exit-interview")) return "Exit Interviews";

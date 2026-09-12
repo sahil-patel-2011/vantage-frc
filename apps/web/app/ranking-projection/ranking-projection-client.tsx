@@ -369,7 +369,7 @@ export default function RankingProjectionClient() {
       if (!response.ok || !isRankingProjectionView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Ranking projection. Showing the last copy on this device.");
+          setError("Could not refresh Rank projection. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setError(
@@ -388,7 +388,7 @@ export default function RankingProjectionClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Ranking projection. Showing the last copy on this device.");
+        setError("Could not refresh Rank projection. Showing the last copy on this device.");
         setFetchFailed(false);
       } else {
         setFetchFailed(true);
@@ -425,13 +425,13 @@ export default function RankingProjectionClient() {
         breadcrumbs={
           <>
             <a href={orgId ? `/competition?orgId=${encodeURIComponent(orgId)}` : "/competition"}>Competition</a>
-            {" / Ranking projection"}
+            {" / Rank projection"}
           </>
         }
-        title="Ranking projection"
+        title="Rank projection"
         description="Current official rank plus remaining qualification matches from the cache."
       />
-      <OfflineBanner feature="Ranking projection" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Rank projection" fromCache={fromCache} cachedAt={cachedAt} />
       {error && view ? <p className="app-muted">{error}</p> : null}
       {!view ? (
         <EmptyState

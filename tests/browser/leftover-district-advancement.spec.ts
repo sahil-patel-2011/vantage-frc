@@ -7,12 +7,12 @@ test.beforeEach(async ({ context }) => {
   if (!signed) await signInFixture(context);
 });
 
-test("leftover District advancement drops TBA/Statbotics and EPA student copy", async ({ page }) => {
+test("leftover Districts drops TBA/Statbotics and EPA student copy", async ({ page }) => {
   test.setTimeout(90_000);
   await assertNoTbaStatbotics(
     page,
     "/district-advancement",
-    /District advancement|Choose your team|Needs setup/i,
+    /Districts|Choose your team|Needs setup/i,
   );
   await expect(page.locator("body")).not.toContainText("EPA baseline");
   await expect(page.locator("body")).not.toContainText("cached EPA");

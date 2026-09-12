@@ -7,11 +7,11 @@ test.beforeEach(async ({ context }) => {
   if (!signed) await signInFixture(context);
 });
 
-test("leftover Ranking projection drops Current TBA student copy", async ({ page }) => {
+test("leftover Rank projection drops Current TBA student copy", async ({ page }) => {
   test.setTimeout(90_000);
   await assertNoLeftoverRankingsTba(
     page,
     "/ranking-projection",
-    /Ranking projection|Choose your team|Rankings are not ready/i,
+    /Rank projection|Choose your team|Rankings are not ready/i,
   );
 });
