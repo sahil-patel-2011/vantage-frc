@@ -139,7 +139,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "getting-started",
     slug: "getting-started",
-    title: "Set up a new team, start to first event",
+    title: "Team setup",
     summary:
       "Your team → invite members → pick how AI is powered → import your old data → connect TBA for your first event.",
     category: "getting-started",
@@ -648,7 +648,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "outreach-by-person",
     slug: "outreach-by-person",
-    title: "Outreach hours by person",
+    title: "Outreach hours",
     summary:
       "Log an outreach event once and name everyone who helped, each with their own minutes. The By-person table adds it up for awards, grants and the students themselves.",
     category: "business",
@@ -728,7 +728,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "learn-cad-naming",
     slug: "cad-naming",
-    title: "Naming CAD parts so the next person can find them",
+    title: "Naming CAD parts",
     summary:
       "Subsystem · What it is · Which one. 'New Part 1' costs a team hours in March; a name is the cheapest documentation there is.",
     category: "build",
@@ -876,7 +876,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "team-invites",
     slug: "team-invites",
-    title: "Invite teammates by email",
+    title: "Invites",
     summary:
       "Owners and admins send an exact-email invite, copy the link if needed, and the recipient signs in with that address to join.",
     category: "account-access",
