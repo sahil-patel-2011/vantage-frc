@@ -18,6 +18,7 @@ import {
   type ChemistryNextAction,
   type ChemistryShellKind,
 } from "../../lib/chemistry/chemistry-related";
+import { studentRatingLabel } from "../../lib/ui/student-rating-label";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { fetchProductSession } from "../../lib/nav/product-session";
 import { FEATURE_API_TIMEOUT_MS, readOrgIdFromSearch } from "../../lib/nav/resolve-org";
@@ -543,7 +544,9 @@ export default function ChemistryClient({
                 <span>Foul risk</span>
               </div>
             </div>
-            <p className="edc-caveat">{chemistry.caveats[0] ?? chemistry.caveat}</p>
+            <p className="edc-caveat">
+              {studentRatingLabel(chemistry.caveats[0] ?? chemistry.caveat)}
+            </p>
             <p className="edc-muted">
               Promote writes these seats onto the same pick list the pick desk, Pick Clock, and
               Draft board read.
@@ -571,7 +574,7 @@ export default function ChemistryClient({
                 </span>
                 <div>
                   <h2>Roles</h2>
-                  <p>Primary phase lean from event ratings</p>
+                  <p>Primary phase lean from season ratings</p>
                 </div>
               </div>
             </header>
@@ -582,7 +585,7 @@ export default function ChemistryClient({
                   <span className="edc-tags">
                     <span>{role.primaryRole}</span>
                   </span>
-                  <p className="edc-muted">{role.evidence}</p>
+                  <p className="edc-muted">{studentRatingLabel(role.evidence)}</p>
                 </li>
               ))}
             </ul>
@@ -599,7 +602,7 @@ export default function ChemistryClient({
                 </span>
                 <div>
                   <h2>Strengths & risks</h2>
-                  <p>Cited from metrics + scout ops</p>
+                  <p>From season ratings and scout notes</p>
                 </div>
               </div>
             </header>
@@ -608,7 +611,7 @@ export default function ChemistryClient({
                 <h3>Strengths</h3>
                 <ul>
                   {chemistry.strengths.length ? (
-                    chemistry.strengths.map((s) => <li key={s}>{s}</li>)
+                    chemistry.strengths.map((s) => <li key={s}>{studentRatingLabel(s)}</li>)
                   ) : (
                     <li className="edc-muted">None flagged yet</li>
                   )}
@@ -618,7 +621,7 @@ export default function ChemistryClient({
                 <h3>Risks</h3>
                 <ul>
                   {chemistry.risks.length ? (
-                    chemistry.risks.map((s) => <li key={s}>{s}</li>)
+                    chemistry.risks.map((s) => <li key={s}>{studentRatingLabel(s)}</li>)
                   ) : (
                     <li className="edc-muted">None flagged yet</li>
                   )}

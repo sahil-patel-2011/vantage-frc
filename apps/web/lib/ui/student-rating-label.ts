@@ -24,6 +24,22 @@ export function studentSourceLabel(source: string | null | undefined): string {
   }
 }
 
+/** Map stored compare-dimension identifiers onto student-readable names. */
+export function studentCompareDimensionLabel(dimension: string): string {
+  switch (dimension) {
+    case "epaTotal":
+      return "Season rating";
+    case "epaAuto":
+      return "Auto";
+    case "epaTeleop":
+      return "Teleop";
+    case "epaEndgame":
+      return "Endgame";
+    default:
+      return studentRatingLabel(dimension);
+  }
+}
+
 export function studentRatingLabel(text: string): string {
   return text
     .replace(/\bTBA's official record\b/gi, "the official record")

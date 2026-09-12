@@ -9,6 +9,10 @@ import {
   type IntelNextAction,
   type IntelScoutNote,
 } from "../../lib/intel/intel-related";
+import {
+  studentCompareDimensionLabel,
+  studentRatingLabel,
+} from "../../lib/ui/student-rating-label";
 import { IntelNextActionsPanel } from "./intel-chrome";
 
 export type IntelSearchTeam = {
@@ -193,7 +197,7 @@ export function IntelReadyView({
       {summary ? (
         <Panel style={{ minHeight: "auto" }}>
           <span className="app-badge">Brief</span>
-          <p style={{ margin: "10px 0 0" }}>{summary}</p>
+          <p style={{ margin: "10px 0 0" }}>{studentRatingLabel(summary)}</p>
         </Panel>
       ) : null}
 
@@ -232,9 +236,9 @@ export function IntelReadyView({
             )}
           </div>
           <h4>Reliability</h4>
-          <p className="app-muted">{intel.reliability.evidence}</p>
+          <p className="app-muted">{studentRatingLabel(intel.reliability.evidence)}</p>
           <h4>Foul risk: {intel.foulRisk.level}</h4>
-          <p className="app-muted">{intel.foulRisk.evidence}</p>
+          <p className="app-muted">{studentRatingLabel(intel.foulRisk.evidence)}</p>
         </Panel>
 
         <Panel>
@@ -354,7 +358,7 @@ export function IntelReadyView({
                   <ul className="intel-h2h">
                     {comparison.headToHead.map((row) => (
                       <li key={row.dimension}>
-                        <span>{row.dimension}</span>
+                        <span>{studentCompareDimensionLabel(row.dimension)}</span>
                         <strong>
                           {fmt(row.a)} vs {fmt(row.b)}
                         </strong>
@@ -369,7 +373,7 @@ export function IntelReadyView({
                     {comparison.chemistry.caveat || comparison.chemistry.caveats?.[0] ? (
                       <span className="app-muted">
                         {" "}
-                        — {comparison.chemistry.caveat || comparison.chemistry.caveats?.[0]}
+                        — {studentRatingLabel(comparison.chemistry.caveat || comparison.chemistry.caveats?.[0] || "")}
                       </span>
                     ) : null}
                   </p>

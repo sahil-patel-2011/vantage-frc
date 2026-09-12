@@ -5,6 +5,7 @@ import type { SummaryProvider } from "./types";
 
 export * from "./analytics";
 export * from "./providers";
+export * from "./student-copy";
 export * from "./types";
 export { IntelResearchRepository } from "./repository";
 
