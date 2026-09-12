@@ -15,6 +15,7 @@ const WEB = join(__dirname, "..", "..");
  * Form builder still said schemas / org-scoped / TBA; Chemistry still named
  * TBA/Statbotics; Inventory / Inspection / Learning / My kit / Kickoff still
  * badged Setup required; CAD API still said Onshape OAuth and API keys.
+ * leftover-learning-shot Learning title stays.
  */
 const FILES = [
   "lib/scouting/form-builder.ts",

@@ -1,7 +1,7 @@
 import LearningClient from "./learning-client";
 
 export const metadata = {
-  title: "Learning — Call Your Shot",
+  title: "Learning",
 };
 
 export default function LearningPage() {

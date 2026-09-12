@@ -286,7 +286,7 @@ function SummaryTiles({ view }: { view: LiveView }) {
 }
 
 /**
- * "Call Your Shot" calibration signals surfaced as EVIDENCE. A strong signal
+ * Learning calibration signals surfaced as EVIDENCE. A strong signal
  * may propose a skill entry; only a mentor's explicit click (the countersign)
  * writes one — the signal itself never changes anyone's proficiency. Thin
  * samples say "not enough graded calls yet" instead of scoring anybody.
@@ -304,7 +304,7 @@ function CalibrationEvidence({
   if (view.calibration.length === 0) return null;
   return (
     <Panel style={{ display: "grid", gap: 10 }}>
-      <h2 style={{ margin: 0 }}>Prediction calibration (Call Your Shot)</h2>
+      <h2 style={{ margin: 0 }}>Prediction calibration</h2>
       <p className="app-muted" style={{ margin: 0 }}>
         Evidence from calls made on the engineering calculators. A signal can propose a skill entry, but
         nothing lands in the graph until a mentor countersigns it.

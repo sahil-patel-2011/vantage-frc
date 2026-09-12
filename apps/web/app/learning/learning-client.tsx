@@ -1,5 +1,5 @@
 "use client";
-// /learning — the "Call Your Shot" home page.
+// /learning — the Learning home page.
 //
 // Mentors (owner/admin) get the foreman view: per-member per-surface rollups
 // with the ONE documented flag rule, the org call feed, and an honest
@@ -144,7 +144,7 @@ export default function LearningClient() {
             {" / Learning"}
           </>
         }
-        title="Learning — Call Your Shot"
+        title="Learning"
         description="Every call a member commits on Gearbox, Power budget, and Shooter table lands here. Mentors see who is calibrating and who needs a hand; each member sees their own record. Nothing is scored below four graded calls."
       />
       <nav className="intel-actions" aria-label="Related calculators">
@@ -179,7 +179,7 @@ export default function LearningClient() {
           title="Choose your team"
           description={
             view.message ||
-            "Join a team to record Call Your Shot activity. Calls from Gearbox, Power budget, and Shooter table land here once you belong to a team."
+            "Join a team to record Learning activity. Calls from Gearbox, Power budget, and Shooter table land here once you belong to a team."
           }
         >
           <Button as="a" variant="primary" href="/workspace">

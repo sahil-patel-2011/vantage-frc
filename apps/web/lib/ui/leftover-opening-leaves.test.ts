@@ -7,7 +7,8 @@ const WEB = join(__dirname, "..", "..");
 /**
  * Leftover student EmptyState title="Loading…" boards after leftover
  * opening-more. Hub labels stay Playbook, Learning, Work, and Get unstuck.
- * leftover-product-chrome Playbook, leftover-schema-oauth Learning,
+ * leftover-product-chrome Playbook, leftover-learning-shot Learning,
+ * leftover-schema-oauth Learning,
  * leftover-opening-more Opening Match sim, leftover-fmea Failure log,
  * leftover-pick-before Choose your team stay. Hub My Day / Schema A/B
  * stay. Routes stay. Do not invent a last-snapshot.
