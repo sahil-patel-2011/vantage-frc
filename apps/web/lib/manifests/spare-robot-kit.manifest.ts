@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "spare-robot-kit",
-  title: "Spare Robot Kit Checklist",
+  title: "Spare kit",
   route: "/spare-robot-kit",
   apiRoute: "/api/spare-robot-kit",
   hub: "Build",

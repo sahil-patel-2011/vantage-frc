@@ -1,7 +1,7 @@
 import SpareForecastClient from "./spare-forecast-client";
 
 export const metadata = {
-  title: "Spare-Parts Failure Forecast",
+  title: "Spares forecast",
 };
 
 export default function SpareForecastPage() {

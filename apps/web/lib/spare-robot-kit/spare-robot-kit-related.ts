@@ -1,10 +1,10 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Spare Robot Kit (never DEMO pack lists). */
+/** Soft-UI related surfaces for Spare kit (never DEMO pack lists). */
 export const SPARE_ROBOT_KIT_RELATED_LINKS = [
   { id: "fmea", label: "Failure log", tab: "fmea" },
-  { id: "spare-forecast", label: "Spare Forecast", tab: "spare-forecast" },
+  { id: "spare-forecast", label: "Spares forecast", tab: "spare-forecast" },
   { id: "batteries", label: "Batteries", tab: "batteries" },
   { id: "readiness-score", label: "Readiness", tab: "readiness-score" },
 ] as const;
@@ -24,7 +24,7 @@ export const SPARE_ROBOT_KIT_RELATED_INCLUDE: SpareRobotKitRelatedId[] = [
 ];
 
 /**
- * Soft-UI cross-links from Spare Robot Kit → FMEA / Spare Forecast / Batteries.
+ * Soft-UI cross-links from Spare kit → FMEA / Spares forecast / Batteries.
  * Build with hubHref — never broken JSX href templates.
  */
 export function spareRobotKitRelatedLinks(
@@ -89,7 +89,7 @@ export function spareRobotKitSetupSteps(orgId?: string | null): SpareRobotKitSet
     },
     {
       id: "spare-forecast",
-      label: "Open Spare Forecast",
+      label: "Open Spares forecast",
       detail: "Forecast failure demand beside the competition pack list.",
       href: hubHref("/build", "spare-forecast", orgId),
     },
@@ -109,7 +109,7 @@ export function shouldShowSpareRobotKitSummaryTiles(candidateCount: number, chec
   return candidateCount > 0 || checklistCount > 0;
 }
 
-/** Classify Spare Robot Kit Soft-UI shell — never invents DEMO pack lists. */
+/** Classify Spare kit Soft-UI shell — never invents DEMO pack lists. */
 export function classifySpareRobotKitShell(input: {
   loading?: boolean;
   fetchFailed?: boolean;
@@ -131,14 +131,14 @@ export function spareRobotKitShellCopy(kind: SpareRobotKitShellKind): SpareRobot
     case "loading":
       return {
         kind,
-        title: "Loading Spare Robot Kit…",
+        title: "Loading Spare kit…",
         description: "Checking which team you are on, spare bins, and Failure log history.",
       };
     case "error":
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Spare Robot Kit",
+        title: "Could not load Spare kit",
         description:
           "A network or server issue blocked the checklist. Retry, or open Failure log while it reloads.",
       };
@@ -168,8 +168,8 @@ export function spareRobotKitShellCopy(kind: SpareRobotKitShellKind): SpareRobot
 }
 
 /**
- * Soft-UI next actions for Spare Robot Kit empty/setup shells.
- * Points at FMEA / Inventory / Spare Forecast — never invents DEMO pack lists.
+ * Soft-UI next actions for Spare kit empty/setup shells.
+ * Points at FMEA / Inventory / Spares forecast — never invents DEMO pack lists.
  */
 export function spareRobotKitNextActions(input: {
   orgId?: string | null;
@@ -209,7 +209,7 @@ export function spareRobotKitNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Finish membership setup so Spare Robot Kit can load.",
+        detail: "Finish membership setup so Spare kit can load.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
       },
@@ -232,7 +232,7 @@ export function spareRobotKitNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Spare Robot Kit",
+        label: "Retry Spare kit",
         detail: "Reload real Failure log × inventory matches.",
         href: withOrgHref("/spare-robot-kit", orgId),
         primary: true,
@@ -245,7 +245,7 @@ export function spareRobotKitNextActions(input: {
       },
       {
         id: "spare-forecast",
-        label: "Open Spare Forecast",
+        label: "Open Spares forecast",
         detail: "Forecast stays available while the kit reloads.",
         href: hubHref("/build", "spare-forecast", orgId),
       },
@@ -269,7 +269,7 @@ export function spareRobotKitNextActions(input: {
       },
       {
         id: "spare-forecast",
-        label: "Open Spare Forecast",
+        label: "Open Spares forecast",
         detail: "Forecast demand stays empty until failures exist.",
         href: hubHref("/build", "spare-forecast", orgId),
       },
@@ -295,7 +295,7 @@ export function spareRobotKitNextActions(input: {
     },
     {
       id: "spare-forecast",
-      label: "Open Spare Forecast",
+      label: "Open Spares forecast",
       detail: "Cross-check demand beside the pack list.",
       href: hubHref("/build", "spare-forecast", orgId),
     },

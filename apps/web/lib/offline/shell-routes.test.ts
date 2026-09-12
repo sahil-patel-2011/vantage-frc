@@ -227,13 +227,13 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/command")).toBe("Event Day");
     expect(offlineCapableLabel("/chemistry")).toBe("Chemistry");
     expect(offlineCapableLabel("/pick-clock")).toBe("Pick clock");
-    expect(offlineCapableLabel("/alliance-selection-desk")).toBe("Alliance selection desk");
+    expect(offlineCapableLabel("/alliance-selection-desk")).toBe("Alliance desk");
     expect(offlineCapableLabel("/print-farm")).toBe("Print farm");
     expect(offlineCapableLabel("/inventory")).toBe("Inventory");
     expect(offlineCapableLabel("/defense-planner")).toBe("Defense planner");
     expect(offlineCapableLabel("/picklist-collab")).toBe("Collaborative pick list");
     expect(offlineCapableLabel("/dossier")).toBe("Dossier");
-    expect(offlineCapableLabel("/pit-repair-triage")).toBe("Pit repair triage");
+    expect(offlineCapableLabel("/pit-repair-triage")).toBe("Repair triage");
     expect(offlineCapableLabel("/event-day-plan")).toBe("Event-day plan");
     expect(offlineCapableLabel("/field-reset-timer")).toBe("Field reset timer");
     expect(offlineCapableLabel("/drive-team-signals")).toBe("Drive-team signals");
@@ -273,7 +273,7 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/outreach-calendar")).toBe("Outreach Calendar");
     expect(offlineCapableLabel("/visit-invites")).toBe("Visit Invites");
     expect(offlineCapableLabel("/judge-sim")).toBe("Judge pitch");
-    expect(offlineCapableLabel("/impact-essay")).toBe("Impact Essay");
+    expect(offlineCapableLabel("/impact-essay")).toBe("Impact essay");
     expect(offlineCapableLabel("/impact")).toBe("Community Impact");
     expect(offlineCapableLabel("/fundraisers")).toBe("Fundraisers");
     expect(offlineCapableLabel("/orders")).toBe("Orders");
@@ -302,8 +302,8 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/matching-gift-finder")).toBe("Matching Gift Finder");
     expect(offlineCapableLabel("/onboarding-buddy")).toBe("Onboarding Buddy");
     expect(offlineCapableLabel("/risk-burndown")).toBe("Risk-Register Burndown");
-    expect(offlineCapableLabel("/spare-robot-kit")).toBe("Spare Robot Kit");
-    expect(offlineCapableLabel("/spare-forecast")).toBe("Spare Forecast");
+    expect(offlineCapableLabel("/spare-robot-kit")).toBe("Spare kit");
+    expect(offlineCapableLabel("/spare-forecast")).toBe("Spares forecast");
     expect(offlineCapableLabel("/sponsor-renewal-roi")).toBe("Sponsor Renewal ROI");
     expect(offlineCapableLabel("/team-health-dashboard")).toBe("Team Health");
     expect(offlineCapableLabel("/sketch-to-brief")).toBe("Sketch-to-Brief");

@@ -67,7 +67,7 @@ async function persistSpareRobotKitSnapshot(
     await putFeatureSnapshot("spare-robot-kit", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("spare-robot-kit", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Spare Robot Kit already painted; IndexedDB is best-effort.
+    // Live Spare kit already painted; IndexedDB is best-effort.
   }
 }
 
@@ -138,10 +138,10 @@ function KitShell({
         breadcrumbs={
           <>
             <a href={buildHref}>Build</a>
-            {" / Spare Robot Kit"}
+            {" / Spare kit"}
           </>
         }
-        title="Spare Robot Kit Checklist"
+        title="Spare kit"
         description={description}
       >
         <RelatedStrip orgId={orgId} />
@@ -229,7 +229,7 @@ export default function SpareRobotKitClient() {
         if (!response.ok || !isSpareRobotKitView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Spare Robot Kit. Showing the last copy on this device.");
+            setError("Could not refresh Spare kit. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -244,7 +244,7 @@ export default function SpareRobotKitClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Spare Robot Kit. Showing the last copy on this device.");
+          setError("Could not refresh Spare kit. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -312,7 +312,7 @@ export default function SpareRobotKitClient() {
   if (shell === "loading") {
     return (
       <KitShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Spare Robot Kit" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Spare kit" fromCache={fromCache} cachedAt={cachedAt} />
       </KitShell>
     );
   }
@@ -325,7 +325,7 @@ export default function SpareRobotKitClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Spare Robot Kit" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Spare kit" fromCache={fromCache} cachedAt={cachedAt} />
       </KitShell>
     );
   }
@@ -336,7 +336,7 @@ export default function SpareRobotKitClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Spare Robot Kit" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Spare kit" fromCache={fromCache} cachedAt={cachedAt} />
       </KitShell>
     );
   }
@@ -347,10 +347,10 @@ export default function SpareRobotKitClient() {
         breadcrumbs={
           <>
             <a href={buildHref}>Build</a>
-            {" / Spare Robot Kit"}
+            {" / Spare kit"}
           </>
         }
-        title="Spare Robot Kit Checklist"
+        title="Spare kit"
         description="Generates a competition spare-parts kit by cross-referencing inventory spare bins against Failure log repeat-failure history."
       >
         <div className="srk-header-actions">
@@ -377,7 +377,7 @@ export default function SpareRobotKitClient() {
         </div>
       </PageHeader>
 
-      <OfflineBanner feature="Spare Robot Kit" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Spare kit" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

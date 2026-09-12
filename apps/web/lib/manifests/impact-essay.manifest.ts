@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "impact-essay",
-  title: "FIRST Impact Essay Generator",
+  title: "Impact essay",
   route: "/impact-essay",
   apiRoute: "/api/impact-essay",
   hub: "Business",

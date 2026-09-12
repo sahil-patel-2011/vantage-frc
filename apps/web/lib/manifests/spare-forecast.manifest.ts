@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "spare-forecast",
-  title: "Spare-Parts Failure Forecast",
+  title: "Spares forecast",
   route: "/spare-forecast",
   apiRoute: "/api/spare-forecast",
   hub: "Build",

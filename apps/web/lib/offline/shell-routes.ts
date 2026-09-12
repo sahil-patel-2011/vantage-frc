@@ -321,7 +321,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/messages")) return "Chat";
   if (bare.startsWith("/match-checklist")) return "Match checklist";
   if (bare.startsWith("/match-notes-timeline")) return "Match notes";
-  if (bare.startsWith("/pit-repair-triage")) return "Pit repair triage";
+  if (bare.startsWith("/pit-repair-triage")) return "Repair triage";
   if (bare === "/pit" || bare.startsWith("/pit/")) return "Pit";
   if (bare.startsWith("/video-analysis")) return "Video";
   if (bare.startsWith("/video")) return "Match video";
@@ -355,7 +355,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/outreach-calendar")) return "Outreach Calendar";
   if (bare.startsWith("/visit-invites")) return "Visit Invites";
   if (bare.startsWith("/judge-sim")) return "Judge pitch";
-  if (bare.startsWith("/impact-essay")) return "Impact Essay";
+  if (bare.startsWith("/impact-essay")) return "Impact essay";
   if (bare.startsWith("/impact")) return "Community Impact";
   if (bare.startsWith("/fundraisers")) return "Fundraisers";
   if (bare.startsWith("/orders")) return "Orders";
@@ -388,8 +388,8 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/cad/setup")) return "CAD setup";
   if (bare.startsWith("/cad/pair")) return "Pair this computer";
   if (bare.startsWith("/cad/connections")) return "CAD connections";
-  if (bare.startsWith("/spare-robot-kit")) return "Spare Robot Kit";
-  if (bare.startsWith("/spare-forecast")) return "Spare Forecast";
+  if (bare.startsWith("/spare-robot-kit")) return "Spare kit";
+  if (bare.startsWith("/spare-forecast")) return "Spares forecast";
   if (bare.startsWith("/sponsor-renewal-roi")) return "Sponsor Renewal ROI";
   if (bare.startsWith("/team-health-dashboard")) return "Team Health";
   if (bare.startsWith("/sketch-to-brief")) return "Sketch-to-Brief";
@@ -411,7 +411,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/my-day")) return "My Day";
   if (bare.startsWith("/chemistry")) return "Chemistry";
   if (bare.startsWith("/pick-clock")) return "Pick clock";
-  if (bare.startsWith("/alliance-selection-desk")) return "Alliance selection desk";
+  if (bare.startsWith("/alliance-selection-desk")) return "Alliance desk";
   if (bare.startsWith("/print-farm")) return "Print farm";
   if (bare.startsWith("/inventory")) return "Inventory";
   if (bare.startsWith("/defense-planner")) return "Defense planner";
@@ -457,7 +457,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/alumni-network")) return "Alumni Network";
   if (bare.startsWith("/auto-routines")) return "Auto routines";
   if (bare.startsWith("/auton-path-library")) return "Auton paths";
-  if (bare.startsWith("/bom-cost-rollup")) return "BOM cost rollup";
+  if (bare.startsWith("/bom-cost-rollup")) return "BOM cost";
   if (bare.startsWith("/bringup")) return "Bring-up";
   if (bare.startsWith("/budget-reconciler")) return "Budget check";
   if (bare.startsWith("/bus-factor")) return "Bus factor";

@@ -48,7 +48,7 @@ async function persistImpactEssaySnapshot(
     await putFeatureSnapshot("impact-essay", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("impact-essay", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Impact Essay already painted; IndexedDB is best-effort.
+    // Live Impact essay already painted; IndexedDB is best-effort.
   }
 }
 
@@ -124,10 +124,10 @@ function ImpactEssayShell({
         breadcrumbs={
           <>
             <a href={businessHref}>Business</a>
-            {" / Impact Essay"}
+            {" / Impact essay"}
           </>
         }
-        title="FIRST Impact Essay Generator"
+        title="Impact essay"
         description={description}
       >
         <ImpactEssayRelatedStrip orgId={orgId} />
@@ -221,7 +221,7 @@ export default function ImpactEssayClient() {
         if (!response.ok || !isImpactEssayView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Impact Essay. Showing the last copy on this device.");
+            setError("Could not refresh Impact essay. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -236,7 +236,7 @@ export default function ImpactEssayClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Impact Essay. Showing the last copy on this device.");
+          setError("Could not refresh Impact essay. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -321,7 +321,7 @@ export default function ImpactEssayClient() {
   if (shell === "loading") {
     return (
       <ImpactEssayShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Impact Essay" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Impact essay" fromCache={fromCache} cachedAt={cachedAt} />
       </ImpactEssayShell>
     );
   }
@@ -335,7 +335,7 @@ export default function ImpactEssayClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Impact Essay" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Impact essay" fromCache={fromCache} cachedAt={cachedAt} />
       </ImpactEssayShell>
     );
   }
@@ -347,7 +347,7 @@ export default function ImpactEssayClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Impact Essay" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Impact essay" fromCache={fromCache} cachedAt={cachedAt} />
       </ImpactEssayShell>
     );
   }
@@ -355,7 +355,7 @@ export default function ImpactEssayClient() {
   if (view?.status !== "live") {
     return (
       <ImpactEssayShell description={shellCopy.description} orgId={orgId} shell="setup">
-        <OfflineBanner feature="Impact Essay" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Impact essay" fromCache={fromCache} cachedAt={cachedAt} />
       </ImpactEssayShell>
     );
   }
@@ -366,10 +366,10 @@ export default function ImpactEssayClient() {
         breadcrumbs={
           <>
             <a href={businessHref}>Business</a>
-            {" / Impact Essay"}
+            {" / Impact essay"}
           </>
         }
-        title="FIRST Impact Essay Generator"
+        title="Impact essay"
         description="Draft the Impact and Engineering Inspiration essays strictly from your logged outreach, hours, sponsors, and events — every claim cites a real record. Cross-check Community Impact, Awards, and Writer."
       >
         <div className="impact-essay-header-actions">
@@ -399,7 +399,7 @@ export default function ImpactEssayClient() {
           ))}
         </div>
       </PageHeader>
-      <OfflineBanner feature="Impact Essay" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Impact essay" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -468,7 +468,7 @@ export default function ImpactEssayClient() {
       <div className="impact-essay-layout">
         <GenerateForm busy={busy} award={award} setAward={setAward} mutate={mutate} hasData={hasGroundedData} />
         <DraftsList view={view} busy={busy} mutate={mutate} />
-        <Panel className="impact-essay-tip" aria-label="Impact Essay tip">
+        <Panel className="impact-essay-tip" aria-label="Impact essay tip">
           <span className="eyebrow">Grounding path</span>
           <p className="app-muted" style={{ marginTop: 8 }}>
             Keep outreach facts in <a href={impactHref}>Community Impact</a>, upload packets in{" "}

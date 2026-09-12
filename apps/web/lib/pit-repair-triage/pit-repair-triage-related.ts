@@ -2,7 +2,7 @@ import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 import { setupActionsFrom } from "../setup-actions";
 
-/** Soft-UI related surfaces for Pit Repair Triage (never DEMO fix/swap calls). */
+/** Soft-UI related surfaces for Repair triage (never DEMO fix/swap calls). */
 export const PIT_REPAIR_TRIAGE_RELATED_LINKS = [
   { id: "command", label: "Command", tab: "command" },
   { id: "fmea", label: "Failure log", hub: "/build" as const, tab: "fmea" },
@@ -138,14 +138,14 @@ export function pitRepairTriageShellCopy(kind: PitRepairTriageShellKind): PitRep
     case "loading":
       return {
         kind,
-        title: "Loading Pit Repair Triage…",
+        title: "Opening Repair triage",
         description: "Checking which team you are on, Failure log history, and spares.",
       };
     case "error":
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Pit Repair Triage",
+        title: "Could not load Repair triage",
         description:
           "A network or server issue blocked triage. Retry, or open Failure log while it reloads.",
       };
@@ -168,7 +168,7 @@ export function pitRepairTriageShellCopy(kind: PitRepairTriageShellKind): PitRep
     default:
       return {
         kind: "ready",
-        title: "Pit repair triage",
+        title: "Repair triage",
         description: "Reports from logged failures only.",
       };
   }
@@ -193,7 +193,7 @@ export function pitRepairTriageNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Pit Repair Triage",
+        label: "Retry Repair triage",
         detail: "Reload real triage reports.",
         href: withOrgHref("/pit-repair-triage", orgId),
         primary: true,
@@ -263,7 +263,7 @@ export function pitRepairTriageNextActions(input: {
     },
     {
       id: "spare-kit",
-      label: "Open Spare Robot Kit",
+      label: "Open Spare kit",
       detail: "Pre-stage pack lists beside triage swaps.",
       href: hubHref("/build", "spare-robot-kit", orgId),
     },

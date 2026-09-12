@@ -26,7 +26,7 @@ function setupStepsFor(orgId: string | null): ImpactEssaySetupStep[] {
     {
       id: "workspace",
       label: "Choose your team",
-      detail: "Choose your team to open Impact Essay.",
+      detail: "Choose your team to open Impact essay.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {

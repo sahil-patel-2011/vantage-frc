@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "bom-cost-rollup",
-  title: "BOM Cost Rollup",
+  title: "BOM cost",
   route: "/bom-cost-rollup",
   apiRoute: "/api/bom-cost-rollup",
   hub: "Build",

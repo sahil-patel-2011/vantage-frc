@@ -1,7 +1,7 @@
 import AllianceSelectionDeskClient from "./alliance-selection-desk-client";
 
 export const metadata = {
-  title: "Alliance selection desk",
+  title: "Alliance desk",
 };
 
 export default function AllianceSelectionDeskPage() {

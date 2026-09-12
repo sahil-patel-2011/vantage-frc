@@ -1,7 +1,7 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Impact Essay (never DEMO essay metrics). */
+/** Soft-UI related surfaces for Impact essay (never DEMO essay metrics). */
 export const IMPACT_ESSAY_RELATED_LINKS = [
   { id: "impact", label: "Community Impact", kind: "business" as const, tab: "impact" },
   { id: "evidence", label: "Awards", kind: "business" as const, tab: "evidence" },
@@ -22,7 +22,7 @@ export type ImpactEssayRelatedLink = {
 export const IMPACT_ESSAY_RELATED_INCLUDE: ImpactEssayRelatedId[] = ["impact", "evidence", "writer"];
 
 /**
- * Soft-UI cross-links from Impact Essay → Impact / Awards / Writer.
+ * Soft-UI cross-links from Impact essay → Impact / Awards / Writer.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function impactEssayRelatedLinks(
@@ -83,7 +83,7 @@ export function shouldShowImpactEssaySummaryTiles(hasGroundedData: boolean): boo
   return hasGroundedData;
 }
 
-/** Classify Impact Essay Soft-UI shell — never invents DEMO essay metrics. */
+/** Classify Impact essay Soft-UI shell — never invents DEMO essay metrics. */
 export function classifyImpactEssayShell(input: {
   loading: boolean;
   fetchFailed?: boolean;
@@ -104,7 +104,7 @@ export function impactEssayShellCopy(kind: ImpactEssayShellKind): ImpactEssayEmp
     case "loading":
       return {
         kind,
-        title: "Loading Impact Essay…",
+        title: "Opening Impact essay",
         description:
           "Checking which team you are on and logged outreach records.",
       };
@@ -112,7 +112,7 @@ export function impactEssayShellCopy(kind: ImpactEssayShellKind): ImpactEssayEmp
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Impact Essay",
+        title: "Could not load Impact essay",
         description:
           "A network or server issue blocked the essay generator. Retry, or open Community Impact / Awards / Writer while it reloads.",
       };
@@ -143,7 +143,7 @@ export function impactEssayShellCopy(kind: ImpactEssayShellKind): ImpactEssayEmp
 }
 
 /**
- * Soft-UI next actions for Impact Essay empty/setup shells.
+ * Soft-UI next actions for Impact essay empty/setup shells.
  * Points at Impact / Awards / Writer — never invents DEMO essay metrics.
  */
 export function impactEssayNextActions(input: {
@@ -192,7 +192,7 @@ export function impactEssayNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Finish membership setup so Impact Essay can load.",
+        detail: "Finish membership setup so Impact essay can load.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
       },
@@ -221,7 +221,7 @@ export function impactEssayNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Impact Essay",
+        label: "Retry Impact essay",
         detail: "Reload real grounded records and drafts.",
         href: withOrgHref("/impact-essay", orgId),
         primary: true,

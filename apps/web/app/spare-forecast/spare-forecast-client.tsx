@@ -61,7 +61,7 @@ async function persistSpareForecastSnapshot(
     await putFeatureSnapshot("spare-forecast", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("spare-forecast", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Spare Forecast already painted; IndexedDB is best-effort.
+    // Live Spares forecast already painted; IndexedDB is best-effort.
   }
 }
 
@@ -138,10 +138,10 @@ function SpareForecastShell({
         breadcrumbs={
           <>
             <a href={buildHref}>Build</a>
-            {" / Spare Forecast"}
+            {" / Spares forecast"}
           </>
         }
-        title="Spare-Parts Failure Forecast"
+        title="Spares forecast"
         description={description}
       >
         <SpareForecastRelatedStrip orgId={orgId} />
@@ -248,7 +248,7 @@ export default function SpareForecastClient() {
         if (!response.ok || !isSpareForecastView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Spare Forecast. Showing the last copy on this device.");
+            setError("Could not refresh Spares forecast. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -263,7 +263,7 @@ export default function SpareForecastClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Spare Forecast. Showing the last copy on this device.");
+          setError("Could not refresh Spares forecast. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -362,7 +362,7 @@ export default function SpareForecastClient() {
   if (shell === "loading") {
     return (
       <SpareForecastShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Spare Forecast" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Spares forecast" fromCache={fromCache} cachedAt={cachedAt} />
       </SpareForecastShell>
     );
   }
@@ -376,7 +376,7 @@ export default function SpareForecastClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Spare Forecast" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Spares forecast" fromCache={fromCache} cachedAt={cachedAt} />
       </SpareForecastShell>
     );
   }
@@ -390,7 +390,7 @@ export default function SpareForecastClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Spare Forecast" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Spares forecast" fromCache={fromCache} cachedAt={cachedAt} />
       </SpareForecastShell>
     );
   }
@@ -398,7 +398,7 @@ export default function SpareForecastClient() {
   if (view?.status !== "live") {
     return (
       <SpareForecastShell description={shellCopy.description} orgId={orgId} shell="setup">
-        <OfflineBanner feature="Spare Forecast" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Spares forecast" fromCache={fromCache} cachedAt={cachedAt} />
       </SpareForecastShell>
     );
   }
@@ -409,10 +409,10 @@ export default function SpareForecastClient() {
         breadcrumbs={
           <>
             <a href={buildHref}>Build</a>
-            {" / Spare Forecast"}
+            {" / Spares forecast"}
           </>
         }
-        title="Spare-Parts Failure Forecast"
+        title="Spares forecast"
         description={
           view.seasonHorizon === "offseason"
             ? "Offseason: remaining-season risk is unknown. Cadence still uses real spare-category bins × logged failures — never \"no risk\" from a closed 200-day window."
@@ -447,7 +447,7 @@ export default function SpareForecastClient() {
         </div>
       </PageHeader>
 
-      <OfflineBanner feature="Spare Forecast" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Spares forecast" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -547,7 +547,7 @@ function SummaryTiles({ view, loaded }: { view: LiveView; loaded: boolean }) {
     { label: "Critical", value: formatSpareForecastMetric(offseason ? null : critical, loaded) },
   ];
   return (
-    <Panel className="spare-forecast-coverage" aria-label="Spare Forecast summary">
+    <Panel className="spare-forecast-coverage" aria-label="Spares forecast summary">
       <div className="spare-forecast-stats">
         <div>
           <span

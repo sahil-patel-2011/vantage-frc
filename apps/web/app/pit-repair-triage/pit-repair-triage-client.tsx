@@ -150,10 +150,10 @@ function TriageShell({
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Pit repair triage"}
+            {" / Repair triage"}
           </>
         }
-        title="Pit repair triage"
+        title="Repair triage"
         description={description}
       >
         <RelatedStrip orgId={orgId} />
@@ -333,7 +333,7 @@ export default function PitRepairTriageClient() {
   if (shell === "loading") {
     return (
       <TriageShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Pit repair triage" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Repair triage" fromCache={fromCache} cachedAt={cachedAt} />
       </TriageShell>
     );
   }
@@ -346,7 +346,7 @@ export default function PitRepairTriageClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Pit repair triage" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Repair triage" fromCache={fromCache} cachedAt={cachedAt} />
       </TriageShell>
     );
   }
@@ -357,7 +357,7 @@ export default function PitRepairTriageClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Pit repair triage" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Repair triage" fromCache={fromCache} cachedAt={cachedAt} />
       </TriageShell>
     );
   }
@@ -368,10 +368,10 @@ export default function PitRepairTriageClient() {
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Pit repair triage"}
+            {" / Repair triage"}
           </>
         }
-        title="Pit repair triage"
+        title="Repair triage"
         description="Log a pit failure against real Failure log history and spare stock. Cross-check Command and Spare Kit."
       >
         <div className="prt-header-actions">
@@ -398,7 +398,7 @@ export default function PitRepairTriageClient() {
         </div>
       </PageHeader>
 
-      <OfflineBanner feature="Pit repair triage" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Repair triage" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

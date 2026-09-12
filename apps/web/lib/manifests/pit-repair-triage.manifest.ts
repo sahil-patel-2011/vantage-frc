@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "pit-repair-triage",
-  title: "Pit Repair Triage",
+  title: "Repair triage",
   route: "/pit-repair-triage",
   apiRoute: "/api/pit-repair-triage",
   hub: "Competition",

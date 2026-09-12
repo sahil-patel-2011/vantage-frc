@@ -2,7 +2,7 @@ import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 import type { SeasonHorizon } from "./types";
 
-/** Soft-UI related surfaces for Spare Forecast (never DEMO spare counts). */
+/** Soft-UI related surfaces for Spares forecast (never DEMO spare counts). */
 export const SPARE_FORECAST_RELATED_LINKS = [
   { id: "batteries", label: "Batteries", kind: "team" as const, tab: "batteries" },
   { id: "orders", label: "Orders", kind: "business" as const, tab: "orders" },
@@ -27,7 +27,7 @@ export const SPARE_FORECAST_RELATED_INCLUDE: SpareForecastRelatedId[] = [
 ];
 
 /**
- * Soft-UI cross-links from Spare Forecast → Batteries / Orders / Subsystems.
+ * Soft-UI cross-links from Spares forecast → Batteries / Orders / Subsystems.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function spareForecastRelatedLinks(
@@ -85,7 +85,7 @@ export function formatSpareForecastMetric(value: unknown, loaded: boolean): stri
   return Math.floor(n).toLocaleString();
 }
 
-/** Classify Spare Forecast Soft-UI shell — never invents DEMO spare counts. */
+/** Classify Spares forecast Soft-UI shell — never invents DEMO spare counts. */
 export function classifySpareForecastShell(input: {
   loading: boolean;
   fetchFailed?: boolean;
@@ -155,7 +155,7 @@ export function spareForecastShellCopy(kind: SpareForecastShellKind): SpareForec
 }
 
 /**
- * Soft-UI next actions for Spare Forecast empty/setup shells.
+ * Soft-UI next actions for Spares forecast empty/setup shells.
  * Points at Batteries / Orders / Subsystems — never invents DEMO spare counts.
  */
 export function spareForecastNextActions(input: {
@@ -207,7 +207,7 @@ export function spareForecastNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Finish membership setup so Spare Forecast can load.",
+        detail: "Finish membership setup so Spares forecast can load.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
       },
@@ -236,7 +236,7 @@ export function spareForecastNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Spare Forecast",
+        label: "Retry Spares forecast",
         detail: "Reload real inventory and Failure log cadence.",
         href: withOrgHref("/spare-forecast", orgId),
         primary: true,
