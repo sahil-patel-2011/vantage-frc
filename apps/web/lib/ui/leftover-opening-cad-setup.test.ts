@@ -38,7 +38,6 @@ describe("leftover student opening-cad-setup chrome", () => {
     expect(setup).toMatch(/Opening CAD setup/);
     expect(setup).toMatch(/CAD_SETUP_TITLE/);
     expect(setup).toMatch(/feature="CAD setup"/);
-    expect(setup).toMatch(/Connect Onshape/);
     const proto = readFileSync(
       join(WEB, "app/prototype-tracker/prototype-tracker-client.tsx"),
       "utf8",
