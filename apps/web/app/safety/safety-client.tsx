@@ -221,7 +221,7 @@ export default function SafetyClient({ orgId }: { orgId: string | null }) {
         <OfflineBanner feature="Safety" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
-          title={failure ? failure.title : "Loading safety…"}
+          title={failure ? failure.title : "Opening Safety log"}
           description={failure ? failure.description : "Checking your team."}
           aria-busy={!loadFailed}
         >

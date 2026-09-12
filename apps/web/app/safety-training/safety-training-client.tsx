@@ -241,7 +241,7 @@ export default function SafetyTrainingClient() {
             : null;
           return (
             <EmptyState
-              title={copy ? copy.title : "Loading…"}
+              title={copy ? copy.title : "Opening Safety"}
               description={copy ? copy.description : "Checking your team."}
               aria-busy={!fetchFailed}
             >
