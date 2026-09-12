@@ -2,14 +2,14 @@ import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 import { setupActionsFrom } from "../setup-actions";
 
-/** Soft-UI related surfaces for Match Strategy Cards (never DEMO game plans). */
+/** Soft-UI related surfaces for Match cards (never DEMO game plans). */
 export const MATCH_STRATEGY_CARDS_RELATED_LINKS = [
   { id: "strategy", label: "Strategy", tab: "strategy" },
   { id: "match-checklist", label: "Match checklist", tab: "match-checklist" },
   { id: "command", label: "Event day", tab: "command" },
   { id: "briefing", label: "Briefing", tab: "briefing" },
-  { id: "defense-planner", label: "Defense Planner", tab: "defense-planner" },
-  { id: "drive-team-signals", label: "Drive-Team Signals", tab: "drive-team-signals" },
+  { id: "defense-planner", label: "Defense", tab: "defense-planner" },
+  { id: "drive-team-signals", label: "Drive-team board", tab: "drive-team-signals" },
 ] as const;
 
 export type MatchStrategyCardsRelatedId =
@@ -30,7 +30,7 @@ export const MATCH_STRATEGY_CARDS_RELATED_INCLUDE: MatchStrategyCardsRelatedId[]
 ];
 
 /**
- * Soft-UI cross-links from Match Strategy Cards → Strategy / Checklist / Event day.
+ * Soft-UI cross-links from Match cards → Strategy / Checklist / Event day.
  * Build with hubHref — never broken JSX href templates.
  */
 export function matchStrategyCardsRelatedLinks(
@@ -128,7 +128,7 @@ export function shouldShowMatchStrategyCardsSummaryTiles(cardCount: number): boo
   return cardCount > 0;
 }
 
-/** Classify Match Strategy Cards Soft-UI shell — never invents DEMO game plans. */
+/** Classify Match cards Soft-UI shell — never invents DEMO game plans. */
 export function classifyMatchStrategyCardsShell(input: {
   loading?: boolean;
   fetchFailed?: boolean;
@@ -151,7 +151,7 @@ export function matchStrategyCardsShellCopy(
     case "loading":
       return {
         kind,
-        title: "Loading Match Strategy Cards…",
+        title: "Opening Match cards",
         description:
           "Checking which team you are on and scheduled matches.",
       };
@@ -159,7 +159,7 @@ export function matchStrategyCardsShellCopy(
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Match Strategy Cards",
+        title: "Could not load Match cards",
         description:
           "A network or server issue blocked the schedule. Retry, or open Strategy / Event day while it reloads.",
       };
@@ -190,7 +190,7 @@ export function matchStrategyCardsShellCopy(
 }
 
 /**
- * Soft-UI next actions for Match Strategy Cards empty/setup shells.
+ * Soft-UI next actions for Match cards empty/setup shells.
  * Points at Strategy / Checklist / Command — never invents DEMO game plans.
  */
 export function matchStrategyCardsNextActions(input: {
@@ -217,7 +217,7 @@ export function matchStrategyCardsNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Match Strategy Cards",
+        label: "Retry Match cards",
         detail: "Reload real schedule cards.",
         href: withOrgHref("/match-strategy-cards", orgId),
         primary: true,
@@ -358,13 +358,13 @@ export function matchStrategyCardsNextActions(input: {
     },
     {
       id: "defense-planner",
-      label: "Open Defense Planner",
+      label: "Open Defense",
       detail: "Ground defense focus in scouted matchups.",
       href: hubHref("/competition", "defense-planner", orgId),
     },
     {
       id: "drive-team-signals",
-      label: "Open Drive-Team Signals",
+      label: "Open Drive-team board",
       detail: "Carry live signals onto the field with the printed pack.",
       href: hubHref("/competition", "drive-team-signals", orgId),
     },

@@ -49,6 +49,9 @@ describe("leftover student delta chrome", () => {
     expect(related).toMatch(/Choose your team/);
     expect(related).toMatch(/Sync Team data/);
     expect(related).toMatch(/Event day/);
+    expect(related).toMatch(/label: "Match cards"/);
+    expect(related).toMatch(/label: "Pick list"/);
+    expect(related).toMatch(/Open Event day/);
     expect(related).not.toMatch(/Event Day/);
     expect(related).not.toMatch(/title="Loading/);
     expect(related).not.toMatch(/\bPick a team\b/);
@@ -104,5 +107,8 @@ describe("leftover student delta chrome", () => {
     );
     expect(routes).toMatch(/if \(bare\.startsWith\("\/counter-book"\)\) return "Counter-book"/);
     expect(routes).toMatch(/if \(bare\.startsWith\("\/retro"\)\) return "Retro"/);
+    expect(routes).toMatch(
+      /if \(bare\.startsWith\("\/match-strategy-cards"\)\) return "Match cards"/,
+    );
   });
 });

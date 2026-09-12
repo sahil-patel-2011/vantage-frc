@@ -81,5 +81,8 @@ describe("leftover student home-more chrome", () => {
     );
     expect(routes).toMatch(/if \(bare\.startsWith\("\/counter-book"\)\) return "Counter-book"/);
     expect(routes).toMatch(/if \(bare\.startsWith\("\/retro"\)\) return "Retro"/);
+    expect(routes).toMatch(
+      /if \(bare\.startsWith\("\/match-strategy-cards"\)\) return "Match cards"/,
+    );
   });
 });

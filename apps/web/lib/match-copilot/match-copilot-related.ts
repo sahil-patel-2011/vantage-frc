@@ -162,7 +162,7 @@ export function matchCopilotNextActions(input: {
         },
         {
           id: "command",
-          label: "Open Command",
+          label: "Open Event day",
           detail: "Active event stays blank until your team selects one.",
           href: hubHref("/competition", "command", null),
         },
@@ -184,7 +184,7 @@ export function matchCopilotNextActions(input: {
       },
       {
         id: "command",
-        label: "Open Command",
+        label: "Open Event day",
         detail: "Set the active event so your next match can resolve.",
         href: hubHref("/competition", "command", orgId),
       },
@@ -220,7 +220,7 @@ export function matchCopilotNextActions(input: {
       },
       {
         id: "command",
-        label: "Open Command",
+        label: "Open Event day",
         detail: "Event day command stays available while the brief reloads.",
         href: hubHref("/competition", "command", orgId),
       },
@@ -250,7 +250,7 @@ export function matchCopilotNextActions(input: {
       },
       {
         id: "command",
-        label: "Open Command",
+        label: "Open Event day",
         detail: "Confirm the active event and schedule before queuing.",
         href: hubHref("/competition", "command", orgId),
       },
@@ -293,7 +293,7 @@ export function matchCopilotNextActions(input: {
     },
     {
       id: "command",
-      label: "Open Command",
+      label: "Open Event day",
       detail: "Confirm event day context before queuing.",
       href: hubHref("/competition", "command", orgId),
     },

@@ -74,6 +74,12 @@ describe("leftover student event-day-title chrome", () => {
     );
     expect(board).toMatch(/title="Drive-team board"/);
     expect(board).toMatch(/feature="Drive-team board"/);
+    const boardRelated = readFileSync(
+      join(WEB, "lib/drive-team-signals/drive-team-signals-related.ts"),
+      "utf8",
+    );
+    expect(boardRelated).toMatch(/Open Match cards/);
+    expect(boardRelated).toMatch(/Drive-team board/);
     const charge = readFileSync(
       join(WEB, "app/battery-rotation/battery-rotation-client.tsx"),
       "utf8",

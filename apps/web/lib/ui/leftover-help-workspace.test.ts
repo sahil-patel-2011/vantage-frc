@@ -38,6 +38,7 @@ describe("leftover student Help / Workspace TBA chrome", () => {
     expect(src).not.toMatch(/team_event_metrics/);
     expect(src).not.toMatch(/Season EPA/);
     expect(src).toMatch(/Connect TBA/);
+    expect(src).toMatch(/Open Event day/);
   });
 
   it("section help stays student-readable", () => {
@@ -47,5 +48,7 @@ describe("leftover student Help / Workspace TBA chrome", () => {
     expect(strategy?.what).toBeTruthy();
     expectPlainCopy(command!.what);
     expectPlainCopy(strategy!.what);
+    const help = readFileSync(join(WEB, "lib/help/section-help.ts"), "utf8");
+    expect(help).toMatch(/label: "Match cards"/);
   });
 });

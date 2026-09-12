@@ -69,8 +69,10 @@ describe("leftover student invites chrome", () => {
     expect(articles).toMatch(/Connect TBA/);
     expect(articles).toMatch(/Choose your team/);
     expect(articles).toMatch(/Alliance desk/);
+    expect(articles).toMatch(/Open Event day/);
     const help = readFileSync(join(WEB, "lib/help/section-help.ts"), "utf8");
     expect(help).toMatch(/Failure log/);
+    expect(help).toMatch(/label: "Match cards"/);
     const routes = readFileSync(join(WEB, "lib/offline/shell-routes.ts"), "utf8");
     expect(routes).toMatch(/if \(bare\.startsWith\("\/team\/admin"\)\) return "Invites"/);
     expect(routes).toMatch(

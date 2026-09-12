@@ -89,6 +89,8 @@ describe("leftover student scout-more chrome", () => {
     expect(heatRelated).toMatch(/Opening Heat signals/);
     expect(heatRelated).not.toMatch(/title="Loading/);
     expect(heatRelated).toMatch(/Choose your team/);
+    expect(heatRelated).toMatch(/label: "Pick list"/);
+    expect(heatRelated).toMatch(/Open Pick list/);
     expect(heatRelated).not.toMatch(/\bPick a team\b/);
     const assisted = readFileSync(
       join(WEB, "app/scout-assisted-count/scout-assisted-count-client.tsx"),

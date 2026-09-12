@@ -108,6 +108,7 @@ describe("leftover student community-impact chrome", () => {
     expect(articles).toMatch(/Connect TBA/);
     expect(articles).toMatch(/Choose your team/);
     expect(articles).toMatch(/Alliance desk/);
+    expect(articles).toMatch(/Open Event day/);
     const routes = readFileSync(join(WEB, "lib/offline/shell-routes.ts"), "utf8");
     expect(routes).toMatch(/if \(bare\.startsWith\("\/impact"\)\) return "Impact"/);
     expect(routes).toMatch(/if \(bare\.startsWith\("\/impact-essay"\)\) return "Impact essay"/);

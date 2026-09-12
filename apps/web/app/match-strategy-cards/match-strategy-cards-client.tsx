@@ -121,17 +121,17 @@ function CardsShell({
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Match strategy cards"}
+            {" / Match cards"}
           </>
         }
-        title="Match strategy cards"
+        title="Match cards"
         description={description}
       >
         <RelatedStrip orgId={orgId} />
       </PageHeader>
       {children}
       {shell === "loading" ? (
-        <div aria-busy="true" aria-label="Loading match strategy cards">
+        <div aria-busy="true" aria-label="Opening Match cards">
           <SoftBlockSkeleton lines={4} />
         </div>
       ) : shell === "error" ? (
@@ -206,7 +206,7 @@ export default function MatchStrategyCardsClient() {
         if (!response.ok || !isMatchStrategyCardsView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Match strategy cards. Showing the last copy on this device.");
+            setError("Could not refresh Match cards. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -220,7 +220,7 @@ export default function MatchStrategyCardsClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Match strategy cards. Showing the last copy on this device.");
+          setError("Could not refresh Match cards. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -317,7 +317,7 @@ export default function MatchStrategyCardsClient() {
   if (shell === "loading") {
     return (
       <CardsShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Match strategy cards" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Match cards" fromCache={fromCache} cachedAt={cachedAt} />
       </CardsShell>
     );
   }
@@ -331,7 +331,7 @@ export default function MatchStrategyCardsClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Match strategy cards" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Match cards" fromCache={fromCache} cachedAt={cachedAt} />
       </CardsShell>
     );
   }
@@ -343,7 +343,7 @@ export default function MatchStrategyCardsClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Match strategy cards" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Match cards" fromCache={fromCache} cachedAt={cachedAt} />
       </CardsShell>
     );
   }
@@ -351,7 +351,7 @@ export default function MatchStrategyCardsClient() {
   if (shell === "empty") {
     return (
       <CardsShell description={shellCopy.description} orgId={orgId} shell="empty">
-        <OfflineBanner feature="Match strategy cards" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Match cards" fromCache={fromCache} cachedAt={cachedAt} />
       </CardsShell>
     );
   }
@@ -359,7 +359,7 @@ export default function MatchStrategyCardsClient() {
   if (view?.status !== "live") {
     return (
       <CardsShell description={shellCopy.description} orgId={orgId} shell="setup">
-        <OfflineBanner feature="Match strategy cards" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Match cards" fromCache={fromCache} cachedAt={cachedAt} />
       </CardsShell>
     );
   }
@@ -370,10 +370,10 @@ export default function MatchStrategyCardsClient() {
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Match strategy cards"}
+            {" / Match cards"}
           </>
         }
-        title="Match strategy cards"
+        title="Match cards"
         description="Printable game plan for our next match — roles, auto, defense, threats. Auto / backup / deploy cues come from written text only."
       >
         <div className="msc-header-actions">
@@ -385,7 +385,7 @@ export default function MatchStrategyCardsClient() {
         </div>
       </PageHeader>
 
-      <OfflineBanner feature="Match strategy cards" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Match cards" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -396,7 +396,7 @@ export default function MatchStrategyCardsClient() {
       <NextActionsPanel actions={nextActions} />
 
       {showTiles ? (
-        <section className="msc-stats" aria-label="Match strategy cards counts">
+        <section className="msc-stats" aria-label="Match cards counts">
           <StatTile label="Scheduled" value={formatMatchStrategyCardsMetric(cardCount, true)} />
           <StatTile label="Saved plans" value={formatMatchStrategyCardsMetric(savedCount, true)} />
         </section>

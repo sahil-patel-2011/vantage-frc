@@ -102,6 +102,7 @@ describe("leftover student event-day-more chrome", () => {
     expect(articles).toMatch(/Connect TBA/);
     expect(articles).toMatch(/Choose your team/);
     expect(articles).toMatch(/Alliance desk/);
+    expect(articles).toMatch(/Open Event day/);
     const teamData = readFileSync(join(WEB, "app/team/data/team-data-client.tsx"), "utf8");
     expect(teamData).toMatch(/Connect TBA/);
     expect(teamData).toMatch(/TBA Read API/);
@@ -119,5 +120,8 @@ describe("leftover student event-day-more chrome", () => {
     expect(routes).toMatch(/if \(bare\.startsWith\("\/skills-graph"\)\) return "Skills"/);
     expect(routes).toMatch(/if \(bare\.startsWith\("\/risks"\)\) return "Risk register"/);
     expect(routes).toMatch(/if \(bare\.startsWith\("\/build-burndown"\)\) return "Burndown"/);
+    expect(routes).toMatch(
+      /if \(bare\.startsWith\("\/match-strategy-cards"\)\) return "Match cards"/,
+    );
   });
 });

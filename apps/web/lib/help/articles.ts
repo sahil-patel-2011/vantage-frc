@@ -462,7 +462,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
     relatedHref: "/competition?tab=command",
     sections: [
       {
-        heading: "Open Command",
+        heading: "Open Event day",
         body: [
           "Competition → Event day, or /command (Vantage Event day).",
           "Choose your team and active event first. Command stays blank until the schedule is saved.",

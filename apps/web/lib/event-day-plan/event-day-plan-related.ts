@@ -206,7 +206,7 @@ export function eventDayPlanNextActions(input: {
       },
       {
         id: "command",
-        label: "Open Command",
+        label: "Open Event day",
         detail: "Command stays available while the planner reloads.",
         href: hubHref("/competition", "command", orgId),
       },
@@ -230,7 +230,7 @@ export function eventDayPlanNextActions(input: {
       },
       {
         id: "command",
-        label: "Open Command",
+        label: "Open Event day",
         detail: "Cross-check live event-day context beside the hourly overlay.",
         href: hubHref("/competition", "command", orgId),
       },
@@ -256,7 +256,7 @@ export function eventDayPlanNextActions(input: {
     },
     {
       id: "command",
-      label: "Open Command",
+      label: "Open Event day",
       detail: "Carry the day plan into event-day ops.",
       href: hubHref("/competition", "command", orgId),
     },

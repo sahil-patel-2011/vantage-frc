@@ -4,10 +4,10 @@ import { withOrgHref } from "../nav/product-nav";
 
 /** Soft-UI related surfaces for Drive-team board (never DEMO cheat sheets). */
 export const DRIVE_TEAM_SIGNALS_RELATED_LINKS = [
-  { id: "match-checklist", label: "Match Checklist", tab: "match-checklist" },
-  { id: "match-strategy-cards", label: "Strategy Cards", tab: "match-strategy-cards" },
-  // Match Copilot was consolidated into the one Pre-Match Briefing.
-  { id: "briefing", label: "Pre-Match Briefing", tab: "briefing" },
+  { id: "match-checklist", label: "Match checklist", tab: "match-checklist" },
+  { id: "match-strategy-cards", label: "Match cards", tab: "match-strategy-cards" },
+  // Briefing is the one pre-match card.
+  { id: "briefing", label: "Briefing", tab: "briefing" },
   { id: "field-reset-timer", label: "Field reset", hub: "/team" as const, tab: "field-reset-timer" },
 ] as const;
 
@@ -141,7 +141,7 @@ export function driveTeamSignalsShellCopy(kind: DriveTeamSignalsShellKind): Driv
         badge: "Unavailable",
         title: "Could not load Drive-team board",
         description:
-          "A network or server issue blocked the signal board. Retry, or open Match Checklist while it reloads.",
+          "A network or server issue blocked the signal board. Retry, or open Match checklist while it reloads.",
       };
     case "setup":
       return {
@@ -196,13 +196,13 @@ export function driveTeamSignalsNextActions(input: {
       },
       {
         id: "checklist",
-        label: "Open Match Checklist",
+        label: "Open Match checklist",
         detail: "Checklists stay available while the board reloads.",
         href: hubHref("/competition", "match-checklist", orgId),
       },
       {
         id: "briefing",
-        label: "Open Pre-Match Briefing",
+        label: "Open Briefing",
         detail: "The briefing stays available while the board reloads.",
         href: hubHref("/competition", "briefing", orgId),
       },
@@ -220,7 +220,7 @@ export function driveTeamSignalsNextActions(input: {
       },
       {
         id: "checklist",
-        label: "Open Match Checklist",
+        label: "Open Match checklist",
         detail: "Prep pre-match cues beside future callouts.",
         href: hubHref("/competition", "match-checklist", orgId),
       },
@@ -246,13 +246,13 @@ export function driveTeamSignalsNextActions(input: {
     },
     {
       id: "checklist",
-      label: "Open Match Checklist",
+      label: "Open Match checklist",
       detail: "Cross-check pre-match cues with signal codes.",
       href: hubHref("/competition", "match-checklist", orgId),
     },
     {
       id: "cards",
-      label: "Open Strategy Cards",
+      label: "Open Match cards",
       detail: "Keep match plans aligned with drive-crew language.",
       href: hubHref("/competition", "match-strategy-cards", orgId),
     },

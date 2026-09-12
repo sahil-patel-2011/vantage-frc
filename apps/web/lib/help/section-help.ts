@@ -107,7 +107,7 @@ export const SECTION_HELP: SectionHelpEntry[] = [
     ],
     related: [
       { label: "Event day", href: "/command" },
-      { label: "Match strategy cards", href: "/match-strategy-cards" },
+      { label: "Match cards", href: "/match-strategy-cards" },
       { label: "Match video", href: "/match-video-index" },
     ],
   },

@@ -27,6 +27,7 @@ describe("leftover student Help / public hub-title chrome", () => {
     expect(articles).toMatch(/Connect TBA/);
     expect(articles).toMatch(/Choose your team/);
     expect(articles).toMatch(/Alliance desk/);
+    expect(articles).toMatch(/Open Event day/);
     const strategy = readFileSync(join(WEB, "app/features/strategy/page.tsx"), "utf8");
     expect(strategy).toMatch(/Alliance desk/);
   });

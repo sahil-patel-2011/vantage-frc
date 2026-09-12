@@ -43,7 +43,16 @@ describe("leftover student Copilot chrome", () => {
     const match = readFileSync(join(WEB, "app/match-copilot/match-copilot-client.tsx"), "utf8");
     expect(match).toMatch(/feature="Briefing"/);
     expect(match).toMatch(/"match-copilot"/);
+    const matchRelated = readFileSync(
+      join(WEB, "lib/match-copilot/match-copilot-related.ts"),
+      "utf8",
+    );
+    expect(matchRelated).toMatch(/Open Event day/);
+    expect(matchRelated).toMatch(/Open Failure log/);
     const routes = readFileSync(join(WEB, "lib/offline/shell-routes.ts"), "utf8");
     expect(routes).toMatch(/startsWith\("\/match-copilot"\)\) return "Briefing"/);
+    expect(routes).toMatch(
+      /if \(bare\.startsWith\("\/match-strategy-cards"\)\) return "Match cards"/,
+    );
   });
 });
