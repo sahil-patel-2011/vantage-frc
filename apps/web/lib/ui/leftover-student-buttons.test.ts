@@ -21,6 +21,8 @@ const FILES = [
   "app/team/ai-keys/ai-keys.css",
   "app/team/ai-memory/ai-memory-client.tsx",
   "app/team/ai-policy/ai-policy-client.tsx",
+  "app/team/security/capabilities-client.tsx",
+  "app/team/security/hub-access-client.tsx",
 ] as const;
 
 describe("leftover student Button chrome", () => {

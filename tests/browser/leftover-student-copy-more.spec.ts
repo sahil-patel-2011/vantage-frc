@@ -7,9 +7,9 @@ test.beforeEach(async ({ context }) => {
   if (!signed) await signInFixture(context);
 });
 
-test("Files, CAD, and Print Farm drop leftover engineering copy", async ({ page }) => {
+test("Event Day and Logistics drop leftover engineering copy", async ({ page }) => {
   test.setTimeout(90_000);
-  for (const path of ["/files", "/cad", "/print-farm"]) {
+  for (const path of ["/command", "/logistics"]) {
     await page.goto(path);
     await waitForLoadingGone(page);
     await expect(page.getByText("object storage")).toHaveCount(0);

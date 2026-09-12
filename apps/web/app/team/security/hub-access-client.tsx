@@ -346,17 +346,17 @@ export default function HubAccessClient({ orgId }: { orgId: string }) {
                   })}
                 </div>
                 <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginTop: "0.75rem" }}>
-                  <button
+                  <Button
+                    variant="primary"
                     type="button"
-                    className="primary-action"
                     disabled={savingUserId === member.userId}
                     onClick={() => void saveHubAccess(member.userId)}
                   >
                     {savingUserId === member.userId ? "Saving…" : "Save hub access"}
-                  </button>
-                  <button type="button" onClick={() => clearAll(member.userId)}>
+                  </Button>
+                  <Button variant="secondary" type="button" onClick={() => clearAll(member.userId)}>
                     Clear all (unrestricted)
-                  </button>
+                  </Button>
                 </div>
               </article>
             );
