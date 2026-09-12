@@ -1,7 +1,7 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Code Deploy Log (never DEMO firmware trails). */
+/** Soft-UI related surfaces for Deploy log (never DEMO firmware trails). */
 export const CODE_DEPLOY_LOG_RELATED_LINKS = [
   { id: "code", label: "Code", tab: "code" },
   { id: "code-perf", label: "Code vs match", tab: "code-perf" },
@@ -25,7 +25,7 @@ export const CODE_DEPLOY_LOG_RELATED_INCLUDE: CodeDeployLogRelatedId[] = [
 ];
 
 /**
- * Soft-UI cross-links from Code Deploy Log → Code / Perf / CAD.
+ * Soft-UI cross-links from Deploy log → Code / Perf / CAD.
  * Build with hubHref — never broken JSX href templates.
  */
 export function codeDeployLogRelatedLinks(
@@ -110,7 +110,7 @@ export function shouldShowCodeDeployLogSummaryTiles(deployCount: number): boolea
   return deployCount > 0;
 }
 
-/** Classify Code Deploy Log Soft-UI shell — never invents DEMO firmware trails. */
+/** Classify Deploy log Soft-UI shell — never invents DEMO firmware trails. */
 export function classifyCodeDeployLogShell(input: {
   loading?: boolean;
   fetchFailed?: boolean;
@@ -131,14 +131,14 @@ export function codeDeployLogShellCopy(kind: CodeDeployLogShellKind): CodeDeploy
     case "loading":
       return {
         kind,
-        title: "Loading Code Deploy Log…",
+        title: "Opening Deploy log",
         description: "Checking which team you are on and deploy history.",
       };
     case "error":
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Code Deploy Log",
+        title: "Could not load Deploy log",
         description:
           "A network or server issue blocked the deploy trail. Retry, or open Code while it reloads.",
       };
@@ -169,7 +169,7 @@ export function codeDeployLogShellCopy(kind: CodeDeployLogShellKind): CodeDeploy
 }
 
 /**
- * Soft-UI next actions for Code Deploy Log empty/setup shells.
+ * Soft-UI next actions for Deploy log empty/setup shells.
  * Points at Code / Perf / CAD — never invents DEMO firmware trails.
  */
 export function codeDeployLogNextActions(input: {
@@ -210,7 +210,7 @@ export function codeDeployLogNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Finish membership setup so Code Deploy Log can load.",
+        detail: "Finish membership setup so Deploy log can load.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
       },
@@ -233,7 +233,7 @@ export function codeDeployLogNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Code Deploy Log",
+        label: "Retry Deploy log",
         detail: "Reload real deploy history.",
         href: withOrgHref("/code-deploy-log", orgId),
         primary: true,

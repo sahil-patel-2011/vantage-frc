@@ -2,7 +2,7 @@ import { hubHref } from "../nav/hubs";
 import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Cross-Team Scrim Scheduling (never DEMO scrim metrics). */
+/** Soft-UI related surfaces for Scrims (never DEMO scrim metrics). */
 export const CROSS_TEAM_SCRIM_RELATED_LINKS = [
   { id: "calendar", label: "Calendar", kind: "team" as const, tab: "calendar" },
   { id: "scouting", label: "Scouting", kind: "competition" as const, tab: "scouting" },
@@ -145,7 +145,7 @@ export function crossTeamScrimShellCopy(kind: CrossTeamScrimShellKind): CrossTea
     case "loading":
       return {
         kind,
-        title: "Loading Cross-Team Scrims…",
+        title: "Opening Scrims",
         description:
           "Checking which team you are on and real scrim invites.",
       };

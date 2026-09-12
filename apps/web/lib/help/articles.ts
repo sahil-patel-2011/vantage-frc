@@ -487,7 +487,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "alliance-season",
     slug: "alliance-season",
-    title: "Alliance desk and Season Planning",
+    title: "Alliance desk and Season plan",
     summary:
       "Live pick board with scout evidence; season goals and milestones from real attendance and build tasks.",
     category: "competition",
@@ -512,9 +512,9 @@ export const HELP_ARTICLES: HelpArticle[] = [
         ],
       },
       {
-        heading: "Season Planning Workspace",
+        heading: "Season plan",
         body: [
-          "Open Season Planning from Team → Work → Season plan (/team?tab=season-planning-workspace).",
+          "Open Season plan from Team → Work → Season plan (/team?tab=season-planning-workspace).",
           "Map goals → milestones → owners, with optional ICS calendar hooks.",
           "Progress comes from real attendance and build_tasks only — completion % stays blank without those rows.",
         ],

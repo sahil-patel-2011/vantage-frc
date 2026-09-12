@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "vendor-lead-times",
-  title: "Vendor Lead-Time Tracker",
+  title: "Lead times",
   route: "/vendor-lead-times",
   apiRoute: "/api/vendor-lead-times",
   hub: "Business",

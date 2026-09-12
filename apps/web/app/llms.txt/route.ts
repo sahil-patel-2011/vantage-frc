@@ -21,7 +21,7 @@ const body = `# Vantage
 ## What Vantage does (citeable)
 - Offline-first match and pit scouting with form builder, voice notes (opt-in), and sync when Wi-Fi returns.
 - Competition hub: Event day, Scouting, Strategy, and Pit workbenches; My Day / Forms / Alliance desk live as inner tabs — not a 40-item More tools list.
-- Team hub: Calendar, Chat, People, Work, Knowledge; Season Planning sits under Work.
+- Team hub: Calendar, Chat, People, Work, Knowledge; Season plan sits under Work.
 - Business hub: Overview, Money, Sponsors, Grants, Outreach.
 - Build hub: Kickoff, CAD, Code, Robot (Failure log/batteries/inspection as Robot tabs).
 - AI hub: Chat, Writer, Agent, Controls, Notes; API keys under Controls.

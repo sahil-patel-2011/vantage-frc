@@ -364,15 +364,15 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/vendors")) return "Vendors";
   if (bare.startsWith("/season-report")) return "Season Report";
   if (bare.startsWith("/battery-health-forecast")) return "Pack health";
-  if (bare.startsWith("/vendor-lead-times")) return "Vendor Lead Times";
+  if (bare.startsWith("/vendor-lead-times")) return "Lead times";
   if (bare.startsWith("/bin-shelf-locator")) return "Bin locator";
   if (bare.startsWith("/cad-vault")) return "CAD vault";
   if (bare.startsWith("/cad-learn")) return "Learn CAD";
   if (bare.startsWith("/cad-review-queue")) return "CAD Review Queue";
   if (bare.startsWith("/cad-change-radar")) return "Change radar";
-  if (bare.startsWith("/code-deploy-log")) return "Code Deploy Log";
+  if (bare.startsWith("/code-deploy-log")) return "Deploy log";
   if (bare.startsWith("/control-map")) return "Control Map";
-  if (bare.startsWith("/cross-team-scrim")) return "Cross-Team Scrims";
+  if (bare.startsWith("/cross-team-scrim")) return "Scrims";
   if (bare.startsWith("/decision-search")) return "Decision Search";
   if (bare.startsWith("/decisions")) return "Decision notes";
   if (bare.startsWith("/failure-patterns")) return "Failure patterns";
@@ -380,7 +380,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/knowledge-gap")) return "Knowledge gaps";
   if (bare.startsWith("/matching-gift-finder")) return "Matching gifts";
   if (bare.startsWith("/onboarding-buddy")) return "Onboarding buddy";
-  if (bare.startsWith("/risk-burndown")) return "Risk-Register Burndown";
+  if (bare.startsWith("/risk-burndown")) return "Risk burndown";
   if (bare.startsWith("/risks")) return "Risk Register";
   if (bare.startsWith("/subsystem-signoff")) return "Subsystem Sign-off";
   if (bare.startsWith("/prototype-tracker")) return "Prototypes";
@@ -401,7 +401,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/scout-accuracy")) return "Scout Accuracy";
   if (bare.startsWith("/scout-crossval")) return "Scout Cross-Validation";
   if (bare.startsWith("/rule-impact")) return "Rule impact";
-  if (bare.startsWith("/season-planning-workspace")) return "Season Planning";
+  if (bare.startsWith("/season-planning-workspace")) return "Season plan";
   if (bare.startsWith("/retro")) return "Retro";
   if (bare.startsWith("/tuning-autopilot")) return "Tuning advisor";
   if (bare === "/tuning" || bare.startsWith("/tuning/")) return "Tuning log";

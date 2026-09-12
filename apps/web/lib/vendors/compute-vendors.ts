@@ -34,7 +34,7 @@ function setupStepsFor(orgId: string | null): VendorsSetupStep[] {
     },
     {
       id: "vendor-lead-times",
-      label: "Open Vendor Lead Times",
+      label: "Open Lead times",
       detail: "Reorder-by dates stay blank until lead times land.",
       href: hubHref("/business", "vendor-lead-times", orgId),
     },

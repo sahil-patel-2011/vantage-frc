@@ -63,7 +63,7 @@ async function persistRiskBurndownSnapshot(
     await putFeatureSnapshot("risk-burndown", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("risk-burndown", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Risk-Register Burndown already painted; IndexedDB is best-effort.
+    // Live Risk burndown already painted; IndexedDB is best-effort.
   }
 }
 
@@ -137,10 +137,10 @@ function RiskBurndownShell({
         breadcrumbs={
           <>
             <a href={teamHref}>Team</a>
-            {" / Risk-Register Burndown"}
+            {" / Risk burndown"}
           </>
         }
-        title="Risk-Register Burndown"
+        title="Risk burndown"
         description={description}
       >
         <RiskBurndownRelatedStrip orgId={orgId} />
@@ -232,7 +232,7 @@ export default function RiskBurndownClient() {
         if (!response.ok || !isRiskBurndownView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Risk-Register Burndown. Showing the last copy on this device.");
+            setError("Could not refresh Risk burndown. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -247,7 +247,7 @@ export default function RiskBurndownClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Risk-Register Burndown. Showing the last copy on this device.");
+          setError("Could not refresh Risk burndown. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -319,7 +319,7 @@ export default function RiskBurndownClient() {
   if (shell === "loading") {
     return (
       <RiskBurndownShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Risk-Register Burndown" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Risk burndown" fromCache={fromCache} cachedAt={cachedAt} />
       </RiskBurndownShell>
     );
   }
@@ -333,7 +333,7 @@ export default function RiskBurndownClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Risk-Register Burndown" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Risk burndown" fromCache={fromCache} cachedAt={cachedAt} />
       </RiskBurndownShell>
     );
   }
@@ -345,7 +345,7 @@ export default function RiskBurndownClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Risk-Register Burndown" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Risk burndown" fromCache={fromCache} cachedAt={cachedAt} />
       </RiskBurndownShell>
     );
   }
@@ -353,7 +353,7 @@ export default function RiskBurndownClient() {
   if (view?.status !== "live") {
     return (
       <RiskBurndownShell description={shellCopy.description} orgId={orgId} shell="setup">
-        <OfflineBanner feature="Risk-Register Burndown" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Risk burndown" fromCache={fromCache} cachedAt={cachedAt} />
       </RiskBurndownShell>
     );
   }
@@ -364,10 +364,10 @@ export default function RiskBurndownClient() {
         breadcrumbs={
           <>
             <a href={teamHref}>Team</a>
-            {" / Risk-Register Burndown"}
+            {" / Risk burndown"}
           </>
         }
-        title="Risk-Register Burndown"
+        title="Risk burndown"
         description="Track season risks — technical, schedule, budget, personnel, logistics, safety — and watch the register burn down as mitigations close them out. Cross-check Risks and Failure log."
       >
         <div className="risk-burndown-header-actions">
@@ -398,7 +398,7 @@ export default function RiskBurndownClient() {
         </div>
       </PageHeader>
 
-      <OfflineBanner feature="Risk-Register Burndown" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Risk burndown" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

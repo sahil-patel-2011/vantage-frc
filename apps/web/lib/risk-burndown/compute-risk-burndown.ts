@@ -19,7 +19,7 @@ function setupStepsFor(orgId: string | null): RiskBurndownSetupStep[] {
     {
       id: "workspace",
       label: "Choose your team",
-      detail: "Choose your team to open Risk-Register Burndown.",
+      detail: "Choose your team to open Risk burndown.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {

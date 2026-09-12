@@ -1,7 +1,7 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Risk-Register Burndown (never DEMO risk metrics). */
+/** Soft-UI related surfaces for Risk burndown (never DEMO risk metrics). */
 export const RISK_BURNDOWN_RELATED_LINKS = [
   { id: "risks", label: "Risks", kind: "path" as const, path: "/risks" },
   { id: "fmea", label: "Failure log", kind: "team" as const, tab: "fmea" },
@@ -22,7 +22,7 @@ export type RiskBurndownRelatedLink = {
 export const RISK_BURNDOWN_RELATED_INCLUDE: RiskBurndownRelatedId[] = ["risks", "fmea"];
 
 /**
- * Soft-UI cross-links from Risk-Register Burndown → Risks / FMEA.
+ * Soft-UI cross-links from Risk burndown → Risks / FMEA.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function riskBurndownRelatedLinks(
@@ -93,7 +93,7 @@ export function riskBurndownShellCopy(kind: RiskBurndownShellKind): RiskBurndown
     case "loading":
       return {
         kind,
-        title: "Loading Risk-Register Burndown…",
+        title: "Opening Risk burndown",
         description:
           "Checking which team you are on and real risk rows.",
       };
@@ -101,7 +101,7 @@ export function riskBurndownShellCopy(kind: RiskBurndownShellKind): RiskBurndown
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Risk-Register Burndown",
+        title: "Could not load Risk burndown",
         description:
           "A network or server issue blocked the register. Retry, or open Risks / Failure log while it reloads.",
       };

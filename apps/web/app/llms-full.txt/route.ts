@@ -18,7 +18,7 @@ Vantage is an invite-only Soft-UI competition operations platform for FIRST Robo
 Primary tabs are four workbenches: Event day, Scouting, Strategy, and Pit. My Day sits under Event day; Forms under Scouting; Alliance desk under Strategy. Inner tabs replace the old More tools dump.
 
 ### Team (signed-in /team)
-Calendar, Chat, People, Work, Knowledge. Season Planning is a Work tab; hours sit under People.
+Calendar, Chat, People, Work, Knowledge. Season plan is a Work tab; hours sit under People.
 
 ### Business (signed-in /business)
 Overview, Money, Sponsors, Grants, Outreach — budget and orders are Money tabs; packages and partners are Sponsors tabs.

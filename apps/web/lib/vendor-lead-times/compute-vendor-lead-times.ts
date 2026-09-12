@@ -17,7 +17,7 @@ function setupStepsFor(orgId: string | null): VendorLeadTimesSetupStep[] {
     {
       id: "workspace",
       label: "Choose your team",
-      detail: "Choose your team to open Vendor Lead Times.",
+      detail: "Choose your team to open Lead times.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {

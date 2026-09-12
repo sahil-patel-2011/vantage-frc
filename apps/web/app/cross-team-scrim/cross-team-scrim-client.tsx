@@ -58,7 +58,7 @@ async function persistCrossTeamScrimSnapshot(
     await putFeatureSnapshot("cross-team-scrim", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("cross-team-scrim", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Cross-Team Scrims already painted; IndexedDB is best-effort.
+    // Live Scrims already painted; IndexedDB is best-effort.
   }
 }
 
@@ -132,10 +132,10 @@ function ScrimShell({
         breadcrumbs={
           <>
             <a href={teamHref}>Team</a>
-            {" / Cross-Team Scrims"}
+            {" / Scrims"}
           </>
         }
-        title="Cross-Team Scrim Scheduling"
+        title="Scrims"
         description={description}
       >
         <ScrimRelatedStrip orgId={orgId} />
@@ -229,7 +229,7 @@ export default function CrossTeamScrimClient() {
         if (!response.ok || !isCrossTeamScrimView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Cross-Team Scrims. Showing the last copy on this device.");
+            setError("Could not refresh Scrims. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -244,7 +244,7 @@ export default function CrossTeamScrimClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Cross-Team Scrims. Showing the last copy on this device.");
+          setError("Could not refresh Scrims. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -313,7 +313,7 @@ export default function CrossTeamScrimClient() {
   if (shell === "loading") {
     return (
       <ScrimShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Cross-Team Scrims" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Scrims" fromCache={fromCache} cachedAt={cachedAt} />
       </ScrimShell>
     );
   }
@@ -327,7 +327,7 @@ export default function CrossTeamScrimClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Cross-Team Scrims" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Scrims" fromCache={fromCache} cachedAt={cachedAt} />
       </ScrimShell>
     );
   }
@@ -339,7 +339,7 @@ export default function CrossTeamScrimClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Cross-Team Scrims" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Scrims" fromCache={fromCache} cachedAt={cachedAt} />
       </ScrimShell>
     );
   }
@@ -347,7 +347,7 @@ export default function CrossTeamScrimClient() {
   if (view?.status !== "live") {
     return (
       <ScrimShell description={shellCopy.description} orgId={orgId} shell="setup">
-        <OfflineBanner feature="Cross-Team Scrims" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Scrims" fromCache={fromCache} cachedAt={cachedAt} />
       </ScrimShell>
     );
   }
@@ -358,10 +358,10 @@ export default function CrossTeamScrimClient() {
         breadcrumbs={
           <>
             <a href={teamHref}>Team</a>
-            {" / Cross-Team Scrims"}
+            {" / Scrims"}
           </>
         }
-        title="Cross-Team Scrim Scheduling"
+        title="Scrims"
         description="Propose scrimmages with nearby teams and agree on what data — match results, video, or full scouting sheets — will be shared. Cross-check Calendar, Scouting, and Team Data."
       >
         <div className="cross-team-scrim-header-actions">
@@ -391,7 +391,7 @@ export default function CrossTeamScrimClient() {
           ))}
         </div>
       </PageHeader>
-      <OfflineBanner feature="Cross-Team Scrims" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Scrims" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

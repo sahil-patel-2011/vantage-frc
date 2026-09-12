@@ -1,7 +1,7 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Vendor Lead Times (never DEMO reorder metrics). */
+/** Soft-UI related surfaces for Lead times (never DEMO reorder metrics). */
 export const VENDOR_LEAD_TIMES_RELATED_LINKS = [
   { id: "orders", label: "Orders", kind: "business" as const, tab: "orders" },
   { id: "spare-forecast", label: "Spares forecast", kind: "build" as const, tab: "spare-forecast" },
@@ -26,7 +26,7 @@ export const VENDOR_LEAD_TIMES_RELATED_INCLUDE: VendorLeadTimesRelatedId[] = [
 ];
 
 /**
- * Soft-UI cross-links from Vendor Lead Times → Orders / Spares forecast / Vendors.
+ * Soft-UI cross-links from Lead times → Orders / Spares forecast / Vendors.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function vendorLeadTimesRelatedLinks(
@@ -79,7 +79,7 @@ export function shouldShowVendorLeadTimesSummaryTiles(vendorCount: number): bool
   return vendorCount > 0;
 }
 
-/** Classify Vendor Lead Times Soft-UI shell — never invents DEMO reorder metrics. */
+/** Classify Lead times Soft-UI shell — never invents DEMO reorder metrics. */
 export function classifyVendorLeadTimesShell(input: {
   loading: boolean;
   fetchFailed?: boolean;
@@ -100,7 +100,7 @@ export function vendorLeadTimesShellCopy(kind: VendorLeadTimesShellKind): Vendor
     case "loading":
       return {
         kind,
-        title: "Loading Vendor Lead Times…",
+        title: "Opening Lead times",
         description:
           "Checking which team you are on and real vendor / reorder rows.",
       };
@@ -108,7 +108,7 @@ export function vendorLeadTimesShellCopy(kind: VendorLeadTimesShellKind): Vendor
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Vendor Lead Times",
+        title: "Could not load Lead times",
         description:
           "A network or server issue blocked the tracker. Retry, or open Orders / Spares forecast / Vendors while it reloads.",
       };
@@ -139,7 +139,7 @@ export function vendorLeadTimesShellCopy(kind: VendorLeadTimesShellKind): Vendor
 }
 
 /**
- * Soft-UI next actions for Vendor Lead Times empty/setup shells.
+ * Soft-UI next actions for Lead times empty/setup shells.
  * Points at Orders / Spares forecast / Vendors — never invents DEMO reorder metrics.
  */
 export function vendorLeadTimesNextActions(input: {
@@ -188,7 +188,7 @@ export function vendorLeadTimesNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Finish membership setup so Vendor Lead Times can load.",
+        detail: "Finish membership setup so Lead times can load.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
       },
@@ -217,7 +217,7 @@ export function vendorLeadTimesNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Vendor Lead Times",
+        label: "Retry Lead times",
         detail: "Reload real vendors and reorders.",
         href: withOrgHref("/vendor-lead-times", orgId),
         primary: true,

@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "code-deploy-log",
-  title: "Code Deploy Log",
+  title: "Deploy log",
   route: "/code-deploy-log",
   apiRoute: "/api/code-deploy-log",
   hub: "Build",
