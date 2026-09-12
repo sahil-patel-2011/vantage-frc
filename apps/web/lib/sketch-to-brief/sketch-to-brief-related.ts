@@ -282,7 +282,7 @@ export function sketchToBriefNextActions(input: {
     },
     {
       id: "rule-impact",
-      label: "Open Rule Impact",
+      label: "Open Rule impact",
       detail: "When a flag looks blocking, check season rule deltas against prior subsystems.",
       href: hubHref("/build", "rule-impact", orgId),
     },

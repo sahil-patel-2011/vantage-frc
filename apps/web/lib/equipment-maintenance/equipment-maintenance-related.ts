@@ -74,7 +74,7 @@ export function equipmentMaintenanceSetupSteps(orgId?: string | null): Equipment
     },
     {
       id: "tools",
-      label: "Open Tool Checkout",
+      label: "Open Tool checkout",
       detail: "Hand tools that leave the shop sit beside machine maintenance.",
       href: hubHref("/team", "tool-checkout", orgId),
     },
@@ -181,7 +181,7 @@ export function equipmentMaintenanceNextActions(input: {
       },
       {
         id: "tools",
-        label: "Open Tool Checkout",
+        label: "Open Tool checkout",
         detail: "Tool loans stay available while maintenance reloads.",
         href: hubHref("/team", "tool-checkout", orgId),
       },
@@ -205,7 +205,7 @@ export function equipmentMaintenanceNextActions(input: {
       },
       {
         id: "tools",
-        label: "Open Tool Checkout",
+        label: "Open Tool checkout",
         detail: "Register hand tools beside future machines.",
         href: hubHref("/team", "tool-checkout", orgId),
       },
@@ -231,7 +231,7 @@ export function equipmentMaintenanceNextActions(input: {
     },
     {
       id: "tools",
-      label: "Open Tool Checkout",
+      label: "Open Tool checkout",
       detail: "Cross-check hand-tool loans with machine service.",
       href: hubHref("/team", "tool-checkout", orgId),
     },

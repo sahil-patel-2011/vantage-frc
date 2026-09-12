@@ -106,13 +106,13 @@ export function batteryRotationSetupSteps(orgId?: string | null): BatteryRotatio
     },
     {
       id: "battery-health-forecast",
-      label: "Open Health Forecast",
+      label: "Open Pack health",
       detail: "Retirement projections stay blank until IR + cycle history exists.",
       href: hubHref("/build", "battery-health-forecast", orgId),
     },
     {
       id: "pit",
-      label: "Open Pit Command",
+      label: "Open Pit command",
       detail: "Event-day rack status uses the same real pack evidence.",
       href: withOrgHref("/pit", orgId),
     },
@@ -245,13 +245,13 @@ export function batteryRotationNextActions(input: {
       },
       {
         id: "battery-health-forecast",
-        label: "Open Health Forecast",
+        label: "Open Pack health",
         detail: "EOL projections stay available while the rotation board reloads.",
         href: hubHref("/build", "battery-health-forecast", orgId),
       },
       {
         id: "pit",
-        label: "Open Pit Command",
+        label: "Open Pit command",
         detail: "Pit rack status stays available while the rotation board reloads.",
         href: withOrgHref("/pit", orgId),
       },
@@ -275,13 +275,13 @@ export function batteryRotationNextActions(input: {
       },
       {
         id: "battery-health-forecast",
-        label: "Open Health Forecast",
+        label: "Open Pack health",
         detail: "Retirement projections stay blank until packs exist.",
         href: hubHref("/build", "battery-health-forecast", orgId),
       },
       {
         id: "pit",
-        label: "Open Pit Command",
+        label: "Open Pit command",
         detail: "Event-day rack status uses the same real pack evidence.",
         href: withOrgHref("/pit", orgId),
       },
@@ -333,13 +333,13 @@ export function batteryRotationNextActions(input: {
     },
     {
       id: "battery-health-forecast",
-      label: "Open Health Forecast",
+      label: "Open Pack health",
       detail: "Project pack retirement from the same IR + cycle history.",
       href: hubHref("/build", "battery-health-forecast", orgId),
     },
     {
       id: "pit",
-      label: "Open Pit Command",
+      label: "Open Pit command",
       detail: "Event-day rack status uses the same pack + log evidence.",
       href: withOrgHref("/pit", orgId),
     },

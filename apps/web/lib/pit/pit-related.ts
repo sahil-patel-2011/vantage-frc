@@ -186,7 +186,7 @@ export function pitShellCopy(kind: PitShellKind): PitEmptyCopy {
     case "loading":
       return {
         kind,
-        title: "Loading Pit Command…",
+        title: "Opening Pit command…",
         description:
           "Checking which team you are on and real issues / maintenance / battery logs.",
       };

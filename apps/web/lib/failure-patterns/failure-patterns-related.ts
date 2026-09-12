@@ -234,7 +234,7 @@ export function failurePatternsNextActions(input: {
       },
       {
         id: "spare-kit",
-        label: "Open Spare Robot Kit",
+        label: "Open Spare kit",
         detail: "Pack lists stay empty until Failure log history exists.",
         href: hubHref("/build", "spare-robot-kit", orgId),
       },
@@ -260,7 +260,7 @@ export function failurePatternsNextActions(input: {
     },
     {
       id: "spare-kit",
-      label: "Open Spare Robot Kit",
+      label: "Open Spare kit",
       detail: "Pack spares for repeating failure modes.",
       href: hubHref("/build", "spare-robot-kit", orgId),
     },

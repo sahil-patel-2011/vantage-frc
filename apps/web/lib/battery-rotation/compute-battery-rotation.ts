@@ -147,13 +147,13 @@ export async function computeBatteryRotationView(
         },
         {
           id: "battery-health-forecast",
-          label: "Open Health Forecast",
+          label: "Open Pack health",
           detail: "Retirement projections stay blank until IR history exists.",
           href: hubHref("/build", "battery-health-forecast", null),
         },
         {
           id: "pit",
-          label: "Open Pit Command",
+          label: "Open Pit command",
           detail: "Event-day rack status stays empty until packs are tracked.",
           href: withOrgHref("/pit", null),
         },

@@ -379,7 +379,7 @@ export function IntelReadyView({
                   </p>
                 ) : null}
                 <a className="text-button" href={chemistryHref}>
-                  Open Alliance Chemistry →
+                  Open Chemistry →
                 </a>
               </div>
             ) : null}

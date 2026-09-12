@@ -164,7 +164,7 @@ export function epaTrendAlertsNextActions(input: {
         },
         {
           id: "opponent-watchlist",
-          label: "Open Opponent Watchlist",
+          label: "Open Watchlist",
           detail: "Manual opponent notes stay blank until logged.",
           href: hubHref("/competition", "opponent-watchlist", null),
         },
@@ -186,7 +186,7 @@ export function epaTrendAlertsNextActions(input: {
       },
       {
         id: "opponent-watchlist",
-        label: "Open Opponent Watchlist",
+        label: "Open Watchlist",
         detail: "Track opponents you already care about beside Rating alerts.",
         href: hubHref("/competition", "opponent-watchlist", orgId),
       },
@@ -210,7 +210,7 @@ export function epaTrendAlertsNextActions(input: {
       },
       {
         id: "opponent-watchlist",
-        label: "Open Opponent Watchlist",
+        label: "Open Watchlist",
         detail: "Opponent notes stay available while alerts reload.",
         href: hubHref("/competition", "opponent-watchlist", orgId),
       },
@@ -234,7 +234,7 @@ export function epaTrendAlertsNextActions(input: {
       },
       {
         id: "opponent-watchlist",
-        label: "Open Opponent Watchlist",
+        label: "Open Watchlist",
         detail: "Keep qualitative opponent notes beside quantitative rating swings.",
         href: hubHref("/competition", "opponent-watchlist", orgId),
       },
@@ -271,13 +271,13 @@ export function epaTrendAlertsNextActions(input: {
     },
     {
       id: "opponent-watchlist",
-      label: "Open Opponent Watchlist",
+      label: "Open Watchlist",
       detail: "Pair qualitative notes with quantitative rating swings.",
       href: hubHref("/competition", "opponent-watchlist", orgId),
     },
     {
       id: "scouting-heat-signals",
-      label: "Open Scouting Heat",
+      label: "Open Heat signals",
       detail: "Field heat signals stay blank until real scout rows exist.",
       href: hubHref("/competition", "scouting-heat-signals", orgId),
     },

@@ -263,7 +263,7 @@ export function binShelfLocatorNextActions(input: {
       },
       {
         id: "spare-robot-kit",
-        label: "Open Spare Robot Kit",
+        label: "Open Spare kit",
         detail: "Kit checklists stay separate from bin maps.",
         href: hubHref("/build", "spare-robot-kit", orgId),
       },

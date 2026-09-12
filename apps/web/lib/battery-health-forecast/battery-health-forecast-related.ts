@@ -115,7 +115,7 @@ export function batteryHealthForecastSetupSteps(
     },
     {
       id: "pit",
-      label: "Open Pit Command",
+      label: "Open Pit command",
       detail: "Event-day rack status uses the same real pack evidence.",
       href: withOrgHref("/pit", orgId),
     },
@@ -258,7 +258,7 @@ export function batteryHealthForecastNextActions(input: {
       },
       {
         id: "pit",
-        label: "Open Pit Command",
+        label: "Open Pit command",
         detail: "Pit rack status stays available while the forecast reloads.",
         href: withOrgHref("/pit", orgId),
       },
@@ -288,7 +288,7 @@ export function batteryHealthForecastNextActions(input: {
       },
       {
         id: "pit",
-        label: "Open Pit Command",
+        label: "Open Pit command",
         detail: "Event-day rack status uses the same real pack evidence.",
         href: withOrgHref("/pit", orgId),
       },
@@ -354,7 +354,7 @@ export function batteryHealthForecastNextActions(input: {
     },
     {
       id: "pit",
-      label: "Open Pit Command",
+      label: "Open Pit command",
       detail: "Event-day rack status uses the same pack + log evidence.",
       href: withOrgHref("/pit", orgId),
     },

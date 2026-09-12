@@ -258,7 +258,7 @@ export function intelNextActions(input: {
         },
         {
           id: "chemistry",
-          label: "Open Alliance Chemistry",
+          label: "Open Chemistry",
           detail: chemistryDetail,
           href: withOrgHref("/chemistry", orgId),
         },

@@ -258,7 +258,7 @@ export function counterBookNextActions(input: {
     },
     {
       id: "opponent-watchlist",
-      label: "Open Opponent Watchlist",
+      label: "Open Watchlist",
       detail: "Pair qualitative notes with quantitative counter plans.",
       href: hubHref("/competition", "opponent-watchlist", orgId),
     },

@@ -176,7 +176,7 @@ function MaintenanceShell({
             </Button>
           ) : null}
           {shell === "empty" ? (
-            <Button as="a" variant="primary" href={hubHref("/team", "tool-checkout", orgId)}>Open Tool Checkout</Button>
+            <Button as="a" variant="primary" href={hubHref("/team", "tool-checkout", orgId)}>Open Tool checkout</Button>
           ) : null}
         </EmptyState>
       )}

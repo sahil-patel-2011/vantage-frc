@@ -79,7 +79,7 @@ function setupSteps(orgId: string | null): EpaTrendAlertsSetupStep[] {
     },
     {
       id: "opponent-watchlist",
-      label: "Open Opponent Watchlist",
+      label: "Open Watchlist",
       detail: "Manual opponent notes stay blank until logged.",
       href: hubHref("/competition", "opponent-watchlist", orgId),
     },

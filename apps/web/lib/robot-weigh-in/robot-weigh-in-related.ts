@@ -203,7 +203,7 @@ export function robotWeighInNextActions(input: {
       },
       {
         id: "kit",
-        label: "Open Spare Robot Kit",
+        label: "Open Spare kit",
         detail: "Pack lists stay available while weigh-ins reload.",
         href: hubHref("/build", "spare-robot-kit", orgId),
       },
@@ -280,7 +280,7 @@ export function robotWeighInNextActions(input: {
     },
     {
       id: "kit",
-      label: "Open Spare Robot Kit",
+      label: "Open Spare kit",
       detail: "Pack mass-sensitive spares beside the weight log.",
       href: hubHref("/build", "spare-robot-kit", orgId),
     },
