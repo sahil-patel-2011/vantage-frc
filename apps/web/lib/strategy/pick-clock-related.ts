@@ -9,7 +9,7 @@ export const PICK_CLOCK_RELATED_LINKS = [
   { id: "chemistry", label: "Chemistry", kind: "hub" as const, tab: "chemistry" },
   { id: "scouting", label: "Scouting", kind: "hub" as const, tab: "scouting" },
   { id: "draft", label: "Draft board", kind: "path" as const, path: "/strategy/draft" },
-  { id: "team-data", label: "Team Data", kind: "path" as const, path: "/team/data" },
+  { id: "team-data", label: "Team data", kind: "path" as const, path: "/team/data" },
 ] as const;
 
 export type PickClockRelatedId = (typeof PICK_CLOCK_RELATED_LINKS)[number]["id"];
@@ -238,7 +238,7 @@ export function pickClockNextActions(input: {
       return dropRelatedStripDuplicates(orgId, [
         {
           id: "team-data",
-          label: "Sync Team Data",
+          label: "Sync Team data",
           detail:
             excludedCount > 0
               ? `${formatPickClockMetric(excludedCount, true)} team${excludedCount === 1 ? "" : "s"} already taken on the draft board. Sync or clear slots.`

@@ -213,7 +213,7 @@ function PickClockShell({
         ) : null}
         {shell === "empty" ? (
           <Button as="a" variant="primary" href={teamDataHref}>
-            Sync Team Data
+            Sync Team data
           </Button>
         ) : null}
       </EmptyState>

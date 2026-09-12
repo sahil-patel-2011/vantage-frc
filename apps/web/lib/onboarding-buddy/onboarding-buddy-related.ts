@@ -5,7 +5,7 @@ import { withOrgHref } from "../nav/product-nav";
 export const ONBOARDING_BUDDY_RELATED_LINKS = [
   { id: "workspace", label: "Your team", kind: "path" as const, path: "/workspace" },
   { id: "onboarding", label: "Onboarding", kind: "path" as const, path: "/onboarding" },
-  { id: "team-data", label: "Team Data", kind: "path" as const, path: "/team/data" },
+  { id: "team-data", label: "Team data", kind: "path" as const, path: "/team/data" },
   { id: "team", label: "Team hub", kind: "team" as const, tab: "onboarding-buddy" },
 ] as const;
 
@@ -17,7 +17,7 @@ export type OnboardingBuddyRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — Workspace · Onboarding · Team Data. */
+/** Focused Soft-UI strip — Workspace · Onboarding · Team data. */
 export const ONBOARDING_BUDDY_RELATED_INCLUDE: OnboardingBuddyRelatedId[] = [
   "workspace",
   "onboarding",
@@ -25,7 +25,7 @@ export const ONBOARDING_BUDDY_RELATED_INCLUDE: OnboardingBuddyRelatedId[] = [
 ];
 
 /**
- * Soft-UI cross-links from Onboarding buddy → Workspace / Onboarding / Team Data.
+ * Soft-UI cross-links from Onboarding buddy → Workspace / Onboarding / Team data.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function onboardingBuddyRelatedLinks(
@@ -86,7 +86,7 @@ export function onboardingBuddySetupSteps(orgId?: string | null): OnboardingBudd
     },
     {
       id: "team-data",
-      label: "Open Team Data",
+      label: "Open Team data",
       detail: "Confirm real official-match and team context for this team.",
       href: withOrgHref("/team/data", orgId),
     },
@@ -160,7 +160,7 @@ export function onboardingBuddyShellCopy(kind: OnboardingBuddyShellKind): Onboar
         badge: "Unavailable",
         title: "Could not load Onboarding buddy",
         description:
-          "A network or server issue blocked buddy pairings. Retry, or open Your team / Onboarding / Team Data while it reloads.",
+          "A network or server issue blocked buddy pairings. Retry, or open Your team / Onboarding / Team data while it reloads.",
       };
     case "setup":
       return {
@@ -176,7 +176,7 @@ export function onboardingBuddyShellCopy(kind: OnboardingBuddyShellKind): Onboar
         badge: "No pairings yet",
         title: "Pair your first buddy",
         description:
-          "First-week plans stay blank until you pair a real new member with a tenured buddy. Cross-check Your team, Onboarding, and Team Data.",
+          "First-week plans stay blank until you pair a real new member with a tenured buddy. Cross-check Your team, Onboarding, and Team data.",
       };
     default:
       return {
@@ -190,7 +190,7 @@ export function onboardingBuddyShellCopy(kind: OnboardingBuddyShellKind): Onboar
 
 /**
  * Soft-UI next actions for Onboarding buddy empty/setup shells.
- * Points at Workspace / Onboarding / Team Data — never invents DEMO progress.
+ * Points at Workspace / Onboarding / Team data — never invents DEMO progress.
  */
 export function onboardingBuddyNextActions(input: {
   orgId?: string | null;
@@ -221,7 +221,7 @@ export function onboardingBuddyNextActions(input: {
         },
         {
           id: "team-data",
-          label: "Open Team Data",
+          label: "Open Team data",
           detail: "Team context stays empty until a team and official matches exist.",
           href: withOrgHref("/team/data", null),
         },
@@ -243,7 +243,7 @@ export function onboardingBuddyNextActions(input: {
       },
       {
         id: "team-data",
-        label: "Open Team Data",
+        label: "Open Team data",
         detail: "Confirm real team/event context for this team.",
         href: withOrgHref("/team/data", orgId),
       },
@@ -273,7 +273,7 @@ export function onboardingBuddyNextActions(input: {
       },
       {
         id: "team-data",
-        label: "Open Team Data",
+        label: "Open Team data",
         detail: "Official-match and team inventory stays honest when this surface is down.",
         href: withOrgHref("/team/data", orgId),
       },
@@ -300,7 +300,7 @@ export function onboardingBuddyNextActions(input: {
       },
       {
         id: "team-data",
-        label: "Open Team Data",
+        label: "Open Team data",
         detail: "Team context for this team.",
         href: withOrgHref("/team/data", orgId),
       },
@@ -332,7 +332,7 @@ export function onboardingBuddyNextActions(input: {
     },
     {
       id: "team-data",
-      label: "Open Team Data",
+      label: "Open Team data",
       detail: "Cross-check official-match and team context while onboarding new members.",
       href: withOrgHref("/team/data", orgId),
     },

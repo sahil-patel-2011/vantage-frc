@@ -9,7 +9,7 @@ export const DOSSIER_RELATED_LINKS = [
   { id: "pick-desk", label: "Pick desk", kind: "path" as const, path: "/strategy?tab=picks" },
   { id: "intel", label: "Research", kind: "path" as const, path: "/intel" },
   { id: "pick-clock", label: "Pick clock", kind: "path" as const, path: "/pick-clock" },
-  { id: "team-data", label: "Team Data", kind: "path" as const, path: "/team/data" },
+  { id: "team-data", label: "Team data", kind: "path" as const, path: "/team/data" },
 ] as const;
 
 export type DossierRelatedId = (typeof DOSSIER_RELATED_LINKS)[number]["id"];
@@ -101,7 +101,7 @@ export function dossierSetupSteps(orgId?: string | null): DossierSetupStep[] {
   return dropRelatedStripDuplicates(orgId, [
     {
       id: "team-data",
-      label: "Sync Team Data",
+      label: "Sync Team data",
       detail: "Pull team identity and season numbers from synced event data.",
       href: withOrgHref("/team/data", orgId),
     },

@@ -99,7 +99,7 @@ export function eventDayPlanSetupSteps(orgId?: string | null): EventDayPlanSetup
   return dropRelatedStripDuplicates(orgId, [
     {
       id: "team-data",
-      label: "Sync Team Data",
+      label: "Sync Team data",
       detail: "Pull the official match schedule so the day plan can fill in.",
       href: withOrgHref("/team/data", orgId),
     },

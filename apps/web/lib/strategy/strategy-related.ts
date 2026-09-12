@@ -8,7 +8,7 @@ export const STRATEGY_RELATED_LINKS = [
   { id: "command", label: "Event day", kind: "hub" as const, tab: "command" },
   { id: "draft", label: "Draft board", kind: "path" as const, path: "/strategy/draft" },
   { id: "coverage", label: "Scout coverage", kind: "path" as const, path: "/scout-coverage-live" },
-  { id: "team-data", label: "Team Data", kind: "path" as const, path: "/team/data" },
+  { id: "team-data", label: "Team data", kind: "path" as const, path: "/team/data" },
 ] as const;
 
 export type StrategyRelatedId = (typeof STRATEGY_RELATED_LINKS)[number]["id"];
@@ -88,7 +88,7 @@ export function strategyShellSetupSteps(orgId?: string | null): StrategyShellSet
     },
     {
       id: "team-data",
-      label: "Sync Team Data",
+      label: "Sync Team data",
       detail: "Load synced event numbers and rankings for the event.",
       href: withOrgHref("/team/data", orgId),
     },
@@ -243,7 +243,7 @@ export function strategyNextActions(input: {
         },
         {
           id: "team-data",
-          label: "Sync Team Data",
+          label: "Sync Team data",
           detail: "Load synced event numbers once an event is selected.",
           href: withOrgHref("/team/data", orgId),
         },
@@ -252,7 +252,7 @@ export function strategyNextActions(input: {
     return [
       {
         id: "team-data",
-        label: "Sync Team Data",
+        label: "Sync Team data",
         detail: "Strategy needs synced event numbers before win probability can appear.",
         href: withOrgHref("/team/data", orgId),
         primary: true,
@@ -317,7 +317,7 @@ export function strategyNextActions(input: {
       needsReferenceData
         ? {
             id: "team-data",
-            label: "Sync Team Data",
+            label: "Sync Team data",
             detail:
               "Load event numbers for this event. Win chance stays blank until then.",
             href: withOrgHref("/team/data", orgId),

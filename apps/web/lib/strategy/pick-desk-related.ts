@@ -9,7 +9,7 @@ export const PICK_DESK_RELATED_LINKS = [
   { id: "coverage", label: "Coverage", kind: "path" as const, path: "/scouting/lineup" },
   { id: "draft", label: "Draft board", kind: "path" as const, path: "/strategy/draft" },
   { id: "pick-clock", label: "Pick clock", kind: "path" as const, path: "/pick-clock" },
-  { id: "team-data", label: "Team Data", kind: "path" as const, path: "/team/data" },
+  { id: "team-data", label: "Team data", kind: "path" as const, path: "/team/data" },
 ] as const;
 
 export type PickDeskRelatedId = (typeof PICK_DESK_RELATED_LINKS)[number]["id"];

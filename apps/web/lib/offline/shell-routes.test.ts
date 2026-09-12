@@ -321,7 +321,7 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/rule-impact")).toBe("Rule impact");
     expect(offlineCapableLabel("/season-planning-workspace")).toBe("Season plan");
     expect(offlineCapableLabel("/retro")).toBe("Retro");
-    expect(offlineCapableLabel("/team/data")).toBe("Team Data");
+    expect(offlineCapableLabel("/team/data")).toBe("Team data");
     expect(offlineCapableLabel("/team/grants")).toBe("Grant writing");
     expect(offlineCapableLabel("/team")).toBe("Team");
     expect(offlineCapableLabel("/team/knowledge")).toBe("Playbook");

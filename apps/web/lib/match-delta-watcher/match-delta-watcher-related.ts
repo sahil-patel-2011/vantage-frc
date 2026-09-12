@@ -98,7 +98,7 @@ export function matchDeltaWatcherSetupSteps(orgId?: string | null): MatchDeltaWa
   return dropRelatedStripDuplicates(orgId, [
     {
       id: "team-data",
-      label: "Sync Team Data",
+      label: "Sync Team data",
       detail: "Pull official results so deltas can appear.",
       href: withOrgHref("/team/data", orgId),
     },

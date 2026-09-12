@@ -8,7 +8,7 @@ export const INTEL_RELATED_LINKS = [
   { id: "dossier", label: "Team Dossier", kind: "path" as const, path: "/dossier" },
   { id: "scouting", label: "Scouting", kind: "hub" as const, tab: "scouting" },
   { id: "pick-desk", label: "Pick desk", kind: "path" as const, path: "/strategy?tab=picks" },
-  { id: "team-data", label: "Team Data", kind: "path" as const, path: "/team/data" },
+  { id: "team-data", label: "Team data", kind: "path" as const, path: "/team/data" },
   { id: "chemistry", label: "Alliance Chemistry", kind: "path" as const, path: "/chemistry" },
 ] as const;
 

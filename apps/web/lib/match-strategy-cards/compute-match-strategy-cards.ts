@@ -125,7 +125,7 @@ export async function computeMatchStrategyCardsView(
     {
       id: "schedule",
       label: "Sync match schedule",
-      detail: "Sync Team Data so matches appear here",
+      detail: "Sync Team data so matches appear here",
       href: "/team/data",
       done: false,
     },
@@ -173,7 +173,7 @@ export async function computeMatchStrategyCardsView(
   if (matchResult.rowCount === 0) {
     return {
       status: "setup_required",
-      message: "No matches found for your team at the active event yet. Sync Team Data so the schedule can fill in.",
+      message: "No matches found for your team at the active event yet. Sync Team data so the schedule can fill in.",
       steps: baseSteps.map((step) => (step.id === "schedule" ? { ...step, done: false } : step)),
       orgId: context.orgId,
       eventKey: context.eventKey,

@@ -281,7 +281,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   ) {
     return "Calendar";
   }
-  if (bare.startsWith("/team/data")) return "Team Data";
+  if (bare.startsWith("/team/data")) return "Team data";
   if (bare.startsWith("/team/grants/calendar")) return "Grant calendar";
   if (bare.startsWith("/team/grants")) return "Grant writing";
   if (bare.startsWith("/team/alumni")) return "Alumni";

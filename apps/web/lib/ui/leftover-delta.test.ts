@@ -10,7 +10,7 @@ const WEB = join(__dirname, "..", "..");
  * leftover-match-more Pick clock / Match notes / Counter-book / Retro,
  * leftover-tool-more Tool checkout, leftover-build-more Parts relay /
  * Subsystem sign-off, leftover-fmea Failure log, leftover-pick Choose
- * your team, leftover-team-data Sync Team Data, leftover-invites Invites,
+ * your team, leftover-team-data Sync Team data, leftover-invites Invites,
  * leftover-visit-invites Visit invites, leftover-community-impact Impact,
  * leftover-event-day-more Event day, leftover-ops-more Skills / Risk
  * register / Burndown stay. Routes stay. Do not invent a last-snapshot.
@@ -47,7 +47,7 @@ describe("leftover student delta chrome", () => {
     expect(related).toMatch(/Opening Match delta/);
     expect(related).toMatch(/Retry Match delta/);
     expect(related).toMatch(/Choose your team/);
-    expect(related).toMatch(/Sync Team Data/);
+    expect(related).toMatch(/Sync Team data/);
     expect(related).toMatch(/Event day/);
     expect(related).not.toMatch(/Event Day/);
     expect(related).not.toMatch(/title="Loading/);

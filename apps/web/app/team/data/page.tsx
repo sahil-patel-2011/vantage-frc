@@ -24,7 +24,7 @@ export default async function TeamDataPage({ searchParams }: { searchParams: Pro
         <header className="app-page-header">
           <div>
             <span className="breadcrumbs">Team / Live data</span>
-            <h1>Team Data</h1>
+            <h1>Team data</h1>
             <p>
               Choose your team so official match sync and inventory stay scoped to the right organization.
             </p>

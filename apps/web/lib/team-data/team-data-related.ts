@@ -1,7 +1,7 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Team Data / TBA sync (never DEMO metrics). */
+/** Soft-UI related surfaces for Team data / TBA sync (never DEMO metrics). */
 export const TEAM_DATA_RELATED_LINKS = [
   { id: "schedule", label: "Schedule", kind: "path" as const, path: "/schedule" },
   { id: "command", label: "Event day", kind: "competition" as const, tab: "command" },
@@ -25,7 +25,7 @@ export const TEAM_DATA_RELATED_INCLUDE: TeamDataRelatedId[] = [
   "strategy",
 ];
 
-/** Cross-links for Team Data Soft-UI (never DEMO team metrics). */
+/** Cross-links for Team data Soft-UI (never DEMO team metrics). */
 export function teamDataRelatedLinks(
   orgId?: string | null,
   options?: { active?: TeamDataRelatedId; include?: TeamDataRelatedId[] },
@@ -54,7 +54,7 @@ export type TeamDataNextAction = {
 };
 
 /**
- * Soft-UI next actions for Team Data empty/setup shells.
+ * Soft-UI next actions for Team data empty/setup shells.
  * Points at real Schedule / Event day / Strategy paths — never DEMO metrics.
  */
 export function teamDataNextActions(input: {
@@ -93,7 +93,7 @@ export function teamDataNextActions(input: {
         {
           id: "workspace",
           label: "Set active event",
-          detail: "Your team’s active event is what Team Data syncs — empty until you choose one.",
+          detail: "Your team’s active event is what Team data syncs — empty until you choose one.",
           href: withOrgHref("/workspace", orgId),
           primary: true,
         },
@@ -140,7 +140,7 @@ export function teamDataNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Finish membership or event setup so Team Data can resolve your org.",
+        detail: "Finish membership or event setup so Team data can resolve your org.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
       },
@@ -163,7 +163,7 @@ export function teamDataNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Team Data",
+        label: "Retry Team data",
         detail: "Reload inventory and ranking health.",
         href: withOrgHref("/team/data", orgId),
         primary: true,
@@ -242,7 +242,7 @@ export function teamDataNextActions(input: {
   ].slice(0, 4);
 }
 
-/** Classify Team Data Soft-UI shell — never invents DEMO team metrics. */
+/** Classify Team data Soft-UI shell — never invents DEMO team metrics. */
 export function classifyTeamDataShell(input: {
   loading: boolean;
   fetchFailed?: boolean;

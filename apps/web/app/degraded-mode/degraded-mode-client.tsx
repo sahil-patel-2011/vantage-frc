@@ -58,7 +58,7 @@ function DataSourceHealthRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related team tools">
       <Button as="a" variant="secondary" href={withOrgHref("/team/data", orgId)}>
-        Team Data
+        Team data
       </Button>
       <Button as="a" variant="secondary" href={withOrgHref("/rankings", orgId)}>
         Rankings
@@ -74,8 +74,8 @@ function DataSourceHealthNextActions({ orgId }: { orgId: string }) {
   const actions = [
     {
       id: "data",
-      label: "Open Team Data",
-      detail: "The last saved schedule and rankings live on Team Data.",
+      label: "Open Team data",
+      detail: "The last saved schedule and rankings live on Team data.",
       href: withOrgHref("/team/data", orgId),
       primary: true,
     },

@@ -49,7 +49,7 @@ async function persistTeamDataSnapshot(orgId: string, data: TeamDataSnapshot): P
   try {
     await putFeatureSnapshot("team-data", orgId, data);
   } catch {
-    // Live Team Data already painted; IndexedDB is best-effort.
+    // Live Team data already painted; IndexedDB is best-effort.
   }
 }
 
@@ -102,7 +102,7 @@ function TeamDataShell({
       <header className="app-page-header">
         <div>
           <span className="breadcrumbs">Team / Live data</span>
-          <h1>Team Data</h1>
+          <h1>Team data</h1>
           <p>{description}</p>
         </div>
         <TeamDataRelated orgId={orgId} include={[...TEAM_DATA_RELATED_INCLUDE]} />
@@ -219,7 +219,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
         if (hadCache || paintedOrgRef.current === orgId) {
           setFromCache(true);
           setFetchFailed(false);
-          setMessage("Could not refresh Team Data. Showing the last copy on this device.");
+          setMessage("Could not refresh Team data. Showing the last copy on this device.");
         } else {
           setOk(false);
           setFetchFailed(true);
@@ -253,7 +253,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
       if (hadCache || paintedOrgRef.current === orgId) {
         setFromCache(true);
         setFetchFailed(false);
-        setMessage("Could not refresh Team Data. Showing the last copy on this device.");
+        setMessage("Could not refresh Team data. Showing the last copy on this device.");
       } else {
         setOk(false);
         setFetchFailed(true);
@@ -366,12 +366,12 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
   if (shell === "loading") {
     return (
       <TeamDataShell
-        title="Loading…"
+        title="Opening Team data"
         description="Checking your event and official match connection."
         orgId={orgId}
         shell="loading"
       >
-        <OfflineBanner feature="Team Data" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Team data" fromCache={fromCache} cachedAt={cachedAt} />
       </TeamDataShell>
     );
   }
@@ -379,7 +379,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
   if (shell === "error") {
     return (
       <TeamDataShell
-        title={forbidden ? "Admin access required" : "Team Data unavailable"}
+        title={forbidden ? "Admin access required" : "Team data unavailable"}
         description="Inventory and event data appear after your first sync."
         orgId={orgId}
         shell="error"
@@ -388,7 +388,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
           void load();
         }}
       >
-        <OfflineBanner feature="Team Data" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Team data" fromCache={fromCache} cachedAt={cachedAt} />
       </TeamDataShell>
     );
   }
@@ -405,18 +405,18 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
     const needsTba = !tbaConfigured;
     return (
       <TeamDataShell
-        title={needsTba ? "Connect TBA" : needsEvent ? "Set active event" : "Finish Team Data setup"}
+        title={needsTba ? "Connect TBA" : needsEvent ? "Set active event" : "Finish Team data setup"}
         description={
           needsTba
             ? `Save a TBA Read API key below, or ask whoever set up this site to add one in deployment settings. Create a key at thebluealliance.com → Account → Read API Keys.${needsEvent ? " You will also need to pick an active event before anything syncs." : ""}`
             : needsEvent
-              ? "Team Data syncs only for a real team event — Schedule, Event day, and Strategy stay empty until then."
+              ? "Team data syncs only for a real team event — Schedule, Event day, and Strategy stay empty until then."
               : "Finish team setup so official matches can load this team."
         }
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Team Data" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Team data" fromCache={fromCache} cachedAt={cachedAt} />
         {needsTba ? (
           <section className="app-card soft-panel team-data-panel">
             <h2>Connect TBA team key</h2>
@@ -456,7 +456,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
       <header className="app-page-header">
         <div>
           <span className="breadcrumbs">Team / Live data</span>
-          <h1>Team Data</h1>
+          <h1>Team data</h1>
           <p>
             Inventory counts for your team, shared official match cache health, and controlled sync for the active event.
             Schedule, Event day, and Strategy use this shared copy of official matches.
@@ -473,7 +473,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
         </div>
       </header>
 
-      <OfflineBanner feature="Team Data" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Team data" fromCache={fromCache} cachedAt={cachedAt} />
 
       {message ? (
         <p className={`telemetry-status${ok ? " success" : ""}`} role="status">

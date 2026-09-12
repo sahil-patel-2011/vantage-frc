@@ -6,7 +6,7 @@ import { withOrgHref } from "../nav/product-nav";
 export const CROSS_TEAM_SCRIM_RELATED_LINKS = [
   { id: "calendar", label: "Calendar", kind: "team" as const, tab: "calendar" },
   { id: "scouting", label: "Scouting", kind: "competition" as const, tab: "scouting" },
-  { id: "team-data", label: "Team Data", kind: "path" as const, path: "/team/data" },
+  { id: "team-data", label: "Team data", kind: "path" as const, path: "/team/data" },
   { id: "team", label: "Team hub", kind: "team" as const, tab: "cross-team-scrim" },
 ] as const;
 
@@ -18,7 +18,7 @@ export type CrossTeamScrimRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — Calendar · Scouting · Team Data. */
+/** Focused Soft-UI strip — Calendar · Scouting · Team data. */
 export const CROSS_TEAM_SCRIM_RELATED_INCLUDE: CrossTeamScrimRelatedId[] = [
   "calendar",
   "scouting",
@@ -26,7 +26,7 @@ export const CROSS_TEAM_SCRIM_RELATED_INCLUDE: CrossTeamScrimRelatedId[] = [
 ];
 
 /**
- * Soft-UI cross-links from Cross-Team Scrim → Calendar / Scouting / Team Data.
+ * Soft-UI cross-links from Cross-Team Scrim → Calendar / Scouting / Team data.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function crossTeamScrimRelatedLinks(
@@ -96,7 +96,7 @@ export function crossTeamScrimSetupSteps(orgId?: string | null): CrossTeamScrimS
     },
     {
       id: "team-data",
-      label: "Open Team Data",
+      label: "Open Team data",
       detail: "Confirm official team context for partner outreach.",
       href: withOrgHref("/team/data", orgId),
     },
@@ -155,7 +155,7 @@ export function crossTeamScrimShellCopy(kind: CrossTeamScrimShellKind): CrossTea
         badge: "Unavailable",
         title: "Could not load scrim scheduling",
         description:
-          "A network or server issue blocked invites. Retry, or open Calendar / Scouting / Team Data while it reloads.",
+          "A network or server issue blocked invites. Retry, or open Calendar / Scouting / Team data while it reloads.",
       };
     case "setup":
       return {
@@ -171,7 +171,7 @@ export function crossTeamScrimShellCopy(kind: CrossTeamScrimShellKind): CrossTea
         badge: "No invites yet",
         title: "Propose a scrimmage with a nearby team",
         description:
-          "Invites and data-share agreements stay blank until you log a real partner. Cross-check Calendar, Scouting, and Team Data.",
+          "Invites and data-share agreements stay blank until you log a real partner. Cross-check Calendar, Scouting, and Team data.",
       };
     default:
       return {
@@ -185,7 +185,7 @@ export function crossTeamScrimShellCopy(kind: CrossTeamScrimShellKind): CrossTea
 
 /**
  * Soft-UI next actions for Cross-Team Scrim empty/setup shells.
- * Points at Calendar / Scouting / Team Data — never invents DEMO scrim metrics.
+ * Points at Calendar / Scouting / Team data — never invents DEMO scrim metrics.
  */
 export function crossTeamScrimNextActions(input: {
   orgId?: string | null;
@@ -227,7 +227,7 @@ export function crossTeamScrimNextActions(input: {
       },
       {
         id: "team-data",
-        label: "Open Team Data",
+        label: "Open Team data",
         detail: "Official-match and team inventory stays independent of scrim invites.",
         href: withOrgHref("/team/data", orgId),
       },
@@ -257,7 +257,7 @@ export function crossTeamScrimNextActions(input: {
       },
       {
         id: "team-data",
-        label: "Open Team Data",
+        label: "Open Team data",
         detail: "Confirm partner team numbers from official team context.",
         href: withOrgHref("/team/data", orgId),
       },
@@ -289,7 +289,7 @@ export function crossTeamScrimNextActions(input: {
     },
     {
       id: "team-data",
-      label: "Open Team Data",
+      label: "Open Team data",
       detail: "Verify partner team context from official matches.",
       href: withOrgHref("/team/data", orgId),
     },

@@ -9,7 +9,7 @@ export const MY_DAY_RELATED_LINKS = [
   { id: "strategy", label: "Strategy", kind: "hub" as const, tab: "strategy" },
   { id: "scouting", label: "Scouting", kind: "hub" as const, tab: "scouting" },
   { id: "match-checklist", label: "Match checklist", kind: "hub" as const, tab: "match-checklist" },
-  { id: "team-data", label: "Team Data", kind: "path" as const, path: "/team/data" },
+  { id: "team-data", label: "Team data", kind: "path" as const, path: "/team/data" },
 ] as const;
 
 export type MyDayRelatedId = (typeof MY_DAY_RELATED_LINKS)[number]["id"];

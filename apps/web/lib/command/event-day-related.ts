@@ -13,7 +13,7 @@ export const EVENT_DAY_RELATED_LINKS = [
   { id: "match-checklist", label: "Match checklist", kind: "hub" as const, tab: "match-checklist" },
   { id: "tool-checkout", label: "Tool checkout", kind: "path" as const, path: "/tool-checkout" },
   { id: "inspection", label: "Inspection", kind: "path" as const, path: "/inspection-copilot" },
-  { id: "team-data", label: "Team Data", kind: "path" as const, path: "/team/data" },
+  { id: "team-data", label: "Team data", kind: "path" as const, path: "/team/data" },
 ] as const;
 
 export type EventDayRelatedId = (typeof EVENT_DAY_RELATED_LINKS)[number]["id"];

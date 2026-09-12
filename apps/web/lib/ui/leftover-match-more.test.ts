@@ -9,7 +9,7 @@ const WEB = join(__dirname, "..", "..");
  * Counter-book / Team Retrospective titles after leftover-tool-more.
  * Hub labels stay Pick clock, Match notes, Counter-book, and Retro.
  * leftover-fmea Failure log, leftover-fmea-strips no Open FMEA,
- * leftover-pick Choose your team, leftover-team-data Sync Team Data,
+ * leftover-pick Choose your team, leftover-team-data Sync Team data,
  * leftover-invites Invites, leftover-visit-invites Visit invites,
  * leftover-community-impact Impact, leftover-event-day-more Event day,
  * leftover-ops-more Skills / Risk register / Burndown,
@@ -68,7 +68,7 @@ describe("leftover student match-more chrome", () => {
     expect(clockRelated).toMatch(/Opening Pick clock/);
     expect(clockRelated).not.toMatch(/title="Loading/);
     expect(clockRelated).toMatch(/Choose your team/);
-    expect(clockRelated).toMatch(/Sync Team Data/);
+    expect(clockRelated).toMatch(/Sync Team data/);
     expect(clockRelated).not.toMatch(/\bPick a team\b/);
     const notesRelated = readFileSync(
       join(WEB, "lib/match-notes-timeline/match-notes-timeline-related.ts"),

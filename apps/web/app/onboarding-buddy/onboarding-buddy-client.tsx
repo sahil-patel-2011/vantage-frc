@@ -343,7 +343,7 @@ export default function OnboardingBuddyClient() {
           </>
         }
         title="Onboarding buddy"
-        description="Auto-pair new members with a tenured buddy and track a first-week plan. Suggestions use only real membership records. Cross-check Your team, Onboarding, and Team Data."
+        description="Auto-pair new members with a tenured buddy and track a first-week plan. Suggestions use only real membership records. Cross-check Your team, Onboarding, and Team data."
       >
         <div className="onboarding-buddy-header-actions">
           {relatedLinks.map((link) => (

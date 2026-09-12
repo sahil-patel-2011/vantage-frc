@@ -23,7 +23,7 @@ export const CONNECTIONS_RELATED_LINKS = [
   { id: "cad", label: "CAD Connections", kind: "path" as const, path: "/cad/connections" },
   { id: "discord", label: "Discord", kind: "path" as const, path: "/team/discord" },
   { id: "slack", label: "Slack", kind: "path" as const, path: "/team/slack" },
-  { id: "tba", label: "Team Data", kind: "path" as const, path: "/team/data" },
+  { id: "tba", label: "Team data", kind: "path" as const, path: "/team/data" },
   { id: "github", label: "Invites · GitHub", kind: "path" as const, path: "/team/admin", hash: "#github-connection" },
   { id: "workspace", label: "Your team", kind: "path" as const, path: "/workspace" },
 ] as const;

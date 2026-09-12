@@ -108,7 +108,7 @@ export function matchStrategyCardsSetupSteps(
   return dropRelatedStripDuplicates(orgId, [
     {
       id: "team-data",
-      label: "Sync Team Data",
+      label: "Sync Team data",
       detail: "Load this event’s match schedule so cards can appear.",
       href: withOrgHref("/team/data", orgId),
     },
