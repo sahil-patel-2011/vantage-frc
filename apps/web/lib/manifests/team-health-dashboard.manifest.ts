@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "team-health-dashboard",
-  title: "Team Health Dashboard",
+  title: "Team health",
   route: "/team-health-dashboard",
   apiRoute: "/api/team-health-dashboard",
   hub: "Team",

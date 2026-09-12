@@ -11,7 +11,7 @@ import {
 import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("sponsorSuiteRelatedLinks", () => {
-  it("builds Sponsor CRM / Sponsorship / Sponsor Wall cross-links", () => {
+  it("builds Sponsor CRM / Sponsorship / Sponsor wall cross-links", () => {
     const links = sponsorSuiteRelatedLinks("org-1", {
       include: [...SPONSOR_SUITE_RELATED_INCLUDE],
     });

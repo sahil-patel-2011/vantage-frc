@@ -1,7 +1,7 @@
 import AwardTrackerClient from "./award-tracker-client";
 
 export const metadata = {
-  title: "Award Tracker",
+  title: "Award tracker",
 };
 
 export default function AwardTrackerPage() {

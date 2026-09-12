@@ -1,4 +1,4 @@
-// Pure, unit-testable helpers for Team Health. No I/O, no framework imports.
+// Pure, unit-testable helpers for Team health. No I/O, no framework imports.
 // Engagement is derived from attendance entries and closed hour logs only.
 
 import type {
@@ -241,7 +241,7 @@ function tierFromScore(score: number): TeamHealthTier {
 export function computeTeamHealthReadiness(summary: TeamHealthSummary): TeamHealthReadiness {
   const recommendations: string[] = [];
   if (!summary.hasLogs) {
-    recommendations.push("Log attendance or clock shop hours before Team Health can show engagement.");
+    recommendations.push("Log attendance or clock shop hours before Team health can show engagement.");
     return {
       score: null,
       tier: null,

@@ -16,7 +16,7 @@ function setupSteps(orgId: string | null): TeamHealthSetupStep[] {
     {
       id: "workspace",
       label: "Choose your team",
-      detail: "Choose your team to open Team Health.",
+      detail: "Choose your team to open Team health.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {

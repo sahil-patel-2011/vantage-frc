@@ -2,7 +2,7 @@ import { hubHref } from "../nav/hubs";
 import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Team Health (never DEMO morale). */
+/** Soft-UI related surfaces for Team health (never DEMO morale). */
 export const TEAM_HEALTH_RELATED_LINKS = [
   { id: "attendance", label: "Attendance", tab: "attendance" },
   { id: "hours-self-view", label: "My hours", tab: "hours-self-view" },
@@ -20,7 +20,7 @@ export type TeamHealthRelatedLink = {
 export const TEAM_HEALTH_RELATED_INCLUDE: TeamHealthRelatedId[] = ["attendance", "hours-self-view"];
 
 /**
- * Soft-UI cross-links from Team Health → Attendance / My hours.
+ * Soft-UI cross-links from Team health → Attendance / My hours.
  * Build with hubHref — never broken JSX href templates.
  */
 export function teamHealthRelatedLinks(
@@ -68,7 +68,7 @@ export function teamHealthSetupSteps(orgId?: string | null): TeamHealthSetupStep
     {
       id: "workspace",
       label: "Choose your team",
-      detail: "Choose your team to open Team Health.",
+      detail: "Choose your team to open Team health.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -114,7 +114,7 @@ export function shouldShowTeamHealthSummaryTiles(hasLogs: boolean): boolean {
   return hasLogs;
 }
 
-/** Classify Team Health Soft-UI shell — never invents DEMO morale. */
+/** Classify Team health Soft-UI shell — never invents DEMO morale. */
 export function classifyTeamHealthShell(input: {
   loading?: boolean;
   fetchFailed?: boolean;
@@ -135,14 +135,14 @@ export function teamHealthShellCopy(kind: TeamHealthShellKind): TeamHealthEmptyC
     case "loading":
       return {
         kind,
-        title: "Loading Team Health…",
+        title: "Opening Team health…",
         description: "Checking which team you are on and attendance / hour logs.",
       };
     case "error":
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Team Health",
+        title: "Could not load Team health",
         description:
           "A network or server issue blocked the engagement view. Retry, or open Attendance while it reloads.",
       };
@@ -160,7 +160,7 @@ export function teamHealthShellCopy(kind: TeamHealthShellKind): TeamHealthEmptyC
         badge: "No logs yet",
         title: "Engagement stays empty until someone logs time",
         description:
-          "Team Health is built from attendance roll call and shop-hour clock-ins only.",
+          "Team health is built from attendance roll call and shop-hour clock-ins only.",
       };
     default:
       return {
@@ -172,7 +172,7 @@ export function teamHealthShellCopy(kind: TeamHealthShellKind): TeamHealthEmptyC
 }
 
 /**
- * Soft-UI next actions for Team Health empty/setup shells.
+ * Soft-UI next actions for Team health empty/setup shells.
  * Points at Attendance / My hours — never invents DEMO morale.
  */
 export function teamHealthNextActions(input: {
@@ -194,7 +194,7 @@ export function teamHealthNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Team Health",
+        label: "Retry Team health",
         detail: "Reload real attendance and hour logs.",
         href: withOrgHref("/team-health-dashboard", orgId),
         primary: true,
@@ -202,13 +202,13 @@ export function teamHealthNextActions(input: {
       {
         id: "attendance",
         label: "Open Attendance",
-        detail: "Attendance stays available while Team Health reloads.",
+        detail: "Attendance stays available while Team health reloads.",
         href: hubHref("/team", "attendance", orgId),
       },
       {
         id: "hours-self-view",
         label: "Open My hours",
-        detail: "My hours stays available while Team Health reloads.",
+        detail: "My hours stays available while Team health reloads.",
         href: hubHref("/team", "hours-self-view", orgId),
       },
     ];

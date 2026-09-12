@@ -2,11 +2,11 @@ import { hubHref } from "../nav/hubs";
 import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Sponsor Suite (never DEMO fundraising metrics). */
+/** Soft-UI related surfaces for Sponsor suite (never DEMO fundraising metrics). */
 export const SPONSOR_SUITE_RELATED_LINKS = [
   { id: "sponsors", label: "Sponsor CRM", kind: "business" as const, tab: "sponsors" },
   { id: "sponsorship", label: "Sponsorship", kind: "business" as const, tab: "sponsorship" },
-  { id: "sponsor-wall", label: "Sponsor Wall", kind: "business" as const, tab: "sponsor-wall" },
+  { id: "sponsor-wall", label: "Sponsor wall", kind: "business" as const, tab: "sponsor-wall" },
   { id: "media-kit", label: "Media kit", kind: "business" as const, tab: "media-kit" },
 ] as const;
 
@@ -18,7 +18,7 @@ export type SponsorSuiteRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — CRM / Sponsorship / Sponsor Wall. */
+/** Focused Soft-UI strip — CRM / Sponsorship / Sponsor wall. */
 export const SPONSOR_SUITE_RELATED_INCLUDE: SponsorSuiteRelatedId[] = [
   "sponsors",
   "sponsorship",
@@ -26,7 +26,7 @@ export const SPONSOR_SUITE_RELATED_INCLUDE: SponsorSuiteRelatedId[] = [
 ];
 
 /**
- * Soft-UI cross-links from Sponsor Suite → CRM / Sponsorship / Wall.
+ * Soft-UI cross-links from Sponsor suite → CRM / Sponsorship / Wall.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function sponsorSuiteRelatedLinks(
@@ -92,7 +92,7 @@ export function sponsorSuiteSetupSteps(orgId?: string | null): SponsorSuiteSetup
     },
     {
       id: "sponsor-wall",
-      label: "Open Sponsor Wall",
+      label: "Open Sponsor wall",
       detail: "Wall shout-outs stay blank until real entries land.",
       href: hubHref("/business", "sponsor-wall", orgId),
     },
@@ -136,7 +136,7 @@ export function isSponsorSuiteBoardEmpty(input: {
   );
 }
 
-/** Classify Sponsor Suite Soft-UI shell — never invents DEMO fundraising metrics. */
+/** Classify Sponsor suite Soft-UI shell — never invents DEMO fundraising metrics. */
 export function classifySponsorSuiteShell(input: {
   loading: boolean;
   fetchFailed?: boolean;
@@ -171,7 +171,7 @@ export function sponsorSuiteShellCopy(kind: SponsorSuiteShellKind): SponsorSuite
     case "loading":
       return {
         kind,
-        title: "Loading Sponsor Suite…",
+        title: "Opening Sponsor suite…",
         description:
           "Checking which team you are on and recorded sponsors.",
       };
@@ -179,7 +179,7 @@ export function sponsorSuiteShellCopy(kind: SponsorSuiteShellKind): SponsorSuite
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Sponsor Suite",
+        title: "Could not load Sponsor suite",
         description:
           "A network or server issue blocked the suite. Retry, or open Sponsor CRM / Sponsorship while it reloads.",
       };
@@ -210,7 +210,7 @@ export function sponsorSuiteShellCopy(kind: SponsorSuiteShellKind): SponsorSuite
 }
 
 /**
- * Soft-UI next actions for Sponsor Suite empty/setup shells.
+ * Soft-UI next actions for Sponsor suite empty/setup shells.
  * Points at CRM / Sponsorship / Wall — never invents DEMO fundraising metrics.
  */
 export function sponsorSuiteNextActions(input: {
@@ -234,7 +234,7 @@ export function sponsorSuiteNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Sponsor Suite",
+        label: "Retry Sponsor suite",
         detail: "Reload real sponsors and decks.",
         href: withOrgHref("/sponsor-suite", orgId),
         primary: true,
@@ -297,7 +297,7 @@ export function sponsorSuiteNextActions(input: {
     },
     {
       id: "sponsor-wall",
-      label: "Open Sponsor Wall",
+      label: "Open Sponsor wall",
       detail: "Pair suite shout-outs with wall entries.",
       href: hubHref("/business", "sponsor-wall", orgId),
     },

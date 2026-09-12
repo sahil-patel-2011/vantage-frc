@@ -341,7 +341,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/opponent-watchlist")) return "Watchlist";
   if (bare.startsWith("/alliance-sim")) return "Alliance sim";
   if (bare.startsWith("/briefing")) return "Pre-match briefing";
-  if (bare.startsWith("/award-tracker")) return "Award Tracker";
+  if (bare.startsWith("/award-tracker")) return "Award tracker";
   if (bare.startsWith("/epa-trend-alerts")) return "Rating alerts";
   if (bare.startsWith("/ranking-projection")) return "Rank projection";
   if (bare.startsWith("/rankings")) return "Rankings";
@@ -350,9 +350,9 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/media-library")) return "Media Library";
   if (bare.startsWith("/media")) return "Media";
   if (bare.startsWith("/sponsorship")) return "Sponsorship";
-  if (bare.startsWith("/sponsor-suite")) return "Sponsor Suite";
-  if (bare.startsWith("/sponsor-wall")) return "Sponsor Wall";
-  if (bare.startsWith("/outreach-calendar")) return "Outreach Calendar";
+  if (bare.startsWith("/sponsor-suite")) return "Sponsor suite";
+  if (bare.startsWith("/sponsor-wall")) return "Sponsor wall";
+  if (bare.startsWith("/outreach-calendar")) return "Outreach calendar";
   if (bare.startsWith("/visit-invites")) return "Visit Invites";
   if (bare.startsWith("/judge-sim")) return "Judge pitch";
   if (bare.startsWith("/impact-essay")) return "Impact essay";
@@ -391,7 +391,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/spare-robot-kit")) return "Spare kit";
   if (bare.startsWith("/spare-forecast")) return "Spares forecast";
   if (bare.startsWith("/sponsor-renewal-roi")) return "Sponsor Renewal ROI";
-  if (bare.startsWith("/team-health-dashboard")) return "Team Health";
+  if (bare.startsWith("/team-health-dashboard")) return "Team health";
   if (bare.startsWith("/sketch-to-brief")) return "Sketch-to-Brief";
   if (bare.startsWith("/scout-assisted-count")) return "Scout-Assisted Count";
   if (bare.startsWith("/scout-coverage-live")) return "Coverage";

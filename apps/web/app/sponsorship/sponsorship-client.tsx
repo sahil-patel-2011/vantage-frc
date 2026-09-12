@@ -413,7 +413,7 @@ export default function SponsorshipClient({ embedded = false }: { embedded?: boo
                 Sponsor pipeline
               </Button>
               <Button as="a" variant="secondary" href={`/sponsor-suite?orgId=${encodeURIComponent(context.orgId)}`}>
-                Sponsor Suite
+                Sponsor suite
               </Button>
               <Button as="a" variant="secondary" href={`/media-kit?orgId=${encodeURIComponent(context.orgId)}`}>
                 Media kit

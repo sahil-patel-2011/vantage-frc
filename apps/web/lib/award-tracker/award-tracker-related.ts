@@ -2,7 +2,7 @@ import { hubHref } from "../nav/hubs";
 import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Award Tracker (never DEMO win rates). */
+/** Soft-UI related surfaces for Award tracker (never DEMO win rates). */
 export const AWARD_TRACKER_RELATED_LINKS = [
   { id: "evidence", label: "Business · Awards", kind: "business" as const, tab: "evidence" },
   { id: "awards-workbench", label: "Awards workbench", kind: "path" as const, path: "/team/awards" },
@@ -26,7 +26,7 @@ export const AWARD_TRACKER_RELATED_INCLUDE: AwardTrackerRelatedId[] = [
 ];
 
 /**
- * Soft-UI cross-links from Award Tracker → Awards / Essay.
+ * Soft-UI cross-links from Award tracker → Awards / Essay.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function awardTrackerRelatedLinks(
@@ -127,7 +127,7 @@ export function isAwardTrackerBoardEmpty(input: { submissionCount: number }): bo
   return input.submissionCount === 0;
 }
 
-/** Classify Award Tracker Soft-UI shell — never invents DEMO win rates. */
+/** Classify Award tracker Soft-UI shell — never invents DEMO win rates. */
 export function classifyAwardTrackerShell(input: {
   loading: boolean;
   fetchFailed?: boolean;
@@ -148,7 +148,7 @@ export function awardTrackerShellCopy(kind: AwardTrackerShellKind): AwardTracker
     case "loading":
       return {
         kind,
-        title: "Loading Award Tracker…",
+        title: "Opening Award tracker…",
         description:
           "Checking which team you are on and award submissions.",
       };
@@ -156,7 +156,7 @@ export function awardTrackerShellCopy(kind: AwardTrackerShellKind): AwardTracker
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Award Tracker",
+        title: "Could not load Award tracker",
         description:
           "A network or server issue blocked the tracker. Retry, or open Awards / Impact essay while it reloads.",
       };
@@ -187,7 +187,7 @@ export function awardTrackerShellCopy(kind: AwardTrackerShellKind): AwardTracker
 }
 
 /**
- * Soft-UI next actions for Award Tracker empty/setup shells.
+ * Soft-UI next actions for Award tracker empty/setup shells.
  * Points at Awards / Impact essay — never invents DEMO win rates.
  */
 export function awardTrackerNextActions(input: {
@@ -211,7 +211,7 @@ export function awardTrackerNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Award Tracker",
+        label: "Retry Award tracker",
         detail: "Reload real submissions and deadlines.",
         href: withOrgHref("/award-tracker", orgId),
         primary: true,

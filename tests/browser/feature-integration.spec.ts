@@ -95,7 +95,7 @@ test.describe("one control per destination", () => {
     await expect(strip.getByRole("link")).toHaveCount(2);
     await expect(strip.getByRole("link", { name: "Media Kit" })).toHaveCount(0);
     await expect(strip.getByRole("link", { name: "Community Impact" })).toHaveCount(0);
-    await expect(strip.getByRole("link", { name: "Outreach Calendar" })).toBeVisible();
+    await expect(strip.getByRole("link", { name: "Outreach calendar" })).toBeVisible();
     // Media Kit is still reachable, but as the shell's own primary action rather
     // than a second header button aimed at the same page. Which shell renders
     // depends on whether the workspace has media rows, so assert only that no

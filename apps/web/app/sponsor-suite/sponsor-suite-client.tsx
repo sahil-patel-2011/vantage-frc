@@ -47,7 +47,7 @@ async function persistSponsorSuiteSnapshot(
     await putFeatureSnapshot("sponsor-suite", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("sponsor-suite", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Sponsor Suite already painted; IndexedDB is best-effort.
+    // Live Sponsor suite already painted; IndexedDB is best-effort.
   }
 }
 
@@ -129,10 +129,10 @@ function SponsorSuiteShell({
         breadcrumbs={
           <>
             <a href={businessHref}>Business</a>
-            {" / Sponsor Suite"}
+            {" / Sponsor suite"}
           </>
         }
-        title="Sponsor Suite"
+        title="Sponsor suite"
         description={description}
       >
         <SponsorSuiteRelatedStrip orgId={orgId} />
@@ -225,7 +225,7 @@ export default function SponsorSuiteClient() {
         if (!response.ok || !isSponsorSuiteView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Sponsor Suite. Showing the last copy on this device.");
+            setError("Could not refresh Sponsor suite. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -240,7 +240,7 @@ export default function SponsorSuiteClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Sponsor Suite. Showing the last copy on this device.");
+          setError("Could not refresh Sponsor suite. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -322,7 +322,7 @@ export default function SponsorSuiteClient() {
   if (shell === "loading") {
     return (
       <SponsorSuiteShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Sponsor Suite" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Sponsor suite" fromCache={fromCache} cachedAt={cachedAt} />
       </SponsorSuiteShell>
     );
   }
@@ -336,7 +336,7 @@ export default function SponsorSuiteClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Sponsor Suite" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Sponsor suite" fromCache={fromCache} cachedAt={cachedAt} />
       </SponsorSuiteShell>
     );
   }
@@ -348,7 +348,7 @@ export default function SponsorSuiteClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Sponsor Suite" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Sponsor suite" fromCache={fromCache} cachedAt={cachedAt} />
       </SponsorSuiteShell>
     );
   }
@@ -356,7 +356,7 @@ export default function SponsorSuiteClient() {
   if (view?.status !== "live") {
     return (
       <SponsorSuiteShell description={shellCopy.description} orgId={orgId} shell="setup">
-        <OfflineBanner feature="Sponsor Suite" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Sponsor suite" fromCache={fromCache} cachedAt={cachedAt} />
       </SponsorSuiteShell>
     );
   }
@@ -367,10 +367,10 @@ export default function SponsorSuiteClient() {
         breadcrumbs={
           <>
             <a href={businessHref}>Business</a>
-            {" / Sponsor Suite"}
+            {" / Sponsor suite"}
           </>
         }
-        title="Sponsor Suite"
+        title="Sponsor suite"
         description="Generate pitch/renewal decks, an end-of-season ROI report, and thank-you/renewal reminders — grounded in your recorded sponsors and contributions. Deck and ROI generation are metered."
       >
         <div className="sponsor-suite-header-actions">
@@ -400,7 +400,7 @@ export default function SponsorSuiteClient() {
           ))}
         </div>
       </PageHeader>
-      <OfflineBanner feature="Sponsor Suite" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Sponsor suite" fromCache={fromCache} cachedAt={cachedAt} />
 
       {orgId && cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} compact /> : null}
 

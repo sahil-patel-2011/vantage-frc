@@ -4,13 +4,13 @@ import { describe, expect, it } from "vitest";
 
 const DIR = __dirname;
 
-describe("Award Tracker last snapshot stays on the phone", () => {
+describe("Award tracker last snapshot stays on the phone", () => {
   it("reads and writes the award-tracker IndexedDB feature cache", () => {
     const src = readFileSync(join(DIR, "award-tracker-client.tsx"), "utf8");
     expect(src).toMatch(/getFeatureSnapshot/);
     expect(src).toMatch(/putFeatureSnapshot/);
     expect(src).toMatch(/"award-tracker"/);
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
-    expect(src).toMatch(/feature="Award Tracker"/);
+    expect(src).toMatch(/feature="Award tracker"/);
   });
 });

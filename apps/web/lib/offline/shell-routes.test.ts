@@ -264,14 +264,14 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/opponent-watchlist")).toBe("Watchlist");
     expect(offlineCapableLabel("/alliance-sim")).toBe("Alliance sim");
     expect(offlineCapableLabel("/briefing")).toBe("Pre-match briefing");
-    expect(offlineCapableLabel("/award-tracker")).toBe("Award Tracker");
+    expect(offlineCapableLabel("/award-tracker")).toBe("Award tracker");
     expect(offlineCapableLabel("/epa-trend-alerts")).toBe("Rating alerts");
     expect(offlineCapableLabel("/rankings")).toBe("Rankings");
     expect(offlineCapableLabel("/grant-report")).toBe("Grant Report");
     expect(offlineCapableLabel("/media-kit")).toBe("Media kit");
-    expect(offlineCapableLabel("/sponsor-wall")).toBe("Sponsor Wall");
-    expect(offlineCapableLabel("/sponsor-suite")).toBe("Sponsor Suite");
-    expect(offlineCapableLabel("/outreach-calendar")).toBe("Outreach Calendar");
+    expect(offlineCapableLabel("/sponsor-wall")).toBe("Sponsor wall");
+    expect(offlineCapableLabel("/sponsor-suite")).toBe("Sponsor suite");
+    expect(offlineCapableLabel("/outreach-calendar")).toBe("Outreach calendar");
     expect(offlineCapableLabel("/visit-invites")).toBe("Visit Invites");
     expect(offlineCapableLabel("/judge-sim")).toBe("Judge pitch");
     expect(offlineCapableLabel("/impact-essay")).toBe("Impact essay");
@@ -306,7 +306,7 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/spare-robot-kit")).toBe("Spare kit");
     expect(offlineCapableLabel("/spare-forecast")).toBe("Spares forecast");
     expect(offlineCapableLabel("/sponsor-renewal-roi")).toBe("Sponsor Renewal ROI");
-    expect(offlineCapableLabel("/team-health-dashboard")).toBe("Team Health");
+    expect(offlineCapableLabel("/team-health-dashboard")).toBe("Team health");
     expect(offlineCapableLabel("/sketch-to-brief")).toBe("Sketch-to-Brief");
     expect(offlineCapableLabel("/scout-assisted-count")).toBe("Scout-Assisted Count");
     expect(offlineCapableLabel("/scout-coverage-live")).toBe("Coverage");
@@ -341,7 +341,7 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/subteams")).toBe("Subteam progress");
     expect(offlineCapableLabel("/budget")).toBe("Season budget");
     expect(offlineCapableLabel("/sponsorship")).toBe("Sponsorship");
-    expect(offlineCapableLabel("/sponsor-suite")).toBe("Sponsor Suite");
+    expect(offlineCapableLabel("/sponsor-suite")).toBe("Sponsor suite");
     expect(offlineCapableLabel("/safety")).toBe("Safety");
     expect(offlineCapableLabel("/writer")).toBe("Writer");
     expect(offlineCapableLabel("/learning")).toBe("Learning");

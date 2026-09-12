@@ -6,8 +6,8 @@ import { withOrgHref } from "../nav/product-nav";
 export const MEDIA_KIT_RELATED_LINKS = [
   { id: "media", label: "Media team", kind: "path" as const, path: "/media" },
   { id: "media-library", label: "Media library", kind: "path" as const, path: "/media-library" },
-  { id: "sponsor-suite", label: "Sponsor Suite", kind: "business" as const, tab: "sponsor-suite" },
-  { id: "outreach-calendar", label: "Outreach Calendar", kind: "business" as const, tab: "outreach-calendar" },
+  { id: "sponsor-suite", label: "Sponsor suite", kind: "business" as const, tab: "sponsor-suite" },
+  { id: "outreach-calendar", label: "Outreach calendar", kind: "business" as const, tab: "outreach-calendar" },
   { id: "impact", label: "Community Impact", kind: "business" as const, tab: "impact" },
   { id: "sponsors", label: "Sponsor CRM", kind: "business" as const, tab: "sponsors" },
 ] as const;
@@ -95,13 +95,13 @@ export function mediaKitSetupSteps(orgId?: string | null): MediaKitSetupStep[] {
     },
     {
       id: "sponsor-suite",
-      label: "Open Sponsor Suite",
+      label: "Open Sponsor suite",
       detail: "Pair media assets with real sponsor decks.",
       href: hubHref("/business", "sponsor-suite", orgId),
     },
     {
       id: "outreach-calendar",
-      label: "Open Outreach Calendar",
+      label: "Open Outreach calendar",
       detail: "Outreach stays empty until you schedule real events.",
       href: hubHref("/business", "outreach-calendar", orgId),
     },
@@ -175,7 +175,7 @@ export function mediaKitShellCopy(kind: MediaKitShellKind): MediaKitEmptyCopy {
         badge: "Unavailable",
         title: "Could not load Media kit",
         description:
-          "A network or server issue blocked the kit. Retry, or open Sponsor Suite / Outreach while it reloads.",
+          "A network or server issue blocked the kit. Retry, or open Sponsor suite / Outreach while it reloads.",
       };
     case "setup":
       return {
@@ -191,7 +191,7 @@ export function mediaKitShellCopy(kind: MediaKitShellKind): MediaKitEmptyCopy {
         badge: "No media yet",
         title: "Record your first media kit fields",
         description:
-          "Mission, bio, logos, and one-pagers stay blank until you add them. Cross-check Sponsor Suite and Outreach.",
+          "Mission, bio, logos, and one-pagers stay blank until you add them. Cross-check Sponsor suite and Outreach.",
       };
     default:
       return {
@@ -235,7 +235,7 @@ export function mediaKitNextActions(input: {
       },
       {
         id: "sponsor-suite",
-        label: "Open Sponsor Suite",
+        label: "Open Sponsor suite",
         detail: "Sponsor decks stay available while the kit reloads.",
         href: hubHref("/business", "sponsor-suite", orgId),
       },
@@ -265,7 +265,7 @@ export function mediaKitNextActions(input: {
       },
       {
         id: "sponsor-suite",
-        label: "Open Sponsor Suite",
+        label: "Open Sponsor suite",
         detail: "Pair kit assets with real sponsor decks.",
         href: hubHref("/business", "sponsor-suite", orgId),
       },
@@ -294,13 +294,13 @@ export function mediaKitNextActions(input: {
     },
     {
       id: "sponsor-suite",
-      label: "Open Sponsor Suite",
+      label: "Open Sponsor suite",
       detail: "Pair kit assets with real sponsor decks.",
       href: hubHref("/business", "sponsor-suite", orgId),
     },
     {
       id: "outreach-calendar",
-      label: "Open Outreach Calendar",
+      label: "Open Outreach calendar",
       detail: "Keep outreach projections grounded in scheduled events.",
       href: hubHref("/business", "outreach-calendar", orgId),
     },

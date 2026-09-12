@@ -1,6 +1,6 @@
 /**
  * Source lock for remaining Impact / community student boards: Community
- * Impact, Awards, Impact Essay, Outreach Calendar, Judge-Pitch, Award
+ * Impact, Awards, Impact Essay, Outreach calendar, Judge-Pitch, Award
  * Tracker, and Mock Judging. Funding hub files (Sponsors / Grants / Budget)
  * are owned by other agents and are not rewritten here.
  */

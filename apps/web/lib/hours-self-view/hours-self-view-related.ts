@@ -5,7 +5,7 @@ import { withOrgHref } from "../nav/product-nav";
 export const HOURS_SELF_VIEW_RELATED_LINKS = [
   { id: "attendance", label: "Attendance", tab: "attendance" },
   { id: "mentor-hours", label: "Mentor Hours", tab: "mentor-hours" },
-  { id: "team-health-dashboard", label: "Team Health", tab: "team-health-dashboard" },
+  { id: "team-health-dashboard", label: "Team health", tab: "team-health-dashboard" },
   { id: "goals-tracker", label: "Season Goals", tab: "goals-tracker" },
 ] as const;
 
@@ -24,7 +24,7 @@ export const HOURS_SELF_VIEW_RELATED_INCLUDE: HoursSelfViewRelatedId[] = [
 ];
 
 /**
- * Soft-UI cross-links from My hours → Attendance / Mentor Hours / Team Health.
+ * Soft-UI cross-links from My hours → Attendance / Mentor Hours / Team health.
  * Build with hubHref — never broken JSX href templates.
  */
 export function hoursSelfViewRelatedLinks(

@@ -6,9 +6,9 @@ import { isMediaWorkspaceEmpty } from ".";
 /** Soft-UI related surfaces for Media team (never DEMO metrics). */
 export const MEDIA_RELATED_LINKS = [
   { id: "media-kit", label: "Media kit", kind: "path" as const, path: "/media-kit" },
-  { id: "outreach-calendar", label: "Outreach Calendar", kind: "business" as const, tab: "outreach-calendar" },
+  { id: "outreach-calendar", label: "Outreach calendar", kind: "business" as const, tab: "outreach-calendar" },
   { id: "impact", label: "Community Impact", kind: "business" as const, tab: "impact" },
-  { id: "sponsor-wall", label: "Sponsor Wall", kind: "business" as const, tab: "sponsor-wall" },
+  { id: "sponsor-wall", label: "Sponsor wall", kind: "business" as const, tab: "sponsor-wall" },
   { id: "recognition", label: "Recognition", kind: "path" as const, path: "/recognition" },
 ] as const;
 
@@ -20,7 +20,7 @@ export type MediaRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — Kit / Outreach / Impact / Sponsor Wall. */
+/** Focused Soft-UI strip — Kit / Outreach / Impact / Sponsor wall. */
 export const MEDIA_RELATED_INCLUDE: MediaRelatedId[] = [
   "media-kit",
   "outreach-calendar",
@@ -252,7 +252,7 @@ export function mediaNextActions(input: {
       },
       {
         id: "sponsor-wall",
-        label: "Open Sponsor Wall",
+        label: "Open Sponsor wall",
         detail: "Sponsor visuals stay blank until real logos land.",
         href: hubHref("/business", "sponsor-wall", orgId),
       },
@@ -287,7 +287,7 @@ export function mediaNextActions(input: {
     },
     {
       id: "sponsor-wall",
-      label: "Curate Sponsor Wall",
+      label: "Curate Sponsor wall",
       detail: "Published logos and messages stay blank until you add them.",
       href: hubHref("/business", "sponsor-wall", orgId),
     },

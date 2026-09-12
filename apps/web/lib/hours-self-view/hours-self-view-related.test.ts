@@ -12,7 +12,7 @@ import {
 import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("hoursSelfViewRelatedLinks", () => {
-  it("builds Attendance / Mentor Hours / Team Health cross-links", () => {
+  it("builds Attendance / Mentor Hours / Team health cross-links", () => {
     const links = hoursSelfViewRelatedLinks("org-1", {
       include: [...HOURS_SELF_VIEW_RELATED_INCLUDE],
     });
