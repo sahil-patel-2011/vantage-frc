@@ -245,7 +245,7 @@ export default function PartRequestsClient() {
         <OfflineBanner feature="Part requests" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
-          title={failure ? failure.title : "Loading part requests…"}
+          title={failure ? failure.title : "Opening Part requests"}
           description={failure ? failure.description : undefined}
           aria-busy={!fetchFailed}
         >

@@ -345,13 +345,13 @@ export default function WhiteboardClient() {
         <header className="app-page-header">
           <div>
             <span className="breadcrumbs">Competition / Whiteboard</span>
-            <h1>Strategy Whiteboard</h1>
+            <h1>Whiteboard</h1>
           </div>
         </header>
         <OfflineBanner feature="Whiteboard" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
-          title={failure ? failure.title : "Loading whiteboard…"}
+          title={failure ? failure.title : "Opening Whiteboard"}
           description={failure ? failure.description : undefined}
           aria-busy={!fetchFailed}
         >
@@ -376,7 +376,7 @@ export default function WhiteboardClient() {
         <header className="app-page-header">
           <div>
             <span className="breadcrumbs">Competition / Whiteboard</span>
-            <h1>Strategy Whiteboard</h1>
+            <h1>Whiteboard</h1>
             <p>Draw plays over a field diagram and save them for match briefings.</p>
           </div>
         </header>
@@ -425,7 +425,7 @@ export default function WhiteboardClient() {
       <header className="app-page-header">
         <div>
           <span className="breadcrumbs">Competition / Whiteboard</span>
-          <h1>Strategy Whiteboard</h1>
+          <h1>Whiteboard</h1>
           <p>
             Draw plays, drag the six robots, and save named strategies for {view.context.orgName ?? "your team"}
             {view.context.teamNumber ? ` (Team ${view.context.teamNumber})` : ""}.

@@ -295,7 +295,7 @@ export default function AutoRoutinesClient({ orgId }: { orgId: string | null }) 
         </PageHeader>
         <OfflineBanner feature="Auto routines" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
-          title={failure ? failure.title : "Loading auto routines…"}
+          title={failure ? failure.title : "Opening Auto routines"}
           description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >
