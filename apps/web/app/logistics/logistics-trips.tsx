@@ -80,7 +80,7 @@ export function LogisticsTripsPanel({
           }}
         >
           <input name="title" placeholder="Trip title" required />
-          <input name="eventKey" placeholder="TBA event key (optional)" />
+          <input name="eventKey" placeholder="Official event key (optional)" />
           <input name="venueName" placeholder="Venue name" />
           <input name="venueAddress" placeholder="Venue address" />
           <input name="startsOn" type="date" />

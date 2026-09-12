@@ -161,7 +161,7 @@ export function matchNotesTimelineNextActions(input: {
         {
           id: "schedule",
           label: "Open Schedule",
-          detail: "Match rows stay empty until real TBA/event data exists.",
+          detail: "Match rows stay empty until real official event data exists.",
           href: withOrgHref("/schedule", null),
         },
         {

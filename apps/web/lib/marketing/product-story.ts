@@ -103,7 +103,7 @@ export const MARKETING_HELPERS = [
   },
   {
     title: "Team profile",
-    copy: "The day a team joins, Vantage already knows where they are from, how long they have competed, what they have won and how their seasons went, from The Blue Alliance and Statbotics. Every AI answer starts from that.",
+    copy: "The day a team joins, Vantage already knows where they are from, how long they have competed, what they have won and how their seasons went, from official matches and season ratings. Every AI answer starts from that.",
   },
 ] as const;
 

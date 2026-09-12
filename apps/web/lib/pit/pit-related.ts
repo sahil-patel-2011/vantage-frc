@@ -106,7 +106,7 @@ export function pitSetupSteps(orgId?: string | null): PitSetupStep[] {
     {
       id: "command",
       label: "Open Event Day",
-      detail: "Active event and match queues stay empty until TBA context syncs.",
+      detail: "Active event and match queues stay empty until official matches sync.",
       href: hubHref("/competition", "command", orgId),
     },
   ];

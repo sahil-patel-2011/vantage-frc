@@ -541,7 +541,7 @@ export default function MigrateClient() {
                     <textarea value={csvPaste} onChange={(event) => setCsvPaste(event.target.value)} rows={8} />
                   </FormRow>
                   <p className="app-muted">
-                    Rows need event key + team number. Free-text scout names are stripped. Missing TBA event years are
+                    Rows need event key + team number. Free-text scout names are stripped. Missing official event years are
                     skipped.
                   </p>
                   {result?.mapping ? (

@@ -73,10 +73,10 @@ export async function GET(request: Request) {
           },
           {
             id: "tba",
-            label: "Sync TBA",
+            label: "Sync official matches",
             detail: tbaConfigured
-              ? "Platform TBA key is set — open Admin → Live Data to sync if stale"
-              : "Connect The Blue Alliance under Team → Data, or ask whoever set up this site to add a Blue Alliance key.",
+              ? "Official match key is set — open Admin → Live Data to sync if stale"
+              : "Connect TBA under Team → Data, or ask whoever set up this site to add an official-match key.",
             href: "/team/data",
           },
         ],

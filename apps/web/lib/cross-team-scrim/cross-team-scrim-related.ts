@@ -97,7 +97,7 @@ export function crossTeamScrimSetupSteps(orgId?: string | null): CrossTeamScrimS
     {
       id: "team-data",
       label: "Open Team Data",
-      detail: "Confirm TBA/team context for partner outreach.",
+      detail: "Confirm official team context for partner outreach.",
       href: withOrgHref("/team/data", orgId),
     },
   ];
@@ -228,7 +228,7 @@ export function crossTeamScrimNextActions(input: {
       {
         id: "team-data",
         label: "Open Team Data",
-        detail: "TBA/team inventory stays independent of scrim invites.",
+        detail: "Official-match and team inventory stays independent of scrim invites.",
         href: withOrgHref("/team/data", orgId),
       },
     ];
@@ -258,7 +258,7 @@ export function crossTeamScrimNextActions(input: {
       {
         id: "team-data",
         label: "Open Team Data",
-        detail: "Confirm partner team numbers from real TBA context.",
+        detail: "Confirm partner team numbers from official team context.",
         href: withOrgHref("/team/data", orgId),
       },
     ];
@@ -290,7 +290,7 @@ export function crossTeamScrimNextActions(input: {
     {
       id: "team-data",
       label: "Open Team Data",
-      detail: "Verify partner team context from TBA.",
+      detail: "Verify partner team context from official matches.",
       href: withOrgHref("/team/data", orgId),
     },
   ];

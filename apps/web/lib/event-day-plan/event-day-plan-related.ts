@@ -100,7 +100,7 @@ export function eventDayPlanSetupSteps(orgId?: string | null): EventDayPlanSetup
     {
       id: "team-data",
       label: "Sync Team Data",
-      detail: "Pull the match schedule from The Blue Alliance so the day plan can fill in.",
+      detail: "Pull the official match schedule so the day plan can fill in.",
       href: withOrgHref("/team/data", orgId),
     },
   ]);

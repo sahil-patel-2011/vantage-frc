@@ -213,7 +213,7 @@ export function labelVideoSourceKind(kind: string): string {
     case "youtube":
       return "YouTube";
     case "tba":
-      return "The Blue Alliance";
+      return "Official match page";
     case "upload":
       return "File";
     case "pit_stream":

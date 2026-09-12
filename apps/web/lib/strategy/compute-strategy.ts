@@ -352,7 +352,7 @@ async function loadScoutOperations(
       ...row.quality.transparency,
       ...(conflictProvenance.some((ref) => ref.teamKey === row.teamKey)
         ? [
-            "Some scout fields contradicted TBA official results and were excluded from strategy scoring.",
+            "Some scout fields contradicted official results and were excluded from strategy scoring.",
           ]
         : []),
     ],
@@ -455,23 +455,23 @@ export async function computeStrategyView(
     },
     {
       id: "tba",
-      label: "Sync TBA",
+      label: "Sync official matches",
       detail: access.platformEnvKey
-        ? "The Blue Alliance key is set — rankings can sync"
+        ? "Official match key is set — rankings can sync"
         : access.credentialAvailable
-          ? "The Blue Alliance key is saved — tap Sync under Team → Data"
+          ? "Official match key is saved — tap Sync under Team → Data"
           : access.cacheHasSync
             ? "Saved rankings from an earlier sync"
-            : "Connect The Blue Alliance under Connectors, then sync",
+            : "Connect TBA under Team → Data, then sync",
       href: dataHref,
       done: access.tbaConfigured,
     },
     {
       id: "statbotics",
-      label: "Cache Statbotics EPA",
+      label: "Cache season ratings",
       detail: access.statbotics.cacheHasMetrics
-        ? `${access.statbotics.eventMetricRows} event + ${access.statbotics.yearMetricRows} year Statbotics rows saved`
-        : "No Statbotics numbers saved yet — tap Sync under Team → Data (no key needed). Strategy can still use The Blue Alliance numbers when they exist.",
+        ? `${access.statbotics.eventMetricRows} event + ${access.statbotics.yearMetricRows} year season-rating rows saved`
+        : "No season ratings saved yet — tap Sync under Team → Data (no key needed). Strategy can still use official match numbers when they exist.",
       href: dataHref,
       done: access.statbotics.cacheHasMetrics,
     },

@@ -307,7 +307,7 @@ function logisticsShellNextActionCandidates(input: {
       {
         id: "command",
         label: "Open Event Day",
-        detail: "Match times load from TBA even when travel is not published yet.",
+        detail: "Match times load from official matches even when travel is not published yet.",
         href: hubHref("/competition", "command", orgId),
       },
       {

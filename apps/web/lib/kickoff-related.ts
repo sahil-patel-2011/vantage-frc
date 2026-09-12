@@ -134,7 +134,7 @@ export function kickoffNextActions(input: {
     actions.push({
       id: "strategy",
       label: "Open Strategy",
-      detail: "Pick lists and match plans stay grounded in real scout/TBA facts.",
+      detail: "Pick lists and match plans stay grounded in real scout and official-match facts.",
       href: strategyHref,
     });
   }

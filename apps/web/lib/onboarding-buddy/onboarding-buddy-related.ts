@@ -87,7 +87,7 @@ export function onboardingBuddySetupSteps(orgId?: string | null): OnboardingBudd
     {
       id: "team-data",
       label: "Open Team Data",
-      detail: "Confirm real TBA/team context for this team.",
+      detail: "Confirm real official-match and team context for this team.",
       href: withOrgHref("/team/data", orgId),
     },
     {
@@ -222,7 +222,7 @@ export function onboardingBuddyNextActions(input: {
         {
           id: "team-data",
           label: "Open Team Data",
-          detail: "Team context stays empty until a team and TBA sync exist.",
+          detail: "Team context stays empty until a team and official matches exist.",
           href: withOrgHref("/team/data", null),
         },
       ];
@@ -274,7 +274,7 @@ export function onboardingBuddyNextActions(input: {
       {
         id: "team-data",
         label: "Open Team Data",
-        detail: "TBA/team inventory stays honest when this surface is down.",
+        detail: "Official-match and team inventory stays honest when this surface is down.",
         href: withOrgHref("/team/data", orgId),
       },
     ];
@@ -333,7 +333,7 @@ export function onboardingBuddyNextActions(input: {
     {
       id: "team-data",
       label: "Open Team Data",
-      detail: "Cross-check TBA/team context while onboarding new members.",
+      detail: "Cross-check official-match and team context while onboarding new members.",
       href: withOrgHref("/team/data", orgId),
     },
     {

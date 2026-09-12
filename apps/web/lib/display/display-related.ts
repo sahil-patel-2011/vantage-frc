@@ -85,7 +85,7 @@ export function displaySetupNextActions(input: {
     actions.push({
       id: "create-board",
       label: "Create your first board",
-      detail: "Pick a preset below and save. Countdowns, ranks, and odds stay blank until TBA and Strategy sync real data.",
+      detail: "Pick a preset below and save. Countdowns, ranks, and odds stay blank until official matches and Strategy sync real data.",
       href: setupHref,
       primary: true,
     });
@@ -111,7 +111,7 @@ export function displaySetupNextActions(input: {
     actions.push({
       id: "event",
       label: "Set active event",
-      detail: "Event Day picks the TBA schedule and context pit boards read for next match and coverage.",
+      detail: "Event Day picks the official schedule and context pit boards read for next match and coverage.",
       href: hubHref("/competition", "command", orgId),
       primary: boardCount > 0 && activeTokenCount > 0,
     });
