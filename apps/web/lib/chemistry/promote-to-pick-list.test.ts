@@ -16,7 +16,7 @@ const setJustificationMock = vi.fn(async () => undefined);
 const upsertEntryMock = vi.fn(
   async (_client: unknown, input: { teamKey: string | number; pickListId: string }) => {
     if (String(input.teamKey) === "frc9999") {
-      throw new Error("9999 is not in the TBA team reference yet — sync the event first.");
+      throw new Error("9999 is not in the official team list yet — sync the event first.");
     }
     return `entry-${input.teamKey}`;
   },

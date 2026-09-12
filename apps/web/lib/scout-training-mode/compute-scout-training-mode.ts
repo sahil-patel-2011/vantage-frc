@@ -175,7 +175,7 @@ export async function computeScoutTrainingView(
         {
           id: "reference-sync",
           label: "Sync competition data",
-          detail: "Historical matches populate once your team's events sync from The Blue Alliance.",
+          detail: "Historical matches populate once your team's events sync official matches.",
           href: "/competition",
         },
       ],

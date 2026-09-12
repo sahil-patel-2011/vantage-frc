@@ -15,6 +15,7 @@ const FILES = [
   "app/dossier/dossier-client.tsx",
   "app/scout-crossval/scout-crossval-client.tsx",
   "app/degraded-mode/degraded-mode-client.tsx",
+  "lib/degraded-mode/index.ts",
   "app/display/page.tsx",
 ] as const;
 

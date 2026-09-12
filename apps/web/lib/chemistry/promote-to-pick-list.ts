@@ -297,7 +297,7 @@ export async function promoteChemistryShortlist(
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : "";
-      if (!/team reference/i.test(message)) throw error;
+      if (!/team reference|official team list/i.test(message)) throw error;
       outcome = "unknown";
     }
     if (outcome === "promoted") promoted.push(teamKey);
