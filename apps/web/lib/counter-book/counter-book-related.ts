@@ -1,7 +1,7 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Opponent Counter-book (never DEMO opponent metrics). */
+/** Soft-UI related surfaces for Counter-book (never DEMO opponent metrics). */
 export const COUNTER_BOOK_RELATED_LINKS = [
   { id: "strategy", label: "Strategy", tab: "strategy" },
   { id: "scouting", label: "Scouting", tab: "scouting" },
@@ -91,7 +91,7 @@ export function counterBookShellCopy(kind: CounterBookShellKind): CounterBookEmp
     case "loading":
       return {
         kind,
-        title: "Loading Counter-book…",
+        title: "Opening Counter-book",
         description:
           "Checking which team you are on and generated reports.",
       };

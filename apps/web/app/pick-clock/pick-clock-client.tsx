@@ -180,7 +180,7 @@ function PickClockShell({
     <main className="module-page app-shell-page pck-page pck-workbench soft-gate">
       <PageHeader
         breadcrumbs="Competition / Pick clock"
-        title="Pick Clock"
+        title="Pick clock"
         description="Next best pick + why — built for the 45-second alliance selection timer."
       >
         <PickClockRelatedStrip orgId={orgId} />
@@ -499,7 +499,7 @@ export default function PickClockClient({
     <main className="module-page app-shell-page pck-page pck-workbench">
       <PageHeader
         breadcrumbs="Competition / Pick clock"
-        title="Pick Clock"
+        title="Pick clock"
         description={
           readyView.eventName
             ? `${readyView.eventName} · ${PICK_CLOCK_SECONDS}s selection clock.`

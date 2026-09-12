@@ -2,7 +2,7 @@ import { hubHref } from "../nav/hubs";
 import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Team Retrospective (never DEMO retro metrics). */
+/** Soft-UI related surfaces for Retro (never DEMO retro metrics). */
 export const RETRO_RELATED_LINKS = [
   { id: "messages", label: "Team chat", kind: "team" as const, tab: "messages" },
   { id: "fmea", label: "Failure log", kind: "team" as const, tab: "fmea" },
@@ -144,7 +144,7 @@ export function retroShellCopy(kind: RetroShellKind): RetroEmptyCopy {
     case "loading":
       return {
         kind,
-        title: "Loading Team Retrospective…",
+        title: "Opening Retro",
         description:
           "Checking which team you are on and real retro sessions.",
       };
@@ -152,7 +152,7 @@ export function retroShellCopy(kind: RetroShellKind): RetroEmptyCopy {
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Team Retrospective",
+        title: "Could not load Retro",
         description:
           "A network or server issue blocked retros. Retry, or open Messages / Failure log / Decisions while it reloads.",
       };
@@ -209,7 +209,7 @@ export function retroNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Retrospective",
+        label: "Retry Retro",
         detail: "Reload real sessions and action items.",
         href: withOrgHref("/retro", orgId),
         primary: true,

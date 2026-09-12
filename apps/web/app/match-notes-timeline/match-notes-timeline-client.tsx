@@ -103,10 +103,10 @@ function MatchNotesShell({
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Match Note Timeline"}
+            {" / Match notes"}
           </>
         }
-        title="Match Note Timeline"
+        title="Match notes"
         description={description}
       >
         <MatchNotesRelatedStrip orgId={orgId} />
@@ -296,10 +296,10 @@ export default function MatchNotesTimelineClient() {
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Match Note Timeline"}
+            {" / Match notes"}
           </>
         }
-        title="Match Note Timeline"
+        title="Match notes"
         description="Log timestamped notes synced to the match clock — auto, teleop, endgame — for film review and drive-coach debriefs. Cross-check Schedule, Strategy, and Scouting."
       >
         <div className="match-notes-timeline-header-actions">
@@ -360,7 +360,7 @@ export default function MatchNotesTimelineClient() {
       <div className="match-notes-timeline-layout">
         <LogNoteForm busy={busy} mutate={mutate} />
         {shell === "ready" ? <Timelines view={view} busy={busy} mutate={mutate} /> : null}
-        <Panel className="match-notes-timeline-tip" aria-label="Match Note Timeline tip">
+        <Panel className="match-notes-timeline-tip" aria-label="Match notes tip">
           <span className="eyebrow">Grounding path</span>
           <p className="app-muted" style={{ marginTop: 8 }}>
             Keep match labels aligned with <a href={scheduleHref}>Schedule</a>, ground debriefs in{" "}
@@ -396,7 +396,7 @@ function SummaryTiles({
     },
   ];
   return (
-    <section className="match-notes-timeline-stats" aria-label="Match Note Timeline counts">
+    <section className="match-notes-timeline-stats" aria-label="Match notes counts">
       {tiles.map((tile) => (
         <div key={tile.label}>
           <strong>{tile.value}</strong>

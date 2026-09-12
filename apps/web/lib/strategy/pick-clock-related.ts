@@ -159,7 +159,7 @@ export function pickClockShellCopy(kind: PickClockShellKind): PickClockEmptyCopy
     case "loading":
       return {
         kind,
-        title: "Loading pick clock…",
+        title: "Opening Pick clock",
         description:
           "Checking which team you are on and synced event numbers.",
       };

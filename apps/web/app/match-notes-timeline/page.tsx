@@ -1,7 +1,7 @@
 import MatchNotesTimelineClient from "./match-notes-timeline-client";
 
 export const metadata = {
-  title: "Match Note Timeline",
+  title: "Match notes",
 };
 
 export default function MatchNotesTimelinePage() {

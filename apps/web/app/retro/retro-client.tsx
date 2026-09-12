@@ -134,7 +134,7 @@ function RetroShell({
             {" / Retro"}
           </>
         }
-        title="Team Retrospective"
+        title="Retro"
         description={description}
       >
         <RetroRelatedStrip orgId={orgId} />
@@ -375,7 +375,7 @@ export default function RetroClient() {
             {" / Retro"}
           </>
         }
-        title="Team Retrospective"
+        title="Retro"
         description="Structured start/stop/continue retros with voting and tracked action items — plus an auto-compiled season postmortem from your decisions, risks, incidents, and Failure log. Cross-check Messages, Failure log, and Decisions."
       >
         <div className="retro-header-actions">

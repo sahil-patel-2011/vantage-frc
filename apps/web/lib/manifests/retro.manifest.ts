@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "retro",
-  title: "Team Retrospective",
+  title: "Retro",
   route: "/retro",
   apiRoute: "/api/retro",
   hub: "Team",
