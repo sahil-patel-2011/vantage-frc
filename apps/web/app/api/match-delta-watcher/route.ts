@@ -40,7 +40,7 @@ export async function GET(request: Request) {
     return Response.json(
       {
         status: "setup_required",
-        message: "Could not load the match-delta watcher. Choose your team and confirm database access.",
+        message: "Could not load Match delta. Choose your team and confirm database access.",
         steps: [
           { id: "workspace", label: "Choose your team", detail: "Choose which FRC team you are working as.", href: "/workspace" },
         ],
@@ -112,7 +112,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Match-delta watcher request failed";
+    const message = error instanceof Error ? error.message : "Match delta request failed";
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

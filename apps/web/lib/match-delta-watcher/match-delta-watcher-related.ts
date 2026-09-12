@@ -2,7 +2,7 @@ import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 import { setupActionsFrom } from "../setup-actions";
 
-/** Soft-UI related surfaces for Match-Delta Watcher (never DEMO upset %). */
+/** Soft-UI related surfaces for Match delta (never DEMO upset %). */
 export const MATCH_DELTA_WATCHER_RELATED_LINKS = [
   { id: "strategy", label: "Strategy", tab: "strategy" },
   { id: "picklist-collab", label: "Pick List", tab: "picklist-collab" },
@@ -25,7 +25,7 @@ export const MATCH_DELTA_WATCHER_RELATED_INCLUDE: MatchDeltaWatcherRelatedId[] =
 ];
 
 /**
- * Soft-UI cross-links from Match-Delta Watcher → Strategy / Pick List / Command.
+ * Soft-UI cross-links from Match delta → Strategy / Pick List / Command.
  * Build with hubHref — never broken JSX href templates.
  */
 export function matchDeltaWatcherRelatedLinks(
@@ -131,7 +131,7 @@ export function shouldShowMatchDeltaWatcherSummaryTiles(watchedCount: number): b
   return watchedCount > 0;
 }
 
-/** Classify Match-Delta Watcher Soft-UI shell — never invents DEMO upset alerts. */
+/** Classify Match delta Soft-UI shell — never invents DEMO upset alerts. */
 export function classifyMatchDeltaWatcherShell(input: {
   loading?: boolean;
   fetchFailed?: boolean;
@@ -152,14 +152,14 @@ export function matchDeltaWatcherShellCopy(kind: MatchDeltaWatcherShellKind): Ma
     case "loading":
       return {
         kind,
-        title: "Loading Match-Delta Watcher…",
+        title: "Opening Match delta",
         description: "Checking which team you are on and scored predictions.",
       };
     case "error":
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Match-Delta Watcher",
+        title: "Could not load Match delta",
         description:
           "A network or server issue blocked the watcher. Retry, or open Strategy while it reloads.",
       };
@@ -189,7 +189,7 @@ export function matchDeltaWatcherShellCopy(kind: MatchDeltaWatcherShellKind): Ma
 }
 
 /**
- * Soft-UI next actions for Match-Delta Watcher empty/setup shells.
+ * Soft-UI next actions for Match delta empty/setup shells.
  * Points at Strategy / Pick List / Command — never invents DEMO upset alerts.
  */
 export function matchDeltaWatcherNextActions(input: {
@@ -210,7 +210,7 @@ export function matchDeltaWatcherNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Match-Delta Watcher",
+        label: "Retry Match delta",
         detail: "Reload real scored matches.",
         href: withOrgHref("/match-delta-watcher", orgId),
         primary: true,

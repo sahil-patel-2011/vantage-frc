@@ -6,7 +6,7 @@ import { setupActionsFrom } from "../setup-actions";
 export const MATCH_VIDEO_INDEX_RELATED_LINKS = [
   { id: "scouting", label: "Scouting", tab: "scouting" },
   { id: "match-notes-timeline", label: "Match notes", tab: "match-notes-timeline" },
-  { id: "match-delta-watcher", label: "Match-Delta", tab: "match-delta-watcher" },
+  { id: "match-delta-watcher", label: "Match delta", tab: "match-delta-watcher" },
   { id: "opponent-watchlist", label: "Watchlist", tab: "opponent-watchlist" },
 ] as const;
 
@@ -236,7 +236,7 @@ export function matchVideoIndexNextActions(input: {
     },
     {
       id: "delta",
-      label: "Open Match-Delta",
+      label: "Open Match delta",
       detail: "Flag upsets beside the same match keys.",
       href: hubHref("/competition", "match-delta-watcher", orgId),
     },

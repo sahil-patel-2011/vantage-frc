@@ -439,7 +439,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/costs")) return "Season costs";
   if (bare.startsWith("/duties")) return "Duties";
   if (bare.startsWith("/announcements")) return "Announcements";
-  if (bare.startsWith("/match-delta-watcher")) return "Match-delta watcher";
+  if (bare.startsWith("/match-delta-watcher")) return "Match delta";
   if (bare.startsWith("/match-video-index")) return "Video index";
   if (bare.startsWith("/match-strategy-cards")) return "Match strategy cards";
   if (bare.startsWith("/match-debrief")) return "Match debrief";

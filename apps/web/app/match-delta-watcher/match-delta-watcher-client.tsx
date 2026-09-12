@@ -129,17 +129,17 @@ function WatcherShell({
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Match-Delta Watcher"}
+            {" / Match delta"}
           </>
         }
-        title="Match-Delta Watcher"
+        title="Match delta"
         description={description}
       >
         <RelatedStrip orgId={orgId} />
       </PageHeader>
       {children}
       {shell === "loading" ? (
-        <div aria-busy="true" aria-label="Loading match-delta watcher">
+        <div aria-busy="true" aria-label="Loading Match delta">
           <SoftBlockSkeleton lines={4} />
         </div>
       ) : shell === "error" ? (
@@ -219,7 +219,7 @@ export default function MatchDeltaWatcherClient() {
         if (!response.ok || !isMatchDeltaWatcherView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Match-delta watcher. Showing the last copy on this device.");
+            setError("Could not refresh Match delta. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -234,7 +234,7 @@ export default function MatchDeltaWatcherClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Match-delta watcher. Showing the last copy on this device.");
+          setError("Could not refresh Match delta. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -301,7 +301,7 @@ export default function MatchDeltaWatcherClient() {
   if (shell === "loading") {
     return (
       <WatcherShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Match-delta watcher" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Match delta" fromCache={fromCache} cachedAt={cachedAt} />
       </WatcherShell>
     );
   }
@@ -315,7 +315,7 @@ export default function MatchDeltaWatcherClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Match-delta watcher" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Match delta" fromCache={fromCache} cachedAt={cachedAt} />
       </WatcherShell>
     );
   }
@@ -327,7 +327,7 @@ export default function MatchDeltaWatcherClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Match-delta watcher" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Match delta" fromCache={fromCache} cachedAt={cachedAt} />
       </WatcherShell>
     );
   }
@@ -335,7 +335,7 @@ export default function MatchDeltaWatcherClient() {
   if (view?.status !== "live") {
     return (
       <WatcherShell description={shellCopy.description} orgId={orgId} shell="setup">
-        <OfflineBanner feature="Match-delta watcher" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Match delta" fromCache={fromCache} cachedAt={cachedAt} />
       </WatcherShell>
     );
   }
@@ -346,10 +346,10 @@ export default function MatchDeltaWatcherClient() {
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Match-Delta Watcher"}
+            {" / Match delta"}
           </>
         }
-        title="Match-Delta Watcher"
+        title="Match delta"
         description="Watches official match results as they land and flags when reality diverges from your prediction model or pick-list priorities."
       >
         <div className="mdw-header-actions">
@@ -379,7 +379,7 @@ export default function MatchDeltaWatcherClient() {
         </div>
       </PageHeader>
 
-      <OfflineBanner feature="Match-delta watcher" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Match delta" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">
