@@ -187,7 +187,7 @@ export default function RecognitionClient({ orgId }: { orgId: string | null }) {
         <OfflineBanner feature="Recognition" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
-          title={failure ? failure.title : "Loading team awards…"}
+          title={failure ? failure.title : "Opening Recognition"}
           description={failure ? failure.description : undefined}
           aria-busy={!fetchFailed}
         >

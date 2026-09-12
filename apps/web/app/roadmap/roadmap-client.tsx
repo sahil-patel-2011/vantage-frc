@@ -312,7 +312,7 @@ export default function RoadmapClient() {
         {header}
         <OfflineBanner feature="Season roadmap" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
-          title={failure ? failure.title : "Loading…"}
+          title={failure ? failure.title : "Opening Season roadmap"}
           description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >

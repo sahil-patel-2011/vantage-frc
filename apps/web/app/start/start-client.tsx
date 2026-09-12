@@ -221,14 +221,14 @@ export default function StartClient({ orgId }: { orgId: string | null }) {
   if (!view) {
     return (
       <main className="module-page start-page">
-        <PageHeader navPath="/start" title="Your path" description={failure?.title ?? "Loading onboarding checklists…"}>
+        <PageHeader navPath="/start" title="Your path" description={failure?.title ?? "Checking your path."}>
           <StartRelated orgId={orgId} />
         </PageHeader>
         <TeamOpsNav orgId={orgId} active="start" />
         <OfflineBanner feature="Your path" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
-          title={failure ? failure.title : "Loading…"}
+          title={failure ? failure.title : "Opening Your path"}
           description={failure ? failure.description : "Checking your path."}
           aria-busy={!fetchFailed}
         >
