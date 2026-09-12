@@ -25,6 +25,7 @@ const FILES = [
   "lib/match-copilot/match-copilot-related.ts",
   "app/shift-balancer/shift-balancer-client.tsx",
   "lib/shift-balancer/compute-shift-balancer.ts",
+  "lib/alliance-partner-brief/index.ts",
 ] as const;
 
 describe("leftover student Rankings / picklist TBA chrome", () => {

@@ -20,6 +20,7 @@ const FILES = [
   "components/ui/data-source-footer.tsx",
   "lib/pairwise/pairwise-next-actions.ts",
   "lib/district-trajectory-sim/compute-district-trajectory-sim.ts",
+  "lib/alliance-partner-brief/index.ts",
 ] as const;
 
 describe("leftover student TBA / Statbotics chrome", () => {
