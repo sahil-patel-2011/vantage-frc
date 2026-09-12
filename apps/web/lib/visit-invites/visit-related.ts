@@ -1,7 +1,7 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Visit Invites (never DEMO invites). */
+/** Soft-UI related surfaces for Visit invites (never DEMO invites). */
 export const VISIT_RELATED_LINKS = [
   { id: "logistics", label: "Logistics", kind: "path" as const, path: "/logistics" },
   { id: "command", label: "Event day", kind: "competition" as const, tab: "command" },
@@ -24,7 +24,7 @@ export const VISIT_RELATED_INCLUDE: VisitRelatedId[] = [
   "calendar",
 ];
 
-/** Cross-links for Visit Invites Soft-UI (never DEMO invite placeholders). */
+/** Cross-links for Visit invites Soft-UI (never DEMO invite placeholders). */
 export function visitRelatedLinks(
   orgId?: string | null,
   options?: { active?: VisitRelatedId; include?: VisitRelatedId[] },
@@ -55,7 +55,7 @@ export type VisitNextAction = {
   primary?: boolean;
 };
 
-/** Org-scoped Visit Invites board URL — never a DEMO seed path. */
+/** Org-scoped Visit invites board URL — never a DEMO seed path. */
 export function visitInvitesShareHref(orgId?: string | null, visitId?: string | null): string {
   const base = withOrgHref("/visit-invites", orgId);
   if (!visitId) return base;
@@ -64,7 +64,7 @@ export function visitInvitesShareHref(orgId?: string | null, visitId?: string | 
 }
 
 /**
- * Soft-UI next actions for Visit Invites empty/setup shells.
+ * Soft-UI next actions for Visit invites empty/setup shells.
  * Points at real Logistics / Event day / Calendar paths — never DEMO invites.
  */
 export function visitNextActions(input: {
@@ -100,7 +100,7 @@ export function visitNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Finish membership or migration setup so Visit Invites can resolve your org.",
+        detail: "Finish membership or migration setup so Visit invites can resolve your org.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
       },
@@ -123,7 +123,7 @@ export function visitNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Visit Invites",
+        label: "Retry Visit invites",
         detail: "Reload real scheduled visits.",
         href: visitInvitesShareHref(orgId),
         primary: true,
@@ -243,7 +243,7 @@ export function visitNextActions(input: {
   return actions.slice(0, 4);
 }
 
-/** Classify Visit Invites Soft-UI shell from API status — never invents DEMO invites. */
+/** Classify Visit invites Soft-UI shell from API status — never invents DEMO invites. */
 export function classifyVisitShell(input: {
   loading: boolean;
   fetchFailed?: boolean;
@@ -278,7 +278,7 @@ export function visitSetupSteps(orgId?: string | null): VisitSetupStep[] {
     {
       id: "workspace",
       label: "Choose your team",
-      detail: "Choose your team to open Visit Invites.",
+      detail: "Choose your team to open Visit invites.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -308,7 +308,7 @@ export function visitShellCopy(kind: VisitShellKind): VisitEmptyCopy {
     case "loading":
       return {
         kind,
-        title: "Loading visit invites…",
+        title: "Opening Visit invites",
         description: "Checking which team you are on and scheduled shop tours.",
       };
     case "error":
@@ -338,7 +338,7 @@ export function visitShellCopy(kind: VisitShellKind): VisitEmptyCopy {
     default:
       return {
         kind,
-        title: "Visit Invites",
+        title: "Visit invites",
         description: "Shop tours, demo days, mentor hosts, and guest RSVPs from real visit rows.",
       };
   }

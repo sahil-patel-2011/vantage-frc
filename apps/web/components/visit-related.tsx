@@ -7,7 +7,7 @@ import {
   type VisitRelatedId,
 } from "../lib/visit-invites/visit-related";
 
-/** Soft-UI cross-links between Visit Invites and Logistics / Event Day / Calendar. */
+/** Soft-UI cross-links between Visit invites and Logistics / Event day / Calendar. */
 export function VisitRelated({
   orgId,
   active,
