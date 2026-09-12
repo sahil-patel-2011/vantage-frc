@@ -213,7 +213,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         { id: "meeting-autopilot", label: "Meeting agenda", legacyHref: "/meeting-autopilot" },
         { id: "retro", label: "Retro", legacyHref: "/retro" },
         { id: "batteries", label: "Batteries", legacyHref: "/batteries" },
-        { id: "fmea", label: "Failure notes", legacyHref: "/fmea" },
+        { id: "fmea", label: "Failure log", legacyHref: "/fmea" },
         { id: "tool-checkout", label: "Tool checkout", legacyHref: "/tool-checkout" },
         { id: "equipment-maintenance", label: "Equipment", legacyHref: "/equipment-maintenance" },
         { id: "safety-training", label: "Safety", legacyHref: "/safety-training" },

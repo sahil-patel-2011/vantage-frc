@@ -39,5 +39,8 @@ describe("leftover student Failure log board chrome", () => {
     expect(page).toMatch(/title: "Failure log"/);
     const routes = readFileSync(join(WEB, "lib/offline/shell-routes.ts"), "utf8");
     expect(routes).toMatch(/startsWith\("\/fmea"\)\) return "Failure log"/);
+    const hubs = readFileSync(join(WEB, "lib/nav/hubs.ts"), "utf8");
+    expect(hubs).toMatch(/id: "fmea", label: "Failure log"/);
+    expect(hubs).not.toMatch(/Failure notes/);
   });
 });
