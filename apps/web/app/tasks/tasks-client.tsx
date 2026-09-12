@@ -227,7 +227,7 @@ export default function TasksClient() {
           );
         })()
       ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your team." aria-busy />
+        <EmptyState title="Opening Task board" description="Checking your team." aria-busy />
       ) : view.status === "setup_required" ? (
         <EmptyState badge="Needs setup" badgeTone="setup" title={view.message}>
           {view.steps[0] ? (

@@ -227,7 +227,7 @@ export default function SeasonRolloverClient() {
           ) : null}
         </EmptyState>
       ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your team." aria-busy />
+        <EmptyState title="Opening Season rollover" description="Checking your team." aria-busy />
       ) : view.status === "setup_required" ? (
         <EmptyState badge="Needs setup" badgeTone="setup" title="Choose your team" description={view.message}>
           {view.steps[0] ? (
