@@ -644,7 +644,7 @@ export default function BriefingClient() {
         </Section>
 
         <Section
-          title="Our alliance — scouted"
+          title="Our alliance"
           badge={view.alliesScouted.length ? `${view.alliesScouted.length} robots` : null}
         >
           {view.alliesScouted.length > 0 || view.allyTeams.some((team) => team.epaTotal != null || team.rank != null) ? (

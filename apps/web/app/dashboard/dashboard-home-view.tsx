@@ -314,7 +314,7 @@ export function DashboardHomeView(props: {
               variant="secondary"
               className="dash-edit-trigger"
               data-testid="dash-customize"
-              aria-label="Edit Home — rearrange, add, or remove widgets"
+              aria-label="Edit Home"
               onClick={enterEditMode}
             >
               Edit Home
