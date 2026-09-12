@@ -15,6 +15,7 @@ const FILES = [
   "app/team/posture/posture-client.tsx",
   "app/team/security/exports/export-audit-client.tsx",
   "app/showcase/present/presentation-client.tsx",
+  "app/display/kiosk/kiosk-client.tsx",
 ] as const;
 
 describe("leftover mill prefix on display / audit / posture", () => {
@@ -22,6 +23,8 @@ describe("leftover mill prefix on display / audit / posture", () => {
     for (const rel of FILES) {
       const src = readFileSync(join(WEB, rel), "utf8");
       expect(src, rel).not.toMatch(/VANTAGE \//);
+      expect(src, rel).not.toMatch(/VANTAGE DISPLAY/);
+      expect(src, rel).not.toMatch(/VANTAGE PIT DISPLAY/);
       expect(src, rel).not.toMatch(/Authentication required/);
     }
   });

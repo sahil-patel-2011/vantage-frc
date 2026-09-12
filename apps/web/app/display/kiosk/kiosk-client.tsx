@@ -112,7 +112,7 @@ export default function KioskClient({
     >
       <header>
         <div className="kiosk-brand">
-          <span>{mode === "pit" ? "VANTAGE PIT DISPLAY" : "VANTAGE DISPLAY"}</span>
+          <span>{mode === "pit" ? "PIT TV" : "EVENT DISPLAY"}</span>
           <strong>
             {data.organization.name} · #{data.organization.teamNumber}
           </strong>
