@@ -1,4 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { studentLiveStrategyCopy } from "../ui/student-strategy-copy";
 import { computeStrategyView } from "./compute-strategy";
 import { EMPTY_PREDICTION_COPY } from "./prediction-empty-copy";
 import { strategyShellSetupSteps } from "./strategy-related";
@@ -99,7 +100,7 @@ export function finalizeStrategyRecompute(view: StrategyView): StrategyView {
     return toEmptyView(view);
   }
 
-  return { ...view, sources: cachedSources };
+  return studentLiveStrategyCopy({ ...view, sources: cachedSources });
 }
 
 /**

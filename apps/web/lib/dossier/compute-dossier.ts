@@ -13,6 +13,7 @@ import type { DataSourceHealthView } from "../reference-health";
 import type { ReferenceAccessInfo } from "../strategy/types";
 import { dossierSetupSteps } from "./dossier-related";
 import { withOrgHref } from "../nav/product-nav";
+import { studentRatingLabel } from "../ui/student-rating-label";
 
 export type DossierSetupStep = {
   id: string;
@@ -306,7 +307,15 @@ export async function computeTeamDossier(
     eventMetrics: eventRows,
     operations,
     maxSeasonYears: 4,
-  });
+  }).map((card) => ({
+    ...card,
+    title: studentRatingLabel(card.title),
+    value: studentRatingLabel(card.value),
+    citation: {
+      ...card.citation,
+      detail: studentRatingLabel(card.citation.detail),
+    },
+  }));
 
   const hasReferenceFacts = dossierHasReferenceFacts(cards);
   if (!hasReferenceFacts && !access.statbotics.cacheHasMetrics && !access.cacheHasSync) {

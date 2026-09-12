@@ -22,6 +22,9 @@ const FILES = [
   "app/district-advancement/page.tsx",
   "lib/manifests/overnight-intel.manifest.ts",
   "lib/manifests/match-copilot.manifest.ts",
+  "lib/strategy/pick-clock-tag-reasons.ts",
+  "lib/ui/student-strategy-copy.ts",
+  "lib/github/oauth.ts",
 ] as const;
 
 describe("leftover student prediction / Event Day EPA chrome", () => {
@@ -57,6 +60,11 @@ describe("leftover student prediction / Event Day EPA chrome", () => {
     expect(briefing).toMatch(/studentRatingLabel/);
     expect(dossier).toMatch(/studentSourceLabel/);
     expect(district).toMatch(/cached season ratings/);
+    const tags = readFileSync(join(WEB, "lib/strategy/pick-clock-tag-reasons.ts"), "utf8");
+    const oauth = readFileSync(join(WEB, "lib/github/oauth.ts"), "utf8");
+    expect(tags).toMatch(/studentPickClockLabel/);
+    expect(oauth).toMatch(/Needs setup —/);
+    expect(oauth).not.toMatch(/Setup required/);
   });
 
   it("rewrites leftover prediction and source labels", () => {
@@ -77,5 +85,6 @@ describe("leftover student prediction / Event Day EPA chrome", () => {
     );
     expect(studentRatingLabel("auto EPA is 30% of total")).toBe("Auto rating is 30% of total");
     expect(studentPickClockLabel("TBA (tba): EPA 45.2")).toBe("Official record: Rating 45.2");
+    expect(studentRatingLabel("statbotics")).toBe("season ratings");
   });
 });

@@ -14,6 +14,7 @@ const FILES = [
   "lib/alliance-partner-brief/index.ts",
   "lib/command/load-command.ts",
   "app/command/command-ready-view.tsx",
+  "lib/strategy/pick-clock-tag-reasons.ts",
 ] as const;
 
 describe("leftover student Pick Clock / partner-brief EPA chrome", () => {

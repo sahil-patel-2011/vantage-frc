@@ -141,7 +141,7 @@ describe("briefingSectionsFromStrategyView", () => {
       scoredAt: "2026-03-01T12:00:00.000Z",
     });
     expect(sections?.prediction?.keyFactors).toEqual([
-      { name: "EPA edge", alliance: "red", impact: 0.12, evidence: "statbotics" },
+      { name: "Rating edge", alliance: "red", impact: 0.12, evidence: "season ratings" },
     ]);
     expect(sections?.plan?.title).toBe("Protect the auto");
     expect(sections?.plan?.priorities).toEqual(["Hold the barge"]);
