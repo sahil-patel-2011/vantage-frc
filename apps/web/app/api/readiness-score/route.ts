@@ -42,7 +42,7 @@ export async function GET(request: Request) {
     return Response.json(
       {
         status: "setup_required",
-        message: "Could not load Readiness Score. Choose your team and confirm database access.",
+        message: "Could not load Readiness. Choose your team and confirm database access.",
         steps: [
           { id: "workspace", label: "Choose your team", detail: "Choose which FRC team you are working as.", href: "/workspace" },
         ],
@@ -82,12 +82,12 @@ export async function POST(request: Request) {
 
       switch (action) {
         // Subsystems, weight, power and the wiring/programming gates are no longer
-        // retyped here — Readiness Score reads them from the tools that own them.
+        // retyped here — Readiness reads them from the tools that own them.
         // The live view carries `sources` with the href for each.
         case "save-subsystem":
         case "delete-subsystem":
           throw new Error(
-            "Readiness Score reads subsystems from the build tools. Edit the roster in Subsystems, weight in Weight Budget, current draw in Power Budget, and wiring/programming state in Subsystem Sign-off.",
+            "Readiness reads subsystems from the build tools. Edit the roster in Subsystems, weight in Weight Budget, current draw in Power Budget, and wiring/programming state in Subsystem Sign-off.",
           );
         case "add-checklist-item": {
           const label = trimmedOrNull(body.label, 300);
@@ -123,6 +123,6 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    return failMeteredAi(error, "Readiness Score request failed");
+    return failMeteredAi(error, "Readiness request failed");
   }
 }

@@ -102,7 +102,7 @@ async function persistReadinessScoreSnapshot(
     await putFeatureSnapshot("readiness-score", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("readiness-score", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Readiness Score already painted; IndexedDB is best-effort.
+    // Live Readiness already painted; IndexedDB is best-effort.
   }
 }
 
@@ -178,15 +178,15 @@ function ReadinessShell({
         breadcrumbs={
           <>
             <a href={buildHref}>Build</a>
-            {" / Readiness Score"}
+            {" / Readiness"}
           </>
         }
-        title="Robot readiness score"
+        title="Readiness"
         description={description}
       >
         <ReadinessRelatedStrip orgId={orgId} />
       </PageHeader>
-      <OfflineBanner feature="Readiness Score" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Readiness" fromCache={fromCache} cachedAt={cachedAt} />
       {shell === "loading" ? (
         <div style={{ display: "grid", gap: 16 }} aria-busy="true" aria-label="Loading readiness score">
           <StatRowSkeleton count={4} />
@@ -273,7 +273,7 @@ export default function ReadinessScoreClient() {
       if (!response.ok || !isReadinessScoreView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Readiness Score. Showing the last copy on this device.");
+          setError("Could not refresh Readiness. Showing the last copy on this device.");
           setFetchFailed(false);
           return;
         }
@@ -288,7 +288,7 @@ export default function ReadinessScoreClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Readiness Score. Showing the last copy on this device.");
+        setError("Could not refresh Readiness. Showing the last copy on this device.");
         setFetchFailed(false);
         return;
       }
@@ -421,10 +421,10 @@ export default function ReadinessScoreClient() {
         breadcrumbs={
           <>
             <a href={buildHref}>Build</a>
-            {" / Readiness Score"}
+            {" / Readiness"}
           </>
         }
-        title="Robot readiness score"
+        title="Readiness"
         description="One grounded ship-readiness index across subsystem wiring/code state, weight & power headroom, the bring-up checklist, and open Failure log. Cross-check Failure log, Inspection, and Code."
       >
         <div className="readiness-score-header-actions">
@@ -455,7 +455,7 @@ export default function ReadinessScoreClient() {
         </div>
       </PageHeader>
 
-      <OfflineBanner feature="Readiness Score" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Readiness" fromCache={fromCache} cachedAt={cachedAt} />
 
       {orgId && cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} compact /> : null}
 
@@ -583,7 +583,7 @@ function FixList({ view }: { view: LiveView }) {
 }
 
 /*
- * Readiness Score used to own a form that wrote its own copy of every
+ * Readiness used to own a form that wrote its own copy of every
  * subsystem's weight, current draw, wiring state and code state. That copy
  * drifted from the tools teams actually work in, and the score was computed
  * from the copy — so a fully-recorded robot could read as empty. The score is

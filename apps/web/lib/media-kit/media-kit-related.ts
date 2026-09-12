@@ -2,7 +2,7 @@ import { hubHref } from "../nav/hubs";
 import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Media Kit (never DEMO asset counts). */
+/** Soft-UI related surfaces for Media kit (never DEMO asset counts). */
 export const MEDIA_KIT_RELATED_LINKS = [
   { id: "media", label: "Media team", kind: "path" as const, path: "/media" },
   { id: "media-library", label: "Media library", kind: "path" as const, path: "/media-library" },
@@ -30,7 +30,7 @@ export const MEDIA_KIT_RELATED_INCLUDE: MediaKitRelatedId[] = [
 ];
 
 /**
- * Soft-UI cross-links from Media Kit → Media / Suite / Outreach / Impact.
+ * Soft-UI cross-links from Media kit → Media / Suite / Outreach / Impact.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function mediaKitRelatedLinks(
@@ -134,7 +134,7 @@ export function isMediaKitBoardEmpty(input: {
   return input.assetCount === 0 && input.documentCount === 0 && input.readinessScore <= 0;
 }
 
-/** Classify Media Kit Soft-UI shell — never invents DEMO media metrics. */
+/** Classify Media kit Soft-UI shell — never invents DEMO media metrics. */
 export function classifyMediaKitShell(input: {
   loading: boolean;
   fetchFailed?: boolean;
@@ -165,7 +165,7 @@ export function mediaKitShellCopy(kind: MediaKitShellKind): MediaKitEmptyCopy {
     case "loading":
       return {
         kind,
-        title: "Loading Media Kit…",
+        title: "Opening Media kit",
         description:
           "Checking which team you are on and recorded assets.",
       };
@@ -173,7 +173,7 @@ export function mediaKitShellCopy(kind: MediaKitShellKind): MediaKitEmptyCopy {
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Media Kit",
+        title: "Could not load Media kit",
         description:
           "A network or server issue blocked the kit. Retry, or open Sponsor Suite / Outreach while it reloads.",
       };
@@ -204,7 +204,7 @@ export function mediaKitShellCopy(kind: MediaKitShellKind): MediaKitEmptyCopy {
 }
 
 /**
- * Soft-UI next actions for Media Kit empty/setup shells.
+ * Soft-UI next actions for Media kit empty/setup shells.
  * Points at profile / Suite / Outreach — never invents DEMO media metrics.
  */
 export function mediaKitNextActions(input: {
@@ -228,7 +228,7 @@ export function mediaKitNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Media Kit",
+        label: "Retry Media kit",
         detail: "Reload real profile and assets.",
         href: withOrgHref("/media-kit", orgId),
         primary: true,

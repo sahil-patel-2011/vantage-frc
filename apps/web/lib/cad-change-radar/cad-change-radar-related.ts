@@ -1,12 +1,12 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for CAD Change Impact Radar (never DEMO revision diffs). */
+/** Soft-UI related surfaces for Change radar (never DEMO revision diffs). */
 export const CAD_CHANGE_RADAR_RELATED_LINKS = [
   { id: "cad", label: "CAD", tab: "cad" },
   { id: "fmea", label: "Failure log", tab: "fmea" },
   { id: "prototype", label: "Prototypes", tab: "prototype" },
-  { id: "readiness-score", label: "Readiness Score", tab: "readiness-score" },
+  { id: "readiness-score", label: "Readiness", tab: "readiness-score" },
 ] as const;
 
 export type CadChangeRadarRelatedId = (typeof CAD_CHANGE_RADAR_RELATED_LINKS)[number]["id"];
@@ -25,7 +25,7 @@ export const CAD_CHANGE_RADAR_RELATED_INCLUDE: CadChangeRadarRelatedId[] = [
 ];
 
 /**
- * Soft-UI cross-links from CAD Change Radar → CAD / FMEA / Prototypes.
+ * Soft-UI cross-links from Change radar → CAD / FMEA / Prototypes.
  * Build with hubHref — never broken JSX href templates.
  */
 export function cadChangeRadarRelatedLinks(
@@ -113,7 +113,7 @@ export function shouldShowCadChangeRadarSummaryTiles(
   return snapshotCount > 0 || diffCount > 0;
 }
 
-/** Classify CAD Change Radar Soft-UI shell — never invents DEMO revision diffs. */
+/** Classify Change radar Soft-UI shell — never invents DEMO revision diffs. */
 export function classifyCadChangeRadarShell(input: {
   loading?: boolean;
   fetchFailed?: boolean;
@@ -135,14 +135,14 @@ export function cadChangeRadarShellCopy(kind: CadChangeRadarShellKind): CadChang
     case "loading":
       return {
         kind,
-        title: "Loading CAD Change Impact Radar…",
+        title: "Opening Change radar",
         description: "Checking which team you are on and the Onshape connection.",
       };
     case "error":
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load CAD Change Impact Radar",
+        title: "Could not load Change radar",
         description:
           "A network or server issue blocked change radar. Retry, or open CAD while it reloads.",
       };
@@ -173,7 +173,7 @@ export function cadChangeRadarShellCopy(kind: CadChangeRadarShellKind): CadChang
 }
 
 /**
- * Soft-UI next actions for CAD Change Radar empty/setup shells.
+ * Soft-UI next actions for Change radar empty/setup shells.
  * Points at CAD / FMEA / Prototypes — never invents DEMO revision diffs.
  */
 export function cadChangeRadarNextActions(input: {
@@ -239,7 +239,7 @@ export function cadChangeRadarNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry CAD Change Radar",
+        label: "Retry Change radar",
         detail: "Reload real revision diffs.",
         href: withOrgHref("/cad-change-radar", orgId),
         primary: true,
@@ -308,7 +308,7 @@ export function cadChangeRadarNextActions(input: {
     },
     {
       id: "readiness-score",
-      label: "Open Readiness Score",
+      label: "Open Readiness",
       detail: "Carry mechanical change impact into robot readiness.",
       href: hubHref("/build", "readiness-score", orgId),
     },

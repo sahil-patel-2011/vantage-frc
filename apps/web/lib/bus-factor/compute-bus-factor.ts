@@ -19,7 +19,7 @@ function setupSteps(orgId: string | null): BusFactorSetupStep[] {
     {
       id: "workspace",
       label: "Choose your team",
-      detail: "Choose your team to open Bus-Factor.",
+      detail: "Choose your team to open Bus factor.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {

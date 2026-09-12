@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "readiness-score",
-  title: "Robot Readiness Score",
+  title: "Readiness",
   route: "/readiness-score",
   apiRoute: "/api/readiness-score",
   hub: "Build",

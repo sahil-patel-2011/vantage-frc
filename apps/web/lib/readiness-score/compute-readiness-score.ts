@@ -14,7 +14,7 @@ import type {
 export { CODE_VERSION_STATUSES, WIRING_STATUSES };
 
 /**
- * Readiness Score is a read model, not a place a team enters data.
+ * Readiness is a read model, not a place a team enters data.
  *
  * It used to own `readiness_score_subsystems`: a fourth copy of the subsystem
  * list carrying its own weight, power, wiring and code-version columns. Nothing
@@ -50,7 +50,7 @@ function setupSteps(orgId: string | null): ReadinessScoreSetupStep[] {
     {
       id: "workspace",
       label: "Choose your team",
-      detail: "Choose your team to open Readiness Score.",
+      detail: "Choose your team to open Readiness.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {

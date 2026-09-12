@@ -267,7 +267,7 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/epa-trend-alerts")).toBe("Rating alerts");
     expect(offlineCapableLabel("/rankings")).toBe("Rankings");
     expect(offlineCapableLabel("/grant-report")).toBe("Grant Report");
-    expect(offlineCapableLabel("/media-kit")).toBe("Media Kit");
+    expect(offlineCapableLabel("/media-kit")).toBe("Media kit");
     expect(offlineCapableLabel("/sponsor-wall")).toBe("Sponsor Wall");
     expect(offlineCapableLabel("/sponsor-suite")).toBe("Sponsor Suite");
     expect(offlineCapableLabel("/outreach-calendar")).toBe("Outreach Calendar");
@@ -282,13 +282,13 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/vendors")).toBe("Vendors");
     expect(offlineCapableLabel("/season-report")).toBe("Season Report");
     expect(offlineCapableLabel("/media")).toBe("Media");
-    expect(offlineCapableLabel("/media-kit")).toBe("Media Kit");
+    expect(offlineCapableLabel("/media-kit")).toBe("Media kit");
     expect(offlineCapableLabel("/battery-health-forecast")).toBe("Battery Health Forecast");
     expect(offlineCapableLabel("/vendor-lead-times")).toBe("Vendor Lead Times");
     expect(offlineCapableLabel("/bin-shelf-locator")).toBe("Bin/Shelf Locator");
     expect(offlineCapableLabel("/build-burndown")).toBe("Build Burndown");
     expect(offlineCapableLabel("/build")).toBe("Build");
-    expect(offlineCapableLabel("/cad-change-radar")).toBe("CAD Change Radar");
+    expect(offlineCapableLabel("/cad-change-radar")).toBe("Change radar");
     expect(offlineCapableLabel("/code-deploy-log")).toBe("Code Deploy Log");
     expect(offlineCapableLabel("/control-map")).toBe("Control Map");
     expect(offlineCapableLabel("/cross-team-scrim")).toBe("Cross-Team Scrims");
@@ -349,7 +349,7 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/cad-vault")).toBe("CAD Vault");
     expect(offlineCapableLabel("/cad-learn")).toBe("CAD Learn");
     expect(offlineCapableLabel("/cad-review-queue")).toBe("CAD Review Queue");
-    expect(offlineCapableLabel("/cad-change-radar")).toBe("CAD Change Radar");
+    expect(offlineCapableLabel("/cad-change-radar")).toBe("Change radar");
     expect(offlineCapableLabel("/reimbursements")).toBe("Reimbursements");
     expect(offlineCapableLabel("/costs")).toBe("Season Costs");
     expect(offlineCapableLabel("/duties")).toBe("Duties");

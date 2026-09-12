@@ -60,7 +60,7 @@ async function persistReuseAdvisorSnapshot(
     await putFeatureSnapshot("reuse-advisor", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("reuse-advisor", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Reuse Advisor already painted; IndexedDB is best-effort.
+    // Live Reuse already painted; IndexedDB is best-effort.
   }
 }
 
@@ -190,7 +190,7 @@ export default function ReuseAdvisorClient() {
       if (!response.ok || !isReuseAdvisorView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Reuse Advisor. Showing the last copy on this device.");
+          setError("Could not refresh Reuse. Showing the last copy on this device.");
           setFetchFailed(false);
           return;
         }
@@ -211,7 +211,7 @@ export default function ReuseAdvisorClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Reuse Advisor. Showing the last copy on this device.");
+        setError("Could not refresh Reuse. Showing the last copy on this device.");
         setFetchFailed(false);
         return;
       }
@@ -263,10 +263,10 @@ export default function ReuseAdvisorClient() {
       breadcrumbs={
         <>
           <a href={buildHref}>Build</a>
-          {" / Reuse Advisor"}
+          {" / Reuse"}
         </>
       }
-      title="Reuse Advisor"
+      title="Reuse"
       description="Cross-season subsystem reuse recommendations — mined from prior Failure log history and design-review track record for each subsystem you designed before."
     >
       <ReuseAdvisorRelated orgId={orgId} />
@@ -312,9 +312,9 @@ export default function ReuseAdvisorClient() {
     return (
       <main className="module-page">
         {header}
-        <OfflineBanner feature="Reuse Advisor" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Reuse" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
-          title={copy ? copy.title : "Loading…"}
+          title={copy ? copy.title : "Opening Reuse"}
           description={copy ? copy.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >
@@ -338,7 +338,7 @@ export default function ReuseAdvisorClient() {
       return (
         <main className="module-page">
           {header}
-          <OfflineBanner feature="Reuse Advisor" fromCache={fromCache} cachedAt={cachedAt} />
+          <OfflineBanner feature="Reuse" fromCache={fromCache} cachedAt={cachedAt} />
           {error ? (
             <p className="telemetry-status" role="alert">
               {error}
@@ -364,7 +364,7 @@ export default function ReuseAdvisorClient() {
   return (
     <main className="module-page">
       {header}
-      <OfflineBanner feature="Reuse Advisor" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Reuse" fromCache={fromCache} cachedAt={cachedAt} />
       {error ? (
         <p className="telemetry-status" role="alert">
           {error}

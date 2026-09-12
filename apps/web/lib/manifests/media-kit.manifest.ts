@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "media-kit",
-  title: "Media Kit",
+  title: "Media kit",
   route: "/media-kit",
   apiRoute: "/api/media-kit",
   hub: "Business",

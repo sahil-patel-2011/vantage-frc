@@ -11,6 +11,6 @@ describe("Media Kit last snapshot stays on the phone", () => {
     expect(src).toMatch(/putFeatureSnapshot/);
     expect(src).toMatch(/"media-kit"/);
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
-    expect(src).toMatch(/feature="Media Kit"/);
+    expect(src).toMatch(/feature="Media kit"/);
   });
 });

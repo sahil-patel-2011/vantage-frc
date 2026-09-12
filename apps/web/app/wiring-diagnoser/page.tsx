@@ -1,7 +1,7 @@
 import WiringDiagnoserClient from "./wiring-diagnoser-client";
 
 export const metadata = {
-  title: "Wiring / Power Fault Diagnoser",
+  title: "Wiring check",
 };
 
 export default function WiringDiagnoserPage() {

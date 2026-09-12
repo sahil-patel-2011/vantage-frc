@@ -346,7 +346,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/ranking-projection")) return "Ranking projection";
   if (bare.startsWith("/rankings")) return "Rankings";
   if (bare.startsWith("/grant-report")) return "Grant Report";
-  if (bare.startsWith("/media-kit")) return "Media Kit";
+  if (bare.startsWith("/media-kit")) return "Media kit";
   if (bare.startsWith("/media-library")) return "Media Library";
   if (bare.startsWith("/media")) return "Media";
   if (bare.startsWith("/sponsorship")) return "Sponsorship";
@@ -369,7 +369,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/cad-vault")) return "CAD Vault";
   if (bare.startsWith("/cad-learn")) return "CAD Learn";
   if (bare.startsWith("/cad-review-queue")) return "CAD Review Queue";
-  if (bare.startsWith("/cad-change-radar")) return "CAD Change Radar";
+  if (bare.startsWith("/cad-change-radar")) return "Change radar";
   if (bare.startsWith("/code-deploy-log")) return "Code Deploy Log";
   if (bare.startsWith("/control-map")) return "Control Map";
   if (bare.startsWith("/cross-team-scrim")) return "Cross-Team Scrims";
@@ -460,7 +460,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/bom-cost-rollup")) return "BOM cost rollup";
   if (bare.startsWith("/bringup")) return "Bring-up";
   if (bare.startsWith("/budget-reconciler")) return "Budget check";
-  if (bare.startsWith("/bus-factor")) return "Bus-Factor";
+  if (bare.startsWith("/bus-factor")) return "Bus factor";
   if (bare.startsWith("/checklist-library")) return "Checklist Library";
   if (bare.startsWith("/code-perf")) return "Code vs match";
   if (bare.startsWith("/connectors")) return "Connectors";
@@ -485,8 +485,8 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/parents")) return "Parent updates";
   if (bare.startsWith("/power-budget")) return "Power budget";
   if (bare.startsWith("/presence")) return "Presence";
-  if (bare.startsWith("/readiness-score")) return "Readiness Score";
-  if (bare.startsWith("/reuse-advisor")) return "Reuse Advisor";
+  if (bare.startsWith("/readiness-score")) return "Readiness";
+  if (bare.startsWith("/reuse-advisor")) return "Reuse";
   if (bare.startsWith("/reviews")) return "Design Reviews";
   if (bare.startsWith("/roadmap")) return "Season roadmap";
   if (bare.startsWith("/search")) return "Search";

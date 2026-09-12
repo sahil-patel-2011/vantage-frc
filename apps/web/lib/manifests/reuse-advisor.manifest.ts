@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "reuse-advisor",
-  title: "Reuse Advisor",
+  title: "Reuse",
   route: "/reuse-advisor",
   apiRoute: "/api/reuse-advisor",
   hub: "Build",

@@ -2,7 +2,7 @@ import { hubHref } from "../nav/hubs";
 import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Robot Readiness Score (never DEMO readiness metrics). */
+/** Soft-UI related surfaces for Readiness (never DEMO readiness metrics). */
 export const READINESS_SCORE_RELATED_LINKS = [
   { id: "fmea", label: "Failure log", tab: "fmea" },
   { id: "inspection-copilot", label: "Inspection", tab: "inspection-copilot" },
@@ -26,7 +26,7 @@ export const READINESS_SCORE_RELATED_INCLUDE: ReadinessScoreRelatedId[] = [
 ];
 
 /**
- * Soft-UI cross-links from Readiness Score → FMEA / Inspection / Code.
+ * Soft-UI cross-links from Readiness → Failure log / Inspection / Code.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function readinessScoreRelatedLinks(
@@ -75,7 +75,7 @@ export function readinessScoreSetupSteps(orgId?: string | null): ReadinessScoreS
     {
       id: "workspace",
       label: "Choose your team",
-      detail: "Choose your team to open Readiness Score.",
+      detail: "Choose your team to open Readiness.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -125,7 +125,7 @@ export function isReadinessScoreBoardEmpty(input: { subsystemCount: number }): b
   return input.subsystemCount === 0;
 }
 
-/** Classify Readiness Score Soft-UI shell — never invents DEMO readiness metrics. */
+/** Classify Readiness Soft-UI shell — never invents DEMO readiness metrics. */
 export function classifyReadinessScoreShell(input: {
   loading?: boolean;
   fetchFailed?: boolean;
@@ -146,7 +146,7 @@ export function readinessScoreShellCopy(kind: ReadinessScoreShellKind): Readines
     case "loading":
       return {
         kind,
-        title: "Loading Robot Readiness…",
+        title: "Opening Readiness",
         description:
           "Checking which team you are on and logged subsystems.",
       };
@@ -154,7 +154,7 @@ export function readinessScoreShellCopy(kind: ReadinessScoreShellKind): Readines
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Readiness Score",
+        title: "Could not load Readiness",
         description:
           "A network or server issue blocked readiness. Retry, or open Failure log / Inspection while it reloads.",
       };
@@ -185,7 +185,7 @@ export function readinessScoreShellCopy(kind: ReadinessScoreShellKind): Readines
 }
 
 /**
- * Soft-UI next actions for Readiness Score empty/setup shells.
+ * Soft-UI next actions for Readiness empty/setup shells.
  * Points at FMEA / Inspection / Code — never invents DEMO readiness metrics.
  */
 export function readinessScoreNextActions(input: {
@@ -209,7 +209,7 @@ export function readinessScoreNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Readiness Score",
+        label: "Retry Readiness",
         detail: "Reload real subsystems.",
         href: withOrgHref("/readiness-score", orgId),
         primary: true,

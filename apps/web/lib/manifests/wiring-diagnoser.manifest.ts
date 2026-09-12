@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "wiring-diagnoser",
-  title: "Wiring / Power Fault Diagnoser",
+  title: "Wiring check",
   route: "/wiring-diagnoser",
   apiRoute: "/api/wiring-diagnoser",
   hub: "Build",

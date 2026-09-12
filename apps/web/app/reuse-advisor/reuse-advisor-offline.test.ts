@@ -11,7 +11,7 @@ describe("Reuse Advisor last snapshot stays on the phone", () => {
     expect(src).toMatch(/putFeatureSnapshot/);
     expect(src).toMatch(/"reuse-advisor"/);
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
-    expect(src).toMatch(/feature="Reuse Advisor"/);
+    expect(src).toMatch(/feature="Reuse"/);
     expect(src).toMatch(/viewRef/);
     expect(src).toMatch(/AbortSignal\.timeout/);
     expect(src).toMatch(/response\.status === 401 \|\| response\.status === 403/);
