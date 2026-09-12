@@ -15,7 +15,7 @@ test("leftover Global Team Manager drops Loading admin student copy", async ({
   await waitForLoadingGone(page);
   await expect(page.locator("body")).not.toContainText("Application error");
   await expect(page.locator("body")).toContainText(
-    /Global Team Manager|Opening Global Team Manager|Your session ended|Sign in/,
+    /Global Team Manager|Opening Global Team Manager|Choose your team|Not found|Your session ended|Sign in/,
   );
   await expect(page.locator("body")).not.toContainText("Loading admin", {
     ignoreCase: false,
@@ -23,6 +23,9 @@ test("leftover Global Team Manager drops Loading admin student copy", async ({
   await page.goto("/admin/waitlist");
   await waitForLoadingGone(page);
   await expect(page.locator("body")).not.toContainText("Application error");
+  await expect(page.locator("body")).toContainText(
+    /Waitlist|Opening Waitlist|Choose your team|Not found|Your session ended|Sign in/,
+  );
   await expect(page.locator("body")).not.toContainText("Loading waitlist", {
     ignoreCase: false,
   });
