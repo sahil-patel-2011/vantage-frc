@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "mock-judging",
-  title: "Mock Judging",
+  title: "Mock judging",
   route: "/mock-judging",
   apiRoute: "/api/mock-judging",
   hub: "Team",

@@ -8,8 +8,9 @@ const WEB = join(__dirname, "..", "..");
  * Leftover student Award tracker / Sponsor suite / Sponsor wall /
  * Outreach calendar / Team health titles after leftover-people-titles.
  * Hub labels stay Award tracker, Sponsor suite, Sponsor wall,
- * Outreach calendar, and Team health. Routes stay. Do not invent a
- * last-snapshot.
+ * Outreach calendar, and Team health. leftover-business-more
+ * Eligibility / Renewal ROI / Tier calculator / Season costs / Mock
+ * judging stay. Routes stay. Do not invent a last-snapshot.
  */
 const FILES = [
   "app/award-tracker/award-tracker-client.tsx",

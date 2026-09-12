@@ -12,8 +12,9 @@ const WEB = join(__dirname, "..", "..");
  * Shifts / Pit link / Field value / Data quality / Pairwise stay.
  * leftover-pick-before Choose your team, leftover-fmea Failure log,
  * leftover-help-workspace Connect TBA, leftover-media Photos & video,
- * leftover-safety Safety incidents stay. Routes stay. Do not invent a
- * last-snapshot.
+ * leftover-safety Safety incidents stay. leftover-business-more
+ * Eligibility / Renewal ROI / Tier calculator / Season costs / Mock
+ * judging stay. Routes stay. Do not invent a last-snapshot.
  */
 const FILES = [
   "app/scout-accuracy/scout-accuracy-client.tsx",

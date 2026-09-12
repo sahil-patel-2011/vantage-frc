@@ -1,7 +1,7 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Sponsor Renewal ROI (never DEMO churn scores). */
+/** Soft-UI related surfaces for Renewal ROI (never DEMO churn scores). */
 export const SPONSOR_RENEWAL_ROI_RELATED_LINKS = [
   { id: "sponsors", label: "Sponsor CRM", kind: "business" as const, tab: "sponsors" },
   { id: "sponsor-suite", label: "Sponsor Suite", kind: "business" as const, tab: "sponsor-suite" },
@@ -25,7 +25,7 @@ export const SPONSOR_RENEWAL_ROI_RELATED_INCLUDE: SponsorRenewalRoiRelatedId[] =
 ];
 
 /**
- * Soft-UI cross-links from Sponsor Renewal ROI → CRM / Suite / Impact.
+ * Soft-UI cross-links from Renewal ROI → CRM / Suite / Impact.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function sponsorRenewalRoiRelatedLinks(
@@ -110,7 +110,7 @@ export function shouldShowSponsorRenewalRoiSummaryTiles(sponsorCount: number): b
   return sponsorCount > 0;
 }
 
-/** Classify Sponsor Renewal ROI Soft-UI shell — never invents DEMO churn scores. */
+/** Classify Renewal ROI Soft-UI shell — never invents DEMO churn scores. */
 export function classifySponsorRenewalRoiShell(input: {
   loading?: boolean;
   fetchFailed?: boolean;
@@ -131,14 +131,14 @@ export function sponsorRenewalRoiShellCopy(kind: SponsorRenewalRoiShellKind): Sp
     case "loading":
       return {
         kind,
-        title: "Loading Sponsor Renewal ROI…",
+        title: "Opening Renewal ROI",
         description: "Checking which team you are on and sponsor CRM.",
       };
     case "error":
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Sponsor Renewal ROI",
+        title: "Could not load Renewal ROI",
         description:
           "A network or server issue blocked renewal scoring. Retry, or open Sponsor CRM while it reloads.",
       };
@@ -169,7 +169,7 @@ export function sponsorRenewalRoiShellCopy(kind: SponsorRenewalRoiShellKind): Sp
 }
 
 /**
- * Soft-UI next actions for Sponsor Renewal ROI empty/setup shells.
+ * Soft-UI next actions for Renewal ROI empty/setup shells.
  * Points at CRM / Suite / Impact — never invents DEMO churn scores.
  */
 export function sponsorRenewalRoiNextActions(input: {
@@ -233,7 +233,7 @@ export function sponsorRenewalRoiNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Sponsor Renewal ROI",
+        label: "Retry Renewal ROI",
         detail: "Reload real renewal scores.",
         href: withOrgHref("/sponsor-renewal-roi", orgId),
         primary: true,

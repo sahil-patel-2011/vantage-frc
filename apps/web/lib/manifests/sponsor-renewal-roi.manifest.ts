@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "sponsor-renewal-roi",
-  title: "Sponsor Renewal ROI",
+  title: "Renewal ROI",
   route: "/sponsor-renewal-roi",
   apiRoute: "/api/sponsor-renewal-roi",
   hub: "Business",

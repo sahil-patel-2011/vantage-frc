@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "sponsor-tier-calculator",
-  title: "Sponsor Tier Calculator",
+  title: "Tier calculator",
   route: "/sponsor-tier-calculator",
   apiRoute: "/api/sponsor-tier-calculator",
   hub: "Business",

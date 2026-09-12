@@ -4,7 +4,7 @@ import { withOrgHref } from "../nav/product-nav";
 /** Soft-UI related surfaces for Matching gifts (never DEMO matches or pledges). */
 export const MATCHING_GIFT_FINDER_RELATED_LINKS = [
   { id: "sponsors", label: "Sponsor CRM", kind: "business" as const, tab: "sponsors" },
-  { id: "sponsor-renewal-roi", label: "Sponsor Renewal ROI", kind: "business" as const, tab: "sponsor-renewal-roi" },
+  { id: "sponsor-renewal-roi", label: "Renewal ROI", kind: "business" as const, tab: "sponsor-renewal-roi" },
   { id: "impact", label: "Community Impact", kind: "business" as const, tab: "impact" },
   { id: "fundraisers", label: "Fundraisers", kind: "business" as const, tab: "fundraisers" },
 ] as const;
@@ -222,7 +222,7 @@ export function matchingGiftFinderNextActions(input: {
       },
       {
         id: "sponsor-renewal-roi",
-        label: "Open Sponsor Renewal ROI",
+        label: "Open Renewal ROI",
         detail: "Renewal risk stays blank until CRM activity exists.",
         href: hubHref("/business", "sponsor-renewal-roi", orgId),
       },
@@ -296,7 +296,7 @@ export function matchingGiftFinderNextActions(input: {
     },
     {
       id: "sponsor-renewal-roi",
-      label: "Open Sponsor Renewal ROI",
+      label: "Open Renewal ROI",
       detail: "Renewal scores stay grounded in CRM activity only.",
       href: hubHref("/business", "sponsor-renewal-roi", orgId),
     },

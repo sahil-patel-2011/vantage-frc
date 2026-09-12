@@ -9,7 +9,7 @@ test.beforeEach(async ({ context }) => {
 
 const LEAVES = [
   { path: "/district-advancement", heading: "Districts" },
-  { path: "/mock-judging", heading: "Mock Judging" },
+  { path: "/mock-judging", heading: "Mock judging" },
   { path: "/team/profile", heading: "Team profile" },
   { path: "/bom-cost-rollup", heading: "BOM cost rollup" },
   { path: "/budget-reconciler", heading: "Budget check" },

@@ -376,7 +376,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/decision-search")) return "Search";
   if (bare.startsWith("/decisions")) return "Decision notes";
   if (bare.startsWith("/failure-patterns")) return "Failure patterns";
-  if (bare.startsWith("/grant-eligibility-matcher")) return "Grant Eligibility Matcher";
+  if (bare.startsWith("/grant-eligibility-matcher")) return "Eligibility";
   if (bare.startsWith("/knowledge-gap")) return "Knowledge gaps";
   if (bare.startsWith("/matching-gift-finder")) return "Matching gifts";
   if (bare.startsWith("/onboarding-buddy")) return "Onboarding buddy";
@@ -390,7 +390,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/cad/connections")) return "CAD connections";
   if (bare.startsWith("/spare-robot-kit")) return "Spare kit";
   if (bare.startsWith("/spare-forecast")) return "Spares forecast";
-  if (bare.startsWith("/sponsor-renewal-roi")) return "Sponsor Renewal ROI";
+  if (bare.startsWith("/sponsor-renewal-roi")) return "Renewal ROI";
   if (bare.startsWith("/team-health-dashboard")) return "Team health";
   if (bare.startsWith("/sketch-to-brief")) return "Sketch to brief";
   if (bare.startsWith("/scout-assisted-count")) return "Assisted count";
@@ -436,7 +436,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/goals-tracker")) return "Goals";
   if (bare.startsWith("/goals")) return "Goals";
   if (bare.startsWith("/reimbursements")) return "Reimbursements";
-  if (bare.startsWith("/costs")) return "Season Costs";
+  if (bare.startsWith("/costs")) return "Season costs";
   if (bare.startsWith("/duties")) return "Duties";
   if (bare.startsWith("/announcements")) return "Announcements";
   if (bare.startsWith("/match-delta-watcher")) return "Match-delta watcher";
@@ -479,7 +479,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/meeting-autopilot")) return "Meeting agenda";
   if (bare.startsWith("/mentor-hours")) return "Mentor hours";
   if (bare.startsWith("/migrate")) return "Bring your season";
-  if (bare.startsWith("/mock-judging")) return "Mock Judging";
+  if (bare.startsWith("/mock-judging")) return "Mock judging";
   if (bare.startsWith("/notebook")) return "Engineering notebook";
   if (bare.startsWith("/object-chat-bridge")) return "Object chat";
   if (bare.startsWith("/parents")) return "Parent updates";
@@ -497,7 +497,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/skills-graph")) return "Skills & Mentorship";
   if (bare.startsWith("/software-versions")) return "Software versions";
   if (bare.startsWith("/spares")) return "Consumables";
-  if (bare.startsWith("/sponsor-tier-calculator")) return "Sponsor Tier Calculator";
+  if (bare.startsWith("/sponsor-tier-calculator")) return "Tier calculator";
   if (bare.startsWith("/standup-digest")) return "Standup";
   if (bare.startsWith("/start")) return "Your path";
   if (bare.startsWith("/subsystems")) return "Subsystem specs";

@@ -3,11 +3,11 @@ import { COSTS_RELATED_INCLUDE } from "../business/business-related";
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Focused Soft-UI Business strip when Season Costs is open (never DEMO $). */
+/** Focused Soft-UI Business strip when Season costs is open (never DEMO $). */
 export const COSTS_BUSINESS_RELATED_INCLUDE: BusinessRelatedId[] = [...COSTS_RELATED_INCLUDE];
 
 /**
- * Soft-UI related surfaces for Season Costs.
+ * Soft-UI related surfaces for Season costs.
  * Real-world spend sits next to Orders / Fundraisers / Business budget — never DEMO dollars.
  */
 export const COSTS_RELATED_LINKS = [
@@ -25,7 +25,7 @@ export type CostsRelatedLink = {
   href: string;
 };
 
-/** Cross-links for Season Costs Soft-UI (never DEMO $). */
+/** Cross-links for Season costs Soft-UI (never DEMO $). */
 export function costsRelatedLinks(
   orgId?: string | null,
   options?: { active?: CostsRelatedId; include?: CostsRelatedId[] },

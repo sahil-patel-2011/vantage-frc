@@ -298,14 +298,14 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/failure-patterns")).toBe("Failure patterns");
     expect(offlineCapableLabel("/hours-self-view")).toBe("My hours");
     expect(offlineCapableLabel("/hours")).toBe("Hours");
-    expect(offlineCapableLabel("/grant-eligibility-matcher")).toBe("Grant Eligibility Matcher");
+    expect(offlineCapableLabel("/grant-eligibility-matcher")).toBe("Eligibility");
     expect(offlineCapableLabel("/knowledge-gap")).toBe("Knowledge gaps");
     expect(offlineCapableLabel("/matching-gift-finder")).toBe("Matching gifts");
     expect(offlineCapableLabel("/onboarding-buddy")).toBe("Onboarding buddy");
     expect(offlineCapableLabel("/risk-burndown")).toBe("Risk burndown");
     expect(offlineCapableLabel("/spare-robot-kit")).toBe("Spare kit");
     expect(offlineCapableLabel("/spare-forecast")).toBe("Spares forecast");
-    expect(offlineCapableLabel("/sponsor-renewal-roi")).toBe("Sponsor Renewal ROI");
+    expect(offlineCapableLabel("/sponsor-renewal-roi")).toBe("Renewal ROI");
     expect(offlineCapableLabel("/team-health-dashboard")).toBe("Team health");
     expect(offlineCapableLabel("/sketch-to-brief")).toBe("Sketch to brief");
     expect(offlineCapableLabel("/scout-assisted-count")).toBe("Assisted count");
@@ -353,7 +353,7 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/cad-review-queue")).toBe("CAD review queue");
     expect(offlineCapableLabel("/cad-change-radar")).toBe("Change radar");
     expect(offlineCapableLabel("/reimbursements")).toBe("Reimbursements");
-    expect(offlineCapableLabel("/costs")).toBe("Season Costs");
+    expect(offlineCapableLabel("/costs")).toBe("Season costs");
     expect(offlineCapableLabel("/duties")).toBe("Duties");
     expect(offlineCapableLabel("/announcements")).toBe("Announcements");
     expect(offlineCapableLabel("/risks")).toBe("Risk Register");
