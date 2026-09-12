@@ -75,6 +75,14 @@ describe("leftover student hub-mismatch chrome", () => {
     const desk = readFileSync(join(WEB, "app/alliance-selection-desk/alliance-selection-desk-client.tsx"), "utf8");
     expect(desk).toMatch(/title="Alliance desk"/);
     expect(desk).toMatch(/feature="Alliance desk"/);
+    const deskRelated = readFileSync(
+      join(WEB, "lib/alliance-selection-desk/alliance-selection-desk-related.ts"),
+      "utf8",
+    );
+    expect(deskRelated).toMatch(/Opening Alliance desk/);
+    expect(deskRelated).toMatch(/label: "Pick list"/);
+    expect(deskRelated).toMatch(/Open Pick list/);
+    expect(deskRelated).toMatch(/label: "Pick clock"/);
     const bom = readFileSync(join(WEB, "app/bom-cost-rollup/bom-cost-rollup-client.tsx"), "utf8");
     expect(bom).toMatch(/title="BOM cost"/);
     expect(bom).toMatch(/feature="BOM cost"/);

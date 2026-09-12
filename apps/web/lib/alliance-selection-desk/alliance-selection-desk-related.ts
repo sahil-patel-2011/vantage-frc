@@ -5,7 +5,7 @@ import { setupActionsFrom } from "../setup-actions";
 /** Soft-UI related surfaces for Alliance desk (never DEMO rankings). */
 export const ALLIANCE_SELECTION_DESK_RELATED_LINKS = [
   { id: "strategy", label: "Strategy", tab: "strategy" },
-  { id: "picklist-collab", label: "Collaborative Pick List", tab: "picklist-collab" },
+  { id: "picklist-collab", label: "Pick list", tab: "picklist-collab" },
   { id: "pick-clock", label: "Pick clock", tab: "pick-clock" },
   { id: "scouting", label: "Scouting", tab: "scouting" },
   { id: "chemistry", label: "Chemistry", tab: "chemistry" },
@@ -244,7 +244,7 @@ export function allianceSelectionDeskNextActions(input: {
       },
       {
         id: "picklist-collab",
-        label: "Open Collaborative Pick List",
+        label: "Open Pick list",
         detail: "Co-rank partners before selection starts.",
         href: hubHref("/competition", "picklist-collab", orgId),
       },
@@ -294,7 +294,7 @@ export function allianceSelectionDeskNextActions(input: {
     },
     {
       id: "picklist-collab",
-      label: "Open Collaborative Pick List",
+      label: "Open Pick list",
       detail: "Cross-check consensus ranks before locking.",
       href: hubHref("/competition", "picklist-collab", orgId),
     },

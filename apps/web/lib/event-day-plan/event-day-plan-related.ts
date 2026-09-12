@@ -4,10 +4,10 @@ import { setupActionsFrom } from "../setup-actions";
 
 /** Soft-UI related surfaces for Day plan (never DEMO schedule blocks). */
 export const EVENT_DAY_PLAN_RELATED_LINKS = [
-  { id: "command", label: "Command", tab: "command" },
+  { id: "command", label: "Event day", tab: "command" },
   { id: "battery-rotation", label: "Charge plan", tab: "battery-rotation" },
   { id: "pit-repair-triage", label: "Repair triage", tab: "pit-repair-triage" },
-  { id: "shift-balancer", label: "Shift Balancer", tab: "shift-balancer" },
+  { id: "shift-balancer", label: "Shifts", tab: "shift-balancer" },
 ] as const;
 
 export type EventDayPlanRelatedId = (typeof EVENT_DAY_PLAN_RELATED_LINKS)[number]["id"];
@@ -236,7 +236,7 @@ export function eventDayPlanNextActions(input: {
       },
       {
         id: "shift-balancer",
-        label: "Open Shift Balancer",
+        label: "Open Shifts",
         detail: "Scout shifts can land on the same plan once assigned.",
         href: hubHref("/competition", "shift-balancer", orgId),
       },

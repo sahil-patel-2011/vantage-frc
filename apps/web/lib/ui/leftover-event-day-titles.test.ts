@@ -68,6 +68,14 @@ describe("leftover student event-day-title chrome", () => {
     expect(day).toMatch(/title="Day plan"/);
     expect(day).toMatch(/feature="Day plan"/);
     expect(day).not.toMatch(/title="Loading/);
+    const dayRelated = readFileSync(
+      join(WEB, "lib/event-day-plan/event-day-plan-related.ts"),
+      "utf8",
+    );
+    expect(dayRelated).toMatch(/Opening Day plan/);
+    expect(dayRelated).toMatch(/label: "Shifts"/);
+    expect(dayRelated).toMatch(/Open Shifts/);
+    expect(dayRelated).toMatch(/Open Event day/);
     const board = readFileSync(
       join(WEB, "app/drive-team-signals/drive-team-signals-client.tsx"),
       "utf8",
