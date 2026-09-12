@@ -23,7 +23,7 @@ const body = `# Vantage
 - Competition hub: Event day, Scouting, Strategy, and Pit workbenches; My Day / Forms / Alliance desk live as inner tabs — not a 40-item More tools list.
 - Team hub: Calendar, Chat, People, Work, Knowledge; Season Planning sits under Work.
 - Business hub: Overview, Money, Sponsors, Grants, Outreach.
-- Build hub: Kickoff, CAD, Code, Robot (FMEA/batteries/inspection as Robot tabs).
+- Build hub: Kickoff, CAD, Code, Robot (Failure log/batteries/inspection as Robot tabs).
 - AI hub: Chat, Writer, Agent, Controls, Notes; API keys under Controls.
 - FRC Assistant answers cite labeled sources (official, scout, prediction); no invented DEMO win rates.
 - Vantage never auto-deploys robot code.
