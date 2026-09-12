@@ -125,8 +125,8 @@ function TeamProfileNextActions({ orgId }: { orgId: string }) {
  *
  * The first thing a new team sees is that Vantage knows who they are — where
  * they are, how long they have competed, what they have won, how seasons went —
- * without anyone typing it in. All of it is from The Blue Alliance and
- * Statbotics; every AI feature gets the same facts as context.
+ * without anyone typing it in. All of it is from the official public
+ * record; every AI feature gets the same facts as context.
  *
  * People are the one thing deliberately NOT gathered from outside: no public
  * source knows a team's mentors or students, so the roster here is Vantage's
@@ -260,7 +260,7 @@ export default function TeamProfileClient() {
         </>
       }
       title={title}
-      description="What The Blue Alliance and Statbotics have on record for this team. Ask AI uses these facts as context."
+      description="What the official record has for this team. Ask AI uses these facts as context."
     >
       <TeamProfileRelated orgId={orgId} />
     </PageHeader>
@@ -327,7 +327,7 @@ export default function TeamProfileClient() {
             title={view.status === "none" ? "No profile yet" : "Gathering the public record"}
             description={
               view.teamNumber
-                ? `Looking up team ${view.teamNumber} on The Blue Alliance and Statbotics. This takes a few seconds and happens once; it refreshes weekly after that.`
+                ? `Looking up team ${view.teamNumber} on the official record. This takes a few seconds and happens once; it refreshes weekly after that.`
                 : "This team has no team number, so there is nothing to look up. Set it on the Team settings page."
             }
           >
@@ -384,14 +384,14 @@ export default function TeamProfileClient() {
             <Fact label="Location" value={location || null} />
             <Fact label="School / organisation" value={p?.schoolName ?? null} />
             <Fact label="Rookie year" value={p?.rookieYear ? String(p.rookieYear) : null} />
-            <Fact label="Seasons competed" value={seasons > 0 ? `${seasons} (per TBA)` : null} />
+            <Fact label="Seasons competed" value={seasons > 0 ? `${seasons} (official)` : null} />
             <Fact
               label="Website"
               value={p?.website ?? null}
               href={p?.website && /^https?:\/\//.test(p.website) ? p.website : undefined}
             />
           </dl>
-          {p?.name ? <small className="app-muted">Full TBA name: {p.name}</small> : null}
+          {p?.name ? <small className="app-muted">Full official name: {p.name}</small> : null}
         </Panel>
 
         <Panel className="tp-card">
@@ -413,14 +413,14 @@ export default function TeamProfileClient() {
           <h2>Results</h2>
           {view.stats ? (
             <dl className="tp-facts">
-              <Fact label="Normalised EPA (career)" value={view.stats.normEpa !== null ? String(view.stats.normEpa) : null} />
+              <Fact label="Career rating" value={view.stats.normEpa !== null ? String(view.stats.normEpa) : null} />
               <Fact
                 label="Career record"
                 value={view.stats.record ? `${view.stats.record.wins}-${view.stats.record.losses}-${view.stats.record.ties} (${Math.round(view.stats.record.winrate * 100)}%)` : null}
               />
               {latest ? (
                 <>
-                  <Fact label={`${latest.year} EPA`} value={latest.epa !== null ? String(latest.epa) : null} />
+                  <Fact label={`${latest.year} rating`} value={latest.epa !== null ? String(latest.epa) : null} />
                   <Fact
                     label={`${latest.year} world rank`}
                     value={latest.rankWorld !== null ? `${latest.rankWorld}${latest.teamsWorld ? ` of ${latest.teamsWorld}` : ""}` : null}
@@ -431,7 +431,7 @@ export default function TeamProfileClient() {
             </dl>
           ) : (
             <p className="app-muted">
-              Statbotics did not answer{view.sources.statbotics?.error ? ` (${view.sources.statbotics.error})` : ""}. Results will
+              Season ratings did not load{view.sources.statbotics?.error ? ` (${view.sources.statbotics.error})` : ""}. Results will
               fill in on the next refresh.
             </p>
           )}
@@ -440,7 +440,7 @@ export default function TeamProfileClient() {
               <thead>
                 <tr>
                   <th>Season</th>
-                  <th>EPA</th>
+                  <th>Rating</th>
                   <th>World rank</th>
                 </tr>
               </thead>
@@ -463,7 +463,7 @@ export default function TeamProfileClient() {
           {view.events.length === 0 ? (
             <p className="app-muted">
               {view.sources.tba?.ok === false
-                ? `The Blue Alliance did not answer${view.sources.tba.error ? ` (${view.sources.tba.error})` : ""}.`
+                ? `Official event records did not answer${view.sources.tba.error ? ` (${view.sources.tba.error})` : ""}.`
                 : "No events on record for the last two seasons this team competed."}
             </p>
           ) : (
@@ -503,7 +503,7 @@ export default function TeamProfileClient() {
           <h2>Awards</h2>
           {view.awards.length === 0 ? (
             <p className="app-muted">
-              {view.sources.tba?.ok === false ? "The Blue Alliance did not answer." : "No awards on record with TBA."}
+              {view.sources.tba?.ok === false ? "Official event records did not answer." : "No awards on record yet."}
             </p>
           ) : (
             <ul className="tp-awards">
@@ -520,7 +520,7 @@ export default function TeamProfileClient() {
 
       <footer className="tp-foot">
         <span className="app-muted">
-          Sources: The Blue Alliance {view.sources.tba?.ok ? "✓" : "✗"} · Statbotics {view.sources.statbotics?.ok ? "✓" : "✗"}
+          Sources: official events {view.sources.tba?.ok ? "✓" : "✗"} · season ratings {view.sources.statbotics?.ok ? "✓" : "✗"}
           {view.computedAt ? ` · built ${view.computedAt.slice(0, 10)}` : ""} · refreshes weekly
         </span>
         {view.canBuild && view.orgId ? (

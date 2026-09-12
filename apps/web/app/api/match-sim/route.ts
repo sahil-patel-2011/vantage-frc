@@ -37,7 +37,7 @@ function setupResponse(message: string): MatchSimView {
     message,
     steps: [
       { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
-      { id: "reference", label: "Sync reference data", detail: "Confirm TBA/Statbotics EPA sync has run for your event", href: "/rankings" },
+      { id: "reference", label: "Sync reference data", detail: "Confirm official event numbers and season ratings have synced for your event", href: "/rankings" },
     ],
     orgId: null,
   };

@@ -268,7 +268,7 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
           </>
         }
         title="Pit TV boards"
-        description="Pick a preset, save a board, then pair a TV or Raspberry Pi with a read-only token. Empty boards stay empty until TBA, Strategy, and Pit ops sync real data."
+        description="Pick a preset, save a board, then pair a TV or Raspberry Pi with a read-only token. Empty boards stay empty until official matches, Strategy, and Pit ops sync real data."
       />
 
       <div className="disp-related">
@@ -322,7 +322,7 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
               badge="Setup"
               badgeTone="setup"
               title="No active event yet"
-              description="Set an Event Day event so next-match and coverage can read The Blue Alliance. Boards stay blank until then."
+              description="Set an Event Day event so next-match and coverage can read official matches. Boards stay blank until then."
             >
               <Button as="a" variant="primary" href={hubHref("/competition", "command", orgId)}>
                 Open Event Day
@@ -572,7 +572,7 @@ function NextActionsPanel({
     <Panel className="disp-next-actions">
       <header>
         <h2>Next actions</h2>
-        <p>Real Event Day and Strategy paths only — boards stay blank until TBA and scored data exist.</p>
+        <p>Real Event Day and Strategy paths only — boards stay blank until official matches and scored data exist.</p>
       </header>
       <ol>
         {actions.map((action) => (

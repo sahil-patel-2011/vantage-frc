@@ -174,7 +174,7 @@ describe("buildScheduleView", () => {
 describe("scheduleCacheRequiredCopy", () => {
   it("says the board stays blank until TBA cache rows — never invented slots", () => {
     const copy = scheduleCacheRequiredCopy();
-    expect(copy.description).toMatch(/cache/i);
+    expect(copy.description).toMatch(/official match/i);
     expectPlainCopy(copy.description);
     expect(`${copy.title} ${copy.description}`).not.toMatch(/\bDEMO\b/);
   });

@@ -50,7 +50,7 @@ export default function ClaimWorkspaceClient() {
     <main className="module-page">
       <PageHeader
         title="Claim your FRC team"
-        description="Verified accounts can create one team per unused TBA team number. Members still join by exact-email invite. STIMS remains official FIRST registration."
+        description="Verified accounts can create one team per unused official team number. Members still join by exact-email invite. STIMS remains official FIRST registration."
       />
       {orgId ? (
         <EmptyState

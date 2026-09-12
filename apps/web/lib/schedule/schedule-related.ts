@@ -77,7 +77,7 @@ export function scheduleNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Choose your team before loading TBA rows.",
+          detail: "Choose your team before loading official match rows.",
           href: "/workspace",
           primary: true,
         },
@@ -107,7 +107,7 @@ export function scheduleNextActions(input: {
         {
           id: "calendar",
           label: "Open Calendar",
-          detail: "Team practices stay on Calendar while competition matches sync from TBA.",
+          detail: "Team practices stay on Calendar while competition matches sync from the official schedule.",
           href: hubHref("/team", "calendar", orgId),
         },
       ];
@@ -134,7 +134,7 @@ export function scheduleNextActions(input: {
       {
         id: "retry",
         label: "Retry Schedule",
-        detail: "Reload real TBA match rows.",
+        detail: "Reload real official match rows.",
         href: withOrgHref("/schedule", orgId),
         primary: true,
       },
@@ -158,7 +158,7 @@ export function scheduleNextActions(input: {
       {
         id: "command",
         label: "Check Event Day sync",
-        detail: "Matches appear after TBA reference sync for the active event.",
+        detail: "Matches appear after official schedule sync for the active event.",
         href: hubHref("/competition", "command", orgId),
         primary: true,
       },
@@ -177,7 +177,7 @@ export function scheduleNextActions(input: {
       {
         id: "team-data",
         label: "Sync team data",
-        detail: "Pull the match schedule from The Blue Alliance when the event is posted.",
+        detail: "Pull the official match schedule when the event is posted.",
         href: withOrgHref("/team/data", orgId),
       },
     ].slice(0, 4);
@@ -187,7 +187,7 @@ export function scheduleNextActions(input: {
     {
       id: "my-day",
       label: "Open My Day",
-      detail: "Countdowns and your next match use the same TBA schedule rows.",
+      detail: "Countdowns and your next match use the same official schedule rows.",
       href: hubHref("/competition", "my-day", orgId),
       primary: true,
     },

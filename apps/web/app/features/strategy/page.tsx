@@ -5,12 +5,12 @@ import { marketingPageMetadata } from "../../../lib/marketing/seo";
 export const metadata: Metadata = marketingPageMetadata({
   title: "Strategy & FRC Assistant — Vantage",
   description:
-    "Competition Strategy, Alliance Selection Desk, Pick clock, and FRC Assistant—sourced from TBA and your scouting.",
+    "Competition Strategy, Alliance Selection Desk, Pick clock, and FRC Assistant—sourced from official event numbers and your scouting.",
   path: "/features/strategy",
 });
 
 const assistantJobs = [
-  { id: "01", title: "Strategy & playbooks", copy: "Drive-team briefs from real scout + TBA facts." },
+  { id: "01", title: "Strategy & playbooks", copy: "Drive-team briefs from real scout + official facts." },
   { id: "02", title: "Matchups & picks", copy: "Alliance Selection Desk and Pick clock, for the event you are at." },
   { id: "03", title: "Opponent history", copy: "How teams tend to auto, cycle, defend, climb." },
   { id: "04", title: "Robot capabilities", copy: "Pit notes beside public metrics—empty until scouted." },
@@ -18,11 +18,11 @@ const assistantJobs = [
 
 const scoutFeeds = [
   { title: "Competition · Strategy", copy: "Playbooks from your scouting plus public facts — empty until someone scouts." },
-  { title: "Alliance Selection Desk", copy: "Shared 8-alliance board with scout evidence attached. TBA conflict flags when cache exists." },
+  { title: "Alliance Selection Desk", copy: "Shared 8-alliance board with scout evidence attached. Official-record conflict flags when cache exists." },
   { title: "Pick clock & pairwise", copy: "Timed picks plus qualitative A-beats-B ranking. Empty until real taps." },
   { title: "Drive-team tags", copy: "Defense, climb, partner-fit labels on event robots — blank until applied." },
-  { title: "Command / My Day", copy: "Same event context: next match, pit queue, bumper color from TBA lists." },
-  { title: "FRC Assistant", copy: "Answers cite TBA, Statbotics cache, and scout notes. No invented win %." },
+  { title: "Command / My Day", copy: "Same event context: next match, pit queue, bumper color from official alliance lists." },
+  { title: "FRC Assistant", copy: "Answers cite official event numbers, season ratings, and scout notes. No invented win %." },
 ] as const;
 
 export default function StrategyFeaturePage() {
@@ -35,7 +35,7 @@ export default function StrategyFeaturePage() {
           <h1>Strategy you can inspect.</h1>
           <p>
             Competition Strategy, Alliance Selection Desk, pick clock, pairwise ranking, and FRC Assistant — sourced
-            from The Blue Alliance cache and your scout entries. Empty until those exist.
+            from the official event cache and your scout entries. Empty until those exist.
           </p>
           <div className="actions">
             <a className="button primary" href="/#waitlist">
@@ -52,7 +52,7 @@ export default function StrategyFeaturePage() {
             <header>
               <span className="section-id">FRC ASSISTANT</span>
               <h2 id="assistant-title">Ask competition-ops. Keep the sources.</h2>
-              <p>Grounded in TBA, Statbotics, and your scouts. Empty events stay empty.</p>
+              <p>Grounded in official event numbers, season ratings, and your scouts. Empty events stay empty.</p>
             </header>
             <div className="assistant-story-grid">
               <div className="assistant-job-grid">

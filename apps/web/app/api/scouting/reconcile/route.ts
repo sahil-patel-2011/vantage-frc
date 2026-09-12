@@ -61,7 +61,7 @@ export async function GET(request: Request) {
       const eventKey = eventOverride ?? context.rows[0]?.eventKey ?? null;
       if (!eventKey) {
         return setupRequired(
-          "Set an active TBA event in Event Day — reconciliation compares your scouting to that event's official score breakdowns.",
+          "Set an active event in Event Day — reconciliation compares your scouting to that event's official score breakdowns.",
         );
       }
 
@@ -92,7 +92,7 @@ export async function GET(request: Request) {
       if (!matches.rows.length) {
         return {
           ...setupRequired(
-            "No played qualification match is cached for this event yet — reconciliation starts once TBA publishes results.",
+            "No played qualification match is cached for this event yet — reconciliation starts once official results are published.",
           ),
           eventKey,
         };
