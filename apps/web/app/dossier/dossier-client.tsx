@@ -51,7 +51,7 @@ async function persistDossierSnapshot(
 
 const CATEGORY_LABEL: Record<string, string> = {
   identity: "Identity",
-  season_epa: "Season EPA",
+  season_epa: "Season rating",
   event: "Event metrics",
   record: "Event record",
   scout: "Org scout",
@@ -144,7 +144,7 @@ function DossierShell({
       <PageHeader
         breadcrumbs="Competition / Dossier"
         title="Season team dossier"
-        description="Fact cards only — TBA identity, Statbotics/TBA EPA and records, and org scout notes."
+        description="Fact cards only — team identity, season rating and records, and this team's scout notes."
       >
         <DossierRelatedStrip orgId={orgId} />
       </PageHeader>
@@ -333,7 +333,7 @@ export default function DossierClient() {
           shell === "error"
             ? error || "Could not load team dossier."
             : shell === "setup" && view?.status === "setup_required"
-              ? `${view.message} Facts stay blank until real TBA/Statbotics rows exist.`
+              ? `${view.message} Facts stay blank until synced event numbers exist.`
               : undefined
         }
         errorStatus={errorStatus}
@@ -369,7 +369,7 @@ export default function DossierClient() {
       <PageHeader
         breadcrumbs="Competition / Dossier"
         title="Season team dossier"
-        description="Fact cards only — TBA identity, Statbotics/TBA EPA and records, and org scout notes. Every card carries a citation."
+        description="Fact cards only — team identity, season rating and records, and this team's scout notes. Every card carries a citation."
       >
         {/* The strip already is Strategy · Scouting · Pick desk. The row that
             used to sit beside it here was the same three hrefs with the same
@@ -458,7 +458,7 @@ export default function DossierClient() {
                 <strong>
                   {view.referenceAccess.statbotics.cacheHasMetrics ? "Cached" : "Empty"}
                 </strong>
-                <small>Statbotics EPA</small>
+                <small>Season rating</small>
               </article>
             </div>
           ) : null}
@@ -495,10 +495,10 @@ function LiveDossier({ view }: { view: Extract<DossierView, { status: "live" }> 
           </div>
           <div className="strategy-provenance">
             <span className="app-badge">
-              Statbotics {view.referenceAccess.statbotics.cacheHasMetrics ? "cached" : "empty"}
+              Season numbers {view.referenceAccess.statbotics.cacheHasMetrics ? "cached" : "empty"}
             </span>
             <span className="app-badge">
-              {view.referenceAccess.tbaConfigured ? "TBA ready" : "TBA missing"}
+              {view.referenceAccess.tbaConfigured ? "Event numbers ready" : "Event numbers missing"}
             </span>
           </div>
         </header>

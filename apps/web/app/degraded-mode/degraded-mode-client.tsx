@@ -374,8 +374,8 @@ function SourcesPanel({ view }: { view: LiveView }) {
       <EmptyState
         badge="No sources tracked"
         badgeTone="setup"
-        title="No reference data sources are tracked yet"
-        description="Once TBA/Statbotics sync runs, source health appears here."
+        title="No event-number sources are tracked yet"
+        description="Once event numbers sync, source health appears here."
       />
     );
   }

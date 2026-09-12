@@ -381,7 +381,7 @@ export default function ScoutCrossvalClient({ orgId: initialOrgId }: { orgId?: s
           </>
         }
         title="Scout Cross-Validation"
-        description="Compares saved match-scout entries against cached TBA score breakdowns — agree, conflict, or unverifiable."
+        description="Compares saved match-scout entries against cached official score breakdowns — agree, conflict, or unverifiable."
       >
         <div className="scout-crossval-header-meta">
           <ScoutCrossvalRelatedStrip orgId={orgId} />
@@ -447,7 +447,7 @@ function SummaryTiles({ view, loaded }: { view: LiveView; loaded: boolean }) {
       <StatTile
         label="Agree"
         value={formatScoutCrossvalMetric(summary.agreeEntries, loaded)}
-        unit="vs TBA"
+        unit="vs official"
       />
       <StatTile
         label="Conflict"
@@ -480,7 +480,7 @@ function EntriesList({
   return (
     <Panel className="scout-crossval-panel" id="crossval-entries">
       <header>
-        <h2>Match entries vs TBA</h2>
+        <h2>Match entries vs official</h2>
         <p className="app-muted">
           Per-field badges use cached official score breakdowns only.
         </p>
