@@ -11,7 +11,8 @@ const WEB = join(__dirname, "..", "..");
  * leftover-opening-cad-setup extras stay. leftover-cad-setup-copy extras
  * stay. leftover-llms Connect Onshape stays. leftover-student-copy extras
  * stay. leftover-student-buttons extras stay. leftover-product extras stay.
- * leftover-help extras stay off leftover-help FILES. leftover-admin
+ * leftover-help extras stay off leftover-help FILES. leftover-cad-change-radar
+ * extras stay off leftover-cad-activity FILES. leftover-admin
  * skip-list Global Team Manager stays. leftover-my-day Loading My Day stays.
  */
 const FILES = ["app/cad/cad-activity-panel.tsx"] as const;

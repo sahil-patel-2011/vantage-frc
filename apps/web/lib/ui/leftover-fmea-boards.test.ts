@@ -7,7 +7,11 @@ const WEB = join(__dirname, "..", "..");
 /**
  * Leftover student FMEA chrome on Get unstuck, board descriptions, Event Day
  * pit flags, and marketing after the Open FMEA strip gold. Route id `fmea`
- * stays. Do not invent a last-snapshot.
+ * stays. leftover-cad-change-radar extras stay. leftover-hub-titles Change
+ * radar extras stay. leftover-export-oauth extras stay. leftover-offline extras
+ * and leftover-hub extras stay off leftover-cad-change-radar FILES — do not
+ * gold leftover-hub + leftover-offline pairs together. Do not invent a
+ * last-snapshot.
  */
 const FILES = [
   "app/readiness-score/readiness-score-client.tsx",

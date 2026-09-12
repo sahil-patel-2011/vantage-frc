@@ -6,8 +6,11 @@ const WEB = join(__dirname, "..", "..");
 
 /**
  * Leftover student OAuth / org_id / Onshape workspace chrome on Exports,
- * CAD Change Radar, and CAD learn. Identifiers stay. Do not invent a
- * last-snapshot.
+ * CAD Change Radar, and CAD learn. Identifiers stay. leftover-cad-change-radar
+ * extras stay. leftover-hub-titles Change radar extras stay. leftover-fmea-boards
+ * extras stay. leftover-offline extras and leftover-hub extras stay off leftover-
+ * cad-change-radar FILES — do not gold leftover-hub + leftover-offline pairs
+ * together. Do not invent a last-snapshot.
  */
 const FILES = [
   "app/exports/export-client.tsx",

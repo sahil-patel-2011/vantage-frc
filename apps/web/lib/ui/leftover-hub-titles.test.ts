@@ -8,7 +8,10 @@ const WEB = join(__dirname, "..", "..");
  * Leftover student Diagnoser / Advisor / Radar / Factor / Score / Media Kit
  * titles after leftover-judge-sim. Hub labels stay Wiring check, Reuse,
  * Change radar, Bus factor, Readiness, and Media kit. Routes stay.
- * Do not invent a last-snapshot.
+ * leftover-cad-change-radar extras stay. leftover-export-oauth extras stay.
+ * leftover-fmea-boards extras stay. leftover-offline extras and leftover-hub
+ * extras stay off leftover-cad-change-radar FILES — do not gold leftover-hub
+ * + leftover-offline pairs together. Do not invent a last-snapshot.
  */
 const FILES = [
   "app/wiring-diagnoser/wiring-diagnoser-client.tsx",

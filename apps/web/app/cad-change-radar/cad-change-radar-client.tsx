@@ -563,7 +563,7 @@ function SnapshotForm({
       <span className="biz-overline">Record a revision</span>
       <h2>Log part-revision snapshot</h2>
       <p className="app-muted ccr-form-hint">
-        Normally pushed by the Onshape release webhook — record manually to backfill or test.
+        Onshape usually sends new revisions here — record one by hand to backfill or test.
       </p>
       <FormGrid min={160}>
         <FormRow label="Part key">
