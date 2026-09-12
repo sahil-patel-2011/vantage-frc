@@ -314,7 +314,7 @@ export default function ReviewsClient() {
         {header}
         <OfflineBanner feature="Design reviews" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
-          title={failure ? failure.title : "Loading…"}
+          title={failure ? failure.title : "Opening Design reviews"}
           description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >

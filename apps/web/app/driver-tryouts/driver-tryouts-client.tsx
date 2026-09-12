@@ -257,7 +257,7 @@ export default function DriverTryoutsClient() {
 
       {!view ? (
         <EmptyState
-          title={failure ? failure.title : "Loading…"}
+          title={failure ? failure.title : "Opening Driver tryouts"}
           description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >

@@ -302,7 +302,7 @@ export default function MeetingAutopilotClient() {
         {header}
         <OfflineBanner feature="Meeting agenda" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
-          title={failure ? failure.title : "Loading…"}
+          title={failure ? failure.title : "Opening Meeting agenda"}
           description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >
