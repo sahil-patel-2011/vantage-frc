@@ -242,7 +242,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "bottom-island",
     slug: "bottom-island",
-    title: "Customize the bottom island",
+    title: "Bottom island",
     summary:
       "Four apps sit in a floating island at the bottom — Home, Compete, Team, and Build by default.",
     category: "getting-started",
@@ -911,7 +911,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "hub-access",
     slug: "hub-access",
-    title: "Limit hub access for scouts and viewers",
+    title: "Hub access",
     summary:
       "Owners and admins restrict Vantage pillars and tabs per member from Team security — unrestricted by default.",
     category: "account-access",
@@ -1051,7 +1051,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "season-finance",
     slug: "season-finance",
-    title: "Season finance desk",
+    title: "Season finance",
     summary:
       "Plan school funds, fees, grants, sponsors, and fundraisers, then log receipts — totals stay blank until real rows exist.",
     category: "business",
@@ -1135,7 +1135,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "funding-profile",
     slug: "funding-profile",
-    title: "Team funding profile and sponsor tools",
+    title: "Team funding",
     summary:
       "Affiliation and funding paths shape Business Vantage — teams that disallow sponsors hide sponsor destinations.",
     category: "business",
