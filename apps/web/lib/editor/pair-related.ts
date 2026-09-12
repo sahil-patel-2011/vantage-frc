@@ -146,7 +146,7 @@ export function pairShellCopy(kind: PairShellKind): PairEmptyCopy {
     case "loading":
       return {
         kind,
-        title: "Loading Pair VS Code…",
+        title: "Opening Pair VS Code…",
         description:
           "Checking which team you are on and real paired editors.",
       };

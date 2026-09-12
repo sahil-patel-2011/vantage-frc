@@ -131,14 +131,14 @@ export function robotWeighInShellCopy(kind: RobotWeighInShellKind): RobotWeighIn
     case "loading":
       return {
         kind,
-        title: "Loading Robot Weigh-In…",
+        title: "Opening Weigh-in…",
         description: "Checking which team you are on and scale readings.",
       };
     case "error":
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Robot Weigh-In",
+        title: "Could not load Weigh-in",
         description:
           "A network or server issue blocked weigh-ins. Retry, or open Readiness while it reloads.",
       };
@@ -190,7 +190,7 @@ export function robotWeighInNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Robot Weigh-In",
+        label: "Retry Weigh-in",
         detail: "Reload real scale readings.",
         href: withOrgHref("/robot-weigh-in", orgId),
         primary: true,
