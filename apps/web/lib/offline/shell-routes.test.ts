@@ -298,7 +298,7 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/hours-self-view")).toBe("My Hours");
     expect(offlineCapableLabel("/hours")).toBe("Hours");
     expect(offlineCapableLabel("/grant-eligibility-matcher")).toBe("Grant Eligibility Matcher");
-    expect(offlineCapableLabel("/knowledge-gap")).toBe("Knowledge-gap detective");
+    expect(offlineCapableLabel("/knowledge-gap")).toBe("Knowledge gaps");
     expect(offlineCapableLabel("/matching-gift-finder")).toBe("Matching Gift Finder");
     expect(offlineCapableLabel("/onboarding-buddy")).toBe("Onboarding Buddy");
     expect(offlineCapableLabel("/risk-burndown")).toBe("Risk-Register Burndown");

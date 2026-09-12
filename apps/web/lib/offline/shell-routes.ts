@@ -377,7 +377,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/decisions")) return "Decision Log";
   if (bare.startsWith("/failure-patterns")) return "Repeat Failure Patterns";
   if (bare.startsWith("/grant-eligibility-matcher")) return "Grant Eligibility Matcher";
-  if (bare.startsWith("/knowledge-gap")) return "Knowledge-gap detective";
+  if (bare.startsWith("/knowledge-gap")) return "Knowledge gaps";
   if (bare.startsWith("/matching-gift-finder")) return "Matching Gift Finder";
   if (bare.startsWith("/onboarding-buddy")) return "Onboarding Buddy";
   if (bare.startsWith("/risk-burndown")) return "Risk-Register Burndown";

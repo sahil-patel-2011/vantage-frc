@@ -75,7 +75,7 @@ async function persistKnowledgeGapSnapshot(
     await putFeatureSnapshot("knowledge-gap", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("knowledge-gap", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Knowledge-gap detective already painted; IndexedDB is best-effort.
+    // Live Knowledge gaps already painted; IndexedDB is best-effort.
   }
 }
 
@@ -146,10 +146,10 @@ function GapShell({
         breadcrumbs={
           <>
             <a href={teamHref}>Team</a>
-            {" / Knowledge-gap detective"}
+            {" / Knowledge gaps"}
           </>
         }
-        title="Knowledge-gap detective"
+        title="Knowledge gaps"
         description={description}
       >
         <RelatedStrip orgId={orgId} />
@@ -237,7 +237,7 @@ export default function KnowledgeGapClient() {
         if (!response.ok || !isKnowledgeGapView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Knowledge-gap detective. Showing the last copy on this device.");
+            setError("Could not refresh Knowledge gaps. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -252,7 +252,7 @@ export default function KnowledgeGapClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Knowledge-gap detective. Showing the last copy on this device.");
+          setError("Could not refresh Knowledge gaps. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -322,7 +322,7 @@ export default function KnowledgeGapClient() {
   if (shell === "loading") {
     return (
       <GapShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Knowledge-gap detective" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Knowledge gaps" fromCache={fromCache} cachedAt={cachedAt} />
       </GapShell>
     );
   }
@@ -335,7 +335,7 @@ export default function KnowledgeGapClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Knowledge-gap detective" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Knowledge gaps" fromCache={fromCache} cachedAt={cachedAt} />
       </GapShell>
     );
   }
@@ -346,7 +346,7 @@ export default function KnowledgeGapClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Knowledge-gap detective" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Knowledge gaps" fromCache={fromCache} cachedAt={cachedAt} />
       </GapShell>
     );
   }
@@ -357,10 +357,10 @@ export default function KnowledgeGapClient() {
         breadcrumbs={
           <>
             <a href={teamHref}>Team</a>
-            {" / Knowledge-gap detective"}
+            {" / Knowledge gaps"}
           </>
         }
-        title="Knowledge-gap detective"
+        title="Knowledge gaps"
         description="Finds build work that has no write-up yet, by comparing the wiki against to-dos, build tasks, and milestones."
       >
         <div className="kg-header-actions">
@@ -390,7 +390,7 @@ export default function KnowledgeGapClient() {
         </div>
       </PageHeader>
 
-      <OfflineBanner feature="Knowledge-gap detective" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Knowledge gaps" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

@@ -179,7 +179,7 @@ export function buildStubPageBody(input: {
         ? `## To-do: ${input.subjectRef}`
         : `## Milestone: ${input.subjectRef}`;
   return [
-    "_Stub page drafted by Knowledge-gap detective — fill this in._",
+    "_Stub page drafted from Knowledge gaps — fill this in._",
     "",
     heading,
     "",
