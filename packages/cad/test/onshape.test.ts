@@ -202,6 +202,7 @@ describe("Onshape feature-tree explain + export plan", () => {
       { autoRunVerify: true, includeExport: "step" },
     );
     expect(plan.map((s) => s.operation)).toEqual([
+      "create_drawing",
       "create_sketch",
       "create_extrude",
       "verify_topology",
@@ -563,6 +564,41 @@ describe("Onshape export + transport (mocked HTTP)", () => {
     }
     expect(message).toMatch(/Rollback of onshape-cp-abc123 is not a native Onshape action in Vantage/);
     expect(message.toLowerCase()).not.toContain("featurescript");
+  });
+
+  it("creates a Drawing tab first and refuses invented success ids", async () => {
+    const paths: string[] = [];
+    const http: OnshapeHttp = vi.fn(async (path: string, init?: RequestInit) => {
+      paths.push(`${init?.method ?? "GET"} ${path}`);
+      if (path === "/drawings/d/d1/w/w1" && init?.method === "POST") {
+        return Response.json({ id: "drw-1" });
+      }
+      return Response.json({ message: "unexpected request" }, { status: 404 });
+    }) as unknown as OnshapeHttp;
+    const transport = createOnshapeApiTransport({
+      http,
+      document: { documentId: "d1", workspaceId: "w1", elementId: "ps-1" },
+    });
+    const drawing = await transport.mutate({
+      operation: "create_drawing",
+      parameters: { name: "Detail drawing", widthMm: 80, heightMm: 40, depthMm: 6 },
+      idempotencyKey: "job-draw:1:drawing",
+    });
+    expect(drawing.featureId).toBe("drw-1");
+    expect(paths).toEqual(["POST /drawings/d/d1/w/w1"]);
+
+    const failing: OnshapeHttp = vi.fn(async () => new Response("no drawing", { status: 400 })) as unknown as OnshapeHttp;
+    const failTransport = createOnshapeApiTransport({
+      http: failing,
+      document: { documentId: "d1", workspaceId: "w1", elementId: "ps-1" },
+    });
+    await expect(
+      failTransport.mutate({
+        operation: "create_drawing",
+        parameters: { name: "Detail drawing" },
+        idempotencyKey: "job-draw:2:drawing",
+      }),
+    ).rejects.toThrow(/Create Drawing failed \(HTTP 400\)/);
   });
 
   it("creates and verifies native assemblies and mates without FeatureScript", async () => {

@@ -371,6 +371,7 @@ export async function POST(request: Request) {
         const promptCachingEnabled = await getOrgPromptCachingEnabled(client, orgId);
         const adapter = await resolveOrgChatAdapter(client, {
           orgId,
+          userId: session.user.id,
           promptCachingEnabled,
           feature: "cad",
           bridgeTransport: createBridgeTransport(),

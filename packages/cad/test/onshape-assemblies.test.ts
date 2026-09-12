@@ -2,6 +2,9 @@ import { describe, expect, it, vi } from "vitest";
 import {
   addOnshapeAssemblyInstance,
   createOnshapeAssembly,
+  annotateOnshapeDrawing,
+  createOnshapeDrawing,
+  createOnshapeDrawingViews,
   createOnshapeMate,
   createOnshapePartStudio,
   getOnshapeBodyDetails,
@@ -29,6 +32,61 @@ describe("native Onshape part and assembly payloads", () => {
       "/partstudios/d/d1/w/w1",
       "/assemblies/d/d1/w/w1",
     ]);
+  });
+
+  it("creates a Drawing tab without inventing an element id", async () => {
+    const paths: string[] = [];
+    const http: OnshapeNativeHttp = vi.fn(async (path) => {
+      paths.push(path);
+      return Response.json({ id: "drw-1" });
+    });
+    await expect(
+      createOnshapeDrawing(http, { documentId: "d1", workspaceId: "w1", name: "Detail drawing" }),
+    ).resolves.toEqual({ elementId: "drw-1", name: "Detail drawing" });
+    expect(paths).toEqual(["/drawings/d/d1/w/w1"]);
+    const failing: OnshapeNativeHttp = vi.fn(async () => new Response("no drawing", { status: 400 }));
+    await expect(
+      createOnshapeDrawing(failing, { documentId: "d1", workspaceId: "w1", name: "Detail drawing" }),
+    ).rejects.toThrow(/Create Drawing failed \(HTTP 400\)/);
+  });
+
+  it("adds drawing views and labels without inventing ids", async () => {
+    const paths: string[] = [];
+    const http: OnshapeNativeHttp = vi.fn(async (path) => {
+      paths.push(path);
+      return Response.json({ id: "drw-1" });
+    });
+    await expect(
+      createOnshapeDrawingViews(http, {
+        documentId: "d1",
+        workspaceId: "w1",
+        elementId: "drw-1",
+        views: ["front", "top"],
+      }),
+    ).resolves.toEqual({ elementId: "drw-1", views: ["front", "top"] });
+    await expect(
+      annotateOnshapeDrawing(http, {
+        documentId: "d1",
+        workspaceId: "w1",
+        elementId: "drw-1",
+        notes: ["Width: 80 mm"],
+        callouts: [{ label: "Width", valueMm: 80, view: "front" }],
+      }),
+    ).resolves.toMatchObject({ elementId: "drw-1", notes: ["Width: 80 mm"] });
+    expect(paths).toEqual([
+      "/drawings/d/d1/w/w1/e/drw-1/views",
+      "/drawings/d/d1/w/w1/e/drw-1/annotations",
+    ]);
+    const failing: OnshapeNativeHttp = vi.fn(async () => new Response("no labels", { status: 400 }));
+    await expect(
+      annotateOnshapeDrawing(failing, {
+        documentId: "d1",
+        workspaceId: "w1",
+        elementId: "drw-1",
+        notes: ["Width: 80 mm"],
+        callouts: [],
+      }),
+    ).rejects.toThrow(/Label Drawing failed \(HTTP 400\)/);
   });
 
   it("reads native body details and inserts a specific part", async () => {

@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { CadOperation } from "./agent-policy";
 import { CAD_TOOL_CATALOG, cadToolInputSchema, cadToolSpec, cadToolSupportMatrix } from "./cad-tool-catalog";
+import { planDrawingPack } from "./drawing-pack";
 import { assertFusionRelayParity, FUSION_RELAY_PROTOCOL_VERSION, signFusionRelayJob } from "./fusion-relay";
 import {
   bindClaudeCadSession,
@@ -23,7 +24,10 @@ import {
 } from "./onshape-api-keys";
 import {
   addOnshapeAssemblyInstance,
+  annotateOnshapeDrawing,
   createOnshapeAssembly,
+  createOnshapeDrawing,
+  createOnshapeDrawingViews,
   createOnshapeMate,
   createOnshapePartStudio,
   getOnshapeAssembly,
@@ -464,6 +468,136 @@ export async function callClaudeCadTool(
         narration: {
           title: `Created and bound Part Studio “${created.name}”`,
           detail: `element ${created.elementId}`,
+        } satisfies CadToolNarration,
+      };
+    }
+    case "onshape_create_drawing": {
+      const http = await getHttp(runtime);
+      const session = await getSession(runtime);
+      const documentId = str(args.documentId) || session.documentId || "";
+      const workspaceId = str(args.workspaceId) || session.workspaceId || "";
+      const name = str(args.name) || "Detail drawing";
+      const created = await createOnshapeDrawing(http, { documentId, workspaceId, name });
+      return {
+        ok: true,
+        operation: "create_drawing",
+        documentId,
+        workspaceId,
+        elementId: created.elementId,
+        name: created.name,
+        widthMm: args.widthMm,
+        heightMm: args.heightMm,
+        depthMm: args.depthMm,
+        featureScriptUsed: false,
+        narration: {
+          title: `Made drawing “${created.name}”`,
+          detail: `element ${created.elementId} · cast the solid from these millimetres`,
+        } satisfies CadToolNarration,
+      };
+    }
+    case "onshape_drawing_views": {
+      const http = await getHttp(runtime);
+      const session = await getSession(runtime);
+      const doc = requireBoundDocument(session);
+      const views = Array.isArray(args.views) ? args.views.map((view) => String(view)) : [];
+      const created = await createOnshapeDrawingViews(http, {
+        documentId: doc.documentId,
+        workspaceId: doc.workspaceId,
+        elementId: str(args.drawingElementId),
+        views,
+      });
+      return {
+        ok: true,
+        operation: "create_drawing",
+        elementId: created.elementId,
+        views: created.views,
+        featureScriptUsed: false,
+        narration: {
+          title: "Added drawing views",
+          detail: created.views.join(", "),
+        } satisfies CadToolNarration,
+      };
+    }
+    case "onshape_drawing_notes": {
+      const http = await getHttp(runtime);
+      const session = await getSession(runtime);
+      const doc = requireBoundDocument(session);
+      const notes = Array.isArray(args.notes) ? args.notes.map((note) => String(note)) : [];
+      const callouts = Array.isArray(args.callouts)
+        ? args.callouts.flatMap((entry) => {
+            if (!entry || typeof entry !== "object" || Array.isArray(entry)) return [];
+            const record = entry as Record<string, unknown>;
+            const valueMm = Number(record.valueMm);
+            const label = String(record.label ?? "").trim();
+            if (!label || !Number.isFinite(valueMm) || valueMm <= 0) return [];
+            return [{ label, valueMm, view: record.view ? String(record.view) : undefined }];
+          })
+        : [];
+      const labeled = await annotateOnshapeDrawing(http, {
+        documentId: doc.documentId,
+        workspaceId: doc.workspaceId,
+        elementId: str(args.drawingElementId),
+        notes,
+        callouts,
+      });
+      return {
+        ok: true,
+        operation: "label_drawing",
+        elementId: labeled.elementId,
+        notes: labeled.notes,
+        callouts: labeled.callouts,
+        featureScriptUsed: false,
+        narration: {
+          title: "Labeled the drawing",
+          detail: `${labeled.notes.length} notes · ${labeled.callouts.length} sizes`,
+        } satisfies CadToolNarration,
+      };
+    }
+    case "onshape_drawing_pack": {
+      const sheets = planDrawingPack({
+        partName: str(args.name) || "Part",
+        dims: {
+          ...(typeof args.widthMm === "number" ? { widthMm: args.widthMm } : {}),
+          ...(typeof args.heightMm === "number" ? { heightMm: args.heightMm } : {}),
+          ...(typeof args.depthMm === "number" ? { depthMm: args.depthMm } : {}),
+        },
+        briefSummary: str(args.briefSummary),
+      });
+      const http = await getHttp(runtime);
+      const session = await getSession(runtime);
+      const documentId = str(args.documentId) || session.documentId || "";
+      const workspaceId = str(args.workspaceId) || session.workspaceId || "";
+      const created: Array<{ name: string; elementId: string }> = [];
+      for (const sheet of sheets) {
+        const drawing = await createOnshapeDrawing(http, { documentId, workspaceId, name: sheet.name });
+        if (sheet.views.length) {
+          await createOnshapeDrawingViews(http, {
+            documentId,
+            workspaceId,
+            elementId: drawing.elementId,
+            views: sheet.views,
+          });
+        }
+        if (sheet.notes.length || sheet.callouts.length) {
+          await annotateOnshapeDrawing(http, {
+            documentId,
+            workspaceId,
+            elementId: drawing.elementId,
+            notes: sheet.notes,
+            callouts: sheet.callouts,
+          });
+        }
+        created.push({ name: drawing.name, elementId: drawing.elementId });
+      }
+      return {
+        ok: true,
+        operation: "create_drawing",
+        sheets: created,
+        pack: sheets,
+        featureScriptUsed: false,
+        narration: {
+          title: `Made ${created.length} labeled drawing${created.length === 1 ? "" : "s"}`,
+          detail: created.map((sheet) => sheet.name).join(" · "),
         } satisfies CadToolNarration,
       };
     }

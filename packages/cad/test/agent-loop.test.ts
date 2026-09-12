@@ -37,6 +37,14 @@ describe("CAD mock agent loop", () => {
     expect(result.steps.some((step) => step.status === "completed")).toBe(true);
   });
 
+  it("keeps personal Claude Code metering at cost 0 with key_source local_cli", () => {
+    expect(resolveCadMetering("claude_code_personal")).toEqual({
+      keySource: "local_cli",
+      costUsd: 0,
+      billing: expect.stringMatching(/local_cli|No Vantage/i),
+    });
+  });
+
   it("halts mutations when approvals are withheld", async () => {
     const result = await runMockCadAgentLoop({
       request: "Need human gate",
