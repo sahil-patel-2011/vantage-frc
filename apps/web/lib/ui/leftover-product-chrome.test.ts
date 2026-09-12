@@ -98,6 +98,12 @@ describe("leftover-product student chrome", () => {
     expect(printChrome).not.toMatch(/title="3D Print Farm"/);
     const inspection = readFileSync(join(WEB, "app/inspection/inspection-client.tsx"), "utf8");
     expect(inspection).not.toMatch(/Inspection copilot/);
+    const usage = readFileSync(join(WEB, "app/team/usage/usage-client.tsx"), "utf8");
+    expect(usage).toMatch(/local_cli: "This computer"/);
+    expect(usage).not.toMatch(/Local CLI/);
+    const keysUsage = readFileSync(join(WEB, "app/team/ai-usage/ai-usage-client.tsx"), "utf8");
+    expect(keysUsage).toMatch(/local_cli: "This computer"/);
+    expect(keysUsage).not.toMatch(/Local CLI/);
   });
 
   it("Playbook last snapshot uses if (!view) and related stays Team chat / FMEA / Decisions", () => {
