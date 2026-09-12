@@ -119,8 +119,7 @@
   gap: 8px;
 }
 
-.ai-keys-actions .primary-action,
-.ai-keys-actions .danger-action {
+.ai-keys-actions .app-button {
   min-height: 44px;
   padding: 0 12px;
   border-radius:var(--radius-sm);

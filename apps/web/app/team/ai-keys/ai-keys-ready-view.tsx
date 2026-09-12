@@ -351,17 +351,17 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
                   />
                 </label>
                 <div className="ai-keys-actions">
-                  <button className="primary-action" type="submit" disabled={busyLocal || !localDraft.baseUrl.trim()}>
+                  <Button variant="primary" type="submit" disabled={busyLocal || !localDraft.baseUrl.trim()}>
                     Save connector
-                  </button>
+                  </Button>
                   {payload.localConnector?.configured ? (
                     <>
-                      <button type="button" disabled={busyLocal} onClick={() => void testLocal()}>
+                      <Button variant="secondary" type="button" disabled={busyLocal} onClick={() => void testLocal()}>
                         Test connection
-                      </button>
-                      <button className="danger-action" type="button" disabled={busyLocal} onClick={() => void removeLocal()}>
+                      </Button>
+                      <Button variant="danger" type="button" disabled={busyLocal} onClick={() => void removeLocal()}>
                         Remove
-                      </button>
+                      </Button>
                     </>
                   ) : null}
                 </div>
@@ -491,9 +491,9 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
                 )}
 
                 <div className="ai-keys-actions">
-                  <button className="primary-action" type="submit" disabled={busyRouting}>
+                  <Button variant="primary" type="submit" disabled={busyRouting}>
                     Save routing
-                  </button>
+                  </Button>
                 </div>
               </form>
             ) : null}
@@ -562,9 +562,9 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
                 ) : null}
 
                 <div className="ai-keys-actions">
-                  <button className="primary-action" type="submit" disabled={busyPolicy}>
+                  <Button variant="primary" type="submit" disabled={busyPolicy}>
                     Save policy
-                  </button>
+                  </Button>
                 </div>
               </form>
             </section>

@@ -658,9 +658,9 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
             </div>
 
             <div className="ai-governance-policy-actions">
-              <button className="primary-action" disabled={saving} type="submit">
+              <Button variant="primary" disabled={saving} type="submit">
                 {saving ? "Saving…" : "Save AI governance policy"}
-              </button>
+              </Button>
               <Button as="a" variant="secondary" href={chatHref}>
                 Open Chat
               </Button>
@@ -718,16 +718,12 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
                   </small>
                   <small>{new Date(approval.createdAt).toLocaleString()}</small>
                   <div className="ai-governance-approval-actions">
-                    <button
-                      type="button"
-                      className="primary-action"
-                      onClick={() => void decide(approval.id, "approve")}
-                    >
+                    <Button variant="primary" type="button" onClick={() => void decide(approval.id, "approve")}>
                       Approve
-                    </button>
-                    <button type="button" onClick={() => void decide(approval.id, "deny")}>
+                    </Button>
+                    <Button variant="secondary" type="button" onClick={() => void decide(approval.id, "deny")}>
                       Deny
-                    </button>
+                    </Button>
                     {approval.runId ? <a href={runsHref}>View runs</a> : null}
                   </div>
                 </article>
@@ -757,12 +753,12 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
               call.
             </p>
             <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginTop: "1rem" }}>
-              <button type="button" className="primary-action" onClick={acceptFinanceRisks}>
+              <Button variant="primary" type="button" onClick={acceptFinanceRisks}>
                 Accept and enable
-              </button>
-              <button type="button" onClick={dismissFinanceRisks}>
+              </Button>
+              <Button variant="secondary" type="button" onClick={dismissFinanceRisks}>
                 Cancel
-              </button>
+              </Button>
             </div>
           </div>
         </div>

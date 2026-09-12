@@ -6,8 +6,8 @@ const WEB = join(__dirname, "..", "..");
 
 /**
  * Leftover student chrome: Code coach, Discord, Support, Team profile,
- * and Chat limits still used className="primary-action". Discord also
- * printed lowercase setup required on the posting-path row.
+ * Chat limits, and Team AI keys / memory / policy still used
+ * className="primary-action". Discord also printed lowercase setup required.
  */
 const FILES = [
   "app/code/code-coach-panel.tsx",
@@ -16,6 +16,11 @@ const FILES = [
   "app/support/support-tickets-client.tsx",
   "app/team/team-profile-panel.tsx",
   "app/team/budgets/budget-client.tsx",
+  "app/team/ai-keys/ai-keys-provider-card.tsx",
+  "app/team/ai-keys/ai-keys-ready-view.tsx",
+  "app/team/ai-keys/ai-keys.css",
+  "app/team/ai-memory/ai-memory-client.tsx",
+  "app/team/ai-policy/ai-policy-client.tsx",
 ] as const;
 
 describe("leftover student Button chrome", () => {
