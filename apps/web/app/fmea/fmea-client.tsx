@@ -275,7 +275,7 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
         <OfflineBanner feature="Failure log" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
-          title={failure ? failure.title : "Loading failure log…"}
+          title={failure ? failure.title : "Opening Failure log"}
           description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >

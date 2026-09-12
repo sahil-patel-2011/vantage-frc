@@ -222,7 +222,7 @@ export default function SecurityClient({
         <OfflineBanner feature="Security" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
-          title={failure ? failure.title : "Loading security…"}
+          title={failure ? failure.title : "Opening Security"}
           description={failure ? failure.description : "Checking authenticator enrollment and remembered devices."}
           aria-busy={!fetchFailed}
         >
