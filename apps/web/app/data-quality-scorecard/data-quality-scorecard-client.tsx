@@ -328,7 +328,7 @@ export default function DataQualityScorecardClient() {
         {header}
         <OfflineBanner feature="Data quality" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
-          title={failure ? failure.title : "Loading…"}
+          title={failure ? failure.title : "Opening Data quality"}
           description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >

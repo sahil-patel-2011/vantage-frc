@@ -194,8 +194,8 @@ export default function MatchDebriefClient({ orgId }: { orgId: string | null }) 
         <OfflineBanner feature="Match debrief" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
-          title={failure ? failure.title : "Loading match log…"}
-          description={failure ? failure.description : undefined}
+          title={failure ? failure.title : "Opening Match debrief"}
+          description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >
           {failure?.primary ? (

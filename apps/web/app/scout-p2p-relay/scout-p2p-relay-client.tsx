@@ -308,7 +308,7 @@ export default function ScoutP2pRelayClient() {
         {header}
         <OfflineBanner feature="Pit link" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
-          title={failure ? failure.title : "Loading…"}
+          title={failure ? failure.title : "Opening Pit link"}
           description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >

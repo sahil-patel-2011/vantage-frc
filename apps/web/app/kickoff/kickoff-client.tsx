@@ -163,12 +163,12 @@ export default function KickoffClient(_props: { embedded?: boolean } = {}) {
       : null;
     return (
       <main className="module-page kick-page">
-        <PageHeader breadcrumbs={crumbs} title="Kickoff & Game Analysis" />
+        <PageHeader breadcrumbs={crumbs} title="Kickoff" />
         <OfflineBanner feature="Kickoff" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
-          title={failure ? failure.title : "Loading kickoff analysis…"}
-          description={failure ? failure.description : undefined}
+          title={failure ? failure.title : "Opening Kickoff"}
+          description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >
           {failure?.primary ? (
@@ -191,7 +191,7 @@ export default function KickoffClient(_props: { embedded?: boolean } = {}) {
       <main className="module-page kick-page">
         <PageHeader
           breadcrumbs={crumbs}
-          title="Kickoff & Game Analysis"
+          title="Kickoff"
           description="Break the new game into scoring actions, rank them by value, and lock the design priorities."
         />
         <BuildHubRelated active="kickoff" include={[...KICKOFF_BUILD_RELATED_INCLUDE]} />
@@ -222,7 +222,7 @@ export default function KickoffClient(_props: { embedded?: boolean } = {}) {
     <main className="module-page kick-page">
       <PageHeader
         breadcrumbs={crumbs}
-        title="Kickoff & Game Analysis"
+        title="Kickoff"
         description={
           <>
             Start from the {year} manual and kickoff transcript for {view.context.orgName ?? "your team"}
