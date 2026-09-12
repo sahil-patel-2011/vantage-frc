@@ -1,7 +1,7 @@
 import LeadershipClient from "./leadership-client";
 
 export const metadata = {
-  title: "Leadership Continuity",
+  title: "Leadership",
 };
 
 export default function LeadershipPage() {

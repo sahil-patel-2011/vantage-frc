@@ -6,7 +6,7 @@ import { withOrgHref } from "../nav/product-nav";
 export const EQUIPMENT_MAINTENANCE_RELATED_LINKS = [
   { id: "tool-checkout", label: "Tool Checkout", tab: "tool-checkout" },
   { id: "safety-training", label: "Safety Training", tab: "safety-training" },
-  { id: "checklist-library", label: "Checklist Library", tab: "checklist-library" },
+  { id: "checklist-library", label: "Checklists", tab: "checklist-library" },
   { id: "pit-map-planner", label: "Pit Map", tab: "pit-map-planner" },
 ] as const;
 
@@ -187,7 +187,7 @@ export function equipmentMaintenanceNextActions(input: {
       },
       {
         id: "checklists",
-        label: "Open Checklist Library",
+        label: "Open Checklists",
         detail: "Checklists stay available while maintenance reloads.",
         href: hubHref("/team", "checklist-library", orgId),
       },

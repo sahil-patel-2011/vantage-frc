@@ -8,7 +8,7 @@ export const KNOWLEDGE_RELATED_LINKS = [
   { id: "cad", label: "CAD", kind: "build" as const, tab: "cad" },
   { id: "decisions", label: "Decisions", kind: "path" as const, path: "/decisions" },
   { id: "assistant", label: "FRC Assistant", kind: "path" as const, path: "/chat" },
-  { id: "getting-started", label: "Getting started", kind: "path" as const, path: "/team/getting-started" },
+  { id: "getting-started", label: "Team setup", kind: "path" as const, path: "/team/getting-started" },
   { id: "knowledge-gap", label: "Knowledge gaps", kind: "path" as const, path: "/knowledge-gap" },
 ] as const;
 

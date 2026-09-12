@@ -51,7 +51,7 @@ async function persistChecklistLibrarySnapshot(
     await putFeatureSnapshot("checklist-library", cacheOrg, data);
     if (!orgHint) await putFeatureSnapshot("checklist-library", "_", data);
   } catch {
-    // Live Checklist Library already painted; IndexedDB is best-effort.
+    // Live Checklists already painted; IndexedDB is best-effort.
   }
 }
 
@@ -175,7 +175,7 @@ export default function ChecklistLibraryClient() {
       if (!response.ok || !isChecklistLibraryView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Checklist Library. Showing the last copy on this device.");
+          setError("Could not refresh Checklists. Showing the last copy on this device.");
           setFetchFailed(false);
           return;
         }
@@ -195,7 +195,7 @@ export default function ChecklistLibraryClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Checklist Library. Showing the last copy on this device.");
+        setError("Could not refresh Checklists. Showing the last copy on this device.");
         setFetchFailed(false);
         return;
       }
@@ -246,10 +246,10 @@ export default function ChecklistLibraryClient() {
       breadcrumbs={
         <>
           <a href={teamHref}>Team</a>
-          {" / Checklist Library"}
+          {" / Checklists"}
         </>
       }
-      title="Checklist Library"
+      title="Checklists"
       description="Store the team's SOP here. Opening a pit/match checklist writes a timed run on Event Day — this page does not keep a second copy."
     >
       <ChecklistLibraryRelated orgId={orgId} />
@@ -276,7 +276,7 @@ export default function ChecklistLibraryClient() {
     return (
       <main className="module-page">
         {header}
-        <OfflineBanner feature="Checklist Library" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Checklists" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           title={failure ? failure.title : "Loading…"}
           description={failure ? failure.description : "Checking your team."}
@@ -302,7 +302,7 @@ export default function ChecklistLibraryClient() {
       return (
         <main className="module-page">
           {header}
-          <OfflineBanner feature="Checklist Library" fromCache={fromCache} cachedAt={cachedAt} />
+          <OfflineBanner feature="Checklists" fromCache={fromCache} cachedAt={cachedAt} />
           {error ? (
             <p className="telemetry-status" role="alert">
               {error}
@@ -328,7 +328,7 @@ export default function ChecklistLibraryClient() {
   return (
     <main className="module-page">
       {header}
-      <OfflineBanner feature="Checklist Library" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Checklists" fromCache={fromCache} cachedAt={cachedAt} />
       {error ? (
         <p className="telemetry-status" role="alert">
           {error}

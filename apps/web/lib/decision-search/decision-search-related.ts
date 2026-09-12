@@ -6,7 +6,7 @@ export const DECISION_SEARCH_RELATED_LINKS = [
   { id: "season-report", label: "Season Report", kind: "ai" as const, tab: "season-report" },
   { id: "knowledge", label: "Knowledge", kind: "team" as const, tab: "knowledge" },
   { id: "strategy", label: "Strategy", kind: "path" as const, path: "/strategy" },
-  { id: "decisions", label: "Decision Log", kind: "path" as const, path: "/decisions" },
+  { id: "decisions", label: "Decision notes", kind: "path" as const, path: "/decisions" },
   { id: "chat", label: "Chat", kind: "ai" as const, tab: "chat" },
   { id: "budgets", label: "Budgets", kind: "ai" as const, tab: "budgets" },
 ] as const;
@@ -129,7 +129,7 @@ export function decisionSearchShellCopy(kind: DecisionSearchShellKind): Decision
         badge: "No documents indexed",
         title: "Index your first record",
         description:
-          "Search stays blank until you index real decisions or import from the Decision Log. Season Report, Knowledge, and Strategy stay linked for context.",
+          "Search stays blank until you index real decisions or import from Decision notes. Season Report, Knowledge, and Strategy stay linked for context.",
       };
     default:
       return {
@@ -249,8 +249,8 @@ export function decisionSearchNextActions(input: {
       },
       {
         id: "import",
-        label: "Import Decision Log",
-        detail: "Pull this season’s Decision Log into the index — grounded fields only.",
+        label: "Import Decision notes",
+        detail: "Pull this season’s Decision notes into the index — grounded fields only.",
         href: "#decision-search-index",
       },
       {

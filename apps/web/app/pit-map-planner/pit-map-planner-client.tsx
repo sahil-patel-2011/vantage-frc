@@ -100,7 +100,7 @@ export default function PitMapPlannerClient() {
         if (!response.ok || !isPitMapPlannerView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Pit Map Planner. Showing the last copy on this device.");
+            setError("Could not refresh Pit map. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setErrorStatus(response.status);
@@ -117,7 +117,7 @@ export default function PitMapPlannerClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Pit Map Planner. Showing the last copy on this device.");
+          setError("Could not refresh Pit map. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -165,10 +165,10 @@ export default function PitMapPlannerClient() {
         breadcrumbs={
           <>
             <a href={orgId ? `/team?orgId=${encodeURIComponent(orgId)}` : "/team"}>Team</a>
-            {" / Pit Map Planner"}
+            {" / Pit map"}
           </>
         }
-        title="Pit Map Planner"
+        title="Pit map"
         description="Plan the pit footprint, power budget, and tool placement — a printable map before you pack for the event."
       >
         {view?.status === "live" && view.seasons.length > 0 ? (
@@ -191,7 +191,7 @@ export default function PitMapPlannerClient() {
           </label>
         ) : null}
       </PageHeader>
-      <OfflineBanner feature="Pit Map Planner" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Pit map" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -231,7 +231,7 @@ export default function PitMapPlannerClient() {
           );
         })()
       ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your team." aria-busy />
+        <EmptyState title="Opening Pit map" description="Checking your team." aria-busy />
       ) : view.status === "setup_required" ? (
         <EmptyState badge="Needs setup" badgeTone="setup" title={view.message}>
           {view.steps[0] ? (

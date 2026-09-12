@@ -254,7 +254,7 @@ export function computeTeamHealthReadiness(summary: TeamHealthSummary): TeamHeal
     recommendations.push("Attendance coverage is low — take roll call at the next meeting or build.");
   }
   if (summary.hoursParticipation != null && summary.hoursParticipation < 0.5) {
-    recommendations.push("Few members have clocked hours — open the shop kiosk or My Hours.");
+    recommendations.push("Few members have clocked hours — open the shop kiosk or My hours.");
   }
   if (summary.entryCount === 0 && summary.hourSessionCount > 0) {
     recommendations.push("Hours are logged but attendance is empty — take roll call so presence is counted.");

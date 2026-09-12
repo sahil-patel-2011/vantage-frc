@@ -7,7 +7,7 @@ export const FIELD_RESET_TIMER_RELATED_LINKS = [
   { id: "practice", label: "Practice", hub: "/team" as const, tab: "practice" },
   { id: "driver-tryouts", label: "Driver Tryouts", hub: "/team" as const, tab: "driver-tryouts" },
   { id: "drive-team-signals", label: "Drive-Team Signals", hub: "/competition" as const, tab: "drive-team-signals" },
-  { id: "hours-self-view", label: "My Hours", hub: "/team" as const, tab: "hours-self-view" },
+  { id: "hours-self-view", label: "My hours", hub: "/team" as const, tab: "hours-self-view" },
 ] as const;
 
 export type FieldResetTimerRelatedId = (typeof FIELD_RESET_TIMER_RELATED_LINKS)[number]["id"];

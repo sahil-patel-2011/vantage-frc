@@ -29,7 +29,7 @@ const OPEN_LABEL: Record<MyKitSectionId, string> = {
   duties: "Open Duties",
   scouting: "Open Lineup",
   media: "Open Media",
-  hours: "Open My Hours",
+  hours: "Open My hours",
   learning: "Open Learning",
   skills: "Open Skills",
   tools: "Open Tool checkout",
@@ -209,7 +209,7 @@ export default function MyKitClient() {
             My Day
           </Button>
           <Button as="a" variant="secondary" href={withOrgHref("/hours-self-view", orgId)}>
-            My Hours
+            My hours
           </Button>
           <Button as="a" variant="secondary" href={withOrgHref("/start", orgId)}>
             Getting started

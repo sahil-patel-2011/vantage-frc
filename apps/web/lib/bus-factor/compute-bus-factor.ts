@@ -30,7 +30,7 @@ function setupSteps(orgId: string | null): BusFactorSetupStep[] {
     },
     {
       id: "hours-self-view",
-      label: "Open My Hours",
+      label: "Open My hours",
       detail: "Clocked hours stay blank until members log shop time.",
       href: hubHref("/team", "hours-self-view", orgId),
     },

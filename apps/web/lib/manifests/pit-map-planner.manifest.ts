@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "pit-map-planner",
-  title: "Pit Map Planner",
+  title: "Pit map",
   route: "/pit-map-planner",
   apiRoute: "/api/pit-map-planner",
   hub: "Team",

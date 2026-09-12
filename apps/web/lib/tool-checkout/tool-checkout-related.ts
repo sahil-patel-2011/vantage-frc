@@ -6,7 +6,7 @@ import { withOrgHref } from "../nav/product-nav";
 export const TOOL_CHECKOUT_RELATED_LINKS = [
   { id: "equipment-maintenance", label: "Equipment Maintenance", tab: "equipment-maintenance" },
   { id: "training", label: "Training matrix", tab: "training" },
-  { id: "checklist-library", label: "Checklist Library", tab: "checklist-library" },
+  { id: "checklist-library", label: "Checklists", tab: "checklist-library" },
   { id: "safety-training", label: "Safety Training", tab: "safety-training" },
   { id: "pit-map-planner", label: "Pit Map", tab: "pit-map-planner" },
 ] as const;

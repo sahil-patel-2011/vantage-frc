@@ -196,7 +196,7 @@ async function persistGettingStartedSnapshot(orgHint: string, data: GettingStart
     await putFeatureSnapshot("getting-started", cacheOrg, data);
     if (!orgHint) await putFeatureSnapshot("getting-started", "_", data);
   } catch {
-    // Live Getting started already painted; IndexedDB is best-effort.
+    // Live Team setup already painted; IndexedDB is best-effort.
   }
 }
 
@@ -304,7 +304,7 @@ export default function GettingStartedClient({ orgId }: { orgId: string }) {
       if (!response.ok || !body || typeof body !== "object") {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setMessage("Could not refresh Getting started. Showing the last copy on this device.");
+          setMessage("Could not refresh Team setup. Showing the last copy on this device.");
           setFetchFailed(false);
           return;
         }
@@ -323,7 +323,7 @@ export default function GettingStartedClient({ orgId }: { orgId: string }) {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setMessage("Could not refresh Getting started. Showing the last copy on this device.");
+        setMessage("Could not refresh Team setup. Showing the last copy on this device.");
         setFetchFailed(false);
         return;
       }
@@ -368,7 +368,7 @@ export default function GettingStartedClient({ orgId }: { orgId: string }) {
       </PageHeader>
 
       <TeamOpsNav orgId={orgId} />
-      <OfflineBanner feature="Getting started" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Team setup" fromCache={fromCache} cachedAt={cachedAt} />
 
       {message ? (
         <p className="start-warn" role="status">

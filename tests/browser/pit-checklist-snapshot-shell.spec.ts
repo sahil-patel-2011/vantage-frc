@@ -8,7 +8,7 @@ test.beforeEach(async ({ context }) => {
 });
 
 const LEAVES = [
-  { path: "/checklist-library", heading: "Checklist Library" },
+  { path: "/checklist-library", heading: "Checklists" },
   { path: "/spares", heading: "Consumables & Spares" },
   { path: "/wiring-diagnoser", heading: "Wiring / Power Fault Diagnoser" },
   { path: "/reuse-advisor", heading: "Reuse Advisor" },

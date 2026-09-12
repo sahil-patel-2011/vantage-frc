@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "checklist-library",
-  title: "Checklist Library",
+  title: "Checklists",
   route: "/checklist-library",
   apiRoute: "/api/checklist-library",
   hub: "Team",

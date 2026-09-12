@@ -1,7 +1,7 @@
 import ChecklistLibraryClient from "./checklist-library-client";
 
 export const metadata = {
-  title: "Checklist Library",
+  title: "Checklists",
 };
 
 export default function ChecklistLibraryPage() {

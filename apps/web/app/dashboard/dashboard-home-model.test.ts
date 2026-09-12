@@ -77,7 +77,7 @@ describe("homeNowAction", () => {
       title: "You’re in the shop",
       detail: "Your hours are still running.",
       href: "/hours-self-view",
-      cta: "Open My Hours",
+      cta: "Open My hours",
     });
     expect(homeNowAction({ orgId: "org-1", openTodos: 3 }).title).toBe("3 things on your list");
     expect(homeNowAction({ orgId: "org-1" }).title).toBe("Nothing you have to do right now");

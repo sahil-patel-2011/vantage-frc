@@ -52,7 +52,7 @@ async function persistDecisionsSnapshot(
     await putFeatureSnapshot("decisions", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("decisions", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Decision Log already painted; IndexedDB is best-effort.
+    // Live Decision notes already painted; IndexedDB is best-effort.
   }
 }
 
@@ -136,10 +136,10 @@ function DecisionsShell({
           breadcrumbs={
             <>
               <a href={aiHref}>AI</a>
-              {" / Decision Log"}
+              {" / Decision notes"}
             </>
           }
-          title="Decision Log"
+          title="Decision notes"
           description={description}
         >
           <DecisionsRelatedStrip orgId={orgId} />
@@ -157,7 +157,7 @@ function DecisionsShell({
                 ? "No decisions yet"
                 : shell === "loading"
                   ? undefined
-                  : "Decision Log"
+                  : "Decision notes"
         }
         badgeTone={shell === "error" ? "demo" : "setup"}
         title={title}
@@ -243,7 +243,7 @@ export default function DecisionsClient() {
         if (!response.ok || !isDecisionsView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Decision Log. Showing the last copy on this device.");
+            setError("Could not refresh Decision notes. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -258,7 +258,7 @@ export default function DecisionsClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Decision Log. Showing the last copy on this device.");
+          setError("Could not refresh Decision notes. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -329,7 +329,7 @@ export default function DecisionsClient() {
         shell="loading"
         embedded={embedded}
       >
-        <OfflineBanner feature="Decision Log" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Decision notes" fromCache={fromCache} cachedAt={cachedAt} />
       </DecisionsShell>
     );
   }
@@ -345,7 +345,7 @@ export default function DecisionsClient() {
         onRetry={() => load()}
         embedded={embedded}
       >
-        <OfflineBanner feature="Decision Log" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Decision notes" fromCache={fromCache} cachedAt={cachedAt} />
       </DecisionsShell>
     );
   }
@@ -359,7 +359,7 @@ export default function DecisionsClient() {
         shell="setup"
         embedded={embedded}
       >
-        <OfflineBanner feature="Decision Log" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Decision notes" fromCache={fromCache} cachedAt={cachedAt} />
       </DecisionsShell>
     );
   }
@@ -373,7 +373,7 @@ export default function DecisionsClient() {
         shell="setup"
         embedded={embedded}
       >
-        <OfflineBanner feature="Decision Log" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Decision notes" fromCache={fromCache} cachedAt={cachedAt} />
       </DecisionsShell>
     );
   }
@@ -387,7 +387,7 @@ export default function DecisionsClient() {
         shell="setup"
         embedded={embedded}
       >
-        <OfflineBanner feature="Decision Log" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Decision notes" fromCache={fromCache} cachedAt={cachedAt} />
       </DecisionsShell>
     );
   }
@@ -431,17 +431,17 @@ export default function DecisionsClient() {
           breadcrumbs={
             <>
               <a href={aiHref}>AI</a>
-              {" / Decision Log"}
+              {" / Decision notes"}
             </>
           }
-          title="Decision Log"
+          title="Decision notes"
           description="Record the calls that shape your season — context, options, what you chose, and why. Institutional memory for next year."
         >
           {headerActions}
         </PageHeader>
       )}
 
-      <OfflineBanner feature="Decision Log" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Decision notes" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -484,7 +484,7 @@ function SummaryTiles({ view, loaded }: { view: LiveView; loaded: boolean }) {
     { label: "Superseded", value: formatDecisionsMetric(s.supersededCount, loaded) },
   ];
   return (
-    <Panel className="decision-log-coverage" aria-label="Decision Log summary">
+    <Panel className="decision-log-coverage" aria-label="Decision notes summary">
       <div className="decision-log-stats">
         <div>
           <span className={`app-badge ${s.total === 0 ? "setup" : "good"}`}>

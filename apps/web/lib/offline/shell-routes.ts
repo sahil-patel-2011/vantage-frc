@@ -293,7 +293,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/team/awards")) return "Awards";
   if (bare.startsWith("/team/background")) return "Team background";
   if (bare.startsWith("/team/discord")) return "Discord";
-  if (bare.startsWith("/team/getting-started")) return "Getting started";
+  if (bare.startsWith("/team/getting-started")) return "Team setup";
   if (bare.startsWith("/team/profile")) return "Team profile";
   if (bare.startsWith("/team/prompts")) return "Prompts";
   if (bare.startsWith("/team/security")) return "Team security";
@@ -315,7 +315,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/dashboard")) return "Home";
   if (bare.startsWith("/strategy/draft")) return "Alliance board";
   if (bare.startsWith("/strategy")) return "Strategy";
-  if (bare.startsWith("/hours-self-view")) return "My Hours";
+  if (bare.startsWith("/hours-self-view")) return "My hours";
   if (bare.startsWith("/hours/kiosk")) return "Hours kiosk";
   if (bare.startsWith("/hours")) return "Hours";
   if (bare.startsWith("/messages")) return "Chat";
@@ -329,7 +329,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/inspection")) return "Inspection";
   if (bare.startsWith("/fmea")) return "Failure log";
   if (bare.startsWith("/match-sim")) return "Match sim";
-  if (bare.startsWith("/pit-map-planner")) return "Pit Map Planner";
+  if (bare.startsWith("/pit-map-planner")) return "Pit map";
   if (bare.startsWith("/pairwise")) return "Pairwise";
   if (bare.startsWith("/team-tags")) return "Drive-team tags";
   if (bare.startsWith("/shift-balancer")) return "Shifts";
@@ -374,7 +374,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/control-map")) return "Control Map";
   if (bare.startsWith("/cross-team-scrim")) return "Cross-Team Scrims";
   if (bare.startsWith("/decision-search")) return "Decision Search";
-  if (bare.startsWith("/decisions")) return "Decision Log";
+  if (bare.startsWith("/decisions")) return "Decision notes";
   if (bare.startsWith("/failure-patterns")) return "Repeat Failure Patterns";
   if (bare.startsWith("/grant-eligibility-matcher")) return "Grant Eligibility Matcher";
   if (bare.startsWith("/knowledge-gap")) return "Knowledge gaps";
@@ -461,7 +461,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/bringup")) return "Bring-up";
   if (bare.startsWith("/budget-reconciler")) return "Budget check";
   if (bare.startsWith("/bus-factor")) return "Bus factor";
-  if (bare.startsWith("/checklist-library")) return "Checklist Library";
+  if (bare.startsWith("/checklist-library")) return "Checklists";
   if (bare.startsWith("/code-perf")) return "Code vs match";
   if (bare.startsWith("/connectors")) return "Connectors";
   if (bare.startsWith("/cross-domain-alerts")) return "Cross-domain alerts";
@@ -475,7 +475,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/gearbox")) return "Gearbox calculator";
   if (bare.startsWith("/incident-heatmap")) return "Incident Heatmap";
   if (bare.startsWith("/knowledge-drafts")) return "Knowledge drafts";
-  if (bare.startsWith("/leadership")) return "Leadership Continuity";
+  if (bare.startsWith("/leadership")) return "Leadership";
   if (bare.startsWith("/meeting-autopilot")) return "Meeting agenda";
   if (bare.startsWith("/mentor-hours")) return "Mentor Hours";
   if (bare.startsWith("/migrate")) return "Bring your season";

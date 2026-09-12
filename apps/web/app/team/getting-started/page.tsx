@@ -16,8 +16,8 @@ export default async function TeamGettingStartedPage({
     return (
       <main className="module-page">
         <PageHeader
-          breadcrumbs="Team / Getting started"
-          title="Getting started"
+          breadcrumbs="Team / Team setup"
+          title="Team setup"
           description="The setup checklist tracks one team’s real progress. Choose your team to open it."
         />
         <EmptyState

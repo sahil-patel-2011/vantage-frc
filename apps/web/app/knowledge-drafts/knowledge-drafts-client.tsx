@@ -67,7 +67,7 @@ function KnowledgeDraftsRelated({ orgId }: { orgId?: string | null }) {
         Decisions
       </Button>
       <Button as="a" variant="secondary" href={withOrgHref("/team/getting-started", orgId)}>
-        Getting started
+        Team setup
       </Button>
     </nav>
   );
@@ -90,7 +90,7 @@ function KnowledgeDraftsNextActions({ orgId }: { orgId: string }) {
     },
     {
       id: "setup",
-      label: "Open Getting started",
+      label: "Open Team setup",
       detail: "The team setup checklist tracks whether the Playbook has real writing yet.",
       href: withOrgHref("/team/getting-started", orgId),
     },

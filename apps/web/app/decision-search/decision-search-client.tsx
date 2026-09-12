@@ -730,15 +730,15 @@ function IndexDocumentForm({
         <h2 style={{ margin: 0 }}>Index a record</h2>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <Button as="a" variant="secondary" href={decisionsHref}>
-            Open Decision Log
+            Open Decision notes
           </Button>
-          <Button variant="secondary" type="button" disabled={busy} onClick={() => mutate({ action: "import-decisions" })} title="Pull this season's Decision Log entries into the search index">
-            Import from Decision Log
+          <Button variant="secondary" type="button" disabled={busy} onClick={() => mutate({ action: "import-decisions" })} title="Pull this season's Decision notes entries into the search index">
+            Import from Decision notes
           </Button>
         </div>
       </div>
       <p className="app-muted" style={{ margin: 0 }}>
-        Paste real decision text only. Import uses Decision Log context/decision/rationale.
+        Paste real decision text only. Import uses Decision notes context/decision/rationale.
       </p>
       <FormGrid min={160}>
         <FormRow label="Source ID">

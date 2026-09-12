@@ -145,7 +145,7 @@ export function leadershipShellCopy(kind: LeadershipShellKind): LeadershipEmptyC
     case "ready":
       return {
         kind,
-        title: "Leadership Continuity",
+        title: "Leadership",
         description: "Who holds each role and who is next.",
       };
     default: {

@@ -251,7 +251,7 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/inspection")).toBe("Inspection");
     expect(offlineCapableLabel("/fmea")).toBe("Failure log");
     expect(offlineCapableLabel("/match-sim")).toBe("Match sim");
-    expect(offlineCapableLabel("/pit-map-planner")).toBe("Pit Map Planner");
+    expect(offlineCapableLabel("/pit-map-planner")).toBe("Pit map");
     expect(offlineCapableLabel("/pairwise")).toBe("Pairwise");
     expect(offlineCapableLabel("/team-tags")).toBe("Drive-team tags");
     expect(offlineCapableLabel("/shift-balancer")).toBe("Shifts");
@@ -294,9 +294,9 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/control-map")).toBe("Control Map");
     expect(offlineCapableLabel("/cross-team-scrim")).toBe("Cross-Team Scrims");
     expect(offlineCapableLabel("/decision-search")).toBe("Decision Search");
-    expect(offlineCapableLabel("/decisions")).toBe("Decision Log");
+    expect(offlineCapableLabel("/decisions")).toBe("Decision notes");
     expect(offlineCapableLabel("/failure-patterns")).toBe("Repeat Failure Patterns");
-    expect(offlineCapableLabel("/hours-self-view")).toBe("My Hours");
+    expect(offlineCapableLabel("/hours-self-view")).toBe("My hours");
     expect(offlineCapableLabel("/hours")).toBe("Hours");
     expect(offlineCapableLabel("/grant-eligibility-matcher")).toBe("Grant Eligibility Matcher");
     expect(offlineCapableLabel("/knowledge-gap")).toBe("Knowledge gaps");

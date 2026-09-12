@@ -385,7 +385,7 @@ export default function BusFactorClient() {
           </>
         }
         title="Bus factor"
-        description="Early-warning for single-point-of-human-failure and overload risk from logged hours and task concentration only. Cross-check Attendance, My Hours, and Task board."
+        description="Early-warning for single-point-of-human-failure and overload risk from logged hours and task concentration only. Cross-check Attendance, My hours, and Task board."
       >
         <div className="bus-factor-header-actions">
           <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>

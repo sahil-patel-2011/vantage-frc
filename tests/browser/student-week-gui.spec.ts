@@ -94,8 +94,8 @@ test.describe("student-week GUI path", () => {
 
   test("Hours Clock in is on the board and clickable", async ({ page }) => {
     await openStudent(page, "/hours-self-view");
-    await expect(page.getByRole("heading", { name: "My Hours" })).toBeVisible();
-    await expectNoBanned(page, "My Hours");
+    await expect(page.getByRole("heading", { name: "My hours" })).toBeVisible();
+    await expectNoBanned(page, "My hours");
     const clock = page.getByRole("region", { name: "Clock in or out" }).getByRole("button", {
       name: /Clock in|Clock out/i,
     });

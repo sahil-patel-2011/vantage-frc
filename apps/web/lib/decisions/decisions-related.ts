@@ -1,7 +1,7 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Decision Log (never DEMO log entries). */
+/** Soft-UI related surfaces for Decision notes (never DEMO log entries). */
 export const DECISIONS_RELATED_LINKS = [
   { id: "decision-search", label: "Decision Search", kind: "ai" as const, tab: "decision-search" },
   { id: "season-report", label: "Season Report", kind: "ai" as const, tab: "season-report" },
@@ -27,7 +27,7 @@ export const DECISIONS_RELATED_INCLUDE: DecisionsRelatedId[] = [
 ];
 
 /**
- * Soft-UI cross-links from Decision Log → Decision Search / Season Report / Knowledge.
+ * Soft-UI cross-links from Decision notes → Decision Search / Season Report / Knowledge.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function decisionsRelatedLinks(
@@ -75,7 +75,7 @@ export function formatDecisionsMetric(value: unknown, loaded: boolean): string {
   return Math.floor(n).toLocaleString();
 }
 
-/** Classify Decision Log Soft-UI shell — never invents DEMO log entries. */
+/** Classify Decision notes Soft-UI shell — never invents DEMO log entries. */
 export function classifyDecisionsShell(input: {
   loading: boolean;
   fetchFailed?: boolean;
@@ -96,16 +96,16 @@ export function decisionsShellCopy(kind: DecisionsShellKind): DecisionsEmptyCopy
     case "loading":
       return {
         kind,
-        title: "Loading Decision Log…",
+        title: "Opening Decision notes",
         description: "Checking which team you are on and logged decisions.",
       };
     case "error":
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load the Decision Log",
+        title: "Could not load Decision notes",
         description:
-          "A network or server issue blocked the log. Retry, or open Knowledge while Decision Log is down.",
+          "A network or server issue blocked the log. Retry, or open Knowledge while Decision notes is down.",
       };
     case "setup":
       return {
@@ -134,7 +134,7 @@ export function decisionsShellCopy(kind: DecisionsShellKind): DecisionsEmptyCopy
 }
 
 /**
- * Soft-UI next actions for Decision Log empty/setup shells.
+ * Soft-UI next actions for Decision notes empty/setup shells.
  * Points at Decision Search / Season Report / Knowledge — never invents DEMO log entries.
  */
 export function decisionsNextActions(input: {
@@ -181,14 +181,14 @@ export function decisionsNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Finish membership setup so Decision Log can load.",
+        detail: "Finish membership setup so Decision notes can load.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
       },
       {
         id: "decision-search",
         label: "Open Decision Search",
-        detail: "Index stays separate until you import grounded Decision Log fields.",
+        detail: "Index stays separate until you import grounded Decision notes fields.",
         href: hubHref("/ai", "decision-search", orgId),
       },
       {
@@ -210,7 +210,7 @@ export function decisionsNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Decision Log",
+        label: "Retry Decision notes",
         detail: "Reload real decision records.",
         href: withOrgHref("/decisions", orgId),
         primary: true,
@@ -218,7 +218,7 @@ export function decisionsNextActions(input: {
       {
         id: "knowledge",
         label: "Open Knowledge",
-        detail: "Wiki stays available while Decision Log is down.",
+        detail: "Wiki stays available while Decision notes is down.",
         href: hubHref("/team", "knowledge", orgId),
       },
       {
@@ -275,7 +275,7 @@ export function decisionsNextActions(input: {
     {
       id: "decision-search",
       label: "Open Decision Search",
-      detail: "Import grounded Decision Log fields into the searchable index.",
+      detail: "Import grounded Decision notes fields into the searchable index.",
       href: hubHref("/ai", "decision-search", orgId),
       primary: !actions.some((a) => a.primary),
     },

@@ -1,7 +1,7 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for My Hours (never DEMO hour totals). */
+/** Soft-UI related surfaces for My hours (never DEMO hour totals). */
 export const HOURS_SELF_VIEW_RELATED_LINKS = [
   { id: "attendance", label: "Attendance", tab: "attendance" },
   { id: "mentor-hours", label: "Mentor Hours", tab: "mentor-hours" },
@@ -24,7 +24,7 @@ export const HOURS_SELF_VIEW_RELATED_INCLUDE: HoursSelfViewRelatedId[] = [
 ];
 
 /**
- * Soft-UI cross-links from My Hours → Attendance / Mentor Hours / Team Health.
+ * Soft-UI cross-links from My hours → Attendance / Mentor Hours / Team Health.
  * Build with hubHref — never broken JSX href templates.
  */
 export function hoursSelfViewRelatedLinks(
@@ -72,7 +72,7 @@ export function hoursSelfViewSetupSteps(orgId?: string | null): HoursSelfViewSet
     {
       id: "workspace",
       label: "Choose your team",
-      detail: "Choose your team to open My Hours.",
+      detail: "Choose your team to open My hours.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
   ];
@@ -99,7 +99,7 @@ export function shouldShowHoursSelfViewSummaryTiles(entryCount: number): boolean
   return entryCount > 0;
 }
 
-/** Classify My Hours Soft-UI shell — never invents DEMO hour totals. */
+/** Classify My hours Soft-UI shell — never invents DEMO hour totals. */
 export function classifyHoursSelfViewShell(input: {
   loading?: boolean;
   fetchFailed?: boolean;
@@ -120,14 +120,14 @@ export function hoursSelfViewShellCopy(kind: HoursSelfViewShellKind): HoursSelfV
     case "loading":
       return {
         kind,
-        title: "Loading My Hours…",
+        title: "Opening My hours",
         description: "Checking which team you are on and your sessions.",
       };
     case "error":
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load My Hours",
+        title: "Could not load My hours",
         description:
           "A network or server issue blocked your hours. Retry, or open Attendance while it reloads.",
       };
@@ -161,7 +161,7 @@ export function hoursSelfViewShellCopy(kind: HoursSelfViewShellKind): HoursSelfV
 }
 
 /**
- * Soft-UI next actions for My Hours empty/setup shells.
+ * Soft-UI next actions for My hours empty/setup shells.
  * Clock in lives on this board — never invents DEMO hour totals.
  */
 export function hoursSelfViewNextActions(input: {
@@ -190,7 +190,7 @@ export function hoursSelfViewNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry My Hours",
+        label: "Retry My hours",
         detail: "Reload your hours.",
         href: withOrgHref("/hours-self-view", orgId),
         primary: true,

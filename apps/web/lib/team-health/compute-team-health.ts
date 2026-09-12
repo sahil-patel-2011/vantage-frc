@@ -27,7 +27,7 @@ function setupSteps(orgId: string | null): TeamHealthSetupStep[] {
     },
     {
       id: "hours-self-view",
-      label: "Open My Hours",
+      label: "Open My hours",
       detail: "Shop-time engagement stays blank until members clock in.",
       href: hubHref("/team", "hours-self-view", orgId),
     },

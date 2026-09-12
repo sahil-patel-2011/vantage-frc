@@ -5,7 +5,7 @@ import { withOrgHref } from "../nav/product-nav";
 /** Soft-UI related surfaces for Team Health (never DEMO morale). */
 export const TEAM_HEALTH_RELATED_LINKS = [
   { id: "attendance", label: "Attendance", tab: "attendance" },
-  { id: "hours-self-view", label: "My Hours", tab: "hours-self-view" },
+  { id: "hours-self-view", label: "My hours", tab: "hours-self-view" },
   { id: "hours", label: "Shop hours", tab: "hours" },
 ] as const;
 
@@ -20,7 +20,7 @@ export type TeamHealthRelatedLink = {
 export const TEAM_HEALTH_RELATED_INCLUDE: TeamHealthRelatedId[] = ["attendance", "hours-self-view"];
 
 /**
- * Soft-UI cross-links from Team Health → Attendance / My Hours.
+ * Soft-UI cross-links from Team Health → Attendance / My hours.
  * Build with hubHref — never broken JSX href templates.
  */
 export function teamHealthRelatedLinks(
@@ -79,7 +79,7 @@ export function teamHealthSetupSteps(orgId?: string | null): TeamHealthSetupStep
     },
     {
       id: "hours-self-view",
-      label: "Open My Hours",
+      label: "Open My hours",
       detail: "Shop-time engagement stays blank until members clock in.",
       href: hubHref("/team", "hours-self-view", orgId),
     },
@@ -173,7 +173,7 @@ export function teamHealthShellCopy(kind: TeamHealthShellKind): TeamHealthEmptyC
 
 /**
  * Soft-UI next actions for Team Health empty/setup shells.
- * Points at Attendance / My Hours — never invents DEMO morale.
+ * Points at Attendance / My hours — never invents DEMO morale.
  */
 export function teamHealthNextActions(input: {
   orgId?: string | null;
@@ -207,8 +207,8 @@ export function teamHealthNextActions(input: {
       },
       {
         id: "hours-self-view",
-        label: "Open My Hours",
-        detail: "My Hours stays available while Team Health reloads.",
+        label: "Open My hours",
+        detail: "My hours stays available while Team Health reloads.",
         href: hubHref("/team", "hours-self-view", orgId),
       },
     ];
@@ -258,7 +258,7 @@ export function teamHealthNextActions(input: {
     },
     {
       id: "hours-self-view",
-      label: "Open My Hours",
+      label: "Open My hours",
       detail: "Clock the next shop session.",
       href: hubHref("/team", "hours-self-view", orgId),
     },

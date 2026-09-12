@@ -265,7 +265,7 @@ export function myDayNextActions(input: {
     {
       id: "hours",
       label: "Clock in",
-      detail: "Open My Hours to start or stop your shop session.",
+      detail: "Open My hours to start or stop your shop session.",
       href: withOrgHref("/hours-self-view", orgId),
     },
     {
