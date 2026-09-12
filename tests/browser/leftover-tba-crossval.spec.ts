@@ -12,6 +12,6 @@ test("leftover Cross-Validation drops TBA student copy", async ({ page }) => {
   await assertNoTbaStatbotics(
     page,
     "/scout-crossval",
-    /Scout Cross-Validation|Choose your team|official/i,
+    /Cross-check|Choose your team|official/i,
   );
 });

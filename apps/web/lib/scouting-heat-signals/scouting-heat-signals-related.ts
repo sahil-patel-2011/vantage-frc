@@ -1,7 +1,7 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Scouting Heat Signals (never DEMO trend arrows). */
+/** Soft-UI related surfaces for Heat signals (never DEMO trend arrows). */
 export const SCOUTING_HEAT_SIGNALS_RELATED_LINKS = [
   { id: "scouting", label: "Scouting", tab: "scouting" },
   { id: "opponent-watchlist", label: "Watchlist", tab: "opponent-watchlist" },
@@ -130,14 +130,14 @@ export function scoutingHeatSignalsShellCopy(kind: ScoutingHeatSignalsShellKind)
     case "loading":
       return {
         kind,
-        title: "Loading Scouting Heat Signals…",
+        title: "Opening Heat signals",
         description: "Checking which team you are on and logged observations.",
       };
     case "error":
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Scouting Heat Signals",
+        title: "Could not load Heat signals",
         description:
           "A network or server issue blocked heat signals. Retry, or open Scouting while it reloads.",
       };

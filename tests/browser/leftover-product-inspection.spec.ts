@@ -14,6 +14,6 @@ test("leftover Playbook / Inspection / Scout Accuracy boards speak student chrom
   await assertLeftoverProductBoards(page, [
     { path: "/team/knowledge", heading: /Playbook|Team|Choose your team/ },
     { path: "/inspection", heading: /Inspection|Robot Inspection/ },
-    { path: "/scout-accuracy", heading: /Scout Accuracy|Choose your team/ },
+    { path: "/scout-accuracy", heading: /Accuracy|Choose your team/ },
   ]);
 });

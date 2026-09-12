@@ -264,7 +264,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   const bare = pathname.split("?")[0] ?? pathname;
   if (bare.startsWith("/scouting/lineup")) return "Lineup & coverage";
   if (bare.startsWith("/scouting/forms")) return "Scout forms";
-  if (bare.startsWith("/scouting-heat-signals")) return "Scouting Heat Signals";
+  if (bare.startsWith("/scouting-heat-signals")) return "Heat signals";
   if (bare.startsWith("/scouting-schema-ab")) return "Schema A/B";
   if (bare.startsWith("/scout-schema-negotiate")) return "Schema sync";
   if (bare.startsWith("/scout-p2p-relay")) return "Pit link";
@@ -393,13 +393,13 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/sponsor-renewal-roi")) return "Sponsor Renewal ROI";
   if (bare.startsWith("/team-health-dashboard")) return "Team health";
   if (bare.startsWith("/sketch-to-brief")) return "Sketch to brief";
-  if (bare.startsWith("/scout-assisted-count")) return "Scout-Assisted Count";
+  if (bare.startsWith("/scout-assisted-count")) return "Assisted count";
   if (bare.startsWith("/scout-coverage-live")) return "Coverage";
   if (bare.startsWith("/scout-field-budget")) return "Field value";
-  if (bare.startsWith("/scout-data-impact")) return "Scout Data Impact";
-  if (bare.startsWith("/scout-disagreements")) return "Scout Disagreements";
-  if (bare.startsWith("/scout-accuracy")) return "Scout Accuracy";
-  if (bare.startsWith("/scout-crossval")) return "Scout Cross-Validation";
+  if (bare.startsWith("/scout-data-impact")) return "Data impact";
+  if (bare.startsWith("/scout-disagreements")) return "Disagreements";
+  if (bare.startsWith("/scout-accuracy")) return "Accuracy";
+  if (bare.startsWith("/scout-crossval")) return "Cross-check";
   if (bare.startsWith("/rule-impact")) return "Rule impact";
   if (bare.startsWith("/season-planning-workspace")) return "Season plan";
   if (bare.startsWith("/retro")) return "Retro";

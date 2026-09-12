@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "scouting-heat-signals",
-  title: "Scouting Heat Signals",
+  title: "Heat signals",
   route: "/scouting-heat-signals",
   apiRoute: "/api/scouting-heat-signals",
   hub: "Competition",

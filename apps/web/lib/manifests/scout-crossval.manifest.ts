@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "scout-crossval",
-  title: "Scout Cross-Validation",
+  title: "Cross-check",
   route: "/scout-crossval",
   apiRoute: "/api/scout-crossval",
   hub: "Competition",

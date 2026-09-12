@@ -10,8 +10,9 @@ const WEB = join(__dirname, "..", "..");
  * the leftover Title-Case name. Hub Safety log, leftover-kit Safety,
  * leftover-build Incidents, leftover-media Photos & video, leftover-fmea
  * Failure log, leftover-pick-before Choose your team, and
- * leftover-help-workspace Connect TBA stay. Routes stay. Do not invent
- * a last-snapshot.
+ * leftover-help-workspace Connect TBA stay. leftover-scout-more
+ * Accuracy / Cross-check / Disagreements / Data impact / Heat signals /
+ * Assisted count stay. Routes stay. Do not invent a last-snapshot.
  */
 const FILES = [
   "app/incidents/incidents-client.tsx",

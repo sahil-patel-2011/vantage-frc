@@ -68,7 +68,7 @@ async function persistScoutCrossvalSnapshot(
     await putFeatureSnapshot("scout-crossval", cacheOrg, data, eventHint || eventKey);
     if (!orgHint) await putFeatureSnapshot("scout-crossval", "_", data, eventHint || eventKey);
   } catch {
-    // Live Scout Cross-Validation already painted; IndexedDB is best-effort.
+    // Live Cross-check already painted; IndexedDB is best-effort.
   }
 }
 
@@ -143,10 +143,10 @@ function ScoutCrossvalShell({
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Scout Cross-Validation"}
+            {" / Cross-check"}
           </>
         }
-        title="Scout Cross-Validation"
+        title="Cross-check"
         description={description}
       >
         <ScoutCrossvalRelatedStrip orgId={orgId} />
@@ -248,7 +248,7 @@ export default function ScoutCrossvalClient({ orgId: initialOrgId }: { orgId?: s
           if (!response.ok || !isScoutCrossvalView(data)) {
             if (hadCache || viewRef.current) {
               setFromCache(true);
-              setError("Could not refresh Scout Cross-Validation. Showing the last copy on this device.");
+              setError("Could not refresh Cross-check. Showing the last copy on this device.");
               setFetchFailed(false);
             } else {
               setFetchFailed(true);
@@ -264,7 +264,7 @@ export default function ScoutCrossvalClient({ orgId: initialOrgId }: { orgId?: s
         } catch {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Scout Cross-Validation. Showing the last copy on this device.");
+            setError("Could not refresh Cross-check. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -335,7 +335,7 @@ export default function ScoutCrossvalClient({ orgId: initialOrgId }: { orgId?: s
   if (shell === "loading") {
     return (
       <ScoutCrossvalShell description={shellCopy.description} orgId={orgId} shell="loading">
-        <OfflineBanner feature="Scout Cross-Validation" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Cross-check" fromCache={fromCache} cachedAt={cachedAt} />
       </ScoutCrossvalShell>
     );
   }
@@ -348,7 +348,7 @@ export default function ScoutCrossvalClient({ orgId: initialOrgId }: { orgId?: s
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Scout Cross-Validation" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Cross-check" fromCache={fromCache} cachedAt={cachedAt} />
       </ScoutCrossvalShell>
     );
   }
@@ -359,14 +359,14 @@ export default function ScoutCrossvalClient({ orgId: initialOrgId }: { orgId?: s
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Scout Cross-Validation" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Cross-check" fromCache={fromCache} cachedAt={cachedAt} />
       </ScoutCrossvalShell>
     );
   }
   if (shell === "empty" || view?.status !== "live") {
     return (
       <ScoutCrossvalShell description={shellCopy.description} orgId={orgId} shell="empty">
-        <OfflineBanner feature="Scout Cross-Validation" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Cross-check" fromCache={fromCache} cachedAt={cachedAt} />
       </ScoutCrossvalShell>
     );
   }
@@ -377,10 +377,10 @@ export default function ScoutCrossvalClient({ orgId: initialOrgId }: { orgId?: s
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Scout Cross-Validation"}
+            {" / Cross-check"}
           </>
         }
-        title="Scout Cross-Validation"
+        title="Cross-check"
         description="Compares saved match-scout entries against cached official score breakdowns — agree, conflict, or unverifiable."
       >
         <div className="scout-crossval-header-meta">
@@ -388,7 +388,7 @@ export default function ScoutCrossvalClient({ orgId: initialOrgId }: { orgId?: s
         </div>
       </PageHeader>
 
-      <OfflineBanner feature="Scout Cross-Validation" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Cross-check" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="form-message" role="status">

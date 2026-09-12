@@ -10,7 +10,7 @@ import ScoutDisagreementsClient from "./scout-disagreements-client";
 import "./scout-disagreements.css";
 
 export const metadata = {
-  title: "Scout Disagreements",
+  title: "Disagreements",
 };
 
 export default async function ScoutDisagreementsPage({
@@ -28,8 +28,8 @@ export default async function ScoutDisagreementsPage({
     return (
       <main className="module-page scout-disagreements-page soft-gate">
         <PageHeader
-          breadcrumbs="Competition / Scout Disagreements"
-          title="Scout Disagreements"
+          breadcrumbs="Competition / Disagreements"
+          title="Disagreements"
           description={copy.description}
         >
           <nav

@@ -58,7 +58,7 @@ async function persistScoutAccuracySnapshot(
     await putFeatureSnapshot("scout-accuracy", cacheOrg, data, eventHint || eventKey);
     if (!orgHint) await putFeatureSnapshot("scout-accuracy", "_", data, eventHint || eventKey);
   } catch {
-    // Live Scout Accuracy already painted; IndexedDB is best-effort.
+    // Live Accuracy already painted; IndexedDB is best-effort.
   }
 }
 
@@ -153,10 +153,10 @@ function ScoutAccuracyShell({
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Scout Accuracy"}
+            {" / Accuracy"}
           </>
         }
-        title="Scout Accuracy"
+        title="Accuracy"
         description={description}
       >
         <ScoutAccuracyRelatedStrip orgId={orgId} />
@@ -264,7 +264,7 @@ export default function ScoutAccuracyClient({ orgId: initialOrgId }: { orgId?: s
         if (!response.ok || !isScoutAccuracyView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Scout Accuracy. Showing the last copy on this device.");
+            setError("Could not refresh Accuracy. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -280,7 +280,7 @@ export default function ScoutAccuracyClient({ orgId: initialOrgId }: { orgId?: s
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Scout Accuracy. Showing the last copy on this device.");
+          setError("Could not refresh Accuracy. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -353,7 +353,7 @@ export default function ScoutAccuracyClient({ orgId: initialOrgId }: { orgId?: s
   if (shell === "loading") {
     return (
       <ScoutAccuracyShell description={shellCopy.description} orgId={orgId} shell="loading">
-        <OfflineBanner feature="Scout Accuracy" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Accuracy" fromCache={fromCache} cachedAt={cachedAt} />
       </ScoutAccuracyShell>
     );
   }
@@ -368,7 +368,7 @@ export default function ScoutAccuracyClient({ orgId: initialOrgId }: { orgId?: s
         errorStatus={failureStatus}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Scout Accuracy" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Accuracy" fromCache={fromCache} cachedAt={cachedAt} />
       </ScoutAccuracyShell>
     );
   }
@@ -382,7 +382,7 @@ export default function ScoutAccuracyClient({ orgId: initialOrgId }: { orgId?: s
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Scout Accuracy" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Accuracy" fromCache={fromCache} cachedAt={cachedAt} />
       </ScoutAccuracyShell>
     );
   }
@@ -390,7 +390,7 @@ export default function ScoutAccuracyClient({ orgId: initialOrgId }: { orgId?: s
   if (shell === "empty" || view?.status !== "live") {
     return (
       <ScoutAccuracyShell description={shellCopy.description} orgId={orgId} shell="empty">
-        <OfflineBanner feature="Scout Accuracy" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Accuracy" fromCache={fromCache} cachedAt={cachedAt} />
       </ScoutAccuracyShell>
     );
   }
@@ -401,10 +401,10 @@ export default function ScoutAccuracyClient({ orgId: initialOrgId }: { orgId?: s
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Scout Accuracy"}
+            {" / Accuracy"}
           </>
         }
-        title="Scout Accuracy"
+        title="Accuracy"
         description="Post-event, each scout's reported totals are scored against cached official results — ranking the roster for pick-desk rotation."
       >
         <div className="scout-accuracy-header-meta">
@@ -417,7 +417,7 @@ export default function ScoutAccuracyClient({ orgId: initialOrgId }: { orgId?: s
         </div>
       </PageHeader>
 
-      <OfflineBanner feature="Scout Accuracy" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Accuracy" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="form-message" role="status">

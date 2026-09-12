@@ -10,7 +10,7 @@ import ScoutAccuracyClient from "./scout-accuracy-client";
 import "./scout-accuracy.css";
 
 export const metadata = {
-  title: "Scout Accuracy",
+  title: "Accuracy",
 };
 
 export default async function ScoutAccuracyPage({
@@ -28,8 +28,8 @@ export default async function ScoutAccuracyPage({
     return (
       <main className="module-page scout-accuracy-page soft-gate">
         <PageHeader
-          breadcrumbs="Competition / Scout Accuracy"
-          title="Scout Accuracy"
+          breadcrumbs="Competition / Accuracy"
+          title="Accuracy"
           description={copy.description}
         >
           <nav

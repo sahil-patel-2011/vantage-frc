@@ -8,7 +8,9 @@ const WEB = join(__dirname, "..", "..");
  * Leftover student Coverage / Shifts / Pit link / Field value /
  * Data quality / Pairwise titles after leftover-strategy-titles.
  * Hub labels stay Coverage, Shifts, Pit link, Field value,
- * Data quality, and Pairwise. Routes stay. Do not invent a last-snapshot.
+ * Data quality, and Pairwise. leftover-scout-more Accuracy /
+ * Cross-check / Disagreements / Data impact / Heat signals / Assisted
+ * count stay. Routes stay. Do not invent a last-snapshot.
  */
 const FILES = [
   "app/scout-coverage-live/scout-coverage-live-client.tsx",
