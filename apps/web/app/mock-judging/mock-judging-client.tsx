@@ -309,7 +309,7 @@ export default function MockJudgingClient() {
         {header}
         <OfflineBanner feature="Mock judging" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
-          title={failure ? failure.title : "Loading…"}
+          title={failure ? failure.title : "Opening Mock judging"}
           description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >

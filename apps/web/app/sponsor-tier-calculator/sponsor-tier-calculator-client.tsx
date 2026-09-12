@@ -300,7 +300,7 @@ export default function SponsorTierCalculatorClient() {
         <OfflineBanner feature="Tier calculator" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
-          title={failure ? failure.title : "Loading…"}
+          title={failure ? failure.title : "Opening Tier calculator"}
           description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >

@@ -283,7 +283,7 @@ export default function CostsClient() {
         <OfflineBanner feature="Season costs" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
-          title={failure ? failure.title : "Loading season costs…"}
+          title={failure ? failure.title : "Opening Season costs"}
           description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >
