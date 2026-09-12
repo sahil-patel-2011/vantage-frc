@@ -4,7 +4,7 @@ import { withOrgHref } from "../nav/product-nav";
 /** Soft-UI related surfaces for Scout Cross-Validation (never DEMO agreement %). */
 export const SCOUT_CROSSVAL_RELATED_LINKS = [
   { id: "scouting", label: "Scouting", kind: "hub" as const, tab: "scouting" },
-  { id: "coverage-live", label: "Coverage Live", kind: "path" as const, path: "/scout-coverage-live" },
+  { id: "coverage-live", label: "Coverage", kind: "path" as const, path: "/scout-coverage-live" },
   { id: "accuracy", label: "Accuracy", kind: "path" as const, path: "/scout-accuracy" },
   { id: "disagreements", label: "Disagreements", kind: "path" as const, path: "/scout-disagreements" },
   { id: "command", label: "Event Day", kind: "hub" as const, tab: "command" },
@@ -18,7 +18,7 @@ export type ScoutCrossvalRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — Scouting · Coverage Live · Accuracy. */
+/** Focused Soft-UI strip — Scouting · Coverage · Accuracy. */
 export const SCOUT_CROSSVAL_RELATED_INCLUDE: ScoutCrossvalRelatedId[] = [
   "scouting",
   "coverage-live",
@@ -88,7 +88,7 @@ export function scoutCrossvalSetupSteps(orgId?: string | null): ScoutCrossvalSet
     },
     {
       id: "coverage-live",
-      label: "Open Coverage Live",
+      label: "Open Coverage",
       detail: "Cover zero/thin robots so more entries can be cross-validated.",
       href: withOrgHref("/scout-coverage-live", orgId),
     },
@@ -169,7 +169,7 @@ export function scoutCrossvalShellCopy(kind: ScoutCrossvalShellKind): ScoutCross
         badge: "Unavailable",
         title: "Could not load scout cross-validation",
         description:
-          "A network or server issue blocked official field checks. Retry, or open Scouting / Coverage Live / Accuracy while it reloads.",
+          "A network or server issue blocked official field checks. Retry, or open Scouting / Coverage / Accuracy while it reloads.",
       };
     case "setup":
       return {
@@ -185,7 +185,7 @@ export function scoutCrossvalShellCopy(kind: ScoutCrossvalShellKind): ScoutCross
         badge: "No entries yet",
         title: "Waiting on match-scout rows",
         description:
-          "Field checks stay blank until your team logs match entries for an event with cached official results. Cross-check Scouting, Coverage Live, and Accuracy.",
+          "Field checks stay blank until your team logs match entries for an event with cached official results. Cross-check Scouting, Coverage, and Accuracy.",
       };
     default:
       return {
@@ -199,7 +199,7 @@ export function scoutCrossvalShellCopy(kind: ScoutCrossvalShellKind): ScoutCross
 
 /**
  * Soft-UI next actions for Scout Cross-Validation empty/setup shells.
- * Points at Scouting / Coverage Live / Accuracy — never invents DEMO agreement.
+ * Points at Scouting / Coverage / Accuracy — never invents DEMO agreement.
  */
 export function scoutCrossvalNextActions(input: {
   orgId?: string | null;
@@ -228,7 +228,7 @@ export function scoutCrossvalNextActions(input: {
         },
         {
           id: "coverage-live",
-          label: "Open Coverage Live",
+          label: "Open Coverage",
           detail: "Gaps stay honest until real scout rows exist.",
           href: withOrgHref("/scout-coverage-live", null),
         },
@@ -256,7 +256,7 @@ export function scoutCrossvalNextActions(input: {
       },
       {
         id: "coverage-live",
-        label: "Open Coverage Live",
+        label: "Open Coverage",
         detail: "Close zero/thin cells so more entries can be checked.",
         href: withOrgHref("/scout-coverage-live", orgId),
       },
@@ -286,7 +286,7 @@ export function scoutCrossvalNextActions(input: {
       },
       {
         id: "coverage-live",
-        label: "Open Coverage Live",
+        label: "Open Coverage",
         detail: "Coverage gaps stay available while cross-validation reloads.",
         href: withOrgHref("/scout-coverage-live", orgId),
       },
@@ -310,7 +310,7 @@ export function scoutCrossvalNextActions(input: {
       },
       {
         id: "coverage-live",
-        label: "Open Coverage Live",
+        label: "Open Coverage",
         detail: "Cover open robots so entries can land for official checks.",
         href: withOrgHref("/scout-coverage-live", orgId),
       },
@@ -351,7 +351,7 @@ export function scoutCrossvalNextActions(input: {
     },
     {
       id: "coverage-live",
-      label: "Open Coverage Live",
+      label: "Open Coverage",
       detail: "Cross-check which robots still need scout rows.",
       href: withOrgHref("/scout-coverage-live", orgId),
     },

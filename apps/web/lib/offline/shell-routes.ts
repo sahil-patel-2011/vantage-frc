@@ -267,7 +267,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/scouting-heat-signals")) return "Scouting Heat Signals";
   if (bare.startsWith("/scouting-schema-ab")) return "Schema A/B";
   if (bare.startsWith("/scout-schema-negotiate")) return "Schema sync";
-  if (bare.startsWith("/scout-p2p-relay")) return "Pit mesh";
+  if (bare.startsWith("/scout-p2p-relay")) return "Pit link";
   if (bare.startsWith("/scout-training-mode")) return "Scout training mode";
   if (bare.startsWith("/scouting")) return "Scouting";
   if (bare.startsWith("/schedule")) return "Schedule";
@@ -330,9 +330,9 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/fmea")) return "Failure log";
   if (bare.startsWith("/match-sim")) return "Match sim";
   if (bare.startsWith("/pit-map-planner")) return "Pit Map Planner";
-  if (bare.startsWith("/pairwise")) return "Pairwise ranking";
+  if (bare.startsWith("/pairwise")) return "Pairwise";
   if (bare.startsWith("/team-tags")) return "Drive-team tags";
-  if (bare.startsWith("/shift-balancer")) return "Scout shift balancer";
+  if (bare.startsWith("/shift-balancer")) return "Shifts";
   if (bare.startsWith("/counter-book")) return "Counter-book";
   if (bare === "/intel" || bare.startsWith("/intel/")) return "Research";
   if (bare.startsWith("/overnight-intel")) return "Overnight brief";
@@ -394,8 +394,8 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/team-health-dashboard")) return "Team Health";
   if (bare.startsWith("/sketch-to-brief")) return "Sketch-to-Brief";
   if (bare.startsWith("/scout-assisted-count")) return "Scout-Assisted Count";
-  if (bare.startsWith("/scout-coverage-live")) return "Scout Coverage Live";
-  if (bare.startsWith("/scout-field-budget")) return "Field-Count Budget";
+  if (bare.startsWith("/scout-coverage-live")) return "Coverage";
+  if (bare.startsWith("/scout-field-budget")) return "Field value";
   if (bare.startsWith("/scout-data-impact")) return "Scout Data Impact";
   if (bare.startsWith("/scout-disagreements")) return "Scout Disagreements";
   if (bare.startsWith("/scout-accuracy")) return "Scout Accuracy";
@@ -465,7 +465,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/code-perf")) return "Code vs match";
   if (bare.startsWith("/connectors")) return "Connectors";
   if (bare.startsWith("/cross-domain-alerts")) return "Cross-domain alerts";
-  if (bare.startsWith("/data-quality-scorecard")) return "Data Quality Scorecard";
+  if (bare.startsWith("/data-quality-scorecard")) return "Data quality";
   if (bare.startsWith("/decision-critic")) return "Decision critic";
   if (bare.startsWith("/degraded-mode")) return "Data-source health";
   if (bare.startsWith("/district-advancement")) return "District advancement";

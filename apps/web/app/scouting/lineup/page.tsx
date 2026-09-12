@@ -52,7 +52,7 @@ export default async function ScoutingLineupPage({
           ) : null}
         </EmptyState>
         <p className="app-muted lineup-footer-links">
-          Also see <a href={withOrgHref("/scout-coverage-live", null)}>Scout Coverage Live</a>
+          Also see <a href={withOrgHref("/scout-coverage-live", null)}>Coverage</a>
         </p>
       </main>
     );

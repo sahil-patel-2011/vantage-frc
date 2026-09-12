@@ -79,7 +79,7 @@ export default function PairwiseClient() {
       if (!response.ok || !isPairwiseView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Pairwise ranking. Showing the last copy on this device.");
+          setError("Could not refresh Pairwise. Showing the last copy on this device.");
         } else {
           setError(data.error ? data.error : "Could not load pairwise ranking.");
           setErrorStatus(response.status);
@@ -98,7 +98,7 @@ export default function PairwiseClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Pairwise ranking. Showing the last copy on this device.");
+        setError("Could not refresh Pairwise. Showing the last copy on this device.");
       } else {
         setError("Network error — please try again.");
       }
@@ -206,10 +206,10 @@ export default function PairwiseClient() {
             {" / Pairwise"}
           </>
         }
-        title="Pairwise ranking"
+        title="Pairwise"
         description="Tap who looked better. Ranks come from your taps — not from official rankings or season ratings."
       />
-      <OfflineBanner feature="Pairwise ranking" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Pairwise" fromCache={fromCache} cachedAt={cachedAt} />
 
       <nav className="product-hub-related" aria-label="Related qualitative tools">
         {related.map((link) => (

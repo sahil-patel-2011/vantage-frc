@@ -6,7 +6,7 @@ export const SCOUT_ASSISTED_COUNT_RELATED_LINKS = [
   { id: "scouting", label: "Scouting", tab: "scouting" },
   { id: "forms", label: "Form builder", tab: "forms" },
   { id: "scout-field-budget", label: "Field Budget", tab: "scout-field-budget" },
-  { id: "scout-coverage-live", label: "Coverage Live", tab: "scout-coverage-live" },
+  { id: "scout-coverage-live", label: "Coverage", tab: "scout-coverage-live" },
 ] as const;
 
 export type ScoutAssistedCountRelatedId = (typeof SCOUT_ASSISTED_COUNT_RELATED_LINKS)[number]["id"];
@@ -257,7 +257,7 @@ export function scoutAssistedCountNextActions(input: {
     },
     {
       id: "coverage",
-      label: "Open Coverage Live",
+      label: "Open Coverage",
       detail: "See which matches still need counts.",
       href: hubHref("/competition", "scout-coverage-live", orgId),
     },

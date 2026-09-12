@@ -166,7 +166,7 @@ export default function TeamTagsClient() {
 
       <nav className="product-hub-related" aria-label="Related qualitative tools">
         <Button as="a" variant="secondary" href={orgId ? withOrgHref("/pairwise", orgId) : "/pairwise"}>
-          Pairwise ranking
+          Pairwise
         </Button>
         <Button as="a" variant="secondary" href={orgId ? hubHref("/competition", "scouting", orgId) : "/scouting"}>
           Scouting

@@ -78,7 +78,7 @@ async function persistDataQualitySnapshot(
     await putFeatureSnapshot("data-quality-scorecard", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("data-quality-scorecard", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Data Quality Scorecard already painted; IndexedDB is best-effort.
+    // Live Data quality already painted; IndexedDB is best-effort.
   }
 }
 
@@ -212,7 +212,7 @@ export default function DataQualityScorecardClient() {
       if (!response.ok || !isDataQualityScorecardView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Data Quality Scorecard. Showing the last copy on this device.");
+          setError("Could not refresh Data quality. Showing the last copy on this device.");
           setFetchFailed(false);
           return;
         }
@@ -229,7 +229,7 @@ export default function DataQualityScorecardClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Data Quality Scorecard. Showing the last copy on this device.");
+        setError("Could not refresh Data quality. Showing the last copy on this device.");
         setFetchFailed(false);
         return;
       }
@@ -277,10 +277,10 @@ export default function DataQualityScorecardClient() {
       breadcrumbs={
         <>
           <a href={competitionHref}>Competition</a>
-          {" / Data Quality Scorecard"}
+          {" / Data quality"}
         </>
       }
-      title="Data Quality Scorecard"
+      title="Data quality"
       description="Org scouting data-quality over the season — coverage against expected fields, cross-scout disagreement, and drift from consensus. Built only from what you log."
     >
       {view?.status === "live" && view.seasons.length > 0 ? (
@@ -326,7 +326,7 @@ export default function DataQualityScorecardClient() {
     return (
       <main className="module-page">
         {header}
-        <OfflineBanner feature="Data Quality Scorecard" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Data quality" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           title={failure ? failure.title : "Loading…"}
           description={failure ? failure.description : "Checking your team."}
@@ -352,7 +352,7 @@ export default function DataQualityScorecardClient() {
       return (
         <main className="module-page">
           {header}
-          <OfflineBanner feature="Data Quality Scorecard" fromCache={fromCache} cachedAt={cachedAt} />
+          <OfflineBanner feature="Data quality" fromCache={fromCache} cachedAt={cachedAt} />
           {error ? (
             <p className="telemetry-status" role="alert">
               {error}
@@ -378,7 +378,7 @@ export default function DataQualityScorecardClient() {
   return (
     <main className="module-page">
       {header}
-      <OfflineBanner feature="Data Quality Scorecard" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Data quality" fromCache={fromCache} cachedAt={cachedAt} />
       {error ? (
         <p className="telemetry-status" role="alert">
           {error}

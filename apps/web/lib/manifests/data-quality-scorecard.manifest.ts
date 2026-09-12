@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "data-quality-scorecard",
-  title: "Data Quality Scorecard",
+  title: "Data quality",
   route: "/data-quality-scorecard",
   apiRoute: "/api/data-quality-scorecard",
   hub: "Competition",

@@ -11,7 +11,7 @@ import {
 import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("scoutAssistedCountRelatedLinks", () => {
-  it("builds Scouting / Forms / Coverage Live cross-links", () => {
+  it("builds Scouting / Forms / Coverage cross-links", () => {
     const links = scoutAssistedCountRelatedLinks("org-1", {
       include: [...SCOUT_ASSISTED_COUNT_RELATED_INCLUDE],
     });

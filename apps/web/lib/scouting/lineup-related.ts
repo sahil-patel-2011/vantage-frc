@@ -8,7 +8,7 @@ export const LINEUP_RELATED_LINKS = [
   { id: "scouting", label: "Scouting", kind: "hub" as const, tab: "scouting" },
   { id: "strategy", label: "Strategy", kind: "hub" as const, tab: "strategy" },
   { id: "forms", label: "Form builder", kind: "hub" as const, tab: "forms" },
-  { id: "coverage-live", label: "Scout Coverage Live", kind: "path" as const, path: "/scout-coverage-live" },
+  { id: "coverage-live", label: "Coverage", kind: "path" as const, path: "/scout-coverage-live" },
   { id: "command", label: "Event Day", kind: "hub" as const, tab: "command" },
 ] as const;
 

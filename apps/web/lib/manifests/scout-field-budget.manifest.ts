@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "scout-field-budget",
-  title: "Scouting Field-Count Budget",
+  title: "Field value",
   route: "/scout-field-budget",
   apiRoute: "/api/scout-field-budget",
   hub: "Competition",

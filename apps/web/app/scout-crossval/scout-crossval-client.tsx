@@ -426,7 +426,7 @@ export default function ScoutCrossvalClient({ orgId: initialOrgId }: { orgId?: s
         Also see{" "}
         <a href={hubHref("/competition", "scouting", orgId)}>Scouting</a>
         {" · "}
-        <a href={withOrgHref("/scout-coverage-live", orgId)}>Coverage Live</a>
+        <a href={withOrgHref("/scout-coverage-live", orgId)}>Coverage</a>
         {" · "}
         <a href={withOrgHref("/scout-accuracy", orgId)}>Accuracy</a>
       </p>

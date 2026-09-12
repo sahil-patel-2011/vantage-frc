@@ -4,13 +4,13 @@ import { describe, expect, it } from "vitest";
 
 const DIR = __dirname;
 
-describe("Field-Count Budget last snapshot stays on the phone", () => {
+describe("Field value last snapshot stays on the phone", () => {
   it("reads and writes the scout-field-budget IndexedDB feature cache", () => {
     const src = readFileSync(join(DIR, "scout-field-budget-client.tsx"), "utf8");
     expect(src).toMatch(/getFeatureSnapshot/);
     expect(src).toMatch(/putFeatureSnapshot/);
     expect(src).toMatch(/"scout-field-budget"/);
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
-    expect(src).toMatch(/feature="Field-Count Budget"/);
+    expect(src).toMatch(/feature="Field value"/);
   });
 });

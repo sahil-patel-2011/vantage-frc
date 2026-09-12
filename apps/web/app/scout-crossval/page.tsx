@@ -52,7 +52,7 @@ export default async function ScoutCrossvalPage({
           </Button>
         </EmptyState>
         <p className="app-muted scout-crossval-footer-links">
-          Also see <a href={withOrgHref("/scout-coverage-live", null)}>Coverage Live</a>
+          Also see <a href={withOrgHref("/scout-coverage-live", null)}>Coverage</a>
         </p>
       </main>
     );

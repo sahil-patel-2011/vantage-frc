@@ -693,7 +693,7 @@ export default function LineupClient({ orgId }: { orgId: string }) {
       <LineupNextActionsPanel actions={nextActions} />
       <p className="app-muted lineup-footer-links">
         Also see{" "}
-        <a href={withOrgHref("/scout-coverage-live", orgId)}>Scout Coverage Live</a>
+        <a href={withOrgHref("/scout-coverage-live", orgId)}>Coverage</a>
         {" · "}
         <a href={hubHref("/competition", "forms", orgId)}>Form builder</a>
         {" · "}

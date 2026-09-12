@@ -1,7 +1,7 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Scout Coverage Live (never DEMO coverage %). */
+/** Soft-UI related surfaces for Coverage (never DEMO coverage %). */
 export const SCOUT_COVERAGE_LIVE_RELATED_LINKS = [
   { id: "scouting", label: "Scouting", kind: "hub" as const, tab: "scouting" },
   { id: "lineup", label: "Lineup", kind: "path" as const, path: "/scouting/lineup" },
@@ -138,7 +138,7 @@ export function isScoutCoverageLiveEmpty(input: { totalCells: number }): boolean
   return input.totalCells === 0;
 }
 
-/** Classify Scout Coverage Live Soft-UI shell — never invents DEMO coverage. */
+/** Classify Coverage Soft-UI shell — never invents DEMO coverage. */
 export function classifyScoutCoverageLiveShell(input: {
   loading?: boolean;
   fetchFailed?: boolean;
@@ -159,7 +159,7 @@ export function scoutCoverageLiveShellCopy(kind: ScoutCoverageLiveShellKind): Sc
     case "loading":
       return {
         kind,
-        title: "Loading scout coverage…",
+        title: "Opening Coverage",
         description:
           "Checking which team you are on and the real match schedule.",
       };
@@ -198,7 +198,7 @@ export function scoutCoverageLiveShellCopy(kind: ScoutCoverageLiveShellKind): Sc
 }
 
 /**
- * Soft-UI next actions for Scout Coverage Live empty/setup shells.
+ * Soft-UI next actions for Coverage empty/setup shells.
  * Points at Scouting / Lineup / Cross-Validation — never invents DEMO gaps.
  */
 export function scoutCoverageLiveNextActions(input: {

@@ -9,7 +9,7 @@ test.beforeEach(async ({ context }) => {
 
 const LEAVES = [
   { path: "/scout-training-mode", heading: "Scout training mode" },
-  { path: "/data-quality-scorecard", heading: "Data Quality Scorecard" },
+  { path: "/data-quality-scorecard", heading: "Data quality" },
   { path: "/standup-digest", heading: "Morning standup" },
   { path: "/meeting-autopilot", heading: "Meeting agenda" },
   { path: "/goals-tracker", heading: "Season Goals" },

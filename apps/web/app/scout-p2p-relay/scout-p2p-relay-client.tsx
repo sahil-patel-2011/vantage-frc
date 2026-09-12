@@ -58,7 +58,7 @@ async function persistScoutP2pSnapshot(
     await putFeatureSnapshot("scout-p2p-relay", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("scout-p2p-relay", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Pit mesh already painted; IndexedDB is best-effort.
+    // Live Pit link already painted; IndexedDB is best-effort.
   }
 }
 
@@ -192,7 +192,7 @@ export default function ScoutP2pRelayClient() {
       if (!response.ok || !isScoutP2pRelayView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Pit mesh. Showing the last copy on this device.");
+          setError("Could not refresh Pit link. Showing the last copy on this device.");
           setFetchFailed(false);
           return;
         }
@@ -209,7 +209,7 @@ export default function ScoutP2pRelayClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Pit mesh. Showing the last copy on this device.");
+        setError("Could not refresh Pit link. Showing the last copy on this device.");
         setFetchFailed(false);
         return;
       }
@@ -257,10 +257,10 @@ export default function ScoutP2pRelayClient() {
       breadcrumbs={
         <>
           <a href={competitionHref}>Competition</a>
-          {" / Pit mesh"}
+          {" / Pit link"}
         </>
       }
-      title="Pit mesh"
+      title="Pit link"
       description="Share scout entries between tablets in the pit when venue Wi-Fi is down. Paste a token onto another tablet; the captain tablet sends the merged entries when the network is back."
     >
       <PitMeshRelated orgId={orgId} />
@@ -306,7 +306,7 @@ export default function ScoutP2pRelayClient() {
     return (
       <main className="module-page">
         {header}
-        <OfflineBanner feature="Pit mesh" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Pit link" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           title={failure ? failure.title : "Loading…"}
           description={failure ? failure.description : "Checking your team."}
@@ -332,7 +332,7 @@ export default function ScoutP2pRelayClient() {
       return (
         <main className="module-page">
           {header}
-          <OfflineBanner feature="Pit mesh" fromCache={fromCache} cachedAt={cachedAt} />
+          <OfflineBanner feature="Pit link" fromCache={fromCache} cachedAt={cachedAt} />
           {error ? (
             <p className="telemetry-status" role="alert">
               {error}
@@ -358,7 +358,7 @@ export default function ScoutP2pRelayClient() {
   return (
     <main className="module-page">
       {header}
-      <OfflineBanner feature="Pit mesh" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Pit link" fromCache={fromCache} cachedAt={cachedAt} />
       {error ? (
         <p className="telemetry-status" role="alert">
           {error}

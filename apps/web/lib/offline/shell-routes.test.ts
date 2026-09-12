@@ -252,9 +252,10 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/fmea")).toBe("Failure log");
     expect(offlineCapableLabel("/match-sim")).toBe("Match sim");
     expect(offlineCapableLabel("/pit-map-planner")).toBe("Pit Map Planner");
-    expect(offlineCapableLabel("/pairwise")).toBe("Pairwise ranking");
+    expect(offlineCapableLabel("/pairwise")).toBe("Pairwise");
     expect(offlineCapableLabel("/team-tags")).toBe("Drive-team tags");
-    expect(offlineCapableLabel("/shift-balancer")).toBe("Scout shift balancer");
+    expect(offlineCapableLabel("/shift-balancer")).toBe("Shifts");
+    expect(offlineCapableLabel("/scout-p2p-relay")).toBe("Pit link");
     expect(offlineCapableLabel("/counter-book")).toBe("Counter-book");
     expect(offlineCapableLabel("/intel")).toBe("Research");
     expect(offlineCapableLabel("/overnight-intel")).toBe("Overnight brief");
@@ -308,8 +309,9 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/team-health-dashboard")).toBe("Team Health");
     expect(offlineCapableLabel("/sketch-to-brief")).toBe("Sketch-to-Brief");
     expect(offlineCapableLabel("/scout-assisted-count")).toBe("Scout-Assisted Count");
-    expect(offlineCapableLabel("/scout-coverage-live")).toBe("Scout Coverage Live");
-    expect(offlineCapableLabel("/scout-field-budget")).toBe("Field-Count Budget");
+    expect(offlineCapableLabel("/scout-coverage-live")).toBe("Coverage");
+    expect(offlineCapableLabel("/scout-field-budget")).toBe("Field value");
+    expect(offlineCapableLabel("/data-quality-scorecard")).toBe("Data quality");
     expect(offlineCapableLabel("/scouting-heat-signals")).toBe("Scouting Heat Signals");
     expect(offlineCapableLabel("/scouting")).toBe("Scouting");
     expect(offlineCapableLabel("/scout-data-impact")).toBe("Scout Data Impact");

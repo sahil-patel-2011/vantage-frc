@@ -128,7 +128,7 @@ export const SECTION_HELP: SectionHelpEntry[] = [
     tips: ["Matches appear only after the schedule is posted and synced."],
     related: [
       { label: "Event day", href: "/command" },
-      { label: "Scout shifts", href: "/shift-balancer" },
+      { label: "Shifts", href: "/shift-balancer" },
     ],
   },
   {

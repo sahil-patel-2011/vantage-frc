@@ -62,7 +62,7 @@ function SchemaSyncRelated({ orgId }: { orgId?: string | null }) {
         Scouting
       </Button>
       <Button as="a" variant="secondary" href={hubHref("/competition", "scout-p2p-relay", orgId)}>
-        Pit mesh
+        Pit link
       </Button>
       <Button as="a" variant="secondary" href={hubHref("/competition", "scouting-schema-ab", orgId)}>
         Schema A/B
@@ -89,7 +89,7 @@ function SchemaSyncNextActions({ orgId }: { orgId: string }) {
     },
     {
       id: "mesh",
-      label: "Open Pit mesh",
+      label: "Open Pit link",
       detail: "Tablets share entries in the pit when venue Wi-Fi drops.",
       href: hubHref("/competition", "scout-p2p-relay", orgId),
       primary: false,
