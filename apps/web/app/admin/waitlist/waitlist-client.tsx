@@ -129,7 +129,7 @@ export default function WaitlistAdminClient() {
       </form>
 
       {message ? <p className="auth-message">{message}</p> : null}
-      {loading ? <EmptyState soft title="Loading waitlist…" aria-busy /> : null}
+      {loading ? <EmptyState soft title="Opening Waitlist" aria-busy /> : null}
 
       {!loading && entries.length === 0 ? (
         <EmptyState soft title="No waitlist entries match this search" description="Try another email or team number." />

@@ -321,7 +321,7 @@ export default function AdminPartnersClient() {
         <Panel className="invite-list admin-partners-list">
           <span className="eyebrow">PARTNER LEDGER</span>
           {loading ? (
-            <EmptyState soft title="Loading partners…" description="Reading platform_app_sponsors." />
+            <EmptyState soft title="Opening partners" description="Reading platform_app_sponsors." />
           ) : !sponsors.length ? (
             <EmptyState
               soft

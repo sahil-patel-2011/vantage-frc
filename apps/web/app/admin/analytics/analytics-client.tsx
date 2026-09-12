@@ -255,7 +255,7 @@ export default function AdminAnalyticsClient() {
   if (loading) {
     return (
       <main className="module-page admin-control admin-analytics-page">
-        <EmptyState soft title="Loading platform analytics…" description="Reading real activity and AI-usage rows." aria-busy />
+        <EmptyState soft title="Opening Platform analytics" description="Reading real activity and AI-usage rows." aria-busy />
       </main>
     );
   }
