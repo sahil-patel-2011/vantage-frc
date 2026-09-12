@@ -230,7 +230,7 @@ export function aiGovernanceNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "AI governance is saved per org — pick a team first.",
+        detail: "AI governance is saved per team. Choose your team.",
         href: "/workspace",
         primary: true,
       },

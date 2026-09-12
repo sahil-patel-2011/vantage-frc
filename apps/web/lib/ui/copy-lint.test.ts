@@ -176,6 +176,16 @@ const RULES: readonly Rule[] = [
     why: 'say "Choose an expense"',
   },
   {
+    label: "pick the team first",
+    pattern: /\bpick the team first\b/i,
+    why: 'say "Choose your team"',
+  },
+  {
+    label: "pick a team first",
+    pattern: /\bpick a team first\b/i,
+    why: 'say "Choose your team"',
+  },
+  {
     label: "pick your organization",
     pattern: /\bpick your organization\b/i,
     why: 'say "choose your team"',

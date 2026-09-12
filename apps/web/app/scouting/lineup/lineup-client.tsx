@@ -685,8 +685,7 @@ export default function LineupClient({ orgId }: { orgId: string }) {
         })}
         {!grouped.length ? (
           <p className="app-muted">
-            Match schedule is empty. Sync TBA after the event schedule publishes — nothing is
-            invented.
+            Match schedule is empty. Sync the event after the schedule publishes.
           </p>
         ) : null}
       </section>

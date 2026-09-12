@@ -17,6 +17,7 @@ const COPY_FILES = [
   "app/team/ai-memory/ai-memory-client.tsx",
   "app/team/budgets/budget-client.tsx",
   "app/team/usage/usage-client.tsx",
+  "lib/ai-governance/ai-governance-related.ts",
 ] as const;
 
 const NO_ORG_PAGES = [

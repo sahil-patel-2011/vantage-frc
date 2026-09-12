@@ -7,14 +7,14 @@ test.beforeEach(async ({ context }) => {
   if (!signed) await signInFixture(context);
 });
 
-test("leftover Ask AI governance board uses gold chrome", async ({ page }) => {
+test("leftover Knowledge history drops pick the team first", async ({ page }) => {
   test.setTimeout(90_000);
-  await page.goto("/ai?tab=governance");
+  await page.goto("/team/knowledge/history");
   await waitForLoadingGone(page);
   await expect(page.locator("body")).not.toContainText("Application error");
   await expect(
-    page.getByRole("heading", { name: /What Ask AI may use|Choose your team|AI/ }).first(),
+    page.getByRole("heading", { name: /Knowledge history|Choose your team/ }).first(),
   ).toBeVisible();
-  await expect(page.locator("body")).not.toContainText("Setup required");
-  await expect(page.locator("body")).not.toContainText("pick a team first");
+  await expect(page.locator("body")).not.toContainText("pick the team first");
+  await expect(page.locator("body")).not.toContainText("VANTAGE /");
 });

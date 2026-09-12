@@ -89,7 +89,7 @@ export function scoutDataImpactSetupSteps(orgId?: string | null): ScoutDataImpac
     {
       id: "accuracy",
       label: "Open Accuracy",
-      detail: "TBA-verified ranks help explain why a scout's data earned a seat.",
+      detail: "official ranks help explain why a scout's data earned a seat.",
       href: withOrgHref("/scout-accuracy", orgId),
     },
     {
@@ -236,7 +236,7 @@ export function scoutDataImpactNextActions(input: {
         {
           id: "accuracy",
           label: "Open Accuracy",
-          detail: "Ranks stay blank until TBA-verified totals exist.",
+          detail: "Ranks stay blank until official totals exist.",
           href: withOrgHref("/scout-accuracy", null),
         },
       ];
@@ -258,7 +258,7 @@ export function scoutDataImpactNextActions(input: {
       {
         id: "accuracy",
         label: "Open Accuracy",
-        detail: "TBA-verified ranks explain why a scout earned a seat.",
+        detail: "official ranks explain why a scout earned a seat.",
         href: withOrgHref("/scout-accuracy", orgId),
       },
       {
@@ -359,7 +359,7 @@ export function scoutDataImpactNextActions(input: {
     {
       id: "accuracy",
       label: "Open Accuracy",
-      detail: "Cross-check TBA ranks against who earned pick credit.",
+      detail: "Cross-check official ranks against who earned pick credit.",
       href: withOrgHref("/scout-accuracy", orgId),
     },
   ];

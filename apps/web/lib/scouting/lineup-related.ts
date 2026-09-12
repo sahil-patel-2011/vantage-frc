@@ -376,7 +376,7 @@ export function lineupNextActions(input: {
       {
         id: "command",
         label: "Sync event schedule",
-        detail: "Match slots stay blank until TBA publishes and syncs the schedule.",
+        detail: "Match slots stay blank until the event schedule syncs.",
         href: hubHref("/competition", "command", orgId),
         primary: true,
       },

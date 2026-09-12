@@ -8,6 +8,7 @@ export async function assertNoMembershipBound(
     await page.goto(route.path);
     await expect(page.locator("body")).not.toContainText("Application error");
     await expect(page.getByText("membership-bound")).toHaveCount(0);
+    await expect(page.getByText("TBA", { exact: true })).toHaveCount(0);
     for (const phrase of route.extra ?? []) {
       await expect(page.getByText(phrase)).toHaveCount(0);
     }

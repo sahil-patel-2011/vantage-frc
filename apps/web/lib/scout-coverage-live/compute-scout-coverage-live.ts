@@ -89,7 +89,7 @@ export async function computeScoutCoverageLiveView(
         {
           id: "schedule",
           label: "Sync event schedule",
-          detail: "Confirm the event key and wait for the schedule to sync from TBA",
+          detail: "Confirm the event key and wait for the schedule to sync",
           href: "/competition",
         },
       ],

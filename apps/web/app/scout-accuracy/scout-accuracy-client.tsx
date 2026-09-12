@@ -405,7 +405,7 @@ export default function ScoutAccuracyClient({ orgId: initialOrgId }: { orgId?: s
           </>
         }
         title="Scout Accuracy"
-        description="Post-event, each scout's reported totals are scored against cached TBA results — ranking the roster for pick-desk rotation."
+        description="Post-event, each scout's reported totals are scored against cached official results — ranking the roster for pick-desk rotation."
       >
         <div className="scout-accuracy-header-meta">
           <ScoutAccuracyRelatedStrip orgId={orgId} />
@@ -472,7 +472,7 @@ function SummaryTiles({ view, loaded }: { view: LiveView; loaded: boolean }) {
       <article>
         <span>Verifiable</span>
         <strong>{formatScoutAccuracyMetric(summary.verifiableEntries, loaded)}</strong>
-        <small>vs TBA totals</small>
+        <small>vs official totals</small>
       </article>
       <article>
         <span>Scouts ranked</span>
@@ -502,7 +502,7 @@ function SummaryTiles({ view, loaded }: { view: LiveView; loaded: boolean }) {
       ) : (
         <p className="app-muted" style={{ gridColumn: "1 / -1", margin: 0 }}>
           No snapshot recorded yet for this event — scores below are computed live from real
-          TBA-verified rows.
+          official rows.
         </p>
       )}
     </section>
@@ -527,7 +527,7 @@ function Leaderboard({
         badge="No verifiable entries yet"
         badgeTone="setup"
         title="No scout accuracy data yet"
-        description="Scouted totals will be scored once matches have cached official TBA results."
+        description="Scouted totals will be scored once matches have cached official results."
       >
         <Button as="a" variant="primary" href={hubHref("/competition", "scouting", view.orgId)}>
           Open Scouting
@@ -540,7 +540,7 @@ function Leaderboard({
       <header>
         <h2>Leaderboard &amp; pick-desk rotation</h2>
         <p className="app-muted">
-          Quality before volume — ranks use TBA-verified totals only.
+          Quality before volume — ranks use official totals only.
         </p>
       </header>
       <ul className="scout-accuracy-list">

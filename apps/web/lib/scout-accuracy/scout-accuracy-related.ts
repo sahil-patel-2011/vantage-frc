@@ -100,7 +100,7 @@ export function scoutAccuracySetupSteps(orgId?: string | null): ScoutAccuracySet
     {
       id: "command",
       label: "Set active event",
-      detail: "TBA results must be cached for the event before totals can be verified.",
+      detail: "official results must be cached for the event before totals can be verified.",
       href: hubHref("/competition", "command", orgId),
     },
   ];
@@ -190,7 +190,7 @@ export function scoutAccuracyShellCopy(kind: ScoutAccuracyShellKind): ScoutAccur
         kind,
         title: "Loading scout accuracy…",
         description:
-          "Checking which team you are on and TBA-verified scout rows.",
+          "Checking which team you are on and official scout rows.",
       };
     case "error":
       return {
@@ -206,7 +206,7 @@ export function scoutAccuracyShellCopy(kind: ScoutAccuracyShellKind): ScoutAccur
         badge: "Needs setup",
         title: "Choose your team",
         description:
-          "Choose your team before TBA-verified ranks appear.",
+          "Choose your team before official ranks appear.",
       };
     case "empty":
       return {
@@ -214,14 +214,14 @@ export function scoutAccuracyShellCopy(kind: ScoutAccuracyShellKind): ScoutAccur
         badge: "No scores yet",
         title: "Waiting on verifiable scout rows",
         description:
-          "The leaderboard stays blank until your team logs match-scout entries for an event with cached TBA results. Cross-check Scouting, Coverage, and Strategy.",
+          "The leaderboard stays blank until your team logs match-scout entries for an event with cached official results. Cross-check Scouting, Coverage, and Strategy.",
       };
     default:
       return {
         kind: "ready",
         title: "Accuracy leaderboard",
         description:
-          "Ranks use only real scout totals vs cached TBA score breakdowns.",
+          "Ranks use only real scout totals vs cached official score breakdowns.",
       };
   }
 }
@@ -273,7 +273,7 @@ export function scoutAccuracyNextActions(input: {
       {
         id: "scouting",
         label: "Open Scouting",
-        detail: "Log match-scout entries so TBA can verify totals.",
+        detail: "Log match-scout entries so official results can verify totals.",
         href: hubHref("/competition", "scouting", orgId),
         primary: true,
       },
@@ -292,7 +292,7 @@ export function scoutAccuracyNextActions(input: {
       {
         id: "command",
         label: "Set active event",
-        detail: "Confirm the TBA event so official score breakdowns can cache.",
+        detail: "Confirm the event so official score breakdowns can cache.",
         href: hubHref("/competition", "command", orgId),
       },
     ];
@@ -303,7 +303,7 @@ export function scoutAccuracyNextActions(input: {
       {
         id: "retry",
         label: "Retry scout accuracy",
-        detail: "Reload real TBA-verified ranks.",
+        detail: "Reload real official ranks.",
         href: withOrgHref("/scout-accuracy", orgId),
         primary: true,
       },
@@ -333,7 +333,7 @@ export function scoutAccuracyNextActions(input: {
       {
         id: "scouting",
         label: "Log scout entries",
-        detail: "Accuracy stays blank until membership-bound match rows exist.",
+        detail: "Accuracy stays blank until this team's match entries exist.",
         href: hubHref("/competition", "scouting", orgId),
         primary: true,
       },
@@ -352,7 +352,7 @@ export function scoutAccuracyNextActions(input: {
       {
         id: "command",
         label: "Sync event results",
-        detail: "TBA score breakdowns must be cached before totals verify.",
+        detail: "Official score breakdowns must be synced before totals verify.",
         href: hubHref("/competition", "command", orgId),
       },
     ];
@@ -367,7 +367,7 @@ export function scoutAccuracyNextActions(input: {
           : "Review pick-desk rotation",
       detail:
         suggestedPromotions > 0
-          ? "Confirm TBA-accurate scouts into the pick-desk conversation."
+          ? "Confirm scouts whose totals match official results into the pick-desk conversation."
           : "Ranks use only verifiable totals.",
       href: suggestedPromotions > 0 ? "#accuracy-leaderboard" : hubHref("/competition", "strategy", orgId),
       primary: true,
@@ -375,7 +375,7 @@ export function scoutAccuracyNextActions(input: {
     {
       id: "scouting",
       label: "Open Scouting",
-      detail: "Keep logging membership-bound match rows for fresher ranks.",
+      detail: "Keep logging this team's match entries for fresher ranks.",
       href: hubHref("/competition", "scouting", orgId),
     },
     {

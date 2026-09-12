@@ -20,6 +20,12 @@ const JOIN_OR_PICK_FILES = [
   "lib/team/team-admin-related.ts",
   "app/team/admin/page.tsx",
   "lib/ai-chat/ai-chat-related.ts",
+  "app/team/audit/page.tsx",
+  "app/team/posture/page.tsx",
+  "app/team/security/exports/page.tsx",
+  "app/team/knowledge/history/page.tsx",
+  "lib/ai-governance/ai-governance-related.ts",
+  "lib/help/articles.ts",
 ] as const;
 
 const SCOUT_ROBOT_FILES = [
@@ -33,6 +39,7 @@ describe("leftover student chrome says Choose your team", () => {
       const src = readFileSync(join(WEB_ROOT, rel), "utf8");
       expect(src, rel).not.toMatch(/Join or pick a team/);
       expect(src, rel).not.toMatch(/\bpick a team first\b/i);
+      expect(src, rel).not.toMatch(/\bpick the team first\b/i);
     }
   });
 

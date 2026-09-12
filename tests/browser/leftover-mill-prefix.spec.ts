@@ -21,5 +21,8 @@ test("leftover Display / Audit boards drop VANTAGE / mill prefix", async ({ page
     await expect(page.locator("body"), `${route.path} still shows VANTAGE /`).not.toContainText(
       "VANTAGE /",
     );
+    await expect(page.locator("body"), `${route.path} still says pick the team first`).not.toContainText(
+      "pick the team first",
+    );
   }
 });

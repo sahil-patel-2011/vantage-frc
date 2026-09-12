@@ -77,7 +77,7 @@ export function scoutCoverageLiveSetupSteps(orgId?: string | null): ScoutCoverag
     {
       id: "command",
       label: "Set active event",
-      detail: "Pin the TBA event so the live grid can read the real match schedule.",
+      detail: "Pin the event so the live grid can read the real match schedule.",
       href: hubHref("/competition", "command", orgId),
     },
     {
@@ -95,7 +95,7 @@ export function scoutCoverageLiveSetupSteps(orgId?: string | null): ScoutCoverag
     {
       id: "crossval",
       label: "Open Cross-Validation",
-      detail: "Once covered, check scout totals against cached TBA results.",
+      detail: "Once covered, check scout totals against cached official results.",
       href: withOrgHref("/scout-crossval", orgId),
     },
   ];
@@ -185,7 +185,7 @@ export function scoutCoverageLiveShellCopy(kind: ScoutCoverageLiveShellKind): Sc
         badge: "No schedule yet",
         title: "Waiting on a real match schedule",
         description:
-          "The grid stays blank until the active event has synced TBA alliances. Cross-check Event Day, Scouting, and Lineup.",
+          "The grid stays blank until the active event has synced match alliances. Cross-check Event Day, Scouting, and Lineup.",
       };
     default:
       return {
@@ -236,7 +236,7 @@ export function scoutCoverageLiveNextActions(input: {
         {
           id: "crossval",
           label: "Open Cross-Validation",
-          detail: "TBA checks stay blank until real scout totals exist.",
+          detail: "Official checks stay blank until real scout totals exist.",
           href: withOrgHref("/scout-crossval", null),
         },
       ];
@@ -245,7 +245,7 @@ export function scoutCoverageLiveNextActions(input: {
       {
         id: "command",
         label: "Set active event",
-        detail: "Confirm the TBA event so the schedule can populate the grid.",
+        detail: "Confirm the event so the schedule can populate the grid.",
         href: hubHref("/competition", "command", orgId),
         primary: true,
       },
@@ -264,7 +264,7 @@ export function scoutCoverageLiveNextActions(input: {
       {
         id: "crossval",
         label: "Open Cross-Validation",
-        detail: "After coverage lands, compare totals to cached TBA results.",
+        detail: "After coverage lands, compare totals to cached official results.",
         href: withOrgHref("/scout-crossval", orgId),
       },
     ];
@@ -294,7 +294,7 @@ export function scoutCoverageLiveNextActions(input: {
       {
         id: "crossval",
         label: "Open Cross-Validation",
-        detail: "TBA cross-checks stay available while coverage reloads.",
+        detail: "Official cross-checks stay available while coverage reloads.",
         href: withOrgHref("/scout-crossval", orgId),
       },
     ];
@@ -305,14 +305,14 @@ export function scoutCoverageLiveNextActions(input: {
       {
         id: "command",
         label: "Sync event schedule",
-        detail: "The grid needs cached TBA alliances before gaps can appear.",
+        detail: "The grid needs cached match alliances before gaps can appear.",
         href: hubHref("/competition", "command", orgId),
         primary: true,
       },
       {
         id: "scouting",
         label: "Open Scouting",
-        detail: "Membership-bound scout rows stay ready once the schedule lands.",
+        detail: "This team's scout rows stay ready once the schedule lands.",
         href: hubHref("/competition", "scouting", orgId),
       },
       {
@@ -324,7 +324,7 @@ export function scoutCoverageLiveNextActions(input: {
       {
         id: "crossval",
         label: "Open Cross-Validation",
-        detail: "TBA field checks wait on the same real scout data.",
+        detail: "Official field checks wait on the same real scout data.",
         href: withOrgHref("/scout-crossval", orgId),
       },
     ];
@@ -351,7 +351,7 @@ export function scoutCoverageLiveNextActions(input: {
     {
       id: "scouting",
       label: "Open Scouting",
-      detail: "Keep logging membership-bound match rows to clear thin cells.",
+      detail: "Keep logging this team's match entries to clear thin cells.",
       href: hubHref("/competition", "scouting", orgId),
     },
     {
@@ -363,7 +363,7 @@ export function scoutCoverageLiveNextActions(input: {
     {
       id: "crossval",
       label: "Open Cross-Validation",
-      detail: "Spot TBA conflicts on covered robots next.",
+      detail: "Spot official conflicts on covered robots next.",
       href: withOrgHref("/scout-crossval", orgId),
     },
   ];
