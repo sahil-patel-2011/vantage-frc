@@ -11,6 +11,6 @@ describe("Match Copilot last snapshot stays on the phone", () => {
     expect(src).toMatch(/putFeatureSnapshot/);
     expect(src).toMatch(/"match-copilot"/);
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
-    expect(src).toMatch(/feature="Match Copilot"/);
+    expect(src).toMatch(/feature="Briefing"/);
   });
 });

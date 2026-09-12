@@ -18,9 +18,9 @@ function trimmedOrNull(value: unknown, max = 64): string | null {
 
 const SETUP_FALLBACK: MatchCopilotView = {
   status: "setup_required",
-  message: "Could not load Match Copilot. Choose your team and confirm database access.",
+  message: "Could not load Briefing. Choose your team and confirm database access.",
   steps: [
-    { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
+    { id: "workspace", label: "Choose your team", detail: "Choose your team.", href: "/workspace" },
   ],
   orgId: null,
 };
@@ -77,6 +77,6 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    return failMeteredAi(error, "Match Copilot request failed");
+    return failMeteredAi(error, "Briefing request failed");
   }
 }

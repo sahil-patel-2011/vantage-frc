@@ -2,7 +2,7 @@ import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 import { setupActionsFrom } from "../setup-actions";
 
-/** Soft-UI related surfaces for Inspection Copilot (never DEMO risk scores). */
+/** Soft-UI related surfaces for Inspection (never DEMO risk scores). */
 export const INSPECTION_COPILOT_RELATED_LINKS = [
   { id: "batteries", label: "Batteries", kind: "team" as const, tab: "batteries" },
   { id: "fmea", label: "Failure log", kind: "build" as const, tab: "fmea" },
@@ -28,7 +28,7 @@ export const INSPECTION_COPILOT_RELATED_INCLUDE: InspectionCopilotRelatedId[] = 
 ];
 
 /**
- * Soft-UI cross-links from Inspection Copilot → Batteries / FMEA / Weigh-in.
+ * Soft-UI cross-links from Inspection → Batteries / FMEA / Weigh-in.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function inspectionCopilotRelatedLinks(
@@ -84,7 +84,7 @@ export function formatInspectionRiskPct(value: unknown, loaded: boolean, hasChec
   return `${Math.round(Math.min(1, n) * 100)}%`;
 }
 
-/** Classify Inspection Copilot Soft-UI shell — never invents DEMO risk scores. */
+/** Classify Inspection Soft-UI shell — never invents DEMO risk scores. */
 export function classifyInspectionCopilotShell(input: {
   loading: boolean;
   fetchFailed?: boolean;
@@ -199,7 +199,7 @@ export function inspectionSetupSteps(orgId?: string | null): InspectionCopilotSe
 }
 
 /**
- * Soft-UI next actions for Inspection Copilot empty/setup shells.
+ * Soft-UI next actions for Inspection empty/setup shells.
  * Destinations already in the header related strip are omitted so each href
  * appears once.
  */

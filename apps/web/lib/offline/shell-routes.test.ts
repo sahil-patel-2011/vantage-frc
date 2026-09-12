@@ -243,7 +243,7 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/strategy/draft")).toBe("Alliance board");
     expect(offlineCapableLabel("/scouting/lineup")).toBe("Lineup & coverage");
     expect(offlineCapableLabel("/match-strategy-cards")).toBe("Match strategy cards");
-    expect(offlineCapableLabel("/match-copilot")).toBe("Match Copilot");
+    expect(offlineCapableLabel("/match-copilot")).toBe("Briefing");
     expect(offlineCapableLabel("/event-readiness")).toBe("Event readiness");
     expect(offlineCapableLabel("/video-analysis")).toBe("Video");
     expect(offlineCapableLabel("/video")).toBe("Match video");

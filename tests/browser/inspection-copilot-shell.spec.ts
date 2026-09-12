@@ -29,6 +29,6 @@ test("Inspection Copilot still loads after the panel split", async ({ page }) =>
   await expect(form).toBeVisible();
   await expect(page.getByText("default 115 until you set one")).toBeVisible();
   await expect(page.getByRole("button", { name: "Predict inspection failures" })).toBeVisible();
-  await expect(page.getByRole("region", { name: "Inspection Copilot summary" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Inspection summary" })).toBeVisible();
   await expect(form.getByRole("tab")).toHaveCount(0);
 });

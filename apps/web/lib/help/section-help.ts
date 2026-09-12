@@ -102,7 +102,7 @@ export const SECTION_HELP: SectionHelpEntry[] = [
       "Skim opponent film and the drive-team readiness row before you queue.",
     ],
     tips: [
-      "Match Copilot was folded into this page — /match-copilot lands here.",
+      "The old match brief page now opens here.",
       "Sections stay empty when there is no scouting on a team; empty means unscouted, not average.",
     ],
     related: [

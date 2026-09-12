@@ -105,7 +105,7 @@ export default function InspectionCopilotClient() {
         if (!response.ok || !isInspectionCopilotView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Inspection Copilot. Showing the last copy on this device.");
+            setError("Could not refresh Inspection. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -120,7 +120,7 @@ export default function InspectionCopilotClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Inspection Copilot. Showing the last copy on this device.");
+          setError("Could not refresh Inspection. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -202,7 +202,7 @@ export default function InspectionCopilotClient() {
   if (shell === "loading") {
     return (
       <InspectionShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Inspection Copilot" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Inspection" fromCache={fromCache} cachedAt={cachedAt} />
       </InspectionShell>
     );
   }
@@ -216,7 +216,7 @@ export default function InspectionCopilotClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Inspection Copilot" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Inspection" fromCache={fromCache} cachedAt={cachedAt} />
       </InspectionShell>
     );
   }
@@ -230,7 +230,7 @@ export default function InspectionCopilotClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Inspection Copilot" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Inspection" fromCache={fromCache} cachedAt={cachedAt} />
       </InspectionShell>
     );
   }
@@ -238,7 +238,7 @@ export default function InspectionCopilotClient() {
   if (view?.status !== "live") {
     return (
       <InspectionShell description={shellCopy.description} orgId={orgId} shell="setup">
-        <OfflineBanner feature="Inspection Copilot" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Inspection" fromCache={fromCache} cachedAt={cachedAt} />
       </InspectionShell>
     );
   }
@@ -283,7 +283,7 @@ export default function InspectionCopilotClient() {
         </div>
       </PageHeader>
 
-      <OfflineBanner feature="Inspection Copilot" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Inspection" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

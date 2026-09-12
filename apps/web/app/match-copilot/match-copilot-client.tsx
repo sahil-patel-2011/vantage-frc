@@ -129,10 +129,10 @@ function CopilotShell({
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Match Copilot"}
+            {" / Briefing"}
           </>
         }
-        title="Match Copilot"
+        title="Briefing"
         description={description}
       >
         <CopilotRelatedStrip orgId={orgId} />
@@ -213,7 +213,7 @@ export default function MatchCopilotClient() {
         if (!response.ok || !isMatchCopilotView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Match Copilot. Showing the last copy on this device.");
+            setError("Could not refresh Briefing. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -227,7 +227,7 @@ export default function MatchCopilotClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Match Copilot. Showing the last copy on this device.");
+          setError("Could not refresh Briefing. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -297,7 +297,7 @@ export default function MatchCopilotClient() {
   if (shell === "loading") {
     return (
       <CopilotShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Match Copilot" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Briefing" fromCache={fromCache} cachedAt={cachedAt} />
       </CopilotShell>
     );
   }
@@ -311,7 +311,7 @@ export default function MatchCopilotClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Match Copilot" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Briefing" fromCache={fromCache} cachedAt={cachedAt} />
       </CopilotShell>
     );
   }
@@ -323,7 +323,7 @@ export default function MatchCopilotClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Match Copilot" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Briefing" fromCache={fromCache} cachedAt={cachedAt} />
       </CopilotShell>
     );
   }
@@ -331,7 +331,7 @@ export default function MatchCopilotClient() {
   if (view?.status !== "live") {
     return (
       <CopilotShell description={shellCopy.description} orgId={orgId} shell="setup">
-        <OfflineBanner feature="Match Copilot" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Briefing" fromCache={fromCache} cachedAt={cachedAt} />
       </CopilotShell>
     );
   }
@@ -342,10 +342,10 @@ export default function MatchCopilotClient() {
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Match Copilot"}
+            {" / Briefing"}
           </>
         }
-        title="Match Copilot"
+        title="Briefing"
         description="A glanceable 60-second brief for your next match — fusing opponent rating, your stored strategy plan, open failure risks, and live battery health into prioritized do-this callouts. Cross-check Strategy, Command, and Failure log."
       >
         <div className="match-copilot-header-actions">
@@ -357,7 +357,7 @@ export default function MatchCopilotClient() {
         </div>
       </PageHeader>
 
-      <OfflineBanner feature="Match Copilot" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Briefing" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -399,7 +399,7 @@ export default function MatchCopilotClient() {
           <RisksPanel view={view} />
           <BatteryPanel view={view} />
         </div>
-        <Panel className="match-copilot-tip" aria-label="Match Copilot tip">
+        <Panel className="match-copilot-tip" aria-label="Briefing tip">
           <span className="eyebrow">Grounding path</span>
           <p className="app-muted" style={{ marginTop: 8 }}>
             Keep the next-match plan in <a href={strategyHref}>Strategy</a>, confirm the active event
@@ -431,7 +431,7 @@ function SummaryTiles({
     { label: "Batteries tracked", value: formatMatchCopilotMetric(batteryCount, loaded) },
   ];
   return (
-    <section className="match-copilot-stats" aria-label="Match Copilot counts">
+    <section className="match-copilot-stats" aria-label="Briefing counts">
       {tiles.map((tile) => (
         <div key={tile.label}>
           <strong>{tile.value}</strong>

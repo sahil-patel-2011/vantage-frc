@@ -67,7 +67,7 @@ function setupSteps(orgId: string | null): ReadinessScoreSetupStep[] {
     },
     {
       id: "inspection-copilot",
-      label: "Open Inspection Copilot",
+      label: "Open Inspection",
       detail: "Inspection readiness stays blank until measurements exist.",
       href: hubHref("/build", "inspection-copilot", orgId),
     },

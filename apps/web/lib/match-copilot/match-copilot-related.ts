@@ -1,7 +1,7 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Match Copilot (never DEMO match metrics). */
+/** Soft-UI related surfaces for Briefing (never DEMO match metrics). */
 export const MATCH_COPILOT_RELATED_LINKS = [
   { id: "strategy", label: "Strategy", kind: "hub" as const, hub: "/competition" as const, tab: "strategy" },
   { id: "command", label: "Command", kind: "hub" as const, hub: "/competition" as const, tab: "command" },
@@ -22,7 +22,7 @@ export type MatchCopilotRelatedLink = {
 export const MATCH_COPILOT_RELATED_INCLUDE: MatchCopilotRelatedId[] = ["strategy", "command", "fmea"];
 
 /**
- * Soft-UI cross-links from Match Copilot → Strategy / Command / FMEA.
+ * Soft-UI cross-links from Briefing → Strategy / Command / FMEA.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function matchCopilotRelatedLinks(
@@ -71,7 +71,7 @@ export function shouldShowMatchCopilotSummaryTiles(calloutCount: number): boolea
   return calloutCount > 0;
 }
 
-/** Classify Match Copilot Soft-UI shell — never invents DEMO match metrics. */
+/** Classify Briefing Soft-UI shell — never invents DEMO match metrics. */
 export function classifyMatchCopilotShell(input: {
   loading: boolean;
   fetchFailed?: boolean;
@@ -92,7 +92,7 @@ export function matchCopilotShellCopy(kind: MatchCopilotShellKind): MatchCopilot
     case "loading":
       return {
         kind,
-        title: "Loading Match Copilot…",
+        title: "Loading Briefing…",
         description:
           "Checking which team you are on and your next match.",
       };
@@ -100,7 +100,7 @@ export function matchCopilotShellCopy(kind: MatchCopilotShellKind): MatchCopilot
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Match Copilot",
+        title: "Could not load Briefing",
         description:
           "A network or server issue blocked the brief. Retry, or open Strategy / Command / Failure log while it reloads.",
       };
@@ -131,7 +131,7 @@ export function matchCopilotShellCopy(kind: MatchCopilotShellKind): MatchCopilot
 }
 
 /**
- * Soft-UI next actions for Match Copilot empty/setup shells.
+ * Soft-UI next actions for Briefing empty/setup shells.
  * Points at Strategy / Command / FMEA — never invents DEMO match metrics.
  */
 export function matchCopilotNextActions(input: {
@@ -178,7 +178,7 @@ export function matchCopilotNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Finish membership setup so Match Copilot can load.",
+        detail: "Finish membership setup so Briefing can load.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
       },
@@ -207,7 +207,7 @@ export function matchCopilotNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Match Copilot",
+        label: "Retry Briefing",
         detail: "Reload real match and brief rows.",
         href: withOrgHref("/match-copilot", orgId),
         primary: true,

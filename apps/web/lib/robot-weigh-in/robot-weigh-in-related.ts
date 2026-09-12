@@ -5,7 +5,7 @@ import { withOrgHref } from "../nav/product-nav";
 /** Soft-UI related surfaces for Robot Weigh-In (never DEMO scale readings). */
 export const ROBOT_WEIGH_IN_RELATED_LINKS = [
   { id: "readiness-score", label: "Readiness", tab: "readiness-score" },
-  { id: "inspection-copilot", label: "Inspection Copilot", tab: "inspection-copilot" },
+  { id: "inspection-copilot", label: "Inspection", tab: "inspection-copilot" },
   { id: "spare-robot-kit", label: "Spare Robot Kit", tab: "spare-robot-kit" },
   { id: "fmea", label: "Failure log", tab: "fmea" },
 ] as const;
@@ -227,7 +227,7 @@ export function robotWeighInNextActions(input: {
       },
       {
         id: "inspection",
-        label: "Open Inspection Copilot",
+        label: "Open Inspection",
         detail: "Prep inspection checks beside future event weigh-ins.",
         href: hubHref("/build", "inspection-copilot", orgId),
       },
@@ -254,7 +254,7 @@ export function robotWeighInNextActions(input: {
       },
       {
         id: "inspection",
-        label: "Open Inspection Copilot",
+        label: "Open Inspection",
         detail: "Pair the playoff re-weigh with inspection readiness.",
         href: hubHref("/build", "inspection-copilot", orgId),
       },

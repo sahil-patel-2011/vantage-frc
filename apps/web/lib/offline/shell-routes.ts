@@ -443,7 +443,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/match-video-index")) return "Match video index";
   if (bare.startsWith("/match-strategy-cards")) return "Match strategy cards";
   if (bare.startsWith("/match-debrief")) return "Match debrief";
-  if (bare.startsWith("/match-copilot")) return "Match Copilot";
+  if (bare.startsWith("/match-copilot")) return "Briefing";
   if (bare.startsWith("/event-readiness")) return "Event readiness";
   if (bare.startsWith("/notifications/preferences")) return "Notification preferences";
   if (bare.startsWith("/notifications")) return "Notifications";

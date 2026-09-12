@@ -5,7 +5,7 @@ import { withOrgHref } from "../nav/product-nav";
 /** Soft-UI related surfaces for Robot Readiness Score (never DEMO readiness metrics). */
 export const READINESS_SCORE_RELATED_LINKS = [
   { id: "fmea", label: "Failure log", tab: "fmea" },
-  { id: "inspection-copilot", label: "Inspection Copilot", tab: "inspection-copilot" },
+  { id: "inspection-copilot", label: "Inspection", tab: "inspection-copilot" },
   { id: "code", label: "Code Coach", tab: "code" },
   { id: "cad", label: "CAD", tab: "cad" },
 ] as const;
@@ -86,7 +86,7 @@ export function readinessScoreSetupSteps(orgId?: string | null): ReadinessScoreS
     },
     {
       id: "inspection-copilot",
-      label: "Open Inspection Copilot",
+      label: "Open Inspection",
       detail: "Weight / frame / wiring readiness stays blank until measurements exist.",
       href: hubHref("/build", "inspection-copilot", orgId),
     },
@@ -222,7 +222,7 @@ export function readinessScoreNextActions(input: {
       },
       {
         id: "inspection-copilot",
-        label: "Open Inspection Copilot",
+        label: "Open Inspection",
         detail: "Inspection checks stay available while readiness reloads.",
         href: hubHref("/build", "inspection-copilot", orgId),
       },
@@ -246,7 +246,7 @@ export function readinessScoreNextActions(input: {
       },
       {
         id: "inspection-copilot",
-        label: "Open Inspection Copilot",
+        label: "Open Inspection",
         detail: "Pair inspection measurements with ship readiness.",
         href: hubHref("/build", "inspection-copilot", orgId),
       },
@@ -278,7 +278,7 @@ export function readinessScoreNextActions(input: {
     },
     {
       id: "inspection-copilot",
-      label: "Open Inspection Copilot",
+      label: "Open Inspection",
       detail: "Cross-check weight and wiring against inspection limits.",
       href: hubHref("/build", "inspection-copilot", orgId),
     },

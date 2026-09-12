@@ -23,8 +23,9 @@ test("leftover Match Copilot drops FMEA student copy", async ({ page }) => {
   await page.goto("/match-copilot");
   await expect(page.locator("body")).not.toContainText("Application error");
   await expect(page.locator("body")).toContainText(
-    /Match Copilot|Choose your team|Needs setup|Your session ended|Sign in/i,
+    /Briefing|Choose your team|Needs setup|Your session ended|Sign in/i,
   );
+  await expect(page.locator("body")).not.toContainText("Match Copilot");
   await expect(page.locator("body")).not.toContainText("TBA/Statbotics");
   await expect(page.locator("body")).not.toContainText("Season EPA");
   await expect(page.locator("body")).not.toContainText("Open FMEA risks");
