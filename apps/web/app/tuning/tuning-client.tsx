@@ -279,7 +279,7 @@ export default function TuningClient({ orgId }: { orgId: string | null }) {
         </PageHeader>
         <OfflineBanner feature="Tuning log" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
-          title={failure ? failure.title : "Loading tuning constants…"}
+          title={failure ? failure.title : "Opening Tuning log"}
           description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >

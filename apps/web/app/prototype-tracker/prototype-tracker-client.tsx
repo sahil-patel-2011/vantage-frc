@@ -304,7 +304,7 @@ export default function PrototypeTrackerClient(_props: { embedded?: boolean } = 
         <OfflineBanner feature="Prototypes" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
-          title={copy ? copy.title : "Loading prototype tracker…"}
+          title={copy ? copy.title : "Opening Prototypes"}
           description={copy ? copy.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >

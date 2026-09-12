@@ -341,7 +341,7 @@ export default function CadSetupWizard({ orgId }: { orgId: string }) {
           soft
           badge={chooseTeam ? "Needs setup" : undefined}
           badgeTone={chooseTeam ? "setup" : undefined}
-          title={chooseTeam ? "Choose your team" : failure ? failure.title : "Loading CAD setup…"}
+          title={chooseTeam ? "Choose your team" : failure ? failure.title : "Opening CAD setup"}
           description={
             chooseTeam
               ? "Choose your team to connect Onshape or pair Fusion."

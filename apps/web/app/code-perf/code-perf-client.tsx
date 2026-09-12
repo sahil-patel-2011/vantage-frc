@@ -296,7 +296,7 @@ export default function CodePerfClient() {
         {header}
         <OfflineBanner feature="Code vs match" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
-          title={failure ? failure.title : "Loading…"}
+          title={failure ? failure.title : "Opening Code vs match"}
           description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >
