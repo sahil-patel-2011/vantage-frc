@@ -272,7 +272,7 @@ export default function AlumniNetworkClient() {
         {header}
         <OfflineBanner feature="Alumni" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
-          title={failure ? failure.title : "Loading…"}
+          title={failure ? failure.title : "Opening Alumni"}
           description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >

@@ -379,7 +379,7 @@ export default function GettingStartedClient({ orgId }: { orgId: string }) {
       {!view ? (
         <EmptyState
           soft
-          title={failure ? failure.title : "Loading…"}
+          title={failure ? failure.title : "Opening Team setup"}
           description={failure ? failure.description : "Checking this team's setup."}
           aria-busy={!fetchFailed}
         >

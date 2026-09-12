@@ -315,7 +315,7 @@ export default function MentorHoursClient() {
         {header}
         <OfflineBanner feature="Mentor hours" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
-          title={failure ? failure.title : "Loading…"}
+          title={failure ? failure.title : "Opening Mentor hours"}
           description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >
