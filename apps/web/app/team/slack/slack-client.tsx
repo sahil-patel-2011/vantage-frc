@@ -300,13 +300,13 @@ export default function TeamSlackClient({ orgId }: { orgId: string }) {
       <form className="app-card team-discord-panel" onSubmit={onSave}>
         <h2>Connect Slack</h2>
         <label>
-          Incoming webhook URL
+          Slack channel link
           <input
             type="password"
             autoComplete="off"
             value={form.webhookUrl}
             onChange={(event) => setForm({ ...form, webhookUrl: event.target.value })}
-            placeholder={view.hasWebhook ? "Saved — paste to replace" : "https://hooks.slack.com/services/…"}
+            placeholder={view.hasWebhook ? "Saved — paste to replace" : "Paste the Slack channel link"}
           />
         </label>
         <label>
@@ -334,7 +334,7 @@ export default function TeamSlackClient({ orgId }: { orgId: string }) {
           />
         </label>
         <label>
-          Event signing secret (optional if SLACK_SIGNING_SECRET is set on the server)
+          Event signing secret (optional if a mentor already set it)
           <input
             type="password"
             autoComplete="off"
@@ -372,7 +372,7 @@ export default function TeamSlackClient({ orgId }: { orgId: string }) {
           Event Request URL for Slack → Event Subscriptions:{" "}
           <code className="slack-events-url">{view.eventsUrl ?? "…"}</code>
           {!view.inboundReady
-            ? " — inbound replies also need SLACK_SIGNING_SECRET on the deployment, or a per-team signing secret saved above."
+            ? " — inbound replies also need a mentor to finish Slack setup on this deployment, or a per-team signing secret saved above."
             : null}{" "}
           Subscribe to <code>message.channels</code>; Vantage ignores bot messages so its own posts do not loop.
         </p>
