@@ -1696,7 +1696,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
     id: "funding-model",
     slug: "funding-model",
     category: "business",
-    title: "How the team is funded",
+    title: "Funding",
     summary: "Pick one: you pay, the school pays with no sponsors, you have sponsors, or the school plus sponsors. Business tools match that choice.",
     keywords: ["funding", "sponsors", "school funded", "dues"],
     relatedHref: "/team/background",
@@ -1721,7 +1721,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
     id: "packing-lists",
     slug: "packing-lists",
     category: "competition",
-    title: "Packing lists at the event",
+    title: "Packing lists",
     summary:
       "Check off the load-out on your phone. The last list stays on this device if venue Wi-Fi drops; packed ticks upload when you are back online.",
     keywords: ["packing", "load-out", "load out", "trailer", "what to bring", "cart", "offline packing"],
@@ -1747,7 +1747,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
     id: "batteries-at-events",
     slug: "batteries-at-events",
     category: "team",
-    title: "Battery logs in the pit",
+    title: "Battery logs",
     summary:
       "Charge cycles and assignments come from logs your team enters. The last snapshot stays on this device; a new log queues if the Wi-Fi drops.",
     keywords: ["batteries", "charge log", "pack rotation", "internal resistance", "offline batteries"],
@@ -1772,7 +1772,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
     id: "offline-at-events",
     slug: "offline-at-events",
     category: "competition",
-    title: "Using the shop without signal",
+    title: "Shop without signal",
     summary:
       "Competition, Hours, Chat, Files, Packing, Batteries, Pit, Calendar, and Match notes keep working on this device. Your last snapshot stays on screen. Ticks, dates, RSVPs, clock-ins, packing checks, battery logs, checklist taps, notes, and chat queue and send when you are back online.",
     keywords: ["offline", "venue wifi", "outbox", "keep on this device", "hours", "chat"],
