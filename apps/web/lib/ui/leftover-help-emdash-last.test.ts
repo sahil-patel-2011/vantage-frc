@@ -37,6 +37,9 @@ describe("leftover student help-emdash-last chrome", () => {
     }
     const articles = readFileSync(join(WEB, "lib/help/articles.ts"), "utf8");
     expect(articles).toMatch(/title: "AI subscription bridge"/);
+    expect(articles).toMatch(/heading: "Your Claude Code"/);
+    expect(articles).not.toMatch(/Claude Code CLI/);
+    expect(articles).not.toMatch(/Codex CLI/);
     expect(articles).toMatch(/title: "Edit Home"/);
     expect(articles).toMatch(/title: "Parts catalog"/);
     expect(articles).toMatch(/title: "Team agent config"/);

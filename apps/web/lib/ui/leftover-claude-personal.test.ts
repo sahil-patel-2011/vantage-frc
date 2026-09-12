@@ -36,5 +36,15 @@ describe("leftover Your Claude Code on the subscription bridge", () => {
     expect(client).toMatch(/Choose your team/);
     expect(client).not.toMatch(/ONSHAPE_|vantage-cad|key_source|\bCLI\b/);
     expect(client).not.toMatch(/primary-action/);
+    const articles = readFileSync(join(WEB, "lib/help/articles.ts"), "utf8");
+    expect(articles).toMatch(/title: "AI subscription bridge"/);
+    expect(articles).toMatch(/heading: "Your Claude Code"/);
+    expect(articles).not.toMatch(/Claude Code CLI/);
+    expect(articles).not.toMatch(/Codex CLI/);
+    const help = readFileSync(join(WEB, "lib/help/section-help.ts"), "utf8");
+    expect(help).toMatch(/title: "Subscription bridge"/);
+    expect(help).toMatch(/Your Claude Code/);
+    expect(help).not.toMatch(/Claude Code CLI/);
+    expect(help).not.toMatch(/Codex CLI/);
   });
 });

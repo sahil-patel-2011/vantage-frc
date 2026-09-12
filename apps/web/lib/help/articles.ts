@@ -1328,6 +1328,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       "claude pro",
       "claude max",
       "claude code",
+      "your claude code",
       "chatgpt",
       "codex",
       "free ai",
@@ -1340,9 +1341,17 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "How it works",
         body: [
-          "A member (typically a mentor) who already pays for Claude Pro/Max — which includes the Claude Code CLI — or ChatGPT runs a tiny bridge service on an always-on computer where that CLI is signed in.",
-          "The bridge asks for an 8-character pairing code, approved at /team/ai-bridge — pairing is the subscriber's own consent to give, and theirs to revoke. Bridged turns are metered at $0 API cost because they run under the CLI's subscription auth.",
-          "Claude Code is the verified path; the ChatGPT/Codex path is experimental and only used when the Codex CLI is actually detected on the machine.",
+          "A member who already pays for Claude or ChatGPT can run the team's AI from their own computer. Those turns cost the team $0.",
+          "That computer shows an 8-character code. Approve it at /team/ai-bridge. Only approve a code from a computer you control.",
+          "Claude Code is the usual path. ChatGPT works when that computer is signed in.",
+        ],
+      },
+      {
+        heading: "Your Claude Code",
+        body: [
+          "Run this signed-in person's Claude Code on this computer. Only their turns. No extra team usage.",
+          "This is not the team's shared subscription bridge. Another person cannot use your session.",
+          "On /team/ai-bridge, pick Your Claude Code when you pair, or flip a computer you paired.",
         ],
       },
       {

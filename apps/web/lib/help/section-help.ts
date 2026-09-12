@@ -1421,9 +1421,9 @@ export const SECTION_HELP: SectionHelpEntry[] = [
     when: "Preseason to pair; it serves the team whenever the machine is online.",
     moments: ["preseason", "build", "pre-comp"],
     how: [
-      "On the always-on machine, sign in the Claude Code CLI (verified path; Codex is experimental) and run the bridge's setup to get an 8-character code.",
-      "Approve the code at /team/ai-bridge — pairing is the subscriber's own consent.",
-      "Pick the device's coverage: interactive chat only (default), or Everything to run all of Vantage's AI on the subscription.",
+      "On the always-on computer, sign in to Claude or ChatGPT. The bridge app prints an 8-character code.",
+      "Approve the code at /team/ai-bridge. Pair for the team, or pick Your Claude Code so only your turns run through it.",
+      "Pick what runs on this subscription: interactive chat only (default), or Everything to run all of Vantage's AI on the subscription.",
       "Revoke the device on the same page to stop routing immediately.",
     ],
     tips: [
