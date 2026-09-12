@@ -283,7 +283,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "edit-home",
     slug: "edit-home",
-    title: "Edit Home — drag, remove, add widgets",
+    title: "Edit Home",
     summary:
       "Your Home layout is personal. Live widgets show on the board; empty cards stay hidden until Edit Home.",
     category: "getting-started",
@@ -674,7 +674,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "parts-catalog",
     slug: "parts-catalog",
-    title: "Parts catalog — what to order and what it is called",
+    title: "Parts catalog",
     summary:
       "A curated list of the COTS parts FRC teams buy — motors, control, pneumatics, hardware, stock, drive, bearings, batteries, tools — with the spec that picks one over its neighbour.",
     category: "business",
@@ -1000,7 +1000,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "agent-config",
     slug: "agent-config",
-    title: "Team agent config — shared rules for coding agents",
+    title: "Team agent config",
     summary:
       "Author rules, subagents, MCP servers, permissions, and skills once; sync them into every member's Claude Code and Cursor.",
     category: "build",
@@ -1092,7 +1092,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "reimbursements",
     slug: "reimbursements",
-    title: "Reimbursements — pay members back",
+    title: "Reimbursements",
     summary:
       "File a claim with a receipt photo, the treasurer works the approve/deny/paid queue, and only paid claims touch the team ledger.",
     category: "business",
