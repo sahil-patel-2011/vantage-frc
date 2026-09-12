@@ -83,7 +83,7 @@ export function githubSetupStatus(env: NodeJS.ProcessEnv = process.env) {
     patAvailable: true,
     message: configured
       ? `GitHub OAuth is configured. Owners/admins can connect a robot-code repo in Team settings. Registered Authorization callback URL: ${callbackUrl}`
-      : `Setup required — set ${missingEnv.join(" and ")} in your deployment environment (Vercel → Project → Settings → Environment Variables), then redeploy. Create the app at github.com → Settings → Developer settings → OAuth Apps and register this exact Authorization callback URL: ${callbackUrl} (scopes: ${scopes.join(", ")}). Until then, owners/admins can still encrypt and save a fine-grained or classic PAT in Team settings — that path needs no OAuth App.`,
+      : `Needs setup — set ${missingEnv.join(" and ")} in your deployment environment (Vercel → Project → Settings → Environment Variables), then redeploy. Create the app at github.com → Settings → Developer settings → OAuth Apps and register this exact Authorization callback URL: ${callbackUrl} (scopes: ${scopes.join(", ")}). Until then, owners/admins can still encrypt and save a fine-grained or classic PAT in Team settings — that path needs no OAuth App.`,
   };
 }
 

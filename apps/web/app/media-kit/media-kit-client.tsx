@@ -46,7 +46,7 @@ async function persistMediaKitSnapshot(
     await putFeatureSnapshot("media-kit", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("media-kit", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Media Kit already painted; IndexedDB is best-effort.
+    // Live Media kit already painted; IndexedDB is best-effort.
   }
 }
 
@@ -132,10 +132,10 @@ function MediaKitShell({
         breadcrumbs={
           <>
             <a href={orgId ? withOrgHref("/media", orgId) : "/media"}>Media</a>
-            {" / Media Kit"}
+            {" / Media kit"}
           </>
         }
-        title="Media Kit"
+        title="Media kit"
         description={description}
       >
         <MediaKitRelatedStrip orgId={orgId} />
@@ -227,7 +227,7 @@ export default function MediaKitClient() {
         if (!response.ok || !isMediaKitView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Media Kit. Showing the last copy on this device.");
+            setError("Could not refresh Media kit. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -242,7 +242,7 @@ export default function MediaKitClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Media Kit. Showing the last copy on this device.");
+          setError("Could not refresh Media kit. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -312,7 +312,7 @@ export default function MediaKitClient() {
   if (shell === "loading") {
     return (
       <MediaKitShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Media Kit" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Media kit" fromCache={fromCache} cachedAt={cachedAt} />
       </MediaKitShell>
     );
   }
@@ -326,7 +326,7 @@ export default function MediaKitClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Media Kit" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Media kit" fromCache={fromCache} cachedAt={cachedAt} />
       </MediaKitShell>
     );
   }
@@ -338,7 +338,7 @@ export default function MediaKitClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Media Kit" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Media kit" fromCache={fromCache} cachedAt={cachedAt} />
       </MediaKitShell>
     );
   }
@@ -346,7 +346,7 @@ export default function MediaKitClient() {
   if (view?.status !== "live") {
     return (
       <MediaKitShell description={shellCopy.description} orgId={orgId} shell="setup">
-        <OfflineBanner feature="Media Kit" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Media kit" fromCache={fromCache} cachedAt={cachedAt} />
       </MediaKitShell>
     );
   }
@@ -357,10 +357,10 @@ export default function MediaKitClient() {
         breadcrumbs={
           <>
             <a href={withOrgHref("/media", orgId)}>Media</a>
-            {" / Media Kit"}
+            {" / Media kit"}
           </>
         }
-        title="Media Kit"
+        title="Media kit"
         description="Build a sponsor- and media-ready team media kit — logos, bio, mission, and a generated one-pager grounded only in what you've recorded."
       >
         <div className="media-kit-header-actions">
@@ -390,7 +390,7 @@ export default function MediaKitClient() {
           ))}
         </div>
       </PageHeader>
-      <OfflineBanner feature="Media Kit" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Media kit" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

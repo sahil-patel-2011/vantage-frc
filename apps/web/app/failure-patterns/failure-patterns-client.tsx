@@ -65,7 +65,7 @@ async function persistFailurePatternsSnapshot(
     await putFeatureSnapshot("failure-patterns", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("failure-patterns", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Repeat Failure Patterns already painted; IndexedDB is best-effort.
+    // Live Failure patterns already painted; IndexedDB is best-effort.
   }
 }
 
@@ -136,10 +136,10 @@ function PatternsShell({
         breadcrumbs={
           <>
             <a href={buildHref}>Build</a>
-            {" / Repeat Failure Patterns"}
+            {" / Failure patterns"}
           </>
         }
-        title="Repeat Failure Patterns"
+        title="Failure patterns"
         description={description}
       >
         <RelatedStrip orgId={orgId} />
@@ -154,7 +154,7 @@ function PatternsShell({
       ) : (
         <EmptyState
           soft
-          badge={shell === "setup" ? "Setup required" : copy.badge}
+          badge={shell === "setup" ? "Needs setup" : copy.badge}
           badgeTone="setup"
           title={copy.title}
           description={error ?? copy.description}
@@ -165,7 +165,7 @@ function PatternsShell({
             </Button>
           ) : null}
           {shell === "empty" ? (
-            <Button as="a" variant="primary" href={hubHref("/build", "fmea", orgId)}>Open FMEA</Button>
+            <Button as="a" variant="primary" href={hubHref("/build", "fmea", orgId)}>Open Failure log</Button>
           ) : null}
         </EmptyState>
       )}
@@ -227,7 +227,7 @@ export default function FailurePatternsClient() {
         if (!response.ok || !isFailurePatternsView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Repeat Failure Patterns. Showing the last copy on this device.");
+            setError("Could not refresh Failure patterns. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -242,7 +242,7 @@ export default function FailurePatternsClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Repeat Failure Patterns. Showing the last copy on this device.");
+          setError("Could not refresh Failure patterns. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -310,7 +310,7 @@ export default function FailurePatternsClient() {
   if (shell === "loading") {
     return (
       <PatternsShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Repeat Failure Patterns" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Failure patterns" fromCache={fromCache} cachedAt={cachedAt} />
       </PatternsShell>
     );
   }
@@ -323,7 +323,7 @@ export default function FailurePatternsClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Repeat Failure Patterns" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Failure patterns" fromCache={fromCache} cachedAt={cachedAt} />
       </PatternsShell>
     );
   }
@@ -334,7 +334,7 @@ export default function FailurePatternsClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Repeat Failure Patterns" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Failure patterns" fromCache={fromCache} cachedAt={cachedAt} />
       </PatternsShell>
     );
   }
@@ -345,11 +345,11 @@ export default function FailurePatternsClient() {
         breadcrumbs={
           <>
             <a href={buildHref}>Build</a>
-            {" / Repeat Failure Patterns"}
+            {" / Failure patterns"}
           </>
         }
-        title="Repeat Failure Patterns"
-        description="Clusters FMEA and equipment incidents by subsystem. Cross-check FMEA and Spare Kit."
+        title="Failure patterns"
+        description="Clusters Failure log and equipment incidents by subsystem. Cross-check Failure log and Spare Kit."
       >
         <div className="fp-header-actions">
           <RelatedStrip orgId={orgId} />
@@ -375,7 +375,7 @@ export default function FailurePatternsClient() {
         </div>
       </PageHeader>
 
-      <OfflineBanner feature="Repeat Failure Patterns" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Failure patterns" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -405,11 +405,11 @@ export default function FailurePatternsClient() {
           soft
           badge="No failures logged"
           badgeTone="setup"
-          title="No FMEA or incident records yet this season"
-          description="Log failures in FMEA or equipment incidents."
+          title="No Failure log or incident records yet this season"
+          description="Log failures in Failure log or equipment incidents."
         >
           <Button as="a" variant="primary" href={hubHref("/build", "fmea", orgId)}>
-            Open FMEA
+            Open Failure log
           </Button>
         </EmptyState>
       ) : (
@@ -443,7 +443,8 @@ function ClusterCard({
           <Badge tone={tierBadgeTone[cluster.tier]}>{failurePatternTierLabel(cluster.tier)}</Badge>
           <h2>{cluster.subsystemName}</h2>
           <small className="app-muted">
-            {cluster.totalCount} failure(s) · {cluster.fmeaCount} FMEA · {cluster.incidentCount} incident(s) ·{" "}
+            {cluster.totalCount} failure(s) · {cluster.fmeaCount} Failure log · {cluster.incidentCount}{" "}
+            incident(s) ·{" "}
             {cluster.firstOccurredOn} → {cluster.lastOccurredOn}
           </small>
         </div>
@@ -459,7 +460,7 @@ function ClusterCard({
         {cluster.events.map((event) => (
           <li key={event.id} className="fp-event-row">
             <span>
-              {event.title} <small className="app-muted">({event.source === "fmea" ? "FMEA" : "Incident"})</small>
+              {event.title} <small className="app-muted">({event.source === "fmea" ? "Failure log" : "Incident"})</small>
             </span>
             <small className="app-muted">
               {event.occurredOn}

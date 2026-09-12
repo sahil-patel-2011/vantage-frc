@@ -22,6 +22,7 @@ const FILES = [
   "app/print-farm/print-farm-chrome.tsx",
   "app/command/command-chrome.tsx",
   "app/logistics/logistics-chrome.tsx",
+  "app/scouting/scout-voice-notes-panel.tsx",
 ] as const;
 
 describe("leftover student engineering copy", () => {
@@ -35,6 +36,8 @@ describe("leftover student engineering copy", () => {
       expect(src, rel).not.toMatch(/OctoPrint/i);
       expect(src, rel).not.toMatch(/\bG-code\b/i);
       expect(src, rel).not.toMatch(/\bChecksumming\b/);
+      expect(src, rel).not.toMatch(/Voice STT|Browser STT|Cloud STT/);
+      expect(src, rel).not.toMatch(/OPENAI_API_KEY/);
     }
   });
 });

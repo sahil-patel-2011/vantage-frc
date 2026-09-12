@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "mentor-hours",
-  title: "Mentor Hours & Engagement",
+  title: "Mentor hours",
   route: "/mentor-hours",
   apiRoute: "/api/mentor-hours",
   hub: "Team",

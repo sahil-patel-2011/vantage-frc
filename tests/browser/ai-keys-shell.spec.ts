@@ -9,7 +9,7 @@ test.beforeEach(async ({ context }) => {
 
 test("AI keys still loads after the panel split", async ({ page }) => {
   await page.goto("/team/ai-keys");
-  await expect(page.getByRole("heading", { level: 1, name: "AI API keys" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "AI keys" })).toBeVisible();
   await expect(page.locator("body")).not.toContainText("Application error");
 
   const islandTeam = page.getByTestId("soft-island").getByRole("link", { name: "Team", exact: true });
@@ -18,7 +18,7 @@ test("AI keys still loads after the panel split", async ({ page }) => {
     const orgId = href ? new URL(href, page.url()).searchParams.get("orgId") : null;
     if (orgId) {
       await page.goto(`/team/ai-keys?orgId=${encodeURIComponent(orgId)}`);
-      await expect(page.getByRole("heading", { level: 1, name: "AI API keys" })).toBeVisible();
+      await expect(page.getByRole("heading", { level: 1, name: "AI keys" })).toBeVisible();
     }
   }
 

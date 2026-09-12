@@ -128,10 +128,10 @@ function WatchlistShell({
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Opponent Watchlist"}
+            {" / Watchlist"}
           </>
         }
-        title="Opponent Watchlist"
+        title="Watchlist"
         description={description}
       >
         <WatchlistRelatedStrip orgId={orgId} />
@@ -141,7 +141,7 @@ function WatchlistShell({
         soft
         badge={
           shell === "setup"
-            ? "Setup required"
+            ? "Needs setup"
             : shell === "error"
               ? "Unavailable"
               : shell === "empty"
@@ -215,7 +215,7 @@ export default function OpponentWatchlistClient() {
         if (!response.ok || !isOpponentWatchlistView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Opponent Watchlist. Showing the last copy on this device.");
+            setError("Could not refresh Watchlist. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -229,7 +229,7 @@ export default function OpponentWatchlistClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Opponent Watchlist. Showing the last copy on this device.");
+          setError("Could not refresh Watchlist. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -301,7 +301,7 @@ export default function OpponentWatchlistClient() {
   if (shell === "loading") {
     return (
       <WatchlistShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Opponent Watchlist" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Watchlist" fromCache={fromCache} cachedAt={cachedAt} />
       </WatchlistShell>
     );
   }
@@ -315,7 +315,7 @@ export default function OpponentWatchlistClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Opponent Watchlist" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Watchlist" fromCache={fromCache} cachedAt={cachedAt} />
       </WatchlistShell>
     );
   }
@@ -327,7 +327,7 @@ export default function OpponentWatchlistClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Opponent Watchlist" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Watchlist" fromCache={fromCache} cachedAt={cachedAt} />
       </WatchlistShell>
     );
   }
@@ -335,7 +335,7 @@ export default function OpponentWatchlistClient() {
   if (view?.status !== "live") {
     return (
       <WatchlistShell description={shellCopy.description} orgId={orgId} shell="setup">
-        <OfflineBanner feature="Opponent Watchlist" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Watchlist" fromCache={fromCache} cachedAt={cachedAt} />
       </WatchlistShell>
     );
   }
@@ -346,11 +346,11 @@ export default function OpponentWatchlistClient() {
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Opponent Watchlist"}
+            {" / Watchlist"}
           </>
         }
-        title="Opponent Watchlist"
-        description="Track opponent teams personally and get notified when their reference EPA or next scheduled match changes. Cross-check Strategy, EPA Trend Alerts, and Scouting."
+        title="Watchlist"
+        description="Track opponent teams personally and get notified when their season rating or next scheduled match changes. Cross-check Strategy, Rating alerts, and Scouting."
       >
         <div className="opponent-watchlist-header-actions">
           {relatedLinks.map((link) => (
@@ -360,7 +360,7 @@ export default function OpponentWatchlistClient() {
           ))}
         </div>
       </PageHeader>
-      <OfflineBanner feature="Opponent Watchlist" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Watchlist" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -397,13 +397,13 @@ export default function OpponentWatchlistClient() {
             <CoveragePriorityPanel view={view} lineupHref={lineupHref} />
           </>
         ) : null}
-        <Panel className="opponent-watchlist-tip" aria-label="Opponent Watchlist tip">
+        <Panel className="opponent-watchlist-tip" aria-label="Watchlist tip">
           <span className="eyebrow">Grounding path</span>
           <p className="app-muted" style={{ marginTop: 8 }}>
             Watched teams sort earlier on{" "}
             <a href={lineupHref}>Lineup &amp; Coverage</a>. Keep{" "}
             <a href={strategyHref}>Strategy</a> picks grounded in scouted and reference metrics, pair{" "}
-            <a href={epaAlertsHref}>EPA Trend Alerts</a> for event-to-event swings, and confirm field
+            <a href={epaAlertsHref}>Rating alerts</a> for event-to-event swings, and confirm field
             notes in <a href={scoutingHref}>Scouting</a>
           </p>
         </Panel>
@@ -421,12 +421,12 @@ function SummaryTiles({
 }) {
   const tiles = [
     { label: "Watched teams", value: formatOpponentWatchlistMetric(summary.totalWatched, loaded) },
-    { label: "EPA alerts", value: formatOpponentWatchlistMetric(summary.epaAlerts, loaded) },
+    { label: "Rating alerts", value: formatOpponentWatchlistMetric(summary.epaAlerts, loaded) },
     { label: "Schedule alerts", value: formatOpponentWatchlistMetric(summary.scheduleAlerts, loaded) },
     { label: "Upcoming matches", value: formatOpponentWatchlistMetric(summary.upcomingMatches, loaded) },
   ];
   return (
-    <section className="opponent-watchlist-stats" aria-label="Opponent Watchlist counts">
+    <section className="opponent-watchlist-stats" aria-label="Watchlist counts">
       {tiles.map((tile) => (
         <div key={tile.label}>
           <strong>{tile.value}</strong>
@@ -446,8 +446,8 @@ function AlertsPanel({ view }: { view: LiveView }) {
         soft
         badge="No changes"
         badgeTone="good"
-        title="No EPA or schedule changes yet"
-        description="Alerts appear here once a watched team's reference EPA moves or their next match is scheduled or rescheduled."
+        title="No rating or schedule changes yet"
+        description="Alerts appear here once a watched team's season rating moves or their next match is scheduled or rescheduled."
       />
     );
   }
@@ -492,8 +492,8 @@ function WatchedTeams({
               </strong>
               <small className="app-muted" style={{ display: "block" }}>
                 {entry.current
-                  ? `EPA ${entry.current.epaTotal != null ? entry.current.epaTotal.toFixed(1) : "—"} · rank ${entry.current.rank ?? "—"} at ${entry.current.eventKey}`
-                  : "No reference EPA data yet"}
+                  ? `Rating ${entry.current.epaTotal != null ? entry.current.epaTotal.toFixed(1) : "—"} · rank ${entry.current.rank ?? "—"} at ${entry.current.eventKey}`
+                  : "No season rating data yet"}
               </small>
               <small className="app-muted" style={{ display: "block" }}>
                 {entry.nextMatch
@@ -581,7 +581,7 @@ function AddEntryForm({
     >
       <h2 style={{ margin: 0 }}>Watch a team</h2>
       <p className="app-muted" style={{ margin: 0 }}>
-        Alerts use reference EPA and scheduled matches for the teams you watch.
+        Alerts use season rating and scheduled matches for the teams you watch.
       </p>
       <FormGrid min={160}>
         <FormRow label="Team key" hint="e.g. frc254">

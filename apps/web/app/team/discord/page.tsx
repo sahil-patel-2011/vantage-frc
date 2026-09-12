@@ -34,7 +34,7 @@ export default async function TeamDiscordPage({
           soft
           title="Choose your team"
           description="Open a team to connect Discord and the object-linked Messages bridge."
-          badge="Setup required"
+          badge="Needs setup"
           badgeTone="setup"
         >
           <Button as="a" variant="primary" href="/workspace">

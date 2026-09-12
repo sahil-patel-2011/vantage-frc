@@ -1,12 +1,12 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Decision Search (never DEMO decisions). */
+/** Soft-UI related surfaces for Search (never DEMO decisions). */
 export const DECISION_SEARCH_RELATED_LINKS = [
-  { id: "season-report", label: "Season Report", kind: "ai" as const, tab: "season-report" },
+  { id: "season-report", label: "Season report", kind: "ai" as const, tab: "season-report" },
   { id: "knowledge", label: "Knowledge", kind: "team" as const, tab: "knowledge" },
   { id: "strategy", label: "Strategy", kind: "path" as const, path: "/strategy" },
-  { id: "decisions", label: "Decision Log", kind: "path" as const, path: "/decisions" },
+  { id: "decisions", label: "Decision notes", kind: "path" as const, path: "/decisions" },
   { id: "chat", label: "Chat", kind: "ai" as const, tab: "chat" },
   { id: "budgets", label: "Budgets", kind: "ai" as const, tab: "budgets" },
 ] as const;
@@ -19,7 +19,7 @@ export type DecisionSearchRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — Season Report / Knowledge / Strategy first. */
+/** Focused Soft-UI strip — Season report / Knowledge / Strategy first. */
 export const DECISION_SEARCH_RELATED_INCLUDE: DecisionSearchRelatedId[] = [
   "season-report",
   "knowledge",
@@ -27,7 +27,7 @@ export const DECISION_SEARCH_RELATED_INCLUDE: DecisionSearchRelatedId[] = [
 ];
 
 /**
- * Soft-UI cross-links from Decision Search → Season Report / Knowledge / Strategy.
+ * Soft-UI cross-links from Search → Season report / Knowledge / Strategy.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function decisionSearchRelatedLinks(
@@ -83,7 +83,7 @@ export function formatDecisionSearchMatchPct(value: unknown, loaded: boolean): s
   return `${Math.round(Math.min(1, n) * 100)}%`;
 }
 
-/** Classify Decision Search Soft-UI shell — never invents DEMO decisions. */
+/** Classify Search Soft-UI shell — never invents DEMO decisions. */
 export function classifyDecisionSearchShell(input: {
   loading: boolean;
   fetchFailed?: boolean;
@@ -104,21 +104,21 @@ export function decisionSearchShellCopy(kind: DecisionSearchShellKind): Decision
     case "loading":
       return {
         kind,
-        title: "Loading Decision Search…",
+        title: "Opening Search…",
         description: "Checking which team you are on and the indexed corpus.",
       };
     case "error":
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Decision Search",
+        title: "Could not load Search",
         description:
           "A network or server issue blocked the index. Retry, or open Budgets if metered search is cut off.",
       };
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Choose your team before indexing decisions, design reviews, or notebook entries.",
@@ -129,7 +129,7 @@ export function decisionSearchShellCopy(kind: DecisionSearchShellKind): Decision
         badge: "No documents indexed",
         title: "Index your first record",
         description:
-          "Search stays blank until you index real decisions or import from the Decision Log. Season Report, Knowledge, and Strategy stay linked for context.",
+          "Search stays blank until you index real decisions or import from Decision notes. Season report, Knowledge, and Strategy stay linked for context.",
       };
     default:
       return {
@@ -142,8 +142,8 @@ export function decisionSearchShellCopy(kind: DecisionSearchShellKind): Decision
 }
 
 /**
- * Soft-UI next actions for Decision Search empty/setup shells.
- * Points at Season Report / Knowledge / Strategy — never invents DEMO decisions.
+ * Soft-UI next actions for Search empty/setup shells.
+ * Points at Season report / Knowledge / Strategy — never invents DEMO decisions.
  */
 export function decisionSearchNextActions(input: {
   orgId?: string | null;
@@ -161,13 +161,13 @@ export function decisionSearchNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before searching.",
+          detail: "Choose your team before searching.",
           href: "/workspace",
           primary: true,
         },
         {
           id: "season-report",
-          label: "Open Season Report",
+          label: "Open Season report",
           detail: "Season notes stay empty until you log real entries.",
           href: hubHref("/ai", "season-report", null),
         },
@@ -189,13 +189,13 @@ export function decisionSearchNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Finish membership setup so Decision Search can load.",
+        detail: "Finish membership setup so Search can load.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
       },
       {
         id: "season-report",
-        label: "Open Season Report",
+        label: "Open Season report",
         detail: "Retrospective notes stay separate from this searchable index.",
         href: hubHref("/ai", "season-report", orgId),
       },
@@ -218,7 +218,7 @@ export function decisionSearchNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Decision Search",
+        label: "Retry Search",
         detail: "Reload the real index.",
         href: withOrgHref("/decision-search", orgId),
         primary: true,
@@ -232,7 +232,7 @@ export function decisionSearchNextActions(input: {
       {
         id: "knowledge",
         label: "Open Knowledge",
-        detail: "Wiki stays available while Decision Search is down.",
+        detail: "Wiki stays available while Search is down.",
         href: hubHref("/team", "knowledge", orgId),
       },
     ];
@@ -249,13 +249,13 @@ export function decisionSearchNextActions(input: {
       },
       {
         id: "import",
-        label: "Import Decision Log",
-        detail: "Pull this season’s Decision Log into the index — grounded fields only.",
+        label: "Import Decision notes",
+        detail: "Pull this season’s Decision notes into the index — grounded fields only.",
         href: "#decision-search-index",
       },
       {
         id: "season-report",
-        label: "Open Season Report",
+        label: "Open Season report",
         detail: "Log season narrative notes separately from the search corpus.",
         href: hubHref("/ai", "season-report", orgId),
       },
@@ -282,7 +282,7 @@ export function decisionSearchNextActions(input: {
   actions.push(
     {
       id: "season-report",
-      label: "Open Season Report",
+      label: "Open Season report",
       detail: "Cross-check season narrative with indexed design choices.",
       href: hubHref("/ai", "season-report", orgId),
       primary: !actions.some((a) => a.primary),

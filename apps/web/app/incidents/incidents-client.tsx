@@ -51,7 +51,7 @@ async function persistIncidentsSnapshot(
     await putFeatureSnapshot("incidents", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("incidents", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Safety Incident Log already painted; IndexedDB is best-effort.
+    // Live Safety incidents already painted; IndexedDB is best-effort.
   }
 }
 
@@ -126,7 +126,7 @@ export default function IncidentsClient() {
       if (!response.ok || !isIncidentsView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Safety Incident Log. Showing the last copy on this device.");
+          setError("Could not refresh Safety incidents. Showing the last copy on this device.");
           setFetchFailed(false);
           return;
         }
@@ -147,7 +147,7 @@ export default function IncidentsClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Safety Incident Log. Showing the last copy on this device.");
+        setError("Could not refresh Safety incidents. Showing the last copy on this device.");
         setFetchFailed(false);
         return;
       }
@@ -196,7 +196,7 @@ export default function IncidentsClient() {
         Safety training
       </Button>
       <Button as="a" variant="secondary" href={hubHref("/build", "fmea", orgId)}>
-        FMEA
+        Failure log
       </Button>
     </nav>
   );
@@ -221,16 +221,16 @@ export default function IncidentsClient() {
     return (
       <main className="module-page">
         <PageHeader
-          breadcrumbs="Team / Safety Incidents"
-          title="Safety Incident Log"
+          breadcrumbs="Team / Safety incidents"
+          title="Safety incidents"
           description="Log injuries, near-misses, and shop hazards, assign a corrective action, and track it to closure."
         >
           {related}
         </PageHeader>
-        <OfflineBanner feature="Safety Incident Log" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Safety incidents" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
-          title={copy ? copy.title : "Loading…"}
+          title={copy ? copy.title : "Opening Safety incidents"}
           description={copy ? copy.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >
@@ -253,13 +253,13 @@ export default function IncidentsClient() {
       return (
         <main className="module-page">
           <PageHeader
-            breadcrumbs="Team / Safety Incidents"
-            title="Safety Incident Log"
+            breadcrumbs="Team / Safety incidents"
+            title="Safety incidents"
             description="Log injuries, near-misses, and shop hazards, assign a corrective action, and track it to closure."
           >
             {related}
           </PageHeader>
-          <OfflineBanner feature="Safety Incident Log" fromCache={fromCache} cachedAt={cachedAt} />
+          <OfflineBanner feature="Safety incidents" fromCache={fromCache} cachedAt={cachedAt} />
           <EmptyState
             soft
             badge="Needs setup"
@@ -286,8 +286,8 @@ export default function IncidentsClient() {
   return (
     <main className="module-page">
       <PageHeader
-        breadcrumbs="Team / Safety Incidents"
-        title="Safety Incident Log"
+        breadcrumbs="Team / Safety incidents"
+        title="Safety incidents"
         description="Log injuries, near-misses, and shop hazards, assign a corrective action, and track it to closure. A near-miss recorded today is an injury prevented tomorrow."
       >
         {related}
@@ -312,7 +312,7 @@ export default function IncidentsClient() {
         ) : null}
       </PageHeader>
 
-      <OfflineBanner feature="Safety Incident Log" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Safety incidents" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

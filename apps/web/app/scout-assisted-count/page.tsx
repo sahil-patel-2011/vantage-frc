@@ -1,7 +1,7 @@
 import ScoutAssistedCountClient from "./scout-assisted-count-client";
 
 export const metadata = {
-  title: "Scout-Assisted Count",
+  title: "Assisted count",
 };
 
 export default function ScoutAssistedCountPage() {

@@ -407,7 +407,7 @@ export default function ReimbursementsClient() {
         </p>
       ) : null}
 
-      {status === "loading" && !view ? <EmptyState title="Loading reimbursements…" aria-busy /> : null}
+      {status === "loading" && !view ? <EmptyState title="Opening Reimbursements" aria-busy /> : null}
 
       {status === "error" && !view ? (
         <EmptyState

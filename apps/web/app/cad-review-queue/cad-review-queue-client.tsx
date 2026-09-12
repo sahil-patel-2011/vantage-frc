@@ -42,7 +42,7 @@ async function persistCadReviewQueueSnapshot(
     await putFeatureSnapshot("cad-review-queue", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("cad-review-queue", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live CAD Review Queue already painted; IndexedDB is best-effort.
+    // Live CAD review queue already painted; IndexedDB is best-effort.
   }
 }
 
@@ -114,7 +114,7 @@ export default function CadReviewQueueClient() {
       if (!response.ok || !isCadReviewQueueView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh CAD Review Queue. Showing the last copy on this device.");
+          setError("Could not refresh CAD review queue. Showing the last copy on this device.");
           setFetchFailed(false);
           return;
         }
@@ -135,7 +135,7 @@ export default function CadReviewQueueClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh CAD Review Queue. Showing the last copy on this device.");
+        setError("Could not refresh CAD review queue. Showing the last copy on this device.");
         setFetchFailed(false);
         return;
       }
@@ -187,10 +187,10 @@ export default function CadReviewQueueClient() {
         breadcrumbs={
           <>
             <a href={orgId ? `/build?orgId=${encodeURIComponent(orgId)}` : "/build"}>Build</a>
-            {" / CAD Review Queue"}
+            {" / CAD review queue"}
           </>
         }
-        title="CAD Review Queue"
+        title="CAD review queue"
         description="Route CAD parts and assemblies through design checkpoints and reviewer sign-offs before releasing them to manufacture."
       >
         <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
@@ -215,7 +215,7 @@ export default function CadReviewQueueClient() {
           ) : null}
         </div>
       </PageHeader>
-      <OfflineBanner feature="CAD Review Queue" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="CAD review queue" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -254,10 +254,10 @@ export default function CadReviewQueueClient() {
           );
           })()
         ) : (
-          <EmptyState title="Loading…" description="Checking your team." aria-busy />
+          <EmptyState title="Opening CAD review queue" description="Checking your team." aria-busy />
         )
       ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
+        <EmptyState badge="Needs setup" badgeTone="setup" title={view.message}>
           
           {view.orgId ? <SubmitItemForm busy={busy} mutate={mutate} /> : null}
         </EmptyState>

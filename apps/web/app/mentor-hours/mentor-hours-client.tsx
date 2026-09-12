@@ -72,7 +72,7 @@ async function persistMentorHoursSnapshot(
     await putFeatureSnapshot("mentor-hours", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("mentor-hours", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Mentor Hours already painted; IndexedDB is best-effort.
+    // Live Mentor hours already painted; IndexedDB is best-effort.
   }
 }
 
@@ -83,7 +83,7 @@ function MentorHoursRelated({ orgId }: { orgId?: string | null }) {
         My hours
       </Button>
       <Button as="a" variant="secondary" href={hubHref("/team", "alumni-network", orgId)}>
-        Alumni Network
+        Alumni
       </Button>
       <Button as="a" variant="secondary" href={hubHref("/team", "exit-interview", orgId)}>
         Exit interviews
@@ -110,7 +110,7 @@ function MentorHoursNextActions({ orgId }: { orgId: string }) {
     },
     {
       id: "alumni",
-      label: "Open Alumni Network",
+      label: "Open Alumni",
       detail: "Alumni mentors who offered office hours live there.",
       href: hubHref("/team", "alumni-network", orgId),
       primary: false,
@@ -199,7 +199,7 @@ export default function MentorHoursClient() {
       if (!response.ok || !isMentorHoursView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Mentor Hours. Showing the last copy on this device.");
+          setError("Could not refresh Mentor hours. Showing the last copy on this device.");
           setFetchFailed(false);
           return;
         }
@@ -216,7 +216,7 @@ export default function MentorHoursClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Mentor Hours. Showing the last copy on this device.");
+        setError("Could not refresh Mentor hours. Showing the last copy on this device.");
         setFetchFailed(false);
         return;
       }
@@ -264,10 +264,10 @@ export default function MentorHoursClient() {
       breadcrumbs={
         <>
           <a href={teamHref}>Team</a>
-          {" / Mentor Hours"}
+          {" / Mentor hours"}
         </>
       }
-      title="Mentor Hours & Engagement"
+      title="Mentor hours"
       description="Log mentor time by role and activity — the evidence trail for grant reporting. Engagement readiness uses only what you record."
     >
       <MentorHoursRelated orgId={orgId} />
@@ -313,9 +313,9 @@ export default function MentorHoursClient() {
     return (
       <main className="module-page">
         {header}
-        <OfflineBanner feature="Mentor Hours" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Mentor hours" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
-          title={failure ? failure.title : "Loading…"}
+          title={failure ? failure.title : "Opening Mentor hours"}
           description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >
@@ -339,13 +339,13 @@ export default function MentorHoursClient() {
       return (
         <main className="module-page">
           {header}
-          <OfflineBanner feature="Mentor Hours" fromCache={fromCache} cachedAt={cachedAt} />
+          <OfflineBanner feature="Mentor hours" fromCache={fromCache} cachedAt={cachedAt} />
           {error ? (
             <p className="telemetry-status" role="alert">
               {error}
             </p>
           ) : null}
-          <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
+          <EmptyState badge="Needs setup" badgeTone="setup" title={view.message}>
             {view.steps[0] ? (
               <Button as="a" variant="primary" href={view.steps[0].href}>
                 {view.steps[0].label}
@@ -358,7 +358,7 @@ export default function MentorHoursClient() {
       return (
         <main className="module-page">
           {header}
-          <OfflineBanner feature="Mentor Hours" fromCache={fromCache} cachedAt={cachedAt} />
+          <OfflineBanner feature="Mentor hours" fromCache={fromCache} cachedAt={cachedAt} />
           {error ? (
             <p className="telemetry-status" role="alert">
               {error}
@@ -388,7 +388,7 @@ export default function MentorHoursClient() {
   return (
     <main className="module-page">
       {header}
-      <OfflineBanner feature="Mentor Hours" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Mentor hours" fromCache={fromCache} cachedAt={cachedAt} />
       {error ? (
         <p className="telemetry-status" role="alert">
           {error}

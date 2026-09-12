@@ -30,7 +30,7 @@ export function SummaryTiles({
     },
   ];
   return (
-    <Panel className="inspection-copilot-coverage" aria-label="Inspection Copilot summary">
+    <Panel className="inspection-copilot-coverage" aria-label="Inspection summary">
       <div className="inspection-copilot-stats">
         <div>
           <span

@@ -62,8 +62,8 @@ export function prototypeNextActions(input: {
     });
     actions.push({
       id: "fmea",
-      label: "Check open FMEA risks",
-      detail: "Prototype the weak subsystems already scored in the failure log — empty RPN means empty list.",
+      label: "Check open failure risks",
+      detail: "Prototype the weak subsystems already scored in the failure log — empty priority means empty list.",
       href: hubHref("/build", "fmea", orgId),
     });
     actions.push({
@@ -103,8 +103,8 @@ export function prototypeNextActions(input: {
 
   actions.push({
     id: "fmea",
-    label: "Capture failing modes in FMEA",
-    detail: "Failed or partial prototypes often become real O×S×D entries.",
+    label: "Capture failing modes in Failure log",
+    detail: "Failed or partial prototypes often become real how often, how bad, and how hard to notice entries.",
     href: hubHref("/build", "fmea", orgId),
     primary: actions.length === 0,
   });

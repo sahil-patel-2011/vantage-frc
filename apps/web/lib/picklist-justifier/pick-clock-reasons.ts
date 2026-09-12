@@ -1,6 +1,6 @@
 // Stored pick-list justifications → Pick Clock recommendation reasons.
 //
-// Pick Clock used to rebuild `reasons` from EPA / rank / notes and never read the
+// Pick Clock used to rebuild `reasons` from season rating / rank / notes and never read the
 // justifier rows. This module is the read helper pick-clock imports: load the
 // saved rationale (unified pick_list_entries columns + one-release sidecar
 // fallback), turn it into glanceable {label, tone} lines, and merge those onto
@@ -10,6 +10,7 @@
 // how to parse justifier rows.
 
 import type { PoolClient } from "@neondatabase/serverless";
+import { studentRatingLabel } from "../ui/student-rating-label";
 import type { PickClockJustificationReason, PicklistSourceRef } from "./types";
 
 export type { PickClockJustificationReason };
@@ -54,7 +55,7 @@ export function glanceableLabel(text: string | null | undefined, max = GLANCE_MA
   return `${sentence.slice(0, Math.max(1, max - 1)).trimEnd()}…`;
 }
 
-/** Prefer the TBA-record clause of a stored contradiction so the clock keeps the win-rate fact. */
+/** Prefer the official-record clause of a stored contradiction so the clock keeps the win-rate fact. */
 function glanceableContradiction(reason: string | null | undefined): string | null {
   if (typeof reason !== "string") return null;
   const afterBut = reason.match(/\bbut\s+(.+)/i)?.[1];
@@ -115,10 +116,15 @@ export function storedJustificationFromEntry(entry: {
   };
 }
 
+/** Rewrite leftover stored EPA / TBA labels so the clock stays student-readable. */
+export function studentPickClockLabel(text: string): string {
+  return studentRatingLabel(text);
+}
+
 /**
  * Glanceable clock lines from one stored justifier row.
  * Contradiction first (caution), then the rationale sentence, then cited sources.
- * Never invents EPA / win-rate / scout counts that were not persisted.
+ * Never invents season ratings / win-rate / scout counts that were not persisted.
  */
 export function pickClockReasonsFromJustification(
   row: StoredPicklistJustification,
@@ -128,19 +134,20 @@ export function pickClockReasonsFromJustification(
   const reasons: PickClockJustificationReason[] = [];
 
   if (row.contradictionFlagged) {
-    const caution =
-      glanceableContradiction(row.contradictionReason) ?? "Scout story contradicts the TBA match record";
+    const caution = studentPickClockLabel(
+      glanceableContradiction(row.contradictionReason) ?? "Scout story contradicts the official match record",
+    );
     reasons.push({ label: caution, tone: "caution" });
   }
 
   const why = glanceableLabel(row.rationale);
-  if (why) reasons.push({ label: why, tone: "strong" });
+  if (why) reasons.push({ label: studentPickClockLabel(why), tone: "strong" });
 
   for (const source of row.sources) {
     const label = glanceableLabel(source.detail ? `${source.label}: ${source.detail}` : source.label);
     if (!label) continue;
     reasons.push({
-      label,
+      label: studentPickClockLabel(label),
       tone: source.kind === "scout_observation" ? "strong" : "neutral",
     });
   }
@@ -180,7 +187,12 @@ export function mergePickClockReasons(
   existing: readonly PickClockJustificationReason[],
   max = CLOCK_REASON_CAP,
 ): PickClockJustificationReason[] {
-  return dedupeReasons([...stored, ...existing]).slice(0, Math.max(0, max));
+  return dedupeReasons(
+    [...stored, ...existing].map((reason) => ({
+      ...reason,
+      label: studentPickClockLabel(reason.label),
+    })),
+  ).slice(0, Math.max(0, max));
 }
 
 export type PickClockReasonCarrier = {
@@ -287,7 +299,7 @@ export async function resolveJustifierPickListId(
  *
  * Unified columns on pick_list_entries win; the legacy sidecar is LEFT JOINed
  * for one release (migration 0454). Teams without a stored rationale are omitted
- * — the clock keeps its EPA / rank fallback instead of inventing a "why".
+ * — the clock keeps its season-rating / rank fallback instead of inventing a "why".
  */
 export async function loadStoredJustificationsForPickClock(
   client: PoolClient,

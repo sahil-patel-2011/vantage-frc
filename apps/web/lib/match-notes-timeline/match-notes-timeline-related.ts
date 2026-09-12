@@ -1,7 +1,7 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Match Note Timeline (never DEMO match metrics). */
+/** Soft-UI related surfaces for Match notes (never DEMO match metrics). */
 export const MATCH_NOTES_TIMELINE_RELATED_LINKS = [
   { id: "schedule", label: "Schedule", kind: "path" as const, path: "/schedule" },
   { id: "strategy", label: "Strategy", kind: "hub" as const, tab: "strategy" },
@@ -25,7 +25,7 @@ export const MATCH_NOTES_TIMELINE_RELATED_INCLUDE: MatchNotesTimelineRelatedId[]
 ];
 
 /**
- * Soft-UI cross-links from Match Note Timeline → Schedule / Strategy / Scouting.
+ * Soft-UI cross-links from Match notes → Schedule / Strategy / Scouting.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function matchNotesTimelineRelatedLinks(
@@ -75,7 +75,7 @@ export function shouldShowMatchNotesSummaryTiles(entryCount: number): boolean {
   return entryCount > 0;
 }
 
-/** Classify Match Note Timeline Soft-UI shell — never invents DEMO match metrics. */
+/** Classify Match notes Soft-UI shell — never invents DEMO match metrics. */
 export function classifyMatchNotesTimelineShell(input: {
   loading: boolean;
   fetchFailed?: boolean;
@@ -96,7 +96,7 @@ export function matchNotesTimelineShellCopy(kind: MatchNotesTimelineShellKind): 
     case "loading":
       return {
         kind,
-        title: "Loading Match Note Timeline…",
+        title: "Opening Match notes",
         description:
           "Checking which team you are on and logged notes.",
       };
@@ -104,14 +104,14 @@ export function matchNotesTimelineShellCopy(kind: MatchNotesTimelineShellKind): 
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Match Note Timeline",
+        title: "Could not load Match notes",
         description:
           "A network or server issue blocked the timeline. Retry, or open Schedule / Strategy / Scouting while it reloads.",
       };
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Choose your team before logging clock-synced notes.",
@@ -135,7 +135,7 @@ export function matchNotesTimelineShellCopy(kind: MatchNotesTimelineShellKind): 
 }
 
 /**
- * Soft-UI next actions for Match Note Timeline empty/setup shells.
+ * Soft-UI next actions for Match notes empty/setup shells.
  * Points at Schedule / Strategy / Scouting — never invents DEMO match metrics.
  */
 export function matchNotesTimelineNextActions(input: {
@@ -154,14 +154,14 @@ export function matchNotesTimelineNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before logging clock times.",
+          detail: "Choose your team before logging clock times.",
           href: "/workspace",
           primary: true,
         },
         {
           id: "schedule",
           label: "Open Schedule",
-          detail: "Match rows stay empty until real TBA/event data exists.",
+          detail: "Match rows stay empty until real official event data exists.",
           href: withOrgHref("/schedule", null),
         },
         {
@@ -182,7 +182,7 @@ export function matchNotesTimelineNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Finish membership setup so Match Note Timeline can load.",
+        detail: "Finish membership setup so Match notes can load.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
       },
@@ -211,7 +211,7 @@ export function matchNotesTimelineNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Match Note Timeline",
+        label: "Retry Match notes",
         detail: "Reload real note rows.",
         href: withOrgHref("/match-notes-timeline", orgId),
         primary: true,

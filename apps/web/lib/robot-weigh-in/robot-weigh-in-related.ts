@@ -5,9 +5,9 @@ import { withOrgHref } from "../nav/product-nav";
 /** Soft-UI related surfaces for Robot Weigh-In (never DEMO scale readings). */
 export const ROBOT_WEIGH_IN_RELATED_LINKS = [
   { id: "readiness-score", label: "Readiness", tab: "readiness-score" },
-  { id: "inspection-copilot", label: "Inspection Copilot", tab: "inspection-copilot" },
+  { id: "inspection-copilot", label: "Inspection", tab: "inspection-copilot" },
   { id: "spare-robot-kit", label: "Spare Robot Kit", tab: "spare-robot-kit" },
-  { id: "fmea", label: "FMEA", tab: "fmea" },
+  { id: "fmea", label: "Failure log", tab: "fmea" },
 ] as const;
 
 export type RobotWeighInRelatedId = (typeof ROBOT_WEIGH_IN_RELATED_LINKS)[number]["id"];
@@ -131,21 +131,21 @@ export function robotWeighInShellCopy(kind: RobotWeighInShellKind): RobotWeighIn
     case "loading":
       return {
         kind,
-        title: "Loading Robot Weigh-In…",
+        title: "Opening Weigh-in…",
         description: "Checking which team you are on and scale readings.",
       };
     case "error":
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Robot Weigh-In",
+        title: "Could not load Weigh-in",
         description:
           "A network or server issue blocked weigh-ins. Retry, or open Readiness while it reloads.",
       };
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Choose your team before logging real scale readings.",
@@ -190,20 +190,20 @@ export function robotWeighInNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Robot Weigh-In",
+        label: "Retry Weigh-in",
         detail: "Reload real scale readings.",
         href: withOrgHref("/robot-weigh-in", orgId),
         primary: true,
       },
       {
         id: "readiness",
-        label: "Open Readiness Score",
+        label: "Open Readiness",
         detail: "Readiness stays available while weigh-ins reload.",
         href: hubHref("/build", "readiness-score", orgId),
       },
       {
         id: "kit",
-        label: "Open Spare Robot Kit",
+        label: "Open Spare kit",
         detail: "Pack lists stay available while weigh-ins reload.",
         href: hubHref("/build", "spare-robot-kit", orgId),
       },
@@ -221,13 +221,13 @@ export function robotWeighInNextActions(input: {
       },
       {
         id: "readiness",
-        label: "Open Readiness Score",
+        label: "Open Readiness",
         detail: "Readiness waits on real weight margin.",
         href: hubHref("/build", "readiness-score", orgId),
       },
       {
         id: "inspection",
-        label: "Open Inspection Copilot",
+        label: "Open Inspection",
         detail: "Prep inspection checks beside future event weigh-ins.",
         href: hubHref("/build", "inspection-copilot", orgId),
       },
@@ -254,7 +254,7 @@ export function robotWeighInNextActions(input: {
       },
       {
         id: "inspection",
-        label: "Open Inspection Copilot",
+        label: "Open Inspection",
         detail: "Pair the playoff re-weigh with inspection readiness.",
         href: hubHref("/build", "inspection-copilot", orgId),
       },
@@ -274,13 +274,13 @@ export function robotWeighInNextActions(input: {
     },
     {
       id: "readiness",
-      label: "Open Readiness Score",
+      label: "Open Readiness",
       detail: "Cross-check weight margin with competition readiness.",
       href: hubHref("/build", "readiness-score", orgId),
     },
     {
       id: "kit",
-      label: "Open Spare Robot Kit",
+      label: "Open Spare kit",
       detail: "Pack mass-sensitive spares beside the weight log.",
       href: hubHref("/build", "spare-robot-kit", orgId),
     },

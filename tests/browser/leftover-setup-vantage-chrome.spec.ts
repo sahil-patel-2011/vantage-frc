@@ -1,5 +1,5 @@
-import { expect, test } from "@playwright/test";
-import { waitForLoadingGone } from "./ready";
+import { test } from "@playwright/test";
+import { assertLeftoverSetupVantageChromeGone } from "./leftover-setup-vantage-walk";
 import { signInAs, signInFixture } from "./session";
 
 test.beforeEach(async ({ context }) => {
@@ -7,25 +7,13 @@ test.beforeEach(async ({ context }) => {
   if (!signed) await signInFixture(context);
 });
 
-const BANNED = ["Setup required", "VANTAGE / FORMS", "TBA/Statbotics", "Sync reference data"];
-
-test("leftover Setup required / VANTAGE Forms chrome is gone from student boards", async ({
+test("leftover Setup required / VANTAGE Forms chrome is gone from Consent / Video index / Day plan", async ({
   page,
 }) => {
-  test.setTimeout(120_000);
-  const routes = [
+  test.setTimeout(90_000);
+  await assertLeftoverSetupVantageChromeGone(page, [
     "/consent",
     "/match-video-index",
     "/event-day-plan",
-    "/match-checklist",
-    "/tool-checkout",
-    "/match-sim",
-  ];
-  for (const route of routes) {
-    await page.goto(route);
-    await waitForLoadingGone(page);
-    for (const phrase of BANNED) {
-      await expect(page.locator("body"), `${route} still shows ${phrase}`).not.toContainText(phrase);
-    }
-  }
+  ]);
 });

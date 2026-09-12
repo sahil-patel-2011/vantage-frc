@@ -170,7 +170,7 @@ export function videoAnalysisShellCopy(kind: VideoAnalysisShellKind): VideoAnaly
     case "loading":
       return {
         kind,
-        title: "Loading Video…",
+        title: "Opening Match video",
         description: "Checking which team you are on and videos already queued.",
       };
     case "error":
@@ -213,7 +213,7 @@ export function labelVideoSourceKind(kind: string): string {
     case "youtube":
       return "YouTube";
     case "tba":
-      return "The Blue Alliance";
+      return "Official match page";
     case "upload":
       return "File";
     case "pit_stream":

@@ -199,7 +199,7 @@ export async function computeGrantReportView(
       status: "setup_required",
       message: "Choose your team to generate post-grant impact reports.",
       steps: [
-        { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
+        { id: "workspace", label: "Choose your team", detail: "Choose which FRC team you are working as.", href: "/workspace" },
       ],
       orgId: null,
       seasonYear,

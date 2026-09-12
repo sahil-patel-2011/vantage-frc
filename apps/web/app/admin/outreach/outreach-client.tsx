@@ -230,7 +230,7 @@ export default function AdminOutreachClient() {
         <Panel className="invite-list admin-partners-list">
           <span className="eyebrow">OUTREACH LEDGER</span>
           {loading ? (
-            <EmptyState soft title="Loading outreach…" description="Reading platform_org_outreach." />
+            <EmptyState soft title="Opening outreach" description="Reading platform_org_outreach." />
           ) : !rows.length ? (
             <EmptyState
               soft

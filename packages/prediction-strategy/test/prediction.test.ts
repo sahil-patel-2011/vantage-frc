@@ -169,7 +169,7 @@ describe("weighted prediction", () => {
     expect(prediction.confidenceLow).toBeLessThan(prediction.pRed);
     expect(prediction.confidenceHigh).toBeGreaterThan(prediction.pRed);
     expect(prediction.keyFactors.map((factor) => factor.name)).toContain("weighted scoring");
-    expect(prediction.keyFactors[0]?.evidence).toMatch(/statbotics|tba|2026miket/);
+    expect(prediction.keyFactors[0]?.evidence).toMatch(/season ratings|official matches|2026miket/);
     expect(prediction.keyFactors[0]?.kind).toBe("model");
     expect(prediction.caveats.some((item) => item.includes("MODEL"))).toBe(true);
   });
@@ -182,7 +182,7 @@ describe("weighted prediction", () => {
   it("cites TBA FACT match results separately from MODEL factors", () => {
     const factFactors = prediction.keyFactors.filter((factor) => factor.kind === "fact");
     expect(factFactors.length).toBeGreaterThan(0);
-    expect(factFactors.some((factor) => factor.evidence.startsWith("FACT"))).toBe(true);
+    expect(factFactors.some((factor) => factor.evidence.startsWith("Official"))).toBe(true);
     expect(prediction.citations?.some((row) => row.matchKey === "2026miket_qm3")).toBe(true);
     // Unscored matches must not become fake facts
     expect(prediction.citations?.some((row) => row.matchKey === "2026miket_qm9")).toBe(false);
@@ -205,7 +205,7 @@ describe("TBA-shaped signal builders", () => {
       operations: [{ teamKey: "frc1", scoutSample: 6, reliability: 72, foulRate: 1.8 }],
     });
     expect(matchup.redTotalEpa).toBeGreaterThan(matchup.blueTotalEpa!);
-    expect(matchup.considerations.some((item) => /Alliance EPA/.test(item))).toBe(true);
+    expect(matchup.considerations.some((item) => /Alliance rating/.test(item))).toBe(true);
     expect(matchup.considerations.some((item) => /foul rate/i.test(item))).toBe(true);
   });
 
@@ -346,7 +346,7 @@ describe("TBA-shaped signal builders", () => {
     const citations = citeMatchResults(fixtureMatchResults, ["frc2337", "frc1", "frc4"]);
     expect(citations).toHaveLength(2);
     expect(citations.every((row) => row.kind === "fact")).toBe(true);
-    expect(citations[0]?.summary).toMatch(/^FACT/);
+    expect(citations[0]?.summary).toMatch(/^Official/);
   });
 });
 

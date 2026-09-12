@@ -1,12 +1,12 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Scout Field-Count Budget (never DEMO field totals). */
+/** Soft-UI related surfaces for Field value (never DEMO field totals). */
 export const SCOUT_FIELD_BUDGET_RELATED_LINKS = [
   { id: "forms", label: "Form builder", kind: "hub" as const, tab: "forms" },
   { id: "scouting", label: "Scouting", kind: "hub" as const, tab: "scouting" },
   { id: "schema-ab", label: "Schema A/B", kind: "hub" as const, tab: "scouting-schema-ab" },
-  { id: "coverage", label: "Coverage Live", kind: "hub" as const, tab: "scout-coverage-live" },
+  { id: "coverage", label: "Coverage", kind: "hub" as const, tab: "scout-coverage-live" },
 ] as const;
 
 export type ScoutFieldBudgetRelatedId = (typeof SCOUT_FIELD_BUDGET_RELATED_LINKS)[number]["id"];
@@ -24,7 +24,7 @@ export const SCOUT_FIELD_BUDGET_RELATED_INCLUDE: ScoutFieldBudgetRelatedId[] = [
 ];
 
 /**
- * Soft-UI cross-links from Field-Count Budget → Forms / Scouting / Schema A/B.
+ * Soft-UI cross-links from Field value → Forms / Scouting / Schema A/B.
  * Build with hubHref — never broken JSX href templates.
  */
 export function scoutFieldBudgetRelatedLinks(
@@ -109,7 +109,7 @@ export function shouldShowScoutFieldBudgetSummaryTiles(snapshotCount: number): b
   return snapshotCount > 0;
 }
 
-/** Classify Field-Count Budget Soft-UI shell — never invents DEMO field totals. */
+/** Classify Field value Soft-UI shell — never invents DEMO field totals. */
 export function classifyScoutFieldBudgetShell(input: {
   loading?: boolean;
   fetchFailed?: boolean;
@@ -130,14 +130,14 @@ export function scoutFieldBudgetShellCopy(kind: ScoutFieldBudgetShellKind): Scou
     case "loading":
       return {
         kind,
-        title: "Loading Field-Count Budget…",
+        title: "Opening Field value",
         description: "Checking which team you are on and schema snapshots.",
       };
     case "error":
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Field-Count Budget",
+        title: "Could not load Field value",
         description:
           "A network or server issue blocked the linter. Retry, or open Form builder while it reloads.",
       };
@@ -167,7 +167,7 @@ export function scoutFieldBudgetShellCopy(kind: ScoutFieldBudgetShellKind): Scou
 }
 
 /**
- * Soft-UI next actions for Field-Count Budget empty/setup shells.
+ * Soft-UI next actions for Field value empty/setup shells.
  * Points at Forms / Scouting / Schema A/B — never invents DEMO field totals.
  */
 export function scoutFieldBudgetNextActions(input: {
@@ -186,7 +186,7 @@ export function scoutFieldBudgetNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before linting schemas.",
+          detail: "Choose your team before linting schemas.",
           href: "/workspace",
           primary: true,
         },
@@ -208,7 +208,7 @@ export function scoutFieldBudgetNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Finish membership setup so Field-Count Budget can load.",
+        detail: "Finish membership setup so Field value can load.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
       },
@@ -231,7 +231,7 @@ export function scoutFieldBudgetNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Field-Count Budget",
+        label: "Retry Field value",
         detail: "Reload real schema snapshots.",
         href: withOrgHref("/scout-field-budget", orgId),
         primary: true,
@@ -300,7 +300,7 @@ export function scoutFieldBudgetNextActions(input: {
     },
     {
       id: "coverage",
-      label: "Open Coverage Live",
+      label: "Open Coverage",
       detail: "Coverage gaps stay honest once the form fits the budget.",
       href: hubHref("/competition", "scout-coverage-live", orgId),
     },

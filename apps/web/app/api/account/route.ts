@@ -331,19 +331,19 @@ function slackIntegration(
     return {
       status: "connected",
       detail: snapshot.slackChatBridgeEnabled
-        ? "Slack webhook is linked and the team-chat bridge is on."
-        : "Slack webhook is linked. Enable the chat bridge to sync Team chat.",
+        ? "A Slack channel link is saved and team chat sync is on."
+        : "A Slack channel link is saved. Turn on team chat sync on Slack.",
     };
   }
   if (!orgId) {
     return {
       status: setup.configured ? "available" : "setup_required",
-      detail: "Choose your team, then paste a Slack incoming webhook on Team → Slack.",
+      detail: "Choose your team, then paste a Slack channel link on Slack.",
     };
   }
   return {
     status: "empty",
-    detail: "No Slack webhook yet. Team chat still works in Vantage without Slack.",
+    detail: "No Slack channel link saved for this team yet. Team chat still works in Vantage without Slack.",
   };
 }
 

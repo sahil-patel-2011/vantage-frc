@@ -8,7 +8,7 @@ export const INTEL_RELATED_LINKS = [
   { id: "dossier", label: "Team Dossier", kind: "path" as const, path: "/dossier" },
   { id: "scouting", label: "Scouting", kind: "hub" as const, tab: "scouting" },
   { id: "pick-desk", label: "Pick desk", kind: "path" as const, path: "/strategy?tab=picks" },
-  { id: "team-data", label: "Team Data", kind: "path" as const, path: "/team/data" },
+  { id: "team-data", label: "Team data", kind: "path" as const, path: "/team/data" },
   { id: "chemistry", label: "Alliance Chemistry", kind: "path" as const, path: "/chemistry" },
 ] as const;
 
@@ -174,7 +174,7 @@ export function intelShellCopy(kind: IntelShellKind): IntelEmptyCopy {
     case "loading":
       return {
         kind,
-        title: "Loading Research…",
+        title: "Opening Research",
         description: "Checking which team you are on so you can look up another FRC team.",
       };
     case "error":
@@ -258,7 +258,7 @@ export function intelNextActions(input: {
         },
         {
           id: "chemistry",
-          label: "Open Alliance Chemistry",
+          label: "Open Chemistry",
           detail: chemistryDetail,
           href: withOrgHref("/chemistry", orgId),
         },

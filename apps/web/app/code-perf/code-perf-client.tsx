@@ -61,7 +61,7 @@ function CodePerfRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related build tools">
       <Button as="a" variant="secondary" href={hubHref("/build", "code", orgId)}>
-        Code Coach
+        Code
       </Button>
       <Button as="a" variant="secondary" href={hubHref("/build", "code-deploy-log", orgId)}>
         Deploy log
@@ -84,7 +84,7 @@ function CodePerfNextActions({ orgId }: { orgId: string }) {
     },
     {
       id: "code",
-      label: "Open Code Coach",
+      label: "Open Code",
       detail: "Review robot code before you log a change here.",
       href: hubHref("/build", "code", orgId),
       primary: false,
@@ -296,7 +296,7 @@ export default function CodePerfClient() {
         {header}
         <OfflineBanner feature="Code vs match" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
-          title={failure ? failure.title : "Loading…"}
+          title={failure ? failure.title : "Opening Code vs match"}
           description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >
@@ -567,7 +567,7 @@ function LogChangeForm({
       <h2 style={{ margin: 0 }}>Log a code/tuning change</h2>
       <FormGrid min={160}>
         <FormRow label="Title">
-          <input value={form.title} onChange={set("title")} placeholder="Retune shooter PID" required />
+          <input value={form.title} onChange={set("title")} placeholder="Retune shooter gains" required />
         </FormRow>
         <FormRow label="Date">
           <input type="date" value={form.occurredOn} onChange={set("occurredOn")} required />

@@ -3,7 +3,7 @@ import { withOrgHref } from "../nav/product-nav";
 import type { TeamHubRelatedId } from "../team/team-related";
 import type { RiskEvaluation, RiskLevel } from "./types";
 
-/** Focused Soft-UI Team strip when Risk Register is open (never DEMO placeholders). */
+/** Focused Soft-UI Team strip when Risk register is open (never DEMO placeholders). */
 export const RISKS_TEAM_RELATED_INCLUDE: TeamHubRelatedId[] = [
   "knowledge",
   "fmea",
@@ -16,7 +16,7 @@ export const RISKS_TEAM_RELATED_INCLUDE: TeamHubRelatedId[] = [
  * Distinct from FMEA: proactive L×I season risks vs logged O×S×D failures.
  */
 export const RISKS_RELATED_LINKS = [
-  { id: "fmea", label: "FMEA", kind: "team" as const, tab: "fmea" },
+  { id: "fmea", label: "Failure log", kind: "team" as const, tab: "fmea" },
   { id: "knowledge", label: "Knowledge", kind: "team" as const, tab: "knowledge" },
   { id: "batteries", label: "Batteries", kind: "team" as const, tab: "batteries" },
   { id: "subsystems", label: "Subsystems", kind: "path" as const, path: "/subsystems" },
@@ -31,7 +31,7 @@ export type RisksRelatedLink = {
   href: string;
 };
 
-/** Cross-links for Risk Register Soft-UI (never DEMO scores). */
+/** Cross-links for Risk register Soft-UI (never DEMO scores). */
 export function risksRelatedLinks(
   orgId?: string | null,
   options?: { active?: RisksRelatedId; include?: RisksRelatedId[] },
@@ -90,14 +90,14 @@ export function risksNextActions(input: {
     actions.push({
       id: "add-first",
       label: "Add the first season risk",
-      detail: "Scores stay blank until someone enters a real likelihood × impact — nothing is pre-filled.",
+      detail: "Scores stay blank until someone enters how likely and how bad — nothing is pre-filled.",
       href: risksHref,
       primary: true,
     });
     actions.push({
       id: "fmea",
-      label: "Log failures in FMEA",
-      detail: "FMEA tracks things that already broke (O×S×D). Use the register for what could still go wrong.",
+      label: "Log failures in Failure log",
+      detail: "Failure log tracks things that already broke (how often, how bad, and how hard to notice). Use the register for what could still go wrong.",
       href: hubHref("/team", "fmea", orgId),
     });
     actions.push({
@@ -114,7 +114,7 @@ export function risksNextActions(input: {
     actions.push({
       id: "overdue",
       label: `Close overdue mitigations (${input.overdueCount})`,
-      detail: `${sample} still has a past-due mitigation — score ${input.highestScore} is from logged L×I only.`,
+      detail: `${sample} still has a past-due mitigation — score ${input.highestScore} is from logged how-likely × how-bad only.`,
       href: risksHref,
       primary: true,
     });
@@ -122,7 +122,7 @@ export function risksNextActions(input: {
     actions.push({
       id: "review-top",
       label: input.topTitle ? `Review “${input.topTitle}”` : "Review open risks",
-      detail: `${input.activeCount} active · top score ${input.highestScore} from real L×I.`,
+      detail: `${input.activeCount} active · top score ${input.highestScore} from how likely and how bad.`,
       href: risksHref,
       primary: true,
     });
@@ -130,8 +130,8 @@ export function risksNextActions(input: {
 
   actions.push({
     id: "fmea",
-    label: "Promote broken modes to FMEA",
-    detail: "When a register item actually fails on the field or in the pit, log it with O×S×D.",
+    label: "Promote broken modes to the failure log",
+    detail: "When a register item actually fails on the field or in the pit, log it with how often, how bad, and how hard to notice.",
     href: hubHref("/team", "fmea", orgId),
     primary: actions.length === 0,
   });
@@ -147,7 +147,7 @@ export function risksNextActions(input: {
     actions.push({
       id: "batteries",
       label: "Battery reliability signals",
-      detail: "Pack IR/cycle evidence can become a season risk when the failure mode is season-relevant.",
+      detail: "Pack health evidence can become a season risk when the failure mode is season-relevant.",
       href: hubHref("/team", "batteries", orgId),
     });
   }
@@ -163,7 +163,7 @@ export function formatRiskScoreDisplay(score: number, hasActive: boolean): strin
 
 /** Compact L×I evidence line from real factors only. */
 export function formatLikelihoodImpact(input: { likelihood: number; impact: number }): string {
-  return `L${input.likelihood} × I${input.impact}`;
+  return `How likely ${input.likelihood} · How bad ${input.impact}`;
 }
 
 /** Risk-row meta from a real evaluation — empty fields omitted (no invented text). */

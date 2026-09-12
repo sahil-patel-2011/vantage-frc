@@ -1,7 +1,7 @@
 import MockJudgingClient from "./mock-judging-client";
 
 export const metadata = {
-  title: "Mock Judging",
+  title: "Mock judging",
 };
 
 export default function MockJudgingPage() {

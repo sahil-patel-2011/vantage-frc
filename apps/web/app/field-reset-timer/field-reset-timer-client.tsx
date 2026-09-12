@@ -134,17 +134,17 @@ function TimerShell({
         breadcrumbs={
           <>
             <a href={teamHref}>Team</a>
-            {" / Field Reset Timer"}
+            {" / Field reset"}
           </>
         }
-        title="Field Reset Timer"
+        title="Field reset"
         description={description}
       >
         <RelatedStrip orgId={orgId} />
       </PageHeader>
       {children}
       {shell === "loading" ? (
-        <div aria-busy="true" aria-label="Loading Field Reset Timer">
+        <div aria-busy="true" aria-label="Loading Field reset">
           <SoftBlockSkeleton lines={4} />
         </div>
       ) : shell === "error" ? (
@@ -152,7 +152,7 @@ function TimerShell({
       ) : (
         <EmptyState
           soft
-          badge={shell === "setup" ? "Setup required" : copy.badge}
+          badge={shell === "setup" ? "Needs setup" : copy.badge}
           badgeTone="setup"
           title={copy.title}
           description={error ?? copy.description}
@@ -228,7 +228,7 @@ export default function FieldResetTimerClient() {
         if (!response.ok || !isFieldResetTimerView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Field reset timer. Showing the last copy on this device.");
+            setError("Could not refresh Field reset. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -243,7 +243,7 @@ export default function FieldResetTimerClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Field reset timer. Showing the last copy on this device.");
+          setError("Could not refresh Field reset. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -317,7 +317,7 @@ export default function FieldResetTimerClient() {
   if (shell === "loading") {
     return (
       <TimerShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Field reset timer" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Field reset" fromCache={fromCache} cachedAt={cachedAt} />
       </TimerShell>
     );
   }
@@ -330,7 +330,7 @@ export default function FieldResetTimerClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Field reset timer" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Field reset" fromCache={fromCache} cachedAt={cachedAt} />
       </TimerShell>
     );
   }
@@ -341,7 +341,7 @@ export default function FieldResetTimerClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Field reset timer" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Field reset" fromCache={fromCache} cachedAt={cachedAt} />
       </TimerShell>
     );
   }
@@ -352,10 +352,10 @@ export default function FieldResetTimerClient() {
         breadcrumbs={
           <>
             <a href={teamHref}>Team</a>
-            {" / Field Reset Timer"}
+            {" / Field reset"}
           </>
         }
-        title="Field Reset Timer"
+        title="Field reset"
         description="Time field-reset and cycle speed during driver practice — real sessions only."
       >
         <div className="frt-header-actions">
@@ -382,7 +382,7 @@ export default function FieldResetTimerClient() {
         </div>
       </PageHeader>
 
-      <OfflineBanner feature="Field reset timer" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Field reset" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

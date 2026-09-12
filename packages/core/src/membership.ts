@@ -410,7 +410,7 @@ export function accessRequestCreatedNotification(input: {
     type: ACCESS_REQUEST_NOTIFICATION_TYPES.created,
     payload: {
       title: `${requester} asked to join ${teamLabel(input.teamNumber)}`,
-      body: "Review the request in Team admin — approve as scout or view-only, or decline.",
+      body: "Review the request in Invites — approve as scout or view-only, or decline.",
       href: `/team?orgId=${encodeURIComponent(input.orgId)}#team-access-title`,
       requestId: input.requestId,
       requesterName: requester,

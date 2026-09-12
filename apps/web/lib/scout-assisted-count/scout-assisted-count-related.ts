@@ -1,12 +1,12 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Scout-Assisted Count (never DEMO tap tallies). */
+/** Soft-UI related surfaces for Assisted count (never DEMO tap tallies). */
 export const SCOUT_ASSISTED_COUNT_RELATED_LINKS = [
   { id: "scouting", label: "Scouting", tab: "scouting" },
   { id: "forms", label: "Form builder", tab: "forms" },
   { id: "scout-field-budget", label: "Field Budget", tab: "scout-field-budget" },
-  { id: "scout-coverage-live", label: "Coverage Live", tab: "scout-coverage-live" },
+  { id: "scout-coverage-live", label: "Coverage", tab: "scout-coverage-live" },
 ] as const;
 
 export type ScoutAssistedCountRelatedId = (typeof SCOUT_ASSISTED_COUNT_RELATED_LINKS)[number]["id"];
@@ -116,14 +116,14 @@ export function scoutAssistedCountShellCopy(kind: ScoutAssistedCountShellKind): 
     case "loading":
       return {
         kind,
-        title: "Loading Scout-Assisted Count…",
+        title: "Opening Assisted count",
         description: "Checking which team you are on and tap sessions.",
       };
     case "error":
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Scout-Assisted Count",
+        title: "Could not load Assisted count",
         description:
           "A network or server issue blocked tap sessions. Retry, or open Scouting while it reloads.",
       };
@@ -167,7 +167,7 @@ export function scoutAssistedCountNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before counting.",
+          detail: "Choose your team before counting.",
           href: "/workspace",
           primary: true,
         },
@@ -183,7 +183,7 @@ export function scoutAssistedCountNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Finish membership setup so Scout-Assisted Count can load.",
+        detail: "Finish membership setup so Assisted count can load.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
       },
@@ -200,7 +200,7 @@ export function scoutAssistedCountNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Scout-Assisted Count",
+        label: "Retry Assisted count",
         detail: "Reload real tap sessions.",
         href: withOrgHref("/scout-assisted-count", orgId),
         primary: true,
@@ -257,7 +257,7 @@ export function scoutAssistedCountNextActions(input: {
     },
     {
       id: "coverage",
-      label: "Open Coverage Live",
+      label: "Open Coverage",
       detail: "See which matches still need counts.",
       href: hubHref("/competition", "scout-coverage-live", orgId),
     },

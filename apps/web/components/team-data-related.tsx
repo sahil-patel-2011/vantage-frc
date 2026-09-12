@@ -7,7 +7,7 @@ import {
   type TeamDataRelatedId,
 } from "../lib/team-data/team-data-related";
 
-/** Soft-UI cross-links between Team Data and Schedule / Event Day / Strategy. */
+/** Soft-UI cross-links between Team data and Schedule / Event Day / Strategy. */
 export function TeamDataRelated({
   orgId,
   active,

@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "pairwise",
-  title: "Pairwise ranking",
+  title: "Pairwise",
   route: "/pairwise",
   apiRoute: "/api/pairwise",
   hub: "Competition",

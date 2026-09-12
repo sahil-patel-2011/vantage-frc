@@ -98,7 +98,7 @@ export async function computeShiftBalancerView(
       status: "setup_required",
       message: "Choose your team to build scout shift rotations.",
       steps: [
-        { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
+        { id: "workspace", label: "Choose your team", detail: "Choose which FRC team you are working as.", href: "/workspace" },
       ],
       orgId: null,
     };
@@ -244,7 +244,7 @@ export async function generatePlan(
     const slots = scheduleSlotsFromQuals(matchRows.rows);
     const qualMatches = new Set(slots.map((slot) => slot.matchNumber)).size;
     if (qualMatches === 0) {
-      throw new Error("No qualification schedule cached for the active event. Sync TBA or pick an event on Command.");
+      throw new Error("No qualification schedule cached for the active event. Sync official matches or pick an event on Command.");
     }
     matchCount = qualMatches;
     assignments = overlayScheduleOnRotation(

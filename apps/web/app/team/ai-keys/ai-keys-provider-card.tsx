@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "../../../components/ui";
 import type { ByokKeyStatus } from "../../../lib/ai-keys/byok-providers";
 import type { ProviderMeta } from "./ai-keys-model";
 
@@ -69,18 +70,13 @@ export function ProviderCard({
             />
           </label>
           <div className="ai-keys-actions">
-            <button className="primary-action" type="submit" disabled={busy || !draft.trim()}>
+            <Button variant="primary" type="submit" disabled={busy || !draft.trim()}>
               {status.configured ? "Update & encrypt" : "Save & encrypt"}
-            </button>
+            </Button>
             {status.configured ? (
-              <button
-                className="danger-action"
-                type="button"
-                disabled={busy}
-                onClick={() => onRemove()}
-              >
+              <Button variant="danger" type="button" disabled={busy} onClick={() => onRemove()}>
                 Remove key
-              </button>
+              </Button>
             ) : null}
           </div>
         </form>

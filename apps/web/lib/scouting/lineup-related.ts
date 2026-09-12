@@ -8,8 +8,8 @@ export const LINEUP_RELATED_LINKS = [
   { id: "scouting", label: "Scouting", kind: "hub" as const, tab: "scouting" },
   { id: "strategy", label: "Strategy", kind: "hub" as const, tab: "strategy" },
   { id: "forms", label: "Form builder", kind: "hub" as const, tab: "forms" },
-  { id: "coverage-live", label: "Scout Coverage Live", kind: "path" as const, path: "/scout-coverage-live" },
-  { id: "command", label: "Event Day", kind: "hub" as const, tab: "command" },
+  { id: "coverage-live", label: "Coverage", kind: "path" as const, path: "/scout-coverage-live" },
+  { id: "command", label: "Event day", kind: "hub" as const, tab: "command" },
 ] as const;
 
 export type LineupRelatedId = (typeof LINEUP_RELATED_LINKS)[number]["id"];
@@ -283,7 +283,7 @@ export function lineupShellCopy(kind: LineupShellKind): LineupEmptyCopy {
     case "loading":
       return {
         kind,
-        title: "Loading lineup coverage…",
+        title: "Opening Coverage",
         description:
           "Checking which team you are on and live scouting slots.",
       };
@@ -376,7 +376,7 @@ export function lineupNextActions(input: {
       {
         id: "command",
         label: "Sync event schedule",
-        detail: "Match slots stay blank until TBA publishes and syncs the schedule.",
+        detail: "Match slots stay blank until the event schedule syncs.",
         href: hubHref("/competition", "command", orgId),
         primary: true,
       },

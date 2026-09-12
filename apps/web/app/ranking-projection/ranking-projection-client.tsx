@@ -369,7 +369,7 @@ export default function RankingProjectionClient() {
       if (!response.ok || !isRankingProjectionView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Ranking projection. Showing the last copy on this device.");
+          setError("Could not refresh Rank projection. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setError(
@@ -388,7 +388,7 @@ export default function RankingProjectionClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Ranking projection. Showing the last copy on this device.");
+        setError("Could not refresh Rank projection. Showing the last copy on this device.");
         setFetchFailed(false);
       } else {
         setFetchFailed(true);
@@ -425,19 +425,19 @@ export default function RankingProjectionClient() {
         breadcrumbs={
           <>
             <a href={orgId ? `/competition?orgId=${encodeURIComponent(orgId)}` : "/competition"}>Competition</a>
-            {" / Ranking projection"}
+            {" / Rank projection"}
           </>
         }
-        title="Ranking projection"
-        description="Current TBA rank plus remaining qualification matches from the cache."
+        title="Rank projection"
+        description="Current official rank plus remaining qualification matches from the cache."
       />
-      <OfflineBanner feature="Ranking projection" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Rank projection" fromCache={fromCache} cachedAt={cachedAt} />
       {error && view ? <p className="app-muted">{error}</p> : null}
       {!view ? (
         <EmptyState
           soft
-          title={failure ? failure.title : "Loading ranking projection…"}
-          description={failure ? failure.description : undefined}
+          title={failure ? failure.title : "Opening Rank projection"}
+          description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >
           {failure?.primary ? (
@@ -454,7 +454,7 @@ export default function RankingProjectionClient() {
       ) : null}
       {view?.status === "setup_required" ? (
         <EmptyState
-          badge="Setup required"
+          badge="Needs setup"
           badgeTone="setup"
           soft
           title="Rankings are not ready"
@@ -469,7 +469,7 @@ export default function RankingProjectionClient() {
             </p>
             <p>
               {view.playedQuals} quals played, {view.remainingQuals} remaining
-              {view.epaTotal != null ? ` · EPA ${view.epaTotal}` : ""}
+              {view.epaTotal != null ? ` · Rating ${view.epaTotal}` : ""}
             </p>
             <p>
               <Button as="a" variant="secondary" href={withOrgHref("/rankings", view.orgId)}>

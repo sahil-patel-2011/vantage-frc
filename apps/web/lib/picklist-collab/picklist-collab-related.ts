@@ -2,12 +2,12 @@ import { hubHref } from "../nav/hubs";
 import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Collaborative Pick List (never DEMO ranks). */
+/** Soft-UI related surfaces for Pick list (never DEMO ranks). */
 export const PICKLIST_COLLAB_RELATED_LINKS = [
   { id: "strategy", label: "Strategy", tab: "strategy" },
-  { id: "picklist-justifier", label: "Pick-list Justifier", tab: "picklist-justifier" },
+  { id: "picklist-justifier", label: "Justifier", tab: "picklist-justifier" },
   { id: "pick-clock", label: "Pick clock", tab: "pick-clock" },
-  { id: "alliance-selection-desk", label: "Alliance Selection Desk", tab: "alliance-selection-desk" },
+  { id: "alliance-selection-desk", label: "Alliance desk", tab: "alliance-selection-desk" },
   { id: "scouting", label: "Scouting", tab: "scouting" },
 ] as const;
 
@@ -27,7 +27,7 @@ export const PICKLIST_COLLAB_RELATED_INCLUDE: PicklistCollabRelatedId[] = [
 ];
 
 /**
- * Soft-UI cross-links from Collaborative Pick List → Strategy / Justifier / Pick clock.
+ * Soft-UI cross-links from Pick list → Strategy / Justifier / Pick clock.
  * Build with hubHref — never broken JSX href templates.
  */
 export function picklistCollabRelatedLinks(
@@ -123,7 +123,7 @@ export function shouldShowPicklistCollabSummaryTiles(input: {
   return input.listCount > 0 && input.totalEntries > 0;
 }
 
-/** Classify Collaborative Pick List Soft-UI shell — never invents DEMO ranks. */
+/** Classify Pick list Soft-UI shell — never invents DEMO ranks. */
 export function classifyPicklistCollabShell(input: {
   loading?: boolean;
   fetchFailed?: boolean;
@@ -144,21 +144,21 @@ export function picklistCollabShellCopy(kind: PicklistCollabShellKind): Picklist
     case "loading":
       return {
         kind,
-        title: "Loading Collaborative Pick List…",
+        title: "Opening Pick list",
         description: "Checking which team you are on and pick lists.",
       };
     case "error":
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Collaborative Pick List",
+        title: "Could not load Pick list",
         description:
           "A network or server issue blocked the list. Retry, or open Strategy / Scouting while it reloads.",
       };
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Choose your team before ranking teams.",
@@ -182,7 +182,7 @@ export function picklistCollabShellCopy(kind: PicklistCollabShellKind): Picklist
 }
 
 /**
- * Soft-UI next actions for Collaborative Pick List empty/setup shells.
+ * Soft-UI next actions for Pick list empty/setup shells.
  * Points at Strategy / Justifier / Scouting — never invents DEMO ranks.
  */
 export function picklistCollabNextActions(input: {
@@ -208,7 +208,7 @@ export function picklistCollabNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Collaborative Pick List",
+        label: "Retry Pick list",
         detail: "Reload real lists.",
         href: withOrgHref("/picklist-collab", orgId),
         primary: true,
@@ -269,7 +269,7 @@ export function picklistCollabNextActions(input: {
       },
       {
         id: "picklist-justifier",
-        label: "Open Pick-list Justifier",
+        label: "Open Justifier",
         detail: "Source-cited rationales after teams are ranked.",
         href: hubHref("/competition", "picklist-justifier", orgId),
       },
@@ -289,7 +289,7 @@ export function picklistCollabNextActions(input: {
     },
     {
       id: "picklist-justifier",
-      label: "Open Pick-list Justifier",
+      label: "Open Justifier",
       detail: "Generate source-cited rationales from this consensus.",
       href: hubHref("/competition", "picklist-justifier", orgId),
     },
@@ -301,7 +301,7 @@ export function picklistCollabNextActions(input: {
     },
     {
       id: "alliance-selection-desk",
-      label: "Open Alliance Selection Desk",
+      label: "Open Alliance desk",
       detail: "Carry consensus onto the live board.",
       href: hubHref("/competition", "alliance-selection-desk", orgId),
     },

@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "object-chat-bridge",
-  title: "Object Chat Bridge",
+  title: "Object chat",
   route: "/object-chat-bridge",
   apiRoute: "/api/object-chat-bridge",
   hub: "Team",

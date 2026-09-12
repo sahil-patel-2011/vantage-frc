@@ -267,7 +267,7 @@ export default function SparesClient() {
           {" / Consumables"}
         </>
       }
-      title="Consumables & Spares"
+      title="Consumables"
       description="Track shop consumables — fasteners, wire, tape, rivets, PPE — with on-hand counts and reorder points, so you never discover you're out of #10-32s the night before ship."
     >
       <SparesRelated orgId={orgId} />
@@ -296,7 +296,7 @@ export default function SparesClient() {
         {header}
         <OfflineBanner feature="Consumables" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
-          title={copy ? copy.title : "Loading…"}
+          title={copy ? copy.title : "Opening Consumables"}
           description={copy ? copy.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >

@@ -51,9 +51,10 @@ describe("POST /api/cad/onshape disconnect", () => {
     expect(route).toContain("WHERE org_id=$1::uuid AND user_id=$2::uuid AND platform='onshape'");
   });
 
-  it("reports the exact missing setting when OAuth is unconfigured", () => {
-    // Not the old bare "Onshape OAuth is not configured".
-    expect(route).toContain("onshapeSetupStatus().message");
+  it("reports student-safe setup copy when OAuth is unconfigured", () => {
+    expect(route).toContain("studentOnshapeApiSetup");
+    expect(route).not.toContain("onshapeSetupStatus().message");
+    expect(route).not.toContain("...onshapeSetupStatus()");
     expect(route).not.toContain('error: "Onshape OAuth is not configured"');
   });
 });

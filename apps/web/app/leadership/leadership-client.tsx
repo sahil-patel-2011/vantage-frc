@@ -69,7 +69,7 @@ async function persistLeadershipSnapshot(
     await putFeatureSnapshot("leadership", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("leadership", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Leadership Continuity already painted; IndexedDB is best-effort.
+    // Live Leadership already painted; IndexedDB is best-effort.
   }
 }
 
@@ -177,7 +177,7 @@ export default function LeadershipClient() {
       if (!response.ok || !isLeadershipView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Leadership Continuity. Showing the last copy on this device.");
+          setError("Could not refresh Leadership. Showing the last copy on this device.");
           setFetchFailed(false);
           return;
         }
@@ -198,7 +198,7 @@ export default function LeadershipClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Leadership Continuity. Showing the last copy on this device.");
+        setError("Could not refresh Leadership. Showing the last copy on this device.");
         setFetchFailed(false);
         return;
       }
@@ -282,15 +282,15 @@ export default function LeadershipClient() {
           breadcrumbs={
             <>
               <a href={teamHref}>Team</a>
-              {" / Leadership Continuity"}
+              {" / Leadership"}
             </>
           }
-          title="Leadership Continuity"
+          title="Leadership"
           description={copy.description}
         >
           <LeadershipRelated orgId={orgId} />
         </PageHeader>
-        <OfflineBanner feature="Leadership Continuity" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Leadership" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           title={failure ? failure.title : copy.title}
           description={failure ? failure.description : copy.description}
@@ -320,15 +320,15 @@ export default function LeadershipClient() {
             breadcrumbs={
               <>
                 <a href={teamHref}>Team</a>
-                {" / Leadership Continuity"}
+                {" / Leadership"}
               </>
             }
-            title="Leadership Continuity"
+            title="Leadership"
             description={copy.description}
           >
             <LeadershipRelated orgId={view.orgId} />
           </PageHeader>
-          <OfflineBanner feature="Leadership Continuity" fromCache={fromCache} cachedAt={cachedAt} />
+          <OfflineBanner feature="Leadership" fromCache={fromCache} cachedAt={cachedAt} />
           <EmptyState badge="Needs setup" badgeTone="setup" title={copy.title} description={view.message || copy.description}>
             {setup ? (
               <Button as="a" variant="primary" href={setup.href}>
@@ -356,10 +356,10 @@ export default function LeadershipClient() {
         breadcrumbs={
           <>
             <a href={teamHref}>Team</a>
-            {" / Leadership Continuity"}
+            {" / Leadership"}
           </>
         }
-        title="Leadership Continuity"
+        title="Leadership"
         description={copy.description}
       >
         <LeadershipRelated orgId={view.orgId} />
@@ -383,7 +383,7 @@ export default function LeadershipClient() {
           </label>
         ) : null}
       </PageHeader>
-      <OfflineBanner feature="Leadership Continuity" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Leadership" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

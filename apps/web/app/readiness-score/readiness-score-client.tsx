@@ -42,7 +42,7 @@ import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/featur
 import "./readiness-score.css";
 
 const CATEGORY_LABEL: Record<ReadinessFixCategory, string> = {
-  fmea: "Open FMEA",
+  fmea: "Open Failure log",
   wiring: "Wiring",
   code: "Code",
   bringup: "Bring-up checklist",
@@ -53,7 +53,7 @@ const CATEGORY_LABEL: Record<ReadinessFixCategory, string> = {
 const COMPONENT_LABEL: Record<string, string> = {
   subsystemHealth: "Subsystem wiring",
   codeReadiness: "Code-version state",
-  fmeaClearance: "FMEA clearance",
+  fmeaClearance: "Failure log clearance",
   weightHeadroom: "Weight headroom",
   powerHeadroom: "Power headroom",
   checklistCompletion: "Bring-up checklist",
@@ -102,7 +102,7 @@ async function persistReadinessScoreSnapshot(
     await putFeatureSnapshot("readiness-score", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("readiness-score", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Readiness Score already painted; IndexedDB is best-effort.
+    // Live Readiness already painted; IndexedDB is best-effort.
   }
 }
 
@@ -178,15 +178,15 @@ function ReadinessShell({
         breadcrumbs={
           <>
             <a href={buildHref}>Build</a>
-            {" / Readiness Score"}
+            {" / Readiness"}
           </>
         }
-        title="Robot readiness score"
+        title="Readiness"
         description={description}
       >
         <ReadinessRelatedStrip orgId={orgId} />
       </PageHeader>
-      <OfflineBanner feature="Readiness Score" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Readiness" fromCache={fromCache} cachedAt={cachedAt} />
       {shell === "loading" ? (
         <div style={{ display: "grid", gap: 16 }} aria-busy="true" aria-label="Loading readiness score">
           <StatRowSkeleton count={4} />
@@ -197,7 +197,7 @@ function ReadinessShell({
       ) : (
         <EmptyState
           soft
-          badge={shell === "setup" ? "Setup required" : shell === "empty" ? "No subsystems yet" : copy.badge}
+          badge={shell === "setup" ? "Needs setup" : shell === "empty" ? "No subsystems yet" : copy.badge}
           badgeTone="setup"
           title={copy.title}
           description={error ?? copy.description}
@@ -273,7 +273,7 @@ export default function ReadinessScoreClient() {
       if (!response.ok || !isReadinessScoreView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Readiness Score. Showing the last copy on this device.");
+          setError("Could not refresh Readiness. Showing the last copy on this device.");
           setFetchFailed(false);
           return;
         }
@@ -288,7 +288,7 @@ export default function ReadinessScoreClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Readiness Score. Showing the last copy on this device.");
+        setError("Could not refresh Readiness. Showing the last copy on this device.");
         setFetchFailed(false);
         return;
       }
@@ -421,11 +421,11 @@ export default function ReadinessScoreClient() {
         breadcrumbs={
           <>
             <a href={buildHref}>Build</a>
-            {" / Readiness Score"}
+            {" / Readiness"}
           </>
         }
-        title="Robot readiness score"
-        description="One grounded ship-readiness index across subsystem wiring/code state, weight & power headroom, the bring-up checklist, and open FMEA. Cross-check FMEA, Inspection, and Code."
+        title="Readiness"
+        description="One grounded ship-readiness index across subsystem wiring/code state, weight & power headroom, the bring-up checklist, and open Failure log. Cross-check Failure log, Inspection, and Code."
       >
         <div className="readiness-score-header-actions">
           {view.seasons.length > 0 ? (
@@ -455,7 +455,7 @@ export default function ReadinessScoreClient() {
         </div>
       </PageHeader>
 
-      <OfflineBanner feature="Readiness Score" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Readiness" fromCache={fromCache} cachedAt={cachedAt} />
 
       {orgId && cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} compact /> : null}
 
@@ -479,7 +479,7 @@ export default function ReadinessScoreClient() {
               value={formatReadinessScorePercent(view.index.score, true)}
             />
             <StatTile
-              label="Open FMEA"
+              label="Open Failure log"
               value={formatReadinessScoreMetric(view.index.openFmeaCount, true)}
             />
             <StatTile
@@ -527,7 +527,7 @@ function ReadinessPanel({ view }: { view: LiveView }) {
           <h2 style={{ margin: "6px 0 0" }}>Ship-readiness index</h2>
           <small className="app-muted">
             {index.weightUsedLbs} / {index.weightBudgetLbs} lbs · {index.powerUsedAmps} / {index.powerBudgetAmps} A ·{" "}
-            {index.checklistComplete}/{index.checklistTotal} checklist · {index.openFmeaCount} open FMEA. Weight and power
+            {index.checklistComplete}/{index.checklistTotal} checklist · {index.openFmeaCount} open Failure log. Weight and power
             fall back to a 115 lb / 120 A yardstick until you record your own budgets — not a measured weigh-in.
           </small>
         </div>
@@ -557,14 +557,14 @@ function FixList({ view }: { view: LiveView }) {
         badge="Ship ready"
         badgeTone="good"
         title="No open fix-list items"
-        description="Wiring is verified, code is deployed & tested, the bring-up checklist is complete, and there's no open FMEA or budget overrun on record."
+        description="Wiring is verified, code is deployed & tested, the bring-up checklist is complete, and there's no open Failure log or budget overrun on record."
       />
     );
   }
   return (
     <Panel id="readiness-score-fixes" className="readiness-score-panel">
       <h2 style={{ marginTop: 0 }}>Fix list — ordered by urgency</h2>
-      <p className="app-muted">From logged subsystems and open FMEA only.</p>
+      <p className="app-muted">From logged subsystems and open Failure log only.</p>
       <ul className="readiness-score-list">
         {fixList.map((item) => (
           <li key={item.id} className="readiness-score-row">
@@ -583,7 +583,7 @@ function FixList({ view }: { view: LiveView }) {
 }
 
 /*
- * Readiness Score used to own a form that wrote its own copy of every
+ * Readiness used to own a form that wrote its own copy of every
  * subsystem's weight, current draw, wiring state and code state. That copy
  * drifted from the tools teams actually work in, and the score was computed
  * from the copy — so a fully-recorded robot could read as empty. The score is

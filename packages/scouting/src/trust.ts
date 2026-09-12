@@ -129,12 +129,12 @@ export function fieldConfidenceHint(
   if (!summary || summary.checks < minimumChecks || summary.disagreementRate == null) return null;
   const pct = Math.round(summary.disagreementRate * 100);
   if (pct <= 5) {
-    return `Team history: ${pct}% disagreement vs TBA across ${summary.checks} checks — usually solid.`;
+    return `Team history: ${pct}% disagreement vs official results across ${summary.checks} checks — usually solid.`;
   }
   if (pct < 18) {
-    return `Team history: ${pct}% disagreement vs TBA across ${summary.checks} checks — double-check.`;
+    return `Team history: ${pct}% disagreement vs official results across ${summary.checks} checks — double-check.`;
   }
-  return `Team history: ${pct}% disagreement vs TBA across ${summary.checks} checks — slow down on this field.`;
+  return `Team history: ${pct}% disagreement vs official results across ${summary.checks} checks — slow down on this field.`;
 }
 
 export type OfficialFieldPolicy = ReferenceOfficialFieldPolicy & {
@@ -254,7 +254,7 @@ export function crossValidateScoutPayload(input: {
         officialValue: null,
         officialSource: "tba",
         officialKey: null,
-        detail: "Official TBA score breakdown is not cached yet for this match.",
+        detail: "Official score breakdown is not cached yet for this match.",
       });
       continue;
     }
@@ -287,7 +287,7 @@ export function crossValidateScoutPayload(input: {
         officialValue: null,
         officialSource: "tba",
         officialKey: null,
-        detail: `No TBA ${classifyComparableField(fieldKey)} key present in score breakdown yet.`,
+        detail: `No official ${classifyComparableField(fieldKey)} key is cached for this match yet.`,
       });
       continue;
     }
@@ -302,8 +302,8 @@ export function crossValidateScoutPayload(input: {
       officialKey: reference.officialKey,
       detail:
         status === "match"
-          ? `Matches TBA score_breakdown.${reference.officialKey}`
-          : `Conflicts with TBA score_breakdown.${reference.officialKey}`,
+          ? `Matches official ${reference.officialKey}`
+          : `Conflicts with official ${reference.officialKey}`,
     });
 
     if (classifyComparableField(fieldKey) === "climb") {
@@ -581,7 +581,7 @@ export function rankScoutsForStrategySeats(input: {
     .map((scout) => ({
       userId: scout.userId,
       accuracy: scout.accuracy,
-      reason: `Top accuracy ${Math.round(scout.accuracy * 100)}% (${scout.matches}/${scout.checks} vs TBA)`,
+      reason: `Top accuracy ${Math.round(scout.accuracy * 100)}% (${scout.matches}/${scout.checks} vs official results)`,
     }));
 }
 

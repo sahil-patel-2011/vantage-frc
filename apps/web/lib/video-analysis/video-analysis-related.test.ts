@@ -116,7 +116,7 @@ describe("videoAnalysisShellCopy", () => {
 describe("student labels", () => {
   it("names sources without file-id jargon", () => {
     expect(labelVideoSourceKind("youtube")).toBe("YouTube");
-    expect(labelVideoSourceKind("tba")).toBe("The Blue Alliance");
+    expect(labelVideoSourceKind("tba")).toBe("Official match page");
     expect(labelVideoSourceKind("upload")).toBe("File");
     expect(labelVideoSourceKind("pit_stream")).toBe("Pit camera");
     expect(labelVideoSourceKind("pit_camera")).toBe("Pit camera");

@@ -3,7 +3,7 @@ import { PRICING_CATALOG } from "@vantage/billing/catalog";
 import { SITE_URL as CANONICAL } from "../../lib/site";
 
 const description =
-  "Vantage is a competition operations platform for FIRST Robotics Competition (FRC) teams. It unifies offline scouting, live The Blue Alliance and Statbotics data, win/loss prediction, strategy and pick lists, AI CAD, and robot-code review in one source-attributed, team-private event context — with every AI action behind a human decision.";
+  "Vantage is a competition operations platform for FIRST Robotics Competition (FRC) teams. It unifies offline scouting, official match and season-rating data, win/loss prediction, strategy and pick lists, AI CAD, and robot-code review in one source-attributed, team-private event context — with every AI action behind a human decision.";
 
 const c = PRICING_CATALOG;
 
@@ -52,9 +52,9 @@ const graph = {
         "Strategy tools and pick desk",
         "Business hub for sponsors, grants, and orders",
         "Hard managed-AI usage cutoffs after included allowance",
-        "Live The Blue Alliance and Statbotics reference data",
+        "Official match and season-rating reference data",
         "Win/loss prediction with confidence and tracked accuracy",
-        "Event Day command and My Day personal queue",
+        "Event day command and My Day personal queue",
         "Team knowledge/wiki and CAD↔strategy linkage",
         "AI CAD builder (Onshape / Fusion, approval-gated)",
         "FRC robot-code risk review as human-approved diffs",

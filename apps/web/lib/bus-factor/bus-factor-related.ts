@@ -2,10 +2,10 @@ import { hubHref } from "../nav/hubs";
 import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Bus-Factor & Burnout Watch (never DEMO risk metrics). */
+/** Soft-UI related surfaces for Bus factor (never DEMO risk metrics). */
 export const BUS_FACTOR_RELATED_LINKS = [
   { id: "attendance", label: "Attendance", tab: "attendance" },
-  { id: "hours-self-view", label: "My Hours", tab: "hours-self-view" },
+  { id: "hours-self-view", label: "My hours", tab: "hours-self-view" },
   { id: "task-board", label: "Task board", tab: "task-board" },
   { id: "knowledge", label: "Knowledge", tab: "knowledge" },
 ] as const;
@@ -18,7 +18,7 @@ export type BusFactorRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — Attendance / My Hours / Task board. */
+/** Focused Soft-UI strip — Attendance / My hours / Task board. */
 export const BUS_FACTOR_RELATED_INCLUDE: BusFactorRelatedId[] = [
   "attendance",
   "hours-self-view",
@@ -26,7 +26,7 @@ export const BUS_FACTOR_RELATED_INCLUDE: BusFactorRelatedId[] = [
 ];
 
 /**
- * Soft-UI cross-links from Bus-Factor → Attendance / Hours / Task board.
+ * Soft-UI cross-links from Bus factor → Attendance / Hours / Task board.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function busFactorRelatedLinks(
@@ -75,7 +75,7 @@ export function busFactorSetupSteps(orgId?: string | null): BusFactorSetupStep[]
     {
       id: "workspace",
       label: "Choose your team",
-      detail: "Choose your team to open Bus-Factor.",
+      detail: "Choose your team to open Bus factor.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -86,7 +86,7 @@ export function busFactorSetupSteps(orgId?: string | null): BusFactorSetupStep[]
     },
     {
       id: "hours-self-view",
-      label: "Open My Hours",
+      label: "Open My hours",
       detail: "Clocked hours stay blank until members log shop time.",
       href: hubHref("/team", "hours-self-view", orgId),
     },
@@ -125,7 +125,7 @@ export function isBusFactorBoardEmpty(input: { entryCount: number }): boolean {
   return input.entryCount === 0;
 }
 
-/** Classify Bus-Factor Soft-UI shell — never invents DEMO risk metrics. */
+/** Classify Bus factor Soft-UI shell — never invents DEMO risk metrics. */
 export function classifyBusFactorShell(input: {
   loading?: boolean;
   fetchFailed?: boolean;
@@ -146,7 +146,7 @@ export function busFactorShellCopy(kind: BusFactorShellKind): BusFactorEmptyCopy
     case "loading":
       return {
         kind,
-        title: "Loading Bus-Factor & Burnout…",
+        title: "Opening Bus factor",
         description:
           "Checking which team you are on and logged workload entries.",
       };
@@ -154,14 +154,14 @@ export function busFactorShellCopy(kind: BusFactorShellKind): BusFactorEmptyCopy
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Bus-Factor",
+        title: "Could not load Bus factor",
         description:
-          "A network or server issue blocked workload risk. Retry, or open Attendance / My Hours while it reloads.",
+          "A network or server issue blocked workload risk. Retry, or open Attendance / My hours while it reloads.",
       };
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Choose your team before logging weekly workload.",
@@ -177,7 +177,7 @@ export function busFactorShellCopy(kind: BusFactorShellKind): BusFactorEmptyCopy
     default:
       return {
         kind: "ready",
-        title: "Bus-factor from logged workload",
+        title: "Bus factor from logged workload",
         description:
           "Concentration and overload use only what the team logs.",
       };
@@ -185,8 +185,8 @@ export function busFactorShellCopy(kind: BusFactorShellKind): BusFactorEmptyCopy
 }
 
 /**
- * Soft-UI next actions for Bus-Factor empty/setup shells.
- * Points at Attendance / My Hours / Task board — never invents DEMO risk metrics.
+ * Soft-UI next actions for Bus factor empty/setup shells.
+ * Points at Attendance / My hours / Task board — never invents DEMO risk metrics.
  */
 export function busFactorNextActions(input: {
   orgId?: string | null;
@@ -209,7 +209,7 @@ export function busFactorNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Bus-Factor",
+        label: "Retry Bus factor",
         detail: "Reload real workload entries.",
         href: withOrgHref("/bus-factor", orgId),
         primary: true,
@@ -222,7 +222,7 @@ export function busFactorNextActions(input: {
       },
       {
         id: "hours-self-view",
-        label: "Open My Hours",
+        label: "Open My hours",
         detail: "Clocked hours stay available while risk reloads.",
         href: hubHref("/team", "hours-self-view", orgId),
       },
@@ -240,7 +240,7 @@ export function busFactorNextActions(input: {
       },
       {
         id: "hours-self-view",
-        label: "Open My Hours",
+        label: "Open My hours",
         detail: "Compare self-reported workload against clocked Build Hours.",
         href: hubHref("/team", "hours-self-view", orgId),
       },
@@ -272,7 +272,7 @@ export function busFactorNextActions(input: {
     },
     {
       id: "hours-self-view",
-      label: "Open My Hours",
+      label: "Open My hours",
       detail: "Corroborate self-reported hours with clocked shop time.",
       href: hubHref("/team", "hours-self-view", orgId),
     },

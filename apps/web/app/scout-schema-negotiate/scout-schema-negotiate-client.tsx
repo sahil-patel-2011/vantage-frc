@@ -62,7 +62,7 @@ function SchemaSyncRelated({ orgId }: { orgId?: string | null }) {
         Scouting
       </Button>
       <Button as="a" variant="secondary" href={hubHref("/competition", "scout-p2p-relay", orgId)}>
-        Pit mesh
+        Pit link
       </Button>
       <Button as="a" variant="secondary" href={hubHref("/competition", "scouting-schema-ab", orgId)}>
         Schema A/B
@@ -89,7 +89,7 @@ function SchemaSyncNextActions({ orgId }: { orgId: string }) {
     },
     {
       id: "mesh",
-      label: "Open Pit mesh",
+      label: "Open Pit link",
       detail: "Tablets share entries in the pit when venue Wi-Fi drops.",
       href: hubHref("/competition", "scout-p2p-relay", orgId),
       primary: false,
@@ -273,7 +273,7 @@ export default function ScoutSchemaNegotiateClient() {
         {header}
         <OfflineBanner feature="Schema sync" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
-          title={failure ? failure.title : "Loading…"}
+          title={failure ? failure.title : "Opening Schema sync"}
           description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >
@@ -303,7 +303,7 @@ export default function ScoutSchemaNegotiateClient() {
               {error}
             </p>
           ) : null}
-          <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
+          <EmptyState badge="Needs setup" badgeTone="setup" title={view.message}>
             {view.steps[0] ? (
               <Button as="a" variant="primary" href={view.steps[0].href}>
                 {view.steps[0].label}

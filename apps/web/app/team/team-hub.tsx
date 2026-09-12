@@ -106,7 +106,7 @@ export default function TeamHub() {
         }
         if (tab === "fmea") {
           return (
-            <HubOrgGate orgId={orgId} label="Failure notes">
+            <HubOrgGate orgId={orgId} label="Failure log">
               {() => <FmeaClient embedded />}
             </HubOrgGate>
           );

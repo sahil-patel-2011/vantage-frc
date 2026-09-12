@@ -7,6 +7,7 @@ import {
   playwrightOrigin,
   playwrightPort,
   playwrightWebServerEnv,
+  shouldReuseLiveNextDevLock,
 } from "./tests/browser/origin";
 
 assertLocalFixtureDatabase();
@@ -53,8 +54,13 @@ function liveNextDevLock(): { origin: string; port: number } | null {
   }
 }
 
-const explicitBase = process.env.PLAYWRIGHT_BASE_URL?.replace(/\/$/, "") || "";
-const lock = liveNextDevLock();
+process.env.NEXT_DIST_DIR ??= ".next-pw";
+
+// A worker re-import sees PLAYWRIGHT_BASE_URL after the parent set it for
+// cookies. That is not attach mode — PLAYWRIGHT_OWNED_SERVER marks our server.
+const ownedServer = process.env.PLAYWRIGHT_OWNED_SERVER === "1";
+const explicitBase = ownedServer ? "" : process.env.PLAYWRIGHT_BASE_URL?.replace(/\/$/, "") || "";
+const lock = shouldReuseLiveNextDevLock() ? liveNextDevLock() : null;
 const origin = explicitBase || lock?.origin || playwrightOrigin();
 const port = lock?.port ?? playwrightPort();
 const hostname = cookieDomain(origin);
@@ -64,24 +70,28 @@ const startWebServer = !explicitBase;
 
 // session.ts reads PLAYWRIGHT_BASE_URL for the fixture cookie URL.
 process.env.PLAYWRIGHT_BASE_URL = origin;
+if (startWebServer) process.env.PLAYWRIGHT_OWNED_SERVER = "1";
 
 if (explicitBase) {
-  // eslint-disable-next-line no-console
   console.log(`Playwright attaching to ${origin} (PLAYWRIGHT_BASE_URL, no webServer)`);
 } else if (lock) {
-  // eslint-disable-next-line no-console
   console.log(`Playwright reusing ${origin} via webServer.reuseExistingServer`);
 }
 
 export default defineConfig({
   testDir: "./tests/browser",
+  // Vitest unit files live beside specs (`origin.test.ts`). Do not collect them.
+  testMatch: "**/*.spec.ts",
   // One worker is the GHA contract: two starve Next 16's compiler
   // (net::ERR_ABORTED / detached frames). Override with PLAYWRIGHT_WORKERS.
   workers: Number(process.env.PLAYWRIGHT_WORKERS) || 1,
   retries: isCi ? 1 : 0,
   forbidOnly: isCi,
   timeout: isCi ? 45_000 : 90_000,
-  reporter: isCi ? [["line"], ["html"]] : [["list"], ["html"]],
+  reporter: [
+    [isCi ? "line" : "list"],
+    ["html", { open: "never" }],
+  ],
   use: {
     baseURL: origin,
     trace: "retain-on-failure",

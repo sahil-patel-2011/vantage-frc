@@ -48,7 +48,7 @@ async function persistGrantEligibilitySnapshot(
     await putFeatureSnapshot("grant-eligibility-matcher", cacheOrg, data);
     if (!orgHint) await putFeatureSnapshot("grant-eligibility-matcher", "_", data);
   } catch {
-    // Live Grant Eligibility Matcher already painted; IndexedDB is best-effort.
+    // Live Eligibility already painted; IndexedDB is best-effort.
   }
 }
 
@@ -137,10 +137,10 @@ function MatcherShell({
         breadcrumbs={
           <>
             <a href={businessHref}>Business</a>
-            {" / Grant Eligibility Matcher"}
+            {" / Eligibility"}
           </>
         }
-        title="Grant Eligibility Matcher"
+        title="Eligibility"
         description={description}
       >
         <RelatedStrip orgId={orgId} />
@@ -155,7 +155,7 @@ function MatcherShell({
       ) : (
         <EmptyState
           soft
-          badge={shell === "setup" ? "Setup required" : copy.badge}
+          badge={shell === "setup" ? "Needs setup" : copy.badge}
           badgeTone="setup"
           title={copy.title}
           description={error ?? copy.description}
@@ -221,7 +221,7 @@ export default function GrantEligibilityMatcherClient() {
         if (!response.ok || !isGrantEligibilityView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Grant Eligibility Matcher. Showing the last copy on this device.");
+            setError("Could not refresh Eligibility. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -235,7 +235,7 @@ export default function GrantEligibilityMatcherClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Grant Eligibility Matcher. Showing the last copy on this device.");
+          setError("Could not refresh Eligibility. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -305,7 +305,7 @@ export default function GrantEligibilityMatcherClient() {
   if (shell === "loading") {
     return (
       <MatcherShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Grant Eligibility Matcher" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Eligibility" fromCache={fromCache} cachedAt={cachedAt} />
       </MatcherShell>
     );
   }
@@ -319,7 +319,7 @@ export default function GrantEligibilityMatcherClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Grant Eligibility Matcher" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Eligibility" fromCache={fromCache} cachedAt={cachedAt} />
       </MatcherShell>
     );
   }
@@ -331,7 +331,7 @@ export default function GrantEligibilityMatcherClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Grant Eligibility Matcher" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Eligibility" fromCache={fromCache} cachedAt={cachedAt} />
       </MatcherShell>
     );
   }
@@ -339,7 +339,7 @@ export default function GrantEligibilityMatcherClient() {
   if (view?.status !== "live") {
     return (
       <MatcherShell description={shellCopy.description} orgId={orgId} shell="setup">
-        <OfflineBanner feature="Grant Eligibility Matcher" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Eligibility" fromCache={fromCache} cachedAt={cachedAt} />
       </MatcherShell>
     );
   }
@@ -350,11 +350,11 @@ export default function GrantEligibilityMatcherClient() {
         breadcrumbs={
           <>
             <a href={businessHref}>Business</a>
-            {" / Grant Eligibility Matcher"}
+            {" / Eligibility"}
           </>
         }
-        title="Grant Eligibility Matcher"
-        description="Grants your team actually qualifies for, matched against your recorded team profile — with a deadline radar. Distinct from Grant Report. Cross-check Grants, Grant Report, and Impact."
+        title="Eligibility"
+        description="Grants your team actually qualifies for, matched against your recorded team profile — with a deadline radar. Distinct from Reports. Cross-check Grants, Reports, and Impact."
       >
         <div className="gem-header-actions">
           {relatedLinks.map((link) => (
@@ -365,7 +365,7 @@ export default function GrantEligibilityMatcherClient() {
         </div>
       </PageHeader>
 
-      <OfflineBanner feature="Grant Eligibility Matcher" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Eligibility" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="impact-status" role="alert">

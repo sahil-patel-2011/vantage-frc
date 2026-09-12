@@ -4,10 +4,10 @@ import { withOrgHref } from "../nav/product-nav";
 /** Soft-UI related surfaces for Scout Cross-Validation (never DEMO agreement %). */
 export const SCOUT_CROSSVAL_RELATED_LINKS = [
   { id: "scouting", label: "Scouting", kind: "hub" as const, tab: "scouting" },
-  { id: "coverage-live", label: "Coverage Live", kind: "path" as const, path: "/scout-coverage-live" },
+  { id: "coverage-live", label: "Coverage", kind: "path" as const, path: "/scout-coverage-live" },
   { id: "accuracy", label: "Accuracy", kind: "path" as const, path: "/scout-accuracy" },
   { id: "disagreements", label: "Disagreements", kind: "path" as const, path: "/scout-disagreements" },
-  { id: "command", label: "Event Day", kind: "hub" as const, tab: "command" },
+  { id: "command", label: "Event day", kind: "hub" as const, tab: "command" },
 ] as const;
 
 export type ScoutCrossvalRelatedId = (typeof SCOUT_CROSSVAL_RELATED_LINKS)[number]["id"];
@@ -18,7 +18,7 @@ export type ScoutCrossvalRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — Scouting · Coverage Live · Accuracy. */
+/** Focused Soft-UI strip — Scouting · Coverage · Accuracy. */
 export const SCOUT_CROSSVAL_RELATED_INCLUDE: ScoutCrossvalRelatedId[] = [
   "scouting",
   "coverage-live",
@@ -71,7 +71,7 @@ export function scoutCrossvalSetupSteps(orgId?: string | null): ScoutCrossvalSet
     {
       id: "workspace",
       label: "Choose your team",
-      detail: "Choose your team to open TBA cross-validation.",
+      detail: "Choose your team to open official cross-checks.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -83,19 +83,19 @@ export function scoutCrossvalSetupSteps(orgId?: string | null): ScoutCrossvalSet
     {
       id: "command",
       label: "Sync event results",
-      detail: "TBA score breakdowns must be cached before fields can agree or conflict.",
+      detail: "Official score breakdowns must be synced before fields can agree or conflict.",
       href: hubHref("/competition", "command", orgId),
     },
     {
       id: "coverage-live",
-      label: "Open Coverage Live",
+      label: "Open Coverage",
       detail: "Cover zero/thin robots so more entries can be cross-validated.",
       href: withOrgHref("/scout-coverage-live", orgId),
     },
     {
       id: "accuracy",
       label: "Open Accuracy",
-      detail: "Post-event ranks use the same TBA-verified totals.",
+      detail: "Post-event ranks use the same official totals.",
       href: withOrgHref("/scout-accuracy", orgId),
     },
   ];
@@ -159,9 +159,9 @@ export function scoutCrossvalShellCopy(kind: ScoutCrossvalShellKind): ScoutCross
     case "loading":
       return {
         kind,
-        title: "Loading scout cross-validation…",
+        title: "Opening Cross-check",
         description:
-          "Checking which team you are on and TBA-cached score breakdowns.",
+          "Checking which team you are on and cached official score breakdowns.",
       };
     case "error":
       return {
@@ -169,7 +169,7 @@ export function scoutCrossvalShellCopy(kind: ScoutCrossvalShellKind): ScoutCross
         badge: "Unavailable",
         title: "Could not load scout cross-validation",
         description:
-          "A network or server issue blocked TBA field checks. Retry, or open Scouting / Coverage Live / Accuracy while it reloads.",
+          "A network or server issue blocked official field checks. Retry, or open Scouting / Coverage / Accuracy while it reloads.",
       };
     case "setup":
       return {
@@ -185,12 +185,12 @@ export function scoutCrossvalShellCopy(kind: ScoutCrossvalShellKind): ScoutCross
         badge: "No entries yet",
         title: "Waiting on match-scout rows",
         description:
-          "Field checks stay blank until your team logs match entries for an event with cached TBA results. Cross-check Scouting, Coverage Live, and Accuracy.",
+          "Field checks stay blank until your team logs match entries for an event with cached official results. Cross-check Scouting, Coverage, and Accuracy.",
       };
     default:
       return {
         kind: "ready",
-        title: "TBA field checks",
+        title: "Official field checks",
         description:
           "Agree / conflict / unverifiable badges use only cached official score breakdowns.",
       };
@@ -199,7 +199,7 @@ export function scoutCrossvalShellCopy(kind: ScoutCrossvalShellKind): ScoutCross
 
 /**
  * Soft-UI next actions for Scout Cross-Validation empty/setup shells.
- * Points at Scouting / Coverage Live / Accuracy — never invents DEMO agreement.
+ * Points at Scouting / Coverage / Accuracy — never invents DEMO agreement.
  */
 export function scoutCrossvalNextActions(input: {
   orgId?: string | null;
@@ -216,7 +216,7 @@ export function scoutCrossvalNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Choose your team before TBA checks run.",
+          detail: "Choose your team before official checks run.",
           href: "/workspace",
           primary: true,
         },
@@ -228,14 +228,14 @@ export function scoutCrossvalNextActions(input: {
         },
         {
           id: "coverage-live",
-          label: "Open Coverage Live",
+          label: "Open Coverage",
           detail: "Gaps stay honest until real scout rows exist.",
           href: withOrgHref("/scout-coverage-live", null),
         },
         {
           id: "accuracy",
           label: "Open Accuracy",
-          detail: "Ranks stay blank until TBA-verified totals exist.",
+          detail: "Ranks stay blank until official totals exist.",
           href: withOrgHref("/scout-accuracy", null),
         },
       ];
@@ -244,26 +244,26 @@ export function scoutCrossvalNextActions(input: {
       {
         id: "scouting",
         label: "Open Scouting",
-        detail: "Log match-scout entries so TBA can compare totals.",
+        detail: "Log match-scout entries so official results can compare totals.",
         href: hubHref("/competition", "scouting", orgId),
         primary: true,
       },
       {
         id: "command",
         label: "Sync event results",
-        detail: "Confirm the TBA event so official score breakdowns can cache.",
+        detail: "Confirm the event so official score breakdowns can cache.",
         href: hubHref("/competition", "command", orgId),
       },
       {
         id: "coverage-live",
-        label: "Open Coverage Live",
+        label: "Open Coverage",
         detail: "Close zero/thin cells so more entries can be checked.",
         href: withOrgHref("/scout-coverage-live", orgId),
       },
       {
         id: "accuracy",
         label: "Open Accuracy",
-        detail: "Post-event ranks wait on the same real TBA checks.",
+        detail: "Post-event ranks wait on the same real official checks.",
         href: withOrgHref("/scout-accuracy", orgId),
       },
     ];
@@ -274,26 +274,26 @@ export function scoutCrossvalNextActions(input: {
       {
         id: "retry",
         label: "Retry cross-validation",
-        detail: "Reload real TBA field checks.",
+        detail: "Reload real official field checks.",
         href: withOrgHref("/scout-crossval", orgId),
         primary: true,
       },
       {
         id: "scouting",
         label: "Open Scouting",
-        detail: "Scout rows stay available while TBA checks reload.",
+        detail: "Scout rows stay available while official checks reload.",
         href: hubHref("/competition", "scouting", orgId),
       },
       {
         id: "coverage-live",
-        label: "Open Coverage Live",
+        label: "Open Coverage",
         detail: "Coverage gaps stay available while cross-validation reloads.",
         href: withOrgHref("/scout-coverage-live", orgId),
       },
       {
         id: "accuracy",
         label: "Open Accuracy",
-        detail: "Accuracy ranks stay available while TBA checks reload.",
+        detail: "Accuracy ranks stay available while official checks reload.",
         href: withOrgHref("/scout-accuracy", orgId),
       },
     ];
@@ -304,26 +304,26 @@ export function scoutCrossvalNextActions(input: {
       {
         id: "scouting",
         label: "Log scout entries",
-        detail: "Cross-validation stays blank until membership-bound match rows exist.",
+        detail: "Cross-validation stays blank until this team's match entries exist.",
         href: hubHref("/competition", "scouting", orgId),
         primary: true,
       },
       {
         id: "coverage-live",
-        label: "Open Coverage Live",
-        detail: "Cover open robots so entries can land for TBA checks.",
+        label: "Open Coverage",
+        detail: "Cover open robots so entries can land for official checks.",
         href: withOrgHref("/scout-coverage-live", orgId),
       },
       {
         id: "accuracy",
         label: "Open Accuracy",
-        detail: "Leaderboard waits on the same real TBA-verified totals.",
+        detail: "Leaderboard waits on the same real official totals.",
         href: withOrgHref("/scout-accuracy", orgId),
       },
       {
         id: "command",
         label: "Sync event results",
-        detail: "TBA score breakdowns must be cached before fields verify.",
+        detail: "Official score breakdowns must be synced before fields verify.",
         href: hubHref("/competition", "command", orgId),
       },
     ];
@@ -335,30 +335,30 @@ export function scoutCrossvalNextActions(input: {
       label:
         conflictEntries > 0
           ? `Review ${conflictEntries} conflict${conflictEntries === 1 ? "" : "s"}`
-          : "Review TBA field checks",
+          : "Review official field checks",
       detail:
         conflictEntries > 0
           ? "Re-check entries that disagree with cached official score breakdowns."
-          : "Agreement uses only verifiable TBA fields.",
+          : "Agreement uses only verifiable official fields.",
       href: conflictEntries > 0 ? "#crossval-entries" : hubHref("/competition", "scouting", orgId),
       primary: true,
     },
     {
       id: "scouting",
       label: "Open Scouting",
-      detail: "Keep logging membership-bound match rows for fresher checks.",
+      detail: "Keep logging this team's match entries for fresher checks.",
       href: hubHref("/competition", "scouting", orgId),
     },
     {
       id: "coverage-live",
-      label: "Open Coverage Live",
+      label: "Open Coverage",
       detail: "Cross-check which robots still need scout rows.",
       href: withOrgHref("/scout-coverage-live", orgId),
     },
     {
       id: "accuracy",
       label: "Open Accuracy",
-      detail: "Roll the same TBA checks into pick-desk rotation ranks.",
+      detail: "Roll the same official checks into pick-desk rotation ranks.",
       href: withOrgHref("/scout-accuracy", orgId),
     },
   ];

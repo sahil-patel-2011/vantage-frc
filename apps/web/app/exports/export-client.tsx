@@ -27,19 +27,19 @@ type Job = {
 const CATEGORY_ORDER = ["scouting", "reference", "strategy", "ai", "ops"] as const;
 const CATEGORY_LABELS: Record<string, string> = {
   scouting: "Scouting",
-  reference: "Official reference (TBA)",
+  reference: "Official reference",
   strategy: "Strategy & research",
   ai: "AI artifacts",
   ops: "Ops & billing",
 };
 
 const EXCLUSIONS = [
-  "API keys and OAuth / session tokens",
-  "Passwords, OTP / MFA secrets or hashes",
+  "API keys and sign-in tokens",
+  "Passwords and one-time codes",
   "Encryption material and payment credentials",
   "Display tokens and internal security fields",
-  "Invite tokens",
-  "Other teams' workspaces (org_id isolation)",
+  "Invite links",
+  "Other teams' work",
 ];
 
 function preselectedFromUrl(): string[] {
@@ -252,7 +252,7 @@ export default function ExportCenter({ orgId }: { orgId: string }) {
         <a href={`/strategy?orgId=${encodeURIComponent(orgId)}`}>Strategy</a>
         <a href={`/business?orgId=${encodeURIComponent(orgId)}`}>Business</a>
         <a href={`/team/usage?orgId=${encodeURIComponent(orgId)}`}>AI usage</a>
-        <a href={`/team/data?orgId=${encodeURIComponent(orgId)}`}>Live TBA data</a>
+        <a href={`/team/data?orgId=${encodeURIComponent(orgId)}`}>Official matches</a>
       </nav>
 
       {message ? (
@@ -354,7 +354,7 @@ export default function ExportCenter({ orgId }: { orgId: string }) {
             <Button variant="secondary" type="button" disabled={busy} onClick={() => void createZip(true)}>
               ZIP all {scope === "team" ? "team" : "private"} data
             </Button>
-            <Button variant="secondary" type="button" disabled={busy} onClick={() => { const ids = available .filter((item) => scope === "private" ? item.id === "ai-private-conversations" || item.id === "ai-private-memory" : item.category === "ai" || item.id === "usage", ) .map((item) => item.id); setSelected(ids); setMessage( scope === "private" ? "Selected your private AI chats and memory only." : "Selected this team's AI chats, memory, and artifacts — not other workspaces.", ); setOk(true); }}>
+            <Button variant="secondary" type="button" disabled={busy} onClick={() => { const ids = available .filter((item) => scope === "private" ? item.id === "ai-private-conversations" || item.id === "ai-private-memory" : item.category === "ai" || item.id === "usage", ) .map((item) => item.id); setSelected(ids); setMessage( scope === "private" ? "Selected your private AI chats and memory only." : "Selected this team's AI chats, memory, and artifacts — not other teams.", ); setOk(true); }}>
               {scope === "private" ? "Select my AI takeout" : "Select this team's AI takeout"}
             </Button>
           </div>
@@ -369,8 +369,8 @@ export default function ExportCenter({ orgId }: { orgId: string }) {
               ))}
             </ul>
             <p className="app-muted">
-              CSV cells are RFC 4180 quoted, UTC timestamps are stable, and spreadsheet formulas are neutralized. ZIP
-              archives include <code>manifest.json</code> + <code>PROVENANCE.txt</code> and expire after 24 hours.
+              CSV files are quoted for Excel, timestamps stay in UTC, and spreadsheet formulas are neutralized. ZIP
+              archives include a contents list and a source note and expire after 24 hours.
             </p>
           </section>
 

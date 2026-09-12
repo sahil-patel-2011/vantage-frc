@@ -50,9 +50,9 @@ export async function GET(request: Request) {
     return Response.json(
       {
         status: "setup_required",
-        message: "Could not load CAD Change Impact Radar. Choose your team and confirm database access.",
+        message: "Could not load Change radar. Choose your team and confirm database access.",
         steps: [
-          { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
+          { id: "workspace", label: "Choose your team", detail: "Choose which FRC team you are working as.", href: "/workspace" },
         ],
         orgId: null,
       } satisfies CadChangeRadarView,
@@ -141,7 +141,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "CAD Change Impact Radar request failed";
+    const message = error instanceof Error ? error.message : "Change radar request failed";
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

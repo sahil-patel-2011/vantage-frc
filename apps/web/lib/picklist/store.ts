@@ -411,7 +411,7 @@ export async function upsertEntry(
   const known = await client.query(`SELECT 1 FROM teams_ref WHERE team_key = $1::text`, [teamKey]);
   if (!known.rowCount) {
     throw new Error(
-      `${teamKey.replace(/^frc/, "")} is not in the TBA team reference yet — sync the event first.`,
+      `${teamKey.replace(/^frc/, "")} is not in the official team list yet — sync the event first.`,
     );
   }
 

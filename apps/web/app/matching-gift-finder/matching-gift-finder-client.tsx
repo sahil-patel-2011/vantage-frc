@@ -56,7 +56,7 @@ async function persistMatchingGiftFinderSnapshot(
     await putFeatureSnapshot("matching-gift-finder", cacheOrg, data);
     if (!orgHint) await putFeatureSnapshot("matching-gift-finder", "_", data);
   } catch {
-    // Live Matching Gift Finder already painted; IndexedDB is best-effort.
+    // Live Matching gifts already painted; IndexedDB is best-effort.
   }
 }
 
@@ -127,10 +127,10 @@ function GiftShell({
         breadcrumbs={
           <>
             <a href={businessHref}>Business</a>
-            {" / Matching Gift Finder"}
+            {" / Matching gifts"}
           </>
         }
-        title="Matching Gift Multiplier Finder"
+        title="Matching gifts"
         description={description}
       >
         <RelatedStrip orgId={orgId} />
@@ -145,7 +145,7 @@ function GiftShell({
       ) : (
         <EmptyState
           soft
-          badge={shell === "setup" ? "Setup required" : copy.badge}
+          badge={shell === "setup" ? "Needs setup" : copy.badge}
           badgeTone="setup"
           title={copy.title}
           description={error ?? copy.description}
@@ -211,7 +211,7 @@ export default function MatchingGiftFinderClient() {
         if (!response.ok || !isMatchingGiftFinderView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Matching Gift Finder. Showing the last copy on this device.");
+            setError("Could not refresh Matching gifts. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -225,7 +225,7 @@ export default function MatchingGiftFinderClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Matching Gift Finder. Showing the last copy on this device.");
+          setError("Could not refresh Matching gifts. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -300,7 +300,7 @@ export default function MatchingGiftFinderClient() {
   if (shell === "loading") {
     return (
       <GiftShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Matching Gift Finder" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Matching gifts" fromCache={fromCache} cachedAt={cachedAt} />
       </GiftShell>
     );
   }
@@ -314,7 +314,7 @@ export default function MatchingGiftFinderClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Matching Gift Finder" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Matching gifts" fromCache={fromCache} cachedAt={cachedAt} />
       </GiftShell>
     );
   }
@@ -326,7 +326,7 @@ export default function MatchingGiftFinderClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Matching Gift Finder" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Matching gifts" fromCache={fromCache} cachedAt={cachedAt} />
       </GiftShell>
     );
   }
@@ -334,7 +334,7 @@ export default function MatchingGiftFinderClient() {
   if (shell === "empty" || view?.status !== "live") {
     return (
       <GiftShell description={shellCopy.description} orgId={orgId} shell="empty">
-        <OfflineBanner feature="Matching Gift Finder" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Matching gifts" fromCache={fromCache} cachedAt={cachedAt} />
         <div id="matching-gift-contacts">
           <ContactForm busy={busy} mutate={mutate} />
         </div>
@@ -348,11 +348,11 @@ export default function MatchingGiftFinderClient() {
         breadcrumbs={
           <>
             <a href={businessHref}>Business</a>
-            {" / Matching Gift Finder"}
+            {" / Matching gifts"}
           </>
         }
-        title="Matching Gift Multiplier Finder"
-        description="Match household-employer contacts against employer matching-gift programs, draft HR request letters, and track pledge status. Cross-check Sponsor CRM, Renewal ROI, and Impact."
+        title="Matching gifts"
+        description="Match household-employer contacts against employer matching-gift programs, draft HR request letters, and track pledge status. Cross-check Sponsors, Renewal ROI, and Impact."
       >
         <div className="mgf-header-actions">
           {relatedLinks.map((link) => (
@@ -363,7 +363,7 @@ export default function MatchingGiftFinderClient() {
         </div>
       </PageHeader>
 
-      <OfflineBanner feature="Matching Gift Finder" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Matching gifts" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="app-muted mgf-status" role="alert">

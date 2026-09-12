@@ -1,13 +1,13 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Judge-Pitch Simulator (never DEMO judge metrics). */
+/** Soft-UI related surfaces for Judge pitch (never DEMO judge metrics). */
 export const JUDGE_SIM_RELATED_LINKS = [
-  { id: "impact", label: "Community Impact", kind: "hub" as const, tab: "impact" },
-  { id: "impact-essay", label: "Impact Essay", kind: "hub" as const, tab: "impact-essay" },
+  { id: "impact", label: "Impact", kind: "hub" as const, tab: "impact" },
+  { id: "impact-essay", label: "Impact essay", kind: "hub" as const, tab: "impact-essay" },
   { id: "evidence", label: "Awards", kind: "hub" as const, tab: "evidence" },
   { id: "award-tracker", label: "Award tracker", kind: "hub" as const, tab: "award-tracker" },
-  { id: "media-kit", label: "Media Kit", kind: "hub" as const, tab: "media-kit" },
+  { id: "media-kit", label: "Media kit", kind: "hub" as const, tab: "media-kit" },
 ] as const;
 
 export type JudgeSimRelatedId = (typeof JUDGE_SIM_RELATED_LINKS)[number]["id"];
@@ -18,11 +18,11 @@ export type JudgeSimRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — Community Impact / Impact Essay / Awards first. */
+/** Focused Soft-UI strip — Impact / Impact essay / Awards first. */
 export const JUDGE_SIM_RELATED_INCLUDE: JudgeSimRelatedId[] = ["impact", "impact-essay", "evidence"];
 
 /**
- * Soft-UI cross-links from Judge-Pitch Simulator → Impact / Essay / Awards.
+ * Soft-UI cross-links from Judge pitch → Impact / Essay / Awards.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function judgeSimRelatedLinks(
@@ -80,7 +80,7 @@ export function shouldShowJudgeSimSummaryTiles(sessionCount: number): boolean {
   return sessionCount > 0;
 }
 
-/** Classify Judge-Pitch Soft-UI shell — never invents DEMO judge metrics. */
+/** Classify Judge pitch Soft-UI shell — never invents DEMO judge metrics. */
 export function classifyJudgeSimShell(input: {
   loading: boolean;
   fetchFailed?: boolean;
@@ -101,7 +101,7 @@ export function judgeSimShellCopy(kind: JudgeSimShellKind): JudgeSimEmptyCopy {
     case "loading":
       return {
         kind,
-        title: "Loading Judge-Pitch Simulator…",
+        title: "Opening Judge pitch",
         description:
           "Checking which team you are on and logged evidence.",
       };
@@ -109,9 +109,9 @@ export function judgeSimShellCopy(kind: JudgeSimShellKind): JudgeSimEmptyCopy {
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Judge-Pitch Simulator",
+        title: "Could not load Judge pitch",
         description:
-          "A network or server issue blocked the simulator. Retry, or open Community Impact / Impact Essay / Awards while it reloads.",
+          "A network or server issue blocked Judge pitch. Retry, or open Impact / Impact essay / Awards while it reloads.",
       };
     case "setup":
       return {
@@ -127,7 +127,7 @@ export function judgeSimShellCopy(kind: JudgeSimShellKind): JudgeSimEmptyCopy {
         badge: "No sessions yet",
         title: "Run your first judge Q&A",
         description:
-          "Graded sessions stay blank until you log evidence and answer a judging question. Cross-check Community Impact, Impact Essay, and Awards.",
+          "Graded sessions stay blank until you log evidence and answer a judging question. Cross-check Impact, Impact essay, and Awards.",
       };
     default:
       return {
@@ -140,7 +140,7 @@ export function judgeSimShellCopy(kind: JudgeSimShellKind): JudgeSimEmptyCopy {
 }
 
 /**
- * Soft-UI next actions for Judge-Pitch empty/setup shells.
+ * Soft-UI next actions for Judge pitch empty/setup shells.
  * Points at Impact / Essay / Awards — never invents DEMO judge metrics.
  */
 export function judgeSimNextActions(input: {
@@ -165,13 +165,13 @@ export function judgeSimNextActions(input: {
         },
         {
           id: "impact",
-          label: "Open Community Impact",
+          label: "Open Impact",
           detail: "Outreach rows stay blank until your team logs them.",
           href: hubHref("/business", "impact", null),
         },
         {
           id: "impact-essay",
-          label: "Open Impact Essay",
+          label: "Open Impact essay",
           detail: "Essay drafts stay empty until real activities exist.",
           href: hubHref("/business", "impact-essay", null),
         },
@@ -187,19 +187,19 @@ export function judgeSimNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Finish membership setup so Judge-Pitch can load.",
+        detail: "Finish membership setup so Judge pitch can load.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
       },
       {
         id: "impact",
-        label: "Open Community Impact",
+        label: "Open Impact",
         detail: "Ground outreach claims in real logged activities.",
         href: hubHref("/business", "impact", orgId),
       },
       {
         id: "impact-essay",
-        label: "Open Impact Essay",
+        label: "Open Impact essay",
         detail: "Draft award language from real impact rows.",
         href: hubHref("/business", "impact-essay", orgId),
       },
@@ -216,27 +216,27 @@ export function judgeSimNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Judge-Pitch",
+        label: "Retry Judge pitch",
         detail: "Reload real evidence and session rows.",
         href: withOrgHref("/judge-sim", orgId),
         primary: true,
       },
       {
         id: "impact",
-        label: "Open Community Impact",
-        detail: "Impact rows stay available while the simulator reloads.",
+        label: "Open Impact",
+        detail: "Impact rows stay available while Judge pitch reloads.",
         href: hubHref("/business", "impact", orgId),
       },
       {
         id: "impact-essay",
-        label: "Open Impact Essay",
-        detail: "Essay drafts stay available while the simulator reloads.",
+        label: "Open Impact essay",
+        detail: "Essay drafts stay available while Judge pitch reloads.",
         href: hubHref("/business", "impact-essay", orgId),
       },
       {
         id: "evidence",
         label: "Open Awards",
-        detail: "Award evidence stays available while the simulator reloads.",
+        detail: "Award evidence stays available while Judge pitch reloads.",
         href: hubHref("/business", "evidence", orgId),
       },
     ];
@@ -264,13 +264,13 @@ export function judgeSimNextActions(input: {
     actions.push(
       {
         id: "impact",
-        label: "Cross-check Community Impact",
+        label: "Cross-check Impact",
         detail: "Outreach claims cite only real logged activities.",
         href: hubHref("/business", "impact", orgId),
       },
       {
         id: "impact-essay",
-        label: "Open Impact Essay",
+        label: "Open Impact essay",
         detail: "Award language stays grounded in real impact.",
         href: hubHref("/business", "impact-essay", orgId),
       },
@@ -303,13 +303,13 @@ export function judgeSimNextActions(input: {
     },
     {
       id: "impact",
-      label: "Open Community Impact",
+      label: "Open Impact",
       detail: "Ground outreach answers in real logged activities.",
       href: hubHref("/business", "impact", orgId),
     },
     {
       id: "impact-essay",
-      label: "Open Impact Essay",
+      label: "Open Impact essay",
       detail: "Turn backed claims into award language.",
       href: hubHref("/business", "impact-essay", orgId),
     },

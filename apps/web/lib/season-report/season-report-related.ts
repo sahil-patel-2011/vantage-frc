@@ -1,11 +1,11 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Season Report (never DEMO season stats). */
+/** Soft-UI related surfaces for Season report (never DEMO season stats). */
 export const SEASON_REPORT_RELATED_LINKS = [
   { id: "strategy", label: "Strategy", kind: "path" as const, path: "/strategy" },
   { id: "impact", label: "Impact", kind: "path" as const, path: "/impact" },
-  { id: "decision-search", label: "Decision Search", kind: "ai" as const, tab: "decision-search" },
+  { id: "decision-search", label: "Search", kind: "ai" as const, tab: "decision-search" },
   { id: "chat", label: "Chat", kind: "ai" as const, tab: "chat" },
   { id: "budgets", label: "Budgets", kind: "ai" as const, tab: "budgets" },
   { id: "usage", label: "AI usage", kind: "path" as const, path: "/team/usage" },
@@ -19,7 +19,7 @@ export type SeasonReportRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — Strategy / Impact / Decision Search first. */
+/** Focused Soft-UI strip — Strategy / Impact / Search first. */
 export const SEASON_REPORT_RELATED_INCLUDE: SeasonReportRelatedId[] = [
   "strategy",
   "impact",
@@ -27,7 +27,7 @@ export const SEASON_REPORT_RELATED_INCLUDE: SeasonReportRelatedId[] = [
 ];
 
 /**
- * Soft-UI cross-links from Season Report → Strategy / Impact first.
+ * Soft-UI cross-links from Season report → Strategy / Impact first.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function seasonReportRelatedLinks(
@@ -80,7 +80,7 @@ export function formatSeasonReportCompleteness(value: unknown, loaded: boolean):
   return `${Math.round(Math.min(1, n) * 100)}%`;
 }
 
-/** Classify Season Report Soft-UI shell — never invents DEMO season stats. */
+/** Classify Season report Soft-UI shell — never invents DEMO season stats. */
 export function classifySeasonReportShell(input: {
   loading: boolean;
   fetchFailed?: boolean;
@@ -101,21 +101,21 @@ export function seasonReportShellCopy(kind: SeasonReportShellKind): SeasonReport
     case "loading":
       return {
         kind,
-        title: "Loading Season Report…",
+        title: "Opening Season report",
         description: "Checking which team you are on and logged season entries.",
       };
     case "error":
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Season Report",
+        title: "Could not load Season report",
         description:
           "A network or server issue blocked the retrospective. Retry, or open Budgets if metered snapshot generation is cut off.",
       };
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Choose your team before logging build, results, budget, or outreach notes.",
@@ -139,7 +139,7 @@ export function seasonReportShellCopy(kind: SeasonReportShellKind): SeasonReport
 }
 
 /**
- * Soft-UI next actions for Season Report empty/setup shells.
+ * Soft-UI next actions for Season report empty/setup shells.
  * Points at Strategy / Impact — never invents DEMO season stats.
  */
 export function seasonReportNextActions(input: {
@@ -158,7 +158,7 @@ export function seasonReportNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before logging entries.",
+          detail: "Choose your team before logging entries.",
           href: "/workspace",
           primary: true,
         },
@@ -171,7 +171,7 @@ export function seasonReportNextActions(input: {
         {
           id: "impact",
           label: "Open Impact",
-          detail: "Outreach hours stay blank until activities are logged in Community Impact.",
+          detail: "Outreach hours stay blank until activities are logged in Impact.",
           href: withOrgHref("/impact", null),
         },
       ];
@@ -180,7 +180,7 @@ export function seasonReportNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Finish membership setup so Season Report can load.",
+        detail: "Finish membership setup so Season report can load.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
       },
@@ -193,7 +193,7 @@ export function seasonReportNextActions(input: {
       {
         id: "impact",
         label: "Open Impact",
-        detail: "Outreach notes here can later align with Community Impact activities.",
+        detail: "Outreach notes here can later align with Impact activities.",
         href: withOrgHref("/impact", orgId),
       },
     ];
@@ -203,7 +203,7 @@ export function seasonReportNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Season Report",
+        label: "Retry Season report",
         detail: "Reload real entries and snapshots.",
         href: withOrgHref("/season-report", orgId),
         primary: true,
@@ -246,7 +246,7 @@ export function seasonReportNextActions(input: {
       },
       {
         id: "decision-search",
-        label: "Open Decision Search",
+        label: "Open Search",
         detail: "Index design decisions separately.",
         href: hubHref("/ai", "decision-search", orgId),
       },
@@ -275,12 +275,12 @@ export function seasonReportNextActions(input: {
     {
       id: "impact",
       label: "Open Impact",
-      detail: "Cross-check outreach notes with Community Impact activities.",
+      detail: "Cross-check outreach notes with Impact activities.",
       href: withOrgHref("/impact", orgId),
     },
     {
       id: "decision-search",
-      label: "Open Decision Search",
+      label: "Open Search",
       detail: "Search indexed decisions that fed this season’s choices.",
       href: hubHref("/ai", "decision-search", orgId),
     },

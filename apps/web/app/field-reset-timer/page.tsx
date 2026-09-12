@@ -1,7 +1,7 @@
 import FieldResetTimerClient from "./field-reset-timer-client";
 
 export const metadata = {
-  title: "Field Reset Timer",
+  title: "Field reset",
 };
 
 export default function FieldResetTimerPage() {

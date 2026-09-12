@@ -276,8 +276,8 @@ export default function BudgetClient() {
         <OfflineBanner feature="Season budget" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
-          title={failure ? failure.title : "Loading season budget…"}
-          description={failure ? failure.description : undefined}
+          title={failure ? failure.title : "Opening Season budget"}
+          description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >
           {failure?.primary ? (

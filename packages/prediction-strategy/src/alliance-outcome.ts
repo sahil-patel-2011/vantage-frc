@@ -15,6 +15,7 @@ import {
   type StrategyEnginePolicy,
 } from "./engine-tier";
 import { seasonWeight } from "./season-weight";
+import { studentCacheSourceLabel } from "./student-copy";
 
 const clamp = (value: number, min = 0, max = 1) => Math.min(max, Math.max(min, value));
 const round = (value: number) => Math.round(value * 10_000) / 10_000;
@@ -187,7 +188,7 @@ export function citeMatchResults(
     citations.push({
       matchKey: fact.matchKey,
       kind: "fact",
-      summary: `FACT TBA ${fact.matchKey}: ${outcomeBits.join("; ")}${scoreBit || ""}.`,
+      summary: `Official ${fact.matchKey}: ${outcomeBits.join("; ")}${scoreBit || ""}.`,
       relatedTeamKeys: related,
       winningAlliance: fact.winningAlliance,
       redScore: fact.redScore ?? null,
@@ -203,8 +204,8 @@ function shortTeam(teamKey: string) {
 
 function contributionEvidence(detail: TeamRatingDetail, shareOfAlliance: number): string {
   const sourceBit = detail.sources.length
-    ? detail.sources.join("+")
-    : "reference metrics";
+    ? detail.sources.map(studentCacheSourceLabel).join(" + ")
+    : "season ratings";
   const eventBit = detail.eventKeys.length ? ` · ${detail.eventKeys.join(", ")}` : "";
   const blendBit =
     detail.scoutBlend != null && detail.scoutBlend > 0
@@ -285,7 +286,7 @@ export function buildAllianceWinBreakdown(
     : "season weights 1.0 / 0.55 / 0.30";
   const keyFactors: PredictionFactor[] = [
     {
-      name: "alliance EPA margin",
+      name: "alliance rating margin",
       alliance: redTotal >= blueTotal ? "red" : "blue",
       impact: round(Math.abs(redTotal - blueTotal)),
       evidence: `MODEL ${policy.engineId}: red rating ${round(redTotal)} vs blue ${round(blueTotal)} (margin ${round(redTotal - blueTotal)}; ${seasonBit}).`,
@@ -334,10 +335,10 @@ export function buildAllianceWinBreakdown(
       if (detail.epaDrift == null || Math.abs(detail.epaDrift) < 1.5) continue;
       const alliance: Alliance = input.red.includes(detail.teamKey) ? "red" : "blue";
       keyFactors.push({
-        name: `EPA drift ${shortTeam(detail.teamKey)}`,
+        name: `Rating drift ${shortTeam(detail.teamKey)}`,
         alliance,
         impact: round(Math.abs(detail.epaDrift)),
-        evidence: `MODEL: ${shortTeam(detail.teamKey)} event-vs-year EPA drift ${round(detail.epaDrift)} (positive = hotter at this event; from real cached metrics only).`,
+        evidence: `MODEL: ${shortTeam(detail.teamKey)} event-vs-year rating drift ${round(detail.epaDrift)} (positive = hotter at this event; from real cached metrics only).`,
         kind: "model",
       });
     }
@@ -366,15 +367,15 @@ export function buildAllianceWinBreakdown(
     citations,
     keyFactors,
     caveats: [
-      "MODEL output — not an official TBA result.",
+      "MODEL output — not an official match result.",
       `Engine ${policy.engineId} (depth ${policy.depth}).`,
-      "Per-team Δp values are leave-one-out MODEL attributions, not TBA facts.",
+      "Per-team Δp values are leave-one-out MODEL attributions, not official match facts.",
       ...(policy.thisSeasonOnly
-        ? ["This-season rules only — prior-year EPA is not blended."]
+        ? ["This-season rules only — prior-year rating is not blended."]
         : []),
       ...(citations.length
-        ? [`${citations.length} FACT match result(s) cited from TBA-shaped schedule.`]
-        : ["No completed TBA match results cited for these alliances yet."]),
+        ? [`${citations.length} official match result(s) cited from the event schedule.`]
+        : ["No completed official match results cited for these alliances yet."]),
       ...(sample < 30 ? ["Sparse historical/scouting sample; interval widened."] : []),
     ],
   };

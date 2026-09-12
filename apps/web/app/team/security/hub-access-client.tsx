@@ -253,7 +253,7 @@ export default function HubAccessClient({ orgId }: { orgId: string }) {
         </p>
       ) : null}
       {loading ? (
-        <EmptyState soft title="Loading hub access…" description="Loading members and which sections they can open." aria-busy />
+        <EmptyState soft title="Opening hub access" description="Opening members and which sections they can open." aria-busy />
       ) : (
         <>
           <div className="invite-list" style={{ marginBottom: "1rem" }}>
@@ -272,10 +272,10 @@ export default function HubAccessClient({ orgId }: { orgId: string }) {
             <EmptyState
               soft
               title="No scouts or viewers to restrict"
-              description="Invite members from Team admin, then limit Competition, Team, Business, Build, AI, or Media here."
+              description="Invite members from Invites, then limit Competition, Team, Business, Build, AI, or Media here."
             >
               <Button as="a" variant="secondary" href={`/team/admin?orgId=${encodeURIComponent(orgId)}`}>
-                Open Team admin
+                Open Invites
               </Button>
             </EmptyState>
           ) : null}
@@ -346,17 +346,17 @@ export default function HubAccessClient({ orgId }: { orgId: string }) {
                   })}
                 </div>
                 <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginTop: "0.75rem" }}>
-                  <button
+                  <Button
+                    variant="primary"
                     type="button"
-                    className="primary-action"
                     disabled={savingUserId === member.userId}
                     onClick={() => void saveHubAccess(member.userId)}
                   >
                     {savingUserId === member.userId ? "Saving…" : "Save hub access"}
-                  </button>
-                  <button type="button" onClick={() => clearAll(member.userId)}>
+                  </Button>
+                  <Button variant="secondary" type="button" onClick={() => clearAll(member.userId)}>
                     Clear all (unrestricted)
-                  </button>
+                  </Button>
                 </div>
               </article>
             );

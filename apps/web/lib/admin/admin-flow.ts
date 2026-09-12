@@ -134,7 +134,7 @@ export function adminEmptyCopy(kind: AdminShellKind, detail?: string | null): Ad
     return {
       kind,
       eyebrow: "PLATFORM ADMIN",
-      title: "Loading team provisioning…",
+      title: "Opening Global Team Manager",
       description:
         "Checking platform_admins access and loading real organization rows. Counts stay blank until the query returns.",
     };

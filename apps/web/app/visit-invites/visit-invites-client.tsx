@@ -54,7 +54,7 @@ async function persistVisitInvitesSnapshot(orgHint: string, data: VisitInvitesVi
     await putFeatureSnapshot("visit-invites", cacheOrg, data);
     if (!orgHint) await putFeatureSnapshot("visit-invites", "_", data);
   } catch {
-    // Live Visit Invites already painted; IndexedDB is best-effort.
+    // Live Visit invites already painted; IndexedDB is best-effort.
   }
 }
 
@@ -125,7 +125,7 @@ function VisitShell({
   if (shell === "loading") {
     return (
       <main className="visit-page module-page soft-gate">
-        <PageHeader navPath="/visit-invites" title="Visit Invites" description={copy.description}>
+        <PageHeader navPath="/visit-invites" title="Visit invites" description={copy.description}>
           <VisitRelated orgId={orgId} include={[...VISIT_RELATED_INCLUDE]} />
         </PageHeader>
         {children}
@@ -140,7 +140,7 @@ function VisitShell({
   if (shell === "error") {
     return (
       <main className="visit-page module-page soft-gate">
-        <PageHeader navPath="/visit-invites" title="Visit Invites" description={description}>
+        <PageHeader navPath="/visit-invites" title="Visit invites" description={description}>
           <VisitRelated orgId={orgId} include={[...VISIT_RELATED_INCLUDE]} />
         </PageHeader>
         {children}
@@ -151,7 +151,7 @@ function VisitShell({
 
   return (
     <main className="visit-page module-page">
-      <PageHeader navPath="/visit-invites" title="Visit Invites" description={description}>
+      <PageHeader navPath="/visit-invites" title="Visit invites" description={description}>
         <VisitRelated orgId={orgId} include={[...VISIT_RELATED_INCLUDE]} />
       </PageHeader>
       {children}
@@ -235,7 +235,7 @@ export default function VisitInvitesClient() {
       if (!res.ok || !isVisitInvitesView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Visit Invites. Showing the last copy on this device.");
+          setError("Could not refresh Visit invites. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setError("error" in data && data.error ? data.error : "Could not load visit invites");
@@ -252,7 +252,7 @@ export default function VisitInvitesClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Visit Invites. Showing the last copy on this device.");
+        setError("Could not refresh Visit invites. Showing the last copy on this device.");
         setFetchFailed(false);
       } else {
         setFetchFailed(true);
@@ -316,7 +316,7 @@ export default function VisitInvitesClient() {
         error={error}
         onRetry={() => void load()}
       >
-        <OfflineBanner feature="Visit Invites" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Visit invites" fromCache={fromCache} cachedAt={cachedAt} />
       </VisitShell>
     );
   }
@@ -330,7 +330,7 @@ export default function VisitInvitesClient() {
         orgId={view.context.orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Visit Invites" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Visit invites" fromCache={fromCache} cachedAt={cachedAt} />
       </VisitShell>
     );
   }
@@ -362,7 +362,7 @@ export default function VisitInvitesClient() {
     <main className="visit-page module-page">
       <PageHeader
         navPath="/visit-invites"
-        title="Visit Invites"
+        title="Visit invites"
         description={`${view.context.orgName} — shop tours, demo days, mentor hosts, and guest RSVPs. Real visits only.`}
       >
         <div className="visit-header-actions">
@@ -372,7 +372,7 @@ export default function VisitInvitesClient() {
           </Button>
         </div>
       </PageHeader>
-      <OfflineBanner feature="Visit Invites" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Visit invites" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? <p className="visit-warn" role="alert">{error}</p> : null}
       {shareNote ? <p className="visit-share-note" role="status">{shareNote}</p> : null}
@@ -603,7 +603,7 @@ function VisitCard({
     onShareNote(
       ok
         ? visit.status === "scheduled"
-          ? `Link copied for “${visit.title}” — members can open Visit Invites and RSVP.`
+          ? `Link copied for “${visit.title}” — members can open Visit invites and RSVP.`
           : `Link copied for “${visit.title}” — set status to Scheduled before guests RSVP.`
         : shareUrl,
     );

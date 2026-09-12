@@ -7,7 +7,7 @@
  *   checked against the app tree in help.test.ts).
  * - Pricing copy is composed from `@vantage/billing/catalog` so it cannot
  *   drift from what billing actually charges (also guarded by a test).
- * - Setup-required integrations are described as setup-required, never as
+ * - Integrations that are not ready yet are described as Needs setup, never as
  *   already working.
  */
 
@@ -87,7 +87,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
   {
     id: "integrations",
     label: "Integrations & connectors",
-    blurb: "TBA, Onshape, GitHub, chat bridges, and self-hosted storage.",
+    blurb: "Official matches, Onshape, GitHub, chat bridges, and self-hosted storage.",
   },
   {
     id: "admin-owner",
@@ -139,7 +139,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "getting-started",
     slug: "getting-started",
-    title: "Set up a new team, start to first event",
+    title: "Team setup",
     summary:
       "Your team → invite members → pick how AI is powered → import your old data → connect TBA for your first event.",
     category: "getting-started",
@@ -166,7 +166,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "2 · Invite your people",
         body: [
-          "Owners and admins invite exact emails from Team admin (/team/admin) with a role per person.",
+          "Owners and admins invite exact emails from Invites (/team/admin) with a role per person.",
           "The live Getting started checklist (/team/getting-started) tracks members, calendar, knowledge, and setup signals as you go.",
         ],
       },
@@ -189,7 +189,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "5 · First event",
         body: [
-          "Connect The Blue Alliance under Team → Data (/team/data) and pick your active event — schedules, rankings, and match cards stay empty until then.",
+          "Connect TBA under Team → Data (/team/data) and pick your active event — schedules, rankings, and match cards stay empty until then.",
           "Publish a scouting form (Competition → Scouting → Forms) before day one so scouts have something to fill.",
         ],
       },
@@ -198,7 +198,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "team-basics",
     slug: "team-basics",
-    title: "Calendar, Chat, People, Work, and Playbook",
+    title: "Team hub",
     summary:
       "The Team hub's five workbenches: where meetings, messages, attendance, tasks, and the team wiki live.",
     category: "getting-started",
@@ -234,7 +234,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         heading: "Playbook",
         body: [
           "Playbook is the team wiki with page history. The Season roadmap, Bring your season importer, and the Team Library are pinned at its front.",
-          "Everything belongs to this team: pick a team first, and empty stays empty until someone writes real rows.",
+          "Everything belongs to this team. Choose your team, and empty stays empty until someone writes real rows.",
         ],
       },
     ],
@@ -242,7 +242,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "bottom-island",
     slug: "bottom-island",
-    title: "Customize the bottom island",
+    title: "Bottom island",
     summary:
       "Four apps sit in a floating island at the bottom — Home, Compete, Team, and Build by default.",
     category: "getting-started",
@@ -283,7 +283,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "edit-home",
     slug: "edit-home",
-    title: "Edit Home — drag, remove, add widgets",
+    title: "Edit Home",
     summary:
       "Your Home layout is personal. Live widgets show on the board; empty cards stay hidden until Edit Home.",
     category: "getting-started",
@@ -342,7 +342,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         heading: "Your layout vs the team",
         body: [
           "Each member has their own Home. Teammates do not see your widget arrangement unless you open a team board on purpose.",
-          "Match scores, scouting coverage, and TBA data stay team-scoped. Only the layout is personal.",
+          "Match scores, scouting coverage, and official match data stay on your team. Only the layout is personal.",
         ],
       },
     ],
@@ -350,7 +350,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "migrate",
     slug: "migrate",
-    title: "Import from other tools (Bring your season)",
+    title: "Import from other tools",
     summary:
       "One source at a time: calendars, scouting exports, hours, Trello, Notion, and your STIMS roster — preview real rows, then commit.",
     category: "getting-started",
@@ -384,7 +384,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         body: [
           "Every source shows the real rows it parsed before anything is written. An empty preview means the file had nothing readable.",
           "Rows the parser declined are always listed with the reason; a silent drop is treated as a bug.",
-          "Notion OAuth pull stays setup-required until the server env is configured — the page says so instead of failing.",
+          "Notion stays Needs setup until it is connected — the page says so instead of failing.",
         ],
       },
       {
@@ -401,7 +401,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "scouting-offline",
     slug: "scouting-offline",
-    title: "Scouting and offline",
+    title: "Scouting",
     summary:
       "Match and pit forms cache on-device. Outbox syncs when online — coverage stays empty until real rows exist.",
     category: "competition",
@@ -445,7 +445,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "event-day-command",
     slug: "event-day-command",
-    title: "Event Day and Command",
+    title: "Event day",
     summary:
       "Field-side command for the active event. Surfaces stay empty until schedule and ops data are real.",
     category: "competition",
@@ -462,9 +462,9 @@ export const HELP_ARTICLES: HelpArticle[] = [
     relatedHref: "/competition?tab=command",
     sections: [
       {
-        heading: "Open Command",
+        heading: "Open Event day",
         body: [
-          "Competition → Event day, or /command (Vantage Event Day).",
+          "Competition → Event day, or /command (Vantage Event day).",
           "Choose your team and active event first. Command stays blank until the schedule is saved.",
         ],
       },
@@ -479,7 +479,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         heading: "Related tools",
         body: [
           "Match checklist, pit displays, and the pre-match briefing hang off the same event context.",
-          "If TBA is not connected, connect it under Team → Data before expecting live ranks or match times.",
+          "If official matches are not connected, Connect TBA under Team → Data before expecting live ranks or match times.",
         ],
       },
     ],
@@ -487,7 +487,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "alliance-season",
     slug: "alliance-season",
-    title: "Alliance Selection Desk and Season Planning",
+    title: "Alliance desk",
     summary:
       "Live pick board with scout evidence; season goals and milestones from real attendance and build tasks.",
     category: "competition",
@@ -504,17 +504,17 @@ export const HELP_ARTICLES: HelpArticle[] = [
     relatedHref: "/alliance-selection-desk",
     sections: [
       {
-        heading: "Alliance Selection Desk",
+        heading: "Alliance desk",
         body: [
-          "Open Alliance Selection Desk from Competition → Strategy → Alliance desk (/competition?tab=alliance-selection-desk).",
-          "Use the live 8-alliance pick board, attach scout evidence, and watch TBA conflict flags against real team_event_metrics.",
+          "Open Alliance desk from Competition → Strategy → Alliance desk (/competition?tab=alliance-selection-desk).",
+          "Use the live 8-alliance pick board, attach scout evidence, and watch official-record conflict flags against real event numbers.",
           "Drive-team export/print is available when you have a real board — ranks come from that board.",
         ],
       },
       {
-        heading: "Season Planning Workspace",
+        heading: "Season plan",
         body: [
-          "Open Season Planning from Team → Work → Season plan (/team?tab=season-planning-workspace).",
+          "Open Season plan from Team → Work → Season plan (/team?tab=season-planning-workspace).",
           "Map goals → milestones → owners, with optional ICS calendar hooks.",
           "Progress comes from real attendance and build_tasks only — completion % stays blank without those rows.",
         ],
@@ -526,7 +526,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "files",
     slug: "files",
-    title: "Files — the team drive and your own space",
+    title: "Files",
     summary:
       "Every member gets a private space; the team gets a shared one. Upload anything, make folders, share by link or to an email address.",
     category: "team",
@@ -560,9 +560,9 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "team-profile",
     slug: "team-profile",
-    title: "Team profile — what the public record says about your team",
+    title: "Team profile",
     summary:
-      "Built the first time an owner or admin opens it: where you are from, rookie year, seasons competed, awards, recent events, EPA and ranks — from The Blue Alliance and Statbotics.",
+      "Built the first time an owner or admin opens it: where you are from, rookie year, seasons competed, awards, recent events, season rating and ranks — from the official record.",
     category: "team",
     keywords: ["team profile", "dossier", "rookie year", "awards", "epa", "rank", "statbotics", "blue alliance", "history"],
     relatedHref: "/team/profile",
@@ -570,7 +570,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "What it knows, and from where",
         body: [
-          "Profile, seasons and awards come from The Blue Alliance. Career and per-season EPA and world / country / state ranks come from Statbotics.",
+          "Profile, seasons and awards come from official event records. Career and per-season rating and world / country / state ranks come from season ratings.",
           "Anything a source does not have reads 'not on record'. If one source did not answer, the page says which.",
           "Nobody scrapes your roster: no public source knows who is on your team. The people counts are your own memberships.",
         ],
@@ -587,7 +587,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "calendar-tasks-and-find-a-time",
     slug: "calendar-tasks",
-    title: "Calendar — tasks on the calendar and Find a time",
+    title: "Calendar",
     summary:
       "Tasks with a due date sit on the calendar and can be ticked off there. Find a time suggests meeting slots from when your team actually turns up.",
     category: "team",
@@ -648,7 +648,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "outreach-by-person",
     slug: "outreach-by-person",
-    title: "Outreach hours by person",
+    title: "Outreach hours",
     summary:
       "Log an outreach event once and name everyone who helped, each with their own minutes. The By-person table adds it up for awards, grants and the students themselves.",
     category: "business",
@@ -674,7 +674,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "parts-catalog",
     slug: "parts-catalog",
-    title: "Parts catalog — what to order and what it is called",
+    title: "Parts catalog",
     summary:
       "A curated list of the COTS parts FRC teams buy — motors, control, pneumatics, hardware, stock, drive, bearings, batteries, tools — with the spec that picks one over its neighbour.",
     category: "business",
@@ -701,7 +701,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "assembly-manual",
     slug: "assembly-manual",
-    title: "Assembly manual — a build book from your CAD",
+    title: "Assembly manual",
     summary:
       "Point it at your Onshape assembly and it produces a step-by-step build book: parts per step, cut and drill and tap lines, pictures, a materials list, and a PDF.",
     category: "build",
@@ -728,7 +728,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "learn-cad-naming",
     slug: "cad-naming",
-    title: "Naming CAD parts so the next person can find them",
+    title: "Naming CAD parts",
     summary:
       "Subsystem · What it is · Which one. 'New Part 1' costs a team hours in March; a name is the cheapest documentation there is.",
     category: "build",
@@ -755,7 +755,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "ask-ai",
     slug: "ask-ai",
-    title: "Ask AI — what it can answer, and from what",
+    title: "Ask AI",
     summary:
       "One button on every page. It answers from your team's data and the public record, cites what it used, and says when it does not know.",
     category: "ai-models",
@@ -765,7 +765,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "What it is for",
         body: [
-          "Strategy questions and match predictions from your scouting plus The Blue Alliance and Statbotics; design questions against your CAD and the parts catalog; writing for grants, sponsors and updates; and finding a meeting time from your attendance history.",
+          "Strategy questions and match predictions from your scouting plus official event numbers and season ratings; design questions against your CAD and the parts catalog; writing for grants, sponsors and updates; and finding a meeting time from your attendance history.",
           "It starts from the team profile, so it already knows where you are from, how long you have competed and how your seasons went.",
         ],
       },
@@ -782,7 +782,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "team-library",
     slug: "team-library",
-    title: "Team Library — links and older uploads (now inside Files)",
+    title: "Team library",
     summary:
       "The older shared shelf. Files (/files) is where the team's files live now; the Library still holds links and earlier uploads and appears inside Files as its own folder.",
     category: "team",
@@ -839,7 +839,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "my-kit",
     slug: "my-kit",
-    title: "My Kit — your personal to-do view",
+    title: "My kit",
     summary:
       "One page answering “what do I need right now”: your tasks, events, duties, scout shifts, hours, tools, and money — all linking back to the owning surface.",
     category: "team",
@@ -866,7 +866,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "How it behaves",
         body: [
-          "My Kit owns no data and writes nothing — every row links to the surface that owns the record, so acting on an item happens in the right place.",
+          "My kit owns no data and writes nothing — every row links to the surface that owns the record, so acting on an item happens in the right place.",
           "Sections are ordered by your subteam focus (a scout sees scouting first, a programmer sees code-adjacent work first).",
           "Empty sections say so honestly, and a section whose backing feature is not in this deployment says that too — those are different states, not the same zero.",
         ],
@@ -876,7 +876,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "team-invites",
     slug: "team-invites",
-    title: "Invite teammates by email",
+    title: "Invites",
     summary:
       "Owners and admins send an exact-email invite, copy the link if needed, and the recipient signs in with that address to join.",
     category: "account-access",
@@ -894,7 +894,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "Send an invite",
         body: [
-          "Open Team admin and use Add a teammate. Enter the person's email and role (Scout, Admin, or Viewer).",
+          "Open Invites and use Add a teammate. Enter the person's email and role (Scout, Admin, or Viewer).",
           "Send invite creates the row first. If email is configured, they also get a message. You always get a copyable link for that send.",
           "Local development does not send email — copy the link and share it. Re-inviting the same pending email rotates the link instead of stacking duplicates.",
         ],
@@ -911,7 +911,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "hub-access",
     slug: "hub-access",
-    title: "Limit hub access for scouts and viewers",
+    title: "Hub access",
     summary:
       "Owners and admins restrict Vantage pillars and tabs per member from Team security — unrestricted by default.",
     category: "account-access",
@@ -958,7 +958,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "bugbot-ultra",
     slug: "bugbot-ultra",
-    title: "Scan GitHub with Bugbot",
+    title: "Scan GitHub",
     summary:
       "Connect a robot-code repo, then scan on your subscription or pay Bugbot Ultra ($1 scan, $2 fix, $1 recheck). Findings must quote the source.",
     category: "build",
@@ -977,7 +977,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "Connect GitHub first",
         body: [
-          "Owners and admins link a PAT or OAuth app under Team admin. Bugbot never requests workflow scope and never pushes.",
+          "Owners and admins connect GitHub under Invites. Bugbot never requests workflow scope and never pushes.",
           "On Bugbot, pick the robot-code repo and optionally load one file, or scan the connected tree (.java, .cpp, .py, vendordeps).",
         ],
       },
@@ -1000,7 +1000,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "agent-config",
     slug: "agent-config",
-    title: "Team agent config — shared rules for coding agents",
+    title: "Team agent config",
     summary:
       "Author rules, subagents, MCP servers, permissions, and skills once; sync them into every member's Claude Code and Cursor.",
     category: "build",
@@ -1030,9 +1030,9 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "Sync into Claude Code and Cursor",
         body: [
-          "Run `vantage-cad agent sync` in your repo. For Claude Code it writes .claude/agents, .claude/skills, a team-rules import inside marked lines of CLAUDE.md, and vantage-prefixed .mcp.json entries — idempotent, never touching your own files.",
-          "The same sync writes Cursor's native formats: .cursor/rules/vantage/*.mdc, .cursor/skills/vantage/, and vantage-prefixed .cursor/mcp.json entries. Subagents and permissions have no Cursor equivalent, so they are reported as skipped.",
-          "Permissions are a security change, so they land as a suggested file plus an instruction — never merged into settings automatically.",
+          "In the robot-code folder on this computer, sync Team agent config so Claude Code and Cursor pick up the team's rules and skills. It only writes Vantage's own files.",
+          "The same sync writes Cursor rules and skills. Helpers and permissions have no Cursor home and are skipped.",
+          "Permissions never apply themselves — a person reviews them.",
         ],
       },
       {
@@ -1040,8 +1040,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         body: [
           "Members can read; writing needs owner/admin unless the org enables member edits.",
           "Each item can be visible to the entire team or only to specific people you pick.",
-          "Every save is versioned with restorable history, and the Vantage in-app agent automatically injects the org's valid rules into its runs — recorded in run provenance.",
-          "Custom agents can pull everything as typed JSON from GET /api/agent-config/bundle.",
+          "Every save is versioned with restorable history, and the Vantage in-app agent automatically uses the team's valid rules.",
         ],
       },
     ],
@@ -1051,7 +1050,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "season-finance",
     slug: "season-finance",
-    title: "Season finance desk",
+    title: "Season finance",
     summary:
       "Plan school funds, fees, grants, sponsors, and fundraisers, then log receipts — totals stay blank until real rows exist.",
     category: "business",
@@ -1092,7 +1091,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "reimbursements",
     slug: "reimbursements",
-    title: "Reimbursements — pay members back",
+    title: "Reimbursements",
     summary:
       "File a claim with a receipt photo, the treasurer works the approve/deny/paid queue, and only paid claims touch the team ledger.",
     category: "business",
@@ -1135,7 +1134,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "funding-profile",
     slug: "funding-profile",
-    title: "Team funding profile and sponsor tools",
+    title: "Team funding",
     summary:
       "Affiliation and funding paths shape Business Vantage — teams that disallow sponsors hide sponsor destinations.",
     category: "business",
@@ -1161,7 +1160,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "What changes in Vantage",
         body: [
-          "When Sponsors allowed is off, Business hub tabs and drawer links for Sponsor Wall, Suite, Matching Gift Finder, and related tools stay hidden.",
+          "When Sponsors allowed is off, Business hub tabs and drawer links for Sponsor wall, Suite, Matching gifts, and related tools stay hidden.",
           "Grants, budget, awards, and Media stay available when those funding paths apply.",
         ],
       },
@@ -1179,7 +1178,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "media-workspace",
     slug: "media-workspace",
-    title: "Media team for press and business",
+    title: "Media team",
     summary:
       "Top-level Vantage Media pillar for calendar, drafts, kit, and impact — empty until real rows exist.",
     category: "media",
@@ -1202,15 +1201,15 @@ export const HELP_ARTICLES: HelpArticle[] = [
         body: [
           "Open the Media pillar from the Vantage island, drawer, or Cmd+K — search “Media”.",
           "You can also pin Media as one of your four island apps.",
-          "Pick a team first — Media belongs to this team like the other tools.",
+          "Choose your team first. Media belongs to this team like the other tools.",
         ],
       },
       {
         heading: "What the tiles mean",
         body: [
-          "Kit readiness and asset counts come from Media Kit profile fields and uploaded URLs.",
+          "Kit readiness and asset counts come from Media kit profile fields and uploaded URLs.",
           "Upcoming outreach and “tagged media” come from calendar events you scheduled.",
-          "Media impact and people reached come only from Community Impact rows with category media.",
+          "Media impact and people reached come only from Impact rows with category media.",
           "Content items are drafts and posts you created here. Reach stays empty until you log it.",
         ],
       },
@@ -1228,7 +1227,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "media-library",
     slug: "media-library",
-    title: "Media library — team photos and video",
+    title: "Media library",
     summary:
       "Upload the team's photos and clips into albums with honest size caps — 8 MB photos after downscale, 4 MiB videos on the hosted cloud path.",
     category: "media",
@@ -1249,7 +1248,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         body: [
           "Photos (JPEG/PNG/WebP) are downscaled in the browser before upload and land under the 8 MB in-database cap; hosted-cloud videos (MP4/WebM) are capped at 4 MiB because Vercel rejects larger bodies. Pair a storage node (/team/storage) for clips up to the 100 MB schema ceiling.",
           "Thumbnails and video poster frames are generated on your device; duplicates are caught by content hash instead of stored twice.",
-          "Bigger videos belong on a paired storage node (/team/storage) or on YouTube via the Match Video Index.",
+          "Bigger videos belong on a paired storage node (/team/storage) or on YouTube via the Video index.",
         ],
       },
       {
@@ -1266,7 +1265,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "byok-automode",
     slug: "byok-automode",
-    title: "Your AI keys and Automode",
+    title: "Your AI keys",
     summary:
       "Anyone can paste personal OpenAI or Anthropic keys. Admins can set team-wide keys. Ollama and LM Studio use an OpenAI-compatible base URL.",
     category: "ai-models",
@@ -1318,7 +1317,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "ai-bridge",
     slug: "ai-bridge",
-    title: "AI subscription bridge — a member's plan serves the team",
+    title: "AI subscription bridge",
     summary:
       "Pair one member's Claude Pro/Max or ChatGPT subscription on an always-on computer and their plan answers the team's AI at $0 API cost.",
     category: "ai-models",
@@ -1328,6 +1327,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       "claude pro",
       "claude max",
       "claude code",
+      "your claude code",
       "chatgpt",
       "codex",
       "free ai",
@@ -1340,9 +1340,17 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "How it works",
         body: [
-          "A member (typically a mentor) who already pays for Claude Pro/Max — which includes the Claude Code CLI — or ChatGPT runs a tiny bridge service on an always-on computer where that CLI is signed in.",
-          "The bridge asks for an 8-character pairing code, approved at /team/ai-bridge — pairing is the subscriber's own consent to give, and theirs to revoke. Bridged turns are metered at $0 API cost because they run under the CLI's subscription auth.",
-          "Claude Code is the verified path; the ChatGPT/Codex path is experimental and only used when the Codex CLI is actually detected on the machine.",
+          "A member who already pays for Claude or ChatGPT can run the team's AI from their own computer. Those turns cost the team $0.",
+          "That computer shows an 8-character code. Approve it at /team/ai-bridge. Only approve a code from a computer you control.",
+          "Claude Code is the usual path. ChatGPT works when that computer is signed in.",
+        ],
+      },
+      {
+        heading: "Your Claude Code",
+        body: [
+          "Run this signed-in person's Claude Code on this computer. Only their turns. No extra team usage.",
+          "This is not the team's shared subscription bridge. Another person cannot use your session.",
+          "On /team/ai-bridge, pick Your Claude Code when you pair, or flip a computer you paired.",
         ],
       },
       {
@@ -1365,7 +1373,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "local-ai",
     slug: "local-ai",
-    title: "Run Vantage on local or free AI",
+    title: "Local AI",
     summary:
       "Point Vantage at Ollama, LM Studio, a LAN box, or a $0 key and every feature still works — with an honest quality notice on smaller models.",
     category: "ai-models",
@@ -1413,7 +1421,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "plans-and-pricing",
     slug: "plans-and-pricing",
-    title: "Plans: Free, Pro, Pro+, and Max",
+    title: "Plans",
     summary:
       "Every feature ships on every plan, including Free. Plans differ only in how much hosted AI usage is included.",
     category: "billing-plans",
@@ -1460,7 +1468,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "credits-vs-free",
     slug: "credits-vs-free",
-    title: "Hosted credits, pay-as-you-go, and spend limits",
+    title: "Spend limits",
     summary:
       "How the hosted allowance, credit packs, and pay-as-you-go work — Chat stops before every extra billed call, with no surprise bill.",
     category: "billing-plans",
@@ -1506,7 +1514,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "integrations",
     slug: "integrations",
-    title: "Connect TBA, Onshape, GitHub, and chat",
+    title: "Connect TBA",
     summary:
       "Settings → Connectors lists every integration. Connect stays available until a real credential is saved. Connected only appears when that save worked.",
     category: "integrations",
@@ -1529,13 +1537,13 @@ export const HELP_ARTICLES: HelpArticle[] = [
         heading: "Where connections live",
         body: [
           "Settings → Connectors lists Google, GitHub, The Blue Alliance, Onshape, Discord, Slack, email, Stripe, storage, Fusion, and the shop Pi. “Connected” appears only when a working credential row exists.",
-          "The Blue Alliance is configured under Team → Data (/team/data); schedules, rankings, and match cards stay empty until it is connected and an active event is picked.",
+          "Connect TBA under Team → Data (/team/data); schedules, rankings, and match cards stay empty until it is connected and an active event is picked.",
         ],
       },
       {
         heading: "What each unlocks",
         body: [
-          "TBA/Statbotics: match schedules, rankings, EPA-based strategy — read from a shared, rate-limited reference cache.",
+          "Official event numbers: match schedules, rankings, season-rating strategy — read from a shared, rate-limited reference cache.",
           "Onshape: the CAD workbench and CAD agent. Fusion stays on this computer.",
           "GitHub: Bugbot repo scans (read-only; never pushes) and code-linked calendar due dates.",
           "Slack (/team/slack) and Discord: optional bridges for team chat and notifications.",
@@ -1553,7 +1561,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "storage-node",
     slug: "storage-node",
-    title: "Self-hosted storage node",
+    title: "Storage node",
     summary:
       "Run a Raspberry Pi (or any Node 20+ box) that stores your team's large files on its own disk — bytes on your hardware, only metadata in the cloud.",
     category: "integrations",
@@ -1601,7 +1609,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "admin-owner",
     slug: "admin-owner",
-    title: "Owner & admin guide",
+    title: "Owner guide",
     summary:
       "Roles, the last-admin safeguard, who can open which sections, and the team settings only owners and admins touch.",
     category: "admin-owner",
@@ -1646,7 +1654,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
     id: "ai-relays",
     slug: "ai-relays",
     category: "integrations",
-    title: "Pair an AI relay (Raspberry Pi)",
+    title: "Pair an AI relay",
     summary: "A Pi on the team network runs Ask AI, Bugbot, assembly manuals, and video analysis. Pair it with a code — never a website cookie.",
     keywords: ["relay", "raspberry pi", "freebuff", "deepseek", "pair"],
     relatedHref: "/team/relays",
@@ -1671,7 +1679,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
     id: "analyze-video",
     slug: "analyze-video",
     category: "competition",
-    title: "Paste a match or pit video",
+    title: "Paste a video",
     summary: "Paste a video for the video Pi. You get a timeline with timestamps. Confirming saves it on Match notes as from-video evidence. Scouted cycle counts stay as the scouts entered them.",
     keywords: ["video", "match video", "pit camera", "youtube"],
     relatedHref: "/video-analysis",
@@ -1696,7 +1704,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
     id: "funding-model",
     slug: "funding-model",
     category: "business",
-    title: "How the team is funded",
+    title: "Funding",
     summary: "Pick one: you pay, the school pays with no sponsors, you have sponsors, or the school plus sponsors. Business tools match that choice.",
     keywords: ["funding", "sponsors", "school funded", "dues"],
     relatedHref: "/team/background",
@@ -1721,7 +1729,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
     id: "packing-lists",
     slug: "packing-lists",
     category: "competition",
-    title: "Packing lists at the event",
+    title: "Packing lists",
     summary:
       "Check off the load-out on your phone. The last list stays on this device if venue Wi-Fi drops; packed ticks upload when you are back online.",
     keywords: ["packing", "load-out", "load out", "trailer", "what to bring", "cart", "offline packing"],
@@ -1747,7 +1755,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
     id: "batteries-at-events",
     slug: "batteries-at-events",
     category: "team",
-    title: "Battery logs in the pit",
+    title: "Battery logs",
     summary:
       "Charge cycles and assignments come from logs your team enters. The last snapshot stays on this device; a new log queues if the Wi-Fi drops.",
     keywords: ["batteries", "charge log", "pack rotation", "internal resistance", "offline batteries"],
@@ -1772,7 +1780,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
     id: "offline-at-events",
     slug: "offline-at-events",
     category: "competition",
-    title: "Using the shop without signal",
+    title: "Shop without signal",
     summary:
       "Competition, Hours, Chat, Files, Packing, Batteries, Pit, Calendar, and Match notes keep working on this device. Your last snapshot stays on screen. Ticks, dates, RSVPs, clock-ins, packing checks, battery logs, checklist taps, notes, and chat queue and send when you are back online.",
     keywords: ["offline", "venue wifi", "outbox", "keep on this device", "hours", "chat"],

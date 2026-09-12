@@ -82,7 +82,7 @@ export const ONBOARDING_TRACKS: OnboardingTrackTemplate[] = [
       ["practice_planner", "Open practice planner", "Book driver practice blocks on the calendar.", "/practice"],
       ["match_checklist", "Walk the match checklist", "Pre-match habits before eliminations.", "/match-checklist"],
       ["my_day", "Use My Day at events", "Next match, bumper color, partners, opponents.", "/my-day"],
-      ["command", "Open Event Day Command", "Field communication hub during matches.", "/command"],
+      ["command", "Open Event day", "Field communication hub during matches.", "/command"],
     ]),
   },
   {
@@ -186,7 +186,7 @@ export const ONBOARDING_TRACKS: OnboardingTrackTemplate[] = [
     summary: "You said competition is your primary focus — prioritize field ops.",
     source: "focus",
     checks: checks([
-      ["command_focus", "Open Event Day Command", "Match flow and pit coordination.", "/command"],
+      ["command_focus", "Open Event day", "Match flow and pit coordination.", "/command"],
       ["scout_focus", "Visit Scouting Hub", "Stand coverage feeds picks.", "/scouting"],
       ["my_day_focus", "Pin My Day", "Glanceable next-match card on your phone.", "/my-day"],
       ["strategy_focus", "Open Strategy and AI", "Alliance chemistry before eliminations.", "/strategy"],

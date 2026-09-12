@@ -1,7 +1,7 @@
 import ScoutingHeatSignalsClient from "./scouting-heat-signals-client";
 
 export const metadata = {
-  title: "Scouting Heat Signals",
+  title: "Heat signals",
 };
 
 export default function ScoutingHeatSignalsPage() {

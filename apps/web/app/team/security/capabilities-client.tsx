@@ -30,7 +30,7 @@ type AdminTenure = {
 const LABELS: Record<OrgCapability, { title: string; hint: string }> = {
   manage_api_keys: {
     title: "Manage the team's keys / connectors",
-    hint: "Your keys, TBA, and Chat limits",
+    hint: "Your keys, official matches, and Chat limits",
   },
   manage_team_settings: {
     title: "Manage team settings",
@@ -236,7 +236,7 @@ export default function CapabilitiesClient({ orgId }: { orgId: string }) {
         </p>
       ) : null}
       {loading ? (
-        <EmptyState soft title="Loading members…" description="Pulling roles and delegated capabilities." aria-busy />
+        <EmptyState soft title="Opening members" description="Pulling roles and delegated capabilities." aria-busy />
       ) : (
         <>
           <div className="invite-list" style={{ marginBottom: "1rem" }}>
@@ -262,10 +262,10 @@ export default function CapabilitiesClient({ orgId }: { orgId: string }) {
             <EmptyState
               soft
               title="No scouts or viewers to delegate"
-              description="Invite members from Team admin, then grant the team's keys, budgets, or settings powers here."
+              description="Invite members from Invites, then grant the team's keys, budgets, or settings powers here."
             >
               <Button as="a" variant="secondary" href={`/team?orgId=${orgId}`}>
-                Open Team admin
+                Open Invites
               </Button>
             </EmptyState>
           ) : null}
@@ -297,12 +297,12 @@ export default function CapabilitiesClient({ orgId }: { orgId: string }) {
                 })}
               </div>
               <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginTop: "0.75rem" }}>
-                <button type="button" className="primary-action" onClick={() => void saveCapabilities(member.userId)}>
+                <Button variant="primary" type="button" onClick={() => void saveCapabilities(member.userId)}>
                   Save capabilities
-                </button>
-                <button type="button" onClick={() => void promoteAdmin(member.userId)}>
+                </Button>
+                <Button variant="secondary" type="button" onClick={() => void promoteAdmin(member.userId)}>
                   Promote to team admin
-                </button>
+                </Button>
               </div>
             </article>
           ))}

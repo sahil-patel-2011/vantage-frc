@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "epa-trend-alerts",
-  title: "EPA Trend Alerts",
+  title: "Rating alerts",
   route: "/epa-trend-alerts",
   apiRoute: "/api/epa-trend-alerts",
   hub: "Competition",

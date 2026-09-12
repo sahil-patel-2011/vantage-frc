@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "battery-rotation",
-  title: "Battery Rotation & Charge Planner",
+  title: "Charge plan",
   route: "/battery-rotation",
   apiRoute: "/api/battery-rotation",
   hub: "Competition",

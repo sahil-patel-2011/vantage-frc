@@ -119,7 +119,7 @@ function CounterShell({
             {" / Counter-book"}
           </>
         }
-        title="Opponent Counter-book"
+        title="Counter-book"
         description={description}
       >
         <CounterRelatedStrip orgId={orgId} />
@@ -129,7 +129,7 @@ function CounterShell({
         soft
         badge={
           shell === "setup"
-            ? "Setup required"
+            ? "Needs setup"
             : shell === "error"
               ? "Unavailable"
               : shell === "empty"
@@ -325,7 +325,7 @@ export default function CounterBookClient() {
             {" / Counter-book"}
           </>
         }
-        title="Opponent Counter-book"
+        title="Counter-book"
         description="One-page counter-strategy per likely playoff opponent — tendencies and failure triggers pulled only from your team's own scouted matches. Cross-check Strategy and Scouting."
       >
         <div className="counter-book-header-actions">

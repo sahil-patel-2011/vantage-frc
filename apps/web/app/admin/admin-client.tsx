@@ -326,7 +326,7 @@ export default function AdminClient() {
     <Suspense
       fallback={
         <main className="module-page admin-control admin-flow-page">
-          <EmptyState soft title="Loading admin…" aria-busy />
+          <EmptyState soft title="Opening Global Team Manager" aria-busy />
         </main>
       }
     >

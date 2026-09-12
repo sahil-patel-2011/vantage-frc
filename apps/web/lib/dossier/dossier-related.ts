@@ -9,7 +9,7 @@ export const DOSSIER_RELATED_LINKS = [
   { id: "pick-desk", label: "Pick desk", kind: "path" as const, path: "/strategy?tab=picks" },
   { id: "intel", label: "Research", kind: "path" as const, path: "/intel" },
   { id: "pick-clock", label: "Pick clock", kind: "path" as const, path: "/pick-clock" },
-  { id: "team-data", label: "Team Data", kind: "path" as const, path: "/team/data" },
+  { id: "team-data", label: "Team data", kind: "path" as const, path: "/team/data" },
 ] as const;
 
 export type DossierRelatedId = (typeof DOSSIER_RELATED_LINKS)[number]["id"];
@@ -101,8 +101,8 @@ export function dossierSetupSteps(orgId?: string | null): DossierSetupStep[] {
   return dropRelatedStripDuplicates(orgId, [
     {
       id: "team-data",
-      label: "Sync Team Data",
-      detail: "Pull team identity and season numbers from The Blue Alliance and Statbotics.",
+      label: "Sync Team data",
+      detail: "Pull team identity and season numbers from synced event data.",
       href: withOrgHref("/team/data", orgId),
     },
   ]);
@@ -154,9 +154,9 @@ export function dossierShellCopy(kind: DossierShellKind): DossierEmptyCopy {
     case "loading":
       return {
         kind,
-        title: "Loading season dossier…",
+        title: "Opening Team dossier",
         description:
-          "Checking which team you are on and TBA/Statbotics caches.",
+          "Checking which team you are on and synced event numbers.",
       };
     case "error":
       return {
@@ -169,10 +169,10 @@ export function dossierShellCopy(kind: DossierShellKind): DossierEmptyCopy {
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
-          "Choose your team and sync TBA/Statbotics before cited facts appear.",
+          "Choose your team and sync event numbers before cited facts appear.",
       };
     case "empty":
       return {
@@ -180,14 +180,14 @@ export function dossierShellCopy(kind: DossierShellKind): DossierEmptyCopy {
         badge: "No facts yet",
         title: "Waiting on cited season facts",
         description:
-          "Enter a team number and sync TBA identity + Statbotics EPA. Cards stay blank until real rows exist. Cross-check Strategy, Scouting, and Pick desk.",
+          "Enter a team number and sync team identity plus season rating. Cards stay blank until real rows exist. Cross-check Strategy, Scouting, and Pick desk.",
       };
     default:
       return {
         kind: "ready",
         title: "Season team dossier",
         description:
-          "Cited TBA / Statbotics / org-scout facts only. Verify before locking picks.",
+          "Cited event numbers and this team's scout notes only. Verify before locking picks.",
       };
   }
 }
@@ -215,7 +215,7 @@ export function dossierNextActions(input: {
       {
         id: "retry",
         label: "Retry dossier",
-        detail: "Reload real TBA/Statbotics/scout facts.",
+        detail: "Reload real event numbers and scout facts.",
         href: withOrgHref("/dossier", orgId),
         primary: true,
       },
@@ -246,7 +246,7 @@ export function dossierNextActions(input: {
         id: "team-data",
         label: "Sync season metrics",
         detail:
-          "Pull TBA identity + Statbotics EPA — dossier cards stay blank until then.",
+          "Pull team identity and season rating — dossier cards stay blank until then.",
         href: withOrgHref("/team/data", orgId),
         primary: true,
       },
@@ -280,7 +280,7 @@ export function dossierNextActions(input: {
     {
       id: "dossier",
       label: "Review cited facts",
-      detail: `${formatDossierMetric(cardCount, true)} cited fact card${cardCount === 1 ? "" : "s"} from TBA/Statbotics/scout only.`,
+      detail: `${formatDossierMetric(cardCount, true)} cited fact card${cardCount === 1 ? "" : "s"} from synced event numbers and scout notes.`,
       href: dossierHref,
       primary: true,
     },

@@ -94,8 +94,8 @@ export function composeMatchCopilotCallouts(input: {
       headline: `Plan around ${teamLabel(strongest)}`,
       detail:
         gap != null
-          ? `Highest-EPA opponent at ${strongest.epaTotal.toFixed(1)} (${gap > 0 ? "+" : ""}${gap.toFixed(1)} vs our ${input.ourEpaTotal!.toFixed(1)}). Assign defense/priority accordingly.`
-          : `Highest-EPA opponent this match at ${strongest.epaTotal.toFixed(1)}.`,
+          ? `Highest-rated opponent at ${strongest.epaTotal.toFixed(1)} (${gap > 0 ? "+" : ""}${gap.toFixed(1)} vs our ${input.ourEpaTotal!.toFixed(1)}). Assign defense/priority accordingly.`
+          : `Highest-rated opponent this match at ${strongest.epaTotal.toFixed(1)}.`,
       sourceRefs: [strongest.teamKey],
     });
   }
@@ -107,7 +107,7 @@ export function composeMatchCopilotCallouts(input: {
       priority: 1,
       category: "risk",
       headline: `Mitigate: ${topRisk.title}`,
-      detail: `${topRisk.subsystemName} — RPN ${topRisk.rpn} (O${topRisk.occurrence}/S${topRisk.severity}/D${topRisk.detection}). Confirm the fix or a workaround before this match.`,
+      detail: `${topRisk.subsystemName} — priority ${topRisk.rpn}. Confirm the fix or a workaround before this match.`,
       sourceRefs: [topRisk.id],
     });
   }

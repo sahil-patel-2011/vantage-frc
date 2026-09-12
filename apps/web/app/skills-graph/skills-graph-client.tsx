@@ -38,7 +38,7 @@ async function persistSkillsGraphSnapshot(orgHint: string, data: SkillsGraphView
     await putFeatureSnapshot("skills-graph", cacheOrg, data);
     if (!orgHint) await putFeatureSnapshot("skills-graph", "_", data);
   } catch {
-    // Live Skills & Mentorship already painted; IndexedDB is best-effort.
+    // Live Skills already painted; IndexedDB is best-effort.
   }
 }
 
@@ -104,7 +104,7 @@ export default function SkillsGraphClient() {
       if (!response.ok || !isSkillsGraphView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Skills & Mentorship. Showing the last copy on this device.");
+          setError("Could not refresh Skills. Showing the last copy on this device.");
           setFetchFailed(false);
           return;
         }
@@ -124,7 +124,7 @@ export default function SkillsGraphClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Skills & Mentorship. Showing the last copy on this device.");
+        setError("Could not refresh Skills. Showing the last copy on this device.");
         setFetchFailed(false);
         return;
       }
@@ -175,14 +175,14 @@ export default function SkillsGraphClient() {
         breadcrumbs={
           <>
             <a href={orgId ? `/team?orgId=${encodeURIComponent(orgId)}` : "/team"}>Team</a>
-            {" / Skills & Mentorship"}
+            {" / Skills"}
           </>
         }
-        title="Skills & Mentorship Graph"
+        title="Skills"
         description="Declared skills backed by real completed-task evidence, matched to novices requesting a mentor. No invented scores — only what your team has logged."
       />
 
-      <OfflineBanner feature="Skills & Mentorship" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Skills" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -210,7 +210,7 @@ export default function SkillsGraphClient() {
             : null;
           return (
             <EmptyState
-              title={copy ? copy.title : "Loading…"}
+              title={copy ? copy.title : "Opening Skills"}
               description={copy ? copy.description : "Checking your team."}
               aria-busy={!fetchFailed}
             >
@@ -232,7 +232,7 @@ export default function SkillsGraphClient() {
           switch (view.status) {
             case "setup_required":
               return (
-                <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
+                <EmptyState badge="Needs setup" badgeTone="setup" title={view.message}>
                   {view.steps[0] ? (
                     <Button as="a" variant="primary" href={view.steps[0].href}>
                       {view.steps[0].label}
@@ -286,7 +286,7 @@ function SummaryTiles({ view }: { view: LiveView }) {
 }
 
 /**
- * "Call Your Shot" calibration signals surfaced as EVIDENCE. A strong signal
+ * Learning calibration signals surfaced as EVIDENCE. A strong signal
  * may propose a skill entry; only a mentor's explicit click (the countersign)
  * writes one — the signal itself never changes anyone's proficiency. Thin
  * samples say "not enough graded calls yet" instead of scoring anybody.
@@ -304,7 +304,7 @@ function CalibrationEvidence({
   if (view.calibration.length === 0) return null;
   return (
     <Panel style={{ display: "grid", gap: 10 }}>
-      <h2 style={{ margin: 0 }}>Prediction calibration (Call Your Shot)</h2>
+      <h2 style={{ margin: 0 }}>Prediction calibration</h2>
       <p className="app-muted" style={{ margin: 0 }}>
         Evidence from calls made on the engineering calculators. A signal can propose a skill entry, but
         nothing lands in the graph until a mentor countersigns it.

@@ -1,13 +1,13 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Tuning Autopilot (never DEMO gain metrics). */
+/** Soft-UI related surfaces for Tuning advisor (never DEMO gain metrics). */
 export const TUNING_AUTOPILOT_RELATED_LINKS = [
   { id: "cad", label: "CAD", kind: "build" as const, tab: "cad" },
-  { id: "fmea", label: "FMEA", kind: "build" as const, tab: "fmea" },
+  { id: "fmea", label: "Failure log", kind: "build" as const, tab: "fmea" },
   { id: "practice", label: "Practice", kind: "team" as const, tab: "practice" },
   { id: "subsystems", label: "Subsystems", kind: "path" as const, path: "/subsystems" },
-  { id: "control-map", label: "Control Map", kind: "path" as const, path: "/control-map" },
+  { id: "control-map", label: "Control map", kind: "path" as const, path: "/control-map" },
 ] as const;
 
 export type TuningAutopilotRelatedId = (typeof TUNING_AUTOPILOT_RELATED_LINKS)[number]["id"];
@@ -26,7 +26,7 @@ export const TUNING_AUTOPILOT_RELATED_INCLUDE: TuningAutopilotRelatedId[] = [
 ];
 
 /**
- * Soft-UI cross-links from Tuning Autopilot → CAD / FMEA / Practice.
+ * Soft-UI cross-links from Tuning advisor → CAD / FMEA / Practice.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function tuningAutopilotRelatedLinks(
@@ -82,7 +82,7 @@ export function formatTuningScorePct(value: unknown, loaded: boolean, hasIterati
   return `${Math.round(Math.min(1, n) * 100)}%`;
 }
 
-/** Classify Tuning Autopilot Soft-UI shell — never invents DEMO gain metrics. */
+/** Classify Tuning advisor Soft-UI shell — never invents DEMO gain metrics. */
 export function classifyTuningAutopilotShell(input: {
   loading: boolean;
   fetchFailed?: boolean;
@@ -103,7 +103,7 @@ export function tuningAutopilotShellCopy(kind: TuningAutopilotShellKind): Tuning
     case "loading":
       return {
         kind,
-        title: "Loading tuning autopilot…",
+        title: "Opening Tuning advisor",
         description:
           "Checking which team you are on and logged tuning sessions.",
       };
@@ -111,14 +111,14 @@ export function tuningAutopilotShellCopy(kind: TuningAutopilotShellKind): Tuning
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load the tuning autopilot",
+        title: "Could not load Tuning advisor",
         description:
-          "A network or server issue blocked tuning sessions. Retry, or open CAD / FMEA / Practice while it reloads.",
+          "A network or server issue blocked tuning sessions. Retry, or open CAD / Failure log / Practice while it reloads.",
       };
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Choose your team before logging gain sets and test results.",
@@ -129,20 +129,20 @@ export function tuningAutopilotShellCopy(kind: TuningAutopilotShellKind): Tuning
         badge: "No sessions yet",
         title: "Start your first tuning session",
         description:
-          "Next-gain suggestions stay blank until you log a real gain set and observed test result. Cross-check CAD, FMEA, and Practice.",
+          "Next-gain suggestions stay blank until you log a real gain set and observed test result. Cross-check CAD, Failure log, and Practice.",
       };
     default:
       return {
         kind: "ready",
         title: "Tuning sessions",
         description:
-          "Suggestions use only the gain sets and test results your team logged. Cross-check CAD, FMEA, and Practice.",
+          "Suggestions use only the gain sets and test results your team logged. Cross-check CAD, Failure log, and Practice.",
       };
   }
 }
 
 /**
- * Soft-UI next actions for Tuning Autopilot empty/setup shells.
+ * Soft-UI next actions for Tuning advisor empty/setup shells.
  * Points at CAD / FMEA / Practice — never invents DEMO gain metrics.
  */
 export function tuningAutopilotNextActions(input: {
@@ -163,7 +163,7 @@ export function tuningAutopilotNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before logging gain sets.",
+          detail: "Choose your team before logging gain sets.",
           href: "/workspace",
           primary: true,
         },
@@ -175,7 +175,7 @@ export function tuningAutopilotNextActions(input: {
         },
         {
           id: "fmea",
-          label: "Open FMEA",
+          label: "Open Failure log",
           detail: "Failure modes stay blank until scored.",
           href: hubHref("/build", "fmea", null),
         },
@@ -191,7 +191,7 @@ export function tuningAutopilotNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Finish membership setup so Tuning Autopilot can load.",
+        detail: "Finish membership setup so Tuning advisor can load.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
       },
@@ -203,8 +203,8 @@ export function tuningAutopilotNextActions(input: {
       },
       {
         id: "fmea",
-        label: "Open FMEA",
-        detail: "High-RPN mechanisms often need the earliest gain logging.",
+        label: "Open Failure log",
+        detail: "High-priority mechanisms often need the earliest gain logging.",
         href: hubHref("/build", "fmea", orgId),
       },
       {
@@ -220,7 +220,7 @@ export function tuningAutopilotNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Tuning Autopilot",
+        label: "Retry Tuning advisor",
         detail: "Reload real tuning sessions.",
         href: withOrgHref("/tuning-autopilot", orgId),
         primary: true,
@@ -233,7 +233,7 @@ export function tuningAutopilotNextActions(input: {
       },
       {
         id: "fmea",
-        label: "Open FMEA",
+        label: "Open Failure log",
         detail: "Review failure modes while tuning reloads.",
         href: hubHref("/build", "fmea", orgId),
       },
@@ -263,7 +263,7 @@ export function tuningAutopilotNextActions(input: {
       },
       {
         id: "fmea",
-        label: "Scan FMEA modes",
+        label: "Scan Failure log",
         detail: "Risky mechanisms deserve the earliest gain logging and settle checks.",
         href: hubHref("/build", "fmea", orgId),
       },
@@ -314,8 +314,8 @@ export function tuningAutopilotNextActions(input: {
     },
     {
       id: "fmea",
-      label: "Open FMEA",
-      detail: "When oscillation or overshoot touches a high-RPN mode, update failure notes too.",
+      label: "Open Failure log",
+      detail: "When oscillation or overshoot touches a high-priority mode, update failure notes too.",
       href: hubHref("/build", "fmea", orgId),
     },
     {

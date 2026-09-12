@@ -99,7 +99,7 @@ function StorageShell({
       ) : (
         <EmptyState
           soft
-          badge="Setup required"
+          badge="Needs setup"
           badgeTone="setup"
           title="Choose your team"
           description={message ?? "Choose your team to manage self-hosted storage."}

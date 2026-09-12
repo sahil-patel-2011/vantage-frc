@@ -64,7 +64,7 @@ export function HeroProductVisual() {
           </span>
           <div className="hero-soft-topbar-title">
             <strong>Competition</strong>
-            <small>Active event from TBA</small>
+            <small>Active event from official matches</small>
           </div>
           <span className="hero-soft-avatar">V</span>
         </header>

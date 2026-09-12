@@ -139,7 +139,7 @@ function WeighShell({
         breadcrumbs={
           <>
             <a href={buildHref}>Build</a>
-            {" / Robot Weigh-In"}
+            {" / Weigh-in"}
           </>
         }
         title="Robot weigh-in log"
@@ -149,7 +149,7 @@ function WeighShell({
       </PageHeader>
       {children}
       {shell === "loading" ? (
-        <div aria-busy="true" aria-label="Loading Robot Weigh-In">
+        <div aria-busy="true" aria-label="Opening Weigh-in">
           <SoftBlockSkeleton lines={4} />
         </div>
       ) : shell === "error" ? (
@@ -157,7 +157,7 @@ function WeighShell({
       ) : (
         <EmptyState
           soft
-          badge={shell === "setup" ? "Setup required" : copy.badge}
+          badge={shell === "setup" ? "Needs setup" : copy.badge}
           badgeTone="setup"
           title={copy.title}
           description={error ?? copy.description}
@@ -350,7 +350,7 @@ export default function RobotWeighInClient() {
         breadcrumbs={
           <>
             <a href={buildHref}>Build</a>
-            {" / Robot Weigh-In"}
+            {" / Weigh-in"}
           </>
         }
         title="Robot weigh-in log"

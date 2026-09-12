@@ -11,6 +11,6 @@ describe("Match video index last snapshot stays on the phone", () => {
     expect(src).toMatch(/putFeatureSnapshot/);
     expect(src).toMatch(/"match-video-index"/);
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
-    expect(src).toMatch(/feature="Match video index"/);
+    expect(src).toMatch(/feature="Video index"/);
   });
 });

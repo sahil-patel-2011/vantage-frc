@@ -285,7 +285,7 @@ export function IntelligenceSection({
       </form>
 
       {intelStatus === "loading" && !selected ? (
-        <EmptyState soft title="Loading intelligence…" description="Checking for a saved release summary." aria-busy />
+        <EmptyState soft title="Opening Kickoff" description="Checking for a saved release summary." aria-busy />
       ) : !selected ? (
         <EmptyState soft badge="Empty" title="No structured summary yet" description={emptyMessage}>
           <p className="app-muted">

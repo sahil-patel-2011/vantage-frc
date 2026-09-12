@@ -127,7 +127,7 @@ export function buildOnboardingChecklistSteps(signals: OnboardingSignals): Onboa
     },
     {
       key: "tba",
-      label: "Sync TBA",
+      label: "Connect TBA",
       detail: "Connect match and rank ingest",
       done: signals.tbaConfigured,
       href: `/team/data${q}`,

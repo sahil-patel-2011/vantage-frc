@@ -63,7 +63,7 @@ async function persistRiskBurndownSnapshot(
     await putFeatureSnapshot("risk-burndown", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("risk-burndown", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Risk-Register Burndown already painted; IndexedDB is best-effort.
+    // Live Risk burndown already painted; IndexedDB is best-effort.
   }
 }
 
@@ -137,10 +137,10 @@ function RiskBurndownShell({
         breadcrumbs={
           <>
             <a href={teamHref}>Team</a>
-            {" / Risk-Register Burndown"}
+            {" / Risk burndown"}
           </>
         }
-        title="Risk-Register Burndown"
+        title="Risk burndown"
         description={description}
       >
         <RiskBurndownRelatedStrip orgId={orgId} />
@@ -150,7 +150,7 @@ function RiskBurndownShell({
         soft
         badge={
           shell === "setup"
-            ? "Setup required"
+            ? "Needs setup"
             : shell === "error"
               ? "Unavailable"
               : shell === "empty"
@@ -232,7 +232,7 @@ export default function RiskBurndownClient() {
         if (!response.ok || !isRiskBurndownView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Risk-Register Burndown. Showing the last copy on this device.");
+            setError("Could not refresh Risk burndown. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -247,7 +247,7 @@ export default function RiskBurndownClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Risk-Register Burndown. Showing the last copy on this device.");
+          setError("Could not refresh Risk burndown. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -319,7 +319,7 @@ export default function RiskBurndownClient() {
   if (shell === "loading") {
     return (
       <RiskBurndownShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Risk-Register Burndown" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Risk burndown" fromCache={fromCache} cachedAt={cachedAt} />
       </RiskBurndownShell>
     );
   }
@@ -333,7 +333,7 @@ export default function RiskBurndownClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Risk-Register Burndown" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Risk burndown" fromCache={fromCache} cachedAt={cachedAt} />
       </RiskBurndownShell>
     );
   }
@@ -345,7 +345,7 @@ export default function RiskBurndownClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Risk-Register Burndown" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Risk burndown" fromCache={fromCache} cachedAt={cachedAt} />
       </RiskBurndownShell>
     );
   }
@@ -353,7 +353,7 @@ export default function RiskBurndownClient() {
   if (view?.status !== "live") {
     return (
       <RiskBurndownShell description={shellCopy.description} orgId={orgId} shell="setup">
-        <OfflineBanner feature="Risk-Register Burndown" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Risk burndown" fromCache={fromCache} cachedAt={cachedAt} />
       </RiskBurndownShell>
     );
   }
@@ -364,11 +364,11 @@ export default function RiskBurndownClient() {
         breadcrumbs={
           <>
             <a href={teamHref}>Team</a>
-            {" / Risk-Register Burndown"}
+            {" / Risk burndown"}
           </>
         }
-        title="Risk-Register Burndown"
-        description="Track season risks — technical, schedule, budget, personnel, logistics, safety — and watch the register burn down as mitigations close them out. Cross-check Risks and FMEA."
+        title="Risk burndown"
+        description="Track season risks — technical, schedule, budget, personnel, logistics, safety — and watch the register burn down as mitigations close them out. Cross-check Risks and Failure log."
       >
         <div className="risk-burndown-header-actions">
           {view.seasons.length > 0 ? (
@@ -398,7 +398,7 @@ export default function RiskBurndownClient() {
         </div>
       </PageHeader>
 
-      <OfflineBanner feature="Risk-Register Burndown" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Risk burndown" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -432,8 +432,8 @@ export default function RiskBurndownClient() {
         <Panel className="risk-burndown-tip" aria-label="Risk burndown tip">
           <span className="eyebrow">Risk path</span>
           <p className="app-muted" style={{ marginTop: 8 }}>
-            Keep season L×I scores in <a href={risksHref}>Risks</a> and failure modes in{" "}
-            <a href={fmeaHref}>FMEA</a> aligned with closures here.
+            Keep season how-likely and how-bad scores in <a href={risksHref}>Risks</a> and failure
+            modes in <a href={fmeaHref}>Failure log</a> aligned with closures here.
           </p>
         </Panel>
       </div>
@@ -564,8 +564,8 @@ function RiskRegister({
               <strong>{item.title}</strong>
               <small className="app-muted" style={{ display: "block" }}>
                 {item.identifiedOn} · {riskCategoryLabel(item.category)} · {riskStatusLabel(item.status)}
-                {item.ownerName ? ` · ${item.ownerName}` : ""} · L{item.likelihood} × I{item.impact} ={" "}
-                {item.severity}
+                {item.ownerName ? ` · ${item.ownerName}` : ""} · How likely {item.likelihood} · How
+                bad {item.impact} = {item.severity}
               </small>
               {item.mitigationPlan ? (
                 <small className="app-muted" style={{ display: "block" }}>
@@ -663,7 +663,7 @@ function LogRiskForm({
     >
       <h2 style={{ margin: 0 }}>Log risk</h2>
       <p className="app-muted" style={{ margin: 0 }}>
-        Likelihood × impact come from real season judgment.
+        How likely and how bad come from real season judgment.
       </p>
       <FormGrid min={160}>
         <FormRow label="Title">
@@ -690,10 +690,10 @@ function LogRiskForm({
             ))}
           </select>
         </FormRow>
-        <FormRow label="Likelihood (1-5)">
+        <FormRow label="How likely (1–5)">
           <input type="number" min={1} max={5} value={form.likelihood} onChange={set("likelihood")} />
         </FormRow>
-        <FormRow label="Impact (1-5)">
+        <FormRow label="How bad (1–5)">
           <input type="number" min={1} max={5} value={form.impact} onChange={set("impact")} />
         </FormRow>
         <FormRow label="Owner (optional)">

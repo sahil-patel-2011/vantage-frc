@@ -34,7 +34,7 @@ describe("student-week Team hub People / invite / roles slice", () => {
     expect(hubById("team").tabs.find((tab) => tab.id === "attendance")?.label).toBe("People");
   });
 
-  it("Team admin setup is Needs setup with one Choose your team primary", () => {
+  it("Invites setup is Needs setup with one Choose your team primary", () => {
     expect(teamAdminShellCopy("setup").badge).toBe("Needs setup");
     expectPlainCopy(teamAdminShellCopy("setup").description);
     expectPlainCopy(teamAdminShellCopy("empty").description);
@@ -60,7 +60,7 @@ describe("student-week Team hub People / invite / roles slice", () => {
     expect(githubSetup.map((action) => action.id)).toEqual(["workspace"]);
   });
 
-  it("invite copy names the waitlist and has gold last-snapshot on Team admin", () => {
+  it("invite copy names the waitlist and has gold last-snapshot on Invites", () => {
     expect(inviteEmptyCopy("auth_required").description).toMatch(/waitlist/);
     const client = readFileSync(join(WEB, "app/team/team-admin-client.tsx"), "utf8");
     expect(client).toMatch(/putFeatureSnapshot\("team-admin"/);

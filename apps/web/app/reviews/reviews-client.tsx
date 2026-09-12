@@ -73,7 +73,7 @@ async function persistReviewsSnapshot(orgHint: string, seasonHint: string, data:
     await putFeatureSnapshot("reviews", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("reviews", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Design Reviews already painted; IndexedDB is best-effort.
+    // Live Design reviews already painted; IndexedDB is best-effort.
   }
 }
 
@@ -200,7 +200,7 @@ export default function ReviewsClient() {
       if (!response.ok || !isReviewsView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Design Reviews. Showing the last copy on this device.");
+          setError("Could not refresh Design reviews. Showing the last copy on this device.");
           setFetchFailed(false);
           return;
         }
@@ -217,7 +217,7 @@ export default function ReviewsClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Design Reviews. Showing the last copy on this device.");
+        setError("Could not refresh Design reviews. Showing the last copy on this device.");
         setFetchFailed(false);
         return;
       }
@@ -263,10 +263,10 @@ export default function ReviewsClient() {
       breadcrumbs={
         <>
           <a href={buildHref}>Build</a>
-          {" / Design Reviews"}
+          {" / Design reviews"}
         </>
       }
-      title="Design Reviews"
+      title="Design reviews"
       description="Run concept, preliminary, critical, and final design reviews with a criteria checklist. The gate — go, conditional, or no-go — is computed from your verdicts, so nothing ships on a failed blocker by accident."
     >
       <ReviewsRelated orgId={orgId} />
@@ -312,9 +312,9 @@ export default function ReviewsClient() {
     return (
       <main className="module-page">
         {header}
-        <OfflineBanner feature="Design Reviews" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Design reviews" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
-          title={failure ? failure.title : "Loading…"}
+          title={failure ? failure.title : "Opening Design reviews"}
           description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >
@@ -338,13 +338,13 @@ export default function ReviewsClient() {
       return (
         <main className="module-page">
           {header}
-          <OfflineBanner feature="Design Reviews" fromCache={fromCache} cachedAt={cachedAt} />
+          <OfflineBanner feature="Design reviews" fromCache={fromCache} cachedAt={cachedAt} />
           {error ? (
             <p className="telemetry-status" role="alert">
               {error}
             </p>
           ) : null}
-          <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
+          <EmptyState badge="Needs setup" badgeTone="setup" title={view.message}>
             {view.steps[0] ? (
               <Button as="a" variant="primary" href={view.steps[0].href}>
                 {view.steps[0].label}
@@ -364,7 +364,7 @@ export default function ReviewsClient() {
   return (
     <main className="module-page">
       {header}
-      <OfflineBanner feature="Design Reviews" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Design reviews" fromCache={fromCache} cachedAt={cachedAt} />
       {error ? (
         <p className="telemetry-status" role="alert">
           {error}

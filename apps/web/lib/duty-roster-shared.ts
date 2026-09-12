@@ -65,16 +65,16 @@ export function dutyWorkflowLinks(kind: DutyKind, orgId: string): DutyWorkflowLi
     case "pit":
       return [
         { href: withOrgPath("/pit", orgId), label: "Pit Command" },
-        { href: withOrgPath("/command", orgId), label: "Event Day" },
+        { href: withOrgPath("/command", orgId), label: "Event day" },
       ];
     case "drive_team":
       return [
-        { href: withOrgPath("/command", orgId), label: "Event Day Command" },
+        { href: withOrgPath("/command", orgId), label: "Event day" },
         { href: withOrgPath("/practice", orgId), label: "Practice" },
       ];
     case "outreach":
       return [
-        { href: withOrgPath("/impact", orgId), label: "Community Impact" },
+        { href: withOrgPath("/impact", orgId), label: "Impact" },
         { href: withOrgPath("/business", orgId), label: "Business" },
       ];
   }

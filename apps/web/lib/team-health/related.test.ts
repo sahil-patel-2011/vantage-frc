@@ -11,7 +11,7 @@ import {
 import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("teamHealthRelatedLinks", () => {
-  it("builds Attendance / My Hours cross-links", () => {
+  it("builds Attendance / My hours cross-links", () => {
     const links = teamHealthRelatedLinks("org-1", {
       include: [...TEAM_HEALTH_RELATED_INCLUDE],
     });

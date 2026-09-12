@@ -223,7 +223,7 @@ export async function computeSustainabilityView(
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick which FRC team you are working as.",
+          detail: "Choose which FRC team you are working as.",
           href: "/workspace",
         },
       ],

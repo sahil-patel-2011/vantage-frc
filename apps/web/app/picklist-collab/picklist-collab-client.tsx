@@ -130,10 +130,10 @@ function CollabShell({
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Collaborative pick list"}
+            {" / Pick list"}
           </>
         }
-        title="Collaborative pick list"
+        title="Pick list"
         description={description}
       >
         <RelatedStrip orgId={orgId} />
@@ -148,7 +148,7 @@ function CollabShell({
       ) : (
         <EmptyState
           soft
-          badge={shell === "setup" ? "Setup required" : copy.badge}
+          badge={shell === "setup" ? "Needs setup" : copy.badge}
           badgeTone="setup"
           title={copy.title}
           description={error ?? copy.description}
@@ -308,7 +308,7 @@ export default function PicklistCollabClient() {
   if (shell === "loading") {
     return (
       <CollabShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Collaborative pick list" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Pick list" fromCache={fromCache} cachedAt={cachedAt} />
       </CollabShell>
     );
   }
@@ -322,7 +322,7 @@ export default function PicklistCollabClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Collaborative pick list" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Pick list" fromCache={fromCache} cachedAt={cachedAt} />
       </CollabShell>
     );
   }
@@ -334,7 +334,7 @@ export default function PicklistCollabClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Collaborative pick list" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Pick list" fromCache={fromCache} cachedAt={cachedAt} />
       </CollabShell>
     );
   }
@@ -345,11 +345,11 @@ export default function PicklistCollabClient() {
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Collaborative pick list"}
+            {" / Pick list"}
           </>
         }
-        title="Collaborative pick list"
-        description="Build the pick list together — rank teams into tiers, see FAST-style EPA roles from the cached event field, and export CSV for the drive team."
+        title="Pick list"
+        description="Build the pick list together — rank teams into tiers, see auto and teleop roles from season ratings, and export CSV for the drive team."
       >
         <div className="picklist-collab-header-actions">
           {view?.status === "live" && view.lists.length > 0 ? (
@@ -384,7 +384,7 @@ export default function PicklistCollabClient() {
         </div>
       </PageHeader>
 
-      <OfflineBanner feature="Collaborative pick list" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Pick list" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

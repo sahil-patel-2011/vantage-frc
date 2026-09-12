@@ -144,17 +144,17 @@ function CheckoutShell({
         breadcrumbs={
           <>
             <a href={teamHref}>Team</a>
-            {" / Tool Checkout"}
+            {" / Tool checkout"}
           </>
         }
-        title="Tool Checkout"
+        title="Tool checkout"
         description={description}
       >
         <RelatedStrip orgId={orgId} />
       </PageHeader>
       <OfflineBanner feature="Tool checkout" fromCache={fromCache} cachedAt={cachedAt} />
       {shell === "loading" ? (
-        <div aria-busy="true" aria-label="Loading Tool Checkout">
+        <div aria-busy="true" aria-label="Loading Tool checkout">
           <SoftBlockSkeleton lines={4} />
         </div>
       ) : shell === "error" ? (
@@ -352,10 +352,10 @@ export default function ToolCheckoutClient() {
         breadcrumbs={
           <>
             <a href={teamHref}>Team</a>
-            {" / Tool Checkout"}
+            {" / Tool checkout"}
           </>
         }
-        title="Tool Checkout"
+        title="Tool checkout"
         description="Track who has each shop tool and when it's due back."
       >
         <RelatedStrip orgId={orgId} />

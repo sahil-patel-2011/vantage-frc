@@ -56,7 +56,7 @@ async function persistSafetyTrainingSnapshot(orgHint: string, data: SafetyTraini
     await putFeatureSnapshot("safety-training", cacheOrg, data);
     if (!orgHint) await putFeatureSnapshot("safety-training", "_", data);
   } catch {
-    // Live Safety Training already painted; IndexedDB is best-effort.
+    // Live Safety already painted; IndexedDB is best-effort.
   }
 }
 
@@ -81,7 +81,7 @@ export default function SafetyTrainingClient() {
         Safety log
       </Button>
       <Button as="a" variant="secondary" href={withOrgHref("/incidents", orgId)}>
-        Safety Incident Log
+        Safety incidents
       </Button>
     </nav>
   );
@@ -132,7 +132,7 @@ export default function SafetyTrainingClient() {
       if (!response.ok || !isSafetyTrainingView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Safety Training. Showing the last copy on this device.");
+          setError("Could not refresh Safety. Showing the last copy on this device.");
           setFetchFailed(false);
           return;
         }
@@ -152,7 +152,7 @@ export default function SafetyTrainingClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Safety Training. Showing the last copy on this device.");
+        setError("Could not refresh Safety. Showing the last copy on this device.");
         setFetchFailed(false);
         return;
       }
@@ -203,16 +203,16 @@ export default function SafetyTrainingClient() {
         breadcrumbs={
           <>
             <a href={orgId ? `/team?orgId=${encodeURIComponent(orgId)}` : "/team"}>Team</a>
-            {" / Safety Training"}
+            {" / Safety"}
           </>
         }
-        title="Safety Training"
+        title="Safety"
         description="Track shop safety modules and per-member certification. Compliance uses only what you record."
       >
         {related}
       </PageHeader>
 
-      <OfflineBanner feature="Safety Training" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Safety" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -241,7 +241,7 @@ export default function SafetyTrainingClient() {
             : null;
           return (
             <EmptyState
-              title={copy ? copy.title : "Loading…"}
+              title={copy ? copy.title : "Opening Safety"}
               description={copy ? copy.description : "Checking your team."}
               aria-busy={!fetchFailed}
             >

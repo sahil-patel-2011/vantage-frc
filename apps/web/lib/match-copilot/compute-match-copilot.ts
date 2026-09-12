@@ -32,7 +32,7 @@ function setupStepsFor(orgId: string | null, focus: "workspace" | "team" | "even
   const workspace: MatchCopilotSetupStep = {
     id: "workspace",
     label: "Choose your team",
-    detail: "Choose your team to open Match Copilot.",
+    detail: "Choose your team to open Briefing.",
     href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
   };
   const team: MatchCopilotSetupStep = {
@@ -56,12 +56,12 @@ function setupStepsFor(orgId: string | null, focus: "workspace" | "team" | "even
   const schedule: MatchCopilotSetupStep = {
     id: "schedule",
     label: "Sync event schedule",
-    detail: "Confirm TBA sync has the qualification/playoff schedule loaded.",
+    detail: "Confirm the official schedule has qualification and playoff matches loaded.",
     href: withOrgHref("/team/data", orgId),
   };
   const fmea: MatchCopilotSetupStep = {
     id: "fmea",
-    label: "Open FMEA",
+    label: "Open Failure log",
     detail: "Risk callouts stay blank until real open failures exist.",
     href: hubHref("/team", "fmea", orgId),
   };
@@ -339,7 +339,7 @@ async function buildContext(
   if (!org) {
     return {
       setup: setupRequired(
-        "Choose your team to open Match Copilot.",
+        "Choose your team to open Briefing.",
         setupStepsFor(null, "workspace"),
         null,
       ),
@@ -348,7 +348,7 @@ async function buildContext(
   if (!org.teamNumber) {
     return {
       setup: setupRequired(
-        "Set your team's number so Match Copilot can find your next match.",
+        "Set your team's number so Briefing can find your next match.",
         setupStepsFor(org.orgId, "team"),
         org.orgId,
       ),
@@ -359,7 +359,7 @@ async function buildContext(
   if (!activeEvent.eventKey || !activeEvent.seasonYear) {
     return {
       setup: setupRequired(
-        "Set your active event so Match Copilot can find your next match.",
+        "Set your active event so Briefing can find your next match.",
         setupStepsFor(org.orgId, "event"),
         org.orgId,
       ),

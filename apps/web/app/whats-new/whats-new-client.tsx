@@ -365,7 +365,7 @@ export default function WhatsNewClient() {
       {message && !failure ? <p className="admin-plans-message">{message}</p> : null}
 
       {loading ? (
-        <EmptyState soft title="Loading releases…" description="Checking published notes for your plan." aria-busy />
+        <EmptyState soft title="Opening What’s new" description="Checking published notes for your plan." aria-busy />
       ) : failure ? (
         <EmptyState
           title={failure.title}

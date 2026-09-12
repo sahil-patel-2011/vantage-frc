@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "inspection-copilot",
-  title: "Inspection-Readiness Copilot",
+  title: "Inspection",
   route: "/inspection-copilot",
   apiRoute: "/api/inspection-copilot",
   hub: "Build",

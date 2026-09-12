@@ -97,7 +97,7 @@ export const CAD_TRACK: Unit[] = [
           "Sign up with an email you will still have next season.",
           "Pick the plan that matches your situation using the tabs below.",
           "Open Onshape and let it finish first-run setup.",
-          "Join your team's Onshape workspace if you have one — ask your CAD lead, do not create a second one.",
+          "Join your team's Onshape document if you have one — ask your CAD lead, do not create a second one.",
         ],
         methods: [
           {

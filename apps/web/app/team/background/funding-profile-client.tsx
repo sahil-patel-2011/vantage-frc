@@ -215,7 +215,7 @@ export default function FundingProfileClient({ orgId }: { orgId: string }) {
         </p>
       ) : null}
       {loading && !ready ? (
-        <EmptyState soft title="Loading funding profile…" description="Pulling affiliation and funding paths." />
+        <EmptyState soft title="Opening Funding profile" description="Pulling affiliation and funding paths." />
       ) : failure ? (
         <EmptyState soft title={failure.title} description={failure.description}>
           {failure.primary ? (

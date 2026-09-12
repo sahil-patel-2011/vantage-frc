@@ -483,7 +483,7 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
           </header>
         ) : null}
         <OfflineBanner feature="Playbook" fromCache={fromCache} cachedAt={cachedAt} />
-        <EmptyState soft title="Loading…" aria-busy />
+        <EmptyState soft title="Opening Playbook" aria-busy />
       </main>
     );
   }

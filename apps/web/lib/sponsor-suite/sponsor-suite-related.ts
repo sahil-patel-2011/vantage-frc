@@ -2,12 +2,12 @@ import { hubHref } from "../nav/hubs";
 import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Sponsor Suite (never DEMO fundraising metrics). */
+/** Soft-UI related surfaces for Sponsor suite (never DEMO fundraising metrics). */
 export const SPONSOR_SUITE_RELATED_LINKS = [
-  { id: "sponsors", label: "Sponsor CRM", kind: "business" as const, tab: "sponsors" },
+  { id: "sponsors", label: "Sponsors", kind: "business" as const, tab: "sponsors" },
   { id: "sponsorship", label: "Sponsorship", kind: "business" as const, tab: "sponsorship" },
-  { id: "sponsor-wall", label: "Sponsor Wall", kind: "business" as const, tab: "sponsor-wall" },
-  { id: "media-kit", label: "Media Kit", kind: "business" as const, tab: "media-kit" },
+  { id: "sponsor-wall", label: "Sponsor wall", kind: "business" as const, tab: "sponsor-wall" },
+  { id: "media-kit", label: "Media kit", kind: "business" as const, tab: "media-kit" },
 ] as const;
 
 export type SponsorSuiteRelatedId = (typeof SPONSOR_SUITE_RELATED_LINKS)[number]["id"];
@@ -18,7 +18,7 @@ export type SponsorSuiteRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — CRM / Sponsorship / Sponsor Wall. */
+/** Focused Soft-UI strip — CRM / Sponsorship / Sponsor wall. */
 export const SPONSOR_SUITE_RELATED_INCLUDE: SponsorSuiteRelatedId[] = [
   "sponsors",
   "sponsorship",
@@ -26,7 +26,7 @@ export const SPONSOR_SUITE_RELATED_INCLUDE: SponsorSuiteRelatedId[] = [
 ];
 
 /**
- * Soft-UI cross-links from Sponsor Suite → CRM / Sponsorship / Wall.
+ * Soft-UI cross-links from Sponsor suite → CRM / Sponsorship / Wall.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function sponsorSuiteRelatedLinks(
@@ -80,7 +80,7 @@ export function sponsorSuiteSetupSteps(orgId?: string | null): SponsorSuiteSetup
     },
     {
       id: "sponsors",
-      label: "Open Sponsor CRM",
+      label: "Open Sponsors",
       detail: "Sponsor rows stay blank until your team logs them.",
       href: hubHref("/business", "sponsors", orgId),
     },
@@ -92,7 +92,7 @@ export function sponsorSuiteSetupSteps(orgId?: string | null): SponsorSuiteSetup
     },
     {
       id: "sponsor-wall",
-      label: "Open Sponsor Wall",
+      label: "Open Sponsor wall",
       detail: "Wall shout-outs stay blank until real entries land.",
       href: hubHref("/business", "sponsor-wall", orgId),
     },
@@ -136,7 +136,7 @@ export function isSponsorSuiteBoardEmpty(input: {
   );
 }
 
-/** Classify Sponsor Suite Soft-UI shell — never invents DEMO fundraising metrics. */
+/** Classify Sponsor suite Soft-UI shell — never invents DEMO fundraising metrics. */
 export function classifySponsorSuiteShell(input: {
   loading: boolean;
   fetchFailed?: boolean;
@@ -171,7 +171,7 @@ export function sponsorSuiteShellCopy(kind: SponsorSuiteShellKind): SponsorSuite
     case "loading":
       return {
         kind,
-        title: "Loading Sponsor Suite…",
+        title: "Opening Sponsor suite…",
         description:
           "Checking which team you are on and recorded sponsors.",
       };
@@ -179,9 +179,9 @@ export function sponsorSuiteShellCopy(kind: SponsorSuiteShellKind): SponsorSuite
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Sponsor Suite",
+        title: "Could not load Sponsor suite",
         description:
-          "A network or server issue blocked the suite. Retry, or open Sponsor CRM / Sponsorship while it reloads.",
+          "A network or server issue blocked the suite. Retry, or open Sponsors / Sponsorship while it reloads.",
       };
     case "setup":
       return {
@@ -197,7 +197,7 @@ export function sponsorSuiteShellCopy(kind: SponsorSuiteShellKind): SponsorSuite
         badge: "No sponsors yet",
         title: "Add sponsors before building the suite",
         description:
-          "Goals, decks, ROI reports, and reminders stay blank until real CRM sponsors exist. Cross-check Sponsor CRM and Sponsorship.",
+          "Goals, decks, ROI reports, and reminders stay blank until real CRM sponsors exist. Cross-check Sponsors and Sponsorship.",
       };
     default:
       return {
@@ -210,7 +210,7 @@ export function sponsorSuiteShellCopy(kind: SponsorSuiteShellKind): SponsorSuite
 }
 
 /**
- * Soft-UI next actions for Sponsor Suite empty/setup shells.
+ * Soft-UI next actions for Sponsor suite empty/setup shells.
  * Points at CRM / Sponsorship / Wall — never invents DEMO fundraising metrics.
  */
 export function sponsorSuiteNextActions(input: {
@@ -234,14 +234,14 @@ export function sponsorSuiteNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Sponsor Suite",
+        label: "Retry Sponsor suite",
         detail: "Reload real sponsors and decks.",
         href: withOrgHref("/sponsor-suite", orgId),
         primary: true,
       },
       {
         id: "sponsors",
-        label: "Open Sponsor CRM",
+        label: "Open Sponsors",
         detail: "Sponsor rows stay available while the suite reloads.",
         href: hubHref("/business", "sponsors", orgId),
       },
@@ -258,7 +258,7 @@ export function sponsorSuiteNextActions(input: {
     return [
       {
         id: "sponsors",
-        label: "Open Sponsor CRM",
+        label: "Open Sponsors",
         detail: "Log real sponsors before generating decks.",
         href: hubHref("/business", "sponsors", orgId),
         primary: true,
@@ -291,19 +291,19 @@ export function sponsorSuiteNextActions(input: {
     },
     {
       id: "sponsors",
-      label: "Open Sponsor CRM",
+      label: "Open Sponsors",
       detail: `${sponsorCount} sponsor${sponsorCount === 1 ? "" : "s"} in CRM — keep decks grounded.`,
       href: hubHref("/business", "sponsors", orgId),
     },
     {
       id: "sponsor-wall",
-      label: "Open Sponsor Wall",
+      label: "Open Sponsor wall",
       detail: "Pair suite shout-outs with wall entries.",
       href: hubHref("/business", "sponsor-wall", orgId),
     },
     {
       id: "media-kit",
-      label: "Open Media Kit",
+      label: "Open Media kit",
       detail: "Keep press assets grounded in recorded logos and bios.",
       href: hubHref("/business", "media-kit", orgId),
     },

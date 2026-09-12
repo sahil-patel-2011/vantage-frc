@@ -231,7 +231,7 @@ async function hydrateSource(
           path,
           content: "",
           provenance: [],
-          empty: "No GitHub repository selected. Pick a repo on Bugbot or set a default in Team admin.",
+          empty: "No GitHub repository selected. Pick a repo on Bugbot or set a default in Invites.",
           filesScanned: 0,
           githubRepo,
           githubRef,

@@ -53,7 +53,7 @@ async function persistAwardTrackerSnapshot(
     await putFeatureSnapshot("award-tracker", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("award-tracker", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Award Tracker already painted; IndexedDB is best-effort.
+    // Live Award tracker already painted; IndexedDB is best-effort.
   }
 }
 
@@ -146,10 +146,10 @@ function AwardTrackerShell({
         breadcrumbs={
           <>
             <a href={businessHref}>Business</a>
-            {" / Award Tracker"}
+            {" / Award tracker"}
           </>
         }
-        title="Award Tracker"
+        title="Award tracker"
         description={description}
       >
         <AwardTrackerRelatedStrip orgId={orgId} />
@@ -240,7 +240,7 @@ export default function AwardTrackerClient() {
         if (!response.ok || !isAwardTrackerView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Award Tracker. Showing the last copy on this device.");
+            setError("Could not refresh Award tracker. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -255,7 +255,7 @@ export default function AwardTrackerClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Award Tracker. Showing the last copy on this device.");
+          setError("Could not refresh Award tracker. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -330,7 +330,7 @@ export default function AwardTrackerClient() {
   if (shell === "loading") {
     return (
       <AwardTrackerShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Award Tracker" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Award tracker" fromCache={fromCache} cachedAt={cachedAt} />
       </AwardTrackerShell>
     );
   }
@@ -344,7 +344,7 @@ export default function AwardTrackerClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Award Tracker" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Award tracker" fromCache={fromCache} cachedAt={cachedAt} />
       </AwardTrackerShell>
     );
   }
@@ -356,7 +356,7 @@ export default function AwardTrackerClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Award Tracker" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Award tracker" fromCache={fromCache} cachedAt={cachedAt} />
       </AwardTrackerShell>
     );
   }
@@ -364,7 +364,7 @@ export default function AwardTrackerClient() {
   if (view?.status !== "live") {
     return (
       <AwardTrackerShell description={shellCopy.description} orgId={orgId} shell="setup">
-        <OfflineBanner feature="Award Tracker" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Award tracker" fromCache={fromCache} cachedAt={cachedAt} />
       </AwardTrackerShell>
     );
   }
@@ -375,11 +375,11 @@ export default function AwardTrackerClient() {
         breadcrumbs={
           <>
             <a href={businessHref}>Business</a>
-            {" / Award Tracker"}
+            {" / Award tracker"}
           </>
         }
-        title="Award Tracker"
-        description="Track award submissions across events with deadlines. Cross-check Awards and Impact Essay."
+        title="Award tracker"
+        description="Track award submissions across events with deadlines. Cross-check Awards and Impact essay."
       >
         <div className="award-tracker-header-actions">
           {view.seasons.length > 0 ? (
@@ -408,7 +408,7 @@ export default function AwardTrackerClient() {
           ))}
         </div>
       </PageHeader>
-      <OfflineBanner feature="Award Tracker" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Award tracker" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -477,12 +477,12 @@ export default function AwardTrackerClient() {
         <UpcomingDeadlines view={view} />
         <CreateSubmissionForm busy={busy} mutate={mutate} />
         <SubmissionsList view={view} busy={busy} mutate={mutate} />
-        <Panel className="award-tracker-tip" aria-label="Award Tracker tip">
+        <Panel className="award-tracker-tip" aria-label="Award tracker tip">
           <span className="eyebrow">Grounding path</span>
           <p className="app-muted" style={{ marginTop: 8 }}>
             Keep packets in <a href={evidenceHref}>Awards</a>, review workbench uploads in{" "}
             <a href={awardsHref}>Awards workbench</a>, and draft narratives in{" "}
-            <a href={essayHref}>Impact Essay</a>
+            <a href={essayHref}>Impact essay</a>
           </p>
         </Panel>
       </div>

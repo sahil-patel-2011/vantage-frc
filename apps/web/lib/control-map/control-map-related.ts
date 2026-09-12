@@ -1,10 +1,10 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Control Map (never DEMO bindings). */
+/** Soft-UI related surfaces for Control map (never DEMO bindings). */
 export const CONTROL_MAP_RELATED_LINKS = [
   { id: "subsystems", label: "Subsystems", kind: "path" as const, path: "/subsystems" },
-  { id: "fmea", label: "FMEA", kind: "build" as const, tab: "fmea" },
+  { id: "fmea", label: "Failure log", kind: "build" as const, tab: "fmea" },
   { id: "practice", label: "Practice", kind: "team" as const, tab: "practice" },
   { id: "auto-routines", label: "Autos", kind: "path" as const, path: "/auto-routines" },
   { id: "code", label: "Code", kind: "build" as const, tab: "code" },
@@ -26,7 +26,7 @@ export const CONTROL_MAP_RELATED_INCLUDE: ControlMapRelatedId[] = [
 ];
 
 /**
- * Soft-UI cross-links from Control Map → Subsystems / FMEA / Practice.
+ * Soft-UI cross-links from Control map → Subsystems / FMEA / Practice.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function controlMapRelatedLinks(
@@ -74,7 +74,7 @@ export function formatControlMapMetric(value: unknown, loaded: boolean): string 
   return Math.floor(n).toLocaleString();
 }
 
-/** Classify Control Map Soft-UI shell — never invents DEMO bindings. */
+/** Classify Control map Soft-UI shell — never invents DEMO bindings. */
 export function classifyControlMapShell(input: {
   loading: boolean;
   fetchFailed?: boolean;
@@ -95,7 +95,7 @@ export function controlMapShellCopy(kind: ControlMapShellKind): ControlMapEmptyC
     case "loading":
       return {
         kind,
-        title: "Loading control map…",
+        title: "Opening Control map",
         description: "Checking which team you are on and saved bindings.",
       };
     case "error":
@@ -104,12 +104,12 @@ export function controlMapShellCopy(kind: ControlMapShellKind): ControlMapEmptyC
         badge: "Unavailable",
         title: "Could not load the control map",
         description:
-          "A network or server issue blocked bindings. Retry, or open Subsystems / FMEA while Control Map is down.",
+          "A network or server issue blocked bindings. Retry, or open Subsystems / Failure log while Control map is down.",
       };
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Choose your team before mapping driver and operator inputs.",
@@ -120,20 +120,20 @@ export function controlMapShellCopy(kind: ControlMapShellKind): ControlMapEmptyC
         badge: "No bindings yet",
         title: "Map your first controller input",
         description:
-          "The cheat sheet stays blank until you save a real input → action. Cross-check Subsystems and FMEA so buttons match robot systems.",
+          "The cheat sheet stays blank until you save a real input → action. Cross-check Subsystems and Failure log so buttons match robot systems.",
       };
     default:
       return {
         kind: "ready",
         title: "Driver control map",
         description:
-          "Bindings come only from inputs your drive team recorded this season. Keep them in sync with robot code, Subsystems, and FMEA.",
+          "Bindings come only from inputs your drive team recorded this season. Keep them in sync with robot code, Subsystems, and Failure log.",
       };
   }
 }
 
 /**
- * Soft-UI next actions for Control Map empty/setup shells.
+ * Soft-UI next actions for Control map empty/setup shells.
  * Points at Subsystems / FMEA / Practice — never invents DEMO bindings.
  */
 export function controlMapNextActions(input: {
@@ -154,7 +154,7 @@ export function controlMapNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before mapping controls.",
+          detail: "Choose your team before mapping controls.",
           href: "/workspace",
           primary: true,
         },
@@ -166,7 +166,7 @@ export function controlMapNextActions(input: {
         },
         {
           id: "fmea",
-          label: "Open FMEA",
+          label: "Open Failure log",
           detail: "Failure modes stay blank until scored.",
           href: hubHref("/build", "fmea", null),
         },
@@ -182,7 +182,7 @@ export function controlMapNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Finish membership setup so Control Map can load.",
+        detail: "Finish membership setup so Control map can load.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
       },
@@ -194,7 +194,7 @@ export function controlMapNextActions(input: {
       },
       {
         id: "fmea",
-        label: "Open FMEA",
+        label: "Open Failure log",
         detail: "High-risk actuators often need the clearest driver-station labels.",
         href: hubHref("/build", "fmea", orgId),
       },
@@ -211,7 +211,7 @@ export function controlMapNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Control Map",
+        label: "Retry Control map",
         detail: "Reload real bindings.",
         href: withOrgHref("/control-map", orgId),
         primary: true,
@@ -219,12 +219,12 @@ export function controlMapNextActions(input: {
       {
         id: "subsystems",
         label: "Open Subsystems",
-        detail: "Specs stay available while Control Map is down.",
+        detail: "Specs stay available while Control map is down.",
         href: withOrgHref("/subsystems", orgId),
       },
       {
         id: "fmea",
-        label: "Open FMEA",
+        label: "Open Failure log",
         detail: "Review failure modes while bindings reload.",
         href: hubHref("/build", "fmea", orgId),
       },
@@ -248,7 +248,7 @@ export function controlMapNextActions(input: {
       },
       {
         id: "fmea",
-        label: "Scan FMEA modes",
+        label: "Scan Failure log",
         detail: "Risky actuators deserve the most obvious driver-station labels.",
         href: hubHref("/build", "fmea", orgId),
       },
@@ -291,8 +291,8 @@ export function controlMapNextActions(input: {
     },
     {
       id: "fmea",
-      label: "Open FMEA",
-      detail: "When a binding changes a high-RPN mechanism, update failure notes too.",
+      label: "Open Failure log",
+      detail: "When a binding changes a high-priority mechanism, update failure notes too.",
       href: hubHref("/build", "fmea", orgId),
     },
     {

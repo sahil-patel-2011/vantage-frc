@@ -244,7 +244,7 @@ export default function SupportTicketsClient() {
         <OfflineBanner feature="Support" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
-          title={failure ? failure.title : "Loading support…"}
+          title={failure ? failure.title : "Opening Support"}
           description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >
@@ -276,7 +276,7 @@ export default function SupportTicketsClient() {
         <OfflineBanner feature="Support" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
-          badge="Setup required"
+          badge="Needs setup"
           badgeTone="setup"
           title={view.message ?? "Choose your team first."}
           description="Choose your team, then return here to submit a real ticket."
@@ -362,9 +362,9 @@ export default function SupportTicketsClient() {
               placeholder="What you were doing, what you expected, and what happened instead. Include the URL if you can."
             />
           </label>
-          <button className="primary-action" type="submit" disabled={busy || !subject.trim() || !body.trim()}>
+          <Button variant="primary" type="submit" disabled={busy || !subject.trim() || !body.trim()}>
             {busy ? "Sending…" : "Submit ticket"}
-          </button>
+          </Button>
         </form>
       </section>
 

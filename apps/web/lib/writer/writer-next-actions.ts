@@ -80,7 +80,7 @@ export function writerNextActions(ctx: WriterNextActionContext): WriterNextActio
     } else if (link.id === "knowledge") {
       actions.push({
         id: "knowledge",
-        label: "Open Team Knowledge",
+        label: "Open Playbook",
         detail: "Ground pitches in recorded team facts context, not invented background.",
         href: link.href,
       });

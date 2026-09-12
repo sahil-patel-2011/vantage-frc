@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "match-notes-timeline",
-  title: "Match Note Timeline",
+  title: "Match notes",
   route: "/match-notes-timeline",
   apiRoute: "/api/match-notes-timeline",
   hub: "Competition",

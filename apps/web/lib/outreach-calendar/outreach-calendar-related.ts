@@ -2,12 +2,12 @@ import { hubHref } from "../nav/hubs";
 import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Outreach Calendar (never DEMO reach metrics). */
+/** Soft-UI related surfaces for Outreach calendar (never DEMO reach metrics). */
 export const OUTREACH_CALENDAR_RELATED_LINKS = [
-  { id: "impact", label: "Community Impact", kind: "business" as const, tab: "impact" },
-  { id: "media-kit", label: "Media Kit", kind: "business" as const, tab: "media-kit" },
+  { id: "impact", label: "Impact", kind: "business" as const, tab: "impact" },
+  { id: "media-kit", label: "Media kit", kind: "business" as const, tab: "media-kit" },
   { id: "fundraisers", label: "Fundraisers", kind: "business" as const, tab: "fundraisers" },
-  { id: "sponsor-suite", label: "Sponsor Suite", kind: "business" as const, tab: "sponsor-suite" },
+  { id: "sponsor-suite", label: "Sponsor suite", kind: "business" as const, tab: "sponsor-suite" },
 ] as const;
 
 export type OutreachCalendarRelatedId = (typeof OUTREACH_CALENDAR_RELATED_LINKS)[number]["id"];
@@ -18,7 +18,7 @@ export type OutreachCalendarRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — Impact / Media Kit / Fundraisers. */
+/** Focused Soft-UI strip — Impact / Media kit / Fundraisers. */
 export const OUTREACH_CALENDAR_RELATED_INCLUDE: OutreachCalendarRelatedId[] = [
   "impact",
   "media-kit",
@@ -26,7 +26,7 @@ export const OUTREACH_CALENDAR_RELATED_INCLUDE: OutreachCalendarRelatedId[] = [
 ];
 
 /**
- * Soft-UI cross-links from Outreach Calendar → Impact / Media Kit / Fundraisers.
+ * Soft-UI cross-links from Outreach calendar → Impact / Media kit / Fundraisers.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function outreachCalendarRelatedLinks(
@@ -86,13 +86,13 @@ export function outreachCalendarSetupSteps(orgId?: string | null): OutreachCalen
     },
     {
       id: "impact",
-      label: "Open Community Impact",
+      label: "Open Impact",
       detail: "Logged impact stays empty until real evidence lands.",
       href: hubHref("/business", "impact", orgId),
     },
     {
       id: "media-kit",
-      label: "Open Media Kit",
+      label: "Open Media kit",
       detail: "Media assets stay blank until you record them.",
       href: hubHref("/business", "media-kit", orgId),
     },
@@ -117,7 +117,7 @@ export function isOutreachCalendarBoardEmpty(input: { eventCount: number }): boo
   return input.eventCount === 0;
 }
 
-/** Classify Outreach Calendar Soft-UI shell — never invents DEMO reach metrics. */
+/** Classify Outreach calendar Soft-UI shell — never invents DEMO reach metrics. */
 export function classifyOutreachCalendarShell(input: {
   loading: boolean;
   fetchFailed?: boolean;
@@ -138,7 +138,7 @@ export function outreachCalendarShellCopy(kind: OutreachCalendarShellKind): Outr
     case "loading":
       return {
         kind,
-        title: "Loading Outreach Calendar…",
+        title: "Opening Outreach calendar…",
         description:
           "Checking which team you are on and scheduled events.",
       };
@@ -146,9 +146,9 @@ export function outreachCalendarShellCopy(kind: OutreachCalendarShellKind): Outr
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load the Outreach Calendar",
+        title: "Could not load Outreach calendar",
         description:
-          "A network or server issue blocked the calendar. Retry, or open Community Impact / Media Kit while it reloads.",
+          "A network or server issue blocked the calendar. Retry, or open Impact / Media kit while it reloads.",
       };
     case "setup":
       return {
@@ -164,7 +164,7 @@ export function outreachCalendarShellCopy(kind: OutreachCalendarShellKind): Outr
         badge: "No events yet",
         title: "Schedule your first outreach event",
         description:
-          "Hours and reach stay blank until you schedule real events. Cross-check Community Impact and Media Kit.",
+          "Hours and reach stay blank until you schedule real events. Cross-check Impact and Media kit.",
       };
     default:
       return {
@@ -177,8 +177,8 @@ export function outreachCalendarShellCopy(kind: OutreachCalendarShellKind): Outr
 }
 
 /**
- * Soft-UI next actions for Outreach Calendar empty/setup shells.
- * Points at schedule / Impact / Media Kit — never invents DEMO reach metrics.
+ * Soft-UI next actions for Outreach calendar empty/setup shells.
+ * Points at schedule / Impact / Media kit — never invents DEMO reach metrics.
  */
 export function outreachCalendarNextActions(input: {
   orgId?: string | null;
@@ -199,21 +199,21 @@ export function outreachCalendarNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Outreach Calendar",
+        label: "Retry Outreach calendar",
         detail: "Reload real scheduled events.",
         href: withOrgHref("/outreach-calendar", orgId),
         primary: true,
       },
       {
         id: "impact",
-        label: "Open Community Impact",
+        label: "Open Impact",
         detail: "Impact log stays available while the calendar reloads.",
         href: hubHref("/business", "impact", orgId),
       },
       {
         id: "media-kit",
-        label: "Open Media Kit",
-        detail: "Media Kit stays available while the calendar reloads.",
+        label: "Open Media kit",
+        detail: "Media kit stays available while the calendar reloads.",
         href: hubHref("/business", "media-kit", orgId),
       },
     ];
@@ -230,13 +230,13 @@ export function outreachCalendarNextActions(input: {
       },
       {
         id: "impact",
-        label: "Open Community Impact",
+        label: "Open Impact",
         detail: "Log completed outreach as real evidence.",
         href: hubHref("/business", "impact", orgId),
       },
       {
         id: "media-kit",
-        label: "Open Media Kit",
+        label: "Open Media kit",
         detail: "Pair outreach with real media assets.",
         href: hubHref("/business", "media-kit", orgId),
       },
@@ -253,13 +253,13 @@ export function outreachCalendarNextActions(input: {
     },
     {
       id: "impact",
-      label: "Open Community Impact",
+      label: "Open Impact",
       detail: "Convert completed events into logged impact evidence.",
       href: hubHref("/business", "impact", orgId),
     },
     {
       id: "media-kit",
-      label: "Open Media Kit",
+      label: "Open Media kit",
       detail: "Keep press assets grounded in recorded logos and bios.",
       href: hubHref("/business", "media-kit", orgId),
     },

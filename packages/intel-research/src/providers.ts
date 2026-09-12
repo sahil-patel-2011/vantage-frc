@@ -1,4 +1,5 @@
 import type { SearchResult, SummaryProvider, WebSearchProvider } from "./types";
+import { studentCacheSourceLabel } from "./student-copy";
 
 export class FixtureSearchProvider implements WebSearchProvider {
   readonly name = "local-fixture";
@@ -47,11 +48,11 @@ export class LocalSummaryProvider implements SummaryProvider {
     const text = [
       `Team ${input.teamNumber}${input.nickname ? ` (${input.nickname})` : ""}`,
       current?.epaTotal == null
-        ? "does not yet have enough verified performance data for an EPA assessment."
-        : `currently measures ${current.epaTotal.toFixed(1)} EPA from ${current.source}.`,
+        ? "does not yet have enough verified performance data for a season-rating read."
+        : `currently measures ${current.epaTotal.toFixed(1)} season rating from ${studentCacheSourceLabel(current.source)}.`,
       input.scoutObservations.length
-        ? `${input.scoutObservations.length} organization scouting observations add event-specific context.`
-        : "No organization scouting observations are available.",
+        ? `${input.scoutObservations.length} team scouting observations add event-specific context.`
+        : "No team scouting observations are available.",
       sources.length
         ? `Qualitative reports (verify at the linked sources): ${sources.join(" ")}`
         : "No sufficiently confident web research is available.",

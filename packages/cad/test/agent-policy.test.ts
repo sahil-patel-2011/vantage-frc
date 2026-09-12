@@ -24,7 +24,8 @@ describe("CAD agent policy and mock fusion plugin", () => {
       summary: "intake",
       assumptions: [{ name: "Envelope dimensions", value: "12in", needsConfirmation: false }],
     });
-    expect(plan).toHaveLength(3);
+    expect(plan).toHaveLength(4);
+    expect(plan[0]?.operation).toBe("create_drawing");
     expect(plan.every((step) => step.requiresApproval)).toBe(true);
     expect(canAutoRunWithinAllowlist("verify_topology", true)).toBe(true);
     expect(canAutoRunWithinAllowlist("create_extrude", true)).toBe(false);
@@ -80,7 +81,10 @@ describe("CAD agent policy and mock fusion plugin", () => {
         },
       },
     );
-    expect(plan[0]?.parameters).toMatchObject({ units: "in" });
+    const sketch = plan.find((step) => step.operation === "create_sketch");
+    expect(sketch?.parameters).toMatchObject({ units: "in" });
+    expect(sketch?.requiresApproval).toBe(true);
+    expect(plan[0]?.operation).toBe("create_drawing");
     expect(plan[0]?.requiresApproval).toBe(true);
   });
 

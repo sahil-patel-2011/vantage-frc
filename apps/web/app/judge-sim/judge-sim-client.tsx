@@ -47,7 +47,7 @@ async function persistJudgeSimSnapshot(
     await putFeatureSnapshot("judge-sim", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("judge-sim", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Judge-Pitch already painted; IndexedDB is best-effort.
+    // Live Judge pitch already painted; IndexedDB is best-effort.
   }
 }
 
@@ -129,10 +129,10 @@ function JudgeSimShell({
         breadcrumbs={
           <>
             <a href={businessHref}>Business</a>
-            {" / Judge-Pitch Simulator"}
+            {" / Judge pitch"}
           </>
         }
-        title="Judge-Pitch Simulator"
+        title="Judge pitch"
         description={description}
       >
         <JudgeSimRelatedStrip orgId={orgId} />
@@ -163,7 +163,7 @@ function JudgeSimShell({
           <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
         ) : null}
         {shell === "empty" ? (
-          <Button as="a" variant="primary" href={impactHref}>Open Community Impact</Button>
+          <Button as="a" variant="primary" href={impactHref}>Open Impact</Button>
         ) : null}
       </EmptyState>
       {shell === "ready" ? <JudgeSimNextActionsPanel actions={actions} /> : null}
@@ -224,7 +224,7 @@ export default function JudgeSimClient() {
         if (!response.ok || !isJudgeSimView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Judge-Pitch. Showing the last copy on this device.");
+            setError("Could not refresh Judge pitch. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -239,7 +239,7 @@ export default function JudgeSimClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Judge-Pitch. Showing the last copy on this device.");
+          setError("Could not refresh Judge pitch. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -313,7 +313,7 @@ export default function JudgeSimClient() {
   if (shell === "loading") {
     return (
       <JudgeSimShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Judge-Pitch Simulator" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Judge pitch" fromCache={fromCache} cachedAt={cachedAt} />
       </JudgeSimShell>
     );
   }
@@ -327,7 +327,7 @@ export default function JudgeSimClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Judge-Pitch Simulator" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Judge pitch" fromCache={fromCache} cachedAt={cachedAt} />
       </JudgeSimShell>
     );
   }
@@ -339,7 +339,7 @@ export default function JudgeSimClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Judge-Pitch Simulator" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Judge pitch" fromCache={fromCache} cachedAt={cachedAt} />
       </JudgeSimShell>
     );
   }
@@ -347,7 +347,7 @@ export default function JudgeSimClient() {
   if (view?.status !== "live") {
     return (
       <JudgeSimShell description={shellCopy.description} orgId={orgId} shell="setup">
-        <OfflineBanner feature="Judge-Pitch Simulator" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Judge pitch" fromCache={fromCache} cachedAt={cachedAt} />
       </JudgeSimShell>
     );
   }
@@ -358,11 +358,11 @@ export default function JudgeSimClient() {
         breadcrumbs={
           <>
             <a href={businessHref}>Business</a>
-            {" / Judge-Pitch Simulator"}
+            {" / Judge pitch"}
           </>
         }
-        title="Judge-Pitch Simulator"
-        description="Practice judge Q&A and get graded against your own logged evidence — any claim you can't back gets flagged before a real judge catches it. Cross-check Community Impact, Impact Essay, and Awards."
+        title="Judge pitch"
+        description="Practice judge Q&A and get graded against your own logged evidence — any claim you can't back gets flagged before a real judge catches it. Cross-check Impact, Impact essay, and Awards."
       >
         <div className="judge-sim-header-actions">
           {view.seasons.length > 0 ? (
@@ -391,7 +391,7 @@ export default function JudgeSimClient() {
           ))}
         </div>
       </PageHeader>
-      <OfflineBanner feature="Judge-Pitch Simulator" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Judge pitch" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -402,7 +402,7 @@ export default function JudgeSimClient() {
       <JudgeSimNextActionsPanel actions={shell === "ready" ? nextActions : []} />
 
       {shouldShowJudgeSimSummaryTiles(sessionCount) ? (
-        <section className="judge-sim-stats" aria-label="Judge-Pitch counts">
+        <section className="judge-sim-stats" aria-label="Judge pitch counts">
           <div>
             <strong>{formatJudgeSimReadiness(readinessScore, sessionCount, true)}</strong>
             <span className="app-muted" style={{ display: "block" }}>
@@ -455,11 +455,11 @@ export default function JudgeSimClient() {
         <SessionsList view={view} busy={busy} mutate={mutate} />
         <EvidenceLogForm busy={busy} mutate={mutate} />
         <EvidenceList view={view} busy={busy} mutate={mutate} />
-        <Panel className="judge-sim-tip" aria-label="Judge-Pitch tip">
+        <Panel className="judge-sim-tip" aria-label="Judge pitch tip">
           <span className="eyebrow">Grounding path</span>
           <p className="app-muted" style={{ marginTop: 8 }}>
-            Keep outreach facts in <a href={impactHref}>Community Impact</a>, draft award language in{" "}
-            <a href={essayHref}>Impact Essay</a>, and upload packets in <a href={awardsHref}>Awards</a>
+            Keep outreach facts in <a href={impactHref}>Impact</a>, draft award language in{" "}
+            <a href={essayHref}>Impact essay</a>, and upload packets in <a href={awardsHref}>Awards</a>
           </p>
         </Panel>
       </div>

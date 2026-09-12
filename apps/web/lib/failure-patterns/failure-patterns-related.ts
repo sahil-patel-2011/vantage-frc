@@ -1,11 +1,11 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Repeat Failure Patterns (never DEMO clusters). */
+/** Soft-UI related surfaces for Failure patterns (never DEMO clusters). */
 export const FAILURE_PATTERNS_RELATED_LINKS = [
-  { id: "fmea", label: "FMEA", tab: "fmea" },
+  { id: "fmea", label: "Failure log", tab: "fmea" },
   { id: "spare-robot-kit", label: "Spare Kit", tab: "spare-robot-kit" },
-  { id: "incident-heatmap", label: "Incident Heatmap", tab: "incident-heatmap" },
+  { id: "incident-heatmap", label: "Incidents", tab: "incident-heatmap" },
   { id: "pit-repair-triage", label: "Pit Triage", hub: "/competition" as const, tab: "pit-repair-triage" },
 ] as const;
 
@@ -76,13 +76,13 @@ export function failurePatternsSetupSteps(orgId?: string | null): FailurePattern
     },
     {
       id: "fmea",
-      label: "Open FMEA",
+      label: "Open Failure log",
       detail: "Log real subsystem failures — clusters only form from logged events.",
       href: hubHref("/build", "fmea", orgId),
     },
     {
       id: "triage",
-      label: "Open Pit Repair Triage",
+      label: "Open Repair triage",
       detail: "Pit failures feed the same subsystem history.",
       href: hubHref("/competition", "pit-repair-triage", orgId),
     },
@@ -119,8 +119,8 @@ export function failurePatternsShellCopy(kind: FailurePatternsShellKind): Failur
     case "loading":
       return {
         kind,
-        title: "Loading Repeat Failure Patterns…",
-        description: "Checking which team you are on and FMEA history.",
+        title: "Opening Failure patterns",
+        description: "Checking which team you are on and Failure log history.",
       };
     case "error":
       return {
@@ -128,12 +128,12 @@ export function failurePatternsShellCopy(kind: FailurePatternsShellKind): Failur
         badge: "Unavailable",
         title: "Could not load failure patterns",
         description:
-          "A network or server issue blocked clustering. Retry, or open FMEA while it reloads.",
+          "A network or server issue blocked clustering. Retry, or open Failure log while it reloads.",
       };
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Choose your team before clustering.",
@@ -142,14 +142,14 @@ export function failurePatternsShellCopy(kind: FailurePatternsShellKind): Failur
       return {
         kind,
         badge: "No failures logged",
-        title: "Log FMEA or incident failures",
+        title: "Log failures or incidents",
         description: "Clusters appear only after real failures are logged.",
       };
     default:
       return {
         kind: "ready",
         title: "Repeat failure clusters",
-        description: "Clusters from logged FMEA and incidents only.",
+        description: "Clusters from logged Failure log and incidents only.",
       };
   }
 }
@@ -170,13 +170,13 @@ export function failurePatternsNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before logging failures.",
+          detail: "Choose your team before logging failures.",
           href: "/workspace",
           primary: true,
         },
         {
           id: "fmea",
-          label: "Open FMEA",
+          label: "Open Failure log",
           detail: "Failure history stays blank until your team logs modes.",
           href: hubHref("/build", "fmea", null),
         },
@@ -192,7 +192,7 @@ export function failurePatternsNextActions(input: {
       },
       {
         id: "fmea",
-        label: "Open FMEA",
+        label: "Open Failure log",
         detail: "Log subsystem failures that drive clusters.",
         href: hubHref("/build", "fmea", orgId),
       },
@@ -203,15 +203,15 @@ export function failurePatternsNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Failure Patterns",
-        detail: "Reload real FMEA clusters.",
+        label: "Retry Failure patterns",
+        detail: "Reload real Failure log clusters.",
         href: withOrgHref("/failure-patterns", orgId),
         primary: true,
       },
       {
         id: "fmea",
-        label: "Open FMEA",
-        detail: "FMEA stays available while clusters reload.",
+        label: "Open Failure log",
+        detail: "Failure log stays available while clusters reload.",
         href: hubHref("/build", "fmea", orgId),
       },
     ];
@@ -221,21 +221,21 @@ export function failurePatternsNextActions(input: {
     return [
       {
         id: "fmea",
-        label: "Log FMEA failures",
+        label: "Log failures",
         detail: "Clusters stay blank until failures are logged.",
         href: hubHref("/build", "fmea", orgId),
         primary: true,
       },
       {
         id: "triage",
-        label: "Open Pit Repair Triage",
+        label: "Open Repair triage",
         detail: "Log pit failures that feed subsystem history.",
         href: hubHref("/competition", "pit-repair-triage", orgId),
       },
       {
         id: "spare-kit",
-        label: "Open Spare Robot Kit",
-        detail: "Pack lists stay empty until FMEA history exists.",
+        label: "Open Spare kit",
+        detail: "Pack lists stay empty until Failure log history exists.",
         href: hubHref("/build", "spare-robot-kit", orgId),
       },
     ];
@@ -254,13 +254,13 @@ export function failurePatternsNextActions(input: {
     },
     {
       id: "fmea",
-      label: "Open FMEA",
+      label: "Open Failure log",
       detail: "Refresh failure history that drives clusters.",
       href: hubHref("/build", "fmea", orgId),
     },
     {
       id: "spare-kit",
-      label: "Open Spare Robot Kit",
+      label: "Open Spare kit",
       detail: "Pack spares for repeating failure modes.",
       href: hubHref("/build", "spare-robot-kit", orgId),
     },

@@ -2,11 +2,11 @@ import { hubHref } from "../nav/hubs";
 import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Equipment Maintenance (never DEMO service logs). */
+/** Soft-UI related surfaces for Equipment (never DEMO service logs). */
 export const EQUIPMENT_MAINTENANCE_RELATED_LINKS = [
   { id: "tool-checkout", label: "Tool Checkout", tab: "tool-checkout" },
-  { id: "safety-training", label: "Safety Training", tab: "safety-training" },
-  { id: "checklist-library", label: "Checklist Library", tab: "checklist-library" },
+  { id: "safety-training", label: "Safety", tab: "safety-training" },
+  { id: "checklist-library", label: "Checklists", tab: "checklist-library" },
   { id: "pit-map-planner", label: "Pit Map", tab: "pit-map-planner" },
 ] as const;
 
@@ -74,13 +74,13 @@ export function equipmentMaintenanceSetupSteps(orgId?: string | null): Equipment
     },
     {
       id: "tools",
-      label: "Open Tool Checkout",
+      label: "Open Tool checkout",
       detail: "Hand tools that leave the shop sit beside machine maintenance.",
       href: hubHref("/team", "tool-checkout", orgId),
     },
     {
       id: "safety",
-      label: "Open Safety Training",
+      label: "Open Safety",
       detail: "Operators who service machines need completed training.",
       href: hubHref("/team", "safety-training", orgId),
     },
@@ -117,21 +117,21 @@ export function equipmentMaintenanceShellCopy(kind: EquipmentMaintenanceShellKin
     case "loading":
       return {
         kind,
-        title: "Loading Equipment Maintenance…",
+        title: "Opening Equipment…",
         description: "Checking which team you are on and service logs.",
       };
     case "error":
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Equipment Maintenance",
+        title: "Could not load Equipment",
         description:
           "A network or server issue blocked equipment logs. Retry, or open Tool Checkout while it reloads.",
       };
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Choose your team before registering real shop machines.",
@@ -174,20 +174,20 @@ export function equipmentMaintenanceNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Equipment Maintenance",
+        label: "Retry Equipment",
         detail: "Reload real service logs.",
         href: withOrgHref("/equipment-maintenance", orgId),
         primary: true,
       },
       {
         id: "tools",
-        label: "Open Tool Checkout",
+        label: "Open Tool checkout",
         detail: "Tool loans stay available while maintenance reloads.",
         href: hubHref("/team", "tool-checkout", orgId),
       },
       {
         id: "checklists",
-        label: "Open Checklist Library",
+        label: "Open Checklists",
         detail: "Checklists stay available while maintenance reloads.",
         href: hubHref("/team", "checklist-library", orgId),
       },
@@ -205,7 +205,7 @@ export function equipmentMaintenanceNextActions(input: {
       },
       {
         id: "tools",
-        label: "Open Tool Checkout",
+        label: "Open Tool checkout",
         detail: "Register hand tools beside future machines.",
         href: hubHref("/team", "tool-checkout", orgId),
       },
@@ -231,13 +231,13 @@ export function equipmentMaintenanceNextActions(input: {
     },
     {
       id: "tools",
-      label: "Open Tool Checkout",
+      label: "Open Tool checkout",
       detail: "Cross-check hand-tool loans with machine service.",
       href: hubHref("/team", "tool-checkout", orgId),
     },
     {
       id: "safety",
-      label: "Open Safety Training",
+      label: "Open Safety",
       detail: "Confirm service operators completed required training.",
       href: hubHref("/team", "safety-training", orgId),
     },

@@ -9,7 +9,7 @@ export const CHEMISTRY_RELATED_LINKS = [
   { id: "draft", label: "Draft board", kind: "path" as const, path: "/strategy/draft" },
   { id: "scouting", label: "Scouting", kind: "hub" as const, tab: "scouting" },
   { id: "pick-clock", label: "Pick clock", kind: "path" as const, path: "/pick-clock" },
-  { id: "team-data", label: "Team Data", kind: "path" as const, path: "/team/data" },
+  { id: "team-data", label: "Team data", kind: "path" as const, path: "/team/data" },
 ] as const;
 
 export type ChemistryRelatedId = (typeof CHEMISTRY_RELATED_LINKS)[number]["id"];
@@ -160,7 +160,7 @@ export function chemistryShellCopy(kind: ChemistryShellKind): ChemistryEmptyCopy
     case "loading":
       return {
         kind,
-        title: "Loading alliance chemistry…",
+        title: "Opening Chemistry",
         description: "Checking which team you are on and event ratings.",
       };
     case "error":
@@ -254,7 +254,7 @@ export function chemistryNextActions(input: {
       return dropRelatedStripDuplicates(orgId, [
         {
           id: "team-data",
-          label: "Sync Team Data",
+          label: "Sync Team data",
           detail: "Load match and ranking rows for this event. Partner-fit stays blank until then.",
           href: withOrgHref("/team/data", orgId),
           primary: true,

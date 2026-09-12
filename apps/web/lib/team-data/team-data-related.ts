@@ -1,10 +1,10 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Team Data / TBA sync (never DEMO metrics). */
+/** Soft-UI related surfaces for Team data / TBA sync (never DEMO metrics). */
 export const TEAM_DATA_RELATED_LINKS = [
   { id: "schedule", label: "Schedule", kind: "path" as const, path: "/schedule" },
-  { id: "command", label: "Event Day", kind: "competition" as const, tab: "command" },
+  { id: "command", label: "Event day", kind: "competition" as const, tab: "command" },
   { id: "strategy", label: "Strategy", kind: "path" as const, path: "/strategy" },
   { id: "exports", label: "Exports", kind: "path" as const, path: "/exports" },
   { id: "workspace", label: "Your team", kind: "path" as const, path: "/workspace" },
@@ -18,14 +18,14 @@ export type TeamDataRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — Schedule / Event Day / Strategy first. */
+/** Focused Soft-UI strip — Schedule / Event day / Strategy first. */
 export const TEAM_DATA_RELATED_INCLUDE: TeamDataRelatedId[] = [
   "schedule",
   "command",
   "strategy",
 ];
 
-/** Cross-links for Team Data Soft-UI (never DEMO team metrics). */
+/** Cross-links for Team data Soft-UI (never DEMO team metrics). */
 export function teamDataRelatedLinks(
   orgId?: string | null,
   options?: { active?: TeamDataRelatedId; include?: TeamDataRelatedId[] },
@@ -54,8 +54,8 @@ export type TeamDataNextAction = {
 };
 
 /**
- * Soft-UI next actions for Team Data empty/setup shells.
- * Points at real Schedule / Event Day / Strategy paths — never DEMO metrics.
+ * Soft-UI next actions for Team data empty/setup shells.
+ * Points at real Schedule / Event day / Strategy paths — never DEMO metrics.
  */
 export function teamDataNextActions(input: {
   orgId?: string | null;
@@ -82,7 +82,7 @@ export function teamDataNextActions(input: {
         {
           id: "schedule",
           label: "Open Schedule",
-          detail: "Match boards stay empty until a team and active event sync real TBA rows.",
+          detail: "Match boards stay empty until a team and active event sync official match rows.",
           href: withOrgHref("/schedule", null),
         },
       ];
@@ -93,14 +93,14 @@ export function teamDataNextActions(input: {
         {
           id: "workspace",
           label: "Set active event",
-          detail: "Your team’s active event is what Team Data syncs — empty until you choose one.",
+          detail: "Your team’s active event is what Team data syncs — empty until you choose one.",
           href: withOrgHref("/workspace", orgId),
           primary: true,
         },
         {
           id: "command",
-          label: "Open Event Day",
-          detail: "Confirm day-of context uses the same active event as TBA sync.",
+          label: "Open Event day",
+          detail: "Confirm day-of context uses the same active event as official match sync.",
           href: hubHref("/competition", "command", orgId),
         },
         {
@@ -130,7 +130,7 @@ export function teamDataNextActions(input: {
         {
           id: "strategy",
           label: "Open Strategy",
-          detail: "Win/loss stays blank until rankings from The Blue Alliance and Statbotics are saved.",
+          detail: "Win/loss stays blank until official match rankings and season ratings are saved.",
           href: withOrgHref("/strategy", orgId),
         },
       ];
@@ -140,13 +140,13 @@ export function teamDataNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Finish membership or event setup so Team Data can resolve your org.",
+        detail: "Finish membership or event setup so Team data can resolve your org.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
       },
       {
         id: "command",
-        label: "Open Event Day",
+        label: "Open Event day",
         detail: "Day-of command uses the same active event this page syncs.",
         href: hubHref("/competition", "command", orgId),
       },
@@ -163,7 +163,7 @@ export function teamDataNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Team Data",
+        label: "Retry Team data",
         detail: "Reload inventory and ranking health.",
         href: withOrgHref("/team/data", orgId),
         primary: true,
@@ -188,7 +188,7 @@ export function teamDataNextActions(input: {
       {
         id: "sync",
         label: "Sync active event",
-        detail: "Pull matches and team numbers from The Blue Alliance.",
+        detail: "Pull official matches and team numbers.",
         href: withOrgHref("/team/data", orgId),
         primary: true,
       },
@@ -200,8 +200,8 @@ export function teamDataNextActions(input: {
       },
       {
         id: "command",
-        label: "Open Event Day",
-        detail: "Pit queue and coverage wait on the same TBA event cache.",
+        label: "Open Event day",
+        detail: "Pit queue and coverage wait on the same official event cache.",
         href: hubHref("/competition", "command", orgId),
       },
       {
@@ -223,8 +223,8 @@ export function teamDataNextActions(input: {
     },
     {
       id: "command",
-      label: "Open Event Day",
-      detail: "Command center for pit ops tied to this event’s TBA schedule.",
+      label: "Open Event day",
+      detail: "Command center for pit ops tied to this event’s official schedule.",
       href: hubHref("/competition", "command", orgId),
     },
     {
@@ -242,7 +242,7 @@ export function teamDataNextActions(input: {
   ].slice(0, 4);
 }
 
-/** Classify Team Data Soft-UI shell — never invents DEMO team metrics. */
+/** Classify Team data Soft-UI shell — never invents DEMO team metrics. */
 export function classifyTeamDataShell(input: {
   loading: boolean;
   fetchFailed?: boolean;

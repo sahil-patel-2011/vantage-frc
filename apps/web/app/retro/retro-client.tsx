@@ -134,7 +134,7 @@ function RetroShell({
             {" / Retro"}
           </>
         }
-        title="Team Retrospective"
+        title="Retro"
         description={description}
       >
         <RetroRelatedStrip orgId={orgId} />
@@ -144,7 +144,7 @@ function RetroShell({
         soft
         badge={
           shell === "setup"
-            ? "Setup required"
+            ? "Needs setup"
             : shell === "error"
               ? "Unavailable"
               : shell === "empty"
@@ -375,8 +375,8 @@ export default function RetroClient() {
             {" / Retro"}
           </>
         }
-        title="Team Retrospective"
-        description="Structured start/stop/continue retros with voting and tracked action items — plus an auto-compiled season postmortem from your decisions, risks, incidents, and FMEA log. Cross-check Messages, FMEA, and Decisions."
+        title="Retro"
+        description="Structured start/stop/continue retros with voting and tracked action items — plus an auto-compiled season postmortem from your decisions, risks, incidents, and Failure log. Cross-check Messages, Failure log, and Decisions."
       >
         <div className="retro-header-actions">
           {view.sessions.length > 0 ? (
@@ -808,7 +808,7 @@ function Postmortems({
         </div>
       ) : (
         <p className="app-muted" style={{ marginTop: 12 }}>
-          No postmortem compiled yet for this season. It draws from your decisions, risks, incidents, and FMEA log.
+          No postmortem compiled yet for this season. It draws from your decisions, risks, incidents, and Failure log.
         </p>
       )}
     </Panel>

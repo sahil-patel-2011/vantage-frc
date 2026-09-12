@@ -134,7 +134,7 @@ export function kickoffNextActions(input: {
     actions.push({
       id: "strategy",
       label: "Open Strategy",
-      detail: "Pick lists and match plans stay grounded in real scout/TBA facts.",
+      detail: "Pick lists and match plans stay grounded in real scout and official-match facts.",
       href: strategyHref,
     });
   }
@@ -142,7 +142,7 @@ export function kickoffNextActions(input: {
   if (actions.length < 5) {
     actions.push({
       id: "fmea",
-      label: "Log build risks in FMEA",
+      label: "Log build risks in Failure log",
       detail: "Capture mechanism risks as you commit to kickoff priorities.",
       href: hubHref("/build", "fmea", orgId),
     });

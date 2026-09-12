@@ -36,7 +36,7 @@ function setupSteps(orgId: string | null): WatchlistSetupStep[] {
     {
       id: "workspace",
       label: "Choose your team",
-      detail: "Choose your team to open Opponent Watchlist.",
+      detail: "Choose your team to open Watchlist.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -47,8 +47,8 @@ function setupSteps(orgId: string | null): WatchlistSetupStep[] {
     },
     {
       id: "epa-trend-alerts",
-      label: "Open EPA Trend Alerts",
-      detail: "EPA swings stay blank until you watch real teams.",
+      label: "Open Rating alerts",
+      detail: "Rating swings stay blank until you watch real teams.",
       href: hubHref("/competition", "epa-trend-alerts", orgId),
     },
     {

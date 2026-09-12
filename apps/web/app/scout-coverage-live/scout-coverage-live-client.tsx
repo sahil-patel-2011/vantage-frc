@@ -68,7 +68,7 @@ async function persistScoutCoverageLiveSnapshot(
     await putFeatureSnapshot("scout-coverage-live", cacheOrg, data);
     if (!orgHint) await putFeatureSnapshot("scout-coverage-live", "_", data);
   } catch {
-    // Live Scout Coverage Live already painted; IndexedDB is best-effort.
+    // Live Coverage already painted; IndexedDB is best-effort.
   }
 }
 
@@ -143,17 +143,17 @@ function ScoutCoverageLiveShell({
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Scout Coverage Live"}
+            {" / Coverage"}
           </>
         }
-        title="Scout Coverage Live"
+        title="Coverage"
         description={description}
       >
         <ScoutCoverageLiveRelatedStrip orgId={orgId} />
       </PageHeader>
       {children}
       {shell === "loading" ? (
-        <div aria-busy="true" aria-label="Loading scout coverage live">
+        <div aria-busy="true" aria-label="Opening Coverage">
           <SoftBlockSkeleton lines={4} />
         </div>
       ) : shell === "error" ? (
@@ -238,7 +238,7 @@ export default function ScoutCoverageLiveClient({ orgId: initialOrgId }: { orgId
         if (!response.ok || !isScoutCoverageLiveView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Scout Coverage Live. Showing the last copy on this device.");
+            setError("Could not refresh Coverage. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -254,7 +254,7 @@ export default function ScoutCoverageLiveClient({ orgId: initialOrgId }: { orgId
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Scout Coverage Live. Showing the last copy on this device.");
+          setError("Could not refresh Coverage. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -326,7 +326,7 @@ export default function ScoutCoverageLiveClient({ orgId: initialOrgId }: { orgId
   if (shell === "loading") {
     return (
       <ScoutCoverageLiveShell description={shellCopy.description} orgId={orgId} shell="loading">
-        <OfflineBanner feature="Scout Coverage Live" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Coverage" fromCache={fromCache} cachedAt={cachedAt} />
       </ScoutCoverageLiveShell>
     );
   }
@@ -339,7 +339,7 @@ export default function ScoutCoverageLiveClient({ orgId: initialOrgId }: { orgId
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Scout Coverage Live" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Coverage" fromCache={fromCache} cachedAt={cachedAt} />
       </ScoutCoverageLiveShell>
     );
   }
@@ -350,14 +350,14 @@ export default function ScoutCoverageLiveClient({ orgId: initialOrgId }: { orgId
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Scout Coverage Live" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Coverage" fromCache={fromCache} cachedAt={cachedAt} />
       </ScoutCoverageLiveShell>
     );
   }
   if (shell === "empty" || view?.status !== "live") {
     return (
       <ScoutCoverageLiveShell description={shellCopy.description} orgId={orgId} shell="empty">
-        <OfflineBanner feature="Scout Coverage Live" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Coverage" fromCache={fromCache} cachedAt={cachedAt} />
       </ScoutCoverageLiveShell>
     );
   }
@@ -368,10 +368,10 @@ export default function ScoutCoverageLiveClient({ orgId: initialOrgId }: { orgId
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Scout Coverage Live"}
+            {" / Coverage"}
           </>
         }
-        title="Scout Coverage Live"
+        title="Coverage"
         description="Zero and thin match/team cells from real scout-entry counts, with coordinator nudges mid-event."
       >
         <div className="scout-coverage-live-header-meta">
@@ -379,7 +379,7 @@ export default function ScoutCoverageLiveClient({ orgId: initialOrgId }: { orgId
         </div>
       </PageHeader>
 
-      <OfflineBanner feature="Scout Coverage Live" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Coverage" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="form-message" role="status">

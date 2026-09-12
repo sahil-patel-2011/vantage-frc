@@ -25,6 +25,7 @@ import {
   type TeamTagAssignment,
   type TeamTagPickReason,
 } from "../team-tags";
+import { studentPickClockLabel } from "../picklist-justifier/pick-clock-reasons";
 import type { PickClockReason } from "./pick-clock";
 
 const CLOCK_REASON_CAP = 4;
@@ -70,7 +71,7 @@ export function teamNumberFromPickClockTeam(input: {
 export function toPickClockReason(reason: TeamTagPickReason): PickClockReason | null {
   const label = reason.label.trim();
   if (!label || isDemoTagText(label) || isDemoTagText(reason.tagSlug)) return null;
-  return { label, tone: reason.tone };
+  return { label: studentPickClockLabel(label), tone: reason.tone };
 }
 
 /**
@@ -90,7 +91,7 @@ export function mergeTeamTagReasonsIntoClock(
     const key = normalizeReasonKey(line.label);
     if (!key || seen.has(key) || out.length >= cap) return;
     seen.add(key);
-    out.push({ label: line.label, tone: line.tone });
+    out.push({ label: studentPickClockLabel(line.label), tone: line.tone });
   };
 
   for (const reason of tagReasons) {
@@ -137,14 +138,14 @@ export function applyTeamTagReasonsToRecommendation<T extends PickClockTagReason
   tags: readonly TeamTagPickReason[] | ReadonlyMap<number, TeamTagPickReason[]>,
 ): T {
   const teamNumber = teamNumberFromPickClockTeam(recommendation);
-  if (teamNumber == null) return recommendation;
   const tagReasons =
-    tags instanceof Map
-      ? (tags.get(teamNumber) ?? [])
-      : Array.isArray(tags)
-        ? tags.filter((reason) => reason.teamNumber === teamNumber)
-        : [];
-  if (!tagReasons.length) return recommendation;
+    teamNumber == null
+      ? []
+      : tags instanceof Map
+        ? (tags.get(teamNumber) ?? [])
+        : Array.isArray(tags)
+          ? tags.filter((reason) => reason.teamNumber === teamNumber)
+          : [];
   return {
     ...recommendation,
     reasons: mergeTeamTagReasonsIntoClock(recommendation.reasons, tagReasons),

@@ -1,7 +1,7 @@
 import CadChangeRadarClient from "./cad-change-radar-client";
 
 export const metadata = {
-  title: "CAD Change Impact Radar",
+  title: "Change radar",
 };
 
 export default function CadChangeRadarPage() {

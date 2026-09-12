@@ -136,10 +136,10 @@ function BriefShell({
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Alliance-Partner Brief"}
+            {" / Partner brief"}
           </>
         }
-        title="Alliance-Partner Brief"
+        title="Partner brief"
         description={description}
       >
         <BriefRelatedStrip orgId={orgId} />
@@ -149,7 +149,7 @@ function BriefShell({
         soft
         badge={
           shell === "setup"
-            ? "Setup required"
+            ? "Needs setup"
             : shell === "error"
               ? "Unavailable"
               : shell === "empty"
@@ -226,7 +226,7 @@ export default function AlliancePartnerBriefClient() {
         if (!response.ok || !isAlliancePartnerBriefView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Alliance-Partner Brief. Showing the last copy on this device.");
+            setError("Could not refresh Partner brief. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -240,7 +240,7 @@ export default function AlliancePartnerBriefClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Alliance-Partner Brief. Showing the last copy on this device.");
+          setError("Could not refresh Partner brief. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -313,7 +313,7 @@ export default function AlliancePartnerBriefClient() {
   if (shell === "loading") {
     return (
       <BriefShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Alliance-Partner Brief" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Partner brief" fromCache={fromCache} cachedAt={cachedAt} />
       </BriefShell>
     );
   }
@@ -327,7 +327,7 @@ export default function AlliancePartnerBriefClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Alliance-Partner Brief" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Partner brief" fromCache={fromCache} cachedAt={cachedAt} />
       </BriefShell>
     );
   }
@@ -339,7 +339,7 @@ export default function AlliancePartnerBriefClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Alliance-Partner Brief" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Partner brief" fromCache={fromCache} cachedAt={cachedAt} />
       </BriefShell>
     );
   }
@@ -347,7 +347,7 @@ export default function AlliancePartnerBriefClient() {
   if (view?.status !== "live") {
     return (
       <BriefShell description={shellCopy.description} orgId={orgId} shell="setup">
-        <OfflineBanner feature="Alliance-Partner Brief" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Partner brief" fromCache={fromCache} cachedAt={cachedAt} />
       </BriefShell>
     );
   }
@@ -358,10 +358,10 @@ export default function AlliancePartnerBriefClient() {
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Alliance-Partner Brief"}
+            {" / Partner brief"}
           </>
         }
-        title="Alliance-Partner Brief"
+        title="Partner brief"
         description="Once alliance selection is finalized, an auto-brief on your actual partners' roles and strengths — grounded in event metrics and your own scouting. Cross-check Strategy, Alliance board, and Scouting."
       >
         <div className="alliance-partner-brief-header-actions">
@@ -372,7 +372,7 @@ export default function AlliancePartnerBriefClient() {
           ))}
         </div>
       </PageHeader>
-      <OfflineBanner feature="Alliance-Partner Brief" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Partner brief" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -407,7 +407,7 @@ export default function AlliancePartnerBriefClient() {
 
       <div className="alliance-partner-brief-layout">
         <LiveBody view={view} busy={busy} onSelectSeed={(seed) => load(seed)} onGenerate={generate} />
-        <Panel className="alliance-partner-brief-tip" aria-label="Alliance-Partner Brief tip">
+        <Panel className="alliance-partner-brief-tip" aria-label="Partner brief tip">
           <span className="eyebrow">Grounding path</span>
           <p className="app-muted" style={{ marginTop: 8 }}>
             Finalize captains on the{" "}
@@ -440,7 +440,7 @@ function SummaryTiles({
     },
   ];
   return (
-    <section className="alliance-partner-brief-stats" aria-label="Alliance-Partner Brief counts">
+    <section className="alliance-partner-brief-stats" aria-label="Partner brief counts">
       {tiles.map((tile) => (
         <div key={tile.label}>
           <strong>{tile.value}</strong>

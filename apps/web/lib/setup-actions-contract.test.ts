@@ -8,7 +8,7 @@
  *     setup screen rendering both showed a student the identical guided list
  *     twice. They derive from the steps now (see `setup-actions.ts`); this test
  *     is what stops a 27th pair from drifting back apart.
- *  2. Media's no-org next actions listed "Open Outreach Calendar" twice.
+ *  2. Media's no-org next actions listed "Open Outreach calendar" twice.
  *
  * The rules below are the general form of both, applied to every module rather
  * than to the ones someone happened to look at.

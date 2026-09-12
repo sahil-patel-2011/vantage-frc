@@ -4,13 +4,13 @@ import { describe, expect, it } from "vitest";
 
 const DIR = __dirname;
 
-describe("Alliance-Partner Brief last snapshot stays on the phone", () => {
+describe("Partner brief last snapshot stays on the phone", () => {
   it("reads and writes the alliance-brief IndexedDB feature cache", () => {
     const src = readFileSync(join(DIR, "alliance-partner-brief-client.tsx"), "utf8");
     expect(src).toMatch(/getFeatureSnapshot/);
     expect(src).toMatch(/putFeatureSnapshot/);
     expect(src).toMatch(/"alliance-brief"/);
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
-    expect(src).toMatch(/feature="Alliance-Partner Brief"/);
+    expect(src).toMatch(/feature="Partner brief"/);
   });
 });

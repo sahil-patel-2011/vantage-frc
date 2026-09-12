@@ -9,7 +9,7 @@ test.beforeEach(async ({ context }) => {
 
 const BANNED = ["Connect TBA", "The Blue Alliance", "TBA/Statbotics", "Setup required", "OAuth", "ONSHAPE_"];
 
-test("student this week can walk Event day packing/checklist → My Hours clock-in → Pick desk", async ({
+test("student this week can walk Event day packing/checklist → My hours clock-in → Pick desk", async ({
   page,
 }) => {
   test.setTimeout(120_000);
@@ -81,13 +81,13 @@ test("student this week can walk Event day packing/checklist → My Hours clock-
   await page.goto("/hours-self-view");
   await expect(page.locator("body")).not.toContainText("Application error");
   await page
-    .getByRole("heading", { name: /Loading My Hours/i })
+    .getByRole("heading", { name: /Loading My hours/i })
     .waitFor({ state: "hidden", timeout: 12_000 })
     .catch(() => undefined);
   for (const phrase of BANNED) {
-    await expect(page.locator("body"), `My Hours still shows ${phrase}`).not.toContainText(phrase);
+    await expect(page.locator("body"), `My hours still shows ${phrase}`).not.toContainText(phrase);
   }
-  await expect(page.getByRole("heading", { name: "My Hours" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "My hours" })).toBeVisible();
   const hoursPrimary = page.getByRole("button", { name: /Clock in|Clock out|Retry/i }).or(
     page.getByRole("link", { name: /Choose your team|Sign in again/i }),
   );

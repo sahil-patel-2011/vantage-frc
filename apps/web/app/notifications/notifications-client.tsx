@@ -246,8 +246,8 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
           soft
           badge={copy ? "Unavailable" : undefined}
           badgeTone={copy ? "setup" : undefined}
-          title={copy ? copy.title : "Loading inbox…"}
-          description={copy ? copy.description : "Loading your inbox."}
+          title={copy ? copy.title : "Opening Notifications"}
+          description={copy ? copy.description : "Checking your inbox."}
           aria-busy={!fetchFailed}
         >
           {copy?.primary ? (

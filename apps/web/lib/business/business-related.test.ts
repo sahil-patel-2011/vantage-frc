@@ -89,7 +89,7 @@ describe("business-related Soft-UI helpers", () => {
     expect(links.find((l) => l.id === "budget")?.href).toBe("/business?tab=budget&orgId=org-1");
   });
 
-  it("builds Season Costs Soft-UI cross-links to Orders, Fundraisers, and Business budget", () => {
+  it("builds Season costs Soft-UI cross-links to Orders, Fundraisers, and Business budget", () => {
     const links = businessRelatedLinks("org-1", {
       active: "costs",
       include: COSTS_RELATED_INCLUDE,
@@ -100,7 +100,7 @@ describe("business-related Soft-UI helpers", () => {
     expect(links.find((l) => l.id === "budget")?.href).toBe("/business?tab=budget&orgId=org-1");
   });
 
-  it("builds Community Impact Soft-UI cross-links to Awards, Outreach, and Writer", () => {
+  it("builds Impact Soft-UI cross-links to Awards, Outreach, and Writer", () => {
     const links = businessRelatedLinks("org-1", {
       active: "impact",
       include: IMPACT_RELATED_INCLUDE,

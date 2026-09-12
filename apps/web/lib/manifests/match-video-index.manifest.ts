@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "match-video-index",
-  title: "Match Video Index",
+  title: "Video index",
   route: "/match-video-index",
   apiRoute: "/api/match-video-index",
   hub: "Competition",

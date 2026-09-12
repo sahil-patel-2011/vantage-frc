@@ -6,9 +6,8 @@ import { offlineCapableLabel } from "../offline/shell-routes";
 const WEB = join(__dirname, "..", "..");
 
 /**
- * Student Season Goals / Morning standup / Meeting agenda chrome — not
- * leftover-product copy, remaining boards, or the testing-week Playwright
- * timeout slice.
+ * Student Goals / Standup / Meeting agenda chrome — not leftover-product
+ * copy, remaining boards, or the testing-week Playwright timeout slice.
  */
 const FILES = [
   "app/goals-tracker/goals-tracker-client.tsx",
@@ -45,7 +44,7 @@ function setupCase(src: string): string {
   return src.slice(start, end);
 }
 
-describe("Season Goals / standup / meeting agenda student chrome", () => {
+describe("Goals / standup / meeting agenda student chrome", () => {
   it("does not print Setup required or Meeting-agenda autopilot on this slice", () => {
     for (const rel of FILES) {
       const src = readFileSync(join(WEB, rel), "utf8");
@@ -63,8 +62,8 @@ describe("Season Goals / standup / meeting agenda student chrome", () => {
     const standup = readFileSync(join(WEB, "app/standup-digest/standup-digest-client.tsx"), "utf8");
     const meeting = readFileSync(join(WEB, "app/meeting-autopilot/meeting-autopilot-client.tsx"), "utf8");
 
-    expect(goals).toMatch(/title="Season Goals"/);
-    expect(standup).toMatch(/title="Morning standup"/);
+    expect(goals).toMatch(/title="Goals"/);
+    expect(standup).toMatch(/title="Standup"/);
     expect(meeting).toMatch(/title="Meeting agenda"/);
     expect(goals).toMatch(/badge="Needs setup"/);
     expect(standup).toMatch(/badge="Needs setup"/);
@@ -85,21 +84,21 @@ describe("Season Goals / standup / meeting agenda student chrome", () => {
       }
     }
 
-    expect(offlineCapableLabel("/goals-tracker")).toBe("Season Goals");
-    expect(offlineCapableLabel("/standup-digest")).toBe("Morning standup");
+    expect(offlineCapableLabel("/goals-tracker")).toBe("Goals");
+    expect(offlineCapableLabel("/standup-digest")).toBe("Standup");
     expect(offlineCapableLabel("/meeting-autopilot")).toBe("Meeting agenda");
   });
 
-  it("header related stays Hours / Standup / Season Goals / Meeting agenda / Calendar", () => {
+  it("header related stays Hours / Standup / Goals / Meeting agenda / Calendar", () => {
     const goals = readFileSync(join(WEB, "app/goals-tracker/goals-tracker-client.tsx"), "utf8");
     const standup = readFileSync(join(WEB, "app/standup-digest/standup-digest-client.tsx"), "utf8");
     const meeting = readFileSync(join(WEB, "app/meeting-autopilot/meeting-autopilot-client.tsx"), "utf8");
     expect(goals).toMatch(/>\s*Standup\s*</);
     expect(goals).toMatch(/>\s*Meeting agenda\s*</);
-    expect(standup).toMatch(/>\s*Season Goals\s*</);
+    expect(standup).toMatch(/>\s*Goals\s*</);
     expect(standup).toMatch(/>\s*Meeting agenda\s*</);
     expect(meeting).toMatch(/>\s*Calendar\s*</);
     expect(meeting).toMatch(/>\s*Standup\s*</);
-    expect(meeting).toMatch(/>\s*Season Goals\s*</);
+    expect(meeting).toMatch(/>\s*Goals\s*</);
   });
 });

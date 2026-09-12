@@ -1,12 +1,12 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Season Planning Workspace (never DEMO completion %). */
+/** Soft-UI related surfaces for Season plan (never DEMO completion %). */
 export const SEASON_PLANNING_RELATED_LINKS = [
-  { id: "goals-tracker", label: "Season Goals", tab: "goals-tracker" },
+  { id: "goals-tracker", label: "Goals", tab: "goals-tracker" },
   { id: "calendar", label: "Calendar", tab: "calendar" },
   { id: "attendance", label: "Attendance", tab: "attendance" },
-  { id: "build-burndown", label: "Build Burndown", tab: "build-burndown" },
+  { id: "build-burndown", label: "Burndown", tab: "build-burndown" },
   { id: "task-board", label: "Task Board", tab: "task-board" },
 ] as const;
 
@@ -26,7 +26,7 @@ export const SEASON_PLANNING_RELATED_INCLUDE: SeasonPlanningRelatedId[] = [
 ];
 
 /**
- * Soft-UI cross-links from Season Planning → Goals / Calendar / Attendance.
+ * Soft-UI cross-links from Season plan → Goals / Calendar / Attendance.
  * Build with hubHref — never broken JSX href templates.
  */
 export function seasonPlanningRelatedLinks(
@@ -79,7 +79,7 @@ export function seasonPlanningSetupSteps(orgId?: string | null): SeasonPlanningS
     },
     {
       id: "goals-tracker",
-      label: "Open Season Goals",
+      label: "Open Goals",
       detail: "Lightweight goal tracking pairs with this team.",
       href: hubHref("/team", "goals-tracker", orgId),
     },
@@ -114,7 +114,7 @@ export function shouldShowSeasonPlanningSummaryTiles(input: {
   return input.goalsTotal > 0 || input.milestonesTotal > 0;
 }
 
-/** Classify Season Planning Soft-UI shell — never invents DEMO completion %. */
+/** Classify Season plan Soft-UI shell — never invents DEMO completion %. */
 export function classifySeasonPlanningShell(input: {
   loading?: boolean;
   fetchFailed?: boolean;
@@ -134,7 +134,7 @@ export function seasonPlanningShellCopy(kind: SeasonPlanningShellKind): SeasonPl
     case "loading":
       return {
         kind,
-        title: "Loading Season Planning Workspace…",
+        title: "Opening Season plan",
         description:
           "Checking which team you are on and season plans.",
       };
@@ -142,14 +142,14 @@ export function seasonPlanningShellCopy(kind: SeasonPlanningShellKind): SeasonPl
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Season Planning Workspace",
+        title: "Could not load Season plan",
         description:
           "A network or server issue blocked the plan. Retry, or open Goals / Calendar while it reloads.",
       };
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Choose your team before creating a plan.",
@@ -173,7 +173,7 @@ export function seasonPlanningShellCopy(kind: SeasonPlanningShellKind): SeasonPl
 }
 
 /**
- * Soft-UI next actions for Season Planning empty/setup shells.
+ * Soft-UI next actions for Season plan empty/setup shells.
  * Points at Goals / Calendar / Attendance — never invents DEMO completion %.
  */
 export function seasonPlanningNextActions(input: {
@@ -192,13 +192,13 @@ export function seasonPlanningNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before creating goals.",
+          detail: "Choose your team before creating goals.",
           href: "/workspace",
           primary: true,
         },
         {
           id: "goals-tracker",
-          label: "Open Season Goals",
+          label: "Open Goals",
           detail: "Goal rows stay blank until your team enters them.",
           href: hubHref("/team", "goals-tracker", null),
         },
@@ -214,13 +214,13 @@ export function seasonPlanningNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Finish membership setup so Season Planning can load.",
+        detail: "Finish membership setup so Season plan can load.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
       },
       {
         id: "goals-tracker",
-        label: "Open Season Goals",
+        label: "Open Goals",
         detail: "Pair lightweight goals with this team plan.",
         href: hubHref("/team", "goals-tracker", orgId),
       },
@@ -237,14 +237,14 @@ export function seasonPlanningNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Season Planning",
+        label: "Retry Season plan",
         detail: "Reload real plans.",
         href: withOrgHref("/season-planning-workspace", orgId),
         primary: true,
       },
       {
         id: "goals-tracker",
-        label: "Open Season Goals",
+        label: "Open Goals",
         detail: "Goals stay available while the plan reloads.",
         href: hubHref("/team", "goals-tracker", orgId),
       },
@@ -268,7 +268,7 @@ export function seasonPlanningNextActions(input: {
       },
       {
         id: "goals-tracker",
-        label: "Open Season Goals",
+        label: "Open Goals",
         detail: "Track lighter goals alongside the team plan.",
         href: hubHref("/team", "goals-tracker", orgId),
       },
@@ -298,7 +298,7 @@ export function seasonPlanningNextActions(input: {
       },
       {
         id: "build-burndown",
-        label: "Open Build Burndown",
+        label: "Open Burndown",
         detail: "Pair plan milestones with real build-task burn.",
         href: hubHref("/team", "build-burndown", orgId),
       },
@@ -324,7 +324,7 @@ export function seasonPlanningNextActions(input: {
     },
     {
       id: "build-burndown",
-      label: "Open Build Burndown",
+      label: "Open Burndown",
       detail: "Cross-check build-task completion against plan milestones.",
       href: hubHref("/team", "build-burndown", orgId),
     },

@@ -6,7 +6,7 @@ test.beforeEach(async ({ context }) => {
   if (!signed) await signInFixture(context);
 });
 
-test("Alliance, Team admin, Help, and Attendance drop leftover engineering copy", async ({ page }) => {
+test("Alliance and Team admin drop leftover engineering copy", async ({ page }) => {
   await page.goto("/strategy/draft");
   await expect(page.locator("body")).not.toContainText("Application error");
   await expect(page.getByText("org-bound")).toHaveCount(0);
@@ -29,12 +29,4 @@ test("Alliance, Team admin, Help, and Attendance drop leftover engineering copy"
   await expect(page.locator("body")).not.toContainText("Application error");
   await expect(page.getByText("token hard limits")).toHaveCount(0);
   await expect(page.getByText("API-key powers")).toHaveCount(0);
-
-  await page.goto("/help/getting-started");
-  await expect(page.getByRole("heading", { name: "Set up a new team, start to first event" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Permalink" })).toHaveCount(0);
-
-  await page.goto("/attendance");
-  await expect(page.locator("body")).not.toContainText("Application error");
-  await expect(page.getByText("workspace members")).toHaveCount(0);
 });

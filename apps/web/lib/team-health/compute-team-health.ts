@@ -16,7 +16,7 @@ function setupSteps(orgId: string | null): TeamHealthSetupStep[] {
     {
       id: "workspace",
       label: "Choose your team",
-      detail: "Choose your team to open Team Health.",
+      detail: "Choose your team to open Team health.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -27,7 +27,7 @@ function setupSteps(orgId: string | null): TeamHealthSetupStep[] {
     },
     {
       id: "hours-self-view",
-      label: "Open My Hours",
+      label: "Open My hours",
       detail: "Shop-time engagement stays blank until members clock in.",
       href: hubHref("/team", "hours-self-view", orgId),
     },

@@ -80,7 +80,7 @@ export async function computeScoutFieldBudgetView(
       status: "setup_required",
       message: "Choose your team to lint scouting schemas against a field-count budget.",
       steps: [
-        { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
+        { id: "workspace", label: "Choose your team", detail: "Choose which FRC team you are working as.", href: "/workspace" },
       ],
       orgId: null,
     };

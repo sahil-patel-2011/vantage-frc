@@ -51,7 +51,7 @@ async function persistChecklistLibrarySnapshot(
     await putFeatureSnapshot("checklist-library", cacheOrg, data);
     if (!orgHint) await putFeatureSnapshot("checklist-library", "_", data);
   } catch {
-    // Live Checklist Library already painted; IndexedDB is best-effort.
+    // Live Checklists already painted; IndexedDB is best-effort.
   }
 }
 
@@ -83,7 +83,7 @@ function ChecklistLibraryNextActions({ orgId }: { orgId: string }) {
     {
       id: "pit",
       label: "Open pit checklist",
-      detail: "Timed pre-queue runs live on Event Day, not as a second copy here.",
+      detail: "Timed pre-queue runs live on Event day, not as a second copy here.",
       href: withOrgHref("/match-checklist", orgId),
       primary: false,
     },
@@ -175,7 +175,7 @@ export default function ChecklistLibraryClient() {
       if (!response.ok || !isChecklistLibraryView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Checklist Library. Showing the last copy on this device.");
+          setError("Could not refresh Checklists. Showing the last copy on this device.");
           setFetchFailed(false);
           return;
         }
@@ -195,7 +195,7 @@ export default function ChecklistLibraryClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Checklist Library. Showing the last copy on this device.");
+        setError("Could not refresh Checklists. Showing the last copy on this device.");
         setFetchFailed(false);
         return;
       }
@@ -246,11 +246,11 @@ export default function ChecklistLibraryClient() {
       breadcrumbs={
         <>
           <a href={teamHref}>Team</a>
-          {" / Checklist Library"}
+          {" / Checklists"}
         </>
       }
-      title="Checklist Library"
-      description="Store the team's SOP here. Opening a pit/match checklist writes a timed run on Event Day — this page does not keep a second copy."
+      title="Checklists"
+      description="Store the team's SOP here. Opening a pit/match checklist writes a timed run on Event day — this page does not keep a second copy."
     >
       <ChecklistLibraryRelated orgId={orgId} />
     </PageHeader>
@@ -276,9 +276,9 @@ export default function ChecklistLibraryClient() {
     return (
       <main className="module-page">
         {header}
-        <OfflineBanner feature="Checklist Library" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Checklists" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
-          title={failure ? failure.title : "Loading…"}
+          title={failure ? failure.title : "Opening Checklists"}
           description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >
@@ -302,13 +302,13 @@ export default function ChecklistLibraryClient() {
       return (
         <main className="module-page">
           {header}
-          <OfflineBanner feature="Checklist Library" fromCache={fromCache} cachedAt={cachedAt} />
+          <OfflineBanner feature="Checklists" fromCache={fromCache} cachedAt={cachedAt} />
           {error ? (
             <p className="telemetry-status" role="alert">
               {error}
             </p>
           ) : null}
-          <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
+          <EmptyState badge="Needs setup" badgeTone="setup" title={view.message}>
             {view.steps[0] ? (
               <Button as="a" variant="primary" href={view.steps[0].href}>
                 {view.steps[0].label}
@@ -328,7 +328,7 @@ export default function ChecklistLibraryClient() {
   return (
     <main className="module-page">
       {header}
-      <OfflineBanner feature="Checklist Library" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Checklists" fromCache={fromCache} cachedAt={cachedAt} />
       {error ? (
         <p className="telemetry-status" role="alert">
           {error}
@@ -358,7 +358,7 @@ function PitOpenedNotice({ view }: { view: LiveView }) {
         {opened.unmappedCount > 0
           ? ` ${opened.unmappedCount} step${opened.unmappedCount === 1 ? "" : "s"} stayed on this SOP — they are not pit cues.`
           : null}{" "}
-        <a href={opened.href}>Open Event Day pit checklist</a>
+        <a href={opened.href}>Open Event day pit checklist</a>
       </p>
     </Panel>
   );
@@ -372,7 +372,7 @@ function PitChecklistPanel({ view }: { view: LiveView }) {
         <div>
           <h2 style={{ marginTop: 0, marginBottom: 4 }}>Pit / match checklists</h2>
           <p className="app-muted" style={{ margin: 0 }}>
-            Timed pre-queue runs live on Event Day. Instantiating an SOP opens a run there — this
+            Timed pre-queue runs live on Event day. Instantiating an SOP opens a run there — this
             library does not store a second pit ledger.
           </p>
         </div>
@@ -573,7 +573,7 @@ function RunsPanel({
         badge="No runs yet"
         badgeTone="setup"
         title="Start an SOP run from a template above"
-        description="Library runs are for transport and load-in practice. Pit/match execution opens on Event Day, not here."
+        description="Library runs are for transport and load-in practice. Pit/match execution opens on Event day, not here."
       />
     );
   }

@@ -2,11 +2,11 @@ import { hubHref } from "../nav/hubs";
 import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Robot Readiness Score (never DEMO readiness metrics). */
+/** Soft-UI related surfaces for Readiness (never DEMO readiness metrics). */
 export const READINESS_SCORE_RELATED_LINKS = [
-  { id: "fmea", label: "FMEA", tab: "fmea" },
-  { id: "inspection-copilot", label: "Inspection Copilot", tab: "inspection-copilot" },
-  { id: "code", label: "Code Coach", tab: "code" },
+  { id: "fmea", label: "Failure log", tab: "fmea" },
+  { id: "inspection-copilot", label: "Inspection", tab: "inspection-copilot" },
+  { id: "code", label: "Code", tab: "code" },
   { id: "cad", label: "CAD", tab: "cad" },
 ] as const;
 
@@ -26,7 +26,7 @@ export const READINESS_SCORE_RELATED_INCLUDE: ReadinessScoreRelatedId[] = [
 ];
 
 /**
- * Soft-UI cross-links from Readiness Score → FMEA / Inspection / Code.
+ * Soft-UI cross-links from Readiness → Failure log / Inspection / Code.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function readinessScoreRelatedLinks(
@@ -75,24 +75,24 @@ export function readinessScoreSetupSteps(orgId?: string | null): ReadinessScoreS
     {
       id: "workspace",
       label: "Choose your team",
-      detail: "Choose your team to open Readiness Score.",
+      detail: "Choose your team to open Readiness.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
       id: "fmea",
-      label: "Open FMEA",
+      label: "Open Failure log",
       detail: "Open failure modes stay blank until real rows exist.",
       href: hubHref("/build", "fmea", orgId),
     },
     {
       id: "inspection-copilot",
-      label: "Open Inspection Copilot",
+      label: "Open Inspection",
       detail: "Weight / frame / wiring readiness stays blank until measurements exist.",
       href: hubHref("/build", "inspection-copilot", orgId),
     },
     {
       id: "code",
-      label: "Open Code Coach",
+      label: "Open Code",
       detail: "Code state stays honest and shows no sample deploy status.",
       href: hubHref("/build", "code", orgId),
     },
@@ -125,7 +125,7 @@ export function isReadinessScoreBoardEmpty(input: { subsystemCount: number }): b
   return input.subsystemCount === 0;
 }
 
-/** Classify Readiness Score Soft-UI shell — never invents DEMO readiness metrics. */
+/** Classify Readiness Soft-UI shell — never invents DEMO readiness metrics. */
 export function classifyReadinessScoreShell(input: {
   loading?: boolean;
   fetchFailed?: boolean;
@@ -146,7 +146,7 @@ export function readinessScoreShellCopy(kind: ReadinessScoreShellKind): Readines
     case "loading":
       return {
         kind,
-        title: "Loading Robot Readiness…",
+        title: "Opening Readiness",
         description:
           "Checking which team you are on and logged subsystems.",
       };
@@ -154,14 +154,14 @@ export function readinessScoreShellCopy(kind: ReadinessScoreShellKind): Readines
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Readiness Score",
+        title: "Could not load Readiness",
         description:
-          "A network or server issue blocked readiness. Retry, or open FMEA / Inspection while it reloads.",
+          "A network or server issue blocked readiness. Retry, or open Failure log / Inspection while it reloads.",
       };
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Choose your team before logging subsystems.",
@@ -172,20 +172,20 @@ export function readinessScoreShellCopy(kind: ReadinessScoreShellKind): Readines
         badge: "No subsystems yet",
         title: "Log your first subsystem",
         description:
-          "Weight, power, wiring, and code-version state ground the index. Cross-check FMEA and Inspection.",
+          "Weight, power, wiring, and code-version state ground the index. Cross-check Failure log and Inspection.",
       };
     default:
       return {
         kind: "ready",
         title: "Ship readiness from logged state",
         description:
-          "The index uses only subsystems, checklist, weight/power, and open FMEA you recorded.",
+          "The index uses only subsystems, checklist, weight/power, and open Failure log you recorded.",
       };
   }
 }
 
 /**
- * Soft-UI next actions for Readiness Score empty/setup shells.
+ * Soft-UI next actions for Readiness empty/setup shells.
  * Points at FMEA / Inspection / Code — never invents DEMO readiness metrics.
  */
 export function readinessScoreNextActions(input: {
@@ -209,20 +209,20 @@ export function readinessScoreNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Readiness Score",
+        label: "Retry Readiness",
         detail: "Reload real subsystems.",
         href: withOrgHref("/readiness-score", orgId),
         primary: true,
       },
       {
         id: "fmea",
-        label: "Open FMEA",
+        label: "Open Failure log",
         detail: "Failure modes stay available while readiness reloads.",
         href: hubHref("/build", "fmea", orgId),
       },
       {
         id: "inspection-copilot",
-        label: "Open Inspection Copilot",
+        label: "Open Inspection",
         detail: "Inspection checks stay available while readiness reloads.",
         href: hubHref("/build", "inspection-copilot", orgId),
       },
@@ -240,19 +240,19 @@ export function readinessScoreNextActions(input: {
       },
       {
         id: "fmea",
-        label: "Open FMEA",
+        label: "Open Failure log",
         detail: "Open failure modes feed the ordered fix list.",
         href: hubHref("/build", "fmea", orgId),
       },
       {
         id: "inspection-copilot",
-        label: "Open Inspection Copilot",
+        label: "Open Inspection",
         detail: "Pair inspection measurements with ship readiness.",
         href: hubHref("/build", "inspection-copilot", orgId),
       },
       {
         id: "code",
-        label: "Open Code Coach",
+        label: "Open Code",
         detail: "Code patterns are tracked separately from deploy status.",
         href: hubHref("/build", "code", orgId),
       },
@@ -272,19 +272,19 @@ export function readinessScoreNextActions(input: {
     },
     {
       id: "fmea",
-      label: "Open FMEA",
-      detail: "Clear open failures to raise FMEA clearance.",
+      label: "Open Failure log",
+      detail: "Clear open failures to raise Failure log clearance.",
       href: hubHref("/build", "fmea", orgId),
     },
     {
       id: "inspection-copilot",
-      label: "Open Inspection Copilot",
+      label: "Open Inspection",
       detail: "Cross-check weight and wiring against inspection limits.",
       href: hubHref("/build", "inspection-copilot", orgId),
     },
     {
       id: "code",
-      label: "Open Code Coach",
+      label: "Open Code",
       detail: "Deploy and test code so subsystem code-version state advances.",
       href: hubHref("/build", "code", orgId),
     },

@@ -54,7 +54,7 @@ export default function PricingPage() {
           </div>
           <div>
             <p>
-              <strong>{creditsLine}</strong> Hosted calls run inside scouting, strategy, Event Day, CAD, and Assistant —
+              <strong>{creditsLine}</strong> Hosted calls run inside scouting, strategy, Event day, CAD, and Assistant —
               not a generic wallet.
             </p>
             <p>

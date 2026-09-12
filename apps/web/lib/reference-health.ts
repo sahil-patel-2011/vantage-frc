@@ -77,7 +77,7 @@ function bannerCopy(
   cacheHasRows: boolean,
   sources: ReferenceSourceHealth[],
 ): { bannerTitle: string; bannerDetail: string } {
-  const names = sources.map((s) => (s.source === "tba" ? "The Blue Alliance" : s.source === "statbotics" ? "Statbotics" : s.source)).join(" / ") || "The Blue Alliance";
+  const names = sources.map((s) => (s.source === "tba" ? "Official matches" : s.source === "statbotics" ? "Season ratings" : s.source)).join(" / ") || "Official matches";
   const lastError = sources.map((s) => s.lastError).find(Boolean) ?? null;
   const lastSuccess = sources
     .map((s) => s.lastSuccessAt)
@@ -95,7 +95,7 @@ function bannerCopy(
 
   if (mode === "unavailable" && !cacheHasRows) {
     return {
-      bannerTitle: "Could not reach The Blue Alliance",
+      bannerTitle: "Could not reach official matches",
       bannerDetail: lastError
         ? `${names} is down (${lastError}). Nothing is saved on this team yet — sync under Team → Data when it is back.`
         : `${names} is down and this team has no saved rankings yet.`,
@@ -117,7 +117,7 @@ function bannerCopy(
   };
 }
 
-/** Pure evaluator for TBA/Statbotics health + ETag cursor signals. */
+/** Pure evaluator for official-match / season-rating health + ETag cursor signals. */
 export function evaluateDataSourceHealth(input: {
   healthRows: HealthRow[];
   cursorRows?: CursorRow[];

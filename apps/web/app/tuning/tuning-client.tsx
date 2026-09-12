@@ -279,7 +279,7 @@ export default function TuningClient({ orgId }: { orgId: string | null }) {
         </PageHeader>
         <OfflineBanner feature="Tuning log" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
-          title={failure ? failure.title : "Loading tuning constants…"}
+          title={failure ? failure.title : "Opening Tuning log"}
           description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >
@@ -315,7 +315,7 @@ export default function TuningClient({ orgId }: { orgId: string | null }) {
             <TuningRelated orgId={orgId} />
           </PageHeader>
           <OfflineBanner feature="Tuning log" fromCache={fromCache} cachedAt={cachedAt} />
-          <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
+          <EmptyState badge="Needs setup" badgeTone="setup" title={view.message}>
             <Button as="a" variant="primary" href="/workspace">
               Choose your team
             </Button>
@@ -363,7 +363,7 @@ export default function TuningClient({ orgId }: { orgId: string | null }) {
         <StatTile label="Constants logged" value={view.summary.total} />
         <StatTile label="Subsystems" value={view.summary.subsystems} />
         <StatTile label="Encoder offsets" value={view.summary.byCategory.encoder_offset} />
-        <StatTile label="PID gain sets" value={view.summary.byCategory.pid} />
+        <StatTile label="Gain sets" value={view.summary.byCategory.pid} />
       </div>
 
       <Panel as="form" id="tuning-constant" onSubmit={saveConstant}>

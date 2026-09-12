@@ -63,7 +63,7 @@ async function persistSubsystemSignoffSnapshot(
     await putFeatureSnapshot("subsystem-signoff", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("subsystem-signoff", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Subsystem Sign-off already painted; IndexedDB is best-effort.
+    // Live Subsystem sign-off already painted; IndexedDB is best-effort.
   }
 }
 
@@ -214,7 +214,7 @@ export default function SubsystemSignoffClient() {
       if (!response.ok || !isSubsystemSignoffView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Subsystem Sign-off. Showing the last copy on this device.");
+          setError("Could not refresh Subsystem sign-off. Showing the last copy on this device.");
           setFetchFailed(false);
           return;
         }
@@ -235,7 +235,7 @@ export default function SubsystemSignoffClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Subsystem Sign-off. Showing the last copy on this device.");
+        setError("Could not refresh Subsystem sign-off. Showing the last copy on this device.");
         setFetchFailed(false);
         return;
       }
@@ -295,14 +295,14 @@ export default function SubsystemSignoffClient() {
     return (
       <main className="module-page signoff-page">
         <PageHeader
-          breadcrumbs="Build / Subsystem Sign-off"
-          title="Subsystem Sign-off"
+          breadcrumbs="Build / Subsystem sign-off"
+          title="Subsystem sign-off"
           description="Track each robot subsystem through its review gates — readiness comes only from recorded approve/reject decisions."
         />
-        <OfflineBanner feature="Subsystem Sign-off" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Subsystem sign-off" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
-          title={failure ? failure.title : "Loading subsystem sign-offs…"}
+          title={failure ? failure.title : "Opening Subsystem sign-off"}
           description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >
@@ -325,12 +325,12 @@ export default function SubsystemSignoffClient() {
     return (
       <main className="module-page signoff-page">
         <PageHeader
-          breadcrumbs="Build / Subsystem Sign-off"
-          title="Subsystem Sign-off"
+          breadcrumbs="Build / Subsystem sign-off"
+          title="Subsystem sign-off"
           description="Clear design through field-test gates with an auditable trail — readiness % stays blank until real decisions exist."
         />
-        <OfflineBanner feature="Subsystem Sign-off" fromCache={fromCache} cachedAt={cachedAt} />
-        <EmptyState soft badge="Setup required" badgeTone="setup" title={view.message}>
+        <OfflineBanner feature="Subsystem sign-off" fromCache={fromCache} cachedAt={cachedAt} />
+        <EmptyState soft badge="Needs setup" badgeTone="setup" title={view.message}>
           {view.steps[0] ? (
             <Button as="a" variant="primary" href={view.steps[0].href}>
               {view.steps[0].label}
@@ -354,10 +354,10 @@ export default function SubsystemSignoffClient() {
         breadcrumbs={
           <>
             <a href={orgId ? withOrgHref("/build", orgId) : "/build"}>Build</a>
-            {" / Subsystem Sign-off"}
+            {" / Subsystem sign-off"}
           </>
         }
-        title="Subsystem Sign-off"
+        title="Subsystem sign-off"
         description={
           <>
             Walk each subsystem through design, fabrication, assembly, wiring, programming, and field
@@ -386,7 +386,7 @@ export default function SubsystemSignoffClient() {
             </label>
           ) : null}
           <Button as="a" variant="secondary" href={hubHref("/build", "fmea", orgId)}>
-            FMEA
+            Failure log
           </Button>
           <Button as="a" variant="secondary" href={hubHref("/build", "cad", orgId)}>
             CAD
@@ -397,7 +397,7 @@ export default function SubsystemSignoffClient() {
         </div>
       </PageHeader>
 
-      <OfflineBanner feature="Subsystem Sign-off" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Subsystem sign-off" fromCache={fromCache} cachedAt={cachedAt} />
 
       {orgId ? <SignoffRelated orgId={orgId} /> : null}
 
@@ -431,7 +431,7 @@ export default function SubsystemSignoffClient() {
           description="Drivetrain, intake, scoring, climber — each clears the same review gates. Readiness stays blank until someone records a real approve or reject."
         >
           <div className="signoff-row-links">
-            <a href={hubHref("/build", "fmea", orgId)}>FMEA →</a>
+            <a href={hubHref("/build", "fmea", orgId)}>Failure log →</a>
             <a href={hubHref("/build", "cad", orgId)}>CAD →</a>
             <a href={withOrgHref("/tasks", orgId)}>Tasks →</a>
             <a href={withOrgHref("/subsystems", orgId)}>Subsystem specs →</a>

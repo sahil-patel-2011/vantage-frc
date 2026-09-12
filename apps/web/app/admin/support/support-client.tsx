@@ -164,7 +164,7 @@ export default function AdminSupportClient() {
       </form>
 
       {message ? <p className="auth-message">{message}</p> : null}
-      {loading ? <EmptyState soft title="Loading tickets…" aria-busy /> : null}
+      {loading ? <EmptyState soft title="Opening tickets" aria-busy /> : null}
 
       {!loading && tickets.length === 0 ? (
         <EmptyState soft title="No tickets match" description="Try another status or search." />

@@ -1,7 +1,7 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for EPA Trend Alerts (never DEMO EPA forecasts). */
+/** Soft-UI related surfaces for Rating alerts (never DEMO EPA forecasts). */
 export const EPA_TREND_ALERTS_RELATED_LINKS = [
   { id: "strategy", label: "Strategy", tab: "strategy" },
   { id: "opponent-watchlist", label: "Opponent Watchlist", tab: "opponent-watchlist" },
@@ -24,7 +24,7 @@ export const EPA_TREND_ALERTS_RELATED_INCLUDE: EpaTrendAlertsRelatedId[] = [
 ];
 
 /**
- * Soft-UI cross-links from EPA Trend Alerts → Strategy / Opponent Watchlist.
+ * Soft-UI cross-links from Rating alerts → Strategy / Opponent Watchlist.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function epaTrendAlertsRelatedLinks(
@@ -73,7 +73,7 @@ export function shouldShowEpaTrendSummaryTiles(watchlistCount: number): boolean 
   return watchlistCount > 0;
 }
 
-/** Classify EPA Trend Alerts Soft-UI shell — never invents DEMO EPA metrics. */
+/** Classify Rating alerts Soft-UI shell — never invents DEMO EPA metrics. */
 export function classifyEpaTrendAlertsShell(input: {
   loading: boolean;
   fetchFailed?: boolean;
@@ -94,7 +94,7 @@ export function epaTrendAlertsShellCopy(kind: EpaTrendAlertsShellKind): EpaTrend
     case "loading":
       return {
         kind,
-        title: "Loading EPA Trend Alerts…",
+        title: "Opening Rating alerts",
         description:
           "Checking which team you are on and watched teams.",
       };
@@ -102,14 +102,14 @@ export function epaTrendAlertsShellCopy(kind: EpaTrendAlertsShellKind): EpaTrend
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load EPA Trend Alerts",
+        title: "Could not load Rating alerts",
         description:
           "A network or server issue blocked the watchlist. Retry, or open Strategy / Opponent Watchlist while it reloads.",
       };
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Choose your team before watching teams.",
@@ -120,20 +120,20 @@ export function epaTrendAlertsShellCopy(kind: EpaTrendAlertsShellKind): EpaTrend
         badge: "No teams watched",
         title: "Add a team to your watchlist",
         description:
-          "Alerts stay blank until you watch a real team with reference EPA history. Cross-check Strategy and Opponent Watchlist.",
+          "Alerts stay blank until you watch a real team with season rating history. Cross-check Strategy and Opponent Watchlist.",
       };
     default:
       return {
         kind: "ready",
-        title: "EPA swings on watched teams",
+        title: "rating swings on watched teams",
         description:
-          "Alerts use stored EPA between events for teams you watch.",
+          "Alerts use stored season rating between events for teams you watch.",
       };
   }
 }
 
 /**
- * Soft-UI next actions for EPA Trend Alerts empty/setup shells.
+ * Soft-UI next actions for Rating alerts empty/setup shells.
  * Points at Strategy / Opponent Watchlist — never invents DEMO EPA metrics.
  */
 export function epaTrendAlertsNextActions(input: {
@@ -152,7 +152,7 @@ export function epaTrendAlertsNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before tracking EPA swings.",
+          detail: "Choose your team before tracking rating swings.",
           href: "/workspace",
           primary: true,
         },
@@ -164,7 +164,7 @@ export function epaTrendAlertsNextActions(input: {
         },
         {
           id: "opponent-watchlist",
-          label: "Open Opponent Watchlist",
+          label: "Open Watchlist",
           detail: "Manual opponent notes stay blank until logged.",
           href: hubHref("/competition", "opponent-watchlist", null),
         },
@@ -174,20 +174,20 @@ export function epaTrendAlertsNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Finish membership setup so EPA Trend Alerts can load.",
+        detail: "Finish membership setup so Rating alerts can load.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
       },
       {
         id: "strategy",
         label: "Open Strategy",
-        detail: "Confirm event context before watching EPA swings.",
+        detail: "Confirm event context before watching rating swings.",
         href: hubHref("/competition", "strategy", orgId),
       },
       {
         id: "opponent-watchlist",
-        label: "Open Opponent Watchlist",
-        detail: "Track opponents you already care about beside EPA alerts.",
+        label: "Open Watchlist",
+        detail: "Track opponents you already care about beside Rating alerts.",
         href: hubHref("/competition", "opponent-watchlist", orgId),
       },
     ];
@@ -197,7 +197,7 @@ export function epaTrendAlertsNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry EPA Trend Alerts",
+        label: "Retry Rating alerts",
         detail: "Reload real watchlist rows.",
         href: withOrgHref("/epa-trend-alerts", orgId),
         primary: true,
@@ -210,7 +210,7 @@ export function epaTrendAlertsNextActions(input: {
       },
       {
         id: "opponent-watchlist",
-        label: "Open Opponent Watchlist",
+        label: "Open Watchlist",
         detail: "Opponent notes stay available while alerts reload.",
         href: hubHref("/competition", "opponent-watchlist", orgId),
       },
@@ -222,7 +222,7 @@ export function epaTrendAlertsNextActions(input: {
       {
         id: "watch-team",
         label: "Watch a team",
-        detail: "Add a team number below — alerts stay blank until reference EPA moves.",
+        detail: "Add a team number below — alerts stay blank until season rating moves.",
         href: "#epa-trend-alerts-watch",
         primary: true,
       },
@@ -234,8 +234,8 @@ export function epaTrendAlertsNextActions(input: {
       },
       {
         id: "opponent-watchlist",
-        label: "Open Opponent Watchlist",
-        detail: "Keep qualitative opponent notes beside quantitative EPA swings.",
+        label: "Open Watchlist",
+        detail: "Keep qualitative opponent notes beside quantitative rating swings.",
         href: hubHref("/competition", "opponent-watchlist", orgId),
       },
     ].slice(0, 4);
@@ -246,8 +246,8 @@ export function epaTrendAlertsNextActions(input: {
   if (alertCount > 0) {
     actions.push({
       id: "review-alerts",
-      label: "Review active EPA swings",
-      detail: `${alertCount} alert${alertCount === 1 ? "" : "s"} from real event-to-event EPA — dismiss only after you acknowledge them.`,
+      label: "Review active rating swings",
+      detail: `${alertCount} alert${alertCount === 1 ? "" : "s"} from real event-to-event season rating — dismiss only after you acknowledge them.`,
       href: "#epa-trend-alerts-list",
       primary: true,
     });
@@ -255,7 +255,7 @@ export function epaTrendAlertsNextActions(input: {
     actions.push({
       id: "watch-more",
       label: "Watch another team",
-      detail: `${watchlistCount} watched — alerts appear only when reference EPA moves enough between events.`,
+      detail: `${watchlistCount} watched — alerts appear only when season rating moves enough between events.`,
       href: "#epa-trend-alerts-watch",
       primary: true,
     });
@@ -271,13 +271,13 @@ export function epaTrendAlertsNextActions(input: {
     },
     {
       id: "opponent-watchlist",
-      label: "Open Opponent Watchlist",
-      detail: "Pair qualitative notes with quantitative EPA swings.",
+      label: "Open Watchlist",
+      detail: "Pair qualitative notes with quantitative rating swings.",
       href: hubHref("/competition", "opponent-watchlist", orgId),
     },
     {
       id: "scouting-heat-signals",
-      label: "Open Scouting Heat",
+      label: "Open Heat signals",
       detail: "Field heat signals stay blank until real scout rows exist.",
       href: hubHref("/competition", "scouting-heat-signals", orgId),
     },

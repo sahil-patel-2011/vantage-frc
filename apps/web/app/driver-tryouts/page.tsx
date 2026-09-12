@@ -1,7 +1,7 @@
 import DriverTryoutsClient from "./driver-tryouts-client";
 
 export const metadata = {
-  title: "Driver Tryouts",
+  title: "Driver tryouts",
 };
 
 export default function DriverTryoutsPage() {

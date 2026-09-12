@@ -9,6 +9,7 @@ const BRIEF = {
 
 describe("hosted native CAD plans", () => {
   it("allows native create_shell, create_chamfer, and set_variable on the hosted allowlist", () => {
+    expect(HOSTED_NATIVE).toContain("create_drawing");
     expect(HOSTED_NATIVE).toContain("create_shell");
     expect(HOSTED_NATIVE).toContain("create_chamfer");
     expect(HOSTED_NATIVE).toContain("set_variable");
@@ -31,6 +32,7 @@ describe("hosted native CAD plans", () => {
     for (const plan of variants) {
       expect(plan.map((step) => step.operation)).not.toContain("feature_script");
       expect(plan.every((step) => HOSTED_NATIVE.includes(step.operation))).toBe(true);
+      expect(plan.some((step) => step.operation === "create_drawing")).toBe(true);
       expect(plan.some((step) => step.operation === "create_sketch")).toBe(true);
       expect(plan.some((step) => step.operation === "create_extrude")).toBe(true);
     }
@@ -39,6 +41,7 @@ describe("hosted native CAD plans", () => {
   it("does not offer feature_script in the hosted AI planner prompt", () => {
     const message = cadAiPlanUserMessage(BRIEF);
     expect(message).not.toMatch(/feature_script/);
+    expect(message).toContain("create_drawing");
     expect(message).toContain("create_sketch");
     expect(message).toContain("create_extrude");
     expect(message).toContain("create_mate");
@@ -51,7 +54,12 @@ describe("hosted native CAD plans", () => {
       '[{"operation":"create_sketch","reason":"profile"},{"operation":"feature_script","parameters":{"source":"opExtrude()"},"reason":"fs"},{"operation":"create_extrude","reason":"solid"}]',
     );
     expect(plan.map((step) => step.operation)).not.toContain("feature_script");
-    expect(plan.map((step) => step.operation)).toEqual(["create_sketch", "create_extrude", "verify_topology"]);
+    expect(plan.map((step) => step.operation)).toEqual([
+      "create_drawing",
+      "create_sketch",
+      "create_extrude",
+      "verify_topology",
+    ]);
   });
 
   it("parseEnvelopeMm converts real lengths and refuses missing or garbage values", () => {

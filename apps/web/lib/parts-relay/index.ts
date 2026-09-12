@@ -1,4 +1,4 @@
-// Pure helper functions for FRC Parts Relay — labels and summary math. No I/O.
+// Pure helper functions for FRC Parts relay — labels and summary math. No I/O.
 
 import type {
   PartsRelayCategory,

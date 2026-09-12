@@ -70,7 +70,7 @@ async function persistScoutingHeatSignalsSnapshot(
     await putFeatureSnapshot("scouting-heat-signals", cacheOrg, data);
     if (!orgHint) await putFeatureSnapshot("scouting-heat-signals", "_", data);
   } catch {
-    // Live Scouting Heat Signals already painted; IndexedDB is best-effort.
+    // Live Heat signals already painted; IndexedDB is best-effort.
   }
 }
 
@@ -141,10 +141,10 @@ function HeatShell({
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Scouting Heat Signals"}
+            {" / Heat signals"}
           </>
         }
-        title="Scouting Heat Signals"
+        title="Heat signals"
         description={description}
       >
         <RelatedStrip orgId={orgId} />
@@ -224,7 +224,7 @@ export default function ScoutingHeatSignalsClient() {
         if (!response.ok || !isScoutingHeatSignalsView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Scouting Heat Signals. Showing the last copy on this device.");
+            setError("Could not refresh Heat signals. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -238,7 +238,7 @@ export default function ScoutingHeatSignalsClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Scouting Heat Signals. Showing the last copy on this device.");
+          setError("Could not refresh Heat signals. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -304,7 +304,7 @@ export default function ScoutingHeatSignalsClient() {
   if (shell === "loading") {
     return (
       <HeatShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Scouting Heat Signals" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Heat signals" fromCache={fromCache} cachedAt={cachedAt} />
       </HeatShell>
     );
   }
@@ -317,7 +317,7 @@ export default function ScoutingHeatSignalsClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Scouting Heat Signals" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Heat signals" fromCache={fromCache} cachedAt={cachedAt} />
       </HeatShell>
     );
   }
@@ -328,7 +328,7 @@ export default function ScoutingHeatSignalsClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Scouting Heat Signals" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Heat signals" fromCache={fromCache} cachedAt={cachedAt} />
       </HeatShell>
     );
   }
@@ -339,16 +339,16 @@ export default function ScoutingHeatSignalsClient() {
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Scouting Heat Signals"}
+            {" / Heat signals"}
           </>
         }
-        title="Scouting Heat Signals"
+        title="Heat signals"
         description="Highlight teams trending up or down from what scouts have actually observed."
       >
         <RelatedStrip orgId={orgId} />
       </PageHeader>
 
-      <OfflineBanner feature="Scouting Heat Signals" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Heat signals" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

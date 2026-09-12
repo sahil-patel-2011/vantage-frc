@@ -4,7 +4,7 @@ export type PicklistCollabTier = "first_pick" | "second_pick" | "avoid" | "unran
 
 export type PicklistCollabListStatus = "open" | "locked" | "archived";
 
-/** FAST-style EPA role from auto/teleop share vs the event field. */
+/** Season-rating role from auto/teleop share vs the event field. */
 export type EpaRoleId =
   | "elite_auto"
   | "elite_all_around"
@@ -39,7 +39,7 @@ export type PicklistCollabEntry = {
   epaTotal?: number | null;
   epaAuto?: number | null;
   epaTeleop?: number | null;
-  /** FAST-style role from cached Statbotics EPA shares — null when the cache has no row. */
+  /** Season-rating role from cached event numbers — null when the cache has no row. */
   epaRole?: EpaRoleId | null;
 };
 

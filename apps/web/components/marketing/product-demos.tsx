@@ -445,7 +445,7 @@ export function AssistantPreview({ compact = false }: { compact?: boolean }) {
               <span>Pit note · climb L3 · limited intake</span>
             </li>
           </ul>
-          <p className="app-muted">Cites your scout sync plus TBA and Statbotics — confidence stays empty until those sources exist.</p>
+          <p className="app-muted">Cites your scout sync plus official matches and season ratings — confidence stays empty until those sources exist.</p>
         </article>
         {!compact && (
           <footer className="product-demo-footer">

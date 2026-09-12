@@ -1,7 +1,7 @@
 import ScoutFieldBudgetClient from "./scout-field-budget-client";
 
 export const metadata = {
-  title: "Scouting Field-Count Budget",
+  title: "Field value",
 };
 
 export default function ScoutFieldBudgetPage() {

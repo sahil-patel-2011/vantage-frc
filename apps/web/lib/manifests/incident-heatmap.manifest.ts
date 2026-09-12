@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "incident-heatmap",
-  title: "Incident Heatmap",
+  title: "Incidents",
   route: "/incident-heatmap",
   apiRoute: "/api/incident-heatmap",
   hub: "Build",

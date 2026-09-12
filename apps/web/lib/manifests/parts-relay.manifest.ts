@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "parts-relay",
-  title: "Parts Relay",
+  title: "Parts relay",
   route: "/parts-relay",
   apiRoute: "/api/parts-relay",
   hub: "Build",

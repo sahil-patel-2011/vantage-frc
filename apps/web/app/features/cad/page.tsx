@@ -18,7 +18,7 @@ const steps = [
   },
   {
     title: "Connectors",
-    copy: "Onshape OAuth or Fusion relay.",
+    copy: "Connect Onshape or Fusion on this computer.",
     frame: "Setup",
     lines: ["Onshape hosted", "Fusion desktop", "Credentials required"],
   },
@@ -40,7 +40,7 @@ export default function CadFeaturePage() {
           <h1>CAD starts with a brief.</h1>
           <p>
             On the Build hub, you confirm a brief first. Then a metered plan (or a no-model starter plan)
-            runs only after approval. Onshape uses hosted OAuth. Fusion uses a desktop relay. Credentials are required.
+            runs only after approval. Connect Onshape in CAD Connections. Fusion stays on this computer. Credentials are required.
             Nothing mutates CAD until a person checks the step.
           </p>
           <div className="actions">
@@ -82,7 +82,7 @@ export default function CadFeaturePage() {
           <div>
             <h2>Related.</h2>
             <p>
-              <a href="/features/strategy">Strategy & Assistant</a> · <a href="/features/code">Code Coach</a> ·{" "}
+              <a href="/features/strategy">Strategy & Assistant</a> · <a href="/features/code">Code</a> ·{" "}
               <a href="/pricing">Pricing</a>
             </p>
           </div>

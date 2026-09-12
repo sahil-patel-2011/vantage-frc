@@ -1,7 +1,7 @@
 import CodeDeployLogClient from "./code-deploy-log-client";
 
 export const metadata = {
-  title: "Code Deploy Log",
+  title: "Deploy log",
 };
 
 export default function CodeDeployLogPage() {

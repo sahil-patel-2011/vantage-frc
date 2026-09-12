@@ -93,6 +93,7 @@ describe("accountNextActions", () => {
       tbaReady: true,
     });
     expect(actions[0]?.id).toBe("email-setup");
-    expect(actions[0]?.detail.toLowerCase()).toContain("resend");
+    expect(actions[0]?.detail).toMatch(/Email isn't ready yet/);
+    expect(actions[0]?.detail).not.toMatch(/Resend|setup-required|OAuth/i);
   });
 });

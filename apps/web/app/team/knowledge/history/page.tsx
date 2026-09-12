@@ -17,11 +17,11 @@ export default async function TeamKnowledgeHistoryPage({
         <PageHeader
           breadcrumbs="Knowledge / History"
           title="Knowledge history"
-          description="Revisions belong to one team’s knowledge base — pick the team first."
+          description="Revisions belong to one team’s knowledge base. Choose your team to open it."
         />
         <EmptyState
           soft
-          badge="Team needed"
+          badge="Needs setup"
           badgeTone="setup"
           title="Choose your team"
           description="History replays the edits this team actually made. Choose your team to open it."

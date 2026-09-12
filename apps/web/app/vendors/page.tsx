@@ -1,7 +1,7 @@
 import VendorsClient from "./vendors-client";
 
 export const metadata = {
-  title: "Vendor Directory",
+  title: "Vendor directory",
 };
 
 export default function VendorsPage() {

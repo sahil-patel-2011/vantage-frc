@@ -18,7 +18,7 @@ export type ImpactNextActionContext = {
 };
 
 /**
- * Soft-UI next actions for Community Impact.
+ * Soft-UI next actions for Impact.
  * Never invents DEMO hours, people reached, or award readiness — only org-local paths.
  */
 export function impactNextActions(ctx: ImpactNextActionContext): ImpactNextAction[] {

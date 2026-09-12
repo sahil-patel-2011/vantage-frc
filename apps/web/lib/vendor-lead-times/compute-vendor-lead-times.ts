@@ -17,7 +17,7 @@ function setupStepsFor(orgId: string | null): VendorLeadTimesSetupStep[] {
     {
       id: "workspace",
       label: "Choose your team",
-      detail: "Choose your team to open Vendor Lead Times.",
+      detail: "Choose your team to open Lead times.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -28,8 +28,8 @@ function setupStepsFor(orgId: string | null): VendorLeadTimesSetupStep[] {
     },
     {
       id: "spare-forecast",
-      label: "Open Spare Forecast",
-      detail: "Spare shortfalls stay blank until inventory + FMEA land.",
+      label: "Open Spares forecast",
+      detail: "Spare shortfalls stay blank until inventory + Failure log land.",
       href: hubHref("/build", "spare-forecast", orgId),
     },
     {

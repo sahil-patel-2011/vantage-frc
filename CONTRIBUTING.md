@@ -75,9 +75,15 @@ npx playwright install chromium          # once per machine (`npm run test:brows
 npm run test:browser                     # Playwright vs http://127.0.0.1:3310 (E2E_AUTH_FIXTURE=1, local vantage_ci)
 ```
 
-If `:3310` is taken by this checkout's `next dev`, Playwright attaches to `.next/dev/lock`
-instead of failing. `PLAYWRIGHT_PORT=3510 npm run test:browser` still starts a server when
-no lock is live. To attach to a server you already started on another port:
+`npm run test:browser` runs four sequential shards. Each shard starts its own
+`next dev` against `NEXT_DIST_DIR=.next-pw` (4 GB `NODE_OPTIONS`) and evicts that
+cache afterwards so compiled routes do not accumulate. A named spec
+(`npm run test:browser -- tests/browser/chat-remaining.spec.ts`) skips sharding.
+`PLAYWRIGHT_SHARDS=1` forces a single process. Playwright uses `.next-pw` and
+does not attach to a leftover human `next dev` unless you set
+`NEXT_DIST_DIR=.next` or `PLAYWRIGHT_BASE_URL`.
+`PLAYWRIGHT_PORT=3510 npm run test:browser` still starts a server when no lock is
+live. To attach to a server you already started on another port:
 `PLAYWRIGHT_BASE_URL=http://127.0.0.1:3410 npm run test:browser:attach`. Never point
 Playwright at production `DATABASE_*`.
 

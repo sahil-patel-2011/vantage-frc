@@ -231,7 +231,7 @@ async function insertImpactActivity(
     ],
   );
   const id = result.rows[0]?.id;
-  if (!id) throw new CompleteOutreachError("Could not log the completed event to Community Impact.");
+  if (!id) throw new CompleteOutreachError("Could not log the completed event to Impact.");
   return id;
 }
 

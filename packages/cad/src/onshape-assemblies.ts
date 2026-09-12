@@ -70,6 +70,82 @@ export async function createOnshapePartStudio(
   return { elementId: elementId(body, "Create Part Studio"), name };
 }
 
+/** Native Onshape Drawing tab. Fail honestly if Onshape rejects — never invent an id. */
+export async function createOnshapeDrawing(
+  http: OnshapeNativeHttp,
+  input: { documentId: string; workspaceId: string; name: string },
+): Promise<{ elementId: string; name: string }> {
+  const documentId = required(input.documentId, "documentId");
+  const workspaceId = required(input.workspaceId, "workspaceId");
+  const name = required(input.name, "Drawing name");
+  const response = await http(
+    `/drawings/d/${encodeURIComponent(documentId)}/w/${encodeURIComponent(workspaceId)}`,
+    { method: "POST", body: JSON.stringify({ name }) },
+  );
+  const body = await jsonResponse(response, "Create Drawing");
+  return { elementId: elementId(body, "Create Drawing"), name };
+}
+
+/** Add named views to a Drawing tab. Fail honestly if Onshape rejects. */
+export async function createOnshapeDrawingViews(
+  http: OnshapeNativeHttp,
+  input: {
+    documentId: string;
+    workspaceId: string;
+    elementId: string;
+    views: string[];
+  },
+): Promise<{ elementId: string; views: string[] }> {
+  const documentId = required(input.documentId, "documentId");
+  const workspaceId = required(input.workspaceId, "workspaceId");
+  const elementIdValue = required(input.elementId, "drawingElementId");
+  const views = input.views.map((view) => String(view).trim()).filter(Boolean);
+  if (!views.length) throw new Error("Drawing views need at least one named view");
+  const response = await http(
+    `/drawings/d/${encodeURIComponent(documentId)}/w/${encodeURIComponent(workspaceId)}/e/${encodeURIComponent(elementIdValue)}/views`,
+    { method: "POST", body: JSON.stringify({ views: views.map((view) => ({ viewType: view.toUpperCase() })) }) },
+  );
+  await jsonResponse(response, "Create Drawing views");
+  return { elementId: elementIdValue, views };
+}
+
+/** Label a Drawing with notes and millimetre callouts. Fail honestly if Onshape rejects. */
+export async function annotateOnshapeDrawing(
+  http: OnshapeNativeHttp,
+  input: {
+    documentId: string;
+    workspaceId: string;
+    elementId: string;
+    notes: string[];
+    callouts: Array<{ label: string; valueMm: number; view?: string }>;
+  },
+): Promise<{ elementId: string; notes: string[]; callouts: Array<{ label: string; valueMm: number; view?: string }> }> {
+  const documentId = required(input.documentId, "documentId");
+  const workspaceId = required(input.workspaceId, "workspaceId");
+  const elementIdValue = required(input.elementId, "drawingElementId");
+  const notes = input.notes.map((note) => String(note).trim()).filter(Boolean);
+  const callouts = input.callouts.filter((item) => item.label.trim() && Number.isFinite(item.valueMm) && item.valueMm > 0);
+  if (!notes.length && !callouts.length) {
+    throw new Error("Drawing labels need at least one note or millimetre callout. Do not invent sizes.");
+  }
+  const response = await http(
+    `/drawings/d/${encodeURIComponent(documentId)}/w/${encodeURIComponent(workspaceId)}/e/${encodeURIComponent(elementIdValue)}/annotations`,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        notes,
+        dimensions: callouts.map((item) => ({
+          label: item.label,
+          valueMm: item.valueMm,
+          view: item.view,
+        })),
+      }),
+    },
+  );
+  await jsonResponse(response, "Label Drawing");
+  return { elementId: elementIdValue, notes, callouts };
+}
+
 export async function getOnshapeBodyDetails(
   http: OnshapeNativeHttp,
   input: { documentId: string; workspaceId: string; elementId: string },

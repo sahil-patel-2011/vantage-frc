@@ -2,7 +2,7 @@ import { hubHref } from "../nav/hubs";
 import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Event Day Command (never DEMO schedule). */
+/** Soft-UI related surfaces for Event day (never DEMO schedule). */
 export const EVENT_DAY_RELATED_LINKS = [
   { id: "my-day", label: "My Day", kind: "hub" as const, tab: "my-day" },
   { id: "schedule", label: "Schedule", kind: "path" as const, path: "/schedule" },
@@ -13,7 +13,7 @@ export const EVENT_DAY_RELATED_LINKS = [
   { id: "match-checklist", label: "Match checklist", kind: "hub" as const, tab: "match-checklist" },
   { id: "tool-checkout", label: "Tool checkout", kind: "path" as const, path: "/tool-checkout" },
   { id: "inspection", label: "Inspection", kind: "path" as const, path: "/inspection-copilot" },
-  { id: "team-data", label: "Team Data", kind: "path" as const, path: "/team/data" },
+  { id: "team-data", label: "Team data", kind: "path" as const, path: "/team/data" },
 ] as const;
 
 export type EventDayRelatedId = (typeof EVENT_DAY_RELATED_LINKS)[number]["id"];
@@ -33,7 +33,7 @@ export const EVENT_DAY_RELATED_INCLUDE: EventDayRelatedId[] = [
 ];
 
 /**
- * Soft-UI cross-links from Event Day → My Day / Schedule / Strategy / Scouting.
+ * Soft-UI cross-links from Event day → My Day / Schedule / Strategy / Scouting.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function eventDayRelatedLinks(
@@ -105,7 +105,7 @@ export function eventDaySetupSteps(orgId?: string | null): EventDaySetupStep[] {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Choose your team to open Event Day Command.",
+        detail: "Choose your team to open Event day.",
         href: "/workspace",
       },
     ];
@@ -128,7 +128,7 @@ export function formatEventDayMatchCount(value: unknown, loaded: boolean): strin
   return Math.floor(n).toLocaleString();
 }
 
-/** True when Event Day has no upcoming matches yet — Soft-UI empty. */
+/** True when Event day has no upcoming matches yet — Soft-UI empty. */
 export function isEventDayScheduleEmpty(input: {
   status?: "live" | "setup_required" | "empty" | null;
   matchCount?: number;
@@ -138,7 +138,7 @@ export function isEventDayScheduleEmpty(input: {
   return (input.matchCount ?? 0) === 0;
 }
 
-/** Classify Event Day Soft-UI shell. */
+/** Classify Event day Soft-UI shell. */
 export function classifyEventDayShell(input: {
   loading?: boolean;
   fetchFailed?: boolean;
@@ -179,14 +179,14 @@ export function eventDayShellCopy(kind: EventDayShellKind): EventDayEmptyCopy {
     case "loading":
       return {
         kind,
-        title: "Loading…",
+        title: "Opening Event day",
         description: "Checking your event schedule.",
       };
     case "error":
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Command",
+        title: "Could not load Event day",
         description: "Retry, or open Schedule while this reloads.",
       };
     case "setup":
@@ -194,7 +194,7 @@ export function eventDayShellCopy(kind: EventDayShellKind): EventDayEmptyCopy {
         kind,
         badge: "Needs setup",
         title: "Set an active event",
-        description: "Set the event you’re at so Command can follow it.",
+        description: "Set the event you’re at so Event day can follow it.",
       };
     case "empty":
       return {
@@ -206,7 +206,7 @@ export function eventDayShellCopy(kind: EventDayShellKind): EventDayEmptyCopy {
     case "ready":
       return {
         kind,
-        title: "Command",
+        title: "Event day",
         description: "Next match, scout gaps, and briefs.",
       };
     default: {
@@ -217,7 +217,7 @@ export function eventDayShellCopy(kind: EventDayShellKind): EventDayEmptyCopy {
 }
 
 /**
- * Soft-UI next actions for Event Day empty/setup shells.
+ * Soft-UI next actions for Event day empty/setup shells.
  * Points at real My Day / Schedule / Strategy / Scouting paths.
  */
 export function eventDayShellNextActions(input: {
@@ -243,7 +243,7 @@ function eventDayShellNextActionCandidates(input: {
     return [
       {
         id: "retry",
-        label: "Retry Event Day",
+        label: "Retry Event day",
         detail: "Reload the event schedule.",
         href: withOrgHref("/command", orgId),
         primary: true,
@@ -263,7 +263,7 @@ function eventDayShellNextActionCandidates(input: {
       {
         id: "strategy",
         label: "Open Strategy",
-        detail: "Alliance prep stays available while Command reloads.",
+        detail: "Alliance prep stays available while Event day reloads.",
         href: hubHref("/competition", "strategy", orgId),
       },
     ];

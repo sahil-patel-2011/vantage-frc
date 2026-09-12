@@ -203,7 +203,7 @@ export async function computeMatchChecklistView(
         },
         {
           id: "command",
-          label: "Open Event Day",
+          label: "Open Event day",
           detail: "Pick the active event so match labels stay aligned with the schedule.",
           href: "/competition?tab=command",
         },

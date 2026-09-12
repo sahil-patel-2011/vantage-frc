@@ -4,13 +4,13 @@ import { describe, expect, it } from "vitest";
 
 const DIR = __dirname;
 
-describe("Alliance Sim last snapshot stays on the phone", () => {
+describe("Alliance sim last snapshot stays on the phone", () => {
   it("reads and writes the alliance-sim IndexedDB feature cache", () => {
     const src = readFileSync(join(DIR, "alliance-sim-client.tsx"), "utf8");
     expect(src).toMatch(/getFeatureSnapshot/);
     expect(src).toMatch(/putFeatureSnapshot/);
     expect(src).toMatch(/"alliance-sim"/);
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
-    expect(src).toMatch(/feature="Alliance Sim"/);
+    expect(src).toMatch(/feature="Alliance sim"/);
   });
 });

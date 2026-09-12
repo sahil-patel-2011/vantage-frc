@@ -7,7 +7,7 @@ import "../marketing-showcase.css";
 export const metadata: Metadata = marketingPageMetadata({
   title: "How it works — Vantage",
   description:
-    "How FRC teams use Vantage from shop weeks through alliance selection: offline scouting, TBA event day, sourced strategy, CAD, and season ops.",
+    "How FRC teams use Vantage from shop weeks through alliance selection: offline scouting, official event day, sourced strategy, CAD, and season ops.",
   path: "/workflow",
 });
 
@@ -22,7 +22,7 @@ const stages = [
     id: "2",
     title: "Connect what you already have",
     detail:
-      "Connect The Blue Alliance for this team’s events. Publish scout forms. Optional: Onshape or Fusion, GitHub, and your own AI keys. Missing connections show a Connect card with the exact next step.",
+      "Connect official event data for this team’s events. Publish scout forms. Optional: Onshape or Fusion, GitHub, and your own AI keys. Missing connections show a Connect card with the exact next step.",
   },
   {
     id: "3",
@@ -34,19 +34,19 @@ const stages = [
     id: "4",
     title: "Run event day from one event",
     detail:
-      "Command and My Day use TBA match times. Checklists, pit queue, bumper color, and strategy cards share that event. Empty until the cache and your scouts have rows.",
+      "Command and My Day use official match times. Checklists, pit queue, bumper color, and strategy cards share that event. Empty until the cache and your scouts have rows.",
   },
   {
     id: "5",
     title: "Pick from your notes",
     detail:
-      "Alliance Selection Desk, pick list, pairwise ranking, and drive-team tags attach scout evidence to public facts. Your team’s scouting numbers stay blank until someone actually scouts.",
+      "Alliance desk, pick list, pairwise ranking, and drive-team tags attach scout evidence to public facts. Your team’s scouting numbers stay blank until someone actually scouts.",
   },
   {
     id: "6",
     title: "Keep the season",
     detail:
-      "Calendar, playbook, finance, CAD briefs, Code Coach, and exports stay in the same login after you load out.",
+      "Calendar, playbook, finance, CAD briefs, Code, and exports stay in the same login after you load out.",
   },
 ] as const;
 

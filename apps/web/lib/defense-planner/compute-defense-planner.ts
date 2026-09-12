@@ -21,7 +21,7 @@ function setupSteps(orgId: string | null): DefensePlannerSetupStep[] {
     {
       id: "workspace",
       label: "Choose your team",
-      detail: "Choose your team to open Defense Planner.",
+      detail: "Choose your team to open Defense.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {

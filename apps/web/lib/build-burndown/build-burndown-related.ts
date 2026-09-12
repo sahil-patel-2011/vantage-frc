@@ -2,11 +2,11 @@ import { hubHref } from "../nav/hubs";
 import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Build-Season Burndown (never DEMO burndown metrics). */
+/** Soft-UI related surfaces for Burndown (never DEMO burndown metrics). */
 export const BUILD_BURNDOWN_RELATED_LINKS = [
   { id: "task-board", label: "Task board", kind: "team" as const, tab: "task-board" },
   { id: "kickoff", label: "Kickoff", kind: "build" as const, tab: "kickoff" },
-  { id: "fmea", label: "FMEA", kind: "build" as const, tab: "fmea" },
+  { id: "fmea", label: "Failure log", kind: "build" as const, tab: "fmea" },
   { id: "team", label: "Team hub", kind: "team" as const, tab: "build-burndown" },
 ] as const;
 
@@ -26,7 +26,7 @@ export const BUILD_BURNDOWN_RELATED_INCLUDE: BuildBurndownRelatedId[] = [
 ];
 
 /**
- * Soft-UI cross-links from Build Burndown → Task board / Kickoff / FMEA.
+ * Soft-UI cross-links from Burndown → Task board / Kickoff / Failure log.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function buildBurndownRelatedLinks(
@@ -93,7 +93,7 @@ export function buildBurndownSetupSteps(orgId?: string | null): BuildBurndownSet
     },
     {
       id: "fmea",
-      label: "Open FMEA",
+      label: "Open Failure log",
       detail: "Risk work sits beside the burndown.",
       href: hubHref("/build", "fmea", orgId),
     },
@@ -129,7 +129,7 @@ export function isBuildBurndownBoardEmpty(input: { taskCount: number }): boolean
   return input.taskCount === 0;
 }
 
-/** Classify Build Burndown Soft-UI shell — never invents DEMO burndown metrics. */
+/** Classify Burndown Soft-UI shell — never invents DEMO burndown metrics. */
 export function classifyBuildBurndownShell(input: {
   loading?: boolean;
   fetchFailed?: boolean;
@@ -150,7 +150,7 @@ export function buildBurndownShellCopy(kind: BuildBurndownShellKind): BuildBurnd
     case "loading":
       return {
         kind,
-        title: "Loading Build-Season Burndown…",
+        title: "Opening Burndown",
         description:
           "Checking which team you are on and real build tasks.",
       };
@@ -158,14 +158,14 @@ export function buildBurndownShellCopy(kind: BuildBurndownShellKind): BuildBurnd
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Build Burndown",
+        title: "Could not load Burndown",
         description:
-          "A network or server issue blocked burndown. Retry, or open Task board / Kickoff / FMEA while it reloads.",
+          "A network or server issue blocked burndown. Retry, or open Task board / Kickoff / Failure log while it reloads.",
       };
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Choose your team before charting remaining work.",
@@ -176,12 +176,12 @@ export function buildBurndownShellCopy(kind: BuildBurndownShellKind): BuildBurnd
         badge: "No tasks yet",
         title: "Add your first build task",
         description:
-          "The burndown line stays blank until you log real tasks with planned dates. Cross-check Task board, Kickoff, and FMEA.",
+          "The burndown line stays blank until you log real tasks with planned dates. Cross-check Task board, Kickoff, and Failure log.",
       };
     default:
       return {
         kind: "ready",
-        title: "Build-season burndown",
+        title: "Burndown",
         description:
           "Tasks with planned dates are what draw the chart.",
       };
@@ -189,8 +189,8 @@ export function buildBurndownShellCopy(kind: BuildBurndownShellKind): BuildBurnd
 }
 
 /**
- * Soft-UI next actions for Build Burndown empty/setup shells.
- * Points at Task board / Kickoff / FMEA — never invents DEMO burndown metrics.
+ * Soft-UI next actions for Burndown empty/setup shells.
+ * Points at Task board / Kickoff / Failure log — never invents DEMO burndown metrics.
  */
 export function buildBurndownNextActions(input: {
   orgId?: string | null;
@@ -215,7 +215,7 @@ export function buildBurndownNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Build Burndown",
+        label: "Retry Burndown",
         detail: "Reload real tasks and plans.",
         href: withOrgHref("/build-burndown", orgId),
         primary: true,
@@ -234,7 +234,7 @@ export function buildBurndownNextActions(input: {
       },
       {
         id: "fmea",
-        label: "Open FMEA",
+        label: "Open Failure log",
         detail: "Failure modes stay honest when this surface is down.",
         href: hubHref("/build", "fmea", orgId),
       },
@@ -266,7 +266,7 @@ export function buildBurndownNextActions(input: {
       },
       {
         id: "fmea",
-        label: "Open FMEA",
+        label: "Open Failure log",
         detail: "Track failure risks beside remaining build work.",
         href: hubHref("/build", "fmea", orgId),
       },
@@ -298,7 +298,7 @@ export function buildBurndownNextActions(input: {
     },
     {
       id: "fmea",
-      label: "Open FMEA",
+      label: "Open Failure log",
       detail: "Cross-check failure risks against remaining build work.",
       href: hubHref("/build", "fmea", orgId),
     },

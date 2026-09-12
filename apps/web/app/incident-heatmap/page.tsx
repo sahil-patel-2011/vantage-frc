@@ -1,7 +1,7 @@
 import IncidentHeatmapClient from "./incident-heatmap-client";
 
 export const metadata = {
-  title: "Incident Heatmap",
+  title: "Incidents",
 };
 
 export default function IncidentHeatmapPage() {

@@ -67,7 +67,7 @@ async function persistSeasonPlanningSnapshot(
     await putFeatureSnapshot("season-planning-workspace", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("season-planning-workspace", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Season Planning already painted; IndexedDB is best-effort.
+    // Live Season plan already painted; IndexedDB is best-effort.
   }
 }
 
@@ -148,10 +148,10 @@ function PlanShell({
         breadcrumbs={
           <>
             <a href={teamHref}>Team</a>
-            {" / Season Planning Workspace"}
+            {" / Season plan"}
           </>
         }
-        title="Season Planning Workspace"
+        title="Season plan"
         description={description}
       >
         <RelatedStrip orgId={orgId} />
@@ -166,7 +166,7 @@ function PlanShell({
       ) : (
         <EmptyState
           soft
-          badge={shell === "setup" ? "Setup required" : copy.badge}
+          badge={shell === "setup" ? "Needs setup" : copy.badge}
           badgeTone="setup"
           title={copy.title}
           description={error ?? copy.description}
@@ -381,7 +381,7 @@ export default function SeasonPlanningWorkspaceClient() {
         if (!response.ok || !isSeasonPlanningWorkspaceView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Season Planning. Showing the last copy on this device.");
+            setError("Could not refresh Season plan. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -399,7 +399,7 @@ export default function SeasonPlanningWorkspaceClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Season Planning. Showing the last copy on this device.");
+          setError("Could not refresh Season plan. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -475,7 +475,7 @@ export default function SeasonPlanningWorkspaceClient() {
   if (shell === "loading") {
     return (
       <PlanShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Season Planning" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Season plan" fromCache={fromCache} cachedAt={cachedAt} />
       </PlanShell>
     );
   }
@@ -489,7 +489,7 @@ export default function SeasonPlanningWorkspaceClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Season Planning" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Season plan" fromCache={fromCache} cachedAt={cachedAt} />
       </PlanShell>
     );
   }
@@ -501,7 +501,7 @@ export default function SeasonPlanningWorkspaceClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Season Planning" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Season plan" fromCache={fromCache} cachedAt={cachedAt} />
       </PlanShell>
     );
   }
@@ -512,11 +512,11 @@ export default function SeasonPlanningWorkspaceClient() {
         breadcrumbs={
           <>
             <a href={teamHref}>Team</a>
-            {" / Season Planning Workspace"}
+            {" / Season plan"}
           </>
         }
-        title="Season Planning Workspace"
-        description="Goals → milestones → owners with calendar sync hooks. Progress uses real attendance and build-task data. Cross-check Season Goals, Calendar, and Attendance."
+        title="Season plan"
+        description="Goals → milestones → owners with calendar sync hooks. Progress uses real attendance and build-task data. Cross-check Goals, Calendar, and Attendance."
       >
         <div className="season-plan-header-actions">
           {view && "seasons" in view && view.seasons.length > 0 ? (
@@ -551,7 +551,7 @@ export default function SeasonPlanningWorkspaceClient() {
         </div>
       </PageHeader>
 
-      <OfflineBanner feature="Season Planning" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Season plan" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p role="alert" className="telemetry-status">
@@ -562,7 +562,7 @@ export default function SeasonPlanningWorkspaceClient() {
       <NextActionsPanel actions={nextActions} />
 
       {showTiles && view?.status === "live" ? (
-        <section className="season-plan-stats" aria-label="Season Planning counts">
+        <section className="season-plan-stats" aria-label="Season plan counts">
           <StatTile
             label="Goals done"
             value={`${formatSeasonPlanningMetric(view.progress.goalsDone, true)}/${formatSeasonPlanningMetric(view.progress.goalsTotal, true)}`}

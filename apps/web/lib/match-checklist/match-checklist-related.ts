@@ -20,7 +20,7 @@ export type MatchChecklistNextAction = {
 
 /**
  * Readable Soft-UI next actions for pre-match checklists.
- * Points at real Event Day / My Day / Scouting / Strategy paths — never DEMO progress.
+ * Points at real Event day / My Day / Scouting / Strategy paths — never DEMO progress.
  */
 export function matchChecklistNextActions(input: {
   orgId?: string | null;
@@ -87,7 +87,7 @@ export function matchChecklistNextActions(input: {
   actions.push(
     {
       id: "command",
-      label: "Open Event Day",
+      label: "Open Event day",
       detail: "Match schedule and pit queues share the same event context.",
       href: hubHref("/competition", "command", orgId),
     },

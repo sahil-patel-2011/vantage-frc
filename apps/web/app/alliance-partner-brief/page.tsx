@@ -1,7 +1,7 @@
 import AlliancePartnerBriefClient from "./alliance-partner-brief-client";
 
 export const metadata = {
-  title: "Alliance-Partner Brief",
+  title: "Partner brief",
 };
 
 export default function AlliancePartnerBriefPage() {

@@ -2,12 +2,12 @@ import { hubHref } from "../nav/hubs";
 import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Award Tracker (never DEMO win rates). */
+/** Soft-UI related surfaces for Award tracker (never DEMO win rates). */
 export const AWARD_TRACKER_RELATED_LINKS = [
   { id: "evidence", label: "Business · Awards", kind: "business" as const, tab: "evidence" },
   { id: "awards-workbench", label: "Awards workbench", kind: "path" as const, path: "/team/awards" },
   { id: "impact-essay", label: "Impact essay", kind: "business" as const, tab: "impact-essay" },
-  { id: "judge-sim", label: "Judge-Pitch", kind: "business" as const, tab: "judge-sim" },
+  { id: "judge-sim", label: "Judge pitch", kind: "business" as const, tab: "judge-sim" },
 ] as const;
 
 export type AwardTrackerRelatedId = (typeof AWARD_TRACKER_RELATED_LINKS)[number]["id"];
@@ -26,7 +26,7 @@ export const AWARD_TRACKER_RELATED_INCLUDE: AwardTrackerRelatedId[] = [
 ];
 
 /**
- * Soft-UI cross-links from Award Tracker → Awards / Essay.
+ * Soft-UI cross-links from Award tracker → Awards / Essay.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function awardTrackerRelatedLinks(
@@ -93,7 +93,7 @@ export function awardTrackerSetupSteps(orgId?: string | null): AwardTrackerSetup
     },
     {
       id: "impact-essay",
-      label: "Open Impact Essay",
+      label: "Open Impact essay",
       detail: "Essay drafts stay blank until grounded outreach exists.",
       href: hubHref("/business", "impact-essay", orgId),
     },
@@ -127,7 +127,7 @@ export function isAwardTrackerBoardEmpty(input: { submissionCount: number }): bo
   return input.submissionCount === 0;
 }
 
-/** Classify Award Tracker Soft-UI shell — never invents DEMO win rates. */
+/** Classify Award tracker Soft-UI shell — never invents DEMO win rates. */
 export function classifyAwardTrackerShell(input: {
   loading: boolean;
   fetchFailed?: boolean;
@@ -148,7 +148,7 @@ export function awardTrackerShellCopy(kind: AwardTrackerShellKind): AwardTracker
     case "loading":
       return {
         kind,
-        title: "Loading Award Tracker…",
+        title: "Opening Award tracker…",
         description:
           "Checking which team you are on and award submissions.",
       };
@@ -156,9 +156,9 @@ export function awardTrackerShellCopy(kind: AwardTrackerShellKind): AwardTracker
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Award Tracker",
+        title: "Could not load Award tracker",
         description:
-          "A network or server issue blocked the tracker. Retry, or open Awards / Impact Essay while it reloads.",
+          "A network or server issue blocked the tracker. Retry, or open Awards / Impact essay while it reloads.",
       };
     case "setup":
       return {
@@ -174,7 +174,7 @@ export function awardTrackerShellCopy(kind: AwardTrackerShellKind): AwardTracker
         badge: "No submissions yet",
         title: "Track your first award submission",
         description:
-          "Deadlines and status stay blank until you log an award, event, and due date. Cross-check Awards and Impact Essay.",
+          "Deadlines and status stay blank until you log an award, event, and due date. Cross-check Awards and Impact essay.",
       };
     default:
       return {
@@ -187,8 +187,8 @@ export function awardTrackerShellCopy(kind: AwardTrackerShellKind): AwardTracker
 }
 
 /**
- * Soft-UI next actions for Award Tracker empty/setup shells.
- * Points at Awards / Impact Essay — never invents DEMO win rates.
+ * Soft-UI next actions for Award tracker empty/setup shells.
+ * Points at Awards / Impact essay — never invents DEMO win rates.
  */
 export function awardTrackerNextActions(input: {
   orgId?: string | null;
@@ -211,7 +211,7 @@ export function awardTrackerNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Award Tracker",
+        label: "Retry Award tracker",
         detail: "Reload real submissions and deadlines.",
         href: withOrgHref("/award-tracker", orgId),
         primary: true,
@@ -224,7 +224,7 @@ export function awardTrackerNextActions(input: {
       },
       {
         id: "impact-essay",
-        label: "Open Impact Essay",
+        label: "Open Impact essay",
         detail: "Essay drafts stay available while the tracker reloads.",
         href: hubHref("/business", "impact-essay", orgId),
       },
@@ -248,7 +248,7 @@ export function awardTrackerNextActions(input: {
       },
       {
         id: "impact-essay",
-        label: "Open Impact Essay",
+        label: "Open Impact essay",
         detail: "Essay drafts stay empty until real outreach lands.",
         href: hubHref("/business", "impact-essay", orgId),
       },
@@ -280,7 +280,7 @@ export function awardTrackerNextActions(input: {
     },
     {
       id: "impact-essay",
-      label: "Open Impact Essay",
+      label: "Open Impact essay",
       detail: "Pair submission timelines with grounded essay drafts.",
       href: hubHref("/business", "impact-essay", orgId),
     },

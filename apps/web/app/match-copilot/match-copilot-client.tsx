@@ -43,7 +43,7 @@ async function persistMatchCopilotSnapshot(orgHint: string, data: MatchCopilotVi
 const CATEGORY_LABEL: Record<MatchCopilotCalloutCategory, string> = {
   opponent: "Opponent",
   strategy: "Strategy",
-  risk: "FMEA risk",
+  risk: "Failure risk",
   battery: "Battery",
 };
 
@@ -129,10 +129,10 @@ function CopilotShell({
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Match Copilot"}
+            {" / Briefing"}
           </>
         }
-        title="Match Copilot"
+        title="Briefing"
         description={description}
       >
         <CopilotRelatedStrip orgId={orgId} />
@@ -142,7 +142,7 @@ function CopilotShell({
         soft
         badge={
           shell === "setup"
-            ? "Setup required"
+            ? "Needs setup"
             : shell === "error"
               ? "Unavailable"
               : shell === "empty"
@@ -213,7 +213,7 @@ export default function MatchCopilotClient() {
         if (!response.ok || !isMatchCopilotView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Match Copilot. Showing the last copy on this device.");
+            setError("Could not refresh Briefing. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -227,7 +227,7 @@ export default function MatchCopilotClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Match Copilot. Showing the last copy on this device.");
+          setError("Could not refresh Briefing. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -297,7 +297,7 @@ export default function MatchCopilotClient() {
   if (shell === "loading") {
     return (
       <CopilotShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Match Copilot" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Briefing" fromCache={fromCache} cachedAt={cachedAt} />
       </CopilotShell>
     );
   }
@@ -311,7 +311,7 @@ export default function MatchCopilotClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Match Copilot" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Briefing" fromCache={fromCache} cachedAt={cachedAt} />
       </CopilotShell>
     );
   }
@@ -323,7 +323,7 @@ export default function MatchCopilotClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Match Copilot" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Briefing" fromCache={fromCache} cachedAt={cachedAt} />
       </CopilotShell>
     );
   }
@@ -331,7 +331,7 @@ export default function MatchCopilotClient() {
   if (view?.status !== "live") {
     return (
       <CopilotShell description={shellCopy.description} orgId={orgId} shell="setup">
-        <OfflineBanner feature="Match Copilot" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Briefing" fromCache={fromCache} cachedAt={cachedAt} />
       </CopilotShell>
     );
   }
@@ -342,11 +342,11 @@ export default function MatchCopilotClient() {
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Match Copilot"}
+            {" / Briefing"}
           </>
         }
-        title="Match Copilot"
-        description="A glanceable 60-second brief for your next match — fusing opponent EPA, your stored strategy plan, open FMEA risks, and live battery health into prioritized do-this callouts. Cross-check Strategy, Command, and FMEA."
+        title="Briefing"
+        description="A glanceable 60-second brief for your next match — fusing opponent rating, your stored strategy plan, open failure risks, and live battery health into prioritized do-this callouts. Cross-check Strategy, Command, and Failure log."
       >
         <div className="match-copilot-header-actions">
           {relatedLinks.map((link) => (
@@ -357,7 +357,7 @@ export default function MatchCopilotClient() {
         </div>
       </PageHeader>
 
-      <OfflineBanner feature="Match Copilot" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Briefing" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -399,11 +399,11 @@ export default function MatchCopilotClient() {
           <RisksPanel view={view} />
           <BatteryPanel view={view} />
         </div>
-        <Panel className="match-copilot-tip" aria-label="Match Copilot tip">
+        <Panel className="match-copilot-tip" aria-label="Briefing tip">
           <span className="eyebrow">Grounding path</span>
           <p className="app-muted" style={{ marginTop: 8 }}>
             Keep the next-match plan in <a href={strategyHref}>Strategy</a>, confirm the active event
-            in <a href={commandHref}>Command</a>, and log open failures in <a href={fmeaHref}>FMEA</a>
+            in <a href={commandHref}>Command</a>, and log open failures in <a href={fmeaHref}>Failure log</a>
           </p>
         </Panel>
       </div>
@@ -427,11 +427,11 @@ function SummaryTiles({
   const tiles = [
     { label: "Callouts", value: formatMatchCopilotMetric(calloutCount, loaded) },
     { label: "Opponents", value: formatMatchCopilotMetric(opponentCount, loaded) },
-    { label: "Open FMEA risks", value: formatMatchCopilotMetric(openRiskCount, loaded) },
+    { label: "Open failure risks", value: formatMatchCopilotMetric(openRiskCount, loaded) },
     { label: "Batteries tracked", value: formatMatchCopilotMetric(batteryCount, loaded) },
   ];
   return (
-    <section className="match-copilot-stats" aria-label="Match Copilot counts">
+    <section className="match-copilot-stats" aria-label="Briefing counts">
       {tiles.map((tile) => (
         <div key={tile.label}>
           <strong>{tile.value}</strong>
@@ -462,7 +462,7 @@ function MatchHeaderPanel({
             {view.compLevel.toUpperCase()} {view.matchNumber} · {view.eventName ?? view.eventKey}
           </h2>
           <small className="app-muted">
-            {view.scheduledTime ? new Date(view.scheduledTime).toLocaleString() : "Time TBD"} · Our EPA{" "}
+            {view.scheduledTime ? new Date(view.scheduledTime).toLocaleString() : "Time TBD"} · Our rating{" "}
             {epaLabel(view.ourEpaTotal)}
           </small>
         </div>
@@ -482,7 +482,7 @@ function CalloutsPanel({ view }: { view: LiveView }) {
         badge="No callouts yet"
         badgeTone="setup"
         title="Generate this match's brief"
-        description="Fuses opponent EPA, your strategy plan, open FMEA risks, and battery health into up to 3 prioritized callouts."
+        description="Fuses opponent rating, your strategy plan, open failure risks, and battery health into up to 3 prioritized callouts."
       />
     );
   }
@@ -519,7 +519,7 @@ function OpponentsPanel({ view }: { view: LiveView }) {
           {view.opponents.map((team) => (
             <li key={team.teamKey} style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
               <span>{team.nickname ? `${team.nickname} (#${team.teamNumber})` : `Team ${team.teamNumber}`}</span>
-              <small className="app-muted">EPA {epaLabel(team.epaTotal)}</small>
+              <small className="app-muted">Rating {epaLabel(team.epaTotal)}</small>
             </li>
           ))}
         </ul>
@@ -531,7 +531,7 @@ function OpponentsPanel({ view }: { view: LiveView }) {
 function RisksPanel({ view }: { view: LiveView }) {
   return (
     <Panel>
-      <h2 style={{ marginTop: 0 }}>Open FMEA risks</h2>
+      <h2 style={{ marginTop: 0 }}>Open failure risks</h2>
       {view.openRisks.length === 0 ? (
         <p className="app-muted">No open risks logged.</p>
       ) : (
@@ -540,7 +540,7 @@ function RisksPanel({ view }: { view: LiveView }) {
             <li key={risk.id}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
                 <span>{risk.title}</span>
-                <small className="app-muted">RPN {risk.rpn}</small>
+                <small className="app-muted">Priority {risk.rpn}</small>
               </div>
               <small className="app-muted">{risk.subsystemName}</small>
             </li>

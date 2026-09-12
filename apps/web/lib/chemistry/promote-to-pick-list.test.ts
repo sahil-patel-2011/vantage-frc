@@ -16,7 +16,7 @@ const setJustificationMock = vi.fn(async () => undefined);
 const upsertEntryMock = vi.fn(
   async (_client: unknown, input: { teamKey: string | number; pickListId: string }) => {
     if (String(input.teamKey) === "frc9999") {
-      throw new Error("9999 is not in the TBA team reference yet — sync the event first.");
+      throw new Error("9999 is not in the official team list yet — sync the event first.");
     }
     return `entry-${input.teamKey}`;
   },
@@ -101,7 +101,7 @@ describe("partnerFitNotes", () => {
 
   it("stamps a MODEL line from a real score and keeps caller notes", () => {
     expect(partnerFitNotes({ fit: realFit, notes: "Captain wants this seat" })).toBe(
-      "Captain wants this seat Chemistry 72/100 partner fit (role fit 85, EPA 94.2). Verify with pit notes before locking the pick.",
+      "Captain wants this seat Chemistry 72/100 partner fit (role fit 85, season rating 94.2). Verify with pit notes before locking the pick.",
     );
   });
 });

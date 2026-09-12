@@ -7,7 +7,7 @@ const WEB = join(__dirname, "..", "..");
 /**
  * Leftover student chrome on surfaces that are not skip-list and not in
  * open PRs #2–#37. Audit / posture / exports / knowledge history still say
- * “pick the team first” on purpose until those skip-list pages are golded.
+ * Audit / posture / exports / knowledge history now say Choose your team.
  */
 const FILES = [
   "app/strategy/board/board-client.tsx",

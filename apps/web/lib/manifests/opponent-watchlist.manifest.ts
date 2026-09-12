@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "opponent-watchlist",
-  title: "Opponent Watchlist",
+  title: "Watchlist",
   route: "/opponent-watchlist",
   apiRoute: "/api/opponent-watchlist",
   hub: "Competition",

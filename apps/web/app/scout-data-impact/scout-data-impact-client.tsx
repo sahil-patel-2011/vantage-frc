@@ -55,7 +55,7 @@ async function persistScoutDataImpactSnapshot(
     await putFeatureSnapshot("scout-data-impact", cacheOrg, data, eventHint || eventKey);
     if (!orgHint) await putFeatureSnapshot("scout-data-impact", "_", data, eventHint || eventKey);
   } catch {
-    // Live Scout Data Impact already painted; IndexedDB is best-effort.
+    // Live Data impact already painted; IndexedDB is best-effort.
   }
 }
 
@@ -151,10 +151,10 @@ function ScoutDataImpactShell({
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Scout Data Impact"}
+            {" / Data impact"}
           </>
         }
-        title="Scout Data Impact"
+        title="Data impact"
         description={description}
       >
         <ScoutDataImpactRelatedStrip orgId={orgId} />
@@ -267,7 +267,7 @@ export default function ScoutDataImpactClient({ orgId: initialOrgId }: { orgId?:
           if (!response.ok || !isScoutDataImpactView(data)) {
             if (hadCache || viewRef.current) {
               setFromCache(true);
-              setError("Could not refresh Scout Data Impact. Showing the last copy on this device.");
+              setError("Could not refresh Data impact. Showing the last copy on this device.");
               setFetchFailed(false);
             } else {
               setFetchFailed(true);
@@ -284,7 +284,7 @@ export default function ScoutDataImpactClient({ orgId: initialOrgId }: { orgId?:
         } catch {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Scout Data Impact. Showing the last copy on this device.");
+            setError("Could not refresh Data impact. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -360,7 +360,7 @@ export default function ScoutDataImpactClient({ orgId: initialOrgId }: { orgId?:
   if (shell === "loading") {
     return (
       <ScoutDataImpactShell description={shellCopy.description} orgId={orgId} shell="loading">
-        <OfflineBanner feature="Scout Data Impact" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Data impact" fromCache={fromCache} cachedAt={cachedAt} />
       </ScoutDataImpactShell>
     );
   }
@@ -374,7 +374,7 @@ export default function ScoutDataImpactClient({ orgId: initialOrgId }: { orgId?:
         errorStatus={failureStatus}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Scout Data Impact" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Data impact" fromCache={fromCache} cachedAt={cachedAt} />
       </ScoutDataImpactShell>
     );
   }
@@ -386,7 +386,7 @@ export default function ScoutDataImpactClient({ orgId: initialOrgId }: { orgId?:
         shell="setup"
         logPick={orgId ? logPickForm : null}
       >
-        <OfflineBanner feature="Scout Data Impact" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Data impact" fromCache={fromCache} cachedAt={cachedAt} />
       </ScoutDataImpactShell>
     );
   }
@@ -398,7 +398,7 @@ export default function ScoutDataImpactClient({ orgId: initialOrgId }: { orgId?:
         shell="empty"
         logPick={logPickForm}
       >
-        <OfflineBanner feature="Scout Data Impact" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Data impact" fromCache={fromCache} cachedAt={cachedAt} />
       </ScoutDataImpactShell>
     );
   }
@@ -409,10 +409,10 @@ export default function ScoutDataImpactClient({ orgId: initialOrgId }: { orgId?:
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Scout Data Impact"}
+            {" / Data impact"}
           </>
         }
-        title="Scout Data Impact"
+        title="Data impact"
         description="After alliance selection, see which real scouting entries informed each pick — where-your-data-went."
       >
         <div className="scout-data-impact-header-meta">
@@ -420,7 +420,7 @@ export default function ScoutDataImpactClient({ orgId: initialOrgId }: { orgId?:
         </div>
       </PageHeader>
 
-      <OfflineBanner feature="Scout Data Impact" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Data impact" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="form-message" role="status">

@@ -11,7 +11,7 @@ import {
 import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("opponentWatchlistRelatedLinks", () => {
-  it("builds Strategy / EPA Trend Alerts / Scouting cross-links", () => {
+  it("builds Strategy / Rating alerts / Scouting cross-links", () => {
     const links = opponentWatchlistRelatedLinks("org-1", {
       include: [...OPPONENT_WATCHLIST_RELATED_INCLUDE],
     });
@@ -52,7 +52,7 @@ describe("opponentWatchlistNextActions", () => {
     expect(actions.some((a) => a.id === "scouting")).toBe(true);
   });
 
-  it("setup with org points at Workspace + Strategy / EPA alerts / Scouting", () => {
+  it("setup with org points at Workspace + Strategy / Rating alerts / Scouting", () => {
     const actions = opponentWatchlistNextActions({ orgId: "org-1", shell: "setup" });
     expect(actions[0]?.id).toBe("workspace");
     expect(actions.some((a) => a.id === "strategy")).toBe(true);
@@ -61,7 +61,7 @@ describe("opponentWatchlistNextActions", () => {
     expect(actions.every((a) => !/\bdemo\b/i.test(`${a.label} ${a.detail}`))).toBe(true);
   });
 
-  it("points empty boards at watch-team + Strategy / EPA alerts / Scouting", () => {
+  it("points empty boards at watch-team + Strategy / Rating alerts / Scouting", () => {
     const actions = opponentWatchlistNextActions({
       orgId: "org-1",
       shell: "empty",

@@ -277,7 +277,7 @@ export default function SubsystemsClient({ orgId }: { orgId: string | null }) {
         </PageHeader>
         <OfflineBanner feature="Subsystem specs" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
-          title={failure ? failure.title : "Loading subsystems…"}
+          title={failure ? failure.title : "Opening Subsystem specs"}
           description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >
@@ -313,7 +313,7 @@ export default function SubsystemsClient({ orgId }: { orgId: string | null }) {
             <SubsystemsRelated orgId={orgId} />
           </PageHeader>
           <OfflineBanner feature="Subsystem specs" fromCache={fromCache} cachedAt={cachedAt} />
-          <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
+          <EmptyState badge="Needs setup" badgeTone="setup" title={view.message}>
             <Button as="a" variant="primary" href="/workspace">
               Choose your team
             </Button>

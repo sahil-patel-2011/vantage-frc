@@ -1,7 +1,7 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Opponent Counter-book (never DEMO opponent metrics). */
+/** Soft-UI related surfaces for Counter-book (never DEMO opponent metrics). */
 export const COUNTER_BOOK_RELATED_LINKS = [
   { id: "strategy", label: "Strategy", tab: "strategy" },
   { id: "scouting", label: "Scouting", tab: "scouting" },
@@ -91,7 +91,7 @@ export function counterBookShellCopy(kind: CounterBookShellKind): CounterBookEmp
     case "loading":
       return {
         kind,
-        title: "Loading Counter-book…",
+        title: "Opening Counter-book",
         description:
           "Checking which team you are on and generated reports.",
       };
@@ -106,7 +106,7 @@ export function counterBookShellCopy(kind: CounterBookShellKind): CounterBookEmp
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Choose your team before generating reports.",
@@ -147,7 +147,7 @@ export function counterBookNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before generating reports.",
+          detail: "Choose your team before generating reports.",
           href: "/workspace",
           primary: true,
         },
@@ -258,7 +258,7 @@ export function counterBookNextActions(input: {
     },
     {
       id: "opponent-watchlist",
-      label: "Open Opponent Watchlist",
+      label: "Open Watchlist",
       detail: "Pair qualitative notes with quantitative counter plans.",
       href: hubHref("/competition", "opponent-watchlist", orgId),
     },

@@ -11,6 +11,6 @@ describe("CAD Change Radar last snapshot stays on the phone", () => {
     expect(src).toMatch(/putFeatureSnapshot/);
     expect(src).toMatch(/"cad-change-radar"/);
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
-    expect(src).toMatch(/feature="CAD Change Radar"/);
+    expect(src).toMatch(/feature="Change radar"/);
   });
 });

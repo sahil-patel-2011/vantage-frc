@@ -11,6 +11,6 @@ describe("Tuning Autopilot last snapshot stays on the phone", () => {
     expect(src).toMatch(/putFeatureSnapshot/);
     expect(src).toMatch(/"tuning-autopilot"/);
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
-    expect(src).toMatch(/feature="Tuning Autopilot"/);
+    expect(src).toMatch(/feature="Tuning advisor"/);
   });
 });

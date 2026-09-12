@@ -1,17 +1,17 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Vendor Directory (never DEMO vendor metrics). */
+/** Soft-UI related surfaces for Vendor directory (never DEMO vendor metrics). */
 export const VENDORS_RELATED_LINKS = [
   { id: "orders", label: "Orders", kind: "business" as const, tab: "orders" },
   {
     id: "vendor-lead-times",
-    label: "Vendor Lead Times",
+    label: "Lead times",
     kind: "business" as const,
     tab: "vendor-lead-times",
   },
   { id: "inventory", label: "Inventory", kind: "path" as const, path: "/inventory" },
-  { id: "spare-forecast", label: "Spare Forecast", kind: "build" as const, tab: "spare-forecast" },
+  { id: "spare-forecast", label: "Spares forecast", kind: "build" as const, tab: "spare-forecast" },
 ] as const;
 
 export type VendorsRelatedId = (typeof VENDORS_RELATED_LINKS)[number]["id"];
@@ -22,11 +22,11 @@ export type VendorsRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — Orders / Vendor Lead Times first. */
+/** Focused Soft-UI strip — Orders / Lead times first. */
 export const VENDORS_RELATED_INCLUDE: VendorsRelatedId[] = ["orders", "vendor-lead-times"];
 
 /**
- * Soft-UI cross-links from Vendors → Orders / Vendor Lead Times.
+ * Soft-UI cross-links from Vendors → Orders / Lead times.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function vendorsRelatedLinks(
@@ -100,7 +100,7 @@ export function vendorsShellCopy(kind: VendorsShellKind): VendorsEmptyCopy {
     case "loading":
       return {
         kind,
-        title: "Loading Vendor Directory…",
+        title: "Opening Vendor directory",
         description:
           "Checking which team you are on and real supplier rows.",
       };
@@ -108,14 +108,14 @@ export function vendorsShellCopy(kind: VendorsShellKind): VendorsEmptyCopy {
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Vendor Directory",
+        title: "Could not load Vendor directory",
         description:
-          "A network or server issue blocked the directory. Retry, or open Orders / Vendor Lead Times while it reloads.",
+          "A network or server issue blocked the directory. Retry, or open Orders / Lead times while it reloads.",
       };
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Choose your team before adding real suppliers.",
@@ -126,7 +126,7 @@ export function vendorsShellCopy(kind: VendorsShellKind): VendorsEmptyCopy {
         badge: "No vendors yet",
         title: "Add a supplier before building the directory",
         description:
-          "Contacts, lead times, and ratings stay blank until you add a real vendor. Orders require a supplier from this directory. Cross-check Orders and Vendor Lead Times.",
+          "Contacts, lead times, and ratings stay blank until you add a real vendor. Orders require a supplier from this directory. Cross-check Orders and Lead times.",
       };
     default:
       return {
@@ -140,7 +140,7 @@ export function vendorsShellCopy(kind: VendorsShellKind): VendorsEmptyCopy {
 
 /**
  * Soft-UI next actions for Vendors empty/setup shells.
- * Points at Orders / Vendor Lead Times — never invents DEMO vendor metrics.
+ * Points at Orders / Lead times — never invents DEMO vendor metrics.
  */
 export function vendorsNextActions(input: {
   orgId?: string | null;
@@ -160,7 +160,7 @@ export function vendorsNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before adding suppliers.",
+          detail: "Choose your team before adding suppliers.",
           href: "/workspace",
           primary: true,
         },
@@ -172,7 +172,7 @@ export function vendorsNextActions(input: {
         },
         {
           id: "vendor-lead-times",
-          label: "Open Vendor Lead Times",
+          label: "Open Lead times",
           detail: "Reorder-by dates stay blank until lead times land.",
           href: hubHref("/business", "vendor-lead-times", null),
         },
@@ -182,7 +182,7 @@ export function vendorsNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Finish membership setup so Vendor Directory can load.",
+        detail: "Finish membership setup so Vendor directory can load.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
       },
@@ -194,7 +194,7 @@ export function vendorsNextActions(input: {
       },
       {
         id: "vendor-lead-times",
-        label: "Open Vendor Lead Times",
+        label: "Open Lead times",
         detail: "Keep reorder windows aligned with the contacts you store here.",
         href: hubHref("/business", "vendor-lead-times", orgId),
       },
@@ -205,7 +205,7 @@ export function vendorsNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Vendor Directory",
+        label: "Retry Vendor directory",
         detail: "Reload real suppliers.",
         href: withOrgHref("/vendors", orgId),
         primary: true,
@@ -218,7 +218,7 @@ export function vendorsNextActions(input: {
       },
       {
         id: "vendor-lead-times",
-        label: "Open Vendor Lead Times",
+        label: "Open Lead times",
         detail: "Lead-time tracking stays available while the directory reloads.",
         href: hubHref("/business", "vendor-lead-times", orgId),
       },
@@ -242,7 +242,7 @@ export function vendorsNextActions(input: {
       },
       {
         id: "vendor-lead-times",
-        label: "Open Vendor Lead Times",
+        label: "Open Lead times",
         detail: "Log lead times once you know which suppliers you buy from.",
         href: hubHref("/business", "vendor-lead-times", orgId),
       },
@@ -286,7 +286,7 @@ export function vendorsNextActions(input: {
     },
     {
       id: "vendor-lead-times",
-      label: "Open Vendor Lead Times",
+      label: "Open Lead times",
       detail: "Align reorder-by dates with the lead times you store on these contacts.",
       href: hubHref("/business", "vendor-lead-times", orgId),
     },

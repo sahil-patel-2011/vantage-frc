@@ -10,7 +10,7 @@ import {
 const FALLBACK: RankingProjectionView = {
   status: "setup_required",
   message: "Could not load ranking projection. Choose your team and confirm database access.",
-  steps: [{ id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" }],
+  steps: [{ id: "workspace", label: "Choose your team", detail: "Choose which FRC team you are working as.", href: "/workspace" }],
   orgId: null,
 };
 

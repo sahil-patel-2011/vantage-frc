@@ -43,7 +43,7 @@ export function aiGovernanceRelatedLinks(
     { id: "finance", label: "Finance in Ask AI", href: hubHref("/ai", "finance", orgId) },
     { id: "usage", label: "AI usage", href: withOrgHref("/team/usage", orgId) },
     { id: "runs", label: "AI runs", href: withOrgHref("/team/ai-runs", orgId) },
-    { id: "admin", label: "Team admin", href: withOrgHref("/team/admin", orgId) },
+    { id: "admin", label: "Invites", href: withOrgHref("/team/admin", orgId) },
   ];
   return all.filter((link) => {
     if (link.id === options?.active) return false;
@@ -164,7 +164,7 @@ export function aiGovernanceShellCopy(kind: AiGovernanceShellKind): AiGovernance
     case "loading":
       return {
         kind,
-        title: "Loading AI governance…",
+        title: "Opening AI governance",
         description: "Checking your team's policy, spend alerts, and the high-cost approval queue.",
       };
     case "auth_required":
@@ -230,7 +230,7 @@ export function aiGovernanceNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "AI governance is saved per org — pick a team first.",
+        detail: "AI governance is saved per team. Choose your team.",
         href: "/workspace",
         primary: true,
       },
@@ -246,7 +246,7 @@ export function aiGovernanceNextActions(input: {
       {
         id: "signin",
         label: "Sign in",
-        detail: "Closed membership — Google or email OTP, then reopen AI · Governance.",
+        detail: "Closed membership — Google or an emailed sign-in code, then reopen AI · Governance.",
         href: "/signin",
         primary: true,
       },

@@ -264,9 +264,9 @@ export default function ObjectChatBridgeClient() {
           ) : null}
         </EmptyState>
       ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your team." aria-busy />
+        <EmptyState title="Opening Object chat" description="Checking your team." aria-busy />
       ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title="Choose your team" description={view.message}>
+        <EmptyState badge="Needs setup" badgeTone="setup" title="Choose your team" description={view.message}>
           {view.steps[0] ? (
             <Button as="a" variant="primary" href={view.steps[0].href}>
               {view.steps[0].label}

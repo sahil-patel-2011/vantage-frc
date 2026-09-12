@@ -4,7 +4,7 @@ import { withOrgHref } from "../nav/product-nav";
 
 /** Related surfaces for Overnight brief (never DEMO overnight metrics). */
 export const OVERNIGHT_INTEL_RELATED_LINKS = [
-  { id: "command", label: "Event Day", tab: "command" },
+  { id: "command", label: "Event day", tab: "command" },
   { id: "strategy", label: "Strategy", tab: "strategy" },
   { id: "scouting", label: "Scouting", tab: "scouting" },
   { id: "epa-trend-alerts", label: "Rating alerts", tab: "epa-trend-alerts" },
@@ -18,7 +18,7 @@ export type OvernightIntelRelatedLink = {
   href: string;
 };
 
-/** Focused header strip — Event Day / Strategy / Scouting. */
+/** Focused header strip — Event day / Strategy / Scouting. */
 export const OVERNIGHT_INTEL_RELATED_INCLUDE: OvernightIntelRelatedId[] = [
   "command",
   "strategy",
@@ -26,7 +26,7 @@ export const OVERNIGHT_INTEL_RELATED_INCLUDE: OvernightIntelRelatedId[] = [
 ];
 
 /**
- * Cross-links from Overnight brief → Event Day / Strategy / Scouting.
+ * Cross-links from Overnight brief → Event day / Strategy / Scouting.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function overnightIntelRelatedLinks(
@@ -85,7 +85,7 @@ function dropRelatedStripDuplicates<T extends { href: string }>(
   return items.filter((item) => !related.has(item.href));
 }
 
-/** One setup primary — Event Day / Strategy / Scouting live on the related strip. */
+/** One setup primary — Event day / Strategy / Scouting live on the related strip. */
 export function overnightIntelSetupSteps(
   orgId?: string | null,
   options?: { needsActiveEvent?: boolean },
@@ -168,7 +168,7 @@ export function overnightIntelShellCopy(kind: OvernightIntelShellKind): Overnigh
     case "loading":
       return {
         kind,
-        title: "Loading overnight brief…",
+        title: "Opening Overnight brief",
         description: "Checking which team you are on and the event you are at.",
       };
     case "error":
@@ -177,7 +177,7 @@ export function overnightIntelShellCopy(kind: OvernightIntelShellKind): Overnigh
         badge: "Unavailable",
         title: "Could not load overnight brief",
         description:
-          "A network or server issue blocked the brief. Retry, or open Event Day while it reloads.",
+          "A network or server issue blocked the brief. Retry, or open Event day while it reloads.",
       };
     case "setup":
       return {

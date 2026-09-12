@@ -29,7 +29,7 @@ function mockClient(route: (sql: string, params: unknown[]) => Row[] | Error) {
 }
 
 describe("access-request notification payloads", () => {
-  it("builds the owner/admin join-request row with a Team admin deep link", () => {
+  it("builds the owner/admin join-request row with a Invites deep link", () => {
     const created = accessRequestCreatedNotification({
       orgId: "org-1",
       requestId: "req-1",

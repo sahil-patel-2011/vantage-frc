@@ -120,7 +120,7 @@ export function buildMentorHomeStrip(input: MentorHomeStripInput): HomeStripItem
   } else {
     items.push({
       key: "event_day",
-      label: "Event Day",
+      label: "Event day",
       detail: "Field command, travel strip, and match queue",
       href: hubHref("/competition", "command", orgId),
       tone: "neutral",

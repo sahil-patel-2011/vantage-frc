@@ -1,7 +1,7 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Sketch-to-Brief (never DEMO brief metrics). */
+/** Soft-UI related surfaces for Sketch to brief (never DEMO brief metrics). */
 export const SKETCH_TO_BRIEF_RELATED_LINKS = [
   { id: "kickoff", label: "Kickoff", kind: "build" as const, tab: "kickoff" },
   { id: "cad", label: "CAD", kind: "build" as const, tab: "cad" },
@@ -21,7 +21,7 @@ export type SketchToBriefRelatedLink = {
 export const SKETCH_TO_BRIEF_RELATED_INCLUDE: SketchToBriefRelatedId[] = ["kickoff", "cad"];
 
 /**
- * Soft-UI cross-links from Sketch-to-Brief → Kickoff / CAD.
+ * Soft-UI cross-links from Sketch to brief → Kickoff / CAD.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function sketchToBriefRelatedLinks(
@@ -66,7 +66,7 @@ export function formatSketchToBriefMetric(value: unknown, loaded: boolean): stri
   return Math.floor(n).toLocaleString();
 }
 
-/** Classify Sketch-to-Brief Soft-UI shell — never invents DEMO brief metrics. */
+/** Classify Sketch to brief Soft-UI shell — never invents DEMO brief metrics. */
 export function classifySketchToBriefShell(input: {
   loading: boolean;
   fetchFailed?: boolean;
@@ -87,7 +87,7 @@ export function sketchToBriefShellCopy(kind: SketchToBriefShellKind): SketchToBr
     case "loading":
       return {
         kind,
-        title: "Loading Sketch-to-Brief…",
+        title: "Opening Sketch to brief",
         description:
           "Checking which team you are on and logged kickoff sketches.",
       };
@@ -95,14 +95,14 @@ export function sketchToBriefShellCopy(kind: SketchToBriefShellKind): SketchToBr
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Sketch-to-Brief",
+        title: "Could not load Sketch to brief",
         description:
           "A network or server issue blocked sketches. Retry, or open Kickoff / CAD while it reloads.",
       };
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Choose your team before logging whiteboard sketches.",
@@ -126,7 +126,7 @@ export function sketchToBriefShellCopy(kind: SketchToBriefShellKind): SketchToBr
 }
 
 /**
- * Soft-UI next actions for Sketch-to-Brief empty/setup shells.
+ * Soft-UI next actions for Sketch to brief empty/setup shells.
  * Points at Kickoff / CAD — never invents DEMO brief metrics.
  */
 export function sketchToBriefNextActions(input: {
@@ -149,7 +149,7 @@ export function sketchToBriefNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before logging whiteboard notes.",
+          detail: "Choose your team before logging whiteboard notes.",
           href: "/workspace",
           primary: true,
         },
@@ -171,7 +171,7 @@ export function sketchToBriefNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Finish membership setup so Sketch-to-Brief can load.",
+        detail: "Finish membership setup so Sketch to brief can load.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
       },
@@ -194,7 +194,7 @@ export function sketchToBriefNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Sketch-to-Brief",
+        label: "Retry Sketch to brief",
         detail: "Reload real sketches.",
         href: withOrgHref("/sketch-to-brief", orgId),
         primary: true,
@@ -282,7 +282,7 @@ export function sketchToBriefNextActions(input: {
     },
     {
       id: "rule-impact",
-      label: "Open Rule Impact",
+      label: "Open Rule impact",
       detail: "When a flag looks blocking, check season rule deltas against prior subsystems.",
       href: hubHref("/build", "rule-impact", orgId),
     },

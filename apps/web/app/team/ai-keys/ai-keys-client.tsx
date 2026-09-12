@@ -360,7 +360,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
       setMessage(
         data.reachabilityWarning
           ? `Local connector saved. ${data.reachabilityWarning}`
-          : "Local OpenAI-compatible connector encrypted and saved.",
+          : "Local connector encrypted and saved.",
       );
       await load();
     } finally {
@@ -396,7 +396,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
 
   async function removeLocal() {
     if (!orgId) return;
-    if (!confirm("Remove the local OpenAI-compatible connector?")) return;
+    if (!confirm("Remove the local connector?")) return;
     setBusyLocal(true);
     setMessage("");
     try {
@@ -486,7 +486,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
           </>
         }
         navPath="/team/ai-keys"
-        title="AI API keys"
+        title="AI keys"
         description={PAGE_DESCRIPTION}
       >
       </PageHeader>
@@ -496,7 +496,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
       <OfflineBanner feature="AI keys" fromCache={fromCache} cachedAt={cachedAt} />
 
       {shell === "loading" ? (
-        <div aria-busy="true" aria-label="Loading AI API keys">
+        <div aria-busy="true" aria-label="Opening API keys">
           <SoftBlockSkeleton lines={3} />
         </div>
       ) : null}

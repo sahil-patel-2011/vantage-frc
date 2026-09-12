@@ -207,7 +207,7 @@ export default async function WorkspacePage({ searchParams }: { searchParams: Pr
           ) : null}
           {isOwnerAdmin ? (
             <>
-              <a href={`/team/data?orgId=${encodeURIComponent(orgId)}`}>TBA data</a>
+              <a href={`/team/data?orgId=${encodeURIComponent(orgId)}`}>Official matches</a>
               <a href={`/team?orgId=${encodeURIComponent(orgId)}`}>Team</a>
             </>
           ) : null}
@@ -216,7 +216,7 @@ export default async function WorkspacePage({ searchParams }: { searchParams: Pr
       <QuickActions orgId={orgId} />
       <DataSourceDegradedBanner health={data.dataSourceHealth} />
       <aside className="freshness-marker" role="status">
-        <strong>TBA cache</strong>
+        <strong>Official match cache</strong>
         <span>
           {data.freshness.syncedAt
             ? `Updated ${new Date(data.freshness.syncedAt).toLocaleString()}`

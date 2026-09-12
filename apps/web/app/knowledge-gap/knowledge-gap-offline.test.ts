@@ -11,6 +11,6 @@ describe("Knowledge-gap detective last snapshot stays on the phone", () => {
     expect(src).toMatch(/putFeatureSnapshot/);
     expect(src).toMatch(/"knowledge-gap"/);
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
-    expect(src).toMatch(/feature="Knowledge-gap detective"/);
+    expect(src).toMatch(/feature="Knowledge gaps"/);
   });
 });

@@ -206,6 +206,7 @@ describe("help search index", () => {
 
   it("finds this release's features by the words teams type", () => {
     expect(searchHelpArticles("subscription bridge")[0]?.slug).toBe("ai-bridge");
+    expect(searchHelpArticles("your claude code")[0]?.slug).toBe("ai-bridge");
     expect(searchHelpArticles("team library folders")[0]?.slug).toBe("team-library");
     expect(searchHelpArticles("reimbursement receipt")[0]?.slug).toBe("reimbursements");
     expect(searchHelpArticles("storage node raspberry pi")[0]?.slug).toBe("storage-node");

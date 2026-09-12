@@ -210,7 +210,7 @@ async function loadForecastLines(
       { id: row.id, subsystem: row.subsystem },
       indexedFailures,
     );
-    // Skip bins with no matched FMEA history — never fabricate a consumption rate.
+    // Skip bins with no matched Failure log history — never fabricate a consumption rate.
     if (failureCount <= 0) continue;
     const quantityOnHand = Number(row.quantity) || 0;
     const unitCost = row.unitCost != null ? Number(row.unitCost) : null;
@@ -251,7 +251,7 @@ export async function computeSpareForecastView(
       status: "setup_required",
       message: "Choose your team to forecast spare-parts exhaustion.",
       steps: [
-        { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
+        { id: "workspace", label: "Choose your team", detail: "Choose which FRC team you are working as.", href: "/workspace" },
         {
           id: "inventory",
           label: "Stock spare parts",
@@ -261,7 +261,7 @@ export async function computeSpareForecastView(
         {
           id: "subsystems",
           label: "Name subsystems",
-          detail: "Match spare bin tags to Subsystems so FMEA cadence can apply",
+          detail: "Match spare bin tags to Subsystems so Failure log cadence can apply",
           href: "/subsystems",
         },
       ],
@@ -324,7 +324,7 @@ export async function draftPurchaseRequest(
     metadata: {
       seasonYear: input.seasonYear,
       candidateCount: forecastLines.length,
-      note: "Deterministic FMEA-rate x bin x cadence exhaustion computation — no external model call",
+      note: "Deterministic failure-rate x bin x cadence exhaustion computation — no external model call",
     },
     invoke: async () => ({
       value: draftPurchaseRequestLines(forecastLines),
@@ -338,7 +338,7 @@ export async function draftPurchaseRequest(
 
   const totalEstimatedCost = drafted.reduce((sum, line) => sum + line.estimatedCost, 0);
   const rationale = drafted.length
-    ? `${drafted.length} spare(s) projected to exhaust before season end based on FMEA repeat-failure cadence.`
+    ? `${drafted.length} spare(s) projected to exhaust before season end based on logged repeat-failure cadence.`
     : "No spares are currently projected to exhaust before season end.";
 
   await client.query(

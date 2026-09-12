@@ -51,7 +51,7 @@ async function persistCostsSnapshot(orgHint: string, seasonHint: string, data: C
     await putFeatureSnapshot("costs", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("costs", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Season Costs already painted; IndexedDB is best-effort.
+    // Live Season costs already painted; IndexedDB is best-effort.
   }
 }
 
@@ -189,7 +189,7 @@ export default function CostsClient() {
       if (!response.ok || !isCostsView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Season Costs. Showing the last copy on this device.");
+          setError("Could not refresh Season costs. Showing the last copy on this device.");
           setFetchFailed(false);
           return;
         }
@@ -210,7 +210,7 @@ export default function CostsClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Season Costs. Showing the last copy on this device.");
+        setError("Could not refresh Season costs. Showing the last copy on this device.");
         setFetchFailed(false);
         return;
       }
@@ -276,14 +276,14 @@ export default function CostsClient() {
     return (
       <main className="module-page costs-page">
         <PageHeader
-          breadcrumbs="Business / Season Costs"
-          title="Season Costs"
+          breadcrumbs="Business / Season costs"
+          title="Season costs"
           description="Real-world spend against a season budget."
         />
-        <OfflineBanner feature="Season Costs" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Season costs" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
-          title={failure ? failure.title : "Loading season costs…"}
+          title={failure ? failure.title : "Opening Season costs"}
           description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >
@@ -306,13 +306,13 @@ export default function CostsClient() {
     return (
       <main className="module-page costs-page">
         <PageHeader
-          breadcrumbs="Business / Season Costs"
-          title="Season Costs"
+          breadcrumbs="Business / Season costs"
+          title="Season costs"
           description="Track real event spend, subscriptions, and live AI/API usage — separate from Business purchase approvals."
         >
           {view.orgId ? <CostsRelated orgId={view.orgId} /> : null}
         </PageHeader>
-        <OfflineBanner feature="Season Costs" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Season costs" fromCache={fromCache} cachedAt={cachedAt} />
         {error ? (
           <p className="costs-alert" role="alert">
             {error}
@@ -337,10 +337,10 @@ export default function CostsClient() {
         breadcrumbs={
           <>
             <a href={orgId ? `/business?orgId=${encodeURIComponent(orgId)}` : "/business"}>Business</a>
-            {" / Season Costs"}
+            {" / Season costs"}
           </>
         }
-        title="Season Costs"
+        title="Season costs"
         description="Real-world spend, subscriptions, and live AI/API usage against one season budget — from logged rows only. Approved purchase requests live under Orders."
       >
         <div className="costs-header-actions">
@@ -374,7 +374,7 @@ export default function CostsClient() {
           </Button>
         </div>
       </PageHeader>
-      <OfflineBanner feature="Season Costs" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Season costs" fromCache={fromCache} cachedAt={cachedAt} />
 
       {orgId ? <CostsRelated orgId={orgId} /> : null}
 

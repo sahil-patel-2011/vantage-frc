@@ -1,5 +1,6 @@
 import { withOrgHref } from "../nav/product-nav";
 import { githubConnectionHref } from "../github/github-related";
+import { ACCOUNT_GITHUB_COPY, ACCOUNT_GOOGLE_COPY } from "./account-api-related";
 
 /** Soft-UI connector ids on Account → Connections (never DEMO connected). */
 export type ConnectionConnectorId = "google" | "tba" | "onshape" | "discord" | "github" | "slack";
@@ -22,8 +23,8 @@ export const CONNECTIONS_RELATED_LINKS = [
   { id: "cad", label: "CAD Connections", kind: "path" as const, path: "/cad/connections" },
   { id: "discord", label: "Discord", kind: "path" as const, path: "/team/discord" },
   { id: "slack", label: "Slack", kind: "path" as const, path: "/team/slack" },
-  { id: "tba", label: "Team Data", kind: "path" as const, path: "/team/data" },
-  { id: "github", label: "Team admin · GitHub", kind: "path" as const, path: "/team/admin", hash: "#github-connection" },
+  { id: "tba", label: "Team data", kind: "path" as const, path: "/team/data" },
+  { id: "github", label: "Invites · GitHub", kind: "path" as const, path: "/team/admin", hash: "#github-connection" },
   { id: "workspace", label: "Your team", kind: "path" as const, path: "/workspace" },
 ] as const;
 
@@ -82,7 +83,7 @@ export function connectionBadgeLabel(status: ConnectionConnectorStatus): string 
   if (status === "connected") return "Connected";
   if (status === "available") return "Ready";
   if (status === "empty") return "Not connected";
-  return "Setup required";
+  return "Needs setup";
 }
 
 /** Soft-UI badge tone — Connected is the only "good" state. */
@@ -116,7 +117,7 @@ export function classifyConnectionsShell(input: {
 export function connectionsEmptyCopy(shell: ConnectionsShellKind): ConnectionsEmptyCopy {
   if (shell === "setup") {
     return {
-      badge: "Setup required",
+      badge: "Needs setup",
       badgeTone: "setup",
       title: "Connectors need a team",
       description:
@@ -144,7 +145,7 @@ export function connectionsEmptyCopy(shell: ConnectionsShellKind): ConnectionsEm
     return {
       badge: "Loading",
       badgeTone: "setup",
-      title: "Loading connections",
+      title: "Opening connections",
       description: "Checking deployment setup and workspace links — Connected only appears for real rows.",
     };
   }
@@ -176,7 +177,7 @@ export function connectionsNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Pick a team before linking.",
+        detail: "Choose your team before linking.",
         href: "/workspace",
         primary: true,
       },
@@ -224,7 +225,7 @@ export function connectionsNextActions(input: {
     actions.push({
       id: "discord",
       label: "Link Discord",
-      detail: "Add a channel webhook (or bot + channel id) on the Discord settings page.",
+      detail: "Paste a Discord channel link (or add the bot plus a channel id) on Discord.",
       href: withOrgHref("/team/discord", orgId),
       primary: actions.length === 0,
     });
@@ -234,7 +235,7 @@ export function connectionsNextActions(input: {
     actions.push({
       id: "slack",
       label: "Link Slack",
-      detail: "Paste a channel webhook so Vantage team chat and Slack stay in sync.",
+      detail: "Paste a Slack channel link so team chat and Slack stay in sync.",
       href: withOrgHref("/team/slack", orgId),
       primary: actions.length === 0,
     });
@@ -244,7 +245,7 @@ export function connectionsNextActions(input: {
     actions.push({
       id: "github",
       label: "Link GitHub",
-      detail: "Owners/admins connect OAuth or save an encrypted PAT in Team admin — AI context stays empty until linked.",
+      detail: ACCOUNT_GITHUB_COPY.emptyUnconfigured,
       href: githubConnectionHref(orgId),
       primary: actions.length === 0,
     });
@@ -254,7 +255,7 @@ export function connectionsNextActions(input: {
     actions.push({
       id: "google",
       label: "Google sign-in setup",
-      detail: "This deployment is missing Google OAuth env — use email OTP until an admin configures it.",
+      detail: ACCOUNT_GOOGLE_COPY.setupRequired,
       href: "/connectors",
     });
   }
@@ -270,7 +271,7 @@ export function connectionsNextActions(input: {
     {
       id: "discord-page",
       label: "Open Discord settings",
-      detail: "Guild / webhook bridge for announcements and object-linked chat posts.",
+      detail: "Paste a Discord channel link so announcements and team chat posts stay in sync.",
       href: withOrgHref("/team/discord", orgId),
     },
     {
@@ -363,7 +364,7 @@ export function buildConnectionConnectors(input: {
       status: input.github?.status ?? (orgId ? "empty" : "setup_required"),
       detail: input.github?.detail ?? "Checking GitHub link…",
       href: orgId ? githubConnectionHref(orgId) : "/workspace",
-      cta: orgId ? "Open Team admin" : "Choose your team",
+      cta: orgId ? "Open Invites" : "Choose your team",
     },
   ];
 }

@@ -46,9 +46,9 @@ export async function GET(request: Request) {
     return Response.json(
       {
         status: "setup_required",
-        message: "Could not load Match Strategy Cards. Choose your team and confirm database access.",
+        message: "Could not load Match cards. Choose your team and confirm database access.",
         steps: [
-          { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace", done: false },
+          { id: "workspace", label: "Choose your team", detail: "Choose which FRC team you are working as.", href: "/workspace", done: false },
         ],
         orgId: null,
         eventKey: null,
@@ -122,6 +122,6 @@ export async function POST(request: Request) {
     // event not yet ingested from TBA raised a 23503 whose raw constraint text
     // went straight to the user. failDbWrite names the fix, and keeps the
     // previous behaviour for every other error.
-    return failDbWrite(error, "Match Strategy Cards request failed");
+    return failDbWrite(error, "Match cards request failed");
   }
 }

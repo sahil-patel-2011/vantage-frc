@@ -699,22 +699,30 @@ export async function resolveOrgChatAdapterWithProvenance(
         lastHeartbeatAt: Date | string | null;
         preferWhenOnline: boolean;
         coverage: string | null;
+        scope: string | null;
+        pairedBy: string | null;
       }>(
-        // coverage via to_jsonb so a 0486-but-not-0488 database answers NULL ('chat'
-        // semantics) instead of erroring the whole bridge path away.
+        // coverage / scope via to_jsonb so older databases answer NULL instead of
+        // erroring the whole bridge path away.
         `SELECT engines,
                 last_heartbeat_at AS "lastHeartbeatAt",
                 prefer_when_online AS "preferWhenOnline",
-                (to_jsonb(ai_bridge_devices) ->> 'coverage') AS coverage
+                (to_jsonb(ai_bridge_devices) ->> 'coverage') AS coverage,
+                (to_jsonb(ai_bridge_devices) ->> 'scope') AS scope,
+                paired_by::text AS "pairedBy"
            FROM ai_bridge_devices
           WHERE org_id = $1::uuid AND revoked_at IS NULL
           ORDER BY last_heartbeat_at DESC NULLS LAST`,
         [input.orgId],
       );
       const interactive = BRIDGE_CHAT_FEATURES.has(input.feature);
-      const covering = devices.rows.filter(
-        (row) => row.preferWhenOnline && (interactive || row.coverage === "everything"),
-      );
+      const covering = devices.rows.filter((row) => {
+        if (!row.preferWhenOnline) return false;
+        if (row.scope === "personal") {
+          return Boolean(input.userId && row.pairedBy === input.userId);
+        }
+        return interactive || row.coverage === "everything";
+      });
       const online = covering.find(
         (row) =>
           row.lastHeartbeatAt &&

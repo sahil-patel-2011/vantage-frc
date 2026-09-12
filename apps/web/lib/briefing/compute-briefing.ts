@@ -27,6 +27,7 @@
 
 import type { PoolClient } from "@neondatabase/serverless";
 import { withSavepoint } from "@vantage/db";
+import { studentRatingLabel } from "../ui/student-rating-label";
 import {
   matchLabel,
   normalizePlan,
@@ -100,10 +101,10 @@ function normalizeKeyFactors(value: unknown): BriefingPrediction["keyFactors"] {
     if (!name) continue;
     const impact = Number(record.impact);
     factors.push({
-      name,
+      name: studentRatingLabel(name),
       alliance: typeof record.alliance === "string" ? record.alliance : "",
       impact: Number.isFinite(impact) ? impact : 0,
-      evidence: typeof record.evidence === "string" ? record.evidence : "",
+      evidence: studentRatingLabel(typeof record.evidence === "string" ? record.evidence : ""),
     });
   }
   return factors.slice(0, 6);
@@ -112,7 +113,10 @@ function normalizeKeyFactors(value: unknown): BriefingPrediction["keyFactors"] {
 /** Defensive narrow of the stored caveats JSONB into a string array. */
 function normalizeCaveats(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
-  return value.filter((entry): entry is string => typeof entry === "string" && entry.trim().length > 0).slice(0, 8);
+  return value
+    .filter((entry): entry is string => typeof entry === "string" && entry.trim().length > 0)
+    .map(studentRatingLabel)
+    .slice(0, 8);
 }
 
 /** Opponent film: reviews tagged with an opponent team or linked to this match. */
@@ -466,7 +470,7 @@ export async function computeBriefingView(
   if (!selected) {
     return {
       status: "setup_required",
-      message: "No matches for your team at this event yet — sync TBA first.",
+      message: "No matches for your team at this event yet — sync official matches first.",
       context,
     };
   }

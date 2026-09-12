@@ -1,7 +1,7 @@
 import RetroClient from "./retro-client";
 
 export const metadata = {
-  title: "Team Retrospective",
+  title: "Retro",
 };
 
 export default function RetroPage() {

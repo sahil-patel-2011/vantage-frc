@@ -10,7 +10,7 @@ import ScoutDataImpactClient from "./scout-data-impact-client";
 import "./scout-data-impact.css";
 
 export const metadata = {
-  title: "Scout Data Impact",
+  title: "Data impact",
 };
 
 export default async function ScoutDataImpactPage({
@@ -28,8 +28,8 @@ export default async function ScoutDataImpactPage({
     return (
       <main className="module-page scout-data-impact-page soft-gate">
         <PageHeader
-          breadcrumbs="Competition / Scout Data Impact"
-          title="Scout Data Impact"
+          breadcrumbs="Competition / Data impact"
+          title="Data impact"
           description={copy.description}
         >
           <nav

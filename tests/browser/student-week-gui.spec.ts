@@ -94,8 +94,8 @@ test.describe("student-week GUI path", () => {
 
   test("Hours Clock in is on the board and clickable", async ({ page }) => {
     await openStudent(page, "/hours-self-view");
-    await expect(page.getByRole("heading", { name: "My Hours" })).toBeVisible();
-    await expectNoBanned(page, "My Hours");
+    await expect(page.getByRole("heading", { name: "My hours" })).toBeVisible();
+    await expectNoBanned(page, "My hours");
     const clock = page.getByRole("region", { name: "Clock in or out" }).getByRole("button", {
       name: /Clock in|Clock out/i,
     });
@@ -137,8 +137,8 @@ test.describe("student-week GUI path", () => {
 
   test("Team invites Send invite is on the board", async ({ page }) => {
     await openStudent(page, "/team/admin");
-    await expect(page.getByRole("heading", { level: 1, name: "Team admin" })).toBeVisible();
-    await expectNoBanned(page, "Team admin", ["Join or pick a team", "Account Connections", "RLS"]);
+    await expect(page.getByRole("heading", { level: 1, name: "Invites" })).toBeVisible();
+    await expectNoBanned(page, "Invites", ["Join or pick a team", "Account Connections", "RLS"]);
     const orgId = await orgIdFromIsland(page);
     if (orgId) {
       await openStudent(page, `/team/admin?orgId=${encodeURIComponent(orgId)}`);

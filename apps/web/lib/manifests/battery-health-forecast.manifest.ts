@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "battery-health-forecast",
-  title: "Battery Health Forecast",
+  title: "Pack health",
   route: "/battery-health-forecast",
   apiRoute: "/api/battery-health-forecast",
   hub: "Build",

@@ -49,7 +49,7 @@ async function persistCadChangeRadarSnapshot(orgHint: string, data: CadChangeRad
     await putFeatureSnapshot("cad-change-radar", cacheOrg, data);
     if (!orgHint) await putFeatureSnapshot("cad-change-radar", "_", data);
   } catch {
-    // Live CAD Change Radar already painted; IndexedDB is best-effort.
+    // Live Change radar already painted; IndexedDB is best-effort.
   }
 }
 
@@ -128,17 +128,17 @@ function RadarShell({
         breadcrumbs={
           <>
             <a href={buildHref}>Build</a>
-            {" / CAD Change Impact Radar"}
+            {" / Change radar"}
           </>
         }
-        title="CAD Change Impact Radar"
+        title="Change radar"
         description={description}
       >
         <RelatedStrip orgId={orgId} />
       </PageHeader>
       {children}
       {shell === "loading" ? (
-        <div aria-busy="true" aria-label="Loading CAD Change Impact Radar">
+        <div aria-busy="true" aria-label="Loading Change radar">
           <SoftBlockSkeleton lines={4} />
         </div>
       ) : shell === "error" ? (
@@ -146,7 +146,7 @@ function RadarShell({
       ) : (
         <EmptyState
           soft
-          badge={shell === "setup" ? "Setup required" : copy.badge}
+          badge={shell === "setup" ? "Needs setup" : copy.badge}
           badgeTone="setup"
           title={copy.title}
           description={error ?? copy.description}
@@ -208,7 +208,7 @@ export default function CadChangeRadarClient() {
         if (!response.ok || !isCadChangeRadarView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh CAD Change Radar. Showing the last copy on this device.");
+            setError("Could not refresh Change radar. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -222,7 +222,7 @@ export default function CadChangeRadarClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh CAD Change Radar. Showing the last copy on this device.");
+          setError("Could not refresh Change radar. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -294,7 +294,7 @@ export default function CadChangeRadarClient() {
   if (shell === "loading") {
     return (
       <RadarShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="CAD Change Radar" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Change radar" fromCache={fromCache} cachedAt={cachedAt} />
       </RadarShell>
     );
   }
@@ -308,7 +308,7 @@ export default function CadChangeRadarClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="CAD Change Radar" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Change radar" fromCache={fromCache} cachedAt={cachedAt} />
       </RadarShell>
     );
   }
@@ -320,7 +320,7 @@ export default function CadChangeRadarClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="CAD Change Radar" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Change radar" fromCache={fromCache} cachedAt={cachedAt} />
       </RadarShell>
     );
   }
@@ -328,7 +328,7 @@ export default function CadChangeRadarClient() {
   if (view?.status !== "live") {
     return (
       <RadarShell description={shellCopy.description} orgId={orgId} shell="setup">
-        <OfflineBanner feature="CAD Change Radar" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Change radar" fromCache={fromCache} cachedAt={cachedAt} />
       </RadarShell>
     );
   }
@@ -339,11 +339,11 @@ export default function CadChangeRadarClient() {
         breadcrumbs={
           <>
             <a href={buildHref}>Build</a>
-            {" / CAD Change Impact Radar"}
+            {" / Change radar"}
           </>
         }
-        title="CAD Change Impact Radar"
-        description="Snapshot tracked parameters on every Onshape release, diff them automatically, and notify who it affects. Cross-check CAD, FMEA, and Prototypes."
+        title="Change radar"
+        description="Snapshot tracked parameters on every Onshape release, diff them automatically, and notify who it affects. Cross-check CAD, Failure log, and Prototypes."
       >
         <div className="ccr-header-actions">
           {relatedLinks.map((link) => (
@@ -353,7 +353,7 @@ export default function CadChangeRadarClient() {
           ))}
         </div>
       </PageHeader>
-      <OfflineBanner feature="CAD Change Radar" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Change radar" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="app-status" role="alert">
@@ -392,7 +392,7 @@ function ConnectionPanel({ view }: { view: LiveView }) {
       as="section"
       aria-label="Onshape connection"
       title={view.connection.label}
-      subtitle="Onshape workspace"
+      subtitle="Onshape document"
       actions={<Badge tone="good">{view.connection.status}</Badge>}
     >
       <p className="app-muted ccr-connection-meta">
@@ -563,7 +563,7 @@ function SnapshotForm({
       <span className="biz-overline">Record a revision</span>
       <h2>Log part-revision snapshot</h2>
       <p className="app-muted ccr-form-hint">
-        Normally pushed by the Onshape release webhook — record manually to backfill or test.
+        Onshape usually sends new revisions here — record one by hand to backfill or test.
       </p>
       <FormGrid min={160}>
         <FormRow label="Part key">

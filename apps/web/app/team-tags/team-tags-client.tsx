@@ -160,13 +160,13 @@ export default function TeamTagsClient() {
           </>
         }
         title="Drive-team tags"
-        description="Label robots as you watch them. The board stays empty until someone applies a real tag — not a 1–10 scale, not TBA."
+        description="Label robots as you watch them. The board stays empty until someone applies a real tag — not a 1–10 scale, not an official ranking."
       />
       <OfflineBanner feature="Drive-team tags" fromCache={fromCache} cachedAt={cachedAt} />
 
       <nav className="product-hub-related" aria-label="Related qualitative tools">
         <Button as="a" variant="secondary" href={orgId ? withOrgHref("/pairwise", orgId) : "/pairwise"}>
-          Pairwise ranking
+          Pairwise
         </Button>
         <Button as="a" variant="secondary" href={orgId ? hubHref("/competition", "scouting", orgId) : "/scouting"}>
           Scouting

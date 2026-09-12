@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "hours-self-view",
-  title: "My Hours (Self-View & Kiosk)",
+  title: "My hours",
   route: "/hours-self-view",
   apiRoute: "/api/hours-self-view",
   hub: "Team",

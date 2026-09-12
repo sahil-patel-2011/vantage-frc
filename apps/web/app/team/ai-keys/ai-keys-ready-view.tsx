@@ -124,7 +124,7 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
               provider-specific machinery below it: the endpoint is the team's
               choice, and the choice does not gate features. Copy lives in
               ./ai-keys-copy.ts so the promises stay pinned by tests. */}
-          <section className="app-card soft-panel ai-keys-any" aria-label="Bring any OpenAI-compatible endpoint">
+          <section className="app-card soft-panel ai-keys-any" aria-label="Bring any endpoint">
             <span className="eyebrow">BRING ANY ENDPOINT</span>
             <h2>{ANY_ENDPOINT_HEADLINE}</h2>
             <p className="app-muted">{ANY_ENDPOINT_BODY}</p>
@@ -286,12 +286,12 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
             })}
           </section>
 
-          <section className="app-card soft-panel ai-keys-local" aria-label="Local OpenAI-compatible connector">
-            <span className="eyebrow">LOCAL / OPENAI-COMPATIBLE</span>
+          <section className="app-card soft-panel ai-keys-local" aria-label="Local connector">
+            <span className="eyebrow">LOCAL CONNECTOR</span>
             <h2>Ollama / LM Studio</h2>
             <p className="app-muted">
               Set a base URL such as <code>http://localhost:11434/v1</code> (Ollama) or your LM Studio
-              OpenAI-compatible URL. Optional API key (often empty or <code>lm-studio</code>).
+              local connector URL. Optional API key (often empty or <code>lm-studio</code>).
               Cloud Vantage cannot call your laptop&apos;s localhost — use a tunnel or self-hosted
               gateway with a reachable HTTPS URL.
             </p>
@@ -351,17 +351,17 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
                   />
                 </label>
                 <div className="ai-keys-actions">
-                  <button className="primary-action" type="submit" disabled={busyLocal || !localDraft.baseUrl.trim()}>
+                  <Button variant="primary" type="submit" disabled={busyLocal || !localDraft.baseUrl.trim()}>
                     Save connector
-                  </button>
+                  </Button>
                   {payload.localConnector?.configured ? (
                     <>
-                      <button type="button" disabled={busyLocal} onClick={() => void testLocal()}>
+                      <Button variant="secondary" type="button" disabled={busyLocal} onClick={() => void testLocal()}>
                         Test connection
-                      </button>
-                      <button className="danger-action" type="button" disabled={busyLocal} onClick={() => void removeLocal()}>
+                      </Button>
+                      <Button variant="danger" type="button" disabled={busyLocal} onClick={() => void removeLocal()}>
                         Remove
-                      </button>
+                      </Button>
                     </>
                   ) : null}
                 </div>
@@ -491,9 +491,9 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
                 )}
 
                 <div className="ai-keys-actions">
-                  <button className="primary-action" type="submit" disabled={busyRouting}>
+                  <Button variant="primary" type="submit" disabled={busyRouting}>
                     Save routing
-                  </button>
+                  </Button>
                 </div>
               </form>
             ) : null}
@@ -562,9 +562,9 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
                 ) : null}
 
                 <div className="ai-keys-actions">
-                  <button className="primary-action" type="submit" disabled={busyPolicy}>
+                  <Button variant="primary" type="submit" disabled={busyPolicy}>
                     Save policy
-                  </button>
+                  </Button>
                 </div>
               </form>
             </section>

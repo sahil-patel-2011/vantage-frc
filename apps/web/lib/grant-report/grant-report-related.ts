@@ -2,11 +2,11 @@ import { hubHref } from "../nav/hubs";
 import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Grant Report (never DEMO grant dollars). */
+/** Soft-UI related surfaces for Reports (never DEMO grant dollars). */
 export const GRANT_REPORT_RELATED_LINKS = [
   { id: "grants", label: "Business · Grants", kind: "business" as const, tab: "grants" },
   { id: "grant-workbench", label: "Grants workbench", kind: "path" as const, path: "/team/grants" },
-  { id: "impact", label: "Community Impact", kind: "business" as const, tab: "impact" },
+  { id: "impact", label: "Impact", kind: "business" as const, tab: "impact" },
   { id: "writer", label: "Writer", kind: "ai" as const, tab: "writer" },
 ] as const;
 
@@ -18,7 +18,7 @@ export type GrantReportRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — Grants / Grants workbench / Community Impact. */
+/** Focused Soft-UI strip — Grants / Grants workbench / Impact. */
 export const GRANT_REPORT_RELATED_INCLUDE: GrantReportRelatedId[] = [
   "grants",
   "grant-workbench",
@@ -26,7 +26,7 @@ export const GRANT_REPORT_RELATED_INCLUDE: GrantReportRelatedId[] = [
 ];
 
 /**
- * Soft-UI cross-links from Grant Report → Grants / Impact.
+ * Soft-UI cross-links from Reports → Grants / Impact.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function grantReportRelatedLinks(
@@ -96,7 +96,7 @@ export function grantReportSetupSteps(orgId?: string | null): GrantReportSetupSt
     },
     {
       id: "impact",
-      label: "Open Community Impact",
+      label: "Open Impact",
       detail: "Outreach stays blank until your team logs it.",
       href: hubHref("/business", "impact", orgId),
     },
@@ -139,7 +139,7 @@ export function isGrantReportBoardEmpty(input: {
   return input.eligibleCount === 0 && input.reportCount === 0;
 }
 
-/** Classify Grant Report Soft-UI shell — never invents DEMO grant dollars. */
+/** Classify Reports Soft-UI shell — never invents DEMO grant dollars. */
 export function classifyGrantReportShell(input: {
   loading: boolean;
   fetchFailed?: boolean;
@@ -166,7 +166,7 @@ export function grantReportShellCopy(kind: GrantReportShellKind): GrantReportEmp
     case "loading":
       return {
         kind,
-        title: "Loading Grant Report…",
+        title: "Opening Reports…",
         description:
           "Checking which team you are on and awarded grants.",
       };
@@ -174,14 +174,14 @@ export function grantReportShellCopy(kind: GrantReportShellKind): GrantReportEmp
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Grant Report",
+        title: "Could not load Reports",
         description:
-          "A network or server issue blocked the report board. Retry, or open Grants / Community Impact while it reloads.",
+          "A network or server issue blocked the report board. Retry, or open Grants / Impact while it reloads.",
       };
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Choose your team and mark real awards before generating.",
@@ -192,7 +192,7 @@ export function grantReportShellCopy(kind: GrantReportShellKind): GrantReportEmp
         badge: "No awarded grants yet",
         title: "Mark a grant as awarded to generate a report",
         description:
-          "Post-grant reports stay blank until Grants tracks an awarded application. Cross-check Grants workbench and Community Impact.",
+          "Post-grant reports stay blank until Grants tracks an awarded application. Cross-check Grants workbench and Impact.",
       };
     default:
       return {
@@ -205,7 +205,7 @@ export function grantReportShellCopy(kind: GrantReportShellKind): GrantReportEmp
 }
 
 /**
- * Soft-UI next actions for Grant Report empty/setup shells.
+ * Soft-UI next actions for Reports empty/setup shells.
  * Points at Grants / Impact — never invents DEMO grant dollars.
  */
 export function grantReportNextActions(input: {
@@ -229,7 +229,7 @@ export function grantReportNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Grant Report",
+        label: "Retry Reports",
         detail: "Reload real awarded grants and reports.",
         href: withOrgHref("/grant-report", orgId),
         primary: true,
@@ -242,7 +242,7 @@ export function grantReportNextActions(input: {
       },
       {
         id: "impact",
-        label: "Open Community Impact",
+        label: "Open Impact",
         detail: "Impact rows stay available while the report board reloads.",
         href: hubHref("/business", "impact", orgId),
       },
@@ -266,7 +266,7 @@ export function grantReportNextActions(input: {
       },
       {
         id: "impact",
-        label: "Open Community Impact",
+        label: "Open Impact",
         detail: "Ground funder narratives in real logged outreach.",
         href: hubHref("/business", "impact", orgId),
       },
@@ -292,7 +292,7 @@ export function grantReportNextActions(input: {
     },
     {
       id: "impact",
-      label: "Open Community Impact",
+      label: "Open Impact",
       detail: "Keep funder narratives grounded in real outreach.",
       href: hubHref("/business", "impact", orgId),
     },

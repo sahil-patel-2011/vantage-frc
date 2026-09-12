@@ -9,7 +9,7 @@ export const TEAM_HUB_RELATED_LINKS = [
   { id: "messages", label: "Chat" },
   { id: "todos", label: "Work" },
   { id: "batteries", label: "Batteries" },
-  { id: "fmea", label: "Failure notes" },
+  { id: "fmea", label: "Failure log" },
 ] as const;
 
 export type TeamHubRelatedId = (typeof TEAM_HUB_RELATED_LINKS)[number]["id"];

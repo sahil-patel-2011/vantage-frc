@@ -73,9 +73,12 @@ Hard rules:
 - Geometry mutations require approval unless verify-only auto-run is enabled.
 - Sketch/extrude helpers submit real Part Studio feature payloads and must return real Onshape feature IDs.
 - Native manual workflow is supported without FeatureScript:
-  `onshape_create_part_studio` → sketch → extrude → `onshape_body_details` →
-  `onshape_create_assembly` → `onshape_add_assembly_instance` → `onshape_mate` →
-  `onshape_get_assembly`.
+  `onshape_drawing_pack` (labeled drawings first) → sketch → extrude from those millimetres →
+  `onshape_body_details` → `onshape_create_assembly` → `onshape_add_assembly_instance` →
+  `onshape_mate` → `onshape_get_assembly`.
+- Drawing tools: `onshape_create_drawing`, `onshape_drawing_views`, `onshape_drawing_notes`,
+  `onshape_drawing_pack`. Multiple sheets per part when faces need their own sizes.
+  Never invent millimetres. Fail honestly if Onshape rejects a Drawing call.
 - Mate types: FASTENED, REVOLUTE, SLIDER, CYLINDRICAL. Use real instance and face ids;
   never infer or invent them.
 - Never return synthetic success IDs when Onshape rejects a mutation.

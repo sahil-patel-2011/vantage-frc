@@ -61,7 +61,7 @@ async function persistSpareForecastSnapshot(
     await putFeatureSnapshot("spare-forecast", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("spare-forecast", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Spare Forecast already painted; IndexedDB is best-effort.
+    // Live Spares forecast already painted; IndexedDB is best-effort.
   }
 }
 
@@ -138,10 +138,10 @@ function SpareForecastShell({
         breadcrumbs={
           <>
             <a href={buildHref}>Build</a>
-            {" / Spare Forecast"}
+            {" / Spares forecast"}
           </>
         }
-        title="Spare-Parts Failure Forecast"
+        title="Spares forecast"
         description={description}
       >
         <SpareForecastRelatedStrip orgId={orgId} />
@@ -151,7 +151,7 @@ function SpareForecastShell({
         soft
         badge={
           shell === "setup"
-            ? "Setup required"
+            ? "Needs setup"
             : shell === "error"
               ? "Unavailable"
               : shell === "empty"
@@ -179,7 +179,7 @@ function SpareForecastShell({
         {shell === "no_risk" ? (
           <>
             <Button as="a" variant="primary" href={hubHref("/build", "fmea", orgId)}>
-              Open FMEA
+              Open Failure log
             </Button>
             <Button as="a" variant="secondary" href={subsystemsHref}>
               Open Subsystems
@@ -248,7 +248,7 @@ export default function SpareForecastClient() {
         if (!response.ok || !isSpareForecastView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Spare Forecast. Showing the last copy on this device.");
+            setError("Could not refresh Spares forecast. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -263,7 +263,7 @@ export default function SpareForecastClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Spare Forecast. Showing the last copy on this device.");
+          setError("Could not refresh Spares forecast. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -362,7 +362,7 @@ export default function SpareForecastClient() {
   if (shell === "loading") {
     return (
       <SpareForecastShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Spare Forecast" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Spares forecast" fromCache={fromCache} cachedAt={cachedAt} />
       </SpareForecastShell>
     );
   }
@@ -376,7 +376,7 @@ export default function SpareForecastClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Spare Forecast" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Spares forecast" fromCache={fromCache} cachedAt={cachedAt} />
       </SpareForecastShell>
     );
   }
@@ -390,7 +390,7 @@ export default function SpareForecastClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Spare Forecast" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Spares forecast" fromCache={fromCache} cachedAt={cachedAt} />
       </SpareForecastShell>
     );
   }
@@ -398,7 +398,7 @@ export default function SpareForecastClient() {
   if (view?.status !== "live") {
     return (
       <SpareForecastShell description={shellCopy.description} orgId={orgId} shell="setup">
-        <OfflineBanner feature="Spare Forecast" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Spares forecast" fromCache={fromCache} cachedAt={cachedAt} />
       </SpareForecastShell>
     );
   }
@@ -409,14 +409,14 @@ export default function SpareForecastClient() {
         breadcrumbs={
           <>
             <a href={buildHref}>Build</a>
-            {" / Spare Forecast"}
+            {" / Spares forecast"}
           </>
         }
-        title="Spare-Parts Failure Forecast"
+        title="Spares forecast"
         description={
           view.seasonHorizon === "offseason"
-            ? "Offseason: remaining-season risk is unknown. Cadence still uses real spare-category bins × logged FMEA failures — never \"no risk\" from a closed 200-day window."
-            : "Projects which real spare bins will run out before the season ends — FMEA cadence × quantity on hand. Cross-check Batteries, Orders, and Subsystems."
+            ? "Offseason: remaining-season risk is unknown. Cadence still uses real spare-category bins × logged failures — never \"no risk\" from a closed 200-day window."
+            : "Projects which real spare bins will run out before the season ends — Failure log cadence × quantity on hand. Cross-check Batteries, Orders, and Subsystems."
         }
       >
         <div className="spare-forecast-header-actions">
@@ -447,7 +447,7 @@ export default function SpareForecastClient() {
         </div>
       </PageHeader>
 
-      <OfflineBanner feature="Spare Forecast" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Spares forecast" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -484,7 +484,7 @@ export default function SpareForecastClient() {
           description={shellCopy.description}
         >
           {shellActions([
-            { href: hubHref("/build", "fmea", orgId), label: "Open FMEA", primary: true },
+            { href: hubHref("/build", "fmea", orgId), label: "Open Failure log", primary: true },
             { href: subsystemsHref, label: "Open Subsystems" },
             { href: ordersHref, label: "Open Orders" },
           ])}
@@ -547,7 +547,7 @@ function SummaryTiles({ view, loaded }: { view: LiveView; loaded: boolean }) {
     { label: "Critical", value: formatSpareForecastMetric(offseason ? null : critical, loaded) },
   ];
   return (
-    <Panel className="spare-forecast-coverage" aria-label="Spare Forecast summary">
+    <Panel className="spare-forecast-coverage" aria-label="Spares forecast summary">
       <div className="spare-forecast-stats">
         <div>
           <span
@@ -566,13 +566,13 @@ function SummaryTiles({ view, loaded }: { view: LiveView; loaded: boolean }) {
               : offseason
                 ? "OFFSEASON"
                 : view.forecastLines.length === 0
-                  ? "NO FMEA"
+                  ? "NO HISTORY"
                   : "LIVE"}
           </span>
           <h2 style={{ margin: "6px 0 0" }}>Season forecast</h2>
           <small className="app-muted">
             {offseason
-              ? "Remaining-season risk is unknown — cadence from inventory × FMEA only"
+              ? "Remaining-season risk is unknown — cadence from inventory × Failure log only"
               : "Real inventory only."}
           </small>
         </div>
@@ -611,12 +611,12 @@ function ForecastPanel({
         <div>
           <h2 style={{ margin: 0 }}>Exhaustion forecast</h2>
           <p className="app-muted" style={{ margin: "4px 0 0" }}>
-            Real spare-category bins with matched FMEA history only.
+            Real spare-category bins with matched Failure log history only.
           </p>
         </div>
         {view.seasonHorizon === "offseason" ? (
           <p className="app-muted spare-forecast-offseason-note">
-            Season window closed — remaining-season risk is unknown. Logged FMEA cadence is still
+            Season window closed — remaining-season risk is unknown. Logged Failure log cadence is still
             shown. Draft restock when a live horizon exists.
           </p>
         ) : (
@@ -652,13 +652,13 @@ function ForecastPanel({
                 <strong style={{ display: "block", marginTop: 4 }}>{line.itemName}</strong>
                 <small className="app-muted">
                   {line.subsystem ?? "Unmatched subsystem"} · {line.quantityOnHand} on hand ·{" "}
-                  {line.failureCount} FMEA failure(s) this season
+                  {line.failureCount} logged failure(s) this season
                 </small>
               </div>
             </header>
             <small className="app-muted">
               {line.forecast.horizon === "offseason" || line.forecast.daysRemaining == null
-                ? `${line.forecast.consumptionPerDay.toFixed(3)} units/day from ${line.failureCount} logged FMEA failure(s) over ${line.forecast.daysElapsed} season day(s). Remaining-season risk is unknown — the season window is closed.`
+                ? `${line.forecast.consumptionPerDay.toFixed(3)} units/day from ${line.failureCount} logged failure(s) over ${line.forecast.daysElapsed} season day(s). Remaining-season risk is unknown — the season window is closed.`
                 : `${line.forecast.consumptionPerDay.toFixed(3)} units/day cadence · ${line.forecast.projectedConsumptionRemaining} projected over ${line.forecast.daysRemaining} remaining day(s)${
                     line.forecast.willExhaust
                       ? ` · shortfall of ${line.forecast.projectedShortfall} · recommend ordering ${line.forecast.recommendedOrderQty}`

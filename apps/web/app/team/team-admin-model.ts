@@ -75,7 +75,7 @@ export type CustomProvider = {
 
 export type InviteNotice = { tone: "ok" | "warn" | "error"; message: string };
 
-/** Last IndexedDB copy of Team admin membership + GitHub — never invented counts. */
+/** Last IndexedDB copy of Invites membership + GitHub — never invented counts. */
 export type TeamAdminSnapshot = {
   invites: Invite[];
   members: Member[];

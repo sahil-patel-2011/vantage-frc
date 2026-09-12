@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "prototype-tracker",
-  title: "Prototype-to-Decision Tracker",
+  title: "Prototypes",
   route: "/prototype-tracker",
   apiRoute: "/api/prototype-tracker",
   hub: "Build",

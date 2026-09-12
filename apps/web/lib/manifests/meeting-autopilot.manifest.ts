@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "meeting-autopilot",
-  title: "Meeting-Agenda Autopilot",
+  title: "Meeting agenda",
   route: "/meeting-autopilot",
   apiRoute: "/api/meeting-autopilot",
   hub: "Team",
@@ -11,7 +11,7 @@ export const manifest = {
     {
       name: "meeting_autopilot.agenda",
       description:
-        "Read-only: the ranked meeting agenda grounded in open blockers, overdue tasks, unresolved decisions, and open FMEA for the org's active season.",
+        "Read-only: the ranked meeting agenda grounded in open blockers, overdue tasks, unresolved decisions, and open Failure log for the org's active season.",
     },
     {
       name: "meeting_autopilot.action_items",

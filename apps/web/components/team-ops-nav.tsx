@@ -17,7 +17,7 @@ const LINKS: Array<{ key: TeamOpsKey; href: string; label: string; match: (path:
   { key: "logistics", href: "/logistics", label: "Logistics", match: (p) => p.startsWith("/logistics") || p.startsWith("/travel") },
   { key: "goals", href: "/goals", label: "Goals", match: (p) => p.startsWith("/goals") },
   { key: "batteries", href: "/team?tab=batteries", label: "Batteries", match: (p) => p.startsWith("/batteries") },
-  { key: "fmea", href: "/team?tab=fmea", label: "FMEA", match: (p) => p.startsWith("/fmea") },
+  { key: "fmea", href: "/team?tab=fmea", label: "Failure log", match: (p) => p.startsWith("/fmea") },
   { key: "admin", href: "/team/admin", label: "Admin", match: (p) => p === "/team/admin" || p.startsWith("/team/admin/") },
 ];
 

@@ -1,13 +1,13 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Rule Impact Analyzer (never DEMO impact metrics). */
+/** Soft-UI related surfaces for Rule impact (never DEMO impact metrics). */
 export const RULE_IMPACT_RELATED_LINKS = [
   { id: "kickoff", label: "Kickoff", kind: "build" as const, tab: "kickoff" },
   { id: "cad", label: "CAD", kind: "build" as const, tab: "cad" },
   { id: "subsystems", label: "Subsystems", kind: "path" as const, path: "/subsystems" },
-  { id: "sketch-to-brief", label: "Sketch-to-Brief", kind: "build" as const, tab: "sketch-to-brief" },
-  { id: "fmea", label: "FMEA", kind: "build" as const, tab: "fmea" },
+  { id: "sketch-to-brief", label: "Sketch to brief", kind: "build" as const, tab: "sketch-to-brief" },
+  { id: "fmea", label: "Failure log", kind: "build" as const, tab: "fmea" },
 ] as const;
 
 export type RuleImpactRelatedId = (typeof RULE_IMPACT_RELATED_LINKS)[number]["id"];
@@ -104,7 +104,7 @@ export function ruleImpactShellCopy(kind: RuleImpactShellKind): RuleImpactEmptyC
     case "loading":
       return {
         kind,
-        title: "Loading rule impact…",
+        title: "Opening Rule impact",
         description:
           "Checking which team you are on and logged rule changes.",
       };
@@ -112,14 +112,14 @@ export function ruleImpactShellCopy(kind: RuleImpactShellKind): RuleImpactEmptyC
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load the Rule Impact Analyzer",
+        title: "Could not load Rule impact",
         description:
           "A network or server issue blocked rule changes. Retry, or open Kickoff / CAD / Subsystems while it reloads.",
       };
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Choose your team before logging game-manual deltas.",
@@ -166,7 +166,7 @@ export function ruleImpactNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before logging game-manual deltas.",
+          detail: "Choose your team before logging game-manual deltas.",
           href: "/workspace",
           primary: true,
         },
@@ -194,7 +194,7 @@ export function ruleImpactNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Finish membership setup so Rule Impact can load.",
+        detail: "Finish membership setup so Rule impact can load.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
       },
@@ -213,7 +213,7 @@ export function ruleImpactNextActions(input: {
       {
         id: "subsystems",
         label: "Open Subsystems",
-        detail: "Prior-season subsystem rows are the library Rule Impact diffs against.",
+        detail: "Prior-season subsystem rows are the library Rule impact diffs against.",
         href: withOrgHref("/subsystems", orgId),
       },
     ];
@@ -223,7 +223,7 @@ export function ruleImpactNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Rule Impact",
+        label: "Retry Rule impact",
         detail: "Reload real rule changes.",
         href: withOrgHref("/rule-impact", orgId),
         primary: true,
@@ -329,7 +329,7 @@ export function ruleImpactNextActions(input: {
     },
     {
       id: "sketch-to-brief",
-      label: "Open Sketch-to-Brief",
+      label: "Open Sketch to brief",
       detail: "New-season sketches can carry rule-compliance flags grounded in Kickoff notes.",
       href: hubHref("/build", "sketch-to-brief", orgId),
     },

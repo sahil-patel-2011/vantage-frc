@@ -1,7 +1,7 @@
 import AllianceSimClient from "./alliance-sim-client";
 
 export const metadata = {
-  title: "Alliance Sim",
+  title: "Alliance sim",
 };
 
 export default function AllianceSimPage() {

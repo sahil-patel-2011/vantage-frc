@@ -63,6 +63,7 @@ describe("leftover-product student chrome", () => {
       expect(src, rel).not.toMatch(/Hard cut-off/);
       expect(src, rel).not.toMatch(/VANTAGE \//);
       expect(src, rel).not.toMatch(/Hosted by Vantage/);
+      expect(src, rel).not.toMatch(/primary-action/);
       expect(src, rel).not.toMatch(/fetchFailed \|\| !view/);
     }
   });
@@ -97,6 +98,16 @@ describe("leftover-product student chrome", () => {
     expect(printChrome).not.toMatch(/title="3D Print Farm"/);
     const inspection = readFileSync(join(WEB, "app/inspection/inspection-client.tsx"), "utf8");
     expect(inspection).not.toMatch(/Inspection copilot/);
+    const usage = readFileSync(join(WEB, "app/team/usage/usage-client.tsx"), "utf8");
+    expect(usage).toMatch(/local_cli: "This computer"/);
+    expect(usage).not.toMatch(/Local CLI/);
+    expect(usage).not.toMatch(/AI API keys/);
+    const keysUsage = readFileSync(join(WEB, "app/team/ai-usage/ai-usage-client.tsx"), "utf8");
+    expect(keysUsage).toMatch(/local_cli: "This computer"/);
+    expect(keysUsage).not.toMatch(/Local CLI/);
+    expect(keysUsage).not.toMatch(/AI API keys/);
+    expect(keysUsage).toMatch(/Open AI keys/);
+    expect(keysUsage).toMatch(/under AI keys/);
   });
 
   it("Playbook last snapshot uses if (!view) and related stays Team chat / FMEA / Decisions", () => {

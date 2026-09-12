@@ -31,18 +31,18 @@ function setupStepsFor(orgId: string | null): JudgeSimSetupStep[] {
     {
       id: "workspace",
       label: "Choose your team",
-      detail: "Choose your team to open Judge-Pitch.",
+      detail: "Choose your team to open Judge pitch.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
       id: "impact",
-      label: "Open Community Impact",
+      label: "Open Impact",
       detail: "Outreach claims stay blank until real activities exist.",
       href: hubHref("/business", "impact", orgId),
     },
     {
       id: "impact-essay",
-      label: "Open Impact Essay",
+      label: "Open Impact essay",
       detail: "Essay drafts stay empty until real impact rows exist.",
       href: hubHref("/business", "impact-essay", orgId),
     },

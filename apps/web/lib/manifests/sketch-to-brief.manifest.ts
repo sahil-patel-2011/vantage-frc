@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "sketch-to-brief",
-  title: "Sketch-to-Brief",
+  title: "Sketch to brief",
   route: "/sketch-to-brief",
   apiRoute: "/api/sketch-to-brief",
   hub: "Build",

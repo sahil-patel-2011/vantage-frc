@@ -52,7 +52,7 @@ function setupFallback(today: string): EventReadinessView {
     status: "setup_required",
     message: "Could not load event readiness. Choose your team and confirm database access.",
     steps: [
-      { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
+      { id: "workspace", label: "Choose your team", detail: "Choose which FRC team you are working as.", href: "/workspace" },
     ],
     orgId: null,
     teamNumber: null,

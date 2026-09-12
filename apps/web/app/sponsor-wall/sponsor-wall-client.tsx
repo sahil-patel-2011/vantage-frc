@@ -37,7 +37,7 @@ async function persistSponsorWallSnapshot(orgHint: string, data: SponsorWallView
     await putFeatureSnapshot("sponsor-wall", cacheOrg, data);
     if (!orgHint) await putFeatureSnapshot("sponsor-wall", "_", data);
   } catch {
-    // Live Sponsor Wall already painted; IndexedDB is best-effort.
+    // Live Sponsor wall already painted; IndexedDB is best-effort.
   }
 }
 
@@ -118,10 +118,10 @@ function SponsorWallShell({
         breadcrumbs={
           <>
             <a href={businessHref}>Business</a>
-            {" / Sponsor Wall"}
+            {" / Sponsor wall"}
           </>
         }
-        title="Sponsor Wall"
+        title="Sponsor wall"
         description={description}
       >
         <SponsorWallRelatedStrip orgId={orgId} />
@@ -152,7 +152,7 @@ function SponsorWallShell({
           <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
         ) : null}
         {shell === "empty" ? (
-          <Button as="a" variant="primary" href={hubHref("/business", "sponsors", orgId)}>Open Sponsor CRM</Button>
+          <Button as="a" variant="primary" href={hubHref("/business", "sponsors", orgId)}>Open Sponsors</Button>
         ) : null}
       </EmptyState>
       {shell === "ready" ? <SponsorWallNextActionsPanel actions={actions} /> : null}
@@ -202,7 +202,7 @@ export default function SponsorWallClient() {
         if (!response.ok || !isSponsorWallView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Sponsor Wall. Showing the last copy on this device.");
+            setError("Could not refresh Sponsor wall. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -216,7 +216,7 @@ export default function SponsorWallClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Sponsor Wall. Showing the last copy on this device.");
+          setError("Could not refresh Sponsor wall. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -288,7 +288,7 @@ export default function SponsorWallClient() {
   if (shell === "loading") {
     return (
       <SponsorWallShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Sponsor Wall" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Sponsor wall" fromCache={fromCache} cachedAt={cachedAt} />
       </SponsorWallShell>
     );
   }
@@ -302,7 +302,7 @@ export default function SponsorWallClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Sponsor Wall" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Sponsor wall" fromCache={fromCache} cachedAt={cachedAt} />
       </SponsorWallShell>
     );
   }
@@ -314,7 +314,7 @@ export default function SponsorWallClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Sponsor Wall" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Sponsor wall" fromCache={fromCache} cachedAt={cachedAt} />
       </SponsorWallShell>
     );
   }
@@ -322,7 +322,7 @@ export default function SponsorWallClient() {
   if (view?.status !== "live") {
     return (
       <SponsorWallShell description={shellCopy.description} orgId={orgId} shell="setup">
-        <OfflineBanner feature="Sponsor Wall" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Sponsor wall" fromCache={fromCache} cachedAt={cachedAt} />
       </SponsorWallShell>
     );
   }
@@ -333,11 +333,11 @@ export default function SponsorWallClient() {
         breadcrumbs={
           <>
             <a href={businessHref}>Business</a>
-            {" / Sponsor Wall"}
+            {" / Sponsor wall"}
           </>
         }
-        title="Sponsor Wall"
-        description="Build a public thank-you wall for your sponsors — logos, tiers, and shout-outs from real entries only. Cross-check Sponsor CRM and Sponsorship."
+        title="Sponsor wall"
+        description="Build a public thank-you wall for your sponsors — logos, tiers, and shout-outs from real entries only. Cross-check Sponsors and Sponsorship."
       >
         <div className="sponsor-wall-header-actions">
           {relatedLinks.map((link) => (
@@ -347,7 +347,7 @@ export default function SponsorWallClient() {
           ))}
         </div>
       </PageHeader>
-      <OfflineBanner feature="Sponsor Wall" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Sponsor wall" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -404,11 +404,11 @@ export default function SponsorWallClient() {
         <SettingsForm view={view} busy={busy} mutate={mutate} />
         <AddEntryForm busy={busy} mutate={mutate} />
         <WallPreview view={view} busy={busy} mutate={mutate} />
-        <Panel className="sponsor-wall-tip" aria-label="Sponsor Wall tip">
+        <Panel className="sponsor-wall-tip" aria-label="Sponsor wall tip">
           <span className="eyebrow">Grounding path</span>
           <p className="app-muted" style={{ marginTop: 8 }}>
-            Pull names from <a href={sponsorsHref}>Sponsor CRM</a>, align tiers with{" "}
-            <a href={sponsorshipHref}>Sponsorship</a>, and pair assets in <a href={suiteHref}>Sponsor Suite</a>
+            Pull names from <a href={sponsorsHref}>Sponsors</a>, align tiers with{" "}
+            <a href={sponsorshipHref}>Sponsorship</a>, and pair assets in <a href={suiteHref}>Sponsor suite</a>
           </p>
         </Panel>
       </div>

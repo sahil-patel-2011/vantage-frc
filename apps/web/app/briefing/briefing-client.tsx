@@ -23,6 +23,7 @@ import {
 } from "../../lib/strategy/prediction-display";
 import { fmtTimestamp } from "../../lib/video-review";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import { studentRatingLabel } from "../../lib/ui/student-rating-label";
 
 function isFullBriefingView(value: unknown): value is FullBriefingView {
   if (!value || typeof value !== "object") return false;
@@ -206,7 +207,7 @@ function ScoutedRow({ row }: { row: BriefingScoutedTeam }) {
   );
 }
 
-/** EPA line for a lineup, rendered only when a team has any real metric. */
+/** Rating line for a lineup, rendered only when a team has any real metric. */
 function EpaList({ teams }: { teams: MatchCopilotTeam[] }) {
   const withData = teams.filter((team) => team.epaTotal != null || team.rank != null);
   if (!withData.length) return null;
@@ -216,7 +217,7 @@ function EpaList({ teams }: { teams: MatchCopilotTeam[] }) {
         <li key={team.teamKey}>
           <b>{team.teamNumber || stripFrc(team.teamKey)}</b>
           {team.nickname ? <span className="brief-epa-nick">{team.nickname}</span> : null}
-          <span className="brief-chip">EPA {fmtEpa(team.epaTotal)}</span>
+          <span className="brief-chip">Rating {fmtEpa(team.epaTotal)}</span>
           {team.rank != null ? <span className="brief-chip">rank {team.rank}</span> : null}
         </li>
       ))}
@@ -486,7 +487,7 @@ export default function BriefingClient() {
                 ? `${view.scoutCount} ${view.scoutCount === 1 ? "scout" : "scouts"} assigned`
                 : "No scouts assigned"}
             </span>
-            {view.ourEpaTotal != null ? <span className="brief-chip">our EPA {fmtEpa(view.ourEpaTotal)}</span> : null}
+            {view.ourEpaTotal != null ? <span className="brief-chip">our rating {fmtEpa(view.ourEpaTotal)}</span> : null}
           </div>
         </div>
         {winDisplay && view.prediction ? (
@@ -528,14 +529,16 @@ export default function BriefingClient() {
             <ul className="brief-factors">
               {view.prediction.keyFactors.slice(0, 3).map((factor, index) => (
                 <li key={`${factor.name}-${index}`}>
-                  <b>{factor.name}</b>
-                  {factor.evidence ? <span> — {factor.evidence}</span> : null}
+                  <b>{studentRatingLabel(factor.name)}</b>
+                  {factor.evidence ? <span> — {studentRatingLabel(factor.evidence)}</span> : null}
                 </li>
               ))}
             </ul>
           ) : null}
           {view.prediction.caveats.length > 0 ? (
-            <p className="brief-caveats">Caveats: {view.prediction.caveats.join(" · ")}</p>
+            <p className="brief-caveats">
+              Caveats: {view.prediction.caveats.map(studentRatingLabel).join(" · ")}
+            </p>
           ) : null}
         </section>
       ) : null}
@@ -641,7 +644,7 @@ export default function BriefingClient() {
         </Section>
 
         <Section
-          title="Our alliance — scouted"
+          title="Our alliance"
           badge={view.alliesScouted.length ? `${view.alliesScouted.length} robots` : null}
         >
           {view.alliesScouted.length > 0 || view.allyTeams.some((team) => team.epaTotal != null || team.rank != null) ? (
@@ -662,7 +665,7 @@ export default function BriefingClient() {
             </>
           ) : (
             <EmptyHint>
-              No partner data yet — <a href={withOrg("/scouting", orgId)}>scout partners in Scouting</a> or sync EPA in{" "}
+              No partner data yet — <a href={withOrg("/scouting", orgId)}>scout partners in Scouting</a> or sync season ratings in{" "}
               <a href={withOrg("/team/data", orgId)}>Team → Data</a>
             </EmptyHint>
           )}
@@ -925,18 +928,18 @@ export default function BriefingClient() {
               ) : null}
               {view.openRisks.length > 0 ? (
                 <div className="brief-subblock">
-                  <h3>Open FMEA risks</h3>
+                  <h3>Open failure risks</h3>
                   <ul className="brief-notes">
                     {view.openRisks.slice(0, 4).map((risk) => (
                       <li key={risk.id}>
-                        <i className="brief-tag">RPN {risk.rpn}</i>
+                        <i className="brief-tag">Priority {risk.rpn}</i>
                         <span className="brief-note-body">
                           <b>{risk.subsystemName}</b> — {risk.title}
                         </span>
                       </li>
                     ))}
                   </ul>
-                  <a href={withOrg("/fmea", orgId)}>Open FMEA</a>
+                  <a href={withOrg("/fmea", orgId)}>Open Failure log</a>
                 </div>
               ) : null}
               {view.batteries.length > 0 ? (
@@ -961,7 +964,7 @@ export default function BriefingClient() {
             <EmptyHint>
               No robot-health data yet — log repairs in{" "}
               <a href={withOrg("/pit-repair-triage", orgId)}>Repair triage</a>, risks in{" "}
-              <a href={withOrg("/fmea", orgId)}>FMEA</a>, or batteries in{" "}
+              <a href={withOrg("/fmea", orgId)}>Failure log</a>, or batteries in{" "}
               <a href={withOrg("/batteries", orgId)}>Batteries</a>
             </EmptyHint>
           )}

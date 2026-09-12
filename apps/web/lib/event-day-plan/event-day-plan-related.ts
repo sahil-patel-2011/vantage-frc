@@ -2,12 +2,12 @@ import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 import { setupActionsFrom } from "../setup-actions";
 
-/** Soft-UI related surfaces for Event-Day Stress Planner (never DEMO schedule blocks). */
+/** Soft-UI related surfaces for Day plan (never DEMO schedule blocks). */
 export const EVENT_DAY_PLAN_RELATED_LINKS = [
-  { id: "command", label: "Command", tab: "command" },
-  { id: "battery-rotation", label: "Battery Rotation", tab: "battery-rotation" },
-  { id: "pit-repair-triage", label: "Pit Repair Triage", tab: "pit-repair-triage" },
-  { id: "shift-balancer", label: "Shift Balancer", tab: "shift-balancer" },
+  { id: "command", label: "Event day", tab: "command" },
+  { id: "battery-rotation", label: "Charge plan", tab: "battery-rotation" },
+  { id: "pit-repair-triage", label: "Repair triage", tab: "pit-repair-triage" },
+  { id: "shift-balancer", label: "Shifts", tab: "shift-balancer" },
 ] as const;
 
 export type EventDayPlanRelatedId = (typeof EVENT_DAY_PLAN_RELATED_LINKS)[number]["id"];
@@ -26,7 +26,7 @@ export const EVENT_DAY_PLAN_RELATED_INCLUDE: EventDayPlanRelatedId[] = [
 ];
 
 /**
- * Soft-UI cross-links from Event-Day Plan → Command / Batteries / Pit.
+ * Soft-UI cross-links from Day plan → Command / Batteries / Pit.
  * Build with hubHref — never broken JSX href templates.
  */
 export function eventDayPlanRelatedLinks(
@@ -99,8 +99,8 @@ export function eventDayPlanSetupSteps(orgId?: string | null): EventDayPlanSetup
   return dropRelatedStripDuplicates(orgId, [
     {
       id: "team-data",
-      label: "Sync Team Data",
-      detail: "Pull the match schedule from The Blue Alliance so the day plan can fill in.",
+      label: "Sync Team data",
+      detail: "Pull the official match schedule so the day plan can fill in.",
       href: withOrgHref("/team/data", orgId),
     },
   ]);
@@ -119,7 +119,7 @@ export function shouldShowEventDayPlanSummaryTiles(blockCount: number): boolean 
   return blockCount > 0;
 }
 
-/** Classify Event-Day Plan Soft-UI shell — never invents DEMO schedule blocks. */
+/** Classify Day plan Soft-UI shell — never invents DEMO schedule blocks. */
 export function classifyEventDayPlanShell(input: {
   loading?: boolean;
   fetchFailed?: boolean;
@@ -140,14 +140,14 @@ export function eventDayPlanShellCopy(kind: EventDayPlanShellKind): EventDayPlan
     case "loading":
       return {
         kind,
-        title: "Loading Event-Day Plan…",
+        title: "Opening Day plan",
         description: "Checking which team you are on and plan date.",
       };
     case "error":
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Event-Day Plan",
+        title: "Could not load Day plan",
         description:
           "A network or server issue blocked the planner. Retry, or open Command while it reloads.",
       };
@@ -178,7 +178,7 @@ export function eventDayPlanShellCopy(kind: EventDayPlanShellKind): EventDayPlan
 }
 
 /**
- * Soft-UI next actions for Event-Day Plan empty/setup shells.
+ * Soft-UI next actions for Day plan empty/setup shells.
  * Points at Command / Batteries / Pit — never invents DEMO schedule blocks.
  */
 export function eventDayPlanNextActions(input: {
@@ -199,20 +199,20 @@ export function eventDayPlanNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Event-Day Plan",
+        label: "Retry Day plan",
         detail: "Reload real schedule blocks.",
         href: withOrgHref("/event-day-plan", orgId),
         primary: true,
       },
       {
         id: "command",
-        label: "Open Command",
+        label: "Open Event day",
         detail: "Command stays available while the planner reloads.",
         href: hubHref("/competition", "command", orgId),
       },
       {
         id: "pit-repair-triage",
-        label: "Open Pit Repair Triage",
+        label: "Open Repair triage",
         detail: "Pit work stays available while the planner reloads.",
         href: hubHref("/competition", "pit-repair-triage", orgId),
       },
@@ -230,13 +230,13 @@ export function eventDayPlanNextActions(input: {
       },
       {
         id: "command",
-        label: "Open Command",
+        label: "Open Event day",
         detail: "Cross-check live event-day context beside the hourly overlay.",
         href: hubHref("/competition", "command", orgId),
       },
       {
         id: "shift-balancer",
-        label: "Open Shift Balancer",
+        label: "Open Shifts",
         detail: "Scout shifts can land on the same plan once assigned.",
         href: hubHref("/competition", "shift-balancer", orgId),
       },
@@ -256,19 +256,19 @@ export function eventDayPlanNextActions(input: {
     },
     {
       id: "command",
-      label: "Open Command",
+      label: "Open Event day",
       detail: "Carry the day plan into event-day ops.",
       href: hubHref("/competition", "command", orgId),
     },
     {
       id: "battery-rotation",
-      label: "Open Battery Rotation",
+      label: "Open Charge plan",
       detail: "Align charge banks with the hourly overlay.",
       href: hubHref("/competition", "battery-rotation", orgId),
     },
     {
       id: "pit-repair-triage",
-      label: "Open Pit Repair Triage",
+      label: "Open Repair triage",
       detail: "Fit repair windows around quals and logistics.",
       href: hubHref("/competition", "pit-repair-triage", orgId),
     },

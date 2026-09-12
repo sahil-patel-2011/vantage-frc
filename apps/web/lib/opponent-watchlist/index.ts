@@ -68,9 +68,9 @@ export function alertMessage(
 ): string {
   switch (type) {
     case "epa_up":
-      return `${label} EPA rose from ${input.previous ?? "—"} to ${input.current ?? "—"}.`;
+      return `${label} rating rose from ${input.previous ?? "—"} to ${input.current ?? "—"}.`;
     case "epa_down":
-      return `${label} EPA dropped from ${input.previous ?? "—"} to ${input.current ?? "—"}.`;
+      return `${label} rating dropped from ${input.previous ?? "—"} to ${input.current ?? "—"}.`;
     case "schedule_new":
       return `${label} has a new scheduled match: ${input.current ?? "—"}.`;
     case "schedule_changed":

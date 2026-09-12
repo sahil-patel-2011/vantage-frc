@@ -612,8 +612,8 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
     return (
       <main className="module-page team-admin-page">
         <PageHeader
-          breadcrumbs="Team / Admin"
-          title="Team admin"
+          breadcrumbs="Team / Invites"
+          title="Invites"
           description="Invite teammates by exact email. People without an invite go to the waitlist."
         >
           <nav className="product-hub-related team-admin-related" aria-label="Related account tools">
@@ -625,7 +625,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
           </nav>
         </PageHeader>
         <TeamOpsNav orgId={orgId} active="admin" />
-        <OfflineBanner feature="Team admin" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Invites" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
           badge={membershipFetchFailed ? "Unavailable" : undefined}
@@ -652,8 +652,8 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
   return (
     <main className="module-page team-admin-page">
       <PageHeader
-        breadcrumbs="Team / Admin"
-        title="Team admin"
+        breadcrumbs="Team / Invites"
+        title="Invites"
         description="Invite teammates by exact email. People without an invite go to the waitlist."
       >
         <nav className="product-hub-related team-admin-related" aria-label="Related account tools">
@@ -665,7 +665,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         </nav>
       </PageHeader>
       <TeamOpsNav orgId={orgId} active="admin" />
-      <OfflineBanner feature="Team admin" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Invites" fromCache={fromCache} cachedAt={cachedAt} />
 
       <TeamProfilePanel orgId={orgId} />
 

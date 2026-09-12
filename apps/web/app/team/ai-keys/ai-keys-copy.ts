@@ -40,7 +40,7 @@ export const ENDPOINT_EXAMPLES: EndpointExample[] = [
   { id: "lmstudio", name: "LM Studio", howToUse: "Local connector — base URL, usually no key" },
   {
     id: "other",
-    name: "Anything else OpenAI-compatible",
+    name: "Anything else",
     howToUse: "Local connector — paste its base URL",
   },
 ];
@@ -51,7 +51,7 @@ export const ENDPOINT_EXAMPLES: EndpointExample[] = [
  * read as the allowlist and teams conclude their endpoint is not welcome.
  */
 export const PAGE_DESCRIPTION =
-  "Point Vantage at any OpenAI-compatible endpoint — OpenAI, Anthropic, Google, OpenRouter, Groq, or a model running in your shop via Ollama or LM Studio. Every AI feature runs through whichever you configure. Fixed model or Automode by task toughness.";
+  "Point Vantage at any endpoint — OpenAI, Anthropic, Google, OpenRouter, Groq, or a model running in your shop via Ollama or LM Studio. Every AI feature runs through whichever you configure. Fixed model or Automode by task toughness.";
 
 /** The headline promise. One sentence, no hedging. */
 export const ANY_ENDPOINT_HEADLINE =
@@ -96,7 +96,7 @@ export const MEMBER_KEY_BODY =
  * plain OpenAI-compatible protocol; a model id is honoured on every provider.
  */
 export const MEMBER_KEY_BASE_URL_HINT =
-  "Optional. Point the OpenAI slot at anything OpenAI-compatible — Groq, Mistral, Cerebras, Together, or your own Ollama / LM Studio server. Leave blank for api.openai.com.";
+  "Optional. Point the OpenAI slot at Groq, Mistral, Cerebras, Together, or your own Ollama / LM Studio server. Leave blank for api.openai.com.";
 
 export const MEMBER_KEY_MODEL_HINT =
   "Optional. The model id this key should use, e.g. llama3.2 or gpt-4.1-mini. Leave blank to use the team's routing.";
