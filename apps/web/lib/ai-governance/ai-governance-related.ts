@@ -246,7 +246,7 @@ export function aiGovernanceNextActions(input: {
       {
         id: "signin",
         label: "Sign in",
-        detail: "Closed membership — Google or email OTP, then reopen AI · Governance.",
+        detail: "Closed membership — Google or an emailed sign-in code, then reopen AI · Governance.",
         href: "/signin",
         primary: true,
       },

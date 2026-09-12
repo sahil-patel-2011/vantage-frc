@@ -290,7 +290,7 @@ export function aiBudgetsNextActions(input: {
       {
         id: "signin",
         label: "Sign in",
-        detail: "Closed membership — Google or email OTP, then reopen AI · Budgets.",
+        detail: "Closed membership — Google or an emailed sign-in code, then reopen AI · Budgets.",
         href: "/signin",
         primary: true,
       },
@@ -487,7 +487,7 @@ export function aiUsageNextActions(input: {
       {
         id: "signin",
         label: "Sign in",
-        detail: "Closed membership — Google or email OTP, then reopen AI · Usage.",
+        detail: "Closed membership — Google or an emailed sign-in code, then reopen AI · Usage.",
         href: "/signin",
         primary: true,
       },
