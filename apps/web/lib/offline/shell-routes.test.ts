@@ -372,7 +372,7 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/cad/connections")).toBe("CAD connections");
     expect(offlineCapableLabel("/presence")).toBe("Presence");
     expect(offlineCapableLabel("/troubleshoot")).toBe("Get unstuck");
-    expect(offlineCapableLabel("/media-library")).toBe("Media Library");
+    expect(offlineCapableLabel("/media-library")).toBe("Photos & video");
     expect(offlineCapableLabel("/hours/kiosk")).toBe("Hours kiosk");
     expect(offlineCapableLabel("/hours")).toBe("Hours");
     expect(offlineCapableLabel("/scouting/forms")).toBe("Scout forms");

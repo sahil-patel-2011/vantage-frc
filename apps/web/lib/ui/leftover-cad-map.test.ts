@@ -9,7 +9,8 @@ const WEB = join(__dirname, "..", "..");
  * leftover-goals-kit. These routes are not hub labels; student chrome
  * stays sentence-case of the leftover Title-Case names. Routes stay.
  * leftover-fmea Failure log and leftover-pick-before Choose your team
- * stay. Do not invent a last-snapshot.
+ * stay. leftover-media Photos & video stays. Do not invent a
+ * last-snapshot.
  */
 const FILES = [
   "app/cad-review-queue/cad-review-queue-client.tsx",
