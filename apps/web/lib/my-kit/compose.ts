@@ -312,7 +312,7 @@ const FOCUS_LINKS: Record<MyKitFocus, MyKitQuickLink[]> = {
   mechanical: [
     { id: "build", label: "Build", href: "/build" },
     { id: "inventory", label: "Inventory", href: "/inventory" },
-    { id: "fmea", label: "FMEA", href: "/fmea" },
+    { id: "fmea", label: "Failure log", href: "/fmea" },
   ],
   cad: [
     { id: "cad", label: "CAD", href: "/cad" },

@@ -269,13 +269,13 @@ function fromFmea(data: unknown, tool: string): { risks: string[]; constraints: 
         .map((item) => {
           const entry = asRecord(item);
           const msg = String(entry?.message ?? entry?.subsystemName ?? "").trim();
-          return msg ? `Repeat FMEA: ${msg}` : "";
+          return msg ? `Repeat Failure log: ${msg}` : "";
         })
         .filter(Boolean),
     );
     return {
       risks,
-      constraints: risks.length ? ["Address repeat FMEA subsystems before freezing related geometry"] : [],
+      constraints: risks.length ? ["Address repeat Failure log subsystems before freezing related geometry"] : [],
     };
   }
   const failures = Array.isArray(row.failures) ? row.failures : [];
@@ -286,16 +286,16 @@ function fromFmea(data: unknown, tool: string): { risks: string[]; constraints: 
         if (!entry) return "";
         const subsystem = String(entry.subsystemName ?? "").trim();
         const title = String(entry.title ?? entry.failureMode ?? "").trim();
-        const rpn = entry.rpn != null ? `RPN ${entry.rpn}` : null;
+        const rpn = entry.rpn != null ? `priority ${entry.rpn}` : null;
         const label = [subsystem, title, rpn].filter(Boolean).join(" — ");
-        return label ? `Open FMEA: ${label}` : "";
+        return label ? `Open Failure log: ${label}` : "";
       })
       .filter(Boolean),
   );
   return {
     risks,
     constraints: risks.length
-      ? ["Address open high-RPN FMEA failures before freezing geometry on those subsystems"]
+      ? ["Address open high-priority Failure log failures before freezing geometry on those subsystems"]
       : [],
   };
 }

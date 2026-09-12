@@ -30,7 +30,7 @@ function setupStepsFor(orgId: string | null): RiskBurndownSetupStep[] {
     },
     {
       id: "fmea",
-      label: "Open FMEA",
+      label: "Open Failure log",
       detail: "Failure modes stay blank until logged.",
       href: hubHref("/team", "fmea", orgId),
     },

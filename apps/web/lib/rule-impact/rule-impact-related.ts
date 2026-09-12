@@ -7,7 +7,7 @@ export const RULE_IMPACT_RELATED_LINKS = [
   { id: "cad", label: "CAD", kind: "build" as const, tab: "cad" },
   { id: "subsystems", label: "Subsystems", kind: "path" as const, path: "/subsystems" },
   { id: "sketch-to-brief", label: "Sketch-to-Brief", kind: "build" as const, tab: "sketch-to-brief" },
-  { id: "fmea", label: "FMEA", kind: "build" as const, tab: "fmea" },
+  { id: "fmea", label: "Failure log", kind: "build" as const, tab: "fmea" },
 ] as const;
 
 export type RuleImpactRelatedId = (typeof RULE_IMPACT_RELATED_LINKS)[number]["id"];

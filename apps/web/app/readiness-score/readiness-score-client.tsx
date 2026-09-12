@@ -42,7 +42,7 @@ import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/featur
 import "./readiness-score.css";
 
 const CATEGORY_LABEL: Record<ReadinessFixCategory, string> = {
-  fmea: "Open FMEA",
+  fmea: "Open Failure log",
   wiring: "Wiring",
   code: "Code",
   bringup: "Bring-up checklist",
@@ -479,7 +479,7 @@ export default function ReadinessScoreClient() {
               value={formatReadinessScorePercent(view.index.score, true)}
             />
             <StatTile
-              label="Open FMEA"
+              label="Open Failure log"
               value={formatReadinessScoreMetric(view.index.openFmeaCount, true)}
             />
             <StatTile

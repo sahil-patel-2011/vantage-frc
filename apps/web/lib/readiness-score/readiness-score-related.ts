@@ -4,7 +4,7 @@ import { withOrgHref } from "../nav/product-nav";
 
 /** Soft-UI related surfaces for Robot Readiness Score (never DEMO readiness metrics). */
 export const READINESS_SCORE_RELATED_LINKS = [
-  { id: "fmea", label: "FMEA", tab: "fmea" },
+  { id: "fmea", label: "Failure log", tab: "fmea" },
   { id: "inspection-copilot", label: "Inspection Copilot", tab: "inspection-copilot" },
   { id: "code", label: "Code Coach", tab: "code" },
   { id: "cad", label: "CAD", tab: "cad" },
@@ -80,7 +80,7 @@ export function readinessScoreSetupSteps(orgId?: string | null): ReadinessScoreS
     },
     {
       id: "fmea",
-      label: "Open FMEA",
+      label: "Open Failure log",
       detail: "Open failure modes stay blank until real rows exist.",
       href: hubHref("/build", "fmea", orgId),
     },
@@ -156,7 +156,7 @@ export function readinessScoreShellCopy(kind: ReadinessScoreShellKind): Readines
         badge: "Unavailable",
         title: "Could not load Readiness Score",
         description:
-          "A network or server issue blocked readiness. Retry, or open FMEA / Inspection while it reloads.",
+          "A network or server issue blocked readiness. Retry, or open Failure log / Inspection while it reloads.",
       };
     case "setup":
       return {
@@ -172,14 +172,14 @@ export function readinessScoreShellCopy(kind: ReadinessScoreShellKind): Readines
         badge: "No subsystems yet",
         title: "Log your first subsystem",
         description:
-          "Weight, power, wiring, and code-version state ground the index. Cross-check FMEA and Inspection.",
+          "Weight, power, wiring, and code-version state ground the index. Cross-check Failure log and Inspection.",
       };
     default:
       return {
         kind: "ready",
         title: "Ship readiness from logged state",
         description:
-          "The index uses only subsystems, checklist, weight/power, and open FMEA you recorded.",
+          "The index uses only subsystems, checklist, weight/power, and open Failure log you recorded.",
       };
   }
 }
@@ -216,7 +216,7 @@ export function readinessScoreNextActions(input: {
       },
       {
         id: "fmea",
-        label: "Open FMEA",
+        label: "Open Failure log",
         detail: "Failure modes stay available while readiness reloads.",
         href: hubHref("/build", "fmea", orgId),
       },
@@ -240,7 +240,7 @@ export function readinessScoreNextActions(input: {
       },
       {
         id: "fmea",
-        label: "Open FMEA",
+        label: "Open Failure log",
         detail: "Open failure modes feed the ordered fix list.",
         href: hubHref("/build", "fmea", orgId),
       },
@@ -272,8 +272,8 @@ export function readinessScoreNextActions(input: {
     },
     {
       id: "fmea",
-      label: "Open FMEA",
-      detail: "Clear open failures to raise FMEA clearance.",
+      label: "Open Failure log",
+      detail: "Clear open failures to raise Failure log clearance.",
       href: hubHref("/build", "fmea", orgId),
     },
     {

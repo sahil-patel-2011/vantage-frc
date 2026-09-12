@@ -33,7 +33,7 @@ export function agendaItemKindLabel(kind: AgendaItem["kind"]): string {
     case "decision":
       return "Unresolved decision";
     case "fmea":
-      return "Open FMEA";
+      return "Open Failure log";
     default:
       return kind;
   }
@@ -91,7 +91,7 @@ export function buildAgendaItems(input: AgendaSourceInput, now: Date = new Date(
       kind: "fmea",
       sourceId: failure.id,
       title: failure.title,
-      detail: `${failure.subsystemName} — RPN ${rpn} (occurrence ${failure.occurrence}, severity ${failure.severity}, detection ${failure.detection})`,
+      detail: `${failure.subsystemName} — priority ${rpn} (how often ${failure.occurrence}, how bad ${failure.severity}, how hard to notice ${failure.detection})`,
       weight: 100 + Math.min(200, rpn),
     });
   }

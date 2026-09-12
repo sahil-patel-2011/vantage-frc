@@ -7,7 +7,7 @@ export const ROBOT_WEIGH_IN_RELATED_LINKS = [
   { id: "readiness-score", label: "Readiness", tab: "readiness-score" },
   { id: "inspection-copilot", label: "Inspection Copilot", tab: "inspection-copilot" },
   { id: "spare-robot-kit", label: "Spare Robot Kit", tab: "spare-robot-kit" },
-  { id: "fmea", label: "FMEA", tab: "fmea" },
+  { id: "fmea", label: "Failure log", tab: "fmea" },
 ] as const;
 
 export type RobotWeighInRelatedId = (typeof ROBOT_WEIGH_IN_RELATED_LINKS)[number]["id"];

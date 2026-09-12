@@ -3,7 +3,7 @@ import { withOrgHref } from "../nav/product-nav";
 
 /** Soft-UI related surfaces for Spare Robot Kit (never DEMO pack lists). */
 export const SPARE_ROBOT_KIT_RELATED_LINKS = [
-  { id: "fmea", label: "FMEA", tab: "fmea" },
+  { id: "fmea", label: "Failure log", tab: "fmea" },
   { id: "spare-forecast", label: "Spare Forecast", tab: "spare-forecast" },
   { id: "batteries", label: "Batteries", tab: "batteries" },
   { id: "readiness-score", label: "Readiness", tab: "readiness-score" },
@@ -77,7 +77,7 @@ export function spareRobotKitSetupSteps(orgId?: string | null): SpareRobotKitSet
     },
     {
       id: "fmea",
-      label: "Open FMEA",
+      label: "Open Failure log",
       detail: "Log real subsystem failures so kit candidates have failure history.",
       href: hubHref("/build", "fmea", orgId),
     },
@@ -132,7 +132,7 @@ export function spareRobotKitShellCopy(kind: SpareRobotKitShellKind): SpareRobot
       return {
         kind,
         title: "Loading Spare Robot Kit…",
-        description: "Checking which team you are on, spare bins, and FMEA history.",
+        description: "Checking which team you are on, spare bins, and Failure log history.",
       };
     case "error":
       return {
@@ -140,7 +140,7 @@ export function spareRobotKitShellCopy(kind: SpareRobotKitShellKind): SpareRobot
         badge: "Unavailable",
         title: "Could not load Spare Robot Kit",
         description:
-          "A network or server issue blocked the checklist. Retry, or open FMEA while it reloads.",
+          "A network or server issue blocked the checklist. Retry, or open Failure log while it reloads.",
       };
     case "setup":
       return {
@@ -148,13 +148,13 @@ export function spareRobotKitShellCopy(kind: SpareRobotKitShellKind): SpareRobot
         badge: "Needs setup",
         title: "Choose your team",
         description:
-          "Choose your team before matching spares to FMEA history.",
+          "Choose your team before matching spares to Failure log history.",
       };
     case "empty":
       return {
         kind,
         badge: "No kit candidates yet",
-        title: "Match spares to FMEA history",
+        title: "Match spares to Failure log history",
         description:
           "Spare bins tagged to subsystems with logged failures surface here.",
       };
@@ -162,7 +162,7 @@ export function spareRobotKitShellCopy(kind: SpareRobotKitShellKind): SpareRobot
       return {
         kind: "ready",
         title: "Competition spare kit",
-        description: "Candidates from inventory × FMEA only.",
+        description: "Candidates from inventory × Failure log only.",
       };
   }
 }
@@ -187,13 +187,13 @@ export function spareRobotKitNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before matching bins to FMEA.",
+          detail: "Pick a team before matching bins to Failure log.",
           href: "/workspace",
           primary: true,
         },
         {
           id: "fmea",
-          label: "Open FMEA",
+          label: "Open Failure log",
           detail: "Failure history stays blank until your team logs real modes.",
           href: hubHref("/build", "fmea", null),
         },
@@ -215,7 +215,7 @@ export function spareRobotKitNextActions(input: {
       },
       {
         id: "fmea",
-        label: "Open FMEA",
+        label: "Open Failure log",
         detail: "Log subsystem failures that drive pack priority.",
         href: hubHref("/build", "fmea", orgId),
       },
@@ -233,14 +233,14 @@ export function spareRobotKitNextActions(input: {
       {
         id: "retry",
         label: "Retry Spare Robot Kit",
-        detail: "Reload real FMEA × inventory matches.",
+        detail: "Reload real Failure log × inventory matches.",
         href: withOrgHref("/spare-robot-kit", orgId),
         primary: true,
       },
       {
         id: "fmea",
-        label: "Open FMEA",
-        detail: "FMEA stays available while the kit reloads.",
+        label: "Open Failure log",
+        detail: "Failure log stays available while the kit reloads.",
         href: hubHref("/build", "fmea", orgId),
       },
       {
@@ -256,7 +256,7 @@ export function spareRobotKitNextActions(input: {
     return [
       {
         id: "fmea",
-        label: "Log FMEA failures",
+        label: "Log failures",
         detail: "Kit candidates stay blank until spare bins match real failure history.",
         href: hubHref("/build", "fmea", orgId),
         primary: true,
@@ -282,14 +282,14 @@ export function spareRobotKitNextActions(input: {
       label: checklistCount > 0 ? "Pack the competition checklist" : "Generate a checklist",
       detail:
         checklistCount > 0
-          ? `${checklistCount} checklist${checklistCount === 1 ? "" : "s"} from real FMEA matches.`
+          ? `${checklistCount} checklist${checklistCount === 1 ? "" : "s"} from real Failure log matches.`
           : `${candidateCount} candidate spare${candidateCount === 1 ? "" : "s"} matched to failure history.`,
       href: checklistCount > 0 ? "#spare-robot-kit-checklists" : "#spare-robot-kit-candidates",
       primary: true,
     },
     {
       id: "fmea",
-      label: "Open FMEA",
+      label: "Open Failure log",
       detail: "Refresh failure history that drives pack priority.",
       href: hubHref("/build", "fmea", orgId),
     },

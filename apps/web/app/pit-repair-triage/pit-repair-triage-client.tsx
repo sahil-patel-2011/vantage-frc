@@ -372,7 +372,7 @@ export default function PitRepairTriageClient() {
           </>
         }
         title="Pit repair triage"
-        description="Log a pit failure against real FMEA history and spare stock. Cross-check Command and Spare Kit."
+        description="Log a pit failure against real Failure log history and spare stock. Cross-check Command and Spare Kit."
       >
         <div className="prt-header-actions">
           <RelatedStrip orgId={orgId} />
@@ -411,7 +411,7 @@ export default function PitRepairTriageClient() {
           <div className="prt-stats">
             <StatTile label="Reports" value={formatPitRepairTriageMetric(reportCount, loaded)} />
             <StatTile label="Open / staged" value={formatPitRepairTriageMetric(openCount, loaded)} />
-            <StatTile label="FMEA history" value={formatPitRepairTriageMetric(fmeaCount, loaded)} />
+            <StatTile label="Failure log history" value={formatPitRepairTriageMetric(fmeaCount, loaded)} />
             <StatTile label="Spares in stock" value={formatPitRepairTriageMetric(spareCount, loaded)} />
           </div>
         </Panel>
@@ -426,7 +426,7 @@ export default function PitRepairTriageClient() {
           badge="No reports yet"
           badgeTone="setup"
           title="Log your first pit failure"
-          description="Fix-vs-swap uses real FMEA history and spare stock."
+          description="Fix-vs-swap uses real Failure log history and spare stock."
         />
       )}
       <ReferencePanels view={view} />
@@ -590,7 +590,7 @@ function ReportsList({
             ) : null}
             <small className="app-muted">{report.rationale}</small>
             <small className="app-muted">
-              {report.minutesUntilNextMatch} min to next match · {report.priorFailureCount} prior FMEA failure(s) ·{" "}
+              {report.minutesUntilNextMatch} min to next match · {report.priorFailureCount} prior logged failure(s) ·{" "}
               {report.sparesAvailable} spare(s) matched
               {report.prestageRecommended ? " · pre-stage recommended" : ""}
             </small>
@@ -645,11 +645,11 @@ function ReportsList({
 
 function ReferencePanels({ view }: { view: LiveView }) {
   return (
-    <section className="app-card soft-panel prt-reference" aria-label="FMEA and spares reference">
+    <section className="app-card soft-panel prt-reference" aria-label="Failure log and spares reference">
       <div>
-        <h2>FMEA history</h2>
+        <h2>Failure log history</h2>
         {view.fmeaHistory.length === 0 ? (
-          <p className="app-muted">No FMEA failures logged this season yet.</p>
+          <p className="app-muted">No failures logged this season yet.</p>
         ) : (
           <ul className="prt-ref-list">
             {view.fmeaHistory.map((entry) => (
@@ -733,7 +733,7 @@ function LogFailureForm({
       }}
     >
       <h2>Log a pit failure</h2>
-      <p className="app-muted">Grounded in real FMEA and spare stock.</p>
+      <p className="app-muted">Grounded in the failure log and spare stock.</p>
       <FormGrid min={180}>
         <FormRow label="Subsystem">
           <input value={form.subsystemName} onChange={set("subsystemName")} placeholder="Intake" required />
@@ -744,7 +744,7 @@ function LogFailureForm({
         <FormRow label="Minutes until next match">
           <input type="number" min={0} value={form.minutesUntilNextMatch} onChange={set("minutesUntilNextMatch")} />
         </FormRow>
-        <FormRow label="Related FMEA failure (optional)">
+        <FormRow label="Related logged failure (optional)">
           <select value={form.relatedFmeaFailureId} onChange={set("relatedFmeaFailureId")}>
             <option value="">None</option>
             {view.fmeaHistory.map((entry) => (

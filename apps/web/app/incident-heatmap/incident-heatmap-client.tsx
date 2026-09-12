@@ -82,7 +82,7 @@ function IncidentHeatmapNextActions({ orgId }: { orgId: string }) {
     },
     {
       id: "fmea",
-      label: "Open FMEA",
+      label: "Open Failure log",
       detail: "Repeat failures should match the risk rows.",
       href: hubHref("/build", "fmea", orgId),
       primary: false,

@@ -285,7 +285,7 @@ export async function POST(request: Request) {
                 alert.message,
                 alert.openCount ? `${alert.openCount} still open` : null,
                 alert.recentTitles.length ? `Recent: ${alert.recentTitles.join("; ")}` : null,
-                `Max RPN ${alert.maxRpn} (${alert.level})`,
+                `Max priority ${alert.maxRpn} (${alert.level})`,
               ]
                 .filter(Boolean)
                 .join(" · "),

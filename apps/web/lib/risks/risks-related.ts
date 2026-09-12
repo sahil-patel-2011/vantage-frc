@@ -16,7 +16,7 @@ export const RISKS_TEAM_RELATED_INCLUDE: TeamHubRelatedId[] = [
  * Distinct from FMEA: proactive L×I season risks vs logged O×S×D failures.
  */
 export const RISKS_RELATED_LINKS = [
-  { id: "fmea", label: "FMEA", kind: "team" as const, tab: "fmea" },
+  { id: "fmea", label: "Failure log", kind: "team" as const, tab: "fmea" },
   { id: "knowledge", label: "Knowledge", kind: "team" as const, tab: "knowledge" },
   { id: "batteries", label: "Batteries", kind: "team" as const, tab: "batteries" },
   { id: "subsystems", label: "Subsystems", kind: "path" as const, path: "/subsystems" },
@@ -96,8 +96,8 @@ export function risksNextActions(input: {
     });
     actions.push({
       id: "fmea",
-      label: "Log failures in FMEA",
-      detail: "FMEA tracks things that already broke (O×S×D). Use the register for what could still go wrong.",
+      label: "Log failures in Failure log",
+      detail: "Failure log tracks things that already broke (how often, how bad, and how hard to notice). Use the register for what could still go wrong.",
       href: hubHref("/team", "fmea", orgId),
     });
     actions.push({
@@ -130,8 +130,8 @@ export function risksNextActions(input: {
 
   actions.push({
     id: "fmea",
-    label: "Promote broken modes to FMEA",
-    detail: "When a register item actually fails on the field or in the pit, log it with O×S×D.",
+    label: "Promote broken modes to the failure log",
+    detail: "When a register item actually fails on the field or in the pit, log it with how often, how bad, and how hard to notice.",
     href: hubHref("/team", "fmea", orgId),
     primary: actions.length === 0,
   });

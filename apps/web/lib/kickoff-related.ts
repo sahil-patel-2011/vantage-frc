@@ -142,7 +142,7 @@ export function kickoffNextActions(input: {
   if (actions.length < 5) {
     actions.push({
       id: "fmea",
-      label: "Log build risks in FMEA",
+      label: "Log build risks in Failure log",
       detail: "Capture mechanism risks as you commit to kickoff priorities.",
       href: hubHref("/build", "fmea", orgId),
     });

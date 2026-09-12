@@ -5,7 +5,7 @@ import { setupActionsFrom } from "../setup-actions";
 /** Soft-UI related surfaces for Inspection Copilot (never DEMO risk scores). */
 export const INSPECTION_COPILOT_RELATED_LINKS = [
   { id: "batteries", label: "Batteries", kind: "team" as const, tab: "batteries" },
-  { id: "fmea", label: "FMEA", kind: "build" as const, tab: "fmea" },
+  { id: "fmea", label: "Failure log", kind: "build" as const, tab: "fmea" },
   { id: "weigh-in", label: "Weigh-in", kind: "build" as const, tab: "robot-weigh-in" },
   { id: "subsystems", label: "Subsystems", kind: "path" as const, path: "/subsystems" },
   { id: "inspection", label: "Inspection", kind: "path" as const, path: "/inspection" },
@@ -115,7 +115,7 @@ export function inspectionCopilotShellCopy(kind: InspectionCopilotShellKind): In
         badge: "Unavailable",
         title: "Could not load inspection",
         description:
-          "A network or server issue blocked readiness checks. Retry, or open Batteries / FMEA / Weigh-in while it reloads.",
+          "A network or server issue blocked readiness checks. Retry, or open Batteries / Failure log / Weigh-in while it reloads.",
       };
     case "setup":
       return {
@@ -131,7 +131,7 @@ export function inspectionCopilotShellCopy(kind: InspectionCopilotShellKind): In
         badge: "No checks yet",
         title: "Run your first inspection-readiness check",
         description:
-          "Risk and flags stay blank until you enter a real weight budget, frame/bumper measurements, and wiring/power state. Cross-check Batteries, FMEA, and Subsystems.",
+          "Risk and flags stay blank until you enter a real weight budget, frame/bumper measurements, and wiring/power state. Cross-check Batteries, Failure log, and Subsystems.",
       };
     case "ready":
       return {
@@ -191,7 +191,7 @@ export function inspectionSetupSteps(orgId?: string | null): InspectionCopilotSe
     },
     {
       id: "fmea",
-      label: "Open FMEA",
+      label: "Open Failure log",
       detail: "Failure modes stay blank until scored.",
       href: hubHref("/build", "fmea", orgId),
     },
@@ -246,7 +246,7 @@ function inspectionCopilotNextActionCandidates(input: {
       },
       {
         id: "fmea",
-        label: "Open FMEA",
+        label: "Open Failure log",
         detail: "Review failure modes while checks reload.",
         href: hubHref("/build", "fmea", orgId),
       },
@@ -276,7 +276,7 @@ function inspectionCopilotNextActionCandidates(input: {
       },
       {
         id: "fmea",
-        label: "Scan FMEA modes",
+        label: "Scan Failure log",
         detail: "Risky mechanisms deserve the earliest weigh-in and bumper verification.",
         href: hubHref("/build", "fmea", orgId),
       },
@@ -319,8 +319,8 @@ function inspectionCopilotNextActionCandidates(input: {
     },
     {
       id: "fmea",
-      label: "Open FMEA",
-      detail: "When a readiness flag touches a high-RPN subsystem, update failure notes too.",
+      label: "Open Failure log",
+      detail: "When a readiness flag touches a high-priority subsystem, update failure notes too.",
       href: hubHref("/build", "fmea", orgId),
     },
     {

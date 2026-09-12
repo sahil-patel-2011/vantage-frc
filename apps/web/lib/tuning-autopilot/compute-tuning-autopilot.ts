@@ -173,7 +173,7 @@ export async function computeTuningAutopilotView(
         },
         {
           id: "fmea",
-          label: "Open FMEA",
+          label: "Open Failure log",
           detail: "Failure modes stay blank until scored.",
           href: "/build?tab=fmea",
         },

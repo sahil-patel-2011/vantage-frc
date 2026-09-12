@@ -4,7 +4,7 @@ import { withOrgHref } from "../nav/product-nav";
 /** Soft-UI related surfaces for Control Map (never DEMO bindings). */
 export const CONTROL_MAP_RELATED_LINKS = [
   { id: "subsystems", label: "Subsystems", kind: "path" as const, path: "/subsystems" },
-  { id: "fmea", label: "FMEA", kind: "build" as const, tab: "fmea" },
+  { id: "fmea", label: "Failure log", kind: "build" as const, tab: "fmea" },
   { id: "practice", label: "Practice", kind: "team" as const, tab: "practice" },
   { id: "auto-routines", label: "Autos", kind: "path" as const, path: "/auto-routines" },
   { id: "code", label: "Code", kind: "build" as const, tab: "code" },
@@ -104,7 +104,7 @@ export function controlMapShellCopy(kind: ControlMapShellKind): ControlMapEmptyC
         badge: "Unavailable",
         title: "Could not load the control map",
         description:
-          "A network or server issue blocked bindings. Retry, or open Subsystems / FMEA while Control Map is down.",
+          "A network or server issue blocked bindings. Retry, or open Subsystems / Failure log while Control Map is down.",
       };
     case "setup":
       return {
@@ -120,14 +120,14 @@ export function controlMapShellCopy(kind: ControlMapShellKind): ControlMapEmptyC
         badge: "No bindings yet",
         title: "Map your first controller input",
         description:
-          "The cheat sheet stays blank until you save a real input → action. Cross-check Subsystems and FMEA so buttons match robot systems.",
+          "The cheat sheet stays blank until you save a real input → action. Cross-check Subsystems and Failure log so buttons match robot systems.",
       };
     default:
       return {
         kind: "ready",
         title: "Driver control map",
         description:
-          "Bindings come only from inputs your drive team recorded this season. Keep them in sync with robot code, Subsystems, and FMEA.",
+          "Bindings come only from inputs your drive team recorded this season. Keep them in sync with robot code, Subsystems, and Failure log.",
       };
   }
 }
@@ -166,7 +166,7 @@ export function controlMapNextActions(input: {
         },
         {
           id: "fmea",
-          label: "Open FMEA",
+          label: "Open Failure log",
           detail: "Failure modes stay blank until scored.",
           href: hubHref("/build", "fmea", null),
         },
@@ -194,7 +194,7 @@ export function controlMapNextActions(input: {
       },
       {
         id: "fmea",
-        label: "Open FMEA",
+        label: "Open Failure log",
         detail: "High-risk actuators often need the clearest driver-station labels.",
         href: hubHref("/build", "fmea", orgId),
       },
@@ -224,7 +224,7 @@ export function controlMapNextActions(input: {
       },
       {
         id: "fmea",
-        label: "Open FMEA",
+        label: "Open Failure log",
         detail: "Review failure modes while bindings reload.",
         href: hubHref("/build", "fmea", orgId),
       },
@@ -248,7 +248,7 @@ export function controlMapNextActions(input: {
       },
       {
         id: "fmea",
-        label: "Scan FMEA modes",
+        label: "Scan Failure log",
         detail: "Risky actuators deserve the most obvious driver-station labels.",
         href: hubHref("/build", "fmea", orgId),
       },
@@ -291,8 +291,8 @@ export function controlMapNextActions(input: {
     },
     {
       id: "fmea",
-      label: "Open FMEA",
-      detail: "When a binding changes a high-RPN mechanism, update failure notes too.",
+      label: "Open Failure log",
+      detail: "When a binding changes a high-priority mechanism, update failure notes too.",
       href: hubHref("/build", "fmea", orgId),
     },
     {

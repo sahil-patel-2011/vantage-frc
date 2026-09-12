@@ -81,16 +81,16 @@ export function buildPostmortemNarrative(input: {
   }
 
   if (counts.fmeaFailuresTotal > 0) {
-    segments.push(`${counts.fmeaFailuresTotal} FMEA failure(s) logged`);
+    segments.push(`${counts.fmeaFailuresTotal} failure(s) logged`);
     if (counts.fmeaTopFailures.length > 0) {
       const top = counts.fmeaTopFailures
         .slice(0, 3)
-        .map((f) => `${f.title} (${f.subsystemName}, RPN ${f.rpn})`)
+        .map((f) => `${f.title} (${f.subsystemName}, priority ${f.rpn})`)
         .join("; ");
-      segments.push(`top by RPN: ${top}`);
+      segments.push(`top by priority: ${top}`);
     }
   } else {
-    segments.push("no FMEA failures logged");
+    segments.push("no failures logged");
   }
 
   if (counts.retroActionItemsTotal > 0) {

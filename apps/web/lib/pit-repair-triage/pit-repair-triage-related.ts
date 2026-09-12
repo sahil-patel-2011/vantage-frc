@@ -5,7 +5,7 @@ import { setupActionsFrom } from "../setup-actions";
 /** Soft-UI related surfaces for Pit Repair Triage (never DEMO fix/swap calls). */
 export const PIT_REPAIR_TRIAGE_RELATED_LINKS = [
   { id: "command", label: "Command", tab: "command" },
-  { id: "fmea", label: "FMEA", hub: "/build" as const, tab: "fmea" },
+  { id: "fmea", label: "Failure log", hub: "/build" as const, tab: "fmea" },
   { id: "failure-patterns", label: "Failure Patterns", hub: "/build" as const, tab: "failure-patterns" },
   { id: "spare-robot-kit", label: "Spare Kit", hub: "/build" as const, tab: "spare-robot-kit" },
 ] as const;
@@ -139,7 +139,7 @@ export function pitRepairTriageShellCopy(kind: PitRepairTriageShellKind): PitRep
       return {
         kind,
         title: "Loading Pit Repair Triage…",
-        description: "Checking which team you are on, FMEA history, and spares.",
+        description: "Checking which team you are on, Failure log history, and spares.",
       };
     case "error":
       return {
@@ -147,7 +147,7 @@ export function pitRepairTriageShellCopy(kind: PitRepairTriageShellKind): PitRep
         badge: "Unavailable",
         title: "Could not load Pit Repair Triage",
         description:
-          "A network or server issue blocked triage. Retry, or open FMEA while it reloads.",
+          "A network or server issue blocked triage. Retry, or open Failure log while it reloads.",
       };
     case "setup":
       return {
@@ -163,7 +163,7 @@ export function pitRepairTriageShellCopy(kind: PitRepairTriageShellKind): PitRep
         badge: "No reports yet",
         title: "Log your first pit failure",
         description:
-          "Fix-vs-swap calls use real FMEA history and spare stock.",
+          "Fix-vs-swap calls use real Failure log history and spare stock.",
       };
     default:
       return {
@@ -200,8 +200,8 @@ export function pitRepairTriageNextActions(input: {
       },
       {
         id: "fmea",
-        label: "Open FMEA",
-        detail: "FMEA stays available while triage reloads.",
+        label: "Open Failure log",
+        detail: "Failure log stays available while triage reloads.",
         href: hubHref("/build", "fmea", orgId),
       },
     ];
@@ -218,7 +218,7 @@ export function pitRepairTriageNextActions(input: {
       },
       {
         id: "fmea",
-        label: "Open FMEA",
+        label: "Open Failure log",
         detail: "Prior failures ground fix-vs-swap confidence.",
         href: hubHref("/build", "fmea", orgId),
       },
@@ -257,7 +257,7 @@ export function pitRepairTriageNextActions(input: {
         ]),
     {
       id: "fmea",
-      label: "Open FMEA",
+      label: "Open Failure log",
       detail: "Refresh failure history that grounds decisions.",
       href: hubHref("/build", "fmea", orgId),
     },

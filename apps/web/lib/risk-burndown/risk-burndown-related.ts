@@ -4,7 +4,7 @@ import { withOrgHref } from "../nav/product-nav";
 /** Soft-UI related surfaces for Risk-Register Burndown (never DEMO risk metrics). */
 export const RISK_BURNDOWN_RELATED_LINKS = [
   { id: "risks", label: "Risks", kind: "path" as const, path: "/risks" },
-  { id: "fmea", label: "FMEA", kind: "team" as const, tab: "fmea" },
+  { id: "fmea", label: "Failure log", kind: "team" as const, tab: "fmea" },
   { id: "knowledge", label: "Knowledge", kind: "team" as const, tab: "knowledge" },
   { id: "subsystems", label: "Subsystems", kind: "path" as const, path: "/subsystems" },
   { id: "batteries", label: "Batteries", kind: "team" as const, tab: "batteries" },
@@ -103,7 +103,7 @@ export function riskBurndownShellCopy(kind: RiskBurndownShellKind): RiskBurndown
         badge: "Unavailable",
         title: "Could not load Risk-Register Burndown",
         description:
-          "A network or server issue blocked the register. Retry, or open Risks / FMEA while it reloads.",
+          "A network or server issue blocked the register. Retry, or open Risks / Failure log while it reloads.",
       };
     case "setup":
       return {
@@ -119,7 +119,7 @@ export function riskBurndownShellCopy(kind: RiskBurndownShellKind): RiskBurndown
         badge: "No risks yet",
         title: "Log a season risk before tracking burndown",
         description:
-          "Open / closed counts stay blank until you log a real risk. Cross-check Risks and FMEA.",
+          "Open / closed counts stay blank until you log a real risk. Cross-check Risks and Failure log.",
       };
     default:
       return {
@@ -165,7 +165,7 @@ export function riskBurndownNextActions(input: {
         },
         {
           id: "fmea",
-          label: "Open FMEA",
+          label: "Open Failure log",
           detail: "Failure modes stay blank until logged.",
           href: hubHref("/team", "fmea", null),
         },
@@ -187,7 +187,7 @@ export function riskBurndownNextActions(input: {
       },
       {
         id: "fmea",
-        label: "Open FMEA",
+        label: "Open Failure log",
         detail: "Logged failure modes often seed the next open risk to mitigate.",
         href: hubHref("/team", "fmea", orgId),
       },
@@ -211,7 +211,7 @@ export function riskBurndownNextActions(input: {
       },
       {
         id: "fmea",
-        label: "Open FMEA",
+        label: "Open Failure log",
         detail: "Failure-mode work stays available while burndown reloads.",
         href: hubHref("/team", "fmea", orgId),
       },
@@ -235,7 +235,7 @@ export function riskBurndownNextActions(input: {
       },
       {
         id: "fmea",
-        label: "Open FMEA",
+        label: "Open Failure log",
         detail: "Pull failure modes that should become tracked season risks.",
         href: hubHref("/team", "fmea", orgId),
       },
@@ -279,7 +279,7 @@ export function riskBurndownNextActions(input: {
     },
     {
       id: "fmea",
-      label: "Open FMEA",
+      label: "Open Failure log",
       detail: "Link failure modes to open risks you are still burning down.",
       href: hubHref("/team", "fmea", orgId),
     },

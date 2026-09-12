@@ -605,7 +605,7 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
               <span>SEASON PATTERN</span>
               <h2>Repeat failures</h2>
             </div>
-            <a href={fmeaHref}>Open FMEA log</a>
+            <a href={fmeaHref}>Open Failure log</a>
           </header>
           <ul>
             {data.repeatAlerts.map((alert) => (

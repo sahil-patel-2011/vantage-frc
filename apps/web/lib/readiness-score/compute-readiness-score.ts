@@ -61,7 +61,7 @@ function setupSteps(orgId: string | null): ReadinessScoreSetupStep[] {
     },
     {
       id: "fmea",
-      label: "Open FMEA",
+      label: "Open Failure log",
       detail: "Open failure modes stay blank until real rows exist.",
       href: hubHref("/build", "fmea", orgId),
     },

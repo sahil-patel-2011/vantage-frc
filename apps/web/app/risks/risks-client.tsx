@@ -258,7 +258,7 @@ export default function RisksClient() {
         <PageHeader
           breadcrumbs="Team / Risk Register"
           title="Risk Register"
-          description="Proactive season risks scored with real likelihood × impact. Distinct from FMEA failure logging."
+          description="Proactive season risks scored with real likelihood × impact. Distinct from the failure log."
         />
         <OfflineBanner feature="Risk Register" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
@@ -288,7 +288,7 @@ export default function RisksClient() {
         <PageHeader
           breadcrumbs="Team / Risk Register"
           title="Risk Register"
-          description="Identify what could derail the season — score likelihood × impact, assign mitigations, and track closure. Separate from FMEA’s O×S×D failure log."
+          description="Identify what could derail the season — score likelihood × impact, assign mitigations, and track closure. Separate from the failure log's how often, how bad, and how hard to notice failure log."
         />
         <OfflineBanner feature="Risk Register" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState soft badge="Needs setup" badgeTone="setup" title={view.message}>
@@ -313,7 +313,7 @@ export default function RisksClient() {
         description={
           <>
             Identify what could derail your season — mechanism failures, schedule slips, funding gaps,
-            driver availability. Score each by likelihood × impact. For things that already broke, use FMEA.
+            driver availability. Score each by likelihood × impact. For things that already broke, use the failure log.
           </>
         }
       >
@@ -338,7 +338,7 @@ export default function RisksClient() {
             </label>
           ) : null}
           <Button as="a" variant="secondary" href={hubHref("/team", "fmea", orgId)}>
-            FMEA
+            Failure log
           </Button>
           <Button as="a" variant="secondary" href={hubHref("/team", "knowledge", orgId)}>
             Knowledge
@@ -375,10 +375,10 @@ export default function RisksClient() {
         <EmptyState
           soft
           title="No season risks logged yet"
-          description="Add schedule, technical, funding, or people risks with real L×I scores. Top score stays blank until then. FMEA is for failures that already happened."
+          description="Add schedule, technical, funding, or people risks with real L×I scores. Top score stays blank until then. Failure log is for failures that already happened."
         >
           <div className="risks-row-links">
-            <a href={hubHref("/team", "fmea", orgId)}>FMEA →</a>
+            <a href={hubHref("/team", "fmea", orgId)}>Failure log →</a>
             <a href={hubHref("/team", "knowledge", orgId)}>Knowledge →</a>
             <a href={withOrgHref("/subsystems", orgId)}>Subsystems →</a>
           </div>
@@ -545,7 +545,7 @@ function AddRiskForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
       }}
     >
       <h2>Add risk</h2>
-      <p>Proactive season risk — not an FMEA failure. Score will be L×I from the values you set.</p>
+      <p>Proactive season risk — not a logged failure. Score will be L×I from the values you set.</p>
       <FormGrid min={130}>
         <FormRow label="Risk" wide>
           <input value={form.title} onChange={set("title")} placeholder="Climber winch could fail under load" required />
@@ -676,7 +676,7 @@ function RiskCard({
           <p className="warn">No mitigation recorded yet.</p>
         )}
         <div className="risks-row-links">
-          <a href={hubHref("/team", "fmea", orgId)}>Log in FMEA if it fails →</a>
+          <a href={hubHref("/team", "fmea", orgId)}>Log in Failure log if it fails →</a>
           <a href={hubHref("/team", "knowledge", orgId)}>Document in Knowledge →</a>
         </div>
       </div>

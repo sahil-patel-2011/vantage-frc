@@ -165,7 +165,7 @@ export function batteryNextActions(input: {
 
   actions.push({
     id: "fmea",
-    label: "Battery failures in FMEA",
+    label: "Battery failures in Failure log",
     detail: "Retire flows can open a failure mode — link retired packs to real root causes.",
     href: hubHref("/team", "fmea", orgId),
   });

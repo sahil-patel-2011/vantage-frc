@@ -6,7 +6,7 @@ import { withOrgHref } from "../nav/product-nav";
 export const BUILD_BURNDOWN_RELATED_LINKS = [
   { id: "task-board", label: "Task board", kind: "team" as const, tab: "task-board" },
   { id: "kickoff", label: "Kickoff", kind: "build" as const, tab: "kickoff" },
-  { id: "fmea", label: "FMEA", kind: "build" as const, tab: "fmea" },
+  { id: "fmea", label: "Failure log", kind: "build" as const, tab: "fmea" },
   { id: "team", label: "Team hub", kind: "team" as const, tab: "build-burndown" },
 ] as const;
 
@@ -93,7 +93,7 @@ export function buildBurndownSetupSteps(orgId?: string | null): BuildBurndownSet
     },
     {
       id: "fmea",
-      label: "Open FMEA",
+      label: "Open Failure log",
       detail: "Risk work sits beside the burndown.",
       href: hubHref("/build", "fmea", orgId),
     },
@@ -160,7 +160,7 @@ export function buildBurndownShellCopy(kind: BuildBurndownShellKind): BuildBurnd
         badge: "Unavailable",
         title: "Could not load Build Burndown",
         description:
-          "A network or server issue blocked burndown. Retry, or open Task board / Kickoff / FMEA while it reloads.",
+          "A network or server issue blocked burndown. Retry, or open Task board / Kickoff / Failure log while it reloads.",
       };
     case "setup":
       return {
@@ -176,7 +176,7 @@ export function buildBurndownShellCopy(kind: BuildBurndownShellKind): BuildBurnd
         badge: "No tasks yet",
         title: "Add your first build task",
         description:
-          "The burndown line stays blank until you log real tasks with planned dates. Cross-check Task board, Kickoff, and FMEA.",
+          "The burndown line stays blank until you log real tasks with planned dates. Cross-check Task board, Kickoff, and Failure log.",
       };
     default:
       return {
@@ -234,7 +234,7 @@ export function buildBurndownNextActions(input: {
       },
       {
         id: "fmea",
-        label: "Open FMEA",
+        label: "Open Failure log",
         detail: "Failure modes stay honest when this surface is down.",
         href: hubHref("/build", "fmea", orgId),
       },
@@ -266,7 +266,7 @@ export function buildBurndownNextActions(input: {
       },
       {
         id: "fmea",
-        label: "Open FMEA",
+        label: "Open Failure log",
         detail: "Track failure risks beside remaining build work.",
         href: hubHref("/build", "fmea", orgId),
       },
@@ -298,7 +298,7 @@ export function buildBurndownNextActions(input: {
     },
     {
       id: "fmea",
-      label: "Open FMEA",
+      label: "Open Failure log",
       detail: "Cross-check failure risks against remaining build work.",
       href: hubHref("/build", "fmea", orgId),
     },

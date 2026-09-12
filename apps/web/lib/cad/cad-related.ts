@@ -167,7 +167,7 @@ export function cadNextActions(input: {
 
   actions.push({
     id: "fmea",
-    label: "Open FMEA risks",
+    label: "Open Failure log",
     detail: "Repeat failures become design constraints — empty log means empty reliability context.",
     href: hubHref("/build", "fmea", orgId),
   });

@@ -155,7 +155,7 @@ export async function computeSpareRobotKitView(
         },
         {
           id: "fmea",
-          label: "Log FMEA failures",
+          label: "Log failures",
           detail: "Record subsystem failures so the checklist has repeat-failure history to draw from",
           href: "/build",
         },
@@ -215,7 +215,7 @@ export async function generateChecklist(
     metadata: {
       seasonYear: input.seasonYear,
       candidateCount: candidateItems.length,
-      note: "Deterministic FMEA-rate x inventory-bin kit checklist computation — no external model call",
+      note: "Deterministic failure-rate x inventory-bin kit checklist computation — no external model call",
     },
     invoke: async () => ({
       value: candidateItems,

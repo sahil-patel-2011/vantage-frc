@@ -4,7 +4,7 @@ import { withOrgHref } from "../nav/product-nav";
 /** Soft-UI related surfaces for CAD Change Impact Radar (never DEMO revision diffs). */
 export const CAD_CHANGE_RADAR_RELATED_LINKS = [
   { id: "cad", label: "CAD", tab: "cad" },
-  { id: "fmea", label: "FMEA", tab: "fmea" },
+  { id: "fmea", label: "Failure log", tab: "fmea" },
   { id: "prototype", label: "Prototypes", tab: "prototype" },
   { id: "readiness-score", label: "Readiness Score", tab: "readiness-score" },
 ] as const;
@@ -84,7 +84,7 @@ export function cadChangeRadarSetupSteps(orgId?: string | null): CadChangeRadarS
     },
     {
       id: "fmea",
-      label: "Open FMEA",
+      label: "Open Failure log",
       detail: "Risk owners stay blank until real failure modes exist.",
       href: hubHref("/build", "fmea", orgId),
     },
@@ -206,7 +206,7 @@ export function cadChangeRadarNextActions(input: {
         },
         {
           id: "fmea",
-          label: "Open FMEA",
+          label: "Open Failure log",
           detail: "Risk owners stay empty until real failure modes exist.",
           href: hubHref("/build", "fmea", null),
         },
@@ -222,7 +222,7 @@ export function cadChangeRadarNextActions(input: {
       },
       {
         id: "fmea",
-        label: "Open FMEA",
+        label: "Open Failure log",
         detail: "Notify risk owners when tracked mounts or envelopes change.",
         href: hubHref("/build", "fmea", orgId),
       },
@@ -252,8 +252,8 @@ export function cadChangeRadarNextActions(input: {
       },
       {
         id: "fmea",
-        label: "Open FMEA",
-        detail: "FMEA stays available while change radar reloads.",
+        label: "Open Failure log",
+        detail: "Failure log stays available while change radar reloads.",
         href: hubHref("/build", "fmea", orgId),
       },
     ];
@@ -276,7 +276,7 @@ export function cadChangeRadarNextActions(input: {
       },
       {
         id: "fmea",
-        label: "Open FMEA",
+        label: "Open Failure log",
         detail: "Subscribe risk owners once parts are tracked.",
         href: hubHref("/build", "fmea", orgId),
       },
@@ -302,7 +302,7 @@ export function cadChangeRadarNextActions(input: {
     },
     {
       id: "fmea",
-      label: "Open FMEA",
+      label: "Open Failure log",
       detail: "Update failure modes when mounts or envelopes shift.",
       href: hubHref("/build", "fmea", orgId),
     },

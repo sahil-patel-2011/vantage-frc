@@ -70,7 +70,7 @@ export function assessReuse(input: ReuseAssessInput): ReuseAssessResult {
     return {
       recommendation: "avoid",
       confidence: round(clamp01(0.65 + Math.min(0.25, (failures - CHRONIC_FAILURE_COUNT) * 0.05))),
-      rationale: `${failures} prior FMEA failure(s), including ${highSeverity} high-severity (>= ${HIGH_SEVERITY_THRESHOLD}/10) — a recurring, serious failure mode. Avoid reusing this design; start a redesign.`,
+      rationale: `${failures} prior logged failure(s), including ${highSeverity} high-severity (>= ${HIGH_SEVERITY_THRESHOLD}/10) — a recurring, serious failure mode. Avoid reusing this design; start a redesign.`,
     };
   }
 
@@ -81,8 +81,8 @@ export function assessReuse(input: ReuseAssessInput): ReuseAssessResult {
       confidence: round(clamp01(0.6 + reviewBonus)),
       rationale:
         reviews > 0
-          ? `No FMEA failures logged, and it passed ${passes}/${reviews} design review(s). Safe to reuse as-is.`
-          : "No FMEA failures logged against this subsystem in prior seasons. Safe to reuse as-is.",
+          ? `No failures logged, and it passed ${passes}/${reviews} design review(s). Safe to reuse as-is.`
+          : "No failures logged against this subsystem in prior seasons. Safe to reuse as-is.",
     };
   }
 
@@ -91,7 +91,7 @@ export function assessReuse(input: ReuseAssessInput): ReuseAssessResult {
       clamp01(0.45 + (chronic ? 0.1 : 0) + (hasHighSeverity ? 0.1 : 0) + (weakReviewRecord ? 0.1 : 0)),
     );
     const parts: string[] = [];
-    if (failures > 0) parts.push(`${failures} prior FMEA failure(s)`);
+    if (failures > 0) parts.push(`${failures} prior logged failure(s)`);
     if (hasHighSeverity) parts.push(`${highSeverity} high-severity`);
     if (reviews > 0) parts.push(`${passes}/${reviews} design review(s) passed`);
     return {

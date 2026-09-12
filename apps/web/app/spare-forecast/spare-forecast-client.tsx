@@ -179,7 +179,7 @@ function SpareForecastShell({
         {shell === "no_risk" ? (
           <>
             <Button as="a" variant="primary" href={hubHref("/build", "fmea", orgId)}>
-              Open FMEA
+              Open Failure log
             </Button>
             <Button as="a" variant="secondary" href={subsystemsHref}>
               Open Subsystems
@@ -415,8 +415,8 @@ export default function SpareForecastClient() {
         title="Spare-Parts Failure Forecast"
         description={
           view.seasonHorizon === "offseason"
-            ? "Offseason: remaining-season risk is unknown. Cadence still uses real spare-category bins × logged FMEA failures — never \"no risk\" from a closed 200-day window."
-            : "Projects which real spare bins will run out before the season ends — FMEA cadence × quantity on hand. Cross-check Batteries, Orders, and Subsystems."
+            ? "Offseason: remaining-season risk is unknown. Cadence still uses real spare-category bins × logged failures — never \"no risk\" from a closed 200-day window."
+            : "Projects which real spare bins will run out before the season ends — Failure log cadence × quantity on hand. Cross-check Batteries, Orders, and Subsystems."
         }
       >
         <div className="spare-forecast-header-actions">
@@ -484,7 +484,7 @@ export default function SpareForecastClient() {
           description={shellCopy.description}
         >
           {shellActions([
-            { href: hubHref("/build", "fmea", orgId), label: "Open FMEA", primary: true },
+            { href: hubHref("/build", "fmea", orgId), label: "Open Failure log", primary: true },
             { href: subsystemsHref, label: "Open Subsystems" },
             { href: ordersHref, label: "Open Orders" },
           ])}
@@ -566,13 +566,13 @@ function SummaryTiles({ view, loaded }: { view: LiveView; loaded: boolean }) {
               : offseason
                 ? "OFFSEASON"
                 : view.forecastLines.length === 0
-                  ? "NO FMEA"
+                  ? "NO HISTORY"
                   : "LIVE"}
           </span>
           <h2 style={{ margin: "6px 0 0" }}>Season forecast</h2>
           <small className="app-muted">
             {offseason
-              ? "Remaining-season risk is unknown — cadence from inventory × FMEA only"
+              ? "Remaining-season risk is unknown — cadence from inventory × Failure log only"
               : "Real inventory only."}
           </small>
         </div>
@@ -611,12 +611,12 @@ function ForecastPanel({
         <div>
           <h2 style={{ margin: 0 }}>Exhaustion forecast</h2>
           <p className="app-muted" style={{ margin: "4px 0 0" }}>
-            Real spare-category bins with matched FMEA history only.
+            Real spare-category bins with matched Failure log history only.
           </p>
         </div>
         {view.seasonHorizon === "offseason" ? (
           <p className="app-muted spare-forecast-offseason-note">
-            Season window closed — remaining-season risk is unknown. Logged FMEA cadence is still
+            Season window closed — remaining-season risk is unknown. Logged Failure log cadence is still
             shown. Draft restock when a live horizon exists.
           </p>
         ) : (
@@ -652,13 +652,13 @@ function ForecastPanel({
                 <strong style={{ display: "block", marginTop: 4 }}>{line.itemName}</strong>
                 <small className="app-muted">
                   {line.subsystem ?? "Unmatched subsystem"} · {line.quantityOnHand} on hand ·{" "}
-                  {line.failureCount} FMEA failure(s) this season
+                  {line.failureCount} logged failure(s) this season
                 </small>
               </div>
             </header>
             <small className="app-muted">
               {line.forecast.horizon === "offseason" || line.forecast.daysRemaining == null
-                ? `${line.forecast.consumptionPerDay.toFixed(3)} units/day from ${line.failureCount} logged FMEA failure(s) over ${line.forecast.daysElapsed} season day(s). Remaining-season risk is unknown — the season window is closed.`
+                ? `${line.forecast.consumptionPerDay.toFixed(3)} units/day from ${line.failureCount} logged failure(s) over ${line.forecast.daysElapsed} season day(s). Remaining-season risk is unknown — the season window is closed.`
                 : `${line.forecast.consumptionPerDay.toFixed(3)} units/day cadence · ${line.forecast.projectedConsumptionRemaining} projected over ${line.forecast.daysRemaining} remaining day(s)${
                     line.forecast.willExhaust
                       ? ` · shortfall of ${line.forecast.projectedShortfall} · recommend ordering ${line.forecast.recommendedOrderQty}`

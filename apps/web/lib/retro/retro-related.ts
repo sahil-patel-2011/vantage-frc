@@ -5,7 +5,7 @@ import { withOrgHref } from "../nav/product-nav";
 /** Soft-UI related surfaces for Team Retrospective (never DEMO retro metrics). */
 export const RETRO_RELATED_LINKS = [
   { id: "messages", label: "Team chat", kind: "team" as const, tab: "messages" },
-  { id: "fmea", label: "FMEA", kind: "team" as const, tab: "fmea" },
+  { id: "fmea", label: "Failure log", kind: "team" as const, tab: "fmea" },
   { id: "decisions", label: "Decisions", kind: "path" as const, path: "/decisions" },
   { id: "season-report", label: "Season report", kind: "path" as const, path: "/season-report" },
   { id: "playbook", label: "Playbook", kind: "team" as const, tab: "knowledge" },
@@ -88,8 +88,8 @@ export function retroSetupSteps(orgId?: string | null): RetroSetupStep[] {
     },
     {
       id: "fmea",
-      label: "Open FMEA",
-      detail: "Season postmortems pull real FMEA rows only.",
+      label: "Open Failure log",
+      detail: "Season postmortems pull real Failure log rows only.",
       href: hubHref("/team", "fmea", orgId),
     },
     {
@@ -154,7 +154,7 @@ export function retroShellCopy(kind: RetroShellKind): RetroEmptyCopy {
         badge: "Unavailable",
         title: "Could not load Team Retrospective",
         description:
-          "A network or server issue blocked retros. Retry, or open Messages / FMEA / Decisions while it reloads.",
+          "A network or server issue blocked retros. Retry, or open Messages / Failure log / Decisions while it reloads.",
       };
     case "setup":
       return {
@@ -170,7 +170,7 @@ export function retroShellCopy(kind: RetroShellKind): RetroEmptyCopy {
         badge: "No session yet",
         title: "Start your first retro",
         description:
-          "Start/stop/continue boards stay blank until you create a real session. Cross-check Messages, FMEA, and Decisions.",
+          "Start/stop/continue boards stay blank until you create a real session. Cross-check Messages, Failure log, and Decisions.",
       };
     default:
       return {
@@ -222,7 +222,7 @@ export function retroNextActions(input: {
       },
       {
         id: "fmea",
-        label: "Open FMEA",
+        label: "Open Failure log",
         detail: "Failure rows stay honest when this surface is down.",
         href: hubHref("/team", "fmea", orgId),
       },
@@ -252,7 +252,7 @@ export function retroNextActions(input: {
       },
       {
         id: "fmea",
-        label: "Open FMEA",
+        label: "Open Failure log",
         detail: "Failure analysis stays separate until a postmortem is compiled.",
         href: hubHref("/team", "fmea", orgId),
       },
@@ -284,7 +284,7 @@ export function retroNextActions(input: {
     },
     {
       id: "fmea",
-      label: "Open FMEA",
+      label: "Open Failure log",
       detail: "Cross-check failure modes before compiling a postmortem.",
       href: hubHref("/team", "fmea", orgId),
     },

@@ -165,7 +165,7 @@ function PatternsShell({
             </Button>
           ) : null}
           {shell === "empty" ? (
-            <Button as="a" variant="primary" href={hubHref("/build", "fmea", orgId)}>Open FMEA</Button>
+            <Button as="a" variant="primary" href={hubHref("/build", "fmea", orgId)}>Open Failure log</Button>
           ) : null}
         </EmptyState>
       )}
@@ -349,7 +349,7 @@ export default function FailurePatternsClient() {
           </>
         }
         title="Repeat Failure Patterns"
-        description="Clusters FMEA and equipment incidents by subsystem. Cross-check FMEA and Spare Kit."
+        description="Clusters Failure log and equipment incidents by subsystem. Cross-check Failure log and Spare Kit."
       >
         <div className="fp-header-actions">
           <RelatedStrip orgId={orgId} />
@@ -405,11 +405,11 @@ export default function FailurePatternsClient() {
           soft
           badge="No failures logged"
           badgeTone="setup"
-          title="No FMEA or incident records yet this season"
-          description="Log failures in FMEA or equipment incidents."
+          title="No Failure log or incident records yet this season"
+          description="Log failures in Failure log or equipment incidents."
         >
           <Button as="a" variant="primary" href={hubHref("/build", "fmea", orgId)}>
-            Open FMEA
+            Open Failure log
           </Button>
         </EmptyState>
       ) : (
@@ -459,7 +459,7 @@ function ClusterCard({
         {cluster.events.map((event) => (
           <li key={event.id} className="fp-event-row">
             <span>
-              {event.title} <small className="app-muted">({event.source === "fmea" ? "FMEA" : "Incident"})</small>
+              {event.title} <small className="app-muted">({event.source === "fmea" ? "Failure log" : "Incident"})</small>
             </span>
             <small className="app-muted">
               {event.occurredOn}

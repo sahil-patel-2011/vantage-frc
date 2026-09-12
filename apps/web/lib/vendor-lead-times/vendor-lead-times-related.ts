@@ -173,7 +173,7 @@ export function vendorLeadTimesNextActions(input: {
         {
           id: "spare-forecast",
           label: "Open Spare Forecast",
-          detail: "Spare shortfalls stay blank until inventory + FMEA land.",
+          detail: "Spare shortfalls stay blank until inventory + Failure log land.",
           href: hubHref("/build", "spare-forecast", null),
         },
         {

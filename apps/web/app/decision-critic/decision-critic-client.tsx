@@ -224,7 +224,7 @@ export default function DecisionCriticClient() {
           </>
         }
         title="Decision critic"
-        description="A second opinion on a design decision, grounded in your FMEA history, weight/power headroom, and prior decision outcomes."
+        description="A second opinion on a design decision, grounded in your Failure log history, weight/power headroom, and prior decision outcomes."
       >
         {view?.status === "live" && view.seasons.length > 0 ? (
           <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
@@ -288,7 +288,7 @@ export default function DecisionCriticClient() {
               badge="No reviews yet"
               badgeTone="setup"
               title="Get your first second opinion"
-              description="Once logged, Vantage cross-references FMEA history, weight/power headroom, and prior decision outcomes to give a grounded verdict."
+              description="Once logged, Vantage cross-references Failure log history, weight/power headroom, and prior decision outcomes to give a grounded verdict."
             />
           )}
           <HeadroomPanels view={view} />
@@ -351,7 +351,7 @@ function ReviewsList({
             <small className="app-muted">{review.recommendation}</small>
             <small className="app-muted">
               +{review.weightAddedLbs} lb ({review.weightMarginLbs} lb margin before) · +{review.powerAddedAmps} A (
-              {review.powerHeadroomAmps} A headroom before) · {review.chronicFailureCount} prior FMEA failure(s) ·{" "}
+              {review.powerHeadroomAmps} A headroom before) · {review.chronicFailureCount} prior logged failure(s) ·{" "}
               {review.priorRejectedCount} similar rejected/superseded decision(s)
             </small>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
