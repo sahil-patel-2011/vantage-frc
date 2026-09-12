@@ -218,7 +218,7 @@ export async function computeRankingProjectionView(
   );
   const org = membership.rows[0];
   if (!org) return setup("Choose your team to project rankings.", null);
-  if (!org.teamNumber) return setup("Set your team number so rankings can find your TBA row.", org.orgId);
+  if (!org.teamNumber) return setup("Set your team number so rankings can find your official row.", org.orgId);
 
   const context = await client.query<{ eventKey: string | null }>(
     `SELECT active_event_key AS "eventKey" FROM org_active_context WHERE org_id = $1`,
@@ -231,7 +231,7 @@ export async function computeRankingProjectionView(
     `SELECT COALESCE(short_name, name) AS name, year FROM events_ref WHERE event_key = $1`,
     [eventKey],
   );
-  if (!event.rows[0]) return setup("Active event is not in the TBA cache yet — sync live data first.", org.orgId);
+  if (!event.rows[0]) return setup("Active event is not in the official cache yet — sync live data first.", org.orgId);
   const eventYear = Number.isFinite(Number(event.rows[0].year)) ? Number(event.rows[0].year) : null;
 
   const teamKey = `frc${org.teamNumber}`;
@@ -258,7 +258,7 @@ export async function computeRankingProjectionView(
 
   const row = metrics.rows[0];
   if (!row || row.rank == null) {
-    return setup("No TBA ranking row yet for your team at this event.", org.orgId);
+    return setup("No official ranking row yet for your team at this event.", org.orgId);
   }
 
   const record =

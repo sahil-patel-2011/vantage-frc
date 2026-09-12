@@ -94,8 +94,8 @@ export function composeMatchCopilotCallouts(input: {
       headline: `Plan around ${teamLabel(strongest)}`,
       detail:
         gap != null
-          ? `Highest-EPA opponent at ${strongest.epaTotal.toFixed(1)} (${gap > 0 ? "+" : ""}${gap.toFixed(1)} vs our ${input.ourEpaTotal!.toFixed(1)}). Assign defense/priority accordingly.`
-          : `Highest-EPA opponent this match at ${strongest.epaTotal.toFixed(1)}.`,
+          ? `Highest-rated opponent at ${strongest.epaTotal.toFixed(1)} (${gap > 0 ? "+" : ""}${gap.toFixed(1)} vs our ${input.ourEpaTotal!.toFixed(1)}). Assign defense/priority accordingly.`
+          : `Highest-rated opponent this match at ${strongest.epaTotal.toFixed(1)}.`,
       sourceRefs: [strongest.teamKey],
     });
   }

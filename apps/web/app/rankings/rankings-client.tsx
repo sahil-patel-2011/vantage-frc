@@ -54,10 +54,10 @@ const RANKINGS_CSV_COLUMNS: CsvColumn<RankedTeam>[] = [
   { key: "team", header: "Team", hint: "Team number", value: (team) => team.teamNumber || null },
   { key: "nickname", header: "Nickname", value: (team) => team.nickname },
   { key: "record", header: "Record", hint: "Wins-losses-ties", value: (team) => team.record },
-  { key: "epaTotal", header: "EPA total", hint: "Unrounded — screen shows 1 decimal", value: (team) => team.epaTotal },
-  { key: "epaAuto", header: "EPA auto", value: (team) => team.epaAuto },
-  { key: "epaTeleop", header: "EPA teleop", value: (team) => team.epaTeleop },
-  { key: "epaEndgame", header: "EPA endgame", value: (team) => team.epaEndgame },
+  { key: "epaTotal", header: "Rating total", hint: "Unrounded — screen shows 1 decimal", value: (team) => team.epaTotal },
+  { key: "epaAuto", header: "Rating auto", value: (team) => team.epaAuto },
+  { key: "epaTeleop", header: "Rating teleop", value: (team) => team.epaTeleop },
+  { key: "epaEndgame", header: "Rating endgame", value: (team) => team.epaEndgame },
   { key: "source", header: "Source", hint: "Where the metric came from", value: (team) => team.source },
 ];
 
@@ -389,7 +389,7 @@ export default function RankingsClient() {
                 orgLabel={view.context.orgName}
                 orgId={view.context.orgId}
                 size="sm"
-                provenance={`${view.context.eventName ?? view.context.eventKey ?? "Active event"} — cached TBA/Statbotics metrics${
+                provenance={`${view.context.eventName ?? view.context.eventKey ?? "Active event"} — cached event numbers${
                   syncedLabel ? `, synced ${syncedLabel}` : ""
                 }.`}
               />
@@ -399,7 +399,7 @@ export default function RankingsClient() {
                 <span className="rank-pos">#</span>
                 <span className="rank-team">Team</span>
                 <span className="rank-record">Record</span>
-                <span className="rank-epa">EPA total · auto / teleop / endgame</span>
+                <span className="rank-epa">Rating · auto / teleop / endgame</span>
                 <span className="rank-source-label">Source</span>
               </li>
               {view.teams.map((entry) => (

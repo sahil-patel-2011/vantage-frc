@@ -429,7 +429,7 @@ export default function RankingProjectionClient() {
           </>
         }
         title="Ranking projection"
-        description="Current TBA rank plus remaining qualification matches from the cache."
+        description="Current official rank plus remaining qualification matches from the cache."
       />
       <OfflineBanner feature="Ranking projection" fromCache={fromCache} cachedAt={cachedAt} />
       {error && view ? <p className="app-muted">{error}</p> : null}
@@ -469,7 +469,7 @@ export default function RankingProjectionClient() {
             </p>
             <p>
               {view.playedQuals} quals played, {view.remainingQuals} remaining
-              {view.epaTotal != null ? ` · EPA ${view.epaTotal}` : ""}
+              {view.epaTotal != null ? ` · Rating ${view.epaTotal}` : ""}
             </p>
             <p>
               <Button as="a" variant="secondary" href={withOrgHref("/rankings", view.orgId)}>

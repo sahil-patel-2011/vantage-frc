@@ -332,11 +332,11 @@ function GeneratePlanForm({
         </p>
       ) : view.eventKey ? (
         <p className="app-muted" style={{ margin: 0 }}>
-          Active event {view.eventKey} has no qualification matches cached yet. Sync TBA or generate a numeric plan below.
+          Active event {view.eventKey} has no qualification matches cached yet. Sync official matches or generate a numeric plan below.
         </p>
       ) : (
         <p className="app-muted" style={{ margin: 0 }}>
-          Set an active event on Command to generate from the real TBA qualification schedule.
+          Set an active event on Command to generate from the official qualification schedule.
         </p>
       )}
       <FormGrid min={160}>

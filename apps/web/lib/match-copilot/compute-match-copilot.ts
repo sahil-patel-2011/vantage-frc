@@ -56,7 +56,7 @@ function setupStepsFor(orgId: string | null, focus: "workspace" | "team" | "even
   const schedule: MatchCopilotSetupStep = {
     id: "schedule",
     label: "Sync event schedule",
-    detail: "Confirm TBA sync has the qualification/playoff schedule loaded.",
+    detail: "Confirm the official schedule has qualification and playoff matches loaded.",
     href: withOrgHref("/team/data", orgId),
   };
   const fmea: MatchCopilotSetupStep = {

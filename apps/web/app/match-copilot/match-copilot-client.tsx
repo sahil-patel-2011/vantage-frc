@@ -346,7 +346,7 @@ export default function MatchCopilotClient() {
           </>
         }
         title="Match Copilot"
-        description="A glanceable 60-second brief for your next match — fusing opponent EPA, your stored strategy plan, open FMEA risks, and live battery health into prioritized do-this callouts. Cross-check Strategy, Command, and FMEA."
+        description="A glanceable 60-second brief for your next match — fusing opponent rating, your stored strategy plan, open FMEA risks, and live battery health into prioritized do-this callouts. Cross-check Strategy, Command, and FMEA."
       >
         <div className="match-copilot-header-actions">
           {relatedLinks.map((link) => (
@@ -462,7 +462,7 @@ function MatchHeaderPanel({
             {view.compLevel.toUpperCase()} {view.matchNumber} · {view.eventName ?? view.eventKey}
           </h2>
           <small className="app-muted">
-            {view.scheduledTime ? new Date(view.scheduledTime).toLocaleString() : "Time TBD"} · Our EPA{" "}
+            {view.scheduledTime ? new Date(view.scheduledTime).toLocaleString() : "Time TBD"} · Our rating{" "}
             {epaLabel(view.ourEpaTotal)}
           </small>
         </div>
@@ -482,7 +482,7 @@ function CalloutsPanel({ view }: { view: LiveView }) {
         badge="No callouts yet"
         badgeTone="setup"
         title="Generate this match's brief"
-        description="Fuses opponent EPA, your strategy plan, open FMEA risks, and battery health into up to 3 prioritized callouts."
+        description="Fuses opponent rating, your strategy plan, open FMEA risks, and battery health into up to 3 prioritized callouts."
       />
     );
   }
@@ -519,7 +519,7 @@ function OpponentsPanel({ view }: { view: LiveView }) {
           {view.opponents.map((team) => (
             <li key={team.teamKey} style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
               <span>{team.nickname ? `${team.nickname} (#${team.teamNumber})` : `Team ${team.teamNumber}`}</span>
-              <small className="app-muted">EPA {epaLabel(team.epaTotal)}</small>
+              <small className="app-muted">Rating {epaLabel(team.epaTotal)}</small>
             </li>
           ))}
         </ul>

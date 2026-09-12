@@ -129,7 +129,7 @@ export function pickClockReasonsFromJustification(
 
   if (row.contradictionFlagged) {
     const caution =
-      glanceableContradiction(row.contradictionReason) ?? "Scout story contradicts the TBA match record";
+      glanceableContradiction(row.contradictionReason) ?? "Scout story contradicts the official match record";
     reasons.push({ label: caution, tone: "caution" });
   }
 

@@ -118,14 +118,14 @@ export function matchCopilotShellCopy(kind: MatchCopilotShellKind): MatchCopilot
         badge: "No callouts yet",
         title: "Generate this match's brief",
         description:
-          "Callouts stay blank until opponent EPA, your strategy plan, open FMEA risks, or battery health land on real rows. Cross-check Strategy, Command, and FMEA.",
+          "Callouts stay blank until opponent rating, your strategy plan, open FMEA risks, or battery health land on real rows. Cross-check Strategy, Command, and FMEA.",
       };
     default:
       return {
         kind: "ready",
         title: "Next-match do-this brief",
         description:
-          "Callouts fuse only real opponent EPA, stored strategy, open FMEA risks, and battery health.",
+          "Callouts fuse only real opponent rating, stored strategy, open FMEA risks, and battery health.",
       };
   }
 }
@@ -238,7 +238,7 @@ export function matchCopilotNextActions(input: {
       {
         id: "generate",
         label: "Generate match brief",
-        detail: "Fuse opponent EPA, strategy, FMEA, and batteries into real callouts.",
+        detail: "Fuse opponent rating, strategy, FMEA, and batteries into real callouts.",
         href: "#match-copilot-callouts",
         primary: true,
       },
@@ -269,7 +269,7 @@ export function matchCopilotNextActions(input: {
     actions.push({
       id: "review-callouts",
       label: "Review match callouts",
-      detail: `${calloutCount} callout${calloutCount === 1 ? "" : "s"} from real EPA, strategy, FMEA, and batteries.`,
+      detail: `${calloutCount} callout${calloutCount === 1 ? "" : "s"} from real rating, strategy, FMEA, and batteries.`,
       href: "#match-copilot-callouts",
       primary: true,
     });
@@ -277,7 +277,7 @@ export function matchCopilotNextActions(input: {
     actions.push({
       id: "generate-brief",
       label: "Generate match brief",
-      detail: "Persist a metered brief from real opponent EPA, strategy, FMEA, and battery rows.",
+      detail: "Persist a metered brief from real opponent rating, strategy, FMEA, and battery rows.",
       href: "#match-copilot-callouts",
       primary: true,
     });

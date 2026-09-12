@@ -347,7 +347,7 @@ export default function PicklistJustifierClient() {
           </>
         }
         title="Pick-list Auto-Justifier"
-        description="Source-cited rationale for every pick-list slot, and a contradiction guard that flags picks leaning on scouting your own TBA match record disagrees with. Cross-check Strategy, Collaborative Pick List, and Scouting."
+        description="Source-cited rationale for every pick-list slot, and a contradiction guard that flags picks leaning on scouting your own official match record disagrees with. Cross-check Strategy, Collaborative Pick List, and Scouting."
       >
         <div className="picklist-justifier-header-actions">
           {view.pickLists.length > 0 ? (
@@ -508,7 +508,7 @@ function EntriesList({ view }: { view: LiveView }) {
               <p style={{ margin: 0 }}>{entry.rationale}</p>
             ) : (
               <p className="app-muted" style={{ margin: 0 }}>
-                No rationale generated yet. {entry.tbaAvailable ? "TBA data is available." : "No TBA data yet for this team at this event."}{" "}
+                No rationale generated yet. {entry.tbaAvailable ? "Official event numbers are available." : "No official event numbers yet for this team at this event."}{" "}
                 {entry.scoutEntryCount > 0
                   ? `${entry.scoutEntryCount} scout entr${entry.scoutEntryCount === 1 ? "y" : "ies"} logged.`
                   : "No scouting logged yet."}

@@ -130,7 +130,7 @@ export function picklistJustifierShellCopy(kind: PicklistJustifierShellKind): Pi
         kind: "ready",
         title: "Source-cited pick rationales",
         description:
-          "Slots cite TBA hard metrics and your scout rows only.",
+          "Slots cite official event numbers and your scout rows only.",
       };
   }
 }
@@ -260,7 +260,7 @@ export function picklistJustifierNextActions(input: {
     actions.push({
       id: "review-contradictions",
       label: "Review contradictions",
-      detail: `${contradictionCount} slot${contradictionCount === 1 ? "" : "s"} where scouting disagrees with TBA.`,
+      detail: `${contradictionCount} slot${contradictionCount === 1 ? "" : "s"} where scouting disagrees with the official record.`,
       href: "#picklist-justifier-entries",
       primary: true,
     });
@@ -268,7 +268,7 @@ export function picklistJustifierNextActions(input: {
     actions.push({
       id: "generate",
       label: "Generate justifications",
-      detail: `${slotCount} slot${slotCount === 1 ? "" : "s"} ready — rationales cite TBA + your scout rows only.`,
+      detail: `${slotCount} slot${slotCount === 1 ? "" : "s"} ready — rationales cite official records and your scout rows only.`,
       href: "#picklist-justifier-summary",
       primary: true,
     });
