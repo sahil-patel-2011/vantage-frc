@@ -85,7 +85,7 @@ export async function computeTrajectoryView(
   if (!org) return setupRequiredView("Choose your team to project district trajectory.");
   if (!org.teamNumber) {
     return setupRequiredView(
-      "Set your team number in workspace settings so the trajectory simulator can find its EPA baseline.",
+      "Set your team number in team settings so the trajectory can find its season-rating baseline.",
       org.orgId,
     );
   }
@@ -122,7 +122,7 @@ export async function computeTrajectoryView(
   const teamKey = teamResult.rows[0]?.teamKey ?? null;
   if (!teamKey) {
     return setupRequiredView(
-      "No reference-cache record for your team yet — TBA/Statbotics sync hasn't picked it up.",
+      "No official team record yet — sync official matches under Team → Data.",
       org.orgId,
     );
   }
@@ -178,7 +178,7 @@ export async function computeTrajectoryView(
 
   if (baselineEpa == null || fieldStats.sampleSize < MIN_FIELD_SAMPLES) {
     return setupRequiredView(
-      "Not enough cached EPA data yet for your team and district — sync TBA/Statbotics reference data first.",
+      "Not enough season ratings yet for your team and district — sync official matches under Team → Data first.",
       org.orgId,
     );
   }

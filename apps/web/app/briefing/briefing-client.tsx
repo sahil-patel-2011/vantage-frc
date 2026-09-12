@@ -206,7 +206,7 @@ function ScoutedRow({ row }: { row: BriefingScoutedTeam }) {
   );
 }
 
-/** EPA line for a lineup, rendered only when a team has any real metric. */
+/** Rating line for a lineup, rendered only when a team has any real metric. */
 function EpaList({ teams }: { teams: MatchCopilotTeam[] }) {
   const withData = teams.filter((team) => team.epaTotal != null || team.rank != null);
   if (!withData.length) return null;
@@ -216,7 +216,7 @@ function EpaList({ teams }: { teams: MatchCopilotTeam[] }) {
         <li key={team.teamKey}>
           <b>{team.teamNumber || stripFrc(team.teamKey)}</b>
           {team.nickname ? <span className="brief-epa-nick">{team.nickname}</span> : null}
-          <span className="brief-chip">EPA {fmtEpa(team.epaTotal)}</span>
+          <span className="brief-chip">Rating {fmtEpa(team.epaTotal)}</span>
           {team.rank != null ? <span className="brief-chip">rank {team.rank}</span> : null}
         </li>
       ))}
@@ -486,7 +486,7 @@ export default function BriefingClient() {
                 ? `${view.scoutCount} ${view.scoutCount === 1 ? "scout" : "scouts"} assigned`
                 : "No scouts assigned"}
             </span>
-            {view.ourEpaTotal != null ? <span className="brief-chip">our EPA {fmtEpa(view.ourEpaTotal)}</span> : null}
+            {view.ourEpaTotal != null ? <span className="brief-chip">our rating {fmtEpa(view.ourEpaTotal)}</span> : null}
           </div>
         </div>
         {winDisplay && view.prediction ? (
@@ -662,7 +662,7 @@ export default function BriefingClient() {
             </>
           ) : (
             <EmptyHint>
-              No partner data yet — <a href={withOrg("/scouting", orgId)}>scout partners in Scouting</a> or sync EPA in{" "}
+              No partner data yet — <a href={withOrg("/scouting", orgId)}>scout partners in Scouting</a> or sync season ratings in{" "}
               <a href={withOrg("/team/data", orgId)}>Team → Data</a>
             </EmptyHint>
           )}

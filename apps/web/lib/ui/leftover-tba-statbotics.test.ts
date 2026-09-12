@@ -18,6 +18,8 @@ const FILES = [
   "lib/degraded-mode/index.ts",
   "app/display/page.tsx",
   "components/ui/data-source-footer.tsx",
+  "lib/pairwise/pairwise-next-actions.ts",
+  "lib/district-trajectory-sim/compute-district-trajectory-sim.ts",
 ] as const;
 
 describe("leftover student TBA / Statbotics chrome", () => {

@@ -68,7 +68,7 @@ describe("picklistToCsv", () => {
       },
     ];
     const csv = picklistToCsv({ listName: "Week 3", entries });
-    expect(csv).toContain("List,Team,Name,Tier,Role,EPA,Auto EPA,Teleop EPA,Weighted score,Note");
+    expect(csv).toContain("List,Team,Name,Tier,Role,Season rating,Auto rating,Teleop rating,Weighted score,Note");
     expect(csv).toContain("Week 3,254,Cheesy Poofs,First pick,Elite auto,60,28,20,3,Ask about auto");
   });
 });

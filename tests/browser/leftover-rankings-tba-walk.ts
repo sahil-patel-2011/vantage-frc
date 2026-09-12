@@ -16,4 +16,6 @@ export async function assertNoLeftoverRankingsTba(
   await expect(page.locator("body"), `${path} still shows Current TBA`).not.toContainText("Current TBA");
   await expect(page.locator("body"), `${path} still shows Season EPA`).not.toContainText("Season EPA");
   await expect(page.locator("body"), `${path} still shows opponent EPA`).not.toContainText("opponent EPA");
+  await expect(page.locator("body"), `${path} still shows our EPA`).not.toContainText("our EPA");
+  await expect(page.locator("body"), `${path} still shows sync EPA`).not.toContainText("sync EPA");
 }
