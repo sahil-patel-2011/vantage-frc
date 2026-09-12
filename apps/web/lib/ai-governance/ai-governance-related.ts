@@ -164,7 +164,7 @@ export function aiGovernanceShellCopy(kind: AiGovernanceShellKind): AiGovernance
     case "loading":
       return {
         kind,
-        title: "Loading AI governance…",
+        title: "Opening AI governance",
         description: "Checking your team's policy, spend alerts, and the high-cost approval queue.",
       };
     case "auth_required":

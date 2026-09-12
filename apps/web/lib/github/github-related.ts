@@ -157,7 +157,7 @@ export function githubShellCopy(kind: GitHubShellKind): GitHubEmptyCopy {
     case "loading":
       return {
         kind,
-        title: "Loading GitHub context…",
+        title: "Opening GitHub",
         description:
           "Checking which team you are on and real GitHub links.",
       };
