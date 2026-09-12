@@ -332,8 +332,8 @@ export default function TeamBackgroundClient({ orgId }: { orgId: string }) {
       {!view ? (
         <EmptyState
           soft
-          title={failure ? failure.title : "Loading team background"}
-          description={failure ? failure.description : "Pulling this team’s profile…"}
+          title={failure ? failure.title : "Opening Team background"}
+          description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >
           {failure?.primary ? (
