@@ -301,7 +301,7 @@ export default function GearboxClient({ orgId }: { orgId: string | null }) {
         </PageHeader>
         <OfflineBanner feature="Gearbox calculator" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
-          title={failure ? failure.title : "Loading gearboxes…"}
+          title={failure ? failure.title : "Opening Gearbox calculator"}
           description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >

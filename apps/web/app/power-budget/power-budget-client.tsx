@@ -289,7 +289,7 @@ export default function PowerBudgetClient({ orgId }: { orgId: string | null }) {
         </PageHeader>
         <OfflineBanner feature="Power budget" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
-          title={failure ? failure.title : "Loading power budget…"}
+          title={failure ? failure.title : "Opening Power budget"}
           description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >

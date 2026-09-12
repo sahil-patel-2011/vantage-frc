@@ -268,7 +268,7 @@ export default function ShooterTableClient({ orgId }: { orgId: string | null }) 
         </PageHeader>
         <OfflineBanner feature="Shooter table" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
-          title={failure ? failure.title : "Loading shooter table…"}
+          title={failure ? failure.title : "Opening Shooter table"}
           description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >
