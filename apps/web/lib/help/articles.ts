@@ -560,7 +560,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "team-profile",
     slug: "team-profile",
-    title: "Team profile — what the public record says about your team",
+    title: "Team profile",
     summary:
       "Built the first time an owner or admin opens it: where you are from, rookie year, seasons competed, awards, recent events, season rating and ranks — from the official record.",
     category: "team",
@@ -587,7 +587,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "calendar-tasks-and-find-a-time",
     slug: "calendar-tasks",
-    title: "Calendar — tasks on the calendar and Find a time",
+    title: "Calendar",
     summary:
       "Tasks with a due date sit on the calendar and can be ticked off there. Find a time suggests meeting slots from when your team actually turns up.",
     category: "team",
@@ -701,7 +701,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "assembly-manual",
     slug: "assembly-manual",
-    title: "Assembly manual — a build book from your CAD",
+    title: "Assembly manual",
     summary:
       "Point it at your Onshape assembly and it produces a step-by-step build book: parts per step, cut and drill and tap lines, pictures, a materials list, and a PDF.",
     category: "build",
@@ -839,7 +839,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "my-kit",
     slug: "my-kit",
-    title: "My kit — your personal to-do view",
+    title: "My kit",
     summary:
       "One page answering “what do I need right now”: your tasks, events, duties, scout shifts, hours, tools, and money — all linking back to the owning surface.",
     category: "team",
