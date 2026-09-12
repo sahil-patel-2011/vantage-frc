@@ -273,7 +273,7 @@ export default function ScoutSchemaNegotiateClient() {
         {header}
         <OfflineBanner feature="Schema sync" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
-          title={failure ? failure.title : "Loading…"}
+          title={failure ? failure.title : "Opening Schema sync"}
           description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >
