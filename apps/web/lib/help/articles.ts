@@ -526,7 +526,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "files",
     slug: "files",
-    title: "Files — the team drive and your own space",
+    title: "Files",
     summary:
       "Every member gets a private space; the team gets a shared one. Upload anything, make folders, share by link or to an email address.",
     category: "team",
@@ -755,7 +755,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "ask-ai",
     slug: "ask-ai",
-    title: "Ask AI — what it can answer, and from what",
+    title: "Ask AI",
     summary:
       "One button on every page. It answers from your team's data and the public record, cites what it used, and says when it does not know.",
     category: "ai-models",
@@ -782,7 +782,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "team-library",
     slug: "team-library",
-    title: "Team Library — links and older uploads (now inside Files)",
+    title: "Team library",
     summary:
       "The older shared shelf. Files (/files) is where the team's files live now; the Library still holds links and earlier uploads and appears inside Files as its own folder.",
     category: "team",
@@ -1228,7 +1228,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "media-library",
     slug: "media-library",
-    title: "Media library — team photos and video",
+    title: "Media library",
     summary:
       "Upload the team's photos and clips into albums with honest size caps — 8 MB photos after downscale, 4 MiB videos on the hosted cloud path.",
     category: "media",
