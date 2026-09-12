@@ -307,7 +307,7 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/spare-forecast")).toBe("Spares forecast");
     expect(offlineCapableLabel("/sponsor-renewal-roi")).toBe("Sponsor Renewal ROI");
     expect(offlineCapableLabel("/team-health-dashboard")).toBe("Team health");
-    expect(offlineCapableLabel("/sketch-to-brief")).toBe("Sketch-to-Brief");
+    expect(offlineCapableLabel("/sketch-to-brief")).toBe("Sketch to brief");
     expect(offlineCapableLabel("/scout-assisted-count")).toBe("Scout-Assisted Count");
     expect(offlineCapableLabel("/scout-coverage-live")).toBe("Coverage");
     expect(offlineCapableLabel("/scout-field-budget")).toBe("Field value");
@@ -348,8 +348,8 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/training")).toBe("Training");
     expect(offlineCapableLabel("/tool-checkout")).toBe("Tool checkout");
     expect(offlineCapableLabel("/goals")).toBe("Goals");
-    expect(offlineCapableLabel("/cad-vault")).toBe("CAD Vault");
-    expect(offlineCapableLabel("/cad-learn")).toBe("CAD Learn");
+    expect(offlineCapableLabel("/cad-vault")).toBe("CAD vault");
+    expect(offlineCapableLabel("/cad-learn")).toBe("Learn CAD");
     expect(offlineCapableLabel("/cad-review-queue")).toBe("CAD Review Queue");
     expect(offlineCapableLabel("/cad-change-radar")).toBe("Change radar");
     expect(offlineCapableLabel("/reimbursements")).toBe("Reimbursements");
@@ -359,7 +359,7 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/risks")).toBe("Risk Register");
     expect(offlineCapableLabel("/risk-burndown")).toBe("Risk-Register Burndown");
     expect(offlineCapableLabel("/subsystem-signoff")).toBe("Subsystem Sign-off");
-    expect(offlineCapableLabel("/prototype-tracker")).toBe("Prototype-to-Decision Tracker");
+    expect(offlineCapableLabel("/prototype-tracker")).toBe("Prototypes");
     expect(offlineCapableLabel("/equipment-maintenance")).toBe("Equipment Maintenance");
     expect(offlineCapableLabel("/notifications")).toBe("Notifications");
     expect(offlineCapableLabel("/forms")).toBe("Forms");

@@ -113,7 +113,7 @@ export function CadSetupRelated({ orgId }: { orgId: string | null }) {
         CAD connections
       </Button>
       <Button as="a" variant="secondary" href={withOrgHref("/cad-vault", orgId)}>
-        CAD Vault
+        CAD vault
       </Button>
     </nav>
   );

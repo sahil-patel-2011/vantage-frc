@@ -1,7 +1,7 @@
 import SketchToBriefClient from "./sketch-to-brief-client";
 
 export const metadata = {
-  title: "Sketch-to-Brief",
+  title: "Sketch to brief",
 };
 
 export default function SketchToBriefPage() {

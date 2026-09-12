@@ -11,7 +11,7 @@ const LEAVES = [
   { path: "/alumni-network", heading: "Alumni Network" },
   { path: "/exit-interview", heading: "Exit interviews" },
   { path: "/mentor-hours", heading: "Mentor hours" },
-  { path: "/reviews", heading: "Design Reviews" },
+  { path: "/reviews", heading: "Design reviews" },
   { path: "/roadmap", heading: "Season roadmap" },
 ] as const;
 

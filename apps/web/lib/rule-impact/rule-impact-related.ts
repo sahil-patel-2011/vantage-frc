@@ -6,7 +6,7 @@ export const RULE_IMPACT_RELATED_LINKS = [
   { id: "kickoff", label: "Kickoff", kind: "build" as const, tab: "kickoff" },
   { id: "cad", label: "CAD", kind: "build" as const, tab: "cad" },
   { id: "subsystems", label: "Subsystems", kind: "path" as const, path: "/subsystems" },
-  { id: "sketch-to-brief", label: "Sketch-to-Brief", kind: "build" as const, tab: "sketch-to-brief" },
+  { id: "sketch-to-brief", label: "Sketch to brief", kind: "build" as const, tab: "sketch-to-brief" },
   { id: "fmea", label: "Failure log", kind: "build" as const, tab: "fmea" },
 ] as const;
 
@@ -329,7 +329,7 @@ export function ruleImpactNextActions(input: {
     },
     {
       id: "sketch-to-brief",
-      label: "Open Sketch-to-Brief",
+      label: "Open Sketch to brief",
       detail: "New-season sketches can carry rule-compliance flags grounded in Kickoff notes.",
       href: hubHref("/build", "sketch-to-brief", orgId),
     },

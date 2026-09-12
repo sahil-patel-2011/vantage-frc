@@ -366,8 +366,8 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/battery-health-forecast")) return "Pack health";
   if (bare.startsWith("/vendor-lead-times")) return "Vendor Lead Times";
   if (bare.startsWith("/bin-shelf-locator")) return "Bin locator";
-  if (bare.startsWith("/cad-vault")) return "CAD Vault";
-  if (bare.startsWith("/cad-learn")) return "CAD Learn";
+  if (bare.startsWith("/cad-vault")) return "CAD vault";
+  if (bare.startsWith("/cad-learn")) return "Learn CAD";
   if (bare.startsWith("/cad-review-queue")) return "CAD Review Queue";
   if (bare.startsWith("/cad-change-radar")) return "Change radar";
   if (bare.startsWith("/code-deploy-log")) return "Code Deploy Log";
@@ -383,7 +383,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/risk-burndown")) return "Risk-Register Burndown";
   if (bare.startsWith("/risks")) return "Risk Register";
   if (bare.startsWith("/subsystem-signoff")) return "Subsystem Sign-off";
-  if (bare.startsWith("/prototype-tracker")) return "Prototype-to-Decision Tracker";
+  if (bare.startsWith("/prototype-tracker")) return "Prototypes";
   if (bare.startsWith("/equipment-maintenance")) return "Equipment Maintenance";
   if (bare.startsWith("/cad/setup")) return "CAD setup";
   if (bare.startsWith("/cad/pair")) return "Pair this computer";
@@ -392,7 +392,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/spare-forecast")) return "Spares forecast";
   if (bare.startsWith("/sponsor-renewal-roi")) return "Sponsor Renewal ROI";
   if (bare.startsWith("/team-health-dashboard")) return "Team health";
-  if (bare.startsWith("/sketch-to-brief")) return "Sketch-to-Brief";
+  if (bare.startsWith("/sketch-to-brief")) return "Sketch to brief";
   if (bare.startsWith("/scout-assisted-count")) return "Scout-Assisted Count";
   if (bare.startsWith("/scout-coverage-live")) return "Coverage";
   if (bare.startsWith("/scout-field-budget")) return "Field value";
@@ -487,7 +487,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/presence")) return "Presence";
   if (bare.startsWith("/readiness-score")) return "Readiness";
   if (bare.startsWith("/reuse-advisor")) return "Reuse";
-  if (bare.startsWith("/reviews")) return "Design Reviews";
+  if (bare.startsWith("/reviews")) return "Design reviews";
   if (bare.startsWith("/roadmap")) return "Season roadmap";
   if (bare.startsWith("/search")) return "Search";
   if (bare.startsWith("/season-rollover")) return "Season rollover";
