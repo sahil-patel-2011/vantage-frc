@@ -279,7 +279,7 @@ export default function BringupClient({ orgId }: { orgId: string | null }) {
         </PageHeader>
         <OfflineBanner feature="Bring-up" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
-          title={failure ? failure.title : "Loading bring-up…"}
+          title={failure ? failure.title : "Opening Bring-up"}
           description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >

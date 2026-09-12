@@ -41,7 +41,7 @@ export function BatteriesLoadShell({
       {!embed ? <TeamOpsNav active="batteries" /> : null}
       <OfflineBanner feature="Batteries" fromCache={fromCache} cachedAt={cachedAt} />
       <EmptyState
-        title={failure ? failure.title : "Loading batteries…"}
+        title={failure ? failure.title : "Opening Batteries"}
         description={failure ? failure.description : undefined}
         soft
         aria-busy={!failure}
