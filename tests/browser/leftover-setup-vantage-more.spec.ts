@@ -7,13 +7,13 @@ test.beforeEach(async ({ context }) => {
   if (!signed) await signInFixture(context);
 });
 
-test("leftover Setup required / VANTAGE Forms chrome is gone from Consent / Video index / Event-day plan", async ({
+test("leftover Setup required / VANTAGE Forms chrome is gone from checklist / checkout / simulator", async ({
   page,
 }) => {
   test.setTimeout(90_000);
   await assertLeftoverSetupVantageChromeGone(page, [
-    "/consent",
-    "/match-video-index",
-    "/event-day-plan",
+    "/match-checklist",
+    "/tool-checkout",
+    "/match-sim",
   ]);
 });

@@ -7,13 +7,14 @@ test.beforeEach(async ({ context }) => {
   if (!signed) await signInFixture(context);
 });
 
-test("leftover schema / OAuth chrome is gone from Forms / Chemistry / Inventory", async ({
+test("leftover schema / OAuth chrome is gone from Inspection / Learning / My Kit / Kickoff", async ({
   page,
 }) => {
   test.setTimeout(90_000);
   await assertLeftoverSchemaChromeGone(page, [
-    "/competition?tab=forms",
-    "/chemistry",
-    "/inventory",
+    "/inspection-copilot",
+    "/learning",
+    "/my-kit",
+    "/kickoff",
   ]);
 });

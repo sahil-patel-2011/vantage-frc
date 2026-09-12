@@ -37,7 +37,7 @@ export default async function TeamAuditPage({
     <main className="intel-app">
       <header className="intel-header">
         <div>
-          <span className="eyebrow">VANTAGE / SECURITY AUDIT</span>
+          <span className="eyebrow">Team / Audit</span>
           <h1>Who changed what</h1>
           <p className="app-muted">
             A reverse-chronological trail of every membership, capability, invitation, and

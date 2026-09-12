@@ -5,13 +5,12 @@ import { describe, expect, it } from "vitest";
 const WEB = join(__dirname, "..", "..");
 
 /**
- * Skip-list boards may still say Setup required (admin, display, audit,
- * posture, security exports, and the multi-fetch code-client shell).
- * Student product boards say Needs setup.
+ * Skip-list boards may still say Setup required (admin, audit, posture,
+ * security exports, and the multi-fetch code-client shell). Student
+ * product boards say Needs setup.
  */
 const SKIP = [
   "app/admin/",
-  "app/display/",
   "app/team/audit/",
   "app/team/posture/",
   "app/team/security/",
