@@ -117,7 +117,7 @@ export function blendPrivateEpa(input: {
   scout: ScoutComponentRates;
 }): PrivateEpaResult | PrivateEpaSkip {
   if (input.publicEpa == null || !Number.isFinite(input.publicEpa)) {
-    return { skipped: true, teamKey: input.teamKey, reason: "No public EPA — pEPA is not invented." };
+    return { skipped: true, teamKey: input.teamKey, reason: "No public season rating — our scouting number is not invented." };
   }
   if (input.scout.sampleSize < MIN_PEPA_SAMPLE) {
     return {
@@ -355,7 +355,7 @@ export function simulateCounterPick(input: {
   if (!us || eligible.length < 3 || !taken) {
     return {
       skipped: true,
-      reason: "Counter-pick needs your pEPA plus 3+ other org-scouted teams.",
+      reason: "Counter-pick needs your scouting number plus 3+ other org-scouted teams.",
       takenTeamKey: input.takenTeamKey,
       recommendedTeamKey: null,
       winRate: null,
@@ -383,7 +383,7 @@ export function simulateCounterPick(input: {
   if (!best) {
     return {
       skipped: true,
-      reason: "No partner candidate with pEPA.",
+      reason: "No partner candidate with a scouting number.",
       takenTeamKey: input.takenTeamKey,
       recommendedTeamKey: null,
       winRate: null,
@@ -392,7 +392,7 @@ export function simulateCounterPick(input: {
   }
   return {
     skipped: false,
-    reason: `If 1st alliance takes ${input.takenTeamKey.replace(/^frc/i, "")}, org pEPA Monte Carlo prefers ${best.teamKey.replace(/^frc/i, "")}.`,
+    reason: `If 1st alliance takes ${input.takenTeamKey.replace(/^frc/i, "")}, our scouting numbers prefer ${best.teamKey.replace(/^frc/i, "")}.`,
     takenTeamKey: input.takenTeamKey,
     recommendedTeamKey: best.teamKey,
     winRate: round4(best.wins / trials),
@@ -707,8 +707,8 @@ export function buildPrivateEdgeView(input: {
   return {
     status: hasAnything ? "live" : "empty",
     message: hasAnything
-      ? "Org-private edge from your scouting + cached public EPA. Not shared. Not Statbotics."
-      : "Private Edge needs org scout entries and cached public EPA. Nothing is invented.",
+      ? "From your scouting + cached season ratings. Not shared."
+      : "Needs org scout entries and cached season ratings. Nothing is invented.",
     eventKey: input.eventKey,
     pepa: live,
     skipped,
