@@ -17,6 +17,7 @@ const FILES = [
   "app/degraded-mode/degraded-mode-client.tsx",
   "lib/degraded-mode/index.ts",
   "app/display/page.tsx",
+  "components/ui/data-source-footer.tsx",
 ] as const;
 
 describe("leftover student TBA / Statbotics chrome", () => {

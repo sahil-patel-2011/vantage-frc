@@ -36,9 +36,9 @@ function PitStreamEmbed({ title, embedUrl }: { title: string; embedUrl: string }
 function sourceLabel(source: string): string {
   switch (source.toLowerCase()) {
     case "tba":
-      return "match data";
+      return "Official matches";
     case "statbotics":
-      return "season scores";
+      return "Season ratings";
     default:
       return source;
   }

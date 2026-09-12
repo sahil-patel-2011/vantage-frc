@@ -41,4 +41,10 @@ describe("leftover student Schedule / profile TBA chrome", () => {
   it("schedule empty copy stays student-readable", () => {
     expectPlainCopy(scheduleCacheRequiredCopy().description);
   });
+
+  it("scouting trust paints Official matches, not raw source keys", () => {
+    const src = readFileSync(join(WEB, "app/scouting/scouting-trust-panel.tsx"), "utf8");
+    expect(src).toMatch(/degradedModeSourceLabel/);
+    expect(src).not.toMatch(/\$\{source\.source\}: \$\{source\.status\}/);
+  });
 });

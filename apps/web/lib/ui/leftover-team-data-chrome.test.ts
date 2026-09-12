@@ -39,7 +39,14 @@ describe("leftover Team Data student TBA chrome", () => {
     expect(src).not.toMatch(/No TBA cache yet/);
     expect(src).not.toMatch(/TBA sync can load/);
     expect(src).not.toMatch(/shared TBA cache/);
+    expect(src).not.toMatch(/toUpperCase\(/);
+    expect(src).not.toMatch(/Ingestion health/);
+    expect(src).not.toMatch(/JSON\.stringify\(health/);
+    expect(src).not.toMatch(/health telemetry/);
+    expect(src).not.toMatch(/cursor errors/);
     expect(src).toMatch(/Connect TBA/);
     expect(src).toMatch(/TBA Read API/);
+    expect(src).toMatch(/degradedModeSourceLabel/);
+    expect(src).toMatch(/Official match status/);
   });
 });

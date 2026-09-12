@@ -8,6 +8,7 @@ import { EmptyState, Panel, Button } from "../../../components/ui";
 import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
 import { withOrgHref } from "../../../lib/nav/product-nav";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
+import { degradedModeReasonLabel, degradedModeSourceLabel } from "../../../lib/degraded-mode";
 import type { DataSourceHealthView } from "../../../lib/reference-health";
 import {
   TEAM_DATA_RELATED_INCLUDE,
@@ -585,12 +586,12 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
           </section>
 
           <section className="app-card soft-panel team-data-panel">
-            <h2>Ingestion health</h2>
+            <h2>Official match status</h2>
             {dataSourceHealth ? (
               <ul className="team-data-inventory">
                 <li>
-                  <span>Mode</span>
-                  <strong>{dataSourceHealth.mode}</strong>
+                  <span>Status</span>
+                  <strong>{degradedModeReasonLabel(dataSourceHealth.mode)}</strong>
                 </li>
                 <li>
                   <span>Last saved copy</span>
@@ -605,18 +606,17 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
                 {dataSourceHealth.sources.map((source) => (
                   <li key={source.source}>
                     <span>
-                      {source.source.toUpperCase()}
+                      {degradedModeSourceLabel(source.source)}
                       {source.etagResources ? ` · ${source.etagResources} saved copies` : ""}
-                      {source.erroredResources ? ` · ${source.erroredResources} cursor errors` : ""}
+                      {source.erroredResources ? ` · ${source.erroredResources} failed copies` : ""}
                     </span>
-                    <strong>{source.status}</strong>
+                    <strong>{degradedModeReasonLabel(source.status)}</strong>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="app-muted">No health telemetry yet — sync once to populate real official match status.</p>
+              <p className="app-muted">No official match status yet — sync once after Connect TBA to populate real official match status.</p>
             )}
-            <pre className="team-data-health">{health ? JSON.stringify(health, null, 2) : "No health telemetry yet."}</pre>
           </section>
         </aside>
       </div>

@@ -12,4 +12,5 @@ test("leftover Team Data related strip drops TBA/Statbotics student copy", async
   await assertNoTbaStatbotics(page, "/team/data", /Team Data|Connect TBA|Choose your team|Needs setup/i);
   await expect(page.locator("body")).not.toContainText("The Blue Alliance");
   await expect(page.locator("body")).not.toContainText("No TBA cache yet");
+  await expect(page.locator("body")).not.toContainText("Ingestion health");
 });

@@ -26,14 +26,17 @@ export function degradedModeSourceLabel(source: string): string {
   }
 }
 
-export function degradedModeReasonLabel(mode: DegradedModeBannerMode): string {
+export function degradedModeReasonLabel(mode: string): string {
   switch (mode) {
     case "unavailable":
+    case "failed":
       return "Unavailable";
     case "degraded":
       return "Degraded";
     case "stale":
       return "Stale";
+    case "ok":
+    case "healthy":
     default:
       return "Healthy";
   }

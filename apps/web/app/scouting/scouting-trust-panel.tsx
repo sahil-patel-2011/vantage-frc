@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, Panel, Button } from "../../components/ui";
+import { degradedModeReasonLabel, degradedModeSourceLabel } from "../../lib/degraded-mode";
 import ScoutingReconciliationPanel from "./scouting-reconciliation-panel";
 
 type InfluenceRow = {
@@ -189,7 +190,9 @@ export default function ScoutingTrustPanel({
           <strong>Reference data degraded</strong>
           <span>
             Strategy and scouting remain available from the last-good cache.{" "}
-            {degraded.map((source) => `${source.source}: ${source.status}`).join(" · ")}
+            {degraded
+              .map((source) => `${degradedModeSourceLabel(source.source)}: ${degradedModeReasonLabel(source.status)}`)
+              .join(" · ")}
           </span>
         </section>
       ) : null}
