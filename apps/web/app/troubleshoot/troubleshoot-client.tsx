@@ -295,7 +295,7 @@ export default function TroubleshootClient() {
           ) : null}
         </EmptyState>
       ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your team." aria-busy />
+        <EmptyState title="Opening Get unstuck" description="Checking your team." aria-busy />
       ) : view.status === "setup_required" ? (
         <EmptyState badge="Needs setup" badgeTone="setup" title={view.message}>
           {view.steps[0] ? (

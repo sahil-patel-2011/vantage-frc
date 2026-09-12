@@ -170,7 +170,7 @@ export default function LearningClient() {
           </Button>
         </EmptyState>
         ) : (
-        <EmptyState title="Loading…" description="Checking your team." aria-busy />
+        <EmptyState title="Opening Learning" description="Checking your team." aria-busy />
         )
       ) : view.status === "setup_required" ? (
         <EmptyState
