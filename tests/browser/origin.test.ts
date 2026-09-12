@@ -87,6 +87,7 @@ describe("playwrightWebServerEnv", () => {
     expect(env.DATABASE_ADMIN_URL).toBe(LOCAL_VANTAGE_CI_ADMIN);
     expect(env.BETTER_AUTH_URL).toBe("http://127.0.0.1:3310");
     expect(env.NODE_OPTIONS).toMatch(/max-old-space-size=4096/);
+    expect(env.MALLOC_ARENA_MAX).toBe("2");
     expect(env.NEXT_DIST_DIR).toBe(".next-pw");
   });
 
@@ -112,5 +113,18 @@ describe("playwrightWebServerEnv", () => {
     expect(env.E2E_AUTH_FIXTURE).toBe("1");
     expect(env.NODE_ENV).toBe("development");
     expect(env.NODE_OPTIONS).toMatch(/max-old-space-size=4096/);
+    expect(env.MALLOC_ARENA_MAX).toBe("2");
+  });
+
+  it("does not stack a second max-old-space-size onto NODE_OPTIONS", () => {
+    const previous = process.env.NODE_OPTIONS;
+    process.env.NODE_OPTIONS = "--max-old-space-size=2048";
+    try {
+      const env = playwrightWebServerEnv("http://127.0.0.1:3310", 3310);
+      expect(env.NODE_OPTIONS).toBe("--max-old-space-size=2048");
+    } finally {
+      if (previous === undefined) delete process.env.NODE_OPTIONS;
+      else process.env.NODE_OPTIONS = previous;
+    }
   });
 });

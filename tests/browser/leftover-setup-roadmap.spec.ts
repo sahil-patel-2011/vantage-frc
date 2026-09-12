@@ -7,7 +7,7 @@ test.beforeEach(async ({ context }) => {
   if (!signed) await signInFixture(context);
 });
 
-test("leftover FMEA / Relays / Alumni boards no longer print Setup required", async ({ page }) => {
+test("leftover Roadmap / Code boards no longer print Setup required", async ({ page }) => {
   test.setTimeout(90_000);
-  await assertStudentBoardsHaveNoSetupRequired(page, ["/fmea", "/team/relays", "/alumni-network"]);
+  await assertStudentBoardsHaveNoSetupRequired(page, ["/roadmap", "/code"]);
 });

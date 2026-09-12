@@ -98,7 +98,10 @@ export function playwrightWebServerEnv(origin: string, port: number): NodeJS.Pro
     NEXT_PUBLIC_APP_URL: origin,
     NEXT_PUBLIC_SITE_URL: origin,
     AUTH_TRUSTED_ORIGINS: trusted,
-    NODE_OPTIONS: [process.env.NODE_OPTIONS, "--max-old-space-size=4096"].filter(Boolean).join(" "),
+    NODE_OPTIONS: process.env.NODE_OPTIONS?.includes("max-old-space-size")
+      ? process.env.NODE_OPTIONS
+      : [process.env.NODE_OPTIONS, "--max-old-space-size=4096"].filter(Boolean).join(" "),
+    MALLOC_ARENA_MAX: process.env.MALLOC_ARENA_MAX ?? "2",
     // Isolated from a human `next dev` on `.next`. Full-suite shards evict
     // this directory between processes so compiled routes do not accumulate.
     NEXT_DIST_DIR: process.env.NEXT_DIST_DIR ?? ".next-pw",

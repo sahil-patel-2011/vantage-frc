@@ -88,7 +88,10 @@ export default defineConfig({
   retries: isCi ? 1 : 0,
   forbidOnly: isCi,
   timeout: isCi ? 45_000 : 90_000,
-  reporter: isCi ? [["line"], ["html"]] : [["list"], ["html"]],
+  reporter: [
+    [isCi ? "line" : "list"],
+    ["html", { open: "never" }],
+  ],
   use: {
     baseURL: origin,
     trace: "retain-on-failure",
