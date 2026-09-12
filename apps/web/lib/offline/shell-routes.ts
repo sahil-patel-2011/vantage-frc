@@ -449,7 +449,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/notifications")) return "Notifications";
   if (bare.startsWith("/forms/") && bare !== "/forms") return "Form";
   if (bare.startsWith("/forms")) return "Forms";
-  if (bare.startsWith("/incidents")) return "Safety Incident Log";
+  if (bare.startsWith("/incidents")) return "Safety incidents";
   if (bare.startsWith("/roles")) return "Season roles";
   if (bare.startsWith("/parts-catalog")) return "Parts catalog";
   if (bare.startsWith("/parts-relay")) return "Parts Relay";

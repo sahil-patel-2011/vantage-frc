@@ -363,7 +363,7 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/equipment-maintenance")).toBe("Equipment");
     expect(offlineCapableLabel("/notifications")).toBe("Notifications");
     expect(offlineCapableLabel("/forms")).toBe("Forms");
-    expect(offlineCapableLabel("/incidents")).toBe("Safety Incident Log");
+    expect(offlineCapableLabel("/incidents")).toBe("Safety incidents");
     expect(offlineCapableLabel("/roles")).toBe("Season roles");
     expect(offlineCapableLabel("/parts-catalog")).toBe("Parts catalog");
     expect(offlineCapableLabel("/parts-relay")).toBe("Parts Relay");

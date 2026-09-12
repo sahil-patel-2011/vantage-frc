@@ -10,7 +10,8 @@ const WEB = join(__dirname, "..", "..");
  * stays in hubs.ts for search/help/access. Drive folder names stay
  * Media Library. Routes stay. leftover-fmea Failure log and
  * leftover-pick-before Choose your team stay. leftover-help-workspace
- * Connect TBA stays. Do not invent a last-snapshot.
+ * Connect TBA stays. leftover-safety Safety incidents stays. Do not
+ * invent a last-snapshot.
  */
 const FILES = [
   "app/media-library/media-library-client.tsx",

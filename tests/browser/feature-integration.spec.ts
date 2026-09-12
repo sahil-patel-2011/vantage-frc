@@ -111,7 +111,7 @@ test.describe("workflow handoffs", () => {
    */
   const HANDOFFS = [
     { path: "/spares", heading: /Consumables/i, links: ["/orders", "/packing"] },
-    { path: "/incidents", heading: /Safety Incident Log/i, links: ["/safety", "/build?tab=fmea"] },
+    { path: "/incidents", heading: /Safety incidents/i, links: ["/safety", "/build?tab=fmea"] },
     { path: "/packing", heading: /Packing Lists/i, links: ["/spares", "/logistics", "/event-readiness"] },
     { path: "/files", heading: /^Files$/, links: ["/team?tab=knowledge", "/team?tab=messages", "/build?tab=cad"] },
   ] as const;

@@ -1,7 +1,7 @@
 import IncidentsClient from "./incidents-client";
 
 export const metadata = {
-  title: "Incidents",
+  title: "Safety incidents",
 };
 
 export default function IncidentsPage() {

@@ -11,7 +11,7 @@ const BANNED = ["Setup required", "VANTAGE /"];
 
 const LEAVES = [
   { path: "/safety", heading: "Safety log" },
-  { path: "/incidents", heading: "Safety Incident Log" },
+  { path: "/incidents", heading: "Safety incidents" },
   { path: "/safety-training", heading: "Safety Training" },
   { path: "/incident-heatmap", heading: "Incidents" },
 ] as const;

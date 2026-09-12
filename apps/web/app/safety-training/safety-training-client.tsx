@@ -81,7 +81,7 @@ export default function SafetyTrainingClient() {
         Safety log
       </Button>
       <Button as="a" variant="secondary" href={withOrgHref("/incidents", orgId)}>
-        Safety Incident Log
+        Safety incidents
       </Button>
     </nav>
   );

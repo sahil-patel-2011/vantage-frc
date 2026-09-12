@@ -63,7 +63,7 @@ function SafetyRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related safety tools">
       <Button as="a" variant="secondary" href={withOrgHref("/incidents", orgId)}>
-        Safety Incident Log
+        Safety incidents
       </Button>
       <Button as="a" variant="secondary" href={hubHref("/team", "safety-training", orgId)}>
         Safety training
