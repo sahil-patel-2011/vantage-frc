@@ -21,5 +21,6 @@ test("leftover Collaborative pick list drops FAST-style EPA student copy", async
     "/picklist-collab",
     /Collaborative pick list|Choose your team|Needs setup/i,
   );
+  await expect(page.locator("body")).not.toContainText("FAST-style");
   await expect(page.locator("body")).not.toContainText("FAST-style EPA");
 });

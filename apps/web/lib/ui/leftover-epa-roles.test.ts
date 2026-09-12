@@ -21,6 +21,7 @@ describe("leftover student EPA roles / marketing setup chrome", () => {
     for (const rel of FILES) {
       const src = readFileSync(join(WEB, rel), "utf8");
       expect(src, rel).not.toMatch(/Setup required/);
+      expect(src, rel).not.toMatch(/FAST-style/);
       expect(src, rel).not.toMatch(/FAST-style EPA/);
       expect(src, rel).not.toMatch(/or EPA\./);
       expect(src, rel).not.toMatch(/not EPA/);
@@ -34,8 +35,11 @@ describe("leftover student EPA roles / marketing setup chrome", () => {
     const promote = readFileSync(join(WEB, "lib/chemistry/promote-to-pick-list.ts"), "utf8");
     const pairwise = readFileSync(join(WEB, "app/pairwise/pairwise-client.tsx"), "utf8");
     const marketing = readFileSync(join(WEB, "lib/marketing/demo-fixtures.ts"), "utf8");
+    const collab = readFileSync(join(WEB, "app/picklist-collab/picklist-collab-client.tsx"), "utf8");
     expect(promote).toMatch(/season rating \$\{input\.fit\.totalEpa\}/);
     expect(pairwise).toMatch(/season ratings/);
     expect(marketing).toMatch(/Needs setup/);
+    expect(collab).toMatch(/season ratings/);
+    expect(collab).not.toMatch(/FAST-style/);
   });
 });
