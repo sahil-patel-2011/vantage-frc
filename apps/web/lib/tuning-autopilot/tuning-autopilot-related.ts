@@ -1,7 +1,7 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Tuning Autopilot (never DEMO gain metrics). */
+/** Soft-UI related surfaces for Tuning advisor (never DEMO gain metrics). */
 export const TUNING_AUTOPILOT_RELATED_LINKS = [
   { id: "cad", label: "CAD", kind: "build" as const, tab: "cad" },
   { id: "fmea", label: "Failure log", kind: "build" as const, tab: "fmea" },
@@ -26,7 +26,7 @@ export const TUNING_AUTOPILOT_RELATED_INCLUDE: TuningAutopilotRelatedId[] = [
 ];
 
 /**
- * Soft-UI cross-links from Tuning Autopilot → CAD / FMEA / Practice.
+ * Soft-UI cross-links from Tuning advisor → CAD / FMEA / Practice.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function tuningAutopilotRelatedLinks(
@@ -82,7 +82,7 @@ export function formatTuningScorePct(value: unknown, loaded: boolean, hasIterati
   return `${Math.round(Math.min(1, n) * 100)}%`;
 }
 
-/** Classify Tuning Autopilot Soft-UI shell — never invents DEMO gain metrics. */
+/** Classify Tuning advisor Soft-UI shell — never invents DEMO gain metrics. */
 export function classifyTuningAutopilotShell(input: {
   loading: boolean;
   fetchFailed?: boolean;
@@ -142,7 +142,7 @@ export function tuningAutopilotShellCopy(kind: TuningAutopilotShellKind): Tuning
 }
 
 /**
- * Soft-UI next actions for Tuning Autopilot empty/setup shells.
+ * Soft-UI next actions for Tuning advisor empty/setup shells.
  * Points at CAD / FMEA / Practice — never invents DEMO gain metrics.
  */
 export function tuningAutopilotNextActions(input: {
@@ -191,7 +191,7 @@ export function tuningAutopilotNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Finish membership setup so Tuning Autopilot can load.",
+        detail: "Finish membership setup so Tuning advisor can load.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
       },
@@ -220,7 +220,7 @@ export function tuningAutopilotNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Tuning Autopilot",
+        label: "Retry Tuning advisor",
         detail: "Reload real tuning sessions.",
         href: withOrgHref("/tuning-autopilot", orgId),
         primary: true,

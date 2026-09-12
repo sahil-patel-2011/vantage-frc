@@ -83,7 +83,7 @@ export default function MatchSimClient() {
         if (!response.ok || !isMatchSimView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Match Simulator. Showing the last copy on this device.");
+            setError("Could not refresh Match sim. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setErrorStatus(response.status);
@@ -98,7 +98,7 @@ export default function MatchSimClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Match Simulator. Showing the last copy on this device.");
+          setError("Could not refresh Match sim. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -162,13 +162,13 @@ export default function MatchSimClient() {
           breadcrumbs={
             <>
               <a href="/competition">Competition</a>
-              {" / Match Simulator"}
+              {" / Match sim"}
             </>
           }
-          title="Match Simulator"
+          title="Match sim"
           description="Full-field score timeline from synced event numbers — plus the highest-leverage lever. Nothing here is guessed."
         />
-        <OfflineBanner feature="Match Simulator" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Match sim" fromCache={fromCache} cachedAt={cachedAt} />
         {copy ? (
           <EmptyState title={copy.title} description={copy.description}>
             {copy.primary ? (
@@ -195,13 +195,13 @@ export default function MatchSimClient() {
         breadcrumbs={
           <>
             <a href={orgId ? `/competition?orgId=${encodeURIComponent(orgId)}` : "/competition"}>Competition</a>
-            {" / Match Simulator"}
+            {" / Match sim"}
           </>
         }
-        title="Match Simulator"
+        title="Match sim"
         description="Full-field score timeline from synced event numbers — plus the highest-leverage lever. Nothing here is guessed."
       />
-      <OfflineBanner feature="Match Simulator" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Match sim" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

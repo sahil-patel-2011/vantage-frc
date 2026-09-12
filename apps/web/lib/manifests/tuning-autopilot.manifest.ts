@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "tuning-autopilot",
-  title: "Tuning Autopilot",
+  title: "Tuning advisor",
   route: "/tuning-autopilot",
   apiRoute: "/api/tuning-autopilot",
   hub: "Build",

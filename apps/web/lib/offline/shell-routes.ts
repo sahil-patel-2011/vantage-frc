@@ -328,7 +328,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/inspection-copilot")) return "Inspection";
   if (bare.startsWith("/inspection")) return "Inspection";
   if (bare.startsWith("/fmea")) return "Failure log";
-  if (bare.startsWith("/match-sim")) return "Match Simulator";
+  if (bare.startsWith("/match-sim")) return "Match sim";
   if (bare.startsWith("/pit-map-planner")) return "Pit Map Planner";
   if (bare.startsWith("/pairwise")) return "Pairwise ranking";
   if (bare.startsWith("/team-tags")) return "Drive-team tags";
@@ -403,7 +403,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/rule-impact")) return "Rule Impact Analyzer";
   if (bare.startsWith("/season-planning-workspace")) return "Season Planning";
   if (bare.startsWith("/retro")) return "Retro";
-  if (bare.startsWith("/tuning-autopilot")) return "Tuning Autopilot";
+  if (bare.startsWith("/tuning-autopilot")) return "Tuning advisor";
   if (bare === "/tuning" || bare.startsWith("/tuning/")) return "Tuning log";
   if (bare.startsWith("/assembly-manual")) return "Assembly manual";
   if (bare.startsWith("/packing")) return "Packing";

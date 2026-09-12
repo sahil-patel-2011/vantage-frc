@@ -5,7 +5,7 @@ import { withOrgHref } from "../nav/product-nav";
 export const KNOWLEDGE_GAP_RELATED_LINKS = [
   { id: "knowledge", label: "Knowledge", tab: "knowledge" },
   { id: "todos", label: "Work", tab: "todos" },
-  { id: "meeting-autopilot", label: "Meeting Autopilot", tab: "meeting-autopilot" },
+  { id: "meeting-autopilot", label: "Meeting agenda", tab: "meeting-autopilot" },
 ] as const;
 
 export type KnowledgeGapRelatedId = (typeof KNOWLEDGE_GAP_RELATED_LINKS)[number]["id"];
@@ -258,7 +258,7 @@ export function knowledgeGapNextActions(input: {
     },
     {
       id: "meeting",
-      label: "Open Meeting Autopilot",
+      label: "Open Meeting agenda",
       detail: "Turn undocumented work into agenda items.",
       href: hubHref("/team", "meeting-autopilot", orgId),
     },

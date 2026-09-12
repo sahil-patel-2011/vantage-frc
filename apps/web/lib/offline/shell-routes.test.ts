@@ -250,7 +250,7 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/inspection-copilot")).toBe("Inspection");
     expect(offlineCapableLabel("/inspection")).toBe("Inspection");
     expect(offlineCapableLabel("/fmea")).toBe("Failure log");
-    expect(offlineCapableLabel("/match-sim")).toBe("Match Simulator");
+    expect(offlineCapableLabel("/match-sim")).toBe("Match sim");
     expect(offlineCapableLabel("/pit-map-planner")).toBe("Pit Map Planner");
     expect(offlineCapableLabel("/pairwise")).toBe("Pairwise ranking");
     expect(offlineCapableLabel("/team-tags")).toBe("Drive-team tags");
@@ -323,7 +323,7 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/team/grants")).toBe("Grant writing");
     expect(offlineCapableLabel("/team")).toBe("Team");
     expect(offlineCapableLabel("/team/knowledge")).toBe("Playbook");
-    expect(offlineCapableLabel("/tuning-autopilot")).toBe("Tuning Autopilot");
+    expect(offlineCapableLabel("/tuning-autopilot")).toBe("Tuning advisor");
     expect(offlineCapableLabel("/practice")).toBe("Practice");
     expect(offlineCapableLabel("/manufacturing")).toBe("Manufacturing");
     expect(offlineCapableLabel("/attendance")).toBe("Attendance");

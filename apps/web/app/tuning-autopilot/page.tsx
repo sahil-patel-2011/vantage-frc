@@ -1,7 +1,7 @@
 import TuningAutopilotClient from "./tuning-autopilot-client";
 
 export const metadata = {
-  title: "Tuning Autopilot",
+  title: "Tuning advisor",
 };
 
 export default function TuningAutopilotPage() {
