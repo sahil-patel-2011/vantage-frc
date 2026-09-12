@@ -225,7 +225,7 @@ export function connectionsNextActions(input: {
     actions.push({
       id: "discord",
       label: "Link Discord",
-      detail: "Add a channel webhook (or bot + channel id) on the Discord settings page.",
+      detail: "Paste a Discord channel link (or add the bot plus a channel id) on Discord.",
       href: withOrgHref("/team/discord", orgId),
       primary: actions.length === 0,
     });
@@ -235,7 +235,7 @@ export function connectionsNextActions(input: {
     actions.push({
       id: "slack",
       label: "Link Slack",
-      detail: "Paste a channel webhook so Vantage team chat and Slack stay in sync.",
+      detail: "Paste a Slack channel link so team chat and Slack stay in sync.",
       href: withOrgHref("/team/slack", orgId),
       primary: actions.length === 0,
     });
@@ -271,7 +271,7 @@ export function connectionsNextActions(input: {
     {
       id: "discord-page",
       label: "Open Discord settings",
-      detail: "Guild / webhook bridge for announcements and object-linked chat posts.",
+      detail: "Paste a Discord channel link so announcements and team chat posts stay in sync.",
       href: withOrgHref("/team/discord", orgId),
     },
     {

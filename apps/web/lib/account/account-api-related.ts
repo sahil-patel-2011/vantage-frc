@@ -34,11 +34,11 @@ export const ACCOUNT_TBA_COPY = {
 export const ACCOUNT_DISCORD_COPY = {
   connectedWebhook: "Discord can post for this team.",
   connectedBot: "Discord can post for this team.",
-  chooseTeamConfigured: "Choose your team to add a Discord webhook or channel.",
-  chooseTeam: "Choose your team, then add a channel webhook on Discord settings.",
-  setupRequired: "Add a Discord channel webhook on Team → Discord before posts work.",
-  emptyConfigured: "Add a webhook or channel id on Discord settings before posts work.",
-  empty: "Webhook not saved for this team yet. Connected only after a valid webhook or bot and channel.",
+  chooseTeamConfigured: "Choose your team to add a Discord channel link.",
+  chooseTeam: "Choose your team, then paste a Discord channel link on Discord.",
+  setupRequired: "Paste a Discord channel link on Discord before posts work.",
+  emptyConfigured: "Paste a Discord channel link or channel id on Discord before posts work.",
+  empty: "No Discord channel link saved for this team yet. Connected only after a valid Discord channel link, or the bot plus a channel.",
 } as const;
 
 export const ACCOUNT_EMAIL_COPY = {
