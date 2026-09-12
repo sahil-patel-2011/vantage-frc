@@ -11,7 +11,7 @@ export const manifest = {
     {
       name: "reuse_advisor.assessments",
       description:
-        "Read this org's cross-season subsystem reuse assessments for the active design season, including the prior-season FMEA-failure-history + design-review-track-record grounded recommendation (reuse, modify, or avoid), confidence, and rationale.",
+        "Read this org's cross-season subsystem reuse assessments for the active design season, including the prior-season failure-history + design-review-track-record grounded recommendation (reuse, modify, or avoid), confidence, and rationale.",
     },
   ],
   exportAdapters: [],

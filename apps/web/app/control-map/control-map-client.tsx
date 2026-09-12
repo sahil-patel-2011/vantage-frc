@@ -405,7 +405,7 @@ export default function ControlMapClient({ orgId: orgIdProp }: { orgId: string |
           </>
         }
         title={`Control Map — ${seasonYear}`}
-        description="Driver-station cheat sheet: every controller input → robot action. Keep it in sync with Subsystems and FMEA."
+        description="Driver-station cheat sheet: every controller input → robot action. Keep it in sync with Subsystems and Failure log."
       >
         <div className="control-map-header-actions">
           {relatedLinks.map((link) => (

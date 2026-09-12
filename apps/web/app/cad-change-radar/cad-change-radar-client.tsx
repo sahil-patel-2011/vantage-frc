@@ -343,7 +343,7 @@ export default function CadChangeRadarClient() {
           </>
         }
         title="CAD Change Impact Radar"
-        description="Snapshot tracked parameters on every Onshape release, diff them automatically, and notify who it affects. Cross-check CAD, FMEA, and Prototypes."
+        description="Snapshot tracked parameters on every Onshape release, diff them automatically, and notify who it affects. Cross-check CAD, Failure log, and Prototypes."
       >
         <div className="ccr-header-actions">
           {relatedLinks.map((link) => (

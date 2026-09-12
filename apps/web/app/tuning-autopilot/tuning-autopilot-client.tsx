@@ -370,7 +370,7 @@ export default function TuningAutopilotClient() {
           </>
         }
         title="Tuning Autopilot"
-        description="Log each PID/feedforward gain set you try and its test result. The next gain set is suggested from your own logged trend. Cross-check CAD, FMEA, and Practice."
+        description="Log each PID/feedforward gain set you try and its test result. The next gain set is suggested from your own logged trend. Cross-check CAD, Failure log, and Practice."
       >
         <div className="tuning-autopilot-header-actions">
           {view.seasons.length > 0 ? (

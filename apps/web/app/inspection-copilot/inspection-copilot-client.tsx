@@ -253,7 +253,7 @@ export default function InspectionCopilotClient() {
           </>
         }
         title="Inspection"
-        description="Compare declared weight, frame/bumper, and wiring limits against measured robot values before you travel. Cross-check Batteries, FMEA, and Weigh-in."
+        description="Compare declared weight, frame/bumper, and wiring limits against measured robot values before you travel. Cross-check Batteries, Failure log, and Weigh-in."
       >
         <div className="inspection-copilot-header-actions">
           {view.seasons.length > 0 ? (

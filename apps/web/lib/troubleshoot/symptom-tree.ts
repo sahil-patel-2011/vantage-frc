@@ -349,7 +349,7 @@ export const SYMPTOMS: TroubleshootSymptom[] = [
         steps: [
           "Measure the voltage at the rio's power connector while it boots — a sagging supply will fail imaging every time.",
           "Try the same cable and laptop against a different roboRIO. If that images, the first rio is the suspect.",
-          "Log the failure in Robot › FMEA with the rio's serial so the team has a record of this unit.",
+          "Log the failure in Robot › Failure log with the rio's serial so the team has a record of this unit.",
           "Post the exact tool message and the Status LED pattern to Chief Delphi or the vendor forum — the LED pattern is the diagnostic everyone will ask for first.",
         ],
         principle:
@@ -943,7 +943,7 @@ export const SYMPTOMS: TroubleshootSymptom[] = [
         steps: [
           "Note what you had just changed or plugged in before it wedged.",
           "Check the Driver Station log for the moments before the failure.",
-          "If this is the second time, stop treating it as transient and log it in Robot › FMEA.",
+          "If this is the second time, stop treating it as transient and log it in Robot › Failure log.",
           "Save a 'resolved' note here so the next student sees this happened before.",
         ],
         principle:
@@ -1507,7 +1507,7 @@ export const SYMPTOMS: TroubleshootSymptom[] = [
         steps: [
           "In the vendor tool, confirm the device is running this season's firmware and update it if not.",
           "If it will not take firmware, put a known-good device of the same type in its place on the same wires.",
-          "If the replacement works, the original is faulty — tag it and log it in Robot › FMEA.",
+          "If the replacement works, the original is faulty — tag it and log it in Robot › Failure log.",
           "If the replacement also fails, the fault is in that harness position, not the device.",
         ],
         principle:

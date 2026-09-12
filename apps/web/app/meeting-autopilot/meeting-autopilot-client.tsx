@@ -395,13 +395,13 @@ function SuggestedAgenda({ view }: { view: LiveView }) {
         <h2 style={{ margin: 0 }}>Suggested agenda items</h2>
         <small className="app-muted">
           {view.sourceCounts.blockers} blocker(s) · {view.sourceCounts.overdueTasks} overdue task(s) ·{" "}
-          {view.sourceCounts.decisions} unresolved decision(s) · {view.sourceCounts.fmea} open FMEA — snapshot these onto
+          {view.sourceCounts.decisions} unresolved decision(s) · {view.sourceCounts.fmea} open Failure log — snapshot these onto
           a calendar meeting below.
         </small>
       </header>
       {view.liveAgendaItems.length === 0 ? (
         <p className="app-muted" style={{ marginTop: 12 }}>
-          No open blockers, overdue tasks, unresolved decisions, or open FMEA right now — nothing extra to put on the
+          No open blockers, overdue tasks, unresolved decisions, or open Failure log right now — nothing extra to put on the
           agenda.
         </p>
       ) : (

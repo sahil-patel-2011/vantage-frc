@@ -53,7 +53,7 @@ const CATEGORY_LABEL: Record<ReadinessFixCategory, string> = {
 const COMPONENT_LABEL: Record<string, string> = {
   subsystemHealth: "Subsystem wiring",
   codeReadiness: "Code-version state",
-  fmeaClearance: "FMEA clearance",
+  fmeaClearance: "Failure log clearance",
   weightHeadroom: "Weight headroom",
   powerHeadroom: "Power headroom",
   checklistCompletion: "Bring-up checklist",
@@ -425,7 +425,7 @@ export default function ReadinessScoreClient() {
           </>
         }
         title="Robot readiness score"
-        description="One grounded ship-readiness index across subsystem wiring/code state, weight & power headroom, the bring-up checklist, and open FMEA. Cross-check FMEA, Inspection, and Code."
+        description="One grounded ship-readiness index across subsystem wiring/code state, weight & power headroom, the bring-up checklist, and open Failure log. Cross-check Failure log, Inspection, and Code."
       >
         <div className="readiness-score-header-actions">
           {view.seasons.length > 0 ? (
@@ -527,7 +527,7 @@ function ReadinessPanel({ view }: { view: LiveView }) {
           <h2 style={{ margin: "6px 0 0" }}>Ship-readiness index</h2>
           <small className="app-muted">
             {index.weightUsedLbs} / {index.weightBudgetLbs} lbs · {index.powerUsedAmps} / {index.powerBudgetAmps} A ·{" "}
-            {index.checklistComplete}/{index.checklistTotal} checklist · {index.openFmeaCount} open FMEA. Weight and power
+            {index.checklistComplete}/{index.checklistTotal} checklist · {index.openFmeaCount} open Failure log. Weight and power
             fall back to a 115 lb / 120 A yardstick until you record your own budgets — not a measured weigh-in.
           </small>
         </div>
@@ -557,14 +557,14 @@ function FixList({ view }: { view: LiveView }) {
         badge="Ship ready"
         badgeTone="good"
         title="No open fix-list items"
-        description="Wiring is verified, code is deployed & tested, the bring-up checklist is complete, and there's no open FMEA or budget overrun on record."
+        description="Wiring is verified, code is deployed & tested, the bring-up checklist is complete, and there's no open Failure log or budget overrun on record."
       />
     );
   }
   return (
     <Panel id="readiness-score-fixes" className="readiness-score-panel">
       <h2 style={{ marginTop: 0 }}>Fix list — ordered by urgency</h2>
-      <p className="app-muted">From logged subsystems and open FMEA only.</p>
+      <p className="app-muted">From logged subsystems and open Failure log only.</p>
       <ul className="readiness-score-list">
         {fixList.map((item) => (
           <li key={item.id} className="readiness-score-row">

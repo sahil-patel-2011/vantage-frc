@@ -11,7 +11,7 @@ export const manifest = {
     {
       name: "spare_forecast.purchase_requests",
       description:
-        "Read this org's spare-parts exhaustion forecast and drafted purchase requests for the active season — FMEA repeat-failure rate x inventory spares on hand x season consumption cadence, with recommended reorder quantities and urgency.",
+        "Read this org's spare-parts exhaustion forecast and drafted purchase requests for the active season — logged repeat-failure rate x inventory spares on hand x season consumption cadence, with recommended reorder quantities and urgency.",
     },
   ],
   exportAdapters: [],
