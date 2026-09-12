@@ -106,16 +106,16 @@ export function discordNextActions(input: {
     actions.push({
       id: "connect",
       label: "Link a Discord channel",
-      detail: "Paste a channel webhook and/or guild + channel ids. Nothing posts until a path is saved.",
+      detail: "Paste a Discord channel link and/or the server and channel IDs. Nothing posts until a path is saved.",
       href: discordHref,
       primary: true,
     });
   } else if (!canPost) {
     actions.push({
       id: "posting-path",
-      label: "Add a webhook or bot token",
+      label: "Add a Discord channel link",
       detail:
-        "Posting needs a valid channel webhook, or DISCORD_BOT_TOKEN plus a channel id — setup stays required until one works.",
+        "Posting needs a valid Discord channel link, or a mentor to add the Discord bot plus a channel id — Needs setup until one works.",
       href: discordHref,
       primary: true,
     });
