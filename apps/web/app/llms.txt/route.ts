@@ -8,7 +8,7 @@ const c = PRICING_CATALOG;
 
 const body = `# Vantage
 
-> Vantage is competition operations software for FIRST Robotics Competition (FRC) teams. It runs Soft-UI hubs for Competition, Team, Business, Build, and AI in one invite-only org workspace. Surfaces stay empty until real TBA, scout, or connector data exists. AI actions are human-gated.
+> Vantage is competition operations software for FIRST Robotics Competition (FRC) teams. It runs Soft-UI hubs for Competition, Team, Business, Build, and AI in one invite-only org workspace. Surfaces stay empty until official matches, scout, or connector data exists. AI actions are human-gated.
 
 ## Entity
 - Name: Vantage (also "Vantage FRC")

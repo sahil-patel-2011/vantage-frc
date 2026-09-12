@@ -115,7 +115,7 @@ function TeamDataShell({
             : shell === "error"
               ? "Unavailable"
               : shell === "empty"
-                ? "No TBA cache yet"
+                ? "No official match cache yet"
                 : undefined
         }
         badgeTone={shell === "setup" || shell === "empty" ? "setup" : ""}
@@ -307,7 +307,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
     setOk(response.ok);
     setMessage(
       response.ok
-        ? "Encrypted TBA fallback key saved. Test it before relying on it."
+        ? "Encrypted official-match fallback key saved. Test it before relying on it."
         : (data.error ?? "Save failed"),
     );
     if (response.ok) {
@@ -366,7 +366,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
     return (
       <TeamDataShell
         title="Loading…"
-        description="Checking your event and The Blue Alliance connection."
+        description="Checking your event and official match connection."
         orgId={orgId}
         shell="loading"
       >
@@ -407,10 +407,10 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
         title={needsTba ? "Connect TBA" : needsEvent ? "Set active event" : "Finish Team Data setup"}
         description={
           needsTba
-            ? `Save a Blue Alliance Read API key below, or ask whoever set up this site to add one in deployment settings. Create a key at thebluealliance.com → Account → Read API Keys.${needsEvent ? " You will also need to pick an active event before anything syncs." : ""}`
+            ? `Save a TBA Read API key below, or ask whoever set up this site to add one in deployment settings. Create a key at thebluealliance.com → Account → Read API Keys.${needsEvent ? " You will also need to pick an active event before anything syncs." : ""}`
             : needsEvent
               ? "Team Data syncs only for a real team event — Schedule, Event Day, and Strategy stay empty until then."
-              : "Finish team setup so TBA sync can load this team."
+              : "Finish team setup so official matches can load this team."
         }
         orgId={orgId}
         shell="setup"
@@ -418,10 +418,10 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
         <OfflineBanner feature="Team Data" fromCache={fromCache} cachedAt={cachedAt} />
         {needsTba ? (
           <section className="app-card soft-panel team-data-panel">
-            <h2>Blue Alliance team key</h2>
+            <h2>Connect TBA team key</h2>
             <p className="app-muted">
               Encrypted on save and never shown again. Create one at thebluealliance.com → Account → Read API
-              Keys. A site-wide Blue Alliance key in deployment settings covers every team and makes this unnecessary.
+              Keys. A site-wide TBA key in deployment settings covers every team and makes this unnecessary.
             </p>
             <form className="team-data-key-form" onSubmit={saveFallbackKey}>
               <label>
@@ -457,8 +457,8 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
           <span className="breadcrumbs">Team / Live data</span>
           <h1>Team Data</h1>
           <p>
-            Inventory counts for your team, shared TBA cache health, and controlled sync for the active event.
-            Schedule, Event Day, and Strategy use this shared copy of The Blue Alliance.
+            Inventory counts for your team, shared official match cache health, and controlled sync for the active event.
+            Schedule, Event Day, and Strategy use this shared copy of official matches.
           </p>
         </div>
         <div className="team-data-header-actions">
@@ -486,10 +486,10 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
         <>
           <EmptyState
             soft
-            badge="No TBA cache yet"
+            badge="No official match cache yet"
             badgeTone="setup"
             title="Sync the active event"
-            description={`Event ${activeEventKey} is selected, but there are no match or ranking rows yet. Sync pulls real The Blue Alliance data.`}
+            description={`Event ${activeEventKey} is selected, but there are no match or ranking rows yet. Sync pulls official match data.`}
           >
             <Button variant="primary" type="button" disabled={busy} onClick={() => void syncActiveEvent()}>
               {busy ? "Working…" : "Sync active event"}
@@ -518,7 +518,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
           )}
           <h3>Shared reference cache</h3>
           {reference.length === 0 ? (
-            <p className="app-muted">Reference cache empty until TBA sync succeeds for this event.</p>
+            <p className="app-muted">Reference cache empty until official match sync succeeds for this event.</p>
           ) : (
             <ul className="team-data-inventory reference">
               {reference.map((row) => (
@@ -544,7 +544,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
           </section>
 
           <section className="app-card soft-panel team-data-panel">
-            <h2>TBA fallback key</h2>
+            <h2>Connect TBA fallback key</h2>
             <p className="app-muted">
               Optional encrypted fallback when platform ingest is under pressure. Saved via the same connector path as
               team settings.
@@ -614,7 +614,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
                 ))}
               </ul>
             ) : (
-              <p className="app-muted">No health telemetry yet — sync once to populate real TBA status.</p>
+              <p className="app-muted">No health telemetry yet — sync once to populate real official match status.</p>
             )}
             <pre className="team-data-health">{health ? JSON.stringify(health, null, 2) : "No health telemetry yet."}</pre>
           </section>

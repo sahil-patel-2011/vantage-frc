@@ -33,7 +33,7 @@ Chat, Writer, Agent, Controls, Notes. API keys, memory, and usage live under Con
 Default Soft-UI island apps: Home, Compete, Team, Business (customizable to four apps). Drawer pillars: Competition, Team, Logistics, Business, Build, AI.
 
 ## Data and honesty rules
-- Reference caches: The Blue Alliance and Statbotics with freshness stamps (setup may be required).
+- Reference caches: official matches and season ratings with freshness stamps (setup may be required).
 - Scout facts feed Strategy, Pick clock, Alliance Selection Desk, Command / My Day, and Assistant — they do not invent missing numbers.
 - Marketing previews are CSS recreations of Soft-UI chrome, not live screenshots and not DEMO dashboards.
 
