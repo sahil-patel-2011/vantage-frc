@@ -386,7 +386,7 @@ export default function SubsystemSignoffClient() {
             </label>
           ) : null}
           <Button as="a" variant="secondary" href={hubHref("/build", "fmea", orgId)}>
-            FMEA
+            Failure log
           </Button>
           <Button as="a" variant="secondary" href={hubHref("/build", "cad", orgId)}>
             CAD
@@ -431,7 +431,7 @@ export default function SubsystemSignoffClient() {
           description="Drivetrain, intake, scoring, climber — each clears the same review gates. Readiness stays blank until someone records a real approve or reject."
         >
           <div className="signoff-row-links">
-            <a href={hubHref("/build", "fmea", orgId)}>FMEA →</a>
+            <a href={hubHref("/build", "fmea", orgId)}>Failure log →</a>
             <a href={hubHref("/build", "cad", orgId)}>CAD →</a>
             <a href={withOrgHref("/tasks", orgId)}>Tasks →</a>
             <a href={withOrgHref("/subsystems", orgId)}>Subsystem specs →</a>

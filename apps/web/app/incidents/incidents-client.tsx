@@ -196,7 +196,7 @@ export default function IncidentsClient() {
         Safety training
       </Button>
       <Button as="a" variant="secondary" href={hubHref("/build", "fmea", orgId)}>
-        FMEA
+        Failure log
       </Button>
     </nav>
   );

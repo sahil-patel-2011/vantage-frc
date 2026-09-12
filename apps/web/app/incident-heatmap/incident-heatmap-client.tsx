@@ -62,7 +62,7 @@ function IncidentHeatmapRelated({ orgId }: { orgId?: string | null }) {
         Failure patterns
       </Button>
       <Button as="a" variant="secondary" href={hubHref("/build", "fmea", orgId)}>
-        FMEA
+        Failure log
       </Button>
       <Button as="a" variant="secondary" href={hubHref("/team", "safety", orgId)}>
         Safety log

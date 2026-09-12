@@ -443,7 +443,8 @@ function ClusterCard({
           <Badge tone={tierBadgeTone[cluster.tier]}>{failurePatternTierLabel(cluster.tier)}</Badge>
           <h2>{cluster.subsystemName}</h2>
           <small className="app-muted">
-            {cluster.totalCount} failure(s) · {cluster.fmeaCount} FMEA · {cluster.incidentCount} incident(s) ·{" "}
+            {cluster.totalCount} failure(s) · {cluster.fmeaCount} Failure log · {cluster.incidentCount}{" "}
+            incident(s) ·{" "}
             {cluster.firstOccurredOn} → {cluster.lastOccurredOn}
           </small>
         </div>

@@ -376,7 +376,7 @@ export default function PrototypeTrackerClient(_props: { embedded?: boolean } = 
             </label>
           ) : null}
           <Button as="a" variant="secondary" href={hubHref("/build", "fmea", orgId)}>
-            FMEA
+            Failure log
           </Button>
           <Button as="a" variant="secondary" href={hubHref("/build", "cad", orgId)}>
             CAD
@@ -427,7 +427,7 @@ export default function PrototypeTrackerClient(_props: { embedded?: boolean } = 
             description="Outcomes, metrics, and decision confidence stay blank until you record a real test — nothing is pre-filled."
           >
             <div className="ptk-empty-links">
-              <a href={hubHref("/build", "fmea", orgId)}>FMEA →</a>
+              <a href={hubHref("/build", "fmea", orgId)}>Failure log →</a>
               <a href={hubHref("/build", "cad", orgId)}>CAD →</a>
               <a href={hubHref("/build", "kickoff", orgId)}>Kickoff →</a>
             </div>
@@ -553,7 +553,7 @@ function DecisionsList({
       >
         <div className="ptk-empty-links">
           <a href={hubHref("/build", "cad", view.orgId)}>CAD →</a>
-          <a href={hubHref("/build", "fmea", view.orgId)}>FMEA →</a>
+          <a href={hubHref("/build", "fmea", view.orgId)}>Failure log →</a>
         </div>
       </EmptyState>
     );

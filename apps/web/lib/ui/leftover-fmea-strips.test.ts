@@ -38,6 +38,9 @@ const FILES = [
   "app/failure-patterns/failure-patterns-client.tsx",
   "app/incident-heatmap/incident-heatmap-client.tsx",
   "app/pit-repair-triage/pit-repair-triage-client.tsx",
+  "app/subsystem-signoff/subsystem-signoff-client.tsx",
+  "app/prototype-tracker/prototype-tracker-client.tsx",
+  "app/incidents/incidents-client.tsx",
 ] as const;
 
 describe("leftover student Open FMEA related-strip chrome", () => {
@@ -50,6 +53,11 @@ describe("leftover student Open FMEA related-strip chrome", () => {
       expect(src, rel).not.toMatch(/Log FMEA/);
       expect(src, rel).not.toMatch(/FMEA failure\(s\)/);
       expect(src, rel).not.toMatch(/prior FMEA/);
+      expect(src, rel).not.toMatch(/>FMEA</);
+      expect(src, rel).not.toMatch(/FMEA →/);
     }
+    const patterns = readFileSync(join(WEB, "app/failure-patterns/failure-patterns-client.tsx"), "utf8");
+    expect(patterns).toMatch(/Failure log ·/);
+    expect(patterns).not.toMatch(/ FMEA ·/);
   });
 });
