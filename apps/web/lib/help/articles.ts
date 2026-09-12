@@ -198,7 +198,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "team-basics",
     slug: "team-basics",
-    title: "Calendar, Chat, People, Work, and Playbook",
+    title: "Team hub",
     summary:
       "The Team hub's five workbenches: where meetings, messages, attendance, tasks, and the team wiki live.",
     category: "getting-started",
@@ -1266,7 +1266,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "byok-automode",
     slug: "byok-automode",
-    title: "Your AI keys and Automode",
+    title: "Your AI keys",
     summary:
       "Anyone can paste personal OpenAI or Anthropic keys. Admins can set team-wide keys. Ollama and LM Studio use an OpenAI-compatible base URL.",
     category: "ai-models",
@@ -1460,7 +1460,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "credits-vs-free",
     slug: "credits-vs-free",
-    title: "Hosted credits, pay-as-you-go, and spend limits",
+    title: "Spend limits",
     summary:
       "How the hosted allowance, credit packs, and pay-as-you-go work — Chat stops before every extra billed call, with no surprise bill.",
     category: "billing-plans",
@@ -1601,7 +1601,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "admin-owner",
     slug: "admin-owner",
-    title: "Owner & admin guide",
+    title: "Owner guide",
     summary:
       "Roles, the last-admin safeguard, who can open which sections, and the team settings only owners and admins touch.",
     category: "admin-owner",
