@@ -243,7 +243,7 @@ export default function DistrictAdvancementClient() {
         {header}
         <OfflineBanner feature="Districts" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
-          title={failure ? failure.title : "Loading…"}
+          title={failure ? failure.title : "Opening Districts"}
           description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >

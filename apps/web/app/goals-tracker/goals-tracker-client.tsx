@@ -310,7 +310,7 @@ export default function GoalsTrackerClient() {
         {header}
         <OfflineBanner feature="Goals" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
-          title={failure ? failure.title : "Loading…"}
+          title={failure ? failure.title : "Opening Goals"}
           description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >

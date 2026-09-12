@@ -278,7 +278,7 @@ export default function ChecklistLibraryClient() {
         {header}
         <OfflineBanner feature="Checklists" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
-          title={failure ? failure.title : "Loading…"}
+          title={failure ? failure.title : "Opening Checklists"}
           description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >
