@@ -264,7 +264,7 @@ export default function StandupDigestClient() {
         {header}
         <OfflineBanner feature="Standup" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
-          title={failure ? failure.title : "Loading…"}
+          title={failure ? failure.title : "Opening Standup"}
           description={failure ? failure.description : "Checking hours and work for this date."}
           aria-busy={!fetchFailed}
         >

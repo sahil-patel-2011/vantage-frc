@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "shift-balancer",
-  title: "Scout Shift Load Balancer",
+  title: "Shifts",
   route: "/shift-balancer",
   apiRoute: "/api/shift-balancer",
   hub: "Competition",

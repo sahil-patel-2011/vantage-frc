@@ -8,10 +8,10 @@ const WEB = join(__dirname, "..", "..");
  * Leftover student Goals / Standup / My kit / Field reset / Season report
  * titles after leftover-kit-titles. Hub labels stay Goals, Standup, My kit,
  * Field reset, and Season report. Routes stay. leftover-cad-map CAD
- * review queue / Control map stay. leftover-fmea Failure log and
- * leftover-pick-before Choose your team stay. leftover-ops-more
- * Skills / Risk register / Burndown stay. Do not invent a
- * last-snapshot.
+ * review queue / Control map stay. leftover-manifest-titles Field reset /
+ * Standup stay. leftover-fmea Failure log and leftover-pick-before Choose
+ * your team stay. leftover-ops-more Skills / Risk register / Burndown stay.
+ * Do not invent a last-snapshot.
  */
 const FILES = [
   "app/goals-tracker/goals-tracker-client.tsx",

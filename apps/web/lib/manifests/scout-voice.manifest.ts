@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "scout-voice",
-  title: "Scout Voice Notes",
+  title: "Voice notes",
   route: "/scouting",
   apiRoute: "/api/scout-voice",
   hub: "Competition",
