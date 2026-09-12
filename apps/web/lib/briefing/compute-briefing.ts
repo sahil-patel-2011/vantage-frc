@@ -466,7 +466,7 @@ export async function computeBriefingView(
   if (!selected) {
     return {
       status: "setup_required",
-      message: "No matches for your team at this event yet — sync TBA first.",
+      message: "No matches for your team at this event yet — sync official matches first.",
       context,
     };
   }

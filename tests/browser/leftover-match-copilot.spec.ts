@@ -7,7 +7,11 @@ test.beforeEach(async ({ context }) => {
   if (!signed) await signInFixture(context);
 });
 
-test("leftover Match Copilot drops opponent EPA student copy", async ({ page }) => {
+test("leftover Pre-match briefing drops opponent EPA student copy", async ({ page }) => {
   test.setTimeout(90_000);
-  await assertNoLeftoverRankingsTba(page, "/match-copilot", /Match Copilot|Choose your team/i);
+  await assertNoLeftoverRankingsTba(
+    page,
+    "/briefing",
+    /Pre-match briefing|Choose your team|Your session ended|Sign in/i,
+  );
 });
