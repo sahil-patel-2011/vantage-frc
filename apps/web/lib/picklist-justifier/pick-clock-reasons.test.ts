@@ -5,7 +5,6 @@ import {
   applyStoredJustificationsToPickClockResult,
   glanceableLabel,
   loadStoredJustificationsForPickClock,
-  studentPickClockLabel,
   mergePickClockReasons,
   parseJustificationSources,
   pickClockReasonsFromJustification,
