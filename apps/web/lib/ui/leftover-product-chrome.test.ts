@@ -101,9 +101,13 @@ describe("leftover-product student chrome", () => {
     const usage = readFileSync(join(WEB, "app/team/usage/usage-client.tsx"), "utf8");
     expect(usage).toMatch(/local_cli: "This computer"/);
     expect(usage).not.toMatch(/Local CLI/);
+    expect(usage).not.toMatch(/AI API keys/);
     const keysUsage = readFileSync(join(WEB, "app/team/ai-usage/ai-usage-client.tsx"), "utf8");
     expect(keysUsage).toMatch(/local_cli: "This computer"/);
     expect(keysUsage).not.toMatch(/Local CLI/);
+    expect(keysUsage).not.toMatch(/AI API keys/);
+    expect(keysUsage).toMatch(/Open AI keys/);
+    expect(keysUsage).toMatch(/under AI keys/);
   });
 
   it("Playbook last snapshot uses if (!view) and related stays Team chat / FMEA / Decisions", () => {

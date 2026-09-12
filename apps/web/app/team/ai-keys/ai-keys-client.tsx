@@ -486,7 +486,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
           </>
         }
         navPath="/team/ai-keys"
-        title="AI API keys"
+        title="AI keys"
         description={PAGE_DESCRIPTION}
       >
       </PageHeader>
@@ -496,7 +496,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
       <OfflineBanner feature="AI keys" fromCache={fromCache} cachedAt={cachedAt} />
 
       {shell === "loading" ? (
-        <div aria-busy="true" aria-label="Loading AI API keys">
+        <div aria-busy="true" aria-label="Opening API keys">
           <SoftBlockSkeleton lines={3} />
         </div>
       ) : null}
