@@ -45,7 +45,7 @@ async function persistGrantReportSnapshot(
     await putFeatureSnapshot("grant-report", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("grant-report", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Grant Report already painted; IndexedDB is best-effort.
+    // Live Reports already painted; IndexedDB is best-effort.
   }
 }
 
@@ -120,10 +120,10 @@ function GrantReportShell({
         breadcrumbs={
           <>
             <a href={businessHref}>Business</a>
-            {" / Grant Report"}
+            {" / Reports"}
           </>
         }
-        title="Grant Report"
+        title="Reports"
         description={description}
       >
         <GrantReportRelatedStrip orgId={orgId} />
@@ -215,7 +215,7 @@ export default function GrantReportClient() {
         if (!response.ok || !isGrantReportView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Grant Report. Showing the last copy on this device.");
+            setError("Could not refresh Reports. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -230,7 +230,7 @@ export default function GrantReportClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Grant Report. Showing the last copy on this device.");
+          setError("Could not refresh Reports. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -302,7 +302,7 @@ export default function GrantReportClient() {
   if (shell === "loading") {
     return (
       <GrantReportShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Grant Report" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Reports" fromCache={fromCache} cachedAt={cachedAt} />
       </GrantReportShell>
     );
   }
@@ -316,7 +316,7 @@ export default function GrantReportClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Grant Report" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Reports" fromCache={fromCache} cachedAt={cachedAt} />
       </GrantReportShell>
     );
   }
@@ -328,7 +328,7 @@ export default function GrantReportClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Grant Report" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Reports" fromCache={fromCache} cachedAt={cachedAt} />
       </GrantReportShell>
     );
   }
@@ -336,7 +336,7 @@ export default function GrantReportClient() {
   if (view?.status !== "live") {
     return (
       <GrantReportShell description={shellCopy.description} orgId={orgId} shell="setup">
-        <OfflineBanner feature="Grant Report" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Reports" fromCache={fromCache} cachedAt={cachedAt} />
       </GrantReportShell>
     );
   }
@@ -347,10 +347,10 @@ export default function GrantReportClient() {
         breadcrumbs={
           <>
             <a href={businessHref}>Business</a>
-            {" / Grant Report"}
+            {" / Reports"}
           </>
         }
-        title="Grant Report"
+        title="Reports"
         description="Post-grant impact reports generated from your team's own logged outreach and finance records. Cross-check Grants and Community Impact."
       >
         <div className="grant-report-header-actions">
@@ -380,7 +380,7 @@ export default function GrantReportClient() {
           ))}
         </div>
       </PageHeader>
-      <OfflineBanner feature="Grant Report" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Reports" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -424,7 +424,7 @@ export default function GrantReportClient() {
       <div className="grant-report-layout">
         <EligibleGrants view={view} busy={busy} mutate={mutate} />
         <Reports view={view} busy={busy} mutate={mutate} />
-        <Panel className="grant-report-tip" aria-label="Grant Report tip">
+        <Panel className="grant-report-tip" aria-label="Reports tip">
           <span className="eyebrow">Grounding path</span>
           <p className="app-muted" style={{ marginTop: 8 }}>
             Mark awards in <a href={grantsHref}>Grants</a>, draft language in{" "}

@@ -5,7 +5,7 @@ import { withOrgHref } from "../nav/product-nav";
 export const SEASON_REPORT_RELATED_LINKS = [
   { id: "strategy", label: "Strategy", kind: "path" as const, path: "/strategy" },
   { id: "impact", label: "Impact", kind: "path" as const, path: "/impact" },
-  { id: "decision-search", label: "Decision Search", kind: "ai" as const, tab: "decision-search" },
+  { id: "decision-search", label: "Search", kind: "ai" as const, tab: "decision-search" },
   { id: "chat", label: "Chat", kind: "ai" as const, tab: "chat" },
   { id: "budgets", label: "Budgets", kind: "ai" as const, tab: "budgets" },
   { id: "usage", label: "AI usage", kind: "path" as const, path: "/team/usage" },
@@ -19,7 +19,7 @@ export type SeasonReportRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — Strategy / Impact / Decision Search first. */
+/** Focused Soft-UI strip — Strategy / Impact / Search first. */
 export const SEASON_REPORT_RELATED_INCLUDE: SeasonReportRelatedId[] = [
   "strategy",
   "impact",
@@ -246,7 +246,7 @@ export function seasonReportNextActions(input: {
       },
       {
         id: "decision-search",
-        label: "Open Decision Search",
+        label: "Open Search",
         detail: "Index design decisions separately.",
         href: hubHref("/ai", "decision-search", orgId),
       },
@@ -280,7 +280,7 @@ export function seasonReportNextActions(input: {
     },
     {
       id: "decision-search",
-      label: "Open Decision Search",
+      label: "Open Search",
       detail: "Search indexed decisions that fed this season’s choices.",
       href: hubHref("/ai", "decision-search", orgId),
     },

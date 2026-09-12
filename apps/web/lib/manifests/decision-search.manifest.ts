@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "decision-search",
-  title: "Decision Search",
+  title: "Search",
   route: "/decision-search",
   apiRoute: "/api/decision-search",
   hub: "AI",

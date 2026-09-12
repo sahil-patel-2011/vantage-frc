@@ -4,7 +4,7 @@ import { withOrgHref } from "../nav/product-nav";
 /** Soft-UI related surfaces for Grant Eligibility Matcher (never DEMO grant dollars). */
 export const GRANT_ELIGIBILITY_MATCHER_RELATED_LINKS = [
   { id: "grants", label: "Business · Grants", kind: "business" as const, tab: "grants" },
-  { id: "grant-report", label: "Grant Report", kind: "business" as const, tab: "grant-report" },
+  { id: "grant-report", label: "Reports", kind: "business" as const, tab: "grant-report" },
   { id: "impact", label: "Community Impact", kind: "business" as const, tab: "impact" },
   { id: "writer", label: "Writer", kind: "ai" as const, tab: "writer" },
 ] as const;
@@ -18,7 +18,7 @@ export type GrantEligibilityMatcherRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — Grants / Grant Report / Impact. */
+/** Focused Soft-UI strip — Grants / Reports / Impact. */
 export const GRANT_ELIGIBILITY_MATCHER_RELATED_INCLUDE: GrantEligibilityMatcherRelatedId[] = [
   "grants",
   "grant-report",
@@ -91,7 +91,7 @@ export function grantEligibilityMatcherSetupSteps(
     },
     {
       id: "grant-report",
-      label: "Open Grant Report",
+      label: "Open Reports",
       detail: "Post-award compliance stays separate from eligibility matching.",
       href: hubHref("/business", "grant-report", orgId),
     },
@@ -236,7 +236,7 @@ export function grantEligibilityMatcherNextActions(input: {
       },
       {
         id: "grant-report",
-        label: "Open Grant Report",
+        label: "Open Reports",
         detail: "Post-award compliance stays separate from eligibility.",
         href: hubHref("/business", "grant-report", orgId),
       },
@@ -260,8 +260,8 @@ export function grantEligibilityMatcherNextActions(input: {
       },
       {
         id: "grant-report",
-        label: "Open Grant Report",
-        detail: "Grant Report stays available while matching reloads.",
+        label: "Open Reports",
+        detail: "Reports stays available while matching reloads.",
         href: hubHref("/business", "grant-report", orgId),
       },
     ];
@@ -304,7 +304,7 @@ export function grantEligibilityMatcherNextActions(input: {
     },
     {
       id: "grant-report",
-      label: "Open Grant Report",
+      label: "Open Reports",
       detail: "Track post-award compliance once awards land.",
       href: hubHref("/business", "grant-report", orgId),
     },

@@ -62,7 +62,7 @@ function ExitInterviewRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related people tools">
       <Button as="a" variant="secondary" href={hubHref("/team", "alumni-network", orgId)}>
-        Alumni Network
+        Alumni
       </Button>
       <Button as="a" variant="secondary" href={hubHref("/team", "mentor-hours", orgId)}>
         Mentor hours
@@ -85,7 +85,7 @@ function ExitInterviewNextActions({ orgId }: { orgId: string }) {
     },
     {
       id: "alumni",
-      label: "Open Alumni Network",
+      label: "Open Alumni",
       detail: "Keep graduates reachable after the handoff page is published.",
       href: hubHref("/team", "alumni-network", orgId),
       primary: false,

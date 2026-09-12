@@ -267,7 +267,7 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/award-tracker")).toBe("Award tracker");
     expect(offlineCapableLabel("/epa-trend-alerts")).toBe("Rating alerts");
     expect(offlineCapableLabel("/rankings")).toBe("Rankings");
-    expect(offlineCapableLabel("/grant-report")).toBe("Grant Report");
+    expect(offlineCapableLabel("/grant-report")).toBe("Reports");
     expect(offlineCapableLabel("/media-kit")).toBe("Media kit");
     expect(offlineCapableLabel("/sponsor-wall")).toBe("Sponsor wall");
     expect(offlineCapableLabel("/sponsor-suite")).toBe("Sponsor suite");
@@ -293,7 +293,7 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/code-deploy-log")).toBe("Deploy log");
     expect(offlineCapableLabel("/control-map")).toBe("Control Map");
     expect(offlineCapableLabel("/cross-team-scrim")).toBe("Scrims");
-    expect(offlineCapableLabel("/decision-search")).toBe("Decision Search");
+    expect(offlineCapableLabel("/decision-search")).toBe("Search");
     expect(offlineCapableLabel("/decisions")).toBe("Decision notes");
     expect(offlineCapableLabel("/failure-patterns")).toBe("Failure patterns");
     expect(offlineCapableLabel("/hours-self-view")).toBe("My hours");
@@ -360,7 +360,7 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/risk-burndown")).toBe("Risk burndown");
     expect(offlineCapableLabel("/subsystem-signoff")).toBe("Subsystem Sign-off");
     expect(offlineCapableLabel("/prototype-tracker")).toBe("Prototypes");
-    expect(offlineCapableLabel("/equipment-maintenance")).toBe("Equipment Maintenance");
+    expect(offlineCapableLabel("/equipment-maintenance")).toBe("Equipment");
     expect(offlineCapableLabel("/notifications")).toBe("Notifications");
     expect(offlineCapableLabel("/forms")).toBe("Forms");
     expect(offlineCapableLabel("/incidents")).toBe("Safety Incident Log");
@@ -380,7 +380,7 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/standup-digest")).toBe("Morning standup");
     expect(offlineCapableLabel("/meeting-autopilot")).toBe("Meeting agenda");
     expect(offlineCapableLabel("/goals")).toBe("Goals");
-    expect(offlineCapableLabel("/safety-training")).toBe("Safety Training");
+    expect(offlineCapableLabel("/safety-training")).toBe("Safety");
     expect(offlineCapableLabel("/safety")).toBe("Safety");
     expect(offlineCapableLabel("/notifications/preferences")).toBe("Notification preferences");
     expect(offlineCapableLabel("/notifications")).toBe("Notifications");

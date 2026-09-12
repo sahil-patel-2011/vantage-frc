@@ -2,7 +2,7 @@ import { hubHref } from "../nav/hubs";
 import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Grant Report (never DEMO grant dollars). */
+/** Soft-UI related surfaces for Reports (never DEMO grant dollars). */
 export const GRANT_REPORT_RELATED_LINKS = [
   { id: "grants", label: "Business · Grants", kind: "business" as const, tab: "grants" },
   { id: "grant-workbench", label: "Grants workbench", kind: "path" as const, path: "/team/grants" },
@@ -26,7 +26,7 @@ export const GRANT_REPORT_RELATED_INCLUDE: GrantReportRelatedId[] = [
 ];
 
 /**
- * Soft-UI cross-links from Grant Report → Grants / Impact.
+ * Soft-UI cross-links from Reports → Grants / Impact.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function grantReportRelatedLinks(
@@ -139,7 +139,7 @@ export function isGrantReportBoardEmpty(input: {
   return input.eligibleCount === 0 && input.reportCount === 0;
 }
 
-/** Classify Grant Report Soft-UI shell — never invents DEMO grant dollars. */
+/** Classify Reports Soft-UI shell — never invents DEMO grant dollars. */
 export function classifyGrantReportShell(input: {
   loading: boolean;
   fetchFailed?: boolean;
@@ -166,7 +166,7 @@ export function grantReportShellCopy(kind: GrantReportShellKind): GrantReportEmp
     case "loading":
       return {
         kind,
-        title: "Loading Grant Report…",
+        title: "Opening Reports…",
         description:
           "Checking which team you are on and awarded grants.",
       };
@@ -174,7 +174,7 @@ export function grantReportShellCopy(kind: GrantReportShellKind): GrantReportEmp
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Grant Report",
+        title: "Could not load Reports",
         description:
           "A network or server issue blocked the report board. Retry, or open Grants / Community Impact while it reloads.",
       };
@@ -205,7 +205,7 @@ export function grantReportShellCopy(kind: GrantReportShellKind): GrantReportEmp
 }
 
 /**
- * Soft-UI next actions for Grant Report empty/setup shells.
+ * Soft-UI next actions for Reports empty/setup shells.
  * Points at Grants / Impact — never invents DEMO grant dollars.
  */
 export function grantReportNextActions(input: {
@@ -229,7 +229,7 @@ export function grantReportNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Grant Report",
+        label: "Retry Reports",
         detail: "Reload real awarded grants and reports.",
         href: withOrgHref("/grant-report", orgId),
         primary: true,

@@ -345,7 +345,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/epa-trend-alerts")) return "Rating alerts";
   if (bare.startsWith("/ranking-projection")) return "Rank projection";
   if (bare.startsWith("/rankings")) return "Rankings";
-  if (bare.startsWith("/grant-report")) return "Grant Report";
+  if (bare.startsWith("/grant-report")) return "Reports";
   if (bare.startsWith("/media-kit")) return "Media kit";
   if (bare.startsWith("/media-library")) return "Media Library";
   if (bare.startsWith("/media")) return "Media";
@@ -373,7 +373,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/code-deploy-log")) return "Deploy log";
   if (bare.startsWith("/control-map")) return "Control Map";
   if (bare.startsWith("/cross-team-scrim")) return "Scrims";
-  if (bare.startsWith("/decision-search")) return "Decision Search";
+  if (bare.startsWith("/decision-search")) return "Search";
   if (bare.startsWith("/decisions")) return "Decision notes";
   if (bare.startsWith("/failure-patterns")) return "Failure patterns";
   if (bare.startsWith("/grant-eligibility-matcher")) return "Grant Eligibility Matcher";
@@ -384,7 +384,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/risks")) return "Risk Register";
   if (bare.startsWith("/subsystem-signoff")) return "Subsystem Sign-off";
   if (bare.startsWith("/prototype-tracker")) return "Prototypes";
-  if (bare.startsWith("/equipment-maintenance")) return "Equipment Maintenance";
+  if (bare.startsWith("/equipment-maintenance")) return "Equipment";
   if (bare.startsWith("/cad/setup")) return "CAD setup";
   if (bare.startsWith("/cad/pair")) return "Pair this computer";
   if (bare.startsWith("/cad/connections")) return "CAD connections";
@@ -427,7 +427,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/recognition")) return "Recognition";
   if (bare.startsWith("/budget")) return "Season budget";
   if (bare.startsWith("/subteams")) return "Subteam progress";
-  if (bare.startsWith("/safety-training")) return "Safety Training";
+  if (bare.startsWith("/safety-training")) return "Safety";
   if (bare.startsWith("/safety")) return "Safety";
   if (bare.startsWith("/writer")) return "Writer";
   if (bare.startsWith("/learning")) return "Learning";
@@ -454,7 +454,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/parts-catalog")) return "Parts catalog";
   if (bare.startsWith("/parts-relay")) return "Parts Relay";
   if (bare.startsWith("/account")) return "Account";
-  if (bare.startsWith("/alumni-network")) return "Alumni Network";
+  if (bare.startsWith("/alumni-network")) return "Alumni";
   if (bare.startsWith("/auto-routines")) return "Auto routines";
   if (bare.startsWith("/auton-path-library")) return "Auton paths";
   if (bare.startsWith("/bom-cost-rollup")) return "BOM cost";

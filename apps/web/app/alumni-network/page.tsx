@@ -1,7 +1,7 @@
 import AlumniNetworkClient from "./alumni-network-client";
 
 export const metadata = {
-  title: "Alumni Network",
+  title: "Alumni",
 };
 
 export default function AlumniNetworkPage() {

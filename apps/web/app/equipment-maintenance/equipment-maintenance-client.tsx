@@ -76,7 +76,7 @@ async function persistEquipmentMaintenanceSnapshot(
     await putFeatureSnapshot("equipment-maintenance", cacheOrg, data);
     if (!orgHint) await putFeatureSnapshot("equipment-maintenance", "_", data);
   } catch {
-    // Live Equipment Maintenance already painted; IndexedDB is best-effort.
+    // Live Equipment already painted; IndexedDB is best-effort.
   }
 }
 
@@ -147,17 +147,17 @@ function MaintenanceShell({
         breadcrumbs={
           <>
             <a href={teamHref}>Team</a>
-            {" / Equipment Maintenance"}
+            {" / Equipment"}
           </>
         }
-        title="Equipment Maintenance"
+        title="Equipment"
         description={description}
       >
         <RelatedStrip orgId={orgId} />
       </PageHeader>
       {children}
       {shell === "loading" ? (
-        <div aria-busy="true" aria-label="Loading Equipment Maintenance">
+        <div aria-busy="true" aria-label="Opening Equipment">
           <SoftBlockSkeleton lines={4} />
         </div>
       ) : shell === "error" ? (
@@ -242,7 +242,7 @@ export default function EquipmentMaintenanceClient() {
         if (!response.ok || !isEquipmentMaintenanceView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Equipment Maintenance. Showing the last copy on this device.");
+            setError("Could not refresh Equipment. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -256,7 +256,7 @@ export default function EquipmentMaintenanceClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Equipment Maintenance. Showing the last copy on this device.");
+          setError("Could not refresh Equipment. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -324,7 +324,7 @@ export default function EquipmentMaintenanceClient() {
   if (shell === "loading") {
     return (
       <MaintenanceShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Equipment Maintenance" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Equipment" fromCache={fromCache} cachedAt={cachedAt} />
       </MaintenanceShell>
     );
   }
@@ -337,7 +337,7 @@ export default function EquipmentMaintenanceClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Equipment Maintenance" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Equipment" fromCache={fromCache} cachedAt={cachedAt} />
       </MaintenanceShell>
     );
   }
@@ -348,7 +348,7 @@ export default function EquipmentMaintenanceClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Equipment Maintenance" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Equipment" fromCache={fromCache} cachedAt={cachedAt} />
       </MaintenanceShell>
     );
   }
@@ -359,16 +359,16 @@ export default function EquipmentMaintenanceClient() {
         breadcrumbs={
           <>
             <a href={teamHref}>Team</a>
-            {" / Equipment Maintenance"}
+            {" / Equipment"}
           </>
         }
-        title="Equipment Maintenance"
+        title="Equipment"
         description="Track shop equipment and log the maintenance that keeps them running."
       >
         <RelatedStrip orgId={orgId} />
       </PageHeader>
 
-      <OfflineBanner feature="Equipment Maintenance" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Equipment" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

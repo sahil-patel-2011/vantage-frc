@@ -56,7 +56,7 @@ async function persistAlumniNetworkSnapshot(orgHint: string, data: AlumniNetwork
     await putFeatureSnapshot("alumni-network", cacheOrg, data);
     if (!orgHint) await putFeatureSnapshot("alumni-network", "_", data);
   } catch {
-    // Live Alumni Network already painted; IndexedDB is best-effort.
+    // Live Alumni already painted; IndexedDB is best-effort.
   }
 }
 
@@ -177,7 +177,7 @@ export default function AlumniNetworkClient() {
       if (!response.ok || !isAlumniNetworkView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Alumni Network. Showing the last copy on this device.");
+          setError("Could not refresh Alumni. Showing the last copy on this device.");
           setFetchFailed(false);
           return;
         }
@@ -193,7 +193,7 @@ export default function AlumniNetworkClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Alumni Network. Showing the last copy on this device.");
+        setError("Could not refresh Alumni. Showing the last copy on this device.");
         setFetchFailed(false);
         return;
       }
@@ -240,10 +240,10 @@ export default function AlumniNetworkClient() {
       breadcrumbs={
         <>
           <a href={teamHref}>Team</a>
-          {" / Alumni Network"}
+          {" / Alumni"}
         </>
       }
-      title="Alumni Network"
+      title="Alumni"
       description="Keep track of graduated members who stay reachable — and log the mentor availability windows they've offered back to the team."
     >
       <AlumniNetworkRelated orgId={orgId} />
@@ -270,7 +270,7 @@ export default function AlumniNetworkClient() {
     return (
       <main className="module-page">
         {header}
-        <OfflineBanner feature="Alumni Network" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Alumni" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           title={failure ? failure.title : "Loading…"}
           description={failure ? failure.description : "Checking your team."}
@@ -296,7 +296,7 @@ export default function AlumniNetworkClient() {
       return (
         <main className="module-page">
           {header}
-          <OfflineBanner feature="Alumni Network" fromCache={fromCache} cachedAt={cachedAt} />
+          <OfflineBanner feature="Alumni" fromCache={fromCache} cachedAt={cachedAt} />
           {error ? (
             <p className="telemetry-status" role="alert">
               {error}
@@ -322,7 +322,7 @@ export default function AlumniNetworkClient() {
   return (
     <main className="module-page">
       {header}
-      <OfflineBanner feature="Alumni Network" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Alumni" fromCache={fromCache} cachedAt={cachedAt} />
       {error ? (
         <p className="telemetry-status" role="alert">
           {error}

@@ -1,7 +1,7 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Decision Search (never DEMO decisions). */
+/** Soft-UI related surfaces for Search (never DEMO decisions). */
 export const DECISION_SEARCH_RELATED_LINKS = [
   { id: "season-report", label: "Season Report", kind: "ai" as const, tab: "season-report" },
   { id: "knowledge", label: "Knowledge", kind: "team" as const, tab: "knowledge" },
@@ -27,7 +27,7 @@ export const DECISION_SEARCH_RELATED_INCLUDE: DecisionSearchRelatedId[] = [
 ];
 
 /**
- * Soft-UI cross-links from Decision Search → Season Report / Knowledge / Strategy.
+ * Soft-UI cross-links from Search → Season Report / Knowledge / Strategy.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function decisionSearchRelatedLinks(
@@ -83,7 +83,7 @@ export function formatDecisionSearchMatchPct(value: unknown, loaded: boolean): s
   return `${Math.round(Math.min(1, n) * 100)}%`;
 }
 
-/** Classify Decision Search Soft-UI shell — never invents DEMO decisions. */
+/** Classify Search Soft-UI shell — never invents DEMO decisions. */
 export function classifyDecisionSearchShell(input: {
   loading: boolean;
   fetchFailed?: boolean;
@@ -104,14 +104,14 @@ export function decisionSearchShellCopy(kind: DecisionSearchShellKind): Decision
     case "loading":
       return {
         kind,
-        title: "Loading Decision Search…",
+        title: "Opening Search…",
         description: "Checking which team you are on and the indexed corpus.",
       };
     case "error":
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Decision Search",
+        title: "Could not load Search",
         description:
           "A network or server issue blocked the index. Retry, or open Budgets if metered search is cut off.",
       };
@@ -142,7 +142,7 @@ export function decisionSearchShellCopy(kind: DecisionSearchShellKind): Decision
 }
 
 /**
- * Soft-UI next actions for Decision Search empty/setup shells.
+ * Soft-UI next actions for Search empty/setup shells.
  * Points at Season Report / Knowledge / Strategy — never invents DEMO decisions.
  */
 export function decisionSearchNextActions(input: {
@@ -189,7 +189,7 @@ export function decisionSearchNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Finish membership setup so Decision Search can load.",
+        detail: "Finish membership setup so Search can load.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
       },
@@ -218,7 +218,7 @@ export function decisionSearchNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Decision Search",
+        label: "Retry Search",
         detail: "Reload the real index.",
         href: withOrgHref("/decision-search", orgId),
         primary: true,
@@ -232,7 +232,7 @@ export function decisionSearchNextActions(input: {
       {
         id: "knowledge",
         label: "Open Knowledge",
-        detail: "Wiki stays available while Decision Search is down.",
+        detail: "Wiki stays available while Search is down.",
         href: hubHref("/team", "knowledge", orgId),
       },
     ];

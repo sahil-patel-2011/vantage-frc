@@ -83,7 +83,7 @@ function MentorHoursRelated({ orgId }: { orgId?: string | null }) {
         My hours
       </Button>
       <Button as="a" variant="secondary" href={hubHref("/team", "alumni-network", orgId)}>
-        Alumni Network
+        Alumni
       </Button>
       <Button as="a" variant="secondary" href={hubHref("/team", "exit-interview", orgId)}>
         Exit interviews
@@ -110,7 +110,7 @@ function MentorHoursNextActions({ orgId }: { orgId: string }) {
     },
     {
       id: "alumni",
-      label: "Open Alumni Network",
+      label: "Open Alumni",
       detail: "Alumni mentors who offered office hours live there.",
       href: hubHref("/team", "alumni-network", orgId),
       primary: false,

@@ -354,7 +354,7 @@ export default function GrantEligibilityMatcherClient() {
           </>
         }
         title="Grant Eligibility Matcher"
-        description="Grants your team actually qualifies for, matched against your recorded team profile — with a deadline radar. Distinct from Grant Report. Cross-check Grants, Grant Report, and Impact."
+        description="Grants your team actually qualifies for, matched against your recorded team profile — with a deadline radar. Distinct from Reports. Cross-check Grants, Reports, and Impact."
       >
         <div className="gem-header-actions">
           {relatedLinks.map((link) => (

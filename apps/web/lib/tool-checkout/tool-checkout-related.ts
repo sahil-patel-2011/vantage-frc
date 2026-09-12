@@ -4,10 +4,10 @@ import { withOrgHref } from "../nav/product-nav";
 
 /** Soft-UI related surfaces for Tool Checkout (never DEMO loan ledgers). */
 export const TOOL_CHECKOUT_RELATED_LINKS = [
-  { id: "equipment-maintenance", label: "Equipment Maintenance", tab: "equipment-maintenance" },
+  { id: "equipment-maintenance", label: "Equipment", tab: "equipment-maintenance" },
   { id: "training", label: "Training matrix", tab: "training" },
   { id: "checklist-library", label: "Checklists", tab: "checklist-library" },
-  { id: "safety-training", label: "Safety Training", tab: "safety-training" },
+  { id: "safety-training", label: "Safety", tab: "safety-training" },
   { id: "pit-map-planner", label: "Pit Map", tab: "pit-map-planner" },
 ] as const;
 
@@ -76,7 +76,7 @@ export function toolCheckoutSetupSteps(orgId?: string | null): ToolCheckoutSetup
     },
     {
       id: "equipment",
-      label: "Open Equipment Maintenance",
+      label: "Open Equipment",
       detail: "Register shop machines beside hand tools you check out.",
       href: hubHref("/team", "equipment-maintenance", orgId),
     },
@@ -183,13 +183,13 @@ export function toolCheckoutNextActions(input: {
       },
       {
         id: "equipment",
-        label: "Open Equipment Maintenance",
+        label: "Open Equipment",
         detail: "Equipment stays available while checkout reloads.",
         href: hubHref("/team", "equipment-maintenance", orgId),
       },
       {
         id: "safety",
-        label: "Open Safety Training",
+        label: "Open Safety",
         detail: "Training stays available while checkout reloads.",
         href: hubHref("/team", "safety-training", orgId),
       },
@@ -207,7 +207,7 @@ export function toolCheckoutNextActions(input: {
       },
       {
         id: "equipment",
-        label: "Open Equipment Maintenance",
+        label: "Open Equipment",
         detail: "Register shop machines beside hand tools.",
         href: hubHref("/team", "equipment-maintenance", orgId),
       },
@@ -233,7 +233,7 @@ export function toolCheckoutNextActions(input: {
     },
     {
       id: "equipment",
-      label: "Open Equipment Maintenance",
+      label: "Open Equipment",
       detail: "Service shop machines beside hand-tool loans.",
       href: hubHref("/team", "equipment-maintenance", orgId),
     },

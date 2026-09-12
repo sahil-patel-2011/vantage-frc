@@ -1,7 +1,7 @@
 import DecisionSearchClient from "./decision-search-client";
 
 export const metadata = {
-  title: "Decision Search",
+  title: "Search",
   description:
     "Semantic search over indexed decisions, design reviews, and notebook entries. Metered search; links to Season Report, Knowledge, and Strategy.",
 };
