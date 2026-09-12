@@ -52,7 +52,9 @@ export async function POST(request: Request) {
         ]);
       } catch (error) {
         if (error instanceof Error && /scope/.test(error.message)) {
-          throw new Error("This team isn't ready for Your Claude Code yet. Ask a mentor to finish setup.");
+          throw new Error("This team isn't ready for Your Claude Code yet. Ask a mentor to finish setup.", {
+            cause: error,
+          });
         }
         throw error;
       }
