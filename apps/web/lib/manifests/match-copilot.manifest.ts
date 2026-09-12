@@ -11,7 +11,7 @@ export const manifest = {
     {
       name: "match_copilot.brief",
       description:
-        "Grounded read of the next-match brief: opponent scouting/EPA, our stored strategy plan, open FMEA risks, and battery fleet health fused into prioritized do-this callouts.",
+        "Grounded read of the next-match brief: opponent scouting and season ratings, our stored strategy plan, open FMEA risks, and battery fleet health fused into prioritized do-this callouts.",
     },
   ],
   exportAdapters: [],

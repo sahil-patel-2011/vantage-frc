@@ -10,6 +10,7 @@
 // how to parse justifier rows.
 
 import type { PoolClient } from "@neondatabase/serverless";
+import { studentRatingLabel } from "../ui/student-rating-label";
 import type { PickClockJustificationReason, PicklistSourceRef } from "./types";
 
 export type { PickClockJustificationReason };
@@ -117,17 +118,7 @@ export function storedJustificationFromEntry(entry: {
 
 /** Rewrite leftover stored EPA / TBA labels so the clock stays student-readable. */
 export function studentPickClockLabel(text: string): string {
-  return text
-    .replace(/\bTBA's official record\b/gi, "the official record")
-    .replace(/\bTBA \(tba\)/gi, "Official record")
-    .replace(/\bTBA\/Statbotics\b/g, "official matches")
-    .replace(/\ban EPA of\b/gi, "a rating of")
-    .replace(/\bSeason EPA\b/g, "Season rating")
-    .replace(/\bEndgame EPA\b/g, "Endgame rating")
-    .replace(/\bTeleop EPA\b/g, "Teleop rating")
-    .replace(/\bAuto EPA\b/g, "Auto rating")
-    .replace(/\bEPA total\b/g, "Season rating")
-    .replace(/\bEPA\b/g, "Rating");
+  return studentRatingLabel(text);
 }
 
 /**

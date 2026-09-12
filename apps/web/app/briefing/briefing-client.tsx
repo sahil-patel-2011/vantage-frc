@@ -23,6 +23,7 @@ import {
 } from "../../lib/strategy/prediction-display";
 import { fmtTimestamp } from "../../lib/video-review";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import { studentRatingLabel } from "../../lib/ui/student-rating-label";
 
 function isFullBriefingView(value: unknown): value is FullBriefingView {
   if (!value || typeof value !== "object") return false;
@@ -528,14 +529,16 @@ export default function BriefingClient() {
             <ul className="brief-factors">
               {view.prediction.keyFactors.slice(0, 3).map((factor, index) => (
                 <li key={`${factor.name}-${index}`}>
-                  <b>{factor.name}</b>
-                  {factor.evidence ? <span> — {factor.evidence}</span> : null}
+                  <b>{studentRatingLabel(factor.name)}</b>
+                  {factor.evidence ? <span> — {studentRatingLabel(factor.evidence)}</span> : null}
                 </li>
               ))}
             </ul>
           ) : null}
           {view.prediction.caveats.length > 0 ? (
-            <p className="brief-caveats">Caveats: {view.prediction.caveats.join(" · ")}</p>
+            <p className="brief-caveats">
+              Caveats: {view.prediction.caveats.map(studentRatingLabel).join(" · ")}
+            </p>
           ) : null}
         </section>
       ) : null}

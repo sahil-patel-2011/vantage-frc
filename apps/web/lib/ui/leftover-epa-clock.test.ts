@@ -13,6 +13,7 @@ const WEB = join(__dirname, "..", "..");
 const FILES = [
   "lib/alliance-partner-brief/index.ts",
   "lib/command/load-command.ts",
+  "app/command/command-ready-view.tsx",
 ] as const;
 
 describe("leftover student Pick Clock / partner-brief EPA chrome", () => {

@@ -23,6 +23,7 @@ import { fetchProductSession } from "../../lib/nav/product-session";
 import { FEATURE_API_TIMEOUT_MS, readOrgIdFromSearch } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import { studentRatingLabel, studentSourceLabel } from "../../lib/ui/student-rating-label";
 import "./dossier.css";
 
 function isDossierView(value: unknown): value is DossierView {
@@ -509,11 +510,11 @@ function LiveDossier({ view }: { view: Extract<DossierView, { status: "live" }> 
           <ul className="dossier-fact-grid">
             {cards.map((card) => (
               <li key={card.id} className="dossier-fact-card soft-panel">
-                <span className="app-badge">{card.citation.source}</span>
-                <strong>{card.title}</strong>
-                <p>{card.value}</p>
+                <span className="app-badge">{studentSourceLabel(card.citation.source)}</span>
+                <strong>{studentRatingLabel(card.title)}</strong>
+                <p>{studentRatingLabel(card.value)}</p>
                 <small className="app-muted">
-                  {card.citation.detail}
+                  {studentRatingLabel(card.citation.detail)}
                   {card.citation.syncedAt
                     ? ` · synced ${new Date(card.citation.syncedAt).toLocaleDateString()}`
                     : ""}

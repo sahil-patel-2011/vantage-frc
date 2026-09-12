@@ -2,7 +2,7 @@ import DistrictAdvancementClient from "./district-advancement-client";
 
 export const metadata = {
   title: "District advancement",
-  description: "District point trajectory from cached EPA.",
+  description: "District point trajectory from cached season ratings.",
 };
 
 export default function DistrictAdvancementPage() {

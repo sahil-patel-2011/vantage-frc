@@ -11,6 +11,7 @@ import NexusQueuePanel from "../../lib/command/nexus-queue-panel";
 import type { CommandSnapshot } from "../../lib/command/types";
 import { formatMyDayWhen } from "../../lib/my-day";
 import { predictionWinDisplay } from "../../lib/strategy/prediction-display";
+import { studentRatingLabel, studentSourceLabel } from "../../lib/ui/student-rating-label";
 import {
   CommandReadyHeader,
   EventDayNextActionsPanel,
@@ -345,12 +346,14 @@ export function CommandReadyView({
               <ul className="edc-factors">
                 {snap.prediction.keyFactors.slice(0, 3).map((factor) => (
                   <li key={factor.name}>
-                    <strong>{factor.name}</strong>
-                    <span>{factor.evidence}</span>
+                    <strong>{studentRatingLabel(factor.name)}</strong>
+                    <span>{studentRatingLabel(factor.evidence)}</span>
                   </li>
                 ))}
               </ul>
-              {snap.prediction.caveats[0] ? <p className="edc-caveat">{snap.prediction.caveats[0]}</p> : null}
+              {snap.prediction.caveats[0] ? (
+                <p className="edc-caveat">{studentRatingLabel(snap.prediction.caveats[0])}</p>
+              ) : null}
               <button
                 type="button"
                 className="edc-link"
@@ -461,11 +464,11 @@ export function CommandReadyView({
                     </div>
                   </div>
                   {brief.capabilities.length ? (
-                    <p className="edc-caps">{brief.capabilities.join(" · ")}</p>
+                    <p className="edc-caps">{brief.capabilities.map(studentRatingLabel).join(" · ")}</p>
                   ) : null}
                   <ul>
                     {brief.evidence.slice(0, 3).map((line) => (
-                      <li key={line}>{line}</li>
+                      <li key={line}>{studentRatingLabel(line)}</li>
                     ))}
                   </ul>
                 </li>
@@ -474,7 +477,7 @@ export function CommandReadyView({
           ) : (
             <div className="dash-empty calm">
               <strong>No opponent briefs</strong>
-              <p>Briefs appear once your next match is known and reference metrics or scout notes exist.</p>
+              <p>Briefs appear once your next match is known and season ratings or scout notes exist.</p>
             </div>
           )}
         </article>
@@ -537,10 +540,10 @@ export function CommandReadyView({
               </div>
               <div>
                 <strong>{snap.record.epaTotal != null ? Math.round(snap.record.epaTotal * 10) / 10 : "—"}</strong>
-                <span>EPA</span>
+                <span>Rating</span>
               </div>
               <p className="edc-muted">
-                Source: {snap.record.source ?? "reference"}
+                Source: {studentSourceLabel(snap.record.source) || "Official matches"}
                 {snap.record.syncedAt ? ` · synced ${new Date(snap.record.syncedAt).toLocaleString()}` : ""}
               </p>
               <p className="edc-muted">
@@ -551,7 +554,7 @@ export function CommandReadyView({
           ) : (
             <div className="dash-empty calm">
               <strong>No event metrics yet</strong>
-              <p>Rank and EPA appear after the event numbers sync.</p>
+              <p>Rank and season rating appear after the event numbers sync.</p>
             </div>
           )}
         </article>

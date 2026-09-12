@@ -10,6 +10,7 @@ import {
   strategyRelatedLinks,
 } from "../../lib/strategy/strategy-related";
 import { predictionWinDisplay } from "../../lib/strategy/prediction-display";
+import { studentRatingLabel, studentSourceLabel } from "../../lib/ui/student-rating-label";
 import type { StrategyView } from "../../lib/strategy/types";
 
 function TeamChip({
@@ -52,7 +53,7 @@ function TeamChip({
       <span>{epa != null ? `Rating ${epa.toFixed(1)}` : "Rating —"}</span>
       <small>
         {record ?? "no record"}
-        {source ? ` · ${source}` : ""}
+        {source ? ` · ${studentSourceLabel(source)}` : ""}
         {scoutBits.length ? ` · ${scoutBits.join(" · ")}` : ""}
       </small>
     </li>
@@ -230,7 +231,10 @@ export function LivePanel({ view }: { view: Extract<StrategyView, { status: "liv
     ]);
   }, [view.prediction, whatIfOn]);
 
-  const sourceLabel = Array.from(new Set(view.sources.map((item) => item.source))).join(" · ") || "no linked source";
+  const sourceLabel =
+    Array.from(new Set(view.sources.map((item) => studentSourceLabel(item.source)).filter(Boolean))).join(
+      " · ",
+    ) || "no linked source";
   const title =
     view.compLevel === "qm"
       ? `Qualification ${view.matchNumber}`
@@ -334,15 +338,16 @@ export function LivePanel({ view }: { view: Extract<StrategyView, { status: "liv
             <li key={`${factor.kind}-${factor.name}`}>
               <b>{factor.impact}</b>
               <span>
-                <em className={`strategy-kind ${factor.kind}`}>{factor.kind.toUpperCase()}</em> {factor.name}
+                <em className={`strategy-kind ${factor.kind}`}>{factor.kind.toUpperCase()}</em>{" "}
+                {studentRatingLabel(factor.name)}
               </span>
-              <small>{factor.evidence}</small>
+              <small>{studentRatingLabel(factor.evidence)}</small>
             </li>
           ))}
         </ul>
         {view.prediction.caveats.map((item) => (
           <p className="app-muted" key={item}>
-            {item}
+            {studentRatingLabel(item)}
           </p>
         ))}
         {view.prediction.reasoningSteps?.length ? (
@@ -351,8 +356,8 @@ export function LivePanel({ view }: { view: Extract<StrategyView, { status: "liv
             <ol>
               {view.prediction.reasoningSteps.map((step) => (
                 <li key={step.step}>
-                  <strong>{step.title}</strong>
-                  <small>{step.detail}</small>
+                  <strong>{studentRatingLabel(step.title)}</strong>
+                  <small>{studentRatingLabel(step.detail)}</small>
                 </li>
               ))}
             </ol>
@@ -378,7 +383,7 @@ export function LivePanel({ view }: { view: Extract<StrategyView, { status: "liv
                 {view.allianceBreakdown.citations.map((citation) => (
                   <li key={citation.matchKey}>
                     <span className="app-badge good">Event</span>
-                    <span>{citation.summary.replace(/^FACT\s*/, "")}</span>
+                    <span>{studentRatingLabel(citation.summary.replace(/^FACT\s*/, ""))}</span>
                   </li>
                 ))}
               </ul>
@@ -394,7 +399,7 @@ export function LivePanel({ view }: { view: Extract<StrategyView, { status: "liv
         </header>
         <ul className="strategy-considerations">
           {view.matchup.considerations.map((item) => (
-            <li key={item}>{item}</li>
+            <li key={item}>{studentRatingLabel(item)}</li>
           ))}
         </ul>
         <h3>Opponent tendencies</h3>
@@ -412,7 +417,7 @@ export function LivePanel({ view }: { view: Extract<StrategyView, { status: "liv
                     ))}
                   </span>
                 ) : null}
-                <small>{item.evidence.join(" ")}</small>
+                <small>{item.evidence.map(studentRatingLabel).join(" ")}</small>
               </li>
             ))}
           </ul>

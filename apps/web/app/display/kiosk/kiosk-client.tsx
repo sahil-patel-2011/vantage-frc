@@ -19,6 +19,7 @@ import {
   type DisplaySnapshot,
 } from "../../../lib/display";
 import { predictionWinDisplay } from "../../../lib/strategy/prediction-display";
+import { studentRatingLabel } from "../../../lib/ui/student-rating-label";
 
 export default function KioskClient({
   params,
@@ -220,7 +221,7 @@ export default function KioskClient({
                 <span>TOP FACTORS</span>
                 {(prediction.keyFactors ?? []).slice(0, 3).map((factor) => (
                   <small key={factor.name}>
-                    {factor.impact} · {factor.name}
+                    {factor.impact} · {studentRatingLabel(factor.name)}
                   </small>
                 ))}
                 {!(prediction.keyFactors ?? []).length ? (
