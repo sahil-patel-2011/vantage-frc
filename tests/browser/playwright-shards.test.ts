@@ -7,6 +7,8 @@ import {
   DEFAULT_PLAYWRIGHT_SHARDS,
   evictPlaywrightNextDist,
   looksLikePlaywrightFileFilter,
+  playwrightFileFilterArgs,
+  playwrightIsolatedSpecFiles,
   playwrightNextDistDir,
   playwrightShardCount,
 } from "./playwright-shards";
@@ -31,6 +33,23 @@ describe("playwright shards", () => {
     expect(playwrightShardCount(["--grep", "Match debrief"], {})).toBe(
       DEFAULT_PLAYWRIGHT_SHARDS,
     );
+    expect(playwrightFileFilterArgs(["--grep", "Match debrief", "leftover-setup-student.spec.ts"])).toEqual([
+      "leftover-setup-student.spec.ts",
+    ]);
+    expect(
+      playwrightIsolatedSpecFiles([
+        "tests/browser/leftover-setup-student.spec.ts",
+        "tests/browser/leftover-debrief-alumni.spec.ts",
+      ]),
+    ).toEqual([
+      "tests/browser/leftover-setup-student.spec.ts",
+      "tests/browser/leftover-debrief-alumni.spec.ts",
+    ]);
+    expect(playwrightIsolatedSpecFiles(["tests/browser/leftover-setup-student.spec.ts"])).toEqual([]);
+    expect(playwrightIsolatedSpecFiles(["tests/browser", "leftover"])).toEqual([]);
+    expect(
+      playwrightIsolatedSpecFiles(["--shard=1/2", "a.spec.ts", "b.spec.ts"]),
+    ).toEqual([]);
   });
 
   it("evicts only a relative Next dist directory", () => {

@@ -8,8 +8,10 @@ import { fileURLToPath } from "node:url";
  * every student board into the same heap. Each shard starts a fresh
  * `next dev` against NEXT_DIST_DIR=.next-pw, then that cache is evicted.
  *
- * File-filter args (a spec path or name) skip sharding. Extra flags such
- * as `--reporter=line,html` still shard. PLAYWRIGHT_SHARDS overrides the
+ * File-filter args (a spec path or name) skip numbered sharding. Two or
+ * more `*.spec.ts` paths each get their own sequential process so one
+ * Next 16 heap does not compile every named board. Extra flags such as
+ * `--reporter=line,html` still shard. PLAYWRIGHT_SHARDS overrides the
  * default of 4. PLAYWRIGHT_BASE_URL attach mode never deletes a cache.
  */
 
@@ -36,7 +38,8 @@ const FLAGS_WITH_VALUES = new Set([
   "--shard",
 ]);
 
-export function looksLikePlaywrightFileFilter(args: readonly string[]): boolean {
+export function playwrightFileFilterArgs(args: readonly string[]): string[] {
+  const files: string[] = [];
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
     if (arg.startsWith("-")) {
@@ -44,9 +47,21 @@ export function looksLikePlaywrightFileFilter(args: readonly string[]): boolean 
       if (FLAGS_WITH_VALUES.has(name) && !arg.includes("=")) index += 1;
       continue;
     }
-    return true;
+    files.push(arg);
   }
-  return false;
+  return files;
+}
+
+export function looksLikePlaywrightFileFilter(args: readonly string[]): boolean {
+  return playwrightFileFilterArgs(args).length > 0;
+}
+
+export function playwrightIsolatedSpecFiles(args: readonly string[]): string[] {
+  if (args.some((arg) => arg === "--shard" || arg.startsWith("--shard="))) return [];
+  const files = playwrightFileFilterArgs(args);
+  if (files.length < 2) return [];
+  if (!files.every((file) => /\.spec\.[cm]?[jt]s$/.test(file))) return [];
+  return files;
 }
 
 export function playwrightShardCount(
@@ -75,10 +90,29 @@ export function runPlaywrightShards(
   extra: readonly string[],
   env: NodeJS.ProcessEnv = process.env,
 ): number {
-  const shards = playwrightShardCount(extra, env);
   const dist = playwrightNextDistDir(env);
   const webRoot = join(repoRoot(), "apps/web");
   const attach = Boolean(env.PLAYWRIGHT_BASE_URL);
+  const isolated = attach ? [] : playwrightIsolatedSpecFiles(extra);
+  if (isolated.length > 0) {
+    const flags = extra.filter((arg) => !isolated.includes(arg));
+    let failed = 0;
+    for (const spec of isolated) {
+      evictPlaywrightNextDist(webRoot, dist);
+      const result = spawnSync("npx", ["playwright", "test", spec, ...flags], {
+        cwd: repoRoot(),
+        stdio: "inherit",
+        env: { ...env, NEXT_DIST_DIR: dist },
+      });
+      const code = result.status ?? 1;
+      if (code !== 0) {
+        failed = code;
+        break;
+      }
+    }
+    return failed;
+  }
+  const shards = playwrightShardCount(extra, env);
   let failed = 0;
   for (let index = 1; index <= shards; index += 1) {
     if (!attach) evictPlaywrightNextDist(webRoot, dist);

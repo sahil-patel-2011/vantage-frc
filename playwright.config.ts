@@ -56,7 +56,10 @@ function liveNextDevLock(): { origin: string; port: number } | null {
 
 process.env.NEXT_DIST_DIR ??= ".next-pw";
 
-const explicitBase = process.env.PLAYWRIGHT_BASE_URL?.replace(/\/$/, "") || "";
+// A worker re-import sees PLAYWRIGHT_BASE_URL after the parent set it for
+// cookies. That is not attach mode — PLAYWRIGHT_OWNED_SERVER marks our server.
+const ownedServer = process.env.PLAYWRIGHT_OWNED_SERVER === "1";
+const explicitBase = ownedServer ? "" : process.env.PLAYWRIGHT_BASE_URL?.replace(/\/$/, "") || "";
 const lock = shouldReuseLiveNextDevLock() ? liveNextDevLock() : null;
 const origin = explicitBase || lock?.origin || playwrightOrigin();
 const port = lock?.port ?? playwrightPort();
@@ -67,6 +70,7 @@ const startWebServer = !explicitBase;
 
 // session.ts reads PLAYWRIGHT_BASE_URL for the fixture cookie URL.
 process.env.PLAYWRIGHT_BASE_URL = origin;
+if (startWebServer) process.env.PLAYWRIGHT_OWNED_SERVER = "1";
 
 if (explicitBase) {
   console.log(`Playwright attaching to ${origin} (PLAYWRIGHT_BASE_URL, no webServer)`);
