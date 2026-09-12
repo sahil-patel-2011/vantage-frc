@@ -8,6 +8,9 @@ const WEB = join(__dirname, "..", "..");
  * Leftover student chrome: Code coach, Discord, Support, Team profile,
  * Chat limits, and Team AI keys / memory / policy still used
  * className="primary-action". Discord also printed lowercase setup required.
+ * leftover-ai-keys extras stay. leftover-ai-keys-openai extras stay.
+ * leftover-opening-join Opening API keys stays. leftover-hub API keys stays.
+ * leftover-offline AI keys stays. leftover-help Your AI keys stays.
  */
 const FILES = [
   "app/code/code-coach-panel.tsx",

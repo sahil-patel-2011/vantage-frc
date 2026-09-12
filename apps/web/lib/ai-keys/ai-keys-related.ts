@@ -143,7 +143,7 @@ export function aiKeysBillingNote(tier: string | null | undefined): { title: str
   if (normalized === "free") {
     return {
       title: "Free · hosted free models or your keys",
-      body: "Free teams use the platform OpenRouter free pool for chat unless you paste your own OpenAI, Anthropic, Google, or OpenRouter key. A local OpenAI-compatible relay still works. Paid Individual/Team plans use hosted Anthropic (Sonnet, or Opus for CAD/code).",
+      body: "Free teams use the platform OpenRouter free pool for chat unless you paste your own OpenAI, Anthropic, Google, or OpenRouter key. A local connector still works. Paid Individual/Team plans use hosted Anthropic (Sonnet, or Opus for CAD/code).",
     };
   }
   return {

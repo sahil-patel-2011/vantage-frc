@@ -23,7 +23,8 @@ const WEB = join(__dirname, "..", "..");
  * stay off these FILES. leftover-student-buttons extras stay off these FILES.
  * leftover-student-copy extras stay. leftover-invites extras stay. leftover-admin
  * skip-list Global Team Manager stays. leftover-my-day Loading My Day stays.
- * leftover-account-api-related leak regex stays. Internal webhookUrl stays.
+ * leftover-account-api-related leak regex stays. leftover-ai-keys-openai extras
+ * stay off leftover-api FILES. Internal webhookUrl stays.
  */
 const FILES = ["app/api/team/discord/route.ts", "app/api/team/slack/route.ts"] as const;
 
