@@ -36,7 +36,7 @@ async function persistEpaTrendSnapshot(orgHint: string, data: EpaTrendAlertsView
     await putFeatureSnapshot("epa-trend", cacheOrg, data);
     if (!orgHint) await putFeatureSnapshot("epa-trend", "_", data);
   } catch {
-    // Live EPA Trend Alerts already painted; IndexedDB is best-effort.
+    // Live Rating alerts already painted; IndexedDB is best-effort.
   }
 }
 
@@ -120,10 +120,10 @@ function EpaShell({
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / EPA Trend Alerts"}
+            {" / Rating alerts"}
           </>
         }
-        title="EPA Trend Alerts"
+        title="Rating alerts"
         description={description}
       >
         <EpaRelatedStrip orgId={orgId} />
@@ -206,7 +206,7 @@ export default function EpaTrendAlertsClient() {
         if (!response.ok || !isEpaTrendAlertsView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh EPA Trend Alerts. Showing the last copy on this device.");
+            setError("Could not refresh Rating alerts. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -220,7 +220,7 @@ export default function EpaTrendAlertsClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh EPA Trend Alerts. Showing the last copy on this device.");
+          setError("Could not refresh Rating alerts. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -290,7 +290,7 @@ export default function EpaTrendAlertsClient() {
   if (shell === "loading") {
     return (
       <EpaShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="EPA Trend Alerts" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Rating alerts" fromCache={fromCache} cachedAt={cachedAt} />
       </EpaShell>
     );
   }
@@ -304,7 +304,7 @@ export default function EpaTrendAlertsClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="EPA Trend Alerts" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Rating alerts" fromCache={fromCache} cachedAt={cachedAt} />
       </EpaShell>
     );
   }
@@ -316,7 +316,7 @@ export default function EpaTrendAlertsClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="EPA Trend Alerts" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Rating alerts" fromCache={fromCache} cachedAt={cachedAt} />
       </EpaShell>
     );
   }
@@ -324,7 +324,7 @@ export default function EpaTrendAlertsClient() {
   if (view?.status !== "live") {
     return (
       <EpaShell description={shellCopy.description} orgId={orgId} shell="setup">
-        <OfflineBanner feature="EPA Trend Alerts" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Rating alerts" fromCache={fromCache} cachedAt={cachedAt} />
       </EpaShell>
     );
   }
@@ -335,11 +335,11 @@ export default function EpaTrendAlertsClient() {
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / EPA Trend Alerts"}
+            {" / Rating alerts"}
           </>
         }
-        title="EPA Trend Alerts"
-        description="Watch teams you might face and get flagged when their reference EPA moves meaningfully between events. Cross-check Strategy and Opponent Watchlist."
+        title="Rating alerts"
+        description="Watch teams you might face and get flagged when their season rating moves meaningfully between events. Cross-check Strategy and Opponent Watchlist."
       >
         <div className="epa-trend-alerts-header-actions">
           {relatedLinks.map((link) => (
@@ -349,7 +349,7 @@ export default function EpaTrendAlertsClient() {
           ))}
         </div>
       </PageHeader>
-      <OfflineBanner feature="EPA Trend Alerts" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Rating alerts" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -392,7 +392,7 @@ export default function EpaTrendAlertsClient() {
             <WatchlistPanel view={view} busy={busy} mutate={mutate} />
           </>
         ) : null}
-        <Panel className="epa-trend-alerts-tip" aria-label="EPA Trend Alerts tip">
+        <Panel className="epa-trend-alerts-tip" aria-label="Rating alerts tip">
           <span className="eyebrow">Grounding path</span>
           <p className="app-muted" style={{ marginTop: 8 }}>
             Keep{" "}
@@ -420,7 +420,7 @@ function SummaryTiles({
     { label: "High severity", value: formatEpaTrendMetric(summary.highSeverityCount, loaded) },
   ];
   return (
-    <section className="epa-trend-alerts-stats" aria-label="EPA Trend Alerts counts">
+    <section className="epa-trend-alerts-stats" aria-label="Rating alerts counts">
       {tiles.map((tile) => (
         <div key={tile.label}>
           <strong>{tile.value}</strong>
@@ -464,7 +464,7 @@ function WatchTeamForm({
     >
       <h2 style={{ margin: 0 }}>Add a team to the watchlist</h2>
       <p className="app-muted" style={{ margin: 0 }}>
-        Alerts use stored EPA between events for teams you watch.
+        Alerts use stored rating between events for teams you watch.
       </p>
       <FormGrid min={160}>
         <FormRow label="Team number">
@@ -505,8 +505,8 @@ function AlertsPanel({
         soft
         badge="No alerts"
         badgeTone="good"
-        title="No meaningful EPA swings right now"
-        description="Alerts appear here once a watched team's reference EPA moves enough between two events."
+        title="No meaningful rating swings right now"
+        description="Alerts appear here once a watched team's season rating moves enough between two events."
       />
     );
   }
@@ -523,7 +523,7 @@ function AlertsPanel({
                 {alert.nickname ? ` — ${alert.nickname}` : ""}
               </strong>
               <small className="app-muted" style={{ display: "block" }}>
-                {directionLabel(alert.direction)}: {alert.previousEpa} → {alert.latestEpa} EPA (
+                {directionLabel(alert.direction)}: {alert.previousEpa} → {alert.latestEpa} rating (
                 {pct(alert.percentChange)}) between {alert.previousEventName ?? alert.previousEventKey} and{" "}
                 {alert.latestEventName ?? alert.latestEventKey}
               </small>

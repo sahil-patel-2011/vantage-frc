@@ -1,4 +1,4 @@
-/* Soft-UI EPA Trend Alerts — .epa-trend-alerts-* + shared Soft-UI tokens. Never DEMO EPA metrics. */
+/* Soft-UI Rating alerts — .epa-trend-alerts-* + shared Soft-UI tokens. Never DEMO rating metrics. */
 .epa-trend-alerts-page{display:grid;gap:16px}
 .epa-trend-alerts-header-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
 .epa-trend-alerts-related{display:flex;flex-wrap:wrap;gap:8px}

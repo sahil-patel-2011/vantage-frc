@@ -342,7 +342,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/alliance-sim")) return "Alliance Sim";
   if (bare.startsWith("/briefing")) return "Pre-match briefing";
   if (bare.startsWith("/award-tracker")) return "Award Tracker";
-  if (bare.startsWith("/epa-trend-alerts")) return "EPA Trend Alerts";
+  if (bare.startsWith("/epa-trend-alerts")) return "Rating alerts";
   if (bare.startsWith("/ranking-projection")) return "Ranking projection";
   if (bare.startsWith("/rankings")) return "Rankings";
   if (bare.startsWith("/grant-report")) return "Grant Report";

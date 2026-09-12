@@ -248,13 +248,13 @@ export const SECTION_HELP: SectionHelpEntry[] = [
       "Sync reference data and collect scout entries first — strategy stays blank without them.",
       "Open Strategy for the matchup read and the factors behind it.",
       "Push conclusions into the pick list and match strategy cards.",
-      "Re-check after each block; EPA alerts flag teams whose form moved.",
+      "Re-check after each block; Rating alerts flag teams whose form moved.",
     ],
     tips: ["Every claim shows its source — if a factor has no citation, treat it as unsupported."],
     related: [
       { label: "Pick list", href: "/picklist-collab" },
       { label: "Alliance desk", href: "/alliance-selection-desk" },
-      { label: "EPA alerts", href: "/epa-trend-alerts" },
+      { label: "Rating alerts", href: "/epa-trend-alerts" },
     ],
   },
   {

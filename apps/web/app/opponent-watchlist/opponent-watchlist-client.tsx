@@ -350,7 +350,7 @@ export default function OpponentWatchlistClient() {
           </>
         }
         title="Opponent Watchlist"
-        description="Track opponent teams personally and get notified when their reference EPA or next scheduled match changes. Cross-check Strategy, EPA Trend Alerts, and Scouting."
+        description="Track opponent teams personally and get notified when their season rating or next scheduled match changes. Cross-check Strategy, Rating alerts, and Scouting."
       >
         <div className="opponent-watchlist-header-actions">
           {relatedLinks.map((link) => (
@@ -403,7 +403,7 @@ export default function OpponentWatchlistClient() {
             Watched teams sort earlier on{" "}
             <a href={lineupHref}>Lineup &amp; Coverage</a>. Keep{" "}
             <a href={strategyHref}>Strategy</a> picks grounded in scouted and reference metrics, pair{" "}
-            <a href={epaAlertsHref}>EPA Trend Alerts</a> for event-to-event swings, and confirm field
+            <a href={epaAlertsHref}>Rating alerts</a> for event-to-event swings, and confirm field
             notes in <a href={scoutingHref}>Scouting</a>
           </p>
         </Panel>
@@ -421,7 +421,7 @@ function SummaryTiles({
 }) {
   const tiles = [
     { label: "Watched teams", value: formatOpponentWatchlistMetric(summary.totalWatched, loaded) },
-    { label: "EPA alerts", value: formatOpponentWatchlistMetric(summary.epaAlerts, loaded) },
+    { label: "Rating alerts", value: formatOpponentWatchlistMetric(summary.epaAlerts, loaded) },
     { label: "Schedule alerts", value: formatOpponentWatchlistMetric(summary.scheduleAlerts, loaded) },
     { label: "Upcoming matches", value: formatOpponentWatchlistMetric(summary.upcomingMatches, loaded) },
   ];
@@ -446,8 +446,8 @@ function AlertsPanel({ view }: { view: LiveView }) {
         soft
         badge="No changes"
         badgeTone="good"
-        title="No EPA or schedule changes yet"
-        description="Alerts appear here once a watched team's reference EPA moves or their next match is scheduled or rescheduled."
+        title="No rating or schedule changes yet"
+        description="Alerts appear here once a watched team's season rating moves or their next match is scheduled or rescheduled."
       />
     );
   }
@@ -492,8 +492,8 @@ function WatchedTeams({
               </strong>
               <small className="app-muted" style={{ display: "block" }}>
                 {entry.current
-                  ? `EPA ${entry.current.epaTotal != null ? entry.current.epaTotal.toFixed(1) : "—"} · rank ${entry.current.rank ?? "—"} at ${entry.current.eventKey}`
-                  : "No reference EPA data yet"}
+                  ? `Rating ${entry.current.epaTotal != null ? entry.current.epaTotal.toFixed(1) : "—"} · rank ${entry.current.rank ?? "—"} at ${entry.current.eventKey}`
+                  : "No season rating data yet"}
               </small>
               <small className="app-muted" style={{ display: "block" }}>
                 {entry.nextMatch
@@ -581,7 +581,7 @@ function AddEntryForm({
     >
       <h2 style={{ margin: 0 }}>Watch a team</h2>
       <p className="app-muted" style={{ margin: 0 }}>
-        Alerts use reference EPA and scheduled matches for the teams you watch.
+        Alerts use season rating and scheduled matches for the teams you watch.
       </p>
       <FormGrid min={160}>
         <FormRow label="Team key" hint="e.g. frc254">
