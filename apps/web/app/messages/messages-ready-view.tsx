@@ -258,7 +258,7 @@ export function MessagesReadyView({
       <OfflineBanner feature="Chat" fromCache={fromCache} cachedAt={cachedAt} />
 
       {loading ? (
-        <EmptyState soft title="Loading…" aria-busy />
+        <EmptyState soft title="Opening Chat" aria-busy />
       ) : loadError ? (
         <MessagesLoadError
           loadError={loadError}
