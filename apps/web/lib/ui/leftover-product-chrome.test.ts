@@ -63,6 +63,7 @@ describe("leftover-product student chrome", () => {
       expect(src, rel).not.toMatch(/Hard cut-off/);
       expect(src, rel).not.toMatch(/VANTAGE \//);
       expect(src, rel).not.toMatch(/Hosted by Vantage/);
+      expect(src, rel).not.toMatch(/primary-action/);
       expect(src, rel).not.toMatch(/fetchFailed \|\| !view/);
     }
   });

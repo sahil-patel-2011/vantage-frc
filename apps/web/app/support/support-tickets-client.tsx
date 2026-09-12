@@ -362,9 +362,9 @@ export default function SupportTicketsClient() {
               placeholder="What you were doing, what you expected, and what happened instead. Include the URL if you can."
             />
           </label>
-          <button className="primary-action" type="submit" disabled={busy || !subject.trim() || !body.trim()}>
+          <Button variant="primary" type="submit" disabled={busy || !subject.trim() || !body.trim()}>
             {busy ? "Sending…" : "Submit ticket"}
-          </button>
+          </Button>
         </form>
       </section>
 

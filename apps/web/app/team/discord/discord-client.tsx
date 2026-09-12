@@ -490,17 +490,17 @@ export default function TeamDiscordClient({ orgId }: { orgId: string }) {
             Only messages with an object link (task, CAD, inventory, …) are mirrored — not a full chat dump.
           </small>
           <div className="team-discord-actions">
-            <button className="primary-action" type="submit" disabled={busy}>
+            <Button variant="primary" type="submit" disabled={busy}>
               {view.configured ? "Save connection" : "Connect Discord"}
-            </button>
+            </Button>
             {view.configured ? (
               <>
-                <button type="button" disabled={busy || !view.canPost} onClick={() => void run("test")}>
+                <Button variant="secondary" type="button" disabled={busy || !view.canPost} onClick={() => void run("test")}>
                   Send test
-                </button>
-                <button type="button" disabled={busy} onClick={() => void run("disconnect")}>
+                </Button>
+                <Button variant="secondary" type="button" disabled={busy} onClick={() => void run("disconnect")}>
                   Disconnect
-                </button>
+                </Button>
               </>
             ) : null}
           </div>
@@ -517,7 +517,7 @@ export default function TeamDiscordClient({ orgId }: { orgId: string }) {
           <ul className="team-discord-meta">
             <li>
               <span>Posting path</span>
-              <strong>{view.canPost ? "ready" : "setup required"}</strong>
+              <strong>{view.canPost ? "ready" : "Needs setup"}</strong>
             </li>
             <li>
               <span>Platform bot</span>
@@ -569,9 +569,9 @@ export default function TeamDiscordClient({ orgId }: { orgId: string }) {
                 placeholder="Shop opens at 5 — bring safety glasses."
               />
             </label>
-            <button
+            <Button
+              variant="primary"
               type="button"
-              className="primary-action"
               disabled={busy || !announceBody.trim() || !view.configured || !view.canPost}
               onClick={() =>
                 void run("announce", { title: announceTitle || "Announcement", message: announceBody }).then(() => {
@@ -581,7 +581,7 @@ export default function TeamDiscordClient({ orgId }: { orgId: string }) {
               }
             >
               Post to Discord
-            </button>
+            </Button>
           </div>
         </section>
       </div>

@@ -88,9 +88,9 @@ export function CodeCoachPanel({
               />
             </label>
             <footer className="cdc-actions">
-              <button type="button" className="primary-action" disabled={busy || !hasSource} onClick={runReview}>
+              <Button variant="primary" type="button" disabled={busy || !hasSource} onClick={runReview}>
                 Run risk review
-              </button>
+              </Button>
               <Button variant="secondary" type="button" disabled={busy || !hasSource} onClick={runPropose}>
                 Build proposal (diff)
               </Button>

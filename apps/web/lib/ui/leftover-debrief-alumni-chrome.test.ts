@@ -22,6 +22,7 @@ const FILES = [
   "lib/pit/pit-related.ts",
   "app/code/code-ready-view.tsx",
   "app/code/code-bugbot-panel.tsx",
+  "app/code/code-coach-panel.tsx",
   "app/team/sponsors/sponsors-client.tsx",
   "app/team/finance/finance-client.tsx",
 ] as const;
