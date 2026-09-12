@@ -8,9 +8,8 @@ import { expectPlainCopy } from "./copy-assertions";
 const WEB = join(__dirname, "..", "..");
 
 /**
- * Leftover student chrome not skip-list: Match debrief still said
- * VANTAGE / MATCH LOG + Setup required; Alumni still said
- * VANTAGE / ALUMNI NETWORK; Kickoff / Pit still badged Setup required.
+ * Leftover student chrome: Match debrief / Alumni mill prefix, Kickoff /
+ * Pit / Code / Sponsors / Finance Setup required and primary-action.
  */
 const FILES = [
   "app/match-debrief/match-debrief-client.tsx",

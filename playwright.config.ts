@@ -69,10 +69,8 @@ const startWebServer = !explicitBase;
 process.env.PLAYWRIGHT_BASE_URL = origin;
 
 if (explicitBase) {
-  // eslint-disable-next-line no-console
   console.log(`Playwright attaching to ${origin} (PLAYWRIGHT_BASE_URL, no webServer)`);
 } else if (lock) {
-  // eslint-disable-next-line no-console
   console.log(`Playwright reusing ${origin} via webServer.reuseExistingServer`);
 }
 

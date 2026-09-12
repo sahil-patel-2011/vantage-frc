@@ -6,16 +6,14 @@ const WEB = join(__dirname, "..", "..");
 
 /**
  * Skip-list boards may still say Setup required (admin, display, audit,
- * posture, and the multi-fetch code-client shell). Student product boards
- * say Needs setup.
+ * posture, security exports, and the multi-fetch code-client shell).
+ * Student product boards say Needs setup.
  */
 const SKIP = [
   "app/admin/",
   "app/display/",
   "app/team/audit/",
   "app/team/posture/",
-  "app/team/sponsors/",
-  "app/team/finance/",
   "app/team/security/",
   "app/code/code-client.tsx",
 ];
