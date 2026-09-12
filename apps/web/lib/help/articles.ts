@@ -350,7 +350,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "migrate",
     slug: "migrate",
-    title: "Import from other tools (Bring your season)",
+    title: "Import from other tools",
     summary:
       "One source at a time: calendars, scouting exports, hours, Trello, Notion, and your STIMS roster — preview real rows, then commit.",
     category: "getting-started",
@@ -445,7 +445,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "event-day-command",
     slug: "event-day-command",
-    title: "Event day and Command",
+    title: "Event day",
     summary:
       "Field-side command for the active event. Surfaces stay empty until schedule and ops data are real.",
     category: "competition",
@@ -487,7 +487,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "alliance-season",
     slug: "alliance-season",
-    title: "Alliance desk and Season plan",
+    title: "Alliance desk",
     summary:
       "Live pick board with scout evidence; season goals and milestones from real attendance and build tasks.",
     category: "competition",
@@ -1506,7 +1506,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "integrations",
     slug: "integrations",
-    title: "Connect TBA, Onshape, GitHub, and chat",
+    title: "Connect TBA",
     summary:
       "Settings → Connectors lists every integration. Connect stays available until a real credential is saved. Connected only appears when that save worked.",
     category: "integrations",
