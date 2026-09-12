@@ -9,7 +9,7 @@ test.beforeEach(async ({ context }) => {
 
 test("leftover student boards no longer print Setup required", async ({ page }) => {
   test.setTimeout(120_000);
-  const routes = ["/fmea", "/team/relays", "/alumni-network", "/start", "/subsystems", "/roadmap"];
+  const routes = ["/fmea", "/team/relays", "/alumni-network", "/start", "/subsystems", "/roadmap", "/code"];
   for (const route of routes) {
     await page.goto(route);
     await waitForLoadingGone(page);

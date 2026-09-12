@@ -6,7 +6,7 @@ const WEB = join(__dirname, "..", "..");
 
 /**
  * Skip-list boards may still say Setup required (admin, display, audit,
- * posture, sponsors, finance, code-client family). Student product boards
+ * posture, and the multi-fetch code-client shell). Student product boards
  * say Needs setup.
  */
 const SKIP = [
@@ -18,8 +18,6 @@ const SKIP = [
   "app/team/finance/",
   "app/team/security/",
   "app/code/code-client.tsx",
-  "app/code/code-bugbot-panel.tsx",
-  "app/code/code-ready-view.tsx",
 ];
 
 function collect(dir: string): string[] {

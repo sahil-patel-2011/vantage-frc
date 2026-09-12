@@ -21,6 +21,10 @@ const FILES = [
   "app/pit/page.tsx",
   "app/pit/pit-command-client.tsx",
   "lib/pit/pit-related.ts",
+  "app/code/code-ready-view.tsx",
+  "app/code/code-bugbot-panel.tsx",
+  "app/team/sponsors/sponsors-client.tsx",
+  "app/team/finance/finance-client.tsx",
 ] as const;
 
 describe("leftover Match debrief / Alumni / Kickoff / Pit student chrome", () => {

@@ -8,6 +8,8 @@ export default tseslint.config(
   {
     ignores: [
       "**/.next/**",
+      "**/.next-pw/**",
+      "**/.next-pw-*/**",
       "**/node_modules/**",
       "**/dist/**",
       "**/release/**",

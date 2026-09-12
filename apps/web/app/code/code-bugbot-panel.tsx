@@ -193,7 +193,7 @@ export function CodeBugbotPanel({
           {!orgId ? (
             <EmptyState
               soft
-              badge="Setup required"
+              badge="Needs setup"
               badgeTone="setup"
               title="Choose your team for Bugbot"
               description="Local pattern review is free. GitHub scans and both Bugbot modes need a team."
