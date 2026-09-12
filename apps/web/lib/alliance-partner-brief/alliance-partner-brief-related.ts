@@ -1,7 +1,7 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Alliance-Partner Brief (never DEMO partner metrics). */
+/** Soft-UI related surfaces for Partner brief (never DEMO partner metrics). */
 export const ALLIANCE_PARTNER_BRIEF_RELATED_LINKS = [
   { id: "strategy", label: "Strategy", kind: "hub" as const, tab: "strategy" },
   { id: "alliance-board", label: "Alliance board", kind: "path" as const, path: "/strategy/draft" },
@@ -26,7 +26,7 @@ export const ALLIANCE_PARTNER_BRIEF_RELATED_INCLUDE: AlliancePartnerBriefRelated
 ];
 
 /**
- * Soft-UI cross-links from Alliance-Partner Brief → Strategy / Alliance board / Scouting.
+ * Soft-UI cross-links from Partner brief → Strategy / Alliance board / Scouting.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function alliancePartnerBriefRelatedLinks(
@@ -76,7 +76,7 @@ export function shouldShowAlliancePartnerBriefSummaryTiles(finalizedCount: numbe
   return finalizedCount > 0;
 }
 
-/** Classify Alliance-Partner Brief Soft-UI shell — never invents DEMO partner metrics. */
+/** Classify Partner brief Soft-UI shell — never invents DEMO partner metrics. */
 export function classifyAlliancePartnerBriefShell(input: {
   loading: boolean;
   fetchFailed?: boolean;
@@ -97,7 +97,7 @@ export function alliancePartnerBriefShellCopy(kind: AlliancePartnerBriefShellKin
     case "loading":
       return {
         kind,
-        title: "Loading Alliance-Partner Brief…",
+        title: "Opening Partner brief",
         description:
           "Checking which team you are on and alliance boards.",
       };
@@ -105,7 +105,7 @@ export function alliancePartnerBriefShellCopy(kind: AlliancePartnerBriefShellKin
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Alliance-Partner Brief",
+        title: "Could not load Partner brief",
         description:
           "A network or server issue blocked the brief. Retry, or open Strategy / Alliance board / Scouting while it reloads.",
       };
@@ -136,7 +136,7 @@ export function alliancePartnerBriefShellCopy(kind: AlliancePartnerBriefShellKin
 }
 
 /**
- * Soft-UI next actions for Alliance-Partner Brief empty/setup shells.
+ * Soft-UI next actions for Partner brief empty/setup shells.
  * Points at Strategy / Alliance board / Scouting — never invents DEMO partner metrics.
  */
 export function alliancePartnerBriefNextActions(input: {
@@ -185,7 +185,7 @@ export function alliancePartnerBriefNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Finish membership setup so Alliance-Partner Brief can load.",
+        detail: "Finish membership setup so Partner brief can load.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
       },
@@ -214,7 +214,7 @@ export function alliancePartnerBriefNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Alliance-Partner Brief",
+        label: "Retry Partner brief",
         detail: "Reload real alliance and brief rows.",
         href: withOrgHref("/alliance-partner-brief", orgId),
         primary: true,

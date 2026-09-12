@@ -1,7 +1,7 @@
 import DefensePlannerClient from "./defense-planner-client";
 
 export const metadata = {
-  title: "Defense planner",
+  title: "Defense",
 };
 
 export default function DefensePlannerPage() {

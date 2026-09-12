@@ -122,10 +122,10 @@ function JustifierShell({
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Pick-list Justifier"}
+            {" / Justifier"}
           </>
         }
-        title="Pick-list Auto-Justifier"
+        title="Justifier"
         description={description}
       >
         <JustifierRelatedStrip orgId={orgId} />
@@ -212,7 +212,7 @@ export default function PicklistJustifierClient() {
         if (!response.ok || !isPicklistJustifierView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Pick-list Justifier. Showing the last copy on this device.");
+            setError("Could not refresh Justifier. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -226,7 +226,7 @@ export default function PicklistJustifierClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Pick-list Justifier. Showing the last copy on this device.");
+          setError("Could not refresh Justifier. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -298,7 +298,7 @@ export default function PicklistJustifierClient() {
   if (shell === "loading") {
     return (
       <JustifierShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Pick-list Justifier" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Justifier" fromCache={fromCache} cachedAt={cachedAt} />
       </JustifierShell>
     );
   }
@@ -312,7 +312,7 @@ export default function PicklistJustifierClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Pick-list Justifier" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Justifier" fromCache={fromCache} cachedAt={cachedAt} />
       </JustifierShell>
     );
   }
@@ -324,7 +324,7 @@ export default function PicklistJustifierClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Pick-list Justifier" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Justifier" fromCache={fromCache} cachedAt={cachedAt} />
       </JustifierShell>
     );
   }
@@ -332,7 +332,7 @@ export default function PicklistJustifierClient() {
   if (view?.status !== "live") {
     return (
       <JustifierShell description={shellCopy.description} orgId={orgId} shell="setup">
-        <OfflineBanner feature="Pick-list Justifier" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Justifier" fromCache={fromCache} cachedAt={cachedAt} />
       </JustifierShell>
     );
   }
@@ -343,11 +343,11 @@ export default function PicklistJustifierClient() {
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Pick-list Justifier"}
+            {" / Justifier"}
           </>
         }
-        title="Pick-list Auto-Justifier"
-        description="Source-cited rationale for every pick-list slot, and a contradiction guard that flags picks leaning on scouting your own official match record disagrees with. Cross-check Strategy, Collaborative Pick List, and Scouting."
+        title="Justifier"
+        description="Source-cited rationale for every pick-list slot, and a contradiction guard that flags picks leaning on scouting your own official match record disagrees with. Cross-check Strategy, Pick list, and Scouting."
       >
         <div className="picklist-justifier-header-actions">
           {view.pickLists.length > 0 ? (
@@ -372,7 +372,7 @@ export default function PicklistJustifierClient() {
           ))}
         </div>
       </PageHeader>
-      <OfflineBanner feature="Pick-list Justifier" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Justifier" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -383,7 +383,7 @@ export default function PicklistJustifierClient() {
       <JustifierNextActionsPanel actions={nextActions} />
 
       {shouldShowPicklistJustifierSummaryTiles(pickListCount) ? (
-        <section className="picklist-justifier-stats" aria-label="Pick-list Justifier counts">
+        <section className="picklist-justifier-stats" aria-label="Justifier counts">
           <div>
             <strong>{formatPicklistJustifierMetric(pickListCount, true)}</strong>
             <span className="app-muted" style={{ display: "block" }}>
@@ -423,7 +423,7 @@ export default function PicklistJustifierClient() {
         <div className="picklist-justifier-layout">
           <SummaryPanel view={view} busy={busy} mutate={mutate} />
           <EntriesList view={view} />
-          <Panel className="picklist-justifier-tip" aria-label="Pick-list Justifier tip">
+          <Panel className="picklist-justifier-tip" aria-label="Justifier tip">
             <span className="eyebrow">Grounding path</span>
             <p className="app-muted" style={{ marginTop: 8 }}>
               Adjust ranks in <a href={strategyHref}>Strategy</a>, deepen{" "}

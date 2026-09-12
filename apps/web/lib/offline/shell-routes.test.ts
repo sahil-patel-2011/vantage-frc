@@ -230,8 +230,8 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/alliance-selection-desk")).toBe("Alliance desk");
     expect(offlineCapableLabel("/print-farm")).toBe("Print farm");
     expect(offlineCapableLabel("/inventory")).toBe("Inventory");
-    expect(offlineCapableLabel("/defense-planner")).toBe("Defense planner");
-    expect(offlineCapableLabel("/picklist-collab")).toBe("Collaborative pick list");
+    expect(offlineCapableLabel("/defense-planner")).toBe("Defense");
+    expect(offlineCapableLabel("/picklist-collab")).toBe("Pick list");
     expect(offlineCapableLabel("/dossier")).toBe("Dossier");
     expect(offlineCapableLabel("/pit-repair-triage")).toBe("Repair triage");
     expect(offlineCapableLabel("/event-day-plan")).toBe("Event-day plan");
@@ -258,10 +258,10 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/counter-book")).toBe("Counter-book");
     expect(offlineCapableLabel("/intel")).toBe("Research");
     expect(offlineCapableLabel("/overnight-intel")).toBe("Overnight brief");
-    expect(offlineCapableLabel("/alliance-partner-brief")).toBe("Alliance-Partner Brief");
-    expect(offlineCapableLabel("/picklist-justifier")).toBe("Pick-list Justifier");
-    expect(offlineCapableLabel("/opponent-watchlist")).toBe("Opponent Watchlist");
-    expect(offlineCapableLabel("/alliance-sim")).toBe("Alliance Sim");
+    expect(offlineCapableLabel("/alliance-partner-brief")).toBe("Partner brief");
+    expect(offlineCapableLabel("/picklist-justifier")).toBe("Justifier");
+    expect(offlineCapableLabel("/opponent-watchlist")).toBe("Watchlist");
+    expect(offlineCapableLabel("/alliance-sim")).toBe("Alliance sim");
     expect(offlineCapableLabel("/briefing")).toBe("Pre-match briefing");
     expect(offlineCapableLabel("/award-tracker")).toBe("Award Tracker");
     expect(offlineCapableLabel("/epa-trend-alerts")).toBe("Rating alerts");

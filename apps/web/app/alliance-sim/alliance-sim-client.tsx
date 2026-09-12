@@ -99,7 +99,7 @@ export default function AllianceSimClient() {
         if (!response.ok || !isAllianceSimView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Alliance Sim. Showing the last copy on this device.");
+            setError("Could not refresh Alliance sim. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setLoadStatus(response.status);
@@ -117,7 +117,7 @@ export default function AllianceSimClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Alliance Sim. Showing the last copy on this device.");
+          setError("Could not refresh Alliance sim. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setLoadStatus(null);
@@ -166,10 +166,10 @@ export default function AllianceSimClient() {
         breadcrumbs={
           <>
             <a href={orgId ? `/competition?orgId=${encodeURIComponent(orgId)}` : "/competition"}>Competition</a>
-            {" / Alliance Sim"}
+            {" / Alliance sim"}
           </>
         }
-        title="Alliance Sim"
+        title="Alliance sim"
         description="Simulate a prospective playoff alliance: declare each robot's physical roles, find the optimal assignment, flag conflicts, and estimate win probability from real coverage."
       >
         {view?.status === "live" && view.scenarios.length > 0 ? (
@@ -188,7 +188,7 @@ export default function AllianceSimClient() {
           </label>
         ) : null}
       </PageHeader>
-      <OfflineBanner feature="Alliance Sim" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Alliance sim" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -226,7 +226,7 @@ export default function AllianceSimClient() {
           );
         })()
       ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your team." aria-busy />
+        <EmptyState title="Opening Alliance sim" description="Checking your team." aria-busy />
       ) : view.status === "setup_required" ? (
         <EmptyState badge="Needs setup" badgeTone="setup" title={view.message}>
           {view.steps[0] ? (

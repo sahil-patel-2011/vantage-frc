@@ -36,7 +36,7 @@ function setupSteps(orgId: string | null): WatchlistSetupStep[] {
     {
       id: "workspace",
       label: "Choose your team",
-      detail: "Choose your team to open Opponent Watchlist.",
+      detail: "Choose your team to open Watchlist.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {

@@ -43,7 +43,7 @@ function setupSteps(orgId: string | null): PicklistJustifierSetupStep[] {
     {
       id: "workspace",
       label: "Choose your team",
-      detail: "Choose your team to open Pick-list Justifier.",
+      detail: "Choose your team to open Justifier.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {

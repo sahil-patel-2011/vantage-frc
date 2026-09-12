@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "picklist-justifier",
-  title: "Pick-list Auto-Justifier",
+  title: "Justifier",
   route: "/picklist-justifier",
   apiRoute: "/api/picklist-justifier",
   hub: "Competition",

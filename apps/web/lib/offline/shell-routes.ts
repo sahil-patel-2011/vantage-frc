@@ -336,10 +336,10 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/counter-book")) return "Counter-book";
   if (bare === "/intel" || bare.startsWith("/intel/")) return "Research";
   if (bare.startsWith("/overnight-intel")) return "Overnight brief";
-  if (bare.startsWith("/alliance-partner-brief")) return "Alliance-Partner Brief";
-  if (bare.startsWith("/picklist-justifier")) return "Pick-list Justifier";
-  if (bare.startsWith("/opponent-watchlist")) return "Opponent Watchlist";
-  if (bare.startsWith("/alliance-sim")) return "Alliance Sim";
+  if (bare.startsWith("/alliance-partner-brief")) return "Partner brief";
+  if (bare.startsWith("/picklist-justifier")) return "Justifier";
+  if (bare.startsWith("/opponent-watchlist")) return "Watchlist";
+  if (bare.startsWith("/alliance-sim")) return "Alliance sim";
   if (bare.startsWith("/briefing")) return "Pre-match briefing";
   if (bare.startsWith("/award-tracker")) return "Award Tracker";
   if (bare.startsWith("/epa-trend-alerts")) return "Rating alerts";
@@ -414,8 +414,8 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/alliance-selection-desk")) return "Alliance desk";
   if (bare.startsWith("/print-farm")) return "Print farm";
   if (bare.startsWith("/inventory")) return "Inventory";
-  if (bare.startsWith("/defense-planner")) return "Defense planner";
-  if (bare.startsWith("/picklist-collab")) return "Collaborative pick list";
+  if (bare.startsWith("/defense-planner")) return "Defense";
+  if (bare.startsWith("/picklist-collab")) return "Pick list";
   if (bare.startsWith("/dossier")) return "Dossier";
   if (bare.startsWith("/event-day-plan")) return "Event-day plan";
   if (bare.startsWith("/field-reset-timer")) return "Field reset timer";

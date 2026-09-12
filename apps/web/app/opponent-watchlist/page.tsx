@@ -1,7 +1,7 @@
 import OpponentWatchlistClient from "./opponent-watchlist-client";
 
 export const metadata = {
-  title: "Opponent Watchlist",
+  title: "Watchlist",
 };
 
 export default function OpponentWatchlistPage() {

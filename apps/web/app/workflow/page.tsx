@@ -40,7 +40,7 @@ const stages = [
     id: "5",
     title: "Pick from your notes",
     detail:
-      "Alliance Selection Desk, pick list, pairwise ranking, and drive-team tags attach scout evidence to public facts. Your team’s scouting numbers stay blank until someone actually scouts.",
+      "Alliance desk, pick list, pairwise ranking, and drive-team tags attach scout evidence to public facts. Your team’s scouting numbers stay blank until someone actually scouts.",
   },
   {
     id: "6",

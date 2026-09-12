@@ -148,10 +148,10 @@ function DefenseShell({
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Defense planner"}
+            {" / Defense"}
           </>
         }
-        title="Defense planner"
+        title="Defense"
         description={description}
       >
         <DefenseRelatedStrip orgId={orgId} />
@@ -243,7 +243,7 @@ export default function DefensePlannerClient() {
         if (!response.ok || !isDefensePlannerView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Defense planner. Showing the last copy on this device.");
+            setError("Could not refresh Defense. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -258,7 +258,7 @@ export default function DefensePlannerClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Defense planner. Showing the last copy on this device.");
+          setError("Could not refresh Defense. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -334,7 +334,7 @@ export default function DefensePlannerClient() {
   if (shell === "loading") {
     return (
       <DefenseShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Defense planner" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Defense" fromCache={fromCache} cachedAt={cachedAt} />
       </DefenseShell>
     );
   }
@@ -348,7 +348,7 @@ export default function DefensePlannerClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Defense planner" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Defense" fromCache={fromCache} cachedAt={cachedAt} />
       </DefenseShell>
     );
   }
@@ -360,7 +360,7 @@ export default function DefensePlannerClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Defense planner" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Defense" fromCache={fromCache} cachedAt={cachedAt} />
       </DefenseShell>
     );
   }
@@ -368,7 +368,7 @@ export default function DefensePlannerClient() {
   if (view?.status !== "live") {
     return (
       <DefenseShell description={shellCopy.description} orgId={orgId} shell="setup">
-        <OfflineBanner feature="Defense planner" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Defense" fromCache={fromCache} cachedAt={cachedAt} />
       </DefenseShell>
     );
   }
@@ -379,10 +379,10 @@ export default function DefensePlannerClient() {
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Defense planner"}
+            {" / Defense"}
           </>
         }
-        title="Defense planner"
+        title="Defense"
         description="Weigh our mass and drivetrain against scouted opponent cycles to decide whether — and whom — to play defense. Cross-check Strategy, Scouting, and Counter-book."
       >
         <div className="defense-planner-header-actions">
@@ -413,7 +413,7 @@ export default function DefensePlannerClient() {
         </div>
       </PageHeader>
 
-      <OfflineBanner feature="Defense planner" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Defense" fromCache={fromCache} cachedAt={cachedAt} />
 
       {orgId && cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} compact /> : null}
 
@@ -426,7 +426,7 @@ export default function DefensePlannerClient() {
       {shell === "ready" ? <DefenseNextActionsPanel actions={nextActions} /> : null}
 
       {showTiles ? (
-        <Panel className="defense-planner-panel" aria-label="Defense planner counts">
+        <Panel className="defense-planner-panel" aria-label="Defense counts">
           <div className="defense-planner-stats">
             <StatTile label="Matchups" value={formatDefensePlannerMetric(matchupCount, true)} />
             <StatTile label="Profile" value={hasProfile ? "Set" : "—"} />

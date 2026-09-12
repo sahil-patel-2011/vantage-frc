@@ -15,7 +15,7 @@ Vantage is an invite-only Soft-UI competition operations platform for FIRST Robo
 
 ## Hubs and real module names
 ### Competition (${CANONICAL}/features · signed-in /competition)
-Primary tabs are four workbenches: Event day, Scouting, Strategy, and Pit. My Day sits under Event day; Forms under Scouting; Alliance Selection Desk under Strategy. Inner tabs replace the old More tools dump.
+Primary tabs are four workbenches: Event day, Scouting, Strategy, and Pit. My Day sits under Event day; Forms under Scouting; Alliance desk under Strategy. Inner tabs replace the old More tools dump.
 
 ### Team (signed-in /team)
 Calendar, Chat, People, Work, Knowledge. Season Planning is a Work tab; hours sit under People.
@@ -34,7 +34,7 @@ Default Soft-UI island apps: Home, Compete, Team, Business (customizable to four
 
 ## Data and honesty rules
 - Reference caches: official matches and season ratings with freshness stamps (setup may be required).
-- Scout facts feed Strategy, Pick clock, Alliance Selection Desk, Command / My Day, and Assistant — they do not invent missing numbers.
+- Scout facts feed Strategy, Pick clock, Alliance desk, Command / My Day, and Assistant — they do not invent missing numbers.
 - Marketing previews are CSS recreations of Soft-UI chrome, not live screenshots and not DEMO dashboards.
 
 ## Pricing detail

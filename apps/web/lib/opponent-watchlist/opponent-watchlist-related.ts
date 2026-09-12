@@ -1,7 +1,7 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Opponent Watchlist (never DEMO opponent metrics). */
+/** Soft-UI related surfaces for Watchlist (never DEMO opponent metrics). */
 export const OPPONENT_WATCHLIST_RELATED_LINKS = [
   { id: "strategy", label: "Strategy", tab: "strategy" },
   { id: "epa-trend-alerts", label: "Rating alerts", tab: "epa-trend-alerts" },
@@ -26,7 +26,7 @@ export const OPPONENT_WATCHLIST_RELATED_INCLUDE: OpponentWatchlistRelatedId[] = 
 ];
 
 /**
- * Soft-UI cross-links from Opponent Watchlist → Strategy / Rating alerts / Scouting.
+ * Soft-UI cross-links from Watchlist → Strategy / Rating alerts / Scouting.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function opponentWatchlistRelatedLinks(
@@ -75,7 +75,7 @@ export function shouldShowOpponentWatchlistSummaryTiles(entryCount: number): boo
   return entryCount > 0;
 }
 
-/** Classify Opponent Watchlist Soft-UI shell — never invents DEMO opponent metrics. */
+/** Classify Watchlist Soft-UI shell — never invents DEMO opponent metrics. */
 export function classifyOpponentWatchlistShell(input: {
   loading: boolean;
   fetchFailed?: boolean;
@@ -96,7 +96,7 @@ export function opponentWatchlistShellCopy(kind: OpponentWatchlistShellKind): Op
     case "loading":
       return {
         kind,
-        title: "Loading Opponent Watchlist…",
+        title: "Opening Watchlist",
         description:
           "Checking which team you are on and watched opponents.",
       };
@@ -104,7 +104,7 @@ export function opponentWatchlistShellCopy(kind: OpponentWatchlistShellKind): Op
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Opponent Watchlist",
+        title: "Could not load Watchlist",
         description:
           "A network or server issue blocked the watchlist. Retry, or open Strategy / Rating alerts / Scouting while it reloads.",
       };
@@ -135,7 +135,7 @@ export function opponentWatchlistShellCopy(kind: OpponentWatchlistShellKind): Op
 }
 
 /**
- * Soft-UI next actions for Opponent Watchlist empty/setup shells.
+ * Soft-UI next actions for Watchlist empty/setup shells.
  * Points at Strategy / Rating alerts / Scouting — never invents DEMO opponent metrics.
  */
 export function opponentWatchlistNextActions(input: {
@@ -182,7 +182,7 @@ export function opponentWatchlistNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Finish membership setup so Opponent Watchlist can load.",
+        detail: "Finish membership setup so Watchlist can load.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
       },
@@ -211,7 +211,7 @@ export function opponentWatchlistNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Opponent Watchlist",
+        label: "Retry Watchlist",
         detail: "Reload real watchlist rows.",
         href: withOrgHref("/opponent-watchlist", orgId),
         primary: true,

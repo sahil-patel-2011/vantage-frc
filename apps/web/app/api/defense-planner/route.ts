@@ -167,6 +167,6 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    return failMeteredAi(error, "Defense planner request failed");
+    return failMeteredAi(error, "Defense request failed");
   }
 }

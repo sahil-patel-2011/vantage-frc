@@ -487,7 +487,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "alliance-season",
     slug: "alliance-season",
-    title: "Alliance Selection Desk and Season Planning",
+    title: "Alliance desk and Season Planning",
     summary:
       "Live pick board with scout evidence; season goals and milestones from real attendance and build tasks.",
     category: "competition",
@@ -504,9 +504,9 @@ export const HELP_ARTICLES: HelpArticle[] = [
     relatedHref: "/alliance-selection-desk",
     sections: [
       {
-        heading: "Alliance Selection Desk",
+        heading: "Alliance desk",
         body: [
-          "Open Alliance Selection Desk from Competition → Strategy → Alliance desk (/competition?tab=alliance-selection-desk).",
+          "Open Alliance desk from Competition → Strategy → Alliance desk (/competition?tab=alliance-selection-desk).",
           "Use the live 8-alliance pick board, attach scout evidence, and watch official-record conflict flags against real event numbers.",
           "Drive-team export/print is available when you have a real board — ranks come from that board.",
         ],
@@ -1208,7 +1208,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "What the tiles mean",
         body: [
-          "Kit readiness and asset counts come from Media Kit profile fields and uploaded URLs.",
+          "Kit readiness and asset counts come from Media kit profile fields and uploaded URLs.",
           "Upcoming outreach and “tagged media” come from calendar events you scheduled.",
           "Media impact and people reached come only from Community Impact rows with category media.",
           "Content items are drafts and posts you created here. Reach stays empty until you log it.",

@@ -5,20 +5,20 @@ import { marketingPageMetadata } from "../../../lib/marketing/seo";
 export const metadata: Metadata = marketingPageMetadata({
   title: "Strategy & FRC Assistant — Vantage",
   description:
-    "Competition Strategy, Alliance Selection Desk, Pick clock, and FRC Assistant—sourced from official event numbers and your scouting.",
+    "Competition Strategy, Alliance desk, Pick clock, and FRC Assistant—sourced from official event numbers and your scouting.",
   path: "/features/strategy",
 });
 
 const assistantJobs = [
   { id: "01", title: "Strategy & playbooks", copy: "Drive-team briefs from real scout + official facts." },
-  { id: "02", title: "Matchups & picks", copy: "Alliance Selection Desk and Pick clock, for the event you are at." },
+  { id: "02", title: "Matchups & picks", copy: "Alliance desk and Pick clock, for the event you are at." },
   { id: "03", title: "Opponent history", copy: "How teams tend to auto, cycle, defend, climb." },
   { id: "04", title: "Robot capabilities", copy: "Pit notes beside public metrics—empty until scouted." },
 ] as const;
 
 const scoutFeeds = [
   { title: "Competition · Strategy", copy: "Playbooks from your scouting plus public facts — empty until someone scouts." },
-  { title: "Alliance Selection Desk", copy: "Shared 8-alliance board with scout evidence attached. Official-record conflict flags when cache exists." },
+  { title: "Alliance desk", copy: "Shared 8-alliance board with scout evidence attached. Official-record conflict flags when cache exists." },
   { title: "Pick clock & pairwise", copy: "Timed picks plus qualitative A-beats-B ranking. Empty until real taps." },
   { title: "Drive-team tags", copy: "Defense, climb, partner-fit labels on event robots — blank until applied." },
   { title: "Command / My Day", copy: "Same event context: next match, pit queue, bumper color from official alliance lists." },
@@ -34,7 +34,7 @@ export default function StrategyFeaturePage() {
           <p className="lux-kicker">Strategy</p>
           <h1>Strategy you can inspect.</h1>
           <p>
-            Competition Strategy, Alliance Selection Desk, pick clock, pairwise ranking, and FRC Assistant — sourced
+            Competition Strategy, Alliance desk, pick clock, pairwise ranking, and FRC Assistant — sourced
             from the official event cache and your scout entries. Empty until those exist.
           </p>
           <div className="actions">
