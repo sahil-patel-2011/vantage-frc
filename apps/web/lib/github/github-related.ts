@@ -4,7 +4,7 @@ import { withOrgHref } from "../nav/product-nav";
 /** Soft-UI related surfaces for GitHub robot-code context (never DEMO repos). */
 export const GITHUB_RELATED_LINKS = [
   { id: "pair", label: "Pair VS Code", kind: "path" as const, path: "/editor/pair" },
-  { id: "code", label: "Code Coach", kind: "build" as const, tab: "code" },
+  { id: "code", label: "Code", kind: "build" as const, tab: "code" },
   {
     id: "connections",
     label: "Connectors",
@@ -23,7 +23,7 @@ export type GitHubRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — Pair VS Code / Code Coach / Connectors. */
+/** Focused Soft-UI strip — Pair VS Code / Code / Connectors. */
 export const GITHUB_RELATED_INCLUDE: GitHubRelatedId[] = ["pair", "code", "connections"];
 
 /**
@@ -35,7 +35,7 @@ export function githubConnectionHref(orgId?: string | null): string {
 }
 
 /**
- * Soft-UI cross-links from GitHub context → Pair VS Code / Code Coach / Connectors.
+ * Soft-UI cross-links from GitHub context → Pair VS Code / Code / Connectors.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function githubRelatedLinks(
@@ -102,7 +102,7 @@ export function githubSetupSteps(orgId?: string | null): GitHubSetupStep[] {
     },
     {
       id: "code",
-      label: "Open Code Coach",
+      label: "Open Code",
       detail: "Local pattern review stays blank until you paste real robot source.",
       href: hubHref("/build", "code", orgId),
     },
@@ -167,7 +167,7 @@ export function githubShellCopy(kind: GitHubShellKind): GitHubEmptyCopy {
         badge: "Unavailable",
         title: "Could not load GitHub context",
         description:
-          "A network or server issue blocked the connection panel. Retry, or open Pair VS Code / Code Coach / Connectors while it reloads.",
+          "A network or server issue blocked the connection panel. Retry, or open Pair VS Code / Code / Connectors while it reloads.",
       };
     case "setup":
       return {
@@ -183,7 +183,7 @@ export function githubShellCopy(kind: GitHubShellKind): GitHubEmptyCopy {
         badge: "Not connected",
         title: "Link GitHub for this team",
         description:
-          "Code tools stay blank until an owner or admin connects GitHub. Pair VS Code, Code Coach, and Connectors stay nearby.",
+          "Code tools stay blank until an owner or admin connects GitHub. Pair VS Code, Code, and Connectors stay nearby.",
       };
     case "ready":
       return {
@@ -201,7 +201,7 @@ export function githubShellCopy(kind: GitHubShellKind): GitHubEmptyCopy {
 
 /**
  * Soft-UI next actions for GitHub empty/setup shells.
- * Points at Pair VS Code / Code Coach / Connectors — never invents DEMO repos.
+ * Points at Pair VS Code / Code / Connectors — never invents DEMO repos.
  */
 export function githubNextActions(input: {
   orgId?: string | null;
@@ -255,7 +255,7 @@ export function githubNextActions(input: {
       },
       {
         id: "code",
-        label: "Open Code Coach",
+        label: "Open Code",
         detail: "Local review still works with pasted source while you pick a default repo.",
         href: hubHref("/build", "code", orgId),
       },
@@ -277,7 +277,7 @@ export function githubNextActions(input: {
   return [
     {
       id: "code",
-      label: "Open Code Coach",
+      label: "Open Code",
       detail: "Hydrate optional file context from your default repo — still local rules only.",
       href: hubHref("/build", "code", orgId),
       primary: true,

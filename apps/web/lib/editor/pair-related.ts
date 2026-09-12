@@ -5,7 +5,7 @@ import { githubConnectionHref } from "../github/github-related";
 
 /** Soft-UI related surfaces for Pair VS Code (never DEMO pairing metrics). */
 export const PAIR_RELATED_LINKS = [
-  { id: "code", label: "Code Coach", kind: "build" as const, tab: "code" },
+  { id: "code", label: "Code", kind: "build" as const, tab: "code" },
   {
     id: "github",
     label: "GitHub context",
@@ -25,11 +25,11 @@ export type PairRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — Code Coach / GitHub / AI first. */
+/** Focused Soft-UI strip — Code / GitHub / AI first. */
 export const PAIR_RELATED_INCLUDE: PairRelatedId[] = ["code", "github", "chat"];
 
 /**
- * Soft-UI cross-links from Pair VS Code → Code Coach / GitHub / AI.
+ * Soft-UI cross-links from Pair VS Code → Code / GitHub / AI.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function pairRelatedLinks(
@@ -88,7 +88,7 @@ export function pairSetupSteps(orgId?: string | null): PairSetupStep[] {
     },
     {
       id: "code",
-      label: "Open Code Coach",
+      label: "Open Code",
       detail: "Local pattern review stays blank until you paste real robot source.",
       href: hubHref("/build", "code", orgId),
     },
@@ -156,7 +156,7 @@ export function pairShellCopy(kind: PairShellKind): PairEmptyCopy {
         badge: "Unavailable",
         title: "Could not load Pair VS Code",
         description:
-          "A network or server issue blocked pairing. Retry, or open Code Coach / GitHub / AI while it reloads.",
+          "A network or server issue blocked pairing. Retry, or open Code / GitHub / AI while it reloads.",
       };
     case "setup":
       return {
@@ -172,7 +172,7 @@ export function pairShellCopy(kind: PairShellKind): PairEmptyCopy {
         badge: "No editors paired yet",
         title: "Approve your first editor",
         description:
-          "Paired devices stay blank until you approve a real code from the Vantage VS Code extension. Cross-check Code Coach, GitHub, and AI.",
+          "Paired devices stay blank until you approve a real code from the Vantage VS Code extension. Cross-check Code, GitHub, and AI.",
       };
     default:
       return {
@@ -186,7 +186,7 @@ export function pairShellCopy(kind: PairShellKind): PairEmptyCopy {
 
 /**
  * Soft-UI next actions for Pair VS Code empty/setup shells.
- * Points at Code Coach / GitHub / AI — never invents DEMO pairing metrics.
+ * Points at Code / GitHub / AI — never invents DEMO pairing metrics.
  */
 export function pairNextActions(input: {
   orgId?: string | null;
@@ -217,7 +217,7 @@ export function pairNextActions(input: {
       },
       {
         id: "code",
-        label: "Open Code Coach",
+        label: "Open Code",
         detail: "Review robot source locally after pairing.",
         href: hubHref("/build", "code", orgId),
       },
@@ -239,7 +239,7 @@ export function pairNextActions(input: {
   return [
     {
       id: "code",
-      label: "Open Code Coach",
+      label: "Open Code",
       detail: `${deviceCount} paired editor${deviceCount === 1 ? "" : "s"} — review pasted source with local rules only.`,
       href: hubHref("/build", "code", orgId),
       primary: true,
@@ -247,7 +247,7 @@ export function pairNextActions(input: {
     {
       id: "github",
       label: "Connect GitHub",
-      detail: "Optional repo context for Code Coach.",
+      detail: "Optional repo context for Code.",
       href: githubConnectionHref(orgId),
     },
     {

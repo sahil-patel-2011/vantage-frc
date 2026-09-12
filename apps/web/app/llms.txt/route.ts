@@ -46,7 +46,7 @@ const body = `# Vantage
 - Product map: ${CANONICAL}/features
 - Strategy & Assistant: ${CANONICAL}/features/strategy
 - CAD agent: ${CANONICAL}/features/cad
-- Code Coach: ${CANONICAL}/features/code
+- Code: ${CANONICAL}/features/code
 - How it works: ${CANONICAL}/workflow
 - Desktop: ${CANONICAL}/desktop
 - For teams: ${CANONICAL}/for-teams

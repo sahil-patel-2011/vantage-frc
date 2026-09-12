@@ -83,10 +83,10 @@ describe("Code vs match / Software versions student chrome", () => {
     expect(offlineCapableLabel("/software-versions")).toBe("Software versions");
   });
 
-  it("header related stays Code Coach / Deploy log / CAD and CAN-bus map / Code / Tuning log", () => {
+  it("header related stays Code / Deploy log / CAD and CAN-bus map / Code / Tuning log", () => {
     const codePerf = readFileSync(join(WEB, "app/code-perf/code-perf-client.tsx"), "utf8");
     const versions = readFileSync(join(WEB, "app/software-versions/software-versions-client.tsx"), "utf8");
-    expect(codePerf).toMatch(/>\s*Code Coach\s*</);
+    expect(codePerf).toMatch(/>\s*Code\s*</);
     expect(codePerf).toMatch(/>\s*Deploy log\s*</);
     expect(codePerf).toMatch(/>\s*CAD\s*</);
     expect(versions).toMatch(/>\s*CAN-bus map\s*</);

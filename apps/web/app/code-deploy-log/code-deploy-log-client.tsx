@@ -369,7 +369,7 @@ export default function CodeDeployLogClient() {
           </>
         }
         title="Code Deploy Log"
-        description="Track which firmware/software build ran during which match or test session. Cross-check Code Coach, Code vs match, and CAD."
+        description="Track which firmware/software build ran during which match or test session. Cross-check Code, Code vs match, and CAD."
       >
         <div className="cdl-header-actions">
           {view.seasons.length > 0 ? (

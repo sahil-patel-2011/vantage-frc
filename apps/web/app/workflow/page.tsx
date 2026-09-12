@@ -46,7 +46,7 @@ const stages = [
     id: "6",
     title: "Keep the season",
     detail:
-      "Calendar, playbook, finance, CAD briefs, Code Coach, and exports stay in the same login after you load out.",
+      "Calendar, playbook, finance, CAD briefs, Code, and exports stay in the same login after you load out.",
   },
 ] as const;
 

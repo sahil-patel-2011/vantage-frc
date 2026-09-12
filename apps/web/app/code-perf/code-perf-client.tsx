@@ -61,7 +61,7 @@ function CodePerfRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related build tools">
       <Button as="a" variant="secondary" href={hubHref("/build", "code", orgId)}>
-        Code Coach
+        Code
       </Button>
       <Button as="a" variant="secondary" href={hubHref("/build", "code-deploy-log", orgId)}>
         Deploy log
@@ -84,7 +84,7 @@ function CodePerfNextActions({ orgId }: { orgId: string }) {
     },
     {
       id: "code",
-      label: "Open Code Coach",
+      label: "Open Code",
       detail: "Review robot code before you log a change here.",
       href: hubHref("/build", "code", orgId),
       primary: false,

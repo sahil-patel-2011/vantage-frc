@@ -6,7 +6,7 @@ import { withOrgHref } from "../nav/product-nav";
 export const READINESS_SCORE_RELATED_LINKS = [
   { id: "fmea", label: "Failure log", tab: "fmea" },
   { id: "inspection-copilot", label: "Inspection", tab: "inspection-copilot" },
-  { id: "code", label: "Code Coach", tab: "code" },
+  { id: "code", label: "Code", tab: "code" },
   { id: "cad", label: "CAD", tab: "cad" },
 ] as const;
 
@@ -92,7 +92,7 @@ export function readinessScoreSetupSteps(orgId?: string | null): ReadinessScoreS
     },
     {
       id: "code",
-      label: "Open Code Coach",
+      label: "Open Code",
       detail: "Code state stays honest and shows no sample deploy status.",
       href: hubHref("/build", "code", orgId),
     },
@@ -252,7 +252,7 @@ export function readinessScoreNextActions(input: {
       },
       {
         id: "code",
-        label: "Open Code Coach",
+        label: "Open Code",
         detail: "Code patterns are tracked separately from deploy status.",
         href: hubHref("/build", "code", orgId),
       },
@@ -284,7 +284,7 @@ export function readinessScoreNextActions(input: {
     },
     {
       id: "code",
-      label: "Open Code Coach",
+      label: "Open Code",
       detail: "Deploy and test code so subsystem code-version state advances.",
       href: hubHref("/build", "code", orgId),
     },

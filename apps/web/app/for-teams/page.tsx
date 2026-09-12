@@ -26,7 +26,7 @@ const roles = [
   },
   {
     title: "Build & programming",
-    copy: "Paste an Onshape or Fusion link, Code Coach, Bugbot that quotes source, Failure log, inspection, power and wiring.",
+    copy: "Paste an Onshape or Fusion link, Code, Bugbot that quotes source, Failure log, inspection, power and wiring.",
   },
   {
     title: "Business leads",

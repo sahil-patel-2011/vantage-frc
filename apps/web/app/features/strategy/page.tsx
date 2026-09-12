@@ -89,7 +89,7 @@ export default function StrategyFeaturePage() {
           <div>
             <h2>Related.</h2>
             <p>
-              <a href="/features/cad">CAD agent</a> · <a href="/features/code">Code Coach</a> ·{" "}
+              <a href="/features/cad">CAD agent</a> · <a href="/features/code">Code</a> ·{" "}
               <a href="/workflow">How it works</a>
             </p>
           </div>

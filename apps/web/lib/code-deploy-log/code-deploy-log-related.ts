@@ -3,7 +3,7 @@ import { withOrgHref } from "../nav/product-nav";
 
 /** Soft-UI related surfaces for Code Deploy Log (never DEMO firmware trails). */
 export const CODE_DEPLOY_LOG_RELATED_LINKS = [
-  { id: "code", label: "Code Coach", tab: "code" },
+  { id: "code", label: "Code", tab: "code" },
   { id: "code-perf", label: "Code vs match", tab: "code-perf" },
   { id: "cad", label: "CAD", tab: "cad" },
   { id: "readiness-score", label: "Readiness Score", tab: "readiness-score" },
@@ -78,7 +78,7 @@ export function codeDeployLogSetupSteps(orgId?: string | null): CodeDeployLogSet
     },
     {
       id: "code",
-      label: "Open Code Coach",
+      label: "Open Code",
       detail: "Review firmware patterns before logging a deploy.",
       href: hubHref("/build", "code", orgId),
     },
@@ -140,7 +140,7 @@ export function codeDeployLogShellCopy(kind: CodeDeployLogShellKind): CodeDeploy
         badge: "Unavailable",
         title: "Could not load Code Deploy Log",
         description:
-          "A network or server issue blocked the deploy trail. Retry, or open Code Coach while it reloads.",
+          "A network or server issue blocked the deploy trail. Retry, or open Code while it reloads.",
       };
     case "setup":
       return {
@@ -194,7 +194,7 @@ export function codeDeployLogNextActions(input: {
         },
         {
           id: "code",
-          label: "Open Code Coach",
+          label: "Open Code",
           detail: "Local pattern review stays available without inventing deploys.",
           href: hubHref("/build", "code", null),
         },
@@ -216,7 +216,7 @@ export function codeDeployLogNextActions(input: {
       },
       {
         id: "code",
-        label: "Open Code Coach",
+        label: "Open Code",
         detail: "Review code context before logging the first deploy.",
         href: hubHref("/build", "code", orgId),
       },
@@ -240,8 +240,8 @@ export function codeDeployLogNextActions(input: {
       },
       {
         id: "code",
-        label: "Open Code Coach",
-        detail: "Code Coach stays available while the log reloads.",
+        label: "Open Code",
+        detail: "Code stays available while the log reloads.",
         href: hubHref("/build", "code", orgId),
       },
       {
@@ -264,7 +264,7 @@ export function codeDeployLogNextActions(input: {
       },
       {
         id: "code",
-        label: "Open Code Coach",
+        label: "Open Code",
         detail: "Review firmware patterns before the first field deploy.",
         href: hubHref("/build", "code", orgId),
       },
@@ -296,7 +296,7 @@ export function codeDeployLogNextActions(input: {
     },
     {
       id: "code",
-      label: "Open Code Coach",
+      label: "Open Code",
       detail: "Pair deploy evidence with code review.",
       href: hubHref("/build", "code", orgId),
     },

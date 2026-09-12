@@ -44,7 +44,7 @@ export function aiChatRelatedLinks(
     { id: "scouting", label: "Scouting", href: hubHref("/competition", "scouting", orgId) },
     { id: "knowledge", label: "Knowledge", href: withOrgHref("/team?tab=knowledge", orgId) },
     { id: "governance", label: "Governance", href: hubHref("/ai", "governance", orgId) },
-    { id: "code", label: "Code Coach", href: hubHref("/ai", "code", orgId) },
+    { id: "code", label: "Code", href: hubHref("/ai", "code", orgId) },
   ];
   return all.filter((link) => !include || include.has(link.id));
 }

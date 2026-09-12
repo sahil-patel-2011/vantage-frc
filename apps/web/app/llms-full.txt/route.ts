@@ -24,7 +24,7 @@ Calendar, Chat, People, Work, Knowledge. Season Planning is a Work tab; hours si
 Overview, Money, Sponsors, Grants, Outreach — budget and orders are Money tabs; packages and partners are Sponsors tabs.
 
 ### Build (signed-in /build)
-Kickoff, CAD, Code, Robot. Bugbot is a Code tab; Failure log, batteries, and inspection are Robot tabs. CAD agent needs Connect Onshape or Fusion on this computer. Code Coach proposes human-approved diffs only.
+Kickoff, CAD, Code, Robot. Bugbot is a Code tab; Failure log, batteries, and inspection are Robot tabs. CAD agent needs Connect Onshape or Fusion on this computer. Code proposes human-approved diffs only.
 
 ### AI (signed-in /ai)
 Chat, Writer, Agent, Controls, Notes. API keys, memory, and usage live under Controls.
