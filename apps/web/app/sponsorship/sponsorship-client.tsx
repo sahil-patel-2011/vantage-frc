@@ -329,15 +329,15 @@ export default function SponsorshipClient({ embedded = false }: { embedded?: boo
         {!embedded ? (
           <PageHeader
             navPath="/sponsorship"
-            title="Sponsorship one-pagers"
+            title="Packages"
             description="Compose org-isolated value props for cash, parts, and mentorship."
           />
         ) : null}
         <OfflineBanner feature="Sponsorship" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
-          title={copy ? copy.title : "Loading sponsorship one-pagers…"}
-          description={copy ? copy.description : undefined}
+          title={copy ? copy.title : "Opening Packages"}
+          description={copy ? copy.description : "Checking your team."}
           aria-busy={!error}
         >
           {copy?.primary ? (
@@ -361,7 +361,7 @@ export default function SponsorshipClient({ embedded = false }: { embedded?: boo
         {!embedded ? (
           <PageHeader
             navPath="/sponsorship"
-            title="Sponsorship one-pagers"
+            title="Packages"
             description="Compose org-isolated value props for cash, parts, and mentorship."
           />
         ) : null}
@@ -382,7 +382,7 @@ export default function SponsorshipClient({ embedded = false }: { embedded?: boo
       {!embedded ? (
       <PageHeader
         navPath="/sponsorship"
-        title="Sponsorship one-pagers"
+        title="Packages"
         description="Build a one-pager for THIS team only — who you are, what you do, what you ask, and what sponsors get. Export PDF when ready."
       >
         <div className="svp-toolbar">

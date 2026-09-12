@@ -372,15 +372,15 @@ export default function RobotClient() {
         <header className="app-page-header">
           <div>
             <span className="breadcrumbs">Build / Robot</span>
-            <h1>Robot Blueprint</h1>
+            <h1>Blueprint</h1>
           </div>
         </header>
         <OfflineBanner feature="Robot" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           className="robot-empty"
           soft
-          title={failure ? failure.title : "Loading robot blueprint…"}
-          description={failure ? failure.description : undefined}
+          title={failure ? failure.title : "Opening Blueprint"}
+          description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >
           {failure?.primary ? (
@@ -404,7 +404,7 @@ export default function RobotClient() {
         <header className="app-page-header">
           <div>
             <span className="breadcrumbs">Build / Robot</span>
-            <h1>Robot Blueprint</h1>
+            <h1>Blueprint</h1>
             <p>Every subsystem linked to its CAD, code, strategy priority, and live ops data.</p>
           </div>
         </header>
@@ -427,7 +427,7 @@ export default function RobotClient() {
       <header className="app-page-header">
         <div>
           <span className="breadcrumbs">Build / Robot</span>
-          <h1>Robot Blueprint</h1>
+          <h1>Blueprint</h1>
           <p>
             The digital twin for {view.context.orgName ?? "your team"}
             {view.context.teamNumber ? ` (Team ${view.context.teamNumber})` : ""} — CAD, code, strategy, and ops per

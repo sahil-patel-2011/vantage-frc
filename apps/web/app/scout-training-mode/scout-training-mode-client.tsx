@@ -277,7 +277,7 @@ export default function ScoutTrainingModeClient() {
         {header}
         <OfflineBanner feature="Scout training mode" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
-          title={failure ? failure.title : "Loading…"}
+          title={failure ? failure.title : "Opening Training"}
           description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >

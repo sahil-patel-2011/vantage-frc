@@ -661,8 +661,8 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
           soft
           badge={fetchFailed ? "Setup" : undefined}
           badgeTone={fetchFailed ? "setup" : undefined}
-          title={failure ? failure.title : "Loading attendance…"}
-          description={failure ? failure.description : "Checking your team for real roll calls."}
+          title={failure ? failure.title : "Opening People"}
+          description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >
           {failure?.primary ? (
