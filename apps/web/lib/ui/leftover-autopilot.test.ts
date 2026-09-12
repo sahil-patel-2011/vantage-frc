@@ -13,6 +13,7 @@ const WEB = join(__dirname, "..", "..");
 const FILES = [
   "app/tuning-autopilot/tuning-autopilot-client.tsx",
   "app/tuning-autopilot/page.tsx",
+  "app/api/tuning-autopilot/route.ts",
   "lib/tuning-autopilot/tuning-autopilot-related.ts",
   "lib/manifests/tuning-autopilot.manifest.ts",
   "app/match-sim/match-sim-client.tsx",
@@ -27,6 +28,7 @@ describe("leftover student Autopilot / Simulator chrome", () => {
     for (const rel of FILES) {
       const src = readFileSync(join(WEB, rel), "utf8");
       expect(src, rel).not.toMatch(/Tuning Autopilot/);
+      expect(src, rel).not.toMatch(/tuning autopilot/i);
       expect(src, rel).not.toMatch(/Meeting Autopilot/);
       expect(src, rel).not.toMatch(/Match Simulator/);
     }

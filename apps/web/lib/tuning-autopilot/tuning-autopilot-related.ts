@@ -103,7 +103,7 @@ export function tuningAutopilotShellCopy(kind: TuningAutopilotShellKind): Tuning
     case "loading":
       return {
         kind,
-        title: "Loading tuning autopilot…",
+        title: "Opening Tuning advisor",
         description:
           "Checking which team you are on and logged tuning sessions.",
       };
@@ -111,7 +111,7 @@ export function tuningAutopilotShellCopy(kind: TuningAutopilotShellKind): Tuning
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load the tuning autopilot",
+        title: "Could not load Tuning advisor",
         description:
           "A network or server issue blocked tuning sessions. Retry, or open CAD / Failure log / Practice while it reloads.",
       };
