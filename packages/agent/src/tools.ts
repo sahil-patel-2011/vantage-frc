@@ -170,7 +170,7 @@ export function createVantageToolRegistry(): AIToolRegistry {
       tool({
         name: "web.fetch",
         description:
-          "HTTPS GET an allowlisted public FRC docs URL (FIRST, TBA, Statbotics, WPILib docs). SSRF-guarded; returns truncated text excerpt only. Soft-degrades when browse is disabled.",
+          "HTTPS GET an allowlisted public FRC docs URL (FIRST, official match results, season ratings, WPILib docs). SSRF-guarded; returns truncated text excerpt only. Soft-degrades when browse is disabled.",
         parseInput: (value) => {
           const input = object(value);
           const url = String(input.url ?? "").trim();
@@ -207,7 +207,7 @@ export function createVantageToolRegistry(): AIToolRegistry {
       tool({
         name: "scouting.team",
         description:
-          "Read organization-scoped match + pit scouting with TBA trust provenance and custom form field labels. Contradicted climb/mobility/foul fields are stripped from trustedPayload — never treat them as facts. Prefer trustedLabeled over raw keys when summarizing custom schemas.",
+          "Read organization-scoped match + pit scouting with official-result trust and custom form field labels. Contradicted climb/mobility/foul fields are stripped from trustedPayload — never treat them as facts. Prefer trustedLabeled over raw keys when summarizing custom schemas.",
         parseInput: teamInput,
         parseOutput: rowsOutput,
         async execute({ client, orgId, activeEventKey }, input) {
@@ -368,7 +368,7 @@ export function createVantageToolRegistry(): AIToolRegistry {
               matchKey: entry.matchKey,
               schemaId: entry.schemaId,
               fieldCatalog: catalog,
-              /** Raw scout payload — may include TBA-contradicted fields; prefer trustedPayload. */
+              /** Raw scout payload — may include official-result-contradicted fields; prefer trustedPayload. */
               payload: entry.payload,
               trustedPayload,
               trustedLabeled,
@@ -460,7 +460,7 @@ export function createVantageToolRegistry(): AIToolRegistry {
       tool({
         name: "strategy.match",
         description:
-          "Read stored match prediction + strategy plan, scout provenance, and TBA scout conflicts for alliance teams",
+          "Read stored match prediction + strategy plan, scout provenance, and official-result scout conflicts for alliance teams",
         parseInput: matchInput,
         parseOutput: objectOutput,
         async execute({ client, orgId }, input) {
@@ -521,8 +521,8 @@ export function createVantageToolRegistry(): AIToolRegistry {
             scoutTbaConflicts: scoutConflicts,
             trustNote:
               scoutConflicts.length > 0
-                ? "Scout fields listed in scoutTbaConflicts contradicted TBA official results — do not trust those values."
-                : "No TBA-contradicted scout fields recorded for alliance teams.",
+                ? "Scout fields listed below contradicted official match results — do not trust those values."
+                : "No official-result scout conflicts recorded for alliance teams.",
           };
         },
       }),
@@ -531,7 +531,7 @@ export function createVantageToolRegistry(): AIToolRegistry {
       tool({
         name: "strategy.private_edge",
         description:
-          "Read org-private pEPA, scout-field calibration vs TBA, opponent scout profiles, and scout-to-pit signals for the active event. Empty when no org scouts — never invents Statbotics clones.",
+          "Read org-private season ratings, scout-field calibration vs official results, opponent scout profiles, and scout-to-pit signals for the active event. Empty when no org scouts — never invents public season-rating clones.",
         parseInput: (value) => {
           const input = object(value);
           return {
@@ -2108,7 +2108,7 @@ export function createVantageToolRegistry(): AIToolRegistry {
       tool({
         name: "match_copilot.brief",
         description:
-          "Grounded read of the next-match brief: opponent scouting/EPA, our stored strategy plan, open FMEA risks, and battery fleet health fused into prioritized do-this callouts.",
+          "Grounded read of the next-match brief: opponent scouting and season ratings, our stored strategy plan, open failure risks, and battery fleet health fused into prioritized do-this callouts.",
         parseInput(value) {
           const input = object(value);
           const matchKey = String(input.matchKey ?? "").trim().slice(0, 100) || null;
@@ -2339,7 +2339,7 @@ export function createVantageToolRegistry(): AIToolRegistry {
       tool({
         name: "overnight_intel.latest_brief",
         description:
-          "Grounded read of the org's most recent overnight event-intel brief — new research findings, EPA movers, and new scouting for the active event.",
+          "Grounded read of the org's most recent overnight event-intel brief — new research findings, season-score movers, and new scouting for the active event.",
         parseInput(value) {
           const input = object(value);
           const eventKey = String(input.eventKey ?? "").trim().slice(0, 40) || null;
@@ -2372,7 +2372,7 @@ export function createVantageToolRegistry(): AIToolRegistry {
       tool({
         name: "picklist_justifier.entries",
         description:
-          "Read this org's generated pick-list justifications (source-cited rationale + TBA contradiction flags) for a pick list.",
+          "Read this org's generated pick-list justifications (source-cited rationale + official-result contradiction flags) for a pick list.",
         parseInput(value) {
           const input = object(value);
           const raw = String(input.pickListId ?? "").trim();
