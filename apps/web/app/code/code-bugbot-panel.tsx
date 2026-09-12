@@ -208,7 +208,7 @@ export function CodeBugbotPanel({
               badge="GitHub"
               badgeTone="setup"
               title="Connect a GitHub repo to scan"
-              description="Owners and admins link a PAT or OAuth app under Team admin. You can still paste a file below without GitHub."
+              description="Owners and admins connect GitHub under Team admin. You can still paste a file below without GitHub."
             >
               <Button as="a" variant="primary" href={githubHref}>
                 Connect GitHub

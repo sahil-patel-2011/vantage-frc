@@ -179,7 +179,7 @@ export function spareForecastNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before projecting spare exhaustion.",
+          detail: "Choose your team before projecting spare exhaustion.",
           href: "/workspace",
           primary: true,
         },

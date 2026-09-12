@@ -7,7 +7,7 @@
  *   checked against the app tree in help.test.ts).
  * - Pricing copy is composed from `@vantage/billing/catalog` so it cannot
  *   drift from what billing actually charges (also guarded by a test).
- * - Setup-required integrations are described as setup-required, never as
+ * - Integrations that are not ready yet are described as Needs setup, never as
  *   already working.
  */
 
@@ -384,7 +384,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         body: [
           "Every source shows the real rows it parsed before anything is written. An empty preview means the file had nothing readable.",
           "Rows the parser declined are always listed with the reason; a silent drop is treated as a bug.",
-          "Notion OAuth pull stays setup-required until the server env is configured — the page says so instead of failing.",
+          "Notion stays Needs setup until it is connected — the page says so instead of failing.",
         ],
       },
       {
@@ -977,7 +977,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "Connect GitHub first",
         body: [
-          "Owners and admins link a PAT or OAuth app under Team admin. Bugbot never requests workflow scope and never pushes.",
+          "Owners and admins connect GitHub under Team admin. Bugbot never requests workflow scope and never pushes.",
           "On Bugbot, pick the robot-code repo and optionally load one file, or scan the connected tree (.java, .cpp, .py, vendordeps).",
         ],
       },

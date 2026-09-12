@@ -147,7 +147,7 @@ export function counterBookNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before generating reports.",
+          detail: "Choose your team before generating reports.",
           href: "/workspace",
           primary: true,
         },

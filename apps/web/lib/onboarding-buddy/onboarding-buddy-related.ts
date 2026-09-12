@@ -209,7 +209,7 @@ export function onboardingBuddyNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before suggesting buddies.",
+          detail: "Choose your team before suggesting buddies.",
           href: "/workspace",
           primary: true,
         },

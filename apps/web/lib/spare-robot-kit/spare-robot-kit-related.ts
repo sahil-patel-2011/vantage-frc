@@ -187,7 +187,7 @@ export function spareRobotKitNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before matching bins to Failure log.",
+          detail: "Choose your team before matching bins to Failure log.",
           href: "/workspace",
           primary: true,
         },

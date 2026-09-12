@@ -170,7 +170,7 @@ export function failurePatternsNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before logging failures.",
+          detail: "Choose your team before logging failures.",
           href: "/workspace",
           primary: true,
         },

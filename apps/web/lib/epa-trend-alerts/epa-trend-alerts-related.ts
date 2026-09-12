@@ -152,7 +152,7 @@ export function epaTrendAlertsNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before tracking rating swings.",
+          detail: "Choose your team before tracking rating swings.",
           href: "/workspace",
           primary: true,
         },

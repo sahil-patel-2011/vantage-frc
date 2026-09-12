@@ -114,7 +114,7 @@ export function codeCoachNextActions(input: {
     {
       id: "github",
       label: "Connect GitHub",
-      detail: "Link a robot-code repo so Bugbot can scan it. PAT or OAuth — read-only, never a push.",
+      detail: "Link a robot-code repo so Bugbot can scan it. Connect GitHub — read-only, never a push.",
       href: githubConnectionHref(orgId),
     },
     {

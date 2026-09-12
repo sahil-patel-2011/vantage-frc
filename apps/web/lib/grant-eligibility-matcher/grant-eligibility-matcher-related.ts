@@ -202,7 +202,7 @@ export function grantEligibilityMatcherNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before matching grants.",
+          detail: "Choose your team before matching grants.",
           href: "/workspace",
           primary: true,
         },

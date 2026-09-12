@@ -149,7 +149,7 @@ export function sketchToBriefNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before logging whiteboard notes.",
+          detail: "Choose your team before logging whiteboard notes.",
           href: "/workspace",
           primary: true,
         },

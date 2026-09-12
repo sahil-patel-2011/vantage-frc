@@ -1,5 +1,6 @@
 import { withOrgHref } from "../nav/product-nav";
 import { githubConnectionHref } from "../github/github-related";
+import { ACCOUNT_GITHUB_COPY, ACCOUNT_GOOGLE_COPY } from "./account-api-related";
 
 /** Soft-UI connector ids on Account → Connections (never DEMO connected). */
 export type ConnectionConnectorId = "google" | "tba" | "onshape" | "discord" | "github" | "slack";
@@ -176,7 +177,7 @@ export function connectionsNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Pick a team before linking.",
+        detail: "Choose your team before linking.",
         href: "/workspace",
         primary: true,
       },
@@ -244,7 +245,7 @@ export function connectionsNextActions(input: {
     actions.push({
       id: "github",
       label: "Link GitHub",
-      detail: "Owners/admins connect OAuth or save an encrypted PAT in Team admin — AI context stays empty until linked.",
+      detail: ACCOUNT_GITHUB_COPY.emptyUnconfigured,
       href: githubConnectionHref(orgId),
       primary: actions.length === 0,
     });
@@ -254,7 +255,7 @@ export function connectionsNextActions(input: {
     actions.push({
       id: "google",
       label: "Google sign-in setup",
-      detail: "This deployment is missing Google OAuth env — use email OTP until an admin configures it.",
+      detail: ACCOUNT_GOOGLE_COPY.setupRequired,
       href: "/connectors",
     });
   }

@@ -150,7 +150,7 @@ export function matchCopilotNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before fusing the next match.",
+          detail: "Choose your team before fusing the next match.",
           href: "/workspace",
           primary: true,
         },

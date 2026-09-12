@@ -111,6 +111,17 @@ describe("connectionsNextActions", () => {
     expect(actions.find((a) => a.id === "onshape")?.detail).toMatch(/Ask a mentor/i);
     expect(actions.find((a) => a.id === "onshape")?.detail).not.toMatch(/ONSHAPE_OAUTH|Vercel|vantage-cad/i);
   });
+
+  it("asks for GitHub under Team admin without OAuth or PAT", () => {
+    const actions = connectionsNextActions({
+      orgId: "org-1",
+      googleReady: true,
+      tbaReady: true,
+      githubStatus: "empty",
+    });
+    expect(actions.find((a) => a.id === "github")?.detail).toMatch(/connect GitHub in Team admin/);
+    expect(actions.find((a) => a.id === "github")?.detail).not.toMatch(/OAuth|\bPAT\b/i);
+  });
 });
 
 describe("buildConnectionConnectors", () => {

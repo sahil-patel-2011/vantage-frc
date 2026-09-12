@@ -154,7 +154,7 @@ export function controlMapNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before mapping controls.",
+          detail: "Choose your team before mapping controls.",
           href: "/workspace",
           primary: true,
         },

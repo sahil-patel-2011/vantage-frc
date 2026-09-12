@@ -167,7 +167,7 @@ export function scoutAssistedCountNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before counting.",
+          detail: "Choose your team before counting.",
           href: "/workspace",
           primary: true,
         },
