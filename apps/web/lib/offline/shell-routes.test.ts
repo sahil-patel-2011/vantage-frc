@@ -358,7 +358,7 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/announcements")).toBe("Announcements");
     expect(offlineCapableLabel("/risks")).toBe("Risk register");
     expect(offlineCapableLabel("/risk-burndown")).toBe("Risk burndown");
-    expect(offlineCapableLabel("/subsystem-signoff")).toBe("Subsystem Sign-off");
+    expect(offlineCapableLabel("/subsystem-signoff")).toBe("Subsystem sign-off");
     expect(offlineCapableLabel("/prototype-tracker")).toBe("Prototypes");
     expect(offlineCapableLabel("/equipment-maintenance")).toBe("Equipment");
     expect(offlineCapableLabel("/notifications")).toBe("Notifications");
@@ -366,7 +366,7 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/incidents")).toBe("Safety incidents");
     expect(offlineCapableLabel("/roles")).toBe("Season roles");
     expect(offlineCapableLabel("/parts-catalog")).toBe("Parts catalog");
-    expect(offlineCapableLabel("/parts-relay")).toBe("Parts Relay");
+    expect(offlineCapableLabel("/parts-relay")).toBe("Parts relay");
     expect(offlineCapableLabel("/cad/setup")).toBe("CAD setup");
     expect(offlineCapableLabel("/cad/pair")).toBe("Pair this computer");
     expect(offlineCapableLabel("/cad/connections")).toBe("CAD connections");

@@ -1,4 +1,4 @@
-// FRC Parts Relay domain types. Pure data shapes — no I/O, no framework imports.
+// FRC Parts relay domain types. Pure data shapes — no I/O, no framework imports.
 // A "listing" is a team's own posted need or offer at an event. A "loan" is the actual
 // hand-off once two teams match — what went out (lending) or came in (borrowing), and
 // whether it has been returned.

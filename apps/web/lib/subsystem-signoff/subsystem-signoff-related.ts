@@ -3,7 +3,7 @@ import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 import type { SubsystemSignoffTier } from "./types";
 
-/** Focused Soft-UI Build strip when Subsystem Sign-off is open (never DEMO placeholders). */
+/** Focused Soft-UI Build strip when Subsystem sign-off is open (never DEMO placeholders). */
 export const SIGNOFF_BUILD_RELATED_INCLUDE: BuildRelatedId[] = [
   "fmea",
   "cad",
@@ -30,7 +30,7 @@ export type SignoffRelatedLink = {
   href: string;
 };
 
-/** Cross-links for Subsystem Sign-off Soft-UI (never DEMO readiness %). */
+/** Cross-links for Subsystem sign-off Soft-UI (never DEMO readiness %). */
 export function signoffRelatedLinks(
   orgId?: string | null,
   options?: { active?: SignoffRelatedId; include?: SignoffRelatedId[] },

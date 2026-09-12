@@ -87,7 +87,7 @@ export async function POST(request: Request) {
         case "save-subsystem":
         case "delete-subsystem":
           throw new Error(
-            "Readiness reads subsystems from the build tools. Edit the roster in Subsystems, weight in Weight Budget, current draw in Power Budget, and wiring/programming state in Subsystem Sign-off.",
+            "Readiness reads subsystems from the build tools. Edit the roster in Subsystems, weight in Weight Budget, current draw in Power Budget, and wiring/programming state in Subsystem sign-off.",
           );
         case "add-checklist-item": {
           const label = trimmedOrNull(body.label, 300);

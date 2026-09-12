@@ -382,7 +382,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/onboarding-buddy")) return "Onboarding buddy";
   if (bare.startsWith("/risk-burndown")) return "Risk burndown";
   if (bare.startsWith("/risks")) return "Risk register";
-  if (bare.startsWith("/subsystem-signoff")) return "Subsystem Sign-off";
+  if (bare.startsWith("/subsystem-signoff")) return "Subsystem sign-off";
   if (bare.startsWith("/prototype-tracker")) return "Prototypes";
   if (bare.startsWith("/equipment-maintenance")) return "Equipment";
   if (bare.startsWith("/cad/setup")) return "CAD setup";
@@ -452,7 +452,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/incidents")) return "Safety incidents";
   if (bare.startsWith("/roles")) return "Season roles";
   if (bare.startsWith("/parts-catalog")) return "Parts catalog";
-  if (bare.startsWith("/parts-relay")) return "Parts Relay";
+  if (bare.startsWith("/parts-relay")) return "Parts relay";
   if (bare.startsWith("/account")) return "Account";
   if (bare.startsWith("/alumni-network")) return "Alumni";
   if (bare.startsWith("/auto-routines")) return "Auto routines";
