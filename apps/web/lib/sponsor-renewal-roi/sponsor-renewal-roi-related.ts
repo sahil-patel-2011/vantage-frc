@@ -6,7 +6,7 @@ export const SPONSOR_RENEWAL_ROI_RELATED_LINKS = [
   { id: "sponsors", label: "Sponsor CRM", kind: "business" as const, tab: "sponsors" },
   { id: "sponsor-suite", label: "Sponsor Suite", kind: "business" as const, tab: "sponsor-suite" },
   { id: "sponsor-wall", label: "Sponsor Wall", kind: "business" as const, tab: "sponsor-wall" },
-  { id: "impact", label: "Community Impact", kind: "business" as const, tab: "impact" },
+  { id: "impact", label: "Impact", kind: "business" as const, tab: "impact" },
 ] as const;
 
 export type SponsorRenewalRoiRelatedId = (typeof SPONSOR_RENEWAL_ROI_RELATED_LINKS)[number]["id"];
@@ -84,7 +84,7 @@ export function sponsorRenewalRoiSetupSteps(orgId?: string | null): SponsorRenew
     },
     {
       id: "impact",
-      label: "Open Community Impact",
+      label: "Open Impact",
       detail: "Impact mentions feed renewal evidence.",
       href: hubHref("/business", "impact", orgId),
     },
@@ -200,7 +200,7 @@ export function sponsorRenewalRoiNextActions(input: {
         },
         {
           id: "impact",
-          label: "Open Community Impact",
+          label: "Open Impact",
           detail: "Impact mentions feed renewal evidence.",
           href: hubHref("/business", "impact", null),
         },
@@ -216,7 +216,7 @@ export function sponsorRenewalRoiNextActions(input: {
       },
       {
         id: "impact",
-        label: "Open Community Impact",
+        label: "Open Impact",
         detail: "Log impact mentions that name sponsors for evidence coverage.",
         href: hubHref("/business", "impact", orgId),
       },
@@ -246,7 +246,7 @@ export function sponsorRenewalRoiNextActions(input: {
       },
       {
         id: "impact",
-        label: "Open Community Impact",
+        label: "Open Impact",
         detail: "Impact stays available while renewal scores reload.",
         href: hubHref("/business", "impact", orgId),
       },
@@ -296,7 +296,7 @@ export function sponsorRenewalRoiNextActions(input: {
     },
     {
       id: "impact",
-      label: "Open Community Impact",
+      label: "Open Impact",
       detail: "Impact mentions naming sponsors raise evidence coverage.",
       href: hubHref("/business", "impact", orgId),
     },

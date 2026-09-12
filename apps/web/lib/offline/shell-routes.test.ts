@@ -275,7 +275,7 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/visit-invites")).toBe("Visit Invites");
     expect(offlineCapableLabel("/judge-sim")).toBe("Judge pitch");
     expect(offlineCapableLabel("/impact-essay")).toBe("Impact essay");
-    expect(offlineCapableLabel("/impact")).toBe("Community Impact");
+    expect(offlineCapableLabel("/impact")).toBe("Impact");
     expect(offlineCapableLabel("/fundraisers")).toBe("Fundraisers");
     expect(offlineCapableLabel("/orders")).toBe("Orders");
     expect(offlineCapableLabel("/business")).toBe("Business");

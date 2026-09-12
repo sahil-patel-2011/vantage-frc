@@ -61,7 +61,7 @@ export function composeEssay(
     return {
       text:
         "No logged outreach activities, build hours, sponsors, or team events were found for this season yet. " +
-        "Log records in Community Impact, Hours, Sponsors, and Team Events before drafting this essay so every " +
+        "Log records in Impact, Hours, Sponsors, and Team Events before drafting this essay so every " +
         "claim can be grounded in a real record.",
       citations: [],
     };

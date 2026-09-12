@@ -62,7 +62,7 @@ describe("Impact / community remaining student chrome", () => {
     expect(awards).toMatch(/fetchActiveOrgId/);
   });
 
-  it("Community Impact related strip is Awards · Outreach · Writer, not the funding hub", () => {
+  it("Impact related strip is Awards · Outreach · Writer, not the funding hub", () => {
     expect([...IMPACT_RELATED_INCLUDE]).toEqual(["awards", "evidence", "writer"]);
     const links = businessRelatedLinks("org-1", {
       active: "impact",
@@ -72,7 +72,7 @@ describe("Impact / community remaining student chrome", () => {
     expect([...AWARDS_RELATED_INCLUDE]).toEqual(["impact", "evidence", "writer"]);
   });
 
-  it("empty Community Impact and Awards keep one next action and skip grants/sponsors", () => {
+  it("empty Impact and Awards keep one next action and skip grants/sponsors", () => {
     const emptyImpact = impactNextActions({ orgId: "org-1", activityCount: 0 });
     expect(emptyImpact).toHaveLength(1);
     expect(emptyImpact[0]?.id).toBe("first-activity");
@@ -86,7 +86,7 @@ describe("Impact / community remaining student chrome", () => {
     expect(emptyAwards.map((a) => a.id)).not.toContain("sponsors");
   });
 
-  it("live Community Impact hides readiness and next-actions until activities exist", () => {
+  it("live Impact hides readiness and next-actions until activities exist", () => {
     const impact = readFileSync(join(WEB, "app/impact/impact-client.tsx"), "utf8");
     expect(impact).toMatch(/view\.summary\.totalEvents > 0 \? <ImpactNextActions/);
     expect(impact).toMatch(/view\.summary\.totalEvents > 0 \? <ReadinessPanel/);

@@ -3,7 +3,7 @@ import { withOrgHref } from "../nav/product-nav";
 
 /** Soft-UI related surfaces for Impact essay (never DEMO essay metrics). */
 export const IMPACT_ESSAY_RELATED_LINKS = [
-  { id: "impact", label: "Community Impact", kind: "business" as const, tab: "impact" },
+  { id: "impact", label: "Impact", kind: "business" as const, tab: "impact" },
   { id: "evidence", label: "Awards", kind: "business" as const, tab: "evidence" },
   { id: "writer", label: "Writer", kind: "ai" as const, tab: "writer" },
   { id: "award-tracker", label: "Award tracker", kind: "business" as const, tab: "award-tracker" },
@@ -18,7 +18,7 @@ export type ImpactEssayRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — Community Impact / Awards / Writer first. */
+/** Focused Soft-UI strip — Impact / Awards / Writer first. */
 export const IMPACT_ESSAY_RELATED_INCLUDE: ImpactEssayRelatedId[] = ["impact", "evidence", "writer"];
 
 /**
@@ -114,7 +114,7 @@ export function impactEssayShellCopy(kind: ImpactEssayShellKind): ImpactEssayEmp
         badge: "Unavailable",
         title: "Could not load Impact essay",
         description:
-          "A network or server issue blocked the essay generator. Retry, or open Community Impact / Awards / Writer while it reloads.",
+          "A network or server issue blocked the essay generator. Retry, or open Impact / Awards / Writer while it reloads.",
       };
     case "setup":
       return {
@@ -130,7 +130,7 @@ export function impactEssayShellCopy(kind: ImpactEssayShellKind): ImpactEssayEmp
         badge: "No grounded records",
         title: "Log outreach before drafting",
         description:
-          "Essay drafts stay blank until your team logs outreach, hours, sponsors, or events. Cross-check Community Impact, Awards, and Writer.",
+          "Essay drafts stay blank until your team logs outreach, hours, sponsors, or events. Cross-check Impact, Awards, and Writer.",
       };
     default:
       return {
@@ -170,7 +170,7 @@ export function impactEssayNextActions(input: {
         },
         {
           id: "impact",
-          label: "Open Community Impact",
+          label: "Open Impact",
           detail: "Outreach rows stay blank until your team logs them.",
           href: hubHref("/business", "impact", null),
         },
@@ -198,7 +198,7 @@ export function impactEssayNextActions(input: {
       },
       {
         id: "impact",
-        label: "Open Community Impact",
+        label: "Open Impact",
         detail: "Ground essay claims in real logged activities.",
         href: hubHref("/business", "impact", orgId),
       },
@@ -228,7 +228,7 @@ export function impactEssayNextActions(input: {
       },
       {
         id: "impact",
-        label: "Open Community Impact",
+        label: "Open Impact",
         detail: "Impact rows stay available while the essay generator reloads.",
         href: hubHref("/business", "impact", orgId),
       },
@@ -251,7 +251,7 @@ export function impactEssayNextActions(input: {
     return [
       {
         id: "impact",
-        label: "Log Community Impact",
+        label: "Log Impact",
         detail: "Outreach stays blank until real activities land.",
         href: hubHref("/business", "impact", orgId),
         primary: true,
@@ -284,7 +284,7 @@ export function impactEssayNextActions(input: {
     },
     {
       id: "impact",
-      label: "Open Community Impact",
+      label: "Open Impact",
       detail: "Keep outreach claims grounded in real logged activities.",
       href: hubHref("/business", "impact", orgId),
     },

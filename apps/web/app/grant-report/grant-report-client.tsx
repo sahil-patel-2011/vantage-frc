@@ -351,7 +351,7 @@ export default function GrantReportClient() {
           </>
         }
         title="Reports"
-        description="Post-grant impact reports generated from your team's own logged outreach and finance records. Cross-check Grants and Community Impact."
+        description="Post-grant impact reports generated from your team's own logged outreach and finance records. Cross-check Grants and Impact."
       >
         <div className="grant-report-header-actions">
           {view.seasons.length > 0 ? (
@@ -429,7 +429,7 @@ export default function GrantReportClient() {
           <p className="app-muted" style={{ marginTop: 8 }}>
             Mark awards in <a href={grantsHref}>Grants</a>, draft language in{" "}
             <a href={workbenchHref}>Grants workbench</a>, and ground outreach in{" "}
-            <a href={impactHref}>Community Impact</a>
+            <a href={impactHref}>Impact</a>
           </p>
         </Panel>
       </div>

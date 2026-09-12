@@ -5,7 +5,7 @@ import { withOrgHref } from "../nav/product-nav";
 export const MATCHING_GIFT_FINDER_RELATED_LINKS = [
   { id: "sponsors", label: "Sponsor CRM", kind: "business" as const, tab: "sponsors" },
   { id: "sponsor-renewal-roi", label: "Renewal ROI", kind: "business" as const, tab: "sponsor-renewal-roi" },
-  { id: "impact", label: "Community Impact", kind: "business" as const, tab: "impact" },
+  { id: "impact", label: "Impact", kind: "business" as const, tab: "impact" },
   { id: "fundraisers", label: "Fundraisers", kind: "business" as const, tab: "fundraisers" },
 ] as const;
 
@@ -90,7 +90,7 @@ export function matchingGiftFinderSetupSteps(orgId?: string | null): MatchingGif
     },
     {
       id: "impact",
-      label: "Open Community Impact",
+      label: "Open Impact",
       detail: "Impact stories can support matching-gift request letters.",
       href: hubHref("/business", "impact", orgId),
     },
@@ -200,7 +200,7 @@ export function matchingGiftFinderNextActions(input: {
         },
         {
           id: "impact",
-          label: "Open Community Impact",
+          label: "Open Impact",
           detail: "Impact stays available without inventing matches.",
           href: hubHref("/business", "impact", null),
         },
@@ -246,7 +246,7 @@ export function matchingGiftFinderNextActions(input: {
       },
       {
         id: "impact",
-        label: "Open Community Impact",
+        label: "Open Impact",
         detail: "Impact stays available while matching reloads.",
         href: hubHref("/business", "impact", orgId),
       },
@@ -270,7 +270,7 @@ export function matchingGiftFinderNextActions(input: {
       },
       {
         id: "impact",
-        label: "Open Community Impact",
+        label: "Open Impact",
         detail: "Impact stories can support HR request letters later.",
         href: hubHref("/business", "impact", orgId),
       },
@@ -302,7 +302,7 @@ export function matchingGiftFinderNextActions(input: {
     },
     {
       id: "impact",
-      label: "Open Community Impact",
+      label: "Open Impact",
       detail: "Impact mentions strengthen matching-gift request letters.",
       href: hubHref("/business", "impact", orgId),
     },

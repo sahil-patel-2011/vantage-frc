@@ -12,7 +12,7 @@ export const BUSINESS_RELATED_LINKS = [
   { id: "evidence", label: "Outreach", kind: "hub" as const, tab: "evidence" },
   { id: "fundraisers", label: "Fundraisers", kind: "path" as const, path: "/fundraisers" },
   { id: "costs", label: "Season costs", kind: "path" as const, path: "/costs" },
-  { id: "impact", label: "Community Impact", kind: "path" as const, path: "/impact" },
+  { id: "impact", label: "Impact", kind: "path" as const, path: "/impact" },
   { id: "awards", label: "Awards", kind: "path" as const, path: "/team/awards" },
   { id: "writer", label: "Writer", kind: "path" as const, path: "/writer" },
   { id: "grant-workbench", label: "Grant writing", kind: "path" as const, path: "/team/grants" },
@@ -113,10 +113,10 @@ export const SEASON_FINANCE_RELATED_INCLUDE: BusinessRelatedId[] = [
   "finance-ai",
 ];
 
-/** Community Impact Soft-UI strip (`/impact`) — Awards · Outreach · Writer. */
+/** Impact Soft-UI strip (`/impact`) — Awards · Outreach · Writer. */
 export const IMPACT_RELATED_INCLUDE: BusinessRelatedId[] = ["awards", "evidence", "writer"];
 
-/** Awards workbench Soft-UI strip (`/team/awards`) — Community Impact · Outreach · Writer. */
+/** Awards workbench Soft-UI strip (`/team/awards`) — Impact · Outreach · Writer. */
 export const AWARDS_RELATED_INCLUDE: BusinessRelatedId[] = ["impact", "evidence", "writer"];
 
 /** Cross-links for Business Soft-UI (never DEMO placeholders). */

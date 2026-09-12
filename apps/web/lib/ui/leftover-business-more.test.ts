@@ -14,7 +14,7 @@ const WEB = join(__dirname, "..", "..");
  * leftover-help-workspace Connect TBA, leftover-media Photos & video,
  * leftover-safety Safety incidents, leftover-scout-more Accuracy
  * family stay. leftover-ops-more Skills / Risk register / Burndown
- * stay. Community Impact related-strip labels stay. Routes stay.
+ * stay. leftover-community-impact Impact stays. Routes stay.
  * Do not invent a last-snapshot.
  */
 const FILES = [
@@ -66,7 +66,7 @@ describe("leftover student business-more chrome", () => {
     expect(eligibilityRelated).not.toMatch(/title="Loading/);
     expect(eligibilityRelated).toMatch(/Choose your team/);
     expect(eligibilityRelated).not.toMatch(/\bPick a team\b/);
-    expect(eligibilityRelated).toMatch(/Open Community Impact/);
+    expect(eligibilityRelated).toMatch(/Open Impact/);
     const renewal = readFileSync(
       join(WEB, "app/sponsor-renewal-roi/sponsor-renewal-roi-client.tsx"),
       "utf8",

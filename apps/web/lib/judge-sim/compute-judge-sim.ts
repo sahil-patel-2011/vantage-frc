@@ -36,7 +36,7 @@ function setupStepsFor(orgId: string | null): JudgeSimSetupStep[] {
     },
     {
       id: "impact",
-      label: "Open Community Impact",
+      label: "Open Impact",
       detail: "Outreach claims stay blank until real activities exist.",
       href: hubHref("/business", "impact", orgId),
     },

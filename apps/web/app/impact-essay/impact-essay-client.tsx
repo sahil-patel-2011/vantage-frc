@@ -158,7 +158,7 @@ function ImpactEssayShell({
           <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
         ) : null}
         {shell === "empty" ? (
-          <Button as="a" variant="primary" href={impactHref}>Open Community Impact</Button>
+          <Button as="a" variant="primary" href={impactHref}>Open Impact</Button>
         ) : null}
       </EmptyState>
       {shell === "ready" ? <ImpactEssayNextActionsPanel actions={actions} /> : null}
@@ -370,7 +370,7 @@ export default function ImpactEssayClient() {
           </>
         }
         title="Impact essay"
-        description="Draft the Impact and Engineering Inspiration essays strictly from your logged outreach, hours, sponsors, and events — every claim cites a real record. Cross-check Community Impact, Awards, and Writer."
+        description="Draft the Impact and Engineering Inspiration essays strictly from your logged outreach, hours, sponsors, and events — every claim cites a real record. Cross-check Impact, Awards, and Writer."
       >
         <div className="impact-essay-header-actions">
           {view.seasons.length > 0 ? (
@@ -460,7 +460,7 @@ export default function ImpactEssayClient() {
           description={shellCopy.description}
         >
           <Button as="a" variant="primary" href={impactHref}>
-            Open Community Impact
+            Open Impact
           </Button>
         </EmptyState>
       ) : null}
@@ -471,7 +471,7 @@ export default function ImpactEssayClient() {
         <Panel className="impact-essay-tip" aria-label="Impact essay tip">
           <span className="eyebrow">Grounding path</span>
           <p className="app-muted" style={{ marginTop: 8 }}>
-            Keep outreach facts in <a href={impactHref}>Community Impact</a>, upload packets in{" "}
+            Keep outreach facts in <a href={impactHref}>Impact</a>, upload packets in{" "}
             <a href={awardsHref}>Awards</a>, and pair language in <a href={writerHref}>Writer</a>.
           </p>
         </Panel>

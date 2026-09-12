@@ -5,7 +5,7 @@ import { withOrgHref } from "../nav/product-nav";
 export const GRANT_ELIGIBILITY_MATCHER_RELATED_LINKS = [
   { id: "grants", label: "Business · Grants", kind: "business" as const, tab: "grants" },
   { id: "grant-report", label: "Reports", kind: "business" as const, tab: "grant-report" },
-  { id: "impact", label: "Community Impact", kind: "business" as const, tab: "impact" },
+  { id: "impact", label: "Impact", kind: "business" as const, tab: "impact" },
   { id: "writer", label: "Writer", kind: "ai" as const, tab: "writer" },
 ] as const;
 
@@ -97,7 +97,7 @@ export function grantEligibilityMatcherSetupSteps(
     },
     {
       id: "impact",
-      label: "Open Community Impact",
+      label: "Open Impact",
       detail: "Demographics and impact narratives improve match accuracy.",
       href: hubHref("/business", "impact", orgId),
     },
@@ -214,7 +214,7 @@ export function grantEligibilityMatcherNextActions(input: {
         },
         {
           id: "impact",
-          label: "Open Community Impact",
+          label: "Open Impact",
           detail: "Impact narratives improve demographic matches.",
           href: hubHref("/business", "impact", null),
         },
@@ -284,7 +284,7 @@ export function grantEligibilityMatcherNextActions(input: {
       },
       {
         id: "impact",
-        label: "Open Community Impact",
+        label: "Open Impact",
         detail: "Demographics narratives improve eligibility coverage.",
         href: hubHref("/business", "impact", orgId),
       },
@@ -316,7 +316,7 @@ export function grantEligibilityMatcherNextActions(input: {
     },
     {
       id: "impact",
-      label: "Open Community Impact",
+      label: "Open Impact",
       detail: "Keep impact evidence current for funder narratives.",
       href: hubHref("/business", "impact", orgId),
     },

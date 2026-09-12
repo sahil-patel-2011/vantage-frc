@@ -26,7 +26,7 @@ export function emailKindLabel(kind: EmailKind): string {
 export function grantFocusLabel(focus: GrantFocus): string {
   const labels: Record<GrantFocus, string> = {
     general: "General",
-    impact: "Community impact",
+    impact: "Impact",
     technical: "Technical / STEM",
     sustainability: "Sustainability",
     inclusion: "Inclusion & access",

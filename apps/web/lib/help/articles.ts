@@ -1210,7 +1210,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         body: [
           "Kit readiness and asset counts come from Media kit profile fields and uploaded URLs.",
           "Upcoming outreach and “tagged media” come from calendar events you scheduled.",
-          "Media impact and people reached come only from Community Impact rows with category media.",
+          "Media impact and people reached come only from Impact rows with category media.",
           "Content items are drafts and posts you created here. Reach stays empty until you log it.",
         ],
       },

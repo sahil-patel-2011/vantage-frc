@@ -380,7 +380,7 @@ export default function OutreachCalendarClient() {
           </>
         }
         title="Outreach calendar"
-        description="Plan outreach events with projected hours and reach. Completing an event writes it to Community Impact; planned events stay empty until then."
+        description="Plan outreach events with projected hours and reach. Completing an event writes it to Impact; planned events stay empty until then."
       >
         <div className="outreach-calendar-header-actions">
           {view.seasons.length > 0 ? (
@@ -586,7 +586,7 @@ function AllEvents({
               </small>
               {item.status === "completed" ? (
                 <small className="app-muted" style={{ display: "block" }}>
-                  Logged to Community Impact
+                  Logged to Impact
                 </small>
               ) : null}
             </div>

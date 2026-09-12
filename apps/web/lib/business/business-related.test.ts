@@ -100,7 +100,7 @@ describe("business-related Soft-UI helpers", () => {
     expect(links.find((l) => l.id === "budget")?.href).toBe("/business?tab=budget&orgId=org-1");
   });
 
-  it("builds Community Impact Soft-UI cross-links to Awards, Outreach, and Writer", () => {
+  it("builds Impact Soft-UI cross-links to Awards, Outreach, and Writer", () => {
     const links = businessRelatedLinks("org-1", {
       active: "impact",
       include: IMPACT_RELATED_INCLUDE,

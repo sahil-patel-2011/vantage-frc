@@ -99,7 +99,7 @@ function NotebookRelated({ orgId }: { orgId?: string | null }) {
         Writer
       </Button>
       <Button as="a" variant="secondary" href={hubHref("/business", "impact", orgId)}>
-        Community Impact
+        Impact
       </Button>
     </nav>
   );

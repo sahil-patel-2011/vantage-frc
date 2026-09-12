@@ -8,7 +8,7 @@ export const MEDIA_KIT_RELATED_LINKS = [
   { id: "media-library", label: "Media library", kind: "path" as const, path: "/media-library" },
   { id: "sponsor-suite", label: "Sponsor suite", kind: "business" as const, tab: "sponsor-suite" },
   { id: "outreach-calendar", label: "Outreach calendar", kind: "business" as const, tab: "outreach-calendar" },
-  { id: "impact", label: "Community Impact", kind: "business" as const, tab: "impact" },
+  { id: "impact", label: "Impact", kind: "business" as const, tab: "impact" },
   { id: "sponsors", label: "Sponsor CRM", kind: "business" as const, tab: "sponsors" },
 ] as const;
 
@@ -241,7 +241,7 @@ export function mediaKitNextActions(input: {
       },
       {
         id: "impact",
-        label: "Open Community Impact",
+        label: "Open Impact",
         detail: "Impact evidence stays available while the kit reloads.",
         href: hubHref("/business", "impact", orgId),
       },

@@ -14,7 +14,7 @@ const WEB = join(__dirname, "..", "..");
  * API, leftover-code-coach Code, leftover-llms Failure log,
  * leftover-business-more Eligibility, leftover-media Photos & video,
  * leftover-safety Safety incidents, leftover-scout-more Accuracy family stay.
- * Community Impact related-strip labels stay. Routes stay. Do not invent a
+ * leftover-community-impact Impact stays. Routes stay. Do not invent a
  * last-snapshot.
  */
 const FILES = [

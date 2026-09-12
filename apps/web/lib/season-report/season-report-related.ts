@@ -171,7 +171,7 @@ export function seasonReportNextActions(input: {
         {
           id: "impact",
           label: "Open Impact",
-          detail: "Outreach hours stay blank until activities are logged in Community Impact.",
+          detail: "Outreach hours stay blank until activities are logged in Impact.",
           href: withOrgHref("/impact", null),
         },
       ];
@@ -193,7 +193,7 @@ export function seasonReportNextActions(input: {
       {
         id: "impact",
         label: "Open Impact",
-        detail: "Outreach notes here can later align with Community Impact activities.",
+        detail: "Outreach notes here can later align with Impact activities.",
         href: withOrgHref("/impact", orgId),
       },
     ];
@@ -275,7 +275,7 @@ export function seasonReportNextActions(input: {
     {
       id: "impact",
       label: "Open Impact",
-      detail: "Cross-check outreach notes with Community Impact activities.",
+      detail: "Cross-check outreach notes with Impact activities.",
       href: withOrgHref("/impact", orgId),
     },
     {

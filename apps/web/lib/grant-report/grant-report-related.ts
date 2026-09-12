@@ -6,7 +6,7 @@ import { withOrgHref } from "../nav/product-nav";
 export const GRANT_REPORT_RELATED_LINKS = [
   { id: "grants", label: "Business · Grants", kind: "business" as const, tab: "grants" },
   { id: "grant-workbench", label: "Grants workbench", kind: "path" as const, path: "/team/grants" },
-  { id: "impact", label: "Community Impact", kind: "business" as const, tab: "impact" },
+  { id: "impact", label: "Impact", kind: "business" as const, tab: "impact" },
   { id: "writer", label: "Writer", kind: "ai" as const, tab: "writer" },
 ] as const;
 
@@ -18,7 +18,7 @@ export type GrantReportRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — Grants / Grants workbench / Community Impact. */
+/** Focused Soft-UI strip — Grants / Grants workbench / Impact. */
 export const GRANT_REPORT_RELATED_INCLUDE: GrantReportRelatedId[] = [
   "grants",
   "grant-workbench",
@@ -96,7 +96,7 @@ export function grantReportSetupSteps(orgId?: string | null): GrantReportSetupSt
     },
     {
       id: "impact",
-      label: "Open Community Impact",
+      label: "Open Impact",
       detail: "Outreach stays blank until your team logs it.",
       href: hubHref("/business", "impact", orgId),
     },
@@ -176,7 +176,7 @@ export function grantReportShellCopy(kind: GrantReportShellKind): GrantReportEmp
         badge: "Unavailable",
         title: "Could not load Reports",
         description:
-          "A network or server issue blocked the report board. Retry, or open Grants / Community Impact while it reloads.",
+          "A network or server issue blocked the report board. Retry, or open Grants / Impact while it reloads.",
       };
     case "setup":
       return {
@@ -192,7 +192,7 @@ export function grantReportShellCopy(kind: GrantReportShellKind): GrantReportEmp
         badge: "No awarded grants yet",
         title: "Mark a grant as awarded to generate a report",
         description:
-          "Post-grant reports stay blank until Grants tracks an awarded application. Cross-check Grants workbench and Community Impact.",
+          "Post-grant reports stay blank until Grants tracks an awarded application. Cross-check Grants workbench and Impact.",
       };
     default:
       return {
@@ -242,7 +242,7 @@ export function grantReportNextActions(input: {
       },
       {
         id: "impact",
-        label: "Open Community Impact",
+        label: "Open Impact",
         detail: "Impact rows stay available while the report board reloads.",
         href: hubHref("/business", "impact", orgId),
       },
@@ -266,7 +266,7 @@ export function grantReportNextActions(input: {
       },
       {
         id: "impact",
-        label: "Open Community Impact",
+        label: "Open Impact",
         detail: "Ground funder narratives in real logged outreach.",
         href: hubHref("/business", "impact", orgId),
       },
@@ -292,7 +292,7 @@ export function grantReportNextActions(input: {
     },
     {
       id: "impact",
-      label: "Open Community Impact",
+      label: "Open Impact",
       detail: "Keep funder narratives grounded in real outreach.",
       href: hubHref("/business", "impact", orgId),
     },

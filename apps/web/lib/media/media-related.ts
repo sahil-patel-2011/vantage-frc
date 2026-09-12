@@ -7,7 +7,7 @@ import { isMediaWorkspaceEmpty } from ".";
 export const MEDIA_RELATED_LINKS = [
   { id: "media-kit", label: "Media kit", kind: "path" as const, path: "/media-kit" },
   { id: "outreach-calendar", label: "Outreach calendar", kind: "business" as const, tab: "outreach-calendar" },
-  { id: "impact", label: "Community Impact", kind: "business" as const, tab: "impact" },
+  { id: "impact", label: "Impact", kind: "business" as const, tab: "impact" },
   { id: "sponsor-wall", label: "Sponsor wall", kind: "business" as const, tab: "sponsor-wall" },
   { id: "recognition", label: "Recognition", kind: "path" as const, path: "/recognition" },
 ] as const;
@@ -228,7 +228,7 @@ export function mediaNextActions(input: {
       },
       {
         id: "impact",
-        label: "Open Community Impact",
+        label: "Open Impact",
         detail: "Impact evidence stays available while the team reloads.",
         href: hubHref("/business", "impact", orgId),
       },

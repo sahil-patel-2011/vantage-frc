@@ -163,7 +163,7 @@ function JudgeSimShell({
           <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
         ) : null}
         {shell === "empty" ? (
-          <Button as="a" variant="primary" href={impactHref}>Open Community Impact</Button>
+          <Button as="a" variant="primary" href={impactHref}>Open Impact</Button>
         ) : null}
       </EmptyState>
       {shell === "ready" ? <JudgeSimNextActionsPanel actions={actions} /> : null}
@@ -362,7 +362,7 @@ export default function JudgeSimClient() {
           </>
         }
         title="Judge pitch"
-        description="Practice judge Q&A and get graded against your own logged evidence — any claim you can't back gets flagged before a real judge catches it. Cross-check Community Impact, Impact essay, and Awards."
+        description="Practice judge Q&A and get graded against your own logged evidence — any claim you can't back gets flagged before a real judge catches it. Cross-check Impact, Impact essay, and Awards."
       >
         <div className="judge-sim-header-actions">
           {view.seasons.length > 0 ? (
@@ -458,7 +458,7 @@ export default function JudgeSimClient() {
         <Panel className="judge-sim-tip" aria-label="Judge pitch tip">
           <span className="eyebrow">Grounding path</span>
           <p className="app-muted" style={{ marginTop: 8 }}>
-            Keep outreach facts in <a href={impactHref}>Community Impact</a>, draft award language in{" "}
+            Keep outreach facts in <a href={impactHref}>Impact</a>, draft award language in{" "}
             <a href={essayHref}>Impact essay</a>, and upload packets in <a href={awardsHref}>Awards</a>
           </p>
         </Panel>

@@ -74,7 +74,7 @@ export function dutyWorkflowLinks(kind: DutyKind, orgId: string): DutyWorkflowLi
       ];
     case "outreach":
       return [
-        { href: withOrgPath("/impact", orgId), label: "Community Impact" },
+        { href: withOrgPath("/impact", orgId), label: "Impact" },
         { href: withOrgPath("/business", orgId), label: "Business" },
       ];
   }

@@ -3,7 +3,7 @@ import { withOrgHref } from "../nav/product-nav";
 
 /** Soft-UI related surfaces for Judge pitch (never DEMO judge metrics). */
 export const JUDGE_SIM_RELATED_LINKS = [
-  { id: "impact", label: "Community Impact", kind: "hub" as const, tab: "impact" },
+  { id: "impact", label: "Impact", kind: "hub" as const, tab: "impact" },
   { id: "impact-essay", label: "Impact essay", kind: "hub" as const, tab: "impact-essay" },
   { id: "evidence", label: "Awards", kind: "hub" as const, tab: "evidence" },
   { id: "award-tracker", label: "Award tracker", kind: "hub" as const, tab: "award-tracker" },
@@ -18,7 +18,7 @@ export type JudgeSimRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — Community Impact / Impact essay / Awards first. */
+/** Focused Soft-UI strip — Impact / Impact essay / Awards first. */
 export const JUDGE_SIM_RELATED_INCLUDE: JudgeSimRelatedId[] = ["impact", "impact-essay", "evidence"];
 
 /**
@@ -111,7 +111,7 @@ export function judgeSimShellCopy(kind: JudgeSimShellKind): JudgeSimEmptyCopy {
         badge: "Unavailable",
         title: "Could not load Judge pitch",
         description:
-          "A network or server issue blocked Judge pitch. Retry, or open Community Impact / Impact essay / Awards while it reloads.",
+          "A network or server issue blocked Judge pitch. Retry, or open Impact / Impact essay / Awards while it reloads.",
       };
     case "setup":
       return {
@@ -127,7 +127,7 @@ export function judgeSimShellCopy(kind: JudgeSimShellKind): JudgeSimEmptyCopy {
         badge: "No sessions yet",
         title: "Run your first judge Q&A",
         description:
-          "Graded sessions stay blank until you log evidence and answer a judging question. Cross-check Community Impact, Impact essay, and Awards.",
+          "Graded sessions stay blank until you log evidence and answer a judging question. Cross-check Impact, Impact essay, and Awards.",
       };
     default:
       return {
@@ -165,7 +165,7 @@ export function judgeSimNextActions(input: {
         },
         {
           id: "impact",
-          label: "Open Community Impact",
+          label: "Open Impact",
           detail: "Outreach rows stay blank until your team logs them.",
           href: hubHref("/business", "impact", null),
         },
@@ -193,7 +193,7 @@ export function judgeSimNextActions(input: {
       },
       {
         id: "impact",
-        label: "Open Community Impact",
+        label: "Open Impact",
         detail: "Ground outreach claims in real logged activities.",
         href: hubHref("/business", "impact", orgId),
       },
@@ -223,7 +223,7 @@ export function judgeSimNextActions(input: {
       },
       {
         id: "impact",
-        label: "Open Community Impact",
+        label: "Open Impact",
         detail: "Impact rows stay available while Judge pitch reloads.",
         href: hubHref("/business", "impact", orgId),
       },
@@ -264,7 +264,7 @@ export function judgeSimNextActions(input: {
     actions.push(
       {
         id: "impact",
-        label: "Cross-check Community Impact",
+        label: "Cross-check Impact",
         detail: "Outreach claims cite only real logged activities.",
         href: hubHref("/business", "impact", orgId),
       },
@@ -303,7 +303,7 @@ export function judgeSimNextActions(input: {
     },
     {
       id: "impact",
-      label: "Open Community Impact",
+      label: "Open Impact",
       detail: "Ground outreach answers in real logged activities.",
       href: hubHref("/business", "impact", orgId),
     },

@@ -465,7 +465,7 @@ export function ImpactPanel({ view }: { view: LiveView }) {
         />
       )}
       <Button as="a" variant="primary" href={withOrgHref("/impact", view.orgId)}>
-        Open Community Impact
+        Open Impact
       </Button>
     </Panel>
   );
