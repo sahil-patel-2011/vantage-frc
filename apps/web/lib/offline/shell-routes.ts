@@ -303,7 +303,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare === "/team") return "Team";
   if (bare.startsWith("/todos") || bare.startsWith("/tasks")) return "Todos";
   if (bare.startsWith("/logistics")) return "Logistics";
-  if (bare.startsWith("/build-burndown")) return "Build Burndown";
+  if (bare.startsWith("/build-burndown")) return "Burndown";
   if (bare.startsWith("/kickoff")) return "Kickoff";
   if (bare.startsWith("/whiteboard")) return "Whiteboard";
   if (bare.startsWith("/manufacturing")) return "Manufacturing";
@@ -381,7 +381,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/matching-gift-finder")) return "Matching gifts";
   if (bare.startsWith("/onboarding-buddy")) return "Onboarding buddy";
   if (bare.startsWith("/risk-burndown")) return "Risk burndown";
-  if (bare.startsWith("/risks")) return "Risk Register";
+  if (bare.startsWith("/risks")) return "Risk register";
   if (bare.startsWith("/subsystem-signoff")) return "Subsystem Sign-off";
   if (bare.startsWith("/prototype-tracker")) return "Prototypes";
   if (bare.startsWith("/equipment-maintenance")) return "Equipment";
@@ -494,7 +494,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/security")) return "Security";
   if (bare.startsWith("/shooter-table")) return "Shooter table";
   if (bare.startsWith("/showcase")) return "Showcase";
-  if (bare.startsWith("/skills-graph")) return "Skills & Mentorship";
+  if (bare.startsWith("/skills-graph")) return "Skills";
   if (bare.startsWith("/software-versions")) return "Software versions";
   if (bare.startsWith("/spares")) return "Consumables";
   if (bare.startsWith("/sponsor-tier-calculator")) return "Tier calculator";

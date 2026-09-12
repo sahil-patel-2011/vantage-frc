@@ -45,7 +45,7 @@ async function persistRisksSnapshot(orgHint: string, seasonHint: string, data: R
     await putFeatureSnapshot("risks", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("risks", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Risk Register already painted; IndexedDB is best-effort.
+    // Live Risk register already painted; IndexedDB is best-effort.
   }
 }
 
@@ -175,7 +175,7 @@ export default function RisksClient() {
       if (!response.ok || !isRisksView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Risk Register. Showing the last copy on this device.");
+          setError("Could not refresh Risk register. Showing the last copy on this device.");
           setFetchFailed(false);
           return;
         }
@@ -196,7 +196,7 @@ export default function RisksClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Risk Register. Showing the last copy on this device.");
+        setError("Could not refresh Risk register. Showing the last copy on this device.");
         setFetchFailed(false);
         return;
       }
@@ -256,14 +256,14 @@ export default function RisksClient() {
     return (
       <main className="module-page risks-page">
         <PageHeader
-          breadcrumbs="Team / Risk Register"
-          title="Risk Register"
+          breadcrumbs="Team / Risk register"
+          title="Risk register"
           description="Proactive season risks scored with how likely and how bad. Distinct from the failure log."
         />
-        <OfflineBanner feature="Risk Register" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Risk register" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
-          title={copy ? copy.title : "Loading risk register…"}
+          title={copy ? copy.title : "Opening Risk register"}
           description={copy ? copy.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >
@@ -286,11 +286,11 @@ export default function RisksClient() {
     return (
       <main className="module-page risks-page">
         <PageHeader
-          breadcrumbs="Team / Risk Register"
-          title="Risk Register"
+          breadcrumbs="Team / Risk register"
+          title="Risk register"
           description="Identify what could derail the season — score how likely and how bad, assign mitigations, and track closure. Separate from the Failure log, which scores things that already broke."
         />
-        <OfflineBanner feature="Risk Register" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Risk register" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState soft badge="Needs setup" badgeTone="setup" title={view.message}>
           {view.steps[0] ? (
             <Button as="a" variant="primary" href={view.steps[0].href}>
@@ -308,8 +308,8 @@ export default function RisksClient() {
   return (
     <main className="module-page risks-page">
       <PageHeader
-        breadcrumbs="Team / Risk Register"
-        title="Risk Register"
+        breadcrumbs="Team / Risk register"
+        title="Risk register"
         description={
           <>
             Identify what could derail your season — mechanism failures, schedule slips, funding gaps,
@@ -349,7 +349,7 @@ export default function RisksClient() {
         </div>
       </PageHeader>
 
-      <OfflineBanner feature="Risk Register" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Risk register" fromCache={fromCache} cachedAt={cachedAt} />
 
       {orgId ? <RisksRelated orgId={orgId} /> : null}
 

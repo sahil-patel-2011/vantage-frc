@@ -55,7 +55,7 @@ async function persistBuildBurndownSnapshot(
     await putFeatureSnapshot("build-burndown", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("build-burndown", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Build Burndown already painted; IndexedDB is best-effort.
+    // Live Burndown already painted; IndexedDB is best-effort.
   }
 }
 
@@ -131,10 +131,10 @@ function BurndownShell({
         breadcrumbs={
           <>
             <a href={teamHref}>Team</a>
-            {" / Build Burndown"}
+            {" / Burndown"}
           </>
         }
-        title="Build-Season Burndown"
+        title="Burndown"
         description={description}
       >
         <BurndownRelatedStrip orgId={orgId} />
@@ -228,7 +228,7 @@ export default function BuildBurndownClient() {
         if (!response.ok || !isBuildBurndownView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Build Burndown. Showing the last copy on this device.");
+            setError("Could not refresh Burndown. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -243,7 +243,7 @@ export default function BuildBurndownClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Build Burndown. Showing the last copy on this device.");
+          setError("Could not refresh Burndown. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -314,7 +314,7 @@ export default function BuildBurndownClient() {
   if (shell === "loading") {
     return (
       <BurndownShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Build Burndown" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Burndown" fromCache={fromCache} cachedAt={cachedAt} />
       </BurndownShell>
     );
   }
@@ -328,7 +328,7 @@ export default function BuildBurndownClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Build Burndown" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Burndown" fromCache={fromCache} cachedAt={cachedAt} />
       </BurndownShell>
     );
   }
@@ -340,7 +340,7 @@ export default function BuildBurndownClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Build Burndown" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Burndown" fromCache={fromCache} cachedAt={cachedAt} />
       </BurndownShell>
     );
   }
@@ -348,7 +348,7 @@ export default function BuildBurndownClient() {
   if (view?.status !== "live") {
     return (
       <BurndownShell description={shellCopy.description} orgId={orgId} shell="setup">
-        <OfflineBanner feature="Build Burndown" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Burndown" fromCache={fromCache} cachedAt={cachedAt} />
       </BurndownShell>
     );
   }
@@ -359,10 +359,10 @@ export default function BuildBurndownClient() {
         breadcrumbs={
           <>
             <a href={teamHref}>Team</a>
-            {" / Build Burndown"}
+            {" / Burndown"}
           </>
         }
-        title="Build-Season Burndown"
+        title="Burndown"
         description="Chart remaining build tasks against the kickoff-plan timeline. Readiness uses only what you record. Cross-check Task board, Kickoff, and Failure log."
       >
         <div className="build-burndown-header-actions">
@@ -392,7 +392,7 @@ export default function BuildBurndownClient() {
           ))}
         </div>
       </PageHeader>
-      <OfflineBanner feature="Build Burndown" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Burndown" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

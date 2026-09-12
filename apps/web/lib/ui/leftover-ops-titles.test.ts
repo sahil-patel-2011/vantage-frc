@@ -10,7 +10,8 @@ const WEB = join(__dirname, "..", "..");
  * Lead times, Deploy log, Season plan, Scrims, and Risk burndown.
  * Routes stay. Help / llms Season plan gold stays off this lock.
  * leftover-fmea Failure log and leftover-pick-before Choose your team
- * stay. Do not invent a last-snapshot.
+ * stay. leftover-ops-more Skills / Risk register / Burndown stay.
+ * Do not invent a last-snapshot.
  */
 const FILES = [
   "app/vendor-lead-times/vendor-lead-times-client.tsx",

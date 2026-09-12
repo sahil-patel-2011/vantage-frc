@@ -11,7 +11,7 @@ test("leftover Risks board drops L×I and PID student copy", async ({ page }) =>
   await page.goto("/risks");
   await expect(page.locator("body")).not.toContainText("Application error");
   await expect(page.locator("body")).toContainText(
-    /Risk Register|Choose your team|Needs setup|Your session ended|Sign in/i,
+    /Risk register|Choose your team|Needs setup|Your session ended|Sign in/i,
   );
   await expect(page.locator("body")).not.toContainText("L×I");
   await expect(page.locator("body")).not.toContainText("L4 × I5");

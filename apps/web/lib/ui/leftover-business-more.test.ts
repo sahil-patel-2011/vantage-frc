@@ -13,8 +13,9 @@ const WEB = join(__dirname, "..", "..");
  * leftover-pick-before Choose your team, leftover-fmea Failure log,
  * leftover-help-workspace Connect TBA, leftover-media Photos & video,
  * leftover-safety Safety incidents, leftover-scout-more Accuracy
- * family stay. Community Impact related-strip labels stay. Routes
- * stay. Do not invent a last-snapshot.
+ * family stay. leftover-ops-more Skills / Risk register / Burndown
+ * stay. Community Impact related-strip labels stay. Routes stay.
+ * Do not invent a last-snapshot.
  */
 const FILES = [
   "app/grant-eligibility-matcher/grant-eligibility-matcher-client.tsx",

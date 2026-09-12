@@ -3,7 +3,7 @@ import { withOrgHref } from "../nav/product-nav";
 import type { TeamHubRelatedId } from "../team/team-related";
 import type { RiskEvaluation, RiskLevel } from "./types";
 
-/** Focused Soft-UI Team strip when Risk Register is open (never DEMO placeholders). */
+/** Focused Soft-UI Team strip when Risk register is open (never DEMO placeholders). */
 export const RISKS_TEAM_RELATED_INCLUDE: TeamHubRelatedId[] = [
   "knowledge",
   "fmea",
@@ -31,7 +31,7 @@ export type RisksRelatedLink = {
   href: string;
 };
 
-/** Cross-links for Risk Register Soft-UI (never DEMO scores). */
+/** Cross-links for Risk register Soft-UI (never DEMO scores). */
 export function risksRelatedLinks(
   orgId?: string | null,
   options?: { active?: RisksRelatedId; include?: RisksRelatedId[] },

@@ -6,7 +6,7 @@ export const SEASON_PLANNING_RELATED_LINKS = [
   { id: "goals-tracker", label: "Goals", tab: "goals-tracker" },
   { id: "calendar", label: "Calendar", tab: "calendar" },
   { id: "attendance", label: "Attendance", tab: "attendance" },
-  { id: "build-burndown", label: "Build Burndown", tab: "build-burndown" },
+  { id: "build-burndown", label: "Burndown", tab: "build-burndown" },
   { id: "task-board", label: "Task Board", tab: "task-board" },
 ] as const;
 
@@ -298,7 +298,7 @@ export function seasonPlanningNextActions(input: {
       },
       {
         id: "build-burndown",
-        label: "Open Build Burndown",
+        label: "Open Burndown",
         detail: "Pair plan milestones with real build-task burn.",
         href: hubHref("/team", "build-burndown", orgId),
       },
@@ -324,7 +324,7 @@ export function seasonPlanningNextActions(input: {
     },
     {
       id: "build-burndown",
-      label: "Open Build Burndown",
+      label: "Open Burndown",
       detail: "Cross-check build-task completion against plan milestones.",
       href: hubHref("/team", "build-burndown", orgId),
     },

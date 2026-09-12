@@ -287,7 +287,7 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/battery-health-forecast")).toBe("Pack health");
     expect(offlineCapableLabel("/vendor-lead-times")).toBe("Lead times");
     expect(offlineCapableLabel("/bin-shelf-locator")).toBe("Bin locator");
-    expect(offlineCapableLabel("/build-burndown")).toBe("Build Burndown");
+    expect(offlineCapableLabel("/build-burndown")).toBe("Burndown");
     expect(offlineCapableLabel("/build")).toBe("Build");
     expect(offlineCapableLabel("/cad-change-radar")).toBe("Change radar");
     expect(offlineCapableLabel("/code-deploy-log")).toBe("Deploy log");
@@ -356,7 +356,7 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/costs")).toBe("Season costs");
     expect(offlineCapableLabel("/duties")).toBe("Duties");
     expect(offlineCapableLabel("/announcements")).toBe("Announcements");
-    expect(offlineCapableLabel("/risks")).toBe("Risk Register");
+    expect(offlineCapableLabel("/risks")).toBe("Risk register");
     expect(offlineCapableLabel("/risk-burndown")).toBe("Risk burndown");
     expect(offlineCapableLabel("/subsystem-signoff")).toBe("Subsystem Sign-off");
     expect(offlineCapableLabel("/prototype-tracker")).toBe("Prototypes");
