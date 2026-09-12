@@ -1,7 +1,7 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Control Map (never DEMO bindings). */
+/** Soft-UI related surfaces for Control map (never DEMO bindings). */
 export const CONTROL_MAP_RELATED_LINKS = [
   { id: "subsystems", label: "Subsystems", kind: "path" as const, path: "/subsystems" },
   { id: "fmea", label: "Failure log", kind: "build" as const, tab: "fmea" },
@@ -26,7 +26,7 @@ export const CONTROL_MAP_RELATED_INCLUDE: ControlMapRelatedId[] = [
 ];
 
 /**
- * Soft-UI cross-links from Control Map → Subsystems / FMEA / Practice.
+ * Soft-UI cross-links from Control map → Subsystems / FMEA / Practice.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function controlMapRelatedLinks(
@@ -74,7 +74,7 @@ export function formatControlMapMetric(value: unknown, loaded: boolean): string 
   return Math.floor(n).toLocaleString();
 }
 
-/** Classify Control Map Soft-UI shell — never invents DEMO bindings. */
+/** Classify Control map Soft-UI shell — never invents DEMO bindings. */
 export function classifyControlMapShell(input: {
   loading: boolean;
   fetchFailed?: boolean;
@@ -95,7 +95,7 @@ export function controlMapShellCopy(kind: ControlMapShellKind): ControlMapEmptyC
     case "loading":
       return {
         kind,
-        title: "Loading control map…",
+        title: "Opening Control map",
         description: "Checking which team you are on and saved bindings.",
       };
     case "error":
@@ -104,7 +104,7 @@ export function controlMapShellCopy(kind: ControlMapShellKind): ControlMapEmptyC
         badge: "Unavailable",
         title: "Could not load the control map",
         description:
-          "A network or server issue blocked bindings. Retry, or open Subsystems / Failure log while Control Map is down.",
+          "A network or server issue blocked bindings. Retry, or open Subsystems / Failure log while Control map is down.",
       };
     case "setup":
       return {
@@ -133,7 +133,7 @@ export function controlMapShellCopy(kind: ControlMapShellKind): ControlMapEmptyC
 }
 
 /**
- * Soft-UI next actions for Control Map empty/setup shells.
+ * Soft-UI next actions for Control map empty/setup shells.
  * Points at Subsystems / FMEA / Practice — never invents DEMO bindings.
  */
 export function controlMapNextActions(input: {
@@ -182,7 +182,7 @@ export function controlMapNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Finish membership setup so Control Map can load.",
+        detail: "Finish membership setup so Control map can load.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
       },
@@ -211,7 +211,7 @@ export function controlMapNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Control Map",
+        label: "Retry Control map",
         detail: "Reload real bindings.",
         href: withOrgHref("/control-map", orgId),
         primary: true,
@@ -219,7 +219,7 @@ export function controlMapNextActions(input: {
       {
         id: "subsystems",
         label: "Open Subsystems",
-        detail: "Specs stay available while Control Map is down.",
+        detail: "Specs stay available while Control map is down.",
         href: withOrgHref("/subsystems", orgId),
       },
       {

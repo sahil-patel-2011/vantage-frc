@@ -9,7 +9,8 @@ const WEB = join(__dirname, "..", "..");
  * Prototypes / Sketch to brief titles after leftover-build-titles.
  * Hub labels stay CAD vault, Learn CAD, Design reviews,
  * Prototypes, and Sketch to brief. Routes stay. Drive folder
- * names stay. Do not invent a last-snapshot.
+ * names stay. leftover-cad-map CAD review queue / Control map stay.
+ * Do not invent a last-snapshot.
  */
 const FILES = [
   "app/cad-vault/cad-vault-client.tsx",

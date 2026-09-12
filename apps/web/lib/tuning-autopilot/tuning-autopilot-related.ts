@@ -7,7 +7,7 @@ export const TUNING_AUTOPILOT_RELATED_LINKS = [
   { id: "fmea", label: "Failure log", kind: "build" as const, tab: "fmea" },
   { id: "practice", label: "Practice", kind: "team" as const, tab: "practice" },
   { id: "subsystems", label: "Subsystems", kind: "path" as const, path: "/subsystems" },
-  { id: "control-map", label: "Control Map", kind: "path" as const, path: "/control-map" },
+  { id: "control-map", label: "Control map", kind: "path" as const, path: "/control-map" },
 ] as const;
 
 export type TuningAutopilotRelatedId = (typeof TUNING_AUTOPILOT_RELATED_LINKS)[number]["id"];

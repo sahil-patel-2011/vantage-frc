@@ -69,7 +69,7 @@ async function persistControlMapSnapshot(orgHint: string, seasonHint: string, da
     await putFeatureSnapshot("control-map", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("control-map", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Control Map already painted; IndexedDB is best-effort.
+    // Live Control map already painted; IndexedDB is best-effort.
   }
 }
 
@@ -168,10 +168,10 @@ function ControlMapShell({
         breadcrumbs={
           <>
             <a href={buildHref}>Build</a>
-            {" / Control Map"}
+            {" / Control map"}
           </>
         }
-        title="Control Map"
+        title="Control map"
         description={description}
       >
         <ControlMapRelatedStrip orgId={orgId} />
@@ -260,7 +260,7 @@ export default function ControlMapClient({ orgId: orgIdProp }: { orgId: string |
       if (!response.ok || !isControlMapView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setMessage("Could not refresh Control Map. Showing the last copy on this device.");
+          setMessage("Could not refresh Control map. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -276,7 +276,7 @@ export default function ControlMapClient({ orgId: orgIdProp }: { orgId: string |
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setMessage("Could not refresh Control Map. Showing the last copy on this device.");
+        setMessage("Could not refresh Control map. Showing the last copy on this device.");
         setFetchFailed(false);
       } else {
         setFetchFailed(true);
@@ -353,7 +353,7 @@ export default function ControlMapClient({ orgId: orgIdProp }: { orgId: string |
         orgId={orgIdProp}
         shell="loading"
       >
-        <OfflineBanner feature="Control Map" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Control map" fromCache={fromCache} cachedAt={cachedAt} />
       </ControlMapShell>
     );
   }
@@ -368,7 +368,7 @@ export default function ControlMapClient({ orgId: orgIdProp }: { orgId: string |
         errorStatus={errorStatus}
         onRetry={() => void load()}
       >
-        <OfflineBanner feature="Control Map" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Control map" fromCache={fromCache} cachedAt={cachedAt} />
       </ControlMapShell>
     );
   }
@@ -382,7 +382,7 @@ export default function ControlMapClient({ orgId: orgIdProp }: { orgId: string |
         orgId={orgIdProp}
         shell="setup"
       >
-        <OfflineBanner feature="Control Map" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Control map" fromCache={fromCache} cachedAt={cachedAt} />
       </ControlMapShell>
     );
   }
@@ -390,7 +390,7 @@ export default function ControlMapClient({ orgId: orgIdProp }: { orgId: string |
   if (view?.status !== "ready") {
     return (
       <ControlMapShell description={shellCopy.description} orgId={orgIdProp} shell="setup">
-        <OfflineBanner feature="Control Map" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Control map" fromCache={fromCache} cachedAt={cachedAt} />
       </ControlMapShell>
     );
   }
@@ -401,10 +401,10 @@ export default function ControlMapClient({ orgId: orgIdProp }: { orgId: string |
         breadcrumbs={
           <>
             <a href={buildHref}>Build</a>
-            {" / Control Map"}
+            {" / Control map"}
           </>
         }
-        title={`Control Map — ${seasonYear}`}
+        title={`Control map — ${seasonYear}`}
         description="Driver-station cheat sheet: every controller input → robot action. Keep it in sync with Subsystems and Failure log."
       >
         <div className="control-map-header-actions">
@@ -415,7 +415,7 @@ export default function ControlMapClient({ orgId: orgIdProp }: { orgId: string |
           ))}
         </div>
       </PageHeader>
-      <OfflineBanner feature="Control Map" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Control map" fromCache={fromCache} cachedAt={cachedAt} />
 
       {message ? (
         <p className="telemetry-status" role="status">
@@ -473,7 +473,7 @@ function SummaryTiles({ view, loaded }: { view: ReadyView; loaded: boolean }) {
     { label: "Other", value: formatControlMapMetric(s.byController.other, loaded) },
   ];
   return (
-    <Panel className="control-map-coverage" aria-label="Control Map summary">
+    <Panel className="control-map-coverage" aria-label="Control map summary">
       <div className="control-map-stats">
         <div>
           <span className={`app-badge ${s.total === 0 ? "setup" : "good"}`}>

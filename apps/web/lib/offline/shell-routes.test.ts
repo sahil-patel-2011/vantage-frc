@@ -291,7 +291,7 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/build")).toBe("Build");
     expect(offlineCapableLabel("/cad-change-radar")).toBe("Change radar");
     expect(offlineCapableLabel("/code-deploy-log")).toBe("Deploy log");
-    expect(offlineCapableLabel("/control-map")).toBe("Control Map");
+    expect(offlineCapableLabel("/control-map")).toBe("Control map");
     expect(offlineCapableLabel("/cross-team-scrim")).toBe("Scrims");
     expect(offlineCapableLabel("/decision-search")).toBe("Search");
     expect(offlineCapableLabel("/decisions")).toBe("Decision notes");
@@ -350,7 +350,7 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/goals")).toBe("Goals");
     expect(offlineCapableLabel("/cad-vault")).toBe("CAD vault");
     expect(offlineCapableLabel("/cad-learn")).toBe("Learn CAD");
-    expect(offlineCapableLabel("/cad-review-queue")).toBe("CAD Review Queue");
+    expect(offlineCapableLabel("/cad-review-queue")).toBe("CAD review queue");
     expect(offlineCapableLabel("/cad-change-radar")).toBe("Change radar");
     expect(offlineCapableLabel("/reimbursements")).toBe("Reimbursements");
     expect(offlineCapableLabel("/costs")).toBe("Season Costs");

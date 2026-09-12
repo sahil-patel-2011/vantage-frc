@@ -1,7 +1,7 @@
 import ControlMapClient from "./control-map-client";
 
 export const metadata = {
-  title: "Control Map",
+  title: "Control map",
 };
 
 export default async function ControlMapPage({ searchParams }: { searchParams: Promise<{ orgId?: string }> }) {

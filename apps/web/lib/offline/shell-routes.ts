@@ -368,10 +368,10 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/bin-shelf-locator")) return "Bin locator";
   if (bare.startsWith("/cad-vault")) return "CAD vault";
   if (bare.startsWith("/cad-learn")) return "Learn CAD";
-  if (bare.startsWith("/cad-review-queue")) return "CAD Review Queue";
+  if (bare.startsWith("/cad-review-queue")) return "CAD review queue";
   if (bare.startsWith("/cad-change-radar")) return "Change radar";
   if (bare.startsWith("/code-deploy-log")) return "Deploy log";
-  if (bare.startsWith("/control-map")) return "Control Map";
+  if (bare.startsWith("/control-map")) return "Control map";
   if (bare.startsWith("/cross-team-scrim")) return "Scrims";
   if (bare.startsWith("/decision-search")) return "Search";
   if (bare.startsWith("/decisions")) return "Decision notes";
