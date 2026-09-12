@@ -40,8 +40,8 @@ type ActivityDetail = {
 };
 
 const ACTIVITY_SOURCE_LABELS: Record<ActivityRow["source"], string> = {
-  terminal: "Terminal",
-  web: "Web agent",
+  terminal: "This computer",
+  web: "This page",
 };
 
 type ActivityScope = "all" | "mine";
@@ -54,11 +54,11 @@ const SCOPE_OPTIONS: Array<{ value: ActivityScope; label: string }> = [
 
 const SOURCE_OPTIONS: Array<{ value: ActivitySource; label: string }> = [
   { value: "all", label: "All" },
-  { value: "web", label: "Web" },
-  { value: "terminal", label: "Terminal" },
+  { value: "web", label: "This page" },
+  { value: "terminal", label: "This computer" },
 ];
 
-/** Web agent sessions and vantage-cad terminal sessions in one newest-first list. */
+/** Sessions from this page and from Claude Code on this computer. */
 export function CadActivityPanel({ orgId }: { orgId: string }) {
   const [rows, setRows] = useState<ActivityRow[] | null>(null);
   const [failed, setFailed] = useState(false);
@@ -160,8 +160,8 @@ export function CadActivityPanel({ orgId }: { orgId: string }) {
             <>No CAD sessions match this filter. Switch to Everyone / All to see the rest.</>
           ) : (
             <>
-              No CAD activity yet. Web agent sessions from this page and terminal sessions from{" "}
-              <code>vantage-cad</code> (Claude Code) will appear here once someone sketches or extrudes.
+              No CAD activity yet. Sessions from this page and from Claude Code on this computer will
+              appear here once someone sketches or extrudes.
             </>
           )}
         </p>
