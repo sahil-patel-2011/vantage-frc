@@ -180,7 +180,7 @@ export default function ChatSafetyPanel({ orgId }: { orgId: string }) {
   if (loading) {
     return (
       <div className="chat-safety-panel">
-        <EmptyState soft title="Loading chat safety…" aria-busy />
+        <EmptyState soft title="Opening Chat safety" aria-busy />
       </div>
     );
   }

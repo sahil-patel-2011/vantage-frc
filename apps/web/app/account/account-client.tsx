@@ -369,7 +369,7 @@ export default function AccountClient() {
           soft
           badge="Loading"
           badgeTone="setup"
-          title="Loading account"
+          title="Opening Account"
           description="Loading your profile, team, and preferences…"
           aria-busy
         />
