@@ -183,7 +183,7 @@ export default function MatchSimClient() {
             ) : null}
           </EmptyState>
         ) : (
-          <EmptyState title="Loading…" description="Checking your team." aria-busy />
+          <EmptyState title="Opening Match sim" description="Checking your team." aria-busy />
         )}
       </main>
     );

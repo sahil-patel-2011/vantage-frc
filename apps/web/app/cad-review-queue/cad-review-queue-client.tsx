@@ -254,7 +254,7 @@ export default function CadReviewQueueClient() {
           );
           })()
         ) : (
-          <EmptyState title="Loading…" description="Checking your team." aria-busy />
+          <EmptyState title="Opening CAD review queue" description="Checking your team." aria-busy />
         )
       ) : view.status === "setup_required" ? (
         <EmptyState badge="Needs setup" badgeTone="setup" title={view.message}>
