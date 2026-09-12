@@ -166,7 +166,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "2 · Invite your people",
         body: [
-          "Owners and admins invite exact emails from Team admin (/team/admin) with a role per person.",
+          "Owners and admins invite exact emails from Invites (/team/admin) with a role per person.",
           "The live Getting started checklist (/team/getting-started) tracks members, calendar, knowledge, and setup signals as you go.",
         ],
       },
@@ -894,7 +894,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "Send an invite",
         body: [
-          "Open Team admin and use Add a teammate. Enter the person's email and role (Scout, Admin, or Viewer).",
+          "Open Invites and use Add a teammate. Enter the person's email and role (Scout, Admin, or Viewer).",
           "Send invite creates the row first. If email is configured, they also get a message. You always get a copyable link for that send.",
           "Local development does not send email — copy the link and share it. Re-inviting the same pending email rotates the link instead of stacking duplicates.",
         ],
@@ -977,7 +977,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "Connect GitHub first",
         body: [
-          "Owners and admins connect GitHub under Team admin. Bugbot never requests workflow scope and never pushes.",
+          "Owners and admins connect GitHub under Invites. Bugbot never requests workflow scope and never pushes.",
           "On Bugbot, pick the robot-code repo and optionally load one file, or scan the connected tree (.java, .cpp, .py, vendordeps).",
         ],
       },

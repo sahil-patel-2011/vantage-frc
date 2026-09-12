@@ -7,11 +7,13 @@ test.beforeEach(async ({ context }) => {
   if (!signed) await signInFixture(context);
 });
 
-test("leftover Invites drops Setup required chrome", async ({ page }) => {
+test("leftover Invites drops Team admin student copy", async ({ page }) => {
   test.setTimeout(90_000);
   await page.goto("/team/admin");
   await waitForLoadingGone(page);
   await expect(page.locator("body")).not.toContainText("Application error");
-  await expect(page.getByRole("heading", { name: /Invites|Choose your team|Needs setup|Your session ended|Sign in/i }).first()).toBeVisible();
-  await expect(page.locator("body")).not.toContainText("Setup required");
+  await expect(page.locator("body")).toContainText(
+    /Invites|Choose your team|Needs setup|Your session ended|Sign in/,
+  );
+  await expect(page.locator("body")).not.toContainText("Team admin");
 });

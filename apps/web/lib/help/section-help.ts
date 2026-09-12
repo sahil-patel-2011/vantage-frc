@@ -434,11 +434,11 @@ export const SECTION_HELP: SectionHelpEntry[] = [
     how: [
       "Open Chat — your team channel opens with this team.",
       "Start a private message for a one-to-one thread.",
-      "Invite anyone who is missing under Team admin.",
+      "Invite anyone who is missing under Invites.",
     ],
     tips: ["People only appear once they have accepted an invite to this team."],
     related: [
-      { label: "Team admin", href: "/team/admin" },
+      { label: "Invites", href: "/team/admin" },
       { label: "Calendar", href: "/team/calendar" },
     ],
   },
@@ -461,7 +461,7 @@ export const SECTION_HELP: SectionHelpEntry[] = [
     related: [
       { label: "Hours kiosk", href: "/hours" },
       { label: "My hours", href: "/hours-self-view" },
-      { label: "Team admin", href: "/team/admin" },
+      { label: "Invites", href: "/team/admin" },
     ],
   },
   {

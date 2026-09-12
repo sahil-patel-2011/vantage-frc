@@ -43,7 +43,7 @@ export function aiGovernanceRelatedLinks(
     { id: "finance", label: "Finance in Ask AI", href: hubHref("/ai", "finance", orgId) },
     { id: "usage", label: "AI usage", href: withOrgHref("/team/usage", orgId) },
     { id: "runs", label: "AI runs", href: withOrgHref("/team/ai-runs", orgId) },
-    { id: "admin", label: "Team admin", href: withOrgHref("/team/admin", orgId) },
+    { id: "admin", label: "Invites", href: withOrgHref("/team/admin", orgId) },
   ];
   return all.filter((link) => {
     if (link.id === options?.active) return false;

@@ -51,7 +51,7 @@ export function ShellPanel({
       ) : null}
       {shell === "setup" && orgId ? (
         <Button as="a" variant="secondary" href={withOrgHref("/team/admin", orgId)}>
-          Team admin
+          Invites
         </Button>
       ) : null}
     </section>

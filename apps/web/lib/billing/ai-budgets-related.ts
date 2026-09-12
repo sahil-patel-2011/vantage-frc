@@ -42,7 +42,7 @@ export function aiBudgetsRelatedLinks(
     { id: "account", label: "Account", href: withOrgHref("/account", orgId) },
     { id: "governance", label: "Governance", href: hubHref("/ai", "governance", orgId) },
     { id: "memory", label: "Memory", href: hubHref("/ai", "memory", orgId) },
-    { id: "admin", label: "Team admin", href: withOrgHref("/team/admin", orgId) },
+    { id: "admin", label: "Invites", href: withOrgHref("/team/admin", orgId) },
   ];
   return all.filter((link) => {
     if (link.id === options?.active) return false;

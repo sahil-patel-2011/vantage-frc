@@ -53,7 +53,7 @@ describe("teamAdminSetupSteps", () => {
   });
 });
 
-describe("Team admin Soft-UI metrics", () => {
+describe("Invites Soft-UI metrics", () => {
   it("formats real member counts only", () => {
     expect(formatTeamAdminMetric(3, true)).toBe("3");
     expect(formatTeamAdminMetric(0, false)).toBe("…");

@@ -15,9 +15,9 @@ export const ACCOUNT_ONSHAPE_COPY = {
 
 export const ACCOUNT_GITHUB_COPY = {
   connected: "GitHub is linked for this team.",
-  chooseTeam: "Choose your team, then an owner or admin can connect GitHub in Team admin.",
-  emptyConfigured: "No GitHub account linked yet. An owner or admin can connect GitHub in Team admin.",
-  emptyUnconfigured: "No GitHub link yet. Ask an owner or admin to connect GitHub in Team admin.",
+  chooseTeam: "Choose your team, then an owner or admin can connect GitHub in Invites.",
+  emptyConfigured: "No GitHub account linked yet. An owner or admin can connect GitHub in Invites.",
+  emptyUnconfigured: "No GitHub link yet. Ask an owner or admin to connect GitHub in Invites.",
 } as const;
 
 export const ACCOUNT_GOOGLE_COPY = {

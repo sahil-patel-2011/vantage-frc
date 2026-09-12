@@ -12,7 +12,7 @@ export const GITHUB_RELATED_LINKS = [
     path: "/connectors",
   },
   { id: "chat", label: "AI chat", kind: "ai" as const, tab: "chat" },
-  { id: "admin", label: "Team admin", kind: "path" as const, path: "/team/admin" },
+  { id: "admin", label: "Invites", kind: "path" as const, path: "/team/admin" },
 ] as const;
 
 export type GitHubRelatedId = (typeof GITHUB_RELATED_LINKS)[number]["id"];
@@ -28,7 +28,7 @@ export const GITHUB_RELATED_INCLUDE: GitHubRelatedId[] = ["pair", "code", "conne
 
 /**
  * Canonical Soft-UI deep link to the GitHub connection panel.
- * Lives on Team admin — never `/team` hub (no `#github-connection` there).
+ * Lives on Invites — never `/team` hub (no `#github-connection` there).
  */
 export function githubConnectionHref(orgId?: string | null): string {
   return withOrgHref("/team/admin", orgId) + "#github-connection";

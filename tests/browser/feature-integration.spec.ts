@@ -42,7 +42,7 @@ test.describe("one control per destination", () => {
    */
   test("team admin offers each related destination once", async ({ page }) => {
     await gotoReady(page, "/team/admin");
-    const title = page.getByRole("heading", { level: 1, name: "Team admin" });
+    const title = page.getByRole("heading", { level: 1, name: "Invites" });
     const missing = page.getByRole("heading", { name: "This page is not here" });
     await expect(title.or(missing).first()).toBeVisible();
     if (await missing.count()) return;

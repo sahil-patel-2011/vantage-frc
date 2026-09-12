@@ -60,7 +60,7 @@ describe("leftover student Pick a team before / PAT OAuth chrome", () => {
     expect(account).not.toMatch(/setup-required/);
     expect(account).toMatch(/ACCOUNT_EMAIL_COPY/);
     const bugbot = readFileSync(join(WEB, "app/code/code-bugbot-panel.tsx"), "utf8");
-    expect(bugbot).toMatch(/connect GitHub under Team admin/);
+    expect(bugbot).toMatch(/connect GitHub under Invites/);
     const code = readFileSync(join(WEB, "lib/code/code-related.ts"), "utf8");
     expect(code).toMatch(/Connect GitHub/);
   });

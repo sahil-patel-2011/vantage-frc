@@ -128,7 +128,7 @@ export default function PostureClient({ orgId }: { orgId: string }) {
         <nav className="intel-actions" aria-label="Security links">
           <a href={`/team/security?orgId=${orgId}`}>Access policy</a>
           <a href={`/team/audit?orgId=${orgId}`}>Audit log</a>
-          <a href={`/team?orgId=${orgId}`}>Team admin</a>
+          <a href={`/team?orgId=${orgId}`}>Invites</a>
         </nav>
       </header>
 

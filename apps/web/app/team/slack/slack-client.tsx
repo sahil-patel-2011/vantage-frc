@@ -230,7 +230,7 @@ export default function TeamSlackClient({ orgId }: { orgId: string }) {
             typeof window === "undefined"
               ? null
               : `${window.location.pathname}${window.location.search}`,
-          message: status || "Try again from Team admin.",
+          message: status || "Try again from Invites.",
         },
       )
     : null;

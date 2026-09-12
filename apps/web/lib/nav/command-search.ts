@@ -408,7 +408,7 @@ const STANDALONE: CommandEntry[] = [
   // Nobody types "connector catalog". They type the provider's name, or the
   // thing that stopped working ("emails not sending", "no match data").
   { id: "connectors", label: "Connectors", context: "Settings", href: "/connectors", kind: "destination", keywords: ["connector", "connectors", "integration", "integrations", "connect", "github", "the blue alliance", "tba", "onshape", "discord", "slack", "stripe", "resend", "email delivery", "google sign in", "storage node", "fusion relay", "free relay", "raspberry pi", "api key", "oauth", "callback url", "redirect uri", "webhook", "not connected", "setup required", "token expired", "emails not sending", "no match data"], featured: true },
-  { id: "team-admin", label: "Team admin", context: "Settings", href: "/team/admin", kind: "destination", keywords: ["admin", "invite", "members", "roles", "permissions", "add someone"] },
+  { id: "team-admin", label: "Invites", context: "Settings", href: "/team/admin", kind: "destination", keywords: ["admin", "invite", "members", "roles", "permissions", "add someone"] },
   { id: "exports", label: "Export data", context: "Settings", href: "/exports", kind: "destination", keywords: ["export", "download", "csv", "takeout", "backup"] },
   { id: "search", label: "Search", context: "Settings", href: "/search", kind: "destination", keywords: ["search", "find", "look up", "global search", "search tasks", "search parts"] },
   { id: "help", label: "Help centre", context: "Support", href: "/help", kind: "destination", keywords: ["help", "how do i", "support", "docs", "manual", "articles", "tutorial", "faq"] },

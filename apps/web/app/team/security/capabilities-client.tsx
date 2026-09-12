@@ -262,10 +262,10 @@ export default function CapabilitiesClient({ orgId }: { orgId: string }) {
             <EmptyState
               soft
               title="No scouts or viewers to delegate"
-              description="Invite members from Team admin, then grant the team's keys, budgets, or settings powers here."
+              description="Invite members from Invites, then grant the team's keys, budgets, or settings powers here."
             >
               <Button as="a" variant="secondary" href={`/team?orgId=${orgId}`}>
-                Open Team admin
+                Open Invites
               </Button>
             </EmptyState>
           ) : null}

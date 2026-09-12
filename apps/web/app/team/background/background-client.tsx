@@ -94,7 +94,7 @@ function TeamBackgroundRelated({ orgId }: { orgId: string }) {
         Grant writing
       </Button>
       <Button as="a" variant="secondary" href={withOrgHref("/team/admin", orgId)}>
-        Team admin
+        Invites
       </Button>
     </nav>
   );

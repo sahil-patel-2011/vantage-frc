@@ -137,8 +137,8 @@ test.describe("student-week GUI path", () => {
 
   test("Team invites Send invite is on the board", async ({ page }) => {
     await openStudent(page, "/team/admin");
-    await expect(page.getByRole("heading", { level: 1, name: "Team admin" })).toBeVisible();
-    await expectNoBanned(page, "Team admin", ["Join or pick a team", "Account Connections", "RLS"]);
+    await expect(page.getByRole("heading", { level: 1, name: "Invites" })).toBeVisible();
+    await expectNoBanned(page, "Invites", ["Join or pick a team", "Account Connections", "RLS"]);
     const orgId = await orgIdFromIsland(page);
     if (orgId) {
       await openStudent(page, `/team/admin?orgId=${encodeURIComponent(orgId)}`);

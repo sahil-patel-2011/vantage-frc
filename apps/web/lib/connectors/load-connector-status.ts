@@ -142,7 +142,7 @@ export async function loadConnectorProofs(
       account: githubRow.login,
       note: githubRow.repo
         ? `The deploy log and code review read ${githubRow.repo}.`
-        : "GitHub is linked, but no default repository is chosen — the deploy log and calendar milestones stay empty until one is set in Team admin.",
+        : "GitHub is linked, but no default repository is chosen — the deploy log and calendar milestones stay empty until one is set in Invites.",
     };
   }
 

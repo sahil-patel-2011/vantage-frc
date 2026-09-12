@@ -272,10 +272,10 @@ export default function HubAccessClient({ orgId }: { orgId: string }) {
             <EmptyState
               soft
               title="No scouts or viewers to restrict"
-              description="Invite members from Team admin, then limit Competition, Team, Business, Build, AI, or Media here."
+              description="Invite members from Invites, then limit Competition, Team, Business, Build, AI, or Media here."
             >
               <Button as="a" variant="secondary" href={`/team/admin?orgId=${encodeURIComponent(orgId)}`}>
-                Open Team admin
+                Open Invites
               </Button>
             </EmptyState>
           ) : null}

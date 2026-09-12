@@ -24,7 +24,7 @@ export const CONNECTIONS_RELATED_LINKS = [
   { id: "discord", label: "Discord", kind: "path" as const, path: "/team/discord" },
   { id: "slack", label: "Slack", kind: "path" as const, path: "/team/slack" },
   { id: "tba", label: "Team Data", kind: "path" as const, path: "/team/data" },
-  { id: "github", label: "Team admin · GitHub", kind: "path" as const, path: "/team/admin", hash: "#github-connection" },
+  { id: "github", label: "Invites · GitHub", kind: "path" as const, path: "/team/admin", hash: "#github-connection" },
   { id: "workspace", label: "Your team", kind: "path" as const, path: "/workspace" },
 ] as const;
 
@@ -364,7 +364,7 @@ export function buildConnectionConnectors(input: {
       status: input.github?.status ?? (orgId ? "empty" : "setup_required"),
       detail: input.github?.detail ?? "Checking GitHub link…",
       href: orgId ? githubConnectionHref(orgId) : "/workspace",
-      cta: orgId ? "Open Team admin" : "Choose your team",
+      cta: orgId ? "Open Invites" : "Choose your team",
     },
   ];
 }

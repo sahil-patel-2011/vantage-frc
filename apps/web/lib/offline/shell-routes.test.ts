@@ -385,7 +385,7 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/notifications/preferences")).toBe("Notification preferences");
     expect(offlineCapableLabel("/notifications")).toBe("Notifications");
     expect(offlineCapableLabel("/team/grants/calendar")).toBe("Grant calendar");
-    expect(offlineCapableLabel("/team/admin")).toBe("Team admin");
+    expect(offlineCapableLabel("/team/admin")).toBe("Invites");
     expect(offlineCapableLabel("/team/security")).toBe("Team security");
     expect(offlineCapableLabel("/security")).toBe("Security");
     expect(offlineCapableLabel("/wiring-diagnoser")).toBe("Wiring check");
