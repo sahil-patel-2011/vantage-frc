@@ -15,8 +15,12 @@ export async function POST(request: Request) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session) return Response.json({ error: "Authentication required" }, { status: 401 });
-    const body = (await request.json()) as { code?: string; orgId?: string };
+    const body = (await request.json()) as { code?: string; orgId?: string; scope?: string };
     if (!body.code || !body.orgId) throw new Error("Pairing code and organization are required");
+    if (body.scope !== undefined && body.scope !== "team" && body.scope !== "personal") {
+      throw new Error("scope must be 'team' or 'personal'");
+    }
+    const scope = body.scope === "personal" ? "personal" : "team";
     await withRls({ userId: session.user.id, orgId: body.orgId }, async (client) => {
       const member = await client.query(`SELECT 1 FROM memberships WHERE org_id = $1 AND user_id = $2`, [
         body.orgId,
@@ -41,6 +45,18 @@ export async function POST(request: Request) {
        VALUES($1,$2,$3,$4,$5,'paired',now()) RETURNING id`,
       [body.orgId, session.user.id, row.machine_name, tokenHash, row.bridge_version],
     );
+    if (scope === "personal") {
+      try {
+        await relay.query(`UPDATE ai_bridge_devices SET scope = 'personal' WHERE id = $1::uuid`, [
+          device.rows[0]!.id,
+        ]);
+      } catch (error) {
+        if (error instanceof Error && /scope/.test(error.message)) {
+          throw new Error("This team isn't ready for Your Claude Code yet. Ask a mentor to finish setup.");
+        }
+        throw error;
+      }
+    }
     await relay.query(
       `UPDATE ai_bridge_pairing_codes
           SET approved_org_id = $2, approved_user_id = $3, device_id = $4,

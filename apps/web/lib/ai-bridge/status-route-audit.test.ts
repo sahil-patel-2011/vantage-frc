@@ -124,4 +124,24 @@ describe("PATCH /api/ai-bridge/status audit trail", () => {
     expect(response.status).toBe(400);
     expect(state.calls).toHaveLength(0);
   });
+
+  it("records flipping a computer to Your Claude Code", async () => {
+    const response = await patch({ deviceId: DEVICE, scope: "personal" });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ success: true, audited: true });
+    const audit = auditCall();
+    expect(audit?.params?.[2]).toBe("ai_bridge.scope.changed");
+    expect(JSON.parse(String(audit?.params?.[3]))).toEqual({
+      deviceId: DEVICE,
+      deviceName: "Mentor desktop",
+      scope: "personal",
+    });
+    expect(state.calls.some((call) => /paired_by = \$3::uuid/.test(call.sql))).toBe(true);
+  });
+
+  it("still rejects an unknown scope value before touching the database", async () => {
+    const response = await patch({ deviceId: DEVICE, scope: "everyone" });
+    expect(response.status).toBe(400);
+    expect(state.calls).toHaveLength(0);
+  });
 });

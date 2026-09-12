@@ -19,6 +19,8 @@ export type BridgeDeviceStatus = {
   preferWhenOnline: boolean;
   /** 'chat' = interactive features only; 'everything' = all AI platform-wide (0488). */
   coverage: "chat" | "everything";
+  /** 'personal' = this pairer's turns only (0655 Your Claude Code). */
+  scope: "team" | "personal";
   jobsServed: number;
   canManage: boolean;
 };
@@ -53,13 +55,15 @@ export async function GET(request: Request) {
         bridgeVersion: string | null;
         preferWhenOnline: boolean;
         coverage: string | null;
+        scope: string | null;
         jobsServed: number;
       }>(
-        // coverage via to_jsonb: a 0486-but-not-0488 database answers NULL, not an error.
+        // coverage / scope via to_jsonb: older databases answer NULL, not an error.
         `SELECT id, name, paired_by AS "pairedBy", last_heartbeat_at AS "lastHeartbeatAt",
                 engines, bridge_version AS "bridgeVersion",
                 prefer_when_online AS "preferWhenOnline",
                 (to_jsonb(ai_bridge_devices) ->> 'coverage') AS coverage,
+                (to_jsonb(ai_bridge_devices) ->> 'scope') AS scope,
                 jobs_served AS "jobsServed"
            FROM ai_bridge_devices
           WHERE org_id = $1::uuid AND revoked_at IS NULL
@@ -74,24 +78,27 @@ export async function GET(request: Request) {
         [orgId],
       );
       return Response.json({
-        devices: devices.rows.map(
-          (row): BridgeDeviceStatus => ({
-            id: row.id,
-            name: row.name,
-            pairedBy: row.pairedBy,
-            pairedByMe: row.pairedBy === session.user.id,
-            online:
-              Boolean(row.lastHeartbeatAt) &&
-              Date.now() - new Date(row.lastHeartbeatAt!).getTime() < BRIDGE_ONLINE_WINDOW_MS,
-            lastHeartbeatAt: row.lastHeartbeatAt ? new Date(row.lastHeartbeatAt).toISOString() : null,
-            engines: row.engines ?? {},
-            bridgeVersion: row.bridgeVersion,
-            preferWhenOnline: row.preferWhenOnline,
-            coverage: row.coverage === "everything" ? "everything" : "chat",
-            jobsServed: row.jobsServed,
-            canManage: isAdmin || row.pairedBy === session.user.id,
-          }),
-        ),
+        devices: devices.rows
+          .filter((row) => row.scope !== "personal" || row.pairedBy === session.user.id)
+          .map(
+            (row): BridgeDeviceStatus => ({
+              id: row.id,
+              name: row.name,
+              pairedBy: row.pairedBy,
+              pairedByMe: row.pairedBy === session.user.id,
+              online:
+                Boolean(row.lastHeartbeatAt) &&
+                Date.now() - new Date(row.lastHeartbeatAt!).getTime() < BRIDGE_ONLINE_WINDOW_MS,
+              lastHeartbeatAt: row.lastHeartbeatAt ? new Date(row.lastHeartbeatAt).toISOString() : null,
+              engines: row.engines ?? {},
+              bridgeVersion: row.bridgeVersion,
+              preferWhenOnline: row.preferWhenOnline,
+              coverage: row.coverage === "everything" ? "everything" : "chat",
+              scope: row.scope === "personal" ? "personal" : "team",
+              jobsServed: row.jobsServed,
+              canManage: isAdmin || row.pairedBy === session.user.id,
+            }),
+          ),
         jobStats: jobs.rows.map((row) => ({
           state: row.state,
           count: Number(row.count),
@@ -153,11 +160,15 @@ export async function PATCH(request: Request) {
       deviceId?: string;
       preferWhenOnline?: boolean;
       coverage?: string;
+      scope?: string;
       revoke?: boolean;
     };
     if (!body.deviceId) throw new Error("deviceId is required");
     if (body.coverage !== undefined && body.coverage !== "chat" && body.coverage !== "everything") {
       throw new Error("coverage must be 'chat' or 'everything'");
+    }
+    if (body.scope !== undefined && body.scope !== "team" && body.scope !== "personal") {
+      throw new Error("scope must be 'team' or 'personal'");
     }
     return await withRls({ userId: session.user.id, orgId }, async (client) => {
       const result = body.revoke
@@ -174,12 +185,22 @@ export async function PATCH(request: Request) {
                 RETURNING name`,
               [body.deviceId, body.coverage],
             )
-          : await client.query<{ name: string }>(
-              `UPDATE ai_bridge_devices SET prefer_when_online = $2, updated_at = now()
-                WHERE id = $1::uuid AND revoked_at IS NULL
-                RETURNING name`,
-              [body.deviceId, Boolean(body.preferWhenOnline)],
-            );
+          : body.scope !== undefined
+            ? await client.query<{ name: string }>(
+                // Personal is only the pairer's own computer. Admins cannot point
+                // someone else's machine at Your Claude Code.
+                `UPDATE ai_bridge_devices SET scope = $2, updated_at = now()
+                  WHERE id = $1::uuid AND revoked_at IS NULL
+                    AND ($2 <> 'personal' OR paired_by = $3::uuid)
+                  RETURNING name`,
+                [body.deviceId, body.scope, session.user.id],
+              )
+            : await client.query<{ name: string }>(
+                `UPDATE ai_bridge_devices SET prefer_when_online = $2, updated_at = now()
+                  WHERE id = $1::uuid AND revoked_at IS NULL
+                  RETURNING name`,
+                [body.deviceId, Boolean(body.preferWhenOnline)],
+              );
       if (!result.rowCount) {
         return Response.json(
           { error: "Device not found, or only the pairer / an owner / admin can change it." },
@@ -205,7 +226,18 @@ export async function PATCH(request: Request) {
                 coverage: body.coverage,
               },
             })
-          : null;
+          : body.scope !== undefined
+            ? await auditBridgeChange(client, {
+                orgId,
+                actorUserId: session.user.id,
+                action: "ai_bridge.scope.changed",
+                metadata: {
+                  deviceId: body.deviceId,
+                  deviceName: result.rows[0]?.name ?? null,
+                  scope: body.scope,
+                },
+              })
+            : null;
       return Response.json({ success: true, ...(audited === null ? {} : { audited }) });
     });
   } catch (error) {

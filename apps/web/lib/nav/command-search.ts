@@ -374,7 +374,16 @@ const KEYWORDS: Record<string, string[]> = {
   "team:my-kit": ["my kit", "my stuff", "what do i need", "my tasks", "my assignments", "personal"],
   "team:team-storage": ["storage node", "raspberry pi", "self host", "storage", "disk", "pi"],
   "team:team-relays": ["relay", "raspberry pi", "freebuff", "deepseek", "ask ai pi", "video pi", "pair pi"],
-  "ai:ai-bridge": ["subscription bridge", "claude code", "codex", "chatgpt", "subscription", "bridge", "free ai"],
+  "ai:ai-bridge": [
+    "subscription bridge",
+    "claude code",
+    "your claude code",
+    "codex",
+    "chatgpt",
+    "subscription",
+    "bridge",
+    "free ai",
+  ],
   "build:agent-config": ["agent config", "agent rules", "claude.md", "mcp", "subagent", "team rules", "coding agent"],
   "media:media-library": ["media library", "photos", "videos", "album", "gallery", "pictures", "upload photo"],
 
