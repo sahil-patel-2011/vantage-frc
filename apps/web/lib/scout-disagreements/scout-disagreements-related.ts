@@ -151,7 +151,7 @@ export function scoutDisagreementsShellCopy(kind: ScoutDisagreementsShellKind): 
     case "loading":
       return {
         kind,
-        title: "Loading scout disagreements…",
+        title: "Opening Disagreements",
         description:
           "Checking which team you are on and real conflict rows.",
       };

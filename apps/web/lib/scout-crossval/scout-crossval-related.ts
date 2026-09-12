@@ -159,7 +159,7 @@ export function scoutCrossvalShellCopy(kind: ScoutCrossvalShellKind): ScoutCross
     case "loading":
       return {
         kind,
-        title: "Loading scout cross-validation…",
+        title: "Opening Cross-check",
         description:
           "Checking which team you are on and cached official score breakdowns.",
       };

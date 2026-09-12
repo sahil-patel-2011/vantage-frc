@@ -188,7 +188,7 @@ export function scoutAccuracyShellCopy(kind: ScoutAccuracyShellKind): ScoutAccur
     case "loading":
       return {
         kind,
-        title: "Loading scout accuracy…",
+        title: "Opening Accuracy",
         description:
           "Checking which team you are on and official scout rows.",
       };

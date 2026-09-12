@@ -175,7 +175,7 @@ export function scoutingShellCopy(kind: ScoutingShellKind): ScoutingEmptyCopy {
     case "loading":
       return {
         kind,
-        title: "Loading scouting…",
+        title: "Opening Scouting",
         description: "Checking your team, event, and published forms.",
       };
     case "error":
