@@ -4,7 +4,7 @@ import { withOrgHref } from "../nav/product-nav";
 
 /** Soft-UI related surfaces for Sponsor wall (never DEMO sponsor counts). */
 export const SPONSOR_WALL_RELATED_LINKS = [
-  { id: "sponsors", label: "Sponsor CRM", kind: "business" as const, tab: "sponsors" },
+  { id: "sponsors", label: "Sponsors", kind: "business" as const, tab: "sponsors" },
   { id: "sponsorship", label: "Sponsorship", kind: "business" as const, tab: "sponsorship" },
   { id: "sponsor-suite", label: "Sponsor suite", kind: "business" as const, tab: "sponsor-suite" },
   { id: "placements", label: "Partner packages", kind: "business" as const, tab: "placements" },
@@ -18,7 +18,7 @@ export type SponsorWallRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — Sponsor CRM / Sponsorship / Sponsor suite. */
+/** Focused Soft-UI strip — Sponsors / Sponsorship / Sponsor suite. */
 export const SPONSOR_WALL_RELATED_INCLUDE: SponsorWallRelatedId[] = [
   "sponsors",
   "sponsorship",
@@ -80,7 +80,7 @@ export function sponsorWallSetupSteps(orgId?: string | null): SponsorWallSetupSt
     },
     {
       id: "sponsors",
-      label: "Open Sponsor CRM",
+      label: "Open Sponsors",
       detail: "Sponsor rows stay blank until your team logs them.",
       href: hubHref("/business", "sponsors", orgId),
     },
@@ -148,7 +148,7 @@ export function sponsorWallShellCopy(kind: SponsorWallShellKind): SponsorWallEmp
         badge: "Unavailable",
         title: "Could not load Sponsor wall",
         description:
-          "A network or server issue blocked the wall. Retry, or open Sponsor CRM / Sponsorship while it reloads.",
+          "A network or server issue blocked the wall. Retry, or open Sponsors / Sponsorship while it reloads.",
       };
     case "setup":
       return {
@@ -164,7 +164,7 @@ export function sponsorWallShellCopy(kind: SponsorWallShellKind): SponsorWallEmp
         badge: "No sponsors yet",
         title: "Add your first sponsor to build the wall",
         description:
-          "Logos, tiers, and thank-you messages stay blank until you add real entries. Cross-check Sponsor CRM and Sponsorship.",
+          "Logos, tiers, and thank-you messages stay blank until you add real entries. Cross-check Sponsors and Sponsorship.",
       };
     default:
       return {
@@ -178,7 +178,7 @@ export function sponsorWallShellCopy(kind: SponsorWallShellKind): SponsorWallEmp
 
 /**
  * Soft-UI next actions for Sponsor wall empty/setup shells.
- * Points at Sponsor CRM / Sponsorship — never invents DEMO sponsor counts.
+ * Points at Sponsors / Sponsorship — never invents DEMO sponsor counts.
  */
 export function sponsorWallNextActions(input: {
   orgId?: string | null;
@@ -208,7 +208,7 @@ export function sponsorWallNextActions(input: {
       },
       {
         id: "sponsors",
-        label: "Open Sponsor CRM",
+        label: "Open Sponsors",
         detail: "Sponsor rows stay available while the wall reloads.",
         href: hubHref("/business", "sponsors", orgId),
       },
@@ -232,7 +232,7 @@ export function sponsorWallNextActions(input: {
       },
       {
         id: "sponsors",
-        label: "Open Sponsor CRM",
+        label: "Open Sponsors",
         detail: "Pull names from real CRM rows.",
         href: hubHref("/business", "sponsors", orgId),
       },
@@ -258,7 +258,7 @@ export function sponsorWallNextActions(input: {
     },
     {
       id: "sponsors",
-      label: "Open Sponsor CRM",
+      label: "Open Sponsors",
       detail: "Keep wall names grounded in CRM sponsors.",
       href: hubHref("/business", "sponsors", orgId),
     },

@@ -152,7 +152,7 @@ function SponsorWallShell({
           <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
         ) : null}
         {shell === "empty" ? (
-          <Button as="a" variant="primary" href={hubHref("/business", "sponsors", orgId)}>Open Sponsor CRM</Button>
+          <Button as="a" variant="primary" href={hubHref("/business", "sponsors", orgId)}>Open Sponsors</Button>
         ) : null}
       </EmptyState>
       {shell === "ready" ? <SponsorWallNextActionsPanel actions={actions} /> : null}
@@ -337,7 +337,7 @@ export default function SponsorWallClient() {
           </>
         }
         title="Sponsor wall"
-        description="Build a public thank-you wall for your sponsors — logos, tiers, and shout-outs from real entries only. Cross-check Sponsor CRM and Sponsorship."
+        description="Build a public thank-you wall for your sponsors — logos, tiers, and shout-outs from real entries only. Cross-check Sponsors and Sponsorship."
       >
         <div className="sponsor-wall-header-actions">
           {relatedLinks.map((link) => (
@@ -407,7 +407,7 @@ export default function SponsorWallClient() {
         <Panel className="sponsor-wall-tip" aria-label="Sponsor wall tip">
           <span className="eyebrow">Grounding path</span>
           <p className="app-muted" style={{ marginTop: 8 }}>
-            Pull names from <a href={sponsorsHref}>Sponsor CRM</a>, align tiers with{" "}
+            Pull names from <a href={sponsorsHref}>Sponsors</a>, align tiers with{" "}
             <a href={sponsorshipHref}>Sponsorship</a>, and pair assets in <a href={suiteHref}>Sponsor suite</a>
           </p>
         </Panel>

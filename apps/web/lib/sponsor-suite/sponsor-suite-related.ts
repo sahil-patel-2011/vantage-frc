@@ -4,7 +4,7 @@ import { withOrgHref } from "../nav/product-nav";
 
 /** Soft-UI related surfaces for Sponsor suite (never DEMO fundraising metrics). */
 export const SPONSOR_SUITE_RELATED_LINKS = [
-  { id: "sponsors", label: "Sponsor CRM", kind: "business" as const, tab: "sponsors" },
+  { id: "sponsors", label: "Sponsors", kind: "business" as const, tab: "sponsors" },
   { id: "sponsorship", label: "Sponsorship", kind: "business" as const, tab: "sponsorship" },
   { id: "sponsor-wall", label: "Sponsor wall", kind: "business" as const, tab: "sponsor-wall" },
   { id: "media-kit", label: "Media kit", kind: "business" as const, tab: "media-kit" },
@@ -80,7 +80,7 @@ export function sponsorSuiteSetupSteps(orgId?: string | null): SponsorSuiteSetup
     },
     {
       id: "sponsors",
-      label: "Open Sponsor CRM",
+      label: "Open Sponsors",
       detail: "Sponsor rows stay blank until your team logs them.",
       href: hubHref("/business", "sponsors", orgId),
     },
@@ -181,7 +181,7 @@ export function sponsorSuiteShellCopy(kind: SponsorSuiteShellKind): SponsorSuite
         badge: "Unavailable",
         title: "Could not load Sponsor suite",
         description:
-          "A network or server issue blocked the suite. Retry, or open Sponsor CRM / Sponsorship while it reloads.",
+          "A network or server issue blocked the suite. Retry, or open Sponsors / Sponsorship while it reloads.",
       };
     case "setup":
       return {
@@ -197,7 +197,7 @@ export function sponsorSuiteShellCopy(kind: SponsorSuiteShellKind): SponsorSuite
         badge: "No sponsors yet",
         title: "Add sponsors before building the suite",
         description:
-          "Goals, decks, ROI reports, and reminders stay blank until real CRM sponsors exist. Cross-check Sponsor CRM and Sponsorship.",
+          "Goals, decks, ROI reports, and reminders stay blank until real CRM sponsors exist. Cross-check Sponsors and Sponsorship.",
       };
     default:
       return {
@@ -241,7 +241,7 @@ export function sponsorSuiteNextActions(input: {
       },
       {
         id: "sponsors",
-        label: "Open Sponsor CRM",
+        label: "Open Sponsors",
         detail: "Sponsor rows stay available while the suite reloads.",
         href: hubHref("/business", "sponsors", orgId),
       },
@@ -258,7 +258,7 @@ export function sponsorSuiteNextActions(input: {
     return [
       {
         id: "sponsors",
-        label: "Open Sponsor CRM",
+        label: "Open Sponsors",
         detail: "Log real sponsors before generating decks.",
         href: hubHref("/business", "sponsors", orgId),
         primary: true,
@@ -291,7 +291,7 @@ export function sponsorSuiteNextActions(input: {
     },
     {
       id: "sponsors",
-      label: "Open Sponsor CRM",
+      label: "Open Sponsors",
       detail: `${sponsorCount} sponsor${sponsorCount === 1 ? "" : "s"} in CRM — keep decks grounded.`,
       href: hubHref("/business", "sponsors", orgId),
     },

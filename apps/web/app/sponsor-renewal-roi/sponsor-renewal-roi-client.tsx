@@ -381,7 +381,7 @@ export default function SponsorRenewalRoiClient() {
           </>
         }
         title="Renewal ROI"
-        description="Churn-risk scoring and sponsor-branded ROI reports built only from logged interactions, contributions, and community-impact mentions. Cross-check Sponsor CRM, Suite, and Impact."
+        description="Churn-risk scoring and sponsor-branded ROI reports built only from logged interactions, contributions, and community-impact mentions. Cross-check Sponsors, Sponsor suite, and Impact."
       >
         <div className="srr-header-actions">
           {view.seasons.length > 0 ? (

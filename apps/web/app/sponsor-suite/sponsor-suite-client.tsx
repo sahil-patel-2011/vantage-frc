@@ -163,7 +163,7 @@ function SponsorSuiteShell({
           <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
         ) : null}
         {shell === "empty" ? (
-          <Button as="a" variant="primary" href={hubHref("/business", "sponsors", orgId)}>Open Sponsor CRM</Button>
+          <Button as="a" variant="primary" href={hubHref("/business", "sponsors", orgId)}>Open Sponsors</Button>
         ) : null}
       </EmptyState>
       {shell === "ready" ? <SponsorSuiteNextActionsPanel actions={actions} /> : null}
@@ -457,7 +457,7 @@ export default function SponsorSuiteClient() {
           description={shellCopy.description}
         >
           <Button as="a" variant="primary" href={hubHref("/business", "sponsors", orgId)}>
-            Open Sponsor CRM
+            Open Sponsors
           </Button>
         </EmptyState>
       ) : null}

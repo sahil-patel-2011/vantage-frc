@@ -9,7 +9,7 @@ export const MEDIA_KIT_RELATED_LINKS = [
   { id: "sponsor-suite", label: "Sponsor suite", kind: "business" as const, tab: "sponsor-suite" },
   { id: "outreach-calendar", label: "Outreach calendar", kind: "business" as const, tab: "outreach-calendar" },
   { id: "impact", label: "Impact", kind: "business" as const, tab: "impact" },
-  { id: "sponsors", label: "Sponsor CRM", kind: "business" as const, tab: "sponsors" },
+  { id: "sponsors", label: "Sponsors", kind: "business" as const, tab: "sponsors" },
 ] as const;
 
 export type MediaKitRelatedId = (typeof MEDIA_KIT_RELATED_LINKS)[number]["id"];

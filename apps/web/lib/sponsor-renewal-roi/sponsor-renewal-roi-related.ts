@@ -3,9 +3,9 @@ import { withOrgHref } from "../nav/product-nav";
 
 /** Soft-UI related surfaces for Renewal ROI (never DEMO churn scores). */
 export const SPONSOR_RENEWAL_ROI_RELATED_LINKS = [
-  { id: "sponsors", label: "Sponsor CRM", kind: "business" as const, tab: "sponsors" },
-  { id: "sponsor-suite", label: "Sponsor Suite", kind: "business" as const, tab: "sponsor-suite" },
-  { id: "sponsor-wall", label: "Sponsor Wall", kind: "business" as const, tab: "sponsor-wall" },
+  { id: "sponsors", label: "Sponsors", kind: "business" as const, tab: "sponsors" },
+  { id: "sponsor-suite", label: "Sponsor suite", kind: "business" as const, tab: "sponsor-suite" },
+  { id: "sponsor-wall", label: "Sponsor wall", kind: "business" as const, tab: "sponsor-wall" },
   { id: "impact", label: "Impact", kind: "business" as const, tab: "impact" },
 ] as const;
 
@@ -78,7 +78,7 @@ export function sponsorRenewalRoiSetupSteps(orgId?: string | null): SponsorRenew
     },
     {
       id: "sponsors",
-      label: "Open Sponsor CRM",
+      label: "Open Sponsors",
       detail: "Sponsor rows stay blank until your team logs them.",
       href: hubHref("/business", "sponsors", orgId),
     },
@@ -90,7 +90,7 @@ export function sponsorRenewalRoiSetupSteps(orgId?: string | null): SponsorRenew
     },
     {
       id: "sponsor-suite",
-      label: "Open Sponsor Suite",
+      label: "Open Sponsor suite",
       detail: "Suite assets stay blank until real sponsors land.",
       href: hubHref("/business", "sponsor-suite", orgId),
     },
@@ -140,7 +140,7 @@ export function sponsorRenewalRoiShellCopy(kind: SponsorRenewalRoiShellKind): Sp
         badge: "Unavailable",
         title: "Could not load Renewal ROI",
         description:
-          "A network or server issue blocked renewal scoring. Retry, or open Sponsor CRM while it reloads.",
+          "A network or server issue blocked renewal scoring. Retry, or open Sponsors while it reloads.",
       };
     case "setup":
       return {
@@ -194,7 +194,7 @@ export function sponsorRenewalRoiNextActions(input: {
         },
         {
           id: "sponsors",
-          label: "Open Sponsor CRM",
+          label: "Open Sponsors",
           detail: "Sponsor rows stay blank until your team logs them.",
           href: hubHref("/business", "sponsors", null),
         },
@@ -209,7 +209,7 @@ export function sponsorRenewalRoiNextActions(input: {
     return [
       {
         id: "sponsors",
-        label: "Open Sponsor CRM",
+        label: "Open Sponsors",
         detail: "Add at least one sponsor before renewal scoring can run.",
         href: hubHref("/business", "sponsors", orgId),
         primary: true,
@@ -222,7 +222,7 @@ export function sponsorRenewalRoiNextActions(input: {
       },
       {
         id: "sponsor-suite",
-        label: "Open Sponsor Suite",
+        label: "Open Sponsor suite",
         detail: "Suite assets stay blank until real sponsors land.",
         href: hubHref("/business", "sponsor-suite", orgId),
       },
@@ -240,7 +240,7 @@ export function sponsorRenewalRoiNextActions(input: {
       },
       {
         id: "sponsors",
-        label: "Open Sponsor CRM",
+        label: "Open Sponsors",
         detail: "CRM stays available while renewal scores reload.",
         href: hubHref("/business", "sponsors", orgId),
       },
@@ -270,7 +270,7 @@ export function sponsorRenewalRoiNextActions(input: {
       },
       {
         id: "sponsor-wall",
-        label: "Open Sponsor Wall",
+        label: "Open Sponsor wall",
         detail: "Public wall stays blank until real sponsors are featured.",
         href: hubHref("/business", "sponsor-wall", orgId),
       },
@@ -290,7 +290,7 @@ export function sponsorRenewalRoiNextActions(input: {
     },
     {
       id: "sponsors",
-      label: "Open Sponsor CRM",
+      label: "Open Sponsors",
       detail: "Log interactions and contributions that feed the score.",
       href: hubHref("/business", "sponsors", orgId),
     },
@@ -302,7 +302,7 @@ export function sponsorRenewalRoiNextActions(input: {
     },
     {
       id: "sponsor-suite",
-      label: "Open Sponsor Suite",
+      label: "Open Sponsor suite",
       detail: "Pair ROI reports with suite assets for renewals.",
       href: hubHref("/business", "sponsor-suite", orgId),
     },
