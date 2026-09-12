@@ -401,7 +401,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "scouting-offline",
     slug: "scouting-offline",
-    title: "Scouting and offline",
+    title: "Scouting",
     summary:
       "Match and pit forms cache on-device. Outbox syncs when online — coverage stays empty until real rows exist.",
     category: "competition",
@@ -1179,7 +1179,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "media-workspace",
     slug: "media-workspace",
-    title: "Media team for press and business",
+    title: "Media team",
     summary:
       "Top-level Vantage Media pillar for calendar, drafts, kit, and impact — empty until real rows exist.",
     category: "media",
@@ -1553,7 +1553,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "storage-node",
     slug: "storage-node",
-    title: "Self-hosted storage node",
+    title: "Storage node",
     summary:
       "Run a Raspberry Pi (or any Node 20+ box) that stores your team's large files on its own disk — bytes on your hardware, only metadata in the cloud.",
     category: "integrations",
@@ -1646,7 +1646,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
     id: "ai-relays",
     slug: "ai-relays",
     category: "integrations",
-    title: "Pair an AI relay (Raspberry Pi)",
+    title: "Pair an AI relay",
     summary: "A Pi on the team network runs Ask AI, Bugbot, assembly manuals, and video analysis. Pair it with a code — never a website cookie.",
     keywords: ["relay", "raspberry pi", "freebuff", "deepseek", "pair"],
     relatedHref: "/team/relays",
