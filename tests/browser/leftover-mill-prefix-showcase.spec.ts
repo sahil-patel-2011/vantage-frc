@@ -12,7 +12,9 @@ test("leftover Showcase deck drops VANTAGE / mill prefix", async ({ page }) => {
   await page.goto("/showcase/present");
   await waitForLoadingGone(page);
   await expect(page.locator("body")).not.toContainText("Application error");
-  await expect(page.getByRole("heading", { name: /Season Impact|Loading showcase|showcase/i }).first()).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: /Season Impact|Choose your team/ }).first(),
+  ).toBeVisible();
   await expect(page.locator("body"), "/showcase/present still shows VANTAGE /").not.toContainText(
     "VANTAGE /",
   );

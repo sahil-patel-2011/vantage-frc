@@ -7,9 +7,9 @@ test.beforeEach(async ({ context }) => {
   if (!signed) await signInFixture(context);
 });
 
-test("Scout Accuracy and Data impact drop membership-bound", async ({ page }) => {
+test("Lineup and Match video drop membership-bound", async ({ page }) => {
   await assertNoMembershipBound(page, [
-    { path: "/scout-accuracy", extra: ["pick-desk ready"] },
-    { path: "/scout-data-impact" },
+    { path: "/scouting/lineup", extra: ["membership IDs"] },
+    { path: "/video" },
   ]);
 });

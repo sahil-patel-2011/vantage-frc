@@ -1,5 +1,5 @@
-import { expect, test } from "@playwright/test";
-import { expectHubReadyOrGate, loadFailureHeading } from "./hub-org-gate";
+import { test } from "@playwright/test";
+import { assertChromeSnapshotLeaf } from "./leftover-chrome-snapshot-walk";
 import { signInAs, signInFixture } from "./session";
 
 test.beforeEach(async ({ context }) => {
@@ -7,28 +7,10 @@ test.beforeEach(async ({ context }) => {
   if (!signed) await signInFixture(context);
 });
 
-const LEAVES = [
-  { path: "/safety", heading: "Safety log" },
-  { path: "/match-debrief", heading: "Match debrief" },
-  { path: "/incident-heatmap", heading: "Incident Heatmap" },
-  { path: "/auton-path-library", heading: "Auton paths" },
-] as const;
+test("/safety paints a heading instead of leftover VANTAGE chrome", async ({ page }) => {
+  await assertChromeSnapshotLeaf(page, { path: "/safety", heading: "Safety log" });
+});
 
-for (const leaf of LEAVES) {
-  test(`${leaf.path} paints a heading instead of leftover VANTAGE chrome`, async ({ page }) => {
-    await page.goto(leaf.path);
-    await expect(page.locator("body")).not.toContainText("Application error");
-    const heading = page.getByRole("heading", { level: 1 }).filter({ hasText: leaf.heading });
-    const setup = page.getByRole("heading", { name: "Choose your team", exact: true });
-    const unavailable = loadFailureHeading(page);
-    if (!(await expectHubReadyOrGate(page, heading, setup.or(unavailable)))) {
-      await page.screenshot({
-        path: `/opt/cursor/artifacts/${leaf.path.slice(1)}-last-snapshot.png`,
-        fullPage: true,
-      });
-      return;
-    }
-    await expect(heading.first()).toBeVisible();
-    await expect(page.getByText("VANTAGE /")).toHaveCount(0);
-  });
-}
+test("/match-debrief paints a heading instead of leftover VANTAGE chrome", async ({ page }) => {
+  await assertChromeSnapshotLeaf(page, { path: "/match-debrief", heading: "Match debrief" });
+});

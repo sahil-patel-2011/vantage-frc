@@ -2,7 +2,8 @@
 
 import "../../product-styles";
 import { useEffect, useState } from "react";
-import { Button } from "../../../components/ui";
+import { Button, EmptyState, PageHeader } from "../../../components/ui";
+import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 
 type View = {
   deck: { title: string; subtitle: string | null; isDemo: boolean };
@@ -18,25 +19,36 @@ type View = {
   }>;
 };
 
+function presentFailure(message: string) {
+  const kind = classifyLoadFailure({ message });
+  return loadFailureCopy(kind, {
+    nextPath: "/showcase/present",
+    message: kind === "unknown" ? null : message,
+  });
+}
+
 export default function ShowcasePresentation({
   params,
 }: {
   params: { token?: string; orgId?: string; deckId?: string };
 }) {
+  const token = params.token?.trim() ?? "";
+  const orgId = params.orgId?.trim() ?? "";
   const [view, setView] = useState<View | null>(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (!token && !orgId) return;
     void (async () => {
-      const response = params.token
-        ? await fetch(`/api/showcase/public?token=${encodeURIComponent(params.token)}`)
-        : await fetch(`/api/showcase?orgId=${params.orgId}&deckId=${params.deckId}`);
+      const response = token
+        ? await fetch(`/api/showcase/public?token=${encodeURIComponent(token)}`)
+        : await fetch(`/api/showcase?orgId=${encodeURIComponent(orgId)}&deckId=${params.deckId ?? ""}`);
       const data = await response.json();
       if (!response.ok) {
-        setError(data.error);
+        setError(typeof data.error === "string" ? data.error : "Showcase request failed");
         return;
       }
-      if (params.token) {
+      if (token) {
         setView(data);
         return;
       }
@@ -60,12 +72,75 @@ export default function ShowcasePresentation({
           ),
       });
     })();
-  }, [params]);
+  }, [token, orgId, params.deckId]);
+
+  if (!token && !orgId) {
+    return (
+      <main className="showcase-present">
+        <PageHeader
+          breadcrumbs="Media / Showcase"
+          title="Season Impact"
+          description="Present one team's approved season story. Choose your team or open a share link."
+        />
+        <EmptyState
+          soft
+          badge="Needs setup"
+          badgeTone="setup"
+          title="Choose your team"
+          description="A Season Impact deck belongs to one team. Choose your team, or open a share link from a mentor."
+        >
+          <Button as="a" variant="primary" href="/workspace">
+            Choose your team
+          </Button>
+          <Button as="a" variant="secondary" href="/showcase">
+            Showcase
+          </Button>
+        </EmptyState>
+      </main>
+    );
+  }
+
+  if (error) {
+    const failure = presentFailure(error);
+    return (
+      <main className="showcase-present">
+        <PageHeader breadcrumbs="Media / Showcase" title="Season Impact" />
+        <EmptyState
+          soft
+          badge={
+            failure.kind === "auth"
+              ? "Signed out"
+              : failure.kind === "forbidden"
+                ? "No access"
+                : "Unavailable"
+          }
+          badgeTone="setup"
+          title={failure.title}
+          description={
+            failure.kind === "unknown"
+              ? "This share link is not available. Ask a mentor for a new link."
+              : failure.description
+          }
+        >
+          {failure.primary ? (
+            <Button as="a" variant="primary" href={failure.primary.href}>
+              {failure.primary.label}
+            </Button>
+          ) : (
+            <Button as="a" variant="primary" href="/showcase">
+              Showcase
+            </Button>
+          )}
+        </EmptyState>
+      </main>
+    );
+  }
 
   if (!view) {
     return (
       <main className="showcase-present">
-        <h1>{error || "Loading showcase…"}</h1>
+        <PageHeader breadcrumbs="Media / Showcase" title="Season Impact" />
+        <p className="app-muted">Loading showcase…</p>
       </main>
     );
   }

@@ -22,6 +22,7 @@ describe("leftover mill prefix on display / audit / posture", () => {
     for (const rel of FILES) {
       const src = readFileSync(join(WEB, rel), "utf8");
       expect(src, rel).not.toMatch(/VANTAGE \//);
+      expect(src, rel).not.toMatch(/Authentication required/);
     }
   });
 });
