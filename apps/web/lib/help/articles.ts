@@ -958,7 +958,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "bugbot-ultra",
     slug: "bugbot-ultra",
-    title: "Scan GitHub with Bugbot",
+    title: "Scan GitHub",
     summary:
       "Connect a robot-code repo, then scan on your subscription or pay Bugbot Ultra ($1 scan, $2 fix, $1 recheck). Findings must quote the source.",
     category: "build",
@@ -1365,7 +1365,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "local-ai",
     slug: "local-ai",
-    title: "Run Vantage on local or free AI",
+    title: "Local AI",
     summary:
       "Point Vantage at Ollama, LM Studio, a LAN box, or a $0 key and every feature still works — with an honest quality notice on smaller models.",
     category: "ai-models",
@@ -1413,7 +1413,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "plans-and-pricing",
     slug: "plans-and-pricing",
-    title: "Plans: Free, Pro, Pro+, and Max",
+    title: "Plans",
     summary:
       "Every feature ships on every plan, including Free. Plans differ only in how much hosted AI usage is included.",
     category: "billing-plans",
@@ -1671,7 +1671,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
     id: "analyze-video",
     slug: "analyze-video",
     category: "competition",
-    title: "Paste a match or pit video",
+    title: "Paste a video",
     summary: "Paste a video for the video Pi. You get a timeline with timestamps. Confirming saves it on Match notes as from-video evidence. Scouted cycle counts stay as the scouts entered them.",
     keywords: ["video", "match video", "pit camera", "youtube"],
     relatedHref: "/video-analysis",
