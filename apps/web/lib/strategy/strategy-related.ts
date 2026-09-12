@@ -141,7 +141,7 @@ export function strategyShellCopy(kind: StrategyShellKind): StrategyEmptyCopy {
     case "loading":
       return {
         kind,
-        title: "Loading strategy…",
+        title: "Opening Strategy",
         description: "Checking your team, event, and synced match data.",
       };
     case "error":

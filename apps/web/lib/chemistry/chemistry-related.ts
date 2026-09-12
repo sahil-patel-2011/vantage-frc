@@ -160,7 +160,7 @@ export function chemistryShellCopy(kind: ChemistryShellKind): ChemistryEmptyCopy
     case "loading":
       return {
         kind,
-        title: "Loading alliance chemistry…",
+        title: "Opening Chemistry",
         description: "Checking which team you are on and event ratings.",
       };
     case "error":

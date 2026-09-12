@@ -148,7 +148,7 @@ export function pickDeskShellCopy(kind: PickDeskShellKind): PickDeskEmptyCopy {
     case "loading":
       return {
         kind,
-        title: "Loading pick desk…",
+        title: "Opening Pick desk",
         description: "Checking which team you are on and who you can rank.",
       };
     case "error":

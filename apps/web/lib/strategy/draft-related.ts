@@ -158,7 +158,7 @@ export function draftShellCopy(kind: DraftShellKind): DraftEmptyCopy {
     case "loading":
       return {
         kind,
-        title: "Loading draft board…",
+        title: "Opening Alliance board",
         description:
           "Checking which team you are on and event alliance board.",
       };
