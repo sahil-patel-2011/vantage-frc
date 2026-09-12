@@ -1318,7 +1318,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "ai-bridge",
     slug: "ai-bridge",
-    title: "AI subscription bridge — a member's plan serves the team",
+    title: "AI subscription bridge",
     summary:
       "Pair one member's Claude Pro/Max or ChatGPT subscription on an always-on computer and their plan answers the team's AI at $0 API cost.",
     category: "ai-models",
