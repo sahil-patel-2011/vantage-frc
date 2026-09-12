@@ -4,7 +4,7 @@ import { withOrgHref } from "../nav/product-nav";
 /** Soft-UI related surfaces for Decision notes (never DEMO log entries). */
 export const DECISIONS_RELATED_LINKS = [
   { id: "decision-search", label: "Search", kind: "ai" as const, tab: "decision-search" },
-  { id: "season-report", label: "Season Report", kind: "ai" as const, tab: "season-report" },
+  { id: "season-report", label: "Season report", kind: "ai" as const, tab: "season-report" },
   { id: "knowledge", label: "Knowledge", kind: "team" as const, tab: "knowledge" },
   { id: "strategy", label: "Strategy", kind: "path" as const, path: "/strategy" },
   { id: "chat", label: "Chat", kind: "ai" as const, tab: "chat" },
@@ -19,7 +19,7 @@ export type DecisionsRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — Search / Season Report / Knowledge first. */
+/** Focused Soft-UI strip — Search / Season report / Knowledge first. */
 export const DECISIONS_RELATED_INCLUDE: DecisionsRelatedId[] = [
   "decision-search",
   "season-report",
@@ -27,7 +27,7 @@ export const DECISIONS_RELATED_INCLUDE: DecisionsRelatedId[] = [
 ];
 
 /**
- * Soft-UI cross-links from Decision notes → Search / Season Report / Knowledge.
+ * Soft-UI cross-links from Decision notes → Search / Season report / Knowledge.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function decisionsRelatedLinks(
@@ -121,7 +121,7 @@ export function decisionsShellCopy(kind: DecisionsShellKind): DecisionsEmptyCopy
         badge: "No decisions yet",
         title: "Record your first call",
         description:
-          "The log stays blank until you capture a real decision with context and rationale. Search, Season Report, and Knowledge stay linked.",
+          "The log stays blank until you capture a real decision with context and rationale. Search, Season report, and Knowledge stay linked.",
       };
     default:
       return {
@@ -135,7 +135,7 @@ export function decisionsShellCopy(kind: DecisionsShellKind): DecisionsEmptyCopy
 
 /**
  * Soft-UI next actions for Decision notes empty/setup shells.
- * Points at Search / Season Report / Knowledge — never invents DEMO log entries.
+ * Points at Search / Season report / Knowledge — never invents DEMO log entries.
  */
 export function decisionsNextActions(input: {
   orgId?: string | null;
@@ -165,7 +165,7 @@ export function decisionsNextActions(input: {
         },
         {
           id: "season-report",
-          label: "Open Season Report",
+          label: "Open Season report",
           detail: "Season notes stay blank until you log real entries.",
           href: hubHref("/ai", "season-report", null),
         },
@@ -193,7 +193,7 @@ export function decisionsNextActions(input: {
       },
       {
         id: "season-report",
-        label: "Open Season Report",
+        label: "Open Season report",
         detail: "Retrospective notes stay separate from this ADR-style log.",
         href: hubHref("/ai", "season-report", orgId),
       },
@@ -247,7 +247,7 @@ export function decisionsNextActions(input: {
       },
       {
         id: "season-report",
-        label: "Open Season Report",
+        label: "Open Season report",
         detail: "Log season narrative notes separately from ADR-style decisions.",
         href: hubHref("/ai", "season-report", orgId),
       },
@@ -281,7 +281,7 @@ export function decisionsNextActions(input: {
     },
     {
       id: "season-report",
-      label: "Open Season Report",
+      label: "Open Season report",
       detail: "Cross-check season narrative with logged design choices.",
       href: hubHref("/ai", "season-report", orgId),
     },

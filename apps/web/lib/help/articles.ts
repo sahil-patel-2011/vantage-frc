@@ -839,7 +839,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "my-kit",
     slug: "my-kit",
-    title: "My Kit — your personal to-do view",
+    title: "My kit — your personal to-do view",
     summary:
       "One page answering “what do I need right now”: your tasks, events, duties, scout shifts, hours, tools, and money — all linking back to the owning surface.",
     category: "team",
@@ -866,7 +866,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "How it behaves",
         body: [
-          "My Kit owns no data and writes nothing — every row links to the surface that owns the record, so acting on an item happens in the right place.",
+          "My kit owns no data and writes nothing — every row links to the surface that owns the record, so acting on an item happens in the right place.",
           "Sections are ordered by your subteam focus (a scout sees scouting first, a programmer sees code-adjacent work first).",
           "Empty sections say so honestly, and a section whose backing feature is not in this deployment says that too — those are different states, not the same zero.",
         ],

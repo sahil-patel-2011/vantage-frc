@@ -3,7 +3,7 @@ import { withOrgHref } from "../nav/product-nav";
 
 /** Soft-UI related surfaces for Search (never DEMO decisions). */
 export const DECISION_SEARCH_RELATED_LINKS = [
-  { id: "season-report", label: "Season Report", kind: "ai" as const, tab: "season-report" },
+  { id: "season-report", label: "Season report", kind: "ai" as const, tab: "season-report" },
   { id: "knowledge", label: "Knowledge", kind: "team" as const, tab: "knowledge" },
   { id: "strategy", label: "Strategy", kind: "path" as const, path: "/strategy" },
   { id: "decisions", label: "Decision notes", kind: "path" as const, path: "/decisions" },
@@ -19,7 +19,7 @@ export type DecisionSearchRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — Season Report / Knowledge / Strategy first. */
+/** Focused Soft-UI strip — Season report / Knowledge / Strategy first. */
 export const DECISION_SEARCH_RELATED_INCLUDE: DecisionSearchRelatedId[] = [
   "season-report",
   "knowledge",
@@ -27,7 +27,7 @@ export const DECISION_SEARCH_RELATED_INCLUDE: DecisionSearchRelatedId[] = [
 ];
 
 /**
- * Soft-UI cross-links from Search → Season Report / Knowledge / Strategy.
+ * Soft-UI cross-links from Search → Season report / Knowledge / Strategy.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function decisionSearchRelatedLinks(
@@ -129,7 +129,7 @@ export function decisionSearchShellCopy(kind: DecisionSearchShellKind): Decision
         badge: "No documents indexed",
         title: "Index your first record",
         description:
-          "Search stays blank until you index real decisions or import from Decision notes. Season Report, Knowledge, and Strategy stay linked for context.",
+          "Search stays blank until you index real decisions or import from Decision notes. Season report, Knowledge, and Strategy stay linked for context.",
       };
     default:
       return {
@@ -143,7 +143,7 @@ export function decisionSearchShellCopy(kind: DecisionSearchShellKind): Decision
 
 /**
  * Soft-UI next actions for Search empty/setup shells.
- * Points at Season Report / Knowledge / Strategy — never invents DEMO decisions.
+ * Points at Season report / Knowledge / Strategy — never invents DEMO decisions.
  */
 export function decisionSearchNextActions(input: {
   orgId?: string | null;
@@ -167,7 +167,7 @@ export function decisionSearchNextActions(input: {
         },
         {
           id: "season-report",
-          label: "Open Season Report",
+          label: "Open Season report",
           detail: "Season notes stay empty until you log real entries.",
           href: hubHref("/ai", "season-report", null),
         },
@@ -195,7 +195,7 @@ export function decisionSearchNextActions(input: {
       },
       {
         id: "season-report",
-        label: "Open Season Report",
+        label: "Open Season report",
         detail: "Retrospective notes stay separate from this searchable index.",
         href: hubHref("/ai", "season-report", orgId),
       },
@@ -255,7 +255,7 @@ export function decisionSearchNextActions(input: {
       },
       {
         id: "season-report",
-        label: "Open Season Report",
+        label: "Open Season report",
         detail: "Log season narrative notes separately from the search corpus.",
         href: hubHref("/ai", "season-report", orgId),
       },
@@ -282,7 +282,7 @@ export function decisionSearchNextActions(input: {
   actions.push(
     {
       id: "season-report",
-      label: "Open Season Report",
+      label: "Open Season report",
       detail: "Cross-check season narrative with indexed design choices.",
       href: hubHref("/ai", "season-report", orgId),
       primary: !actions.some((a) => a.primary),

@@ -13,7 +13,7 @@ const WEB = join(__dirname, "..", "..");
 /**
  * Leftover student chrome not skip-list and not in open PRs #2–#41:
  * Form builder still said schemas / org-scoped / TBA; Chemistry still named
- * TBA/Statbotics; Inventory / Inspection / Learning / My Kit / Kickoff still
+ * TBA/Statbotics; Inventory / Inspection / Learning / My kit / Kickoff still
  * badged Setup required; CAD API still said Onshape OAuth and API keys.
  */
 const FILES = [

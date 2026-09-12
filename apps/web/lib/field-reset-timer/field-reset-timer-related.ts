@@ -2,7 +2,7 @@ import { hubHref } from "../nav/hubs";
 import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Field Reset Timer (never DEMO drill times). */
+/** Soft-UI related surfaces for Field reset (never DEMO drill times). */
 export const FIELD_RESET_TIMER_RELATED_LINKS = [
   { id: "practice", label: "Practice", hub: "/team" as const, tab: "practice" },
   { id: "driver-tryouts", label: "Driver tryouts", hub: "/team" as const, tab: "driver-tryouts" },
@@ -131,14 +131,14 @@ export function fieldResetTimerShellCopy(kind: FieldResetTimerShellKind): FieldR
     case "loading":
       return {
         kind,
-        title: "Loading Field Reset Timer…",
+        title: "Opening Field reset",
         description: "Checking which team you are on and reset-drill sessions.",
       };
     case "error":
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Field Reset Timer",
+        title: "Could not load Field reset",
         description:
           "A network or server issue blocked reset drills. Retry, or open Practice while it reloads.",
       };
@@ -188,7 +188,7 @@ export function fieldResetTimerNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Field Reset Timer",
+        label: "Retry Field reset",
         detail: "Reload real practice sessions.",
         href: withOrgHref("/field-reset-timer", orgId),
         primary: true,

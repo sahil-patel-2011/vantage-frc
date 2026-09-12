@@ -7,10 +7,10 @@ const WEB = join(__dirname, "..", "..");
 /**
  * Leftover student Equipment / Safety / Alumni / Search / Reports titles
  * after leftover-ops-titles. Hub labels stay Equipment, Safety, Alumni,
- * Search, and Reports. Routes stay. Season Goals / Morning standup stay
- * on season-goals-standup-chrome. leftover-fmea Failure log and
- * leftover-pick-before Choose your team stay. Do not invent a
- * last-snapshot.
+ * Search, and Reports. Routes stay. leftover-goals-kit Goals /
+ * Standup / My kit / Field reset / Season report stay. leftover-fmea
+ * Failure log and leftover-pick-before Choose your team stay. Do not
+ * invent a last-snapshot.
  */
 const FILES = [
   "app/equipment-maintenance/equipment-maintenance-client.tsx",

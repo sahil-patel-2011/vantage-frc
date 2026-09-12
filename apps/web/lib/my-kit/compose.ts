@@ -1,5 +1,5 @@
 /**
- * My Kit — pure composition. No I/O, no framework, deterministic given its input.
+ * My kit — pure composition. No I/O, no framework, deterministic given its input.
  *
  * Everything here is a fusion of records the loader already read from surfaces that
  * own them. This module invents nothing: if a list is empty it stays empty, and if a
@@ -353,14 +353,14 @@ export const MY_KIT_SETUP_STEPS: MyKitSetupStep[] = [
   {
     id: "workspace",
     label: "Choose your team",
-    detail: "My Kit reads your own rows inside one team, so it needs to know which team.",
+    detail: "My kit reads your own rows inside one team, so it needs to know which team.",
     href: "/workspace",
   },
 ];
 
 export function myKitSetupRequired(
   orgId: string | null = null,
-  message = "Choose your team to open My Kit.",
+  message = "Choose your team to open My kit.",
 ): Extract<MyKitView, { status: "setup_required" }> {
   return { status: "setup_required", message, steps: MY_KIT_SETUP_STEPS, orgId };
 }

@@ -1,7 +1,7 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Season Report (never DEMO season stats). */
+/** Soft-UI related surfaces for Season report (never DEMO season stats). */
 export const SEASON_REPORT_RELATED_LINKS = [
   { id: "strategy", label: "Strategy", kind: "path" as const, path: "/strategy" },
   { id: "impact", label: "Impact", kind: "path" as const, path: "/impact" },
@@ -27,7 +27,7 @@ export const SEASON_REPORT_RELATED_INCLUDE: SeasonReportRelatedId[] = [
 ];
 
 /**
- * Soft-UI cross-links from Season Report → Strategy / Impact first.
+ * Soft-UI cross-links from Season report → Strategy / Impact first.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function seasonReportRelatedLinks(
@@ -80,7 +80,7 @@ export function formatSeasonReportCompleteness(value: unknown, loaded: boolean):
   return `${Math.round(Math.min(1, n) * 100)}%`;
 }
 
-/** Classify Season Report Soft-UI shell — never invents DEMO season stats. */
+/** Classify Season report Soft-UI shell — never invents DEMO season stats. */
 export function classifySeasonReportShell(input: {
   loading: boolean;
   fetchFailed?: boolean;
@@ -101,14 +101,14 @@ export function seasonReportShellCopy(kind: SeasonReportShellKind): SeasonReport
     case "loading":
       return {
         kind,
-        title: "Loading Season Report…",
+        title: "Opening Season report",
         description: "Checking which team you are on and logged season entries.",
       };
     case "error":
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Season Report",
+        title: "Could not load Season report",
         description:
           "A network or server issue blocked the retrospective. Retry, or open Budgets if metered snapshot generation is cut off.",
       };
@@ -139,7 +139,7 @@ export function seasonReportShellCopy(kind: SeasonReportShellKind): SeasonReport
 }
 
 /**
- * Soft-UI next actions for Season Report empty/setup shells.
+ * Soft-UI next actions for Season report empty/setup shells.
  * Points at Strategy / Impact — never invents DEMO season stats.
  */
 export function seasonReportNextActions(input: {
@@ -180,7 +180,7 @@ export function seasonReportNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Finish membership setup so Season Report can load.",
+        detail: "Finish membership setup so Season report can load.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
       },
@@ -203,7 +203,7 @@ export function seasonReportNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Season Report",
+        label: "Retry Season report",
         detail: "Reload real entries and snapshots.",
         href: withOrgHref("/season-report", orgId),
         primary: true,

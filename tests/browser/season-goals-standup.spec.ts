@@ -10,12 +10,12 @@ test.beforeEach(async ({ context }) => {
 const BANNED = ["Setup required", "Meeting-agenda autopilot", "VANTAGE /"];
 
 const LEAVES = [
-  { path: "/goals-tracker", heading: "Season Goals", related: ["Standup", "Meeting agenda", "Season plan"] },
-  { path: "/standup-digest", heading: "Morning standup", related: ["Hours", "Season Goals", "Meeting agenda"] },
-  { path: "/meeting-autopilot", heading: "Meeting agenda", related: ["Calendar", "Standup", "Season Goals"] },
+  { path: "/goals-tracker", heading: "Goals", related: ["Standup", "Meeting agenda", "Season plan"] },
+  { path: "/standup-digest", heading: "Standup", related: ["Hours", "Goals", "Meeting agenda"] },
+  { path: "/meeting-autopilot", heading: "Meeting agenda", related: ["Calendar", "Standup", "Goals"] },
 ] as const;
 
-test("Season Goals / standup / meeting agenda speak student chrome", async ({ page }) => {
+test("Goals / standup / meeting agenda speak student chrome", async ({ page }) => {
   test.setTimeout(120_000);
   for (const leaf of LEAVES) {
     await page.goto(leaf.path);

@@ -516,7 +516,7 @@ export default function SeasonPlanningWorkspaceClient() {
           </>
         }
         title="Season plan"
-        description="Goals → milestones → owners with calendar sync hooks. Progress uses real attendance and build-task data. Cross-check Season Goals, Calendar, and Attendance."
+        description="Goals → milestones → owners with calendar sync hooks. Progress uses real attendance and build-task data. Cross-check Goals, Calendar, and Attendance."
       >
         <div className="season-plan-header-actions">
           {view && "seasons" in view && view.seasons.length > 0 ? (

@@ -60,7 +60,7 @@ async function persistGoalsTrackerSnapshot(
     await putFeatureSnapshot("goals-tracker", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("goals-tracker", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Season Goals already painted; IndexedDB is best-effort.
+    // Live Goals already painted; IndexedDB is best-effort.
   }
 }
 
@@ -194,7 +194,7 @@ export default function GoalsTrackerClient() {
       if (!response.ok || !isGoalsTrackerView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Season Goals. Showing the last copy on this device.");
+          setError("Could not refresh Goals. Showing the last copy on this device.");
           setFetchFailed(false);
           return;
         }
@@ -211,7 +211,7 @@ export default function GoalsTrackerClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Season Goals. Showing the last copy on this device.");
+        setError("Could not refresh Goals. Showing the last copy on this device.");
         setFetchFailed(false);
         return;
       }
@@ -259,10 +259,10 @@ export default function GoalsTrackerClient() {
       breadcrumbs={
         <>
           <a href={teamHref}>Team</a>
-          {" / Season Goals"}
+          {" / Goals"}
         </>
       }
-      title="Season Goals"
+      title="Goals"
       description="Set goals for the season and track progress from real check-ins your team logs — never a guessed number."
     >
       {view?.status === "live" && view.seasons.length > 0 ? (
@@ -308,7 +308,7 @@ export default function GoalsTrackerClient() {
     return (
       <main className="module-page">
         {header}
-        <OfflineBanner feature="Season Goals" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Goals" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           title={failure ? failure.title : "Loading…"}
           description={failure ? failure.description : "Checking your team."}
@@ -334,7 +334,7 @@ export default function GoalsTrackerClient() {
       return (
         <main className="module-page">
           {header}
-          <OfflineBanner feature="Season Goals" fromCache={fromCache} cachedAt={cachedAt} />
+          <OfflineBanner feature="Goals" fromCache={fromCache} cachedAt={cachedAt} />
           {error ? (
             <p className="telemetry-status" role="alert">
               {error}
@@ -360,7 +360,7 @@ export default function GoalsTrackerClient() {
   return (
     <main className="module-page">
       {header}
-      <OfflineBanner feature="Season Goals" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Goals" fromCache={fromCache} cachedAt={cachedAt} />
       {error ? (
         <p className="telemetry-status" role="alert">
           {error}

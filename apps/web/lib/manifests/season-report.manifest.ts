@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "season-report",
-  title: "Season Report",
+  title: "Season report",
   route: "/season-report",
   apiRoute: "/api/season-report",
   hub: "AI",

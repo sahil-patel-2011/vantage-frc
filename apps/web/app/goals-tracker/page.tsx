@@ -1,7 +1,7 @@
 import GoalsTrackerClient from "./goals-tracker-client";
 
 export const metadata = {
-  title: "Season Goals",
+  title: "Goals",
 };
 
 export default function GoalsTrackerPage() {

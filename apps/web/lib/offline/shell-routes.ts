@@ -362,7 +362,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/business")) return "Business";
   if (bare.startsWith("/battery-rotation")) return "Charge plan";
   if (bare.startsWith("/vendors")) return "Vendors";
-  if (bare.startsWith("/season-report")) return "Season Report";
+  if (bare.startsWith("/season-report")) return "Season report";
   if (bare.startsWith("/battery-health-forecast")) return "Pack health";
   if (bare.startsWith("/vendor-lead-times")) return "Lead times";
   if (bare.startsWith("/bin-shelf-locator")) return "Bin locator";
@@ -418,11 +418,11 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/picklist-collab")) return "Pick list";
   if (bare.startsWith("/dossier")) return "Dossier";
   if (bare.startsWith("/event-day-plan")) return "Day plan";
-  if (bare.startsWith("/field-reset-timer")) return "Field reset timer";
+  if (bare.startsWith("/field-reset-timer")) return "Field reset";
   if (bare.startsWith("/drive-team-signals")) return "Drive-team board";
   if (bare.startsWith("/robot-weigh-in")) return "Robot weigh-in";
   if (bare.startsWith("/robot")) return "Robot";
-  if (bare.startsWith("/my-kit")) return "My Kit";
+  if (bare.startsWith("/my-kit")) return "My kit";
   if (bare.startsWith("/part-requests")) return "Part requests";
   if (bare.startsWith("/recognition")) return "Recognition";
   if (bare.startsWith("/budget")) return "Season budget";
@@ -433,7 +433,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/learning")) return "Learning";
   if (bare.startsWith("/training")) return "Training";
   if (bare.startsWith("/tool-checkout")) return "Tool checkout";
-  if (bare.startsWith("/goals-tracker")) return "Season Goals";
+  if (bare.startsWith("/goals-tracker")) return "Goals";
   if (bare.startsWith("/goals")) return "Goals";
   if (bare.startsWith("/reimbursements")) return "Reimbursements";
   if (bare.startsWith("/costs")) return "Season Costs";
@@ -498,7 +498,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/software-versions")) return "Software versions";
   if (bare.startsWith("/spares")) return "Consumables";
   if (bare.startsWith("/sponsor-tier-calculator")) return "Sponsor Tier Calculator";
-  if (bare.startsWith("/standup-digest")) return "Morning standup";
+  if (bare.startsWith("/standup-digest")) return "Standup";
   if (bare.startsWith("/start")) return "Your path";
   if (bare.startsWith("/subsystems")) return "Subsystem specs";
   if (bare.startsWith("/support")) return "Support";

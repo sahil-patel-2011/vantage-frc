@@ -3,7 +3,7 @@ import { withOrgHref } from "../nav/product-nav";
 
 /** Soft-UI related surfaces for Season plan (never DEMO completion %). */
 export const SEASON_PLANNING_RELATED_LINKS = [
-  { id: "goals-tracker", label: "Season Goals", tab: "goals-tracker" },
+  { id: "goals-tracker", label: "Goals", tab: "goals-tracker" },
   { id: "calendar", label: "Calendar", tab: "calendar" },
   { id: "attendance", label: "Attendance", tab: "attendance" },
   { id: "build-burndown", label: "Build Burndown", tab: "build-burndown" },
@@ -79,7 +79,7 @@ export function seasonPlanningSetupSteps(orgId?: string | null): SeasonPlanningS
     },
     {
       id: "goals-tracker",
-      label: "Open Season Goals",
+      label: "Open Goals",
       detail: "Lightweight goal tracking pairs with this team.",
       href: hubHref("/team", "goals-tracker", orgId),
     },
@@ -198,7 +198,7 @@ export function seasonPlanningNextActions(input: {
         },
         {
           id: "goals-tracker",
-          label: "Open Season Goals",
+          label: "Open Goals",
           detail: "Goal rows stay blank until your team enters them.",
           href: hubHref("/team", "goals-tracker", null),
         },
@@ -220,7 +220,7 @@ export function seasonPlanningNextActions(input: {
       },
       {
         id: "goals-tracker",
-        label: "Open Season Goals",
+        label: "Open Goals",
         detail: "Pair lightweight goals with this team plan.",
         href: hubHref("/team", "goals-tracker", orgId),
       },
@@ -244,7 +244,7 @@ export function seasonPlanningNextActions(input: {
       },
       {
         id: "goals-tracker",
-        label: "Open Season Goals",
+        label: "Open Goals",
         detail: "Goals stay available while the plan reloads.",
         href: hubHref("/team", "goals-tracker", orgId),
       },
@@ -268,7 +268,7 @@ export function seasonPlanningNextActions(input: {
       },
       {
         id: "goals-tracker",
-        label: "Open Season Goals",
+        label: "Open Goals",
         detail: "Track lighter goals alongside the team plan.",
         href: hubHref("/team", "goals-tracker", orgId),
       },

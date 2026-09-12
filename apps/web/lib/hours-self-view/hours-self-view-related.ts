@@ -6,7 +6,7 @@ export const HOURS_SELF_VIEW_RELATED_LINKS = [
   { id: "attendance", label: "Attendance", tab: "attendance" },
   { id: "mentor-hours", label: "Mentor hours", tab: "mentor-hours" },
   { id: "team-health-dashboard", label: "Team health", tab: "team-health-dashboard" },
-  { id: "goals-tracker", label: "Season Goals", tab: "goals-tracker" },
+  { id: "goals-tracker", label: "Goals", tab: "goals-tracker" },
 ] as const;
 
 export type HoursSelfViewRelatedId = (typeof HOURS_SELF_VIEW_RELATED_LINKS)[number]["id"];

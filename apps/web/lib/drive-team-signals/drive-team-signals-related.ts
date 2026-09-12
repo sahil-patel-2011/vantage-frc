@@ -8,7 +8,7 @@ export const DRIVE_TEAM_SIGNALS_RELATED_LINKS = [
   { id: "match-strategy-cards", label: "Strategy Cards", tab: "match-strategy-cards" },
   // Match Copilot was consolidated into the one Pre-Match Briefing.
   { id: "briefing", label: "Pre-Match Briefing", tab: "briefing" },
-  { id: "field-reset-timer", label: "Field Reset Timer", hub: "/team" as const, tab: "field-reset-timer" },
+  { id: "field-reset-timer", label: "Field reset", hub: "/team" as const, tab: "field-reset-timer" },
 ] as const;
 
 export type DriveTeamSignalsRelatedId = (typeof DRIVE_TEAM_SIGNALS_RELATED_LINKS)[number]["id"];
@@ -226,7 +226,7 @@ export function driveTeamSignalsNextActions(input: {
       },
       {
         id: "reset",
-        label: "Open Field Reset Timer",
+        label: "Open Field reset",
         detail: "Reset drills use the same drive-crew language.",
         href: hubHref("/team", "field-reset-timer", orgId),
       },

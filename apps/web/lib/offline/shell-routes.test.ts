@@ -235,7 +235,7 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/dossier")).toBe("Dossier");
     expect(offlineCapableLabel("/pit-repair-triage")).toBe("Repair triage");
     expect(offlineCapableLabel("/event-day-plan")).toBe("Day plan");
-    expect(offlineCapableLabel("/field-reset-timer")).toBe("Field reset timer");
+    expect(offlineCapableLabel("/field-reset-timer")).toBe("Field reset");
     expect(offlineCapableLabel("/drive-team-signals")).toBe("Drive-team board");
     expect(offlineCapableLabel("/robot-weigh-in")).toBe("Robot weigh-in");
     expect(offlineCapableLabel("/match-delta-watcher")).toBe("Match-delta watcher");
@@ -281,7 +281,7 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/business")).toBe("Business");
     expect(offlineCapableLabel("/battery-rotation")).toBe("Charge plan");
     expect(offlineCapableLabel("/vendors")).toBe("Vendors");
-    expect(offlineCapableLabel("/season-report")).toBe("Season Report");
+    expect(offlineCapableLabel("/season-report")).toBe("Season report");
     expect(offlineCapableLabel("/media")).toBe("Media");
     expect(offlineCapableLabel("/media-kit")).toBe("Media kit");
     expect(offlineCapableLabel("/battery-health-forecast")).toBe("Pack health");
@@ -335,7 +335,7 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/whiteboard")).toBe("Whiteboard");
     expect(offlineCapableLabel("/robot")).toBe("Robot");
     expect(offlineCapableLabel("/robot-weigh-in")).toBe("Robot weigh-in");
-    expect(offlineCapableLabel("/my-kit")).toBe("My Kit");
+    expect(offlineCapableLabel("/my-kit")).toBe("My kit");
     expect(offlineCapableLabel("/part-requests")).toBe("Part requests");
     expect(offlineCapableLabel("/recognition")).toBe("Recognition");
     expect(offlineCapableLabel("/subteams")).toBe("Subteam progress");
@@ -376,8 +376,8 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/hours/kiosk")).toBe("Hours kiosk");
     expect(offlineCapableLabel("/hours")).toBe("Hours");
     expect(offlineCapableLabel("/scouting/forms")).toBe("Scout forms");
-    expect(offlineCapableLabel("/goals-tracker")).toBe("Season Goals");
-    expect(offlineCapableLabel("/standup-digest")).toBe("Morning standup");
+    expect(offlineCapableLabel("/goals-tracker")).toBe("Goals");
+    expect(offlineCapableLabel("/standup-digest")).toBe("Standup");
     expect(offlineCapableLabel("/meeting-autopilot")).toBe("Meeting agenda");
     expect(offlineCapableLabel("/goals")).toBe("Goals");
     expect(offlineCapableLabel("/safety-training")).toBe("Safety");

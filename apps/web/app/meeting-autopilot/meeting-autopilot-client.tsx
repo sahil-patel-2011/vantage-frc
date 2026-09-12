@@ -65,7 +65,7 @@ function MeetingAutopilotRelated({ orgId }: { orgId?: string | null }) {
         Standup
       </Button>
       <Button as="a" variant="secondary" href={hubHref("/team", "goals-tracker", orgId)}>
-        Season Goals
+        Goals
       </Button>
     </nav>
   );
@@ -89,7 +89,7 @@ function MeetingAutopilotNextActions({ orgId }: { orgId: string }) {
     },
     {
       id: "goals",
-      label: "Open Season Goals",
+      label: "Open Goals",
       detail: "Season targets sit beside this meeting board.",
       href: hubHref("/team", "goals-tracker", orgId),
       primary: false,
