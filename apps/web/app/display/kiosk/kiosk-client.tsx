@@ -150,7 +150,7 @@ export default function KioskClient({
                       hour: "numeric",
                       minute: "2-digit",
                     })
-                  : "Schedule time unavailable from TBA"}
+                  : "Schedule time unavailable"}
               </small>
             </article>
             <article>
@@ -165,7 +165,7 @@ export default function KioskClient({
               <strong className={bumper === "red" ? "alliance-red" : bumper === "blue" ? "alliance-blue" : undefined}>
                 {bumperBanner(bumper)}
               </strong>
-              <small>{match.scheduledTime ? "From TBA alliance lists" : "No TBA time; bumper still from alliance lists"}</small>
+              <small>{match.scheduledTime ? "From alliance lists" : "No posted time; bumper still from alliance lists"}</small>
             </article>
             <article>
               <span>ALLIANCES</span>
@@ -178,7 +178,7 @@ export default function KioskClient({
             <span>NEXT MATCH</span>
             <h2>No upcoming team match</h2>
             <p>
-              Set an active event and sync The Blue Alliance. This board only shows matches that include team #
+              Set an active event and sync Team Data. This board only shows matches that include team #
               {data.organization.teamNumber}. Queue time stays blank until those matches exist.
             </p>
           </section>
@@ -214,7 +214,7 @@ export default function KioskClient({
                     caveats: prediction.caveats,
                   })?.label ?? "—"}
                 </strong>
-                <em>Not a TBA result</em>
+                <em>Not an official result</em>
               </article>
               <article>
                 <span>TOP FACTORS</span>
@@ -287,7 +287,7 @@ export default function KioskClient({
             <article>
               <span>NEXT TEAM MATCH</span>
               <strong>{match ? matchLabel(match.compLevel, match.matchNumber) : "-"}</strong>
-              <small>{match ? clock.label : "No upcoming match on TBA"}</small>
+              <small>{match ? clock.label : "No upcoming match posted"}</small>
             </article>
             <article>
               <span>RANK</span>
@@ -295,7 +295,7 @@ export default function KioskClient({
               <small>
                 {data.eventStatus?.source
                   ? `from ${data.eventStatus.source}`
-                  : "Sync TBA/Statbotics metrics"}
+                  : "Sync Team Data ratings"}
               </small>
             </article>
             <article>
@@ -320,8 +320,8 @@ export default function KioskClient({
             <span>EVENT COMMAND</span>
             <h2>Waiting on synced event data</h2>
             <p>
-              Set an active event and sync TBA matches/metrics. This board stays blank instead of
-              inventing a rank, record, or next match.
+              Set an active event and sync Team Data. This board stays blank until a rank, record,
+              or next match exists.
             </p>
           </section>
         ))}
