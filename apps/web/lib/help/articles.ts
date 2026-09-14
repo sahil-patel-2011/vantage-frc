@@ -1267,7 +1267,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
     slug: "byok-automode",
     title: "Your AI keys",
     summary:
-      "Anyone can paste personal OpenAI or Anthropic keys. Admins can set team-wide keys. Ollama and LM Studio use an OpenAI-compatible base URL.",
+      "Anyone can paste personal OpenAI or Anthropic keys. Admins can set team-wide keys. Ollama and LM Studio use a local connector base URL.",
     category: "ai-models",
     keywords: [
       "byok",
@@ -1292,7 +1292,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         heading: "Add keys",
         body: [
           "Go to AI keys (/team/ai-keys). Anyone on the team can save personal keys. Team-wide keys need Manage API keys (owner/admin). Your keys override the team's for your own requests.",
-          "OpenAI and Anthropic are on the main page; Google AI Studio and OpenRouter are under More. The optional OpenAI base URL points the OpenAI slot at anything OpenAI-compatible — Groq, Mistral, Cerebras, or Ollama (http://127.0.0.1:11434/v1) and LM Studio (http://127.0.0.1:1234/v1) in your shop.",
+          "OpenAI and Anthropic are on the main page; Google AI Studio and OpenRouter are under More. The optional OpenAI base URL points the OpenAI slot at Groq, Mistral, Cerebras, or Ollama (http://127.0.0.1:11434/v1) and LM Studio (http://127.0.0.1:1234/v1) in your shop.",
           "Cloud Vantage cannot reach localhost on your laptop unless you expose a reachable URL (tunnel or self-hosted gateway).",
         ],
       },
@@ -1395,7 +1395,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         heading: "A supported configuration, not a degraded account",
         body: [
           "A team on a local endpoint gets the same features as a team on a frontier key. What changes is only which endpoint answers, and a one-line quality notice on smaller models.",
-          "Configure it under AI → API keys: fill the base URL on an OpenAI-compatible entry — Ollama (http://127.0.0.1:11434/v1), LM Studio (http://127.0.0.1:1234/v1), or a LAN inference box. Local servers ignore the key value.",
+          "Configure it under AI → API keys: fill the base URL on a local connector — Ollama (http://127.0.0.1:11434/v1), LM Studio (http://127.0.0.1:1234/v1), or a LAN inference box. Local servers ignore the key value.",
           "Personal keys overlay team keys for the same provider, so one member can run their laptop's Ollama while the rest of the team stays on the team key.",
         ],
       },
@@ -1404,7 +1404,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         body: [
           "Every request tries, in order: your personal key → team keys or the shop model address (Automode or a pinned model) → the plan's hosted path → the free-tier pool. If nothing resolves, the page says what is missing.",
           "Each surface can show what answered (provider, model, and endpoint origin). Localhost/LAN models carry a plain notice that they are smaller than frontier defaults; unrecognized custom models are described as custom, never assumed bad.",
-          "Voice scouting transcription also follows your OpenAI-compatible endpoint when it supports audio; when it does not, the UI says so and degrades to browser speech recognition.",
+          "Voice scouting transcription also follows your local connector when it supports audio; when it does not, the UI says so and degrades to browser speech recognition.",
         ],
       },
       {
@@ -1459,7 +1459,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "Your own keys and local models on every plan",
         body: [
-          "Bring any provider key — OpenAI, Anthropic, Google AI Studio, OpenRouter, Groq, Mistral, or anything OpenAI-compatible — or point Vantage at Ollama / LM Studio. Unlimited by Vantage; you pay your provider directly.",
+          "Bring any provider key — OpenAI, Anthropic, Google AI Studio, OpenRouter, Groq, Mistral, or anything else — or point Vantage at Ollama / LM Studio. Unlimited by Vantage; you pay your provider directly.",
           "When a hosted allowance runs out, Chat stops: buy a credit pack, turn on pay-as-you-go with an explicit cap, or keep working on your own keys or a shop model. There is never a silent extra bill.",
         ],
       },

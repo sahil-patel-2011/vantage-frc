@@ -16,7 +16,7 @@ const PROVIDER_SETUP_STEPS: MeteredAiSetupStep[] = [
   {
     id: "keys",
     label: "Add an AI provider key",
-    detail: "Paste an OpenAI, Anthropic, or Google key, or a local OpenAI-compatible address, under Team → AI keys.",
+    detail: "Paste an OpenAI, Anthropic, or Google key, or a local connector, under Team → AI keys.",
     href: "/team/ai-keys",
   },
   {

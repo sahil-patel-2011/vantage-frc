@@ -17,7 +17,8 @@ const WEB = join(__dirname, "..", "..");
  * leftover-offline AI keys stays. leftover-help Your AI keys stays.
  * leftover-offline extras and leftover-hub extras stay off leftover-ai-keys
  * FILES — do not gold leftover-hub + leftover-offline pairs together.
- * leftover-help extras stay off leftover-help FILES. leftover-cad extras stay
+ * leftover-help extras stay off leftover-help FILES. leftover-help-openai extras
+ * stay. leftover-cad extras stay
  * off leftover-ai-keys FILES. leftover-cad-change-radar extras stay off leftover-
  * ai-keys FILES. leftover-cad-setup-copy extras stay off leftover-ai-keys FILES.
  * leftover-product extras stay. leftover-api extras stay off leftover-ai-keys
