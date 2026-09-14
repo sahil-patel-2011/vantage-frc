@@ -570,7 +570,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "What it knows, and from where",
         body: [
-          "Profile, seasons and awards come from The Blue Alliance. Career and per-season EPA and world / country / state ranks come from Statbotics.",
+          "Profile, seasons and awards come from Team Data. Career and per-season EPA and world / country / state ranks come from Statbotics.",
           "Anything a source does not have reads 'not on record'. If one source did not answer, the page says which.",
           "Nobody scrapes your roster: no public source knows who is on your team. The people counts are your own memberships.",
         ],
