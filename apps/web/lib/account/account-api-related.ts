@@ -28,7 +28,7 @@ export const ACCOUNT_GOOGLE_COPY = {
 export const ACCOUNT_TBA_COPY = {
   ready: "The Blue Alliance is connected for match schedules and rankings.",
   cached: "Saved rankings from an earlier sync. Connect The Blue Alliance to refresh.",
-  setupRequired: "Connect The Blue Alliance under Connectors, or ask a mentor.",
+  setupRequired: "Sync Team Data under Connectors, or ask a mentor.",
 } as const;
 
 export const ACCOUNT_DISCORD_COPY = {
