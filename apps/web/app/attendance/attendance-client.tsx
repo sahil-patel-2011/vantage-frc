@@ -656,8 +656,7 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
         <OfflineBanner feature="Attendance" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
-          badge={fetchFailed ? "Setup" : undefined}
-          badgeTone={fetchFailed ? "setup" : undefined}
+          badge={fetchFailed ? "Unavailable" : undefined}
           title={failure ? failure.title : "Loading attendance…"}
           description={failure ? failure.description : "Checking your team for real roll calls."}
           aria-busy={!fetchFailed}
