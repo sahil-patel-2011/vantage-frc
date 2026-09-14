@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { TEAM_6925_RESOURCES, TEAM_6925_WEEKS, allTeam6925Links, totalLabMinutes } from "./frc6925";
 
@@ -18,6 +20,12 @@ describe("Team 6925 lab", () => {
     expect(hrefs.some((href) => href.includes("docs.wpilib.org"))).toBe(true);
     expect(hrefs.some((href) => href.includes("education.github.com"))).toBe(true);
     expect(hrefs.some((href) => href.includes("www.cadvideotutor.com"))).toBe(true);
+  });
+
+  it("passes orgId into withOrgHref so the lab typechecks", () => {
+    const lab = readFileSync(join(__dirname, "../../app/learn/6925/team-6925-lab.tsx"), "utf8");
+    expect(lab).not.toMatch(/withOrgHref\([^,\)]+\)/);
+    expect(lab).toMatch(/withOrgHref\("\/build", null\)/);
   });
 
   it("gives every group and week exactly one primary link", () => {
