@@ -7,6 +7,8 @@ import { isPriorityFreebuffTeam } from "./priority-team";
 export const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
 export const GROQ_BASE_URL = "https://api.groq.com/openai/v1";
 export const GROQ_FREE_MODEL = "llama-3.1-8b-instant";
+export const GEMINI_OPENAI_COMPAT_BASE = "https://generativelanguage.googleapis.com/v1beta/openai";
+export const GEMINI_DEFAULT_MODEL = "gemini-2.0-flash";
 /** Official free-model router — avoids pinning a rotating `:free` slug. */
 export const OPENROUTER_FREE_MODEL = "openrouter/free";
 export const HOSTED_ANTHROPIC_SONNET = "claude-sonnet-4-20250514";
@@ -36,6 +38,12 @@ export function readOpenRouterApiKey(env: NodeJS.ProcessEnv = process.env): stri
 
 export function readAnthropicPlatformKey(env: NodeJS.ProcessEnv = process.env): string | null {
   const key = env.ANTHROPIC_API_KEY?.trim();
+  return key || null;
+}
+
+/** Local / platform Gemini placeholder. Prefer GEMINI_API_KEY; GOOGLE_AI_API_KEY is an alias. */
+export function readGeminiPlatformKey(env: NodeJS.ProcessEnv = process.env): string | null {
+  const key = env.GEMINI_API_KEY?.trim() || env.GOOGLE_AI_API_KEY?.trim();
   return key || null;
 }
 
@@ -175,6 +183,33 @@ export function tryCreateOpenRouterFreeAdapter(input?: {
     providerLabel: "openrouter",
     capability: input?.capability ?? "chat",
     extraHeaders: openRouterRequestHeaders(env),
+  });
+}
+
+const GEMINI_FLASH_PRICES = {
+  inputPerMillionUsd: 0.1,
+  outputPerMillionUsd: 0.4,
+};
+
+export function tryCreateHostedGeminiAdapter(input?: {
+  promptCachingEnabled?: boolean;
+  fetchImpl?: typeof fetch;
+  env?: NodeJS.ProcessEnv;
+  capability?: string;
+}): HttpChatAdapter | null {
+  const env = input?.env ?? process.env;
+  const apiKey = readGeminiPlatformKey(env);
+  if (!apiKey) return null;
+  return new HttpChatAdapter({
+    provider: "openai-compatible",
+    model: env.GEMINI_MODEL?.trim() || GEMINI_DEFAULT_MODEL,
+    apiKey,
+    baseUrl: GEMINI_OPENAI_COMPAT_BASE,
+    promptCachingEnabled: input?.promptCachingEnabled ?? true,
+    prices: GEMINI_FLASH_PRICES,
+    fetchImpl: input?.fetchImpl,
+    providerLabel: "gemini-hosted",
+    capability: input?.capability ?? "chat",
   });
 }
 

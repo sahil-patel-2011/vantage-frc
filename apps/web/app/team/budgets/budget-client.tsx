@@ -61,9 +61,12 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
     provider: "",
     model: "",
     allowed: true,
+    allowedModelIds: "",
     ...blank,
   });
-  const [members, setMembers] = useState<Array<{ userId: string; name: string; email: string }>>([]);
+  const [members, setMembers] = useState<
+    Array<{ userId: string; name: string; email: string; allowedModelIds?: string[] | null }>
+  >([]);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [httpStatus, setHttpStatus] = useState<number | null>(null);
@@ -409,7 +412,15 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
                   Member
                   <select
                     value={layer.identifier}
-                    onChange={(e) => setLayer({ ...layer, identifier: e.target.value })}
+                    onChange={(e) => {
+                      const userId = e.target.value;
+                      const member = members.find((row) => row.userId === userId);
+                      setLayer({
+                        ...layer,
+                        identifier: userId,
+                        allowedModelIds: (member?.allowedModelIds ?? []).join(", "),
+                      });
+                    }}
                   >
                     <option value="">Choose member</option>
                     {members.map((m) => (
@@ -418,6 +429,16 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
                       </option>
                     ))}
                   </select>
+                </label>
+              ) : null}
+              {layer.scope === "member" ? (
+                <label>
+                  Models this person may use
+                  <input
+                    value={layer.allowedModelIds}
+                    onChange={(e) => setLayer({ ...layer, allowedModelIds: e.target.value })}
+                    placeholder="Leave blank for all, or gemini-2.0-flash, glm/glm-5.3-flash"
+                  />
                 </label>
               ) : layer.scope === "feature" ? (
                 <label>

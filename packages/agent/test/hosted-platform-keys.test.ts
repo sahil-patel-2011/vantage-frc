@@ -12,6 +12,7 @@ import {
   tryCreateFreeRelayAdapter,
   tryCreateGroqFreeAdapter,
   tryCreateHostedAnthropicAdapter,
+  tryCreateHostedGeminiAdapter,
   tryCreateOpenRouterFreeAdapter,
 } from "../src/hosted-platform-keys";
 import { FREEBUFF_UNMETERED_DEFAULT } from "../src/freebuff-models";
@@ -28,6 +29,18 @@ describe("hosted platform keys", () => {
     expect(adapter?.provider).toBe("openai-compatible");
     expect(adapter?.model).toBe(OPENROUTER_FREE_MODEL);
     expect(adapter).toBeTruthy();
+  });
+
+  it("builds a Gemini placeholder adapter only when a platform key is set", () => {
+    expect(tryCreateHostedGeminiAdapter({ env: {} })).toBeNull();
+    const adapter = tryCreateHostedGeminiAdapter({
+      env: { GEMINI_API_KEY: "aq-test", GEMINI_MODEL: "gemini-2.0-flash" },
+    });
+    expect(adapter?.provider).toBe("openai-compatible");
+    expect(adapter?.model).toBe("gemini-2.0-flash");
+    expect(
+      tryCreateHostedGeminiAdapter({ env: { GOOGLE_AI_API_KEY: "aq-alias" } })?.model,
+    ).toBe("gemini-2.0-flash");
   });
 
   it("builds Groq and OpenAI-compatible local relay adapters only when configured", () => {

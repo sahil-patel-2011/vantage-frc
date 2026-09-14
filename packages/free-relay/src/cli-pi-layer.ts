@@ -14,6 +14,7 @@ import {
   catalogFallback,
   clampChatCompletionBody,
   healthPayload,
+  readChatCompletionModel,
   joinUpstream,
   piLayerErrorBody,
   readPiLayerConfig,
@@ -307,7 +308,8 @@ async function chatViaOfficialLogin(
   const home = process.env.HOME?.trim() || process.env.USERPROFILE?.trim() || "";
   const creds = home ? await readOfficialFreebuffCredentials(home) : null;
   if (!creds) return null;
-  const session = await admitOfficialFreebuffSession({ token: creds.authToken, model: cfg.model });
+  const requested = readChatCompletionModel(body) ?? cfg.model;
+  const session = await admitOfficialFreebuffSession({ token: creds.authToken, model: requested });
   if (!session.ok && session.status !== "model_locked") {
     return {
       ok: false,
@@ -318,7 +320,7 @@ async function chatViaOfficialLogin(
   }
   const result = await officialFreebuffChat({
     token: creds.authToken,
-    model: session.model ?? cfg.model,
+    model: requested,
     body,
     instanceId: session.instanceId,
     userId: creds.id,

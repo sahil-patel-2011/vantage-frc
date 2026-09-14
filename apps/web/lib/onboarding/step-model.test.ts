@@ -133,6 +133,31 @@ describe("onboarding step gates", () => {
       validateOnboardingStep("preferences", draft, { ...BASE_CONTEXT, legalNeeded: false }),
     ).toEqual({ ok: true });
   });
+
+  it("asks other team heads for a Gemini key, but not team 6925", () => {
+    const head = { ...BASE_CONTEXT, isTeamHead: true };
+    const ready = filledProfile({
+      teamNumber: "254",
+      orgCity: "Austin",
+      orgStateProv: "TX",
+      termsAccepted: true,
+      privacyAccepted: true,
+    });
+    expect(validateOnboardingStep("preferences", ready, head)).toMatchObject({
+      ok: false,
+      field: "geminiApiKey",
+    });
+    expect(
+      validateOnboardingStep(
+        "preferences",
+        { ...ready, geminiApiKey: "AIzaSyTestKeyThatLooksLongEnough" },
+        head,
+      ),
+    ).toEqual({ ok: true });
+    expect(
+      validateOnboardingStep("preferences", { ...ready, teamNumber: "6925", geminiApiKey: "" }, head),
+    ).toEqual({ ok: true });
+  });
 });
 
 describe("onboarding forward / back navigation", () => {

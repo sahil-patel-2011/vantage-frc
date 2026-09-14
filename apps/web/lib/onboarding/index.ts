@@ -75,6 +75,11 @@ export {
 } from "./step-model";
 
 export {
+  looksLikeGeminiApiKey,
+  onboardingAsksForGeminiKey,
+} from "./gemini-key";
+
+export {
   FIRST_FIVE_LIMIT,
   buildOnboardingLanding,
   landingTrackRank,

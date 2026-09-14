@@ -2,6 +2,7 @@ import type { PoolClient } from "@neondatabase/serverless";
 import { CommitAndThrowError } from "@vantage/db";
 import { describe, expect, it, vi } from "vitest";
 import {
+  BudgetLimitExceededError,
   UsageHardCutoffError,
   DuplicateMeteredRequestError,
   classifyMeteredAiError,
@@ -99,6 +100,43 @@ describe("serialized AI metering", () => {
         invoke,
       }),
     ).rejects.toBeInstanceOf(DuplicateMeteredRequestError);
+    expect(invoke).not.toHaveBeenCalled();
+  });
+
+  it("denies a model that is not on the member allowlist", async () => {
+    const { client: base } = paidClient(1, 10);
+    const invoke = vi.fn();
+    const client = {
+      query(sql: string, params?: unknown[]) {
+        if (sql.includes("FROM org_api_member_limits")) {
+          return Promise.resolve({
+            rows: [{ allowed_model_ids: ["gemini-2.0-flash"] }],
+            rowCount: 1,
+          });
+        }
+        return base.query(sql, params);
+      },
+    } as unknown as PoolClient;
+    try {
+      await meteredAI({
+        client,
+        orgId: "org",
+        userId: "user",
+        feature: "chat",
+        requestId: "request-member-model",
+        estimatedCostUsd: 0.01,
+        model: "gpt-4.1-mini",
+        provider: "openai",
+        invoke,
+      });
+      expect.unreachable("expected member model deny");
+    } catch (error) {
+      expect(error).toBeInstanceOf(CommitAndThrowError);
+      const publicError =
+        error instanceof CommitAndThrowError ? error.publicError : error;
+      expect(publicError).toBeInstanceOf(BudgetLimitExceededError);
+      expect((publicError as BudgetLimitExceededError).reason).toBe("member.model_not_allowed");
+    }
     expect(invoke).not.toHaveBeenCalled();
   });
 

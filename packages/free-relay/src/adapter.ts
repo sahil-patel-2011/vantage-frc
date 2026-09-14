@@ -31,7 +31,12 @@ export function createFreeRelayChatAdapter(
 }
 
 export function isFreeRelayConfigured(env: NodeJS.ProcessEnv = process.env): boolean {
-  return Boolean(readFreeRelayConfig(env)) || Boolean(env.GROQ_API_KEY?.trim()) || Boolean(env.OPENROUTER_API_KEY?.trim());
+  return (
+    Boolean(readFreeRelayConfig(env)) ||
+    Boolean(env.GROQ_API_KEY?.trim()) ||
+    Boolean(env.OPENROUTER_API_KEY?.trim()) ||
+    Boolean(env.GEMINI_API_KEY?.trim() || env.GOOGLE_AI_API_KEY?.trim())
+  );
 }
 
 export function describeFreeRelayBackend(env: NodeJS.ProcessEnv = process.env): string {

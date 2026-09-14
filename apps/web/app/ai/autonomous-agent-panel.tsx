@@ -9,6 +9,7 @@ import { SponsoredPromoBanner } from "../../components/sponsored-promo-banner";
 import { AIAttribution, ModelProvenance } from "../../components/ui";
 import { resolveCutoffErrorCode, UsageCutoffBanner } from "../../components/usage-cutoff-banner";
 import { hubHref } from "../../lib/nav/hubs";
+import { FreebuffModelPicker } from "../chat/freebuff-model-picker";
 import "./autonomous-agent.css";
 
 type RunSummary = {
@@ -134,11 +135,45 @@ export function AutonomousAgentPanel({ orgId, embedded = false }: { orgId: strin
     setErrorCode(null);
     setCutoffCode(null);
     try {
-      const response = await fetch("/api/agent/autonomous", {
+      const begun = await fetch("/api/agent/autonomous", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ orgId, goal: trimmed, maxSteps: 8 }),
+        body: JSON.stringify({ orgId, goal: trimmed, maxSteps: 8, action: "begin" }),
       });
+      const begunData = (await begun.json()) as { runId?: string; error?: string; code?: string };
+      if (!begun.ok || !begunData.runId) {
+        setHttpStatus(begun.status);
+        setError(begunData.error ?? "Could not start the agent run");
+        setErrorCode(begunData.code ?? null);
+        return;
+      }
+      setSelectedId(begunData.runId);
+      setSelectedRun({
+        id: begunData.runId,
+        goal: trimmed,
+        status: "running",
+        provider: null,
+        model: null,
+        stepCount: 0,
+        finalAnswer: null,
+        errorClass: null,
+        errorMessage: null,
+        startedAt: new Date().toISOString(),
+        finishedAt: null,
+      });
+      const poll = window.setInterval(() => {
+        void loadRunDetail(begunData.runId!);
+      }, 1200);
+      let response: Response;
+      try {
+        response = await fetch("/api/agent/autonomous", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ orgId, goal: trimmed, maxSteps: 8, runId: begunData.runId }),
+        });
+      } finally {
+        window.clearInterval(poll);
+      }
       setHttpStatus(response.status);
       const data = (await response.json()) as {
         runId?: string;
@@ -262,9 +297,10 @@ export function AutonomousAgentPanel({ orgId, embedded = false }: { orgId: strin
           disabled={busy}
           maxLength={4000}
         />
+        <FreebuffModelPicker orgId={orgId} />
         <div className="aa-compose-actions">
           <button type="button" className="app-button" onClick={() => void onRun()} disabled={busy || !goal.trim()}>
-            {busy ? "Running…" : "Run autonomous agent"}
+            {busy ? "Running — progress updates below" : "Run autonomous agent"}
           </button>
           <button type="button" className="app-button secondary" onClick={() => void loadRuns()} disabled={busy}>
             Refresh history

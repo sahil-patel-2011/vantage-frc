@@ -24,6 +24,7 @@ import {
   type TeamAffiliationOption,
 } from "./onboarding-flow";
 import { lookupTeamNumber, parseTeamNumber, type TeamLookupAccessStatus } from "./team-lookup";
+import { looksLikeGeminiApiKey, onboardingAsksForGeminiKey } from "./gemini-key";
 
 export type OnboardingRole = "student" | "mentor" | "coach" | "parent" | "other";
 export type OnboardingCrew =
@@ -66,6 +67,8 @@ export type OnboardingDraft = {
   sponsorsAllowed: boolean;
   termsAccepted: boolean;
   privacyAccepted: boolean;
+  /** Free Google AI Studio key — required for team heads of every number except 6925. */
+  geminiApiKey: string;
 };
 
 export type OnboardingStepContext = {
@@ -108,6 +111,7 @@ export function emptyOnboardingDraft(): OnboardingDraft {
     sponsorsAllowed: true,
     termsAccepted: false,
     privacyAccepted: false,
+    geminiApiKey: "",
   };
 }
 
@@ -221,6 +225,17 @@ function validateFinishStep(draft: OnboardingDraft, context: OnboardingStepConte
       field: "legal",
       message: "Agree to the Terms of Service and the Privacy Policy to submit.",
     };
+  }
+  const teamNumber = submittedTeamNumber(draft, context);
+  if (onboardingAsksForGeminiKey({ isTeamHead: context.isTeamHead, teamNumber })) {
+    if (!looksLikeGeminiApiKey(draft.geminiApiKey)) {
+      return {
+        ok: false,
+        field: "geminiApiKey",
+        message:
+          "Paste a free Gemini API key from Google AI Studio so this team can use Ask, Write, and Agent. Team 6925 does not need one.",
+      };
+    }
   }
   return { ok: true };
 }

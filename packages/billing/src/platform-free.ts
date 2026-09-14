@@ -5,5 +5,11 @@ export function isPlatformHostedFreeConfigured(env: NodeJS.ProcessEnv = process.
   // always a tunnel hostname, where keyless is refused anyway, and under-claiming a free
   // path is harmless where over-claiming would promise a team AI that cannot serve it.
   const relayUsable = Boolean(env.FREE_RELAY_BASE_URL?.trim() && env.FREE_RELAY_API_KEY?.trim());
-  return Boolean(env.GROQ_API_KEY?.trim() || env.OPENROUTER_API_KEY?.trim() || relayUsable);
+  return Boolean(
+    env.GROQ_API_KEY?.trim() ||
+      env.OPENROUTER_API_KEY?.trim() ||
+      env.GEMINI_API_KEY?.trim() ||
+      env.GOOGLE_AI_API_KEY?.trim() ||
+      relayUsable,
+  );
 }

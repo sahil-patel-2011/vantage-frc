@@ -1,0 +1,214 @@
+﻿
+> vantage@0.2.0 test:browser
+> playwright test tests/browser/product-shell.spec.ts --reporter=line
+
+
+Running 8 tests using 1 worker
+
+
+node.exe : (node:7572) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ((node:7572) War... env being set.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+[1/8] [chromium] ΓÇ║ tests\browser\product-shell.spec.ts:15:5 ΓÇ║ dashboard home is decluttered and exposes customize controls
+  1) [chromium] ΓÇ║ tests\browser\product-shell.spec.ts:15:5 ΓÇ║ dashboard home is decluttered and exposes customize controls 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByTestId('dash-customize')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for getByTestId('dash-customize')
+
+
+      16 |   await page.goto("/dashboard");
+      17 |   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    > 18 |   await expect(page.getByTestId("dash-customize")).toBeVisible();
+         |                                                    ^
+      19 |   await expect(page.getByRole("button", { name: /Edit Home/ })).toBeVisible();
+      20 |   await expect(page.getByText("Competition Command Center")).toHaveCount(0);
+      21 |   await expect(page.getByRole("region", { name: "First-run setup" })).toBeVisible();
+        at C:\Users\sahil\OneDrive\Desktop\vantage-frc\tests\browser\product-shell.spec.ts:18:52
+
+    Error Context: test-results\product-shell-dashboard-ho-a3bc5--exposes-customize-controls-chromium\error-context.md
+
+    attachment #2: trace (application/zip) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    test-results\product-shell-dashboard-ho-a3bc5--exposes-customize-controls-chromium\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\product-shell-dashboard-ho-a3bc5--exposes-customize-controls-chromium\trace.zip
+
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+
+
+
+(node:26756) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[2/8] [chromium] ΓÇ║ tests\browser\product-shell.spec.ts:24:5 ΓÇ║ dashboard editor can enter edit mode and show widget catalog
+  2) [chromium] ΓÇ║ tests\browser\product-shell.spec.ts:24:5 ΓÇ║ dashboard editor can enter edit mode and show widget catalog 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.evaluate: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for getByTestId('dash-customize')
+
+
+      25 |   await page.goto("/dashboard");
+      26 |   // Fixed soft-topbar can intercept pointer clicks after scroll-into-view; call the DOM handler directly.
+    > 27 |   await page.getByTestId("dash-customize").evaluate((node) => (node as HTMLButtonElement).click());
+         |                                            ^
+      28 |   await expect(page.getByTestId("dash-open-library")).toBeVisible();
+      29 |   await expect(page.getByRole("button", { name: "Cancel", exact: true })).toBeVisible();
+      30 |   await expect(page.getByRole("button", { name: "Done", exact: true })).toBeVisible();
+        at C:\Users\sahil\OneDrive\Desktop\vantage-frc\tests\browser\product-shell.spec.ts:27:44
+
+    Error Context: test-results\product-shell-dashboard-ed-934c2-ode-and-show-widget-catalog-chromium\error-context.md
+
+    attachment #2: trace (application/zip) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    test-results\product-shell-dashboard-ed-934c2-ode-and-show-widget-catalog-chromium\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\product-shell-dashboard-ed-934c2-ode-and-show-widget-catalog-chromium\trace.zip
+
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+
+
+(node:5040) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+[3/8] [chromium] ΓÇ║ tests\browser\product-shell.spec.ts:35:5 ΓÇ║ dashboard editor rearranges widgets with drag-and-drop
+  3) [chromium] ΓÇ║ tests\browser\product-shell.spec.ts:35:5 ΓÇ║ dashboard editor rearranges widgets with drag-and-drop 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.evaluate: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for getByTestId('dash-customize')
+
+
+      36 |   await page.setViewportSize({ width: 1400, height: 900 });
+      37 |   await page.goto("/dashboard");
+    > 38 |   await page.getByTestId("dash-customize").evaluate((node) => (node as HTMLButtonElement).click());
+         |                                            ^
+      39 |   await expect(page.getByTestId("dash-widget-grid")).toHaveAttribute("data-dash-drag", "on");
+      40 |   await expect(page.locator(".dash-grid")).toBeVisible();
+      41 |
+        at C:\Users\sahil\OneDrive\Desktop\vantage-frc\tests\browser\product-shell.spec.ts:38:44
+
+    Error Context: test-results\product-shell-dashboard-ed-85c8d--widgets-with-drag-and-drop-chromium\error-context.md
+
+    attachment #2: trace (application/zip) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    test-results\product-shell-dashboard-ed-85c8d--widgets-with-drag-and-drop-chromium\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\product-shell-dashboard-ed-85c8d--widgets-with-drag-and-drop-chromium\trace.zip
+
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+
+
+(node:27748) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+[4/8] [chromium] ΓÇ║ tests\browser\product-shell.spec.ts:66:5 ΓÇ║ product shell keeps four workspace shortcuts on phone and uses the drawer on desktop
+  4) [chromium] ΓÇ║ tests\browser\product-shell.spec.ts:66:5 ΓÇ║ product shell keeps four workspace shortcuts on phone and uses the drawer on desktop 
+
+    Error: expect(locator).toBeHidden() failed
+
+    Locator:  getByRole('navigation', { name: 'Primary apps' })
+    Expected: hidden
+    Received: visible
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toBeHidden" with timeout 5000ms
+      - waiting for getByRole('navigation', { name: 'Primary apps' })
+        14 ├ù locator resolved to <nav class="soft-island" data-testid="soft-island" aria-label="Primary apps" title="Press and hold or right-click to change these four apps">ΓÇª</nav>
+           - unexpected value "visible"
+
+
+      82 |
+      83 |   await page.setViewportSize({ width: 1400, height: 900 });
+    > 84 |   await expect(island).toBeHidden();
+         |                        ^
+      85 | });
+      86 |
+      87 | test("onboarding route is reachable when authenticated fixture skips incomplete gate", async ({ page }) => {
+        at C:\Users\sahil\OneDrive\Desktop\vantage-frc\tests\browser\product-shell.spec.ts:84:24
+
+    Error Context: test-results\product-shell-product-shel-ea84e--uses-the-drawer-on-desktop-chromium\error-context.md
+
+    attachment #2: trace (application/zip) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    test-results\product-shell-product-shel-ea84e--uses-the-drawer-on-desktop-chromium\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\product-shell-product-shel-ea84e--uses-the-drawer-on-desktop-chromium\trace.zip
+
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+
+
+(node:25640) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+
+(Use `node --trace-warnings ...` to show where the warning was created)
+[5/8] [chromium] ΓÇ║ tests\browser\product-shell.spec.ts:87:5 ΓÇ║ onboarding route is reachable when authenticated fixture skips incomplete gate
+[6/8] [chromium] ΓÇ║ tests\browser\product-shell.spec.ts:93:5 ΓÇ║ account route keeps settings discoverable when the API session is unavailable
+  5) [chromium] ΓÇ║ tests\browser\product-shell.spec.ts:93:5 ΓÇ║ account route keeps settings discoverable when the API session is unavailable 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('navigation', { name: 'All settings' })
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for getByRole('navigation', { name: 'All settings' })
+
+
+      94 |   await page.goto("/account");
+      95 |   await expect(page.getByRole("heading", { name: "Your settings" })).toBeVisible();
+    > 96 |   await expect(page.getByRole("navigation", { name: "All settings" })).toBeVisible();
+         |                                                                        ^
+      97 |   await expect(page.getByRole("link", { name: "Appearance" })).toBeVisible();
+      98 |   await expect(page.getByRole("link", { name: "AI usage" })).toBeVisible();
+      99 |   await expect(page.getByRole("heading", { name: "Your session ended" })).toBeVisible();
+        at C:\Users\sahil\OneDrive\Desktop\vantage-frc\tests\browser\product-shell.spec.ts:96:72
+
+    Error Context: test-results\product-shell-account-rout-b7aca--API-session-is-unavailable-chromium\error-context.md
+
+    attachment #2: trace (application/zip) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    test-results\product-shell-account-rout-b7aca--API-session-is-unavailable-chromium\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\product-shell-account-rout-b7aca--API-session-is-unavailable-chromium\trace.zip
+
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+
+
+(node:24244) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+[7/8] [chromium] ΓÇ║ tests\browser\product-shell.spec.ts:103:5 ΓÇ║ strategy defaults to empty setup and hides fabricated probabilities
+[8/8] [chromium] ΓÇ║ tests\browser\product-shell.spec.ts:112:5 ΓÇ║ code route requires a real team and never falls back to fixture findings
+  5 failed
+    [chromium] ΓÇ║ tests\browser\product-shell.spec.ts:15:5 ΓÇ║ dashboard home is decluttered and exposes customize controls 
+    [chromium] ΓÇ║ tests\browser\product-shell.spec.ts:24:5 ΓÇ║ dashboard editor can enter edit mode and show widget catalog 
+    [chromium] ΓÇ║ tests\browser\product-shell.spec.ts:35:5 ΓÇ║ dashboard editor rearranges widgets with drag-and-drop 
+    [chromium] ΓÇ║ tests\browser\product-shell.spec.ts:66:5 ΓÇ║ product shell keeps four workspace shortcuts on phone and uses the drawer on desktop 
+    [chromium] ΓÇ║ tests\browser\product-shell.spec.ts:93:5 ΓÇ║ account route keeps settings discoverable when the API session is unavailable 
+  3 passed (1.5m)

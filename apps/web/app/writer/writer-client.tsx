@@ -22,6 +22,7 @@ import type {
 } from "../../lib/writer/types";
 import { writerNextActions } from "../../lib/writer/writer-next-actions";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { FreebuffModelPicker } from "../chat/freebuff-model-picker";
 
 type LiveView = Extract<WriterView, { status: "live" }>;
 type Mutate = (payload: Record<string, unknown>) => void;
@@ -149,34 +150,7 @@ export default function WriterClient({
   return (
     <main className={`module-page writer-page${embedded ? " writer-page--embedded" : ""}`}>
       {embedded ? (
-        live && live.seasons.length > 0 ? (
-          <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-            Season
-            <select
-              value={season ?? live.seasonYear}
-              onChange={(event) => {
-                const next = Number(event.target.value);
-                setSeason(next);
-                load(next);
-              }}
-            >
-              {live.seasons.map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : null
-      ) : (
-        <header className="app-page-header">
-          <div>
-            <span className="breadcrumbs">AI / Write</span>
-            <h1>Write</h1>
-            <p>
-              Draft grant answers and sponsor pitches from this team&apos;s profile only — nothing is invented.
-            </p>
-          </div>
+        <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
           {live && live.seasons.length > 0 ? (
             <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
               Season
@@ -196,6 +170,39 @@ export default function WriterClient({
               </select>
             </label>
           ) : null}
+          {orgId ? <FreebuffModelPicker orgId={orgId} /> : null}
+        </div>
+      ) : (
+        <header className="app-page-header">
+          <div>
+            <span className="breadcrumbs">AI / Write</span>
+            <h1>Write</h1>
+            <p>
+              Draft grant answers and sponsor pitches from this team&apos;s profile only — nothing is invented.
+            </p>
+          </div>
+          <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+            {live && live.seasons.length > 0 ? (
+              <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                Season
+                <select
+                  value={season ?? live.seasonYear}
+                  onChange={(event) => {
+                    const next = Number(event.target.value);
+                    setSeason(next);
+                    load(next);
+                  }}
+                >
+                  {live.seasons.map((year) => (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+            {orgId ? <FreebuffModelPicker orgId={orgId} /> : null}
+          </div>
         </header>
       )}
 

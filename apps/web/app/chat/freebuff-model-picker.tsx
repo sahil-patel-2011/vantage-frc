@@ -27,11 +27,12 @@ export function FreebuffModelPicker({ orgId }: { orgId: string }) {
           freebuffModel?: string;
           freebuffModels?: FreebuffModel[];
           usePlatformFreeAi?: boolean;
+          geminiOnly?: boolean;
         };
         if (cancelled) return;
         const relay = data.grants?.some((grant) => grant.accessKind === "platform_relay");
         const catalog = data.freebuffModels ?? [];
-        if (!relay || data.usePlatformFreeAi === false || catalog.length === 0) {
+        if (data.geminiOnly || !relay || data.usePlatformFreeAi === false || catalog.length === 0) {
           setVisible(false);
           return;
         }

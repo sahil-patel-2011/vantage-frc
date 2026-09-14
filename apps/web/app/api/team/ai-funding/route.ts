@@ -120,6 +120,18 @@ export async function GET(request: Request) {
         }
       }
 
+      const org = await client.query<{ teamNumber: number | null }>(
+        `SELECT team_number AS "teamNumber" FROM organizations WHERE id = $1::uuid`,
+        [orgId],
+      );
+      const googleKey = await client.query(
+        `SELECT 1 FROM org_llm_keys WHERE org_id = $1::uuid AND lower(provider) IN ('google', 'gemini') LIMIT 1`,
+        [orgId],
+      );
+      const teamNumber = org.rows[0]?.teamNumber ?? null;
+      const geminiOnly = Number(teamNumber) === 6925;
+      const hasRelay = grants.rows.some((grant) => grant.accessKind === "platform_relay");
+      const hasGoogleKey = Boolean(googleKey.rowCount);
       const row = credits.rows[0];
       return {
         credits: row
@@ -144,6 +156,10 @@ export async function GET(request: Request) {
         usePlatformFreeAi,
         freebuffModel,
         freebuffModels: freebuffModelCatalog(),
+        teamNumber,
+        geminiOnly,
+        hasGoogleKey,
+        needsGeminiKey: !geminiOnly && !hasGoogleKey && !hasRelay,
       };
     });
 

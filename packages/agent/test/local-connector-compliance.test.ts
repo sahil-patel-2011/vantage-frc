@@ -59,7 +59,14 @@ function localConnectorClient() {
   };
 }
 
-const PLATFORM_ENV_KEYS = ["OPENROUTER_API_KEY", "ANTHROPIC_API_KEY", "MISTRAL_API_KEY", "OPENAI_API_KEY"] as const;
+const PLATFORM_ENV_KEYS = [
+  "OPENROUTER_API_KEY",
+  "ANTHROPIC_API_KEY",
+  "MISTRAL_API_KEY",
+  "OPENAI_API_KEY",
+  "GEMINI_API_KEY",
+  "GOOGLE_AI_API_KEY",
+] as const;
 
 describe("local-connector compliance matrix", () => {
   const savedEnv: Record<string, string | undefined> = {};

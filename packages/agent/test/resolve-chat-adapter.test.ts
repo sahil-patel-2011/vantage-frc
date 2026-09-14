@@ -26,6 +26,8 @@ const PLATFORM_ENV_KEYS = [
   "FREE_RELAY_BASE_URL",
   "FREE_RELAY_API_KEY",
   "FREE_RELAY_MODEL",
+  "GEMINI_API_KEY",
+  "GOOGLE_AI_API_KEY",
 ] as const;
 
 describe("resolveOrgChatAdapter", () => {
@@ -538,5 +540,103 @@ describe("resolveOrgChatAdapter", () => {
 
     expect(adapter.provider).toBe("anthropic");
     expect(adapter.model).toContain("claude");
+  });
+
+  it("keeps team 6925 on hosted Gemini even when a Freebuff grant and OpenRouter key exist", async () => {
+    process.env.FREE_RELAY_BASE_URL = "http://127.0.0.1:8080/v1";
+    process.env.FREE_RELAY_API_KEY = "relay-secret";
+    process.env.OPENROUTER_API_KEY = "sk-or-test";
+    process.env.GEMINI_API_KEY = "AIza-test";
+    const client = fakeClient([
+      () => ({
+        rowCount: 1,
+        rows: [
+          {
+            prefs: {
+              mode: "automode",
+              use_platform_free_ai: true,
+              freebuff_model: "mimo/mimo-2.5",
+            },
+            policy: null,
+            hasRelayGrant: true,
+            teamNumber: 6925,
+          },
+        ],
+      }),
+      () => ({ rowCount: 0, rows: [] }),
+      () => ({ rowCount: 0, rows: [] }),
+      () => ({ rowCount: 1, rows: [{ tier: "free" }] }),
+    ]);
+
+    const adapter = await resolveOrgChatAdapter(client as never, {
+      orgId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      promptCachingEnabled: false,
+      decrypt: async () => {
+        throw new Error("BYOK must not be decrypted for Gemini-only 6925");
+      },
+    });
+
+    expect(adapter).toBeInstanceOf(HttpChatAdapter);
+    expect(adapter).not.toBeInstanceOf(OrgIsolatedChatAdapter);
+    expect(adapter.model).toContain("gemini");
+  });
+
+  it("does not use a custom OpenAI-compat provider for team 6925", async () => {
+    process.env.GEMINI_API_KEY = "AIza-test";
+    const client = fakeClient([
+      () => ({
+        rowCount: 1,
+        rows: [{ prefs: null, policy: null, hasRelayGrant: false, teamNumber: 6925 }],
+      }),
+      () => ({
+        rowCount: 1,
+        rows: [
+          {
+            id: "p1",
+            kind: "openai-compatible",
+            label: "Custom",
+            baseUrl: "https://api.example.com/v1",
+            localRelay: false,
+            modelMappings: { default: "team-model" },
+            keyCiphertext: "c",
+            keyNonce: "n",
+            keyAuthTag: "t",
+            encryptedDek: "d",
+            kmsKeyId: "k",
+          },
+        ],
+      }),
+      () => ({ rowCount: 0, rows: [] }),
+      () => ({ rowCount: 1, rows: [{ tier: "free" }] }),
+    ]);
+
+    const adapter = await resolveOrgChatAdapter(client as never, {
+      orgId: "org-1",
+      promptCachingEnabled: true,
+      decrypt: async () => "sk-test",
+    });
+
+    expect(adapter).toBeInstanceOf(HttpChatAdapter);
+    expect(adapter.model).toContain("gemini");
+  });
+
+  it("errors honestly when team 6925 has no Gemini key", async () => {
+    const client = fakeClient([
+      () => ({
+        rowCount: 1,
+        rows: [{ prefs: null, policy: null, hasRelayGrant: false, teamNumber: 6925 }],
+      }),
+      () => ({ rowCount: 0, rows: [] }),
+      () => ({ rowCount: 0, rows: [] }),
+      () => ({ rowCount: 1, rows: [{ tier: "free" }] }),
+    ]);
+
+    await expect(
+      resolveOrgChatAdapter(client as never, {
+        orgId: "org-1",
+        promptCachingEnabled: false,
+        decrypt: async () => "unused",
+      }),
+    ).rejects.toThrow(/Team 6925 uses Gemini only/);
   });
 });

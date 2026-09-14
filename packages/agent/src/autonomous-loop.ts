@@ -212,6 +212,8 @@ export type RunAutonomousAgentInput = {
   promptCachingEnabled?: boolean;
   /** Extra context items (memories etc.) — never invent DEMO facts. */
   extraContext?: ContextItem[];
+  /** Reuse a run the UI already opened so the site can poll steps while this loop works. */
+  runId?: string;
 };
 
 /**
@@ -225,16 +227,26 @@ export async function runAutonomousAgent(
   const maxSteps = Math.min(Math.max(input.maxSteps ?? DEFAULT_MAX_STEPS, 1), 20);
   const { client, orgId, userId, adapter } = input;
 
-  const runId = await insertAutonomousRun(client, {
-    orgId,
-    userId,
-    goal,
-    requestId: input.requestId,
-    maxSteps,
-    feature: "agent",
-    provider: adapter.provider,
-    model: adapter.model,
-  });
+  const runId =
+    input.runId?.trim() ||
+    (await insertAutonomousRun(client, {
+      orgId,
+      userId,
+      goal,
+      requestId: input.requestId,
+      maxSteps,
+      feature: "agent",
+      provider: adapter.provider,
+      model: adapter.model,
+    }));
+  if (input.runId?.trim()) {
+    await client.query(
+      `UPDATE autonomous_agent_runs
+          SET status = 'running', provider = $3, model = $4, max_steps = $5
+        WHERE id = $1::uuid AND org_id = $2::uuid`,
+      [runId, orgId, adapter.provider, adapter.model, maxSteps],
+    );
+  }
 
   const steps: AutonomousAgentStepLog[] = [];
   const usageEventIds: string[] = [];

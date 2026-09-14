@@ -21,6 +21,7 @@ import {
   onboardingGoBack,
   onboardingLegalRequired,
   onboardingLoadCopy,
+  onboardingAsksForGeminiKey,
   onboardingMembershipNote,
   onboardingProgressLabel,
   sanitizeTeamNumberInput,
@@ -506,6 +507,18 @@ export default function OnboardingClient() {
         return;
       }
       hydrate(data);
+      if (data.workspaceOrgId && draft.geminiApiKey.trim()) {
+        await fetch("/api/organizations/ai-keys", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            orgId: data.workspaceOrgId,
+            action: "save_key",
+            provider: "google",
+            apiKey: draft.geminiApiKey.trim(),
+          }),
+        }).catch(() => null);
+      }
       routeCompleteState(data, true);
     } finally {
       setBusy(false);
@@ -909,6 +922,27 @@ export default function OnboardingClient() {
                 </label>
               </fieldset>
             </details>
+
+            {onboardingAsksForGeminiKey({
+              isTeamHead: Boolean(state.isTeamHead),
+              teamNumber: lookup.teamNumber,
+            }) ? (
+              <label>
+                Free Gemini API key
+                <input
+                  type="password"
+                  autoComplete="off"
+                  value={draft.geminiApiKey}
+                  onChange={(event) => patch({ geminiApiKey: event.target.value })}
+                  placeholder="AIza… or AQ.… from aistudio.google.com/apikey"
+                  aria-invalid={errorField === "geminiApiKey" || undefined}
+                />
+                <small>
+                  Required for basic Ask / Write / Agent on this team. Create a free key at Google AI Studio. Team 6925
+                  uses the platform Gemini key instead.
+                </small>
+              </label>
+            ) : null}
 
             {legalNeeded ? (
               <div className="onboarding-terms-block">

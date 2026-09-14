@@ -90,9 +90,10 @@ describe("official Freebuff login files", () => {
     expect(officialAgentIdForModel("mimo/mimo-v2.5")).toBe("base3-free-mimo");
     expect(officialAgentIdForModel("glm/glm-5.3-flash")).toBe("base3-free-glm-5-3-flash");
     expect(officialAgentIdForModel("z-ai/glm-5.3-flash")).toBe("base3-free-glm-5-3-flash");
+    expect(officialAgentIdForModel("deepseek/deepseek-v4-flash")).toBe("base3-free-deepseek-flash");
   });
 
-  it("reuses a live official session instead of POSTing a second model", async () => {
+  it("reuses a live official session when the picker model matches", async () => {
     const { admitOfficialFreebuffSession } = await import("../src/official-freebuff-session");
     const calls: string[] = [];
     const fetchImpl = (async (url: string | URL, init?: RequestInit) => {
@@ -101,7 +102,7 @@ describe("official Freebuff login files", () => {
         JSON.stringify({
           status: "active",
           instanceId: "live-1",
-          model: "mimo/mimo-v2.5",
+          model: "z-ai/glm-5.3-flash",
         }),
         { status: 200 },
       );
@@ -115,9 +116,51 @@ describe("official Freebuff login files", () => {
       ok: true,
       status: "active",
       instanceId: "live-1",
-      model: "mimo/mimo-v2.5",
+      model: "z-ai/glm-5.3-flash",
     });
     expect(calls).toEqual(["GET https://www.codebuff.com/api/v1/freebuff/session"]);
+  });
+
+  it("opens a new official session when the picker model changes", async () => {
+    const { admitOfficialFreebuffSession } = await import("../src/official-freebuff-session");
+    const calls: string[] = [];
+    const fetchImpl = (async (url: string | URL, init?: RequestInit) => {
+      const method = init?.method ?? "GET";
+      calls.push(`${method} ${String(url)}`);
+      if (method === "GET") {
+        return new Response(
+          JSON.stringify({
+            status: "active",
+            instanceId: "live-1",
+            model: "mimo/mimo-v2.5",
+          }),
+          { status: 200 },
+        );
+      }
+      return new Response(
+        JSON.stringify({
+          status: "active",
+          instanceId: "live-2",
+          model: "z-ai/glm-5.3-flash",
+        }),
+        { status: 200 },
+      );
+    }) as typeof fetch;
+    const admitted = await admitOfficialFreebuffSession({
+      token: "cb_test",
+      model: "glm/glm-5.3-flash",
+      fetchImpl,
+    });
+    expect(admitted).toEqual({
+      ok: true,
+      status: "active",
+      instanceId: "live-2",
+      model: "z-ai/glm-5.3-flash",
+    });
+    expect(calls).toEqual([
+      "GET https://www.codebuff.com/api/v1/freebuff/session",
+      "POST https://www.codebuff.com/api/v1/freebuff/session",
+    ]);
   });
 });
 

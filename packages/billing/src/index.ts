@@ -465,9 +465,16 @@ async function enforceApiBudgets<T>(
         [input.orgId],
       ),
       input.client.query(
-        `SELECT daily_spend_limit_usd,monthly_spend_limit_usd,daily_token_limit,monthly_token_limit
+        `SELECT daily_spend_limit_usd,monthly_spend_limit_usd,daily_token_limit,monthly_token_limit,
+                allowed_model_ids
          FROM org_api_member_limits WHERE org_id=$1 AND user_id=$2`,
         [input.orgId, input.userId],
+      ).catch(() =>
+        input.client.query(
+          `SELECT daily_spend_limit_usd,monthly_spend_limit_usd,daily_token_limit,monthly_token_limit
+           FROM org_api_member_limits WHERE org_id=$1 AND user_id=$2`,
+          [input.orgId, input.userId],
+        ),
       ),
       input.client.query(
         `SELECT daily_spend_limit_usd,monthly_spend_limit_usd,daily_token_limit,monthly_token_limit
@@ -541,6 +548,12 @@ async function enforceApiBudgets<T>(
   )
     await deny("model.not_allowed");
   if (model?.allowed === false) await deny("model.not_allowed");
+  const memberModels = Array.isArray(member?.allowed_model_ids)
+    ? (member.allowed_model_ids as string[]).map((id) => id.trim()).filter(Boolean)
+    : [];
+  if (memberModels.length > 0 && input.model && !memberModels.includes(input.model)) {
+    await deny("member.model_not_allowed");
+  }
   const createLayer = (
     name: string,
     limit: Record<string, unknown> | undefined,

@@ -6,6 +6,7 @@ import {
   readFreeRelayConfigs,
   tryCreateFreeRelayAdapter,
   tryCreateGroqFreeAdapter,
+  tryCreateHostedGeminiAdapter,
   tryCreateOpenRouterFreeAdapter,
 } from "./hosted-platform-keys";
 
@@ -143,6 +144,9 @@ export function tryCreatePlatformRelayAdapter(input?: {
 
   const groq = tryCreateGroqFreeAdapter({ ...input, env });
   if (groq) entries.push({ label: "groq-free", kind: "fallback", adapter: groq });
+
+  const gemini = tryCreateHostedGeminiAdapter({ ...input, env });
+  if (gemini) entries.push({ label: "gemini-hosted", kind: "fallback", adapter: gemini });
 
   return new RelayFailoverChatAdapter(entries, { rotateRelays: true });
 }

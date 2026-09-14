@@ -154,6 +154,16 @@ export function catalogFallback(config: PiLayerConfig): Record<string, unknown> 
  * Rewrite a chat-completions body to a picker slug. Unknown models become
  * DeepSeek V4 Flash, the free / unlimited / fast default.
  */
+/** The picker slug already on a chat-completions body, or null if the JSON is unusable. */
+export function readChatCompletionModel(body: string): string | null {
+  try {
+    const parsed = JSON.parse(body) as { model?: unknown };
+    return typeof parsed?.model === "string" && parsed.model.trim() ? parsed.model.trim() : null;
+  } catch {
+    return null;
+  }
+}
+
 export function clampChatCompletionBody(body: string, fallbackModel: string): string {
   try {
     const parsed = JSON.parse(body) as { model?: unknown };

@@ -243,12 +243,16 @@ export async function admitOfficialFreebuffSession(input: {
   const fetchImpl = input.fetchImpl ?? fetch;
   const existing = await readOfficialFreebuffSession({ token: input.token, origin, fetchImpl });
   if (existing.status === "active" && existing.instanceId) {
-    return {
-      ok: true,
-      status: "active",
-      instanceId: existing.instanceId,
-      model: existing.model ? toOfficialFreebuffWireModel(existing.model) : model,
-    };
+    const live = existing.model ? toOfficialFreebuffWireModel(existing.model) : model;
+    if (live === model) {
+      return {
+        ok: true,
+        status: "active",
+        instanceId: existing.instanceId,
+        model: live,
+      };
+    }
+    // A different picker slug must open a new session so the official agent id matches.
   }
   const response = await fetchImpl(officialSessionUrl(origin), {
     method: "POST",

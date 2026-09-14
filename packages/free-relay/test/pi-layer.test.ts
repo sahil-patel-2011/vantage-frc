@@ -5,6 +5,7 @@ import {
   catalogFallback,
   clampChatCompletionBody,
   healthPayload,
+  readChatCompletionModel,
   joinUpstream,
   PI_LAYER_DEFAULT_UPSTREAM,
   PI_LAYER_FAILOVER_STATUSES,
@@ -101,6 +102,17 @@ describe("health and catalog", () => {
       { id: "glm/glm-5.3-flash", object: "model", owned_by: "freebuff" },
       { id: "mimo/mimo-2.5", object: "model", owned_by: "freebuff" },
     ]);
+  });
+});
+
+describe("readChatCompletionModel", () => {
+  it("reads the picker slug already on the chat body", () => {
+    expect(readChatCompletionModel(JSON.stringify({ model: "mimo/mimo-2.5" }))).toBe("mimo/mimo-2.5");
+    expect(readChatCompletionModel(JSON.stringify({ model: "glm/glm-5.3-flash" }))).toBe(
+      "glm/glm-5.3-flash",
+    );
+    expect(readChatCompletionModel("{not json")).toBeNull();
+    expect(readChatCompletionModel(JSON.stringify({ messages: [] }))).toBeNull();
   });
 });
 

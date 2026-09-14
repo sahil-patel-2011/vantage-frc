@@ -26,12 +26,14 @@ import {
   openRouterFreeModel,
   openRouterRequestHeaders,
   tryCreateHostedAnthropicAdapter,
+  tryCreateHostedGeminiAdapter,
   tryCreateOpenRouterFreeAdapter,
 } from "./hosted-platform-keys";
 import { OrgIsolatedChatAdapter } from "./org-isolation";
 import { tryCreatePlatformRelayAdapter } from "./relay-failover-adapter";
 import { tryCreateSponsoredFailoverAdapter } from "./sponsored-provider-pool";
 import { isLocalOrLanOrigin } from "./model-tier";
+import { isGeminiOnlyTeam } from "./priority-team";
 import {
   bridgeHeavyCliTimeoutMs,
   bridgeHeavyPollBudgetMs,
@@ -712,8 +714,15 @@ async function resolveHostedPlatformChatAdapter(
   });
   if (openrouter) return openrouter;
 
+  const gemini = tryCreateHostedGeminiAdapter({
+    promptCachingEnabled: input.promptCachingEnabled,
+    fetchImpl: input.fetchImpl,
+    capability: input.feature,
+  });
+  if (gemini) return gemini;
+
   throw new ChatProviderResolutionError(
-    "Bugbot Ultra needs a hosted Vantage model (ANTHROPIC_API_KEY, managed peek, or OPENROUTER_API_KEY). Use subscription Bugbot with your own key instead.",
+    "Bugbot Ultra needs a hosted Vantage model (ANTHROPIC_API_KEY, managed peek, OPENROUTER_API_KEY, or GEMINI_API_KEY). Use subscription Bugbot with your own key instead.",
   );
 }
 
@@ -851,8 +860,8 @@ export async function resolveOrgChatAdapterWithProvenance(
 
   // Grant + toggle ON: the team's own keys do not win. One Pi session serves
   // every org, so the adapter is wrapped to drop any context that names another
-  // team before it leaves this process.
-  if (hasRelayGrant && usePlatformFreeAi) {
+  // team before it leaves this process. Team 6925 is Gemini-only — skip Freebuff.
+  if (hasRelayGrant && usePlatformFreeAi && !isGeminiOnlyTeam(teamNumber)) {
     const preferredRelay = tryCreatePlatformRelayAdapter({
       promptCachingEnabled: input.promptCachingEnabled,
       fetchImpl: input.fetchImpl,
@@ -889,6 +898,9 @@ export async function resolveOrgChatAdapterWithProvenance(
   const orgKeys = {
     rows: overlayMemberKeys(await loadOrgLlmKeys(client, input.orgId), memberKeys),
   };
+  if (isGeminiOnlyTeam(teamNumber)) {
+    orgKeys.rows = orgKeys.rows.filter((row) => isGoogleByokProvider(row.provider));
+  }
 
   const available = availableProvidersFrom(orgKeys.rows, orgProviders.rows);
   const chosen = pickByokModelForFeature({
@@ -907,13 +919,17 @@ export async function resolveOrgChatAdapterWithProvenance(
   });
 
   // Prefer explicit OpenAI-compatible / local connector when configured.
-  const localOrCompat = orgProviders.rows.find(
-    (row) =>
-      !row.localRelay &&
-      (row.label === LOCAL_OPENAI_COMPAT_LABEL ||
-        normalizeProvider(row.kind) === "openai-compatible" ||
-        Boolean(row.baseUrl)),
-  );
+  // Team 6925 stays on Gemini — skip local / custom OpenAI-compat connectors.
+  const geminiOnly = isGeminiOnlyTeam(teamNumber);
+  const localOrCompat = geminiOnly
+    ? undefined
+    : orgProviders.rows.find(
+        (row) =>
+          !row.localRelay &&
+          (row.label === LOCAL_OPENAI_COMPAT_LABEL ||
+            normalizeProvider(row.kind) === "openai-compatible" ||
+            Boolean(row.baseUrl)),
+      );
   if (localOrCompat?.baseUrl) {
     // When Automode/fixed picks a first-party model and a cloud key exists, prefer that
     // unless the only available path is the local connector.
@@ -1011,9 +1027,9 @@ export async function resolveOrgChatAdapterWithProvenance(
   }
 
   // Legacy: any enabled HTTPS custom provider (Team Admin).
-  const hosted = orgProviders.rows.find(
-    (row) => !row.localRelay && row.baseUrl && row.keyCiphertext,
-  );
+  const hosted = geminiOnly
+    ? undefined
+    : orgProviders.rows.find((row) => !row.localRelay && row.baseUrl && row.keyCiphertext);
   if (hosted) {
     const provider = normalizeProvider(hosted.kind) ?? (hosted.baseUrl ? "openai-compatible" : null);
     if (!provider) {
@@ -1125,7 +1141,7 @@ export async function resolveOrgChatAdapterWithProvenance(
       [input.orgId],
     );
     const row = managed.rows[0];
-    if (row) {
+    if (row && !geminiOnly) {
       const provider = normalizeProvider(row.provider);
       if (provider === "openai" || provider === "anthropic") {
         const apiKey = await decryptRow(row, input.decrypt);
@@ -1148,18 +1164,32 @@ export async function resolveOrgChatAdapterWithProvenance(
         );
       }
     }
-    const hostedAnthropic = tryCreateHostedAnthropicAdapter({
+    if (!isGeminiOnlyTeam(teamNumber)) {
+      const hostedAnthropic = tryCreateHostedAnthropicAdapter({
+        promptCachingEnabled: input.promptCachingEnabled,
+        fetchImpl: input.fetchImpl,
+        feature: input.feature,
+      });
+      if (hostedAnthropic) return resolved(hostedAnthropic, "hosted");
+    }
+  }
+
+  if (isGeminiOnlyTeam(teamNumber)) {
+    const gemini = tryCreateHostedGeminiAdapter({
       promptCachingEnabled: input.promptCachingEnabled,
       fetchImpl: input.fetchImpl,
-      feature: input.feature,
+      capability: input.feature,
     });
-    if (hostedAnthropic) return resolved(hostedAnthropic, "hosted");
+    if (gemini) return resolved(gemini, "hosted");
+    throw new ChatProviderResolutionError(
+      "Team 6925 uses Gemini only. Set GEMINI_API_KEY on this host or add a Google AI Studio key under Team → AI keys.",
+    );
   }
 
   // Toggle OFF: team keys already had first refusal above. The grant is still a
   // fallback so a team that turned Free AI off is not left with no model when
   // they also have no key. Same isolation wrap — the Pi is still one session.
-  if (hasRelayGrant && !usePlatformFreeAi) {
+  if (hasRelayGrant && !usePlatformFreeAi && !geminiOnly) {
     const fallbackRelay = tryCreatePlatformRelayAdapter({
       promptCachingEnabled: input.promptCachingEnabled,
       fetchImpl: input.fetchImpl,
@@ -1180,6 +1210,12 @@ export async function resolveOrgChatAdapterWithProvenance(
       capability: input.feature,
     });
     if (openrouter) return resolved(openrouter, "hosted");
+    const gemini = tryCreateHostedGeminiAdapter({
+      promptCachingEnabled: input.promptCachingEnabled,
+      fetchImpl: input.fetchImpl,
+      capability: input.feature,
+    });
+    if (gemini) return resolved(gemini, "hosted");
   }
 
   if (orgProviders.rows.some((row) => row.localRelay)) {
@@ -1204,7 +1240,7 @@ export async function resolveOrgChatAdapterWithProvenance(
       throw new ChatProviderResolutionError(sponsoredPromoExpiredMessage(promo.teamNumber ?? 1111));
     }
     throw new ChatProviderResolutionError(
-      "No AI provider key is configured for this organization. Free workspaces use the platform OpenRouter free pool when OPENROUTER_API_KEY is set, or your own OpenAI, Anthropic, Google, or OpenRouter key under Team → AI API keys (or a local OpenAI-compatible base URL for Ollama / LM Studio).",
+      "No AI provider key is configured for this organization. Free workspaces use the platform OpenRouter or Gemini pool when those keys are set, or your own OpenAI, Anthropic, Google, or OpenRouter key under Team → AI API keys (or a local OpenAI-compatible base URL for Ollama / LM Studio).",
     );
   }
 

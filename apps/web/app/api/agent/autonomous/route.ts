@@ -2,6 +2,7 @@ import {
   createVantageToolRegistry,
   getOrgPromptCachingEnabled,
   getAutonomousRunWithSteps,
+  insertAutonomousRun,
   listAutonomousRuns,
   resolveOrgChatAdapter,
   runAutonomousAgent,
@@ -74,6 +75,8 @@ export async function POST(request: Request) {
       orgId?: string;
       goal?: string;
       maxSteps?: number;
+      action?: "begin" | "run";
+      runId?: string;
     };
     if (!body.orgId) return Response.json({ error: "orgId is required" }, { status: 400 });
     const goal = String(body.goal ?? "").trim();
@@ -82,6 +85,18 @@ export async function POST(request: Request) {
     const data = await withRls({ userId: session.user.id, orgId }, async (client) => {
       const membership = await client.query("SELECT 1 FROM memberships WHERE org_id=$1::uuid", [orgId]);
       if (!membership.rowCount) throw new Error("Organization access denied");
+
+      if (body.action === "begin") {
+        const runId = await insertAutonomousRun(client, {
+          orgId,
+          userId: session.user.id,
+          goal,
+          requestId: crypto.randomUUID(),
+          maxSteps: body.maxSteps,
+          feature: "agent",
+        });
+        return { runId, status: "running" };
+      }
 
       const promptCachingEnabled = await getOrgPromptCachingEnabled(client, orgId);
       const adapter = await resolveOrgChatAdapter(client, {
@@ -101,6 +116,7 @@ export async function POST(request: Request) {
         maxSteps: body.maxSteps,
         registry: createVantageToolRegistry(),
         promptCachingEnabled,
+        runId: body.runId,
       });
 
       const detail = await getAutonomousRunWithSteps(client, orgId, result.runId);
