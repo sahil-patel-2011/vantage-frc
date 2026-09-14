@@ -1531,7 +1531,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "integrations",
     slug: "integrations",
-    title: "Connect TBA, Onshape, GitHub, and chat",
+    title: "Connect Team Data, Onshape, GitHub, and chat",
     summary:
       "Settings → Connectors lists every integration. Connect stays available until a real credential is saved. Connected only appears when that save worked.",
     category: "integrations",
