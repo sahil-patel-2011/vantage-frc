@@ -325,7 +325,7 @@ export function visitShellCopy(kind: VisitShellKind): VisitEmptyCopy {
         badge: "Needs setup",
         title: "Choose your team",
         description:
-          "Choose your team and apply the visit invites migration if tables are missing.",
+          "Choose your team before logging shop tours or demo days.",
       };
     case "empty":
       return {
