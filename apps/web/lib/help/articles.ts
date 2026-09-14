@@ -189,7 +189,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "5 · First event",
         body: [
-          "Connect The Blue Alliance under Team → Data (/team/data) and pick your active event — schedules, rankings, and match cards stay empty until then.",
+          "Sync Team Data under Team → Data (/team/data) and pick your active event — schedules, rankings, and match cards stay empty until then.",
           "Publish a scouting form (Competition → Scouting → Forms) before day one so scouts have something to fill.",
         ],
       },
