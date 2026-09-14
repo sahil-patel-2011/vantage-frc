@@ -71,22 +71,6 @@ export type VideoRescoutSetupStep = {
   href: string;
 };
 
-function videoRescoutRelatedHrefs(orgId?: string | null): Set<string> {
-  return new Set(
-    videoRescoutRelatedLinks(orgId, { include: [...VIDEO_RESCOUT_RELATED_INCLUDE] }).map(
-      (link) => link.href,
-    ),
-  );
-}
-
-function dropRelatedStripDuplicates<T extends { href: string }>(
-  orgId: string | null | undefined,
-  items: T[],
-): T[] {
-  const related = videoRescoutRelatedHrefs(orgId);
-  return items.filter((item) => !related.has(item.href));
-}
-
 export function videoRescoutSetupSteps(orgId?: string | null): VideoRescoutSetupStep[] {
   if (!orgId) {
     return [
