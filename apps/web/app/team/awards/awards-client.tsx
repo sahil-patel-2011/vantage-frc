@@ -124,7 +124,7 @@ export default function AwardsClient() {
     return (
       <main className="module-page awards-page">
         <PageHeader breadcrumbs="Business / Awards" title="Awards" description="Checking which team you are on." />
-        <EmptyState soft title="Loading awards…" description="Checking your team." aria-busy />
+        <EmptyState soft title="Opening Awards" description="Checking your team." aria-busy />
       </main>
     );
   }
@@ -496,7 +496,7 @@ function AwardsLive({ orgId }: { orgId: string }) {
       ) : null}
 
       {loading ? (
-        <EmptyState soft title="Loading awards…" description="Opening this team’s FIRST submissions." aria-busy />
+        <EmptyState soft title="Opening Awards" description="Opening this team’s FIRST submissions." aria-busy />
       ) : (
         <>
           {submissions.length > 0 ? <AwardsNextActions actions={nextActions} /> : null}

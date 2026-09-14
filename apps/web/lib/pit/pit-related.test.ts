@@ -162,6 +162,7 @@ describe("pitShellCopy + metrics", () => {
     }
     expectPlainCopy(pitShellCopy("empty").description);
     expectPlainCopy(pitShellCopy("setup").description);
+    expect(pitShellCopy("setup").badge).toBe("Needs setup");
   });
 
   it("formats real counts only and hides zeroed tiles", () => {

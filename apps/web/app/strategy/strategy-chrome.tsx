@@ -145,7 +145,7 @@ export function StrategyShell({
           <Button as="a" variant="primary" href={orgId ? commandHref : workspaceHref}>{orgId ? "Set active event" : "Choose your team"}</Button>
         ) : null}
         {shell === "empty" ? (
-          <Button as="a" variant="primary" href={teamDataHref}>Sync Team Data</Button>
+          <Button as="a" variant="primary" href={teamDataHref}>Sync Team data</Button>
         ) : null}
       </EmptyState>
     </Root>

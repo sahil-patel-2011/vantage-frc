@@ -132,7 +132,7 @@ export default function AuthPolicyClient({ orgId }: { orgId: string }) {
         description="Team sign-in policy, 2FA requirements, hub access for scouts/viewers, and delegated admin powers. Personal authenticator setup lives under Account → Security."
       >
         <nav className="settings-inline-links" aria-label="Related settings">
-          <a href={`/team?orgId=${orgId}`}>Team admin</a>
+          <a href={`/team?orgId=${orgId}`}>Invites</a>
           <a href={`/team/budgets?orgId=${orgId}`}>Chat limits</a>
           <a href={`/team/ai-keys?orgId=${orgId}`}>Team keys</a>
           <a href="/security">Personal 2FA</a>

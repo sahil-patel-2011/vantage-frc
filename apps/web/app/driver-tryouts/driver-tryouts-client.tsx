@@ -61,7 +61,7 @@ async function persistDriverTryoutsSnapshot(
     await putFeatureSnapshot("driver-tryouts", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("driver-tryouts", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Driver Tryouts already painted; IndexedDB is best-effort.
+    // Live Driver tryouts already painted; IndexedDB is best-effort.
   }
 }
 
@@ -129,7 +129,7 @@ export default function DriverTryoutsClient() {
       if (!response.ok || !isDriverTryoutsView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Driver Tryouts. Showing the last copy on this device.");
+          setError("Could not refresh Driver tryouts. Showing the last copy on this device.");
           setFetchFailed(false);
           return;
         }
@@ -150,7 +150,7 @@ export default function DriverTryoutsClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Driver Tryouts. Showing the last copy on this device.");
+        setError("Could not refresh Driver tryouts. Showing the last copy on this device.");
         setFetchFailed(false);
         return;
       }
@@ -220,10 +220,10 @@ export default function DriverTryoutsClient() {
         breadcrumbs={
           <>
             <a href={orgId ? `/team?orgId=${encodeURIComponent(orgId)}` : "/team"}>Team</a>
-            {" / Driver Tryouts"}
+            {" / Driver tryouts"}
           </>
         }
-        title="Driver Tryouts"
+        title="Driver tryouts"
         description="Score and rank drive-team candidates against a fixed rubric. Selection readiness reflects only what has been scored."
       >
         {view?.status === "live" && view.seasons.length > 0 ? (
@@ -247,7 +247,7 @@ export default function DriverTryoutsClient() {
         ) : null}
       </PageHeader>
 
-      <OfflineBanner feature="Driver Tryouts" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Driver tryouts" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -257,7 +257,7 @@ export default function DriverTryoutsClient() {
 
       {!view ? (
         <EmptyState
-          title={failure ? failure.title : "Loading…"}
+          title={failure ? failure.title : "Opening Driver tryouts"}
           description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >
@@ -277,7 +277,7 @@ export default function DriverTryoutsClient() {
           switch (view.status) {
             case "setup_required":
               return (
-                <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
+                <EmptyState badge="Needs setup" badgeTone="setup" title={view.message}>
                   {view.steps[0] ? (
                     <Button as="a" variant="primary" href={view.steps[0].href}>
                       {view.steps[0].label}

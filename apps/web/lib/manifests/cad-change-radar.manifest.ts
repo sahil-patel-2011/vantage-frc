@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "cad-change-radar",
-  title: "CAD Change Impact Radar",
+  title: "Change radar",
   route: "/cad-change-radar",
   apiRoute: "/api/cad-change-radar",
   hub: "Build",

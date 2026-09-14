@@ -22,8 +22,9 @@ Use the **vantage-cad MCP** tools. Do not invent geometry. Prefer a **disposable
 1. `onshape_list_documents`
 2. `onshape_list_elements` with document + default workspace
 3. `onshape_bind` the Part Studio
-4. `onshape_sketch_rectangle` (mm) then `onshape_extrude` (mm)
-5. `onshape_describe` to confirm the feature tree
+4. `onshape_drawing_pack` or `onshape_create_drawing` first — labeled views and millimetre notes a person can CAD from. Multiple sheets when faces need their own sizes. Never invent millimetres.
+5. `onshape_sketch_rectangle` (same mm) then `onshape_extrude` (same mm)
+6. `onshape_describe` to confirm the feature tree
 6. For assemblies without FeatureScript: `onshape_body_details`, `onshape_create_assembly`,
    `onshape_add_assembly_instance`, `onshape_mate`, then `onshape_get_assembly`
 

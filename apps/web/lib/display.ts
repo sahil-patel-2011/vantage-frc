@@ -99,10 +99,10 @@ export const PRESET_WIDGETS: Record<string, DisplayWidgetType[]> = {
 };
 
 export const PRESET_META: Array<{ id: DisplayPreset; title: string; copy: string }> = [
-  { id: "next_match", title: "Next Match", copy: "Countdown, alliances, scheduled time, and leave-now status from TBA" },
+  { id: "next_match", title: "Next Match", copy: "Countdown, alliances, scheduled time, and leave-now status from official matches" },
   { id: "win_prediction", title: "Win Prediction", copy: "Stored Strategy model odds - empty until you score a match prediction" },
   { id: "robot_readiness", title: "Robot Readiness", copy: "Battery fleet, open failures, and maintenance from Pit ops - never assumed green" },
-  { id: "event_command", title: "Event Command", copy: "Next team match plus TBA rank/record when metrics are synced" },
+  { id: "event_command", title: "Event Command", copy: "Next team match plus official rank/record when metrics are synced" },
   { id: "scouting_coverage", title: "Scouting Coverage", copy: "Assignments, reports, and open disagreements at the active event" },
   { id: "custom", title: "Custom grid", copy: "Pick authorized competition-readable widgets only" },
 ];
@@ -153,7 +153,7 @@ export function pitChromiumKioskCommand(url: string): string {
 }
 
 export const LEAVE_PIT_MS = 15 * 60_000;
-/** PitFUSION-style: countdown goes red inside 5 minutes of TBA predicted/event time. */
+/** PitFUSION-style: countdown goes red inside 5 minutes of official predicted/event time. */
 export const QUEUE_SOON_MS = 5 * 60_000;
 
 export type CountdownState = {
@@ -188,7 +188,7 @@ export function queueCue(clock: CountdownState): string {
   return "STAY READY";
 }
 
-/** Our bumper color from the TBA alliance lists — never guessed. */
+/** Our bumper color from the official alliance lists — never guessed. */
 export function ourBumperColor(
   match: Pick<DisplayNextMatch, "redAlliance" | "blueAlliance"> | null | undefined,
   teamNumber: number | null | undefined,

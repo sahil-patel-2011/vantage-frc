@@ -1,7 +1,7 @@
 import MediaLibraryClient from "./media-library-client";
 
 export const metadata = {
-  title: "Media Library",
+  title: "Photos & video",
 };
 
 export default function MediaLibraryPage() {

@@ -67,7 +67,7 @@ function KnowledgeDraftsRelated({ orgId }: { orgId?: string | null }) {
         Decisions
       </Button>
       <Button as="a" variant="secondary" href={withOrgHref("/team/getting-started", orgId)}>
-        Getting started
+        Team setup
       </Button>
     </nav>
   );
@@ -90,7 +90,7 @@ function KnowledgeDraftsNextActions({ orgId }: { orgId: string }) {
     },
     {
       id: "setup",
-      label: "Open Getting started",
+      label: "Open Team setup",
       detail: "The team setup checklist tracks whether the Playbook has real writing yet.",
       href: withOrgHref("/team/getting-started", orgId),
     },
@@ -271,7 +271,7 @@ export default function KnowledgeDraftsClient() {
         {header}
         <OfflineBanner feature="Knowledge drafts" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
-          title={failure ? failure.title : "Loading…"}
+          title={failure ? failure.title : "Opening Knowledge drafts"}
           description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >
@@ -301,7 +301,7 @@ export default function KnowledgeDraftsClient() {
               {error}
             </p>
           ) : null}
-          <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
+          <EmptyState badge="Needs setup" badgeTone="setup" title={view.message}>
             {view.steps[0] ? (
               <Button as="a" variant="primary" href={view.steps[0].href}>
                 {view.steps[0].label}

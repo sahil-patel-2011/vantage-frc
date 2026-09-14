@@ -28,7 +28,7 @@ const SURFACES = [
   },
   {
     path: "/team/ai-keys",
-    heading: "AI API keys",
+    heading: "AI keys",
     crumb: /AI\s*\/\s*API keys/,
     ready: "Use your own key, just for you",
   },

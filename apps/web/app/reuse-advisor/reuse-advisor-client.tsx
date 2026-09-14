@@ -60,7 +60,7 @@ async function persistReuseAdvisorSnapshot(
     await putFeatureSnapshot("reuse-advisor", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("reuse-advisor", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Reuse Advisor already painted; IndexedDB is best-effort.
+    // Live Reuse already painted; IndexedDB is best-effort.
   }
 }
 
@@ -71,7 +71,7 @@ function ReuseAdvisorRelated({ orgId }: { orgId?: string | null }) {
         Subsystems
       </Button>
       <Button as="a" variant="secondary" href={hubHref("/build", "fmea", orgId)}>
-        FMEA
+        Failure log
       </Button>
       <Button as="a" variant="secondary" href={hubHref("/build", "readiness-score", orgId)}>
         Readiness
@@ -91,7 +91,7 @@ function ReuseAdvisorNextActions({ orgId }: { orgId: string }) {
     },
     {
       id: "fmea",
-      label: "Open FMEA",
+      label: "Open Failure log",
       detail: "Failure history is what makes a reuse recommendation honest.",
       href: hubHref("/build", "fmea", orgId),
       primary: false,
@@ -190,7 +190,7 @@ export default function ReuseAdvisorClient() {
       if (!response.ok || !isReuseAdvisorView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Reuse Advisor. Showing the last copy on this device.");
+          setError("Could not refresh Reuse. Showing the last copy on this device.");
           setFetchFailed(false);
           return;
         }
@@ -211,7 +211,7 @@ export default function ReuseAdvisorClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Reuse Advisor. Showing the last copy on this device.");
+        setError("Could not refresh Reuse. Showing the last copy on this device.");
         setFetchFailed(false);
         return;
       }
@@ -263,11 +263,11 @@ export default function ReuseAdvisorClient() {
       breadcrumbs={
         <>
           <a href={buildHref}>Build</a>
-          {" / Reuse Advisor"}
+          {" / Reuse"}
         </>
       }
-      title="Reuse Advisor"
-      description="Cross-season subsystem reuse recommendations — mined from prior FMEA failure history and design-review track record for each subsystem you designed before."
+      title="Reuse"
+      description="Cross-season subsystem reuse recommendations — mined from prior Failure log history and design-review track record for each subsystem you designed before."
     >
       <ReuseAdvisorRelated orgId={orgId} />
       {view?.status === "live" && view.seasons.length > 0 ? (
@@ -312,9 +312,9 @@ export default function ReuseAdvisorClient() {
     return (
       <main className="module-page">
         {header}
-        <OfflineBanner feature="Reuse Advisor" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Reuse" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
-          title={copy ? copy.title : "Loading…"}
+          title={copy ? copy.title : "Opening Reuse"}
           description={copy ? copy.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >
@@ -338,13 +338,13 @@ export default function ReuseAdvisorClient() {
       return (
         <main className="module-page">
           {header}
-          <OfflineBanner feature="Reuse Advisor" fromCache={fromCache} cachedAt={cachedAt} />
+          <OfflineBanner feature="Reuse" fromCache={fromCache} cachedAt={cachedAt} />
           {error ? (
             <p className="telemetry-status" role="alert">
               {error}
             </p>
           ) : null}
-          <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
+          <EmptyState badge="Needs setup" badgeTone="setup" title={view.message}>
             {view.steps[0] ? (
               <Button as="a" variant="primary" href={view.steps[0].href}>
                 {view.steps[0].label}
@@ -364,7 +364,7 @@ export default function ReuseAdvisorClient() {
   return (
     <main className="module-page">
       {header}
-      <OfflineBanner feature="Reuse Advisor" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Reuse" fromCache={fromCache} cachedAt={cachedAt} />
       {error ? (
         <p className="telemetry-status" role="alert">
           {error}
@@ -379,7 +379,7 @@ export default function ReuseAdvisorClient() {
             badge="No prior-season subsystems"
             badgeTone="setup"
             title="Log subsystems from prior seasons to get reuse recommendations"
-            description="Add subsystems on the Build spec sheet in past seasons (season year below the current design season). Reuse recommendations use their FMEA and design-review history here."
+            description="Add subsystems on the Build spec sheet in past seasons (season year below the current design season). Reuse recommendations use their Failure log and design-review history here."
           >
             <Button as="a" variant="primary" href={hubHref("/build", "subsystems", view.orgId)}>
               Open Subsystems
@@ -407,7 +407,7 @@ function CandidatesPanel({
     <Panel>
       <h2 style={{ marginTop: 0 }}>Reuse candidates</h2>
       <p className="app-muted" style={{ marginTop: 0 }}>
-        Prior-season subsystems, cross-referenced against FMEA failure history and design-review outcomes.
+        Prior-season subsystems, cross-referenced against Failure log history and design-review outcomes.
       </p>
       <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 10 }}>
         {view.candidates.map((candidate) => (
@@ -450,7 +450,7 @@ function CandidateRow({
       </header>
       <small className="app-muted">{candidate.rationale}</small>
       <small className="app-muted">
-        {candidate.fmeaFailureCount} prior FMEA failure(s) · {candidate.fmeaHighSeverityCount} high-severity ·{" "}
+        {candidate.fmeaFailureCount} prior logged failure(s) · {candidate.fmeaHighSeverityCount} high-severity ·{" "}
         {candidate.designReviewPassCount}/{candidate.designReviewCount} design review(s) passed
       </small>
     </li>

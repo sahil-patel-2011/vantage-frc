@@ -51,7 +51,7 @@ async function persistStandupSnapshot(
     await putFeatureSnapshot("standup-digest", cacheOrg, data, dateHint || dateKey);
     if (!orgHint) await putFeatureSnapshot("standup-digest", "_", data, dateHint || dateKey);
   } catch {
-    // Live Morning standup already painted; IndexedDB is best-effort.
+    // Live Standup already painted; IndexedDB is best-effort.
   }
 }
 
@@ -62,7 +62,7 @@ function StandupRelated({ orgId }: { orgId?: string | null }) {
         Hours
       </Button>
       <Button as="a" variant="secondary" href={hubHref("/team", "goals-tracker", orgId)}>
-        Season Goals
+        Goals
       </Button>
       <Button as="a" variant="secondary" href={hubHref("/team", "meeting-autopilot", orgId)}>
         Meeting agenda
@@ -82,7 +82,7 @@ function StandupNextActions({ orgId }: { orgId: string }) {
     },
     {
       id: "goals",
-      label: "Open Season Goals",
+      label: "Open Goals",
       detail: "Season targets sit beside this morning summary.",
       href: hubHref("/team", "goals-tracker", orgId),
       primary: false,
@@ -182,7 +182,7 @@ export default function StandupDigestClient() {
       if (!response.ok || !isStandupView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Morning standup. Showing the last copy on this device.");
+          setError("Could not refresh Standup. Showing the last copy on this device.");
           setFetchFailed(false);
           return;
         }
@@ -199,7 +199,7 @@ export default function StandupDigestClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Morning standup. Showing the last copy on this device.");
+        setError("Could not refresh Standup. Showing the last copy on this device.");
         setFetchFailed(false);
         return;
       }
@@ -218,10 +218,10 @@ export default function StandupDigestClient() {
       breadcrumbs={
         <>
           <a href={teamHref}>Team</a>
-          {" / Morning standup"}
+          {" / Standup"}
         </>
       }
-      title="Morning standup"
+      title="Standup"
       description="Yesterday's closed hours and task movement — compiled only from work that actually happened."
     >
       {view && view.status !== "setup_required" ? (
@@ -262,9 +262,9 @@ export default function StandupDigestClient() {
     return (
       <main className="module-page">
         {header}
-        <OfflineBanner feature="Morning standup" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Standup" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
-          title={failure ? failure.title : "Loading…"}
+          title={failure ? failure.title : "Opening Standup"}
           description={failure ? failure.description : "Checking hours and work for this date."}
           aria-busy={!fetchFailed}
         >
@@ -288,7 +288,7 @@ export default function StandupDigestClient() {
       return (
         <main className="module-page">
           {header}
-          <OfflineBanner feature="Morning standup" fromCache={fromCache} cachedAt={cachedAt} />
+          <OfflineBanner feature="Standup" fromCache={fromCache} cachedAt={cachedAt} />
           {error ? (
             <p className="telemetry-status" role="alert">
               {error}
@@ -307,7 +307,7 @@ export default function StandupDigestClient() {
       return (
         <main className="module-page">
           {header}
-          <OfflineBanner feature="Morning standup" fromCache={fromCache} cachedAt={cachedAt} />
+          <OfflineBanner feature="Standup" fromCache={fromCache} cachedAt={cachedAt} />
           {error ? (
             <p className="telemetry-status" role="alert">
               {error}
@@ -327,7 +327,7 @@ export default function StandupDigestClient() {
   return (
     <main className="module-page">
       {header}
-      <OfflineBanner feature="Morning standup" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Standup" fromCache={fromCache} cachedAt={cachedAt} />
       {error ? (
         <p className="telemetry-status" role="alert">
           {error}

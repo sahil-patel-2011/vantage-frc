@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "rule-impact",
-  title: "Rule Impact Analyzer",
+  title: "Rule impact",
   route: "/rule-impact",
   apiRoute: "/api/rule-impact",
   hub: "Build",

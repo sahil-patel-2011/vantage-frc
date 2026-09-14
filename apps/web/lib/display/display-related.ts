@@ -1,9 +1,9 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related Event Day / Strategy surfaces for pit Displays (never DEMO placeholders). */
+/** Soft-UI related Event day / Strategy surfaces for pit Displays (never DEMO placeholders). */
 export const DISPLAY_RELATED_LINKS = [
-  { id: "command", label: "Event Day", kind: "competition" as const, tab: "command" },
+  { id: "command", label: "Event day", kind: "competition" as const, tab: "command" },
   { id: "strategy", label: "Strategy", kind: "competition" as const, tab: "strategy" },
   { id: "scouting", label: "Scouting", kind: "competition" as const, tab: "scouting" },
   { id: "match-checklist", label: "Match checklist", kind: "competition" as const, tab: "match-checklist" },
@@ -18,7 +18,7 @@ export type DisplayRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip on Display setup — Event Day + Strategy first. */
+/** Focused Soft-UI strip on Display setup — Event day + Strategy first. */
 export const DISPLAY_RELATED_INCLUDE: DisplayRelatedId[] = [
   "command",
   "strategy",
@@ -54,7 +54,7 @@ export type DisplayNextAction = {
 
 /**
  * Soft-UI next actions for pit Display setup / empty boards.
- * Points at real Event Day, Strategy, and board pairing — never DEMO schedules or ranks.
+ * Points at real Event day, Strategy, and board pairing — never DEMO schedules or ranks.
  */
 export function displaySetupNextActions(input: {
   orgId?: string | null;
@@ -85,7 +85,7 @@ export function displaySetupNextActions(input: {
     actions.push({
       id: "create-board",
       label: "Create your first board",
-      detail: "Pick a preset below and save. Countdowns, ranks, and odds stay blank until TBA and Strategy sync real data.",
+      detail: "Pick a preset below and save. Countdowns, ranks, and odds stay blank until official matches and Strategy sync real data.",
       href: setupHref,
       primary: true,
     });
@@ -111,7 +111,7 @@ export function displaySetupNextActions(input: {
     actions.push({
       id: "event",
       label: "Set active event",
-      detail: "Event Day picks the TBA schedule and context pit boards read for next match and coverage.",
+      detail: "Event day picks the official schedule and context pit boards read for next match and coverage.",
       href: hubHref("/competition", "command", orgId),
       primary: boardCount > 0 && activeTokenCount > 0,
     });
@@ -120,7 +120,7 @@ export function displaySetupNextActions(input: {
   actions.push(
     {
       id: "command",
-      label: "Open Event Day",
+      label: "Open Event day",
       detail: "Confirm the active event and synced schedule before expecting match countdowns on TV.",
       href: hubHref("/competition", "command", orgId),
     },

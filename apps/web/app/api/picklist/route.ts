@@ -71,7 +71,7 @@ function setupRequired(
       {
         id: "event",
         label: "Set an active event",
-        detail: "A pick list belongs to one TBA event.",
+        detail: "A pick list belongs to one official event.",
         href: "/competition",
       },
     ],

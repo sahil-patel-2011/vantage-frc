@@ -1,7 +1,7 @@
 import BatteryHealthForecastClient from "./battery-health-forecast-client";
 
 export const metadata = {
-  title: "Battery Health Forecast",
+  title: "Pack health",
 };
 
 export default function BatteryHealthForecastPage() {

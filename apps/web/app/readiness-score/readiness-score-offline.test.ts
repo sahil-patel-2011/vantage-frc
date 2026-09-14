@@ -11,7 +11,7 @@ describe("Readiness Score last snapshot stays on the phone", () => {
     expect(src).toMatch(/putFeatureSnapshot/);
     expect(src).toMatch(/"readiness-score"/);
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
-    expect(src).toMatch(/feature="Readiness Score"/);
+    expect(src).toMatch(/feature="Readiness"/);
     expect(src).toMatch(/viewRef/);
     expect(src).toMatch(/AbortSignal\.timeout/);
     expect(src).toMatch(/response\.status === 401 \|\| response\.status === 403/);

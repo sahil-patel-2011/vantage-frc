@@ -168,7 +168,7 @@ describe("engine depth behavior", () => {
     const prediction = predictMatch({ ...baseInput, engineId: "strategy-engine-v2" });
     expect(prediction.modelVersion).toBe("strategy-engine-v2");
     expect(prediction.keyFactors.map((f) => f.name)).toContain("this-season rules");
-    expect(prediction.keyFactors.map((f) => f.name)).toContain("TBA+scout trust blend");
+    expect(prediction.keyFactors.map((f) => f.name)).toContain("Official + scout blend");
     expect(prediction.caveats.some((c) => /This-season rules only/i.test(c))).toBe(true);
   });
 
@@ -192,7 +192,7 @@ describe("engine depth behavior", () => {
     expect(prediction.modelVersion).toBe("strategy-engine-max-v1");
     expect(prediction.reasoningSteps?.length).toBeGreaterThanOrEqual(4);
     expect(prediction.reasoningSteps?.[0]?.detail).toMatch(/never invented/i);
-    expect(prediction.keyFactors.some((f) => f.name.startsWith("EPA drift"))).toBe(true);
+    expect(prediction.keyFactors.some((f) => f.name.startsWith("Rating drift"))).toBe(true);
     expect(prediction.caveats.every((c) => !/DEMO/i.test(c) || /without inventing DEMO/i.test(c))).toBe(
       true,
     );

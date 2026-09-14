@@ -4,13 +4,13 @@ import { describe, expect, it } from "vitest";
 
 const DIR = __dirname;
 
-describe("Repeat Failure Patterns last snapshot stays on the phone", () => {
+describe("Failure patterns last snapshot stays on the phone", () => {
   it("reads and writes the failure-patterns IndexedDB feature cache", () => {
     const src = readFileSync(join(DIR, "failure-patterns-client.tsx"), "utf8");
     expect(src).toMatch(/getFeatureSnapshot/);
     expect(src).toMatch(/putFeatureSnapshot/);
     expect(src).toMatch(/"failure-patterns"/);
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
-    expect(src).toMatch(/feature="Repeat Failure Patterns"/);
+    expect(src).toMatch(/feature="Failure patterns"/);
   });
 });

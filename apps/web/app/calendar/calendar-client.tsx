@@ -660,7 +660,7 @@ function ReadyCalendar({
         <summary>Seed a season template</summary>
         <div className="cal-seed-body">
           <p className="app-muted">
-            Templates are opt-in plans dated from your kickoff — not live TBA stats. Existing titles are skipped so you
+            Templates are opt-in plans dated from your kickoff — not live official stats. Existing titles are skipped so you
             can layer packs (build + stop-build + outreach) safely.
           </p>
           <label className="cal-template-pick">

@@ -56,7 +56,7 @@ async function persistScoutDisagreementsSnapshot(
     await putFeatureSnapshot("scout-disagreements", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("scout-disagreements", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Scout Disagreements already painted; IndexedDB is best-effort.
+    // Live Disagreements already painted; IndexedDB is best-effort.
   }
 }
 
@@ -154,10 +154,10 @@ function ScoutDisagreementsShell({
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Scout Disagreements"}
+            {" / Disagreements"}
           </>
         }
-        title="Scout Disagreements"
+        title="Disagreements"
         description={description}
       >
         <ScoutDisagreementsRelatedStrip orgId={orgId} />
@@ -271,7 +271,7 @@ export default function ScoutDisagreementsClient({ orgId: initialOrgId }: { orgI
           if (!response.ok || !isScoutDisagreementsView(data)) {
             if (hadCache || viewRef.current) {
               setFromCache(true);
-              setError("Could not refresh Scout Disagreements. Showing the last copy on this device.");
+              setError("Could not refresh Disagreements. Showing the last copy on this device.");
               setFetchFailed(false);
             } else {
               setFetchFailed(true);
@@ -288,7 +288,7 @@ export default function ScoutDisagreementsClient({ orgId: initialOrgId }: { orgI
         } catch {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Scout Disagreements. Showing the last copy on this device.");
+            setError("Could not refresh Disagreements. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -363,7 +363,7 @@ export default function ScoutDisagreementsClient({ orgId: initialOrgId }: { orgI
   if (shell === "loading") {
     return (
       <ScoutDisagreementsShell description={shellCopy.description} orgId={orgId} shell="loading">
-        <OfflineBanner feature="Scout Disagreements" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Disagreements" fromCache={fromCache} cachedAt={cachedAt} />
       </ScoutDisagreementsShell>
     );
   }
@@ -378,7 +378,7 @@ export default function ScoutDisagreementsClient({ orgId: initialOrgId }: { orgI
         errorStatus={failureStatus}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Scout Disagreements" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Disagreements" fromCache={fromCache} cachedAt={cachedAt} />
       </ScoutDisagreementsShell>
     );
   }
@@ -392,7 +392,7 @@ export default function ScoutDisagreementsClient({ orgId: initialOrgId }: { orgI
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Scout Disagreements" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Disagreements" fromCache={fromCache} cachedAt={cachedAt} />
       </ScoutDisagreementsShell>
     );
   }
@@ -400,7 +400,7 @@ export default function ScoutDisagreementsClient({ orgId: initialOrgId }: { orgI
   if (shell === "empty" || view?.status !== "live") {
     return (
       <ScoutDisagreementsShell description={shellCopy.description} orgId={orgId} shell="empty">
-        <OfflineBanner feature="Scout Disagreements" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Disagreements" fromCache={fromCache} cachedAt={cachedAt} />
         <LogDisagreementForm busy={busy} mutate={mutate} />
       </ScoutDisagreementsShell>
     );
@@ -412,10 +412,10 @@ export default function ScoutDisagreementsClient({ orgId: initialOrgId }: { orgI
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Scout Disagreements"}
+            {" / Disagreements"}
           </>
         }
-        title="Scout Disagreements"
+        title="Disagreements"
         description="Resolve conflicting scouted field values between scouts, with an immutable audit trail."
       >
         <div className="scout-disagreements-header-meta">
@@ -423,7 +423,7 @@ export default function ScoutDisagreementsClient({ orgId: initialOrgId }: { orgI
         </div>
       </PageHeader>
 
-      <OfflineBanner feature="Scout Disagreements" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Disagreements" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="form-message" role="status">

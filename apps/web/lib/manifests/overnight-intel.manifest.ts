@@ -11,7 +11,7 @@ export const manifest = {
     {
       name: "overnight_intel.latest_brief",
       description:
-        "Grounded read of the org's most recent overnight event-intel brief — new research findings, EPA movers, and new scouting for the active event.",
+        "Grounded read of the org's most recent overnight event-intel brief — new research findings, season-score movers, and new scouting for the active event.",
     },
   ],
   exportAdapters: [],

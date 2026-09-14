@@ -17,11 +17,11 @@ export default async function TeamAuditPage({
         <PageHeader
           breadcrumbs="Team / Audit"
           title="Audit"
-          description="The membership, capability, and auth-policy trail belongs to one team — pick the team first."
+          description="The membership, capability, and auth-policy trail belongs to one team. Choose your team to open it."
         />
         <EmptyState
           soft
-          badge="Team needed"
+          badge="Needs setup"
           badgeTone="setup"
           title="Choose your team"
           description="Audit rows stay on this team. Choose your team to read the trail."
@@ -37,7 +37,7 @@ export default async function TeamAuditPage({
     <main className="intel-app">
       <header className="intel-header">
         <div>
-          <span className="eyebrow">VANTAGE / SECURITY AUDIT</span>
+          <span className="eyebrow">Team / Audit</span>
           <h1>Who changed what</h1>
           <p className="app-muted">
             A reverse-chronological trail of every membership, capability, invitation, and

@@ -254,7 +254,7 @@ function DraftShell({
         ) : null}
         {shell === "empty" && !primary ? (
           <Button as="a" variant="primary" href={teamDataHref}>
-            Sync Team Data
+            Sync Team data
           </Button>
         ) : null}
       </EmptyState>

@@ -4,13 +4,13 @@ import { describe, expect, it } from "vitest";
 
 const DIR = __dirname;
 
-describe("Sponsor Renewal ROI last snapshot stays on the phone", () => {
+describe("Renewal ROI last snapshot stays on the phone", () => {
   it("reads and writes the sponsor-renewal-roi IndexedDB feature cache", () => {
     const src = readFileSync(join(DIR, "sponsor-renewal-roi-client.tsx"), "utf8");
     expect(src).toMatch(/getFeatureSnapshot/);
     expect(src).toMatch(/putFeatureSnapshot/);
     expect(src).toMatch(/"sponsor-renewal-roi"/);
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
-    expect(src).toMatch(/feature="Sponsor Renewal ROI"/);
+    expect(src).toMatch(/feature="Renewal ROI"/);
   });
 });

@@ -27,7 +27,7 @@ function setupSteps(orgId: string | null): SketchToBriefSetupStep[] {
     {
       id: "workspace",
       label: "Choose your team",
-      detail: "Choose your team to open Sketch-to-Brief.",
+      detail: "Choose your team to open Sketch to brief.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {

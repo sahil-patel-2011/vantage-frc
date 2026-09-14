@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
+import { Button, PageHeader } from "../../../components/ui";
 import { SPONSOR_TIERS, SPONSOR_STATUSES, tierLabel, type SponsorTier, type SponsorStatus } from "../../../lib/sponsors";
 import {
   contributionRowUsd,
@@ -154,10 +155,20 @@ export default function SponsorsClient({ orgId }: { orgId: string }) {
 
   return (
     <main className="intel-app">
-      <header className="intel-header">
-        <div><span className="eyebrow">VANTAGE / SPONSORS</span><h1>Sponsor relationships &amp; fundraising</h1></div>
-        <nav className="intel-actions"><a href={`/team/finance?orgId=${orgId}`}>Finance</a><a href={`/team/grants?orgId=${orgId}`}>Grants</a><a href={`/team?orgId=${orgId}`}>Team controls →</a></nav>
-      </header>
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={`/team?orgId=${orgId}`}>Team</a>
+            {" / Sponsors"}
+          </>
+        }
+        title="Sponsor relationships & fundraising"
+      >
+        <nav className="product-hub-related" aria-label="Related money tools">
+          <Button as="a" variant="secondary" href={`/team/finance?orgId=${orgId}`}>Finance</Button>
+          <Button as="a" variant="secondary" href={`/team/grants?orgId=${orgId}`}>Grants</Button>
+        </nav>
+      </PageHeader>
       {message && <p className="telemetry-status">{message}</p>}
       <section className="metric-grid">
         <article><span>Active sponsors</span><strong>{sponsors.filter((s) => s.status === "active").length}</strong></article>
@@ -179,7 +190,7 @@ export default function SponsorsClient({ orgId }: { orgId: string }) {
             <label>State<input value={sponsorForm.stateProv} onChange={(e) => setSponsorForm({ ...sponsorForm, stateProv: e.target.value })} /></label>
           </div>
           <label>Notes<input value={sponsorForm.notes} onChange={(e) => setSponsorForm({ ...sponsorForm, notes: e.target.value })} /></label>
-          <button className="primary-action">Add sponsor</button>
+          <Button type="submit" variant="primary">Add sponsor</Button>
         </form>
         <section className="intel-panel invite-list">
           <span className="eyebrow">SPONSORS</span>
@@ -206,7 +217,7 @@ export default function SponsorsClient({ orgId }: { orgId: string }) {
                 <label>Email<input type="email" value={contactForm.email} onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })} /></label>
                 <label>Phone<input value={contactForm.phone} onChange={(e) => setContactForm({ ...contactForm, phone: e.target.value })} /></label>
                 <label className="check-field"><input type="checkbox" checked={contactForm.isPrimary} onChange={(e) => setContactForm({ ...contactForm, isPrimary: e.target.checked })} /> Primary contact</label>
-                <button className="primary-action">Add contact</button>
+                <Button type="submit" variant="primary">Add contact</Button>
               </form>
             </section>
             <section className="intel-panel">
@@ -219,7 +230,7 @@ export default function SponsorsClient({ orgId }: { orgId: string }) {
                   ? <label>Amount ($)<input type="number" min="0" step="0.01" value={contributionForm.amountUsd} onChange={(e) => setContributionForm({ ...contributionForm, amountUsd: e.target.value })} /></label>
                   : <label>Estimated value ($)<input type="number" min="0" step="0.01" value={contributionForm.estimatedValueUsd} onChange={(e) => setContributionForm({ ...contributionForm, estimatedValueUsd: e.target.value })} /></label>}
                 <label>Description<input value={contributionForm.description} onChange={(e) => setContributionForm({ ...contributionForm, description: e.target.value })} /></label>
-                <button className="primary-action">Log contribution</button>
+                <Button type="submit" variant="primary">Log contribution</Button>
               </form>
             </section>
             <section className="intel-panel">
@@ -229,7 +240,7 @@ export default function SponsorsClient({ orgId }: { orgId: string }) {
                 <label>Type<select value={interactionForm.type} onChange={(e) => setInteractionForm({ ...interactionForm, type: e.target.value })}><option value="email">Email</option><option value="call">Call</option><option value="meeting">Meeting</option><option value="event_invite">Event invite</option><option value="thank_you">Thank you</option><option value="other">Other</option></select></label>
                 <label>Subject<input value={interactionForm.subject} onChange={(e) => setInteractionForm({ ...interactionForm, subject: e.target.value })} /></label>
                 <label>Notes<input value={interactionForm.notes} onChange={(e) => setInteractionForm({ ...interactionForm, notes: e.target.value })} /></label>
-                <button className="primary-action">Log interaction</button>
+                <Button type="submit" variant="primary">Log interaction</Button>
               </form>
             </section>
           </div>
@@ -240,7 +251,7 @@ export default function SponsorsClient({ orgId }: { orgId: string }) {
               <div>
                 <label>Subject<input value={draft.subject} onChange={(e) => setDraft({ ...draft, subject: e.target.value })} /></label>
                 <label>Body<textarea rows={8} value={draft.body} onChange={(e) => setDraft({ ...draft, body: e.target.value })} /></label>
-                <button className="primary-action" onClick={() => void sendDraft()}>Send</button>
+                <Button type="button" variant="primary" onClick={() => void sendDraft()}>Send</Button>
               </div>
             )}
           </div>

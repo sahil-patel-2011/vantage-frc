@@ -122,9 +122,9 @@ export function provenanceFromEvidence(evidence: GrantOrgEvidence): GrantProvena
   }
   if (evidence.impact.activities > 0) {
     items.push({
-      label: "Community impact",
+      label: "Impact",
       value: `${evidence.impact.activities} activities · ${evidence.communityHours} hours · ${evidence.impact.peopleReached.toLocaleString()} people`,
-      source: "Community Impact log (this org)",
+      source: "Impact log (this org)",
       kind: "impact",
     });
   }
@@ -132,7 +132,7 @@ export function provenanceFromEvidence(evidence: GrantOrgEvidence): GrantProvena
     items.push({
       label: "Community hours",
       value: `${evidence.communityHours} service hours`,
-      source: "Community Impact log (this org)",
+      source: "Impact log (this org)",
       kind: "impact",
     });
   }

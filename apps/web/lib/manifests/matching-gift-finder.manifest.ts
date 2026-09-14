@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "matching-gift-finder",
-  title: "Matching Gift Multiplier Finder",
+  title: "Matching gifts",
   route: "/matching-gift-finder",
   apiRoute: "/api/matching-gift-finder",
   hub: "Business",

@@ -59,7 +59,7 @@ export const MARKETING_HUBS = [
       "Programming setup: Git, VS Code, WPILib and PathPlanner with real download links, plus the GitHub Student Pack walk-through",
       "CAD vault with Onshape links, change radar, and design reviews",
       "The assembly manual: your Onshape assembly turned into a step-by-step build book with parts, cuts and drill sizes",
-      "Parts catalog, inventory, FMEA, batteries, power budget, and Bugbot for robot code",
+      "Parts catalog, inventory, Failure log, batteries, power budget, and Bugbot for robot code",
     ],
   },
   {
@@ -103,7 +103,7 @@ export const MARKETING_HELPERS = [
   },
   {
     title: "Team profile",
-    copy: "The day a team joins, Vantage already knows where they are from, how long they have competed, what they have won and how their seasons went, from The Blue Alliance and Statbotics. Every AI answer starts from that.",
+    copy: "The day a team joins, Vantage already knows where they are from, how long they have competed, what they have won and how their seasons went, from official matches and season ratings. Every AI answer starts from that.",
   },
 ] as const;
 

@@ -7,7 +7,7 @@ test.beforeEach(async ({ context }) => {
 });
 
 const LEAVES = [
-  { path: "/sponsor-tier-calculator", heading: /Sponsor Tier Calculator|Sponsors/i },
+  { path: "/sponsor-tier-calculator", heading: /Tier calculator|Sponsors/i },
   { path: "/knowledge-drafts", heading: /Knowledge drafts/i },
   { path: "/team/grants/calendar", heading: /Grant calendar/i },
   { path: "/team/background", heading: /Team background/i },

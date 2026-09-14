@@ -62,7 +62,7 @@ export const SETTINGS_NAV: SettingsNavItem[] = [
     requiredRole: "member",
   },
   // Team — owner/admin only.
-  { id: "team-admin", label: "Team admin", href: "/team/admin", icon: "gear", scope: "team", requiredRole: "owner-admin" },
+  { id: "team-admin", label: "Invites", href: "/team/admin", icon: "gear", scope: "team", requiredRole: "owner-admin" },
   {
     id: "member-access",
     label: "Member access",

@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "judge-sim",
-  title: "Judge-Pitch Simulator",
+  title: "Judge pitch",
   route: "/judge-sim",
   apiRoute: "/api/judge-sim",
   hub: "Business",

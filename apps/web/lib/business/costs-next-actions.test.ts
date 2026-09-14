@@ -9,7 +9,7 @@ describe("costsNextActions Soft-UI helpers", () => {
     expect(actions[0]).toMatchObject({ id: "workspace", href: "/workspace", primary: true });
   });
 
-  it("points unset budget at Season Costs plus Orders / Fundraisers / Business", () => {
+  it("points unset budget at Season costs plus Orders / Fundraisers / Business", () => {
     const actions = costsNextActions({ orgId: "org-1", seasonYear: 2026, budgetUsd: null, costCount: 0 });
     expect(actions.map((a) => a.id)).toEqual(["set-budget", "orders", "fundraisers", "budget"]);
     expect(actions[0]?.href).toContain("/costs");

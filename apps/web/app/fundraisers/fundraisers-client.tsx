@@ -272,7 +272,7 @@ export default function FundraisersClient({ orgId }: { orgId: string | null }) {
         </header>
         <EmptyState
           soft
-          title={failure ? failure.title : "Loading fundraisers…"}
+          title={failure ? failure.title : "Opening Fundraisers"}
           description={failure ? failure.description : "Opening this season’s community events."}
           aria-busy={failure ? undefined : true}
         >

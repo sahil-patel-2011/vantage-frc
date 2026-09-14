@@ -101,7 +101,7 @@ function setupSteps(orgId: string | null): MatchNotesTimelineSetupStep[] {
     {
       id: "schedule",
       label: "Open Schedule",
-      detail: "Match rows stay empty until real TBA/event data exists.",
+      detail: "Match rows stay empty until real official event data exists.",
       href: withOrgHref("/schedule", orgId),
     },
     {

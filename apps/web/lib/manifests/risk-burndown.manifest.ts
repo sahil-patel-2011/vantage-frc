@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "risk-burndown",
-  title: "Risk-Register Burndown",
+  title: "Risk burndown",
   route: "/risk-burndown",
   apiRoute: "/api/risk-burndown",
   hub: "Team",

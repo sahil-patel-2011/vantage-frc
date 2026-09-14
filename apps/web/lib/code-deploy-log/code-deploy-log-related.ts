@@ -1,12 +1,12 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Code Deploy Log (never DEMO firmware trails). */
+/** Soft-UI related surfaces for Deploy log (never DEMO firmware trails). */
 export const CODE_DEPLOY_LOG_RELATED_LINKS = [
-  { id: "code", label: "Code Coach", tab: "code" },
+  { id: "code", label: "Code", tab: "code" },
   { id: "code-perf", label: "Code vs match", tab: "code-perf" },
   { id: "cad", label: "CAD", tab: "cad" },
-  { id: "readiness-score", label: "Readiness Score", tab: "readiness-score" },
+  { id: "readiness-score", label: "Readiness", tab: "readiness-score" },
 ] as const;
 
 export type CodeDeployLogRelatedId = (typeof CODE_DEPLOY_LOG_RELATED_LINKS)[number]["id"];
@@ -25,7 +25,7 @@ export const CODE_DEPLOY_LOG_RELATED_INCLUDE: CodeDeployLogRelatedId[] = [
 ];
 
 /**
- * Soft-UI cross-links from Code Deploy Log → Code / Perf / CAD.
+ * Soft-UI cross-links from Deploy log → Code / Perf / CAD.
  * Build with hubHref — never broken JSX href templates.
  */
 export function codeDeployLogRelatedLinks(
@@ -78,7 +78,7 @@ export function codeDeployLogSetupSteps(orgId?: string | null): CodeDeployLogSet
     },
     {
       id: "code",
-      label: "Open Code Coach",
+      label: "Open Code",
       detail: "Review firmware patterns before logging a deploy.",
       href: hubHref("/build", "code", orgId),
     },
@@ -110,7 +110,7 @@ export function shouldShowCodeDeployLogSummaryTiles(deployCount: number): boolea
   return deployCount > 0;
 }
 
-/** Classify Code Deploy Log Soft-UI shell — never invents DEMO firmware trails. */
+/** Classify Deploy log Soft-UI shell — never invents DEMO firmware trails. */
 export function classifyCodeDeployLogShell(input: {
   loading?: boolean;
   fetchFailed?: boolean;
@@ -131,21 +131,21 @@ export function codeDeployLogShellCopy(kind: CodeDeployLogShellKind): CodeDeploy
     case "loading":
       return {
         kind,
-        title: "Loading Code Deploy Log…",
+        title: "Opening Deploy log",
         description: "Checking which team you are on and deploy history.",
       };
     case "error":
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Code Deploy Log",
+        title: "Could not load Deploy log",
         description:
-          "A network or server issue blocked the deploy trail. Retry, or open Code Coach while it reloads.",
+          "A network or server issue blocked the deploy trail. Retry, or open Code while it reloads.",
       };
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Choose your team before recording firmware builds.",
@@ -169,7 +169,7 @@ export function codeDeployLogShellCopy(kind: CodeDeployLogShellKind): CodeDeploy
 }
 
 /**
- * Soft-UI next actions for Code Deploy Log empty/setup shells.
+ * Soft-UI next actions for Deploy log empty/setup shells.
  * Points at Code / Perf / CAD — never invents DEMO firmware trails.
  */
 export function codeDeployLogNextActions(input: {
@@ -188,13 +188,13 @@ export function codeDeployLogNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before recording builds.",
+          detail: "Choose your team before recording builds.",
           href: "/workspace",
           primary: true,
         },
         {
           id: "code",
-          label: "Open Code Coach",
+          label: "Open Code",
           detail: "Local pattern review stays available without inventing deploys.",
           href: hubHref("/build", "code", null),
         },
@@ -210,13 +210,13 @@ export function codeDeployLogNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Finish membership setup so Code Deploy Log can load.",
+        detail: "Finish membership setup so Deploy log can load.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
       },
       {
         id: "code",
-        label: "Open Code Coach",
+        label: "Open Code",
         detail: "Review code context before logging the first deploy.",
         href: hubHref("/build", "code", orgId),
       },
@@ -233,15 +233,15 @@ export function codeDeployLogNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Code Deploy Log",
+        label: "Retry Deploy log",
         detail: "Reload real deploy history.",
         href: withOrgHref("/code-deploy-log", orgId),
         primary: true,
       },
       {
         id: "code",
-        label: "Open Code Coach",
-        detail: "Code Coach stays available while the log reloads.",
+        label: "Open Code",
+        detail: "Code stays available while the log reloads.",
         href: hubHref("/build", "code", orgId),
       },
       {
@@ -264,7 +264,7 @@ export function codeDeployLogNextActions(input: {
       },
       {
         id: "code",
-        label: "Open Code Coach",
+        label: "Open Code",
         detail: "Review firmware patterns before the first field deploy.",
         href: hubHref("/build", "code", orgId),
       },
@@ -296,13 +296,13 @@ export function codeDeployLogNextActions(input: {
     },
     {
       id: "code",
-      label: "Open Code Coach",
+      label: "Open Code",
       detail: "Pair deploy evidence with code review.",
       href: hubHref("/build", "code", orgId),
     },
     {
       id: "readiness-score",
-      label: "Open Readiness Score",
+      label: "Open Readiness",
       detail: "Carry firmware confidence into robot readiness.",
       href: hubHref("/build", "readiness-score", orgId),
     },

@@ -66,9 +66,9 @@ export async function GET(request: Request) {
     return Response.json(
       {
         status: "setup_required",
-        message: "Could not load Community Impact. Choose your team and confirm database access.",
+        message: "Could not load Impact. Choose your team and confirm database access.",
         steps: [
-          { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
+          { id: "workspace", label: "Choose your team", detail: "Choose which FRC team you are working as.", href: "/workspace" },
         ],
         orgId: null,
         seasonYear: seasonYear ?? currentSeasonYear(),
@@ -170,7 +170,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Community Impact request failed";
+    const message = error instanceof Error ? error.message : "Impact request failed";
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

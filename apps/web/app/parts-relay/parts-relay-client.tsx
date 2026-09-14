@@ -49,7 +49,7 @@ async function persistPartsRelaySnapshot(orgHint: string, data: PartsRelayView):
     await putFeatureSnapshot("parts-relay", cacheOrg, data);
     if (!orgHint) await putFeatureSnapshot("parts-relay", "_", data);
   } catch {
-    // Live Parts Relay already painted; IndexedDB is best-effort.
+    // Live Parts relay already painted; IndexedDB is best-effort.
   }
 }
 
@@ -118,7 +118,7 @@ export default function PartsRelayClient() {
       if (!response.ok || !isPartsRelayView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Parts Relay. Showing the last copy on this device.");
+          setError("Could not refresh Parts relay. Showing the last copy on this device.");
           setFetchFailed(false);
           return;
         }
@@ -138,7 +138,7 @@ export default function PartsRelayClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Parts Relay. Showing the last copy on this device.");
+        setError("Could not refresh Parts relay. Showing the last copy on this device.");
         setFetchFailed(false);
         return;
       }
@@ -202,15 +202,15 @@ export default function PartsRelayClient() {
           breadcrumbs={
             <>
               <a href="/build">Build</a>
-              {" / Parts Relay"}
+              {" / Parts relay"}
             </>
           }
-          title="Parts Relay"
+          title="Parts relay"
           description="Post what your team needs or can lend at an event, then track the hand-off — who has it, when it's due back, and whether it came home."
         />
-        <OfflineBanner feature="Parts Relay" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Parts relay" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
-          title={copy ? copy.title : "Loading…"}
+          title={copy ? copy.title : "Opening Parts relay"}
           description={copy ? copy.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >
@@ -236,14 +236,14 @@ export default function PartsRelayClient() {
             breadcrumbs={
               <>
                 <a href="/build">Build</a>
-                {" / Parts Relay"}
+                {" / Parts relay"}
               </>
             }
-            title="Parts Relay"
+            title="Parts relay"
             description="Post what your team needs or can lend at an event, then track the hand-off — who has it, when it's due back, and whether it came home."
           />
-          <OfflineBanner feature="Parts Relay" fromCache={fromCache} cachedAt={cachedAt} />
-          <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
+          <OfflineBanner feature="Parts relay" fromCache={fromCache} cachedAt={cachedAt} />
+          <EmptyState badge="Needs setup" badgeTone="setup" title={view.message}>
             {view.steps[0] ? (
               <Button as="a" variant="primary" href={view.steps[0].href}>
                 {view.steps[0].label}
@@ -266,13 +266,13 @@ export default function PartsRelayClient() {
         breadcrumbs={
           <>
             <a href={orgId ? `/build?orgId=${encodeURIComponent(orgId)}` : "/build"}>Build</a>
-            {" / Parts Relay"}
+            {" / Parts relay"}
           </>
         }
-        title="Parts Relay"
+        title="Parts relay"
         description="Post what your team needs or can lend at an event, then track the hand-off — who has it, when it's due back, and whether it came home."
       />
-      <OfflineBanner feature="Parts Relay" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Parts relay" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

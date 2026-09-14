@@ -13,7 +13,7 @@ export type VenueShortcut = {
 export function venueShortcutsForOrg(orgId: string | null | undefined): VenueShortcut[] {
   return [
     { key: "s", label: "Scouting", href: withOrgHref("/scouting", orgId ?? null) },
-    { key: "e", label: "Event Day Command", href: withOrgHref("/command", orgId ?? null) },
+    { key: "e", label: "Event day", href: withOrgHref("/command", orgId ?? null) },
     { key: "y", label: "Strategy", href: withOrgHref("/strategy", orgId ?? null) },
     { key: "d", label: "Dashboard", href: withOrgHref("/dashboard", orgId ?? null) },
     { key: "m", label: "My Day", href: withOrgHref("/my-day", orgId ?? null) },
@@ -89,7 +89,7 @@ export function VenueShortcutCheatsheet({
             ×
           </button>
         </header>
-        <p className="app-muted">Press a key to jump — works on Scouting, Event Day, Strategy, and Dashboard.</p>
+        <p className="app-muted">Press a key to jump — works on Scouting, Event day, Strategy, and Dashboard.</p>
         <ul>
           {shortcuts.map((row) => (
             <li key={row.key}>

@@ -7,7 +7,12 @@ describe("CAD AI plan parser", () => {
       `Here is the plan:\n\`\`\`json\n[{"operation":"create_sketch","parameters":{"plane":"Top"},"reason":"Base profile","requiresApproval":false},{"operation":"create_extrude","parameters":{"depth":"12 mm"},"reason":"Solid"},{"operation":"rm","reason":"not allowlisted"}]\n\`\`\``,
       { autoRunVerify: false },
     );
-    expect(plan.map((step) => step.operation)).toEqual(["create_sketch", "create_extrude", "verify_topology"]);
+    expect(plan.map((step) => step.operation)).toEqual([
+      "create_drawing",
+      "create_sketch",
+      "create_extrude",
+      "verify_topology",
+    ]);
     expect(plan.find((step) => step.operation === "create_sketch")?.requiresApproval).toBe(true);
     expect(plan.find((step) => step.operation === "verify_topology")?.requiresApproval).toBe(true);
   });

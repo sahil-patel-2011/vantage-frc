@@ -1,11 +1,11 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Match Copilot (never DEMO match metrics). */
+/** Soft-UI related surfaces for Briefing (never DEMO match metrics). */
 export const MATCH_COPILOT_RELATED_LINKS = [
   { id: "strategy", label: "Strategy", kind: "hub" as const, hub: "/competition" as const, tab: "strategy" },
   { id: "command", label: "Command", kind: "hub" as const, hub: "/competition" as const, tab: "command" },
-  { id: "fmea", label: "FMEA", kind: "hub" as const, hub: "/team" as const, tab: "fmea" },
+  { id: "fmea", label: "Failure log", kind: "hub" as const, hub: "/team" as const, tab: "fmea" },
   { id: "batteries", label: "Batteries", kind: "hub" as const, hub: "/team" as const, tab: "batteries" },
   { id: "scouting", label: "Scouting", kind: "hub" as const, hub: "/competition" as const, tab: "scouting" },
 ] as const;
@@ -22,7 +22,7 @@ export type MatchCopilotRelatedLink = {
 export const MATCH_COPILOT_RELATED_INCLUDE: MatchCopilotRelatedId[] = ["strategy", "command", "fmea"];
 
 /**
- * Soft-UI cross-links from Match Copilot → Strategy / Command / FMEA.
+ * Soft-UI cross-links from Briefing → Strategy / Command / FMEA.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function matchCopilotRelatedLinks(
@@ -71,7 +71,7 @@ export function shouldShowMatchCopilotSummaryTiles(calloutCount: number): boolea
   return calloutCount > 0;
 }
 
-/** Classify Match Copilot Soft-UI shell — never invents DEMO match metrics. */
+/** Classify Briefing Soft-UI shell — never invents DEMO match metrics. */
 export function classifyMatchCopilotShell(input: {
   loading: boolean;
   fetchFailed?: boolean;
@@ -92,7 +92,7 @@ export function matchCopilotShellCopy(kind: MatchCopilotShellKind): MatchCopilot
     case "loading":
       return {
         kind,
-        title: "Loading Match Copilot…",
+        title: "Opening Briefing",
         description:
           "Checking which team you are on and your next match.",
       };
@@ -100,14 +100,14 @@ export function matchCopilotShellCopy(kind: MatchCopilotShellKind): MatchCopilot
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Match Copilot",
+        title: "Could not load Briefing",
         description:
-          "A network or server issue blocked the brief. Retry, or open Strategy / Command / FMEA while it reloads.",
+          "A network or server issue blocked the brief. Retry, or open Strategy / Command / Failure log while it reloads.",
       };
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Choose your team, set an active event, and confirm your next match before a brief appears.",
@@ -118,20 +118,20 @@ export function matchCopilotShellCopy(kind: MatchCopilotShellKind): MatchCopilot
         badge: "No callouts yet",
         title: "Generate this match's brief",
         description:
-          "Callouts stay blank until opponent EPA, your strategy plan, open FMEA risks, or battery health land on real rows. Cross-check Strategy, Command, and FMEA.",
+          "Callouts stay blank until opponent rating, your strategy plan, open failure risks, or battery health land on real rows. Cross-check Strategy, Command, and Failure log.",
       };
     default:
       return {
         kind: "ready",
         title: "Next-match do-this brief",
         description:
-          "Callouts fuse only real opponent EPA, stored strategy, open FMEA risks, and battery health.",
+          "Callouts fuse only real opponent rating, stored strategy, open failure risks, and battery health.",
       };
   }
 }
 
 /**
- * Soft-UI next actions for Match Copilot empty/setup shells.
+ * Soft-UI next actions for Briefing empty/setup shells.
  * Points at Strategy / Command / FMEA — never invents DEMO match metrics.
  */
 export function matchCopilotNextActions(input: {
@@ -150,7 +150,7 @@ export function matchCopilotNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before fusing the next match.",
+          detail: "Choose your team before fusing the next match.",
           href: "/workspace",
           primary: true,
         },
@@ -162,13 +162,13 @@ export function matchCopilotNextActions(input: {
         },
         {
           id: "command",
-          label: "Open Command",
+          label: "Open Event day",
           detail: "Active event stays blank until your team selects one.",
           href: hubHref("/competition", "command", null),
         },
         {
           id: "fmea",
-          label: "Open FMEA",
+          label: "Open Failure log",
           detail: "Risk rows stay blank until your team logs them.",
           href: hubHref("/team", "fmea", null),
         },
@@ -178,13 +178,13 @@ export function matchCopilotNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Finish membership setup so Match Copilot can load.",
+        detail: "Finish membership setup so Briefing can load.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
       },
       {
         id: "command",
-        label: "Open Command",
+        label: "Open Event day",
         detail: "Set the active event so your next match can resolve.",
         href: hubHref("/competition", "command", orgId),
       },
@@ -196,7 +196,7 @@ export function matchCopilotNextActions(input: {
       },
       {
         id: "fmea",
-        label: "Open FMEA",
+        label: "Open Failure log",
         detail: "Ground risk callouts in real open failures.",
         href: hubHref("/team", "fmea", orgId),
       },
@@ -207,7 +207,7 @@ export function matchCopilotNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Match Copilot",
+        label: "Retry Briefing",
         detail: "Reload real match and brief rows.",
         href: withOrgHref("/match-copilot", orgId),
         primary: true,
@@ -220,13 +220,13 @@ export function matchCopilotNextActions(input: {
       },
       {
         id: "command",
-        label: "Open Command",
+        label: "Open Event day",
         detail: "Event day command stays available while the brief reloads.",
         href: hubHref("/competition", "command", orgId),
       },
       {
         id: "fmea",
-        label: "Open FMEA",
+        label: "Open Failure log",
         detail: "Open risks stay available while the brief reloads.",
         href: hubHref("/team", "fmea", orgId),
       },
@@ -238,7 +238,7 @@ export function matchCopilotNextActions(input: {
       {
         id: "generate",
         label: "Generate match brief",
-        detail: "Fuse opponent EPA, strategy, FMEA, and batteries into real callouts.",
+        detail: "Fuse opponent rating, strategy, Failure log, and batteries into real callouts.",
         href: "#match-copilot-callouts",
         primary: true,
       },
@@ -250,13 +250,13 @@ export function matchCopilotNextActions(input: {
       },
       {
         id: "command",
-        label: "Open Command",
+        label: "Open Event day",
         detail: "Confirm the active event and schedule before queuing.",
         href: hubHref("/competition", "command", orgId),
       },
       {
         id: "fmea",
-        label: "Open FMEA",
+        label: "Open Failure log",
         detail: "Risk callouts stay blank until real open failures exist.",
         href: hubHref("/team", "fmea", orgId),
       },
@@ -269,7 +269,7 @@ export function matchCopilotNextActions(input: {
     actions.push({
       id: "review-callouts",
       label: "Review match callouts",
-      detail: `${calloutCount} callout${calloutCount === 1 ? "" : "s"} from real EPA, strategy, FMEA, and batteries.`,
+      detail: `${calloutCount} callout${calloutCount === 1 ? "" : "s"} from real rating, strategy, Failure log, and batteries.`,
       href: "#match-copilot-callouts",
       primary: true,
     });
@@ -277,7 +277,7 @@ export function matchCopilotNextActions(input: {
     actions.push({
       id: "generate-brief",
       label: "Generate match brief",
-      detail: "Persist a metered brief from real opponent EPA, strategy, FMEA, and battery rows.",
+      detail: "Persist a metered brief from real opponent rating, strategy, Failure log, and battery rows.",
       href: "#match-copilot-callouts",
       primary: true,
     });
@@ -293,13 +293,13 @@ export function matchCopilotNextActions(input: {
     },
     {
       id: "command",
-      label: "Open Command",
+      label: "Open Event day",
       detail: "Confirm event day context before queuing.",
       href: hubHref("/competition", "command", orgId),
     },
     {
       id: "fmea",
-      label: "Open FMEA",
+      label: "Open Failure log",
       detail: "Risk callouts stay blank until real open failures exist.",
       href: hubHref("/team", "fmea", orgId),
     },

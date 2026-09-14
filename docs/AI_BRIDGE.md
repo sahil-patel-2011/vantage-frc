@@ -37,6 +37,10 @@ sha256-hashed device token, heartbeats, and SECURITY DEFINER job-lease functions
     plan rate-limits, everything falls back to the team's keys until it resets.
 - Bridged prompts include team context and execute on the pairer's machine. Revoking the device
   on `/team/ai-bridge` stops that immediately.
+- **Your Claude Code** (`scope=personal`, migration `0655`) is this signed-in person's computer
+  for their turns only. It is not the team's shared subscription bridge. Another person cannot
+  use that session. Claim only picks jobs whose `user_id` matches the pairer. The page title
+  stays **AI subscription bridge**; the hub label stays **Subscription bridge**.
 
 ## How a turn flows
 

@@ -297,10 +297,10 @@ export default function WiringDiagnoserClient() {
       breadcrumbs={
         <>
           <a href={buildHref}>Build</a>
-          {" / Wiring Diagnoser"}
+          {" / Wiring check"}
         </>
       }
-      title="Wiring / Power Fault Diagnoser"
+      title="Wiring check"
       description="Compare a board photo against your stored wiring diagram and power budget to flag miswires, undersized breakers, and over-spec channels before they cost you a match."
     >
       <WiringDiagnoserRelated orgId={orgId} />
@@ -348,7 +348,7 @@ export default function WiringDiagnoserClient() {
         {header}
         <OfflineBanner feature="Wiring check" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
-          title={failure ? failure.title : "Loading…"}
+          title={failure ? failure.title : "Opening Wiring check"}
           description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >

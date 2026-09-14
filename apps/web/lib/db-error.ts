@@ -4,7 +4,7 @@
  * 31 columns across 18 migrations carry `event_key ... REFERENCES events_ref`,
  * and nothing anywhere classified a 23503. So a team that opened a pick list (or
  * a match note, or a scouting assignment) for an event Vantage had not ingested
- * from The Blue Alliance yet got the raw constraint text straight back:
+ * from official matches yet got the raw constraint text straight back:
  *
  *   insert or update on table "pick_lists" violates foreign key constraint
  *   "pick_lists_event_key_fkey"
@@ -59,7 +59,7 @@ export function classifyDbError(error: unknown): FriendlyDbError | null {
     if (/event_key/.test(constraint) || /\bevent_key\b/.test(detail)) {
       return {
         message:
-          "That event is not in Vantage's reference data yet. Sync the event from The Blue Alliance (Reference → Events), then try again.",
+          "That event is not in Vantage's reference data yet. Sync the official event under Team → Data, then try again.",
         status: 422,
         eventReferenceMissing: true,
       };
@@ -67,14 +67,14 @@ export function classifyDbError(error: unknown): FriendlyDbError | null {
     if (/team_key/.test(constraint) || /\bteam_key\b/.test(detail)) {
       return {
         message:
-          "That team is not in Vantage's reference data yet. Sync the event's teams from The Blue Alliance, then try again.",
+          "That team is not in Vantage's reference data yet. Sync the event's official teams under Team → Data, then try again.",
         status: 422,
       };
     }
     if (/match_key/.test(constraint) || /\bmatch_key\b/.test(detail)) {
       return {
         message:
-          "That match is not in Vantage's reference data yet. Sync the event's schedule from The Blue Alliance, then try again.",
+          "That match is not in Vantage's reference data yet. Sync the event's official schedule under Team → Data, then try again.",
         status: 422,
       };
     }

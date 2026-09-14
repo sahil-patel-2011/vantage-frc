@@ -29,7 +29,7 @@ const OPEN_LABEL: Record<MyKitSectionId, string> = {
   duties: "Open Duties",
   scouting: "Open Lineup",
   media: "Open Media",
-  hours: "Open My Hours",
+  hours: "Open My hours",
   learning: "Open Learning",
   skills: "Open Skills",
   tools: "Open Tool checkout",
@@ -55,7 +55,7 @@ async function persistMyKitSnapshot(orgHint: string, data: MyKitView): Promise<v
     await putFeatureSnapshot("my-kit", cacheOrg, data);
     if (!orgHint) await putFeatureSnapshot("my-kit", "_", data);
   } catch {
-    // Live My Kit already painted; IndexedDB is best-effort.
+    // Live My kit already painted; IndexedDB is best-effort.
   }
 }
 
@@ -150,7 +150,7 @@ export default function MyKitClient() {
         if (!response.ok || !isMyKitView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setErrorMessage("Could not refresh My Kit. Showing the last copy on this device.");
+            setErrorMessage("Could not refresh My kit. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setErrorMessage("error" in data && data.error ? data.error : "");
@@ -166,7 +166,7 @@ export default function MyKitClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setErrorMessage("Could not refresh My Kit. Showing the last copy on this device.");
+          setErrorMessage("Could not refresh My kit. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -198,10 +198,10 @@ export default function MyKitClient() {
         breadcrumbs={
           <>
             <a href={teamHref}>Team</a>
-            {" / My Kit"}
+            {" / My kit"}
           </>
         }
-        title="My Kit"
+        title="My kit"
         description="What you need tonight — assignments and packing that belong to you. Read-only, never a template kit."
       >
         <nav className="product-hub-related mk-related" aria-label="Related personal views">
@@ -209,7 +209,7 @@ export default function MyKitClient() {
             My Day
           </Button>
           <Button as="a" variant="secondary" href={withOrgHref("/hours-self-view", orgId)}>
-            My Hours
+            My hours
           </Button>
           <Button as="a" variant="secondary" href={withOrgHref("/start", orgId)}>
             Getting started
@@ -217,13 +217,13 @@ export default function MyKitClient() {
         </nav>
       </PageHeader>
 
-      <OfflineBanner feature="My Kit" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="My kit" fromCache={fromCache} cachedAt={cachedAt} />
       {errorMessage && view ? <p className="app-muted">{errorMessage}</p> : null}
 
       <Shell
         state={shell}
         loading={
-          <div aria-busy="true" aria-label="Loading My Kit">
+          <div aria-busy="true" aria-label="Loading My kit">
             <SoftBlockSkeleton lines={6} />
           </div>
         }
@@ -233,7 +233,7 @@ export default function MyKitClient() {
             badge="Needs setup"
             badgeTone="setup"
             title={view?.status === "setup_required" ? view.message : "Choose your team"}
-            description="My Kit shows only your assignments on this team."
+            description="My kit shows only your assignments on this team."
           >
             {view?.status === "setup_required" && view.steps[0] ? (
               <Button as="a" variant="primary" href={view.steps[0].href}>
@@ -247,7 +247,7 @@ export default function MyKitClient() {
           </EmptyState>
         }
         error={{
-          title: "Could not load My Kit",
+          title: "Could not load My kit",
           message: errorMessage,
           onRetry: load,
         }}

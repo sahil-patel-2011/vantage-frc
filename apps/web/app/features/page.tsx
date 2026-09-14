@@ -70,7 +70,7 @@ export default function FeaturesPage() {
               {" · "}
               <a href="/features/cad">CAD agent</a>
               {" · "}
-              <a href="/features/code">Code Coach</a>
+              <a href="/features/code">Code</a>
             </p>
           </div>
         </section>

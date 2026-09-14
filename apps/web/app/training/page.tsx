@@ -1,7 +1,7 @@
 import TrainingClient from "./training-client";
 
 export const metadata = {
-  title: "Training Matrix",
+  title: "Training matrix",
 };
 
 export default function TrainingPage() {

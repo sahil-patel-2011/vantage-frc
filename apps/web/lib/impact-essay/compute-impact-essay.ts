@@ -26,12 +26,12 @@ function setupStepsFor(orgId: string | null): ImpactEssaySetupStep[] {
     {
       id: "workspace",
       label: "Choose your team",
-      detail: "Choose your team to open Impact Essay.",
+      detail: "Choose your team to open Impact essay.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
       id: "impact",
-      label: "Open Community Impact",
+      label: "Open Impact",
       detail: "Outreach claims stay blank until real activities exist.",
       href: hubHref("/business", "impact", orgId),
     },

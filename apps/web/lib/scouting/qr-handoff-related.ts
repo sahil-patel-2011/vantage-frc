@@ -205,7 +205,7 @@ export function qrHandoffShellCopy(kind: QrHandoffShellKind): QrHandoffEmptyCopy
     case "loading":
       return {
         kind,
-        title: "Loading QR handoff…",
+        title: "Opening QR handoff",
         description: "Checking which team you are on and this device’s outbox.",
       };
     case "error":

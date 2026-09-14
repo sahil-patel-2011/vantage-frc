@@ -26,6 +26,21 @@ function browserSpeechAvailable(): boolean {
   return Boolean(w.SpeechRecognition || w.webkitSpeechRecognition);
 }
 
+function voiceSourceLabel(source: ScoutVoiceSttSource): string {
+  switch (source) {
+    case "browser":
+      return "This computer";
+    case "cloud":
+      return "Cloud";
+    case "manual":
+      return "Typed";
+    default: {
+      const _never: never = source;
+      return _never;
+    }
+  }
+}
+
 function createSpeechRecognition(): SpeechRecognitionLike | null {
   if (typeof window === "undefined") return null;
   const w = window as typeof window & {
@@ -52,7 +67,7 @@ type Props = {
   entryType: "match" | "pit";
   /** Notes attach to this client id; form fill is optional via onApplyToForm. */
   pendingEntryClientId: string | null;
-  /** Published custom-form fields available for optional STT → form fill. */
+  /** Published custom-form fields available for optional speech → form fill. */
   formFields?: Array<{ key: string; label: string }>;
   /** Apply a reviewed transcript onto the open custom form (caller owns payload merge). */
   onApplyToForm?: (transcript: string, fieldKey: string | null) => void;
@@ -173,10 +188,8 @@ export default function ScoutVoiceNotesPanel({
     const cloudOk = view && "providers" in view ? view.providers.cloudConfigured : false;
 
     if (!hasBrowser && !cloudOk) {
-      setError(
-        "No speech-to-text provider available. Use a browser with speech recognition, or configure OPENAI_API_KEY for cloud STT.",
-      );
-      onStatus?.("Voice STT setup required");
+      setError("Voice notes are not set up on this computer. Type the notes, or ask a mentor.");
+      onStatus?.("Needs setup");
       return;
     }
 
@@ -267,8 +280,8 @@ export default function ScoutVoiceNotesPanel({
           reason?: string;
         };
         if (data.status === "setup_required") {
-          setError(data.message || "Cloud STT provider is not configured.");
-          onStatus?.("Cloud STT setup required");
+          setError(data.message || "Cloud voice notes are not connected. Type the notes, or ask a mentor.");
+          onStatus?.("Needs setup");
           return;
         }
         if (!response.ok || !data.transcript) {
@@ -352,7 +365,7 @@ export default function ScoutVoiceNotesPanel({
     return (
       <div className="scout-voice" id="scout-voice">
         <strong>Voice notes</strong>
-        <small className="app-muted">Loading opt-in and STT status…</small>
+        <small className="app-muted">Loading voice notes…</small>
       </div>
     );
   }
@@ -418,12 +431,14 @@ export default function ScoutVoiceNotesPanel({
     <div className="scout-voice" id="scout-voice">
       <div className="scout-voice-heading">
         <div>
-          <strong>Voice STT</strong>
+          <strong>Voice notes</strong>
           <small className="app-muted">
-            Record → transcript queues with audio in the offline outbox. Optionally apply speech into
-            this custom form, or attach as a note only.
-            {browserStt ? " Browser STT ready." : ""}
-            {view.providers.cloudConfigured ? " Cloud STT available (metered)." : " Cloud STT not configured."}
+            Record a note. Words appear here so you can check them, then attach the note or fill a form
+            field.
+            {browserStt ? " This computer can listen." : ""}
+            {view.providers.cloudConfigured
+              ? " Cloud voice notes are connected."
+              : " Cloud voice notes are not connected."}
           </small>
         </div>
         <Button variant="secondary" type="button" disabled={busy} onClick={() => void mutate({ action: "set-user-opt-in", enabled: false, acceptConsent: false })}>
@@ -483,7 +498,7 @@ export default function ScoutVoiceNotesPanel({
           {notes.map((note) => (
             <li key={note.id}>
               <div>
-                <strong>{note.sttSource}</strong>
+                <strong>{voiceSourceLabel(note.sttSource)}</strong>
                 <small className="app-muted"> · {new Date(note.createdAt).toLocaleString()}</small>
               </div>
               <p>{note.transcript}</p>

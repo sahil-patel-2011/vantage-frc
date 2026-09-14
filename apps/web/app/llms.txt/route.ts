@@ -8,7 +8,7 @@ const c = PRICING_CATALOG;
 
 const body = `# Vantage
 
-> Vantage is competition operations software for FIRST Robotics Competition (FRC) teams. It runs Soft-UI hubs for Competition, Team, Business, Build, and AI in one invite-only org workspace. Surfaces stay empty until real TBA, scout, or connector data exists. AI actions are human-gated.
+> Vantage is competition operations software for FIRST Robotics Competition (FRC) teams. It runs Soft-UI hubs for Competition, Team, Business, Build, and AI in one invite-only org workspace. Surfaces stay empty until official matches, scout, or connector data exists. AI actions are human-gated.
 
 ## Entity
 - Name: Vantage (also "Vantage FRC")
@@ -21,9 +21,9 @@ const body = `# Vantage
 ## What Vantage does (citeable)
 - Offline-first match and pit scouting with form builder, voice notes (opt-in), and sync when Wi-Fi returns.
 - Competition hub: Event day, Scouting, Strategy, and Pit workbenches; My Day / Forms / Alliance desk live as inner tabs — not a 40-item More tools list.
-- Team hub: Calendar, Chat, People, Work, Knowledge; Season Planning sits under Work.
+- Team hub: Calendar, Chat, People, Work, Knowledge; Season plan sits under Work.
 - Business hub: Overview, Money, Sponsors, Grants, Outreach.
-- Build hub: Kickoff, CAD, Code, Robot (FMEA/batteries/inspection as Robot tabs).
+- Build hub: Kickoff, CAD, Code, Robot (Failure log/batteries/inspection as Robot tabs).
 - AI hub: Chat, Writer, Agent, Controls, Notes; API keys under Controls.
 - FRC Assistant answers cite labeled sources (official, scout, prediction); no invented DEMO win rates.
 - Vantage never auto-deploys robot code.
@@ -46,7 +46,7 @@ const body = `# Vantage
 - Product map: ${CANONICAL}/features
 - Strategy & Assistant: ${CANONICAL}/features/strategy
 - CAD agent: ${CANONICAL}/features/cad
-- Code Coach: ${CANONICAL}/features/code
+- Code: ${CANONICAL}/features/code
 - How it works: ${CANONICAL}/workflow
 - Desktop: ${CANONICAL}/desktop
 - For teams: ${CANONICAL}/for-teams

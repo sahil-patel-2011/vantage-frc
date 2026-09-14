@@ -53,7 +53,7 @@ async function persistSketchToBriefSnapshot(
     await putFeatureSnapshot("sketch-to-brief", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("sketch-to-brief", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Sketch-to-Brief already painted; IndexedDB is best-effort.
+    // Live Sketch to brief already painted; IndexedDB is best-effort.
   }
 }
 
@@ -126,10 +126,10 @@ function SketchShell({
         breadcrumbs={
           <>
             <a href={buildHref}>Build</a>
-            {" / Sketch-to-Brief"}
+            {" / Sketch to brief"}
           </>
         }
-        title="Sketch-to-Brief"
+        title="Sketch to brief"
         description={description}
       >
         <SketchRelatedStrip orgId={orgId} />
@@ -139,7 +139,7 @@ function SketchShell({
         soft
         badge={
           shell === "setup"
-            ? "Setup required"
+            ? "Needs setup"
             : shell === "error"
               ? "Unavailable"
               : shell === "empty"
@@ -221,7 +221,7 @@ export default function SketchToBriefClient() {
         if (!response.ok || !isSketchToBriefView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Sketch-to-Brief. Showing the last copy on this device.");
+            setError("Could not refresh Sketch to brief. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -236,7 +236,7 @@ export default function SketchToBriefClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Sketch-to-Brief. Showing the last copy on this device.");
+          setError("Could not refresh Sketch to brief. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -314,7 +314,7 @@ export default function SketchToBriefClient() {
   if (shell === "loading") {
     return (
       <SketchShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Sketch-to-Brief" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Sketch to brief" fromCache={fromCache} cachedAt={cachedAt} />
       </SketchShell>
     );
   }
@@ -328,7 +328,7 @@ export default function SketchToBriefClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Sketch-to-Brief" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Sketch to brief" fromCache={fromCache} cachedAt={cachedAt} />
       </SketchShell>
     );
   }
@@ -340,7 +340,7 @@ export default function SketchToBriefClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Sketch-to-Brief" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Sketch to brief" fromCache={fromCache} cachedAt={cachedAt} />
       </SketchShell>
     );
   }
@@ -348,7 +348,7 @@ export default function SketchToBriefClient() {
   if (view?.status !== "live") {
     return (
       <SketchShell description={shellCopy.description} orgId={orgId} shell="setup">
-        <OfflineBanner feature="Sketch-to-Brief" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Sketch to brief" fromCache={fromCache} cachedAt={cachedAt} />
       </SketchShell>
     );
   }
@@ -359,10 +359,10 @@ export default function SketchToBriefClient() {
         breadcrumbs={
           <>
             <a href={buildHref}>Build</a>
-            {" / Sketch-to-Brief"}
+            {" / Sketch to brief"}
           </>
         }
-        title="Sketch-to-Brief"
+        title="Sketch to brief"
         description="Transcribe a kickoff whiteboard sketch and get a grounded first-pass CAD brief plus a rule-compliance check — from your team's Kickoff notes and design priorities only. Cross-check Kickoff and CAD."
       >
         <div className="sketch-to-brief-header-actions">
@@ -393,7 +393,7 @@ export default function SketchToBriefClient() {
         </div>
       </PageHeader>
 
-      <OfflineBanner feature="Sketch-to-Brief" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Sketch to brief" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -429,7 +429,7 @@ export default function SketchToBriefClient() {
         <LogSketchForm busy={busy} mutate={mutate} />
         <SketchList view={view} busy={busy} mutate={mutate} />
         <BriefList view={view} kickoffHref={kickoffHref} cadHref={cadHref} />
-        <Panel className="sketch-to-brief-tip" aria-label="Sketch-to-Brief tip">
+        <Panel className="sketch-to-brief-tip" aria-label="Sketch to brief tip">
           <span className="eyebrow">Grounding path</span>
           <p className="app-muted" style={{ marginTop: 8 }}>
             Keep{" "}
@@ -462,7 +462,7 @@ function SummaryTiles({
     { label: "Rule flags", value: formatSketchToBriefMetric(ruleFlagCount, loaded) },
   ];
   return (
-    <section className="sketch-to-brief-stats" aria-label="Sketch-to-Brief counts">
+    <section className="sketch-to-brief-stats" aria-label="Sketch to brief counts">
       {tiles.map((tile) => (
         <div key={tile.label}>
           <strong>{tile.value}</strong>

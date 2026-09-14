@@ -46,7 +46,7 @@ export type StandupView =
 const WORKSPACE_STEP: StandupSetupStep = {
   id: "workspace",
   label: "Choose your team",
-  detail: "Pick which FRC team you are working as.",
+  detail: "Choose which FRC team you are working as.",
   href: "/workspace",
 };
 

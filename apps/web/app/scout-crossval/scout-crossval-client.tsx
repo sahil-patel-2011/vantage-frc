@@ -68,7 +68,7 @@ async function persistScoutCrossvalSnapshot(
     await putFeatureSnapshot("scout-crossval", cacheOrg, data, eventHint || eventKey);
     if (!orgHint) await putFeatureSnapshot("scout-crossval", "_", data, eventHint || eventKey);
   } catch {
-    // Live Scout Cross-Validation already painted; IndexedDB is best-effort.
+    // Live Cross-check already painted; IndexedDB is best-effort.
   }
 }
 
@@ -143,10 +143,10 @@ function ScoutCrossvalShell({
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Scout Cross-Validation"}
+            {" / Cross-check"}
           </>
         }
-        title="Scout Cross-Validation"
+        title="Cross-check"
         description={description}
       >
         <ScoutCrossvalRelatedStrip orgId={orgId} />
@@ -248,7 +248,7 @@ export default function ScoutCrossvalClient({ orgId: initialOrgId }: { orgId?: s
           if (!response.ok || !isScoutCrossvalView(data)) {
             if (hadCache || viewRef.current) {
               setFromCache(true);
-              setError("Could not refresh Scout Cross-Validation. Showing the last copy on this device.");
+              setError("Could not refresh Cross-check. Showing the last copy on this device.");
               setFetchFailed(false);
             } else {
               setFetchFailed(true);
@@ -264,7 +264,7 @@ export default function ScoutCrossvalClient({ orgId: initialOrgId }: { orgId?: s
         } catch {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Scout Cross-Validation. Showing the last copy on this device.");
+            setError("Could not refresh Cross-check. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -335,7 +335,7 @@ export default function ScoutCrossvalClient({ orgId: initialOrgId }: { orgId?: s
   if (shell === "loading") {
     return (
       <ScoutCrossvalShell description={shellCopy.description} orgId={orgId} shell="loading">
-        <OfflineBanner feature="Scout Cross-Validation" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Cross-check" fromCache={fromCache} cachedAt={cachedAt} />
       </ScoutCrossvalShell>
     );
   }
@@ -348,7 +348,7 @@ export default function ScoutCrossvalClient({ orgId: initialOrgId }: { orgId?: s
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Scout Cross-Validation" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Cross-check" fromCache={fromCache} cachedAt={cachedAt} />
       </ScoutCrossvalShell>
     );
   }
@@ -359,14 +359,14 @@ export default function ScoutCrossvalClient({ orgId: initialOrgId }: { orgId?: s
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Scout Cross-Validation" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Cross-check" fromCache={fromCache} cachedAt={cachedAt} />
       </ScoutCrossvalShell>
     );
   }
   if (shell === "empty" || view?.status !== "live") {
     return (
       <ScoutCrossvalShell description={shellCopy.description} orgId={orgId} shell="empty">
-        <OfflineBanner feature="Scout Cross-Validation" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Cross-check" fromCache={fromCache} cachedAt={cachedAt} />
       </ScoutCrossvalShell>
     );
   }
@@ -377,18 +377,18 @@ export default function ScoutCrossvalClient({ orgId: initialOrgId }: { orgId?: s
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Scout Cross-Validation"}
+            {" / Cross-check"}
           </>
         }
-        title="Scout Cross-Validation"
-        description="Compares saved match-scout entries against cached TBA score breakdowns — agree, conflict, or unverifiable."
+        title="Cross-check"
+        description="Compares saved match-scout entries against cached official score breakdowns — agree, conflict, or unverifiable."
       >
         <div className="scout-crossval-header-meta">
           <ScoutCrossvalRelatedStrip orgId={orgId} />
         </div>
       </PageHeader>
 
-      <OfflineBanner feature="Scout Cross-Validation" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Cross-check" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="form-message" role="status">
@@ -426,7 +426,7 @@ export default function ScoutCrossvalClient({ orgId: initialOrgId }: { orgId?: s
         Also see{" "}
         <a href={hubHref("/competition", "scouting", orgId)}>Scouting</a>
         {" · "}
-        <a href={withOrgHref("/scout-coverage-live", orgId)}>Coverage Live</a>
+        <a href={withOrgHref("/scout-coverage-live", orgId)}>Coverage</a>
         {" · "}
         <a href={withOrgHref("/scout-accuracy", orgId)}>Accuracy</a>
       </p>
@@ -447,7 +447,7 @@ function SummaryTiles({ view, loaded }: { view: LiveView; loaded: boolean }) {
       <StatTile
         label="Agree"
         value={formatScoutCrossvalMetric(summary.agreeEntries, loaded)}
-        unit="vs TBA"
+        unit="vs official"
       />
       <StatTile
         label="Conflict"
@@ -480,7 +480,7 @@ function EntriesList({
   return (
     <Panel className="scout-crossval-panel" id="crossval-entries">
       <header>
-        <h2>Match entries vs TBA</h2>
+        <h2>Match entries vs official</h2>
         <p className="app-muted">
           Per-field badges use cached official score breakdowns only.
         </p>

@@ -192,9 +192,9 @@ export function pitFlagsFromPitBoard(
       title: alert.message,
       detail:
         alert.openCount > 0
-          ? `${alert.openCount} still open in the FMEA log${alert.recentTitles[0] ? ` · ${alert.recentTitles[0]}` : ""}`
+          ? `${alert.openCount} still open in the Failure log${alert.recentTitles[0] ? ` · ${alert.recentTitles[0]}` : ""}`
           : alert.recentTitles[0] ?? "Logged across events this season — confirm the root cause stuck.",
-      evidence: `FMEA / failure log · ${alert.failureCount} entries · ${alert.href}`,
+      evidence: `Failure log · ${alert.failureCount} entries · ${alert.href}`,
       source: "fmea_repeat",
     });
   }

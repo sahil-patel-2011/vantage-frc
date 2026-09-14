@@ -15,9 +15,9 @@ export const ACCOUNT_ONSHAPE_COPY = {
 
 export const ACCOUNT_GITHUB_COPY = {
   connected: "GitHub is linked for this team.",
-  chooseTeam: "Choose your team, then an owner or admin can connect GitHub in Team admin.",
-  emptyConfigured: "No GitHub account linked yet. An owner or admin can connect GitHub in Team admin.",
-  emptyUnconfigured: "No GitHub link yet. Ask an owner or admin to connect GitHub in Team admin.",
+  chooseTeam: "Choose your team, then an owner or admin can connect GitHub in Invites.",
+  emptyConfigured: "No GitHub account linked yet. An owner or admin can connect GitHub in Invites.",
+  emptyUnconfigured: "No GitHub link yet. Ask an owner or admin to connect GitHub in Invites.",
 } as const;
 
 export const ACCOUNT_GOOGLE_COPY = {
@@ -34,11 +34,11 @@ export const ACCOUNT_TBA_COPY = {
 export const ACCOUNT_DISCORD_COPY = {
   connectedWebhook: "Discord can post for this team.",
   connectedBot: "Discord can post for this team.",
-  chooseTeamConfigured: "Choose your team to add a Discord webhook or channel.",
-  chooseTeam: "Choose your team, then add a channel webhook on Discord settings.",
-  setupRequired: "Add a Discord channel webhook on Team → Discord before posts work.",
-  emptyConfigured: "Add a webhook or channel id on Discord settings before posts work.",
-  empty: "Webhook not saved for this team yet. Connected only after a valid webhook or bot and channel.",
+  chooseTeamConfigured: "Choose your team to add a Discord channel link.",
+  chooseTeam: "Choose your team, then paste a Discord channel link on Discord.",
+  setupRequired: "Paste a Discord channel link on Discord before posts work.",
+  emptyConfigured: "Paste a Discord channel link or channel id on Discord before posts work.",
+  empty: "No Discord channel link saved for this team yet. Connected only after a valid Discord channel link, or the bot plus a channel.",
 } as const;
 
 export const ACCOUNT_EMAIL_COPY = {

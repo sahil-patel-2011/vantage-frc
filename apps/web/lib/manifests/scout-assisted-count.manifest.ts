@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "scout-assisted-count",
-  title: "Scout-Assisted Count",
+  title: "Assisted count",
   route: "/scout-assisted-count",
   apiRoute: "/api/scout-assisted-count",
   hub: "Competition",

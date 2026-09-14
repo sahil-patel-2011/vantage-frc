@@ -32,7 +32,7 @@ describe("Home widget empty copy", () => {
     const hint = emptyHintFor("sync_status");
     expect(
       studentWidgetDescription(
-        "The Blue Alliance is not connected. Save a key under Team Data before match and ranking cards can fill in.",
+        "The Blue Alliance is not connected. Save a key under Team data before match and ranking cards can fill in.",
         hint,
       ),
     ).toBe(hint.body);

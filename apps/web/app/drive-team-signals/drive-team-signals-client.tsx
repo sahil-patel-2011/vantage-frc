@@ -131,10 +131,10 @@ function SignalsShell({
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Drive-Team Signals"}
+            {" / Drive-team board"}
           </>
         }
-        title="Drive-Team Signal Board"
+        title="Drive-team board"
         description={description}
       >
         <RelatedStrip orgId={orgId} />
@@ -149,7 +149,7 @@ function SignalsShell({
       ) : (
         <EmptyState
           soft
-          badge={shell === "setup" ? "Setup required" : copy.badge}
+          badge={shell === "setup" ? "Needs setup" : copy.badge}
           badgeTone="setup"
           title={copy.title}
           description={error ?? copy.description}
@@ -293,7 +293,7 @@ export default function DriveTeamSignalsClient() {
   if (shell === "loading") {
     return (
       <SignalsShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Drive-team signals" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Drive-team board" fromCache={fromCache} cachedAt={cachedAt} />
       </SignalsShell>
     );
   }
@@ -306,7 +306,7 @@ export default function DriveTeamSignalsClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Drive-team signals" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Drive-team board" fromCache={fromCache} cachedAt={cachedAt} />
       </SignalsShell>
     );
   }
@@ -317,7 +317,7 @@ export default function DriveTeamSignalsClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Drive-team signals" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Drive-team board" fromCache={fromCache} cachedAt={cachedAt} />
       </SignalsShell>
     );
   }
@@ -328,16 +328,16 @@ export default function DriveTeamSignalsClient() {
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Drive-Team Signals"}
+            {" / Drive-team board"}
           </>
         }
-        title="Drive-Team Signal Board"
+        title="Drive-team board"
         description="Hand signals, radio codes, and field markers your drive crew actually uses."
       >
         <RelatedStrip orgId={orgId} />
       </PageHeader>
 
-      <OfflineBanner feature="Drive-team signals" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Drive-team board" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

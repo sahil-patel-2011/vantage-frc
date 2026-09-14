@@ -1,7 +1,7 @@
 import BatteryRotationClient from "./battery-rotation-client";
 
 export const metadata = {
-  title: "Battery rotation & charge planner",
+  title: "Charge plan",
 };
 
 export default function BatteryRotationPage() {

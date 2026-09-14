@@ -159,7 +159,7 @@ export async function computeScoutTrainingView(
       status: "setup_required",
       message: "Choose your team to start scout training mode.",
       steps: [
-        { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
+        { id: "workspace", label: "Choose your team", detail: "Choose which FRC team you are working as.", href: "/workspace" },
       ],
       orgId: null,
     };
@@ -175,7 +175,7 @@ export async function computeScoutTrainingView(
         {
           id: "reference-sync",
           label: "Sync competition data",
-          detail: "Historical matches populate once your team's events sync from The Blue Alliance.",
+          detail: "Historical matches populate once your team's events sync official matches.",
           href: "/competition",
         },
       ],

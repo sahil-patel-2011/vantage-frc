@@ -2,7 +2,7 @@ import { CodeClient } from "./code-client";
 import "./code.css";
 
 export const metadata = {
-  title: "FRC Code Coach",
+  title: "Code",
   description:
     "Flag risky robot-code patterns, explain why they matter, and propose human-approved diffs — not autonomous robot code.",
 };

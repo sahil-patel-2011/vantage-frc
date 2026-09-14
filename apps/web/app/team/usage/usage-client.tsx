@@ -88,7 +88,7 @@ const KEY_SOURCE_LABELS: Record<string, string> = {
   platform: "Hosted",
   byo: "Your own key",
   local: "Local",
-  local_cli: "Local CLI",
+  local_cli: "This computer",
 };
 
 const FEATURE_LABELS: Record<string, string> = {

@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "leadership",
-  title: "Leadership Continuity",
+  title: "Leadership",
   route: "/leadership",
   apiRoute: "/api/leadership",
   hub: "Team",

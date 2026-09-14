@@ -1,7 +1,7 @@
 import SpareRobotKitClient from "./spare-robot-kit-client";
 
 export const metadata = {
-  title: "Spare Robot Kit Checklist",
+  title: "Spare kit",
 };
 
 export default function SpareRobotKitPage() {

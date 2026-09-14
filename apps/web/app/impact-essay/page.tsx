@@ -1,7 +1,7 @@
 import ImpactEssayClient from "./impact-essay-client";
 
 export const metadata = {
-  title: "FIRST Impact Essay Generator",
+  title: "Impact essay",
 };
 
 export default function ImpactEssayPage() {

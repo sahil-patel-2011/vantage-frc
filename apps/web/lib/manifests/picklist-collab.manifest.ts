@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "picklist-collab",
-  title: "Collaborative Pick List",
+  title: "Pick list",
   route: "/picklist-collab",
   apiRoute: "/api/picklist-collab",
   hub: "Competition",

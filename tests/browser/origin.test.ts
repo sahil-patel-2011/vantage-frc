@@ -4,6 +4,7 @@ import {
   LOCAL_VANTAGE_CI_ADMIN,
   LOCAL_VANTAGE_CI_APP,
   playwrightWebServerEnv,
+  shouldReuseLiveNextDevLock,
 } from "./origin";
 
 const KEYS = [
@@ -65,6 +66,14 @@ describe("assertLocalFixtureDatabase", () => {
   });
 });
 
+describe("shouldReuseLiveNextDevLock", () => {
+  it("reuses a human next only when NEXT_DIST_DIR is .next", () => {
+    expect(shouldReuseLiveNextDevLock({})).toBe(false);
+    expect(shouldReuseLiveNextDevLock({ NEXT_DIST_DIR: ".next-pw" })).toBe(false);
+    expect(shouldReuseLiveNextDevLock({ NEXT_DIST_DIR: ".next" })).toBe(true);
+  });
+});
+
 describe("playwrightWebServerEnv", () => {
   it("fills local vantage_ci when DATABASE_* is unset outside GitHub Actions", () => {
     delete process.env.GITHUB_ACTIONS;
@@ -78,6 +87,20 @@ describe("playwrightWebServerEnv", () => {
     expect(env.DATABASE_ADMIN_URL).toBe(LOCAL_VANTAGE_CI_ADMIN);
     expect(env.BETTER_AUTH_URL).toBe("http://127.0.0.1:3310");
     expect(env.NODE_OPTIONS).toMatch(/max-old-space-size=4096/);
+    expect(env.MALLOC_ARENA_MAX).toBe("2");
+    expect(env.NEXT_DIST_DIR).toBe(".next-pw");
+  });
+
+  it("honors an explicit NEXT_DIST_DIR for a leftover next cache", () => {
+    const previous = process.env.NEXT_DIST_DIR;
+    process.env.NEXT_DIST_DIR = ".next-pw-3598";
+    try {
+      const env = playwrightWebServerEnv("http://127.0.0.1:3310", 3310);
+      expect(env.NEXT_DIST_DIR).toBe(".next-pw-3598");
+    } finally {
+      if (previous === undefined) delete process.env.NEXT_DIST_DIR;
+      else process.env.NEXT_DIST_DIR = previous;
+    }
   });
 
   it("does not invent DATABASE_* on GitHub Actions", () => {
@@ -90,5 +113,18 @@ describe("playwrightWebServerEnv", () => {
     expect(env.E2E_AUTH_FIXTURE).toBe("1");
     expect(env.NODE_ENV).toBe("development");
     expect(env.NODE_OPTIONS).toMatch(/max-old-space-size=4096/);
+    expect(env.MALLOC_ARENA_MAX).toBe("2");
+  });
+
+  it("does not stack a second max-old-space-size onto NODE_OPTIONS", () => {
+    const previous = process.env.NODE_OPTIONS;
+    process.env.NODE_OPTIONS = "--max-old-space-size=2048";
+    try {
+      const env = playwrightWebServerEnv("http://127.0.0.1:3310", 3310);
+      expect(env.NODE_OPTIONS).toBe("--max-old-space-size=2048");
+    } finally {
+      if (previous === undefined) delete process.env.NODE_OPTIONS;
+      else process.env.NODE_OPTIONS = previous;
+    }
   });
 });

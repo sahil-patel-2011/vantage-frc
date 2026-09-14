@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "outreach-calendar",
-  title: "Outreach Calendar",
+  title: "Outreach calendar",
   route: "/outreach-calendar",
   apiRoute: "/api/outreach-calendar",
   hub: "Business",

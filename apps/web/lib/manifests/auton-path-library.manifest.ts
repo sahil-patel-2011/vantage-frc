@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "auton-path-library",
-  title: "Autonomous Path Library",
+  title: "Auton paths",
   route: "/auton-path-library",
   apiRoute: "/api/auton-path-library",
   hub: "Build",

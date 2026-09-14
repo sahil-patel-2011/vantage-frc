@@ -170,7 +170,7 @@ export const SEARCH_SOURCES: SearchSource[] = [
   },
   {
     id: "impact",
-    label: "Community Impact",
+    label: "Impact",
     run: async (client, orgId, pattern, limit) => {
       const { rows } = await client.query<{
         id: string;
@@ -194,7 +194,7 @@ export const SEARCH_SOURCES: SearchSource[] = [
       return rows.map((row) => ({
         id: row.id,
         source: "impact" as const,
-        sourceLabel: "Community Impact",
+        sourceLabel: "Impact",
         title: row.title,
         subtitle: [row.category.replace(/_/g, " "), row.occurredOn].filter(Boolean).join(" · ") || null,
         href: orgHref("/impact", orgId),

@@ -18,7 +18,6 @@
 .team-data-credentials{margin:8px 0 0;padding:0;list-style:none;display:grid;gap:8px}
 .team-data-credentials li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--radius-xs)}
 .team-data-credentials small{display:block;color:var(--muted);font-size:11px}
-.team-data-health{margin:0;padding:12px;max-height:240px;overflow:auto;font-size:11px;line-height:1.45;background:var(--bg);border:1px solid var(--line);border-radius:var(--radius-xs)}
 @media(max-width:900px){
   .team-data-layout{grid-template-columns:1fr}
   .team-data-header-actions{justify-content:flex-start}

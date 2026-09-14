@@ -167,7 +167,7 @@ export const SETTINGS_DEEP_LINKS: ProductNavItem[] = [
   { href: "/docs", label: "App manual", icon: "clipboard" },
   { href: "/support", label: "Support", icon: "chat" },
   { href: "/security", label: "Security", icon: "gear" },
-  { href: "/team/admin", label: "Team admin", icon: "gear" },
+  { href: "/team/admin", label: "Invites", icon: "gear" },
   { href: "/team/data", label: "Team data", icon: "stats" },
   { href: "/team/ai-keys", label: "AI keys", icon: "gear" },
   { href: "/schedule", label: "Schedule", icon: "calendar" },

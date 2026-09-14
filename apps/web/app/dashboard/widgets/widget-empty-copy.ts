@@ -41,7 +41,7 @@ export const WIDGET_EMPTY_COPY: Record<string, EmptyHint> = {
     title: "Match results not connected",
     body: "Ask a mentor to connect match results so cards can fill in.",
     ctaHref: "/team/data",
-    ctaLabel: "Open Team Data",
+    ctaLabel: "Open Team data",
   },
   pit_youtube: {
     title: "No pit stream",

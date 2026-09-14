@@ -41,12 +41,12 @@ test("strategy empty setup hides fabricated probabilities", async ({ page }) => 
 
 test("scout P2P relay renders without invented mesh counts", async ({ page }) => {
   await page.goto("/scout-p2p-relay");
-  await expect(page.getByRole("heading", { name: "Pit mesh" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Pit link" })).toBeVisible();
   await expect(page.getByText("Deterministic demo")).toHaveCount(0);
 });
 
 test("exit interviews render without invented wiki copy", async ({ page }) => {
   await page.goto("/exit-interview");
-  await expect(page.getByRole("heading", { name: "Graduation Exit Interviews" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Exit interviews" })).toBeVisible();
   await expect(page.getByText("Deterministic demo")).toHaveCount(0);
 });

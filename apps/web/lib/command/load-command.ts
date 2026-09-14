@@ -132,11 +132,11 @@ export async function loadEventDayCommand(
   if (!row) {
     return emptySnapshot({
       computedAt,
-      message: "Join a team to open Event Day Command.",
+      message: "Choose your team to open Event day.",
       setupSteps: [
         {
           id: "workspace",
-          label: "Join or choose a team",
+          label: "Choose your team",
           detail: "Open Home and choose your team.",
           href: "/dashboard",
         },
@@ -217,7 +217,7 @@ export async function loadEventDayCommand(
       ...base,
       status: "setup_required",
       message: !row.eventKey
-        ? "Set your active event to turn Event Day Command into your field-side OS."
+        ? "Set your active event to turn Event day into your field-side OS."
         : "Set your team's number so we can filter your match queue.",
       matches: [],
       scoutQueue: [],
@@ -497,10 +497,10 @@ export async function loadEventDayCommand(
         const ops = strategy.matchup.red.concat(strategy.matchup.blue).find((b) => b.teamKey === t.teamKey);
         const capabilities: string[] = [];
         if (ops?.autoEpa != null && ops.epa != null && ops.epa > 0 && ops.autoEpa / ops.epa > 0.28) {
-          capabilities.push(`Auto EPA ${Math.round(ops.autoEpa * 10) / 10}`);
+          capabilities.push(`Auto rating ${Math.round(ops.autoEpa * 10) / 10}`);
         }
         if (ops?.endgameEpa != null && ops.epa != null && ops.epa > 0 && ops.endgameEpa / ops.epa > 0.25) {
-          capabilities.push(`Endgame EPA ${Math.round(ops.endgameEpa * 10) / 10}`);
+          capabilities.push(`Endgame rating ${Math.round(ops.endgameEpa * 10) / 10}`);
         }
         if (ops?.reliability != null) {
           capabilities.push(`Scout reliability ${Math.round(ops.reliability)}% (n=${ops.scoutSample})`);

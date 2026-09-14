@@ -295,7 +295,7 @@ export default function AutoRoutinesClient({ orgId }: { orgId: string | null }) 
         </PageHeader>
         <OfflineBanner feature="Auto routines" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
-          title={failure ? failure.title : "Loading auto routines…"}
+          title={failure ? failure.title : "Opening Auto routines"}
           description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >
@@ -331,7 +331,7 @@ export default function AutoRoutinesClient({ orgId }: { orgId: string | null }) 
             <AutoRoutinesRelated orgId={orgId} />
           </PageHeader>
           <OfflineBanner feature="Auto routines" fromCache={fromCache} cachedAt={cachedAt} />
-          <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
+          <EmptyState badge="Needs setup" badgeTone="setup" title={view.message}>
             <Button as="a" variant="primary" href="/workspace">
               Choose your team
             </Button>

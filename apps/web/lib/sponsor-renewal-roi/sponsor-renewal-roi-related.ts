@@ -1,12 +1,12 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Sponsor Renewal ROI (never DEMO churn scores). */
+/** Soft-UI related surfaces for Renewal ROI (never DEMO churn scores). */
 export const SPONSOR_RENEWAL_ROI_RELATED_LINKS = [
-  { id: "sponsors", label: "Sponsor CRM", kind: "business" as const, tab: "sponsors" },
-  { id: "sponsor-suite", label: "Sponsor Suite", kind: "business" as const, tab: "sponsor-suite" },
-  { id: "sponsor-wall", label: "Sponsor Wall", kind: "business" as const, tab: "sponsor-wall" },
-  { id: "impact", label: "Community Impact", kind: "business" as const, tab: "impact" },
+  { id: "sponsors", label: "Sponsors", kind: "business" as const, tab: "sponsors" },
+  { id: "sponsor-suite", label: "Sponsor suite", kind: "business" as const, tab: "sponsor-suite" },
+  { id: "sponsor-wall", label: "Sponsor wall", kind: "business" as const, tab: "sponsor-wall" },
+  { id: "impact", label: "Impact", kind: "business" as const, tab: "impact" },
 ] as const;
 
 export type SponsorRenewalRoiRelatedId = (typeof SPONSOR_RENEWAL_ROI_RELATED_LINKS)[number]["id"];
@@ -25,7 +25,7 @@ export const SPONSOR_RENEWAL_ROI_RELATED_INCLUDE: SponsorRenewalRoiRelatedId[] =
 ];
 
 /**
- * Soft-UI cross-links from Sponsor Renewal ROI → CRM / Suite / Impact.
+ * Soft-UI cross-links from Renewal ROI → CRM / Suite / Impact.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function sponsorRenewalRoiRelatedLinks(
@@ -78,19 +78,19 @@ export function sponsorRenewalRoiSetupSteps(orgId?: string | null): SponsorRenew
     },
     {
       id: "sponsors",
-      label: "Open Sponsor CRM",
+      label: "Open Sponsors",
       detail: "Sponsor rows stay blank until your team logs them.",
       href: hubHref("/business", "sponsors", orgId),
     },
     {
       id: "impact",
-      label: "Open Community Impact",
+      label: "Open Impact",
       detail: "Impact mentions feed renewal evidence.",
       href: hubHref("/business", "impact", orgId),
     },
     {
       id: "sponsor-suite",
-      label: "Open Sponsor Suite",
+      label: "Open Sponsor suite",
       detail: "Suite assets stay blank until real sponsors land.",
       href: hubHref("/business", "sponsor-suite", orgId),
     },
@@ -110,7 +110,7 @@ export function shouldShowSponsorRenewalRoiSummaryTiles(sponsorCount: number): b
   return sponsorCount > 0;
 }
 
-/** Classify Sponsor Renewal ROI Soft-UI shell — never invents DEMO churn scores. */
+/** Classify Renewal ROI Soft-UI shell — never invents DEMO churn scores. */
 export function classifySponsorRenewalRoiShell(input: {
   loading?: boolean;
   fetchFailed?: boolean;
@@ -131,16 +131,16 @@ export function sponsorRenewalRoiShellCopy(kind: SponsorRenewalRoiShellKind): Sp
     case "loading":
       return {
         kind,
-        title: "Loading Sponsor Renewal ROI…",
+        title: "Opening Renewal ROI",
         description: "Checking which team you are on and sponsor CRM.",
       };
     case "error":
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Sponsor Renewal ROI",
+        title: "Could not load Renewal ROI",
         description:
-          "A network or server issue blocked renewal scoring. Retry, or open Sponsor CRM while it reloads.",
+          "A network or server issue blocked renewal scoring. Retry, or open Sponsors while it reloads.",
       };
     case "setup":
       return {
@@ -169,7 +169,7 @@ export function sponsorRenewalRoiShellCopy(kind: SponsorRenewalRoiShellKind): Sp
 }
 
 /**
- * Soft-UI next actions for Sponsor Renewal ROI empty/setup shells.
+ * Soft-UI next actions for Renewal ROI empty/setup shells.
  * Points at CRM / Suite / Impact — never invents DEMO churn scores.
  */
 export function sponsorRenewalRoiNextActions(input: {
@@ -194,13 +194,13 @@ export function sponsorRenewalRoiNextActions(input: {
         },
         {
           id: "sponsors",
-          label: "Open Sponsor CRM",
+          label: "Open Sponsors",
           detail: "Sponsor rows stay blank until your team logs them.",
           href: hubHref("/business", "sponsors", null),
         },
         {
           id: "impact",
-          label: "Open Community Impact",
+          label: "Open Impact",
           detail: "Impact mentions feed renewal evidence.",
           href: hubHref("/business", "impact", null),
         },
@@ -209,20 +209,20 @@ export function sponsorRenewalRoiNextActions(input: {
     return [
       {
         id: "sponsors",
-        label: "Open Sponsor CRM",
+        label: "Open Sponsors",
         detail: "Add at least one sponsor before renewal scoring can run.",
         href: hubHref("/business", "sponsors", orgId),
         primary: true,
       },
       {
         id: "impact",
-        label: "Open Community Impact",
+        label: "Open Impact",
         detail: "Log impact mentions that name sponsors for evidence coverage.",
         href: hubHref("/business", "impact", orgId),
       },
       {
         id: "sponsor-suite",
-        label: "Open Sponsor Suite",
+        label: "Open Sponsor suite",
         detail: "Suite assets stay blank until real sponsors land.",
         href: hubHref("/business", "sponsor-suite", orgId),
       },
@@ -233,20 +233,20 @@ export function sponsorRenewalRoiNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Sponsor Renewal ROI",
+        label: "Retry Renewal ROI",
         detail: "Reload real renewal scores.",
         href: withOrgHref("/sponsor-renewal-roi", orgId),
         primary: true,
       },
       {
         id: "sponsors",
-        label: "Open Sponsor CRM",
+        label: "Open Sponsors",
         detail: "CRM stays available while renewal scores reload.",
         href: hubHref("/business", "sponsors", orgId),
       },
       {
         id: "impact",
-        label: "Open Community Impact",
+        label: "Open Impact",
         detail: "Impact stays available while renewal scores reload.",
         href: hubHref("/business", "impact", orgId),
       },
@@ -270,7 +270,7 @@ export function sponsorRenewalRoiNextActions(input: {
       },
       {
         id: "sponsor-wall",
-        label: "Open Sponsor Wall",
+        label: "Open Sponsor wall",
         detail: "Public wall stays blank until real sponsors are featured.",
         href: hubHref("/business", "sponsor-wall", orgId),
       },
@@ -290,19 +290,19 @@ export function sponsorRenewalRoiNextActions(input: {
     },
     {
       id: "sponsors",
-      label: "Open Sponsor CRM",
+      label: "Open Sponsors",
       detail: "Log interactions and contributions that feed the score.",
       href: hubHref("/business", "sponsors", orgId),
     },
     {
       id: "impact",
-      label: "Open Community Impact",
+      label: "Open Impact",
       detail: "Impact mentions naming sponsors raise evidence coverage.",
       href: hubHref("/business", "impact", orgId),
     },
     {
       id: "sponsor-suite",
-      label: "Open Sponsor Suite",
+      label: "Open Sponsor suite",
       detail: "Pair ROI reports with suite assets for renewals.",
       href: hubHref("/business", "sponsor-suite", orgId),
     },

@@ -4,12 +4,12 @@ import { setupActionsFrom } from "./setup-actions";
 
 /** Soft-UI related surfaces for live ops / now-next My Day (never DEMO matches). */
 export const MY_DAY_RELATED_LINKS = [
-  { id: "command", label: "Event Day", kind: "hub" as const, tab: "command" },
+  { id: "command", label: "Event day", kind: "hub" as const, tab: "command" },
   { id: "schedule", label: "Schedule", kind: "path" as const, path: "/schedule" },
   { id: "strategy", label: "Strategy", kind: "hub" as const, tab: "strategy" },
   { id: "scouting", label: "Scouting", kind: "hub" as const, tab: "scouting" },
   { id: "match-checklist", label: "Match checklist", kind: "hub" as const, tab: "match-checklist" },
-  { id: "team-data", label: "Team Data", kind: "path" as const, path: "/team/data" },
+  { id: "team-data", label: "Team data", kind: "path" as const, path: "/team/data" },
 ] as const;
 
 export type MyDayRelatedId = (typeof MY_DAY_RELATED_LINKS)[number]["id"];
@@ -20,11 +20,11 @@ export type MyDayRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — Event Day · Schedule · Strategy. */
+/** Focused Soft-UI strip — Event day · Schedule · Strategy. */
 export const MY_DAY_RELATED_INCLUDE: MyDayRelatedId[] = ["command", "schedule", "strategy"];
 
 /**
- * Soft-UI cross-links from My Day → Event Day / Schedule / Strategy.
+ * Soft-UI cross-links from My Day → Event day / Schedule / Strategy.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function myDayRelatedLinks(
@@ -69,20 +69,6 @@ export type MyDaySetupStep = {
   href: string;
 };
 
-function myDayRelatedHrefs(orgId?: string | null): Set<string> {
-  return new Set(
-    myDayRelatedLinks(orgId, { include: [...MY_DAY_RELATED_INCLUDE] }).map((link) => link.href),
-  );
-}
-
-function dropRelatedStripDuplicates<T extends { href: string }>(
-  orgId: string | null | undefined,
-  items: T[],
-): T[] {
-  const related = myDayRelatedHrefs(orgId);
-  return items.filter((item) => !related.has(item.href));
-}
-
 export function myDaySetupSteps(orgId?: string | null): MyDaySetupStep[] {
   if (!orgId) {
     return [
@@ -98,7 +84,7 @@ export function myDaySetupSteps(orgId?: string | null): MyDaySetupStep[] {
     {
       id: "command",
       label: "Set the event you’re at",
-      detail: "Event Day picks the event so next-match times can show.",
+      detail: "Event day picks the event so next-match times can show.",
       href: hubHref("/competition", "command", orgId),
     },
   ];
@@ -154,7 +140,7 @@ export function myDayShellCopy(
         kind,
         badge: "Unavailable",
         title: "Could not load My Day",
-        description: "Could not load My Day. Retry, or open Event Day while it reloads.",
+        description: "Could not load My Day. Retry, or open Event day while it reloads.",
       };
     case "setup":
       return {
@@ -191,7 +177,7 @@ export function myDayShellCopy(
 
 /**
  * Soft-UI next actions for My Day empty/setup shells.
- * Points at real Event Day / Schedule / Strategy paths — never DEMO matches.
+ * Points at real Event day / Schedule / Strategy paths — never DEMO matches.
  */
 export function myDayNextActions(input: {
   orgId?: string | null;
@@ -216,7 +202,7 @@ export function myDayNextActions(input: {
       },
       {
         id: "command",
-        label: "Open Event Day",
+        label: "Open Event day",
         detail: "Pit command may still load from Competition if personal timing failed.",
         href: hubHref("/competition", "command", orgId),
       },
@@ -240,9 +226,9 @@ export function myDayNextActions(input: {
     return [
       {
         id: noUpcoming ? "schedule" : "command",
-        label: noUpcoming ? "Open Schedule" : "Check Event Day sync",
+        label: noUpcoming ? "Open Schedule" : "Check Event day sync",
         detail: noUpcoming
-          ? "Confirm posted alliances on Event Day."
+          ? "Confirm posted alliances on Event day."
           : "Matches appear after the event schedule is set.",
         href: noUpcoming
           ? withOrgHref("/schedule", orgId)
@@ -251,7 +237,7 @@ export function myDayNextActions(input: {
       },
       {
         id: noUpcoming ? "command" : "schedule",
-        label: noUpcoming ? "Open Event Day" : "Open Schedule",
+        label: noUpcoming ? "Open Event day" : "Open Schedule",
         detail: noUpcoming
           ? "Day-of queues share the same event once alliances post."
           : "The event board stays blank until the schedule is saved.",
@@ -279,12 +265,12 @@ export function myDayNextActions(input: {
     {
       id: "hours",
       label: "Clock in",
-      detail: "Open My Hours to start or stop your shop session.",
+      detail: "Open My hours to start or stop your shop session.",
       href: withOrgHref("/hours-self-view", orgId),
     },
     {
       id: "command",
-      label: "Open Event Day",
+      label: "Open Event day",
       detail: "Pit queues and readiness share this next-match context.",
       href: hubHref("/competition", "command", orgId),
     },

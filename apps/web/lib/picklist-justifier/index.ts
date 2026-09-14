@@ -29,7 +29,7 @@ export function winRate(wins: number, losses: number, ties: number): number | nu
   return Math.round(((wins + ties * 0.5) / total) * 100) / 100;
 }
 
-/** A pick "leans on" scouting when there is no TBA row, or scouts are confident despite a weak official record. */
+/** A pick "leans on" scouting when there is no official row, or scouts are confident despite a weak official record. */
 export function detectContradiction(input: JustificationInput): PicklistContradiction {
   const { tba, scout } = input;
   if (scout.entryCount === 0) return { flagged: false, reason: null };
@@ -45,7 +45,7 @@ export function detectContradiction(input: JustificationInput): PicklistContradi
   if (rate != null && rate < 0.35 && confident && !mostlyLowConfidence) {
     return {
       flagged: true,
-      reason: `Scouts logged this pick with average-or-higher confidence, but TBA's official record shows a ${Math.round(
+      reason: `Scouts logged this pick with average-or-higher confidence, but the official record shows a ${Math.round(
         rate * 100,
       )}% win rate (${tba.wins}-${tba.losses}-${tba.ties}) at this event.`,
     };
@@ -58,12 +58,12 @@ export function buildSources(input: JustificationInput): PicklistSourceRef[] {
   const sources: PicklistSourceRef[] = [];
   if (input.tba) {
     const parts: string[] = [];
-    if (input.tba.epaTotal != null) parts.push(`EPA ${input.tba.epaTotal.toFixed(1)}`);
+    if (input.tba.epaTotal != null) parts.push(`Rating ${input.tba.epaTotal.toFixed(1)}`);
     if (input.tba.rank != null) parts.push(`rank ${input.tba.rank}`);
     parts.push(`${input.tba.wins}-${input.tba.losses}-${input.tba.ties}`);
     sources.push({
       kind: "hard_metric",
-      label: `TBA (${input.tba.source})`,
+      label: "Official record",
       detail: parts.join(" · "),
     });
   }
@@ -84,15 +84,15 @@ export function buildRationaleText(input: JustificationInput, contradiction: Pic
 
   if (input.tba) {
     const rate = winRate(input.tba.wins, input.tba.losses, input.tba.ties);
-    const epa = input.tba.epaTotal != null ? `an EPA of ${input.tba.epaTotal.toFixed(1)}` : "no recorded EPA";
+    const epa = input.tba.epaTotal != null ? `a rating of ${input.tba.epaTotal.toFixed(1)}` : "no recorded rating";
     const rank = input.tba.rank != null ? `, ranked ${input.tba.rank} at the event` : "";
     parts.push(
-      `TBA's official record shows ${epa}${rank} and a ${input.tba.wins}-${input.tba.losses}-${input.tba.ties} match record${
+      `The official record shows ${epa}${rank} and a ${input.tba.wins}-${input.tba.losses}-${input.tba.ties} match record${
         rate != null ? ` (${Math.round(rate * 100)}% win rate)` : ""
       }.`,
     );
   } else {
-    parts.push("No TBA match-record data is available yet for this team at this event.");
+    parts.push("No official match-record data is available yet for this team at this event.");
   }
 
   if (input.scout.entryCount > 0) {

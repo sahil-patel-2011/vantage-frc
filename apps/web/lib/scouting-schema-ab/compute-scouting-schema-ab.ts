@@ -92,7 +92,7 @@ function setupRequired(orgId: string | null): SchemaAbView {
     status: "setup_required",
     message: "Choose your team to compare scouting schema versions.",
     steps: [
-      { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
+      { id: "workspace", label: "Choose your team", detail: "Choose which FRC team you are working as.", href: "/workspace" },
     ],
     orgId,
   };

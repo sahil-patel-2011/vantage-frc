@@ -59,7 +59,7 @@ describe("student-week Event day / Hours / Pick desk slice", () => {
     expect(hubById("team").tabs.find((tab) => tab.id === "hours-self-view")?.featured).toBe(true);
   });
 
-  it("My Hours empty is Clock in; setup is Needs setup without invented totals", () => {
+  it("My hours empty is Clock in; setup is Needs setup without invented totals", () => {
     expect(hoursSelfViewShellCopy("setup").badge).toBe("Needs setup");
     expect(hoursSelfViewShellCopy("empty").title).toBe("Clock in to start your record");
     const empty = hoursSelfViewNextActions({ orgId: "org-1", shell: "empty", entryCount: 0 });
@@ -73,7 +73,7 @@ describe("student-week Event day / Hours / Pick desk slice", () => {
     expect(client).not.toMatch(/Open Attendance/);
   });
 
-  it("My Day ready offers Clock in to My Hours after Scout this match", () => {
+  it("My Day ready offers Clock in to My hours after Scout this match", () => {
     const ready = myDayNextActions({ orgId: "org-1", shell: "ready" });
     expect(ready[0]?.label).toBe("Scout this match");
     expect(ready.find((action) => action.id === "hours")?.href).toBe("/hours-self-view?orgId=org-1");

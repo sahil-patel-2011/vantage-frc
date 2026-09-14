@@ -211,8 +211,8 @@ export default function RolesClient() {
     return (
       <main className="module-page">
         <PageHeader
-          breadcrumbs="Team / Roles"
-          title="Roles & Responsibilities"
+          breadcrumbs="Team / Season roles"
+          title="Season roles"
           description="Map every role — leads and positions — to a person and what they own."
         >
           {related}
@@ -220,7 +220,7 @@ export default function RolesClient() {
         <OfflineBanner feature="Season roles" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
-          title={copy ? copy.title : "Loading…"}
+          title={copy ? copy.title : "Opening Season roles"}
           description={copy ? copy.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >
@@ -243,8 +243,8 @@ export default function RolesClient() {
       return (
         <main className="module-page">
           <PageHeader
-            breadcrumbs="Team / Roles"
-            title="Roles & Responsibilities"
+            breadcrumbs="Team / Season roles"
+            title="Season roles"
             description="Map every role — leads and positions — to a person and what they own."
           >
             {related}
@@ -270,8 +270,8 @@ export default function RolesClient() {
   return (
     <main className="module-page">
       <PageHeader
-        breadcrumbs="Team / Roles"
-        title="Roles & Responsibilities"
+        breadcrumbs="Team / Season roles"
+        title="Season roles"
         description="Map every role — leads and positions — to a person and what they own. Coverage gaps are surfaced so no responsibility falls through the cracks mid-season."
       >
         {related}

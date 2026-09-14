@@ -78,7 +78,7 @@ export default function ShiftBalancerClient() {
         if (!response.ok || !isShiftBalancerView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Scout shift balancer. Showing the last copy on this device.");
+            setError("Could not refresh Shifts. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setErrorStatus(response.status);
@@ -94,7 +94,7 @@ export default function ShiftBalancerClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Scout shift balancer. Showing the last copy on this device.");
+          setError("Could not refresh Shifts. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -141,13 +141,13 @@ export default function ShiftBalancerClient() {
         breadcrumbs={
           <>
             <a href={orgId ? `/competition?orgId=${encodeURIComponent(orgId)}` : "/competition"}>Competition</a>
-            {" / Shift Balancer"}
+            {" / Shifts"}
           </>
         }
-        title="Scout shift load balancer"
+        title="Shifts"
         description="Auto-generate scouting shift rotations across the roster, capping consecutive matches per scout. When an event schedule is cached, assign scouts to real qualification slots, flag lunch-sized gaps, and print a sheet per tablet."
       />
-      <OfflineBanner feature="Scout shift balancer" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Shifts" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -187,9 +187,9 @@ export default function ShiftBalancerClient() {
           );
         })()
       ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your team." aria-busy />
+        <EmptyState title="Opening Shifts" description="Checking your team." aria-busy />
       ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
+        <EmptyState badge="Needs setup" badgeTone="setup" title={view.message}>
           {view.steps[0] ? (
             <Button as="a" variant="primary" href={view.steps[0].href}>
               {view.steps[0].label}
@@ -332,11 +332,11 @@ function GeneratePlanForm({
         </p>
       ) : view.eventKey ? (
         <p className="app-muted" style={{ margin: 0 }}>
-          Active event {view.eventKey} has no qualification matches cached yet. Sync TBA or generate a numeric plan below.
+          Active event {view.eventKey} has no qualification matches cached yet. Sync official matches or generate a numeric plan below.
         </p>
       ) : (
         <p className="app-muted" style={{ margin: 0 }}>
-          Set an active event on Command to generate from the real TBA qualification schedule.
+          Set an active event on Command to generate from the official qualification schedule.
         </p>
       )}
       <FormGrid min={160}>

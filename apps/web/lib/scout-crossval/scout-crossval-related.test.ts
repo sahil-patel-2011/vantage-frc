@@ -14,7 +14,7 @@ import {
 import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("scoutCrossvalRelatedLinks", () => {
-  it("builds Scouting / Coverage Live / Accuracy via hubHref / withOrgHref", () => {
+  it("builds Scouting / Coverage / Accuracy via hubHref / withOrgHref", () => {
     const links = scoutCrossvalRelatedLinks("org-1", {
       include: [...SCOUT_CROSSVAL_RELATED_INCLUDE],
     });

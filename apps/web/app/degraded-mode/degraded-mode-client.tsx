@@ -58,7 +58,7 @@ function DataSourceHealthRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related team tools">
       <Button as="a" variant="secondary" href={withOrgHref("/team/data", orgId)}>
-        Team Data
+        Team data
       </Button>
       <Button as="a" variant="secondary" href={withOrgHref("/rankings", orgId)}>
         Rankings
@@ -74,8 +74,8 @@ function DataSourceHealthNextActions({ orgId }: { orgId: string }) {
   const actions = [
     {
       id: "data",
-      label: "Open Team Data",
-      detail: "The last saved schedule and rankings live on Team Data.",
+      label: "Open Team data",
+      detail: "The last saved schedule and rankings live on Team data.",
       href: withOrgHref("/team/data", orgId),
       primary: true,
     },
@@ -266,7 +266,7 @@ export default function DegradedModeClient() {
         {header}
         <OfflineBanner feature="Data-source health" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
-          title={failure ? failure.title : "Loading…"}
+          title={failure ? failure.title : "Opening Data-source health"}
           description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >
@@ -296,7 +296,7 @@ export default function DegradedModeClient() {
               {error}
             </p>
           ) : null}
-          <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
+          <EmptyState badge="Needs setup" badgeTone="setup" title={view.message}>
             {view.steps[0] ? (
               <Button as="a" variant="primary" href={view.steps[0].href}>
                 {view.steps[0].label}
@@ -374,8 +374,8 @@ function SourcesPanel({ view }: { view: LiveView }) {
       <EmptyState
         badge="No sources tracked"
         badgeTone="setup"
-        title="No reference data sources are tracked yet"
-        description="Once TBA/Statbotics sync runs, source health appears here."
+        title="No event-number sources are tracked yet"
+        description="Once event numbers sync, source health appears here."
       />
     );
   }

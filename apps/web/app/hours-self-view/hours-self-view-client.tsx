@@ -55,7 +55,7 @@ async function persistHoursSelfViewSnapshot(orgHint: string, data: HoursSelfView
     await putFeatureSnapshot("hours-self-view", cacheOrg, data);
     if (!orgHint) await putFeatureSnapshot("hours-self-view", "_", data);
   } catch {
-    // Live My Hours already painted; IndexedDB is best-effort.
+    // Live My hours already painted; IndexedDB is best-effort.
   }
 }
 
@@ -136,10 +136,10 @@ function HoursShell({
         breadcrumbs={
           <>
             <a href={teamHref}>Team</a>
-            {" / My Hours"}
+            {" / My hours"}
           </>
         }
-        title="My Hours"
+        title="My hours"
         description={description}
       >
         <RelatedStrip orgId={orgId} />
@@ -222,7 +222,7 @@ export default function HoursSelfViewClient() {
         if (!response.ok || !isHoursSelfViewView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh My Hours. Showing the last copy on this device.");
+            setError("Could not refresh My hours. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -236,7 +236,7 @@ export default function HoursSelfViewClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh My Hours. Showing the last copy on this device.");
+          setError("Could not refresh My hours. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -321,7 +321,7 @@ export default function HoursSelfViewClient() {
   if (shell === "loading") {
     return (
       <HoursShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="My Hours" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="My hours" fromCache={fromCache} cachedAt={cachedAt} />
       </HoursShell>
     );
   }
@@ -334,7 +334,7 @@ export default function HoursSelfViewClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="My Hours" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="My hours" fromCache={fromCache} cachedAt={cachedAt} />
       </HoursShell>
     );
   }
@@ -345,7 +345,7 @@ export default function HoursSelfViewClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="My Hours" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="My hours" fromCache={fromCache} cachedAt={cachedAt} />
       </HoursShell>
     );
   }
@@ -357,15 +357,15 @@ export default function HoursSelfViewClient() {
           breadcrumbs={
             <>
               <a href={teamHref}>Team</a>
-              {" / My Hours"}
+              {" / My hours"}
             </>
           }
-          title="My Hours"
+          title="My hours"
           description={shellCopy.description}
         >
           <RelatedStrip orgId={orgId} />
         </PageHeader>
-        <OfflineBanner feature="My Hours" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="My hours" fromCache={fromCache} cachedAt={cachedAt} />
         {error ? (
           <p className="telemetry-status" role="alert">
             {error}
@@ -397,16 +397,16 @@ export default function HoursSelfViewClient() {
         breadcrumbs={
           <>
             <a href={teamHref}>Team</a>
-            {" / My Hours"}
+            {" / My hours"}
           </>
         }
-        title="My Hours"
+        title="My hours"
         description="Your own logged shop, meeting, and outreach time — plus who’s in the shop right now from open clock-ins."
       >
         <RelatedStrip orgId={orgId} />
       </PageHeader>
 
-      <OfflineBanner feature="My Hours" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="My hours" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

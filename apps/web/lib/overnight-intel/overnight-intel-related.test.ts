@@ -18,7 +18,7 @@ describe("overnightIntelRelatedLinks", () => {
       include: [...OVERNIGHT_INTEL_RELATED_INCLUDE],
     });
     expect(links.map((l) => l.id)).toEqual(["command", "strategy", "scouting"]);
-    expect(links.find((l) => l.id === "command")?.label).toBe("Event Day");
+    expect(links.find((l) => l.id === "command")?.label).toBe("Event day");
     expect(links.find((l) => l.id === "command")?.href).toBe(
       "/competition?tab=command&orgId=org-1",
     );

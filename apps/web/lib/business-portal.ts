@@ -271,7 +271,7 @@ export function generateEvidenceDraft(input: {
   const facts: string[] = [];
   if (input.impact.activities > 0) {
     facts.push(`During the ${input.seasonYear} season, our students recorded ${input.impact.activities} community activities, ${input.impact.hours} service hours, and ${input.impact.peopleReached.toLocaleString()} people reached.`);
-    evidence.push({ label: "Community impact", value: `${input.impact.activities} activities · ${input.impact.hours} hours · ${input.impact.peopleReached.toLocaleString()} people`, source: "Community Impact log" });
+    evidence.push({ label: "Impact", value: `${input.impact.activities} activities · ${input.impact.hours} hours · ${input.impact.peopleReached.toLocaleString()} people`, source: "Impact log" });
   }
   const recentAwards = input.awards.slice(0, 3);
   if (recentAwards.length) {

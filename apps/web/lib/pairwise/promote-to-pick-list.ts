@@ -150,7 +150,7 @@ export async function promotePairwiseOrder(
       );
     } catch (error) {
       const message = error instanceof Error ? error.message : "";
-      if (!/team reference/i.test(message)) throw error;
+      if (!/team reference|official team list/i.test(message)) throw error;
       entryId = null;
     }
     if (entryId === null) {

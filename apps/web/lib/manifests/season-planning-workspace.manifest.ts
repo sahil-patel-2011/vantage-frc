@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "season-planning-workspace",
-  title: "Season Planning Workspace",
+  title: "Season plan",
   route: "/season-planning-workspace",
   apiRoute: "/api/season-planning-workspace",
   hub: "Team",

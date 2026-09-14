@@ -74,7 +74,7 @@ describe("pickClockReasonsFromJustification", () => {
     const reasons = pickClockReasonsFromJustification(stored());
     expect(reasons[0]?.tone).toBe("strong");
     expect(reasons[0]?.label).toMatch(/Team 254 is ranked #1/);
-    expect(reasons.some((r) => /TBA \(tba\): EPA 45\.2/.test(r.label) && r.tone === "neutral")).toBe(true);
+    expect(reasons.some((r) => /Official record: Rating 45\.2/.test(r.label) && r.tone === "neutral")).toBe(true);
     expect(reasons.some((r) => /Team scouting/.test(r.label) && r.tone === "strong")).toBe(true);
     expect(reasons).toHaveLength(3);
   });
@@ -131,7 +131,7 @@ describe("applyStoredJustificationToRecommendation", () => {
     };
     const applied = applyStoredJustificationToRecommendation(rec, stored());
     expect(applied.reasons[0]?.label).toMatch(/Team 254 is ranked #1/);
-    expect(applied.reasons.some((r) => r.label === "EPA 45.2")).toBe(true);
+    expect(applied.reasons.some((r) => r.label === "Rating 45.2")).toBe(true);
     expect(applied.reasons.length).toBeLessThanOrEqual(4);
 
     const other = applyStoredJustificationToRecommendation(

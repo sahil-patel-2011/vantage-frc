@@ -1,5 +1,5 @@
 // Pure, unit-testable Match Simulator math. No I/O, no framework imports — every function here
-// takes already-fetched rows (real EPA data or none) and returns a deterministic result. Nothing
+// takes already-fetched rows (real season ratings or none) and returns a deterministic result. Nothing
 // is randomized and nothing is fabricated: a team with no synced EPA contributes 0 and is flagged
 // via `hasData` / `dataCompleteness` rather than being guessed at.
 
@@ -103,8 +103,8 @@ export function computeLever(red: AllianceCapability, blue: AllianceCapability):
     phaseGap: round1(best.gap),
     marginSwing: round1(best.gap),
     rationale: weakest
-      ? `${trailing.color === "red" ? "Red" : "Blue"} trails by ${round1(best.gap)} pts in ${phaseLabel(best.phase)}; team ${weakest.teamNumber ?? weakest.teamKey} contributes the least there on real EPA data.`
-      : `${trailing.color === "red" ? "Red" : "Blue"} trails by ${round1(best.gap)} pts in ${phaseLabel(best.phase)}, but no team on that alliance has synced ${phaseLabel(best.phase)} EPA to attribute it to.`,
+      ? `${trailing.color === "red" ? "Red" : "Blue"} trails by ${round1(best.gap)} pts in ${phaseLabel(best.phase)}; team ${weakest.teamNumber ?? weakest.teamKey} contributes the least there on real season ratings.`
+      : `${trailing.color === "red" ? "Red" : "Blue"} trails by ${round1(best.gap)} pts in ${phaseLabel(best.phase)}, but no team on that alliance has synced ${phaseLabel(best.phase)} season ratings to attribute it to.`,
   };
 }
 

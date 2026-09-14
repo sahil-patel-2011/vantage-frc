@@ -8,6 +8,7 @@ import { EmptyState, Panel, Button } from "../../../components/ui";
 import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
 import { withOrgHref } from "../../../lib/nav/product-nav";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
+import { degradedModeReasonLabel, degradedModeSourceLabel } from "../../../lib/degraded-mode";
 import type { DataSourceHealthView } from "../../../lib/reference-health";
 import {
   TEAM_DATA_RELATED_INCLUDE,
@@ -48,7 +49,7 @@ async function persistTeamDataSnapshot(orgId: string, data: TeamDataSnapshot): P
   try {
     await putFeatureSnapshot("team-data", orgId, data);
   } catch {
-    // Live Team Data already painted; IndexedDB is best-effort.
+    // Live Team data already painted; IndexedDB is best-effort.
   }
 }
 
@@ -101,7 +102,7 @@ function TeamDataShell({
       <header className="app-page-header">
         <div>
           <span className="breadcrumbs">Team / Live data</span>
-          <h1>Team Data</h1>
+          <h1>Team data</h1>
           <p>{description}</p>
         </div>
         <TeamDataRelated orgId={orgId} include={[...TEAM_DATA_RELATED_INCLUDE]} />
@@ -115,7 +116,7 @@ function TeamDataShell({
             : shell === "error"
               ? "Unavailable"
               : shell === "empty"
-                ? "No TBA cache yet"
+                ? "No official match cache yet"
                 : undefined
         }
         badgeTone={shell === "setup" || shell === "empty" ? "setup" : ""}
@@ -218,7 +219,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
         if (hadCache || paintedOrgRef.current === orgId) {
           setFromCache(true);
           setFetchFailed(false);
-          setMessage("Could not refresh Team Data. Showing the last copy on this device.");
+          setMessage("Could not refresh Team data. Showing the last copy on this device.");
         } else {
           setOk(false);
           setFetchFailed(true);
@@ -252,7 +253,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
       if (hadCache || paintedOrgRef.current === orgId) {
         setFromCache(true);
         setFetchFailed(false);
-        setMessage("Could not refresh Team Data. Showing the last copy on this device.");
+        setMessage("Could not refresh Team data. Showing the last copy on this device.");
       } else {
         setOk(false);
         setFetchFailed(true);
@@ -307,7 +308,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
     setOk(response.ok);
     setMessage(
       response.ok
-        ? "Encrypted TBA fallback key saved. Test it before relying on it."
+        ? "Encrypted official-match fallback key saved. Test it before relying on it."
         : (data.error ?? "Save failed"),
     );
     if (response.ok) {
@@ -365,12 +366,12 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
   if (shell === "loading") {
     return (
       <TeamDataShell
-        title="Loading…"
-        description="Checking your event and The Blue Alliance connection."
+        title="Opening Team data"
+        description="Checking your event and official match connection."
         orgId={orgId}
         shell="loading"
       >
-        <OfflineBanner feature="Team Data" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Team data" fromCache={fromCache} cachedAt={cachedAt} />
       </TeamDataShell>
     );
   }
@@ -378,7 +379,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
   if (shell === "error") {
     return (
       <TeamDataShell
-        title={forbidden ? "Admin access required" : "Team Data unavailable"}
+        title={forbidden ? "Admin access required" : "Team data unavailable"}
         description="Inventory and event data appear after your first sync."
         orgId={orgId}
         shell="error"
@@ -387,7 +388,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
           void load();
         }}
       >
-        <OfflineBanner feature="Team Data" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Team data" fromCache={fromCache} cachedAt={cachedAt} />
       </TeamDataShell>
     );
   }
@@ -404,24 +405,24 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
     const needsTba = !tbaConfigured;
     return (
       <TeamDataShell
-        title={needsTba ? "Connect TBA" : needsEvent ? "Set active event" : "Finish Team Data setup"}
+        title={needsTba ? "Connect TBA" : needsEvent ? "Set active event" : "Finish Team data setup"}
         description={
           needsTba
-            ? `Save a Blue Alliance Read API key below, or ask whoever set up this site to add one in deployment settings. Create a key at thebluealliance.com → Account → Read API Keys.${needsEvent ? " You will also need to pick an active event before anything syncs." : ""}`
+            ? `Save a TBA Read API key below, or ask whoever set up this site to add one in deployment settings. Create a key at thebluealliance.com → Account → Read API Keys.${needsEvent ? " You will also need to pick an active event before anything syncs." : ""}`
             : needsEvent
-              ? "Team Data syncs only for a real team event — Schedule, Event Day, and Strategy stay empty until then."
-              : "Finish team setup so TBA sync can load this team."
+              ? "Team data syncs only for a real team event — Schedule, Event day, and Strategy stay empty until then."
+              : "Finish team setup so official matches can load this team."
         }
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Team Data" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Team data" fromCache={fromCache} cachedAt={cachedAt} />
         {needsTba ? (
           <section className="app-card soft-panel team-data-panel">
-            <h2>Blue Alliance team key</h2>
+            <h2>Connect TBA team key</h2>
             <p className="app-muted">
               Encrypted on save and never shown again. Create one at thebluealliance.com → Account → Read API
-              Keys. A site-wide Blue Alliance key in deployment settings covers every team and makes this unnecessary.
+              Keys. A site-wide TBA key in deployment settings covers every team and makes this unnecessary.
             </p>
             <form className="team-data-key-form" onSubmit={saveFallbackKey}>
               <label>
@@ -455,10 +456,10 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
       <header className="app-page-header">
         <div>
           <span className="breadcrumbs">Team / Live data</span>
-          <h1>Team Data</h1>
+          <h1>Team data</h1>
           <p>
-            Inventory counts for your team, shared TBA cache health, and controlled sync for the active event.
-            Schedule, Event Day, and Strategy use this shared copy of The Blue Alliance.
+            Inventory counts for your team, shared official match cache health, and controlled sync for the active event.
+            Schedule, Event day, and Strategy use this shared copy of official matches.
           </p>
         </div>
         <div className="team-data-header-actions">
@@ -472,7 +473,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
         </div>
       </header>
 
-      <OfflineBanner feature="Team Data" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Team data" fromCache={fromCache} cachedAt={cachedAt} />
 
       {message ? (
         <p className={`telemetry-status${ok ? " success" : ""}`} role="status">
@@ -486,10 +487,10 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
         <>
           <EmptyState
             soft
-            badge="No TBA cache yet"
+            badge="No official match cache yet"
             badgeTone="setup"
             title="Sync the active event"
-            description={`Event ${activeEventKey} is selected, but there are no match or ranking rows yet. Sync pulls real The Blue Alliance data.`}
+            description={`Event ${activeEventKey} is selected, but there are no match or ranking rows yet. Sync pulls official match data.`}
           >
             <Button variant="primary" type="button" disabled={busy} onClick={() => void syncActiveEvent()}>
               {busy ? "Working…" : "Sync active event"}
@@ -518,7 +519,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
           )}
           <h3>Shared reference cache</h3>
           {reference.length === 0 ? (
-            <p className="app-muted">Reference cache empty until TBA sync succeeds for this event.</p>
+            <p className="app-muted">Reference cache empty until official match sync succeeds for this event.</p>
           ) : (
             <ul className="team-data-inventory reference">
               {reference.map((row) => (
@@ -535,7 +536,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
           <section className="app-card soft-panel team-data-panel">
             <h2>Sync active event</h2>
             <p className="app-muted">
-              Refreshes match and team data for the event selected on Event Day. Uses the platform key with
+              Refreshes match and team data for the event selected on Event day. Uses the platform key with
               your fallback credential when configured.
             </p>
             <Button variant="primary" type="button" disabled={busy || !hasActiveEvent} onClick={() => void syncActiveEvent()}>
@@ -544,7 +545,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
           </section>
 
           <section className="app-card soft-panel team-data-panel">
-            <h2>TBA fallback key</h2>
+            <h2>Connect TBA fallback key</h2>
             <p className="app-muted">
               Optional encrypted fallback when platform ingest is under pressure. Saved via the same connector path as
               team settings.
@@ -585,12 +586,12 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
           </section>
 
           <section className="app-card soft-panel team-data-panel">
-            <h2>Ingestion health</h2>
+            <h2>Official match status</h2>
             {dataSourceHealth ? (
               <ul className="team-data-inventory">
                 <li>
-                  <span>Mode</span>
-                  <strong>{dataSourceHealth.mode}</strong>
+                  <span>Status</span>
+                  <strong>{degradedModeReasonLabel(dataSourceHealth.mode)}</strong>
                 </li>
                 <li>
                   <span>Last saved copy</span>
@@ -605,18 +606,17 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
                 {dataSourceHealth.sources.map((source) => (
                   <li key={source.source}>
                     <span>
-                      {source.source.toUpperCase()}
+                      {degradedModeSourceLabel(source.source)}
                       {source.etagResources ? ` · ${source.etagResources} saved copies` : ""}
-                      {source.erroredResources ? ` · ${source.erroredResources} cursor errors` : ""}
+                      {source.erroredResources ? ` · ${source.erroredResources} failed copies` : ""}
                     </span>
-                    <strong>{source.status}</strong>
+                    <strong>{degradedModeReasonLabel(source.status)}</strong>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="app-muted">No health telemetry yet — sync once to populate real TBA status.</p>
+              <p className="app-muted">No official match status yet — sync once after Connect TBA to populate real official match status.</p>
             )}
-            <pre className="team-data-health">{health ? JSON.stringify(health, null, 2) : "No health telemetry yet."}</pre>
           </section>
         </aside>
       </div>

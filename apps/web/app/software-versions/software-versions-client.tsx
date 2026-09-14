@@ -290,7 +290,7 @@ export default function SoftwareVersionsClient({ orgId }: { orgId: string | null
         </PageHeader>
         <OfflineBanner feature="Software versions" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
-          title={failure ? failure.title : "Loading software versions…"}
+          title={failure ? failure.title : "Opening Software versions"}
           description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >

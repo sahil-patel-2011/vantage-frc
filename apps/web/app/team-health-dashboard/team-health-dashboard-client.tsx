@@ -55,7 +55,7 @@ async function persistTeamHealthSnapshot(
     await putFeatureSnapshot("team-health-dashboard", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("team-health-dashboard", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Team Health already painted; IndexedDB is best-effort.
+    // Live Team health already painted; IndexedDB is best-effort.
   }
 }
 
@@ -134,10 +134,10 @@ function TeamHealthShell({
         breadcrumbs={
           <>
             <a href={teamHref}>Team</a>
-            {" / Team Health"}
+            {" / Team health"}
           </>
         }
-        title="Team Health"
+        title="Team health"
         description={description}
       >
         <RelatedStrip orgId={orgId} />
@@ -152,7 +152,7 @@ function TeamHealthShell({
       ) : (
         <EmptyState
           soft
-          badge={shell === "setup" ? "Setup required" : copy.badge}
+          badge={shell === "setup" ? "Needs setup" : copy.badge}
           badgeTone="setup"
           title={copy.title}
           description={error ?? copy.description}
@@ -224,7 +224,7 @@ export default function TeamHealthDashboardClient() {
         if (!response.ok || !isTeamHealthDashboardView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Team Health. Showing the last copy on this device.");
+            setError("Could not refresh Team health. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -239,7 +239,7 @@ export default function TeamHealthDashboardClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Team Health. Showing the last copy on this device.");
+          setError("Could not refresh Team health. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -277,7 +277,7 @@ export default function TeamHealthDashboardClient() {
   if (shell === "loading") {
     return (
       <TeamHealthShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Team Health" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Team health" fromCache={fromCache} cachedAt={cachedAt} />
       </TeamHealthShell>
     );
   }
@@ -290,7 +290,7 @@ export default function TeamHealthDashboardClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Team Health" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Team health" fromCache={fromCache} cachedAt={cachedAt} />
       </TeamHealthShell>
     );
   }
@@ -301,14 +301,14 @@ export default function TeamHealthDashboardClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Team Health" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Team health" fromCache={fromCache} cachedAt={cachedAt} />
       </TeamHealthShell>
     );
   }
   if (shell === "empty") {
     return (
       <TeamHealthShell description={shellCopy.description} orgId={orgId} shell="empty">
-        <OfflineBanner feature="Team Health" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Team health" fromCache={fromCache} cachedAt={cachedAt} />
         {view.seasons.length > 1 ? (
           <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
             Season
@@ -344,10 +344,10 @@ export default function TeamHealthDashboardClient() {
         breadcrumbs={
           <>
             <a href={teamHref}>Team</a>
-            {" / Team Health"}
+            {" / Team health"}
           </>
         }
-        title="Team Health"
+        title="Team health"
         description="Engagement from attendance roll call and shop-hour clock-ins only."
       >
         <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
@@ -374,7 +374,7 @@ export default function TeamHealthDashboardClient() {
         </div>
       </PageHeader>
 
-      <OfflineBanner feature="Team Health" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Team health" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

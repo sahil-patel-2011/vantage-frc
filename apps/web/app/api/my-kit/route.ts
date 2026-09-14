@@ -21,7 +21,7 @@ async function requireSession() {
   return session;
 }
 
-/** Read-only. My Kit composes other surfaces' data; it owns nothing, so there is no writer. */
+/** Read-only. My kit composes other surfaces' data; it owns nothing, so there is no writer. */
 export async function GET(request: Request) {
   try {
     const session = await requireSession();
@@ -35,7 +35,7 @@ export async function GET(request: Request) {
   } catch (error) {
     const status = error instanceof HttpError ? error.status : 400;
     return Response.json(
-      { error: error instanceof Error ? error.message : "My Kit request failed" },
+      { error: error instanceof Error ? error.message : "My kit request failed" },
       { status },
     );
   }

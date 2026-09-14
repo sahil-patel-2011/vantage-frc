@@ -12,7 +12,7 @@ import {
 import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("grantReportRelatedLinks", () => {
-  it("builds Grants / Grants workbench / Community Impact cross-links", () => {
+  it("builds Grants / Grants workbench / Impact cross-links", () => {
     const links = grantReportRelatedLinks("org-1", {
       include: [...GRANT_REPORT_RELATED_INCLUDE],
     });

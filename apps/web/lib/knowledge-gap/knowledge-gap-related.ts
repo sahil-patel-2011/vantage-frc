@@ -1,11 +1,11 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Knowledge-gap detective (never DEMO wiki gaps). */
+/** Soft-UI related surfaces for Knowledge gaps (never DEMO wiki gaps). */
 export const KNOWLEDGE_GAP_RELATED_LINKS = [
   { id: "knowledge", label: "Knowledge", tab: "knowledge" },
   { id: "todos", label: "Work", tab: "todos" },
-  { id: "meeting-autopilot", label: "Meeting Autopilot", tab: "meeting-autopilot" },
+  { id: "meeting-autopilot", label: "Meeting agenda", tab: "meeting-autopilot" },
 ] as const;
 
 export type KnowledgeGapRelatedId = (typeof KNOWLEDGE_GAP_RELATED_LINKS)[number]["id"];
@@ -79,7 +79,7 @@ export function knowledgeGapSetupSteps(orgId?: string | null): KnowledgeGapSetup
     {
       id: "todos",
       label: "Open Work",
-      detail: "To-dos, build tasks, and milestones are the only subjects the detective can scan.",
+      detail: "To-dos, build tasks, and milestones are the only subjects Knowledge gaps can scan.",
       href: hubHref("/team", "todos", orgId),
     },
   ];
@@ -116,14 +116,14 @@ export function knowledgeGapShellCopy(kind: KnowledgeGapShellKind): KnowledgeGap
     case "loading":
       return {
         kind,
-        title: "Loading Knowledge-gap detective…",
+        title: "Opening Knowledge gaps",
         description: "Checking which team you are on and wiki coverage.",
       };
     case "error":
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Knowledge-gap detective",
+        title: "Could not load Knowledge gaps",
         description:
           "A network or server issue blocked the scan. Retry, or open the wiki while it reloads.",
       };
@@ -184,14 +184,14 @@ export function knowledgeGapNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Finish membership setup so Knowledge-gap can load.",
+        detail: "Finish membership setup so Knowledge gaps can load.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
       },
       {
         id: "knowledge",
         label: "Open Knowledge",
-        detail: "Write wiki pages the detective will treat as coverage.",
+        detail: "Write wiki pages Knowledge gaps will treat as coverage.",
         href: hubHref("/team", "knowledge", orgId),
       },
     ];
@@ -201,7 +201,7 @@ export function knowledgeGapNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Knowledge-gap",
+        label: "Retry Knowledge gaps",
         detail: "Reload real wiki diffs.",
         href: withOrgHref("/knowledge-gap", orgId),
         primary: true,
@@ -258,7 +258,7 @@ export function knowledgeGapNextActions(input: {
     },
     {
       id: "meeting",
-      label: "Open Meeting Autopilot",
+      label: "Open Meeting agenda",
       detail: "Turn undocumented work into agenda items.",
       href: hubHref("/team", "meeting-autopilot", orgId),
     },

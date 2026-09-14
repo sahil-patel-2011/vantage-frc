@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "grant-eligibility-matcher",
-  title: "Grant Eligibility Matcher",
+  title: "Eligibility",
   route: "/grant-eligibility-matcher",
   apiRoute: "/api/grant-eligibility-matcher",
   hub: "Business",

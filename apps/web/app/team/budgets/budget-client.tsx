@@ -415,9 +415,9 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
               Enable prompt caching for this organization
             </label>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
-              <button
+              <Button
+                variant="primary"
                 type="button"
-                className="primary-action"
                 onClick={() =>
                   void save({
                     scope: "org",
@@ -427,7 +427,7 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
                 }
               >
                 Save caching preference
-              </button>
+              </Button>
               <Button as="a" variant="secondary" href={chatHref}>
                 Open Chat
               </Button>
@@ -500,7 +500,7 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
                 />
                 Pause Chat for everyone
               </label>
-              <button className="primary-action">Save limits</button>
+              <Button variant="primary" type="submit">Save limits</Button>
             </form>
 
             <form
@@ -585,7 +585,7 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
                   </label>
                 ))}
               </div>
-              <button className="primary-action">Save layered limit</button>
+              <Button variant="primary" type="submit">Save layered limit</Button>
             </form>
           </section>
         </>
@@ -635,14 +635,14 @@ function UsageCutoffQuickActions({
 
   return (
     <>
-      <button
+      <Button
+        variant="primary"
         type="button"
-        className="primary-action"
         disabled={busy != null}
         onClick={() => void checkout("credits", { packCode: "credits_100" })}
       >
         {busy === "credits" ? "Opening…" : "Buy AI credits"}
-      </button>
+      </Button>
       <Button variant="secondary" type="button" disabled={busy != null || paygEnabled} onClick={() => void checkout("payg")}>
         {paygEnabled ? "Pay-as-you-go is on" : busy === "payg" ? "Opening…" : "Turn on pay-as-you-go"}
       </Button>

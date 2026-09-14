@@ -504,7 +504,7 @@ export const TRACK: Stage[] = [
         install: [
           "Build it first. In WPILib VS Code: Ctrl+Shift+P → 'WPILib: Build Robot Code'. Compiling is the lowest bar, not proof.",
           "Simulate before you deploy: 'WPILib: Simulate Robot Code'. Catches the mistakes that would otherwise be found by the robot.",
-          "Check every number it invented. Made-up CAN IDs, port numbers, gear ratios and PID gains are the most common AI error in robot code, and they all compile fine.",
+          "Check every number it invented. Made-up CAN IDs, port numbers, gear ratios and gain numbers are the most common AI error in robot code, and they all compile fine.",
           "Deploy with the robot on blocks, wheels off the ground, and someone on the disable button.",
           "Read the diff before you commit: `git diff`. If it changed a file you did not expect, find out why.",
         ],

@@ -2,12 +2,12 @@ import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 import { setupActionsFrom } from "../setup-actions";
 
-/** Soft-UI related surfaces for Match-Delta Watcher (never DEMO upset %). */
+/** Soft-UI related surfaces for Match delta (never DEMO upset %). */
 export const MATCH_DELTA_WATCHER_RELATED_LINKS = [
   { id: "strategy", label: "Strategy", tab: "strategy" },
-  { id: "picklist-collab", label: "Pick List", tab: "picklist-collab" },
-  { id: "match-strategy-cards", label: "Strategy Cards", tab: "match-strategy-cards" },
-  { id: "command", label: "Command", tab: "command" },
+  { id: "picklist-collab", label: "Pick list", tab: "picklist-collab" },
+  { id: "match-strategy-cards", label: "Match cards", tab: "match-strategy-cards" },
+  { id: "command", label: "Event day", tab: "command" },
 ] as const;
 
 export type MatchDeltaWatcherRelatedId = (typeof MATCH_DELTA_WATCHER_RELATED_LINKS)[number]["id"];
@@ -25,7 +25,7 @@ export const MATCH_DELTA_WATCHER_RELATED_INCLUDE: MatchDeltaWatcherRelatedId[] =
 ];
 
 /**
- * Soft-UI cross-links from Match-Delta Watcher → Strategy / Pick List / Command.
+ * Soft-UI cross-links from Match delta → Strategy / Pick list / Event day.
  * Build with hubHref — never broken JSX href templates.
  */
 export function matchDeltaWatcherRelatedLinks(
@@ -98,8 +98,8 @@ export function matchDeltaWatcherSetupSteps(orgId?: string | null): MatchDeltaWa
   return dropRelatedStripDuplicates(orgId, [
     {
       id: "team-data",
-      label: "Sync Team Data",
-      detail: "Pull official results from The Blue Alliance so deltas can appear.",
+      label: "Sync Team data",
+      detail: "Pull official results so deltas can appear.",
       href: withOrgHref("/team/data", orgId),
     },
   ]);
@@ -131,7 +131,7 @@ export function shouldShowMatchDeltaWatcherSummaryTiles(watchedCount: number): b
   return watchedCount > 0;
 }
 
-/** Classify Match-Delta Watcher Soft-UI shell — never invents DEMO upset alerts. */
+/** Classify Match delta Soft-UI shell — never invents DEMO upset alerts. */
 export function classifyMatchDeltaWatcherShell(input: {
   loading?: boolean;
   fetchFailed?: boolean;
@@ -152,21 +152,21 @@ export function matchDeltaWatcherShellCopy(kind: MatchDeltaWatcherShellKind): Ma
     case "loading":
       return {
         kind,
-        title: "Loading Match-Delta Watcher…",
+        title: "Opening Match delta",
         description: "Checking which team you are on and scored predictions.",
       };
     case "error":
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Match-Delta Watcher",
+        title: "Could not load Match delta",
         description:
           "A network or server issue blocked the watcher. Retry, or open Strategy while it reloads.",
       };
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Choose your team before comparing official results to predictions.",
@@ -189,8 +189,8 @@ export function matchDeltaWatcherShellCopy(kind: MatchDeltaWatcherShellKind): Ma
 }
 
 /**
- * Soft-UI next actions for Match-Delta Watcher empty/setup shells.
- * Points at Strategy / Pick List / Command — never invents DEMO upset alerts.
+ * Soft-UI next actions for Match delta empty/setup shells.
+ * Points at Strategy / Pick list / Event day — never invents DEMO upset alerts.
  */
 export function matchDeltaWatcherNextActions(input: {
   orgId?: string | null;
@@ -210,7 +210,7 @@ export function matchDeltaWatcherNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Match-Delta Watcher",
+        label: "Retry Match delta",
         detail: "Reload real scored matches.",
         href: withOrgHref("/match-delta-watcher", orgId),
         primary: true,
@@ -223,8 +223,8 @@ export function matchDeltaWatcherNextActions(input: {
       },
       {
         id: "command",
-        label: "Open Command",
-        detail: "Event Day stays available while the watcher reloads.",
+        label: "Open Event day",
+        detail: "Event day stays available while the watcher reloads.",
         href: hubHref("/competition", "command", orgId),
       },
     ];
@@ -241,13 +241,13 @@ export function matchDeltaWatcherNextActions(input: {
       },
       {
         id: "command",
-        label: "Open Command",
-        detail: "Confirm the active event so TBA results can land.",
+        label: "Open Event day",
+        detail: "Confirm the active event so official results can land.",
         href: hubHref("/competition", "command", orgId),
       },
       {
         id: "picklist-collab",
-        label: "Open Pick List",
+        label: "Open Pick list",
         detail: "Rank alliance targets so pick-list upsets can surface.",
         href: hubHref("/competition", "picklist-collab", orgId),
       },
@@ -273,13 +273,13 @@ export function matchDeltaWatcherNextActions(input: {
     },
     {
       id: "picklist-collab",
-      label: "Open Pick List",
+      label: "Open Pick list",
       detail: "Cross-check alliance priorities against upset alerts.",
       href: hubHref("/competition", "picklist-collab", orgId),
     },
     {
       id: "command",
-      label: "Open Command",
+      label: "Open Event day",
       detail: "Carry deltas into event-day ops.",
       href: hubHref("/competition", "command", orgId),
     },

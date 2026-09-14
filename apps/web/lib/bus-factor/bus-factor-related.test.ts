@@ -12,7 +12,7 @@ import {
 import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("busFactorRelatedLinks", () => {
-  it("builds Attendance / My Hours / Task board cross-links", () => {
+  it("builds Attendance / My hours / Task board cross-links", () => {
     const links = busFactorRelatedLinks("org-1", {
       include: [...BUS_FACTOR_RELATED_INCLUDE],
     });

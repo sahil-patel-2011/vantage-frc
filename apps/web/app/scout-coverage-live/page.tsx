@@ -10,7 +10,7 @@ import ScoutCoverageLiveClient from "./scout-coverage-live-client";
 import "./scout-coverage-live.css";
 
 export const metadata = {
-  title: "Scout Coverage Live",
+  title: "Coverage",
 };
 
 export default async function ScoutCoverageLivePage({
@@ -28,8 +28,8 @@ export default async function ScoutCoverageLivePage({
     return (
       <main className="module-page scout-coverage-live-page soft-gate">
         <PageHeader
-          breadcrumbs="Competition / Scout Coverage Live"
-          title="Scout Coverage Live"
+          breadcrumbs="Competition / Coverage"
+          title="Coverage"
           description={copy.description}
         >
           <nav

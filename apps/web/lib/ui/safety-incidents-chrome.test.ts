@@ -31,7 +31,7 @@ describe("safety / incidents student chrome", () => {
     expect(safety).toMatch(/badge="Needs setup"/);
     expect(safety).toMatch(/title="Choose your team"/);
     expect(safety).toMatch(/href="\/workspace"/);
-    expect(safety).toMatch(/Safety Incident Log/);
+    expect(safety).toMatch(/Safety incidents/);
     expect(safety).toMatch(/Safety training/);
     expectPlainCopy("Incidents, near-misses, and who is cleared on which tools.");
 
@@ -44,7 +44,7 @@ describe("safety / incidents student chrome", () => {
     const training = readFileSync(join(WEB, "app/safety-training/safety-training-client.tsx"), "utf8");
     expect(training).toMatch(/badge="Needs setup"/);
     expect(training).toMatch(/title="Choose your team"/);
-    expect(training).toMatch(/Safety Incident Log/);
+    expect(training).toMatch(/Safety incidents/);
     expect(training).toMatch(/view\.steps\[0\]/);
 
     const heatmap = readFileSync(join(WEB, "app/incident-heatmap/incident-heatmap-client.tsx"), "utf8");

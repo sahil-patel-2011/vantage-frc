@@ -9,7 +9,7 @@ export const DRAFT_RELATED_LINKS = [
   { id: "scouting", label: "Scouting", kind: "hub" as const, tab: "scouting" },
   { id: "pick-clock", label: "Pick clock", kind: "path" as const, path: "/pick-clock" },
   { id: "coverage", label: "Coverage", kind: "path" as const, path: "/scouting/lineup" },
-  { id: "team-data", label: "Team Data", kind: "path" as const, path: "/team/data" },
+  { id: "team-data", label: "Team data", kind: "path" as const, path: "/team/data" },
 ] as const;
 
 export type DraftRelatedId = (typeof DRAFT_RELATED_LINKS)[number]["id"];
@@ -158,7 +158,7 @@ export function draftShellCopy(kind: DraftShellKind): DraftEmptyCopy {
     case "loading":
       return {
         kind,
-        title: "Loading draft board…",
+        title: "Opening Alliance board",
         description:
           "Checking which team you are on and event alliance board.",
       };
@@ -250,7 +250,7 @@ export function draftNextActions(input: {
     return [
       {
         id: "team-data",
-        label: "Sync Team Data",
+        label: "Sync Team data",
         detail:
           "Load the event’s team list. Alliance slots stay blank until then.",
         href: withOrgHref("/team/data", orgId),

@@ -165,7 +165,7 @@ export async function GET(request: Request) {
       if (!membership) {
         return {
           status: "setup_required",
-          message: "Join a team to see Call Your Shot activity.",
+          message: "Join a team to see Learning activity.",
         };
       }
       const mentor = canReadOrgCalls(membership.role);

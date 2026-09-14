@@ -41,8 +41,8 @@ function dateOrNull(value: unknown): string | null {
 
 const SETUP_FALLBACK: SeasonPlanningWorkspaceView = {
   status: "setup_required",
-  message: "Could not load Season Planning Workspace. Choose your team and confirm database access.",
-  steps: [{ id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" }],
+  message: "Could not load Season plan. Choose your team and confirm database access.",
+  steps: [{ id: "workspace", label: "Choose your team", detail: "Choose which FRC team you are working as.", href: "/workspace" }],
   orgId: null,
   seasonYear: currentSeasonYear(),
 };

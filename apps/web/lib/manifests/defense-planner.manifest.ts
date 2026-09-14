@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "defense-planner",
-  title: "Defense Planner",
+  title: "Defense",
   route: "/defense-planner",
   apiRoute: "/api/defense-planner",
   hub: "Competition",

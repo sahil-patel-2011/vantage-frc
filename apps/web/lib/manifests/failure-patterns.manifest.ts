@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "failure-patterns",
-  title: "Repeat Failure Patterns",
+  title: "Failure patterns",
   route: "/failure-patterns",
   apiRoute: "/api/failure-patterns",
   hub: "Build",

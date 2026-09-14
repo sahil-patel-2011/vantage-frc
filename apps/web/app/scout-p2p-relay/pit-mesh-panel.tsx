@@ -157,7 +157,7 @@ export function PitMeshPanel({
 
   return (
     <div className="app-card soft-panel" style={{ display: "grid", gap: 8 }}>
-      <h3 style={{ margin: 0 }}>Pit mesh</h3>
+      <h3 style={{ margin: 0 }}>Pit link</h3>
       <p className="app-muted" style={{ margin: 0 }}>
         Tabs in the same browser share automatically. For another tablet, paste the copied text or use QR scout
         handoff. Only entries saved on this device are shared.

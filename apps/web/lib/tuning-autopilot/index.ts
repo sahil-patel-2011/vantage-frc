@@ -19,11 +19,15 @@ export const TUNING_SESSION_STATUSES: TuningSessionStatus[] = ["active", "conver
 export function tuningControllerTypeLabel(type: TuningControllerType): string {
   switch (type) {
     case "pid":
-      return "PID";
+      return "Gains";
     case "pidf":
-      return "PID + Feedforward";
-    default:
-      return "Feedforward";
+      return "Gains + extra";
+    case "feedforward":
+      return "Extra";
+    default: {
+      const _never: never = type;
+      return _never;
+    }
   }
 }
 

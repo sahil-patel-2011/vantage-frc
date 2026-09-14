@@ -1,5 +1,6 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
+import { ACCOUNT_EMAIL_COPY, ACCOUNT_GOOGLE_COPY, ACCOUNT_TBA_COPY } from "./account-api-related";
 
 /** Soft-UI related surfaces from Account (never DEMO plan/usage figures). */
 export const ACCOUNT_RELATED_LINKS = [
@@ -142,7 +143,7 @@ export function accountNextActions(input: {
     actions.push({
       id: "email-setup",
       label: "Email delivery not configured",
-      detail: "Opt-in emails need Resend on this deployment. In-app prefs still save; transactional mail stays setup-required.",
+      detail: ACCOUNT_EMAIL_COPY.setupRequired,
       href: "/account?tab=notifications",
       primary: actions.length === 0,
     });
@@ -152,7 +153,7 @@ export function accountNextActions(input: {
     actions.push({
       id: "tba",
       label: "Connect The Blue Alliance",
-      detail: "Match alerts stay quiet until a TBA key is connected.",
+      detail: ACCOUNT_TBA_COPY.setupRequired,
       href: withOrgHref("/connectors", orgId),
       primary: actions.length === 0,
     });
@@ -162,7 +163,7 @@ export function accountNextActions(input: {
     actions.push({
       id: "google",
       label: "Google sign-in setup",
-      detail: "This deployment is missing Google OAuth env — use email OTP until an admin configures it.",
+      detail: ACCOUNT_GOOGLE_COPY.setupRequired,
       href: "/connectors",
     });
   }

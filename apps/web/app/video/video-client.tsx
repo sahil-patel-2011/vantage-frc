@@ -517,7 +517,7 @@ export default function VideoClient() {
           <div className="app-card vid-empty">
             <strong>No reviews yet</strong>
             <p className="app-muted">
-              Paste a YouTube match link (TBA match pages link them) and start dropping timestamped notes.
+              Paste a YouTube match link (official match pages link them) and start dropping timestamped notes.
               Hosted MP4/WebM uploads belong in the Media library, not here.
             </p>
           </div>

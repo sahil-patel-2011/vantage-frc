@@ -58,7 +58,7 @@ async function persistScoutFieldBudgetSnapshot(
     await putFeatureSnapshot("scout-field-budget", cacheOrg, data);
     if (!orgHint) await putFeatureSnapshot("scout-field-budget", "_", data);
   } catch {
-    // Live Field-Count Budget already painted; IndexedDB is best-effort.
+    // Live Field value already painted; IndexedDB is best-effort.
   }
 }
 
@@ -129,10 +129,10 @@ function BudgetShell({
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Field-Count Budget"}
+            {" / Field value"}
           </>
         }
-        title="Scouting Field-Count Budget"
+        title="Field value"
         description={description}
       >
         <RelatedStrip orgId={orgId} />
@@ -212,7 +212,7 @@ export default function ScoutFieldBudgetClient() {
         if (!response.ok || !isScoutFieldBudgetView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Field-Count Budget. Showing the last copy on this device.");
+            setError("Could not refresh Field value. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -226,7 +226,7 @@ export default function ScoutFieldBudgetClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Field-Count Budget. Showing the last copy on this device.");
+          setError("Could not refresh Field value. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -292,7 +292,7 @@ export default function ScoutFieldBudgetClient() {
   if (shell === "loading") {
     return (
       <BudgetShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Field-Count Budget" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Field value" fromCache={fromCache} cachedAt={cachedAt} />
       </BudgetShell>
     );
   }
@@ -305,7 +305,7 @@ export default function ScoutFieldBudgetClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Field-Count Budget" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Field value" fromCache={fromCache} cachedAt={cachedAt} />
       </BudgetShell>
     );
   }
@@ -316,7 +316,7 @@ export default function ScoutFieldBudgetClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Field-Count Budget" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Field value" fromCache={fromCache} cachedAt={cachedAt} />
       </BudgetShell>
     );
   }
@@ -327,16 +327,16 @@ export default function ScoutFieldBudgetClient() {
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Field-Count Budget"}
+            {" / Field value"}
           </>
         }
-        title="Scouting Field-Count Budget"
+        title="Field value"
         description="Log a scouting schema's per-phase field count and lint it against a realistic per-match budget."
       >
         <RelatedStrip orgId={orgId} />
       </PageHeader>
 
-      <OfflineBanner feature="Field-Count Budget" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Field value" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

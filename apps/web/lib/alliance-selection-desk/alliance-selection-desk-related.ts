@@ -2,10 +2,10 @@ import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 import { setupActionsFrom } from "../setup-actions";
 
-/** Soft-UI related surfaces for Alliance Selection Desk (never DEMO rankings). */
+/** Soft-UI related surfaces for Alliance desk (never DEMO rankings). */
 export const ALLIANCE_SELECTION_DESK_RELATED_LINKS = [
   { id: "strategy", label: "Strategy", tab: "strategy" },
-  { id: "picklist-collab", label: "Collaborative Pick List", tab: "picklist-collab" },
+  { id: "picklist-collab", label: "Pick list", tab: "picklist-collab" },
   { id: "pick-clock", label: "Pick clock", tab: "pick-clock" },
   { id: "scouting", label: "Scouting", tab: "scouting" },
   { id: "chemistry", label: "Chemistry", tab: "chemistry" },
@@ -28,7 +28,7 @@ export const ALLIANCE_SELECTION_DESK_RELATED_INCLUDE: AllianceSelectionDeskRelat
 ];
 
 /**
- * Soft-UI cross-links from Alliance Selection Desk → Strategy / Pick tools.
+ * Soft-UI cross-links from Alliance desk → Strategy / Pick tools.
  * Build with hubHref — never broken JSX href templates.
  */
 export function allianceSelectionDeskRelatedLinks(
@@ -131,7 +131,7 @@ export function isAllianceSelectionDeskEmpty(input: { sessionCount: number }): b
   return input.sessionCount === 0;
 }
 
-/** Classify Alliance Selection Desk Soft-UI shell — never invents DEMO rankings. */
+/** Classify Alliance desk Soft-UI shell — never invents DEMO rankings. */
 export function classifyAllianceSelectionDeskShell(input: {
   loading?: boolean;
   fetchFailed?: boolean;
@@ -153,7 +153,7 @@ export function allianceSelectionDeskShellCopy(
     case "loading":
       return {
         kind,
-        title: "Loading Alliance Selection Desk…",
+        title: "Opening Alliance desk",
         description:
           "Checking which team you are on and desk sessions.",
       };
@@ -161,7 +161,7 @@ export function allianceSelectionDeskShellCopy(
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Alliance Selection Desk",
+        title: "Could not load Alliance desk",
         description:
           "A network or server issue blocked the board. Retry, or open Strategy / Scouting while it reloads.",
       };
@@ -192,7 +192,7 @@ export function allianceSelectionDeskShellCopy(
 }
 
 /**
- * Soft-UI next actions for Alliance Selection Desk empty/setup shells.
+ * Soft-UI next actions for Alliance desk empty/setup shells.
  * Points at Strategy / Pick list / Scouting — never invents DEMO rankings.
  */
 export function allianceSelectionDeskNextActions(input: {
@@ -213,7 +213,7 @@ export function allianceSelectionDeskNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Alliance Selection Desk",
+        label: "Retry Alliance desk",
         detail: "Reload real sessions.",
         href: withOrgHref("/alliance-selection-desk", orgId),
         primary: true,
@@ -244,7 +244,7 @@ export function allianceSelectionDeskNextActions(input: {
       },
       {
         id: "picklist-collab",
-        label: "Open Collaborative Pick List",
+        label: "Open Pick list",
         detail: "Co-rank partners before selection starts.",
         href: hubHref("/competition", "picklist-collab", orgId),
       },
@@ -294,7 +294,7 @@ export function allianceSelectionDeskNextActions(input: {
     },
     {
       id: "picklist-collab",
-      label: "Open Collaborative Pick List",
+      label: "Open Pick list",
       detail: "Cross-check consensus ranks before locking.",
       href: hubHref("/competition", "picklist-collab", orgId),
     },

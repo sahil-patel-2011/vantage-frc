@@ -32,8 +32,8 @@ export function CodeReadyView(props: CodeReadyViewProps) {
       {!embedded ? (
       <header className="app-page-header">
         <div>
-          <span className="breadcrumbs">{related === "ai" ? "AI / Code assist" : "Build / Code Coach"}</span>
-          <h1>FRC Code Coach</h1>
+          <span className="breadcrumbs">{related === "ai" ? "AI / Code assist" : "Build / Code"}</span>
+          <h1>Code</h1>
           <p>
             Flag risky robot-code patterns, explain why they fail under match pressure, then suggest a safer habit.
             Review runs on this device against a fixed rule set. Every proposed change is a diff a person has to
@@ -62,9 +62,9 @@ export function CodeReadyView(props: CodeReadyViewProps) {
       {!orgId ? (
         <EmptyState
           soft
-          badge="Setup required"
+          badge="Needs setup"
           badgeTone="setup"
-          title="Choose your team to coach code"
+          title="Choose your team"
           description="Local pattern review works without a model key. Pairing VS Code, GitHub context, CAD, and AI chat need a team."
           className="product-hub-setup"
         >
@@ -87,7 +87,7 @@ export function CodeReadyView(props: CodeReadyViewProps) {
       <section className="cdc-billing" aria-label="Local versus metered">
         <article className="cdc-billing-local">
           <span className="app-badge good">Local · free</span>
-          <h2>Code Coach pattern review</h2>
+          <h2>Code pattern review</h2>
           <p>
             Risk rules run in the browser against pasted or loaded source. No provider key, no plan credits, and no
             findings unless a rule matches evidence in your file.

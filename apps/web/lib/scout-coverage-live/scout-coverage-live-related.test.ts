@@ -46,7 +46,7 @@ describe("scoutCoverageLiveSetupSteps", () => {
   });
 });
 
-describe("Scout Coverage Live Soft-UI metrics", () => {
+describe("Coverage Soft-UI metrics", () => {
   it("formats real counts only", () => {
     expect(formatScoutCoverageLiveMetric(3, true)).toBe("3");
     expect(formatScoutCoverageLiveMetric(0, false)).toBe("…");

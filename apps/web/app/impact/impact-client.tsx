@@ -65,7 +65,7 @@ async function persistImpactSnapshot(orgHint: string, seasonHint: string, data: 
     await putFeatureSnapshot("impact", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("impact", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Community Impact already painted; IndexedDB is best-effort.
+    // Live Impact already painted; IndexedDB is best-effort.
   }
 }
 
@@ -150,7 +150,7 @@ export default function ImpactClient() {
         if (!response.ok || !isImpactView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Community Impact. Showing the last copy on this device.");
+            setError("Could not refresh Impact. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setErrorStatus(response.status);
@@ -166,7 +166,7 @@ export default function ImpactClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Community Impact. Showing the last copy on this device.");
+          setError("Could not refresh Impact. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -232,10 +232,10 @@ export default function ImpactClient() {
         breadcrumbs={
           <>
             <a href={relatedOrg ? `/business?orgId=${encodeURIComponent(relatedOrg)}` : "/business"}>Business</a>
-            {" / Community Impact"}
+            {" / Impact"}
           </>
         }
-        title="Community impact"
+        title="Impact"
         description="Log outreach, STEM demos, and mentoring — the evidence trail for Impact and Engineering Inspiration. Readiness uses only what you record."
       >
         <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
@@ -270,7 +270,7 @@ export default function ImpactClient() {
         />
       ) : null}
 
-      <OfflineBanner feature="Community Impact" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Impact" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="impact-status" role="alert">
@@ -309,7 +309,7 @@ export default function ImpactClient() {
           );
         })()
       ) : view == null ? (
-        <EmptyState soft title="Loading…" description="Checking your team." aria-busy />
+        <EmptyState soft title="Opening Impact" description="Checking your team." aria-busy />
       ) : view.status === "setup_required" ? (
         <>
           <EmptyState soft badge="Needs setup" badgeTone="setup" title={view.message}>

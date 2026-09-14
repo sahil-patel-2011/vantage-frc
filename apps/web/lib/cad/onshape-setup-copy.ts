@@ -54,3 +54,17 @@ export function hostedOnshapeEnvStatus(env: NodeJS.ProcessEnv = process.env): On
     apiKeyConfigured: Boolean(readOnshapeApiKeys(env)),
   });
 }
+
+/**
+ * Student CAD APIs must not leak operator setup: env-var names, callback URLs,
+ * or "Setup required —". Connectors catalog stays the operator surface.
+ */
+export function studentOnshapeApiSetup(env: NodeJS.ProcessEnv = process.env) {
+  const hosted = hostedOnshapeEnvStatus(env);
+  return {
+    configured: hosted.configured,
+    setupRequired: hosted.setupRequired,
+    message: hosted.message,
+    connectCtaEnabled: hosted.connectCtaEnabled,
+  };
+}

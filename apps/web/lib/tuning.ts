@@ -9,8 +9,8 @@ export type TuningCategory = (typeof TUNING_CATEGORIES)[number];
 
 export const TUNING_CATEGORY_LABEL: Record<TuningCategory, string> = {
   encoder_offset: "Encoder offset",
-  pid: "PID gains",
-  feedforward: "Feedforward",
+  pid: "Gains",
+  feedforward: "Extra",
   sensor: "Sensor offset",
   vision: "Vision transform",
   limit: "Soft limit",
@@ -52,7 +52,7 @@ export function summarizeTuning(constants: { subsystem: string; category: Tuning
 
 /** FRC: log supply current limits with PID/encoder values so a reflash does not brown out. */
 export const CURRENT_LIMIT_TUNING_CUE =
-  "Log supply current limits (Soft limit category) next to PID/encoder values — a reflash without them browns out.";
+  "Log supply current limits (Soft limit category) next to gain and encoder values — a reflash without them browns out.";
 
 export function currentLimitTuningCue(
   constants: Array<{ category: TuningCategory; name: string; notes?: string }>,

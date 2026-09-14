@@ -4,7 +4,7 @@ import { withOrgHref } from "../nav/product-nav";
 /** Soft-UI related surfaces for the Match Schedule board (never DEMO matches). */
 export const SCHEDULE_RELATED_LINKS = [
   { id: "calendar", label: "Calendar", kind: "team" as const, tab: "calendar" },
-  { id: "command", label: "Event Day", kind: "competition" as const, tab: "command" },
+  { id: "command", label: "Event day", kind: "competition" as const, tab: "command" },
   { id: "my-day", label: "My Day", kind: "competition" as const, tab: "my-day" },
   { id: "scouting", label: "Scouting", kind: "path" as const, path: "/scouting" },
   { id: "workspace", label: "Your team", kind: "path" as const, path: "/workspace" },
@@ -18,7 +18,7 @@ export type ScheduleRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — Calendar / Event Day / My Day first. */
+/** Focused Soft-UI strip — Calendar / Event day / My Day first. */
 export const SCHEDULE_RELATED_INCLUDE: ScheduleRelatedId[] = [
   "calendar",
   "command",
@@ -59,7 +59,7 @@ export type ScheduleNextAction = {
 
 /**
  * Soft-UI next actions for Match Schedule empty/setup shells.
- * Points at real Calendar / Event Day / My Day paths — never DEMO matches.
+ * Points at real Calendar / Event day / My Day paths — never DEMO matches.
  */
 export function scheduleNextActions(input: {
   orgId?: string | null;
@@ -77,7 +77,7 @@ export function scheduleNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Choose your team before loading TBA rows.",
+          detail: "Choose your team before loading official match rows.",
           href: "/workspace",
           primary: true,
         },
@@ -100,14 +100,14 @@ export function scheduleNextActions(input: {
         },
         {
           id: "command",
-          label: "Open Event Day",
+          label: "Open Event day",
           detail: "Confirm the synced event context the pit uses for day-of ops.",
           href: hubHref("/competition", "command", orgId),
         },
         {
           id: "calendar",
           label: "Open Calendar",
-          detail: "Team practices stay on Calendar while competition matches sync from TBA.",
+          detail: "Team practices stay on Calendar while competition matches sync from the official schedule.",
           href: hubHref("/team", "calendar", orgId),
         },
       ];
@@ -122,7 +122,7 @@ export function scheduleNextActions(input: {
       },
       {
         id: "command",
-        label: "Open Event Day",
+        label: "Open Event day",
         detail: "Day-of command uses the same active event as this board.",
         href: hubHref("/competition", "command", orgId),
       },
@@ -134,7 +134,7 @@ export function scheduleNextActions(input: {
       {
         id: "retry",
         label: "Retry Schedule",
-        detail: "Reload real TBA match rows.",
+        detail: "Reload real official match rows.",
         href: withOrgHref("/schedule", orgId),
         primary: true,
       },
@@ -157,8 +157,8 @@ export function scheduleNextActions(input: {
     return [
       {
         id: "command",
-        label: "Check Event Day sync",
-        detail: "Matches appear after TBA reference sync for the active event.",
+        label: "Check Event day sync",
+        detail: "Matches appear after official schedule sync for the active event.",
         href: hubHref("/competition", "command", orgId),
         primary: true,
       },
@@ -177,7 +177,7 @@ export function scheduleNextActions(input: {
       {
         id: "team-data",
         label: "Sync team data",
-        detail: "Pull the match schedule from The Blue Alliance when the event is posted.",
+        detail: "Pull the official match schedule when the event is posted.",
         href: withOrgHref("/team/data", orgId),
       },
     ].slice(0, 4);
@@ -187,13 +187,13 @@ export function scheduleNextActions(input: {
     {
       id: "my-day",
       label: "Open My Day",
-      detail: "Countdowns and your next match use the same TBA schedule rows.",
+      detail: "Countdowns and your next match use the same official schedule rows.",
       href: hubHref("/competition", "my-day", orgId),
       primary: true,
     },
     {
       id: "command",
-      label: "Open Event Day",
+      label: "Open Event day",
       detail: "Command center for pit ops tied to this event’s schedule.",
       href: hubHref("/competition", "command", orgId),
     },

@@ -2,12 +2,12 @@ import { hubHref } from "../nav/hubs";
 import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Defense Planner (never DEMO defense metrics). */
+/** Soft-UI related surfaces for Defense (never DEMO defense metrics). */
 export const DEFENSE_PLANNER_RELATED_LINKS = [
   { id: "strategy", label: "Strategy", tab: "strategy" },
   { id: "scouting", label: "Scouting", tab: "scouting" },
   { id: "counter-book", label: "Counter-book", tab: "counter-book" },
-  { id: "opponent-watchlist", label: "Opponent Watchlist", tab: "opponent-watchlist" },
+  { id: "opponent-watchlist", label: "Watchlist", tab: "opponent-watchlist" },
 ] as const;
 
 export type DefensePlannerRelatedId = (typeof DEFENSE_PLANNER_RELATED_LINKS)[number]["id"];
@@ -26,7 +26,7 @@ export const DEFENSE_PLANNER_RELATED_INCLUDE: DefensePlannerRelatedId[] = [
 ];
 
 /**
- * Soft-UI cross-links from Defense Planner → Strategy / Scouting / Counter-book.
+ * Soft-UI cross-links from Defense → Strategy / Scouting / Counter-book.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function defensePlannerRelatedLinks(
@@ -92,7 +92,7 @@ export function defensePlannerSetupSteps(orgId?: string | null): DefensePlannerS
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Choose your team to open Defense Planner.",
+        detail: "Choose your team to open Defense.",
         href: "/workspace",
       },
     ];
@@ -128,7 +128,7 @@ export function isDefensePlannerBoardEmpty(input: { matchupCount: number }): boo
   return input.matchupCount === 0;
 }
 
-/** Classify Defense Planner Soft-UI shell — never invents DEMO defense metrics. */
+/** Classify Defense Soft-UI shell — never invents DEMO defense metrics. */
 export function classifyDefensePlannerShell(input: {
   loading?: boolean;
   fetchFailed?: boolean;
@@ -149,7 +149,7 @@ export function defensePlannerShellCopy(kind: DefensePlannerShellKind): DefenseP
     case "loading":
       return {
         kind,
-        title: "Loading Defense Planner…",
+        title: "Opening Defense",
         description:
           "Checking which team you are on and logged matchups.",
       };
@@ -157,14 +157,14 @@ export function defensePlannerShellCopy(kind: DefensePlannerShellKind): DefenseP
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Defense Planner",
+        title: "Could not load Defense",
         description:
           "A network or server issue blocked matchups. Retry, or open Strategy / Scouting while it reloads.",
       };
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Choose your team before logging robot profile or matchups.",
@@ -188,7 +188,7 @@ export function defensePlannerShellCopy(kind: DefensePlannerShellKind): DefenseP
 }
 
 /**
- * Soft-UI next actions for Defense Planner empty/setup shells.
+ * Soft-UI next actions for Defense empty/setup shells.
  * Points at Strategy / Scouting / Counter-book — never invents DEMO defense metrics.
  */
 export function defensePlannerNextActions(input: {
@@ -212,7 +212,7 @@ export function defensePlannerNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Defense Planner",
+        label: "Retry Defense",
         detail: "Reload real matchups.",
         href: withOrgHref("/defense-planner", orgId),
         primary: true,

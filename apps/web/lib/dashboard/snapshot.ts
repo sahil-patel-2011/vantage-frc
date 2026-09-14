@@ -388,8 +388,8 @@ export async function loadDashboardSnapshot(
       "competition_snapshot",
       undefined,
       eventKey
-        ? "Match data is not connected for this team yet — open Team Data."
-        : "Set an active event or connect match data under Team Data.",
+        ? "Match data is not connected for this team yet — open Team data."
+        : "Set an active event or connect match data under Team data.",
     );
   }
 

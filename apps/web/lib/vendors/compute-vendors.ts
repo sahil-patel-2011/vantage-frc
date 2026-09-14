@@ -23,7 +23,7 @@ function setupStepsFor(orgId: string | null): VendorsSetupStep[] {
     {
       id: "workspace",
       label: "Choose your team",
-      detail: "Choose your team to open Vendor Directory.",
+      detail: "Choose your team to open Vendor directory.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -34,7 +34,7 @@ function setupStepsFor(orgId: string | null): VendorsSetupStep[] {
     },
     {
       id: "vendor-lead-times",
-      label: "Open Vendor Lead Times",
+      label: "Open Lead times",
       detail: "Reorder-by dates stay blank until lead times land.",
       href: hubHref("/business", "vendor-lead-times", orgId),
     },

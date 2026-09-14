@@ -49,7 +49,7 @@ async function persistDistrictAdvancementSnapshot(
     await putFeatureSnapshot("district-advancement", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("district-advancement", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live District advancement already painted; IndexedDB is best-effort.
+    // Live Districts already painted; IndexedDB is best-effort.
   }
 }
 
@@ -177,7 +177,7 @@ export default function DistrictAdvancementClient() {
       if (!response.ok || !isTrajectoryView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh District advancement. Showing the last copy on this device.");
+          setError("Could not refresh Districts. Showing the last copy on this device.");
           setFetchFailed(false);
           return;
         }
@@ -193,7 +193,7 @@ export default function DistrictAdvancementClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh District advancement. Showing the last copy on this device.");
+        setError("Could not refresh Districts. Showing the last copy on this device.");
         setFetchFailed(false);
         return;
       }
@@ -211,10 +211,10 @@ export default function DistrictAdvancementClient() {
       breadcrumbs={
         <>
           <a href={competitionHref}>Competition</a>
-          {" / District advancement"}
+          {" / Districts"}
         </>
       }
-      title="District advancement"
+      title="Districts"
       description="Project remaining district points from cached scores and the remaining event list."
     >
       <DistrictAdvancementRelated orgId={orgId} />
@@ -241,9 +241,9 @@ export default function DistrictAdvancementClient() {
     return (
       <main className="module-page">
         {header}
-        <OfflineBanner feature="District advancement" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Districts" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
-          title={failure ? failure.title : "Loading…"}
+          title={failure ? failure.title : "Opening Districts"}
           description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >
@@ -267,13 +267,13 @@ export default function DistrictAdvancementClient() {
       return (
         <main className="module-page">
           {header}
-          <OfflineBanner feature="District advancement" fromCache={fromCache} cachedAt={cachedAt} />
+          <OfflineBanner feature="Districts" fromCache={fromCache} cachedAt={cachedAt} />
           {error ? (
             <p className="telemetry-status" role="alert">
               {error}
             </p>
           ) : null}
-          <EmptyState badge="Setup required" badgeTone="setup" title="Not enough district data yet" description={view.message}>
+          <EmptyState badge="Needs setup" badgeTone="setup" title="Not enough district data yet" description={view.message}>
             {view.steps[0] ? (
               <Button as="a" variant="primary" href={view.steps[0].href}>
                 {view.steps[0].label}
@@ -293,7 +293,7 @@ export default function DistrictAdvancementClient() {
   return (
     <main className="module-page">
       {header}
-      <OfflineBanner feature="District advancement" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Districts" fromCache={fromCache} cachedAt={cachedAt} />
       {error ? (
         <p className="telemetry-status" role="alert">
           {error}

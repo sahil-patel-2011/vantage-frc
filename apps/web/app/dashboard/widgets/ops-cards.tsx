@@ -6,6 +6,7 @@ import { hubHref } from "../../../lib/nav/hubs";
 import { withOrgHref } from "../../../lib/nav/product-nav";
 import { parseYouTubeEmbed } from "../../../lib/youtube";
 import { predictionWinDisplay } from "../../../lib/strategy/prediction-display";
+import { studentRatingLabel } from "../../../lib/ui/student-rating-label";
 import { LiveCountdown } from "./live-countdown";
 import { emptyHintFor, WidgetShell as Shell } from "./widget-shell";
 import { OnboardingChecklistCard } from "./onboarding-card";
@@ -36,9 +37,9 @@ function PitStreamEmbed({ title, embedUrl }: { title: string; embedUrl: string }
 function sourceLabel(source: string): string {
   switch (source.toLowerCase()) {
     case "tba":
-      return "match data";
+      return "Official matches";
     case "statbotics":
-      return "season scores";
+      return "Season ratings";
     default:
       return source;
   }
@@ -158,7 +159,7 @@ export function renderOpsWidget({
               <ul className="dash-checklist">
                 {factors.map((factor, index) => (
                   <li key={`${factor.name}-${index}`}>
-                    <span>{factor.name ?? "Factor"}</span>
+                    <span>{factor.name ? studentRatingLabel(factor.name) : "Factor"}</span>
                     <b>{factor.impact ?? ""}</b>
                   </li>
                 ))}

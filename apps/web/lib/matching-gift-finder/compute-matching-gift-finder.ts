@@ -68,7 +68,7 @@ function setupSteps(orgId: string | null): MatchingGiftFinderSetupStep[] {
     {
       id: "workspace",
       label: "Choose your team",
-      detail: "Choose your team to open Matching Gift Finder.",
+      detail: "Choose your team to open Matching gifts.",
       href: "/workspace",
     },
     {

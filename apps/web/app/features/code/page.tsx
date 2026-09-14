@@ -3,9 +3,9 @@ import { SiteFooter, SiteHeader } from "../../../components/marketing/site-heade
 import { marketingPageMetadata } from "../../../lib/marketing/seo";
 
 export const metadata: Metadata = marketingPageMetadata({
-  title: "Code Coach — Vantage",
+  title: "Code — Vantage",
   description:
-    "Build hub Code Coach flags risky WPILib patterns, teaches safer habits, and proposes human-approved diffs. Never auto-deploys to a robot.",
+    "Build hub Code flags risky WPILib patterns, teaches safer habits, and proposes human-approved diffs. Never auto-deploys to a robot.",
   path: "/features/code",
 });
 
@@ -23,10 +23,10 @@ export default function CodeFeaturePage() {
       <SiteHeader />
       <main className="route-page">
         <header className="lux-route-hero">
-          <p className="lux-kicker">Code Coach</p>
+          <p className="lux-kicker">Code</p>
           <h1>Flag risk. Teach the fix.</h1>
           <p>
-            Build hub Code Coach—local pattern review plus metered AI Bugbot. Human-approved diffs only. Never
+            Build hub Code—local pattern review plus metered AI Bugbot. Human-approved diffs only. Never
             auto-deploys to a robot.
           </p>
           <div className="actions">

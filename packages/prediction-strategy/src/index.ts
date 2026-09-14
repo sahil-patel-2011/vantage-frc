@@ -45,6 +45,7 @@ export {
   type StrategyEngineSummary,
   type StrategyEngineTier,
 } from "./engine-tier";
+export { studentCacheSourceLabel } from "./student-copy";
 export { seasonWeight } from "./season-weight";
 export {
   buildAllianceWinBreakdown,
@@ -92,6 +93,7 @@ import type {
 } from "./types";
 import { strategyEnginePolicyForId } from "./engine-tier";
 import { buildAllianceWinBreakdown, rateTeam } from "./alliance-outcome";
+import { studentCacheSourceLabel } from "./student-copy";
 
 const clamp = (value: number, min = 0, max = 1) => Math.min(max, Math.max(min, value));
 const round = (value: number) => Math.round(value * 10_000) / 10_000;
@@ -105,7 +107,7 @@ function citeSources(
   const eventKeys = [...new Set(cited.map((signal) => signal.eventKey).filter(Boolean))];
   const matchTotal = cited.reduce((sum, signal) => sum + signal.matches, 0);
   const parts = [
-    sources.length ? `sources ${sources.join("+")}` : "reference metrics",
+    sources.length ? `sources ${sources.map(studentCacheSourceLabel).join(" + ")}` : "season ratings",
     eventKeys.length ? `event ${eventKeys.join(", ")}` : null,
     matchTotal > 0 ? `${matchTotal} weighted team-matches` : null,
   ].filter(Boolean);
@@ -127,7 +129,7 @@ function buildReasoningSteps(input: {
     {
       step: 1,
       title: "Ground ratings in cached metrics",
-      detail: `Use Neon last-good TBA/Statbotics signals only (${input.citation || "no linked source yet"}). Missing EPA is skipped — never invented.`,
+      detail: `Use last-good official match and season-rating signals only (${input.citation || "no linked source yet"}). Missing ratings are skipped — never invented.`,
     },
     {
       step: 2,
@@ -141,7 +143,7 @@ function buildReasoningSteps(input: {
       title: "Blend org scout trust",
       detail:
         input.scoutSample > 0
-          ? `${input.scoutSample} org scout observations quality-weighted into ratings (MODEL adjustments, not TBA facts).`
+          ? `${input.scoutSample} org scout observations quality-weighted into ratings (MODEL adjustments, not official match facts).`
           : "No org scout sample on this matchup; ratings use reference metrics only.",
     },
     {
@@ -160,15 +162,15 @@ function buildReasoningSteps(input: {
   if (input.epaDriftCount > 0) {
     steps.push({
       step: steps.length + 1,
-      title: "Surface EPA drift",
-      detail: `${input.epaDriftCount} event-vs-year EPA drift factor(s) from real cached metrics.`,
+      title: "Surface rating drift",
+      detail: `${input.epaDriftCount} event-vs-year rating drift factor(s) from real cached metrics.`,
     });
   }
   if (input.factCount > 0) {
     steps.push({
       step: steps.length + 1,
-      title: "Cite completed TBA matches",
-      detail: `${input.factCount} FACT match result(s) cited; unscored matches are skipped.`,
+      title: "Cite completed official matches",
+      detail: `${input.factCount} official match result(s) cited; unscored matches are skipped.`,
     });
   }
   steps.push({
@@ -247,7 +249,7 @@ export function predictMatch(input: MatchPredictionInput): MatchPrediction {
       name: "autonomous",
       alliance: autoMargin > 0 ? "red" : "blue",
       impact: round(Math.abs(autoMargin)),
-      evidence: `MODEL: Weighted autonomous EPA margin ${round(autoMargin)} (${citation}).${
+      evidence: `MODEL: Weighted autonomous rating margin ${round(autoMargin)} (${citation}).${
         autoCapTeams.length ? ` Scout auto-capable: ${autoCapTeams.join(", ")}.` : ""
       }`,
       kind: "model",
@@ -259,7 +261,7 @@ export function predictMatch(input: MatchPredictionInput): MatchPrediction {
       name: "foul exposure",
       alliance: foulMargin > 0 ? "blue" : "red",
       impact: round(Math.abs(foulMargin)),
-      evidence: `MODEL: Org scout foul penalty (capped) margin ${round(Math.abs(foulMargin))}; not a TBA fact.${scoutProvenanceBit}`,
+      evidence: `MODEL: Org scout foul penalty (capped) margin ${round(Math.abs(foulMargin))}; not an official match fact.${scoutProvenanceBit}`,
       kind: "model",
       scoutEntryIds: foulEntryIds.length ? foulEntryIds : undefined,
     });
@@ -288,10 +290,10 @@ export function predictMatch(input: MatchPredictionInput): MatchPrediction {
       [...operations.values()].reduce((total, op) => total + (op.qualityWeight ?? 1), 0) /
       Math.max(1, operations.size);
     factors.push({
-      name: "TBA+scout trust blend",
+      name: "Official + scout blend",
       alliance: "neutral",
       impact: round(Math.min(6, policy.maxScoutBlend * 10 * avgQuality)),
-      evidence: `MODEL ${policy.engineId}: TBA/Statbotics base with scout trust blend capped at ${Math.round(policy.maxScoutBlend * 100)}% (mean quality weight ${round(avgQuality)}).${
+      evidence: `MODEL ${policy.engineId}: official-match base with scout trust blend capped at ${Math.round(policy.maxScoutBlend * 100)}% (mean quality weight ${round(avgQuality)}).${
         qualityNotes.length ? ` Quality notes: ${qualityNotes.slice(0, 3).join("; ")}.` : ""
       }`,
       kind: "model",
@@ -304,7 +306,7 @@ export function predictMatch(input: MatchPredictionInput): MatchPrediction {
       name: "this-season rules",
       alliance: "neutral",
       impact: 1,
-      evidence: `MODEL ${policy.engineId}: only ${input.currentYear} season signals contribute — prior-year EPA is excluded.`,
+      evidence: `MODEL ${policy.engineId}: only ${input.currentYear} season signals contribute — prior-year rating is excluded.`,
       kind: "model",
     });
   }
@@ -319,10 +321,11 @@ export function predictMatch(input: MatchPredictionInput): MatchPrediction {
     });
   }
 
-  // Surface Max-only breakdown factors (EPA drift / full leave-one-out) in the prediction too.
+  // Surface Max-only breakdown factors (rating drift / full leave-one-out) in the prediction too.
   if (policy.tier === "max") {
     for (const factor of breakdown.keyFactors) {
       if (
+        factor.name.startsWith("Rating drift") ||
         factor.name.startsWith("EPA drift") ||
         factor.name.includes("leave-one-out")
       ) {
@@ -343,7 +346,9 @@ export function predictMatch(input: MatchPredictionInput): MatchPrediction {
         citation,
         factCount: breakdown.citations.length,
         leaveOneOutCount: factors.filter((f) => f.name.includes("leave-one-out")).length,
-        epaDriftCount: factors.filter((f) => f.name.startsWith("EPA drift")).length,
+        epaDriftCount: factors.filter(
+          (f) => f.name.startsWith("Rating drift") || f.name.startsWith("EPA drift"),
+        ).length,
       })
     : undefined;
 
@@ -357,19 +362,19 @@ export function predictMatch(input: MatchPredictionInput): MatchPrediction {
     effectiveSampleSize: breakdown.effectiveSampleSize,
     keyFactors: factors,
     caveats: [
-      "MODEL output — not an official TBA result.",
+      "MODEL output — not an official match result.",
       `Engine ${policy.engineId} · depth ${policy.depth} · ${policy.label}.`,
       ...(breakdown.effectiveSampleSize < 30
         ? ["Sparse historical/scouting sample; interval widened."]
         : []),
       scoutSample === 0
-        ? "No org scout sample on this matchup; ratings use TBA/Statbotics event metrics only."
+        ? "No org scout sample on this matchup; ratings use official event numbers only."
         : `Includes ${scoutSample} org scout observations as operational adjustments.`,
       breakdown.citations.length
-        ? `${breakdown.citations.length} FACT TBA match result(s) cited for alliance context.`
-        : "No completed TBA match results cited for these alliances yet.",
+        ? `${breakdown.citations.length} official match result(s) cited for alliance context.`
+        : "No completed official match results cited for these alliances yet.",
       ...(policy.thisSeasonOnly
-        ? ["This-season rules only — prior-year EPA is not blended."]
+        ? ["This-season rules only — prior-year rating is not blended."]
         : []),
       "Prediction is decision support, not a guarantee.",
     ],

@@ -2,11 +2,11 @@ import { hubHref } from "../nav/hubs";
 import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Sponsor Wall (never DEMO sponsor counts). */
+/** Soft-UI related surfaces for Sponsor wall (never DEMO sponsor counts). */
 export const SPONSOR_WALL_RELATED_LINKS = [
-  { id: "sponsors", label: "Sponsor CRM", kind: "business" as const, tab: "sponsors" },
+  { id: "sponsors", label: "Sponsors", kind: "business" as const, tab: "sponsors" },
   { id: "sponsorship", label: "Sponsorship", kind: "business" as const, tab: "sponsorship" },
-  { id: "sponsor-suite", label: "Sponsor Suite", kind: "business" as const, tab: "sponsor-suite" },
+  { id: "sponsor-suite", label: "Sponsor suite", kind: "business" as const, tab: "sponsor-suite" },
   { id: "placements", label: "Partner packages", kind: "business" as const, tab: "placements" },
 ] as const;
 
@@ -18,7 +18,7 @@ export type SponsorWallRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — Sponsor CRM / Sponsorship / Sponsor Suite. */
+/** Focused Soft-UI strip — Sponsors / Sponsorship / Sponsor suite. */
 export const SPONSOR_WALL_RELATED_INCLUDE: SponsorWallRelatedId[] = [
   "sponsors",
   "sponsorship",
@@ -26,7 +26,7 @@ export const SPONSOR_WALL_RELATED_INCLUDE: SponsorWallRelatedId[] = [
 ];
 
 /**
- * Soft-UI cross-links from Sponsor Wall → CRM / Sponsorship / Suite.
+ * Soft-UI cross-links from Sponsor wall → CRM / Sponsorship / Suite.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function sponsorWallRelatedLinks(
@@ -80,7 +80,7 @@ export function sponsorWallSetupSteps(orgId?: string | null): SponsorWallSetupSt
     },
     {
       id: "sponsors",
-      label: "Open Sponsor CRM",
+      label: "Open Sponsors",
       detail: "Sponsor rows stay blank until your team logs them.",
       href: hubHref("/business", "sponsors", orgId),
     },
@@ -92,7 +92,7 @@ export function sponsorWallSetupSteps(orgId?: string | null): SponsorWallSetupSt
     },
     {
       id: "sponsor-suite",
-      label: "Open Sponsor Suite",
+      label: "Open Sponsor suite",
       detail: "Suite assets stay blank until real sponsors land.",
       href: hubHref("/business", "sponsor-suite", orgId),
     },
@@ -117,7 +117,7 @@ export function isSponsorWallBoardEmpty(input: { entryCount: number }): boolean 
   return input.entryCount === 0;
 }
 
-/** Classify Sponsor Wall Soft-UI shell — never invents DEMO sponsor counts. */
+/** Classify Sponsor wall Soft-UI shell — never invents DEMO sponsor counts. */
 export function classifySponsorWallShell(input: {
   loading: boolean;
   fetchFailed?: boolean;
@@ -138,7 +138,7 @@ export function sponsorWallShellCopy(kind: SponsorWallShellKind): SponsorWallEmp
     case "loading":
       return {
         kind,
-        title: "Loading Sponsor Wall…",
+        title: "Opening Sponsor wall…",
         description:
           "Checking which team you are on and wall entries.",
       };
@@ -146,9 +146,9 @@ export function sponsorWallShellCopy(kind: SponsorWallShellKind): SponsorWallEmp
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load the Sponsor Wall",
+        title: "Could not load Sponsor wall",
         description:
-          "A network or server issue blocked the wall. Retry, or open Sponsor CRM / Sponsorship while it reloads.",
+          "A network or server issue blocked the wall. Retry, or open Sponsors / Sponsorship while it reloads.",
       };
     case "setup":
       return {
@@ -164,7 +164,7 @@ export function sponsorWallShellCopy(kind: SponsorWallShellKind): SponsorWallEmp
         badge: "No sponsors yet",
         title: "Add your first sponsor to build the wall",
         description:
-          "Logos, tiers, and thank-you messages stay blank until you add real entries. Cross-check Sponsor CRM and Sponsorship.",
+          "Logos, tiers, and thank-you messages stay blank until you add real entries. Cross-check Sponsors and Sponsorship.",
       };
     default:
       return {
@@ -177,8 +177,8 @@ export function sponsorWallShellCopy(kind: SponsorWallShellKind): SponsorWallEmp
 }
 
 /**
- * Soft-UI next actions for Sponsor Wall empty/setup shells.
- * Points at Sponsor CRM / Sponsorship — never invents DEMO sponsor counts.
+ * Soft-UI next actions for Sponsor wall empty/setup shells.
+ * Points at Sponsors / Sponsorship — never invents DEMO sponsor counts.
  */
 export function sponsorWallNextActions(input: {
   orgId?: string | null;
@@ -201,14 +201,14 @@ export function sponsorWallNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Sponsor Wall",
+        label: "Retry Sponsor wall",
         detail: "Reload real wall entries.",
         href: withOrgHref("/sponsor-wall", orgId),
         primary: true,
       },
       {
         id: "sponsors",
-        label: "Open Sponsor CRM",
+        label: "Open Sponsors",
         detail: "Sponsor rows stay available while the wall reloads.",
         href: hubHref("/business", "sponsors", orgId),
       },
@@ -232,7 +232,7 @@ export function sponsorWallNextActions(input: {
       },
       {
         id: "sponsors",
-        label: "Open Sponsor CRM",
+        label: "Open Sponsors",
         detail: "Pull names from real CRM rows.",
         href: hubHref("/business", "sponsors", orgId),
       },
@@ -258,7 +258,7 @@ export function sponsorWallNextActions(input: {
     },
     {
       id: "sponsors",
-      label: "Open Sponsor CRM",
+      label: "Open Sponsors",
       detail: "Keep wall names grounded in CRM sponsors.",
       href: hubHref("/business", "sponsors", orgId),
     },
@@ -270,7 +270,7 @@ export function sponsorWallNextActions(input: {
     },
     {
       id: "sponsor-suite",
-      label: "Open Sponsor Suite",
+      label: "Open Sponsor suite",
       detail: "Pair wall shout-outs with suite assets.",
       href: hubHref("/business", "sponsor-suite", orgId),
     },

@@ -23,8 +23,8 @@ export function slackNextActions(input: {
     return [
       {
         id: "webhook",
-        label: "Paste a Slack incoming webhook",
-        detail: "Slack → Apps → Incoming Webhooks. Outbound posts stay in this team’s workspace only.",
+        label: "Paste a Slack channel link",
+        detail: "Paste the Slack channel link a mentor made. Posts stay in this team's Slack only.",
         href: withOrgHref("/team/slack", orgId),
         primary: true,
       },
@@ -40,8 +40,8 @@ export function slackNextActions(input: {
   if (!input.hasWebhook) {
     actions.push({
       id: "webhook",
-      label: "Finish the webhook",
-      detail: "A valid hooks.slack.com URL is required before Vantage can post into Slack.",
+      label: "Finish the Slack channel link",
+      detail: "A valid Slack channel link is required before Vantage can post into Slack.",
       href: withOrgHref("/team/slack", orgId),
       primary: true,
     });
@@ -59,7 +59,7 @@ export function slackNextActions(input: {
     actions.push({
       id: "events",
       label: "Set Slack event signing",
-      detail: "Add SLACK_SIGNING_SECRET or a team signing secret so Slack→Vantage ingest can verify requests.",
+      detail: "Ask a mentor to finish Slack setup, or save a team signing secret so Slack replies can be verified.",
       href: withOrgHref("/team/slack", orgId),
     });
   }

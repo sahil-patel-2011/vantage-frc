@@ -155,7 +155,7 @@ export function draftPurchaseRequestLines(lines: SpareForecastLine[]): PurchaseR
         unitCost: line.unitCost,
         estimatedCost,
         urgency: line.forecast.urgency ?? "watch",
-        rationale: `${line.failureCount} FMEA failure(s) on ${line.subsystem ?? "this subsystem"} in ${line.forecast.daysElapsed} day(s) projects ${line.forecast.projectedConsumptionRemaining} unit(s) consumed over the ${line.forecast.daysRemaining} remaining season day(s), against ${line.quantityOnHand} on hand.`,
+        rationale: `${line.failureCount} logged failure(s) on ${line.subsystem ?? "this subsystem"} in ${line.forecast.daysElapsed} day(s) projects ${line.forecast.projectedConsumptionRemaining} unit(s) consumed over the ${line.forecast.daysRemaining} remaining season day(s), against ${line.quantityOnHand} on hand.`,
       };
     });
 }

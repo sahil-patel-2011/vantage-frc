@@ -106,7 +106,7 @@ export function fieldEpaBenchmarks(totals: number[]): { median: number; p75: num
 }
 
 /**
- * Copy of F.A.S.T. alliance-selection roles, driven only by cached EPA shares.
+ * Copy of F.A.S.T. alliance-selection roles, driven only by cached season-rating shares.
  * Returns null when totals are missing — never invents a role.
  */
 export function classifyEpaRole(input: {
@@ -174,9 +174,9 @@ export function picklistToCsv(input: {
     "Name",
     "Tier",
     "Role",
-    "EPA",
-    "Auto EPA",
-    "Teleop EPA",
+    "Season rating",
+    "Auto rating",
+    "Teleop rating",
     "Weighted score",
     "Note",
   ];

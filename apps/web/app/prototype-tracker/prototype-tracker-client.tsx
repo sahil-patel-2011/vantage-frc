@@ -49,7 +49,7 @@ async function persistPrototypeTrackerSnapshot(
     await putFeatureSnapshot("prototype-tracker", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("prototype-tracker", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Prototype-to-Decision Tracker already painted; IndexedDB is best-effort.
+    // Live Prototypes already painted; IndexedDB is best-effort.
   }
 }
 
@@ -214,7 +214,7 @@ export default function PrototypeTrackerClient(_props: { embedded?: boolean } = 
       if (!response.ok || !isPrototypeTrackerView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Prototype-to-Decision Tracker. Showing the last copy on this device.");
+          setError("Could not refresh Prototypes. Showing the last copy on this device.");
           setFetchFailed(false);
           return;
         }
@@ -235,7 +235,7 @@ export default function PrototypeTrackerClient(_props: { embedded?: boolean } = 
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Prototype-to-Decision Tracker. Showing the last copy on this device.");
+        setError("Could not refresh Prototypes. Showing the last copy on this device.");
         setFetchFailed(false);
         return;
       }
@@ -298,13 +298,13 @@ export default function PrototypeTrackerClient(_props: { embedded?: boolean } = 
       <main className="module-page ptk-page">
         <PageHeader
           breadcrumbs={crumbs}
-          title="Prototype-to-Decision Tracker"
+          title="Prototypes"
           description="Log a real prototype test — hypothesis, outcome, metric vs. target — then draft the design decision it informs."
         />
-        <OfflineBanner feature="Prototype-to-Decision Tracker" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Prototypes" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
-          title={copy ? copy.title : "Loading prototype tracker…"}
+          title={copy ? copy.title : "Opening Prototypes"}
           description={copy ? copy.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >
@@ -328,11 +328,11 @@ export default function PrototypeTrackerClient(_props: { embedded?: boolean } = 
       <main className="module-page ptk-page">
         <PageHeader
           breadcrumbs={crumbs}
-          title="Prototype-to-Decision Tracker"
+          title="Prototypes"
           description="Log a prototype test — hypothesis, outcome, metric vs. target — then draft the design decision and notebook entry it informs, grounded only in what you recorded."
         />
-        <OfflineBanner feature="Prototype-to-Decision Tracker" fromCache={fromCache} cachedAt={cachedAt} />
-        <EmptyState soft badge="Setup required" badgeTone="setup" title={view.message}>
+        <OfflineBanner feature="Prototypes" fromCache={fromCache} cachedAt={cachedAt} />
+        <EmptyState soft badge="Needs setup" badgeTone="setup" title={view.message}>
           {view.steps[0] ? (
             <Button as="a" variant="primary" href={view.steps[0].href}>
               {view.steps[0].label}
@@ -352,7 +352,7 @@ export default function PrototypeTrackerClient(_props: { embedded?: boolean } = 
     <main className="module-page ptk-page">
       <PageHeader
         breadcrumbs={crumbs}
-        title="Prototype-to-Decision Tracker"
+        title="Prototypes"
         description="Log a prototype test — hypothesis, outcome, metric vs. target — then draft the design decision and notebook entry it informs, grounded only in what you recorded."
       >
         <div className="ptk-header-actions">
@@ -376,7 +376,7 @@ export default function PrototypeTrackerClient(_props: { embedded?: boolean } = 
             </label>
           ) : null}
           <Button as="a" variant="secondary" href={hubHref("/build", "fmea", orgId)}>
-            FMEA
+            Failure log
           </Button>
           <Button as="a" variant="secondary" href={hubHref("/build", "cad", orgId)}>
             CAD
@@ -387,7 +387,7 @@ export default function PrototypeTrackerClient(_props: { embedded?: boolean } = 
         </div>
       </PageHeader>
 
-      <OfflineBanner feature="Prototype-to-Decision Tracker" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Prototypes" fromCache={fromCache} cachedAt={cachedAt} />
 
       {orgId ? (
         <BuildHubRelated
@@ -427,7 +427,7 @@ export default function PrototypeTrackerClient(_props: { embedded?: boolean } = 
             description="Outcomes, metrics, and decision confidence stay blank until you record a real test — nothing is pre-filled."
           >
             <div className="ptk-empty-links">
-              <a href={hubHref("/build", "fmea", orgId)}>FMEA →</a>
+              <a href={hubHref("/build", "fmea", orgId)}>Failure log →</a>
               <a href={hubHref("/build", "cad", orgId)}>CAD →</a>
               <a href={hubHref("/build", "kickoff", orgId)}>Kickoff →</a>
             </div>
@@ -553,7 +553,7 @@ function DecisionsList({
       >
         <div className="ptk-empty-links">
           <a href={hubHref("/build", "cad", view.orgId)}>CAD →</a>
-          <a href={hubHref("/build", "fmea", view.orgId)}>FMEA →</a>
+          <a href={hubHref("/build", "fmea", view.orgId)}>Failure log →</a>
         </div>
       </EmptyState>
     );

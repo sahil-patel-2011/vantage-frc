@@ -13,6 +13,7 @@ import type { DataSourceHealthView } from "../reference-health";
 import type { ReferenceAccessInfo } from "../strategy/types";
 import { dossierSetupSteps } from "./dossier-related";
 import { withOrgHref } from "../nav/product-nav";
+import { studentRatingLabel } from "../ui/student-rating-label";
 
 export type DossierSetupStep = {
   id: string;
@@ -119,19 +120,19 @@ export async function computeTeamDossier(
     },
     {
       id: "tba",
-      label: "Sync TBA identity + schedule",
+      label: "Sync official identity + schedule",
       detail: access.tbaConfigured
-        ? "TBA credential or cache available"
-        : "Connect The Blue Alliance or save a team key, then sync.",
+        ? "Official match credential or cache available"
+        : "Connect TBA or save a team key, then sync.",
       href: withOrgHref("/team/data", orgId),
       done: access.tbaConfigured,
     },
     {
       id: "statbotics",
-      label: "Cache Statbotics season EPA",
+      label: "Cache season ratings",
       detail: access.statbotics.cacheHasMetrics
-        ? `${access.statbotics.yearMetricRows} year + ${access.statbotics.eventMetricRows} event Statbotics rows saved`
-        : "No Statbotics numbers saved yet — tap Sync under Team → Data (no key needed).",
+        ? `${access.statbotics.yearMetricRows} year + ${access.statbotics.eventMetricRows} event season-rating rows saved`
+        : "No season ratings saved yet — tap Sync under Team → Data (no key needed).",
       href: withOrgHref("/team/data", orgId),
       done: access.statbotics.cacheHasMetrics,
     },
@@ -197,8 +198,8 @@ export async function computeTeamDossier(
     return {
       status: access.tbaConfigured ? "empty" : "setup_required",
       message: access.tbaConfigured
-        ? `Team ${teamNumber} is not in the saved Blue Alliance list yet. Sync under Team → Data, then retry.`
-        : "This team's Blue Alliance page is not saved yet. Connect TBA under Team → Data, sync, then open the profile.",
+        ? `Team ${teamNumber} is not in the saved official team list yet. Sync under Team → Data, then retry.`
+        : "This team's official page is not saved yet. Connect TBA under Team → Data, sync, then open the profile.",
       steps,
       orgId: row.orgId,
       teamNumber,
@@ -306,14 +307,22 @@ export async function computeTeamDossier(
     eventMetrics: eventRows,
     operations,
     maxSeasonYears: 4,
-  });
+  }).map((card) => ({
+    ...card,
+    title: studentRatingLabel(card.title),
+    value: studentRatingLabel(card.value),
+    citation: {
+      ...card.citation,
+      detail: studentRatingLabel(card.citation.detail),
+    },
+  }));
 
   const hasReferenceFacts = dossierHasReferenceFacts(cards);
   if (!hasReferenceFacts && !access.statbotics.cacheHasMetrics && !access.cacheHasSync) {
     return {
       status: "setup_required",
       message:
-        "No cited facts yet. Sync The Blue Alliance and Statbotics, then add scout notes.",
+        "No cited facts yet. Sync official matches and season ratings, then add scout notes.",
       steps,
       orgId: row.orgId,
       teamNumber: team.teamNumber,
@@ -325,8 +334,8 @@ export async function computeTeamDossier(
     return {
       status: "empty",
       message: access.statbotics.cacheHasMetrics
-        ? `Team ${team.teamNumber} is in cache, but this team has no season EPA, event records, or scout notes to cite yet.`
-        : `Team ${team.teamNumber} is saved, but Statbotics numbers for this team are missing. Sync under Team → Data.`,
+        ? `Team ${team.teamNumber} is in cache, but this team has no season rating, event records, or scout notes to cite yet.`
+        : `Team ${team.teamNumber} is saved, but season ratings for this team are missing. Sync under Team → Data.`,
       steps,
       orgId: row.orgId,
       teamNumber: team.teamNumber,

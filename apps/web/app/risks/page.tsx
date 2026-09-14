@@ -1,7 +1,7 @@
 import RisksClient from "./risks-client";
 
 export const metadata = {
-  title: "Risk Register",
+  title: "Risk register",
 };
 
 export default function RisksPage() {

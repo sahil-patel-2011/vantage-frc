@@ -41,9 +41,9 @@ test("student this week can walk Team hub People → Invites → Season roles", 
 
   await page.goto("/team/admin");
   await expect(page.locator("body")).not.toContainText("Application error");
-  await expect(page.getByRole("heading", { level: 1, name: "Team admin" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Invites" })).toBeVisible();
   for (const phrase of BANNED) {
-    await expect(page.locator("body"), `Team admin still shows ${phrase}`).not.toContainText(phrase);
+    await expect(page.locator("body"), `Invites still shows ${phrase}`).not.toContainText(phrase);
   }
   const adminPrimary = page
     .getByRole("link", { name: /Choose your team|Invite an exact email|Sign in again/i })
@@ -57,9 +57,9 @@ test("student this week can walk Team hub People → Invites → Season roles", 
     const orgId = href ? new URL(href, page.url()).searchParams.get("orgId") : null;
     if (orgId) {
       await page.goto(`/team/admin?orgId=${encodeURIComponent(orgId)}`);
-      await expect(page.getByRole("heading", { level: 1, name: "Team admin" })).toBeVisible();
+      await expect(page.getByRole("heading", { level: 1, name: "Invites" })).toBeVisible();
       for (const phrase of BANNED) {
-        await expect(page.locator("body"), `Team admin with team still shows ${phrase}`).not.toContainText(
+        await expect(page.locator("body"), `Invites with team still shows ${phrase}`).not.toContainText(
           phrase,
         );
       }

@@ -21,13 +21,13 @@ const KIND_LABEL: Record<AgentConfigKind, string> = {
 
 const KIND_CHEATSHEET: Record<AgentConfigKind, { hint: string; example: string }> = {
   rules: {
-    hint: "Plain markdown appended to every member's agent context (imported into CLAUDE.md by sync; written as a .cursor/rules .mdc for Cursor). Optionally start with a ---description/globs/alwaysApply--- frontmatter block to scope the Cursor rule to matching files; without it the rule is always-on.",
+    hint: "Plain notes every member's coding agent reads.",
     example: `- Always use meters — never inches — in robot code and CAD discussion.
 - SparkMax current limits are mandatory on every motor controller.
 - Subsystems are named <Mechanism>Subsystem (e.g. ShooterSubsystem).`,
   },
   subagent: {
-    hint: "Claude Code subagent file: YAML frontmatter {name, description, tools?, model?} then the system prompt body. Synced to .claude/agents/<name>.md.",
+    hint: "A helper the coding agent can call. Name it, say when to use it, then write what it should do.",
     example: `---
 name: drivetrain-reviewer
 description: Reviews drivetrain code for unit and current-limit mistakes
@@ -38,7 +38,7 @@ You review FRC drivetrain code. Flag any imperial units and any motor
 controller configured without a current limit.`,
   },
   "mcp-server": {
-    hint: "One .mcp.json mcpServers entry: {\"command\", \"args\", \"env\"} for stdio or {\"url\"} for remote. Never paste real keys — use ${PLACEHOLDER} values members set locally. Synced under the vantage- prefix.",
+    hint: "A connection the coding agent can use. Never paste real keys — use a placeholder each person sets on their computer.",
     example: `{
   "command": "npx",
   "args": ["-y", "@modelcontextprotocol/server-github"],
@@ -46,14 +46,14 @@ controller configured without a current limit.`,
 }`,
   },
   permissions: {
-    hint: "settings.json permissions arrays. Sync writes these to .claude/vantage-permissions.suggested.json only — a human merges them, never automation.",
+    hint: "What the coding agent may run. Sync never applies these itself — a person reviews them.",
     example: `{
   "allow": ["Bash(./gradlew build)", "Bash(./gradlew test)"],
   "deny": ["Bash(rm -rf *)"]
 }`,
   },
   skill: {
-    hint: "SKILL.md format: frontmatter {name, description} then the skill instructions. Synced to .claude/skills/<name>/SKILL.md.",
+    hint: "A how-to the coding agent can follow. Name it, then write the steps.",
     example: `---
 name: match-strategy-notes
 description: How this team writes pre-match strategy notes
@@ -200,7 +200,7 @@ export default function AgentConfigClient() {
   if (!view) {
     return (
       <main className="module-page">
-        <p aria-busy="true">Loading team agent configuration…</p>
+        <p aria-busy="true">Opening Team agent config…</p>
       </main>
     );
   }
@@ -210,8 +210,8 @@ export default function AgentConfigClient() {
       <main className="module-page">
         <header className="app-page-header">
           <div>
-            <span className="breadcrumbs">Team / Agent config</span>
-            <h1>Team agent configuration</h1>
+            <span className="breadcrumbs">Team / Team agent config</span>
+            <h1>Team agent config</h1>
             <p>{view.message}</p>
           </div>
         </header>
@@ -219,7 +219,6 @@ export default function AgentConfigClient() {
     );
   }
 
-  const bundleUrl = `/api/agent-config/bundle?orgId=${encodeURIComponent(view.orgId)}`;
   const cheat = KIND_CHEATSHEET[editor.kind];
   // Sharing state always comes from the freshly-loaded view (mutations refresh it).
   const currentItem = editor.itemId ? view.items.find((item) => item.id === editor.itemId) ?? null : null;
@@ -236,13 +235,11 @@ export default function AgentConfigClient() {
     <main className="module-page">
       <header className="app-page-header">
         <div>
-          <span className="breadcrumbs">Team / Agent config</span>
-          <h1>Team agent configuration</h1>
+          <span className="breadcrumbs">Team / Team agent config</span>
+          <h1>Team agent config</h1>
           <p>
-            Author your coding-agent setup once — rules, subagents, MCP servers, permissions, skills — and
-            every member&apos;s agent uses it: Claude Code and Cursor via one sync command, custom agents via
-            the bundle export, and Vantage&apos;s own in-app agent automatically. Each item is shared with the
-            entire team or with just the people you pick.
+            Write the team&apos;s coding-agent rules once. Every member&apos;s Claude Code and Cursor picks
+            them up. Share with the whole team or just the people you pick.
           </p>
         </div>
       </header>
@@ -539,35 +536,17 @@ export default function AgentConfigClient() {
 
       <section className="agent-config-panel agent-config-howto" style={{ marginTop: 16 }} aria-label="How to use">
         <h2>How every member uses this</h2>
-        <h3>Claude Code (one command, run in your robot-code repo)</h3>
-        <pre>{`vantage-cad agent sync # writes .claude/agents, team rules + CLAUDE.md import, .mcp.json (vantage-* only)
-vantage-cad agent sync --dry-run # preview without writing`}</pre>
-        <p style={{ fontSize: 12, color: "var(--muted)" }}>
-          Requires one-time pairing via <code>vantage-cad setup</code>. Permissions are never auto-applied —
-          sync writes <code>.claude/vantage-permissions.suggested.json</code> for a human to review.
+        <p>
+          In the robot-code folder on this computer, sync Team agent config so Claude Code and Cursor pick up
+          the team&apos;s rules and skills. It only writes Vantage&apos;s own files.
         </p>
-        <h3>Cursor (same command, Cursor-native formats)</h3>
-        <pre>{`vantage-cad agent sync --agent cursor # rules → .cursor/rules/vantage/*.mdc, skills → .cursor/skills, MCP → .cursor/mcp.json
-vantage-cad agent sync --agent all # Claude Code + Cursor together`}</pre>
-        <p style={{ fontSize: 12, color: "var(--muted)" }}>
-          Without <code>--agent</code>, sync targets whatever the repo already uses (a <code>.cursor/</code>{" "}
-          folder enables Cursor). Rules without path scopes become always-on (<code>alwaysApply: true</code>);
-          a rule starting with a <code>globs:</code> frontmatter block becomes auto-attached to matching
-          files. Only files Vantage generated (inside <code>.cursor/rules/vantage/</code>, marked with a
-          banner) are ever updated or removed. Subagents and permissions have no Cursor equivalent and are
-          skipped.
-        </p>
-        <h3>Any custom agent (typed JSON export)</h3>
-        <pre>{`GET ${bundleUrl}
-GET ${bundleUrl}&format=cursor # same content materialized as Cursor-native files`}</pre>
-        <p style={{ fontSize: 12, color: "var(--muted)" }}>
-          The export is signed in as you: team-wide items, plus the items shared with you.
-        </p>
+        <p>Ask a mentor to pair this computer once. Permissions never apply themselves — a person reviews them.</p>
+        <h3>Claude Code</h3>
+        <p>Sync writes the team&apos;s helpers, rules, and skills into Claude Code. Your own files stay yours.</p>
+        <h3>Cursor</h3>
+        <p>The same sync writes Cursor rules and skills. Helpers and permissions have no Cursor home and are skipped.</p>
         <h3>Vantage in-app agent</h3>
-        <p style={{ fontSize: 12, color: "var(--muted)" }}>
-          Valid <b>rules</b> items are injected into every in-app AI run automatically, labeled as
-          &quot;Team agent rules&quot; in the run&apos;s context sources.
-        </p>
+        <p>Valid rules are added to every in-app AI run automatically, labeled Team agent rules.</p>
       </section>
     </main>
   );

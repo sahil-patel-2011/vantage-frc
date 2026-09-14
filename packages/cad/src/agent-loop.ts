@@ -42,6 +42,8 @@ export function resolveCadMetering(brainMode: CadBrainMode): CadMeterResolution 
   switch (brainMode) {
     case "terminal_cli":
       return { keySource: "local_cli", costUsd: 0, billing: described.billing };
+    case "claude_code_personal":
+      return { keySource: "local_cli", costUsd: 0, billing: described.billing };
     case "mock":
       return { keySource: "local", costUsd: 0, billing: described.billing };
     case "team_byok":

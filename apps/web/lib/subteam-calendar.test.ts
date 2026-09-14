@@ -213,7 +213,7 @@ describe("my-subteam strip + workflow deep links", () => {
       ORG,
     );
     expect(competition.map((l) => l.label)).toEqual(
-      expect.arrayContaining(["Event Day Command", "Scouting duty"]),
+      expect.arrayContaining(["Event day", "Scouting duty"]),
     );
 
     const deadline = eventWorkflowLinks(

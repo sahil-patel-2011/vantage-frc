@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * CAD Vault client: link Onshape/Fusion by title, then upload printable files.
+ * CAD vault client: link Onshape/Fusion by title, then upload printable files.
  * Geometry is a face count only — never shown as kilograms.
  */
 
@@ -50,7 +50,7 @@ async function persistCadVaultSnapshot(orgHint: string, seasonHint: string, data
     await putFeatureSnapshot("cad-vault", cacheOrg, data, seasonHint || seasonKey);
     await putFeatureSnapshot("cad-vault", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live CAD Vault already painted; IndexedDB is best-effort.
+    // Live CAD vault already painted; IndexedDB is best-effort.
   }
 }
 
@@ -153,7 +153,7 @@ export default function CadVaultClient() {
       if (!response.ok || !isCadVaultView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh CAD Vault. Showing the last copy on this device.");
+          setError("Could not refresh CAD vault. Showing the last copy on this device.");
           setFetchFailed(false);
           return;
         }
@@ -168,7 +168,7 @@ export default function CadVaultClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh CAD Vault. Showing the last copy on this device.");
+        setError("Could not refresh CAD vault. Showing the last copy on this device.");
         setFetchFailed(false);
         return;
       }
@@ -340,7 +340,7 @@ export default function CadVaultClient() {
     return (
       <main className="module-page cad-vault-page">
         <CadVaultHeader orgId={null} />
-        <OfflineBanner feature="CAD Vault" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="CAD vault" fromCache={fromCache} cachedAt={cachedAt} />
         <CadVaultEmptyCard
           shell={shell}
           onRetry={shell === "error" ? () => void load(seasonYear) : undefined}
@@ -353,7 +353,7 @@ export default function CadVaultClient() {
     return (
       <main className="module-page cad-vault-page soft-gate">
         <CadVaultHeader orgId={view.orgId} />
-        <OfflineBanner feature="CAD Vault" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="CAD vault" fromCache={fromCache} cachedAt={cachedAt} />
         {error ? (
           <p className="telemetry-status" role="alert">
             {error}
@@ -530,7 +530,7 @@ export default function CadVaultClient() {
           <span className="app-badge">{formatBytes(ready?.totalBytes ?? 0)} of 2 GB</span>
         </div>
       </CadVaultHeader>
-      <OfflineBanner feature="CAD Vault" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="CAD vault" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

@@ -65,6 +65,11 @@ describe("composer native ops", () => {
     expect(composerPalette("onshape")).not.toContain("feature_script");
     expect(composerPalette("fusion360")).not.toContain("feature_script");
     expect(composerPalette("onshape")).toEqual([...COMPOSER_NATIVE_OPS]);
+    expect(COMPOSER_NATIVE_OPS).toContain("create_drawing");
+    expect(COMPOSER_NATIVE_OPS[0]).toBe("create_drawing");
+    expect(describeComposerOp("create_drawing")).toBe("Make a drawing first");
+    expect(COMPOSER_NATIVE_OPS).toContain("label_drawing");
+    expect(describeComposerOp("label_drawing")).toBe("Label the drawing");
     expect(COMPOSER_NATIVE_OPS).toContain("create_chamfer");
     expect(COMPOSER_NATIVE_OPS).toContain("create_shell");
     expect(COMPOSER_NATIVE_OPS).toContain("create_pattern");

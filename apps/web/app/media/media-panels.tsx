@@ -369,10 +369,10 @@ export function KitPanel({ view }: { view: LiveView }) {
   return (
     <Panel>
       <header>
-        <h2>Media Kit readiness</h2>
+        <h2>Media kit readiness</h2>
         <p className="app-muted">
           {view.kit.readinessTier === "ready"
-            ? "Profile and logo recorded — open Media Kit to edit."
+            ? "Profile and logo recorded — open Media kit to edit."
             : view.kit.missingFields.length
               ? `Still missing: ${view.kit.missingFields.slice(0, 3).join(", ")}${view.kit.missingFields.length > 3 ? "…" : ""}`
               : "No kit fields yet."}
@@ -418,7 +418,7 @@ export function KitPanel({ view }: { view: LiveView }) {
           in both places. */}
       <div className="media-kit-actions">
         <Button as="a" variant="primary" href={kitHref}>
-          Open Media Kit
+          Open Media kit
         </Button>
       </div>
     </Panel>
@@ -465,7 +465,7 @@ export function ImpactPanel({ view }: { view: LiveView }) {
         />
       )}
       <Button as="a" variant="primary" href={withOrgHref("/impact", view.orgId)}>
-        Open Community Impact
+        Open Impact
       </Button>
     </Panel>
   );

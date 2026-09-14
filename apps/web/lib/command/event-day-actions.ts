@@ -12,7 +12,7 @@ export type EventDayNextAction = {
 };
 
 /**
- * Prioritized next actions for Event Day Command / My Day.
+ * Prioritized next actions for Event day / My Day.
  * Never invents DEMO match times, win rates, or scout coverage.
  */
 export function eventDayNextActions(
@@ -39,7 +39,7 @@ export function eventDayNextActions(
     actions.push({
       id: "workspace",
       label: "Choose your team",
-      detail: "Choose your team before loading Event Day.",
+      detail: "Choose your team before loading Event day.",
       href: "/workspace",
       primary: true,
     });
@@ -60,7 +60,7 @@ export function eventDayNextActions(
     actions.push({
       id: "tba",
       label: "Set the event schedule",
-      detail: "Sync the schedule under Team → Data. Event Day stays blank until matches exist.",
+      detail: "Sync the schedule under Team → Data. Event day stays blank until matches exist.",
       href: snap?.links.teamData ?? withOrgHref("/team/data", orgId),
       primary: !snap?.eventKey ? false : true,
     });

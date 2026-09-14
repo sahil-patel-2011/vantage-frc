@@ -48,7 +48,7 @@ export function DashboardBoardsModal({
     <Modal
       open={open}
       onClose={onClose}
-      title="Home Screens"
+      title="Home screens"
       description="Personal boards are yours. Team boards are shared — owner/admin can create and edit them."
       variant="sheet"
     >

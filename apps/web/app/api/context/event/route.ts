@@ -98,7 +98,7 @@ export async function POST(request: Request) {
       if (eventKey) {
         const exists = await client.query(`SELECT 1 FROM events_ref WHERE event_key = $1`, [eventKey]);
         if (!exists.rowCount) {
-          throw new Error("Unknown event key — sync TBA events before selecting.");
+          throw new Error("Unknown event key — sync official events before selecting.");
         }
       }
 

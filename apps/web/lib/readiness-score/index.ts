@@ -153,7 +153,7 @@ export function computeReadinessIndex(input: {
     fixList.push({
       id: `fmea-${failure.id}`,
       label: failure.title,
-      reason: `Open FMEA on ${failure.subsystemName} — RPN ${fmeaRpn(failure)} (${failure.status})`,
+      reason: `Open Failure log on ${failure.subsystemName} — priority ${fmeaRpn(failure)} (${failure.status})`,
       severity: fmeaFixSeverity(failure),
       category: "fmea",
     });

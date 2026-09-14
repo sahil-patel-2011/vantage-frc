@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "cad-vault",
-  title: "CAD Vault",
+  title: "CAD vault",
   route: "/cad-vault",
   apiRoute: "/api/cad-vault",
   hub: "Build",

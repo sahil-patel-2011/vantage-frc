@@ -283,7 +283,7 @@ export default function ScoutingSchemaAbClient() {
         {header}
         <OfflineBanner feature="Schema A/B" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
-          title={failure ? failure.title : "Loading…"}
+          title={failure ? failure.title : "Opening Schema A/B"}
           description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >
@@ -313,7 +313,7 @@ export default function ScoutingSchemaAbClient() {
               {error}
             </p>
           ) : null}
-          <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
+          <EmptyState badge="Needs setup" badgeTone="setup" title={view.message}>
             {view.steps[0] ? (
               <Button as="a" variant="primary" href={view.steps[0].href}>
                 {view.steps[0].label}

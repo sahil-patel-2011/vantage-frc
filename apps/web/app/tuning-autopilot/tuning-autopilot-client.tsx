@@ -54,7 +54,7 @@ async function persistTuningAutopilotSnapshot(
     await putFeatureSnapshot("tuning-autopilot", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("tuning-autopilot", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Tuning Autopilot already painted; IndexedDB is best-effort.
+    // Live Tuning advisor already painted; IndexedDB is best-effort.
   }
 }
 
@@ -127,10 +127,10 @@ function TuningShell({
         breadcrumbs={
           <>
             <a href={buildHref}>Build</a>
-            {" / Tuning Autopilot"}
+            {" / Tuning advisor"}
           </>
         }
-        title="Tuning Autopilot"
+        title="Tuning advisor"
         description={description}
       >
         <TuningRelatedStrip orgId={orgId} />
@@ -140,7 +140,7 @@ function TuningShell({
         soft
         badge={
           shell === "setup"
-            ? "Setup required"
+            ? "Needs setup"
             : shell === "error"
               ? "Unavailable"
               : shell === "empty"
@@ -223,7 +223,7 @@ export default function TuningAutopilotClient() {
         if (!response.ok || !isTuningAutopilotView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Tuning Autopilot. Showing the last copy on this device.");
+            setError("Could not refresh Tuning advisor. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -238,7 +238,7 @@ export default function TuningAutopilotClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Tuning Autopilot. Showing the last copy on this device.");
+          setError("Could not refresh Tuning advisor. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -321,7 +321,7 @@ export default function TuningAutopilotClient() {
   if (shell === "loading") {
     return (
       <TuningShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Tuning Autopilot" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Tuning advisor" fromCache={fromCache} cachedAt={cachedAt} />
       </TuningShell>
     );
   }
@@ -335,7 +335,7 @@ export default function TuningAutopilotClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Tuning Autopilot" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Tuning advisor" fromCache={fromCache} cachedAt={cachedAt} />
       </TuningShell>
     );
   }
@@ -347,7 +347,7 @@ export default function TuningAutopilotClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Tuning Autopilot" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Tuning advisor" fromCache={fromCache} cachedAt={cachedAt} />
       </TuningShell>
     );
   }
@@ -355,7 +355,7 @@ export default function TuningAutopilotClient() {
   if (view?.status !== "live") {
     return (
       <TuningShell description={shellCopy.description} orgId={orgId} shell="setup">
-        <OfflineBanner feature="Tuning Autopilot" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Tuning advisor" fromCache={fromCache} cachedAt={cachedAt} />
       </TuningShell>
     );
   }
@@ -366,11 +366,11 @@ export default function TuningAutopilotClient() {
         breadcrumbs={
           <>
             <a href={buildHref}>Build</a>
-            {" / Tuning Autopilot"}
+            {" / Tuning advisor"}
           </>
         }
-        title="Tuning Autopilot"
-        description="Log each PID/feedforward gain set you try and its test result. The next gain set is suggested from your own logged trend. Cross-check CAD, FMEA, and Practice."
+        title="Tuning advisor"
+        description="Log each gain set you try and its test result. The next gain set is suggested from your own logged trend. Cross-check CAD, Failure log, and Practice."
       >
         <div className="tuning-autopilot-header-actions">
           {view.seasons.length > 0 ? (
@@ -400,7 +400,7 @@ export default function TuningAutopilotClient() {
         </div>
       </PageHeader>
 
-      <OfflineBanner feature="Tuning Autopilot" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Tuning advisor" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -444,7 +444,7 @@ export default function TuningAutopilotClient() {
               <span className="eyebrow">Before you converge</span>
               <p className="app-muted" style={{ marginTop: 8 }}>
                 Re-test suggested gains on the robot. Keep <a href={cadHref}>CAD</a>,{" "}
-                <a href={fmeaHref}>FMEA</a>, and <a href={practiceHref}>Practice</a> aligned with the
+                <a href={fmeaHref}>Failure log</a>, and <a href={practiceHref}>Practice</a> aligned with the
                 subsystem you’re tuning.
               </p>
             </Panel>
@@ -488,7 +488,7 @@ function SummaryTiles({
     },
   ];
   return (
-    <Panel className="tuning-autopilot-coverage" aria-label="Tuning Autopilot summary">
+    <Panel className="tuning-autopilot-coverage" aria-label="Tuning advisor summary">
       <div className="tuning-autopilot-stats">
         <div>
           <span

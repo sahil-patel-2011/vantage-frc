@@ -44,7 +44,7 @@ async function persistVendorLeadTimesSnapshot(orgHint: string, data: VendorLeadT
     await putFeatureSnapshot("vendor-lead-times", cacheOrg, data);
     if (!orgHint) await putFeatureSnapshot("vendor-lead-times", "_", data);
   } catch {
-    // Live Vendor Lead Times already painted; IndexedDB is best-effort.
+    // Live Lead times already painted; IndexedDB is best-effort.
   }
 }
 
@@ -120,10 +120,10 @@ function VendorLeadTimesShell({
         breadcrumbs={
           <>
             <a href={businessHref}>Business</a>
-            {" / Vendor Lead Times"}
+            {" / Lead times"}
           </>
         }
-        title="Vendor Lead Times"
+        title="Lead times"
         description={description}
       >
         <VendorLeadTimesRelatedStrip orgId={orgId} />
@@ -133,7 +133,7 @@ function VendorLeadTimesShell({
         soft
         badge={
           shell === "setup"
-            ? "Setup required"
+            ? "Needs setup"
             : shell === "error"
               ? "Unavailable"
               : shell === "empty"
@@ -204,7 +204,7 @@ export default function VendorLeadTimesClient() {
         if (!response.ok || !isVendorLeadTimesView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Vendor Lead Times. Showing the last copy on this device.");
+            setError("Could not refresh Lead times. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -218,7 +218,7 @@ export default function VendorLeadTimesClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Vendor Lead Times. Showing the last copy on this device.");
+          setError("Could not refresh Lead times. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -290,7 +290,7 @@ export default function VendorLeadTimesClient() {
   if (shell === "loading") {
     return (
       <VendorLeadTimesShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Vendor Lead Times" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Lead times" fromCache={fromCache} cachedAt={cachedAt} />
       </VendorLeadTimesShell>
     );
   }
@@ -304,7 +304,7 @@ export default function VendorLeadTimesClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Vendor Lead Times" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Lead times" fromCache={fromCache} cachedAt={cachedAt} />
       </VendorLeadTimesShell>
     );
   }
@@ -316,7 +316,7 @@ export default function VendorLeadTimesClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Vendor Lead Times" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Lead times" fromCache={fromCache} cachedAt={cachedAt} />
       </VendorLeadTimesShell>
     );
   }
@@ -324,7 +324,7 @@ export default function VendorLeadTimesClient() {
   if (view?.status !== "live") {
     return (
       <VendorLeadTimesShell description={shellCopy.description} orgId={orgId} shell="setup">
-        <OfflineBanner feature="Vendor Lead Times" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Lead times" fromCache={fromCache} cachedAt={cachedAt} />
       </VendorLeadTimesShell>
     );
   }
@@ -335,11 +335,11 @@ export default function VendorLeadTimesClient() {
         breadcrumbs={
           <>
             <a href={businessHref}>Business</a>
-            {" / Vendor Lead Times"}
+            {" / Lead times"}
           </>
         }
-        title="Vendor Lead Times"
-        description="Track real vendor shipping lead times and calculate the latest date to reorder parts so they still arrive in time. Cross-check Orders, Spare Forecast, and Vendors."
+        title="Lead times"
+        description="Track real vendor shipping lead times and calculate the latest date to reorder parts so they still arrive in time. Cross-check Orders, Spares forecast, and Vendors."
       >
         <div className="vendor-lead-times-header-actions">
           {relatedLinks.map((link) => (
@@ -349,7 +349,7 @@ export default function VendorLeadTimesClient() {
           ))}
         </div>
       </PageHeader>
-      <OfflineBanner feature="Vendor Lead Times" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Lead times" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -388,7 +388,7 @@ export default function VendorLeadTimesClient() {
           <span className="eyebrow">Procurement path</span>
           <p className="app-muted" style={{ marginTop: 8 }}>
             Place due reorders through <a href={ordersHref}>Orders</a>, align restock windows with{" "}
-            <a href={spareHref}>Spare Forecast</a>, and keep contacts in <a href={vendorsHref}>Vendors</a>{" "}
+            <a href={spareHref}>Spares forecast</a>, and keep contacts in <a href={vendorsHref}>Vendors</a>{" "}
           </p>
         </Panel>
       </div>

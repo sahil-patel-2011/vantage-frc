@@ -47,7 +47,7 @@ describe("account API connector copy", () => {
     );
   });
 
-  it("keeps GitHub next steps on Team admin without OAuth or PAT", () => {
+  it("keeps GitHub next steps on Invites without OAuth or PAT", () => {
     expect(accountGithubDetail({ configured: true, connected: true, orgId: "org-1" })).toBe(
       ACCOUNT_GITHUB_COPY.connected,
     );

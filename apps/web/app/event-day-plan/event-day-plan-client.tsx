@@ -157,10 +157,10 @@ function PlanShell({
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Event-Day Plan"}
+            {" / Day plan"}
           </>
         }
-        title="Event-Day Stress Planner"
+        title="Day plan"
         description={description}
       >
         <RelatedStrip orgId={orgId} />
@@ -342,7 +342,7 @@ export default function EventDayPlanClient() {
   if (shell === "loading") {
     return (
       <PlanShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Event-day plan" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Day plan" fromCache={fromCache} cachedAt={cachedAt} />
       </PlanShell>
     );
   }
@@ -356,7 +356,7 @@ export default function EventDayPlanClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Event-day plan" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Day plan" fromCache={fromCache} cachedAt={cachedAt} />
       </PlanShell>
     );
   }
@@ -368,7 +368,7 @@ export default function EventDayPlanClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Event-day plan" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Day plan" fromCache={fromCache} cachedAt={cachedAt} />
       </PlanShell>
     );
   }
@@ -376,7 +376,7 @@ export default function EventDayPlanClient() {
   if (view?.status !== "live") {
     return (
       <PlanShell description={shellCopy.description} orgId={orgId} shell="setup">
-        <OfflineBanner feature="Event-day plan" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Day plan" fromCache={fromCache} cachedAt={cachedAt} />
       </PlanShell>
     );
   }
@@ -387,11 +387,11 @@ export default function EventDayPlanClient() {
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Event-Day Plan"}
+            {" / Day plan"}
           </>
         }
-        title="Event-Day Stress Planner"
-        description="A per-hour overlay of qual matches, battery charges, scout shifts, pit-repair windows, and logistics — with automatic conflict alerts. Cross-check Command, Battery Rotation, and Pit Repair."
+        title="Day plan"
+        description="A per-hour overlay of qual matches, battery charges, scout shifts, pit-repair windows, and logistics — with automatic conflict alerts. Cross-check Command, Charge plan, and Pit Repair."
       >
         <div className="edp-header-actions">
           <label className="app-muted edp-filter">
@@ -429,7 +429,7 @@ export default function EventDayPlanClient() {
         </div>
       </PageHeader>
 
-      <OfflineBanner feature="Event-day plan" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Day plan" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -440,7 +440,7 @@ export default function EventDayPlanClient() {
       <NextActionsPanel actions={nextActions} />
 
       {showTiles ? (
-        <section className="edp-stats" aria-label="Event-day plan counts">
+        <section className="edp-stats" aria-label="Day plan counts">
           <StatTile
             label="Blocks"
             value={formatEventDayPlanMetric(view.summary.totalBlocks, true)}

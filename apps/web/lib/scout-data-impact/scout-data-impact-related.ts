@@ -6,8 +6,8 @@ export const SCOUT_DATA_IMPACT_RELATED_LINKS = [
   { id: "scouting", label: "Scouting", kind: "hub" as const, tab: "scouting" },
   { id: "strategy", label: "Strategy", kind: "hub" as const, tab: "strategy" },
   { id: "accuracy", label: "Accuracy", kind: "path" as const, path: "/scout-accuracy" },
-  { id: "coverage-live", label: "Coverage Live", kind: "path" as const, path: "/scout-coverage-live" },
-  { id: "command", label: "Event Day", kind: "hub" as const, tab: "command" },
+  { id: "coverage-live", label: "Coverage", kind: "path" as const, path: "/scout-coverage-live" },
+  { id: "command", label: "Event day", kind: "hub" as const, tab: "command" },
 ] as const;
 
 export type ScoutDataImpactRelatedId = (typeof SCOUT_DATA_IMPACT_RELATED_LINKS)[number]["id"];
@@ -89,7 +89,7 @@ export function scoutDataImpactSetupSteps(orgId?: string | null): ScoutDataImpac
     {
       id: "accuracy",
       label: "Open Accuracy",
-      detail: "TBA-verified ranks help explain why a scout's data earned a seat.",
+      detail: "official ranks help explain why a scout's data earned a seat.",
       href: withOrgHref("/scout-accuracy", orgId),
     },
     {
@@ -160,7 +160,7 @@ export function scoutDataImpactShellCopy(kind: ScoutDataImpactShellKind): ScoutD
     case "loading":
       return {
         kind,
-        title: "Loading scout data impact…",
+        title: "Opening Data impact",
         description:
           "Checking which team you are on and logged alliance picks.",
       };
@@ -236,7 +236,7 @@ export function scoutDataImpactNextActions(input: {
         {
           id: "accuracy",
           label: "Open Accuracy",
-          detail: "Ranks stay blank until TBA-verified totals exist.",
+          detail: "Ranks stay blank until official totals exist.",
           href: withOrgHref("/scout-accuracy", null),
         },
       ];
@@ -258,7 +258,7 @@ export function scoutDataImpactNextActions(input: {
       {
         id: "accuracy",
         label: "Open Accuracy",
-        detail: "TBA-verified ranks explain why a scout earned a seat.",
+        detail: "official ranks explain why a scout earned a seat.",
         href: withOrgHref("/scout-accuracy", orgId),
       },
       {
@@ -359,7 +359,7 @@ export function scoutDataImpactNextActions(input: {
     {
       id: "accuracy",
       label: "Open Accuracy",
-      detail: "Cross-check TBA ranks against who earned pick credit.",
+      detail: "Cross-check official ranks against who earned pick credit.",
       href: withOrgHref("/scout-accuracy", orgId),
     },
   ];

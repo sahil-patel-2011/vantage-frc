@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "alliance-selection-desk",
-  title: "Alliance Selection Desk 2.0",
+  title: "Alliance desk",
   route: "/alliance-selection-desk",
   apiRoute: "/api/alliance-selection-desk",
   hub: "Competition",

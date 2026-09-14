@@ -14,7 +14,7 @@ import {
 import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("githubConnectionHref", () => {
-  it("targets Team admin #github-connection via withOrgHref", () => {
+  it("targets Invites #github-connection via withOrgHref", () => {
     expect(githubConnectionHref("org-1")).toBe("/team/admin?orgId=org-1#github-connection");
     expect(githubConnectionHref(null)).toBe("/team/admin#github-connection");
   });

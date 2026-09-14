@@ -11,6 +11,6 @@ describe("Judge-Pitch last snapshot stays on the phone", () => {
     expect(src).toMatch(/putFeatureSnapshot/);
     expect(src).toMatch(/"judge-sim"/);
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
-    expect(src).toMatch(/feature="Judge-Pitch Simulator"/);
+    expect(src).toMatch(/feature="Judge pitch"/);
   });
 });

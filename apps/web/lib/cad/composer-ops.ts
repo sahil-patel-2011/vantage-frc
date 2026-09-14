@@ -1,6 +1,8 @@
 /** Native Onshape ops the human CAD composer can edit. Mirrors agent-policy names. */
 
 export const COMPOSER_NATIVE_OPS = [
+  "create_drawing",
+  "label_drawing",
   "create_sketch",
   "create_extrude",
   "create_fillet",
@@ -78,6 +80,8 @@ const LIST_ALIASES: Record<string, string> = {
 };
 
 const POSITIVE_MM_BY_OP: Record<ComposerNativeOp, readonly string[]> = {
+  create_drawing: ["widthMm", "heightMm", "depthMm"],
+  label_drawing: [],
   create_sketch: ["widthMm", "heightMm"],
   create_extrude: ["depthMm"],
   create_fillet: ["radiusMm"],
@@ -102,6 +106,8 @@ const POSITIVE_MM_BY_OP: Record<ComposerNativeOp, readonly string[]> = {
 };
 
 const COUNT_BY_OP: Record<ComposerNativeOp, readonly string[]> = {
+  create_drawing: [],
+  label_drawing: [],
   create_sketch: [],
   create_extrude: [],
   create_fillet: [],
@@ -126,6 +132,8 @@ const COUNT_BY_OP: Record<ComposerNativeOp, readonly string[]> = {
 };
 
 const SIGNED_MM_BY_OP: Record<ComposerNativeOp, readonly string[]> = {
+  create_drawing: [],
+  label_drawing: [],
   create_sketch: [],
   create_extrude: [],
   create_fillet: [],
@@ -222,6 +230,53 @@ const PATTERN_DIRECTIONS = [
 ] as const;
 
 export const COMPOSER_OP_FIELDS: Record<ComposerNativeOp, readonly ComposerFieldSpec[]> = {
+  create_drawing: [
+    { key: "name", label: "Name", kind: "text", help: "Drawing tab name in Onshape." },
+    {
+      key: "widthMm",
+      label: "Width",
+      kind: "mm",
+      help: "Controlling width from the brief. Make the drawing first, then cast from these millimetres. Do not invent.",
+    },
+    {
+      key: "heightMm",
+      label: "Height",
+      kind: "mm",
+      help: "Controlling height from the brief. Do not invent.",
+    },
+    {
+      key: "depthMm",
+      label: "Depth",
+      kind: "mm",
+      help: "Controlling depth from the brief. The solid copies this after the drawing.",
+    },
+    {
+      key: "views",
+      label: "Views",
+      kind: "idList",
+      help: "front, top, side, iso. Multiple faces when the part needs more than one drawing.",
+    },
+    {
+      key: "notes",
+      label: "Notes",
+      kind: "idList",
+      help: "Plain notes a person can CAD from. Do not invent sizes.",
+    },
+  ],
+  label_drawing: [
+    {
+      key: "drawingElementId",
+      label: "Drawing tab",
+      kind: "text",
+      help: "Drawing tab id from Make a drawing first. Do not invent an id.",
+    },
+    {
+      key: "notes",
+      label: "Notes",
+      kind: "idList",
+      help: "Plain notes a person can CAD from. Do not invent sizes.",
+    },
+  ],
   create_sketch: [
     { key: "plane", label: "Plane", kind: "select", options: SKETCH_PLANES },
     { key: "sketchKind", label: "Kind", kind: "select", options: SKETCH_KINDS },
@@ -446,6 +501,10 @@ export function emptyComposerParameters(_operation?: ComposerNativeOp): Record<s
 
 export function describeComposerOp(operation: ComposerNativeOp): string {
   switch (operation) {
+    case "create_drawing":
+      return "Make a drawing first";
+    case "label_drawing":
+      return "Label the drawing";
     case "create_sketch":
       return "Sketch";
     case "create_extrude":
@@ -488,6 +547,10 @@ export function describeComposerOp(operation: ComposerNativeOp): string {
       return "Export glTF";
     case "render_views":
       return "Render views";
+    default: {
+      const _exhaustive: never = operation;
+      return _exhaustive;
+    }
   }
 }
 

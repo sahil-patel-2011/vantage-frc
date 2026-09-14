@@ -1,6 +1,6 @@
 import { hubHref } from "../nav/hubs";
 
-/** Soft-UI related Competition surfaces for Event Day / Strategy / picks. */
+/** Soft-UI related Competition surfaces for Event day / Strategy / picks. */
 export const COMPETITION_RELATED_LINKS = [
   { id: "command", label: "Event day", tab: "command" },
   { id: "my-day", label: "My Day", tab: "my-day" },
@@ -95,7 +95,7 @@ export function strategySetupNextActions(ctx: StrategySetupContext): StrategyNex
     actions.push({
       id: "event",
       label: "Set active event",
-      detail: "Event Day Command picks the event schedule Strategy and picks use.",
+      detail: "Event day picks the event schedule Strategy and picks use.",
       href: withOrg("/command", orgId),
       primary: true,
     });
@@ -171,7 +171,7 @@ export function strategyCoverageLinks(
 export function pickSurfaceSetupMessage(ctx: StrategySetupContext): string {
   if (!ctx.orgId) return "Choose your team before opening this Competition tool.";
   if (!ctx.eventKey) {
-    return "Set your active event on Event Day. Rankings stay blank until then.";
+    return "Set your active event on Event day. Rankings stay blank until then.";
   }
   if (ctx.tbaConfigured === false && ctx.hasMetrics === false) {
     return "Ask a mentor to connect match results, then sync under Team → Data.";

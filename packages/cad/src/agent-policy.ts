@@ -5,6 +5,8 @@
 
 /** Local type mirrors — avoid circular import with index.ts */
 export type CadOperation =
+  | "create_drawing"
+  | "label_drawing"
   | "create_sketch"
   | "create_extrude"
   | "create_fillet"
@@ -44,6 +46,8 @@ export type EngineeringBriefLite = {
 
 /** Operations that change geometry and always require explicit approval (or session auto-run policy). */
 export const DESTRUCTIVE_CAD_OPERATIONS = new Set<CadOperation>([
+  "create_drawing",
+  "label_drawing",
   "create_sketch",
   "create_extrude",
   "create_fillet",
@@ -75,6 +79,8 @@ export const VERIFY_CAD_OPERATIONS = new Set<CadOperation>([
 ]);
 
 const ALLOWLISTED: readonly CadOperation[] = [
+  "create_drawing",
+  "label_drawing",
   "create_sketch",
   "create_extrude",
   "create_fillet",
@@ -108,6 +114,8 @@ const ALLOWLISTED: readonly CadOperation[] = [
  * appear in a hosted starter or metered planner plan.
  */
 export const HOSTED_NATIVE: readonly CadOperation[] = [
+  "create_drawing",
+  "label_drawing",
   "create_sketch",
   "create_extrude",
   "create_fillet",
@@ -147,7 +155,7 @@ Hard rules:
 
 Output structured CAD action plans only using allowlisted operations.`;
 
-export type CadBrainMode = "managed_api" | "team_byok" | "terminal_cli" | "mock";
+export type CadBrainMode = "managed_api" | "team_byok" | "terminal_cli" | "claude_code_personal" | "mock";
 export type CadSetupTarget = "mock" | "fusion360" | "onshape";
 export type CadTeamProfile = {
   defaultPlatform: CadSetupTarget;
@@ -274,14 +282,45 @@ export function buildDefaultCadPlan(
   const envelopeMm = parseEnvelopeMm(envelope?.value);
   const verifyNeedsApproval = !options.autoRunVerify;
   const adaptive = buildAdaptiveCadContext(options.teamProfile, options.userPreferences);
+  const drawingParameters: Record<string, unknown> = {
+    name: "Detail drawing",
+    units: adaptive.units,
+    views: ["front", "top", "iso"],
+    purpose: "Labeled front and top so a person can sketch the outline from the millimetres.",
+    notes: [
+      "Ask for controlling millimetres before sketching. Do not invent sizes.",
+      "A person can CAD from these labels: sketch the named view, then cast the solid from the same millimetres.",
+    ],
+  };
   const sketchParameters: Record<string, unknown> = { plane: "Top", units: adaptive.units };
   const extrudeParameters: Record<string, unknown> = {};
   if (envelopeMm !== undefined) {
+    drawingParameters.widthMm = envelopeMm;
+    drawingParameters.heightMm = envelopeMm;
+    drawingParameters.depthMm = envelopeMm;
+    drawingParameters.callouts = [
+      { label: "Width", valueMm: envelopeMm, view: "front" },
+      { label: "Height", valueMm: envelopeMm, view: "front" },
+      { label: "Width", valueMm: envelopeMm, view: "top" },
+      { label: "Depth", valueMm: envelopeMm, view: "top" },
+    ];
+    drawingParameters.notes = [
+      `Width: ${envelopeMm} mm`,
+      `Height: ${envelopeMm} mm`,
+      `Depth: ${envelopeMm} mm`,
+      "A person can CAD from these labels: sketch the named view, then cast the solid from the same millimetres.",
+    ];
     sketchParameters.widthMm = envelopeMm;
     sketchParameters.heightMm = envelopeMm;
     extrudeParameters.depthMm = envelopeMm;
   }
   const plan: CadAction[] = [
+    {
+      operation: "create_drawing",
+      parameters: drawingParameters,
+      requiresApproval: true,
+      reason: "Make a detailed drawing first so the solid is cast from those millimetres",
+    },
     {
       operation: "create_sketch",
       parameters: sketchParameters,
@@ -344,6 +383,12 @@ export function describeCadBrainMode(mode: CadBrainMode): { title: string; billi
         billing: "No Vantage model charge (key_source=local_cli, cost 0)",
         detail: "Uses Claude Code / Codex CLI / local OpenAI-compatible via vantage-cad on your machine.",
       };
+    case "claude_code_personal":
+      return {
+        title: "Your Claude Code",
+        billing: "No Vantage model charge (key_source=local_cli, cost 0)",
+        detail: "This signed-in person's Claude Code in the terminal. Only their turns. Not a team pool.",
+      };
     case "mock":
       return {
         title: "Mock (CI / demo)",
@@ -370,6 +415,8 @@ export function cadenceAgentPlanningPrompt(
       2_500,
     ),
     "",
+    "Start with create_drawing listing controlling millimetres from the brief. Never invent sizes.",
+    "Then create_sketch / create_extrude must copy those same widthMm / heightMm / depthMm — cast the solid from the drawing.",
     "Produce an allowlisted, approval-gated action plan for this brief summary:",
     sanitizeUntrustedCadText(briefSummary, 2_000),
   ].join("\n");

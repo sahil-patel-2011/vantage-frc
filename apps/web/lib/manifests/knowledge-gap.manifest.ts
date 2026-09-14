@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "knowledge-gap",
-  title: "Knowledge-gap detective",
+  title: "Knowledge gaps",
   route: "/knowledge-gap",
   apiRoute: "/api/knowledge-gap",
   hub: "Team",

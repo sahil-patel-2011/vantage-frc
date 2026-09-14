@@ -194,7 +194,7 @@ async function syncVisitCalendar(
   },
 ): Promise<string> {
   const calTitle = calendarTitleForVisit({ title: input.title, kind: input.kind });
-  const notes = [input.description, "Linked from Visit Invites"].filter(Boolean).join("\n\n");
+  const notes = [input.description, "Linked from Visit invites"].filter(Boolean).join("\n\n");
 
   if (input.calendarEventId) {
     const updated = await client.query(

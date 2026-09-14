@@ -31,7 +31,7 @@ describe("connection badges", () => {
   it("only marks Connected as good — never invents DEMO connected", () => {
     expect(connectionBadgeLabel("connected")).toBe("Connected");
     expect(connectionBadgeTone("connected")).toBe("good");
-    expect(connectionBadgeLabel("setup_required")).toBe("Setup required");
+    expect(connectionBadgeLabel("setup_required")).toBe("Needs setup");
     expect(connectionBadgeTone("empty")).toBe("setup");
     expect(connectionBadgeLabel("available")).toBe("Ready");
   });
@@ -69,7 +69,7 @@ describe("classifyConnectionsShell", () => {
 
 describe("connectionsEmptyCopy", () => {
   it("keeps setup / empty honest", () => {
-    expect(connectionsEmptyCopy("setup").badge).toBe("Setup required");
+    expect(connectionsEmptyCopy("setup").badge).toBe("Needs setup");
     expectPlainCopy(connectionsEmptyCopy("empty").description.toLowerCase());
     expect(connectionsEmptyCopy("empty").description).not.toMatch(/\bdemo\b/i);
   });
@@ -110,6 +110,17 @@ describe("connectionsNextActions", () => {
     expect(actions.find((a) => a.id === "onshape")?.label).toBe("Ask a mentor about Onshape");
     expect(actions.find((a) => a.id === "onshape")?.detail).toMatch(/Ask a mentor/i);
     expect(actions.find((a) => a.id === "onshape")?.detail).not.toMatch(/ONSHAPE_OAUTH|Vercel|vantage-cad/i);
+  });
+
+  it("asks for GitHub under Invites without OAuth or PAT", () => {
+    const actions = connectionsNextActions({
+      orgId: "org-1",
+      googleReady: true,
+      tbaReady: true,
+      githubStatus: "empty",
+    });
+    expect(actions.find((a) => a.id === "github")?.detail).toMatch(/connect GitHub in Invites/);
+    expect(actions.find((a) => a.id === "github")?.detail).not.toMatch(/OAuth|\bPAT\b/i);
   });
 });
 

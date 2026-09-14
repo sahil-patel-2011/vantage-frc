@@ -45,6 +45,7 @@ describe("alumniShellCopy + next actions", () => {
     }
     expectPlainCopy(alumniShellCopy("empty").description);
     expectPlainCopy(alumniShellCopy("setup").description);
+    expect(alumniShellCopy("setup").badge).toBe("Needs setup");
   });
 
   it("setup without a team tells the reader to Choose your team", () => {

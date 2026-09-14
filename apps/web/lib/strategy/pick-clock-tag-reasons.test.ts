@@ -161,14 +161,16 @@ describe("toPickClockReason / mergeTeamTagReasonsIntoClock", () => {
     expect(merged).toEqual([
       { label: "Defense", tone: "strong" },
       { label: "No climb", tone: "caution" },
-      { label: "EPA 45.2", tone: "neutral" },
+      { label: "Rating 45.2", tone: "neutral" },
       { label: "High reliability 90", tone: "strong" },
     ]);
   });
 
   it("leaves existing clock reasons unchanged when there are no tags", () => {
     const existing = [{ label: "EPA 12.1", tone: "neutral" as const }];
-    expect(mergeTeamTagReasonsIntoClock(existing, [])).toEqual(existing);
+    expect(mergeTeamTagReasonsIntoClock(existing, [])).toEqual([
+      { label: "Rating 12.1", tone: "neutral" },
+    ]);
   });
 });
 
@@ -180,10 +182,10 @@ describe("applyTeamTagReasonsToRecommendation", () => {
     });
     const applied = applyTeamTagReasonsToRecommendation(rec({ teamKey: "frc254", teamNumber: 254 }), tags);
     expect(applied.reasons[0]).toEqual({ label: "Defense", tone: "strong" });
-    expect(applied.reasons.some((reason) => reason.label === "EPA 45.2")).toBe(true);
+    expect(applied.reasons.some((reason) => reason.label === "Rating 45.2")).toBe(true);
 
     const other = applyTeamTagReasonsToRecommendation(rec({ teamKey: "frc118", teamNumber: 118 }), tags);
-    expect(other.reasons).toEqual([{ label: "EPA 45.2", tone: "neutral" }]);
+    expect(other.reasons).toEqual([{ label: "Rating 45.2", tone: "neutral" }]);
   });
 
   it("matches frcNNNN when teamNumber is missing", () => {
@@ -274,7 +276,7 @@ describe("applyTeamTagReasonsToPickClock", () => {
       },
     );
     expect(result.recommendation?.reasons[0]).toEqual({ label: "Defense", tone: "strong" });
-    expect(result.recommendation?.reasons.some((reason) => reason.label === "EPA 45.2")).toBe(true);
+    expect(result.recommendation?.reasons.some((reason) => reason.label === "Rating 45.2")).toBe(true);
   });
 
   it("degrades to the original clock when tag tables are missing", async () => {

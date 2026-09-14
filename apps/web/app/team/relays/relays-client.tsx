@@ -120,7 +120,7 @@ export default function RelaysClient() {
         </Panel>
       ) : (
         <EmptyState
-          badge="Setup required"
+          badge="Needs setup"
           badgeTone="setup"
           title="Choose your team"
           description="Open this page from Team so Vantage knows which shop the Pi belongs to."

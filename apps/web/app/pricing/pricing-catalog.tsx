@@ -86,7 +86,7 @@ const ladder: PlanCard[] = [
 const everyPlanFeatures = [
   "Scouting with offline sync and data trust checks",
   "Match prediction, strategy, and alliance selection desks",
-  "Event Day, pit operations, and competition logistics",
+  "Event day, pit operations, and competition logistics",
   "CAD agent for Onshape and Fusion, plus design review",
   "Robot-code review and the team coding assistant",
   "Team chat, calendar, playbook, and member management",

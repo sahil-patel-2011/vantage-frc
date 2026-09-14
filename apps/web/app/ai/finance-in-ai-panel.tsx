@@ -41,7 +41,7 @@ function financeShellCopy(kind: FinanceShell): { badge?: string; title: string; 
   switch (kind) {
     case "loading":
       return {
-        title: "Loading finance settings…",
+        title: "Opening finance settings",
         description: "Checking whether this team lets Ask AI see budgets and orders.",
       };
     case "auth_required":

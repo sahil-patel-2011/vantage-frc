@@ -322,7 +322,7 @@ export default function TeamDiscordClient({ orgId }: { orgId: string }) {
         <OfflineBanner feature="Discord" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
-          title={failure ? failure.title : "Loading Discord…"}
+          title={failure ? failure.title : "Opening Discord"}
           description={failure ? failure.description : "Checking your team connection."}
           aria-busy={!fetchFailed}
         >
@@ -375,7 +375,7 @@ export default function TeamDiscordClient({ orgId }: { orgId: string }) {
           description={view.emptyReason ?? view.message}
         >
           <p className="app-muted">
-            Paste a channel webhook below, or set the server and channel IDs once a mentor has added the bot.
+            Paste a Discord channel link below, or set the server and channel once a mentor has added the bot.
             Bridge counts stay blank until a linked Team Message actually posts.
           </p>
         </EmptyState>
@@ -384,7 +384,7 @@ export default function TeamDiscordClient({ orgId }: { orgId: string }) {
       {showSetupShell ? (
         <EmptyState
           soft
-          badge="Setup required"
+          badge="Needs setup"
           badgeTone="setup"
           title="Posting path incomplete"
           description={view.message}
@@ -406,7 +406,7 @@ export default function TeamDiscordClient({ orgId }: { orgId: string }) {
           <span className="eyebrow">BOT OPTIONAL</span>
           <h2>Platform Discord bot not configured</h2>
           <p className="app-muted">
-            Webhook posting works. Ask a mentor to add the Discord bot on this deployment if you want
+            Channel-link posting works. Ask a mentor to add the Discord bot on this deployment if you want
             posts by channel id.
           </p>
           {view.inviteUrl ? (
@@ -424,7 +424,7 @@ export default function TeamDiscordClient({ orgId }: { orgId: string }) {
           <span className="eyebrow">GUILD &amp; CHANNEL</span>
           <h2>{view.configured ? "Update connection" : "Link Discord"}</h2>
           <p className="app-muted">
-            Paste a channel webhook and/or server and channel IDs (Developer Mode in Discord).
+            Paste a Discord channel link and/or the server and channel IDs.
           </p>
           <label>
             Guild (server) id
@@ -461,12 +461,12 @@ export default function TeamDiscordClient({ orgId }: { orgId: string }) {
             />
           </label>
           <label>
-            Channel webhook URL {view.hasWebhook ? "(leave blank to keep current)" : ""}
+            Discord channel link {view.hasWebhook ? "(leave blank to keep current)" : ""}
             <input
               type="url"
               value={form.webhookUrl}
               onChange={(e) => setForm({ ...form, webhookUrl: e.target.value })}
-              placeholder="https://discord.com/api/webhooks/…"
+              placeholder="Paste the Discord channel link"
               autoComplete="off"
             />
           </label>
@@ -490,17 +490,17 @@ export default function TeamDiscordClient({ orgId }: { orgId: string }) {
             Only messages with an object link (task, CAD, inventory, …) are mirrored — not a full chat dump.
           </small>
           <div className="team-discord-actions">
-            <button className="primary-action" type="submit" disabled={busy}>
+            <Button variant="primary" type="submit" disabled={busy}>
               {view.configured ? "Save connection" : "Connect Discord"}
-            </button>
+            </Button>
             {view.configured ? (
               <>
-                <button type="button" disabled={busy || !view.canPost} onClick={() => void run("test")}>
+                <Button variant="secondary" type="button" disabled={busy || !view.canPost} onClick={() => void run("test")}>
                   Send test
-                </button>
-                <button type="button" disabled={busy} onClick={() => void run("disconnect")}>
+                </Button>
+                <Button variant="secondary" type="button" disabled={busy} onClick={() => void run("disconnect")}>
                   Disconnect
-                </button>
+                </Button>
               </>
             ) : null}
           </div>
@@ -517,14 +517,14 @@ export default function TeamDiscordClient({ orgId }: { orgId: string }) {
           <ul className="team-discord-meta">
             <li>
               <span>Posting path</span>
-              <strong>{view.canPost ? "ready" : "setup required"}</strong>
+              <strong>{view.canPost ? "ready" : "Needs setup"}</strong>
             </li>
             <li>
               <span>Platform bot</span>
               <strong>{view.platformConfigured ? "configured" : "optional / unset"}</strong>
             </li>
             <li>
-              <span>Webhook</span>
+              <span>Channel link</span>
               <strong>{view.hasWebhook ? "saved" : "none"}</strong>
             </li>
             <li>
@@ -569,9 +569,9 @@ export default function TeamDiscordClient({ orgId }: { orgId: string }) {
                 placeholder="Shop opens at 5 — bring safety glasses."
               />
             </label>
-            <button
+            <Button
+              variant="primary"
               type="button"
-              className="primary-action"
               disabled={busy || !announceBody.trim() || !view.configured || !view.canPost}
               onClick={() =>
                 void run("announce", { title: announceTitle || "Announcement", message: announceBody }).then(() => {
@@ -581,7 +581,7 @@ export default function TeamDiscordClient({ orgId }: { orgId: string }) {
               }
             >
               Post to Discord
-            </button>
+            </Button>
           </div>
         </section>
       </div>

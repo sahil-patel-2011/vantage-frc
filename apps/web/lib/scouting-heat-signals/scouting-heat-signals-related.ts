@@ -1,11 +1,11 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Scouting Heat Signals (never DEMO trend arrows). */
+/** Soft-UI related surfaces for Heat signals (never DEMO trend arrows). */
 export const SCOUTING_HEAT_SIGNALS_RELATED_LINKS = [
   { id: "scouting", label: "Scouting", tab: "scouting" },
   { id: "opponent-watchlist", label: "Watchlist", tab: "opponent-watchlist" },
-  { id: "picklist-collab", label: "Pick List", tab: "picklist-collab" },
+  { id: "picklist-collab", label: "Pick list", tab: "picklist-collab" },
   { id: "strategy", label: "Strategy", tab: "strategy" },
 ] as const;
 
@@ -24,7 +24,7 @@ export const SCOUTING_HEAT_SIGNALS_RELATED_INCLUDE: ScoutingHeatSignalsRelatedId
 ];
 
 /**
- * Soft-UI cross-links from Heat Signals → Scouting / Watchlist / Pick List.
+ * Soft-UI cross-links from Heat Signals → Scouting / Watchlist / Pick list.
  * Build with hubHref — never broken JSX href templates.
  */
 export function scoutingHeatSignalsRelatedLinks(
@@ -89,7 +89,7 @@ export function scoutingHeatSignalsSetupSteps(orgId?: string | null): ScoutingHe
     },
     {
       id: "picklist-collab",
-      label: "Open Pick List",
+      label: "Open Pick list",
       detail: "Carry rising/falling teams into alliance priorities.",
       href: hubHref("/competition", "picklist-collab", orgId),
     },
@@ -130,14 +130,14 @@ export function scoutingHeatSignalsShellCopy(kind: ScoutingHeatSignalsShellKind)
     case "loading":
       return {
         kind,
-        title: "Loading Scouting Heat Signals…",
+        title: "Opening Heat signals",
         description: "Checking which team you are on and logged observations.",
       };
     case "error":
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Scouting Heat Signals",
+        title: "Could not load Heat signals",
         description:
           "A network or server issue blocked heat signals. Retry, or open Scouting while it reloads.",
       };
@@ -168,7 +168,7 @@ export function scoutingHeatSignalsShellCopy(kind: ScoutingHeatSignalsShellKind)
 
 /**
  * Soft-UI next actions for Heat Signals empty/setup shells.
- * Points at Scouting / Watchlist / Pick List — never invents DEMO trend arrows.
+ * Points at Scouting / Watchlist / Pick list — never invents DEMO trend arrows.
  */
 export function scoutingHeatSignalsNextActions(input: {
   orgId?: string | null;
@@ -186,7 +186,7 @@ export function scoutingHeatSignalsNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before logging trends.",
+          detail: "Choose your team before logging trends.",
           href: "/workspace",
           primary: true,
         },
@@ -198,7 +198,7 @@ export function scoutingHeatSignalsNextActions(input: {
         },
         {
           id: "picklist-collab",
-          label: "Open Pick List",
+          label: "Open Pick list",
           detail: "Alliance priorities stay empty until your team ranks targets.",
           href: hubHref("/competition", "picklist-collab", null),
         },
@@ -244,8 +244,8 @@ export function scoutingHeatSignalsNextActions(input: {
       },
       {
         id: "picklist-collab",
-        label: "Open Pick List",
-        detail: "Pick List stays available while heat signals reload.",
+        label: "Open Pick list",
+        detail: "Pick list stays available while heat signals reload.",
         href: hubHref("/competition", "picklist-collab", orgId),
       },
     ];
@@ -288,7 +288,7 @@ export function scoutingHeatSignalsNextActions(input: {
     },
     {
       id: "picklist-collab",
-      label: "Open Pick List",
+      label: "Open Pick list",
       detail: "Fold rising/falling teams into alliance priorities.",
       href: hubHref("/competition", "picklist-collab", orgId),
     },

@@ -45,7 +45,7 @@ function MyDayNextActionsPanel({ actions }: { actions: MyDayNextAction[] }) {
     <Panel className="myday-next-actions">
       <header>
         <h2>Next actions</h2>
-        <p>Event Day, Schedule, and Strategy stay empty until a match is synced.</p>
+        <p>Event day, Schedule, and Strategy stay empty until a match is synced.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -105,7 +105,7 @@ function MatchHero({ match, orgId }: { match: MyDayMatch; orgId?: string | null 
           Scout this match
         </a>
         <a className="myday-link" href={commandHref}>
-          Event Day
+          Event day
         </a>
         <a className="myday-link" href={scheduleHref}>
           Schedule
@@ -244,7 +244,7 @@ function MyDayShell({
         ) : null}
         {shell === "empty" ? (
           <Button as="a" variant="primary" href={emptyReason === "no_upcoming" ? scheduleHref : commandHref}>
-            {emptyReason === "no_upcoming" ? "Open Schedule" : "Open Event Day"}
+            {emptyReason === "no_upcoming" ? "Open Schedule" : "Open Event day"}
           </Button>
         ) : null}
       </EmptyState>
@@ -460,7 +460,7 @@ export default function MyDayClient({ embedded = false }: { embedded?: boolean }
       {!view.next && view.matches.length > 0 ? (
         <nav className="myday-hero-links" aria-label="Live ops links">
           <a className="myday-link primary" href={commandHref}>
-            Event Day
+            Event day
           </a>
           <a className="myday-link" href={scheduleHref}>
             Schedule

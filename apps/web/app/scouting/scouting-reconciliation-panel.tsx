@@ -104,7 +104,7 @@ function AllianceBlock({
 
 /**
  * Additive reconciliation section for the scouting trust panel: our scouts'
- * summed alliance totals against the official TBA score breakdown, worst gap
+ * summed alliance totals against the official score breakdown, worst gap
  * first. Every state is honest — no event, no breakdown, or no scouted numbers
  * says so instead of showing a fabricated delta.
  */
@@ -210,14 +210,14 @@ export default function ScoutingReconciliationPanel({
           <article>
             <span>No breakdown</span>
             <strong>{view.summary.matchesWithoutBreakdown}</strong>
-            <small>TBA has not published</small>
+            <small>Official scores not published</small>
           </article>
         </section>
 
         {!view.summary.comparedAlliances ? (
           <EmptyState
             title="No alliance is comparable yet"
-            description={`Reconciliation needs all three robots on an alliance scouted with a scoring number AND a cached TBA score breakdown for that match. ${view.summary.matchesWithoutScouting} played match${
+            description={`Reconciliation needs all three robots on an alliance scouted with a scoring number AND a cached official score breakdown for that match. ${view.summary.matchesWithoutScouting} played match${
               view.summary.matchesWithoutScouting === 1 ? "" : "es"
             } have no scouted numbers at all.`}
           />

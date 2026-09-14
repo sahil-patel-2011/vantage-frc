@@ -173,7 +173,7 @@ export async function computeTuningAutopilotView(
         },
         {
           id: "fmea",
-          label: "Open FMEA",
+          label: "Open Failure log",
           detail: "Failure modes stay blank until scored.",
           href: "/build?tab=fmea",
         },
@@ -394,7 +394,7 @@ export async function logIteration(
     metadata: {
       sessionId: input.sessionId,
       iterationCount: iterations.length,
-      note: "Deterministic PID/feedforward next-gain suggestion from the session's own logged trend — no external model call",
+      note: "Deterministic next-gain suggestion from the session's own logged trend — no external model call",
     },
     invoke: async () => ({
       value: suggestNextGains(iterations),

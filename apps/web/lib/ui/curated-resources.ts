@@ -267,7 +267,7 @@ export const CURATED_RESOURCES: CuratedResource[] = [
     title: "Statbotics",
     url: "https://www.statbotics.io/",
     oneLine:
-      "Free EPA ratings and season-long team analytics — a scouting-free starting picture of any team before your own data exists.",
+      "Free season ratings and season-long team analytics — a scouting-free starting picture of any team before your own data exists.",
     topic: "scouting",
     secondaryTopics: ["strategy"],
     audience: "everyone",

@@ -146,7 +146,7 @@ export async function computeSpareRobotKitView(
       status: "setup_required",
       message: "Choose your team to generate a spare-robot-kit checklist.",
       steps: [
-        { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
+        { id: "workspace", label: "Choose your team", detail: "Choose which FRC team you are working as.", href: "/workspace" },
         {
           id: "inventory",
           label: "Stock spare parts",
@@ -155,7 +155,7 @@ export async function computeSpareRobotKitView(
         },
         {
           id: "fmea",
-          label: "Log FMEA failures",
+          label: "Log failures",
           detail: "Record subsystem failures so the checklist has repeat-failure history to draw from",
           href: "/build",
         },
@@ -215,7 +215,7 @@ export async function generateChecklist(
     metadata: {
       seasonYear: input.seasonYear,
       candidateCount: candidateItems.length,
-      note: "Deterministic FMEA-rate x inventory-bin kit checklist computation — no external model call",
+      note: "Deterministic failure-rate x inventory-bin kit checklist computation — no external model call",
     },
     invoke: async () => ({
       value: candidateItems,

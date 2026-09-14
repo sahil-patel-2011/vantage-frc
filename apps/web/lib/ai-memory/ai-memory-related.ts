@@ -117,7 +117,7 @@ export function aiMemoryShellCopy(kind: AiMemoryShellKind): AiMemoryEmptyCopy {
     case "loading":
       return {
         kind,
-        title: "Loading team memory…",
+        title: "Opening Memory",
         description: "Checking your team's memory settings for this team.",
       };
     case "auth_required":
@@ -204,7 +204,7 @@ export function aiMemoryNextActions(input: {
       {
         id: "signin",
         label: "Sign in",
-        detail: "Closed membership — Google or email OTP, then reopen AI · Memory.",
+        detail: "Closed membership — Google or an emailed sign-in code, then reopen AI · Memory.",
         href: "/signin",
         primary: true,
       },

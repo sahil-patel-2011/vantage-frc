@@ -211,14 +211,14 @@ export async function loadGrounding(
       rows.push({
         id: `fmea:${row.id}`,
         source: "fmea",
-        sourceLabel: "Your FMEA log",
+        sourceLabel: "Your Failure log",
         title: truncate(row.title, 120),
         detail: truncate(`${row.subsystem ? `${row.subsystem} · ` : ""}${row.detail ?? ""} (${row.status})`),
         when: isoOrNull(row.when),
         href: "/fmea",
       });
     }
-  } else unavailable.push("FMEA log");
+  } else unavailable.push("Failure log");
 
   if (present.has("robot_failures")) {
     const result = await client.query(

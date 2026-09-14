@@ -41,7 +41,7 @@ describe("computeCodePerfView", () => {
               occurredOn: "2026-02-10",
               changeType: "commit",
               subsystem: "shooter",
-              title: "Retune shooter PID",
+              title: "Retune shooter gains",
               commitSha: "abc1234",
               repoUrl: "https://github.com/team/robot-code",
               description: "Tightened kP after auton overshoot",

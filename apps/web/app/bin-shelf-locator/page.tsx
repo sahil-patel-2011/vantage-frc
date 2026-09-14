@@ -1,7 +1,7 @@
 import BinShelfLocatorClient from "./bin-shelf-locator-client";
 
 export const metadata = {
-  title: "Bin/Shelf Locator",
+  title: "Bin locator",
 };
 
 export default function BinShelfLocatorPage() {

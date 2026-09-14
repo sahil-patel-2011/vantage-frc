@@ -68,7 +68,7 @@ export default function ExportAuditClient({ orgId }: { orgId: string }) {
     <main className="intel-app">
       <header className="intel-header">
         <div>
-          <span className="eyebrow">VANTAGE / DATA EXPORT AUDIT</span>
+          <span className="eyebrow">Team / Export audit</span>
           <h1>Who took a copy of the team&apos;s data</h1>
           <p className="app-muted">
             Every data export — requested, built, and downloaded — with who did it, the scope, and how large

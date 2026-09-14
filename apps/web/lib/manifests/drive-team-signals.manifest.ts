@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "drive-team-signals",
-  title: "Drive-Team Signal Board",
+  title: "Drive-team board",
   route: "/drive-team-signals",
   apiRoute: "/api/drive-team-signals",
   hub: "Competition",

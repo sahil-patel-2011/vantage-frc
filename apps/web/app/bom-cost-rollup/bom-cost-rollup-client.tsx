@@ -83,7 +83,7 @@ async function persistBomCostRollupSnapshot(
     await putFeatureSnapshot("bom-cost-rollup", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("bom-cost-rollup", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live BOM cost rollup already painted; IndexedDB is best-effort.
+    // Live BOM cost already painted; IndexedDB is best-effort.
   }
 }
 
@@ -207,7 +207,7 @@ export default function BomCostRollupClient() {
       if (!response.ok || !isBomCostRollupView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh BOM cost rollup. Showing the last copy on this device.");
+          setError("Could not refresh BOM cost. Showing the last copy on this device.");
           setFetchFailed(false);
           return;
         }
@@ -223,7 +223,7 @@ export default function BomCostRollupClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh BOM cost rollup. Showing the last copy on this device.");
+        setError("Could not refresh BOM cost. Showing the last copy on this device.");
         setFetchFailed(false);
         return;
       }
@@ -271,10 +271,10 @@ export default function BomCostRollupClient() {
       breadcrumbs={
         <>
           <a href={buildHref}>Build</a>
-          {" / BOM cost rollup"}
+          {" / BOM cost"}
         </>
       }
-      title="BOM cost rollup"
+      title="BOM cost"
       description="Roll up bill-of-materials line items — logged by hand or imported from CAD — against a season budget, broken down by subsystem and category."
     >
       <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
@@ -315,9 +315,9 @@ export default function BomCostRollupClient() {
     return (
       <main className="module-page">
         {header}
-        <OfflineBanner feature="BOM cost rollup" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="BOM cost" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
-          title={failure ? failure.title : "Loading…"}
+          title={failure ? failure.title : "Opening BOM cost"}
           description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >
@@ -341,13 +341,13 @@ export default function BomCostRollupClient() {
       return (
         <main className="module-page">
           {header}
-          <OfflineBanner feature="BOM cost rollup" fromCache={fromCache} cachedAt={cachedAt} />
+          <OfflineBanner feature="BOM cost" fromCache={fromCache} cachedAt={cachedAt} />
           {error ? (
             <p className="telemetry-status" role="alert">
               {error}
             </p>
           ) : null}
-          <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
+          <EmptyState badge="Needs setup" badgeTone="setup" title={view.message}>
             {view.steps[0] ? (
               <Button as="a" variant="primary" href={view.steps[0].href}>
                 {view.steps[0].label}
@@ -367,7 +367,7 @@ export default function BomCostRollupClient() {
   return (
     <main className="module-page">
       {header}
-      <OfflineBanner feature="BOM cost rollup" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="BOM cost" fromCache={fromCache} cachedAt={cachedAt} />
       {error ? (
         <p className="telemetry-status" role="alert">
           {error}

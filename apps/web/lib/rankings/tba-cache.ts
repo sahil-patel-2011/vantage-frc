@@ -153,7 +153,7 @@ export function classifyRankingsCache(input: {
 export function rankingsCacheRequiredCopy(): { title: string; description: string } {
   return {
     title: "Reference metrics not synced yet",
-    description: "Sync TBA/Statbotics under Team → Data to populate event rankings — ranks stay blank until cache rows exist.",
+    description: "Sync event numbers under Team → Data to populate event rankings — ranks stay blank until cache rows exist.",
   };
 }
 

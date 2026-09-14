@@ -1,7 +1,7 @@
 import PairwiseClient from "./pairwise-client";
 
 export const metadata = {
-  title: "Pairwise ranking",
+  title: "Pairwise",
   description: "Qualitative A-beats-B ranking for driver skill, defense, and alliance fit.",
 };
 

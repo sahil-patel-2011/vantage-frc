@@ -74,7 +74,7 @@ async function persistCodeDeployLogSnapshot(
     await putFeatureSnapshot("code-deploy-log", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("code-deploy-log", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Code Deploy Log already painted; IndexedDB is best-effort.
+    // Live Deploy log already painted; IndexedDB is best-effort.
   }
 }
 
@@ -145,10 +145,10 @@ function DeployShell({
         breadcrumbs={
           <>
             <a href={buildHref}>Build</a>
-            {" / Code Deploy Log"}
+            {" / Deploy log"}
           </>
         }
-        title="Code Deploy Log"
+        title="Deploy log"
         description={description}
       >
         <RelatedStrip orgId={orgId} />
@@ -163,7 +163,7 @@ function DeployShell({
       ) : (
         <EmptyState
           soft
-          badge={shell === "setup" ? "Setup required" : copy.badge}
+          badge={shell === "setup" ? "Needs setup" : copy.badge}
           badgeTone="setup"
           title={copy.title}
           description={error ?? copy.description}
@@ -236,7 +236,7 @@ export default function CodeDeployLogClient() {
         if (!response.ok || !isCodeDeployLogView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Code Deploy Log. Showing the last copy on this device.");
+            setError("Could not refresh Deploy log. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -251,7 +251,7 @@ export default function CodeDeployLogClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Code Deploy Log. Showing the last copy on this device.");
+          setError("Could not refresh Deploy log. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -320,7 +320,7 @@ export default function CodeDeployLogClient() {
   if (shell === "loading") {
     return (
       <DeployShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Code Deploy Log" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Deploy log" fromCache={fromCache} cachedAt={cachedAt} />
       </DeployShell>
     );
   }
@@ -334,7 +334,7 @@ export default function CodeDeployLogClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Code Deploy Log" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Deploy log" fromCache={fromCache} cachedAt={cachedAt} />
       </DeployShell>
     );
   }
@@ -346,7 +346,7 @@ export default function CodeDeployLogClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Code Deploy Log" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Deploy log" fromCache={fromCache} cachedAt={cachedAt} />
       </DeployShell>
     );
   }
@@ -354,7 +354,7 @@ export default function CodeDeployLogClient() {
   if (view?.status !== "live") {
     return (
       <DeployShell description={shellCopy.description} orgId={orgId} shell="setup">
-        <OfflineBanner feature="Code Deploy Log" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Deploy log" fromCache={fromCache} cachedAt={cachedAt} />
       </DeployShell>
     );
   }
@@ -365,11 +365,11 @@ export default function CodeDeployLogClient() {
         breadcrumbs={
           <>
             <a href={buildHref}>Build</a>
-            {" / Code Deploy Log"}
+            {" / Deploy log"}
           </>
         }
-        title="Code Deploy Log"
-        description="Track which firmware/software build ran during which match or test session. Cross-check Code Coach, Code vs match, and CAD."
+        title="Deploy log"
+        description="Track which firmware/software build ran during which match or test session. Cross-check Code, Code vs match, and CAD."
       >
         <div className="cdl-header-actions">
           {view.seasons.length > 0 ? (
@@ -398,7 +398,7 @@ export default function CodeDeployLogClient() {
           ))}
         </div>
       </PageHeader>
-      <OfflineBanner feature="Code Deploy Log" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Deploy log" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

@@ -132,7 +132,7 @@ export function cadLearnShellCopy(kind: CadLearnShellKind): CadLearnShellCopy {
       return {
         kind,
         badge: "Loading",
-        title: "Loading Learn CAD…",
+        title: "Opening Learn CAD",
         description: "Fetching your team's CAD lessons.",
       };
     case "error":

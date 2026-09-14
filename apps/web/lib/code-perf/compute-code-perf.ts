@@ -160,7 +160,7 @@ export async function computeCodePerfView(
       status: "setup_required",
       message: "Choose your team to correlate code changes against match performance.",
       steps: [
-        { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
+        { id: "workspace", label: "Choose your team", detail: "Choose which FRC team you are working as.", href: "/workspace" },
       ],
       orgId: null,
       seasonYear,

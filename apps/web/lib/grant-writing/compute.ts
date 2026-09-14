@@ -121,7 +121,7 @@ export async function computeGrantWritingView(
       status: "setup_required",
       message: "Choose your team to compose grant narratives.",
       steps: [
-        { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
+        { id: "workspace", label: "Choose your team", detail: "Choose which FRC team you are working as.", href: "/workspace" },
       ],
       orgId: null,
       seasonYear,
@@ -140,7 +140,7 @@ export async function computeGrantWritingView(
         status: "setup_required",
         message: "Could not load organization profile for grant writing.",
         steps: [
-          { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
+          { id: "workspace", label: "Choose your team", detail: "Choose which FRC team you are working as.", href: "/workspace" },
         ],
         orgId: org.orgId,
         seasonYear,

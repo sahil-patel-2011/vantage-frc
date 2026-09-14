@@ -89,7 +89,7 @@ describe("evaluateDataSourceHealth", () => {
     });
     expect(view.mode).toBe("unavailable");
     expect(view.usingLastGoodCache).toBe(false);
-    expect(view.bannerTitle).toBe("Could not reach The Blue Alliance");
+    expect(view.bannerTitle).toBe("Could not reach official matches");
   });
 
   it("marks stale when last success aged out but cache still usable", () => {

@@ -138,7 +138,7 @@ function VendorsShell({
             {" / Vendors"}
           </>
         }
-        title="Vendor Directory"
+        title="Vendor directory"
         description={description}
       >
         <VendorsRelatedStrip orgId={orgId} />
@@ -148,7 +148,7 @@ function VendorsShell({
         soft
         badge={
           shell === "setup"
-            ? "Setup required"
+            ? "Needs setup"
             : shell === "error"
               ? "Unavailable"
               : shell === "empty"
@@ -348,8 +348,8 @@ export default function VendorsClient() {
             {" / Vendors"}
           </>
         }
-        title="Vendor Directory"
-        description="Your team's known suppliers — COTS, raw stock, tools, and services — with contacts, lead times, and ratings. Purchase orders pick a vendor from this directory. Cross-check Orders and Vendor Lead Times."
+        title="Vendor directory"
+        description="Your team's known suppliers — COTS, raw stock, tools, and services — with contacts, lead times, and ratings. Purchase orders pick a vendor from this directory. Cross-check Orders and Lead times."
       >
         <div className="vendors-header-actions">
           {relatedLinks.map((link) => (
@@ -393,7 +393,7 @@ export default function VendorsClient() {
           <p className="app-muted" style={{ marginTop: 8 }}>
             Purchase orders pick a supplier id from this directory — add vendors here, then submit
             through <a href={ordersHref}>Orders</a>. Keep shipping windows in{" "}
-            <a href={leadTimesHref}>Vendor Lead Times</a>.
+            <a href={leadTimesHref}>Lead times</a>.
           </p>
         </Panel>
       </div>

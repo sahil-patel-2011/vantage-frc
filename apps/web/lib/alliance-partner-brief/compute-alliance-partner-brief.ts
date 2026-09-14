@@ -60,7 +60,7 @@ function setupSteps(orgId: string | null): AlliancePartnerBriefSetupStep[] {
     {
       id: "workspace",
       label: "Choose your team",
-      detail: "Choose your team to open Alliance-Partner Brief.",
+      detail: "Choose your team to open Partner brief.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {

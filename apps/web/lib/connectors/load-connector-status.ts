@@ -142,7 +142,7 @@ export async function loadConnectorProofs(
       account: githubRow.login,
       note: githubRow.repo
         ? `The deploy log and code review read ${githubRow.repo}.`
-        : "GitHub is linked, but no default repository is chosen — the deploy log and calendar milestones stay empty until one is set in Team admin.",
+        : "GitHub is linked, but no default repository is chosen — the deploy log and calendar milestones stay empty until one is set in Invites.",
     };
   }
 
@@ -156,10 +156,10 @@ export async function loadConnectorProofs(
   if (discordWebhookOk || discordRow?.channelId) {
     proofs.discord = {
       linked: true,
-      account: discordWebhookOk ? "a channel webhook" : `channel ${discordRow!.channelId}`,
+      account: discordWebhookOk ? "a Discord channel link" : `channel ${discordRow!.channelId}`,
       note: discordWebhookOk
-        ? `Announcements post to the saved channel webhook.${discordRow?.bridge ? " The team-chat bridge is on." : " The team-chat bridge is off — turn it on at /team/discord."}`
-        : "A channel id is saved but no webhook. Add a webhook on Discord settings before posts work.",
+        ? `Announcements post to the saved Discord channel link.${discordRow?.bridge ? " Team chat sync is on." : " Team chat sync is off — turn it on at Discord."}`
+        : "A channel id is saved but no Discord channel link. Paste a Discord channel link on Discord before posts work.",
     };
   }
 
@@ -167,10 +167,10 @@ export async function loadConnectorProofs(
   if (slackRow?.webhookUrl && isValidSlackWebhook(slackRow.webhookUrl)) {
     proofs.slack = {
       linked: true,
-      account: "an incoming webhook",
+      account: "a Slack channel link",
       note: slackRow.bridge
-        ? "Team chat mirrors to the saved Slack webhook. Replies come back after the Slack request URL is registered."
-        : "The Slack webhook is saved but the chat bridge is off — turn it on at /team/slack.",
+        ? "Team chat mirrors to the saved Slack channel link. Replies come back after Slack setup is finished."
+        : "The Slack channel link is saved but team chat sync is off — turn it on at Slack.",
     };
   }
 

@@ -151,6 +151,11 @@
   padding: 0 4px;
 }
 
+.ai-bridge-personal {
+  display: grid;
+  gap: 6px;
+}
+
 .ai-bridge-terms ul {
   margin: 0;
   padding-left: 18px;

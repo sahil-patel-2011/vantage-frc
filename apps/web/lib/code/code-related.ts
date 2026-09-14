@@ -29,7 +29,7 @@ export type CodeCoachRelatedLink = {
 };
 
 /**
- * Soft-UI cross-links from Code Coach → CAD, GitHub context, and AI chat.
+ * Soft-UI cross-links from Code → CAD, GitHub context, and AI chat.
  * Never DEMO code samples or invented review findings.
  */
 export function codeCoachRelatedLinks(
@@ -61,7 +61,7 @@ export type CodeCoachNextAction = {
 };
 
 /**
- * Soft-UI next actions for empty / setup Code Coach.
+ * Soft-UI next actions for empty / setup Code.
  * Points at workspace, GitHub, CAD, and AI chat — never invented findings.
  */
 export function codeCoachNextActions(input: {
@@ -114,13 +114,13 @@ export function codeCoachNextActions(input: {
     {
       id: "github",
       label: "Connect GitHub",
-      detail: "Link a robot-code repo so Bugbot can scan it. PAT or OAuth — read-only, never a push.",
+      detail: "Link a robot-code repo so Bugbot can scan it. Connect GitHub — read-only, never a push.",
       href: githubConnectionHref(orgId),
     },
     {
       id: "chat",
       label: "Open AI chat",
-      detail: "Team-aware assistant uses plan credits. Distinct from Code Coach’s free local pattern pass.",
+      detail: "Team-aware assistant uses plan credits. Distinct from Code’s free local pattern pass.",
       href: hubHref("/ai", "chat", orgId),
     },
     {

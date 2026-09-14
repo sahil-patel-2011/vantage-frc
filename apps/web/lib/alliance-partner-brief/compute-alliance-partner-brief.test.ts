@@ -62,7 +62,7 @@ describe("alliance-partner-brief pure helpers", () => {
       3,
       1,
     );
-    expect(strengths).toContain("EPA total 40.5 (tba)");
+    expect(strengths).toContain("Season rating 40.5");
     expect(strengths).toContain("Event rank #2");
     expect(strengths.some((s) => s.includes("match-scout"))).toBe(true);
   });
@@ -177,7 +177,7 @@ describe("generateAlliancePartnerBrief", () => {
               ourTeamKey: "frc254",
               partnerTeamKeys: ["frc118", "frc1114"],
               partners: [
-                { teamKey: "frc118", teamNumber: 118, nickname: "Robonauts", slot: "first", role: "teleop_scorer", roleLabel: "Teleop scorer", strengths: ["EPA total 38.2 (tba)"], epa: null, matchScoutEntryCount: 3, pitScoutEntryCount: 0, evidenceNote: "Event metrics + our own scouting" },
+                { teamKey: "frc118", teamNumber: 118, nickname: "Robonauts", slot: "first", role: "teleop_scorer", roleLabel: "Teleop scorer", strengths: ["Season rating 38.2"], epa: null, matchScoutEntryCount: 3, pitScoutEntryCount: 0, evidenceNote: "Event metrics + our own scouting" },
                 { teamKey: "frc1114", teamNumber: 1114, nickname: "Simbotics", slot: "second", role: "unproven", roleLabel: "Unproven — no event data yet", strengths: [], epa: null, matchScoutEntryCount: 0, pitScoutEntryCount: 1, evidenceNote: "Our own scouting only — no event metrics synced yet" },
               ],
               updatedAt: new Date().toISOString(),

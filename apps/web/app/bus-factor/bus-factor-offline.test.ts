@@ -11,7 +11,7 @@ describe("Bus-Factor last snapshot stays on the phone", () => {
     expect(src).toMatch(/putFeatureSnapshot/);
     expect(src).toMatch(/"bus-factor"/);
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
-    expect(src).toMatch(/feature="Bus-Factor"/);
+    expect(src).toMatch(/feature="Bus factor"/);
     expect(src).toMatch(/AbortSignal\.timeout/);
     expect(src).toMatch(/fetchFailed && view == null/);
     expect(src).not.toMatch(/fetchFailed \|\| !view/);

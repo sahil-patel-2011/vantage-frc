@@ -60,7 +60,7 @@ async function persistMediaLibrarySnapshot(orgHint: string, data: MediaLibraryVi
     await putFeatureSnapshot("media-library", cacheOrg, data);
     if (!orgHint) await putFeatureSnapshot("media-library", "_", data);
   } catch {
-    // Live Media Library already painted; IndexedDB is best-effort.
+    // Live Photos & video already painted; IndexedDB is best-effort.
   }
 }
 
@@ -284,21 +284,21 @@ export default function MediaLibraryClient() {
         setLoadError(
           data && typeof data === "object" && "error" in data && typeof data.error === "string"
             ? data.error
-            : "Could not load the media library",
+            : "Could not load Photos & video",
         );
         return;
       }
       if (!response.ok || !isMediaLibraryView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setLoadError("Could not refresh Media Library. Showing the last copy on this device.");
+          setLoadError("Could not refresh Photos & video. Showing the last copy on this device.");
           return;
         }
         setErrorStatus(response.status);
         setLoadError(
           data && typeof data === "object" && "error" in data && typeof data.error === "string"
             ? data.error
-            : "Could not load the media library",
+            : "Could not load Photos & video",
         );
         return;
       }
@@ -310,10 +310,10 @@ export default function MediaLibraryClient() {
     } catch (error) {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setLoadError("Could not refresh Media Library. Showing the last copy on this device.");
+        setLoadError("Could not refresh Photos & video. Showing the last copy on this device.");
         return;
       }
-      setLoadError(error instanceof Error ? error.message : "Could not load the media library");
+      setLoadError(error instanceof Error ? error.message : "Could not load Photos & video");
     }
   }, []);
 
@@ -499,8 +499,8 @@ export default function MediaLibraryClient() {
     );
     return (
       <div className="ml-page">
-        <PageHeader title="Media Library" description="Team photos and videos, in one place." />
-        <OfflineBanner feature="Media Library" fromCache={fromCache} cachedAt={cachedAt} />
+        <PageHeader title="Photos & video" description="Team photos and videos, in one place." />
+        <OfflineBanner feature="Photos & video" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
           title={failure.title}
@@ -523,8 +523,8 @@ export default function MediaLibraryClient() {
   if (!view) {
     return (
       <div className="ml-page">
-        <PageHeader title="Media Library" description="Team photos and videos, in one place." />
-        <OfflineBanner feature="Media Library" fromCache={fromCache} cachedAt={cachedAt} />
+        <PageHeader title="Photos & video" description="Team photos and videos, in one place." />
+        <OfflineBanner feature="Photos & video" fromCache={fromCache} cachedAt={cachedAt} />
         <SoftBlockSkeleton />
       </div>
     );
@@ -532,9 +532,9 @@ export default function MediaLibraryClient() {
   if (view.status === "setup_required") {
     return (
       <div className="ml-page">
-        <PageHeader title="Media Library" description="Team photos and videos, in one place." />
-        <OfflineBanner feature="Media Library" fromCache={fromCache} cachedAt={cachedAt} />
-        <EmptyState badge="Setup required" badgeTone="setup" title="Choose your team" description={view.message}>
+        <PageHeader title="Photos & video" description="Team photos and videos, in one place." />
+        <OfflineBanner feature="Photos & video" fromCache={fromCache} cachedAt={cachedAt} />
+        <EmptyState badge="Needs setup" badgeTone="setup" title="Choose your team" description={view.message}>
           {view.steps[0] ? (
             <Button as="a" variant="primary" href={view.steps[0].href}>
               {view.steps[0].label}
@@ -549,10 +549,10 @@ export default function MediaLibraryClient() {
   return (
     <div className="ml-page">
       <PageHeader
-        title="Media Library"
+        title="Photos & video"
         description="Every team photo and video — uploads, pit-scouting shots, and business artwork — in one place."
       />
-      <OfflineBanner feature="Media Library" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Photos & video" fromCache={fromCache} cachedAt={cachedAt} />
       {loadError ? (
         <p className="ml-error" role="status">
           {loadError}
@@ -565,7 +565,7 @@ export default function MediaLibraryClient() {
         <span className="app-muted ml-meter-note">
           Photos are downscaled in your browser (~{formatMediaBytes(PHOTO_DB_CAP_BYTES)} cap). Videos up to{" "}
           {formatMediaBytes(VIDEO_DB_CAP_BYTES)} store in the database; bigger match footage belongs on a
-          storage node or as a YouTube link in the <a href="/match-video-index">Match Video Index</a>.
+          storage node or as a YouTube link in the <a href="/match-video-index">Video index</a>.
         </span>
       </Panel>
 

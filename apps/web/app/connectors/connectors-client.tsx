@@ -247,7 +247,7 @@ export default function ConnectorsClient() {
             soft
             badge="Loading"
             badgeTone="setup"
-            title="Loading connectors"
+            title="Opening Connectors"
             description={CONNECTORS_PAGE_LOADING}
           />
         )}

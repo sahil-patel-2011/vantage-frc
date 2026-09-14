@@ -123,7 +123,7 @@ export function workspaceShellCopy(kind: WorkspaceShellKind): WorkspaceJoinCopy 
       return {
         kind,
         eyebrow: "YOUR TEAM",
-        title: "Loading…",
+        title: "Opening your team",
         description: "Checking which teams you can open.",
       };
     case "setup":

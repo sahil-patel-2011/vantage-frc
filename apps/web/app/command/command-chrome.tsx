@@ -87,12 +87,12 @@ export function EventDayShell({
     return (
       <main className={`edc-page${embedded ? " is-embedded" : ""} soft-gate`}>
         {embedded ? null : (
-          <PageHeader breadcrumbs="Competition / Event Day" title="Command" description="Next match and pit cues.">
+          <PageHeader breadcrumbs="Competition / Event day" title="Event day" description="Next match and pit cues.">
             {related}
           </PageHeader>
         )}
         {children}
-        <div style={{ display: "grid", gap: 16 }} aria-busy="true" aria-label="Loading Event Day Command">
+        <div style={{ display: "grid", gap: 16 }} aria-busy="true" aria-label="Opening Event day">
           <StatRowSkeleton count={3} />
           <CardGridSkeleton cols={3} rows={1} />
         </div>
@@ -104,7 +104,7 @@ export function EventDayShell({
     return (
       <main className={`edc-page${embedded ? " is-embedded" : ""} soft-gate`}>
         {embedded ? null : (
-          <PageHeader breadcrumbs="Competition / Event Day" title="Command" description="Next match and pit cues.">
+          <PageHeader breadcrumbs="Competition / Event day" title="Event day" description="Next match and pit cues.">
             {related}
           </PageHeader>
         )}
@@ -129,8 +129,8 @@ export function EventDayShell({
     <main className={`edc-page${embedded ? " is-embedded" : ""} soft-gate`}>
       {embedded ? null : (
         <PageHeader
-          breadcrumbs="Competition / Event Day"
-          title="Command"
+          breadcrumbs="Competition / Event day"
+          title="Event day"
           description="Set the event you’re at so match times can show."
         >
           {related}
@@ -211,7 +211,7 @@ export function CommandReadyHeader({
 
   return (
     <PageHeader
-      breadcrumbs="Competition / Event Day"
+      breadcrumbs="Competition / Event day"
       title={title}
       description={
         <>

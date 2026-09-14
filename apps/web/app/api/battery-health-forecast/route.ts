@@ -41,9 +41,9 @@ function numberOrNull(value: unknown): number | null {
 
 const SETUP_FALLBACK: BatteryHealthForecastView = {
   status: "setup_required",
-  message: "Could not load Battery Health Forecast. Choose your team and confirm database access.",
+  message: "Could not load Pack health. Choose your team and confirm database access.",
   steps: [
-    { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
+    { id: "workspace", label: "Choose your team", detail: "Choose which FRC team you are working as.", href: "/workspace" },
   ],
   orgId: null,
 };
@@ -148,7 +148,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Battery Health Forecast request failed";
+    const message = error instanceof Error ? error.message : "Pack health request failed";
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

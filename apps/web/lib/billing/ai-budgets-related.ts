@@ -42,7 +42,7 @@ export function aiBudgetsRelatedLinks(
     { id: "account", label: "Account", href: withOrgHref("/account", orgId) },
     { id: "governance", label: "Governance", href: hubHref("/ai", "governance", orgId) },
     { id: "memory", label: "Memory", href: hubHref("/ai", "memory", orgId) },
-    { id: "admin", label: "Team admin", href: withOrgHref("/team/admin", orgId) },
+    { id: "admin", label: "Invites", href: withOrgHref("/team/admin", orgId) },
   ];
   return all.filter((link) => {
     if (link.id === options?.active) return false;
@@ -203,7 +203,7 @@ export function aiBudgetsShellCopy(kind: AiBudgetsShellKind): AiBudgetsEmptyCopy
     case "loading":
       return {
         kind,
-        title: "Loading Chat limits…",
+        title: "Opening Chat limits",
         description: "Checking your team's spend limits and included allowance.",
       };
     case "auth_required":
@@ -290,7 +290,7 @@ export function aiBudgetsNextActions(input: {
       {
         id: "signin",
         label: "Sign in",
-        detail: "Closed membership — Google or email OTP, then reopen AI · Budgets.",
+        detail: "Closed membership — Google or an emailed sign-in code, then reopen AI · Budgets.",
         href: "/signin",
         primary: true,
       },
@@ -400,7 +400,7 @@ export function aiUsageShellCopy(kind: AiBudgetsShellKind): AiBudgetsEmptyCopy {
     case "loading":
       return {
         kind,
-        title: "Loading AI usage…",
+        title: "Opening AI usage",
         description: "Checking Chat calls, which key paid, and any that were refused.",
       };
     case "auth_required":
@@ -487,7 +487,7 @@ export function aiUsageNextActions(input: {
       {
         id: "signin",
         label: "Sign in",
-        detail: "Closed membership — Google or email OTP, then reopen AI · Usage.",
+        detail: "Closed membership — Google or an emailed sign-in code, then reopen AI · Usage.",
         href: "/signin",
         primary: true,
       },

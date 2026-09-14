@@ -11,7 +11,7 @@ import TeamAdminClient from "../team-admin-client";
 import "../team-admin.css";
 
 export const metadata = {
-  title: "Team admin",
+  title: "Invites",
   description:
     "Invite teammates by exact email. People without an invite go to the waitlist.",
 };
@@ -31,8 +31,8 @@ export default async function TeamAdminPage({
     return (
       <main className="module-page team-admin-page soft-gate">
         <PageHeader
-          breadcrumbs="Team / Admin"
-          title="Team admin"
+          breadcrumbs="Team / Invites"
+          title="Invites"
           description="Invite teammates by exact email. People without an invite go to the waitlist."
         >
           <nav className="product-hub-related team-admin-related" aria-label="Related account tools">
@@ -57,7 +57,7 @@ export default async function TeamAdminPage({
         </EmptyState>
         <p className="app-muted" style={{ marginTop: "1rem" }}>
           After you choose your team, open{" "}
-          <a href={withOrgHref("/team/admin", null)}>Team admin</a> again to invite people by exact email.
+          <a href={withOrgHref("/team/admin", null)}>Invites</a> again to invite people by exact email.
         </p>
       </main>
     );

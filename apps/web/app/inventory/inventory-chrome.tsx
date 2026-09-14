@@ -233,7 +233,7 @@ export function InventoryReadyHeader({
         </>
       }
       title="Inventory & BOM"
-      description={`Parts & materials stock, storage locations, and per-mechanism bills of materials for ${orgName ?? "your team"}${teamNumber ? ` (Team ${teamNumber})` : ""}. Cross-check Vendors, Orders, and Spare Forecast.`}
+      description={`Parts & materials stock, storage locations, and per-mechanism bills of materials for ${orgName ?? "your team"}${teamNumber ? ` (Team ${teamNumber})` : ""}. Cross-check Vendors, Orders, and Spares forecast.`}
     >
       <div className="inventory-header-actions">
         {lowStock > 0 ? (
@@ -297,7 +297,7 @@ export function InventoryTipPanel() {
   return (
     <Panel className="inventory-tip" aria-label="Inventory tip">
       <span className="eyebrow">Procurement path</span>
-      {/* Prose, not a third set of buttons. Orders, Vendors and Spare Forecast
+      {/* Prose, not a third set of buttons. Orders, Vendors and Spares forecast
           each had a link here *and* a row in Next actions above — two controls
           for the same destination, the lower one with no reason attached. The
           panel keeps the sentence and gives up the links. */}

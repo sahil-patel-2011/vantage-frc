@@ -42,7 +42,7 @@ export const cadFixture = {
     { id: "04", label: "Render / BOM artifact", state: "Queued" as const },
   ],
   connectors: [
-    { name: "Onshape hosted", status: "Setup required" as const },
-    { name: "Fusion local relay", status: "Setup required" as const },
+    { name: "Onshape hosted", status: "Needs setup" as const },
+    { name: "Fusion local relay", status: "Needs setup" as const },
   ],
 };

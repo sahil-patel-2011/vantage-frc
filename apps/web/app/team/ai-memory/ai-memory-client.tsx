@@ -548,9 +548,9 @@ export default function AiMemoryClient({ orgId }: { orgId: string }) {
               </small>
             </label>
             <div className="ai-memory-policy-actions">
-              <button className="primary-action" disabled={saving} type="submit">
+              <Button variant="primary" disabled={saving} type="submit">
                 {saving ? "Saving…" : "Save team memory policy"}
-              </button>
+              </Button>
               <Button as="a" variant="secondary" href={chatHref}>
                 Open Chat
               </Button>

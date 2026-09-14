@@ -43,7 +43,7 @@ export function pairwiseNextActions(ctx: {
     actions.push({
       id: "event",
       label: "Set the active event",
-      detail: "Event teams fill the picker from the TBA cache.",
+      detail: "Event teams fill the picker from official match data.",
       href: hubHref("/competition", "command", orgId),
     });
   }
@@ -67,7 +67,7 @@ export function pairwiseNextActions(ctx: {
   actions.push({
     id: "pick-clock",
     label: "Open pick clock",
-    detail: "Use these ranks at the draft desk — they are not TBA EPA.",
+    detail: "Use these ranks at the draft desk — they are not season ratings.",
     href: hubHref("/competition", "pick-clock", orgId),
   });
   actions.push({

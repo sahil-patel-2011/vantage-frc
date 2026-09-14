@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "bus-factor",
-  title: "Bus-Factor & Burnout Watch",
+  title: "Bus factor",
   route: "/bus-factor",
   apiRoute: "/api/bus-factor",
   hub: "Team",

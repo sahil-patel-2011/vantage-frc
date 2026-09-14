@@ -60,7 +60,7 @@ async function persistSponsorTierSnapshot(
     await putFeatureSnapshot("sponsor-tier-calculator", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("sponsor-tier-calculator", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Sponsor Tier Calculator already painted; IndexedDB is best-effort.
+    // Live Tier calculator already painted; IndexedDB is best-effort.
   }
 }
 
@@ -184,7 +184,7 @@ export default function SponsorTierCalculatorClient() {
       if (!response.ok || !isSponsorTierView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Sponsor Tier Calculator. Showing the last copy on this device.");
+          setError("Could not refresh Tier calculator. Showing the last copy on this device.");
           setFetchFailed(false);
           return;
         }
@@ -201,7 +201,7 @@ export default function SponsorTierCalculatorClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Sponsor Tier Calculator. Showing the last copy on this device.");
+        setError("Could not refresh Tier calculator. Showing the last copy on this device.");
         setFetchFailed(false);
         return;
       }
@@ -246,10 +246,10 @@ export default function SponsorTierCalculatorClient() {
       breadcrumbs={
         <>
           <a href={orgId ? `/business?orgId=${encodeURIComponent(orgId)}` : "/business"}>Business</a>
-          {" / Sponsor Tier Calculator"}
+          {" / Tier calculator"}
         </>
       }
-      title="Sponsor Tier Calculator"
+      title="Tier calculator"
       description="Define giving-level tiers and recognition benefits, then see which sponsors qualify and what benefits are still owed — computed from recorded contributions only."
     >
       <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
@@ -297,10 +297,10 @@ export default function SponsorTierCalculatorClient() {
     return (
       <main className="module-page">
         {header}
-        <OfflineBanner feature="Sponsor Tier Calculator" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Tier calculator" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
-          title={failure ? failure.title : "Loading…"}
+          title={failure ? failure.title : "Opening Tier calculator"}
           description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >
@@ -324,7 +324,7 @@ export default function SponsorTierCalculatorClient() {
       return (
         <main className="module-page">
           {header}
-          <OfflineBanner feature="Sponsor Tier Calculator" fromCache={fromCache} cachedAt={cachedAt} />
+          <OfflineBanner feature="Tier calculator" fromCache={fromCache} cachedAt={cachedAt} />
           {error ? (
             <p className="telemetry-status" role="alert">
               {error}
@@ -343,7 +343,7 @@ export default function SponsorTierCalculatorClient() {
       return (
         <main className="module-page">
           {header}
-          <OfflineBanner feature="Sponsor Tier Calculator" fromCache={fromCache} cachedAt={cachedAt} />
+          <OfflineBanner feature="Tier calculator" fromCache={fromCache} cachedAt={cachedAt} />
           {error ? (
             <p className="telemetry-status" role="alert">
               {error}

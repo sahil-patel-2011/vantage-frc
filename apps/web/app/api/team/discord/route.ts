@@ -9,6 +9,7 @@ import {
   isValidDiscordWebhook,
   postTeamDiscordMessage,
 } from "../../../../lib/discord";
+import { ACCOUNT_DISCORD_COPY } from "../../../../lib/account/account-api-related";
 import { canPostViaDiscord } from "../../../../lib/discord-related";
 
 async function session() {
@@ -160,12 +161,12 @@ export async function GET(request: Request) {
         canPost,
         inviteUrl: setup.inviteUrl,
         message: !configured
-          ? "Link a Discord guild and channel for announcements and an optional object-linked chat bridge."
+          ? ACCOUNT_DISCORD_COPY.empty
           : setupRequired
             ? hasWebhook || channelId
-              ? "Add a valid channel webhook, or set DISCORD_BOT_TOKEN on the server with a channel id, before posting."
-              : "Provide a channel webhook URL and/or a Discord channel id to finish setup."
-            : setup.message,
+              ? ACCOUNT_DISCORD_COPY.emptyConfigured
+              : ACCOUNT_DISCORD_COPY.setupRequired
+            : ACCOUNT_DISCORD_COPY.connectedWebhook,
         channelLabel: connection?.channelLabel ?? null,
         enabled: connection?.enabled ?? false,
         updatedAt: connection?.updatedAt ?? null,
@@ -177,7 +178,7 @@ export async function GET(request: Request) {
         empty: !configured,
         emptyReason: configured
           ? null
-          : "No Discord guild/channel linked yet. Paste a webhook or set guild + channel ids.",
+          : ACCOUNT_DISCORD_COPY.empty,
         // Real discord_bridge_posts only — null when table unavailable, never DEMO sync %.
         bridgePosts,
       };
@@ -246,14 +247,14 @@ export async function POST(request: Request) {
         else if (body.webhookUrl?.trim()) {
           webhookUrl = body.webhookUrl.trim();
           if (!isValidDiscordWebhook(webhookUrl)) {
-            throw new Error("Enter a valid Discord webhook URL (Server Settings → Integrations → Webhooks)");
+            throw new Error("Paste a valid Discord channel link");
           }
         } else if (existing.rowCount) {
           webhookUrl = existing.rows[0]!.webhookUrl;
         }
 
         if (!webhookUrl && !channelId) {
-          throw new Error("Provide a channel webhook URL and/or a Discord channel id");
+          throw new Error("Paste a Discord channel link or a Discord channel id");
         }
 
         await client.query(
@@ -302,7 +303,7 @@ export async function POST(request: Request) {
           [orgId],
         ),
       );
-      if (!row.rowCount) throw new Error("Connect a Discord guild/channel first");
+      if (!row.rowCount) throw new Error("Connect Discord first");
       if (!row.rows[0]!.enabled) throw new Error("Discord posting is turned off for this team");
 
       const webhookUrl =

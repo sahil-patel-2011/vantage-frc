@@ -86,7 +86,7 @@ export function Body(props: BodyProps) {
   const { listing, rail, layout, orgId } = props;
 
   if (listing.status === "loading") {
-    return <EmptyState title="Loading your files…" aria-busy soft />;
+    return <EmptyState title="Opening Files" aria-busy soft />;
   }
   if (listing.status === "setup_required") {
     return (

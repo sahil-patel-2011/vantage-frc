@@ -79,7 +79,7 @@ export default function PairwiseClient() {
       if (!response.ok || !isPairwiseView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Pairwise ranking. Showing the last copy on this device.");
+          setError("Could not refresh Pairwise. Showing the last copy on this device.");
         } else {
           setError(data.error ? data.error : "Could not load pairwise ranking.");
           setErrorStatus(response.status);
@@ -98,7 +98,7 @@ export default function PairwiseClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Pairwise ranking. Showing the last copy on this device.");
+        setError("Could not refresh Pairwise. Showing the last copy on this device.");
       } else {
         setError("Network error — please try again.");
       }
@@ -206,10 +206,10 @@ export default function PairwiseClient() {
             {" / Pairwise"}
           </>
         }
-        title="Pairwise ranking"
-        description="Tap who looked better. Ranks come from your taps — not from official rankings or EPA."
+        title="Pairwise"
+        description="Tap who looked better. Ranks come from your taps — not from official rankings or season ratings."
       />
-      <OfflineBanner feature="Pairwise ranking" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Pairwise" fromCache={fromCache} cachedAt={cachedAt} />
 
       <nav className="product-hub-related" aria-label="Related qualitative tools">
         {related.map((link) => (
@@ -255,7 +255,7 @@ export default function PairwiseClient() {
       {!view && !error ? <p className="app-muted">Loading qualitative ranks…</p> : null}
 
       {view?.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
+        <EmptyState badge="Needs setup" badgeTone="setup" title={view.message}>
           {view.steps[0] ? (
             <Button as="a" variant="primary" href={view.steps[0].href}>
               {view.steps[0].label}
@@ -434,7 +434,7 @@ function LivePairwise({
               ))}
               {!view.ranks.length ? (
                 <tr>
-                  <td colSpan={5}>No qualitative ranks yet. Strength is not EPA and is not filled in for you.</td>
+                  <td colSpan={5}>No qualitative ranks yet. Strength is not a season rating and is not filled in for you.</td>
                 </tr>
               ) : null}
             </tbody>

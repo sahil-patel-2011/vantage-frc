@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "learning",
-  title: "Learning — Call Your Shot",
+  title: "Learning",
   route: "/learning",
   apiRoute: "/api/learning/mentor",
   hub: "Team",

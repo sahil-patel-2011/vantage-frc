@@ -4,6 +4,9 @@ import {
   addOnshapeAssemblyInstance,
   createOnshapeAssembly,
   createOnshapeMate,
+  annotateOnshapeDrawing,
+  createOnshapeDrawing,
+  createOnshapeDrawingViews,
   createOnshapePartStudio,
   getOnshapeAssembly,
   type OnshapeAssemblyRef,
@@ -648,6 +651,74 @@ export function createOnshapeApiTransport(input: {
         });
         lastPartStudio = { ...document, elementId: created.elementId, label: created.name };
         return { featureId: created.elementId };
+      }
+      if (operation === "create_drawing") {
+        const created = await createOnshapeDrawing(http, {
+          documentId: document.documentId,
+          workspaceId: document.workspaceId,
+          name: String(parameters.name ?? "Detail drawing").trim() || "Detail drawing",
+        });
+        const views = Array.isArray(parameters.views)
+          ? parameters.views.map((view) => String(view).trim()).filter(Boolean)
+          : [];
+        if (views.length) {
+          await createOnshapeDrawingViews(http, {
+            documentId: document.documentId,
+            workspaceId: document.workspaceId,
+            elementId: created.elementId,
+            views,
+          });
+        }
+        const notes = Array.isArray(parameters.notes)
+          ? parameters.notes.map((note) => String(note).trim()).filter(Boolean)
+          : [];
+        const callouts = Array.isArray(parameters.callouts)
+          ? parameters.callouts.flatMap((entry) => {
+              if (!entry || typeof entry !== "object" || Array.isArray(entry)) return [];
+              const record = entry as Record<string, unknown>;
+              const valueMm = Number(record.valueMm);
+              const label = String(record.label ?? "").trim();
+              if (!label || !Number.isFinite(valueMm) || valueMm <= 0) return [];
+              return [{ label, valueMm, view: record.view ? String(record.view) : undefined }];
+            })
+          : [];
+        if (notes.length || callouts.length) {
+          await annotateOnshapeDrawing(http, {
+            documentId: document.documentId,
+            workspaceId: document.workspaceId,
+            elementId: created.elementId,
+            notes,
+            callouts,
+          });
+        }
+        return { featureId: created.elementId };
+      }
+      if (operation === "label_drawing") {
+        const drawingElementId = String(parameters.drawingElementId ?? parameters.elementId ?? "").trim();
+        if (!drawingElementId) {
+          throw new Error("Label drawing needs the Onshape drawing tab id. Do not invent an id.");
+        }
+        const notes = Array.isArray(parameters.notes)
+          ? parameters.notes.map((note) => String(note).trim()).filter(Boolean)
+          : [];
+        const callouts = Array.isArray(parameters.callouts)
+          ? parameters.callouts.flatMap((entry) => {
+              if (!entry || typeof entry !== "object" || Array.isArray(entry)) return [];
+              const record = entry as Record<string, unknown>;
+              const valueMm = Number(record.valueMm);
+              const label = String(record.label ?? "").trim();
+              if (!label || !Number.isFinite(valueMm) || valueMm <= 0) return [];
+              return [{ label, valueMm, view: record.view ? String(record.view) : undefined }];
+            })
+          : [];
+        const labeled = await annotateOnshapeDrawing(http, {
+          documentId: document.documentId,
+          workspaceId: document.workspaceId,
+          elementId: drawingElementId,
+          notes,
+          callouts,
+        });
+        return { featureId: labeled.elementId };
       }
       if (operation === "add_assembly_instance") {
         const assemblyElementId = String(parameters.assemblyElementId ?? "").trim();

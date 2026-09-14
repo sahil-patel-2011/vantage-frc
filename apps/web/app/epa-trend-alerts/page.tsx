@@ -1,7 +1,7 @@
 import EpaTrendAlertsClient from "./epa-trend-alerts-client";
 
 export const metadata = {
-  title: "EPA Trend Alerts",
+  title: "Rating alerts",
 };
 
 export default function EpaTrendAlertsPage() {

@@ -3,6 +3,7 @@ import {
   hostedOnshapeAgentStatus,
   hostedOnshapeEnvStatus,
   hostedOnshapeSetup,
+  studentOnshapeApiSetup,
   ONSHAPE_HOSTED_BADGE,
   ONSHAPE_HOSTED_UNCONFIGURED_TITLE,
   ONSHAPE_LOCAL_PLAYWRIGHT_HINT,
@@ -31,6 +32,17 @@ const ALL_COPY = [
 ].join(" ");
 
 describe("hosted Onshape setup copy", () => {
+  it("student CAD APIs omit operator env names and callback URLs", () => {
+    const setup = studentOnshapeApiSetup({});
+    expect(setup.setupRequired).toBe(true);
+    expect(setup.connectCtaEnabled).toBe(false);
+    expect(setup.message).toMatch(/Ask a mentor/);
+    expect(setup.message).not.toMatch(/Setup required|ONSHAPE_|Vercel|callback/i);
+    expect(setup).not.toHaveProperty("missingEnv");
+    expect(setup).not.toHaveProperty("callbackUrl");
+    expect(setup).not.toHaveProperty("redirectUri");
+  });
+
   it("reports setup_required when OAuth and API-key env are missing", () => {
     const status = hostedOnshapeEnvStatus({});
     expect(status.setupRequired).toBe(true);
@@ -142,6 +154,9 @@ describe("hosted Onshape setup copy", () => {
     expect(onshapeOauthCtaEnabled({ configured: true, redirectUri: null, scopes: [] })).toBe(false);
     expect(onshapeOauthCtaEnabled({ configured: true, redirectUri: "https://app.example/callback" })).toBe(true);
     expect(onshapeOauthCtaEnabled({ configured: true, scopes: ["OAuth2Read"] })).toBe(true);
+    expect(onshapeOauthCtaEnabled({ configured: true, setupRequired: false })).toBe(true);
+    expect(onshapeOauthCtaEnabled({ configured: false, connectCtaEnabled: true })).toBe(true);
+    expect(onshapeOauthCtaEnabled({ configured: true, connectCtaEnabled: false })).toBe(false);
   });
 
   it("keeps student CAD copy free of env vars and never invents STL or documents", () => {

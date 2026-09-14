@@ -6,8 +6,8 @@ export const SCOUT_DISAGREEMENTS_RELATED_LINKS = [
   { id: "scouting", label: "Scouting", kind: "hub" as const, tab: "scouting" },
   { id: "accuracy", label: "Accuracy", kind: "path" as const, path: "/scout-accuracy" },
   { id: "coverage", label: "Coverage", kind: "path" as const, path: "/scouting/lineup" },
-  { id: "coverage-live", label: "Scout Coverage Live", kind: "path" as const, path: "/scout-coverage-live" },
-  { id: "command", label: "Event Day", kind: "hub" as const, tab: "command" },
+  { id: "coverage-live", label: "Coverage", kind: "path" as const, path: "/scout-coverage-live" },
+  { id: "command", label: "Event day", kind: "hub" as const, tab: "command" },
 ] as const;
 
 export type ScoutDisagreementsRelatedId = (typeof SCOUT_DISAGREEMENTS_RELATED_LINKS)[number]["id"];
@@ -88,7 +88,7 @@ export function scoutDisagreementsSetupSteps(orgId?: string | null): ScoutDisagr
     {
       id: "accuracy",
       label: "Open Accuracy",
-      detail: "TBA-verified ranks help decide which scout's value to trust when resolving.",
+      detail: "official ranks help decide which scout's value to trust when resolving.",
       href: withOrgHref("/scout-accuracy", orgId),
     },
     {
@@ -151,7 +151,7 @@ export function scoutDisagreementsShellCopy(kind: ScoutDisagreementsShellKind): 
     case "loading":
       return {
         kind,
-        title: "Loading scout disagreements…",
+        title: "Opening Disagreements",
         description:
           "Checking which team you are on and real conflict rows.",
       };
@@ -221,7 +221,7 @@ export function scoutDisagreementsNextActions(input: {
         {
           id: "accuracy",
           label: "Open Accuracy",
-          detail: "TBA-verified ranks stay honest until real scout rows exist.",
+          detail: "official ranks stay honest until real scout rows exist.",
           href: withOrgHref("/scout-accuracy", null),
         },
         {
@@ -243,7 +243,7 @@ export function scoutDisagreementsNextActions(input: {
       {
         id: "accuracy",
         label: "Open Accuracy",
-        detail: "Use TBA-verified ranks when choosing an authoritative value.",
+        detail: "Use official ranks when choosing an authoritative value.",
         href: withOrgHref("/scout-accuracy", orgId),
       },
       {
@@ -303,7 +303,7 @@ export function scoutDisagreementsNextActions(input: {
       {
         id: "accuracy",
         label: "Open Accuracy",
-        detail: "Cross-check TBA-verified ranks before you need to resolve.",
+        detail: "Cross-check official ranks before you need to resolve.",
         href: withOrgHref("/scout-accuracy", orgId),
       },
       {
@@ -338,13 +338,13 @@ export function scoutDisagreementsNextActions(input: {
     {
       id: "scouting",
       label: "Open Scouting",
-      detail: "Keep logging membership-bound match rows for fresher conflicts.",
+      detail: "Keep logging this team's match entries for fresher conflicts.",
       href: hubHref("/competition", "scouting", orgId),
     },
     {
       id: "accuracy",
       label: "Open Accuracy",
-      detail: "Prefer TBA-accurate scouts when choosing an authoritative value.",
+      detail: "Prefer scouts whose totals match official results when choosing an authoritative value.",
       href: withOrgHref("/scout-accuracy", orgId),
     },
     {

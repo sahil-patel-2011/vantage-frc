@@ -45,7 +45,7 @@ async function persistRisksSnapshot(orgHint: string, seasonHint: string, data: R
     await putFeatureSnapshot("risks", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("risks", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Risk Register already painted; IndexedDB is best-effort.
+    // Live Risk register already painted; IndexedDB is best-effort.
   }
 }
 
@@ -92,7 +92,7 @@ function NextActions({
     <section className="risks-next-actions app-card soft-panel" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p>Prioritized from logged season risks — scores stay blank until you enter real L×I.</p>
+        <p>Prioritized from logged season risks — scores stay blank until you enter how likely and how bad.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -175,7 +175,7 @@ export default function RisksClient() {
       if (!response.ok || !isRisksView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Risk Register. Showing the last copy on this device.");
+          setError("Could not refresh Risk register. Showing the last copy on this device.");
           setFetchFailed(false);
           return;
         }
@@ -196,7 +196,7 @@ export default function RisksClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Risk Register. Showing the last copy on this device.");
+        setError("Could not refresh Risk register. Showing the last copy on this device.");
         setFetchFailed(false);
         return;
       }
@@ -256,14 +256,14 @@ export default function RisksClient() {
     return (
       <main className="module-page risks-page">
         <PageHeader
-          breadcrumbs="Team / Risk Register"
-          title="Risk Register"
-          description="Proactive season risks scored with real likelihood × impact. Distinct from FMEA failure logging."
+          breadcrumbs="Team / Risk register"
+          title="Risk register"
+          description="Proactive season risks scored with how likely and how bad. Distinct from the failure log."
         />
-        <OfflineBanner feature="Risk Register" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Risk register" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
-          title={copy ? copy.title : "Loading risk register…"}
+          title={copy ? copy.title : "Opening Risk register"}
           description={copy ? copy.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >
@@ -286,12 +286,12 @@ export default function RisksClient() {
     return (
       <main className="module-page risks-page">
         <PageHeader
-          breadcrumbs="Team / Risk Register"
-          title="Risk Register"
-          description="Identify what could derail the season — score likelihood × impact, assign mitigations, and track closure. Separate from FMEA’s O×S×D failure log."
+          breadcrumbs="Team / Risk register"
+          title="Risk register"
+          description="Identify what could derail the season — score how likely and how bad, assign mitigations, and track closure. Separate from the Failure log, which scores things that already broke."
         />
-        <OfflineBanner feature="Risk Register" fromCache={fromCache} cachedAt={cachedAt} />
-        <EmptyState soft badge="Setup required" badgeTone="setup" title={view.message}>
+        <OfflineBanner feature="Risk register" fromCache={fromCache} cachedAt={cachedAt} />
+        <EmptyState soft badge="Needs setup" badgeTone="setup" title={view.message}>
           {view.steps[0] ? (
             <Button as="a" variant="primary" href={view.steps[0].href}>
               {view.steps[0].label}
@@ -308,12 +308,12 @@ export default function RisksClient() {
   return (
     <main className="module-page risks-page">
       <PageHeader
-        breadcrumbs="Team / Risk Register"
-        title="Risk Register"
+        breadcrumbs="Team / Risk register"
+        title="Risk register"
         description={
           <>
             Identify what could derail your season — mechanism failures, schedule slips, funding gaps,
-            driver availability. Score each by likelihood × impact. For things that already broke, use FMEA.
+            driver availability. Score each by how likely and how bad. For things that already broke, use the failure log.
           </>
         }
       >
@@ -338,7 +338,7 @@ export default function RisksClient() {
             </label>
           ) : null}
           <Button as="a" variant="secondary" href={hubHref("/team", "fmea", orgId)}>
-            FMEA
+            Failure log
           </Button>
           <Button as="a" variant="secondary" href={hubHref("/team", "knowledge", orgId)}>
             Knowledge
@@ -349,7 +349,7 @@ export default function RisksClient() {
         </div>
       </PageHeader>
 
-      <OfflineBanner feature="Risk Register" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Risk register" fromCache={fromCache} cachedAt={cachedAt} />
 
       {orgId ? <RisksRelated orgId={orgId} /> : null}
 
@@ -375,10 +375,10 @@ export default function RisksClient() {
         <EmptyState
           soft
           title="No season risks logged yet"
-          description="Add schedule, technical, funding, or people risks with real L×I scores. Top score stays blank until then. FMEA is for failures that already happened."
+          description="Add schedule, technical, funding, or people risks with how likely and how bad. Top score stays blank until then. Failure log is for failures that already happened."
         >
           <div className="risks-row-links">
-            <a href={hubHref("/team", "fmea", orgId)}>FMEA →</a>
+            <a href={hubHref("/team", "fmea", orgId)}>Failure log →</a>
             <a href={hubHref("/team", "knowledge", orgId)}>Knowledge →</a>
             <a href={withOrgHref("/subsystems", orgId)}>Subsystems →</a>
           </div>
@@ -407,7 +407,7 @@ function BatteryReliabilitySignals({ view }: { view: LiveView }) {
           <li key={signal.id}>
             <strong>{signal.title}</strong>
             <span className="meta">
-              L{signal.likelihood} × I{signal.impact} · {signal.category}
+              {formatLikelihoodImpact(signal)} · {signal.category}
             </span>
             <span>{signal.detail}</span>
             <a href={signal.href}>Open Batteries</a>
@@ -458,14 +458,14 @@ function RiskMatrix({ view }: { view: LiveView }) {
       <p>Counts of active risks only — empty cells stay dim; no demo placements.</p>
       <div className="risks-matrix-wrap">
         <div className="risks-matrix-axis">
-          <span>Impact →</span>
+          <span>How bad →</span>
         </div>
         <div>
-          <div className="risks-matrix" role="img" aria-label="5 by 5 likelihood by impact matrix">
+          <div className="risks-matrix" role="img" aria-label="5 by 5 how likely by how bad matrix">
             {view.matrix.map((cell: MatrixCell) => (
               <div
                 key={`${cell.likelihood}-${cell.impact}`}
-                title={`Likelihood ${cell.likelihood} × Impact ${cell.impact} = ${cell.score} (${riskLevelLabel(cell.level)})`}
+                title={`${formatLikelihoodImpact(cell)} = ${cell.score} (${riskLevelLabel(cell.level)})`}
                 className={`risks-matrix-cell ${cell.level}${cell.count > 0 ? "" : " empty"}`}
               >
                 {cell.count > 0 ? cell.count : ""}
@@ -477,7 +477,7 @@ function RiskMatrix({ view }: { view: LiveView }) {
               <span key={n}>{n}</span>
             ))}
           </div>
-          <div className="risks-matrix-caption">Likelihood →</div>
+          <div className="risks-matrix-caption">How likely →</div>
         </div>
       </div>
     </Panel>
@@ -545,7 +545,7 @@ function AddRiskForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
       }}
     >
       <h2>Add risk</h2>
-      <p>Proactive season risk — not an FMEA failure. Score will be L×I from the values you set.</p>
+      <p>Proactive season risk — not a logged failure. Score is how likely times how bad from the values you set.</p>
       <FormGrid min={130}>
         <FormRow label="Risk" wide>
           <input value={form.title} onChange={set("title")} placeholder="Climber winch could fail under load" required />
@@ -559,7 +559,7 @@ function AddRiskForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
             ))}
           </select>
         </FormRow>
-        <FormRow label="Likelihood (1–5)">
+        <FormRow label="How likely (1–5)">
           <select value={form.likelihood} onChange={set("likelihood")}>
             {SCALES.map((n) => (
               <option key={n} value={n}>
@@ -568,7 +568,7 @@ function AddRiskForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
             ))}
           </select>
         </FormRow>
-        <FormRow label="Impact (1–5)">
+        <FormRow label="How bad (1–5)">
           <select value={form.impact} onChange={set("impact")}>
             {SCALES.map((n) => (
               <option key={n} value={n}>
@@ -676,18 +676,18 @@ function RiskCard({
           <p className="warn">No mitigation recorded yet.</p>
         )}
         <div className="risks-row-links">
-          <a href={hubHref("/team", "fmea", orgId)}>Log in FMEA if it fails →</a>
+          <a href={hubHref("/team", "fmea", orgId)}>Log in Failure log if it fails →</a>
           <a href={hubHref("/team", "knowledge", orgId)}>Document in Knowledge →</a>
         </div>
       </div>
 
       <footer className="risks-row-actions">
         <label>
-          L
+          How likely
           <select
             value={String(risk.likelihood)}
             disabled={busy}
-            aria-label="Likelihood"
+            aria-label="How likely"
             onChange={(event) => mutate({ action: "update-risk", riskId: risk.id, likelihood: event.target.value })}
           >
             {SCALES.map((n) => (
@@ -698,11 +698,11 @@ function RiskCard({
           </select>
         </label>
         <label>
-          I
+          How bad
           <select
             value={String(risk.impact)}
             disabled={busy}
-            aria-label="Impact"
+            aria-label="How bad"
             onChange={(event) => mutate({ action: "update-risk", riskId: risk.id, impact: event.target.value })}
           >
             {SCALES.map((n) => (

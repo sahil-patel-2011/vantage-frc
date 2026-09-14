@@ -54,7 +54,7 @@ describe("Intel analytics", () => {
       },
     ]);
     expect(complementary.score!).toBeGreaterThan(overlap.score!);
-    expect(complementary.caveats[0]).toMatch(/MODEL/i);
+    expect(complementary.caveats[0]).toMatch(/alliance fit/i);
   });
 
   it("requires evidence before assigning foul risk", () => {

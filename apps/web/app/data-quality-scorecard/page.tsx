@@ -1,7 +1,7 @@
 import DataQualityScorecardClient from "./data-quality-scorecard-client";
 
 export const metadata = {
-  title: "Data Quality Scorecard",
+  title: "Data quality",
 };
 
 export default function DataQualityScorecardPage() {

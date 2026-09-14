@@ -99,7 +99,7 @@ function NotebookRelated({ orgId }: { orgId?: string | null }) {
         Writer
       </Button>
       <Button as="a" variant="secondary" href={hubHref("/business", "impact", orgId)}>
-        Community Impact
+        Impact
       </Button>
     </nav>
   );
@@ -366,7 +366,7 @@ export default function NotebookClient({ orgId }: { orgId: string | null }) {
         </PageHeader>
         <OfflineBanner feature="Engineering notebook" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
-          title={failure ? failure.title : "Loading notebook…"}
+          title={failure ? failure.title : "Opening Engineering notebook"}
           description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >
@@ -402,7 +402,7 @@ export default function NotebookClient({ orgId }: { orgId: string | null }) {
             <NotebookRelated orgId={orgId} />
           </PageHeader>
           <OfflineBanner feature="Engineering notebook" fromCache={fromCache} cachedAt={cachedAt} />
-          <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
+          <EmptyState badge="Needs setup" badgeTone="setup" title={view.message}>
             <Button as="a" variant="primary" href="/workspace">
               Choose your team
             </Button>

@@ -67,7 +67,7 @@ async function persistSpareRobotKitSnapshot(
     await putFeatureSnapshot("spare-robot-kit", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("spare-robot-kit", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Spare Robot Kit already painted; IndexedDB is best-effort.
+    // Live Spare kit already painted; IndexedDB is best-effort.
   }
 }
 
@@ -138,10 +138,10 @@ function KitShell({
         breadcrumbs={
           <>
             <a href={buildHref}>Build</a>
-            {" / Spare Robot Kit"}
+            {" / Spare kit"}
           </>
         }
-        title="Spare Robot Kit Checklist"
+        title="Spare kit"
         description={description}
       >
         <RelatedStrip orgId={orgId} />
@@ -156,7 +156,7 @@ function KitShell({
       ) : (
         <EmptyState
           soft
-          badge={shell === "setup" ? "Setup required" : copy.badge}
+          badge={shell === "setup" ? "Needs setup" : copy.badge}
           badgeTone="setup"
           title={copy.title}
           description={error ?? copy.description}
@@ -167,7 +167,7 @@ function KitShell({
             </Button>
           ) : null}
           {shell === "empty" ? (
-            <Button as="a" variant="primary" href={hubHref("/build", "fmea", orgId)}>Open FMEA</Button>
+            <Button as="a" variant="primary" href={hubHref("/build", "fmea", orgId)}>Open Failure log</Button>
           ) : null}
         </EmptyState>
       )}
@@ -229,7 +229,7 @@ export default function SpareRobotKitClient() {
         if (!response.ok || !isSpareRobotKitView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Spare Robot Kit. Showing the last copy on this device.");
+            setError("Could not refresh Spare kit. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -244,7 +244,7 @@ export default function SpareRobotKitClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Spare Robot Kit. Showing the last copy on this device.");
+          setError("Could not refresh Spare kit. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -312,7 +312,7 @@ export default function SpareRobotKitClient() {
   if (shell === "loading") {
     return (
       <KitShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Spare Robot Kit" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Spare kit" fromCache={fromCache} cachedAt={cachedAt} />
       </KitShell>
     );
   }
@@ -325,7 +325,7 @@ export default function SpareRobotKitClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Spare Robot Kit" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Spare kit" fromCache={fromCache} cachedAt={cachedAt} />
       </KitShell>
     );
   }
@@ -336,7 +336,7 @@ export default function SpareRobotKitClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Spare Robot Kit" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Spare kit" fromCache={fromCache} cachedAt={cachedAt} />
       </KitShell>
     );
   }
@@ -347,11 +347,11 @@ export default function SpareRobotKitClient() {
         breadcrumbs={
           <>
             <a href={buildHref}>Build</a>
-            {" / Spare Robot Kit"}
+            {" / Spare kit"}
           </>
         }
-        title="Spare Robot Kit Checklist"
-        description="Generates a competition spare-parts kit by cross-referencing inventory spare bins against FMEA repeat-failure history."
+        title="Spare kit"
+        description="Generates a competition spare-parts kit by cross-referencing inventory spare bins against Failure log repeat-failure history."
       >
         <div className="srk-header-actions">
           <RelatedStrip orgId={orgId} />
@@ -377,7 +377,7 @@ export default function SpareRobotKitClient() {
         </div>
       </PageHeader>
 
-      <OfflineBanner feature="Spare Robot Kit" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Spare kit" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -418,8 +418,8 @@ function CandidatesPanel({
         soft
         badge="No kit candidates yet"
         badgeTone="setup"
-        title="No spares are currently matched to FMEA history"
-        description="Once spare-category inventory items are tagged with a subsystem that has logged FMEA failures, Vantage will surface what to pack."
+        title="No spares are currently matched to Failure log history"
+        description="Once spare-category inventory items are tagged with a subsystem that has logged failures, Vantage will surface what to pack."
       />
     );
   }
@@ -448,7 +448,7 @@ function CandidatesPanel({
                 <strong className="srk-item-name">{item.itemName}</strong>
                 <small className="app-muted">
                   {item.subsystem ?? "Unmatched subsystem"} · {item.quantityOnHand} on hand · {item.failureCount}{" "}
-                  FMEA failure(s) this season
+                  logged failure(s) this season
                 </small>
               </div>
             </header>

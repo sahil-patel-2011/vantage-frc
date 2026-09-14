@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "field-reset-timer",
-  title: "Field Reset Timer",
+  title: "Field reset",
   route: "/field-reset-timer",
   apiRoute: "/api/field-reset-timer",
   hub: "Team",

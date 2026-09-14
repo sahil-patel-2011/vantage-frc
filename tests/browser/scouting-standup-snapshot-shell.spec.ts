@@ -9,10 +9,10 @@ test.beforeEach(async ({ context }) => {
 
 const LEAVES = [
   { path: "/scout-training-mode", heading: "Scout training mode" },
-  { path: "/data-quality-scorecard", heading: "Data Quality Scorecard" },
-  { path: "/standup-digest", heading: "Morning standup" },
+  { path: "/data-quality-scorecard", heading: "Data quality" },
+  { path: "/standup-digest", heading: "Standup" },
   { path: "/meeting-autopilot", heading: "Meeting agenda" },
-  { path: "/goals-tracker", heading: "Season Goals" },
+  { path: "/goals-tracker", heading: "Goals" },
 ] as const;
 
 for (const leaf of LEAVES) {

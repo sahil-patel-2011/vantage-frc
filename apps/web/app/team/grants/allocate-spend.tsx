@@ -295,7 +295,7 @@ export function AllocateSpend({ orgId, seasonYear }: { orgId: string; seasonYear
       ) : null}
 
       {loading ? (
-        <EmptyState compact title="Loading spend options…" aria-busy />
+        <EmptyState compact title="Opening spend options" aria-busy />
       ) : !applications.length ? (
         <EmptyState
           compact

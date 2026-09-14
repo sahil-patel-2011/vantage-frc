@@ -4,13 +4,13 @@ import { describe, expect, it } from "vitest";
 
 const DIR = __dirname;
 
-describe("Spare Robot Kit last snapshot stays on the phone", () => {
+describe("Spare kit last snapshot stays on the phone", () => {
   it("reads and writes the spare-robot-kit IndexedDB feature cache", () => {
     const src = readFileSync(join(DIR, "spare-robot-kit-client.tsx"), "utf8");
     expect(src).toMatch(/getFeatureSnapshot/);
     expect(src).toMatch(/putFeatureSnapshot/);
     expect(src).toMatch(/"spare-robot-kit"/);
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
-    expect(src).toMatch(/feature="Spare Robot Kit"/);
+    expect(src).toMatch(/feature="Spare kit"/);
   });
 });

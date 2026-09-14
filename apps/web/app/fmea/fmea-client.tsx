@@ -102,7 +102,7 @@ function NextActions({
     <section className="fmea-next-actions app-card soft-panel" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p>Prioritized from logged failures — RPN stays blank until you score real O×S×D.</p>
+        <p>Prioritized from logged failures — priority stays blank until you score how often, how bad, and how hard to notice.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -138,7 +138,7 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
   viewRef.current = view;
 
   const orgId = view && "orgId" in view ? view.orgId : null;
-  const crumbs = embed === "build" ? "Build / FMEA" : "Team / FMEA";
+  const crumbs = embed === "build" ? "Build / Failure log" : "Team / Failure log";
 
   const load = useCallback((seasonOverride?: number) => {
     void (async () => {
@@ -190,7 +190,7 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
         if (!response.ok || !isFmeaView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh FMEA. Showing the last copy on this device.");
+            setError("Could not refresh the failure log. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -207,7 +207,7 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh FMEA. Showing the last copy on this device.");
+          setError("Could not refresh the failure log. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -269,13 +269,13 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
       <main className="module-page fmea-page">
         <PageHeader
           breadcrumbs={crumbs}
-          title="Failure Log (FMEA)"
-          description="Capture in-match and pit failures with real O×S×D scores."
+          title="Failure log"
+          description="Capture in-match and pit failures with how often, how bad, and how hard to notice."
         />
-        <OfflineBanner feature="FMEA" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Failure log" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
-          title={failure ? failure.title : "Loading failure log…"}
+          title={failure ? failure.title : "Opening Failure log"}
           description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >
@@ -299,16 +299,16 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
       <main className="module-page fmea-page">
         <PageHeader
           breadcrumbs={crumbs}
-          title="Failure Log (FMEA)"
-          description="Capture every in-match and pit failure against a subsystem. Score occurrence, severity, and detection from real events only."
+          title="Failure log"
+          description="Capture every in-match and pit failure against a subsystem. Score how often it happens, how bad it is, and how hard it is to notice — from real events only."
         />
-        <OfflineBanner feature="FMEA" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Failure log" fromCache={fromCache} cachedAt={cachedAt} />
         {error ? (
           <p className="fmea-alert" role="alert">
             {error}
           </p>
         ) : null}
-        <EmptyState soft badge="Setup required" badgeTone="setup" title={view.message}>
+        <EmptyState soft badge="Needs setup" badgeTone="setup" title={view.message}>
           {view.steps[0] ? (
             <Button as="a" variant="primary" href={view.steps[0].href}>
               {view.steps[0].label}
@@ -326,11 +326,12 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
     <main className="module-page fmea-page">
       <PageHeader
         breadcrumbs={crumbs}
-        title="Failure Log (FMEA)"
+        title="Failure log"
         description={
           <>
-            Capture every in-match and pit failure against a subsystem. Score occurrence, severity, and
-            detection, record root cause and fix. Risk priority is calculated from the scores you enter.
+            Capture every in-match and pit failure against a subsystem. Score how often it happens, how
+            bad it is, and how hard it is to notice. Record root cause and fix. Priority is calculated
+            from the scores you enter.
           </>
         }
       >
@@ -368,7 +369,7 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
           </Button>
         </div>
       </PageHeader>
-      <OfflineBanner feature="FMEA" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Failure log" fromCache={fromCache} cachedAt={cachedAt} />
 
       {orgId && !embed ? <FmeaRelated orgId={orgId} /> : null}
 
@@ -394,7 +395,7 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
         <EmptyState
           soft
           title="No failures logged yet"
-          description="When something breaks in the pit or on the field, log it with O/S/D scores. Highest RPN stays blank until then."
+          description="When something breaks in the pit or on the field, log it with how often, how bad, and how hard to notice. Highest priority stays blank until then."
         >
           <div className="fmea-risk-links">
             <a href={hubHref("/team", "knowledge", orgId)}>Knowledge →</a>
@@ -419,14 +420,14 @@ function BatteryReliabilitySignals({ view }: { view: LiveView }) {
   if (!view.batterySignals?.length) return null;
   return (
     <Panel className="fmea-panel">
-      <h2>Battery reliability → FMEA</h2>
+      <h2>Battery reliability → Failure log</h2>
       <p>Derived from your logged pack measurements. Promote one into the failure log when you confirm a mode.</p>
       <ul className="fmea-battery-signals">
         {view.batterySignals.map((signal) => (
           <li key={signal.id}>
             <strong>{signal.title}</strong>
             <span className="meta">
-              L{signal.likelihood} × I{signal.impact} · {signal.category}
+              How likely {signal.likelihood} · How bad {signal.impact} · {signal.category}
             </span>
             <span>{signal.detail}</span>
             <a href={signal.href}>Open Batteries</a>
@@ -447,7 +448,7 @@ function SummaryTiles({ view }: { view: LiveView }) {
       value: String(s.byLevel.critical + s.byLevel.high),
       tone: s.byLevel.critical + s.byLevel.high > 0 ? "critical" : "",
     },
-    { label: "Top RPN", value: formatRpnDisplay(s.highestRpn, hasActive), tone: "" },
+    { label: "Top priority", value: formatRpnDisplay(s.highestRpn, hasActive), tone: "" },
     { label: "Needs fix", value: String(s.needsFix.length), tone: s.needsFix.length > 0 ? "warn" : "" },
   ];
   return (
@@ -492,11 +493,11 @@ function SubsystemHotspots({ view, orgId }: { view: LiveView; orgId: string | nu
             <div className="who">
               <strong>{row.subsystemName}</strong>
               <span className={`fmea-badge ${row.level}`}>
-                {row.count}× · avg RPN {row.avgRpn}
+                {row.count}× · avg priority {row.avgRpn}
               </span>
             </div>
             <div className="meta">
-              max RPN {row.maxRpn}
+              max priority {row.maxRpn}
               {row.openCount > 0 ? ` · ${row.openCount} open` : ""}
             </div>
           </li>
@@ -510,20 +511,20 @@ function TopFailures({ view }: { view: LiveView }) {
   if (view.summary.topFailures.length === 0) {
     return (
       <Panel className="fmea-panel">
-        <h2>Highest RPN</h2>
-        <p>No active failures — keep logging when something breaks. No demo RPN is shown.</p>
+        <h2>Highest priority</h2>
+        <p>No active failures — keep logging when something breaks. No demo priority is shown.</p>
       </Panel>
     );
   }
   return (
     <Panel className="fmea-panel">
-      <h2>Highest RPN</h2>
+      <h2>Highest priority</h2>
       <ol className="fmea-top-list">
         {view.summary.topFailures.map((evaluation) => (
           <li key={evaluation.failure.id}>
             <div className="who">
               <strong>{evaluation.failure.title}</strong>
-              <span className={`fmea-badge ${evaluation.level}`}>RPN {evaluation.rpn}</span>
+              <span className={`fmea-badge ${evaluation.level}`}>Priority {evaluation.rpn}</span>
             </div>
             <div className="meta">
               {evaluation.failure.subsystemName} · {fmeaContextLabel(evaluation.failure.context)} ·{" "}
@@ -563,7 +564,7 @@ function AddFailureForm({ view, busy, mutate }: { view: LiveView; busy: boolean;
   return (
     <Panel className="fmea-panel">
       <h2>Log a failure</h2>
-      <p>Preview RPN updates from the O/S/D you pick — it is not saved until you add the entry.</p>
+      <p>Preview priority updates from how often, how bad, and how hard to notice you pick — it is not saved until you add the entry.</p>
       <form
         onSubmit={(event) => {
           event.preventDefault();
@@ -656,7 +657,7 @@ function AddFailureForm({ view, busy, mutate }: { view: LiveView; busy: boolean;
               placeholder="Belt skips teeth under load"
             />
           </FormRow>
-          <FormRow label={`Occurrence (${form.occurrence})`}>
+          <FormRow label={`How often (${form.occurrence})`}>
             <select value={form.occurrence} onChange={(e) => setForm({ ...form, occurrence: e.target.value })}>
               {SCALES.map((n) => (
                 <option key={n} value={n}>
@@ -665,7 +666,7 @@ function AddFailureForm({ view, busy, mutate }: { view: LiveView; busy: boolean;
               ))}
             </select>
           </FormRow>
-          <FormRow label={`Severity (${form.severity})`}>
+          <FormRow label={`How bad (${form.severity})`}>
             <select value={form.severity} onChange={(e) => setForm({ ...form, severity: e.target.value })}>
               {SCALES.map((n) => (
                 <option key={n} value={n}>
@@ -674,7 +675,7 @@ function AddFailureForm({ view, busy, mutate }: { view: LiveView; busy: boolean;
               ))}
             </select>
           </FormRow>
-          <FormRow label={`Detection (${form.detection})`}>
+          <FormRow label={`How hard to notice (${form.detection})`}>
             <select value={form.detection} onChange={(e) => setForm({ ...form, detection: e.target.value })}>
               {SCALES.map((n) => (
                 <option key={n} value={n}>
@@ -742,7 +743,7 @@ function AddFailureForm({ view, busy, mutate }: { view: LiveView; busy: boolean;
             {busy ? "Saving…" : "Add failure"}
           </Button>
           <span className="fmea-preview">
-            Preview RPN: <strong>{previewRpn}</strong>{" "}
+            Preview priority: <strong>{previewRpn}</strong>{" "}
             <span className="app-muted">({formatOsdFactors({
               occurrence: Number(form.occurrence) || 1,
               severity: Number(form.severity) || 1,
@@ -769,7 +770,7 @@ function FailureList({
   return (
     <Panel className="fmea-panel">
       <h2>Season log</h2>
-      <p>Risk rows ranked by RPN from logged O×S×D — empty fields stay blank.</p>
+      <p>Risk rows ranked by priority from logged scores — empty fields stay blank.</p>
       <div className="fmea-risk-list">
         {view.evaluations.map((evaluation) => (
           <FailureCard
@@ -820,8 +821,8 @@ function FailureCard({
           </div>
         </div>
         <div className="fmea-risk-scores">
-          <span className="fmea-rpn" title="Risk priority number from logged O×S×D">
-            <em>RPN</em>
+          <span className="fmea-rpn" title="Priority from how often, how bad, and how hard to notice">
+            <em>Priority</em>
             <strong>{evaluation.rpn}</strong>
           </span>
           <span className="fmea-osd">{formatOsdFactors(f)}</span>

@@ -2,10 +2,10 @@ import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 import { setupActionsFrom } from "../setup-actions";
 
-/** Soft-UI related surfaces for Pit Repair Triage (never DEMO fix/swap calls). */
+/** Soft-UI related surfaces for Repair triage (never DEMO fix/swap calls). */
 export const PIT_REPAIR_TRIAGE_RELATED_LINKS = [
   { id: "command", label: "Command", tab: "command" },
-  { id: "fmea", label: "FMEA", hub: "/build" as const, tab: "fmea" },
+  { id: "fmea", label: "Failure log", hub: "/build" as const, tab: "fmea" },
   { id: "failure-patterns", label: "Failure Patterns", hub: "/build" as const, tab: "failure-patterns" },
   { id: "spare-robot-kit", label: "Spare Kit", hub: "/build" as const, tab: "spare-robot-kit" },
 ] as const;
@@ -138,21 +138,21 @@ export function pitRepairTriageShellCopy(kind: PitRepairTriageShellKind): PitRep
     case "loading":
       return {
         kind,
-        title: "Loading Pit Repair Triage…",
-        description: "Checking which team you are on, FMEA history, and spares.",
+        title: "Opening Repair triage",
+        description: "Checking which team you are on, Failure log history, and spares.",
       };
     case "error":
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Pit Repair Triage",
+        title: "Could not load Repair triage",
         description:
-          "A network or server issue blocked triage. Retry, or open FMEA while it reloads.",
+          "A network or server issue blocked triage. Retry, or open Failure log while it reloads.",
       };
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Choose your team before logging failures.",
@@ -163,12 +163,12 @@ export function pitRepairTriageShellCopy(kind: PitRepairTriageShellKind): PitRep
         badge: "No reports yet",
         title: "Log your first pit failure",
         description:
-          "Fix-vs-swap calls use real FMEA history and spare stock.",
+          "Fix-vs-swap calls use real Failure log history and spare stock.",
       };
     default:
       return {
         kind: "ready",
-        title: "Pit repair triage",
+        title: "Repair triage",
         description: "Reports from logged failures only.",
       };
   }
@@ -193,15 +193,15 @@ export function pitRepairTriageNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Pit Repair Triage",
+        label: "Retry Repair triage",
         detail: "Reload real triage reports.",
         href: withOrgHref("/pit-repair-triage", orgId),
         primary: true,
       },
       {
         id: "fmea",
-        label: "Open FMEA",
-        detail: "FMEA stays available while triage reloads.",
+        label: "Open Failure log",
+        detail: "Failure log stays available while triage reloads.",
         href: hubHref("/build", "fmea", orgId),
       },
     ];
@@ -218,7 +218,7 @@ export function pitRepairTriageNextActions(input: {
       },
       {
         id: "fmea",
-        label: "Open FMEA",
+        label: "Open Failure log",
         detail: "Prior failures ground fix-vs-swap confidence.",
         href: hubHref("/build", "fmea", orgId),
       },
@@ -257,13 +257,13 @@ export function pitRepairTriageNextActions(input: {
         ]),
     {
       id: "fmea",
-      label: "Open FMEA",
+      label: "Open Failure log",
       detail: "Refresh failure history that grounds decisions.",
       href: hubHref("/build", "fmea", orgId),
     },
     {
       id: "spare-kit",
-      label: "Open Spare Robot Kit",
+      label: "Open Spare kit",
       detail: "Pre-stage pack lists beside triage swaps.",
       href: hubHref("/build", "spare-robot-kit", orgId),
     },

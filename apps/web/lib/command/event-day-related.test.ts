@@ -113,7 +113,7 @@ describe("eventDayEmptyTitle", () => {
     expect(eventDayEmptyTitle({ shell: "empty", orgId: "org-1", hasActiveEvent: true })).toBe(
       "No upcoming matches",
     );
-    expect(eventDayEmptyTitle({ shell: "error", orgId: "org-1" })).toBe("Could not load Command");
+    expect(eventDayEmptyTitle({ shell: "error", orgId: "org-1" })).toBe("Could not load Event day");
   });
 });
 

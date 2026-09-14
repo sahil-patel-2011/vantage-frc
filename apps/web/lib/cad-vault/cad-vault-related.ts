@@ -23,7 +23,7 @@ const CAD_VAULT_RELATED_LINKS = [
   { id: "robot" as const, label: "Robot", kind: "path" as const, path: "/robot" },
 ];
 
-/** Cross-links from CAD Vault — Learn CAD / Assembly manual / CAD workbench. */
+/** Cross-links from CAD vault — Learn CAD / Assembly manual / CAD workbench. */
 export function cadVaultRelatedLinks(
   orgId?: string | null,
   options?: { active?: CadVaultRelatedId; include?: CadVaultRelatedId[] },
@@ -79,7 +79,7 @@ export function cadVaultShellCopy(kind: CadVaultShellKind): CadVaultShellCopy {
       return {
         kind,
         badge: "Loading",
-        title: "Loading the vault…",
+        title: "Opening CAD vault",
         description: "Fetching your team's CAD documents.",
       };
     case "error":

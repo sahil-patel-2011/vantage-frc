@@ -1,7 +1,7 @@
 import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Team admin membership (never DEMO members). */
+/** Soft-UI related surfaces for Invites membership (never DEMO members). */
 export const TEAM_ADMIN_RELATED_LINKS = [
   { id: "account", label: "Account", kind: "account" as const, path: "/account?tab=profile" },
   { id: "discord", label: "Discord", kind: "path" as const, path: "/team/discord" },
@@ -12,7 +12,7 @@ export const TEAM_ADMIN_RELATED_LINKS = [
     path: "/connectors",
   },
   { id: "security", label: "Security & delegation", kind: "path" as const, path: "/team/security" },
-  { id: "admin", label: "Team admin", kind: "path" as const, path: "/team/admin" },
+  { id: "admin", label: "Invites", kind: "path" as const, path: "/team/admin" },
 ] as const;
 
 export type TeamAdminRelatedId = (typeof TEAM_ADMIN_RELATED_LINKS)[number]["id"];
@@ -31,7 +31,7 @@ export const TEAM_ADMIN_RELATED_INCLUDE: TeamAdminRelatedId[] = [
 ];
 
 /**
- * Soft-UI cross-links from Team admin → Account / Discord / Connections.
+ * Soft-UI cross-links from Invites → Account / Discord / Connections.
  * Build with withOrgHref (and account tabs) — never broken JSX href templates.
  */
 export function teamAdminRelatedLinks(
@@ -150,7 +150,7 @@ export function isTeamAdminBoardEmpty(input: { memberCount: number }): boolean {
   return input.memberCount <= 0;
 }
 
-/** Classify Team admin membership Soft-UI shell — never invents DEMO members. */
+/** Classify Invites membership Soft-UI shell — never invents DEMO members. */
 export function classifyTeamAdminShell(input: {
   loading?: boolean;
   fetchFailed?: boolean;
@@ -171,7 +171,7 @@ export function teamAdminShellCopy(kind: TeamAdminShellKind): TeamAdminEmptyCopy
     case "loading":
       return {
         kind,
-        title: "Loading membership…",
+        title: "Opening Invites",
         description:
           "Checking which team you are on and whether invites are waiting.",
       };
@@ -214,7 +214,7 @@ export function teamAdminShellCopy(kind: TeamAdminShellKind): TeamAdminEmptyCopy
 }
 
 /**
- * Soft-UI next actions for Team admin membership empty/setup shells.
+ * Soft-UI next actions for Invites membership empty/setup shells.
  * Destinations already in the header related strip are omitted so each href
  * appears once. Never invents DEMO members.
  */

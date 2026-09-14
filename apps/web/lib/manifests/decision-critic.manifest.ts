@@ -11,7 +11,7 @@ export const manifest = {
     {
       name: "decision_critic.reviews",
       description:
-        "Read this org's logged design-decision second opinions for the active season, including the verdict (proceed, proceed with caution, or reconsider), concerns grounded in weight/power headroom and FMEA failure history, confidence, and recorded outcome.",
+        "Read this org's logged design-decision second opinions for the active season, including the verdict (proceed, proceed with caution, or reconsider), concerns grounded in weight/power headroom and Failure log history, confidence, and recorded outcome.",
     },
   ],
   exportAdapters: [],

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Button } from "../../components/ui";
 import { formatOrgLocation, type TeamBackgroundView } from "../../lib/team-background";
 
 /** Soft team-settings editor for org city/state + short description (owners/admins). */
@@ -115,9 +116,9 @@ export function TeamProfilePanel({ orgId }: { orgId: string }) {
             Mission <small>Optional · sponsorship / grants</small>
             <textarea maxLength={2000} rows={2} value={mission} onChange={(e) => setMission(e.target.value)} placeholder="One or two sentences about what the team is about." disabled={busy} />
           </label>
-          <button className="primary-action" type="submit" disabled={busy}>
+          <Button variant="primary" type="submit" disabled={busy}>
             {busy ? "Saving…" : "Save team profile"}
-          </button>
+          </Button>
         </form>
       )}
       {message ? <p role="status" className="telemetry-status">{message}</p> : null}

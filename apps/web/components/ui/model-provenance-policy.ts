@@ -55,7 +55,7 @@ const PROVIDER_LABELS: Record<string, string> = {
   fireworks: "Fireworks AI",
   deepseek: "DeepSeek",
   cerebras: "Cerebras",
-  "openai-compatible": "OpenAI-compatible endpoint",
+  "openai-compatible": "local connector",
 };
 
 /** Canonical hosts we can name more kindly than the raw domain. */

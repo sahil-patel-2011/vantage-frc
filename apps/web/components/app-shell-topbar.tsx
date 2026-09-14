@@ -91,7 +91,7 @@ export function AppShellTopbar({
           className="soft-icon-btn soft-ask-ai"
           href={withOrgHref("/ai?tab=chat", orgId || null)}
           aria-label="Ask AI"
-          title="Ask AI — strategy, match predictions, design help"
+          title="Ask AI"
         >
           <Icon name="bolt" />
           <span className="soft-ask-ai-label">Ask AI</span>

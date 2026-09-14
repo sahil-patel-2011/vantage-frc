@@ -12,7 +12,7 @@ export const PARTNER_ROLE_LABEL: Record<PartnerRole, string> = {
 };
 
 /**
- * Classifies the partner's on-field role from real EPA-breakdown numbers only.
+ * Classifies the partner's on-field role from real season-rating breakdown numbers only.
  * Returns "unproven" when there is no metrics source at all — never guesses.
  */
 export function classifyPartnerRole(epa: PartnerEpa | null): PartnerRole {
@@ -37,7 +37,7 @@ export function classifyPartnerRole(epa: PartnerEpa | null): PartnerRole {
 }
 
 /**
- * Builds a short list of strength statements from real EPA numbers and scouting coverage.
+ * Builds a short list of strength statements from real season ratings and scouting coverage.
  * Every line cites the number that produced it — no invented claims.
  */
 export function buildPartnerStrengths(
@@ -47,10 +47,10 @@ export function buildPartnerStrengths(
 ): string[] {
   const strengths: string[] = [];
   if (epa) {
-    if (epa.epaTotal != null) strengths.push(`EPA total ${epa.epaTotal.toFixed(1)} (${epa.source})`);
-    if (epa.epaAuto != null && epa.epaAuto > 0) strengths.push(`Auto EPA ${epa.epaAuto.toFixed(1)}`);
-    if (epa.epaTeleop != null && epa.epaTeleop > 0) strengths.push(`Teleop EPA ${epa.epaTeleop.toFixed(1)}`);
-    if (epa.epaEndgame != null && epa.epaEndgame > 0) strengths.push(`Endgame EPA ${epa.epaEndgame.toFixed(1)}`);
+    if (epa.epaTotal != null) strengths.push(`Season rating ${epa.epaTotal.toFixed(1)}`);
+    if (epa.epaAuto != null && epa.epaAuto > 0) strengths.push(`Auto rating ${epa.epaAuto.toFixed(1)}`);
+    if (epa.epaTeleop != null && epa.epaTeleop > 0) strengths.push(`Teleop rating ${epa.epaTeleop.toFixed(1)}`);
+    if (epa.epaEndgame != null && epa.epaEndgame > 0) strengths.push(`Endgame rating ${epa.epaEndgame.toFixed(1)}`);
     if (epa.rank != null) strengths.push(`Event rank #${epa.rank}`);
     const played = epa.wins + epa.losses + epa.ties;
     if (played > 0) strengths.push(`${epa.wins}-${epa.losses}-${epa.ties} at this event`);

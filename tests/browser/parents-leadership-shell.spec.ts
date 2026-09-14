@@ -17,7 +17,7 @@ const LEAVES = [
   },
   {
     path: "/leadership",
-    heading: "Leadership Continuity",
+    heading: "Leadership",
     related: "Related team tools",
     relatedBits: ["Season roles", "Skills", "Safety"],
   },

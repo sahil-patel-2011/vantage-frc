@@ -81,7 +81,7 @@ export function aiKeysShellCopy(kind: AiKeysShellKind, detail?: string | null): 
   if (kind === "loading") {
     return {
       eyebrow: "AI KEYS",
-      title: "Loading encrypted key status…",
+      title: "Opening API keys",
       description: "Checking which first-party providers are configured for this team.",
     };
   }
@@ -108,7 +108,7 @@ export function aiKeysShellCopy(kind: AiKeysShellKind, detail?: string | null): 
       description:
         detail?.trim() ||
         "This deployment cannot envelope-encrypt API keys yet (KMS / local vault missing). Keys are not accepted until encryption is configured — nothing crashes, and no plaintext is stored.",
-      badge: "Setup required",
+      badge: "Needs setup",
     };
   }
   if (kind === "forbidden") {
@@ -143,7 +143,7 @@ export function aiKeysBillingNote(tier: string | null | undefined): { title: str
   if (normalized === "free") {
     return {
       title: "Free · hosted free models or your keys",
-      body: "Free teams use the platform OpenRouter free pool for chat unless you paste your own OpenAI, Anthropic, Google, or OpenRouter key. A local OpenAI-compatible relay still works. Paid Individual/Team plans use hosted Anthropic (Sonnet, or Opus for CAD/code).",
+      body: "Free teams use the platform OpenRouter free pool for chat unless you paste your own OpenAI, Anthropic, Google, or OpenRouter key. A local connector still works. Paid Individual/Team plans use hosted Anthropic (Sonnet, or Opus for CAD/code).",
     };
   }
   return {

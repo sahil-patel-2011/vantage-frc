@@ -21,6 +21,7 @@ const hostname = cookieDomain(baseURL);
 
 export default defineConfig({
   testDir: "./tests/browser",
+  testMatch: "**/*.spec.ts",
   workers: Number(process.env.PLAYWRIGHT_WORKERS) || 1,
   use: {
     baseURL,

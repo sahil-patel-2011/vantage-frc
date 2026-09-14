@@ -40,13 +40,13 @@ const SHELLS = [
   },
   {
     path: "/match-delta-watcher",
-    board: /Match-Delta Watcher|Official results vs predictions/i,
+    board: /Match delta|Official results vs predictions/i,
     empty: /Score predictions, then scan/i,
     shot: "match-delta-watcher-after-shell.png",
   },
   {
     path: "/match-video-index",
-    board: /Match Video Index|Match video library/i,
+    board: /Video index|Match video library/i,
     empty: /Index your first match video/i,
     shot: "match-video-index-after-shell.png",
   },

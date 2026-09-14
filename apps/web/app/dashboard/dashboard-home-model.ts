@@ -113,7 +113,7 @@ export function homeNowAction(input: {
       title: "You’re in the shop",
       detail: "Your hours are still running.",
       href: "/hours-self-view",
-      cta: "Open My Hours",
+      cta: "Open My hours",
     };
   }
   const todos = input.openTodos ?? 0;

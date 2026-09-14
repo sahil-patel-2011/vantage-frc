@@ -1,4 +1,5 @@
 import type { Metric, ScoutObservation } from "./types";
+import { studentCacheSourceLabel } from "./student-copy";
 
 const finite = (value: unknown): value is number =>
   typeof value === "number" && Number.isFinite(value);
@@ -133,16 +134,16 @@ function round1(value: number) {
 /**
  * Alliance Chemistry compatibility scorer (alliance-chemistry-v1).
  * Scores role complementarity + EPA balance + scout reliability/foul risk.
- * Labeled MODEL — never a TBA alliance selection fact.
+ * Labeled as alliance fit only — never an official alliance selection fact.
  */
 export function scoreAllianceChemistry(teams: AllianceChemistryTeamInput[]): AllianceChemistryResult {
   const known = teams.filter((team) => team.metric?.epaTotal != null);
   const provenance: string[] = [
-    "MODEL alliance-chemistry-v1 — not an official TBA alliance ranking.",
+    "Alliance fit only — not an official alliance ranking.",
   ];
   if (!known.length) {
     const caveat =
-      "Need event EPA metrics (TBA/Statbotics sync) before chemistry can score.";
+      "Need season ratings (official match sync) before chemistry can score.";
     return {
       score: null,
       modelVersion: "alliance-chemistry-v1",
@@ -151,7 +152,7 @@ export function scoreAllianceChemistry(teams: AllianceChemistryTeamInput[]): All
       reliabilityBlend: null,
       foulRisk: "unknown",
       strengths: [],
-      risks: ["Missing reference metrics for selected teams."],
+      risks: ["Need season ratings for the selected teams."],
       roles: [],
       caveats: [caveat],
       provenance,
@@ -164,7 +165,7 @@ export function scoreAllianceChemistry(teams: AllianceChemistryTeamInput[]): All
   const teleop = known.reduce((sum, team) => sum + (team.metric!.epaTeleop ?? 0), 0);
   const endgame = known.reduce((sum, team) => sum + (team.metric!.epaEndgame ?? 0), 0);
   provenance.push(
-    `EPA totals from ${[...new Set(known.map((t) => t.metric!.source).filter(Boolean))].join("+") || "reference"} across ${known.length} teams.`,
+    `Season ratings from ${[...new Set(known.map((t) => studentCacheSourceLabel(t.metric!.source)))].join(" + ")} across ${known.length} teams.`,
   );
 
   const roles = teams.map((team) => {
@@ -173,7 +174,7 @@ export function scoreAllianceChemistry(teams: AllianceChemistryTeamInput[]): All
       return {
         teamKey: team.teamKey,
         primaryRole: "unknown",
-        evidence: "No event EPA for role assignment.",
+        evidence: "No event rating for role assignment.",
       };
     }
     const shares = [
@@ -186,7 +187,7 @@ export function scoreAllianceChemistry(teams: AllianceChemistryTeamInput[]): All
     return {
       teamKey: team.teamKey,
       primaryRole: archetypeHint ?? top.role,
-      evidence: `${team.teamKey}: ${top.role} share ${Math.round(top.value * 100)}% of EPA ${round1(m.epaTotal)} (${m.source}).`,
+      evidence: `${team.teamKey}: ${top.role} share ${Math.round(top.value * 100)}% of rating ${round1(m.epaTotal)} (${studentCacheSourceLabel(m.source)}).`,
     };
   });
 
@@ -243,12 +244,12 @@ export function scoreAllianceChemistry(teams: AllianceChemistryTeamInput[]): All
   }
   if (foulRisk === "high") risks.push("Elevated foul exposure in scout notes.");
   if (known.length < teams.length) {
-    risks.push(`${teams.length - known.length} alliance seat(s) missing EPA — score is partial.`);
+    risks.push(`${teams.length - known.length} alliance seat(s) missing a season rating — score is partial.`);
   }
 
   const clamped = Math.round(Math.min(100, Math.max(0, score)));
   const caveat =
-    "MODEL output for alliance fit — verify with pit scouting and field practice before locking picks.";
+    "Alliance fit only — verify with pit scouting and field practice before locking picks.";
   return {
     score: clamped,
     modelVersion: "alliance-chemistry-v1",

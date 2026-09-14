@@ -10,7 +10,7 @@ import ScoutCrossvalClient from "./scout-crossval-client";
 import "./scout-crossval.css";
 
 export const metadata = {
-  title: "Scout Cross-Validation",
+  title: "Cross-check",
 };
 
 export default async function ScoutCrossvalPage({
@@ -28,8 +28,8 @@ export default async function ScoutCrossvalPage({
     return (
       <main className="module-page scout-crossval-page soft-gate">
         <PageHeader
-          breadcrumbs="Competition / Scout Cross-Validation"
-          title="Scout Cross-Validation"
+          breadcrumbs="Competition / Cross-check"
+          title="Cross-check"
           description={copy.description}
         >
           <nav className="product-hub-related scout-crossval-related" aria-label="Related competition tools">
@@ -52,7 +52,7 @@ export default async function ScoutCrossvalPage({
           </Button>
         </EmptyState>
         <p className="app-muted scout-crossval-footer-links">
-          Also see <a href={withOrgHref("/scout-coverage-live", null)}>Coverage Live</a>
+          Also see <a href={withOrgHref("/scout-coverage-live", null)}>Coverage</a>
         </p>
       </main>
     );

@@ -11,6 +11,6 @@ describe("Match-delta watcher last snapshot stays on the phone", () => {
     expect(src).toMatch(/putFeatureSnapshot/);
     expect(src).toMatch(/"match-delta"/);
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
-    expect(src).toMatch(/feature="Match-delta watcher"/);
+    expect(src).toMatch(/feature="Match delta"/);
   });
 });

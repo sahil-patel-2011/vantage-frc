@@ -1,10 +1,10 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Pick-list Auto-Justifier (never DEMO pick rationales). */
+/** Soft-UI related surfaces for Justifier (never DEMO pick rationales). */
 export const PICKLIST_JUSTIFIER_RELATED_LINKS = [
   { id: "strategy", label: "Strategy", kind: "hub" as const, hub: "/competition" as const, tab: "strategy" },
-  { id: "picklist-collab", label: "Collaborative Pick List", kind: "hub" as const, hub: "/competition" as const, tab: "picklist-collab" },
+  { id: "picklist-collab", label: "Pick list", kind: "hub" as const, hub: "/competition" as const, tab: "picklist-collab" },
   { id: "scouting", label: "Scouting", kind: "hub" as const, hub: "/competition" as const, tab: "scouting" },
   { id: "chemistry", label: "Chemistry", kind: "hub" as const, hub: "/competition" as const, tab: "chemistry" },
   { id: "draft", label: "Alliance board", kind: "path" as const, path: "/strategy/draft" },
@@ -19,7 +19,7 @@ export type PicklistJustifierRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — Strategy / Collaborative Pick List / Scouting first. */
+/** Focused Soft-UI strip — Strategy / Pick list / Scouting first. */
 export const PICKLIST_JUSTIFIER_RELATED_INCLUDE: PicklistJustifierRelatedId[] = [
   "strategy",
   "picklist-collab",
@@ -27,7 +27,7 @@ export const PICKLIST_JUSTIFIER_RELATED_INCLUDE: PicklistJustifierRelatedId[] = 
 ];
 
 /**
- * Soft-UI cross-links from Pick-list Justifier → Strategy / Pick list / Scouting.
+ * Soft-UI cross-links from Justifier → Strategy / Pick list / Scouting.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function picklistJustifierRelatedLinks(
@@ -76,7 +76,7 @@ export function shouldShowPicklistJustifierSummaryTiles(pickListCount: number): 
   return pickListCount > 0;
 }
 
-/** Classify Pick-list Justifier Soft-UI shell — never invents DEMO rationales. */
+/** Classify Justifier Soft-UI shell — never invents DEMO rationales. */
 export function classifyPicklistJustifierShell(input: {
   loading: boolean;
   fetchFailed?: boolean;
@@ -97,7 +97,7 @@ export function picklistJustifierShellCopy(kind: PicklistJustifierShellKind): Pi
     case "loading":
       return {
         kind,
-        title: "Loading Pick-list Justifier…",
+        title: "Opening Justifier",
         description:
           "Checking which team you are on and pick lists.",
       };
@@ -105,14 +105,14 @@ export function picklistJustifierShellCopy(kind: PicklistJustifierShellKind): Pi
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Pick-list Justifier",
+        title: "Could not load Justifier",
         description:
           "A network or server issue blocked the pick list. Retry, or open Strategy / Scouting while it reloads.",
       };
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Choose your team before justifying slots.",
@@ -123,21 +123,21 @@ export function picklistJustifierShellCopy(kind: PicklistJustifierShellKind): Pi
         badge: "No pick lists yet",
         title: "Build a pick list first",
         description:
-          "Justifications stay blank until you have a real ranked pick list. Cross-check Strategy and Collaborative Pick List.",
+          "Justifications stay blank until you have a real ranked pick list. Cross-check Strategy and Pick list.",
       };
     default:
       return {
         kind: "ready",
         title: "Source-cited pick rationales",
         description:
-          "Slots cite TBA hard metrics and your scout rows only.",
+          "Slots cite official event numbers and your scout rows only.",
       };
   }
 }
 
 /**
- * Soft-UI next actions for Pick-list Justifier empty/setup shells.
- * Points at Strategy / Collaborative Pick List / Scouting — never invents DEMO rationales.
+ * Soft-UI next actions for Justifier empty/setup shells.
+ * Points at Strategy / Pick list / Scouting — never invents DEMO rationales.
  */
 export function picklistJustifierNextActions(input: {
   orgId?: string | null;
@@ -157,7 +157,7 @@ export function picklistJustifierNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before generating rationales.",
+          detail: "Choose your team before generating rationales.",
           href: "/workspace",
           primary: true,
         },
@@ -179,7 +179,7 @@ export function picklistJustifierNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Finish membership setup so Pick-list Justifier can load.",
+        detail: "Finish membership setup so Justifier can load.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
       },
@@ -191,7 +191,7 @@ export function picklistJustifierNextActions(input: {
       },
       {
         id: "picklist-collab",
-        label: "Open Collaborative Pick List",
+        label: "Open Pick list",
         detail: "Rank teams together before auto-justifying slots.",
         href: hubHref("/competition", "picklist-collab", orgId),
       },
@@ -202,7 +202,7 @@ export function picklistJustifierNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Pick-list Justifier",
+        label: "Retry Justifier",
         detail: "Reload real pick-list slots.",
         href: withOrgHref("/picklist-justifier", orgId),
         primary: true,
@@ -233,7 +233,7 @@ export function picklistJustifierNextActions(input: {
       },
       {
         id: "picklist-collab",
-        label: "Open Collaborative Pick List",
+        label: "Open Pick list",
         detail: "Co-edit ranks before generating source-cited rationales.",
         href: hubHref("/competition", "picklist-collab", orgId),
       },
@@ -260,7 +260,7 @@ export function picklistJustifierNextActions(input: {
     actions.push({
       id: "review-contradictions",
       label: "Review contradictions",
-      detail: `${contradictionCount} slot${contradictionCount === 1 ? "" : "s"} where scouting disagrees with TBA.`,
+      detail: `${contradictionCount} slot${contradictionCount === 1 ? "" : "s"} where scouting disagrees with the official record.`,
       href: "#picklist-justifier-entries",
       primary: true,
     });
@@ -268,7 +268,7 @@ export function picklistJustifierNextActions(input: {
     actions.push({
       id: "generate",
       label: "Generate justifications",
-      detail: `${slotCount} slot${slotCount === 1 ? "" : "s"} ready — rationales cite TBA + your scout rows only.`,
+      detail: `${slotCount} slot${slotCount === 1 ? "" : "s"} ready — rationales cite official records and your scout rows only.`,
       href: "#picklist-justifier-summary",
       primary: true,
     });

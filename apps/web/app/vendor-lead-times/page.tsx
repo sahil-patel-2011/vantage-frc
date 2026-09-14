@@ -1,7 +1,7 @@
 import VendorLeadTimesClient from "./vendor-lead-times-client";
 
 export const metadata = {
-  title: "Vendor Lead Times",
+  title: "Lead times",
 };
 
 export default function VendorLeadTimesPage() {

@@ -118,7 +118,7 @@ export default function PostureClient({ orgId }: { orgId: string }) {
     <main className="intel-app">
       <header className="intel-header">
         <div>
-          <span className="eyebrow">VANTAGE / SECURITY POSTURE</span>
+          <span className="eyebrow">Team / Posture</span>
           <h1>This team&apos;s access at a glance</h1>
           <p className="app-muted">
             A read-only roll-up of the controls protecting this team, with suggestions where a setting could
@@ -128,7 +128,7 @@ export default function PostureClient({ orgId }: { orgId: string }) {
         <nav className="intel-actions" aria-label="Security links">
           <a href={`/team/security?orgId=${orgId}`}>Access policy</a>
           <a href={`/team/audit?orgId=${orgId}`}>Audit log</a>
-          <a href={`/team?orgId=${orgId}`}>Team admin</a>
+          <a href={`/team?orgId=${orgId}`}>Invites</a>
         </nav>
       </header>
 

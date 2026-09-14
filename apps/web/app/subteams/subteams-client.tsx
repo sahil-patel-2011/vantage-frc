@@ -197,7 +197,7 @@ export default function SubteamsClient() {
         <OfflineBanner feature="Subteam progress" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
-          title={failure ? failure.title : "Loading subteam progress…"}
+          title={failure ? failure.title : "Opening Subteam progress"}
           description={failure ? failure.description : undefined}
           aria-busy={!fetchFailed}
         >

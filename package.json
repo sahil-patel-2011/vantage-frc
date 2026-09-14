@@ -13,7 +13,7 @@
     "lint": "eslint .",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "vitest run",
-    "test:browser": "playwright test",
+    "test:browser": "npx tsx tests/browser/playwright-shards.ts",
     "test:browser:attach": "playwright test -c playwright.fixture.config.ts",
     "test:browser:install": "playwright install chromium",
     "test:migrations": "vitest run packages/db/src/migrations-unique.test.ts scripts/deploy-preflight.test.ts",

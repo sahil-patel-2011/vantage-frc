@@ -428,7 +428,7 @@ export function CodeClient({
       return;
     }
     if (useRepo && !githubConnected) {
-      setMessage("Connect GitHub in Team admin before scanning a repo.");
+      setMessage("Connect GitHub in Invites before scanning a repo.");
       return;
     }
     // A repo pass is one metered call PER PLANNED CHUNK. Running them here (rather

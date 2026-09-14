@@ -1,7 +1,7 @@
 import ImpactClient from "./impact-client";
 
 export const metadata = {
-  title: "Community impact",
+  title: "Impact",
 };
 
 export default function ImpactPage() {

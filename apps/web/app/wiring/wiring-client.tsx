@@ -308,7 +308,7 @@ export default function WiringClient({ orgId }: { orgId: string | null }) {
         </PageHeader>
         <OfflineBanner feature="CAN-bus map" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
-          title={failure ? failure.title : "Loading wiring map…"}
+          title={failure ? failure.title : "Opening CAN-bus map"}
           description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >

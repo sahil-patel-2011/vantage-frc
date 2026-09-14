@@ -64,7 +64,7 @@ async function persistMockJudgingSnapshot(
     await putFeatureSnapshot("mock-judging", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("mock-judging", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Mock Judging already painted; IndexedDB is best-effort.
+    // Live Mock judging already painted; IndexedDB is best-effort.
   }
 }
 
@@ -191,7 +191,7 @@ export default function MockJudgingClient() {
       if (!response.ok || !isMockJudgingView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Mock Judging. Showing the last copy on this device.");
+          setError("Could not refresh Mock judging. Showing the last copy on this device.");
           setFetchFailed(false);
           return;
         }
@@ -208,7 +208,7 @@ export default function MockJudgingClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Mock Judging. Showing the last copy on this device.");
+        setError("Could not refresh Mock judging. Showing the last copy on this device.");
         setFetchFailed(false);
         return;
       }
@@ -256,10 +256,10 @@ export default function MockJudgingClient() {
       breadcrumbs={
         <>
           <a href={businessHref}>Business</a>
-          {" / Mock Judging"}
+          {" / Mock judging"}
         </>
       }
-      title="Mock Judging"
+      title="Mock judging"
       description="Run practice judging sessions with a rubric scored from your own prep notes — substance, specificity, evidence, clarity, and confidence before you are in front of real judges."
     >
       <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
@@ -307,9 +307,9 @@ export default function MockJudgingClient() {
     return (
       <main className="module-page">
         {header}
-        <OfflineBanner feature="Mock Judging" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Mock judging" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
-          title={failure ? failure.title : "Loading…"}
+          title={failure ? failure.title : "Opening Mock judging"}
           description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >
@@ -333,7 +333,7 @@ export default function MockJudgingClient() {
       return (
         <main className="module-page">
           {header}
-          <OfflineBanner feature="Mock Judging" fromCache={fromCache} cachedAt={cachedAt} />
+          <OfflineBanner feature="Mock judging" fromCache={fromCache} cachedAt={cachedAt} />
           {error ? (
             <p className="telemetry-status" role="alert">
               {error}
@@ -359,7 +359,7 @@ export default function MockJudgingClient() {
   return (
     <main className="module-page">
       {header}
-      <OfflineBanner feature="Mock Judging" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Mock judging" fromCache={fromCache} cachedAt={cachedAt} />
       {error ? (
         <p className="telemetry-status" role="alert">
           {error}

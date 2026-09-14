@@ -66,7 +66,7 @@ async function persistSeasonReportSnapshot(
     await putFeatureSnapshot("season-report", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("season-report", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Season Report already painted; IndexedDB is best-effort.
+    // Live Season report already painted; IndexedDB is best-effort.
   }
 }
 
@@ -150,10 +150,10 @@ function SeasonReportShell({
         breadcrumbs={
           <>
             <a href={aiHref}>AI</a>
-            {" / Season Report"}
+            {" / Season report"}
           </>
         }
-        title="Season Report"
+        title="Season report"
         description={description}
       >
         <SeasonReportRelatedStrip orgId={orgId} />
@@ -163,14 +163,14 @@ function SeasonReportShell({
         soft
         badge={
           shell === "setup"
-            ? "Setup required"
+            ? "Needs setup"
             : shell === "error"
               ? "Unavailable"
               : shell === "empty"
                 ? "No entries yet"
                 : shell === "loading"
                   ? undefined
-                  : "Season Report"
+                  : "Season report"
         }
         badgeTone={shell === "error" ? "demo" : "setup"}
         title={title}
@@ -253,7 +253,7 @@ export default function SeasonReportClient() {
         if (!response.ok || !isSeasonReportView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Season Report. Showing the last copy on this device.");
+            setError("Could not refresh Season report. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -268,7 +268,7 @@ export default function SeasonReportClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Season Report. Showing the last copy on this device.");
+          setError("Could not refresh Season report. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -352,7 +352,7 @@ export default function SeasonReportClient() {
         orgId={orgId}
         shell="loading"
       >
-        <OfflineBanner feature="Season Report" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Season report" fromCache={fromCache} cachedAt={cachedAt} />
       </SeasonReportShell>
     );
   }
@@ -367,7 +367,7 @@ export default function SeasonReportClient() {
         error={error}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Season Report" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Season report" fromCache={fromCache} cachedAt={cachedAt} />
       </SeasonReportShell>
     );
   }
@@ -380,7 +380,7 @@ export default function SeasonReportClient() {
         orgId={view.orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Season Report" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Season report" fromCache={fromCache} cachedAt={cachedAt} />
       </SeasonReportShell>
     );
   }
@@ -393,7 +393,7 @@ export default function SeasonReportClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Season Report" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Season report" fromCache={fromCache} cachedAt={cachedAt} />
       </SeasonReportShell>
     );
   }
@@ -406,7 +406,7 @@ export default function SeasonReportClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Season Report" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Season report" fromCache={fromCache} cachedAt={cachedAt} />
       </SeasonReportShell>
     );
   }
@@ -417,10 +417,10 @@ export default function SeasonReportClient() {
         breadcrumbs={
           <>
             <a href={aiHref}>AI</a>
-            {" / Season Report"}
+            {" / Season report"}
           </>
         }
-        title="Season Report"
+        title="Season report"
         description="Log build reliability, results, budget, and outreach notes through the season, then generate a state-of-the-team retrospective grounded in only what you recorded."
       >
         <div className="season-report-header-actions">
@@ -450,7 +450,7 @@ export default function SeasonReportClient() {
           ) : null}
         </div>
       </PageHeader>
-      <OfflineBanner feature="Season Report" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Season report" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

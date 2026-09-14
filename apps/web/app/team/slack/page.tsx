@@ -25,7 +25,7 @@ export default async function TeamSlackPage({
           soft
           title="Choose your team"
           description="Open a team to connect Slack. Team chat still works without Slack."
-          badge="Setup required"
+          badge="Needs setup"
           badgeTone="setup"
         >
           <Button as="a" variant="primary" href="/workspace">

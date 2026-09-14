@@ -1,7 +1,7 @@
 import GrantEligibilityMatcherClient from "./grant-eligibility-matcher-client";
 
 export const metadata = {
-  title: "Grant Eligibility Matcher",
+  title: "Eligibility",
 };
 
 export default function GrantEligibilityMatcherPage() {

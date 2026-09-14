@@ -74,7 +74,7 @@ async function persistBusFactorSnapshot(orgHint: string, data: BusFactorView): P
     await putFeatureSnapshot("bus-factor", cacheOrg, data);
     if (!orgHint) await putFeatureSnapshot("bus-factor", "_", data);
   } catch {
-    // Live Bus-Factor already painted; IndexedDB is best-effort.
+    // Live Bus factor already painted; IndexedDB is best-effort.
   }
 }
 
@@ -150,15 +150,15 @@ function BusFactorShell({
         breadcrumbs={
           <>
             <a href={teamHref}>Team</a>
-            {" / Bus-Factor & Burnout"}
+            {" / Bus factor"}
           </>
         }
-        title="Bus-Factor & Burnout Watch"
+        title="Bus factor"
         description={description}
       >
         <BusFactorRelatedStrip orgId={orgId} />
       </PageHeader>
-      <OfflineBanner feature="Bus-Factor" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Bus factor" fromCache={fromCache} cachedAt={cachedAt} />
       {shell === "loading" ? (
         <div style={{ display: "grid", gap: 16 }} aria-busy="true" aria-label="Loading bus-factor">
           <StatRowSkeleton count={5} />
@@ -169,7 +169,7 @@ function BusFactorShell({
       ) : (
         <EmptyState
           soft
-          badge={shell === "setup" ? "Setup required" : shell === "empty" ? "No entries yet" : copy.badge}
+          badge={shell === "setup" ? "Needs setup" : shell === "empty" ? "No entries yet" : copy.badge}
           badgeTone="setup"
           title={copy.title}
           description={error ?? copy.description}
@@ -239,7 +239,7 @@ export default function BusFactorClient() {
         if (!response.ok || !isBusFactorView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Bus-Factor. Showing the last copy on this device.");
+            setError("Could not refresh Bus factor. Showing the last copy on this device.");
             setFetchFailed(false);
             return;
           }
@@ -254,7 +254,7 @@ export default function BusFactorClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Bus-Factor. Showing the last copy on this device.");
+          setError("Could not refresh Bus factor. Showing the last copy on this device.");
           setFetchFailed(false);
           return;
         }
@@ -381,11 +381,11 @@ export default function BusFactorClient() {
         breadcrumbs={
           <>
             <a href={teamHref}>Team</a>
-            {" / Bus-Factor & Burnout"}
+            {" / Bus factor"}
           </>
         }
-        title="Bus-Factor & Burnout Watch"
-        description="Early-warning for single-point-of-human-failure and overload risk from logged hours and task concentration only. Cross-check Attendance, My Hours, and Task board."
+        title="Bus factor"
+        description="Early-warning for single-point-of-human-failure and overload risk from logged hours and task concentration only. Cross-check Attendance, My hours, and Task board."
       >
         <div className="bus-factor-header-actions">
           <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
@@ -413,7 +413,7 @@ export default function BusFactorClient() {
         </div>
       </PageHeader>
 
-      <OfflineBanner feature="Bus-Factor" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Bus factor" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -634,7 +634,7 @@ function LogEntryForm({
         badge="No members"
         badgeTone="setup"
         title="Invite teammates before logging workload"
-        description="Bus-Factor needs org members to attribute hours."
+        description="Bus factor needs org members to attribute hours."
       >
         <Button as="a" variant="primary" href={withOrgHref("/workspace", view.orgId)}>
           Choose your team

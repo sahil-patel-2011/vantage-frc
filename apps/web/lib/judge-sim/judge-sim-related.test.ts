@@ -12,7 +12,7 @@ import {
 import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("judgeSimRelatedLinks", () => {
-  it("builds Community Impact / Impact Essay / Awards cross-links", () => {
+  it("builds Impact / Impact Essay / Awards cross-links", () => {
     const links = judgeSimRelatedLinks("org-1", {
       include: [...JUDGE_SIM_RELATED_INCLUDE],
     });

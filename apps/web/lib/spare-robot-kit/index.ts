@@ -79,8 +79,8 @@ export function buildKitItems(bins: SpareKitBin[], aggregates: SubsystemFailureA
       recommendedQty,
       priority,
       rationale:
-        `${aggregate.failureCount} FMEA failure(s) on ${bin.subsystem ?? "this subsystem"} this season ` +
-        `(avg RPN ${round(aggregate.avgRpn, 1)}) recommend packing ${recommendedQty}; ${bin.quantityOnHand} on hand` +
+        `${aggregate.failureCount} logged failure(s) on ${bin.subsystem ?? "this subsystem"} this season ` +
+        `(avg priority ${round(aggregate.avgRpn, 1)}) recommend packing ${recommendedQty}; ${bin.quantityOnHand} on hand` +
         (shortfall > 0 ? `, ${shortfall} short of the recommended count` : "."),
       packed: false,
     });
@@ -95,12 +95,12 @@ export function summarizeChecklistItems(items: KitChecklistItem[]): { packedCoun
 /** Deterministic rationale for a freshly generated checklist, grounded only in the built items. */
 export function checklistRationale(items: KitChecklistItem[]): string {
   if (items.length === 0) {
-    return "No spare bins currently match a subsystem with logged FMEA failures — nothing to pack yet.";
+    return "No spare bins currently match a subsystem with logged failures — nothing to pack yet.";
   }
   const critical = items.filter((item) => item.priority === "critical").length;
   const recommended = items.filter((item) => item.priority === "recommended").length;
   return (
-    `${items.length} spare(s) matched to FMEA repeat-failure history` +
+    `${items.length} spare(s) matched to Failure log repeat-failure history` +
     (critical ? ` · ${critical} critical` : "") +
     (recommended ? ` · ${recommended} recommended` : "") +
     "."

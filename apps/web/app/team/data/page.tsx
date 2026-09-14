@@ -11,7 +11,7 @@ import "./team-data.css";
 export const metadata = {
   title: "Team data",
   description:
-    "Match-data sync, cache health, and team inventory. Links to Schedule, Event Day, and Strategy.",
+    "Match-data sync, cache health, and team inventory. Links to Schedule, Event day, and Strategy.",
 };
 
 export default async function TeamDataPage({ searchParams }: { searchParams: Promise<{ orgId?: string }> }) {
@@ -24,9 +24,9 @@ export default async function TeamDataPage({ searchParams }: { searchParams: Pro
         <header className="app-page-header">
           <div>
             <span className="breadcrumbs">Team / Live data</span>
-            <h1>Team Data</h1>
+            <h1>Team data</h1>
             <p>
-              Choose your team so TBA sync and inventory stay scoped to the right organization.
+              Choose your team so official match sync and inventory stay scoped to the right organization.
             </p>
           </div>
           <nav className="product-hub-related team-data-related" aria-label="Related team data tools">

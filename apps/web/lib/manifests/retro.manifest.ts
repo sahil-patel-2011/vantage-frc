@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "retro",
-  title: "Team Retrospective",
+  title: "Retro",
   route: "/retro",
   apiRoute: "/api/retro",
   hub: "Team",
@@ -11,7 +11,7 @@ export const manifest = {
     {
       name: "retro.postmortem",
       description:
-        "Read this org's auto-compiled season postmortem: counted decisions, risks, safety incidents, and FMEA failures, plus retro action-item follow-through, with a grounded narrative summary.",
+        "Read this org's auto-compiled season postmortem: counted decisions, risks, safety incidents, and logged failures, plus retro action-item follow-through, with a grounded narrative summary.",
     },
   ],
   exportAdapters: [],

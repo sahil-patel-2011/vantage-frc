@@ -11,6 +11,6 @@ describe("Inspection Copilot last snapshot stays on the phone", () => {
     expect(src).toMatch(/putFeatureSnapshot/);
     expect(src).toMatch(/"inspection-copilot"/);
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
-    expect(src).toMatch(/feature="Inspection Copilot"/);
+    expect(src).toMatch(/feature="Inspection"/);
   });
 });

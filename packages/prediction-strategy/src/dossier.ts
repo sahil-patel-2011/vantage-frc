@@ -1,5 +1,6 @@
 import type { EventMetricRow, YearMetricRow } from "./signals";
 import type { TeamOperationalSignal } from "./types";
+import { studentCacheSourceLabel } from "./student-copy";
 
 export type DossierSource = "tba" | "statbotics" | "scout";
 
@@ -80,7 +81,7 @@ export function buildTeamDossierFacts(input: {
     value: input.identity.nickname ?? input.identity.name ?? input.identity.teamKey,
     citation: {
       source: identitySource,
-      detail: "Team identity from Neon teams_ref cache (TBA ingest).",
+      detail: "Team identity from the official team record.",
       syncedAt: input.identity.syncedAt ?? null,
     },
   });
@@ -93,7 +94,7 @@ export function buildTeamDossierFacts(input: {
       value: location,
       citation: {
         source: identitySource,
-        detail: "City / state / country from TBA team record cache.",
+        detail: "City / state / country from the official team record.",
         syncedAt: input.identity.syncedAt ?? null,
       },
     });
@@ -107,7 +108,7 @@ export function buildTeamDossierFacts(input: {
       value: String(input.identity.rookieYear),
       citation: {
         source: identitySource,
-        detail: "Rookie year from TBA team record cache.",
+        detail: "Rookie year from the official team record.",
         syncedAt: input.identity.syncedAt ?? null,
       },
     });
@@ -121,18 +122,18 @@ export function buildTeamDossierFacts(input: {
     const preferred = preferMetric(input.yearMetrics.filter((row) => row.year === year));
     const source = normalizeSource(preferred?.source);
     if (!preferred || preferred.epaTotal == null || !source) continue;
-    const parts = [`EPA ${round1(preferred.epaTotal)}`];
+    const parts = [`Rating ${round1(preferred.epaTotal)}`];
     if (preferred.epaAuto != null) parts.push(`auto ${round1(preferred.epaAuto)}`);
     if (preferred.epaTeleop != null) parts.push(`teleop ${round1(preferred.epaTeleop)}`);
     if (preferred.epaEndgame != null) parts.push(`endgame ${round1(preferred.epaEndgame)}`);
     cards.push({
       id: `season-epa-${year}`,
       category: "season_epa",
-      title: `${year} season EPA`,
+      title: `${year} Season rating`,
       value: parts.join(" · "),
       citation: {
         source,
-        detail: `${source} team_year_metrics cache for ${input.identity.teamKey} / ${year}.`,
+        detail: `${studentCacheSourceLabel(source)} for ${input.identity.teamKey} / ${year}.`,
         syncedAt: preferred.syncedAt ?? null,
         year,
       },
@@ -154,11 +155,11 @@ export function buildTeamDossierFacts(input: {
       cards.push({
         id: `event-epa-${eventKey}`,
         category: "event",
-        title: `${eventKey} EPA`,
+        title: `${eventKey} rating`,
         value: String(round1(preferred.epaTotal)),
         citation: {
           source,
-          detail: `${source} team_event_metrics for ${eventKey}.`,
+          detail: `${studentCacheSourceLabel(source)} for ${eventKey}.`,
           syncedAt: preferred.syncedAt ?? null,
           eventKey,
           year: preferred.year,
@@ -178,7 +179,7 @@ export function buildTeamDossierFacts(input: {
         value: `${record}${rankBit}`,
         citation: {
           source,
-          detail: `${source} event W-L-T${preferred.rank != null ? " and rank" : ""} for ${eventKey}.`,
+          detail: `Event record${preferred.rank != null ? " and rank" : ""} for ${eventKey}.`,
           syncedAt: preferred.syncedAt ?? null,
           eventKey,
           year: preferred.year,
@@ -197,7 +198,7 @@ export function buildTeamDossierFacts(input: {
         value: `${Math.round(op.reliability)}% (n=${op.scoutSample})`,
         citation: {
           source: "scout",
-          detail: `Org match/pit scout observations for ${input.identity.teamKey}; not a TBA/Statbotics fact.`,
+          detail: `Org match/pit scout observations for ${input.identity.teamKey}; not an official match fact.`,
         },
       });
     }
@@ -209,7 +210,7 @@ export function buildTeamDossierFacts(input: {
         value: `~${round1(op.foulRate)} / match (n=${op.scoutSample})`,
         citation: {
           source: "scout",
-          detail: `Derived from org scout payloads for ${input.identity.teamKey}; labeled separately from reference EPA.`,
+          detail: `Derived from org scout payloads for ${input.identity.teamKey}; labeled separately from season ratings.`,
         },
       });
     }

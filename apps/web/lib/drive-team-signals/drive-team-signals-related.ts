@@ -2,13 +2,13 @@ import { hubHref } from "../nav/hubs";
 import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Drive-Team Signals (never DEMO cheat sheets). */
+/** Soft-UI related surfaces for Drive-team board (never DEMO cheat sheets). */
 export const DRIVE_TEAM_SIGNALS_RELATED_LINKS = [
-  { id: "match-checklist", label: "Match Checklist", tab: "match-checklist" },
-  { id: "match-strategy-cards", label: "Strategy Cards", tab: "match-strategy-cards" },
-  // Match Copilot was consolidated into the one Pre-Match Briefing.
-  { id: "briefing", label: "Pre-Match Briefing", tab: "briefing" },
-  { id: "field-reset-timer", label: "Field Reset Timer", hub: "/team" as const, tab: "field-reset-timer" },
+  { id: "match-checklist", label: "Match checklist", tab: "match-checklist" },
+  { id: "match-strategy-cards", label: "Match cards", tab: "match-strategy-cards" },
+  // Briefing is the one pre-match card.
+  { id: "briefing", label: "Briefing", tab: "briefing" },
+  { id: "field-reset-timer", label: "Field reset", hub: "/team" as const, tab: "field-reset-timer" },
 ] as const;
 
 export type DriveTeamSignalsRelatedId = (typeof DRIVE_TEAM_SIGNALS_RELATED_LINKS)[number]["id"];
@@ -132,21 +132,21 @@ export function driveTeamSignalsShellCopy(kind: DriveTeamSignalsShellKind): Driv
     case "loading":
       return {
         kind,
-        title: "Loading Drive-Team Signals…",
+        title: "Opening Drive-team board",
         description: "Checking which team you are on and signal sheets.",
       };
     case "error":
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Drive-Team Signals",
+        title: "Could not load Drive-team board",
         description:
-          "A network or server issue blocked the signal board. Retry, or open Match Checklist while it reloads.",
+          "A network or server issue blocked the signal board. Retry, or open Match checklist while it reloads.",
       };
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Choose your team before defining real callouts.",
@@ -162,7 +162,7 @@ export function driveTeamSignalsShellCopy(kind: DriveTeamSignalsShellKind): Driv
     default:
       return {
         kind: "ready",
-        title: "Drive-team signal board",
+        title: "Drive-team board",
         description: "Sheets and signals from your crew only.",
       };
   }
@@ -189,20 +189,20 @@ export function driveTeamSignalsNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Drive-Team Signals",
+        label: "Retry Drive-team board",
         detail: "Reload real signal sheets.",
         href: withOrgHref("/drive-team-signals", orgId),
         primary: true,
       },
       {
         id: "checklist",
-        label: "Open Match Checklist",
+        label: "Open Match checklist",
         detail: "Checklists stay available while the board reloads.",
         href: hubHref("/competition", "match-checklist", orgId),
       },
       {
         id: "briefing",
-        label: "Open Pre-Match Briefing",
+        label: "Open Briefing",
         detail: "The briefing stays available while the board reloads.",
         href: hubHref("/competition", "briefing", orgId),
       },
@@ -220,13 +220,13 @@ export function driveTeamSignalsNextActions(input: {
       },
       {
         id: "checklist",
-        label: "Open Match Checklist",
+        label: "Open Match checklist",
         detail: "Prep pre-match cues beside future callouts.",
         href: hubHref("/competition", "match-checklist", orgId),
       },
       {
         id: "reset",
-        label: "Open Field Reset Timer",
+        label: "Open Field reset",
         detail: "Reset drills use the same drive-crew language.",
         href: hubHref("/team", "field-reset-timer", orgId),
       },
@@ -246,13 +246,13 @@ export function driveTeamSignalsNextActions(input: {
     },
     {
       id: "checklist",
-      label: "Open Match Checklist",
+      label: "Open Match checklist",
       detail: "Cross-check pre-match cues with signal codes.",
       href: hubHref("/competition", "match-checklist", orgId),
     },
     {
       id: "cards",
-      label: "Open Strategy Cards",
+      label: "Open Match cards",
       detail: "Keep match plans aligned with drive-crew language.",
       href: hubHref("/competition", "match-strategy-cards", orgId),
     },

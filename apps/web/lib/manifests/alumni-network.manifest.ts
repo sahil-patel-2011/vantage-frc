@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "alumni-network",
-  title: "Alumni Network",
+  title: "Alumni",
   route: "/alumni-network",
   apiRoute: "/api/alumni-network",
   hub: "Team",

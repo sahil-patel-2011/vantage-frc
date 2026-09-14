@@ -12,7 +12,7 @@ import {
 import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("driveTeamSignalsRelatedLinks", () => {
-  it("builds Checklist / Strategy Cards / Briefing cross-links", () => {
+  it("builds Checklist / Match cards / Briefing cross-links", () => {
     const links = driveTeamSignalsRelatedLinks("org-1", {
       include: [...DRIVE_TEAM_SIGNALS_RELATED_INCLUDE],
     });

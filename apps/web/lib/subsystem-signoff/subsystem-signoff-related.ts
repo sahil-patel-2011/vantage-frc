@@ -3,7 +3,7 @@ import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 import type { SubsystemSignoffTier } from "./types";
 
-/** Focused Soft-UI Build strip when Subsystem Sign-off is open (never DEMO placeholders). */
+/** Focused Soft-UI Build strip when Subsystem sign-off is open (never DEMO placeholders). */
 export const SIGNOFF_BUILD_RELATED_INCLUDE: BuildRelatedId[] = [
   "fmea",
   "cad",
@@ -15,7 +15,7 @@ export const SIGNOFF_BUILD_RELATED_INCLUDE: BuildRelatedId[] = [
  * Gate reviews sit next to FMEA failure modes, CAD geometry, and the task board.
  */
 export const SIGNOFF_RELATED_LINKS = [
-  { id: "fmea", label: "FMEA", kind: "build" as const, tab: "fmea" },
+  { id: "fmea", label: "Failure log", kind: "build" as const, tab: "fmea" },
   { id: "cad", label: "CAD", kind: "build" as const, tab: "cad" },
   { id: "tasks", label: "Tasks", kind: "path" as const, path: "/tasks" },
   { id: "subsystems", label: "Subsystem specs", kind: "path" as const, path: "/subsystems" },
@@ -30,7 +30,7 @@ export type SignoffRelatedLink = {
   href: string;
 };
 
-/** Cross-links for Subsystem Sign-off Soft-UI (never DEMO readiness %). */
+/** Cross-links for Subsystem sign-off Soft-UI (never DEMO readiness %). */
 export function signoffRelatedLinks(
   orgId?: string | null,
   options?: { active?: SignoffRelatedId; include?: SignoffRelatedId[] },
@@ -96,7 +96,7 @@ export function signoffNextActions(input: {
     });
     actions.push({
       id: "fmea",
-      label: "Scan open FMEA modes",
+      label: "Scan open Failure log",
       detail: "Weak subsystems already in the failure log often need the earliest design / field-test gates.",
       href: hubHref("/build", "fmea", orgId),
     });
@@ -155,8 +155,8 @@ export function signoffNextActions(input: {
 
   actions.push({
     id: "fmea",
-    label: "Log failures in FMEA",
-    detail: "Rejected gates and field issues belong in O×S×D — sign-off tracks the review trail.",
+    label: "Log failures in Failure log",
+    detail: "Rejected gates and field issues belong in how often, how bad, and how hard to notice — sign-off tracks the review trail.",
     href: hubHref("/build", "fmea", orgId),
     primary: actions.length === 0,
   });

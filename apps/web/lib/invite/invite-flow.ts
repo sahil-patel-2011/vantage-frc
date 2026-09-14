@@ -172,7 +172,7 @@ export function inviteEmptyCopy(kind: InviteFlowKind, detail?: string | null): I
     return {
       kind,
       eyebrow: "TEAM INVITATION",
-      title: "Loading invitation…",
+      title: "Opening Invites",
       description: "Checking this invite. Nothing is joined until you accept.",
     };
   }

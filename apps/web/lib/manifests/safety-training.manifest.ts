@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "safety-training",
-  title: "Safety Training Tracker",
+  title: "Safety",
   route: "/safety-training",
   apiRoute: "/api/safety-training",
   hub: "Team",

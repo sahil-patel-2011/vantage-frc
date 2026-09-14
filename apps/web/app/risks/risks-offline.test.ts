@@ -4,13 +4,13 @@ import { describe, expect, it } from "vitest";
 
 const DIR = __dirname;
 
-describe("Risk Register last snapshot stays on the phone", () => {
+describe("Risk register last snapshot stays on the phone", () => {
   it("reads and writes the risks IndexedDB feature cache", () => {
     const src = readFileSync(join(DIR, "risks-client.tsx"), "utf8");
     expect(src).toMatch(/getFeatureSnapshot/);
     expect(src).toMatch(/putFeatureSnapshot/);
     expect(src).toMatch(/"risks"/);
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
-    expect(src).toMatch(/feature="Risk Register"/);
+    expect(src).toMatch(/feature="Risk register"/);
   });
 });

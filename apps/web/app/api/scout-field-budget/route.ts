@@ -41,7 +41,7 @@ export async function GET(request: Request) {
         status: "setup_required",
         message: "Could not load the field-count budget linter. Choose your team and confirm database access.",
         steps: [
-          { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
+          { id: "workspace", label: "Choose your team", detail: "Choose which FRC team you are working as.", href: "/workspace" },
         ],
         orgId: null,
       } satisfies ScoutFieldBudgetView,

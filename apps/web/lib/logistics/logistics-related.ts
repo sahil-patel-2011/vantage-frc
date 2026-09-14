@@ -2,9 +2,9 @@ import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 import { TRAVEL_LEG_LABELS, type TravelLegKind } from "../logistics";
 
-/** Soft-UI related Event Day / Team surfaces for logistics travel. */
+/** Soft-UI related Event day / Team surfaces for logistics travel. */
 export const LOGISTICS_RELATED_LINKS = [
-  { id: "command", label: "Event Day", kind: "competition" as const, tab: "command" },
+  { id: "command", label: "Event day", kind: "competition" as const, tab: "command" },
   { id: "my-day", label: "My Day", kind: "competition" as const, tab: "my-day" },
   { id: "calendar", label: "Team calendar", kind: "path" as const, path: "/team/calendar?tab=trip" },
   { id: "packing", label: "Packing", kind: "path" as const, path: "/packing" },
@@ -19,7 +19,7 @@ export type LogisticsRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — Event Day · My Day · Calendar · Packing · Visit invites. */
+/** Focused Soft-UI strip — Event day · My Day · Calendar · Packing · Visit invites. */
 export const LOGISTICS_RELATED_INCLUDE: LogisticsRelatedId[] = [
   "command",
   "my-day",
@@ -87,7 +87,7 @@ export function logisticsSetupSteps(orgId?: string | null): LogisticsSetupStep[]
     },
     {
       id: "command",
-      label: "Open Event Day",
+      label: "Open Event day",
       detail: "Field-side Command shares the same travel strip once a trip exists.",
       href: hubHref("/competition", "command", orgId),
     },
@@ -121,7 +121,7 @@ export function logisticsShellCopy(kind: LogisticsShellKind): LogisticsEmptyCopy
     case "loading":
       return {
         kind,
-        title: "Loading Logistics…",
+        title: "Opening Logistics",
         description: "Checking which team you are on and published trips.",
       };
     case "error":
@@ -130,12 +130,12 @@ export function logisticsShellCopy(kind: LogisticsShellKind): LogisticsEmptyCopy
         badge: "Unavailable",
         title: "Could not load Logistics",
         description:
-          "A network or server issue blocked hotels and travel. Retry, or open Event Day / My Day / Calendar while it reloads.",
+          "A network or server issue blocked hotels and travel. Retry, or open Event day / My Day / Calendar while it reloads.",
       };
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Finish setup for travel plans",
         description:
           "Choose your team and apply the event logistics migration if tables are missing.",
@@ -169,7 +169,7 @@ function dropRelatedStripDuplicates(
 
 /**
  * Soft-UI next actions for Logistics empty/setup shells.
- * Points at real Event Day / My Day / Calendar / Visit invites — never DEMO lodging.
+ * Points at real Event day / My Day / Calendar / Visit invites — never DEMO lodging.
  * Destinations already in the header related strip are omitted so each href
  * appears once on the page.
  */
@@ -207,7 +207,7 @@ function logisticsShellNextActionCandidates(input: {
         },
         {
           id: "command",
-          label: "Open Event Day",
+          label: "Open Event day",
           detail: "Field command stays blank until a team and trip exist.",
           href: hubHref("/competition", "command", null),
         },
@@ -229,7 +229,7 @@ function logisticsShellNextActionCandidates(input: {
       },
       {
         id: "command",
-        label: "Open Event Day",
+        label: "Open Event day",
         detail: "Competition day-of tools stay separate until travel is published here.",
         href: hubHref("/competition", "command", orgId),
       },
@@ -253,7 +253,7 @@ function logisticsShellNextActionCandidates(input: {
       },
       {
         id: "command",
-        label: "Open Event Day",
+        label: "Open Event day",
         detail: "Match queue may still load if this travel board failed.",
         href: hubHref("/competition", "command", orgId),
       },
@@ -284,7 +284,7 @@ function logisticsShellNextActionCandidates(input: {
         },
         {
           id: "command",
-          label: "Open Event Day",
+          label: "Open Event day",
           detail: "Field command shows lodging once a trip and rooming list exist.",
           href: hubHref("/competition", "command", orgId),
         },
@@ -306,8 +306,8 @@ function logisticsShellNextActionCandidates(input: {
       },
       {
         id: "command",
-        label: "Open Event Day",
-        detail: "Match times load from TBA even when travel is not published yet.",
+        label: "Open Event day",
+        detail: "Match times load from official matches even when travel is not published yet.",
         href: hubHref("/competition", "command", orgId),
       },
       {
@@ -350,7 +350,7 @@ function logisticsShellNextActionCandidates(input: {
 
   actions.push({
     id: "command",
-    label: "Open Event Day",
+    label: "Open Event day",
     detail: "Match queue and travel strip share this trip once lodging is published.",
     href: hubHref("/competition", "command", orgId),
     primary: actions.length === 0,

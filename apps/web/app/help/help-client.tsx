@@ -213,7 +213,7 @@ export default function HelpClient({ sectionGuide }: HelpClientProps = {}) {
           {!searching ? (
             <p className="help-hint app-muted">
               {HELP_ARTICLES.length} topics in-repo — no CMS. Empty product surfaces stay honest
-              until real TBA/scout data exists.
+              until real official match and scout data exists.
             </p>
           ) : null}
         </>

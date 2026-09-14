@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "driver-tryouts",
-  title: "Driver Tryouts",
+  title: "Driver tryouts",
   route: "/driver-tryouts",
   apiRoute: "/api/driver-tryouts",
   hub: "Team",

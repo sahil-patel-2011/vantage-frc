@@ -94,7 +94,7 @@ describe("home + competition polish for students this week", () => {
     const hint = emptyHintFor("sync_status");
     expect(
       studentWidgetDescription(
-        "The Blue Alliance is not connected. Save a key under Team Data before match and ranking cards can fill in.",
+        "The Blue Alliance is not connected. Save a key under Team data before match and ranking cards can fill in.",
         hint,
       ),
     ).toBe(hint.body);
@@ -109,7 +109,7 @@ describe("home + competition polish for students this week", () => {
     expect([...VIDEO_RESCOUT_RELATED_INCLUDE]).toEqual(["scouting", "command"]);
   });
 
-  it("Chat empty has no next-actions neighbor; Pick clock empty is one Sync Team Data", () => {
+  it("Chat empty has no next-actions neighbor; Pick clock empty is one Sync Team data", () => {
     expect(aiChatNextActions({ orgId: "org-1", shell: "empty" })).toEqual([]);
     const emptyClock = pickClockNextActions({
       orgId: "org-1",
@@ -118,7 +118,7 @@ describe("home + competition polish for students this week", () => {
       availableCount: 0,
     });
     expect(emptyClock).toHaveLength(1);
-    expect(emptyClock[0]?.label).toBe("Sync Team Data");
+    expect(emptyClock[0]?.label).toBe("Sync Team data");
 
     const chat = readFileSync(join(WEB, "app/chat/chat-client.tsx"), "utf8");
     expect(chat).toMatch(/shell !== "empty"/);

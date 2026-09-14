@@ -149,7 +149,7 @@ export function Field({
       return (
         <FormRow
           label={label}
-          hint={field.helpText ?? "Camera or gallery — stored only for this organization"}
+          hint={field.helpText ?? "Camera or gallery — stored with this team"}
         >
           <div className="scout-robot-images">
             {refs.length ? (

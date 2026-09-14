@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "match-strategy-cards",
-  title: "Match Strategy Cards",
+  title: "Match cards",
   route: "/match-strategy-cards",
   apiRoute: "/api/match-strategy-cards",
   hub: "Competition",

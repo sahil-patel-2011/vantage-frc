@@ -29,7 +29,7 @@ async function persistCadLearnSnapshot(orgHint: string, data: CadLearnView): Pro
     await putFeatureSnapshot("cad-learn", cacheOrg, data);
     if (!orgHint) await putFeatureSnapshot("cad-learn", "_", data);
   } catch {
-    // Live CAD Learn already painted; IndexedDB is best-effort.
+    // Live Learn CAD already painted; IndexedDB is best-effort.
   }
 }
 
@@ -84,7 +84,7 @@ export default function CadLearnClient() {
       if (!response.ok) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setRefreshError("Could not refresh CAD Learn. Showing the last copy on this device.");
+          setRefreshError("Could not refresh Learn CAD. Showing the last copy on this device.");
         } else {
           setFetchFailed(true);
         }
@@ -94,7 +94,7 @@ export default function CadLearnClient() {
       if (!isCadLearnView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setRefreshError("Could not refresh CAD Learn. Showing the last copy on this device.");
+          setRefreshError("Could not refresh Learn CAD. Showing the last copy on this device.");
         } else {
           setFetchFailed(true);
         }
@@ -108,7 +108,7 @@ export default function CadLearnClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setRefreshError("Could not refresh CAD Learn. Showing the last copy on this device.");
+        setRefreshError("Could not refresh Learn CAD. Showing the last copy on this device.");
       } else {
         setFetchFailed(true);
       }
@@ -191,7 +191,7 @@ export default function CadLearnClient() {
     return (
       <main className="module-page cl-page">
         <CadLearnHeader orgId={null} />
-        <OfflineBanner feature="CAD Learn" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Learn CAD" fromCache={fromCache} cachedAt={cachedAt} />
         <CadLearnEmptyCard
           shell={shell}
           onRetry={shell === "error" ? () => void load() : undefined}
@@ -203,7 +203,7 @@ export default function CadLearnClient() {
   return (
     <main className="module-page cl-page">
       <CadLearnHeader orgId={view?.orgId ?? null} />
-      <OfflineBanner feature="CAD Learn" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Learn CAD" fromCache={fromCache} cachedAt={cachedAt} />
       {refreshError ? (
         <p className="cl-muted" role="alert">
           {refreshError}

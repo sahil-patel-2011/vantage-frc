@@ -283,7 +283,7 @@ export default function EventReadinessClient() {
         ) : null}
         <EmptyState
           soft
-          badge="Setup required"
+          badge="Needs setup"
           badgeTone="setup"
           title="No readiness plan yet"
           description={view.message}

@@ -14,6 +14,7 @@ import {
   recomputeStrategyView,
 } from "../strategy/recompute";
 import type { StrategyView } from "../strategy/types";
+import { studentRatingLabel } from "../ui/student-rating-label";
 import { normalizePlanOperations, normalizePlanTendencies } from "./plan-sections";
 import type { BriefingScoutedTeam, BriefingTendency } from "./types";
 
@@ -40,10 +41,10 @@ function keyFactorsOf(value: unknown): BriefingPrediction["keyFactors"] {
     if (!name) continue;
     const impact = Number(record.impact);
     factors.push({
-      name,
+      name: studentRatingLabel(name),
       alliance: typeof record.alliance === "string" ? record.alliance : "",
       impact: Number.isFinite(impact) ? impact : 0,
-      evidence: typeof record.evidence === "string" ? record.evidence : "",
+      evidence: studentRatingLabel(typeof record.evidence === "string" ? record.evidence : ""),
     });
   }
   return factors.slice(0, 6);
@@ -51,7 +52,10 @@ function keyFactorsOf(value: unknown): BriefingPrediction["keyFactors"] {
 
 function caveatsOf(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
-  return value.filter((entry): entry is string => typeof entry === "string" && entry.trim().length > 0).slice(0, 8);
+  return value
+    .filter((entry): entry is string => typeof entry === "string" && entry.trim().length > 0)
+    .map(studentRatingLabel)
+    .slice(0, 8);
 }
 
 /**

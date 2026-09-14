@@ -83,7 +83,7 @@ export default function MatchSimClient() {
         if (!response.ok || !isMatchSimView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Match Simulator. Showing the last copy on this device.");
+            setError("Could not refresh Match sim. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setErrorStatus(response.status);
@@ -98,7 +98,7 @@ export default function MatchSimClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Match Simulator. Showing the last copy on this device.");
+          setError("Could not refresh Match sim. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -162,13 +162,13 @@ export default function MatchSimClient() {
           breadcrumbs={
             <>
               <a href="/competition">Competition</a>
-              {" / Match Simulator"}
+              {" / Match sim"}
             </>
           }
-          title="Match Simulator"
+          title="Match sim"
           description="Full-field score timeline from synced event numbers — plus the highest-leverage lever. Nothing here is guessed."
         />
-        <OfflineBanner feature="Match Simulator" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Match sim" fromCache={fromCache} cachedAt={cachedAt} />
         {copy ? (
           <EmptyState title={copy.title} description={copy.description}>
             {copy.primary ? (
@@ -183,7 +183,7 @@ export default function MatchSimClient() {
             ) : null}
           </EmptyState>
         ) : (
-          <EmptyState title="Loading…" description="Checking your team." aria-busy />
+          <EmptyState title="Opening Match sim" description="Checking your team." aria-busy />
         )}
       </main>
     );
@@ -195,13 +195,13 @@ export default function MatchSimClient() {
         breadcrumbs={
           <>
             <a href={orgId ? `/competition?orgId=${encodeURIComponent(orgId)}` : "/competition"}>Competition</a>
-            {" / Match Simulator"}
+            {" / Match sim"}
           </>
         }
-        title="Match Simulator"
+        title="Match sim"
         description="Full-field score timeline from synced event numbers — plus the highest-leverage lever. Nothing here is guessed."
       />
-      <OfflineBanner feature="Match Simulator" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Match sim" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -349,7 +349,7 @@ function ActiveRunResult({ view, run }: { view: LiveView; run: MatchSimRun }) {
 
       {view.active === run && (result.red.dataCompleteness < 1 || result.blue.dataCompleteness < 1) ? (
         <p className="app-muted" style={{ marginTop: 12 }}>
-          Some teams have no synced EPA yet — they contribute 0 above rather than a guess (Red{" "}
+          Some teams have no synced season rating yet — they contribute 0 above rather than a guess (Red{" "}
           {pct(result.red.dataCompleteness)} covered, Blue {pct(result.blue.dataCompleteness)} covered).
         </p>
       ) : null}
@@ -371,7 +371,7 @@ function AllianceCard({ alliance, maxScore }: { alliance: MatchSimRun["result"][
           <li key={t.teamKey} style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
             <span>{t.teamNumber ?? t.teamKey}</span>
             <small className="app-muted">
-              {t.hasData ? `${t.epaTotal ?? 0} EPA (${t.source ?? "reference"})` : "No synced EPA"}
+              {t.hasData ? `${t.epaTotal ?? 0} season rating (${t.source ?? "official matches"})` : "No synced season rating"}
             </small>
           </li>
         ))}
@@ -397,7 +397,7 @@ function SavedRuns({
         badge="No simulations yet"
         badgeTone="setup"
         title="Run your first match simulation"
-        description="Enter both alliances above to project a score timeline from synced EPA data."
+        description="Enter both alliances above to project a score timeline from synced season ratings."
       />
     );
   }

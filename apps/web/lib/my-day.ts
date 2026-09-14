@@ -300,7 +300,7 @@ export function myDayMatchToCalendarEvent(
     `With ${match.partners.length ? match.partners.join(", ") : "—"}`,
     `vs ${match.opponents.length ? match.opponents.join(", ") : "—"}`,
     eventName ? `Event: ${eventName}` : null,
-    "Open My Day in Vantage for scout / Event Day links.",
+    "Open My Day in Vantage for scout / Event day links.",
   ]
     .filter(Boolean)
     .join("\n");

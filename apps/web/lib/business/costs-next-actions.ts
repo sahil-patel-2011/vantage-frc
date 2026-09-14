@@ -19,7 +19,7 @@ export type CostsNextActionContext = {
 };
 
 /**
- * Soft-UI next actions for Season Costs.
+ * Soft-UI next actions for Season costs.
  * Never invents DEMO season spend — only points at real budget / orders / fundraising paths.
  */
 export function costsNextActions(ctx: CostsNextActionContext): CostsNextAction[] {
@@ -91,7 +91,7 @@ export function costsNextActions(ctx: CostsNextActionContext): CostsNextAction[]
   actions.push({
     id: "budget",
     label: "Open Business · Budget",
-    detail: "Category allocations and purchase approvals stay on the Business hub — separate from Season Costs.",
+    detail: "Category allocations and purchase approvals stay on the Business hub — separate from Season costs.",
     href: hubHref("/business", "budget", orgId),
   });
 

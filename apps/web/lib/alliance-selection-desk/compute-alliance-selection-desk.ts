@@ -1,4 +1,4 @@
-// Alliance Selection Desk — the draft board. It keeps its own session / slot / evidence rows
+// Alliance desk — the draft board. It keeps its own session / slot / evidence rows
 // (evidence FKs to a slot), but the answer to "which team is in this slot" now comes from the ONE
 // pick list: pick_list_entries.drafted_alliance_seed / drafted_pick_slot (migration 0454). Placing
 // a team here therefore moves the collaborative list and takes the team out of Pick Clock, and the
@@ -150,7 +150,7 @@ function setupSteps(orgId: string | null, eventKey: string | null): DeskSetupSte
     {
       id: "workspace",
       label: "Choose your team",
-      detail: "Pick which FRC team you are working as.",
+      detail: "Choose which FRC team you are working as.",
       href: "/workspace",
       done: Boolean(orgId),
     },
@@ -233,7 +233,7 @@ export async function computeAllianceSelectionDeskView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Choose your team to run Alliance Selection Desk.",
+      message: "Choose your team to run Alliance desk.",
       steps: setupSteps(null, null),
       orgId: null,
       eventKey: null,

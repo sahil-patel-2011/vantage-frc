@@ -12,11 +12,11 @@ function pgError(code: string, constraint: string, table: string, detail = "") {
 }
 
 describe("classifyDbError", () => {
-  it("names the fix when an event has not been ingested from The Blue Alliance", () => {
+  it("names the fix when an event has not been ingested from official matches", () => {
     const friendly = classifyDbError(pgError("23503", "pick_lists_event_key_fkey", "pick_lists"));
     expect(friendly?.status).toBe(422);
     expect(friendly?.eventReferenceMissing).toBe(true);
-    expect(friendly?.message).toMatch(/Blue Alliance/);
+    expect(friendly?.message).toMatch(/official event/);
     // The raw constraint name must not reach the user.
     expect(friendly?.message).not.toMatch(/fkey|constraint/i);
   });

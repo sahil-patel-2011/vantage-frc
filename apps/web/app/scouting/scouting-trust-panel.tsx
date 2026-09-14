@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, Panel, Button } from "../../components/ui";
+import { degradedModeReasonLabel, degradedModeSourceLabel } from "../../lib/degraded-mode";
 import ScoutingReconciliationPanel from "./scouting-reconciliation-panel";
 
 type InfluenceRow = {
@@ -170,7 +171,7 @@ export default function ScoutingTrustPanel({
     return (
       <EmptyState
         title="Set active event"
-        description="Trust checks and coverage are event-specific. Choose the event in Event Day first."
+        description="Trust checks and coverage are event-specific. Choose the event in Event day first."
       />
     );
   }
@@ -189,7 +190,9 @@ export default function ScoutingTrustPanel({
           <strong>Reference data degraded</strong>
           <span>
             Strategy and scouting remain available from the last-good cache.{" "}
-            {degraded.map((source) => `${source.source}: ${source.status}`).join(" · ")}
+            {degraded
+              .map((source) => `${degradedModeSourceLabel(source.source)}: ${degradedModeReasonLabel(source.status)}`)
+              .join(" · ")}
           </span>
         </section>
       ) : null}
@@ -251,7 +254,7 @@ export default function ScoutingTrustPanel({
           </div>
           {!view.coverage.length ? (
             <p className="app-muted">
-              The synced match schedule is empty. Last-good data will appear here when TBA is available.
+              The synced match schedule is empty. Last-good data will appear here when official matches are available.
             </p>
           ) : null}
         </Panel>
@@ -295,7 +298,7 @@ export default function ScoutingTrustPanel({
               </article>
             ) : (
               <p className="app-muted">
-                Accuracy vs TBA earns a rotating seat so scouts see their product used at alliance selection.
+                Accuracy vs official scores earns a rotating seat so scouts see their product used at alliance selection.
               </p>
             )}
             {view.strategySeats.length ? (
@@ -343,7 +346,7 @@ export default function ScoutingTrustPanel({
             ))}
             {!view.fieldTrust.length ? (
               <p className="app-muted">
-                Official field checks begin automatically when TBA publishes score breakdowns.
+                Official field checks begin automatically when official score breakdowns are published.
               </p>
             ) : null}
           </div>
@@ -398,8 +401,8 @@ export default function ScoutingTrustPanel({
                   >
                     <option value="consensus">Scout consensus</option>
                     <option value="scout">Scout data</option>
-                    <option value="tba">TBA official</option>
-                    <option value="statbotics">Statbotics</option>
+                    <option value="tba">Official score</option>
+                    <option value="statbotics">Season rating</option>
                   </select>
                 </label>
               );

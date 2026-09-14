@@ -1,7 +1,7 @@
 import RiskBurndownClient from "./risk-burndown-client";
 
 export const metadata = {
-  title: "Risk-Register Burndown",
+  title: "Risk burndown",
 };
 
 export default function RiskBurndownPage() {

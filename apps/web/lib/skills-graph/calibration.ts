@@ -1,4 +1,4 @@
-// Calibration signals: "Call Your Shot" prediction accuracy feeding the skills graph.
+// Calibration signals: Learning prediction accuracy feeding the skills graph.
 //
 // Per docs/archive/AI_MENTOR_CONCEPT.md, per-concept prediction-error rows
 // (learning_predictions, 0452) feed compute-skills-graph.ts — as EVIDENCE.
@@ -98,7 +98,7 @@ export function buildCalibrationSignals(rows: CalibrationRow[]): CalibrationSign
         skillCategory,
         proficiency: "proficient",
         evidenceNote:
-          `Call Your Shot calibration: ${scored} graded calls on ${surfaceLabel.toLowerCase()} ` +
+          `Learning calibration: ${scored} graded calls on ${surfaceLabel.toLowerCase()} ` +
           `(${row.spotOn} spot on, ${row.close} close, ${row.off} off; mean score ${accuracy}). ` +
           `Proposed by the calibration signal; countersigned by a mentor.`,
       };

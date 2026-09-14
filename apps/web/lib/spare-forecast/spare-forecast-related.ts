@@ -2,13 +2,13 @@ import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 import type { SeasonHorizon } from "./types";
 
-/** Soft-UI related surfaces for Spare Forecast (never DEMO spare counts). */
+/** Soft-UI related surfaces for Spares forecast (never DEMO spare counts). */
 export const SPARE_FORECAST_RELATED_LINKS = [
   { id: "batteries", label: "Batteries", kind: "team" as const, tab: "batteries" },
   { id: "orders", label: "Orders", kind: "business" as const, tab: "orders" },
   { id: "subsystems", label: "Subsystems", kind: "path" as const, path: "/subsystems" },
   { id: "inventory", label: "Inventory", kind: "path" as const, path: "/inventory" },
-  { id: "fmea", label: "FMEA", kind: "build" as const, tab: "fmea" },
+  { id: "fmea", label: "Failure log", kind: "build" as const, tab: "fmea" },
 ] as const;
 
 export type SpareForecastRelatedId = (typeof SPARE_FORECAST_RELATED_LINKS)[number]["id"];
@@ -27,7 +27,7 @@ export const SPARE_FORECAST_RELATED_INCLUDE: SpareForecastRelatedId[] = [
 ];
 
 /**
- * Soft-UI cross-links from Spare Forecast → Batteries / Orders / Subsystems.
+ * Soft-UI cross-links from Spares forecast → Batteries / Orders / Subsystems.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function spareForecastRelatedLinks(
@@ -85,7 +85,7 @@ export function formatSpareForecastMetric(value: unknown, loaded: boolean): stri
   return Math.floor(n).toLocaleString();
 }
 
-/** Classify Spare Forecast Soft-UI shell — never invents DEMO spare counts. */
+/** Classify Spares forecast Soft-UI shell — never invents DEMO spare counts. */
 export function classifySpareForecastShell(input: {
   loading: boolean;
   fetchFailed?: boolean;
@@ -108,7 +108,7 @@ export function spareForecastShellCopy(kind: SpareForecastShellKind): SpareForec
     case "loading":
       return {
         kind,
-        title: "Loading spare forecast…",
+        title: "Opening Spares forecast",
         description:
           "Checking which team you are on and real spare-category inventory.",
       };
@@ -123,7 +123,7 @@ export function spareForecastShellCopy(kind: SpareForecastShellKind): SpareForec
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Choose your team before projecting exhaustion from real bins.",
@@ -142,20 +142,20 @@ export function spareForecastShellCopy(kind: SpareForecastShellKind): SpareForec
         badge: "No exhaustion risk",
         title: "No spares are projected to run out",
         description:
-          "Spare bins exist, but none have matched FMEA repeat-failure history yet. Log failures and keep inventory subsystem names aligned.",
+          "Spare bins exist, but none have matched Failure log repeat-failure history yet. Log failures and keep inventory subsystem names aligned.",
       };
     default:
       return {
         kind: "ready",
         title: "Spare-parts exhaustion forecast",
         description:
-          "Projections use only real spare-category bins × logged FMEA cadence. Draft purchase requests from shortfalls.",
+          "Projections use only real spare-category bins × logged Failure log cadence. Draft purchase requests from shortfalls.",
       };
   }
 }
 
 /**
- * Soft-UI next actions for Spare Forecast empty/setup shells.
+ * Soft-UI next actions for Spares forecast empty/setup shells.
  * Points at Batteries / Orders / Subsystems — never invents DEMO spare counts.
  */
 export function spareForecastNextActions(input: {
@@ -179,7 +179,7 @@ export function spareForecastNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before projecting spare exhaustion.",
+          detail: "Choose your team before projecting spare exhaustion.",
           href: "/workspace",
           primary: true,
         },
@@ -207,7 +207,7 @@ export function spareForecastNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Finish membership setup so Spare Forecast can load.",
+        detail: "Finish membership setup so Spares forecast can load.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
       },
@@ -226,7 +226,7 @@ export function spareForecastNextActions(input: {
       {
         id: "subsystems",
         label: "Open Subsystems",
-        detail: "Name mechanisms so spare bins can match FMEA failure history.",
+        detail: "Name mechanisms so spare bins can match Failure log history.",
         href: withOrgHref("/subsystems", orgId),
       },
     ];
@@ -236,8 +236,8 @@ export function spareForecastNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Spare Forecast",
-        detail: "Reload real inventory and FMEA cadence.",
+        label: "Retry Spares forecast",
+        detail: "Reload real inventory and Failure log cadence.",
         href: withOrgHref("/spare-forecast", orgId),
         primary: true,
       },
@@ -274,7 +274,7 @@ export function spareForecastNextActions(input: {
       {
         id: "subsystems",
         label: "Name Subsystems",
-        detail: "Inventory subsystem labels must match FMEA names for a consumption rate.",
+        detail: "Inventory subsystem labels must match Failure log names for a consumption rate.",
         href: withOrgHref("/subsystems", orgId),
       },
       {
@@ -296,7 +296,7 @@ export function spareForecastNextActions(input: {
     return [
       {
         id: "fmea",
-        label: "Log FMEA failures",
+        label: "Log failures",
         detail: "Repeat failures on a subsystem unlock consumption cadence.",
         href: hubHref("/build", "fmea", orgId),
         primary: true,
@@ -304,7 +304,7 @@ export function spareForecastNextActions(input: {
       {
         id: "subsystems",
         label: "Align Subsystems",
-        detail: "Spare bin subsystem names must match FMEA subsystem names exactly.",
+        detail: "Spare bin subsystem names must match Failure log subsystem names exactly.",
         href: withOrgHref("/subsystems", orgId),
       },
       {
@@ -366,7 +366,7 @@ export function spareForecastNextActions(input: {
     },
     {
       id: "fmea",
-      label: "Open FMEA",
+      label: "Open Failure log",
       detail: "When failure cadence changes, re-check which bins will exhaust first.",
       href: hubHref("/build", "fmea", orgId),
     },

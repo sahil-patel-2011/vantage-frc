@@ -193,7 +193,7 @@ export function CodeBugbotPanel({
           {!orgId ? (
             <EmptyState
               soft
-              badge="Setup required"
+              badge="Needs setup"
               badgeTone="setup"
               title="Choose your team for Bugbot"
               description="Local pattern review is free. GitHub scans and both Bugbot modes need a team."
@@ -208,7 +208,7 @@ export function CodeBugbotPanel({
               badge="GitHub"
               badgeTone="setup"
               title="Connect a GitHub repo to scan"
-              description="Owners and admins link a PAT or OAuth app under Team admin. You can still paste a file below without GitHub."
+              description="Owners and admins connect GitHub under Invites. You can still paste a file below without GitHub."
             >
               <Button as="a" variant="primary" href={githubHref}>
                 Connect GitHub
@@ -357,14 +357,14 @@ export function CodeBugbotPanel({
           ) : null}
 
           <footer className="cdc-bugbot-actions">
-            <button
+            <Button
               type="button"
-              className="primary-action"
+              variant="primary"
               disabled={busy || !orgId || !hasSource}
               onClick={() => void runBugbot({ mode: bugbotMode, phase: "scan", scanRepo: false })}
             >
               {bugbotMode === "ultra" ? `Scan file · $${BUGBOT_ULTRA_PRICES_USD.scan.toFixed(2)}` : "Scan this file"}
-            </button>
+            </Button>
             <Button variant="secondary" type="button" disabled={busy || !orgId || !githubConnected || !selectedRepo} onClick={() => void runBugbot({ mode: bugbotMode, phase: "scan", scanRepo: true })}>
               {bugbotMode === "ultra"
                 ? `Scan repo · $${(scanPlan?.cost.totalUsd ?? BUGBOT_ULTRA_PRICES_USD.scan).toFixed(2)}`
@@ -585,9 +585,9 @@ export function CodeBugbotPanel({
                       />
                     </label>
                     <div className="cdc-dismiss-actions">
-                      <button type="submit" className="primary-action" disabled={busy || dismissReason.trim().length < 3}>
+                      <Button type="submit" variant="primary" disabled={busy || dismissReason.trim().length < 3}>
                         Dismiss this finding
-                      </button>
+                      </Button>
                       <Button variant="ghost" type="button" onClick={() => { setDismissTarget(null); setDismissReason(""); }}>
                         Cancel
                       </Button>

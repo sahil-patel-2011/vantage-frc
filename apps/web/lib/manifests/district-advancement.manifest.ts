@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "district-advancement",
-  title: "District Advancement",
+  title: "Districts",
   route: "/district-advancement",
   apiRoute: "/api/district-advancement",
   hub: "Competition",

@@ -1,7 +1,7 @@
 import PrototypeTrackerClient from "./prototype-tracker-client";
 
 export const metadata = {
-  title: "Prototype-to-Decision Tracker",
+  title: "Prototypes",
 };
 
 export default function PrototypeTrackerPage() {

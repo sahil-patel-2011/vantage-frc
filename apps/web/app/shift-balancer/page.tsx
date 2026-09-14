@@ -1,7 +1,7 @@
 import ShiftBalancerClient from "./shift-balancer-client";
 
 export const metadata = {
-  title: "Scout shift load balancer",
+  title: "Shifts",
 };
 
 export default function ShiftBalancerPage() {

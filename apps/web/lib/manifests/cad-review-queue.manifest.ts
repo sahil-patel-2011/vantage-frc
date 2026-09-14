@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "cad-review-queue",
-  title: "CAD Review Queue",
+  title: "CAD review queue",
   route: "/cad-review-queue",
   apiRoute: "/api/cad-review-queue",
   hub: "Build",

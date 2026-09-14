@@ -1,5 +1,5 @@
 // Pure, framework-free devil's-advocate critique math. Everything here is deterministic and
-// grounded only in the numbers the caller supplies (weight margin, power headroom, chronic FMEA
+// grounded only in the numbers the caller supplies (weight margin, power headroom, chronic Failure log
 // failure count for the subsystem, and prior rejected/superseded decisions in the same category)
 // — it never fabricates a value. compute-decision-critic.ts wraps this with DB I/O; the API route
 // and client render results.
@@ -10,7 +10,7 @@ import type { CriticResult, DecisionCriticOutcome, DecisionCriticVerdict } from 
 export const WEIGHT_TIGHT_MARGIN_LBS = 3;
 /** Below this many amps of remaining headroom (after the addition), flag it as tight. */
 export const POWER_TIGHT_HEADROOM_AMPS = 5;
-/** Prior FMEA failures on this subsystem at/above this count are treated as a recurring/chronic issue. */
+/** Prior Failure log failures on this subsystem at/above this count are treated as a recurring/chronic issue. */
 export const CHRONIC_FAILURE_THRESHOLD = 2;
 
 export const DECISION_CRITIC_CATEGORIES = ["design", "strategy", "build", "process", "other"] as const;
@@ -65,7 +65,7 @@ export type CritiqueInput = {
   powerAddedAmps: number;
   /** Remaining power headroom (breaker capacity - current peak draw) BEFORE this addition. */
   powerHeadroomAmps: number;
-  /** Count of prior FMEA failures logged against this subsystem. */
+  /** Count of prior Failure log failures logged against this subsystem. */
   chronicFailureCount: number;
   /** Count of prior decisions in this category/subsystem that were rejected or superseded. */
   priorRejectedCount: number;
@@ -103,7 +103,7 @@ export function critiqueDecision(input: CritiqueInput): CriticResult {
 
   if (chronicFailureCount >= CHRONIC_FAILURE_THRESHOLD) {
     concerns.push(
-      `This subsystem has ${chronicFailureCount} prior FMEA failure(s) on record — a recurring failure mode worth re-examining before committing.`,
+      `This subsystem has ${chronicFailureCount} prior logged failure(s) on record — a recurring failure mode worth re-examining before committing.`,
     );
   }
 
@@ -119,7 +119,7 @@ export function critiqueDecision(input: CritiqueInput): CriticResult {
       confidence: 0.6,
       concerns: [],
       recommendation:
-        "No grounded concerns found in weight/power headroom, FMEA history, or prior decisions — proceed.",
+        "No grounded concerns found in weight/power headroom, Failure log history, or prior decisions — proceed.",
     };
   }
 

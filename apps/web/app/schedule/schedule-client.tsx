@@ -58,7 +58,7 @@ function scheduleCsvColumns(teamKey: string | null): CsvColumn<ScheduleMatch>[] 
       hint: "Level and number as shown on the board",
       value: (match) => `${compLevelLabel(match.compLevel)} ${match.matchNumber}`,
     },
-    { key: "compLevel", header: "Comp level", hint: "Raw TBA level (qm/qf/sf/f)", value: (match) => match.compLevel },
+    { key: "compLevel", header: "Comp level", hint: "Raw official level (qm/qf/sf/f)", value: (match) => match.compLevel },
     { key: "matchNumber", header: "Match number", value: (match) => match.matchNumber },
     {
       key: "scheduledTime",
@@ -227,7 +227,7 @@ function ScheduleShell({
       <header className="app-page-header">
         <div>
           <span className="breadcrumbs">Competition / Schedule</span>
-          <h1>Match schedule</h1>
+          <h1>Schedule</h1>
           <p>{description}</p>
         </div>
         <ScheduleRelated orgId={orgId} include={[...SCHEDULE_RELATED_INCLUDE]} />
@@ -365,11 +365,11 @@ export default function ScheduleClient() {
   if (!view) {
     return (
       <ScheduleShell
-        title={fetchFailed ? "Could not load the match schedule" : "Loading match schedule…"}
+        title={fetchFailed ? "Could not load the match schedule" : "Opening Schedule"}
         description={
           fetchFailed
             ? "A network or server issue blocked the board. Retry."
-            : "Reading the TBA match cache for your active event…"
+            : "Checking your team."
         }
         shell={fetchFailed ? "error" : "loading"}
         fetchFailed={fetchFailed}
@@ -424,7 +424,7 @@ export default function ScheduleClient() {
       <header className="app-page-header">
         <div>
           <span className="breadcrumbs">Competition / Schedule</span>
-          <h1>Match schedule</h1>
+          <h1>Schedule</h1>
           <p>
             {eventLabel}
             {view.context.teamNumber ? ` — Team ${view.context.teamNumber}` : ""} · {view.matches.length}{" "}
@@ -512,13 +512,13 @@ export default function ScheduleClient() {
             <ExportButton
               rows={visible}
               columns={scheduleCsvColumns(teamKey)}
-              feature="Match schedule"
+              feature="Schedule"
               orgLabel={view.context.orgName}
               orgId={orgId}
               size="sm"
               provenance={`${eventLabel} — ${scope === "ours" ? "our matches" : "all matches"}${
                 hidePlayed ? ", unplayed only" : ""
-              }. Cached TBA schedule.`}
+              }. Cached official schedule.`}
             />
           </div>
 

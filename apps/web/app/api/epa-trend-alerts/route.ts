@@ -24,9 +24,9 @@ function teamNumberOrNull(value: unknown): number | null {
 
 const SETUP_REQUIRED_FALLBACK: EpaTrendAlertsView = {
   status: "setup_required",
-  message: "Could not load EPA trend alerts. Choose your team and confirm database access.",
+  message: "Could not load Rating alerts. Choose your team and confirm database access.",
   steps: [
-    { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
+    { id: "workspace", label: "Choose your team", detail: "Choose which FRC team you are working as.", href: "/workspace" },
   ],
   orgId: null,
 };
@@ -109,7 +109,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "EPA trend alerts request failed";
+    const message = error instanceof Error ? error.message : "Rating alerts request failed";
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

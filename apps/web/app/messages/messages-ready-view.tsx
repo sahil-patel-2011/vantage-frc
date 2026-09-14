@@ -258,7 +258,7 @@ export function MessagesReadyView({
       <OfflineBanner feature="Chat" fromCache={fromCache} cachedAt={cachedAt} />
 
       {loading ? (
-        <EmptyState soft title="Loading…" aria-busy />
+        <EmptyState soft title="Opening Chat" aria-busy />
       ) : loadError ? (
         <MessagesLoadError
           loadError={loadError}
@@ -715,7 +715,7 @@ export function MessagesReadyView({
                         <div className="messages-mention-empty" role="status">
                           <p>
                             {members.length === 0
-                              ? "No teammates to mention yet — invite under Team admin."
+                              ? "No teammates to mention yet — invite under Invites."
                               : activeMention.query
                                 ? `No org member matches @${activeMention.query}`
                                 : "Type a name to mention a teammate in this organization."}
@@ -723,7 +723,7 @@ export function MessagesReadyView({
                           <small>Esc to dismiss · mentions stay inside this team</small>
                           {members.length === 0 ? (
                             <Button as="a" variant="secondary" href={withOrgHref("/team/admin", orgId)}>
-                              Team admin
+                              Invites
                             </Button>
                           ) : null}
                         </div>
@@ -797,10 +797,10 @@ export function MessagesReadyView({
             <EmptyState
               soft
               title="No teammates yet"
-              description="Invite people under Team admin."
+              description="Invite people under Invites."
             >
               <Button as="a" variant="secondary" href={withOrgHref("/team/admin", orgId)}>
-                Team admin
+                Invites
               </Button>
             </EmptyState>
           ) : (

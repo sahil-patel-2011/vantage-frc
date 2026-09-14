@@ -4,13 +4,13 @@ import { describe, expect, it } from "vitest";
 
 const DIR = __dirname;
 
-describe("Season Planning last snapshot stays on the phone", () => {
+describe("Season plan last snapshot stays on the phone", () => {
   it("reads and writes the season-planning-workspace IndexedDB feature cache", () => {
     const src = readFileSync(join(DIR, "season-planning-workspace-client.tsx"), "utf8");
     expect(src).toMatch(/getFeatureSnapshot/);
     expect(src).toMatch(/putFeatureSnapshot/);
     expect(src).toMatch(/"season-planning-workspace"/);
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
-    expect(src).toMatch(/feature="Season Planning"/);
+    expect(src).toMatch(/feature="Season plan"/);
   });
 });

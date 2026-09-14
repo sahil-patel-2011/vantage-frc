@@ -248,7 +248,7 @@ export default function AppearancePanel() {
                 Set the team colour
               </a>
             ) : (
-              "An owner or admin can set one in Team admin."
+              "An owner or admin can set one in Invites."
             )}
           </p>
         ) : !org.applyAccentToApp ? (

@@ -346,7 +346,7 @@ export default function GrantsClient({ orgId: orgIdProp }: { orgId?: string }) {
             <h1>Grant writing</h1>
           </div>
         </header>
-        <EmptyState soft title="Loading grant writing…" description="Opening this team’s narrative drafts." aria-busy />
+        <EmptyState soft title="Opening Grants" description="Opening this team’s narrative drafts." aria-busy />
       </main>
     );
   }
@@ -497,7 +497,7 @@ function GrantWritingWorkspace({
           <span className="breadcrumbs">Business / Grants</span>
           <h1>Grant writing</h1>
           <p className="app-muted">
-            Compose grant narratives from this team&apos;s profile and Community Impact log for {teamLabel}. Asks and
+            Compose grant narratives from this team&apos;s profile and Impact log for {teamLabel}. Asks and
             awards stay blank until you enter amounts.
           </p>
         </div>

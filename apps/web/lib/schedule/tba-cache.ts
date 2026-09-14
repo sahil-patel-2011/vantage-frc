@@ -105,7 +105,7 @@ export function scheduleCacheRequiredCopy(): { title: string; description: strin
   return {
     title: "No matches synced for this event yet",
     description:
-      "Once the schedule is posted and TBA cache has rows, matches appear here automatically.",
+      "Once the schedule is posted and official match rows exist, matches appear here automatically.",
   };
 }
 

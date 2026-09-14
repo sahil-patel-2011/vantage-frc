@@ -90,7 +90,7 @@ export function batteryNextActions(input: {
     });
     actions.push({
       id: "pit",
-      label: "Open Pit Command",
+      label: "Open Pit command",
       detail: "Same readiness rules as Batteries — log measurements from the pit.",
       href: withOrg("/pit", orgId),
     });
@@ -165,7 +165,7 @@ export function batteryNextActions(input: {
 
   actions.push({
     id: "fmea",
-    label: "Battery failures in FMEA",
+    label: "Battery failures in Failure log",
     detail: "Retire flows can open a failure mode — link retired packs to real root causes.",
     href: hubHref("/team", "fmea", orgId),
   });

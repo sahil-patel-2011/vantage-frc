@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "subsystem-signoff",
-  title: "Subsystem Sign-off",
+  title: "Subsystem sign-off",
   route: "/subsystem-signoff",
   apiRoute: "/api/subsystem-signoff",
   hub: "Build",

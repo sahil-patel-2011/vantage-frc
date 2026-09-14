@@ -83,10 +83,10 @@ export function CadVaultHeader({
       breadcrumbs={
         <>
           <a href={withOrgHref("/build", orgId)}>Build</a>
-          {" / CAD Vault"}
+          {" / CAD vault"}
         </>
       }
-      title="CAD Vault"
+      title="CAD vault"
       description={description ?? CAD_VAULT_DESCRIPTION}
     >
       <CadVaultRelated orgId={orgId} />

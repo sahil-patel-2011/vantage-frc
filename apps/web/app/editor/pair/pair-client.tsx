@@ -246,7 +246,7 @@ export default function PairClient({
           </>
         }
         title="Pair VS Code"
-        description="Approve a short code from the Vantage VS Code extension. Only machines you control — passwords never enter the editor. Cross-check Code Coach, GitHub, and AI."
+        description="Approve a short code from the Vantage VS Code extension. Only machines you control — passwords never enter the editor. Cross-check Code, GitHub, and AI."
       >
         <div className="pair-header-actions">
           {relatedLinks.map((link) => (

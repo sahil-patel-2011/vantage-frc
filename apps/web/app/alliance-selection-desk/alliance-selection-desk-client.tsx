@@ -145,15 +145,15 @@ function DeskShell({
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Alliance selection desk"}
+            {" / Alliance desk"}
           </>
         }
-        title="Alliance selection desk"
+        title="Alliance desk"
         description={description}
       >
         <DeskRelatedStrip orgId={orgId} />
       </PageHeader>
-      <OfflineBanner feature="Alliance selection desk" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Alliance desk" fromCache={fromCache} cachedAt={cachedAt} />
       {children}
       {shell === "loading" ? (
         <div aria-busy="true" aria-label="Loading alliance selection desk">
@@ -355,7 +355,7 @@ export default function AllianceSelectionDeskClient() {
         if (!response.ok || !isAllianceSelectionDeskView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Alliance selection desk. Showing the last copy on this device.");
+            setError("Could not refresh Alliance desk. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -369,7 +369,7 @@ export default function AllianceSelectionDeskClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Alliance selection desk. Showing the last copy on this device.");
+          setError("Could not refresh Alliance desk. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -501,10 +501,10 @@ export default function AllianceSelectionDeskClient() {
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Alliance selection desk"}
+            {" / Alliance desk"}
           </>
         }
-        title="Alliance selection desk"
+        title="Alliance desk"
         description="Live pick board with shared slots, scout evidence attach, ranking conflict flags, and drive-team export. Cross-check Strategy, Collaborative pick list, and Pick clock."
       >
         <div className="alliance-desk-header-actions">
@@ -546,7 +546,7 @@ export default function AllianceSelectionDeskClient() {
         </div>
       </PageHeader>
 
-      <OfflineBanner feature="Alliance selection desk" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Alliance desk" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p role="alert" className="telemetry-status">
@@ -557,7 +557,7 @@ export default function AllianceSelectionDeskClient() {
       <DeskNextActionsPanel actions={nextActions} />
 
       {showTiles && view?.status === "live" ? (
-        <section className="alliance-desk-stats" aria-label="Alliance selection desk counts">
+        <section className="alliance-desk-stats" aria-label="Alliance desk counts">
           <StatTile label="Filled slots" value={formatAllianceSelectionDeskMetric(filledSlots, true)} />
           <StatTile
             label="Conflicts"

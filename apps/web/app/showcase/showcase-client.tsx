@@ -261,7 +261,7 @@ export default function ShowcaseClient({ orgId }: { orgId: string }) {
             type="button"
             onClick={() =>
               void act("create", {
-                title: "Season Impact",
+                title: "Season impact",
                 subtitle: "Student decisions, evidence, and iteration",
               })
             }

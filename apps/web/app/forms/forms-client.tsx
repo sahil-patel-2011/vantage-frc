@@ -235,7 +235,7 @@ export default function FormsClient() {
           soft
           badge={copy ? "Not available" : undefined}
           badgeTone={copy ? "setup" : undefined}
-          title={copy ? copy.title : "Loading forms…"}
+          title={copy ? copy.title : "Opening Forms"}
           description={copy ? copy.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >

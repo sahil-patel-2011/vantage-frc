@@ -2,11 +2,11 @@ import { hubHref } from "../nav/hubs";
 import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Battery Health Forecast (never DEMO IR / EOL metrics). */
+/** Soft-UI related surfaces for Pack health (never DEMO IR / EOL metrics). */
 export const BATTERY_HEALTH_FORECAST_RELATED_LINKS = [
   {
     id: "battery-rotation",
-    label: "Battery Rotation",
+    label: "Charge plan",
     kind: "competition" as const,
     tab: "battery-rotation",
   },
@@ -14,7 +14,7 @@ export const BATTERY_HEALTH_FORECAST_RELATED_LINKS = [
   { id: "pit", label: "Pit Command", kind: "path" as const, path: "/pit" },
   {
     id: "battery-health-forecast",
-    label: "Battery Health Forecast",
+    label: "Pack health",
     kind: "build" as const,
     tab: "battery-health-forecast",
   },
@@ -29,7 +29,7 @@ export type BatteryHealthForecastRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — Battery Rotation / Batteries / Pit first. */
+/** Focused Soft-UI strip — Charge plan / Batteries / Pit first. */
 export const BATTERY_HEALTH_FORECAST_RELATED_INCLUDE: BatteryHealthForecastRelatedId[] = [
   "battery-rotation",
   "batteries",
@@ -37,7 +37,7 @@ export const BATTERY_HEALTH_FORECAST_RELATED_INCLUDE: BatteryHealthForecastRelat
 ];
 
 /**
- * Soft-UI cross-links from Battery Health Forecast → Rotation / Batteries / Pit.
+ * Soft-UI cross-links from Pack health → Rotation / Batteries / Pit.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function batteryHealthForecastRelatedLinks(
@@ -98,12 +98,12 @@ export function batteryHealthForecastSetupSteps(
     {
       id: "workspace",
       label: "Choose your team",
-      detail: "Choose your team to open Battery Health Forecast.",
+      detail: "Choose your team to open Pack health.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
       id: "battery-rotation",
-      label: "Open Battery Rotation",
+      label: "Open Charge plan",
       detail: "Match assignments stay blank until packs exist.",
       href: hubHref("/competition", "battery-rotation", orgId),
     },
@@ -115,7 +115,7 @@ export function batteryHealthForecastSetupSteps(
     },
     {
       id: "pit",
-      label: "Open Pit Command",
+      label: "Open Pit command",
       detail: "Event-day rack status uses the same real pack evidence.",
       href: withOrgHref("/pit", orgId),
     },
@@ -147,7 +147,7 @@ export function shouldShowBatteryHealthForecastSummaryTiles(batteryCount: number
   return batteryCount > 0;
 }
 
-/** Classify Battery Health Forecast Soft-UI shell — never invents DEMO IR / EOL metrics. */
+/** Classify Pack health Soft-UI shell — never invents DEMO IR / EOL metrics. */
 export function classifyBatteryHealthForecastShell(input: {
   loading: boolean;
   fetchFailed?: boolean;
@@ -170,7 +170,7 @@ export function batteryHealthForecastShellCopy(
     case "loading":
       return {
         kind,
-        title: "Loading Battery Health Forecast…",
+        title: "Opening Pack health",
         description:
           "Checking which team you are on and real IR / cycle logs.",
       };
@@ -178,14 +178,14 @@ export function batteryHealthForecastShellCopy(
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Battery Health Forecast",
+        title: "Could not load Pack health",
         description:
-          "A network or server issue blocked the forecast. Retry, or open Battery Rotation / Batteries / Pit while it reloads.",
+          "A network or server issue blocked the forecast. Retry, or open Charge plan / Batteries / Pit while it reloads.",
       };
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Choose your team before projecting retirement from real logs.",
@@ -196,7 +196,7 @@ export function batteryHealthForecastShellCopy(
         badge: "No batteries yet",
         title: "Add a pack before forecasting end-of-life",
         description:
-          "Retirement dates stay blank until you register a pack and log IR + cycle readings. Cross-check Battery Rotation, Batteries, and Pit.",
+          "Retirement dates stay blank until you register a pack and log IR + cycle readings. Cross-check Charge plan, Batteries, and Pit.",
       };
     default:
       return {
@@ -209,8 +209,8 @@ export function batteryHealthForecastShellCopy(
 }
 
 /**
- * Soft-UI next actions for Battery Health Forecast empty/setup shells.
- * Points at Battery Rotation / Batteries / Pit — never invents DEMO IR or EOL metrics.
+ * Soft-UI next actions for Pack health empty/setup shells.
+ * Points at Charge plan / Batteries / Pit — never invents DEMO IR or EOL metrics.
  */
 export function batteryHealthForecastNextActions(input: {
   orgId?: string | null;
@@ -239,14 +239,14 @@ export function batteryHealthForecastNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Battery Health Forecast",
+        label: "Retry Pack health",
         detail: "Reload real IR / cycle forecasts.",
         href: withOrgHref("/battery-health-forecast", orgId),
         primary: true,
       },
       {
         id: "battery-rotation",
-        label: "Open Battery Rotation",
+        label: "Open Charge plan",
         detail: "Charge plans stay available while the forecast reloads.",
         href: hubHref("/competition", "battery-rotation", orgId),
       },
@@ -258,7 +258,7 @@ export function batteryHealthForecastNextActions(input: {
       },
       {
         id: "pit",
-        label: "Open Pit Command",
+        label: "Open Pit command",
         detail: "Pit rack status stays available while the forecast reloads.",
         href: withOrgHref("/pit", orgId),
       },
@@ -276,7 +276,7 @@ export function batteryHealthForecastNextActions(input: {
       },
       {
         id: "battery-rotation",
-        label: "Open Battery Rotation",
+        label: "Open Charge plan",
         detail: "Match assignments stay blank until packs exist.",
         href: hubHref("/competition", "battery-rotation", orgId),
       },
@@ -288,7 +288,7 @@ export function batteryHealthForecastNextActions(input: {
       },
       {
         id: "pit",
-        label: "Open Pit Command",
+        label: "Open Pit command",
         detail: "Event-day rack status uses the same real pack evidence.",
         href: withOrgHref("/pit", orgId),
       },
@@ -342,7 +342,7 @@ export function batteryHealthForecastNextActions(input: {
   actions.push(
     {
       id: "battery-rotation",
-      label: "Open Battery Rotation",
+      label: "Open Charge plan",
       detail: "Schedule which pack runs which match from the same fleet.",
       href: hubHref("/competition", "battery-rotation", orgId),
     },
@@ -354,7 +354,7 @@ export function batteryHealthForecastNextActions(input: {
     },
     {
       id: "pit",
-      label: "Open Pit Command",
+      label: "Open Pit command",
       detail: "Event-day rack status uses the same pack + log evidence.",
       href: withOrgHref("/pit", orgId),
     },

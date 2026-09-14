@@ -199,7 +199,7 @@ export default function MatchChecklistClient(_props: { embedded?: boolean } = {}
             ) : null}
           </EmptyState>
         ) : (
-          <EmptyState soft title="Loading…" description="Checking your team." aria-busy />
+          <EmptyState soft title="Opening Match checklist" description="Checking your team." aria-busy />
         )}
       </main>
     );

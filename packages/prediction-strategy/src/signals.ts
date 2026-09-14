@@ -1,4 +1,5 @@
 import type { TeamOperationalSignal, TeamSeasonSignal } from "./types";
+import { studentCacheSourceLabel } from "./student-copy";
 
 /** TBA / Statbotics-shaped event metric row used to build model inputs (fixtures or Neon cache). */
 export type EventMetricRow = {
@@ -215,14 +216,14 @@ export function buildAllianceMatchup(input: {
   if (redTotalEpa != null && blueTotalEpa != null) {
     const margin = redTotalEpa - blueTotalEpa;
     considerations.push(
-      `Alliance EPA totals (event metrics): red ${round1(redTotalEpa)} vs blue ${round1(blueTotalEpa)} (margin ${round1(margin)}).`,
+      `Alliance rating totals (event metrics): red ${round1(redTotalEpa)} vs blue ${round1(blueTotalEpa)} (margin ${round1(margin)}).`,
     );
   }
   const autoGap =
     sumKnown(red.map((t) => t.autoEpa)) - sumKnown(blue.map((t) => t.autoEpa));
   if (Math.abs(autoGap) >= 2) {
     considerations.push(
-      `Autonomous EPA edge favors ${autoGap > 0 ? "red" : "blue"} by ${round1(Math.abs(autoGap))}.`,
+      `Autonomous rating edge favors ${autoGap > 0 ? "red" : "blue"} by ${round1(Math.abs(autoGap))}.`,
     );
   }
   const scouted = [...red, ...blue].filter((team) => team.scoutSample > 0);
@@ -231,7 +232,7 @@ export function buildAllianceMatchup(input: {
       `Org scouting covers ${scouted.length}/${red.length + blue.length} alliance robots (${scouted.map((t) => t.teamKey).join(", ")}).`,
     );
   } else {
-    considerations.push("No org scout sample on this matchup yet — model uses reference EPA only.");
+    considerations.push("No org scout sample on this matchup yet — model uses season ratings only.");
   }
   const foulHeavy = [...red, ...blue].filter((team) => (team.foulRate ?? 0) >= 1);
   if (foulHeavy.length) {
@@ -313,7 +314,7 @@ export function opponentTendencies(input: {
       if (metric.epaAuto / metric.epaTotal > 0.28) {
         labels.push("autonomous-leaning");
         evidence.push(
-          `${teamKey} auto EPA ${round1(metric.epaAuto)} is ${Math.round((metric.epaAuto / metric.epaTotal) * 100)}% of event EPA (${metric.source ?? "reference"}).`,
+          `${teamKey} auto rating ${round1(metric.epaAuto)} is ${Math.round((metric.epaAuto / metric.epaTotal) * 100)}% of event rating (${studentCacheSourceLabel(metric.source)}).`,
         );
       }
     }
@@ -321,7 +322,7 @@ export function opponentTendencies(input: {
       if (metric.epaEndgame / metric.epaTotal > 0.25) {
         labels.push("endgame-leaning");
         evidence.push(
-          `${teamKey} endgame EPA ${round1(metric.epaEndgame)} from ${metric.source ?? "reference"} metrics.`,
+          `${teamKey} endgame rating ${round1(metric.epaEndgame)} from ${studentCacheSourceLabel(metric.source)} metrics.`,
         );
       }
     }
@@ -468,7 +469,7 @@ export function detectPickDataMode(
       mode: "low_data_tba",
       scoutedTeams: 0,
       teamCount: 0,
-      reason: "No event teams loaded — waiting on TBA/Statbotics sync.",
+      reason: "No event teams loaded — waiting on official match sync.",
     };
   }
   const coverage = scoutedTeams / teamCount;
@@ -477,7 +478,7 @@ export function detectPickDataMode(
       mode: "low_data_tba",
       scoutedTeams,
       teamCount,
-      reason: `Only ${scoutedTeams}/${teamCount} teams have >=${minSample} scout entries — ranking from TBA/Statbotics EPA.`,
+      reason: `Only ${scoutedTeams}/${teamCount} teams have >=${minSample} scout entries — ranking from season ratings.`,
     };
   }
   return { mode: "full", scoutedTeams, teamCount, reason: null };

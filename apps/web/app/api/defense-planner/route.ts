@@ -69,7 +69,7 @@ export async function GET(request: Request) {
         status: "setup_required",
         message: "Could not load the defense planner. Choose your team and confirm database access.",
         steps: [
-          { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
+          { id: "workspace", label: "Choose your team", detail: "Choose which FRC team you are working as.", href: "/workspace" },
         ],
         orgId: null,
         seasonYear: seasonYear ?? currentSeasonYear(),
@@ -167,6 +167,6 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    return failMeteredAi(error, "Defense planner request failed");
+    return failMeteredAi(error, "Defense request failed");
   }
 }

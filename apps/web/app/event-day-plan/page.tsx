@@ -1,7 +1,7 @@
 import EventDayPlanClient from "./event-day-plan-client";
 
 export const metadata = {
-  title: "Event-Day Stress Planner",
+  title: "Day plan",
 };
 
 export default function EventDayPlanPage() {

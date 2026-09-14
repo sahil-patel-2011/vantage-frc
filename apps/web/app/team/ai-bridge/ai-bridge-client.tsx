@@ -3,6 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../../components/offline-banner";
 import { Button, EmptyState, PageHeader } from "../../../components/ui";
+import {
+  PERSONAL_CLAUDE_DESCRIPTION,
+  PERSONAL_CLAUDE_NOT_TEAM,
+  PERSONAL_CLAUDE_PAIR,
+  PERSONAL_CLAUDE_TITLE,
+} from "../../../lib/cad/personal-claude-copy";
 import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
 
@@ -20,6 +26,8 @@ type Device = {
   bridgeVersion: string | null;
   preferWhenOnline: boolean;
   coverage: "chat" | "everything";
+  /** Missing on last-snapshot rows from before 0655 — treat as team. */
+  scope?: "team" | "personal";
   jobsServed: number;
   canManage: boolean;
 };
@@ -86,6 +94,7 @@ export default function AiBridgeClient({
       : (organizations[0]?.id ?? ""),
   );
   const [code, setCode] = useState(initialCode);
+  const [pairScope, setPairScope] = useState<"team" | "personal">("team");
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState<StatusPayload | null>(null);
   const [loading, setLoading] = useState(true);
@@ -177,12 +186,14 @@ export default function AiBridgeClient({
     const response = await fetch("/api/ai-bridge/pair/approve", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ code, orgId }),
+      body: JSON.stringify({ code, orgId, scope: pairScope }),
     });
     const data = (await response.json()) as { machineName?: string; error?: string };
     setMessage(
       response.ok
-        ? `${data.machineName} is paired. Return to that computer — the bridge starts serving once it checks in.`
+        ? pairScope === "personal"
+          ? `${data.machineName} is paired as ${PERSONAL_CLAUDE_TITLE}. Keep Claude Code signed in on that computer — only your turns run through it.`
+          : `${data.machineName} is paired. Return to that computer — the bridge starts serving once it checks in.`
         : (data.error ?? "Pairing approval failed"),
     );
     if (response.ok) {
@@ -259,6 +270,34 @@ export default function AiBridgeClient({
                 <li>Run the bridge app — it prints an 8-character code.</li>
                 <li>Enter that code here. Only approve a code shown on a computer you control.</li>
               </ol>
+              <fieldset className="ai-bridge-coverage">
+                <legend>Who this computer serves</legend>
+                <label className="ai-bridge-toggle">
+                  <input
+                    type="radio"
+                    name="pair-scope"
+                    checked={pairScope === "team"}
+                    onChange={() => setPairScope("team")}
+                  />
+                  Team — shared subscription bridge
+                </label>
+                <label className="ai-bridge-toggle">
+                  <input
+                    type="radio"
+                    name="pair-scope"
+                    checked={pairScope === "personal"}
+                    onChange={() => setPairScope("personal")}
+                  />
+                  {PERSONAL_CLAUDE_TITLE} — only their turns
+                </label>
+                {pairScope === "personal" ? (
+                  <div className="ai-bridge-personal">
+                    <p className="app-muted ai-bridge-meta">{PERSONAL_CLAUDE_DESCRIPTION}</p>
+                    <p className="app-muted ai-bridge-meta">{PERSONAL_CLAUDE_PAIR}</p>
+                    <p className="app-muted ai-bridge-meta">{PERSONAL_CLAUDE_NOT_TEAM}</p>
+                  </div>
+                ) : null}
+              </fieldset>
               <label>
                 Pairing code
                 <input
@@ -296,6 +335,9 @@ export default function AiBridgeClient({
                     <li key={device.id}>
                       <div className="ai-bridge-device-head">
                         <strong>{device.name}</strong>
+                        {device.scope === "personal" ? (
+                          <span className="ai-bridge-dot">{PERSONAL_CLAUDE_TITLE}</span>
+                        ) : null}
                         <span className={device.online ? "ai-bridge-dot online" : "ai-bridge-dot"}>
                           {device.online ? "Online" : "Offline"}
                         </span>
@@ -323,6 +365,32 @@ export default function AiBridgeClient({
                             />
                             Prefer this bridge while it&apos;s online
                           </label>
+                          {device.pairedByMe ? (
+                            <fieldset className="ai-bridge-coverage">
+                              <legend>Who this computer serves</legend>
+                              <label className="ai-bridge-toggle">
+                                <input
+                                  type="radio"
+                                  name={`scope-${device.id}`}
+                                  checked={device.scope !== "personal"}
+                                  onChange={() => void patchDevice(device.id, { scope: "team" })}
+                                />
+                                Team — shared subscription bridge
+                              </label>
+                              <label className="ai-bridge-toggle">
+                                <input
+                                  type="radio"
+                                  name={`scope-${device.id}`}
+                                  checked={device.scope === "personal"}
+                                  onChange={() => void patchDevice(device.id, { scope: "personal" })}
+                                />
+                                {PERSONAL_CLAUDE_TITLE} — only their turns
+                              </label>
+                              {device.scope === "personal" ? (
+                                <p className="app-muted ai-bridge-meta">{PERSONAL_CLAUDE_NOT_TEAM}</p>
+                              ) : null}
+                            </fieldset>
+                          ) : null}
                           <fieldset className="ai-bridge-coverage">
                             <legend>What runs on this subscription</legend>
                             <label className="ai-bridge-toggle">
@@ -398,6 +466,10 @@ export default function AiBridgeClient({
                 {status?.bridgeFeatures?.length ? ` (${status.bridgeFeatures.join(", ")})` : ""}. The pairer can widen
                 that to <strong>Everything</strong> above — then all of Vantage&apos;s AI, including long jobs like season
                 reports and nightly summaries, runs on their subscription while the bridge is online.
+              </li>
+              <li>
+                <strong>{PERSONAL_CLAUDE_TITLE}</strong> is this signed-in person&apos;s computer for their turns only.
+                {` ${PERSONAL_CLAUDE_NOT_TEAM}`}
               </li>
               <li>
                 Prompts for bridged turns include team context and are executed on the pairer&apos;s computer. Revoke the

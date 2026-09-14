@@ -125,10 +125,12 @@ export async function GET(request: Request) {
         canPost: hasWebhook && (connection?.enabled ?? false),
         setupRequired: !hasWebhook,
         message: !configured
-          ? "Link a Slack channel webhook so team chat and Slack stay in sync."
+          ? "No Slack channel link saved for this team yet. Team chat still works in Vantage without Slack."
           : !hasWebhook
-            ? "Paste a valid Slack incoming webhook URL to finish setup."
-            : setup.message,
+            ? "Paste a Slack channel link to finish setup."
+            : connection?.chatBridgeEnabled
+              ? "A Slack channel link is saved and team chat sync is on."
+              : "A Slack channel link is saved. Turn on team chat sync on Slack.",
         channelLabel: connection?.channelLabel ?? null,
         enabled: connection?.enabled ?? false,
         updatedAt: connection?.updatedAt ?? null,
@@ -179,7 +181,7 @@ export async function POST(request: Request) {
 
       if (action === "set-bridge") {
         const existing = await client.query(`SELECT 1 FROM team_slack WHERE org_id=$1`, [orgId]);
-        if (!existing.rowCount) throw new Error("Connect Slack before enabling the chat bridge");
+        if (!existing.rowCount) throw new Error("Connect Slack before turning on team chat sync");
         await client.query(
           `UPDATE team_slack SET chat_bridge_enabled=$2, updated_by=$3, updated_at=now() WHERE org_id=$1`,
           [orgId, Boolean(body.chatBridgeEnabled), current.user.id],
@@ -205,10 +207,10 @@ export async function POST(request: Request) {
         else if (body.webhookUrl?.trim()) {
           webhookUrl = body.webhookUrl.trim();
           if (!isValidSlackWebhook(webhookUrl)) {
-            throw new Error("Enter a Slack incoming webhook URL (hooks.slack.com/services/…)");
+            throw new Error("Paste a Slack channel link");
           }
         }
-        if (!webhookUrl) throw new Error("Provide a Slack incoming webhook URL");
+        if (!webhookUrl) throw new Error("Paste a Slack channel link");
 
         let signingSecret: string | null = existing.rows[0]?.signingSecret ?? null;
         if (body.signingSecret === "") signingSecret = null;
@@ -256,7 +258,7 @@ export async function POST(request: Request) {
         if (!row.rows[0]!.enabled) throw new Error("Slack posting is turned off for this team");
         const webhookUrl = row.rows[0]!.webhookUrl;
         if (!webhookUrl || !isValidSlackWebhook(webhookUrl)) {
-          throw new Error("A valid Slack webhook is required");
+          throw new Error("Paste a Slack channel link");
         }
         const post = await postToSlackWebhook(
           webhookUrl,

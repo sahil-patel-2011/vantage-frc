@@ -161,7 +161,7 @@ export function supportNextActions(input: {
     {
       id: "help",
       label: "App manual",
-      detail: "topics — island, Edit Home, scouting, your own keys, Event Day, credits.",
+      detail: "topics — island, Edit Home, scouting, your own keys, Event day, credits.",
       href: "/docs",
       primary: false,
     },

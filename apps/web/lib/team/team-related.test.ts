@@ -33,7 +33,7 @@ describe("team-related Soft-UI helpers", () => {
       attendance: "People",
       todos: "Work",
       knowledge: "Playbook",
-      fmea: "Failure notes",
+      fmea: "Failure log",
     });
   });
 });

@@ -6,8 +6,8 @@ const WEB = join(__dirname, "..", "..");
 
 /**
  * Leftover student chrome on Scout Accuracy / Data impact / Lineup / Match video
- * that is not skip-list and not in open PRs #2–#38. Related.ts files owned by
- * #33 still say membership-bound until that PR lands its own copy pass.
+ * plus coverage / crossval / disagreements related copy. Do not invent a
+ * last-snapshot here — only drop membership-bound and TBA.
  */
 const FILES = [
   "app/scout-accuracy/scout-accuracy-client.tsx",
@@ -15,6 +15,11 @@ const FILES = [
   "app/scouting/lineup/lineup-client.tsx",
   "lib/scouting/lineup-related.ts",
   "lib/video-rescout-related.ts",
+  "lib/scout-accuracy/scout-accuracy-related.ts",
+  "lib/scout-data-impact/scout-data-impact-related.ts",
+  "lib/scout-coverage-live/scout-coverage-live-related.ts",
+  "lib/scout-crossval/scout-crossval-related.ts",
+  "lib/scout-disagreements/scout-disagreements-related.ts",
 ] as const;
 
 describe("leftover student membership-bound chrome", () => {
@@ -24,6 +29,7 @@ describe("leftover student membership-bound chrome", () => {
       expect(src, rel).not.toMatch(/membership-bound/i);
       expect(src, rel).not.toMatch(/membership IDs/i);
       expect(src, rel).not.toMatch(/pick-desk ready/i);
+      expect(src, rel).not.toMatch(/\bTBA\b/);
     }
   });
 });

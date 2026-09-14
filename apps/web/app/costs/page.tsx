@@ -1,7 +1,7 @@
 import CostsClient from "./costs-client";
 
 export const metadata = {
-  title: "Season Costs",
+  title: "Season costs",
 };
 
 export default function CostsPage() {

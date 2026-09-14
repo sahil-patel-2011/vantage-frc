@@ -15,6 +15,7 @@ import {
   type EngineeringBriefLite,
 } from "./agent-policy";
 import { buildAdaptiveCadContext } from "./agent-policy";
+import { applyDrawingDimensionsToCast, ensureDrawingFirstPlan } from "./drawing-first";
 
 const MAX_AI_PLAN_STEPS = 12;
 
@@ -89,6 +90,8 @@ export function cadAiPlanUserMessage(
     "Do not include shell, network, or file-system tools. Do not claim certified engineering.",
     `Preferred units: ${adaptive.units}. Preferred platform: ${adaptive.platform}.`,
     exportHint,
+    "Start with create_drawing listing controlling millimetres from the brief. Never invent sizes.",
+    "Then create_sketch / create_extrude must copy those same widthMm / heightMm / depthMm — cast the solid from the drawing.",
     "Include a verify_topology (and optionally render_views / create_checkpoint) after geometry mutations.",
     "Keep the plan under 12 steps. Geometry mutations will be approval-gated by the server.",
     "",
@@ -157,5 +160,6 @@ export function parseCadActionPlan(text: string, options: CadAiPlanOptions = {})
     }
   }
 
-  return plan.slice(0, MAX_AI_PLAN_STEPS);
+  const drawingFirst = applyDrawingDimensionsToCast(ensureDrawingFirstPlan(plan));
+  return drawingFirst.slice(0, MAX_AI_PLAN_STEPS);
 }

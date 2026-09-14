@@ -54,7 +54,7 @@ async function persistScoutAssistedCountSnapshot(
     await putFeatureSnapshot("scout-assisted-count", cacheOrg, data);
     if (!orgHint) await putFeatureSnapshot("scout-assisted-count", "_", data);
   } catch {
-    // Live Scout-Assisted Count already painted; IndexedDB is best-effort.
+    // Live Assisted count already painted; IndexedDB is best-effort.
   }
 }
 
@@ -125,17 +125,17 @@ function CountShell({
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Scout-Assisted Count"}
+            {" / Assisted count"}
           </>
         }
-        title="Scout-Assisted Count"
+        title="Assisted count"
         description={description}
       >
         <RelatedStrip orgId={orgId} />
       </PageHeader>
       {children}
       {shell === "loading" ? (
-        <div aria-busy="true" aria-label="Loading Scout-Assisted Count">
+        <div aria-busy="true" aria-label="Opening Assisted count">
           <SoftBlockSkeleton lines={4} />
         </div>
       ) : shell === "error" ? (
@@ -208,7 +208,7 @@ export default function ScoutAssistedCountClient() {
         if (!response.ok || !isScoutAssistedCountView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Scout-Assisted Count. Showing the last copy on this device.");
+            setError("Could not refresh Assisted count. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -222,7 +222,7 @@ export default function ScoutAssistedCountClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Scout-Assisted Count. Showing the last copy on this device.");
+          setError("Could not refresh Assisted count. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -289,7 +289,7 @@ export default function ScoutAssistedCountClient() {
   if (shell === "loading") {
     return (
       <CountShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Scout-Assisted Count" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Assisted count" fromCache={fromCache} cachedAt={cachedAt} />
       </CountShell>
     );
   }
@@ -302,7 +302,7 @@ export default function ScoutAssistedCountClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Scout-Assisted Count" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Assisted count" fromCache={fromCache} cachedAt={cachedAt} />
       </CountShell>
     );
   }
@@ -313,7 +313,7 @@ export default function ScoutAssistedCountClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Scout-Assisted Count" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Assisted count" fromCache={fromCache} cachedAt={cachedAt} />
       </CountShell>
     );
   }
@@ -324,16 +324,16 @@ export default function ScoutAssistedCountClient() {
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Scout-Assisted Count"}
+            {" / Assisted count"}
           </>
         }
-        title="Scout-Assisted Count"
+        title="Assisted count"
         description="Tap a counter during a match instead of typing — every tap is audited. Cross-check Scouting and Forms."
       >
         <RelatedStrip orgId={orgId} />
       </PageHeader>
 
-      <OfflineBanner feature="Scout-Assisted Count" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Assisted count" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

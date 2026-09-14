@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "match-sim",
-  title: "Match Simulator",
+  title: "Match sim",
   route: "/match-sim",
   apiRoute: "/api/match-sim",
   hub: "Competition",

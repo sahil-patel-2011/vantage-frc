@@ -1,7 +1,7 @@
 import MatchCopilotClient from "./match-copilot-client";
 
 export const metadata = {
-  title: "Match Copilot",
+  title: "Briefing",
 };
 
 export default function MatchCopilotPage() {

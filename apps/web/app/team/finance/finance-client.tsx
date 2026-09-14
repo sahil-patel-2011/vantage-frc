@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { Button, PageHeader } from "../../../components/ui";
 import { describeBudgetLine, type BudgetLine } from "../../../lib/finance/budget-vs-actual";
 import { validateBuySheet } from "../../../lib/finance/buy-sheet";
 import { formatSponsorUsd, sponsorPageTotals, teamContributionTotalUsd } from "../../../lib/sponsors/totals";
@@ -183,10 +184,20 @@ export default function FinanceClient({ orgId }: { orgId: string }) {
 
   return (
     <main className="intel-app">
-      <header className="intel-header">
-        <div><span className="eyebrow">VANTAGE / TEAM FINANCE</span><h1>Season budget &amp; purchase requests</h1></div>
-        <nav className="intel-actions"><a href={`/team/sponsors?orgId=${orgId}`}>Sponsors</a><a href={`/team/grants?orgId=${orgId}`}>Grants</a><a href={`/team?orgId=${orgId}`}>Team controls →</a></nav>
-      </header>
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={`/team?orgId=${orgId}`}>Team</a>
+            {" / Finance"}
+          </>
+        }
+        title="Season budget & purchase requests"
+      >
+        <nav className="product-hub-related" aria-label="Related money tools">
+          <Button as="a" variant="secondary" href={`/team/sponsors?orgId=${orgId}`}>Sponsors</Button>
+          <Button as="a" variant="secondary" href={`/team/grants?orgId=${orgId}`}>Grants</Button>
+        </nav>
+      </PageHeader>
       {message && <p className="telemetry-status">{message}</p>}
       <section className="metric-grid">
         <article><span>Raised this season</span><strong>${totals.totalIncome.toLocaleString()}</strong></article>
@@ -224,7 +235,7 @@ export default function FinanceClient({ orgId }: { orgId: string }) {
             <label>Season total ($)<input type="number" min="0" step="0.01" value={budgetForm.totalLimitUsd} onChange={(e) => setBudgetForm({ ...budgetForm, totalLimitUsd: e.target.value })} /></label>
           </div>
           <label>Notes<input value={budgetForm.notes} onChange={(e) => setBudgetForm({ ...budgetForm, notes: e.target.value })} /></label>
-          <button className="primary-action">Save category budget</button>
+          <Button type="submit" variant="primary">Save category budget</Button>
         </form>
         <section className="intel-panel">
           <span className="eyebrow">CATEGORY BUDGETS — {seasonYear}</span>
@@ -275,7 +286,7 @@ export default function FinanceClient({ orgId }: { orgId: string }) {
           </label>
           <label>Why<input required value={requestForm.justification} onChange={(e) => setRequestForm({ ...requestForm, justification: e.target.value })} /></label>
           <label>When <small>needed by, optional</small><input type="date" value={requestForm.neededBy} onChange={(e) => setRequestForm({ ...requestForm, neededBy: e.target.value })} /></label>
-          <button className="primary-action">Submit request</button>
+          <Button type="submit" variant="primary">Submit request</Button>
         </form>
         <section className="intel-panel invite-list">
           <span className="eyebrow">PURCHASE REQUESTS</span>
