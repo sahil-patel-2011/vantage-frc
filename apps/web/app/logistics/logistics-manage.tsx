@@ -123,6 +123,7 @@ export function LogisticsManagePanel({
       <Panel>
         <h2>Emergency contacts (edit)</h2>
         <form
+          id="log-add-contact"
           className="log-grid-form"
           onSubmit={(e) => {
             e.preventDefault();

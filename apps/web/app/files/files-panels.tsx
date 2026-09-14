@@ -153,7 +153,13 @@ export function Body(props: BodyProps) {
               : "Upload something into My files or Team files and it will show up here."
           }
           soft
-        />
+        >
+          {rail === "trash" ? null : (
+            <Button as="a" variant="primary" href="#drive-upload">
+              Upload files
+            </Button>
+          )}
+        </EmptyState>
       );
     }
     return (
@@ -251,7 +257,11 @@ export function Body(props: BodyProps) {
               : "Drop a file here or use Upload files. Everyone on the team will be able to open it."
           }
           soft
-        />
+        >
+          <Button as="a" variant="primary" href="#drive-upload">
+            Upload files
+          </Button>
+        </EmptyState>
       ) : (
         <>
           {listing.folders.length > 0 ? (
