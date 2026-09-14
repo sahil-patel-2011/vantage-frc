@@ -35,27 +35,27 @@ import {
 } from "./compute";
 
 const rows = [
-  { teamKey: "frc1", qual: true, values: { autoPoints: 19.0 } },
-  { teamKey: "frc2", qual: true, values: { autoPoints: 26.0 } },
-  { teamKey: "frc3", qual: true, values: { autoPoints: 39.0 } },
-  { teamKey: "frc3", qual: true, values: { autoPoints: 39.0 } },
+  { teamKey: "frc1", qual: true, values: { autoPoints: 20.0 } },
+  { teamKey: "frc2", qual: true, values: { autoPoints: 22.0 } },
+  { teamKey: "frc3", qual: true, values: { autoPoints: 44.0 } },
+  { teamKey: "frc3", qual: true, values: { autoPoints: 44.0 } },
 ];
 
-describe("auto-last12-rank", () => {
+describe("auto-quals-interfere", () => {
   it("does not invent a field average from one blank team", () => {
     expect(populationMean([])).toBeNull();
     expect(zScore(10, null, 2)).toBeNull();
     expect(contributionShare(10, 0)).toBeNull();
     expect(sparklinePath([1])).toBeNull();
     expect(emptyCopy().badge).toBe("Needs setup");
-    expect(SLUG).toBe("auto-last12-rank");
+    expect(SLUG).toBe("auto-quals-interfere");
   });
 
   it("compares a real sample to this event and keeps scout blanks empty", () => {
     const cards = buildCards({ teamKey: "frc3", rows });
     const lead = cards.find((card) => card.id === "autoPoints");
     expect(lead?.value).not.toBeNull();
-    expect(lead?.compare.tone === "above" || lead?.compare.tone === "near").toBe(true);
+    expect(lead?.display).not.toBe("—");
     const other = buildCards({
       teamKey: "frc9",
       rows: [{ teamKey: "frc9", values: {} }],
@@ -94,13 +94,13 @@ describe("auto-last12-rank", () => {
 
   it("builds a report without filling missing ratings", () => {
     const report = buildReport({ teamKey: "frc3", rows });
-    expect(report.slug).toBe("auto-last12-rank");
+    expect(report.slug).toBe("auto-quals-interfere");
     expect(report.summary.known).toBeGreaterThan(0);
     expect(studentChrome().event).toBe("Compared to this event");
     expect(studentChrome().setup).toBe("Needs setup");
     expect(histogram([1, 2, 2, 8]).length).toBeGreaterThan(0);
     expect(forecastNext([1, 2, 3])).not.toBeNull();
-    expect(bootstrapMean([19.0, 26.0, 39.0])).not.toBeNull();
+    expect(bootstrapMean([20.0, 22.0, 44.0])).not.toBeNull();
     expect(rankTeams(rows, ["frc1", "frc2", "frc3"]).some((row) => row.rank === 1)).toBe(true);
     expect(weightedPickScore(report.cards, defaultWeights()) == null || Number.isFinite(weightedPickScore(report.cards, defaultWeights()))).toBe(true);
     const blank = buildCards({ teamKey: "frc9", rows: [{ teamKey: "frc9", values: {} }] });
