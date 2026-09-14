@@ -186,7 +186,7 @@ export function scoutingHeatSignalsNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before logging trends.",
+          detail: "Choose your team before logging trends.",
           href: "/workspace",
           primary: true,
         },
