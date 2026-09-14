@@ -11,6 +11,7 @@ import {
   MARKETING_STUDENT_PATH,
   MARKETING_TRUST,
 } from "../../lib/marketing/product-story";
+import { MARKETING_APP_FRAMES, ProductFrame } from "./app-frames";
 import { MIcon } from "./marketing-icons";
 
 export function HomeShowcase() {
@@ -57,6 +58,25 @@ export function HomeShowcase() {
               </li>
             ))}
           </ol>
+        </div>
+      </section>
+
+      <section className="lux-pillars mk-app-gallery" aria-labelledby="lux-app-frames">
+        <div className="lux-content">
+          <header className="lux-section-head" data-reveal>
+            <p className="lux-eyebrow">Inside the app</p>
+            <h2 id="lux-app-frames">The windows a student opens after they sign in.</h2>
+            <p>Kickoff, scouting, Learn CAD, and Ask AI — scores stay blank until real data exists.</p>
+          </header>
+          <ul className="mk-app-gallery-grid" data-reveal>
+            {MARKETING_APP_FRAMES.map((frame) => (
+              <li key={frame.id}>
+                <ProductFrame id={frame.id} />
+                <strong>{frame.title}</strong>
+                <span>{frame.copy}</span>
+              </li>
+            ))}
+          </ul>
         </div>
       </section>
 

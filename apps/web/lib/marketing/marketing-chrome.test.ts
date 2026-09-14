@@ -28,7 +28,23 @@ describe("marketing chrome", () => {
     const showcase = src("components/marketing/home-showcase.tsx");
     expect(showcase).not.toMatch(/mk-tag/);
     expect(showcase).toMatch(/MARKETING_STUDENT_PATH/);
+    expect(showcase).toMatch(/ProductFrame/);
+    expect(showcase).toMatch(/MARKETING_APP_FRAMES/);
     expect(showcase).not.toMatch(/\b\d{2,}%\b|\b\d{3,}\s+teams\b/i);
+  });
+
+  it("hero and product frames show the real Kickoff brief, not a Good-evening mock", () => {
+    const frames = src("components/marketing/app-frames.tsx");
+    const hero = src("components/marketing/hero-product.tsx");
+    expect(hero).toMatch(/export \{ HeroProductPanel \} from "\.\/app-frames"/);
+    expect(frames).toMatch(/computeGameBrief/);
+    expect(frames).toMatch(/gameBriefStatusBadge/);
+    expect(frames).toMatch(/Ask about this game/);
+    expect(frames).toMatch(/Needs setup/);
+    expect(frames).toMatch(/Connect Claude Code/);
+    expect(frames).toMatch(/CAD Video Tutor/);
+    expect(frames).not.toMatch(/Good evening/);
+    expect(frames).not.toMatch(/\b\d{2,}%\b|\b\d{3,}\s+teams\b/i);
   });
 
   it("pricing and for-teams keep one hero primary and point leftover to waitlist or sign-in", () => {
