@@ -133,6 +133,7 @@ function MatchRow({
     blue: match.blue.map(stripFrc).join(","),
   });
   const predictHref = withOrgHref(`/match-sim?${predictQuery.toString()}`, orgId);
+  const reportsHref = withOrgHref("/scouting#recent-entries", orgId);
 
   return (
     <li className={rowClass}>
@@ -167,6 +168,11 @@ function MatchRow({
         {!scored ? (
           <Button as="a" variant="ghost" size="sm" href={predictHref} className="sched-predict">
             Predict
+          </Button>
+        ) : null}
+        {match.scoutCount > 0 ? (
+          <Button as="a" variant="ghost" size="sm" href={reportsHref}>
+            View report
           </Button>
         ) : null}
       </div>

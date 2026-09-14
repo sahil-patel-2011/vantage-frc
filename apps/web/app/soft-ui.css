@@ -2362,6 +2362,14 @@ body.has-app-shell .strategy-demo-optin{
 .scout-entry-list,.scout-conflict-list,.intel-findings,.intel-similar,.intel-trajectory,.intel-h2h{margin:0;padding:0;list-style:none;display:grid;gap:10px}
 .scout-entry-list li,.intel-findings li{display:grid;gap:4px;padding-top:10px;border-top:1px solid var(--line)}
 .scout-entry-list li:first-child,.intel-findings li:first-child{border-top:0;padding-top:0}
+.scout-report-open{display:grid;gap:4px;text-align:left;width:100%}
+.scout-report-viewer{display:grid;gap:10px;padding-top:8px}
+.scout-report-tabs{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
+.scout-report-tabs h3{margin:0 0 6px;font-size:13px}
+.scout-report-tabs dl,.scout-report-tabs ol{margin:0;padding:0;display:grid;gap:6px}
+.scout-report-tabs dl div{display:flex;justify-content:space-between;gap:10px}
+.scout-report-tabs ol{list-style:none}
+.scout-report-tabs li{display:flex;gap:10px}
 .scout-conflicts-heading{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
 .scout-conflicts-heading h2{margin:0 0 4px}
 .scout-conflicts-heading p{margin:0;max-width:42rem}
