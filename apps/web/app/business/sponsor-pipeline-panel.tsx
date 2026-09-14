@@ -219,7 +219,7 @@ export function SponsorPipelinePanel({
       {!activeSponsors.length ? (
         <EmptyState
           soft
-          badge={view.canManageFinance ? "Get started" : "Setup"}
+          badge={view.canManageFinance ? "Get started" : "Needs setup"}
           badgeTone={view.canManageFinance ? "" : "setup"}
           title={view.canManageFinance ? "No sponsors yet" : "Sponsor list is empty"}
           description={
