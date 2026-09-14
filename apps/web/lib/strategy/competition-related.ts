@@ -179,5 +179,5 @@ export function pickSurfaceSetupMessage(ctx: StrategySetupContext): string {
   if (ctx.hasMetrics === false) {
     return "No team numbers for this event yet. Sync under Team → Data before ranking picks.";
   }
-  return "Finish setup so this page can use your event.";
+  return "Choose your team so this page can use your event.";
 }
