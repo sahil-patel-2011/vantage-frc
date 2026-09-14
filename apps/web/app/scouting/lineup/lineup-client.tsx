@@ -26,6 +26,7 @@ import { hubHref } from "../../../lib/nav/hubs";
 import { withOrgHref } from "../../../lib/nav/product-nav";
 import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
+import { AssignmentRangeForm } from "./assignment-range-form";
 import "./lineup.css";
 
 type CoverageScout = {
@@ -524,6 +525,16 @@ export default function LineupClient({ orgId }: { orgId: string }) {
         ) : null}
         <span className="app-muted">{view.eventKey}</span>
       </section>
+
+      {view.canAssign ? (
+        <AssignmentRangeForm
+          matchKeys={view.slots}
+          scouts={view.scouts}
+          qualsOnly={qualsOnly}
+          busy={busy}
+          onAssign={(payload) => void mutate(payload)}
+        />
+      ) : null}
 
       {view.schemaRoles.warnings.length ? (
         <section className="lineup-panel" aria-label="Form to strategy mapping">

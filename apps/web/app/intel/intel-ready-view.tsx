@@ -10,6 +10,14 @@ import {
   type IntelScoutNote,
 } from "../../lib/intel/intel-related";
 import { IntelNextActionsPanel } from "./intel-chrome";
+import { IntelLookupBoard } from "./intel-lookup-board";
+import { IntelLookupNotes } from "./intel-lookup-notes";
+import {
+  fieldStatsFromEventRows,
+  scoutAveragesFromPayloads,
+  type EventRatingRow,
+} from "../../lib/intel/lovat-lookup";
+import type { LookupNote } from "../../lib/intel/lookup-notes";
 
 export type IntelSearchTeam = {
   teamKey: string;
@@ -139,6 +147,9 @@ export function IntelReadyView({
   onCompare,
   onPickNameChange,
   onSavePick,
+  fieldRatings,
+  lookupNote,
+  onSaveNote,
   onSelectSimilar,
 }: {
   intel: IntelDetail;
@@ -161,8 +172,22 @@ export function IntelReadyView({
   onPickNameChange: (value: string) => void;
   onSavePick: () => void;
   onSelectSimilar: (teamNumber: number) => void;
+  fieldRatings?: EventRatingRow[];
+  lookupNote?: LookupNote | null;
+  onSaveNote?: (body: string) => void;
 }) {
   const metric = intel.metrics[0];
+  const eventRow =
+    fieldRatings?.find((row) => row.teamKey === intel.team.teamKey) ??
+    (metric
+      ? {
+          teamKey: intel.team.teamKey,
+          epaTotal: metric.epaTotal,
+          epaAuto: metric.epaAuto,
+          epaTeleop: metric.epaTeleop,
+          epaEndgame: metric.epaEndgame,
+        }
+      : null);
   const findingCount = intel.findings.length;
   const noteLines = intelScoutNoteLines(scoutNotes);
   const eventLabel = activeEvent?.eventName?.trim() || activeEvent?.eventKey || null;
@@ -195,6 +220,21 @@ export function IntelReadyView({
           <span className="app-badge">Brief</span>
           <p style={{ margin: "10px 0 0" }}>{summary}</p>
         </Panel>
+      ) : null}
+
+      <IntelLookupBoard
+        teamKey={intel.team.teamKey}
+        event={eventRow}
+        field={fieldStatsFromEventRows(fieldRatings ?? [])}
+        scout={scoutAveragesFromPayloads(
+          intel.team.teamKey,
+          scoutNotes.map((note) => note.payload),
+        )}
+        history={intel.trajectory.map((point) => point.epa)}
+      />
+
+      {lookupNote && onSaveNote ? (
+        <IntelLookupNotes note={lookupNote} busy={submitting} onSave={onSaveNote} />
       ) : null}
 
       <section className="intel-metric-grid" aria-label="Season scores">

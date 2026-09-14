@@ -166,6 +166,9 @@
   .lineup-gap-list a{grid-row:auto}
 }
 
+.lineup-range{display:grid;gap:10px;margin:0 0 14px}
+.lineup-range-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(10rem,1fr));gap:10px}
+
 @media print{
   .lineup-page .lineup-related,.lineup-page .lineup-header-meta .app-button,.lineup-page .lineup-next-actions,.lineup-page .lineup-assign{display:none!important}
   .lineup-page{max-width:none!important;padding:0!important}

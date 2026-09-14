@@ -9,11 +9,12 @@ import {
   planAutoAssignments,
   swapCoverageSlot,
 } from "../../../../lib/scouting/coverage";
+import { expandAssignmentRange } from "../../../../lib/scouting/assignment-range";
 import { loadWatchlistTeamKeys } from "../../../../lib/watchlist";
 import { isScoutForbidden, scoutForbiddenResponse } from "../../../../lib/scout-org-access";
 import { eventKeyFromMatchKey } from "../../../../lib/webhooks/tba-messages";
 
-const WRITE_ACTIONS = new Set(["assign", "swap", "auto-assign"]);
+const WRITE_ACTIONS = new Set(["assign", "swap", "auto-assign", "assign-range"]);
 
 function noStore(body: unknown, status = 200) {
   return Response.json(body, {
@@ -111,6 +112,33 @@ export async function POST(request: Request) {
           teamKey,
           userId: typeof body.userId === "string" ? body.userId : session.user.id,
         });
+      } else if (action === "assign-range") {
+        const preview = await computeScoutingCoverageView(client, {
+          userId: session.user.id,
+          requestedOrg: orgId,
+          priorityTeamKeys,
+          qualsOnly: qualsOnlyOf(body.qualsOnly),
+        });
+        const boardKeys = preview.status === "live" ? preview.slots.map((slot) => slot.matchKey) : [];
+        const range = expandAssignmentRange({
+          firstMatchKey: typeof body.firstMatchKey === "string" ? body.firstMatchKey : "",
+          lastMatchKey: typeof body.lastMatchKey === "string" ? body.lastMatchKey : "",
+          teamKey,
+          matchKeys: boardKeys,
+          qualsOnly: qualsOnlyOf(body.qualsOnly),
+        });
+        if (!range.ok) {
+          throw Object.assign(new Error(range.error), { status: 400 });
+        }
+        for (const slot of range.slots) {
+          await assignCoverageSlot(client, {
+            orgId,
+            eventKey: eventKey || eventKeyFromMatchKey(slot.matchKey) || "",
+            matchKey: slot.matchKey,
+            teamKey: slot.teamKey,
+            userId: typeof body.userId === "string" ? body.userId : session.user.id,
+          });
+        }
       } else if (action === "swap") {
         await swapCoverageSlot(client, {
           orgId,
