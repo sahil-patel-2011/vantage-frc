@@ -47,7 +47,7 @@ function setupSteps(orgId: string | null): WatchlistSetupStep[] {
     },
     {
       id: "epa-trend-alerts",
-      label: "Open EPA Trend Alerts",
+      label: "Open Rating alerts",
       detail: "EPA swings stay blank until you watch real teams.",
       href: hubHref("/competition", "epa-trend-alerts", orgId),
     },
