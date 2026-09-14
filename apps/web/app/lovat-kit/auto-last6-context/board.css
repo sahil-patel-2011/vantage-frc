@@ -1,0 +1,27 @@
+.lk-auto-last6-context-board{display:grid;gap:12px;margin:4px 0 8px}
+.lk-auto-last6-context-board header h3{margin:0 0 4px}
+.lk-auto-last6-context-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr));gap:10px}
+.lk-auto-last6-context-tile{display:grid;gap:4px;padding:12px}
+.lk-auto-last6-context-tile strong{font-size:1.35rem;letter-spacing:-0.03em}
+.lk-auto-last6-context-tile em{font-style:normal;font-size:11px}
+.lk-auto-last6-context-spark{width:72px;height:28px;color:var(--accent)}
+.lk-auto-last6-context-vs{font-size:11px}
+.lk-auto-last6-context-vs-above{color:var(--good,#1b7f4e)}
+.lk-auto-last6-context-vs-below{color:var(--warn,#9a5b12)}
+.lk-auto-last6-context-vs-near,.lk-auto-last6-context-vs-unknown{color:var(--muted)}
+
+.lk-auto-last6-context-deep{display:grid;gap:12px;margin-top:8px}
+.lk-auto-last6-context-meters{display:grid;grid-template-columns:repeat(auto-fit,minmax(8.5rem,1fr));gap:8px;margin:0;padding:0;list-style:none}
+.lk-auto-last6-context-meter{display:grid;gap:2px;padding:8px 10px;border:1px solid var(--border,rgba(0,0,0,.08));border-radius:10px}
+.lk-auto-last6-context-split{display:grid;grid-template-columns:repeat(auto-fit,minmax(14rem,1fr));gap:10px}
+.lk-auto-last6-context-panel h4{margin:0 0 8px;font-size:13px}
+.lk-auto-last6-context-zones,.lk-auto-last6-context-colley,.lk-auto-last6-context-residual,.lk-auto-last6-context-pareto,.lk-auto-last6-context-setup{margin:0;padding:0;list-style:none;display:grid;gap:6px}
+.lk-auto-last6-context-zone{display:grid;grid-template-columns:7rem 1fr;gap:8px;align-items:center;font-size:12px}
+.lk-auto-last6-context-bar{display:block;height:8px;border-radius:999px;background:var(--accent,#3d6)}
+.lk-auto-last6-context-page{padding-bottom:24px}
+
+.lk-auto-last6-context-wide{display:grid;gap:12px;margin-top:10px}
+.lk-auto-last6-context-wide-meters{display:grid;grid-template-columns:repeat(auto-fit,minmax(8.5rem,1fr));gap:8px;margin:0;padding:0;list-style:none}
+.lk-auto-last6-context-slots,.lk-auto-last6-context-scouts{margin:0;padding-left:1.1rem;display:grid;gap:4px;font-size:12px}
+
+.lk-auto-last6-context-lovat{display:grid;gap:12px;margin-top:12px}
