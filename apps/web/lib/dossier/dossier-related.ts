@@ -187,7 +187,7 @@ export function dossierShellCopy(kind: DossierShellKind): DossierEmptyCopy {
         kind: "ready",
         title: "Season team dossier",
         description:
-          "Cited TBA / Statbotics / org-scout facts only. Verify before locking picks.",
+          "Cited Team Data and scout facts only. Verify before locking picks.",
       };
   }
 }
