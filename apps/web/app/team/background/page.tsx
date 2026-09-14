@@ -23,7 +23,7 @@ export default async function TeamBackgroundPage({
         <TeamOpsNav active="admin" />
         <EmptyState
           soft
-          badge="Setup"
+          badge="Needs setup"
           badgeTone="setup"
           title="Choose your team"
           description="Open Team background from Team admin so the team is included."

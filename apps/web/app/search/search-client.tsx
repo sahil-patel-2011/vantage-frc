@@ -330,7 +330,7 @@ export default function SearchClient() {
 
       {view?.status === "setup_required" ? (
         <EmptyState
-          badge="Setup"
+          badge="Needs setup"
           badgeTone="setup"
           title="Choose your team"
           description={view.message}

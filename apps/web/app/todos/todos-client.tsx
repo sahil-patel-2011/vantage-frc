@@ -326,8 +326,8 @@ export default function TodosClient({ embedded = false }: { embedded?: boolean }
       {failure ? (
         <EmptyState
           soft
-          badge="Setup"
-          badgeTone="setup"
+          badge={failure.kind === "setup" ? "Needs setup" : undefined}
+          badgeTone={failure.kind === "setup" ? "setup" : undefined}
           title={failure.title}
           description={failure.description}
         >
