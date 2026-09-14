@@ -333,7 +333,7 @@ export function scoutAccuracyNextActions(input: {
       {
         id: "scouting",
         label: "Log scout entries",
-        detail: "Accuracy stays blank until membership-bound match rows exist.",
+        detail: "Accuracy stays blank until signed-in scout match rows exist.",
         href: hubHref("/competition", "scouting", orgId),
         primary: true,
       },
@@ -375,7 +375,7 @@ export function scoutAccuracyNextActions(input: {
     {
       id: "scouting",
       label: "Open Scouting",
-      detail: "Keep logging membership-bound match rows for fresher ranks.",
+      detail: "Keep logging signed-in scout match rows for fresher ranks.",
       href: hubHref("/competition", "scouting", orgId),
     },
     {
