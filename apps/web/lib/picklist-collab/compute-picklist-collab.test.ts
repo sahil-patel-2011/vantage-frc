@@ -131,6 +131,7 @@ describe("computePicklistCollabView", () => {
     expect(view.entries[0]?.weightedScore).toBe(3);
     expect(view.entries[0]?.averageRankSuggestion).toBeCloseTo(1.33, 1);
     expect(view.entries[1]?.weightedScore).toBe(1);
+    expect(view.fieldStats).toEqual({});
   });
 
   it("shows no EPA role when the event has no cached metrics — never a fabricated one", async () => {

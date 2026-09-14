@@ -22,6 +22,7 @@ import {
   type PickListEntry,
   type PickListSnapshot,
 } from "../picklist";
+import { fieldStatsFromRows, type FieldStats, type TeamMetricRow } from "@vantage/prediction-strategy";
 import { classifyEpaRole, fieldEpaBenchmarks, sortEntriesForDisplay, summarizePicklistCollab } from ".";
 import type {
   PicklistCollabEntry,
@@ -54,6 +55,8 @@ export type PicklistCollabView =
       activeList: PicklistCollabList | null;
       entries: PicklistCollabEntry[];
       summary: PicklistCollabSummary;
+      /** Event-wide field stats for slider ranking. Empty when fewer than two teams have ratings. */
+      fieldStats?: FieldStats;
       computedAt: string;
     };
 
@@ -145,20 +148,26 @@ async function loadEventEpa(
   client: PoolClient,
   eventKey: string,
 ): Promise<{
-  byTeam: Map<number, { epaTotal: number | null; epaAuto: number | null; epaTeleop: number | null }>;
+  byTeam: Map<
+    number,
+    { epaTotal: number | null; epaAuto: number | null; epaTeleop: number | null; epaEndgame: number | null }
+  >;
   bench: { median: number; p75: number } | null;
+  fieldStats: FieldStats;
 }> {
   const result = await client.query<{
     teamKey: string;
     epaTotal: number | null;
     epaAuto: number | null;
     epaTeleop: number | null;
+    epaEndgame: number | null;
   }>(
     `SELECT DISTINCT ON (m.team_key)
         m.team_key AS "teamKey",
         m.epa_total AS "epaTotal",
         m.epa_auto AS "epaAuto",
-        m.epa_teleop AS "epaTeleop"
+        m.epa_teleop AS "epaTeleop",
+        m.epa_endgame AS "epaEndgame"
      FROM team_event_metrics m
      WHERE m.event_key = $1::text
      ORDER BY m.team_key,
@@ -167,8 +176,12 @@ async function loadEventEpa(
     [eventKey],
   );
 
-  const byTeam = new Map<number, { epaTotal: number | null; epaAuto: number | null; epaTeleop: number | null }>();
+  const byTeam = new Map<
+    number,
+    { epaTotal: number | null; epaAuto: number | null; epaTeleop: number | null; epaEndgame: number | null }
+  >();
   const fieldTotals: number[] = [];
+  const metricRows: TeamMetricRow[] = [];
   for (const row of result.rows) {
     if (row.epaTotal != null && Number.isFinite(row.epaTotal)) fieldTotals.push(row.epaTotal);
     const teamNumber = teamNumberFromKey(row.teamKey);
@@ -177,9 +190,19 @@ async function loadEventEpa(
       epaTotal: row.epaTotal,
       epaAuto: row.epaAuto,
       epaTeleop: row.epaTeleop,
+      epaEndgame: row.epaEndgame,
+    });
+    metricRows.push({
+      teamKey: row.teamKey,
+      values: {
+        totalPoints: row.epaTotal,
+        autoPoints: row.epaAuto,
+        teleopPoints: row.epaTeleop,
+        endgameClimb: row.epaEndgame,
+      },
     });
   }
-  return { byTeam, bench: fieldEpaBenchmarks(fieldTotals) };
+  return { byTeam, bench: fieldEpaBenchmarks(fieldTotals), fieldStats: fieldStatsFromRows(metricRows) };
 }
 
 function projectEntries(
@@ -206,6 +229,7 @@ function projectEntries(
       epaTotal: metrics?.epaTotal ?? null,
       epaAuto: metrics?.epaAuto ?? null,
       epaTeleop: metrics?.epaTeleop ?? null,
+      epaEndgame: metrics?.epaEndgame ?? null,
       epaRole: classifyEpaRole({
         epaTotal: metrics?.epaTotal ?? null,
         epaAuto: metrics?.epaAuto ?? null,
@@ -262,6 +286,7 @@ export async function computePicklistCollabView(
     activeList,
     entries: sortEntriesForDisplay(entries),
     summary: summarizePicklistCollab(entries),
+    fieldStats: epa.fieldStats,
     computedAt: new Date().toISOString(),
   };
 }

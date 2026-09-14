@@ -36,6 +36,30 @@ export type {
   TeamScoreFeatures,
 } from "./calibrated-score";
 export {
+  PICKLIST_METRICS,
+  PICKLIST_METRIC_IDS,
+  defaultPicklistWeights,
+  fieldStatsFromRows,
+  finiteValues,
+  picklistMetricLabel,
+  populationMean,
+  populationStdDev,
+  rankByWeightedZScores,
+  scoreTeamAgainstField,
+  zScore,
+} from "./zscore-picklist";
+export type {
+  FieldStat,
+  FieldStats,
+  MetricWeight,
+  PicklistMetricDef,
+  PicklistMetricId,
+  PicklistMetricSource,
+  PicklistScoreBreakdown,
+  RankedPicklistTeam,
+  TeamMetricRow,
+} from "./zscore-picklist";
+export {
   PLAN_TO_ENGINE_ID,
   normalizePlanCode,
   selectStrategyEngine,
