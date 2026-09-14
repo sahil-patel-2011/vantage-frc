@@ -155,4 +155,4 @@
 
 Team admin: `/team/admin`. Redirects: `apps/web/next.config.ts`.
 
-Cross-feature AI: `scouting.team` returns TBA-trusted payloads plus `trustedLabeled` / `fieldCatalog` from published custom schemas; `scouting.schema` exposes the form-builder catalog to strategy/CAD/kickoff/chat. Fields stay blank until a published schema exists.
+Cross-feature AI: `scouting.team` returns Team Data payloads plus `trustedLabeled` / `fieldCatalog` from published custom schemas; `scouting.schema` exposes the form-builder catalog to strategy/CAD/kickoff/chat. Fields stay blank until a published schema exists.
