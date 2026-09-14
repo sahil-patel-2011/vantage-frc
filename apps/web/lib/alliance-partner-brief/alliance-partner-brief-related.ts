@@ -157,7 +157,7 @@ export function alliancePartnerBriefNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before generating roles.",
+          detail: "Choose your team before generating roles.",
           href: "/workspace",
           primary: true,
         },
