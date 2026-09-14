@@ -1,0 +1,11 @@
+.lk-auto-quals-consistency-board{display:grid;gap:12px;margin:4px 0 8px}
+.lk-auto-quals-consistency-board header h3{margin:0 0 4px}
+.lk-auto-quals-consistency-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr));gap:10px}
+.lk-auto-quals-consistency-tile{display:grid;gap:4px;padding:12px}
+.lk-auto-quals-consistency-tile strong{font-size:1.35rem;letter-spacing:-0.03em}
+.lk-auto-quals-consistency-tile em{font-style:normal;font-size:11px}
+.lk-auto-quals-consistency-spark{width:72px;height:28px;color:var(--accent)}
+.lk-auto-quals-consistency-vs{font-size:11px}
+.lk-auto-quals-consistency-vs-above{color:var(--good,#1b7f4e)}
+.lk-auto-quals-consistency-vs-below{color:var(--warn,#9a5b12)}
+.lk-auto-quals-consistency-vs-near,.lk-auto-quals-consistency-vs-unknown{color:var(--muted)}
