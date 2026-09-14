@@ -177,17 +177,9 @@ function SpareForecastShell({
           <Button as="a" variant="primary" href={inventoryHref}>Open Inventory</Button>
         ) : null}
         {shell === "no_risk" ? (
-          <>
-            <Button as="a" variant="primary" href={hubHref("/build", "fmea", orgId)}>
-              Open FMEA
-            </Button>
-            <Button as="a" variant="secondary" href={subsystemsHref}>
-              Open Subsystems
-            </Button>
-            <Button as="a" variant="secondary" href={ordersHref}>
-              Open Orders
-            </Button>
-          </>
+          <Button as="a" variant="primary" href={hubHref("/build", "fmea", orgId)}>
+            Open FMEA
+          </Button>
         ) : null}
       </EmptyState>
       {shell === "ready" ? <SpareForecastNextActionsPanel actions={actions} /> : null}
@@ -303,24 +295,8 @@ export default function SpareForecastClient() {
     purchaseRequestCount,
     seasonHorizon: view?.status === "live" ? view.seasonHorizon : undefined,
   });
-  // FMEA, Orders and Subsystems appeared three times on one screen: the header
-  // strip, the Next actions list, and the empty-state buttons. Next actions is
-  // the copy that says *why* to go, so it wins; the strip keeps whatever it is
-  // not already offering, and the empty state offers none of them.
+  // Header strip drops destinations the Next-actions panel already offers.
   const nextActionHrefs = new Set(nextActions.map((action) => action.href));
-  /** Drop any button whose destination the Next actions panel already offers. */
-  const shellActions = (buttons: Array<{ href: string; label: string; primary?: boolean }>) =>
-    buttons
-      .filter((button) => !nextActionHrefs.has(button.href))
-      .map((button, index) => (
-        <a
-          key={button.href}
-          className={button.primary || index === 0 ? "app-button" : "app-button secondary"}
-          href={button.href}
-        >
-          {button.label}
-        </a>
-      ));
   const relatedLinks = spareForecastRelatedLinks(orgId, {
     include: [...SPARE_FORECAST_RELATED_INCLUDE],
   }).filter((link) => !nextActionHrefs.has(link.href));
@@ -467,11 +443,9 @@ export default function SpareForecastClient() {
         >
           {/* Only what Next actions is not already offering — this empty state
               used to repeat all three of them a scroll below the panel. */}
-          {shellActions([
-            { href: inventoryHref, label: "Open Inventory", primary: true },
-            { href: subsystemsHref, label: "Open Subsystems" },
-            { href: batteriesHref, label: "Open Batteries" },
-          ])}
+          <Button as="a" variant="primary" href={inventoryHref}>
+            Open Inventory
+          </Button>
         </EmptyState>
       ) : null}
 
@@ -483,11 +457,9 @@ export default function SpareForecastClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          {shellActions([
-            { href: hubHref("/build", "fmea", orgId), label: "Open FMEA", primary: true },
-            { href: subsystemsHref, label: "Open Subsystems" },
-            { href: ordersHref, label: "Open Orders" },
-          ])}
+          <Button as="a" variant="primary" href={hubHref("/build", "fmea", orgId)}>
+            Open FMEA
+          </Button>
         </EmptyState>
       ) : null}
 
