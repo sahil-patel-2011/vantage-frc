@@ -82,7 +82,7 @@ export function teamDataNextActions(input: {
         {
           id: "schedule",
           label: "Open Schedule",
-          detail: "Match boards stay empty until a team and active event sync real TBA rows.",
+          detail: "Match boards stay empty until a team and active event sync real rows.",
           href: withOrgHref("/schedule", null),
         },
       ];
@@ -100,7 +100,7 @@ export function teamDataNextActions(input: {
         {
           id: "command",
           label: "Open Event Day",
-          detail: "Confirm day-of context uses the same active event as TBA sync.",
+          detail: "Confirm day-of context uses the same active event as Team Data sync.",
           href: hubHref("/competition", "command", orgId),
         },
         {
@@ -130,7 +130,7 @@ export function teamDataNextActions(input: {
         {
           id: "strategy",
           label: "Open Strategy",
-          detail: "Win/loss stays blank until rankings from The Blue Alliance and Statbotics are saved.",
+          detail: "Win/loss stays blank until cached rankings from Team Data are saved.",
           href: withOrgHref("/strategy", orgId),
         },
       ];
@@ -188,7 +188,7 @@ export function teamDataNextActions(input: {
       {
         id: "sync",
         label: "Sync active event",
-        detail: "Pull matches and team numbers from The Blue Alliance.",
+        detail: "Pull matches and team numbers from Team Data.",
         href: withOrgHref("/team/data", orgId),
         primary: true,
       },
@@ -201,7 +201,7 @@ export function teamDataNextActions(input: {
       {
         id: "command",
         label: "Open Event Day",
-        detail: "Pit queue and coverage wait on the same TBA event cache.",
+        detail: "Pit queue and coverage wait on the same event cache.",
         href: hubHref("/competition", "command", orgId),
       },
       {
@@ -224,7 +224,7 @@ export function teamDataNextActions(input: {
     {
       id: "command",
       label: "Open Event Day",
-      detail: "Command center for pit ops tied to this event’s TBA schedule.",
+      detail: "Command center for pit ops tied to this event’s schedule.",
       href: hubHref("/competition", "command", orgId),
     },
     {
