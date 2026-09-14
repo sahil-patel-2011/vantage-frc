@@ -243,7 +243,8 @@ const KEYWORDS: Record<string, string[]> = {
   "build:bugbot": ["bugbot", "bugs", "review code", "static analysis", "github", "lint"],
   "build:team-resources": [
     "6925", "team 6925", "limelight", "wpilib", "pathplanner", "github student pack",
-    "coding lessons", "paced coding", "vision camera",
+    "coding lessons", "paced coding", "vision camera", "shop lab", "cursor pack",
+    "github pull", "github push", "pull request",
   ],
   "build:code-deploy-log": ["deploy", "deploy log", "what version is on the robot"],
   "build:code-perf": ["code performance", "loop time", "code vs match"],
@@ -403,6 +404,7 @@ const STANDALONE: CommandEntry[] = [
   // "sign up sheet", "permission slip" — because nobody types "forms engine".
   { id: "forms", label: "Forms", context: "Team", href: "/forms", kind: "destination", keywords: ["form", "forms", "survey", "google form", "microsoft forms", "sign up", "sign up sheet", "intake", "new members", "tryout", "dues", "permission slip", "questionnaire", "poll", "responses"], featured: true },
   { id: "dev-setup", label: "Programming setup", context: "Team", href: "/dev-setup", kind: "destination", keywords: ["setup", "install", "laptop", "new programmer", "onboarding", "wpilib", "pathplanner", "homebrew", "git", "github", "student pack", "vs code", "claude", "cursor", "how do i start", "first day"], featured: true },
+  { id: "shop-lab", label: "Shop lab", context: "Build", href: "/learn/shop", kind: "destination", keywords: ["shop lab", "limelight", "one camera", "github pull", "github push", "pull request", "cursor rules", "cursor skills", "agent prompt", "self-review"], featured: true },
   { id: "subteams", label: "Subteam progress", context: "Team", href: "/subteams", kind: "destination", keywords: ["subteam", "subteams", "mechanical", "electrical", "programming", "cad", "pit crew", "drive team", "business", "who is on", "roster", "progress", "mentor view", "follow up"], featured: true },
   { id: "announcements", label: "Announcements", context: "Team", href: "/announcements", kind: "destination", keywords: ["announcement", "announcements", "notice", "post", "broadcast", "tell the team", "bulletin", "read receipt", "acknowledge"], featured: true },
   { id: "account", label: "Account", context: "Settings", href: "/account", kind: "destination", keywords: ["account", "profile", "me", "settings", "preferences"] },

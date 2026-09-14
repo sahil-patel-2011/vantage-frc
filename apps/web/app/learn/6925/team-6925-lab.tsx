@@ -13,9 +13,12 @@ export function Team6925Lab() {
           </>
         }
         title="Team 6925 lab"
-        description="Official Limelight, WPILib, GitHub, and CAD Video Tutor links, then five paced weeks. Scores stay blank until a real grade exists."
+        description="Official Limelight, WPILib, GitHub, and CAD Video Tutor links, then paced weeks through one Limelight in code, GitHub pull requests, and the Cursor robotics pack. Scores stay blank until a real grade exists."
       >
         <nav className="product-hub-related" aria-label="Related coding tools">
+          <Button as="a" variant="primary" href={withOrgHref("/learn/shop")}>
+            Shop lab
+          </Button>
           <Button as="a" variant="secondary" href={withOrgHref("/dev-setup")}>
             Programming setup
           </Button>

@@ -4,7 +4,7 @@ import { TEAM_6925_RESOURCES, TEAM_6925_WEEKS, allTeam6925Links, totalLabMinutes
 describe("Team 6925 lab", () => {
   it("is a real lab, not a stub", () => {
     expect(TEAM_6925_RESOURCES.length).toBeGreaterThanOrEqual(4);
-    expect(TEAM_6925_WEEKS.length).toBeGreaterThanOrEqual(5);
+    expect(TEAM_6925_WEEKS.length).toBeGreaterThanOrEqual(8);
     expect(totalLabMinutes()).toBeGreaterThan(300);
   });
 

@@ -1,0 +1,20 @@
+.lab-prompt {
+  margin: 12px 0 0;
+  padding: 12px 14px;
+  overflow: auto;
+  white-space: pre-wrap;
+  font-size: 13px;
+  line-height: 1.45;
+  background: var(--panel, transparent);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.lab-pack-item {
+  margin: 16px 0 0;
+}
+
+.lab-pack-item h3 {
+  margin: 0 0 6px;
+  font-size: 16px;
+}
