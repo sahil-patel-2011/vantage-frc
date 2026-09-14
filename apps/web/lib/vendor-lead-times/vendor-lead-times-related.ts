@@ -160,7 +160,7 @@ export function vendorLeadTimesNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before logging vendors.",
+          detail: "Choose your team before logging vendors.",
           href: "/workspace",
           primary: true,
         },
