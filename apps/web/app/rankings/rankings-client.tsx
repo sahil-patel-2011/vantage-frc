@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { Button } from "../../components/ui";
+import { Button, EmptyState } from "../../components/ui";
 import { ExportButton, type CsvColumn } from "../../components/ui/export-button";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
@@ -54,10 +54,10 @@ const RANKINGS_CSV_COLUMNS: CsvColumn<RankedTeam>[] = [
   { key: "team", header: "Team", hint: "Team number", value: (team) => team.teamNumber || null },
   { key: "nickname", header: "Nickname", value: (team) => team.nickname },
   { key: "record", header: "Record", hint: "Wins-losses-ties", value: (team) => team.record },
-  { key: "epaTotal", header: "EPA total", hint: "Unrounded — screen shows 1 decimal", value: (team) => team.epaTotal },
-  { key: "epaAuto", header: "EPA auto", value: (team) => team.epaAuto },
-  { key: "epaTeleop", header: "EPA teleop", value: (team) => team.epaTeleop },
-  { key: "epaEndgame", header: "EPA endgame", value: (team) => team.epaEndgame },
+  { key: "epaTotal", header: "Rating total", hint: "Unrounded — screen shows 1 decimal", value: (team) => team.epaTotal },
+  { key: "epaAuto", header: "Rating auto", value: (team) => team.epaAuto },
+  { key: "epaTeleop", header: "Rating teleop", value: (team) => team.epaTeleop },
+  { key: "epaEndgame", header: "Rating endgame", value: (team) => team.epaEndgame },
   { key: "source", header: "Source", hint: "Where the metric came from", value: (team) => team.source },
 ];
 
@@ -310,13 +310,11 @@ export default function RankingsClient() {
           </div>
         </header>
         <OfflineBanner feature="Rankings" fromCache={fromCache} cachedAt={cachedAt} />
-        <div className="app-card rank-empty">
-          <strong>Almost there</strong>
-          <p className="app-muted">{view.message}</p>
+        <EmptyState badge="Needs setup" badgeTone="setup" soft title="Choose your team" description={view.message}>
           <Button as="a" variant="primary" href="/workspace">
             Choose your team
           </Button>
-        </div>
+        </EmptyState>
       </main>
     );
   }
@@ -372,13 +370,17 @@ export default function RankingsClient() {
 
       {tab === "rankings" ? (
         view.teams.length === 0 ? (
-          <div className="app-card rank-empty">
-            <strong>{rankingsCacheRequiredCopy().title}</strong>
-            <p className="app-muted">{rankingsCacheRequiredCopy().description}</p>
+          <EmptyState
+            badge="Needs setup"
+            badgeTone="setup"
+            soft
+            title={rankingsCacheRequiredCopy().title}
+            description={rankingsCacheRequiredCopy().description}
+          >
             <Button as="a" variant="primary" href="/team/data">
-              Open Team → Data
+              Open Team Data
             </Button>
-          </div>
+          </EmptyState>
         ) : (
           <>
             <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
@@ -389,7 +391,7 @@ export default function RankingsClient() {
                 orgLabel={view.context.orgName}
                 orgId={view.context.orgId}
                 size="sm"
-                provenance={`${view.context.eventName ?? view.context.eventKey ?? "Active event"} — cached TBA/Statbotics metrics${
+                provenance={`${view.context.eventName ?? view.context.eventKey ?? "Active event"} — cached event ratings${
                   syncedLabel ? `, synced ${syncedLabel}` : ""
                 }.`}
               />
@@ -399,7 +401,7 @@ export default function RankingsClient() {
                 <span className="rank-pos">#</span>
                 <span className="rank-team">Team</span>
                 <span className="rank-record">Record</span>
-                <span className="rank-epa">EPA total · auto / teleop / endgame</span>
+                <span className="rank-epa">Rating · auto / teleop / endgame</span>
                 <span className="rank-source-label">Source</span>
               </li>
               {view.teams.map((entry) => (
