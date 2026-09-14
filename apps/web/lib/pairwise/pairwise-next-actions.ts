@@ -67,7 +67,7 @@ export function pairwiseNextActions(ctx: {
   actions.push({
     id: "pick-clock",
     label: "Open pick clock",
-    detail: "Use these ranks at the draft desk — they are not TBA EPA.",
+    detail: "Use these ranks at the draft desk — they are not public ratings.",
     href: hubHref("/competition", "pick-clock", orgId),
   });
   actions.push({
