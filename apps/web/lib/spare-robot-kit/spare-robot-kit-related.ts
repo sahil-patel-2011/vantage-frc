@@ -187,7 +187,7 @@ export function spareRobotKitNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before matching bins to FMEA.",
+          detail: "Choose your team before matching bins to FMEA.",
           href: "/workspace",
           primary: true,
         },
