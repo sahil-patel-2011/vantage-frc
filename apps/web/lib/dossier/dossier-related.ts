@@ -156,7 +156,7 @@ export function dossierShellCopy(kind: DossierShellKind): DossierEmptyCopy {
         kind,
         title: "Loading season dossier…",
         description:
-          "Checking which team you are on and TBA/Statbotics caches.",
+          "Checking which team you are on and synced season numbers.",
       };
     case "error":
       return {
