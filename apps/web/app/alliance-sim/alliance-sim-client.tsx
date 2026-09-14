@@ -170,7 +170,7 @@ export default function AllianceSimClient() {
           </>
         }
         title="Alliance Sim"
-        description="Simulate a prospective playoff alliance: declare each robot's physical roles, find the optimal assignment, flag conflicts, and estimate win probability from real coverage."
+        description="Simulate a prospective playoff alliance: declare each robot's physical roles, find the assignment, and flag conflicts. Win odds stay blank until real coverage exists."
       >
         {view?.status === "live" && view.scenarios.length > 0 ? (
           <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
@@ -251,8 +251,12 @@ export default function AllianceSimClient() {
                   badge="No robots yet"
                   badgeTone="setup"
                   title="Add alliance robots to this scenario"
-                  description="Declare each robot's capable physical roles and strength to see role assignment, conflicts, and win probability."
-                />
+                  description="Declare each robot's capable physical roles and strength to see role assignment and conflicts. Win odds stay blank until real coverage exists."
+                >
+                  <Button as="a" variant="primary" href="#alliance-sim-add-robot">
+                    Add a robot
+                  </Button>
+                </EmptyState>
               )}
             </>
           ) : null}
@@ -363,6 +367,7 @@ function RobotForm({
   return (
     <Panel
       as="form"
+      id="alliance-sim-add-robot"
       onSubmit={(event) => {
         event.preventDefault();
         const teamNumber = Number(form.teamNumber);
