@@ -120,7 +120,7 @@ export function connectionsEmptyCopy(shell: ConnectionsShellKind): ConnectionsEm
       badgeTone: "setup",
       title: "Connectors need a team",
       description:
-        "Google sign-in is personal to this deployment. TBA, Onshape, Discord, and GitHub are saved per active team — nothing shows Connected until a real link exists.",
+        "Google sign-in is personal to this deployment. Team Data, Onshape, Discord, and GitHub are saved per active team — nothing shows Connected until a real link exists.",
     };
   }
   if (shell === "empty") {
@@ -129,7 +129,7 @@ export function connectionsEmptyCopy(shell: ConnectionsShellKind): ConnectionsEm
       badgeTone: "setup",
       title: "No team connectors linked yet",
       description:
-        "Statuses stay blank until you configure TBA, authorize Onshape, add Discord, or link GitHub.",
+        "Statuses stay blank until you configure Team Data, authorize Onshape, add Discord, or link GitHub.",
     };
   }
   if (shell === "error") {
@@ -152,7 +152,7 @@ export function connectionsEmptyCopy(shell: ConnectionsShellKind): ConnectionsEm
     badge: "Connections",
     badgeTone: "good",
     title: "Team connectors",
-    description: "Honest setup and link status for TBA, Onshape, Google, Discord, and GitHub.",
+    description: "Honest setup and link status for Team Data, Onshape, Google, Discord, and GitHub.",
   };
 }
 
@@ -200,8 +200,8 @@ export function connectionsNextActions(input: {
   if (input.tbaReady === false) {
     actions.push({
       id: "tba",
-      label: "Configure TBA",
-      detail: "Match sync stays quiet until a TBA key or saved rankings exist.",
+      label: "Open Team Data",
+      detail: "Match sync stays quiet until a Team Data key or saved rankings exist.",
       href: withOrgHref("/team/data", orgId),
       primary: true,
     });
@@ -327,11 +327,11 @@ export function buildConnectionConnectors(input: {
     },
     {
       id: "tba",
-      label: "The Blue Alliance",
+      label: "Team Data",
       status: tbaStatus,
-      detail: input.tba?.detail ?? "Checking TBA configuration…",
+      detail: input.tba?.detail ?? "Checking Team Data configuration…",
       href: orgId ? withOrgHref("/team/data", orgId) : "/workspace",
-      cta: orgId ? "Open TBA connectors" : "Choose your team",
+      cta: orgId ? "Open Team Data" : "Choose your team",
     },
     {
       id: "onshape",
