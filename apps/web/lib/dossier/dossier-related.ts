@@ -280,7 +280,7 @@ export function dossierNextActions(input: {
     {
       id: "dossier",
       label: "Review cited facts",
-      detail: `${formatDossierMetric(cardCount, true)} cited fact card${cardCount === 1 ? "" : "s"} from TBA/Statbotics/scout only.`,
+      detail: `${formatDossierMetric(cardCount, true)} cited fact card${cardCount === 1 ? "" : "s"} from Team Data and scouting only.`,
       href: dossierHref,
       primary: true,
     },
