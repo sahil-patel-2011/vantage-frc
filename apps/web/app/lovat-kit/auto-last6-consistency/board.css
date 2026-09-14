@@ -1,0 +1,11 @@
+.lk-auto-last6-consistency-board{display:grid;gap:12px;margin:4px 0 8px}
+.lk-auto-last6-consistency-board header h3{margin:0 0 4px}
+.lk-auto-last6-consistency-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr));gap:10px}
+.lk-auto-last6-consistency-tile{display:grid;gap:4px;padding:12px}
+.lk-auto-last6-consistency-tile strong{font-size:1.35rem;letter-spacing:-0.03em}
+.lk-auto-last6-consistency-tile em{font-style:normal;font-size:11px}
+.lk-auto-last6-consistency-spark{width:72px;height:28px;color:var(--accent)}
+.lk-auto-last6-consistency-vs{font-size:11px}
+.lk-auto-last6-consistency-vs-above{color:var(--good,#1b7f4e)}
+.lk-auto-last6-consistency-vs-below{color:var(--warn,#9a5b12)}
+.lk-auto-last6-consistency-vs-near,.lk-auto-last6-consistency-vs-unknown{color:var(--muted)}
