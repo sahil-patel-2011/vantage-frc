@@ -1,0 +1,21 @@
+.lk-teleop-playoffs-path-board{display:grid;gap:12px;margin:4px 0 8px}
+.lk-teleop-playoffs-path-board header h3{margin:0 0 4px}
+.lk-teleop-playoffs-path-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr));gap:10px}
+.lk-teleop-playoffs-path-tile{display:grid;gap:4px;padding:12px}
+.lk-teleop-playoffs-path-tile strong{font-size:1.35rem;letter-spacing:-0.03em}
+.lk-teleop-playoffs-path-tile em{font-style:normal;font-size:11px}
+.lk-teleop-playoffs-path-spark{width:72px;height:28px;color:var(--accent)}
+.lk-teleop-playoffs-path-vs{font-size:11px}
+.lk-teleop-playoffs-path-vs-above{color:var(--good,#1b7f4e)}
+.lk-teleop-playoffs-path-vs-below{color:var(--warn,#9a5b12)}
+.lk-teleop-playoffs-path-vs-near,.lk-teleop-playoffs-path-vs-unknown{color:var(--muted)}
+
+.lk-teleop-playoffs-path-deep{display:grid;gap:12px;margin-top:8px}
+.lk-teleop-playoffs-path-meters{display:grid;grid-template-columns:repeat(auto-fit,minmax(8.5rem,1fr));gap:8px;margin:0;padding:0;list-style:none}
+.lk-teleop-playoffs-path-meter{display:grid;gap:2px;padding:8px 10px;border:1px solid var(--border,rgba(0,0,0,.08));border-radius:10px}
+.lk-teleop-playoffs-path-split{display:grid;grid-template-columns:repeat(auto-fit,minmax(14rem,1fr));gap:10px}
+.lk-teleop-playoffs-path-panel h4{margin:0 0 8px;font-size:13px}
+.lk-teleop-playoffs-path-zones,.lk-teleop-playoffs-path-colley,.lk-teleop-playoffs-path-residual,.lk-teleop-playoffs-path-pareto,.lk-teleop-playoffs-path-setup{margin:0;padding:0;list-style:none;display:grid;gap:6px}
+.lk-teleop-playoffs-path-zone{display:grid;grid-template-columns:7rem 1fr;gap:8px;align-items:center;font-size:12px}
+.lk-teleop-playoffs-path-bar{display:block;height:8px;border-radius:999px;background:var(--accent,#3d6)}
+.lk-teleop-playoffs-path-page{padding-bottom:24px}
