@@ -11,7 +11,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
-import { learningSurfaceLabel, LEARNING_SURFACES } from "../../lib/learning/learning-mode";
 import type { MemberRollup, SurfaceRollup } from "../../lib/learning/mentor-view";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
@@ -218,13 +217,9 @@ function MySection({ view }: { view: ReadyView }) {
           title="You have not called a shot yet"
           description="Open a calculator with learning mode on, call the answer before the reveal, and your record starts here. Skipping is fine and is logged, not blocked."
         >
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {LEARNING_SURFACES.map((surface) => (
-              <Button as="a" variant="secondary" key={surface} href={SURFACE_ROUTES[surface]}>
-                {learningSurfaceLabel(surface)}
-              </Button>
-            ))}
-          </div>
+          <Button as="a" variant="primary" href={SURFACE_ROUTES.gearbox ?? "/gearbox"}>
+            Open Gearbox
+          </Button>
         </EmptyState>
       ) : (
         <>
@@ -292,7 +287,11 @@ function ForemanSection({ view }: { view: ReadyView }) {
             badgeTone="setup"
             title="Nobody has called a shot yet"
             description="When members commit calls on the gearbox, power-budget or shooter-table calculators, this rollup shows who is calibrating and who could use a mentor. Until then there is nothing to score."
-          />
+          >
+            <Button as="a" variant="primary" href={SURFACE_ROUTES.gearbox ?? "/gearbox"}>
+              Open Gearbox
+            </Button>
+          </EmptyState>
         ) : (
           <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 16 }}>
             {org.members.map((member) => (
