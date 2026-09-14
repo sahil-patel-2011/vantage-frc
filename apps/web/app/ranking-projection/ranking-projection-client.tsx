@@ -429,7 +429,7 @@ export default function RankingProjectionClient() {
           </>
         }
         title="Ranking projection"
-        description="Current TBA rank plus remaining qualification matches from the cache."
+        description="Current event rank plus remaining qualification matches from the cache."
       />
       <OfflineBanner feature="Ranking projection" fromCache={fromCache} cachedAt={cachedAt} />
       {error && view ? <p className="app-muted">{error}</p> : null}
@@ -457,9 +457,13 @@ export default function RankingProjectionClient() {
           badge="Needs setup"
           badgeTone="setup"
           soft
-          title="Rankings are not ready"
+          title="Choose your team"
           description={view.message}
-        />
+        >
+          <Button as="a" variant="primary" href="/workspace">
+            Choose your team
+          </Button>
+        </EmptyState>
       ) : null}
       {view?.status === "live" ? (
         <>
@@ -469,7 +473,7 @@ export default function RankingProjectionClient() {
             </p>
             <p>
               {view.playedQuals} quals played, {view.remainingQuals} remaining
-              {view.epaTotal != null ? ` · EPA ${view.epaTotal}` : ""}
+              {view.epaTotal != null ? ` · Rating ${view.epaTotal}` : ""}
             </p>
             <p>
               <Button as="a" variant="secondary" href={withOrgHref("/rankings", view.orgId)}>
