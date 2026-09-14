@@ -172,7 +172,7 @@ export function dossierShellCopy(kind: DossierShellKind): DossierEmptyCopy {
         badge: "Needs setup",
         title: "Choose your team",
         description:
-          "Choose your team and sync TBA/Statbotics before cited facts appear.",
+          "Choose your team and sync Team Data before cited facts appear.",
       };
     case "empty":
       return {
