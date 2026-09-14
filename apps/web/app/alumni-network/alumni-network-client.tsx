@@ -444,7 +444,11 @@ function ProfileList({
   if (view.profiles.length === 0) {
     const copy = alumniShellCopy("empty");
     return (
-      <EmptyState badge={copy.badge} badgeTone="setup" title={copy.title} description={copy.description} />
+      <EmptyState badge={copy.badge} badgeTone="setup" title={copy.title} description={copy.description}>
+        <Button as="a" variant="primary" href="#alumni-add-profile">
+          Add an alumni profile
+        </Button>
+      </EmptyState>
     );
   }
   return (
