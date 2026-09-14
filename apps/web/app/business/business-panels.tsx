@@ -358,7 +358,7 @@ export function Grants({ view, busy, submit, mutate }: { view: BusinessView; bus
       {!view.grants.length ? (
         <EmptyState
           soft
-          badge={view.canManageFinance ? "Get started" : "Setup"}
+          badge={view.canManageFinance ? "Get started" : "Needs setup"}
           badgeTone={view.canManageFinance ? "" : "setup"}
           title={view.canManageFinance ? "No grant applications yet" : "Grant pipeline is empty"}
           description="Add an opportunity in the form below, or write in Grant writing. Award $ appears only after you record a real award."
