@@ -304,7 +304,7 @@ export function scoutCrossvalNextActions(input: {
       {
         id: "scouting",
         label: "Log scout entries",
-        detail: "Cross-validation stays blank until membership-bound match rows exist.",
+        detail: "Cross-validation stays blank until signed-in scout match rows exist.",
         href: hubHref("/competition", "scouting", orgId),
         primary: true,
       },
@@ -346,7 +346,7 @@ export function scoutCrossvalNextActions(input: {
     {
       id: "scouting",
       label: "Open Scouting",
-      detail: "Keep logging membership-bound match rows for fresher checks.",
+      detail: "Keep logging signed-in scout match rows for fresher checks.",
       href: hubHref("/competition", "scouting", orgId),
     },
     {
