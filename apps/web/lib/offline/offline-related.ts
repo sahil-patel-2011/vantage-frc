@@ -143,7 +143,7 @@ export function offlineShellCopy(kind: OfflineShellKind): OfflineShellCopy {
     case "setup":
       return {
         kind,
-        badge: "Setup",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Readiness is per team. Choose your team first. Device counts stay at zero until then.",
