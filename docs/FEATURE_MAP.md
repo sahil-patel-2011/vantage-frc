@@ -4,7 +4,7 @@
 
 | Hub | Route | Tabs |
 |---|---|---|
-| Competition | `/competition` | **Event day · Scouting · Strategy · Pit** — related tools are inner tabs, not a More-tools dump (My Day under Event day, Forms under Scouting, Alliance desk under Strategy) Setup badge is **Needs setup**. No-team primary is **Choose your team**. |
+| Competition | `/competition` | **Event day · Scouting · Strategy · Pit** — related tools are inner tabs, not a More-tools dump (My Day under Event day, Forms under Scouting, Alliance desk under Strategy) Setup badge is **Needs setup**. No-team primary is **Choose your team**. Student chrome says **Needs setup**, not Setup. |
 | Team | `/team` | **Calendar · Chat · People · Work · Playbook Setup badge is **Needs setup**. No-team primary is **Choose your team**.** — hours, team profile, forms under People; practice/FMEA/batteries under Work; Files, Writer, decision notes under Playbook Setup badge is **Needs setup**. |
 | Business | `/business` | **Overview · Money · Sponsors · Grants · Outreach** — budget/orders under Money, packages/partners under Sponsors. Header related strip is **Sponsors · Grants · Budget**. Setup badge is **Needs setup**. Last snapshot stays on this phone (`feature: "business"`). Working funds stay **—** until a budget or recorded cash exists. Featured inner tool: **Budget**. No-team primary is **Choose your team**. |
 | Build | `/build` | **Kickoff · CAD · Code · Robot** — Bugbot under Code; FMEA, batteries, inspection under Robot Setup badge is **Needs setup**. No-team primary is **Choose your team**. |
