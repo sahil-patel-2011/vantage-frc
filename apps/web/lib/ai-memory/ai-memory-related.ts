@@ -146,7 +146,7 @@ export function aiMemoryShellCopy(kind: AiMemoryShellKind): AiMemoryEmptyCopy {
     case "setup":
       return {
         kind,
-        badge: "Setup",
+        badge: "Nothing shared",
         title: "Team memory is on — nothing shared yet",
         description:
           "Sharing is enabled, but there are no active team memories. Promote useful private Chat replies, or leave the list empty.",
