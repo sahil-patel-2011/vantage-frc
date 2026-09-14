@@ -1,0 +1,11 @@
+.lk-endgame-event-combo-board{display:grid;gap:12px;margin:4px 0 8px}
+.lk-endgame-event-combo-board header h3{margin:0 0 4px}
+.lk-endgame-event-combo-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr));gap:10px}
+.lk-endgame-event-combo-tile{display:grid;gap:4px;padding:12px}
+.lk-endgame-event-combo-tile strong{font-size:1.35rem;letter-spacing:-0.03em}
+.lk-endgame-event-combo-tile em{font-style:normal;font-size:11px}
+.lk-endgame-event-combo-spark{width:72px;height:28px;color:var(--accent)}
+.lk-endgame-event-combo-vs{font-size:11px}
+.lk-endgame-event-combo-vs-above{color:var(--good,#1b7f4e)}
+.lk-endgame-event-combo-vs-below{color:var(--warn,#9a5b12)}
+.lk-endgame-event-combo-vs-near,.lk-endgame-event-combo-vs-unknown{color:var(--muted)}
