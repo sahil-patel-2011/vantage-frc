@@ -99,7 +99,7 @@ export const PRESET_WIDGETS: Record<string, DisplayWidgetType[]> = {
 };
 
 export const PRESET_META: Array<{ id: DisplayPreset; title: string; copy: string }> = [
-  { id: "next_match", title: "Next Match", copy: "Countdown, alliances, scheduled time, and leave-now status from TBA" },
+  { id: "next_match", title: "Next Match", copy: "Countdown, alliances, scheduled time, and leave-now status from official scores" },
   { id: "win_prediction", title: "Win Prediction", copy: "Stored Strategy model odds - empty until you score a match prediction" },
   { id: "robot_readiness", title: "Robot Readiness", copy: "Battery fleet, open failures, and maintenance from Pit ops - never assumed green" },
   { id: "event_command", title: "Event Command", copy: "Next team match plus TBA rank/record when metrics are synced" },
