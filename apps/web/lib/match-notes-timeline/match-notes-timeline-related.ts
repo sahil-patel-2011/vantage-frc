@@ -154,7 +154,7 @@ export function matchNotesTimelineNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before logging clock times.",
+          detail: "Choose your team before logging clock times.",
           href: "/workspace",
           primary: true,
         },
