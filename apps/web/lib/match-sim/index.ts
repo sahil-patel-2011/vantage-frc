@@ -103,8 +103,8 @@ export function computeLever(red: AllianceCapability, blue: AllianceCapability):
     phaseGap: round1(best.gap),
     marginSwing: round1(best.gap),
     rationale: weakest
-      ? `${trailing.color === "red" ? "Red" : "Blue"} trails by ${round1(best.gap)} pts in ${phaseLabel(best.phase)}; team ${weakest.teamNumber ?? weakest.teamKey} contributes the least there on real EPA data.`
-      : `${trailing.color === "red" ? "Red" : "Blue"} trails by ${round1(best.gap)} pts in ${phaseLabel(best.phase)}, but no team on that alliance has synced ${phaseLabel(best.phase)} EPA to attribute it to.`,
+      ? `${trailing.color === "red" ? "Red" : "Blue"} trails by ${round1(best.gap)} pts in ${phaseLabel(best.phase)}; team ${weakest.teamNumber ?? weakest.teamKey} contributes the least there on stored ratings.`
+      : `${trailing.color === "red" ? "Red" : "Blue"} trails by ${round1(best.gap)} pts in ${phaseLabel(best.phase)}, but no team on that alliance has a stored ${phaseLabel(best.phase)} rating to attribute it to.`,
   };
 }
 
