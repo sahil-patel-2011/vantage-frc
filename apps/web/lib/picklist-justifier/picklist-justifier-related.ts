@@ -157,7 +157,7 @@ export function picklistJustifierNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before generating rationales.",
+          detail: "Choose your team before generating rationales.",
           href: "/workspace",
           primary: true,
         },
