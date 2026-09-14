@@ -73,7 +73,7 @@ export async function GET(request: Request) {
           },
           {
             id: "tba",
-            label: "Sync TBA",
+            label: "Sync Team Data",
             detail: tbaConfigured
               ? "Platform TBA key is set — open Admin → Live Data to sync if stale"
               : "Connect The Blue Alliance under Team → Data, or ask whoever set up this site to add a Blue Alliance key.",
