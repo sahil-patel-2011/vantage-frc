@@ -1,0 +1,11 @@
+.lk-auto-quals-interfere-board{display:grid;gap:12px;margin:4px 0 8px}
+.lk-auto-quals-interfere-board header h3{margin:0 0 4px}
+.lk-auto-quals-interfere-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr));gap:10px}
+.lk-auto-quals-interfere-tile{display:grid;gap:4px;padding:12px}
+.lk-auto-quals-interfere-tile strong{font-size:1.35rem;letter-spacing:-0.03em}
+.lk-auto-quals-interfere-tile em{font-style:normal;font-size:11px}
+.lk-auto-quals-interfere-spark{width:72px;height:28px;color:var(--accent)}
+.lk-auto-quals-interfere-vs{font-size:11px}
+.lk-auto-quals-interfere-vs-above{color:var(--good,#1b7f4e)}
+.lk-auto-quals-interfere-vs-below{color:var(--warn,#9a5b12)}
+.lk-auto-quals-interfere-vs-near,.lk-auto-quals-interfere-vs-unknown{color:var(--muted)}
