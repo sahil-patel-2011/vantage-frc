@@ -20,6 +20,7 @@ import {
   scheduleCacheRequiredCopy,
   shouldRefreshSchedule,
 } from "../../lib/schedule/tba-cache";
+import { formatSchedulePrediction } from "../../lib/schedule/schedule-predictions";
 import {
   allianceOf,
   compLevelLabel,
@@ -111,11 +112,27 @@ function AllianceTeams({
   );
 }
 
-function MatchRow({ match, teamKey, isNext }: { match: ScheduleMatch; teamKey: string | null; isNext: boolean }) {
+function MatchRow({
+  match,
+  teamKey,
+  isNext,
+  orgId,
+}: {
+  match: ScheduleMatch;
+  teamKey: string | null;
+  isNext: boolean;
+  orgId: string | null;
+}) {
   const side = teamKey ? allianceOf(match, teamKey) : null;
   const outcome = teamKey ? matchResult(match, teamKey) : null;
   const scored = isScored(match);
   const rowClass = ["sched-row", side ? "ours" : "", isNext ? "next" : ""].filter(Boolean).join(" ");
+  const predictQuery = new URLSearchParams({
+    matchKey: match.matchKey,
+    red: match.red.map(stripFrc).join(","),
+    blue: match.blue.map(stripFrc).join(","),
+  });
+  const predictHref = withOrgHref(`/match-sim?${predictQuery.toString()}`, orgId);
 
   return (
     <li className={rowClass}>
@@ -137,6 +154,8 @@ function MatchRow({ match, teamKey, isNext }: { match: ScheduleMatch; teamKey: s
             <span className="sched-score-sep">–</span>
             <b className={match.winningAlliance === "blue" ? "win" : undefined}>{match.blueScore}</b>
           </span>
+        ) : match.prediction ? (
+          <span className="sched-prediction">{formatSchedulePrediction(match.prediction)}</span>
         ) : null}
         {outcome ? <span className={`sched-wlt ${outcome.result.toLowerCase()}`}>{outcome.result}</span> : null}
         {isNext ? <span className="sched-chip ondeck">On deck</span> : null}
@@ -144,6 +163,11 @@ function MatchRow({ match, teamKey, isNext }: { match: ScheduleMatch; teamKey: s
           <span className="sched-chip">
             {match.scoutCount} {match.scoutCount === 1 ? "scout" : "scouts"}
           </span>
+        ) : null}
+        {!scored ? (
+          <Button as="a" variant="ghost" size="sm" href={predictHref} className="sched-predict">
+            Predict
+          </Button>
         ) : null}
       </div>
     </li>
@@ -542,6 +566,7 @@ export default function ScheduleClient() {
                       match={entry}
                       teamKey={teamKey}
                       isNext={entry.matchKey === next?.matchKey}
+                      orgId={orgId}
                     />
                   ))}
                 </ul>

@@ -2,6 +2,7 @@ import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import type { ScheduleContext } from "../../../lib/schedule-board";
+import { fieldStdFromRatings } from "../../../lib/schedule/schedule-predictions";
 import { buildScheduleView, type TbaMatchCacheRow } from "../../../lib/schedule/tba-cache";
 import { hydrateOrgActiveEvent } from "../../../lib/reference/hydrate-active-event";
 
@@ -61,23 +62,47 @@ export async function GET(request: Request) {
         });
       }
 
-      const matches = await client.query<TbaMatchCacheRow>(
-        `SELECT m.match_key AS "matchKey", m.comp_level AS "compLevel", m.match_number AS "matchNumber",
-                COALESCE(m.actual_time, m.predicted_time, m.event_time)::text AS "scheduledTime",
-                m.red_alliance AS "redAlliance", m.blue_alliance AS "blueAlliance",
-                m.winning_alliance AS "winningAlliance",
-                (SELECT count(*)::int FROM scout_assignments a
-                 WHERE a.org_id = $2 AND a.match_key = m.match_key) AS "scoutCount"
-         FROM matches_ref m
-         WHERE m.event_key = $1
-         ORDER BY CASE m.comp_level
-                    WHEN 'qm' THEN 0 WHEN 'ef' THEN 1 WHEN 'qf' THEN 2
-                    WHEN 'sf' THEN 3 WHEN 'f' THEN 4 ELSE 5
-                  END, m.match_number`,
-        [row.eventKey, row.orgId],
-      );
+      const [matches, metrics] = await Promise.all([
+        client.query<TbaMatchCacheRow>(
+          `SELECT m.match_key AS "matchKey", m.comp_level AS "compLevel", m.match_number AS "matchNumber",
+                  COALESCE(m.actual_time, m.predicted_time, m.event_time)::text AS "scheduledTime",
+                  m.red_alliance AS "redAlliance", m.blue_alliance AS "blueAlliance",
+                  m.winning_alliance AS "winningAlliance",
+                  (SELECT count(*)::int FROM scout_assignments a
+                   WHERE a.org_id = $2 AND a.match_key = m.match_key) AS "scoutCount"
+           FROM matches_ref m
+           WHERE m.event_key = $1
+           ORDER BY CASE m.comp_level
+                      WHEN 'qm' THEN 0 WHEN 'ef' THEN 1 WHEN 'qf' THEN 2
+                      WHEN 'sf' THEN 3 WHEN 'f' THEN 4 ELSE 5
+                    END, m.match_number`,
+          [row.eventKey, row.orgId],
+        ),
+        client.query<{ teamKey: string; epaTotal: number | null }>(
+          `SELECT DISTINCT ON (m.team_key)
+              m.team_key AS "teamKey",
+              m.epa_total AS "epaTotal"
+           FROM team_event_metrics m
+           WHERE m.event_key = $1::text
+           ORDER BY m.team_key,
+             CASE m.source WHEN 'statbotics' THEN 0 WHEN 'tba' THEN 1 ELSE 2 END,
+             m.synced_at DESC NULLS LAST`,
+          [row.eventKey],
+        ),
+      ]);
 
-      return buildScheduleView({ context: row, rows: matches.rows });
+      const teamRatings = new Map<string, number>();
+      for (const metric of metrics.rows) {
+        if (metric.epaTotal == null || !Number.isFinite(metric.epaTotal)) continue;
+        teamRatings.set(metric.teamKey, metric.epaTotal);
+      }
+
+      return buildScheduleView({
+        context: row,
+        rows: matches.rows,
+        teamRatings,
+        fieldStd: fieldStdFromRatings(teamRatings.values()),
+      });
     });
 
     return Response.json(view);

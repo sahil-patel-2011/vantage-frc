@@ -61,6 +61,7 @@
 .sched-score b{font-weight:600}
 .sched-score b.win{font-weight:800}
 .sched-score-sep{color:var(--muted)}
+.sched-prediction{color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .sched-wlt{min-width:22px;padding:2px 7px;border-radius:var(--radius-xs);font-size:11px;font-weight:800;text-align:center}
 .sched-wlt.w{color:var(--positive);border:1px solid var(--positive)}
 .sched-wlt.l{color:var(--critical);border:1px solid var(--critical)}

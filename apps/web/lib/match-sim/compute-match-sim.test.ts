@@ -1,7 +1,7 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { describe, expect, it, vi } from "vitest";
 import { computeMatchSimView, resolveTeamCapabilities, simulateMatch } from "./compute-match-sim";
-import { computeAllianceCapability, computeLever, computeMatchSimResult } from ".";
+import { computeAllianceCapability, computeLever, computeMatchSimResult, flipMatchSimResult } from ".";
 import type { TeamCapability } from "./types";
 
 const USER = "11111111-1111-4111-8111-111111111111";
@@ -69,6 +69,16 @@ describe("match-sim pure math", () => {
     expect(result.timeline[3].redScore).toBe(red.total);
     expect(result.finalMargin).toBeGreaterThan(0);
     expect(result.favored).toBe("red");
+  });
+
+  it("flips red and blue without inventing ratings", () => {
+    const red = computeAllianceCapability("red", [team()]);
+    const blue = computeAllianceCapability("blue", [team({ teamKey: "frc900", teamNumber: 900, epaAuto: 1, epaTeleop: 5, epaEndgame: 1 })]);
+    const flipped = flipMatchSimResult(computeMatchSimResult(red, blue));
+    expect(flipped.favored).toBe("blue");
+    expect(flipped.red.total).toBe(blue.total);
+    expect(flipped.blue.total).toBe(red.total);
+    expect(flipped.finalMargin).toBeLessThan(0);
   });
 });
 

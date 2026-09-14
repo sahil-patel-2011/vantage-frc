@@ -36,6 +36,17 @@ export type {
   TeamScoreFeatures,
 } from "./calibrated-score";
 export {
+  allianceScoreSpread,
+  lovatWinProbability,
+  predictUnscoredMatch,
+  standardNormalCdf,
+} from "./lovat-win";
+export type {
+  AllianceScoreSpread,
+  LovatWinPrediction,
+  TeamScoreSpread,
+} from "./lovat-win";
+export {
   PICKLIST_METRICS,
   PICKLIST_METRIC_IDS,
   defaultPicklistWeights,
