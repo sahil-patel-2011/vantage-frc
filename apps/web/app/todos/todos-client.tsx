@@ -326,7 +326,7 @@ export default function TodosClient({ embedded = false }: { embedded?: boolean }
       {failure ? (
         <EmptyState
           soft
-          badge="Setup"
+          badge="Needs setup"
           badgeTone="setup"
           title={failure.title}
           description={failure.description}
@@ -453,6 +453,7 @@ function CreateTodoForm({ view, busy, mutate }: { view: LiveView; busy: boolean;
   return (
     <Panel
       as="form"
+      id="todos-create"
       onSubmit={(event) => {
         event.preventDefault();
         if (!form.title.trim()) return;
@@ -539,17 +540,9 @@ function Board({
         title="No team todos yet"
         description="Add the first shared action item when your team has real work to track."
       >
-        <div className="soft-btn-row">
-          <Button as="a" variant="secondary" href={withOrgHref("/team?tab=calendar", view.orgId)}>
-            Calendar
-          </Button>
-          <Button as="a" variant="secondary" href={withOrgHref("/team?tab=messages", view.orgId)}>
-            Messages
-          </Button>
-          <Button as="a" variant="secondary" href={withOrgHref("/team?tab=practice", view.orgId)}>
-            Practice
-          </Button>
-        </div>
+        <Button as="a" variant="primary" href="#todos-create">
+          Add a todo
+        </Button>
       </EmptyState>
     );
   }
