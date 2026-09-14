@@ -1,0 +1,12 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { describe, expect, it } from "vitest";
+
+const ROOT = join(__dirname, "..", "..", "..", "..");
+
+describe("leftover Feature map Learn CAD setup wording student copy", () => {
+  it("uses student chrome", () => {
+    const src = readFileSync(join(ROOT, "docs/FEATURE_MAP.md"), "utf8");
+    expect(src).toContain("Paced Onshape track, CAD Video Tutor beginner set on cast iron, Explore Onshape document list from the connected account, then mass + spin grade vs the team reference. Includes **Drawings for the shop** (`#drawings`) with verified Creating a Drawing + Views help. No typed mass. Setup badge is **Needs setup**. No-team primary is **Choose your team**. Student chrome says **Needs setup**, not Setup.");
+  });
+});
