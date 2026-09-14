@@ -14,6 +14,8 @@ describe("Kickoff game brief student chrome", () => {
     expect(client).toMatch(/GameBriefSection/);
     expect(brief).toMatch(/Ask about this game/);
     expect(brief).toMatch(/gameAskHref/);
+    expect(brief).toMatch(/gameBriefStatusBadge/);
+    expect(brief).not.toMatch(/Needs setup/);
     expect(brief.match(/<Button\b/g) ?? []).toHaveLength(1);
     expect(brief).toMatch(/variant="primary"/);
     expect(computeGameBrief(2026).scoringLabels.length).toBeGreaterThan(0);

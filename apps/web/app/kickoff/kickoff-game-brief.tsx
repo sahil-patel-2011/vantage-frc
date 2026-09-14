@@ -1,6 +1,6 @@
 "use client";
 
-import { computeGameBrief, gameAskHref } from "../../lib/game-brief/compute-game-brief";
+import { computeGameBrief, gameAskHref, gameBriefStatusBadge } from "../../lib/game-brief/compute-game-brief";
 import { Button } from "../../components/ui";
 
 function BriefLists({
@@ -50,7 +50,7 @@ export function GameBriefSection({ orgId, seasonYear }: { orgId: string; seasonY
     <section className="app-card soft-panel kick-brief" aria-labelledby="kick-brief-title">
       <header>
         <span className={`app-badge ${brief.status === "published" ? "good" : "setup"}`}>
-          {brief.status === "published" ? "From the manual" : "Needs setup"}
+          {gameBriefStatusBadge(brief.status)}
         </span>
         <h2 id="kick-brief-title">
           {brief.gameName} {brief.year}

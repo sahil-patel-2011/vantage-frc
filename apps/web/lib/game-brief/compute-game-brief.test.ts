@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeGameBrief, gameAskHref, gameAskPrompt } from "./compute-game-brief";
+import { computeGameBrief, gameAskHref, gameAskPrompt, gameBriefStatusBadge } from "./compute-game-brief";
 
 describe("computeGameBrief", () => {
   it("uses the published REBUILT brief and scoring labels", () => {
@@ -32,5 +32,10 @@ describe("computeGameBrief", () => {
     expect(href).toContain("orgId=org-1");
     expect(href).toContain("source=kickoff");
     expect(href).toContain("prompt=");
+  });
+
+  it("labels an unpublished year Manual not out, not Needs setup", () => {
+    expect(gameBriefStatusBadge("published")).toBe("From the manual");
+    expect(gameBriefStatusBadge("awaiting_manual")).toBe("Manual not out");
   });
 });

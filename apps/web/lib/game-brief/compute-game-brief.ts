@@ -100,3 +100,17 @@ export function gameAskHref(orgId: string, year: number): string {
   });
   return `/chat?${params.toString()}`;
 }
+
+/** Badge on the Kickoff brief — awaiting a manual is not a Vantage setup gap. */
+export function gameBriefStatusBadge(status: GameYearStatus): string {
+  switch (status) {
+    case "published":
+      return "From the manual";
+    case "awaiting_manual":
+      return "Manual not out";
+    default: {
+      const exhaustive: never = status;
+      return exhaustive;
+    }
+  }
+}
