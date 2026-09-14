@@ -111,11 +111,11 @@ function TeamDataShell({
         soft
         badge={
           shell === "setup"
-            ? "Setup"
+            ? "Needs setup"
             : shell === "error"
               ? "Unavailable"
               : shell === "empty"
-                ? "No TBA cache yet"
+                ? "No cache yet"
                 : undefined
         }
         badgeTone={shell === "setup" || shell === "empty" ? "setup" : ""}
@@ -366,7 +366,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
     return (
       <TeamDataShell
         title="Loading…"
-        description="Checking your event and The Blue Alliance connection."
+        description="Checking your event and Team Data connection."
         orgId={orgId}
         shell="loading"
       >
@@ -404,13 +404,13 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
     const needsTba = !tbaConfigured;
     return (
       <TeamDataShell
-        title={needsTba ? "Connect TBA" : needsEvent ? "Set active event" : "Finish Team Data setup"}
+        title={needsTba ? "Connect Team Data" : needsEvent ? "Set active event" : "Finish Team Data setup"}
         description={
           needsTba
             ? `Save a Blue Alliance Read API key below, or ask whoever set up this site to add one in deployment settings. Create a key at thebluealliance.com → Account → Read API Keys.${needsEvent ? " You will also need to pick an active event before anything syncs." : ""}`
             : needsEvent
               ? "Team Data syncs only for a real team event — Schedule, Event Day, and Strategy stay empty until then."
-              : "Finish team setup so TBA sync can load this team."
+              : "Finish team setup so Team Data sync can load this team."
         }
         orgId={orgId}
         shell="setup"
@@ -457,8 +457,8 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
           <span className="breadcrumbs">Team / Live data</span>
           <h1>Team Data</h1>
           <p>
-            Inventory counts for your team, shared TBA cache health, and controlled sync for the active event.
-            Schedule, Event Day, and Strategy use this shared copy of The Blue Alliance.
+            Inventory counts for your team, shared cache health, and controlled sync for the active event.
+            Schedule, Event Day, and Strategy use this shared Team Data copy.
           </p>
         </div>
         <div className="team-data-header-actions">
@@ -486,10 +486,10 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
         <>
           <EmptyState
             soft
-            badge="No TBA cache yet"
+            badge="No cache yet"
             badgeTone="setup"
             title="Sync the active event"
-            description={`Event ${activeEventKey} is selected, but there are no match or ranking rows yet. Sync pulls real The Blue Alliance data.`}
+            description={`Event ${activeEventKey} is selected, but there are no match or ranking rows yet. Sync pulls the official event numbers.`}
           >
             <Button variant="primary" type="button" disabled={busy} onClick={() => void syncActiveEvent()}>
               {busy ? "Working…" : "Sync active event"}
@@ -544,7 +544,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
           </section>
 
           <section className="app-card soft-panel team-data-panel">
-            <h2>TBA fallback key</h2>
+            <h2>Fallback key</h2>
             <p className="app-muted">
               Optional encrypted fallback when platform ingest is under pressure. Saved via the same connector path as
               team settings.
