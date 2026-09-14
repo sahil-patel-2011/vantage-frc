@@ -104,12 +104,12 @@ export class ScoutingRepository {
       this.client.query(
         `SELECT e.id,'match' AS type,e.match_key AS "matchKey",e.team_key AS "teamKey",
           e.confidence,e.source,e.updated_at AS "updatedAt",
-          e.scout_user_id AS "scoutUserId",u.name AS "scoutName"
+          e.scout_user_id AS "scoutUserId",u.name AS "scoutName",e.payload
          FROM match_scout_entries e JOIN users u ON u.id=e.scout_user_id
          WHERE e.org_id=$1 AND e.event_key=$2
          UNION ALL
          SELECT e.id,'pit' AS type,NULL,e.team_key,e.confidence,e.source,
-          e.updated_at,e.scout_user_id,u.name
+          e.updated_at,e.scout_user_id,u.name,e.payload
          FROM pit_scout_entries e JOIN users u ON u.id=e.scout_user_id
          WHERE e.org_id=$1 AND e.event_key=$2
          ORDER BY "updatedAt" DESC LIMIT 30`,
@@ -485,5 +485,27 @@ export class ScoutingRepository {
       );
     }
     return validations;
+  }
+
+  /** Scouting leads only. Deletes one stored report — never a fabricated id. */
+  async deleteEntry(
+    orgId: string,
+    userId: string,
+    input: { entryId: string; type: EntryType },
+  ): Promise<boolean> {
+    const membership = await this.client.query<{ role: string }>(
+      `SELECT role FROM memberships WHERE org_id = $1 AND user_id = $2`,
+      [orgId, userId],
+    );
+    const role = membership.rows[0]?.role ?? "viewer";
+    if (role !== "owner" && role !== "admin") {
+      throw new Error("Coach role required to delete a scout report.");
+    }
+    const table = input.type === "match" ? "match_scout_entries" : "pit_scout_entries";
+    const result = await this.client.query(
+      `DELETE FROM ${table} WHERE id = $1::uuid AND org_id = $2::uuid`,
+      [input.entryId, orgId],
+    );
+    return (result.rowCount ?? 0) > 0;
   }
 }

@@ -28,6 +28,7 @@ import {
   type ScoutTab,
 } from "./scouting-model";
 import { ScoutQuarantinePanel } from "./scouting-quarantine";
+import { ScoutReportViewer } from "./scout-report-viewer";
 import ScoutHandoffPanel from "./scout-handoff-panel";
 import ScoutVoiceNotesPanel from "./scout-voice-notes-panel";
 import ScoutingTrustPanel from "./scouting-trust-panel";
@@ -644,10 +645,10 @@ return (
             )}
           </Panel>
 
-          <Panel className="scout-activity" style={{ minHeight: "auto" }}>
+          <Panel id="recent-entries" className="scout-activity" style={{ minHeight: "auto" }}>
             <h2 style={{ marginTop: 0 }}>Recent entries</h2>
             <p className="app-muted">
-              The newest save wins for each entry. Scout, confidence, and source stay visible.
+              Open a report to see the stored stats and any timed actions. Team leads can delete a report.
             </p>
             {data?.recentEntries && shouldShowScoutingRecentEntries(data.recentEntries.length) ? (
               <>
@@ -662,21 +663,12 @@ return (
                     data.eventKey ?? "Active event"
                   } — the 30 most recent synced entries only. Anything still queued offline, and the rest of the event, is in the full export.`}
                 />
-                <ul className="scout-entry-list">
-                  {data.recentEntries.map((entry) => (
-                    <li key={entry.id}>
-                      <strong>
-                        {entry.matchKey ?? "PIT"} · {entry.teamKey}
-                      </strong>
-                      <span>
-                        {entry.scoutName} · {entry.source}
-                      </span>
-                      <small className="app-muted">
-                        {entry.confidence} confidence · {new Date(entry.updatedAt).toLocaleTimeString()}
-                      </small>
-                    </li>
-                  ))}
-                </ul>
+                <ScoutReportViewer
+                  entries={data.recentEntries}
+                  orgId={orgId}
+                  canDelete={Boolean(data.canManageSchemas)}
+                  onDeleted={() => void sync()}
+                />
               </>
             ) : (
               <p className="app-muted">No entries yet for this event.</p>

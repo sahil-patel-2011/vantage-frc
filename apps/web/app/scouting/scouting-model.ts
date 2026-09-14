@@ -39,6 +39,7 @@ export type Bootstrap = {
     updatedAt: string;
     scoutName: string;
     scoutUserId?: string;
+    payload?: Record<string, unknown> | null;
   }>;
   scoutIdentity?: ScoutIdentity;
 };
