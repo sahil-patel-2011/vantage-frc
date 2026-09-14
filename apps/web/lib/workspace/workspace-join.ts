@@ -130,9 +130,9 @@ export function workspaceShellCopy(kind: WorkspaceShellKind): WorkspaceJoinCopy 
       return {
         kind,
         eyebrow: "SETUP",
-        title: "Finish setup",
+        title: "Finish your profile",
         description: "Complete your profile before joining a team.",
-        badge: "Setup",
+        badge: "Needs setup",
       };
     case "select":
       return {
