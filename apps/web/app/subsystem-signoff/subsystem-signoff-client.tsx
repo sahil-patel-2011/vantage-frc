@@ -407,15 +407,17 @@ export default function SubsystemSignoffClient() {
         </p>
       ) : null}
 
-      <NextActions
-        orgId={orgId}
-        subsystemCount={view.summary.totalSubsystems}
-        startedCount={view.summary.startedSubsystems}
-        signedOffCount={view.summary.signedOffSubsystems}
-        blockedCount={view.summary.blockedSubsystems}
-        pendingGates={pendingGates}
-        topTitle={topTitle}
-      />
+      {hasSubsystems ? (
+        <NextActions
+          orgId={orgId}
+          subsystemCount={view.summary.totalSubsystems}
+          startedCount={view.summary.startedSubsystems}
+          signedOffCount={view.summary.signedOffSubsystems}
+          blockedCount={view.summary.blockedSubsystems}
+          pendingGates={pendingGates}
+          topTitle={topTitle}
+        />
+      ) : null}
 
       <ReadinessPanel view={view} />
       {shouldShowSignoffSummaryTiles(view.summary.totalSubsystems) ? <SummaryTiles view={view} /> : null}
@@ -430,12 +432,9 @@ export default function SubsystemSignoffClient() {
           title="Add your first robot subsystem"
           description="Drivetrain, intake, scoring, climber — each clears the same review gates. Readiness stays blank until someone records a real approve or reject."
         >
-          <div className="signoff-row-links">
-            <a href={hubHref("/build", "fmea", orgId)}>FMEA →</a>
-            <a href={hubHref("/build", "cad", orgId)}>CAD →</a>
-            <a href={withOrgHref("/tasks", orgId)}>Tasks →</a>
-            <a href={withOrgHref("/subsystems", orgId)}>Subsystem specs →</a>
-          </div>
+          <Button as="a" variant="primary" href="#signoff-add">
+            Add a subsystem
+          </Button>
         </EmptyState>
       ) : (
         <SubsystemBoard view={view} busy={busy} mutate={mutate} />
@@ -681,6 +680,7 @@ function AddSubsystemForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
   return (
     <Panel
       as="form"
+      id="signoff-add"
       className="signoff-panel"
       onSubmit={(event) => {
         event.preventDefault();
