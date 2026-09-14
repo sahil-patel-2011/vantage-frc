@@ -87,7 +87,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
   {
     id: "integrations",
     label: "Integrations & connectors",
-    blurb: "TBA, Onshape, GitHub, chat bridges, and self-hosted storage.",
+    blurb: "Team Data, Onshape, GitHub, chat bridges, and self-hosted storage.",
   },
   {
     id: "admin-owner",
@@ -141,7 +141,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
     slug: "getting-started",
     title: "Set up a new team, start to first event",
     summary:
-      "Your team → invite members → pick how AI is powered → import your old data → connect TBA for your first event.",
+      "Your team → invite members → pick how AI is powered → import your old data → connect Team Data for your first event.",
     category: "getting-started",
     keywords: [
       "getting started",
@@ -189,7 +189,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "5 · First event",
         body: [
-          "Connect The Blue Alliance under Team → Data (/team/data) and pick your active event — schedules, rankings, and match cards stay empty until then.",
+          "Connect Team Data under Team → Data (/team/data) and pick your active event — schedules, rankings, and match cards stay empty until then.",
           "Publish a scouting form (Competition → Scouting → Forms) before day one so scouts have something to fill.",
         ],
       },
@@ -342,7 +342,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         heading: "Your layout vs the team",
         body: [
           "Each member has their own Home. Teammates do not see your widget arrangement unless you open a team board on purpose.",
-          "Match scores, scouting coverage, and TBA data stay team-scoped. Only the layout is personal.",
+          "Match scores, scouting coverage, and Team Data stay on your team. Only the layout is personal.",
         ],
       },
     ],
@@ -479,7 +479,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         heading: "Related tools",
         body: [
           "Match checklist, pit displays, and the pre-match briefing hang off the same event context.",
-          "If TBA is not connected, connect it under Team → Data before expecting live ranks or match times.",
+          "If Team Data is not connected, connect it under Team → Data before expecting live ranks or match times.",
         ],
       },
     ],
@@ -507,7 +507,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         heading: "Alliance Selection Desk",
         body: [
           "Open Alliance Selection Desk from Competition → Strategy → Alliance desk (/competition?tab=alliance-selection-desk).",
-          "Use the live 8-alliance pick board, attach scout evidence, and watch TBA conflict flags against real team_event_metrics.",
+          "Use the live 8-alliance pick board, attach scout evidence, and watch official-record conflict flags against cached rankings.",
           "Drive-team export/print is available when you have a real board — ranks come from that board.",
         ],
       },
@@ -562,7 +562,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
     slug: "team-profile",
     title: "Team profile — what the public record says about your team",
     summary:
-      "Built the first time an owner or admin opens it: where you are from, rookie year, seasons competed, awards, recent events, EPA and ranks — from The Blue Alliance and Statbotics.",
+      "Built the first time an owner or admin opens it: where you are from, rookie year, seasons competed, awards, recent events, ratings and ranks — from Team Data.",
     category: "team",
     keywords: ["team profile", "dossier", "rookie year", "awards", "epa", "rank", "statbotics", "blue alliance", "history"],
     relatedHref: "/team/profile",
@@ -570,7 +570,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "What it knows, and from where",
         body: [
-          "Profile, seasons and awards come from The Blue Alliance. Career and per-season EPA and world / country / state ranks come from Statbotics.",
+          "Profile, seasons and awards come from Team Data. Career and per-season ratings and world / country / state ranks come from the same cached record.",
           "Anything a source does not have reads 'not on record'. If one source did not answer, the page says which.",
           "Nobody scrapes your roster: no public source knows who is on your team. The people counts are your own memberships.",
         ],
@@ -757,7 +757,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
     slug: "team-6925-lab",
     title: "Team 6925 lab — Limelight, coding, and CAD weeks",
     summary:
-      "Official Limelight, WPILib, PathPlanner, and GitHub links, then five paced weeks. Learn CAD grades the CAD Video Tutor part from Onshape — you never type mass.",
+      "Official Limelight, WPILib, PathPlanner, and GitHub links, then eight paced weeks. Learn CAD grades the CAD Video Tutor part from Onshape — you never type mass.",
     category: "build",
     keywords: ["6925", "limelight", "wpilib", "pathplanner", "github", "cad video tutor", "learn cad"],
     relatedHref: "/learn/6925",
@@ -766,13 +766,38 @@ export const HELP_ARTICLES: HelpArticle[] = [
         heading: "What is on the page",
         body: [
           "Vision, robot code, GitHub, and vendor docs — each group has one link to open first.",
-          "Weeks 1–4 are laptop, GitHub, Limelight, and PathPlanner. Week 5 is Learn CAD: CAD Video Tutor on cast iron, then the grader.",
+          "Weeks 1–5 are laptop, GitHub, Limelight on the bench, PathPlanner, and Learn CAD. Weeks 6–8 are pull/push/PR, one Limelight in code, and the Cursor robotics pack.",
         ],
       },
       {
         heading: "What stays blank",
         body: [
           "Detection percentages, typed mass, and lesson scores stay blank. Explore Onshape shows document names and last-edited times from the connected account.",
+        ],
+      },
+    ],
+  },
+  {
+    id: "shop-lab",
+    slug: "shop-lab",
+    title: "Shop lab — one Limelight, GitHub, Cursor pack",
+    summary:
+      "Tutorials for the camera on the cart, GitHub pull/push/PR, Cursor rules and skills you ask Cursor to add, and prompts that do one job then self-review.",
+    category: "build",
+    keywords: ["shop lab", "limelight", "github", "push", "pull", "cursor", "skills", "prompts", "self-review"],
+    relatedHref: "/learn/shop",
+    sections: [
+      {
+        heading: "What is on the page",
+        body: [
+          "One Limelight — this shop has a single camera. GitHub collaboration is clone, pull, branch, push, one pull request.",
+          "The Cursor robotics pack is rules and skills with robot spec blanks. Ask Cursor to add .cursor/rules/vantage and .cursor/skills/vantage. Do not invent FOV, mass, or a second camera.",
+        ],
+      },
+      {
+        heading: "Prompts",
+        body: [
+          "Each saved prompt names the goal, what not to do, how you will know, and a self-review line. Extra features are out of scope.",
         ],
       },
     ],
@@ -790,7 +815,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "What it is for",
         body: [
-          "Strategy questions and match predictions from your scouting plus The Blue Alliance and Statbotics; design questions against your CAD and the parts catalog; writing for grants, sponsors and updates; and finding a meeting time from your attendance history.",
+          "Strategy questions and match predictions from your scouting plus Team Data; design questions against your CAD and the parts catalog; writing for grants, sponsors and updates; and finding a meeting time from your attendance history.",
           "It starts from the team profile, so it already knows where you are from, how long you have competed and how your seasons went.",
         ],
       },
@@ -1365,8 +1390,8 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "How it works",
         body: [
-          "A member (typically a mentor) who already pays for Claude Pro/Max — which includes the Claude Code CLI — or ChatGPT runs a tiny bridge service on an always-on computer where that CLI is signed in.",
-          "The bridge asks for an 8-character pairing code, approved at /team/ai-bridge — pairing is the subscriber's own consent to give, and theirs to revoke. Bridged turns are metered at $0 API cost because they run under the CLI's subscription auth.",
+          "A member (typically a mentor) who already pays for Claude Pro/Max — which includes Claude Code — or ChatGPT signs in on an always-on computer and connects it here.",
+          "That computer asks for an 8-character pairing code, approved at /team/ai-bridge — pairing is the subscriber's own consent to give, and theirs to revoke. Connected turns cost $0 API because they run under that person's subscription.",
           "Claude Code is the verified path; the ChatGPT/Codex path is experimental and only used when the Codex CLI is actually detected on the machine.",
         ],
       },
@@ -1531,7 +1556,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "integrations",
     slug: "integrations",
-    title: "Connect TBA, Onshape, GitHub, and chat",
+    title: "Connect Team Data, Onshape, GitHub, and chat",
     summary:
       "Settings → Connectors lists every integration. Connect stays available until a real credential is saved. Connected only appears when that save worked.",
     category: "integrations",
@@ -1553,14 +1578,14 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "Where connections live",
         body: [
-          "Settings → Connectors lists Google, GitHub, The Blue Alliance, Onshape, Discord, Slack, email, Stripe, storage, Fusion, and the shop Pi. “Connected” appears only when a working credential row exists.",
-          "The Blue Alliance is configured under Team → Data (/team/data); schedules, rankings, and match cards stay empty until it is connected and an active event is picked.",
+          "Settings → Connectors lists Google, GitHub, Team Data, Onshape, Discord, Slack, email, Stripe, storage, Fusion, and the shop Pi. “Connected” appears only when a working credential row exists.",
+          "Team Data is configured under Team → Data (/team/data); schedules, rankings, and match cards stay empty until it is connected and an active event is picked.",
         ],
       },
       {
         heading: "What each unlocks",
         body: [
-          "TBA/Statbotics: match schedules, rankings, EPA-based strategy — read from a shared, rate-limited reference cache.",
+          "Team Data: match schedules, rankings, and rating-based strategy — read from a shared, rate-limited cache.",
           "Onshape: the CAD workbench and CAD agent. Fusion stays on this computer.",
           "GitHub: Bugbot repo scans (read-only; never pushes) and code-linked calendar due dates.",
           "Slack (/team/slack) and Discord: optional bridges for team chat and notifications.",

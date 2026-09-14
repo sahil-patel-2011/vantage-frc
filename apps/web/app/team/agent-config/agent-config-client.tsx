@@ -547,6 +547,13 @@ vantage-cad agent sync --dry-run # preview without writing`}</pre>
           sync writes <code>.claude/vantage-permissions.suggested.json</code> for a human to review.
         </p>
         <h3>Cursor (same command, Cursor-native formats)</h3>
+        <p style={{ fontSize: 12, color: "var(--muted)" }}>
+          Copy the robotics starter pack from{" "}
+          <a href="/learn/shop#starter-pack">Shop lab</a>
+          , save it here, then ask Cursor: add the Vantage robotics rules and skills from{" "}
+          <code>.cursor/rules/vantage</code> and <code>.cursor/skills/vantage</code>. Keep robot spec
+          blanks empty. This shop has one Limelight.
+        </p>
         <pre>{`vantage-cad agent sync --agent cursor # rules → .cursor/rules/vantage/*.mdc, skills → .cursor/skills, MCP → .cursor/mcp.json
 vantage-cad agent sync --agent all # Claude Code + Cursor together`}</pre>
         <p style={{ fontSize: 12, color: "var(--muted)" }}>

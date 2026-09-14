@@ -34,7 +34,7 @@ export const TEAM_6925_RESOURCES: TeamResourceGroup[] = [
     id: "vision",
     title: "Limelight and vision",
     blurb:
-      "The camera on the robot. Start with Limelight's own docs — they match the hardware on the cart.",
+      "This shop has one Limelight. Start with Limelight's own docs — they match the camera on the cart. Do not invent a second camera or a detection %.",
     links: [
       { label: "Limelight docs", href: "https://docs.limelightvision.io/", primary: true },
       { label: "PhotonVision docs", href: "https://docs.photonvision.org/" },
@@ -54,10 +54,21 @@ export const TEAM_6925_RESOURCES: TeamResourceGroup[] = [
     id: "github",
     title: "GitHub",
     blurb:
-      "The Student Developer Pack is free software for students. Use it for private robot-code repos — not a second chat app.",
+      "The Student Developer Pack is free software for students. Use it for private robot-code repos — not a second chat app. Pull, branch, push, then one pull request.",
     links: [
       { label: "GitHub Student Developer Pack", href: "https://education.github.com/pack", primary: true },
       { label: "GitHub Docs — Git basics", href: "https://docs.github.com/en/get-started/using-git" },
+    ],
+  },
+  {
+    id: "cursor",
+    title: "Cursor robotics pack",
+    blurb:
+      "Ask Cursor to add the team's rules and skills. Robot spec blanks stay empty until CAD or a lead fills them. One Limelight — never a guessed second camera.",
+    links: [
+      { label: "Shop lab — Cursor pack", href: "/learn/shop#cursor-pack", primary: true },
+      { label: "Team agent config", href: "/team/agent-config" },
+      { label: "Cursor rules", href: "https://cursor.com/docs/context/rules" },
     ],
   },
   {
@@ -151,6 +162,66 @@ export const TEAM_6925_WEEKS: PacedWeek[] = [
         label: "CAD Video Tutor beginner set",
         href: "https://www.cadvideotutor.com/project-set/introduction-to-feature-based-modeling",
       },
+    ],
+  },
+  {
+    id: "week-6",
+    week: 6,
+    title: "GitHub collaboration — pull, branch, push, PR",
+    why: "A commit that never leaves your laptop cannot be reviewed. Pull first, then one branch, one push, one pull request.",
+    steps: [
+      "Pull the default branch of the team repo before you type.",
+      "Make a short branch named for the job. Edit one thing.",
+      "Commit with a why sentence. Push that branch — not main.",
+      "Open one pull request and ask a teammate to read the diff.",
+    ],
+    verify: "The pull request URL opens on GitHub and the diff is only that job.",
+    minutes: 60,
+    links: [
+      {
+        label: "Open a pull request",
+        href: "https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request",
+        primary: true,
+      },
+      { label: "Shop lab — GitHub", href: "/learn/shop#github" },
+    ],
+  },
+  {
+    id: "week-7",
+    week: 7,
+    title: "One Limelight in code",
+    why: "Week 3 proved the camera is alive. This week the robot program names that one camera and nothing else.",
+    steps: [
+      "Open the Limelight page and confirm a live image still exists.",
+      "Write the camera name the page uses into the team project — one name.",
+      "Read that camera over NetworkTables. Do not add a second Limelight name.",
+      "Leave detection % blank unless the camera page shows one right now.",
+    ],
+    verify:
+      "Code names one camera, and the Limelight page still shows a live image. A typed detection % that the page does not show is not done.",
+    minutes: 70,
+    links: [
+      { label: "Shop lab — one Limelight", href: "/learn/shop#limelight", primary: true },
+      { label: "Limelight docs", href: "https://docs.limelightvision.io/" },
+    ],
+  },
+  {
+    id: "week-8",
+    week: 8,
+    title: "Cursor pack and one-job prompts",
+    why: "An agent without the team's rules will invent a second camera or a mass. Load the pack, then use a prompt that names one job and a self-review.",
+    steps: [
+      "Open Shop lab and copy the robotics starter pack into Team agent config, or ask Cursor to add .cursor/rules/vantage and .cursor/skills/vantage.",
+      "Fill only spec blanks you can see on the cart or in CAD.",
+      "Paste one saved prompt from Shop lab. Do not add a second job.",
+      "Read the agent's self-review. If it invented a number, the pack is not loaded.",
+    ],
+    verify:
+      "Cursor can name the one-Limelight rule, and you have one pull request or local diff that matches the prompt you pasted.",
+    minutes: 45,
+    links: [
+      { label: "Shop lab — Cursor pack", href: "/learn/shop#cursor-pack", primary: true },
+      { label: "Team agent config", href: "/team/agent-config" },
     ],
   },
 ];
