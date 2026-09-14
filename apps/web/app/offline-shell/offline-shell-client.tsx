@@ -16,6 +16,7 @@ import { OFFLINE_SHELL_NETWORK_STATUSES, offlineShellNetworkStatusLabel } from "
 import type { OfflineShellView } from "../../lib/offline-shell/compute-offline-shell";
 import type { OfflineShellNetworkStatus } from "../../lib/offline-shell/types";
 import { OfflineBanner } from "../../components/offline-banner";
+import { withOrgHref } from "../../lib/nav/product-nav";
 import "./offline-shell.css";
 
 const COMPONENT_LABEL: Record<string, string> = {
@@ -194,7 +195,9 @@ export default function OfflineShellClient() {
         </EmptyState>
       ) : (
         <div className="offline-shell-stack">
-          <NextActions orgId={orgId} shell={shell} recommendations={recommendations} />
+          {shell === "ready" ? (
+            <NextActions orgId={orgId} shell={shell} recommendations={recommendations} />
+          ) : null}
           <ReadinessPanel view={view} />
           <SummaryTiles view={view} loaded />
           <LogCacheEventForm busy={busy} mutate={mutate} />
@@ -288,7 +291,9 @@ function RecentEvents({
     const copy = offlineShellCopy("empty");
     return (
       <EmptyState soft badge={copy.badge} badgeTone="setup" title={copy.title} description={copy.description}>
-        <NextActions orgId={orgId} shell={shell} />
+        <Button as="a" variant="primary" href={withOrgHref("/scouting", orgId)}>
+          Open Scouting
+        </Button>
       </EmptyState>
     );
   }
