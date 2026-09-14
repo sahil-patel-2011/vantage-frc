@@ -53,7 +53,7 @@ export function writerNextActions(ctx: WriterNextActionContext): WriterNextActio
       id: "compose",
       label: "Compose a template draft",
       detail:
-        "Start from an your team's template, or use FRC Assistant when a provider key is configured.",
+        "Start from your team's template, or pair Claude Code to draft with Ask AI.",
       href: writerHref,
       primary: true,
     });
