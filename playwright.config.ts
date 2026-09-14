@@ -66,15 +66,15 @@ const startWebServer = !explicitBase;
 process.env.PLAYWRIGHT_BASE_URL = origin;
 
 if (explicitBase) {
-  // eslint-disable-next-line no-console
   console.log(`Playwright attaching to ${origin} (PLAYWRIGHT_BASE_URL, no webServer)`);
 } else if (lock) {
-  // eslint-disable-next-line no-console
   console.log(`Playwright reusing ${origin} via webServer.reuseExistingServer`);
 }
 
 export default defineConfig({
   testDir: "./tests/browser",
+  // Vitest unit files (origin.test.ts) live beside specs — never run them here.
+  testMatch: "**/*.spec.ts",
   // One worker is the GHA contract: two starve Next 16's compiler
   // (net::ERR_ABORTED / detached frames). Override with PLAYWRIGHT_WORKERS.
   workers: Number(process.env.PLAYWRIGHT_WORKERS) || 1,
