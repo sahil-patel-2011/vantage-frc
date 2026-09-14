@@ -391,17 +391,18 @@ export function PartnerPlacementsPanel({
       {!program.packages.length && canManage ? (
         <EmptyState
           soft
-          badge="Get started"
           title="No placement packages yet"
           description="Add a priced package with surfaces below. Totals only reflect packages you configure for this team."
-        />
+        >
+          <Button as="a" variant="primary" href="#pp-add-package">
+            Add a package
+          </Button>
+        </EmptyState>
       ) : null}
 
       {!program.sponsors.length ? (
         <EmptyState
           soft
-          badge="Setup"
-          badgeTone="setup"
           title="Add sponsors before attaching packages"
           description="Add a sponsor first, then come back to attach a package."
         >
@@ -461,7 +462,11 @@ export function PartnerPlacementsPanel({
           <article className="app-card">
             <span className="biz-overline">Placement packages</span>
             <h2>Make recognition clear, not cluttered.</h2>
-            <form className="biz-form-grid" onSubmit={(event) => void submit(event, "save-package")}>
+            <form
+              id="pp-add-package"
+              className="biz-form-grid"
+              onSubmit={(event) => void submit(event, "save-package")}
+            >
               <label className="biz-field">
                 <span>Package name</span>
                 <input name="name" required placeholder="Gold partner" />

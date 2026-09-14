@@ -51,7 +51,7 @@ export function Shell({
     case "empty":
       return <>{empty ?? <EmptyState title="Nothing here yet" />}</>;
     case "setup":
-      return <>{setup ?? <EmptyState title="Finish setup" badge="Setup" badgeTone="setup" />}</>;
+      return <>{setup ?? <EmptyState title="Finish setup" badge="Needs setup" badgeTone="setup" />}</>;
     case "filtered_empty":
       return (
         <>

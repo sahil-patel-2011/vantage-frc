@@ -299,24 +299,20 @@ export function AllocateSpend({ orgId, seasonYear }: { orgId: string; seasonYear
       ) : !applications.length ? (
         <EmptyState
           compact
-          badge="Setup"
-          badgeTone="setup"
           title="No grant applications yet"
           description="Add an application on the Business grants board first. Award and spend amounts stay blank until you record them."
         >
-          <Button as="a" variant="secondary" href={businessGrantsHref(orgId)}>
+          <Button as="a" variant="primary" href={businessGrantsHref(orgId)}>
             Open Business · Grants
           </Button>
         </EmptyState>
       ) : !expenses.length ? (
         <EmptyState
           compact
-          badge="Setup"
-          badgeTone="setup"
           title="No named expenses yet"
           description="Log a purchase or other spend first. There is nothing to allocate yet."
         >
-          <Button as="a" variant="secondary" href={seasonFinanceHref(orgId)}>
+          <Button as="a" variant="primary" href={seasonFinanceHref(orgId)}>
             Open Season Finance
           </Button>
         </EmptyState>

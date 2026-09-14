@@ -200,11 +200,15 @@ export default function DocRolesClient() {
         <OfflineBanner feature="Document roles" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
-          badge="Setup"
+          badge="Needs setup"
           badgeTone="setup"
-          title="Document roles are not ready"
+          title="Choose your team"
           description={view.message}
-        />
+        >
+          <Button as="a" variant="primary" href="/workspace">
+            Choose your team
+          </Button>
+        </EmptyState>
       </main>
     );
   }

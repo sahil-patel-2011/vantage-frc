@@ -694,7 +694,7 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
           </>
         ) : null}
         <OfflineBanner feature="Attendance" fromCache={fromCache} cachedAt={cachedAt} />
-        <EmptyState soft title="Choose your team" description={view.message} badge="Setup" badgeTone="setup">
+        <EmptyState soft title="Choose your team" description={view.message} badge="Needs setup" badgeTone="setup">
           <Button as="a" variant="primary" href="/workspace">
             Choose your team
           </Button>

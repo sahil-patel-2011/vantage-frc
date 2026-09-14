@@ -319,10 +319,8 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
           {!loading && !activeEventKey ? (
             <EmptyState
               soft
-              badge="Setup"
-              badgeTone="setup"
               title="No active event yet"
-              description="Set an Event Day event so next-match and coverage can read The Blue Alliance. Boards stay blank until then."
+              description="Set an Event Day event so next-match and coverage can read official scores. Boards stay blank until then."
             >
               <Button as="a" variant="primary" href={hubHref("/competition", "command", orgId)}>
                 Open Event Day
@@ -333,11 +331,13 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
           {!loading && !boards.length ? (
             <EmptyState
               soft
-              badge="No boards yet"
-              badgeTone="setup"
               title="Create your first display board"
               description="Choose a preset below and save. Countdowns, ranks, and predictions stay blank until this board has an event."
-            />
+            >
+              <Button as="a" variant="primary" href="#display-new-board">
+                Name this board
+              </Button>
+            </EmptyState>
           ) : null}
 
           <section className="preset-picker" aria-label="Display presets">
@@ -356,6 +356,7 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
 
           <section className="display-editor">
             <form
+              id="display-new-board"
               className="display-form soft-panel"
               onSubmit={(e) => {
                 e.preventDefault();
