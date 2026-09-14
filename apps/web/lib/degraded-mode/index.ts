@@ -14,11 +14,11 @@ export const DEGRADED_MODE_REASONS: DegradedModeReason[] = ["degraded", "unavail
 export function degradedModeSourceLabel(source: string): string {
   switch (source) {
     case "tba":
-      return "The Blue Alliance";
+      return "Team Data";
     case "statbotics":
-      return "Statbotics";
+      return "Ratings";
     case "db":
-      return "Reference database";
+      return "Saved cache";
     case "all":
       return "All data sources";
     default:
@@ -58,7 +58,7 @@ export function computeDegradedFallbacks(
     {
       id: "team-data",
       label: "Team → Data",
-      detail: "Review the last saved rankings and schedule, then sync again when The Blue Alliance is back.",
+      detail: "Review the last saved rankings and schedule, then sync again when Team Data is back.",
       href: `/team/data${org}`,
     },
   ];
