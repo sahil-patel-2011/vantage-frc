@@ -178,7 +178,7 @@ export async function computeTrajectoryView(
 
   if (baselineEpa == null || fieldStats.sampleSize < MIN_FIELD_SAMPLES) {
     return setupRequiredView(
-      "Not enough cached EPA data yet for your team and district — sync TBA/Statbotics reference data first.",
+      "Not enough cached rating data yet for your team and district — sync Team Data first.",
       org.orgId,
     );
   }
