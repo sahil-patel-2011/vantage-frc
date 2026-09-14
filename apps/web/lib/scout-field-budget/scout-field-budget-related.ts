@@ -186,7 +186,7 @@ export function scoutFieldBudgetNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before linting schemas.",
+          detail: "Choose your team before linting schemas.",
           href: "/workspace",
           primary: true,
         },
