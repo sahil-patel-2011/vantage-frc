@@ -37,6 +37,7 @@ const FILES = [
   "app/inspection/inspection-client.tsx",
   "lib/inspection-copilot/inspection-copilot-related.ts",
   "lib/scout-accuracy/scout-accuracy-related.ts",
+  "app/knowledge-gap/knowledge-gap-client.tsx",
 ] as const;
 
 function emptyStates(src: string): { tag: string; inner: string }[] {

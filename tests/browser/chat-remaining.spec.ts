@@ -60,6 +60,6 @@ test("Chat remaining student chrome keeps one primary and drops leftover copy", 
   const setup = page.getByText("Needs setup", { exact: true });
   if (await setup.isVisible().catch(() => false)) {
     await expect(page.getByRole("heading", { name: "Next actions" })).toHaveCount(0);
-    await expect(page.locator("main").getByRole("link", { name: "Open Team Admin" })).toHaveCount(1);
+    await expect(page.locator("main").getByRole("link", { name: "Connect Claude Code" })).toHaveCount(1);
   }
 });

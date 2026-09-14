@@ -112,7 +112,7 @@ export function alliancePartnerBriefShellCopy(kind: AlliancePartnerBriefShellKin
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Choose your team and run alliance selection before generating a partner brief.",

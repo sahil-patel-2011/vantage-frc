@@ -85,6 +85,12 @@ export function cadLearnNextActions(input: {
     detail: "Paste an Onshape document and Edit in Onshape from the workbench.",
     href: hubHref("/build", "cad", input.orgId),
   });
+  actions.push({
+    id: "explore",
+    label: "See your Onshape documents",
+    detail: "Explore Onshape lists names and last-edited times from the connected account.",
+    href: "#explore",
+  });
   return actions.slice(0, 4);
 }
 
@@ -104,7 +110,7 @@ export function cadLearnCheckNote(note: string): string {
 }
 
 export const CAD_LEARN_PAGE_DESCRIPTION =
-  "Onshape from the first sketch to a mated assembly. At the end you link your part and Vantage checks how heavy it is — and how hard it is to spin — against your team's reference.";
+  "Onshape from the first sketch to a mated assembly, then CAD Video Tutor on cast iron. At the end you link your part and Vantage reads mass and spin from Onshape against your team's reference.";
 
 export type CadLearnShellKind = "loading" | "error" | "setup";
 

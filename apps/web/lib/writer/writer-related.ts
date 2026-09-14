@@ -17,7 +17,8 @@ export type WriterRelatedId =
   | "chat"
   | "budgets"
   | "usage"
-  | "sponsors";
+  | "sponsors"
+  | "claude-code";
 
 export type WriterRelatedLink = {
   id: WriterRelatedId;
@@ -40,6 +41,7 @@ export function writerRelatedLinks(
     { id: "awards", label: "Awards", href: withOrgHref("/team/awards", orgId) },
     { id: "knowledge", label: "Knowledge", href: hubHref("/team", "knowledge", orgId) },
     { id: "sponsors", label: "Sponsors", href: hubHref("/business", "sponsors", orgId) },
+    { id: "claude-code", label: "Claude Code", href: withOrgHref("/team/ai-bridge", orgId) },
     { id: "chat", label: "Chat", href: hubHref("/ai", "chat", orgId) },
     { id: "budgets", label: "Budgets", href: hubHref("/ai", "budgets", orgId) },
     { id: "usage", label: "AI usage", href: hubHref("/ai", "usage", orgId) },
@@ -92,18 +94,18 @@ export function writerShellCopy(kind: WriterShellKind): WriterShellCopy {
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
-          "Choose your team before composing. FRC Assistant needs a provider key; templates work without one.",
+          "Choose your team before composing. Templates work now. Pair Claude Code when you want the assistant.",
       };
     case "provider_setup":
       return {
         kind,
-        badge: "Setup required",
-        title: "AI provider not configured",
+        badge: "Needs setup",
+        title: "Connect Claude Code",
         description:
-          "Use Compose from template to draft from your team’s profile without a model key.",
+          "Templates still draft from this team’s profile. Pair Claude Code if you want the assistant — no API key.",
       };
     case "empty":
       return {
@@ -113,11 +115,15 @@ export function writerShellCopy(kind: WriterShellKind): WriterShellCopy {
         description:
           "Templates and saved drafts stay blank until you compose.",
       };
-    default:
+    case "ready":
       return {
-        kind: "ready",
+        kind,
         title: "Grant & Sponsorship Writer",
         description: "Draft from this team’s profile and business data only — review before sending.",
       };
+    default: {
+      const _exhaustive: never = kind;
+      return _exhaustive;
+    }
   }
 }

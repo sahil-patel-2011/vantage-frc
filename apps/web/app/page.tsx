@@ -10,9 +10,9 @@ import { marketingPageMetadata, organizationSoftwareJsonLd } from "../lib/market
 import "./marketing-showcase.css";
 
 export const metadata: Metadata = marketingPageMetadata({
-  title: "Vantage — one login an FRC student can use without help",
+  title: "Vantage — the FRC season in one login",
   description:
-    "Invite-only FRC software: scout matches, paste a CAD link, watch match video, and run the team — Google or an email code. Mentors invite exact emails. Everyone else joins the waitlist.",
+    "Invite-only FRC software: scout matches, learn CAD and robot code, see the next match with a measured error band, and run practice — Google or an email code. Mentors invite exact emails. Everyone else joins the waitlist.",
   path: "/",
 });
 
@@ -30,10 +30,11 @@ export default function Home() {
           <div className="lux-hero-inner">
             <div className="lux-hero-copy">
               <p className="lux-kicker">For FRC teams · Invite-only</p>
-              <h1 id="lux-hero-title">One login a student can use without help.</h1>
+              <h1 id="lux-hero-title">The season, in one login.</h1>
               <p>
-                Scout matches, paste a CAD link, watch match video, and run the shop — Google or a short email
-                code. Mentors invite exact emails. If you have not been invited, join the waitlist.
+                Scout a match, learn CAD and robot code, see the next score with a measured error band, and run
+                practice from the same sign-in. Mentors invite exact emails. If you have not been invited, join
+                the waitlist.
               </p>
               <div className="actions">
                 <a className="button primary" href="#waitlist">
@@ -45,7 +46,7 @@ export default function Home() {
               </div>
               <ul className="mk-hero-proof">
                 <li>Works in the pit, offline</li>
-                <li>Your team&rsquo;s data stays yours</li>
+                <li>CAD Video Tutor + real Onshape progress</li>
                 <li>No public signup</li>
               </ul>
               <p className="lux-hero-note">

@@ -241,6 +241,10 @@ const KEYWORDS: Record<string, string[]> = {
     "fix it", "broken robot", "not working",
   ],
   "build:bugbot": ["bugbot", "bugs", "review code", "static analysis", "github", "lint"],
+  "build:team-resources": [
+    "6925", "team 6925", "limelight", "wpilib", "pathplanner", "github student pack",
+    "coding lessons", "paced coding", "vision camera",
+  ],
   "build:code-deploy-log": ["deploy", "deploy log", "what version is on the robot"],
   "build:code-perf": ["code performance", "loop time", "code vs match"],
   "build:fmea": ["robot", "fmea", "failure", "risk", "what breaks", "reliability"],

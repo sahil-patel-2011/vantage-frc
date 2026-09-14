@@ -224,6 +224,26 @@ export async function loadConnectorProofs(
     };
   }
 
+  const claude = await safeRows<{ name: string; lastHeartbeatAt: string | null }>(
+    client,
+    `SELECT name, last_heartbeat_at::text AS "lastHeartbeatAt"
+     FROM ai_bridge_devices
+     WHERE org_id=$1::uuid AND revoked_at IS NULL
+     ORDER BY last_heartbeat_at DESC NULLS LAST
+     LIMIT 1`,
+    [orgId],
+  );
+  const claudeRow = claude[0];
+  if (claudeRow) {
+    proofs["claude-code"] = {
+      linked: true,
+      account: claudeRow.name,
+      note: claudeRow.lastHeartbeatAt
+        ? `Paired and last heard from at ${claudeRow.lastHeartbeatAt}.`
+        : "Paired, but Claude Code has not checked in yet — keep it running on that computer.",
+    };
+  }
+
   return proofs;
 }
 

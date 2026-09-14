@@ -112,7 +112,8 @@ export function practiceNextActions(input: {
     actions.push({
       id: "attendance",
       label: "Create a roll call",
-      detail: "Attendance events use occurred_on dates — link them after the session exists.",
+      detail:
+        "Attendance events use occurred_on dates. Emails already on the roster stay when you add people.",
       href: hubHref("/team", "attendance", orgId),
     });
     return actions;

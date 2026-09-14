@@ -43,14 +43,12 @@ describe("cad learning track", () => {
     }
   });
 
-  it("does not link thecadvideotutor, which does not resolve", () => {
-    // Named as a source by the product owner. thecadvideotutor.com fails DNS
-    // and the YouTube handle 404s, so it cannot be linked at all. Pinned so it
-    // cannot be re-added from memory.
+  it("links the live CAD Video Tutor host and never the dead one", () => {
+    // www.cadvideotutor.com is the paced Onshape beginner set. thecadvideotutor.com
+    // still fails DNS and must not come back from memory.
     const links = allCadLinks().map((link) => link.href.toLowerCase());
-    for (const dead of ["thecadvideotutor", "cadvideotutor"]) {
-      expect(links.some((href) => href.includes(dead)), dead).toBe(false);
-    }
+    expect(links.some((href) => href.includes("thecadvideotutor"))).toBe(false);
+    expect(links.some((href) => href.includes("www.cadvideotutor.com"))).toBe(true);
   });
 
   it("never uses a flat Onshape help path, which 200s even when it does not exist", () => {
@@ -88,6 +86,8 @@ describe("cad learning track", () => {
     expect(order.indexOf("sketching")).toBeLessThan(order.indexOf("solids"));
     expect(order.indexOf("solids")).toBeLessThan(order.indexOf("part-studios"));
     expect(order.indexOf("part-studios")).toBeLessThan(order.indexOf("multi-part"));
+    expect(order.indexOf("multi-part")).toBeLessThan(order.indexOf("cvt"));
+    expect(order.indexOf("cvt")).toBeLessThan(order.indexOf("graded"));
     expect(order[order.length - 1]).toBe("graded");
   });
 
@@ -105,6 +105,8 @@ describe("cad learning track", () => {
       "in-context",
       "assemblies",
       "mates",
+      "cvt-explore",
+      "cvt-saddle",
     ]) {
       expect(ids, `missing lesson: ${required}`).toContain(required);
     }

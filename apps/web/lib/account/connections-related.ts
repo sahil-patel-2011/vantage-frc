@@ -82,7 +82,7 @@ export function connectionBadgeLabel(status: ConnectionConnectorStatus): string 
   if (status === "connected") return "Connected";
   if (status === "available") return "Ready";
   if (status === "empty") return "Not connected";
-  return "Setup required";
+  return "Needs setup";
 }
 
 /** Soft-UI badge tone — Connected is the only "good" state. */
@@ -116,7 +116,7 @@ export function classifyConnectionsShell(input: {
 export function connectionsEmptyCopy(shell: ConnectionsShellKind): ConnectionsEmptyCopy {
   if (shell === "setup") {
     return {
-      badge: "Setup required",
+      badge: "Needs setup",
       badgeTone: "setup",
       title: "Connectors need a team",
       description:

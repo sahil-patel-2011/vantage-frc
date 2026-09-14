@@ -111,9 +111,9 @@ export function aiChatShellCopy(kind: AiChatShellKind): AiChatEmptyCopy {
       return {
         kind,
         badge: "Needs setup",
-        title: "Ask AI needs a key",
+        title: "Connect Claude Code",
         description:
-          "A mentor or owner adds a platform or your own key under Team Admin. Chat stays empty until then.",
+          "A mentor signs in to Claude Code on one computer and pairs it here. Ask AI then runs on that plan — no API key.",
       };
     case "empty":
       return {

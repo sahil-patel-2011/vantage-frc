@@ -7,7 +7,7 @@ const rail = ["Home", "Compete", "Team", "Build"] as const;
 
 const today: readonly { label: string; value: string }[] = [
   { label: "What to do now", value: "Scout this match" },
-  { label: "CAD", value: "Paste an Onshape link" },
+  { label: "Learn CAD", value: "CAD Video Tutor on Onshape" },
   { label: "Match video", value: "Confirm the timeline" },
 ] as const;
 
@@ -40,7 +40,7 @@ export function HeroProductPanel() {
               ))}
             </dl>
             <p className="mk-mock-empty">
-              Scouting, a CAD link, match video, and team ops — the same sign-in, nothing extra to install.
+              Scouting, CAD Video Tutor, match video, and practice — the same sign-in, nothing extra to install.
             </p>
           </article>
         </div>

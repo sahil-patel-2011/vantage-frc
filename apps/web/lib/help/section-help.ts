@@ -1356,7 +1356,7 @@ export const SECTION_HELP: SectionHelpEntry[] = [
     when: "Build season and the offseason, on grant and award deadlines.",
     moments: ["build", "pre-comp", "after"],
     how: [
-      "Configure an AI provider key first — drafts are blocked without one.",
+      "Pair Claude Code if you want the assistant. Templates still draft from the team profile without one.",
       "Pick the prompt or paste the funder's question.",
       "Generate a draft, then replace every number with one you can source.",
       "Save it back to the grant or award it belongs to.",
@@ -1365,7 +1365,7 @@ export const SECTION_HELP: SectionHelpEntry[] = [
     related: [
       { label: "Grants", href: "/team/grants" },
       { label: "Awards", href: "/team/awards" },
-      { label: "API keys", href: "/team/ai-keys" },
+      { label: "Claude Code", href: "/team/ai-bridge" },
     ],
   },
   {
@@ -1415,16 +1415,17 @@ export const SECTION_HELP: SectionHelpEntry[] = [
     id: "ai.ai-bridge",
     hub: "ai",
     tab: "ai-bridge",
-    title: "Subscription bridge",
-    what: "A member's Claude Pro/Max or ChatGPT subscription, running on their always-on computer, answering the team's AI at $0 API cost — chat-class by default, everything if they opt in.",
-    why: "A mentor already paying for Claude can cover the whole team's chat without the team buying API usage.",
-    when: "Preseason to pair; it serves the team whenever the machine is online.",
+    title: "Claude Code",
+    what: "A mentor signs in to Claude Code on one computer and pairs it here so Ask AI runs on that plan — no API key.",
+    why: "The team already paying for Claude can cover Ask AI without buying a separate key.",
+    when: "Preseason to pair; it serves the team whenever that computer is on.",
     moments: ["preseason", "build", "pre-comp"],
     how: [
-      "On the always-on machine, sign in the Claude Code CLI (verified path; Codex is experimental) and run the bridge's setup to get an 8-character code.",
-      "Approve the code at /team/ai-bridge — pairing is the subscriber's own consent.",
-      "Pick the device's coverage: interactive chat only (default), or Everything to run all of Vantage's AI on the subscription.",
-      "Revoke the device on the same page to stop routing immediately.",
+      "On a computer that stays on, install Claude Code and sign in.",
+      "Start the Vantage Claude connector on that computer. It shows an 8-character code.",
+      "Approve the code at /team/ai-bridge.",
+      "Leave chat-only on unless this computer should also run long jobs.",
+      "Revoke the computer on the same page to stop.",
     ],
     tips: [
       "It is that person's plan: rate limits apply, the provider's message is shown verbatim, and turns fall back to the team's own keys automatically.",

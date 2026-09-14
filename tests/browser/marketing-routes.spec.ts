@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 test("marketing navigation uses real routes and active tabs", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "One login a student can use without help." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "The season, in one login." })).toBeVisible();
   const hero = page.locator(".lux-hero");
   await expect(hero.getByRole("link", { name: "Join the waitlist" })).toHaveCount(1);
   await expect(hero.getByRole("link", { name: /Already invited/ })).toBeVisible();

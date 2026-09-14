@@ -243,7 +243,7 @@ export default function PartsRelayClient() {
             description="Post what your team needs or can lend at an event, then track the hand-off — who has it, when it's due back, and whether it came home."
           />
           <OfflineBanner feature="Parts Relay" fromCache={fromCache} cachedAt={cachedAt} />
-          <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
+          <EmptyState badge="Needs setup" badgeTone="setup" title={view.message}>
             {view.steps[0] ? (
               <Button as="a" variant="primary" href={view.steps[0].href}>
                 {view.steps[0].label}

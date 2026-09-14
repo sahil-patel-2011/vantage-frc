@@ -77,7 +77,7 @@ describe("Chat remaining student chrome", () => {
     expect(chat).toMatch(/shell === "setup" \|\| shell === "loading" \|\| shell === "auth_required" \|\| shell === "error"/);
     expect(chat).not.toMatch(/shell === "empty".*NextActions/s);
     expect(chat).toMatch(/shell === "ready" \? <NextActions/);
-    expect(chat).toMatch(/Open Team Admin/);
+    expect(chat).toMatch(/Connect Claude Code/);
     expect(chat).toMatch(/shell === "ready"/);
 
     const setupCards = emptyStates(chat);

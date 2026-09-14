@@ -181,7 +181,7 @@ function ControlMapShell({
         soft
         badge={
           shell === "setup"
-            ? "Setup required"
+            ? "Needs setup"
             : failure
               ? failure.kind === "auth"
                 ? "Signed out"

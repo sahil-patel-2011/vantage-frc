@@ -49,9 +49,9 @@ export function ShellPanel({
           Sign in
         </Button>
       ) : null}
-      {shell === "setup" && orgId ? (
-        <Button as="a" variant="secondary" href={withOrgHref("/team/admin", orgId)}>
-          Team admin
+      {shell === "setup" ? (
+        <Button as="a" variant="primary" href={withOrgHref("/team/ai-bridge", orgId)}>
+          Connect Claude Code
         </Button>
       ) : null}
     </section>

@@ -167,7 +167,7 @@ function DefenseShell({
       ) : (
         <EmptyState
           soft
-          badge={shell === "setup" ? "Setup required" : shell === "empty" ? "No matchups yet" : copy.badge}
+          badge={copy.badge}
           badgeTone="setup"
           title={copy.title}
           description={error ?? copy.description}

@@ -27,9 +27,9 @@ const SURFACES = [
   },
   {
     path: "/team/ai-bridge",
-    heading: "AI subscription bridge",
-    crumb: "Team / AI subscription bridge",
-    ready: "Pair a machine",
+    heading: "Claude Code",
+    crumb: "Team / Claude Code",
+    ready: "Pair this computer",
   },
 ] as const;
 

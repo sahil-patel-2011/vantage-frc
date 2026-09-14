@@ -145,7 +145,7 @@ export function robotWeighInShellCopy(kind: RobotWeighInShellKind): RobotWeighIn
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Choose your team before logging real scale readings.",

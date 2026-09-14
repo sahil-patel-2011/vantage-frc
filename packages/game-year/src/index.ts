@@ -3,7 +3,15 @@ import { BIOCORE_2027 } from "./packs/biocore-2027";
 import { REBUILT_2026 } from "./packs/rebuilt-2026";
 import type { GameYearPack, SchemaDefinition } from "./types";
 
-export type { GameField, GameFieldType, GameSchema, GameYearPack, GameYearStatus, SchemaDefinition } from "./types";
+export type {
+  GameField,
+  GameFieldType,
+  GameSchema,
+  GameYearBrief,
+  GameYearPack,
+  GameYearStatus,
+  SchemaDefinition,
+} from "./types";
 export { BIOCORE_2027, FIELD_CENTRIC_FIELDS, REBUILT_2026, withFieldCentric };
 
 const PACKS: Record<number, GameYearPack> = {
@@ -78,4 +86,17 @@ export function defaultPitSchema(year: number): SchemaDefinition {
 
 export function isManualPublished(year: number): boolean {
   return packForYear(year).status === "published";
+}
+
+/** Newest published pack at or before `year`, if any. */
+export function lastPublishedPack(year: number = currentSeasonYear()): GameYearPack | null {
+  const known = Object.keys(PACKS)
+    .map(Number)
+    .filter((candidate) => candidate <= year)
+    .sort((a, b) => b - a);
+  for (const candidate of known) {
+    const pack = PACKS[candidate];
+    if (pack && pack.status === "published") return pack;
+  }
+  return null;
 }

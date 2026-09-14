@@ -114,6 +114,51 @@
   font-variant-numeric: tabular-nums;
 }
 
+.cl-explore {
+  margin: 0 0 28px;
+  padding: 18px 20px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.cl-explore h2 {
+  margin: 0 0 6px;
+  font-size: 18px;
+}
+
+.cl-explore header p,
+.cl-explore-empty p {
+  margin: 0 0 12px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.cl-explore-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cl-explore-list li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+}
+
+.cl-explore-list a {
+  color: var(--ink);
+  font-weight: 650;
+}
+
+.cl-explore-list span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
 .cl-muted {
   color: var(--muted);
   font-weight: 400;

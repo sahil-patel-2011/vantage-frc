@@ -9,10 +9,9 @@
  *
  * SOURCING
  *
- * "thecadvideotutor" was suggested as a source. It cannot be used: the domain
- * thecadvideotutor.com does not resolve (DNS failure) and the YouTube handle
- * returns 404. It is deliberately not linked, and there is a test pinning that
- * so it cannot be added back from memory.
+ * CAD Video Tutor is live at https://www.cadvideotutor.com/ and is the paced
+ * Onshape video set before the graded part. thecadvideotutor.com still does
+ * not resolve and must not be linked — a test pins that dead host.
  *
  * The backbone is Onshape's own free official material, which is both correct
  * and permanently maintained: the Learning Center, the Education programme, the
@@ -521,8 +520,89 @@ export const CAD_TRACK: Unit[] = [
     ],
   },
   {
+    id: "cvt",
+    title: "6 · CAD Video Tutor",
+    blurb:
+      "Watch the official Onshape beginner set, rebuild each part in your own document, assign cast iron, and read mass yourself. Vantage later grades those same numbers from Onshape — you never type them in.",
+    lessons: [
+      {
+        id: "cvt-explore",
+        title: "Explore Onshape and open the beginner set",
+        why:
+          "CAD Video Tutor is the paced video track this team uses for first parts. Explore Onshape on this page shows the documents that actually exist on the connected account, so a lead can see real progress instead of a checkbox someone ticked.",
+        steps: [
+          "Open the CAD Video Tutor beginner set linked below and watch the introduction all the way through before you sketch.",
+          "Create or open your lesson document in Onshape — the same one from Getting in, not a second copy.",
+          "Come back to this page and look at Explore Onshape. Your document should appear with a last-edited time after you save a feature.",
+          "If Explore Onshape is empty, connect Onshape on CAD first. An empty list is not a score.",
+        ],
+        practice: "Watch the introduction, then confirm your lesson document shows up under Explore Onshape with a recent last-edited time.",
+        verify: "You can name the three beginner parts (Fixture, Saddle Bracket, Spacer Plate) and you can see your own document on this page.",
+        tip:
+          "Explore Onshape lists names and last-edited times from the connected account. Feature counts stay blank here.",
+        links: [
+          {
+            label: "CAD Video Tutor — Introduction to feature-based modeling",
+            href: "https://www.cadvideotutor.com/project-set/introduction-to-feature-based-modeling",
+            primary: true,
+          },
+          { label: "Onshape Learning Center", href: "https://learn.onshape.com" },
+        ],
+        minutes: 40,
+      },
+      {
+        id: "cvt-saddle",
+        title: "Saddle Bracket — assign cast iron and read mass",
+        why:
+          "Project 1.2 is the first CAD Video Tutor part that assigns a material and checks mass properties. That is the same pair of numbers the grader reads later. Doing it here means you already know how to weigh a part before anyone scores you.",
+        steps: [
+          "Follow Saddle Bracket (Project 1.2) on CAD Video Tutor in your own Part Studio.",
+          "Assign CAST IRON to the part — the same material the graded lesson and the team reference use.",
+          "Open mass properties and write down mass and the three spin numbers. Do not type those numbers into Vantage; the grader reads them from Onshape.",
+          "Change one dimension by a little and watch both numbers move, then undo if that was only a check.",
+        ],
+        practice: "One Saddle Bracket, one Part Studio, cast iron, fully defined sketches, mass properties open.",
+        verify: "The part reports a non-zero mass on cast iron, and you can find the spin numbers without hunting.",
+        warning:
+          "If mass properties are blank, no material is assigned. The grader will later say it graded nothing — it will not guess a density.",
+        links: [
+          {
+            label: "Saddle Bracket on CAD Video Tutor",
+            href: "https://www.cadvideotutor.com/project-set/introduction-to-feature-based-modeling",
+            primary: true,
+          },
+          { label: "Mass Properties tool", href: `${HELP}/View/mass_properties_tool.htm` },
+        ],
+        minutes: 70,
+      },
+      {
+        id: "cvt-fixture",
+        title: "Fixture and Spacer Plate — same material as the grader",
+        why:
+          "Fixture 1.1 and Spacer Plate 1.3 finish the beginner set. Doing both on cast iron keeps every lesson part on the material the reference part uses, so a later grade compares shape, not density.",
+        steps: [
+          "Build Fixture (Project 1.1) in the same document, as its own part, and assign cast iron.",
+          "Build Spacer Plate (Project 1.3) the same way.",
+          "Read mass properties on each part. Heavier is fine — cast iron is dense on purpose.",
+          "Name each part for what it is, not Part 1.",
+        ],
+        practice: "Fixture and Spacer Plate in your lesson document, both on cast iron, both named.",
+        verify: "Both parts show a mass, and Explore Onshape shows the document was edited after you finished.",
+        links: [
+          {
+            label: "Beginner set on CAD Video Tutor",
+            href: "https://www.cadvideotutor.com/project-set/introduction-to-feature-based-modeling",
+            primary: true,
+          },
+          { label: "Customizing part materials", href: `${HELP}/PartStudio/customizing_part_materials.htm` },
+        ],
+        minutes: 80,
+      },
+    ],
+  },
+  {
     id: "graded",
-    title: "6 · The graded part",
+    title: "7 · The graded part",
     blurb:
       "Everything above is practice. This is the one you submit, and the one Vantage measures against your team's reference part.",
     lessons: [
@@ -532,7 +612,7 @@ export const CAD_TRACK: Unit[] = [
         why:
           "Being able to build a specific part to a specific spec — not something roughly like it — is the difference between a student who can help and one who needs help. The grader measures two things a picture cannot: how much material you used, and where you put it.",
         steps: [
-          "Get the part drawing from your CAD lead, or the lesson document they bound as the reference.",
+          "Get the part drawing from your CAD lead, or rebuild the CAD Video Tutor beginner part they bound as the reference — usually the Saddle Bracket on cast iron.",
           "Model it in ONE Part Studio, as one solid part.",
           "Assign CAST IRON to the part. The reference is on cast iron; if yours is not, both numbers will be wrong and the grader will tell you the materials do not match.",
           "Read your own mass properties first and compare them to the drawing. Find your own mistakes before you submit.",
@@ -548,7 +628,12 @@ export const CAD_TRACK: Unit[] = [
           "If the grader says it could not read your mass properties, it has graded nothing and given you no score. Check, in order: is your Onshape account connected to Vantage, is the document shared with that account, does the part have cast iron assigned. Nothing about a failed read is a mark against you.",
         gradable: true,
         links: [
-          { label: "Mass Properties tool", href: `${HELP}/View/mass_properties_tool.htm`, primary: true },
+          {
+            label: "CAD Video Tutor — the part this grade is built for",
+            href: "https://www.cadvideotutor.com/project-set/introduction-to-feature-based-modeling",
+            primary: true,
+          },
+          { label: "Mass Properties tool", href: `${HELP}/View/mass_properties_tool.htm` },
           { label: "Customizing part materials", href: `${HELP}/PartStudio/customizing_part_materials.htm` },
         ],
         minutes: 90,
@@ -653,6 +738,7 @@ export const CAD_COMMUNITY_LINKS: LessonLink[] = [
     primary: true,
   },
   { label: "Course catalog", href: "https://learn.onshape.com/catalog" },
+  { label: "CAD Video Tutor — Onshape beginner projects", href: "https://www.cadvideotutor.com/" },
   { label: "Onshape forum — ask a question", href: "https://forum.onshape.com/discussions" },
   { label: "Onshape forum home", href: "https://forum.onshape.com" },
   { label: "Chief Delphi — the FRC community", href: "https://www.chiefdelphi.com" },

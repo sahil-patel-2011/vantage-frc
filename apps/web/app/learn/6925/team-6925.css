@@ -1,0 +1,49 @@
+.lab-page {
+  display: block;
+  max-width: 74ch;
+}
+
+.lab-lead {
+  margin: 0 0 24px;
+  color: var(--muted);
+}
+
+.lab-unit {
+  margin: 0 0 28px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.lab-unit h2 {
+  margin: 0 0 8px;
+  font-size: 20px;
+}
+
+.lab-unit p,
+.lab-unit li {
+  line-height: 1.55;
+}
+
+.lab-links {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lab-links a {
+  color: var(--ink);
+}
+
+.lab-link-primary {
+  font-weight: 700;
+}
+
+.lab-verify {
+  margin: 12px 0 0;
+}
+
+.lab-minutes {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}

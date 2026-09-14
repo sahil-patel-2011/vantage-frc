@@ -89,4 +89,23 @@ export const REBUILT_2026: GameYearPack = {
     ],
   },
   strategyTemplates: ["safe_fuel", "balanced", "climb_first"],
+  brief: {
+    headline: "Fuel on the field, then a tower climb",
+    whatWeKnow: [
+      "The published manual scores auto fuel, teleop fuel, and fuel passed.",
+      "Endgame is a tower climb: none, L1, L2, or L3.",
+      "Trench and bump are traversal facts you confirm in the pit and mark per match.",
+    ],
+    scoutFirst: [
+      "Count auto fuel, teleop fuel, and fuel passed.",
+      "Record the tower climb level you actually saw.",
+      "Mark trench and bump only when that robot did them this match.",
+      "In the pit: drivetrain, motors, language, driver seasons, photos, and clearance.",
+    ],
+    designQuestions: [
+      "Do we score fuel in auto, pass it, or both?",
+      "What tower level can we climb if a partner is dead?",
+      "Do we fit the trench, clear the bump, or play the open field?",
+    ],
+  },
 };

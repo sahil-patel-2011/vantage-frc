@@ -3,6 +3,7 @@ import {
   currentSeasonYear,
   defaultMatchSchema,
   isManualPublished,
+  lastPublishedPack,
   packForYear,
 } from "../src";
 
@@ -19,6 +20,13 @@ describe("game-year packs", () => {
     expect(pitKeys).toContain("driver_seasons");
     expect(pitKeys).not.toContain("fuel_capacity");
     expect(pitKeys).not.toContain("tower_capability");
+    expect(pack.brief?.headline).toMatch(/tower/i);
+  });
+
+  it("points 2027 at last published REBUILT", () => {
+    const prior = lastPublishedPack(2027);
+    expect(prior?.year).toBe(2026);
+    expect(prior?.gameName).toBe("REBUILT");
   });
 
   it("does not invent 2027 BIOCORE scoring keys before the manual", () => {

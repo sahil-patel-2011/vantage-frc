@@ -18,6 +18,7 @@ import {
 import { classifyCadLearnShell } from "../../lib/cad-learn/cad-learn-related";
 import "../cad/cad-setup.css";
 import { CadLearnEmptyCard, CadLearnHeader, CadLearnNextActions } from "./cad-learn-chrome";
+import { ExploreOnshapeBoard } from "./cad-learn-explore";
 import { LessonBody } from "./cad-learn-lesson";
 import { BAND_LABEL, isCadLearnView, type CadLearnView } from "./cad-learn-model";
 import { OnshapeEditBoard } from "../cad/onshape-edit-board";
@@ -218,11 +219,13 @@ export default function CadLearnClient() {
       ) : null}
 
       <OnshapeEditBoard />
+      <ExploreOnshapeBoard orgId={view.orgId} />
 
       <div className="cl-shell">
         <nav className="cl-side" aria-label="CAD track sections">
           <p className="cl-side-title">CAD onboarding</p>
           <div className="cl-side-group">
+            <a href="#explore">Explore Onshape</a>
             <a href="#reference">Which tool do I want</a>
           </div>
           {CAD_TRACK.map((unit) => (

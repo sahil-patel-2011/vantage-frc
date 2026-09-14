@@ -59,6 +59,13 @@ describe("duplicate-safe persistence", () => {
   const store = new MemoryWaitlistStore();
   beforeEach(() => store.clear());
 
+  it("keeps the first person's email when a second person joins", async () => {
+    await store.upsert(waitlistSchema.parse({ termsAccepted: true, privacyAccepted: true, email: "a@example.com", teamNumber: 6925 }));
+    await store.upsert(waitlistSchema.parse({ termsAccepted: true, privacyAccepted: true, email: "b@example.com", teamNumber: 6925 }));
+    const emails = (await store.list()).map((entry) => entry.email).sort();
+    expect(emails).toEqual(["a@example.com", "b@example.com"]);
+  });
+
   it("updates an existing email without disclosing a duplicate", async () => {
     await store.upsert(waitlistSchema.parse({ termsAccepted: true, privacyAccepted: true, email: "a@example.com", teamNumber: 1 }));
     await expect(store.upsert(waitlistSchema.parse({ termsAccepted: true, privacyAccepted: true,

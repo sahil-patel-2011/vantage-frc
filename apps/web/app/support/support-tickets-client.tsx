@@ -276,7 +276,7 @@ export default function SupportTicketsClient() {
         <OfflineBanner feature="Support" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
-          badge="Setup required"
+          badge="Needs setup"
           badgeTone="setup"
           title={view.message ?? "Choose your team first."}
           description="Choose your team, then return here to submit a real ticket."

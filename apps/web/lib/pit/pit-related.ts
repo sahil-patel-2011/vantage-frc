@@ -201,7 +201,7 @@ export function pitShellCopy(kind: PitShellKind): PitEmptyCopy {
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Choose your team before logging batteries, issues, or maintenance.",
@@ -214,13 +214,17 @@ export function pitShellCopy(kind: PitShellKind): PitEmptyCopy {
         description:
           "Release gates, rack status, and work queues stay blank until you record real evidence. Cross-check Batteries, Match checklist, and Event Day.",
       };
-    default:
+    case "ready":
       return {
-        kind: "ready",
+        kind,
         title: "Robot release board",
         description:
           "Gates use only logged issues, maintenance, and battery readings.",
       };
+    default: {
+      const _exhaustive: never = kind;
+      return _exhaustive;
+    }
   }
 }
 

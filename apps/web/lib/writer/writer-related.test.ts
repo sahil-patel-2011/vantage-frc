@@ -22,10 +22,16 @@ describe("writerRelated Soft-UI helpers", () => {
   });
 
   it("includes AI neighbor links when requested", () => {
-    const links = writerRelatedLinks("org-1", { include: ["chat", "budgets", "usage"] });
+    const links = writerRelatedLinks("org-1", { include: ["claude-code", "chat", "budgets"] });
+    expect(links.find((l) => l.id === "claude-code")?.href).toBe("/team/ai-bridge?orgId=org-1");
     expect(links.find((l) => l.id === "chat")?.href).toBe("/ai?tab=chat&orgId=org-1");
     expect(links.find((l) => l.id === "budgets")?.href).toBe("/ai?tab=budgets&orgId=org-1");
-    expect(links.find((l) => l.id === "usage")?.href).toBe("/ai?tab=usage&orgId=org-1");
+  });
+
+  it("setup and provider_setup use Needs setup and Claude Code", () => {
+    expect(writerShellCopy("setup").badge).toBe("Needs setup");
+    expect(writerShellCopy("provider_setup").badge).toBe("Needs setup");
+    expect(writerShellCopy("provider_setup").title).toBe("Connect Claude Code");
   });
 
   it("classifies shells without inventing DEMO copy", () => {

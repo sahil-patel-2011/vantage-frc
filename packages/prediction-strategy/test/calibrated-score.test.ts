@@ -45,23 +45,23 @@ describe("calibrated alliance score predictor", () => {
   it("reports honest metrics on the fixture (not a live TBA claim)", () => {
     const metrics = scorePredictionMetrics(fixtureSeasonRows());
     expect(metrics.n).toBe(4);
-    expect(metrics.mae).toBe(89.7);
-    expect(metrics.rmse).toBe(89.88);
-    expect(metrics.within3).toBe(0);
-    expect(metrics.within5).toBe(0);
-    expect(metrics.modelVersion).toBe("calibrated-linear-v1");
+    expect(metrics.mae).toBe(3.75);
+    expect(metrics.rmse).toBe(4.89);
+    expect(metrics.within3).toBe(0.5);
+    expect(metrics.within5).toBe(0.5);
+    expect(metrics.modelVersion).toBe("calibrated-linear-v2");
   });
 
   it("uses the fixture MAE as the UI band, not a placeholder 8", () => {
     expect(errorBandFromMae(Number.NaN)).toBe(1);
     expect(errorBandFromMae(-4)).toBe(1);
     expect(errorBandFromMae(0)).toBe(1);
-    expect(errorBandFromMae(89.7)).toBe(90);
+    expect(errorBandFromMae(3.75)).toBe(4);
     const metrics = scorePredictionMetrics(fixtureSeasonRows());
     expect(errorBandFromMae(metrics.mae)).toBe(FIXTURE_ERROR_BAND);
-    expect(FIXTURE_ERROR_BAND).toBe(90);
+    expect(FIXTURE_ERROR_BAND).toBe(4);
     expect(DEFAULT_ERROR_BAND).toBe(FIXTURE_ERROR_BAND);
-    expect(typicalScoreErrorCopy(FIXTURE_ERROR_BAND)).toBe("typical error ±90 (last measured set)");
+    expect(typicalScoreErrorCopy(FIXTURE_ERROR_BAND)).toBe("typical error ±4 (last measured set)");
     const [row] = fixtureSeasonRows();
     const overridden = predictAllianceScores(row!, { errorBand: 12.4 });
     expect(isScorePredictionSkip(overridden)).toBe(false);

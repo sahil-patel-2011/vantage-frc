@@ -86,6 +86,19 @@
 .kick-setup-steps span{color:var(--muted);font-size:12px}
 .kick-setup-steps a{display:inline-flex;align-items:center;flex:none;min-height:44px;font-size:12px;font-weight:700;color:var(--accent)}
 
+.kick-brief{display:grid;gap:14px}
+.kick-brief header h2{margin:6px 0 4px}
+.kick-brief header p{margin:0;color:var(--muted)}
+.kick-brief-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.kick-brief-grid h3,.kick-brief-prior h3{margin:0 0 8px;font-size:var(--text-xs);text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.kick-brief-grid ul,.kick-brief-prior ul{margin:0;padding-left:1.1rem;display:grid;gap:6px}
+.kick-brief-prior{display:grid;gap:12px;padding-top:8px;border-top:1px solid var(--line)}
+.kick-brief-actions{display:flex;flex-wrap:wrap;gap:8px}
+
+@media(max-width:900px){
+.kick-brief-grid{grid-template-columns:1fr}
+}
+
 @media(max-width:900px){
 .kick-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
 .kick-intel-grid,.kick-intel-entry{grid-template-columns:1fr}

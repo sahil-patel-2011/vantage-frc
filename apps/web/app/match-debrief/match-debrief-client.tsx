@@ -185,7 +185,7 @@ export default function MatchDebriefClient({ orgId }: { orgId: string | null }) 
           <div><span className="eyebrow">VANTAGE / MATCH LOG</span><h1>Match debrief</h1></div>
         </header>
         <OfflineBanner feature="Match debrief" fromCache={fromCache} cachedAt={cachedAt} />
-        <EmptyState badge="Setup required" badgeTone="setup" soft title="Choose your team" description={view.message}>
+        <EmptyState badge="Needs setup" badgeTone="setup" soft title="Choose your team" description={view.message}>
           <Button as="a" variant="primary" href="/workspace">Choose your team</Button>
         </EmptyState>
       </main>

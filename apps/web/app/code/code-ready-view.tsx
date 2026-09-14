@@ -62,7 +62,7 @@ export function CodeReadyView(props: CodeReadyViewProps) {
       {!orgId ? (
         <EmptyState
           soft
-          badge="Setup required"
+          badge="Needs setup"
           badgeTone="setup"
           title="Choose your team to coach code"
           description="Local pattern review works without a model key. Pairing VS Code, GitHub context, CAD, and AI chat need a team."

@@ -148,7 +148,7 @@ function CollabShell({
       ) : (
         <EmptyState
           soft
-          badge={shell === "setup" ? "Setup required" : copy.badge}
+          badge={copy.badge}
           badgeTone="setup"
           title={copy.title}
           description={error ?? copy.description}

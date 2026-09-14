@@ -154,7 +154,7 @@ function DossierShell({
         className="dossier-empty"
         badge={
           shell === "setup"
-            ? "Setup required"
+            ? "Needs setup"
             : failure
               ? failure.kind === "auth"
                 ? "Signed out"

@@ -40,7 +40,7 @@ export type AllianceScorePrediction = {
   /** Expected absolute error from the last backtest of this model version, if known. */
   errorBand: number;
   drivers: string[];
-  modelVersion: "calibrated-linear-v1";
+  modelVersion: "calibrated-linear-v2";
 };
 
 export type ScorePredictionSkip = {
@@ -55,10 +55,15 @@ export type ScorePredictionMetrics = {
   within3: number;
   within5: number;
   byEventType: Record<string, { n: number; mae: number; within3: number }>;
-  modelVersion: "calibrated-linear-v1";
+  modelVersion: "calibrated-linear-v2";
 };
 
-const MODEL_VERSION = "calibrated-linear-v1" as const;
+const MODEL_VERSION = "calibrated-linear-v2" as const;
+
+/** Three robots share field space and game pieces — do not sum three full ratings. */
+const ALLIANCE_INTERACTION = 0.5;
+const SCOUT_SHRINK = 0.65;
+const OPPONENT_DPR_WEIGHT = 0.12;
 
 /**
  * Turn a measured MAE into the UI ±band. Round to the nearest point and never
@@ -70,11 +75,11 @@ export function errorBandFromMae(mae: number): number {
 }
 
 /**
- * Rounded MAE of `fixtureSeasonRows()` (89.7 → 90). Tests lock this to
+ * Rounded MAE of `fixtureSeasonRows()` after v2. Tests lock this to
  * `scorePredictionMetrics` so the widget cannot silently drift back to a
- * placeholder. Not a season claim — the fixture scores are toy totals vs EPA.
+ * placeholder. Not a season claim — the fixture scores are toy totals vs ratings.
  */
-export const FIXTURE_ERROR_BAND = 90;
+export const FIXTURE_ERROR_BAND = 4;
 
 /** @deprecated Use FIXTURE_ERROR_BAND. Alias kept so older imports still resolve. */
 export const DEFAULT_ERROR_BAND = FIXTURE_ERROR_BAND;
@@ -90,32 +95,57 @@ function resolveErrorBand(override: number | undefined): number {
   return FIXTURE_ERROR_BAND;
 }
 
-function allianceTotal(side: TeamScoreFeatures[]): { total: number | null; missing: string[] } {
+function tanh(value: number): number {
+  const exp = Math.exp(2 * value);
+  return (exp - 1) / (exp + 1);
+}
+
+function teamContribution(team: TeamScoreFeatures): number | null {
+  const auto = team.autoEpa;
+  const teleop = team.teleopEpa;
+  const endgame = team.endgameEpa;
+  if (auto == null && teleop == null && endgame == null && team.opr == null && team.ccwm == null) {
+    return null;
+  }
+  const epa = (auto ?? 0) + (teleop ?? 0) + (endgame ?? 0);
+  let rating = epa;
+  if (team.opr != null && team.ccwm != null) {
+    rating = 0.52 * epa + 0.28 * team.opr + 0.2 * team.ccwm;
+  } else if (team.opr != null) {
+    rating = 0.62 * epa + 0.38 * team.opr;
+  } else if (team.ccwm != null) {
+    rating = 0.75 * epa + 0.25 * team.ccwm;
+  }
+  const form = tanh((team.recentFormDelta ?? 0) / 12) * 8;
+  const scoutRaw =
+    team.scoutCycles == null ? 0 : Math.min(12, Math.max(-8, team.scoutCycles - 8)) * 0.35;
+  const climb = team.climbRate == null ? 0 : (team.climbRate - 0.5) * 6;
+  const defense = team.defenseFlag ? -2 : 0;
+  return rating + form + scoutRaw * SCOUT_SHRINK + climb + defense;
+}
+
+function allianceTotal(
+  side: TeamScoreFeatures[],
+  opponent: TeamScoreFeatures[] = [],
+): { total: number | null; missing: string[] } {
   const missing: string[] = [];
   let total = 0;
   let counted = 0;
   for (const team of side) {
-    const auto = team.autoEpa;
-    const teleop = team.teleopEpa;
-    const endgame = team.endgameEpa;
-    if (auto == null && teleop == null && endgame == null && team.opr == null) {
+    const contribution = teamContribution(team);
+    if (contribution == null) {
       missing.push(`${team.teamKey} has no rating yet`);
       continue;
     }
-    const epa = (auto ?? 0) + (teleop ?? 0) + (endgame ?? 0);
-    const oprBlend = team.opr == null ? epa : 0.65 * epa + 0.35 * team.opr;
-    const form = team.recentFormDelta ?? 0;
-    const scout = team.scoutCycles == null ? 0 : Math.min(12, Math.max(-8, team.scoutCycles - 8)) * 0.35;
-    const climb = team.climbRate == null ? 0 : (team.climbRate - 0.5) * 8;
-    const defense = team.defenseFlag ? -2.5 : 0;
-    total += oprBlend + form + scout + climb + defense;
+    total += contribution;
     counted += 1;
   }
   if (counted < 2) {
     missing.push("This alliance is missing ratings for at least two robots");
     return { total: null, missing };
   }
-  return { total, missing };
+  const dprPressure = opponent.reduce((sum, team) => sum + (team.dpr ?? 0), 0) * OPPONENT_DPR_WEIGHT;
+  return { total: total * ALLIANCE_INTERACTION - dprPressure, missing };
 }
 
 function driversFor(side: TeamScoreFeatures[], color: "red" | "blue"): string[] {
@@ -142,8 +172,8 @@ export function predictAllianceScores(
   row: Omit<ScoreFeatureRow, "redScore" | "blueScore"> & { redScore?: number; blueScore?: number },
   options?: { errorBand?: number },
 ): AllianceScorePrediction | ScorePredictionSkip {
-  const red = allianceTotal(row.red);
-  const blue = allianceTotal(row.blue);
+  const red = allianceTotal(row.red, row.blue);
+  const blue = allianceTotal(row.blue, row.red);
   if (red.total == null || blue.total == null) {
     return {
       matchKey: row.matchKey,

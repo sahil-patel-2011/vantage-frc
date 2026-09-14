@@ -304,7 +304,7 @@ export default function GoalsClient() {
           {view.orgId ? <GoalsRelated orgId={view.orgId} /> : null}
         </PageHeader>
         <OfflineBanner feature="Goals" fromCache={fromCache} cachedAt={cachedAt} />
-        <EmptyState soft badge="Setup required" badgeTone="setup" title={view.message}>
+        <EmptyState soft badge="Needs setup" badgeTone="setup" title={view.message}>
           {view.steps[0] ? (
             <Button as="a" variant="primary" href={view.steps[0].href}>
               {view.steps[0].label}

@@ -40,18 +40,18 @@ const COPY = [
 ] as const;
 
 describe("match prediction stays honest", () => {
-  it("locks fixture MAE 89.7 to UI band ±90 — not a season ±3 claim", () => {
+  it("locks fixture MAE 3.75 to UI band ±4 — not a season ±3 claim", () => {
     const metrics = scorePredictionMetrics(fixtureSeasonRows());
     expect(metrics.n).toBe(4);
-    expect(metrics.mae).toBe(89.7);
-    expect(metrics.rmse).toBe(89.88);
-    expect(metrics.within3).toBe(0);
-    expect(metrics.within5).toBe(0);
+    expect(metrics.mae).toBe(3.75);
+    expect(metrics.rmse).toBe(4.89);
+    expect(metrics.within3).toBe(0.5);
+    expect(metrics.within5).toBe(0.5);
     expect(errorBandFromMae(metrics.mae)).toBe(FIXTURE_ERROR_BAND);
-    expect(FIXTURE_ERROR_BAND).toBe(90);
-    expect(typicalScoreErrorCopy(FIXTURE_ERROR_BAND)).toBe("typical error ±90 (last measured set)");
+    expect(FIXTURE_ERROR_BAND).toBe(4);
+    expect(typicalScoreErrorCopy(FIXTURE_ERROR_BAND)).toBe("typical error ±4 (last measured set)");
     expect(nextMatchScoreLine({ redPredicted: 94.4, bluePredicted: 81.2, errorBand: FIXTURE_ERROR_BAND })).toBe(
-      "Red 94 · Blue 81 · typical error ±90 (last measured set)",
+      "Red 94 · Blue 81 · typical error ±4 (last measured set)",
     );
   });
 
@@ -88,11 +88,11 @@ describe("match prediction stays honest", () => {
     expect(readFileSync(join(WEB, "lib/strategy/compute-strategy.ts"), "utf8")).not.toMatch(/event\/year EPA/);
   });
 
-  it("PREDICTION_RESULTS.md prints 89.7 / ±90 and refuses a season ±3 claim", () => {
+  it("PREDICTION_RESULTS.md prints 3.75 / ±4 and refuses a season ±3 claim", () => {
     const doc = readFileSync(join(ROOT, "docs/PREDICTION_RESULTS.md"), "utf8");
-    expect(doc).toMatch(/\*\*89\.7\*\*/);
-    expect(doc).toMatch(/FIXTURE_ERROR_BAND.*\*\*90\*\*/);
-    expect(doc).toMatch(/typical error ±90 \(last measured set\)/);
+    expect(doc).toMatch(/\*\*3\.75\*\*/);
+    expect(doc).toMatch(/FIXTURE_ERROR_BAND.*\*\*4\*\*/);
+    expect(doc).toMatch(/typical error ±4 \(last measured set\)/);
     expect(doc).toMatch(/This is not a ±3 claim/);
     expect(doc).not.toMatch(/season ±3/);
   });

@@ -145,7 +145,7 @@ export function spareRobotKitShellCopy(kind: SpareRobotKitShellKind): SpareRobot
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Choose your team before matching spares to FMEA history.",

@@ -57,8 +57,16 @@ describe("ai keys soft-ui helpers", () => {
     expect(`${copy.eyebrow} ${copy.badge} ${copy.title} ${copy.description}`).not.toMatch(/workspace/i);
   });
 
-  it("keeps the keys page related strip to chat only", () => {
-    expect(AI_KEYS_RELATED_INCLUDE).toEqual(["chat"]);
+  it("keeps the keys page related strip to Chat and Claude Code", () => {
+    expect(AI_KEYS_RELATED_INCLUDE).toEqual(["chat", "claude-code"]);
+  });
+
+  it("setup copy is Needs setup and points students at Claude Code", () => {
+    const copy = aiKeysShellCopy("setup");
+    expect(copy.badge).toBe("Needs setup");
+    expect(copy.eyebrow).toBe("NEEDS SETUP");
+    expect(copy.description).toMatch(/Claude Code/);
+    expect(copy.description).not.toMatch(/KMS|envelope-encrypt|vault/i);
   });
 });
 

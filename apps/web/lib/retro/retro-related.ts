@@ -159,7 +159,7 @@ export function retroShellCopy(kind: RetroShellKind): RetroEmptyCopy {
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Choose your team before collecting start/stop/continue feedback.",

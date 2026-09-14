@@ -236,7 +236,7 @@ export default function WriterClient({ orgId: orgIdProp }: { orgId?: string | nu
   const setupCopy = writerShellCopy("setup");
   const setupPrimary = writerNextActions({ orgId: setupOrg, draftCount: 0 })[0] ?? null;
   const neighborLinks = orgId
-    ? writerRelatedLinks(orgId, { include: ["chat", "budgets", "usage"] })
+    ? writerRelatedLinks(orgId, { include: ["claude-code", "chat", "budgets"] })
     : [];
 
   return (
@@ -247,7 +247,7 @@ export default function WriterClient({ orgId: orgIdProp }: { orgId?: string | nu
           <h1>Grant &amp; Sponsorship Writer</h1>
           <p>
             Draft grant answers and sponsor pitches from this team&apos;s profile and business data only — template or
-            metered FRC Assistant. Review and edit before sending; nothing is invented across orgs.
+            the assistant after Claude Code is paired. Review and edit before sending.
           </p>
         </div>
         {live && live.seasons.length > 0 ? (
@@ -311,7 +311,7 @@ export default function WriterClient({ orgId: orgIdProp }: { orgId?: string | nu
       ) : view.status === "setup_required" ? (
         <EmptyState
           soft
-          badge={setupCopy.badge ?? "Setup required"}
+          badge={setupCopy.badge ?? "Needs setup"}
           badgeTone="setup"
           title={view.message || setupCopy.title}
           description={setupCopy.description}
@@ -682,7 +682,7 @@ function Composer({
               message:
                 ("message" in data && data.message) ||
                 ("error" in data && data.error) ||
-                "Configure an AI provider key before using FRC Assistant drafts.",
+                "Pair Claude Code before using assistant drafts. Templates still work.",
               steps: "steps" in data && Array.isArray(data.steps) ? data.steps : [],
             });
             setError("");
@@ -741,14 +741,16 @@ function Composer({
       {cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} compact /> : null}
       {providerSetup ? (
         <div className="product-hub-setup writer-provider-setup" role="status">
-          <span className="app-badge setup">{writerShellCopy("provider_setup").badge ?? "Setup required"}</span>
+          <span className="app-badge setup">{writerShellCopy("provider_setup").badge ?? "Needs setup"}</span>
           <p className="app-muted" style={{ margin: "8px 0" }}>
             {providerSetup.message}
           </p>
           <p className="app-muted" style={{ marginTop: 0 }}>
             {writerShellCopy("provider_setup").description}
           </p>
-          
+          <Button as="a" variant="primary" href={orgId ? `/team/ai-bridge?orgId=${encodeURIComponent(orgId)}` : "/team/ai-bridge"}>
+            Connect Claude Code
+          </Button>
         </div>
       ) : null}
       <div className="writer-kind-pills" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -870,14 +872,7 @@ function Composer({
           <h3 style={{ margin: "8px 0 4px", fontSize: "1rem" }}>Templates stay empty until you compose</h3>
           <p className="app-muted" style={{ margin: 0 }}>
             Pick a grant or sponsor template above, then <strong>Compose from template</strong> to fill it in from your
-            team’s profile. FRC Assistant needs a provider key before it can draft for you. Pair with{" "}
-            {writerRelatedLinks(orgId, { include: WRITER_RELATED_INCLUDE }).map((link, index, arr) => (
-              <span key={link.id}>
-                <a href={link.href}>{link.label}</a>
-                {index < arr.length - 1 ? (index === arr.length - 2 ? ", or " : ", ") : ""}
-              </span>
-            ))}{" "}
-            for longer narratives.
+            team’s profile. Pair Claude Code if you want the assistant.
           </p>
         </div>
       )}

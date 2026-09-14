@@ -204,8 +204,8 @@ export function IntelligenceSection({
               {providerSetup.steps[0].label}
             </Button>
           ) : (
-            <Button as="a" variant="primary" href="/team/admin">
-              Open Team Admin
+            <Button as="a" variant="primary" href="/team/ai-bridge">
+              Connect Claude Code
             </Button>
           )}
         </EmptyState>

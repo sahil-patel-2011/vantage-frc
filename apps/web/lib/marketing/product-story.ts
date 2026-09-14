@@ -16,16 +16,16 @@ export const MARKETING_STUDENT_PATH = [
     copy: "Match and pit forms stay on the tablet when the venue Wi-Fi dies, then sync when you are back online.",
   },
   {
-    title: "Link CAD",
-    copy: "Paste an Onshape or Fusion link. Mentors handle the rest — students never set up a second account.",
+    title: "Learn CAD",
+    copy: "Paced Onshape lessons and CAD Video Tutor on cast iron. Vantage reads mass and spin from the real document — students never type those numbers.",
   },
   {
     title: "Watch match video",
     copy: "Paste a match or pit video, confirm the timeline, and keep it as evidence. Scouted numbers do not change.",
   },
   {
-    title: "Run the team",
-    copy: "Hours, packing, pit checklists, and chat — the same sign-in a student can use without help.",
+    title: "Run practice",
+    copy: "Hours, packing, pit checklists, chat, and practice roll calls — emails already on the roster stay when you add people.",
   },
 ] as const;
 
@@ -55,11 +55,11 @@ export const MARKETING_HUBS = [
     promise: "From a new member's first sketch to a printable build book for the finished robot.",
     modules: ["Kickoff", "CAD", "Code", "Robot"],
     tools: [
-      "Learn CAD: an Onshape track from the first sketch to a graded part, and how to name things so the next person can find them",
+      "Learn CAD: Onshape from the first sketch, CAD Video Tutor on cast iron, Explore Onshape progress, then a graded part",
+      "Team 6925 lab: paced Limelight, WPILib, PathPlanner and GitHub weeks with official docs only",
       "Programming setup: Git, VS Code, WPILib and PathPlanner with real download links, plus the GitHub Student Pack walk-through",
       "CAD vault with Onshape links, change radar, and design reviews",
       "The assembly manual: your Onshape assembly turned into a step-by-step build book with parts, cuts and drill sizes",
-      "Parts catalog, inventory, FMEA, batteries, power budget, and Bugbot for robot code",
     ],
   },
   {
@@ -73,7 +73,7 @@ export const MARKETING_HUBS = [
     tools: [
       "Match and pit forms that work with no Wi-Fi and sync later",
       "Event day and My Day from the real match schedule",
-      "Match prediction and strategy from your scouting plus public stats, with the reasoning shown",
+      "Match prediction from your scouting plus public stats, with a measured error band — not a promised ±3",
       "Alliance selection desk, pick list, pairwise ranking",
       "Pit checklist, repair triage, battery rotation",
     ],
@@ -98,12 +98,12 @@ export const MARKETING_HUBS = [
 /** The two helpers that used to be their own pillars. */
 export const MARKETING_HELPERS = [
   {
-    title: "Ask AI",
-    copy: "One button on every page. It answers from your team's own data — scouting, calendar, files, the public record — and says when it does not know. Strategy questions, match predictions, design help, writing.",
+    title: "Claude Code",
+    copy: "Ask the team questions from your own scouting, calendar, and files. Pair Claude Code so students do not paste an API key. It says when it does not know.",
   },
   {
-    title: "Team profile",
-    copy: "The day a team joins, Vantage already knows where they are from, how long they have competed, what they have won and how their seasons went, from The Blue Alliance and Statbotics. Every AI answer starts from that.",
+    title: "Honest scores",
+    copy: "Next-match totals show a typical error from the last measured set. Missing ratings skip the match rather than filling a number.",
   },
 ] as const;
 
@@ -129,7 +129,7 @@ export const MARKETING_LEARN = [
   {
     step: "1",
     title: "Learn",
-    copy: "A new member gets a track, not a wiki dump: set up the laptop, learn Onshape from the first sketch to a graded part, learn Git and the robot code workflow — with an assistant in the guide that knows your team's own material.",
+    copy: "A new member gets paced weeks, not a wiki dump: laptop setup, CAD Video Tutor, Onshape from the first sketch to a graded part, Limelight and Git — with Claude Code when they get stuck.",
   },
   {
     step: "2",
@@ -144,7 +144,7 @@ export const MARKETING_LEARN = [
   {
     step: "4",
     title: "Compete",
-    copy: "Scout with no Wi-Fi, see the next match, ask for a prediction, pick the alliance from evidence you collected, run the pit.",
+    copy: "Scout with no Wi-Fi, see the next match with a measured error band, pick the alliance from evidence you collected, run the pit.",
   },
 ] as const;
 
@@ -162,7 +162,7 @@ export const MARKETING_TRUST = [
   {
     icon: "shield" as const,
     title: "AI that helps, and shows its work",
-    copy: "Every AI answer is grounded in your team's data and the public record, cites what it used, and says plainly when there is not enough to answer. CAD and code changes always wait for a person.",
+    copy: "Claude Code answers from your team's data, cites what it used, and says when there is not enough to answer. CAD and code changes always wait for a person. Match scores show a measured band, not a promise.",
   },
 ] as const;
 
@@ -184,7 +184,7 @@ export const MARKETING_MENU = [
 export const MARKETING_SEASON = [
   {
     title: "Preseason",
-    copy: "New members work through the CAD and programming tracks. The team profile, calendar and files are already set up when they arrive.",
+    copy: "New members work through CAD Video Tutor, Learn CAD, and the Team 6925 lab. Calendar, files, and practice emails are already there when they arrive.",
   },
   {
     title: "Build season",

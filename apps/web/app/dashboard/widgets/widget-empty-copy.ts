@@ -123,9 +123,9 @@ export const WIDGET_EMPTY_COPY: Record<string, EmptyHint> = {
   },
   ask_ai: {
     title: "Ask AI",
-    body: "Type a question. It uses your team's facts and says when it does not know.",
-    ctaHref: "/ai?tab=chat",
-    ctaLabel: "Ask AI",
+    body: "Pair Claude Code on one computer so questions run on that plan — no API key.",
+    ctaHref: "/team/ai-bridge",
+    ctaLabel: "Connect Claude Code",
   },
   quick_actions: {
     title: "Get set up",

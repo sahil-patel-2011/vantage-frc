@@ -384,7 +384,7 @@ export default function TeamDiscordClient({ orgId }: { orgId: string }) {
       {showSetupShell ? (
         <EmptyState
           soft
-          badge="Setup required"
+          badge="Needs setup"
           badgeTone="setup"
           title="Posting path incomplete"
           description={view.message}

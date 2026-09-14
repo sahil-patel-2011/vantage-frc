@@ -3,6 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../../components/offline-banner";
 import { Button, EmptyState, PageHeader } from "../../../components/ui";
+import {
+  AI_BRIDGE_FEATURE_LABEL,
+  AI_BRIDGE_SETUP_STEPS,
+  AI_BRIDGE_TITLE,
+  aiBridgeShellCopy,
+} from "../../../lib/ai-bridge/ai-bridge-related";
 import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
 
@@ -129,7 +135,7 @@ export default function AiBridgeClient({
           error:
             data && typeof data === "object" && "error" in data && typeof data.error === "string"
               ? data.error
-              : "Could not load the subscription bridge.",
+              : "Could not load Claude Code pairing.",
         });
         setFromCache(false);
         setCachedAt(null);
@@ -146,7 +152,7 @@ export default function AiBridgeClient({
           error:
             data && typeof data === "object" && "error" in data && typeof data.error === "string"
               ? data.error
-              : "Could not load the subscription bridge. Check your connection and retry.",
+              : "Could not load Claude Code pairing. Check your connection and retry.",
         });
         setLoading(false);
         return;
@@ -163,7 +169,7 @@ export default function AiBridgeClient({
         setLoading(false);
         return;
       }
-      setStatus({ error: "Could not load the subscription bridge. Check your connection and retry." });
+      setStatus({ error: "Could not load Claude Code pairing. Check your connection and retry." });
       setLoading(false);
     }
   }, [orgId]);
@@ -182,8 +188,8 @@ export default function AiBridgeClient({
     const data = (await response.json()) as { machineName?: string; error?: string };
     setMessage(
       response.ok
-        ? `${data.machineName} is paired. Return to that computer — the bridge starts serving once it checks in.`
-        : (data.error ?? "Pairing approval failed"),
+        ? `${data.machineName} is paired. Leave Claude Code running on that computer.`
+        : (data.error ?? "Could not approve that code"),
     );
     if (response.ok) {
       setCode("");
@@ -216,21 +222,21 @@ export default function AiBridgeClient({
         breadcrumbs={
           <>
             <a href="/team">Team</a>
-            {" / AI subscription bridge"}
+            {` / ${AI_BRIDGE_TITLE}`}
           </>
         }
-        title="AI subscription bridge"
-        description="One mentor or member who already pays for Claude or ChatGPT can run the team's AI from their own computer. Chat is the default; they can widen that. Those turns cost the team $0 in API usage."
+        title={AI_BRIDGE_TITLE}
+        description="Sign in to Claude Code on one computer. Pair it here. Ask AI then uses that plan — no API key."
       />
-      <OfflineBanner fromCache={fromCache} cachedAt={cachedAt} feature="AI subscription bridge" />
+      <OfflineBanner fromCache={fromCache} cachedAt={cachedAt} feature={AI_BRIDGE_FEATURE_LABEL} />
 
       {organizations.length === 0 ? (
         <EmptyState
           soft
-          badge="Setup"
+          badge={aiBridgeShellCopy("no-team").badge}
           badgeTone="setup"
-          title="Choose your team"
-          description="Join or create a team before pairing a bridge."
+          title={aiBridgeShellCopy("no-team").title}
+          description={aiBridgeShellCopy("no-team").description}
         >
           <Button as="a" variant="primary" href="/workspace">
             Choose your team
@@ -253,11 +259,11 @@ export default function AiBridgeClient({
 
           <section className="ai-bridge-grid">
             <form className="ai-bridge-card" onSubmit={approve}>
-              <h2>Pair a machine</h2>
+              <h2>Pair this computer</h2>
               <ol className="ai-bridge-steps">
-                <li>On the always-on computer, sign in to Claude or ChatGPT.</li>
-                <li>Run the bridge app — it prints an 8-character code.</li>
-                <li>Enter that code here. Only approve a code shown on a computer you control.</li>
+                {AI_BRIDGE_SETUP_STEPS.map((step) => (
+                  <li key={step}>{step}</li>
+                ))}
               </ol>
               <label>
                 Pairing code
@@ -271,7 +277,7 @@ export default function AiBridgeClient({
                 />
               </label>
               <Button variant="primary" type="submit" disabled={!orgId}>
-                Approve pairing
+                Approve this computer
               </Button>
               {message ? (
                 <p role="status" className="telemetry-status">
@@ -283,13 +289,13 @@ export default function AiBridgeClient({
             <section className="ai-bridge-card" aria-label="Bridge status">
               <h2>Status</h2>
               {loading && !status ? (
-                <p className="app-muted">Loading bridge status…</p>
+                <p className="app-muted">Loading Claude Code status…</p>
               ) : showStatusError ? (
                 <p className="telemetry-status">{status?.error}</p>
               ) : status?.setupRequired ? (
-                <p className="app-muted">This team isn&apos;t ready for a bridge yet. Ask a mentor to finish setup.</p>
+                <p className="app-muted">This team is not ready to pair yet. Ask a mentor to finish team setup.</p>
               ) : !status?.devices?.length ? (
-                <p className="app-muted">No bridge paired yet. Chat keeps using the team&apos;s configured AI keys.</p>
+                <p className="app-muted">No computer paired yet. Follow the three steps, then approve the code.</p>
               ) : (
                 <ul className="ai-bridge-devices">
                   {status.devices.map((device) => (
@@ -303,7 +309,7 @@ export default function AiBridgeClient({
                       <p className="app-muted ai-bridge-meta">
                         {device.lastHeartbeatAt
                           ? `Last heard ${new Date(device.lastHeartbeatAt).toLocaleString()}`
-                          : "Not heard from yet — start the bridge on that computer"}
+                          : "Not heard from yet — keep Claude Code running on that computer"}
                         {" · "}
                         {device.jobsServed} job{device.jobsServed === 1 ? "" : "s"} served
                         {device.bridgeVersion ? ` · bridge v${device.bridgeVersion}` : ""}
@@ -321,10 +327,10 @@ export default function AiBridgeClient({
                               checked={device.preferWhenOnline}
                               onChange={(event) => void patchDevice(device.id, { preferWhenOnline: event.target.checked })}
                             />
-                            Prefer this bridge while it&apos;s online
+                            Use this computer while it is online
                           </label>
                           <fieldset className="ai-bridge-coverage">
-                            <legend>What runs on this subscription</legend>
+                            <legend>What this computer answers</legend>
                             <label className="ai-bridge-toggle">
                               <input
                                 type="radio"
@@ -346,8 +352,8 @@ export default function AiBridgeClient({
                             {device.coverage === "everything" ? (
                               <p className="app-muted ai-bridge-meta">
                                 Every AI feature — chat, season reports, CAD plans, nightly summaries — now draws from
-                                this plan&apos;s usage window while the bridge is online. Long jobs use it faster; when the
-                                plan hits its limit, features fall back to the team&apos;s keys until it resets.
+                                this plan while the computer is online. Long jobs use it faster; when the
+                                plan hits its limit, Ask AI falls back to the team&apos;s keys until it resets.
                               </p>
                             ) : null}
                           </fieldset>
@@ -371,15 +377,15 @@ export default function AiBridgeClient({
             </section>
           </section>
 
-          <section className="ai-bridge-card ai-bridge-terms" aria-label="Terms and limits">
-            <h2>Honest terms &amp; limits</h2>
+          <section className="ai-bridge-card ai-bridge-terms" aria-label="What this uses">
+            <h2>What this uses</h2>
             <ul>
               <li>
-                <strong>This uses the pairer&apos;s subscription on the pairer&apos;s computer.</strong> Every bridged turn
-                draws from that person&apos;s Claude or ChatGPT plan — not a team pool.
+                <strong>This is that person&apos;s Claude or ChatGPT plan on their computer.</strong> It is not a shared
+                team pool.
               </li>
               <li>
-                Subscription plans have <strong>usage windows and rate limits</strong>, and their own terms apply:{" "}
+                Plans have usage windows. Their terms apply:{" "}
                 <a href="https://www.anthropic.com/legal/consumer-terms" target="_blank" rel="noreferrer">
                   Anthropic consumer terms
                 </a>{" "}
@@ -387,22 +393,18 @@ export default function AiBridgeClient({
                 <a href="https://openai.com/policies/terms-of-use" target="_blank" rel="noreferrer">
                   OpenAI terms of use
                 </a>
-                . Review whether bridged team use fits your plan before pairing.
+                .
               </li>
               <li>
-                When the provider says you hit a limit, Vantage shows that message (including any reset time) and the
-                turn <strong>falls back to the team&apos;s configured AI keys</strong>. Nothing here is unlimited.
+                When the plan hits a limit, Ask AI shows that message and falls back to the team&apos;s keys if any
+                exist.
               </li>
               <li>
-                By default only interactive chat-class features use the bridge
-                {status?.bridgeFeatures?.length ? ` (${status.bridgeFeatures.join(", ")})` : ""}. The pairer can widen
-                that to <strong>Everything</strong> above — then all of Vantage&apos;s AI, including long jobs like season
-                reports and nightly summaries, runs on their subscription while the bridge is online.
+                Default is chat, writer, and troubleshooting
+                {status?.bridgeFeatures?.length ? ` (${status.bridgeFeatures.join(", ")})` : ""}. Choose Everything
+                above only if this computer should also run long jobs.
               </li>
-              <li>
-                Prompts for bridged turns include team context and are executed on the pairer&apos;s computer. Revoke the
-                device here at any time to stop that immediately.
-              </li>
+              <li>Revoke the computer here to stop sending team prompts to it.</li>
             </ul>
           </section>
         </>

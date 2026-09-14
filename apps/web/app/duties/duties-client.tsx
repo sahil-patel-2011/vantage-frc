@@ -238,7 +238,7 @@ export default function DutiesClient() {
         ) : null}
         <EmptyState
           soft
-          badge="Setup required"
+          badge="Needs setup"
           badgeTone="setup"
           title={view.message}
           description="Choose your team, then post who is on duty. My Day stays empty until someone is assigned."

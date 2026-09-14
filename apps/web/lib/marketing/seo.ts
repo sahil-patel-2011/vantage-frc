@@ -42,17 +42,17 @@ export function rootMarketingMetadata(): Metadata {
   return {
     metadataBase: new URL(SITE_URL),
     title: {
-      default: "Vantage — one login an FRC student can use without help",
+      default: "Vantage — the FRC season in one login",
       template: "%s — Vantage",
     },
     description:
-      "Invite-only FRC software: scouting, CAD from a pasteable link, match video, and team ops. Google or an email code. Mentors invite exact emails.",
+      "Invite-only FRC software: scouting, Learn CAD, match video, and practice. Google or an email code. Mentors invite exact emails.",
     manifest: "/manifest.webmanifest",
     alternates: { canonical: "/" },
     openGraph: {
-      title: "Vantage — one login an FRC student can use without help",
+      title: "Vantage — the FRC season in one login",
       description:
-        "Scout, paste a CAD link, watch match video, and run the team. Invite-only — no public signup.",
+        "Scout, learn CAD, watch match video, and run practice. Invite-only — no public signup.",
       url: SITE_URL,
       type: "website",
       siteName: "Vantage",
@@ -60,9 +60,9 @@ export function rootMarketingMetadata(): Metadata {
     },
     twitter: {
       card: "summary_large_image",
-      title: "Vantage — one login an FRC student can use without help",
+      title: "Vantage — the FRC season in one login",
       description:
-        "Invite-only FRC software: offline scouting, CAD from a link, match video, and team ops.",
+        "Invite-only FRC software: offline scouting, Learn CAD, match video, and practice.",
       images: [OG_IMAGE.url],
     },
     robots: { index: true, follow: true },

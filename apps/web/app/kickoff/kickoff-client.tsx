@@ -1,6 +1,6 @@
 "use client";
 
-import { packForYear } from "@vantage/game-year";
+import { currentSeasonYear, lastPublishedPack, packForYear } from "@vantage/game-year";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BuildHubRelated } from "../../components/build-hub-related";
 import { OfflineBanner } from "../../components/offline-banner";
@@ -15,6 +15,7 @@ import { IntelligenceSection } from "./kickoff-intelligence";
 import type { ActionBody } from "./kickoff-model";
 import { PrioritySection } from "./kickoff-priority";
 import { RulesSection } from "./kickoff-rules";
+import { GameBriefSection } from "./kickoff-game-brief";
 import { ScoringSection } from "./kickoff-scoring";
 
 function isKickoffView(value: unknown): value is KickoffView {
@@ -196,7 +197,7 @@ export default function KickoffClient(_props: { embedded?: boolean } = {}) {
         />
         <BuildHubRelated active="kickoff" include={[...KICKOFF_BUILD_RELATED_INCLUDE]} />
         <OfflineBanner feature="Kickoff" fromCache={fromCache} cachedAt={cachedAt} />
-        <EmptyState badge="Setup required" badgeTone="setup" soft title="Choose your team" description={view.message}>
+        <EmptyState badge="Needs setup" badgeTone="setup" soft title="Choose your team" description={view.message}>
           <Button as="a" variant="primary" href="/workspace">
             Choose your team
           </Button>
@@ -206,7 +207,9 @@ export default function KickoffClient(_props: { embedded?: boolean } = {}) {
   }
 
   const orgId = view.context.orgId ?? "";
-  const yearSet = new Set<number>([view.context.defaultSeasonYear]);
+  const yearSet = new Set<number>([view.context.defaultSeasonYear, currentSeasonYear()]);
+  const prior = lastPublishedPack();
+  if (prior) yearSet.add(prior.year);
   for (const entry of view.actions) yearSet.add(entry.seasonYear);
   for (const entry of view.priorities) yearSet.add(entry.seasonYear);
   for (const entry of view.ruleNotes) yearSet.add(entry.seasonYear);
@@ -251,8 +254,8 @@ export default function KickoffClient(_props: { embedded?: boolean } = {}) {
           <p className="app-muted" role="status">
             {pack.gameName} {pack.year}
             {pack.status === "awaiting_manual"
-              ? " — scoring keys stay empty until the official manual publishes."
-              : " — scoring keys come from the official manual."}
+              ? " — official scoring is not published yet. Last season is below so you can still practice."
+              : " — scoring on the sheet comes from the published manual."}
           </p>
         );
       })()}
@@ -262,6 +265,8 @@ export default function KickoffClient(_props: { embedded?: boolean } = {}) {
           {error}
         </p>
       ) : null}
+
+      <GameBriefSection orgId={orgId} seasonYear={year} />
 
       <NextActionsPanel
         orgId={orgId}

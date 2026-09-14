@@ -24,6 +24,14 @@ export type GameSchema = {
 
 export type GameYearStatus = "published" | "awaiting_manual";
 
+/** Student-readable brief taken only from a published manual / pack. */
+export type GameYearBrief = {
+  headline: string;
+  whatWeKnow: readonly string[];
+  scoutFirst: readonly string[];
+  designQuestions: readonly string[];
+};
+
 export type GameYearPack = {
   year: number;
   gameName: string;
@@ -34,6 +42,8 @@ export type GameYearPack = {
   matchSchema: GameSchema;
   pitSchema: GameSchema;
   strategyTemplates: string[];
+  /** Present only when `status` is published. */
+  brief?: GameYearBrief;
 };
 
 export type SchemaDefinition = {

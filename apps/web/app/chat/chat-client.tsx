@@ -83,11 +83,11 @@ function ChatRelatedStrip({ orgId }: { orgId: string }) {
 function ChatStatusPrimary({
   shell,
   onRetry,
-  adminHref,
+  claudeHref,
 }: {
   shell: AiChatShellKind;
   onRetry: () => void;
-  adminHref: string;
+  claudeHref: string;
 }) {
   switch (shell) {
     case "error":
@@ -104,8 +104,8 @@ function ChatStatusPrimary({
       );
     case "setup":
       return (
-        <Button as="a" variant="primary" href={adminHref}>
-          Open Team Admin
+        <Button as="a" variant="primary" href={claudeHref}>
+          Connect Claude Code
         </Button>
       );
     case "loading":
@@ -168,7 +168,9 @@ export default function ChatClient({
       ? contextId
         ? `Opened from VS Code with editor context ${contextId.slice(0, 8)}…`
         : "Opened from VS Code"
-      : "",
+      : source === "kickoff"
+        ? "Opened from Kickoff with this year's game brief. Send when you are ready."
+        : "",
   );
   const [lastTools, setLastTools] = useState<ToolOutput[]>([]);
   const [privateBudget, setPrivateBudget] = useState(1200);
@@ -411,7 +413,7 @@ export default function ChatClient({
   const blocked = shell === "auth_required" || shell === "error" || shell === "setup" || shell === "loading";
   const showStatusShell =
     shell === "setup" || shell === "loading" || shell === "auth_required" || shell === "error";
-  const adminHref = withOrgHref("/team/admin", orgId);
+  const claudeHref = withOrgHref("/team/ai-bridge", orgId);
 
   return (
     <main className="module-page ch-page">
@@ -469,7 +471,7 @@ export default function ChatClient({
           description={shellCopy.description}
           aria-busy={shell === "loading"}
         >
-          <ChatStatusPrimary shell={shell} onRetry={() => void load()} adminHref={adminHref} />
+          <ChatStatusPrimary shell={shell} onRetry={() => void load()} claudeHref={claudeHref} />
         </EmptyState>
       ) : null}
 

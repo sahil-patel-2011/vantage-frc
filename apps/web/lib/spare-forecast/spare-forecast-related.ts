@@ -123,7 +123,7 @@ export function spareForecastShellCopy(kind: SpareForecastShellKind): SpareForec
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Needs setup",
         title: "Choose your team",
         description:
           "Choose your team before projecting exhaustion from real bins.",

@@ -360,6 +360,12 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         // recurring blocker, so it is pinned to the front of the Code workbench.
         { id: "troubleshoot", label: "Get unstuck", legacyHref: "/troubleshoot", featured: true },
         { id: "bugbot", label: "AI Bugbot", legacyHref: "/bugbot", featured: true },
+        {
+          id: "team-resources",
+          label: "Team 6925 lab",
+          legacyHref: "/learn/6925",
+          featured: true,
+        },
         { id: "code-deploy-log", label: "Deploy log", legacyHref: "/code-deploy-log" },
         { id: "agent-config", label: "Team agent config", legacyHref: "/team/agent-config" },
         { id: "code-perf", label: "Code vs match", legacyHref: "/code-perf" },
@@ -427,7 +433,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         { id: "governance", label: "Governance", legacyHref: "/team/ai-policy" },
         { id: "finance", label: "Finance" },
         { id: "ai-keys", label: "API keys", legacyHref: "/team/ai-keys", featured: true },
-        { id: "ai-bridge", label: "Subscription bridge", legacyHref: "/team/ai-bridge" },
+        { id: "ai-bridge", label: "Claude Code", legacyHref: "/team/ai-bridge", featured: true },
         { id: "ai-usage", label: "Your keys usage", legacyHref: "/team/ai-usage" },
         { id: "usage", label: "Usage", legacyHref: "/team/usage" },
       ]),

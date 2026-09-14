@@ -753,6 +753,31 @@ export const HELP_ARTICLES: HelpArticle[] = [
     ],
   },
   {
+    id: "team-6925-lab",
+    slug: "team-6925-lab",
+    title: "Team 6925 lab — Limelight, coding, and CAD weeks",
+    summary:
+      "Official Limelight, WPILib, PathPlanner, and GitHub links, then five paced weeks. Learn CAD grades the CAD Video Tutor part from Onshape — you never type mass.",
+    category: "build",
+    keywords: ["6925", "limelight", "wpilib", "pathplanner", "github", "cad video tutor", "learn cad"],
+    relatedHref: "/learn/6925",
+    sections: [
+      {
+        heading: "What is on the page",
+        body: [
+          "Vision, robot code, GitHub, and vendor docs — each group has one link to open first.",
+          "Weeks 1–4 are laptop, GitHub, Limelight, and PathPlanner. Week 5 is Learn CAD: CAD Video Tutor on cast iron, then the grader.",
+        ],
+      },
+      {
+        heading: "What stays blank",
+        body: [
+          "Detection percentages, typed mass, and lesson scores stay blank. Explore Onshape shows document names and last-edited times from the connected account.",
+        ],
+      },
+    ],
+  },
+  {
     id: "ask-ai",
     slug: "ask-ai",
     title: "Ask AI — what it can answer, and from what",
@@ -1318,9 +1343,9 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "ai-bridge",
     slug: "ai-bridge",
-    title: "AI subscription bridge — a member's plan serves the team",
+    title: "Claude Code — run Ask AI from a signed-in computer",
     summary:
-      "Pair one member's Claude Pro/Max or ChatGPT subscription on an always-on computer and their plan answers the team's AI at $0 API cost.",
+      "Pair Claude Code on one computer so Ask AI runs on that plan. No API key. The subscription bridge is this pairing.",
     category: "ai-models",
     keywords: [
       "subscription bridge",

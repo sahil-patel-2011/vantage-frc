@@ -119,7 +119,7 @@ describe("dossierShellCopy", () => {
     }
     expect(dossierShellCopy("empty").badge).toBe("No facts yet");
     expectPlainCopy(dossierShellCopy("empty").description);
-    expect(dossierShellCopy("setup").badge).toBe("Setup required");
+    expect(dossierShellCopy("setup").badge).toBe("Needs setup");
     expectPlainCopy(dossierShellCopy("ready").description);
   });
 });

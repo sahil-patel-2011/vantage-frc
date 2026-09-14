@@ -167,7 +167,7 @@ describe("product hubs", () => {
     expect(hubFeaturedMoreTabs(hubById("team")).map((tab) => tab.id)).toContain(
       "season-planning-workspace",
     );
-    expect(hubFeaturedMoreTabs(hubById("ai")).map((tab) => tab.id)).toEqual(["ai-keys"]);
+    expect(hubFeaturedMoreTabs(hubById("ai")).map((tab) => tab.id)).toEqual(["ai-keys", "ai-bridge"]);
   });
 
   it("links a nested tool back to its workbench, not to itself", () => {

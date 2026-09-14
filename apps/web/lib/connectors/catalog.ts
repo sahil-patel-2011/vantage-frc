@@ -36,7 +36,8 @@ export type ConnectorId =
   | "stripe"
   | "storage-node"
   | "fusion-relay"
-  | "free-relay";
+  | "free-relay"
+  | "claude-code";
 
 /**
  * Who owns the link.
@@ -272,6 +273,21 @@ export const CONNECTORS: readonly ConnectorDefinition[] = [
     hasConnectAction: false,
     hasDisconnectAction: false,
   },
+  {
+    id: "claude-code",
+    label: "Claude Code",
+    powers: "Ask AI runs on a mentor's signed-in Claude Code computer — no API key.",
+    scope: "team",
+    requiredEnv: [],
+    optionalEnv: [],
+    callbackPath: "/api/ai-bridge/device/pair/poll",
+    callbackLabel: "Pairing poll URL",
+    providerConsole: "Install Claude Code, start the Vantage Claude connector, then approve the code",
+    permissions: ["A pairing code approved by the person who signed in on that computer"],
+    managePath: "/team/ai-bridge",
+    hasConnectAction: false,
+    hasDisconnectAction: false,
+  },
 ] as const;
 
 export function connectorById(id: ConnectorId): ConnectorDefinition {
@@ -453,6 +469,8 @@ export function studentPermissionsCopy(id: ConnectorId): string {
       return "Fusion stays on this computer. Pair it from CAD Connections.";
     case "free-relay":
       return "Run Ask AI on the team's Raspberry Pi.";
+    case "claude-code":
+      return "Sign in to Claude Code on one computer and pair it here.";
     default: {
       const _exhaustive: never = id;
       return _exhaustive;
