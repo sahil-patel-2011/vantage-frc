@@ -188,7 +188,7 @@ export function codeDeployLogNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before recording builds.",
+          detail: "Choose your team before recording builds.",
           href: "/workspace",
           primary: true,
         },
