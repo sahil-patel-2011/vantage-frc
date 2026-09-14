@@ -151,8 +151,8 @@ export function accountNextActions(input: {
   if (input.tbaReady === false) {
     actions.push({
       id: "tba",
-      label: "Connect The Blue Alliance",
-      detail: "Match alerts stay quiet until a TBA key is connected.",
+      label: "Connect Team Data",
+      detail: "Match alerts stay quiet until Team Data is connected.",
       href: withOrgHref("/connectors", orgId),
       primary: actions.length === 0,
     });
