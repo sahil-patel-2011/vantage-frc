@@ -1554,7 +1554,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         heading: "Where connections live",
         body: [
           "Settings → Connectors lists Google, GitHub, Team Data, Onshape, Discord, Slack, email, Stripe, storage, Fusion, and the shop Pi. “Connected” appears only when a working credential row exists.",
-          "The Blue Alliance is configured under Team → Data (/team/data); schedules, rankings, and match cards stay empty until it is connected and an active event is picked.",
+          "Team Data is configured under Team → Data (/team/data); schedules, rankings, and match cards stay empty until it is connected and an active event is picked.",
         ],
       },
       {
