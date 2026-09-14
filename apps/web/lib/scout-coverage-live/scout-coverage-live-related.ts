@@ -351,7 +351,7 @@ export function scoutCoverageLiveNextActions(input: {
     {
       id: "scouting",
       label: "Open Scouting",
-      detail: "Keep logging membership-bound match rows to clear thin cells.",
+      detail: "Keep logging signed-in scout match rows to clear thin cells.",
       href: hubHref("/competition", "scouting", orgId),
     },
     {
