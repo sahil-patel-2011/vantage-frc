@@ -246,7 +246,7 @@ export function dossierNextActions(input: {
         id: "team-data",
         label: "Sync season metrics",
         detail:
-          "Pull TBA identity + Statbotics EPA — dossier cards stay blank until then.",
+          "Pull Team Data — dossier cards stay blank until then.",
         href: withOrgHref("/team/data", orgId),
         primary: true,
       },
