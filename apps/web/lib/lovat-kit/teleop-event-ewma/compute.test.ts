@@ -35,27 +35,27 @@ import {
 } from "./compute";
 
 const rows = [
-  { teamKey: "frc1", qual: true, values: { autoPoints: 16.0 } },
-  { teamKey: "frc2", qual: true, values: { autoPoints: 28.0 } },
-  { teamKey: "frc3", qual: true, values: { autoPoints: 44.0 } },
-  { teamKey: "frc3", qual: true, values: { autoPoints: 44.0 } },
+  { teamKey: "frc1", qual: true, values: { teleopPoints: 16.0 } },
+  { teamKey: "frc2", qual: true, values: { teleopPoints: 23.0 } },
+  { teamKey: "frc3", qual: true, values: { teleopPoints: 36.0 } },
+  { teamKey: "frc3", qual: true, values: { teleopPoints: 36.0 } },
 ];
 
-describe("auto-recent3-rate", () => {
+describe("teleop-event-ewma", () => {
   it("does not invent a field average from one blank team", () => {
     expect(populationMean([])).toBeNull();
     expect(zScore(10, null, 2)).toBeNull();
     expect(contributionShare(10, 0)).toBeNull();
     expect(sparklinePath([1])).toBeNull();
     expect(emptyCopy().badge).toBe("Needs setup");
-    expect(SLUG).toBe("auto-recent3-rate");
+    expect(SLUG).toBe("teleop-event-ewma");
   });
 
   it("compares a real sample to this event and keeps scout blanks empty", () => {
     const cards = buildCards({ teamKey: "frc3", rows });
-    const lead = cards.find((card) => card.id === "autoPoints");
+    const lead = cards.find((card) => card.id === "teleopPoints");
     expect(lead?.value).not.toBeNull();
-    expect(lead?.compare.tone === "above" || lead?.compare.tone === "near").toBe(true);
+    expect(lead?.display).not.toBe("—");
     const other = buildCards({
       teamKey: "frc9",
       rows: [{ teamKey: "frc9", values: {} }],
@@ -71,7 +71,7 @@ describe("auto-recent3-rate", () => {
     expect(filterOwn(rows, "3").every((row) => row.teamKey === "frc3")).toBe(true);
     expect(parseSampleRows([{ teamKey: "nope" }])).toEqual([]);
     expect(trimmedMean([1, 2, 100])).not.toBeNull();
-    expect(teamValue(rows, "frc3", "autoPoints")).not.toBeNull();
+    expect(teamValue(rows, "frc3", "teleopPoints")).not.toBeNull();
   });
 
   it("path helpers need two real points before measuring", () => {
@@ -94,13 +94,13 @@ describe("auto-recent3-rate", () => {
 
   it("builds a report without filling missing ratings", () => {
     const report = buildReport({ teamKey: "frc3", rows });
-    expect(report.slug).toBe("auto-recent3-rate");
+    expect(report.slug).toBe("teleop-event-ewma");
     expect(report.summary.known).toBeGreaterThan(0);
     expect(studentChrome().event).toBe("Compared to this event");
     expect(studentChrome().setup).toBe("Needs setup");
     expect(histogram([1, 2, 2, 8]).length).toBeGreaterThan(0);
     expect(forecastNext([1, 2, 3])).not.toBeNull();
-    expect(bootstrapMean([16.0, 28.0, 44.0])).not.toBeNull();
+    expect(bootstrapMean([16.0, 23.0, 36.0])).not.toBeNull();
     expect(rankTeams(rows, ["frc1", "frc2", "frc3"]).some((row) => row.rank === 1)).toBe(true);
     expect(weightedPickScore(report.cards, defaultWeights()) == null || Number.isFinite(weightedPickScore(report.cards, defaultWeights()))).toBe(true);
     const blank = buildCards({ teamKey: "frc9", rows: [{ teamKey: "frc9", values: {} }] });
