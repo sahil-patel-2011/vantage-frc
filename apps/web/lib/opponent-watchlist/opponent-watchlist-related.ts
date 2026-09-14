@@ -154,7 +154,7 @@ export function opponentWatchlistNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before tracking opponents.",
+          detail: "Choose your team before tracking opponents.",
           href: "/workspace",
           primary: true,
         },
