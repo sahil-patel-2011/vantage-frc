@@ -4,7 +4,7 @@ import { withOrgHref } from "../nav/product-nav";
 /** Soft-UI related surfaces for Opponent Watchlist (never DEMO opponent metrics). */
 export const OPPONENT_WATCHLIST_RELATED_LINKS = [
   { id: "strategy", label: "Strategy", tab: "strategy" },
-  { id: "epa-trend-alerts", label: "EPA Trend Alerts", tab: "epa-trend-alerts" },
+  { id: "epa-trend-alerts", label: "Rating alerts", tab: "epa-trend-alerts" },
   { id: "scouting", label: "Scouting", tab: "scouting" },
   { id: "scouting-heat-signals", label: "Scouting Heat", tab: "scouting-heat-signals" },
   { id: "counter-book", label: "Counter-book", tab: "counter-book" },
@@ -106,7 +106,7 @@ export function opponentWatchlistShellCopy(kind: OpponentWatchlistShellKind): Op
         badge: "Unavailable",
         title: "Could not load Opponent Watchlist",
         description:
-          "A network or server issue blocked the watchlist. Retry, or open Strategy / EPA Trend Alerts / Scouting while it reloads.",
+          "A network or server issue blocked the watchlist. Retry, or open Strategy / Rating alerts / Scouting while it reloads.",
       };
     case "setup":
       return {
@@ -122,14 +122,14 @@ export function opponentWatchlistShellCopy(kind: OpponentWatchlistShellKind): Op
         badge: "Empty watchlist",
         title: "Add your first opponent to watch",
         description:
-          "The board stays blank until you watch a real team. Cross-check Strategy, EPA Trend Alerts, and Scouting.",
+          "The board stays blank until you watch a real team. Cross-check Strategy, Rating alerts, and Scouting.",
       };
     default:
       return {
         kind: "ready",
         title: "Personal opponent watchlist",
         description:
-          "Alerts use only reference EPA and scheduled matches for teams you watch.",
+          "Alerts use only stored ratings and scheduled matches for teams you watch.",
       };
   }
 }
@@ -166,8 +166,8 @@ export function opponentWatchlistNextActions(input: {
         },
         {
           id: "epa-trend-alerts",
-          label: "Open EPA Trend Alerts",
-          detail: "EPA swings stay blank until you watch real teams.",
+          label: "Open Rating alerts",
+          detail: "Rating swings stay blank until you watch real teams.",
           href: hubHref("/competition", "epa-trend-alerts", null),
         },
         {
@@ -194,8 +194,8 @@ export function opponentWatchlistNextActions(input: {
       },
       {
         id: "epa-trend-alerts",
-        label: "Open EPA Trend Alerts",
-        detail: "Pair quantitative EPA swings with personal opponent notes.",
+        label: "Open Rating alerts",
+        detail: "Pair rating swings with personal opponent notes.",
         href: hubHref("/competition", "epa-trend-alerts", orgId),
       },
       {
@@ -224,8 +224,8 @@ export function opponentWatchlistNextActions(input: {
       },
       {
         id: "epa-trend-alerts",
-        label: "Open EPA Trend Alerts",
-        detail: "EPA alerts stay available while the watchlist reloads.",
+        label: "Open Rating alerts",
+        detail: "Rating alerts stay available while the watchlist reloads.",
         href: hubHref("/competition", "epa-trend-alerts", orgId),
       },
       {
@@ -242,7 +242,7 @@ export function opponentWatchlistNextActions(input: {
       {
         id: "watch-team",
         label: "Watch a team",
-        detail: "Add a team key below — alerts stay blank until EPA or schedule moves.",
+        detail: "Add a team number below — alerts stay blank until a rating or schedule moves.",
         href: "#opponent-watchlist-watch",
         primary: true,
       },
@@ -254,8 +254,8 @@ export function opponentWatchlistNextActions(input: {
       },
       {
         id: "epa-trend-alerts",
-        label: "Open EPA Trend Alerts",
-        detail: "Org-shared EPA swings complement personal opponent notes.",
+        label: "Open Rating alerts",
+        detail: "Shared rating swings complement personal opponent notes.",
         href: hubHref("/competition", "epa-trend-alerts", orgId),
       },
       {
@@ -273,7 +273,7 @@ export function opponentWatchlistNextActions(input: {
     actions.push({
       id: "review-alerts",
       label: "Review watchlist alerts",
-      detail: `${alertCount} alert${alertCount === 1 ? "" : "s"} from real EPA or schedule changes.`,
+      detail: `${alertCount} alert${alertCount === 1 ? "" : "s"} from real rating or schedule changes.`,
       href: "#opponent-watchlist-alerts",
       primary: true,
     });
@@ -281,7 +281,7 @@ export function opponentWatchlistNextActions(input: {
     actions.push({
       id: "watch-more",
       label: "Watch another team",
-      detail: `${entryCount} watched — alerts appear only when reference EPA or next match changes.`,
+      detail: `${entryCount} watched — alerts appear only when a stored rating or next match changes.`,
       href: "#opponent-watchlist-watch",
       primary: true,
     });
@@ -297,8 +297,8 @@ export function opponentWatchlistNextActions(input: {
     },
     {
       id: "epa-trend-alerts",
-      label: "Open EPA Trend Alerts",
-      detail: "Pair qualitative notes with quantitative EPA swings.",
+      label: "Open Rating alerts",
+      detail: "Pair notes with rating swings.",
       href: hubHref("/competition", "epa-trend-alerts", orgId),
     },
     {
