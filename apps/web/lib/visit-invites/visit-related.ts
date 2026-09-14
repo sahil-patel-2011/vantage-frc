@@ -323,7 +323,7 @@ export function visitShellCopy(kind: VisitShellKind): VisitEmptyCopy {
       return {
         kind,
         badge: "Needs setup",
-        title: "Finish setup for visit invites",
+        title: "Choose your team",
         description:
           "Choose your team and apply the visit invites migration if tables are missing.",
       };
