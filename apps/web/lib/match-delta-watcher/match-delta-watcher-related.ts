@@ -99,7 +99,7 @@ export function matchDeltaWatcherSetupSteps(orgId?: string | null): MatchDeltaWa
     {
       id: "team-data",
       label: "Sync Team Data",
-      detail: "Pull official results from The Blue Alliance so deltas can appear.",
+      detail: "Pull official scores under Team Data so deltas can appear.",
       href: withOrgHref("/team/data", orgId),
     },
   ]);
