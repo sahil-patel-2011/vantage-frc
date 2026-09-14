@@ -102,7 +102,7 @@ export function dossierSetupSteps(orgId?: string | null): DossierSetupStep[] {
     {
       id: "team-data",
       label: "Sync Team Data",
-      detail: "Pull team identity and season numbers from The Blue Alliance and Statbotics.",
+      detail: "Pull team identity and season numbers from Team Data.",
       href: withOrgHref("/team/data", orgId),
     },
   ]);
