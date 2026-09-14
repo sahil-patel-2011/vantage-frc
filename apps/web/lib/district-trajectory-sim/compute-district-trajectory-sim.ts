@@ -122,7 +122,7 @@ export async function computeTrajectoryView(
   const teamKey = teamResult.rows[0]?.teamKey ?? null;
   if (!teamKey) {
     return setupRequiredView(
-      "No reference-cache record for your team yet — TBA/Statbotics sync hasn't picked it up.",
+      "No reference-cache record for your team yet — Team Data sync has not picked it up.",
       org.orgId,
     );
   }
