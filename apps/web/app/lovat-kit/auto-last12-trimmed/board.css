@@ -1,0 +1,11 @@
+.lk-auto-last12-trimmed-board{display:grid;gap:12px;margin:4px 0 8px}
+.lk-auto-last12-trimmed-board header h3{margin:0 0 4px}
+.lk-auto-last12-trimmed-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr));gap:10px}
+.lk-auto-last12-trimmed-tile{display:grid;gap:4px;padding:12px}
+.lk-auto-last12-trimmed-tile strong{font-size:1.35rem;letter-spacing:-0.03em}
+.lk-auto-last12-trimmed-tile em{font-style:normal;font-size:11px}
+.lk-auto-last12-trimmed-spark{width:72px;height:28px;color:var(--accent)}
+.lk-auto-last12-trimmed-vs{font-size:11px}
+.lk-auto-last12-trimmed-vs-above{color:var(--good,#1b7f4e)}
+.lk-auto-last12-trimmed-vs-below{color:var(--warn,#9a5b12)}
+.lk-auto-last12-trimmed-vs-near,.lk-auto-last12-trimmed-vs-unknown{color:var(--muted)}
