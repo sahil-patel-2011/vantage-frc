@@ -161,7 +161,7 @@ export function decisionSearchNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before searching.",
+          detail: "Choose your team before searching.",
           href: "/workspace",
           primary: true,
         },
