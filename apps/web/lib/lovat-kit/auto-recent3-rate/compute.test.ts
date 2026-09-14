@@ -55,7 +55,7 @@ describe("auto-recent3-rate", () => {
     const cards = buildCards({ teamKey: "frc3", rows });
     const lead = cards.find((card) => card.id === "autoPoints");
     expect(lead?.value).not.toBeNull();
-    expect(lead?.display).not.toBe("—");
+    expect(lead?.compare.tone === "above" || lead?.compare.tone === "near").toBe(true);
     const other = buildCards({
       teamKey: "frc9",
       rows: [{ teamKey: "frc9", values: {} }],
