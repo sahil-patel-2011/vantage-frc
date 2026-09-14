@@ -1,0 +1,11 @@
+.lk-teleop-event-trimmed-board{display:grid;gap:12px;margin:4px 0 8px}
+.lk-teleop-event-trimmed-board header h3{margin:0 0 4px}
+.lk-teleop-event-trimmed-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr));gap:10px}
+.lk-teleop-event-trimmed-tile{display:grid;gap:4px;padding:12px}
+.lk-teleop-event-trimmed-tile strong{font-size:1.35rem;letter-spacing:-0.03em}
+.lk-teleop-event-trimmed-tile em{font-style:normal;font-size:11px}
+.lk-teleop-event-trimmed-spark{width:72px;height:28px;color:var(--accent)}
+.lk-teleop-event-trimmed-vs{font-size:11px}
+.lk-teleop-event-trimmed-vs-above{color:var(--good,#1b7f4e)}
+.lk-teleop-event-trimmed-vs-below{color:var(--warn,#9a5b12)}
+.lk-teleop-event-trimmed-vs-near,.lk-teleop-event-trimmed-vs-unknown{color:var(--muted)}
