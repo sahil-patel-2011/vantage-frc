@@ -11,6 +11,7 @@ function src(rel: string) {
 describe("marketing chrome", () => {
   it("landing hero has one primary CTA and a sign-in text link", () => {
     const page = src("app/page.tsx");
+    expect(page).toMatch(/export const revalidate = 86_400/);
     // Slice the hero section, not the HomeShowcase import at the top of the file.
     const heroStart = page.indexOf('className="lux-hero"');
     const heroEnd = page.indexOf("<HomeShowcase");
@@ -28,7 +29,26 @@ describe("marketing chrome", () => {
     const showcase = src("components/marketing/home-showcase.tsx");
     expect(showcase).not.toMatch(/mk-tag/);
     expect(showcase).toMatch(/MARKETING_STUDENT_PATH/);
+    expect(showcase).toMatch(/ProductFrame/);
+    expect(showcase).toMatch(/MARKETING_APP_FRAMES/);
     expect(showcase).not.toMatch(/\b\d{2,}%\b|\b\d{3,}\s+teams\b/i);
+  });
+
+  it("hero and product frames show the real Kickoff brief, not a Good-evening mock", () => {
+    const frames = src("components/marketing/app-frames.tsx");
+    const hero = src("components/marketing/hero-product.tsx");
+    expect(hero).toMatch(/export \{ HeroProductPanel \} from "\.\/app-frames"/);
+    expect(frames).toMatch(/computeGameBrief/);
+    expect(frames).toMatch(/gameBriefStatusBadge/);
+    expect(frames).toMatch(/Ask about this game/);
+    expect(frames).toMatch(/Needs setup/);
+    expect(frames).toMatch(/Coverage stays blank until you scout/);
+    expect(frames).not.toMatch(/never a fake/);
+    expect(frames).toMatch(/Connect Claude Code/);
+    expect(frames).toMatch(/CAD Video Tutor/);
+    expect(src("app/marketing-showcase.css")).toMatch(/color:var\(--m-on-accent/);
+    expect(frames).not.toMatch(/Good evening/);
+    expect(frames).not.toMatch(/\b\d{2,}%\b|\b\d{3,}\s+teams\b/i);
   });
 
   it("pricing and for-teams keep one hero primary and point leftover to waitlist or sign-in", () => {

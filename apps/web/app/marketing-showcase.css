@@ -183,3 +183,33 @@
   .shx-stack-need{grid-column:1/-1}
   .shx-closer-inner{flex-direction:column;align-items:flex-start}
 }
+
+/* Signed-in app frames on the public homepage */
+.marketing-lux .mk-app-primary{
+  display:inline-flex;align-items:center;min-height:32px;padding:0 12px;
+  border-radius:9px;background:var(--m-ink,#111);color:var(--m-on-accent,#fff);
+  font:600 12px/1 var(--m-sans);letter-spacing:-.01em;
+}
+.marketing-lux .mk-app-gallery{
+  background:var(--m-white,#fff);
+  border-top:1px solid var(--m-line);
+}
+.marketing-lux .mk-app-gallery-grid{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:clamp(16px,2.2vw,24px);margin:0;padding:0;list-style:none;
+}
+.marketing-lux .mk-app-gallery-grid>li{
+  display:flex;flex-direction:column;gap:12px;min-width:0;
+}
+.marketing-lux .mk-app-gallery-grid>li>strong{
+  font:650 17px/1.25 var(--m-sans);letter-spacing:-.02em;
+}
+.marketing-lux .mk-app-gallery-grid>li>span{
+  color:var(--m-muted);font-size:13.5px;line-height:1.55;
+}
+.marketing-lux .mk-app-gallery-grid .mk-mock{
+  width:100%;max-width:none;justify-self:stretch;animation:none;
+}
+@media (max-width:999px){
+  .marketing-lux .mk-app-gallery-grid{grid-template-columns:1fr}
+}
