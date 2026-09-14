@@ -333,7 +333,7 @@ export default function DossierClient() {
           shell === "error"
             ? error || "Could not load team dossier."
             : shell === "setup" && view?.status === "setup_required"
-              ? `${view.message} Facts stay blank until real TBA/Statbotics rows exist.`
+              ? `${view.message} Facts stay blank until real Team Data rows exist.`
               : undefined
         }
         errorStatus={errorStatus}
