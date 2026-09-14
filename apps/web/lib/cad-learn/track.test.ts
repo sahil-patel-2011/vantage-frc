@@ -74,6 +74,8 @@ describe("cad learning track", () => {
       "/help/Content/partstudios.htm",
       "/help/Content/incontext.htm",
       "/help/Content/sketchbasics.htm",
+      "/help/Content/drawing.htm",
+      "/help/Content/Drawings/drawings.htm",
     ];
     const links = allCadLinks().map((link) => link.href);
     for (const dead of fallbacks) {
@@ -105,6 +107,7 @@ describe("cad learning track", () => {
       "in-context",
       "assemblies",
       "mates",
+      "drawings",
       "cvt-explore",
       "cvt-saddle",
     ]) {

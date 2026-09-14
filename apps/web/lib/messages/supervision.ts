@@ -63,6 +63,69 @@ export function resetYouthProtectionCapabilityCache(): void {
   youthProtectionSupportedCache = null;
 }
 
+let teamChatColumnCache: boolean | null = null;
+
+export async function supportsTeamChatFlag(client: PoolClient): Promise<boolean> {
+  return cachedSchemaSupport(
+    client,
+    {
+      read: () => teamChatColumnCache,
+      write: (value) => {
+        teamChatColumnCache = value;
+      },
+    },
+    `SELECT 1
+       FROM information_schema.columns
+       WHERE table_schema = 'public'
+         AND table_name = 'org_chat_policy'
+         AND column_name = 'team_chat_enabled'`,
+  );
+}
+
+export function resetTeamChatFlagCapabilityCache(): void {
+  teamChatColumnCache = null;
+}
+
+/** Default on: existing teams keep chat until a mentor turns it off. */
+export async function readTeamChatEnabled(client: PoolClient, orgId: string): Promise<boolean> {
+  if (!(await supportsYouthProtection(client)) || !(await supportsTeamChatFlag(client))) return true;
+  const row = await client.query<{ enabled: boolean | null }>(
+    `SELECT team_chat_enabled AS enabled FROM org_chat_policy WHERE org_id = $1::uuid LIMIT 1`,
+    [orgId],
+  );
+  if (!row.rowCount) return true;
+  return row.rows[0]!.enabled !== false;
+}
+
+export async function writeTeamChatEnabled(
+  client: PoolClient,
+  orgId: string,
+  actorUserId: string,
+  enabled: boolean,
+): Promise<boolean> {
+  if (!(await supportsYouthProtection(client))) {
+    throw new Error("Chat safety settings require migration 0455_chat_youth_protection");
+  }
+  if (!(await supportsTeamChatFlag(client))) {
+    throw new Error("Turning team chat off requires migration 0655_team_chat_enabled");
+  }
+  if (!(await isOrgChatAdmin(client, orgId, actorUserId))) {
+    throw new Error("Only an owner or admin can change chat safety settings");
+  }
+  const row = await client.query<{ enabled: boolean }>(
+    `INSERT INTO org_chat_policy (org_id, team_chat_enabled, updated_by, updated_at)
+     VALUES ($1::uuid, $2, $3::uuid, now())
+     ON CONFLICT (org_id) DO UPDATE
+       SET team_chat_enabled = excluded.team_chat_enabled,
+           updated_by = excluded.updated_by,
+           updated_at = now()
+     RETURNING team_chat_enabled AS enabled`,
+    [orgId, enabled, actorUserId],
+  );
+  if (!row.rowCount) throw new Error("Only an owner or admin can change chat safety settings");
+  return row.rows[0]!.enabled !== false;
+}
+
 export async function readDmMode(client: PoolClient, orgId: string): Promise<DmMode> {
   if (!(await supportsYouthProtection(client))) return DEFAULT_DM_MODE;
   const row = await client.query<{ dmMode: string }>(

@@ -50,19 +50,27 @@ describe("settingsRoleTier", () => {
 });
 
 describe("visibleSettingsNav", () => {
-  it("members see only personal entries", () => {
+  it("members see only personal entries, without an AI-keys chip", () => {
     const items = visibleSettingsNav("scout");
     expect(items.every((i) => i.scope === "personal")).toBe(true);
-    expect(items.map((i) => i.id)).toContain("my-ai-keys");
+    expect(items.map((i) => i.id)).toEqual([
+      "profile",
+      "appearance",
+      "notifications",
+      "security",
+      "connectors",
+    ]);
   });
 
-  it("owners see personal then team, with the AI-keys page deduped to the team entry", () => {
+  it("owners see personal then a short team list, including Chat", () => {
     const items = visibleSettingsNav("owner");
     const ids = items.map((i) => i.id);
     expect(ids).toContain("team-admin");
+    expect(ids).toContain("chat");
     expect(ids).toContain("team-ai-keys");
     expect(ids).not.toContain("my-ai-keys");
-    // Personal group comes before the team group.
+    expect(ids).not.toContain("ai-budgets");
+    expect(ids).not.toContain("ai-governance");
     const firstTeam = items.findIndex((i) => i.scope === "team");
     expect(items.slice(0, firstTeam).every((i) => i.scope === "personal")).toBe(true);
     expect(items.slice(firstTeam).every((i) => i.scope === "team")).toBe(true);
@@ -80,6 +88,8 @@ describe("isSettingsPath", () => {
     expect(isSettingsPath("/security")).toBe(true);
     expect(isSettingsPath("/team/admin")).toBe(true);
     expect(isSettingsPath("/team/ai-policy")).toBe(true);
+    expect(isSettingsPath("/team/budgets")).toBe(true);
+    expect(isSettingsPath("/messages")).toBe(false);
     expect(isSettingsPath("/exports")).toBe(true);
     expect(isSettingsPath("/accounting")).toBe(false);
     expect(isSettingsPath("/team")).toBe(false);
@@ -108,8 +118,9 @@ describe("activeSettingsId", () => {
 
   it("matches team routes and ignores unrelated query params", () => {
     expect(activeSettingsId(owner, "/team/ai-keys", "?orgId=abc")).toBe("team-ai-keys");
-    expect(activeSettingsId(member, "/team/ai-keys", "?orgId=abc")).toBe("my-ai-keys");
-    expect(activeSettingsId(owner, "/team/budgets")).toBe("ai-budgets");
+    expect(activeSettingsId(member, "/team/ai-keys", "?orgId=abc")).toBeNull();
+    expect(activeSettingsId(owner, "/team/budgets")).toBeNull();
+    expect(activeSettingsId(owner, "/messages", "?settings=1")).toBe("chat");
   });
 
   it("longest path prefix wins and non-settings paths return null", () => {

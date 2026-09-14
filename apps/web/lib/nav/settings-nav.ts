@@ -3,9 +3,9 @@
  * answers "where do I change X". Pure data + helpers, safe for client bundles.
  *
  * Personal entries are visible to every member; team entries require an
- * owner/admin role. `/team/ai-keys` intentionally appears in both scopes
- * (members manage their personal key there; admins also manage team keys) —
- * `visibleSettingsNav` dedupes it so one viewer never sees the page twice.
+ * owner/admin role. Members do not get an AI-keys chip — Claude Code is the
+ * no-key Ask AI path. Owners see one AI keys chip plus Chat, Team admin,
+ * Member access, and Data export.
  */
 
 import type { ProductNavIcon } from "./product-nav";
@@ -53,15 +53,7 @@ export const SETTINGS_NAV: SettingsNavItem[] = [
     scope: "personal",
     requiredRole: "member",
   },
-  {
-    id: "my-ai-keys",
-    label: "AI keys",
-    href: "/team/ai-keys",
-    icon: "bolt",
-    scope: "personal",
-    requiredRole: "member",
-  },
-  // Team — owner/admin only.
+  // Team — owner/admin only. AI keys stay one chip (Claude Code is the no-key Ask AI path).
   { id: "team-admin", label: "Team admin", href: "/team/admin", icon: "gear", scope: "team", requiredRole: "owner-admin" },
   {
     id: "member-access",
@@ -72,31 +64,26 @@ export const SETTINGS_NAV: SettingsNavItem[] = [
     requiredRole: "owner-admin",
   },
   {
+    id: "chat",
+    label: "Chat",
+    href: "/messages?settings=1",
+    icon: "users",
+    scope: "team",
+    requiredRole: "owner-admin",
+  },
+  {
     id: "team-ai-keys",
-    label: "AI keys & models",
+    label: "AI keys",
     href: "/team/ai-keys",
     icon: "bolt",
     scope: "team",
     requiredRole: "owner-admin",
   },
-  {
-    id: "ai-budgets",
-    label: "AI budgets",
-    href: "/team/budgets",
-    icon: "stats",
-    scope: "team",
-    requiredRole: "owner-admin",
-  },
-  {
-    id: "ai-governance",
-    label: "AI governance",
-    href: "/team/ai-policy",
-    icon: "clipboard",
-    scope: "team",
-    requiredRole: "owner-admin",
-  },
   { id: "data-export", label: "Data export", href: "/exports", icon: "grid", scope: "team", requiredRole: "owner-admin" },
 ];
+
+/** Pages that still exist but are no longer chips — keep Settings highlighting. */
+const SETTINGS_PATH_ALIASES = ["/team/budgets", "/team/ai-policy"];
 
 /** Map a raw org role ("owner" | "admin" | "scout" | "viewer" | null) to the nav tier. */
 export function settingsRoleTier(role: string | null | undefined): SettingsRequiredRole {
@@ -108,16 +95,20 @@ function pathOf(href: string): string {
   return href.split("#")[0]?.split("?")[0] ?? href;
 }
 
-function tabOf(href: string): string | null {
+function queryOf(href: string): URLSearchParams {
   const queryIndex = href.indexOf("?");
-  if (queryIndex < 0) return null;
-  return new URLSearchParams(href.slice(queryIndex + 1)).get("tab");
+  if (queryIndex < 0) return new URLSearchParams();
+  return new URLSearchParams(href.slice(queryIndex + 1));
+}
+
+function tabOf(href: string): string | null {
+  return queryOf(href).get("tab");
 }
 
 /**
  * Entries the given role may see, in Personal-then-Team order. When a team
- * entry covers the same page as a personal one (AI keys), the team entry wins
- * so an admin never sees two chips pointing at one page.
+ * entry covers the same page as a personal one, the team entry wins so an
+ * admin never sees two chips pointing at one page.
  */
 export function visibleSettingsNav(role: string | null | undefined, scope?: SettingsScope): SettingsNavItem[] {
   const tier = settingsRoleTier(role);
@@ -132,8 +123,8 @@ export function visibleSettingsNav(role: string | null | undefined, scope?: Sett
 /** Whether a pathname is one of the settings surfaces (segment-aware prefix). */
 export function isSettingsPath(pathname: string): boolean {
   const path = pathOf(pathname);
-  return SETTINGS_NAV.some((item) => {
-    const itemPath = pathOf(item.href);
+  if (path === "/messages") return false;
+  return [...SETTINGS_NAV.map((item) => pathOf(item.href)), ...SETTINGS_PATH_ALIASES].some((itemPath) => {
     return path === itemPath || path.startsWith(`${itemPath}/`);
   });
 }
@@ -158,10 +149,14 @@ export function activeSettingsId(
     const itemPath = pathOf(item.href);
     const onPath = path === itemPath || path.startsWith(`${itemPath}/`);
     if (!onPath) continue;
-    const itemTab = tabOf(item.href);
+    const itemQuery = queryOf(item.href);
+    const itemTab = itemQuery.get("tab");
+    const itemSettings = itemQuery.get("settings");
+    const currentSettings = search ? new URLSearchParams(search.replace(/^\?/, "")).get("settings") : null;
     const tabMatches =
       itemTab === null ? currentTab === null || currentTab === "profile" : currentTab === itemTab;
-    if (!tabMatches) continue;
+    const settingsMatches = itemSettings === null || currentSettings === itemSettings;
+    if (!tabMatches || !settingsMatches) continue;
     if (itemPath.length > bestScore) {
       bestScore = itemPath.length;
       best = item;

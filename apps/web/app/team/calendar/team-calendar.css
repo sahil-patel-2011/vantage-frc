@@ -465,6 +465,34 @@
   gap: 4px 14px;
   margin-left: auto;
 }
+.tc-more {
+  position: relative;
+}
+.tc-more summary {
+  cursor: pointer;
+  list-style: none;
+  font: 700 13px inherit;
+  color: var(--accent);
+}
+.tc-more summary::-webkit-details-marker {
+  display: none;
+}
+.tc-more-menu {
+  position: absolute;
+  right: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 10rem;
+  margin-top: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg);
+  box-shadow: var(--shadow);
+}
 .tc-back {
   display: inline-flex;
   align-items: center;

@@ -517,6 +517,30 @@ export const CAD_TRACK: Unit[] = [
         ],
         minutes: 60,
       },
+      {
+        id: "drawings",
+        title: "Drawings for the shop",
+        why:
+          "The person holding the wrench should not have to guess which hole is which. An Onshape drawing of your assembly — front, top, side, and a few dimensions — is the sheet you tape to the cart so two people can build the same thing.",
+        steps: [
+          "Open the assembly you already mated, not a leftover part studio.",
+          "Right-click the assembly in the parts list and choose Create drawing. Pick a template your lead uses (ANSI inch is common on FRC teams).",
+          "Click Suggested views so the sheet starts with front, top, right, and isometric instead of a blank page.",
+          "Add the dimensions the shop actually needs: hole-to-hole, overall length, and which way is up. Skip every dimension that only restates the model.",
+          "Export a PDF and put it next to the assembly in the CAD vault so the person building it does not need an Onshape seat.",
+        ],
+        practice:
+          "One drawing tab of your plate-and-bracket assembly with suggested views and the three shop dimensions written on it.",
+        verify:
+          "A teammate who did not model it can pick the right bolts and orientation from the PDF alone.",
+        tip:
+          "If the drawing looks empty, you created a drawing with no views. Use Insert view and pick the assembly, or start again with Suggested views.",
+        links: [
+          { label: "Creating a Drawing", href: `${HELP}/Drawing/creating_a_drawing.htm`, primary: true },
+          { label: "Views", href: `${HELP}/Drawing/views.htm` },
+        ],
+        minutes: 45,
+      },
     ],
   },
   {

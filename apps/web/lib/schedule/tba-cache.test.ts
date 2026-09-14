@@ -172,9 +172,10 @@ describe("buildScheduleView", () => {
 });
 
 describe("scheduleCacheRequiredCopy", () => {
-  it("says the board stays blank until TBA cache rows — never invented slots", () => {
+  it("says the board stays blank until the event schedule is synced", () => {
     const copy = scheduleCacheRequiredCopy();
-    expect(copy.description).toMatch(/cache/i);
+    expect(copy.description).toMatch(/sync/i);
+    expect(copy.description).not.toMatch(/\bTBA\b/);
     expectPlainCopy(copy.description);
     expect(`${copy.title} ${copy.description}`).not.toMatch(/\bDEMO\b/);
   });

@@ -35,6 +35,7 @@ import {
   listSupervisors,
   memberChatClass,
   readDmMode,
+  readTeamChatEnabled,
   supportsYouthProtection,
   type SupervisorRef,
 } from "../../../lib/messages/supervision";
@@ -1261,6 +1262,7 @@ type YouthProtectionState = {
   dmMode: DmMode;
   viewerClass: "adult" | "youth";
   canManage: boolean;
+  teamChatEnabled: boolean;
 };
 
 async function youthProtectionState(
@@ -1270,14 +1272,21 @@ async function youthProtectionState(
 ): Promise<YouthProtectionState> {
   const supported = await supportsYouthProtection(client);
   if (!supported) {
-    return { supported: false, dmMode: "open", viewerClass: "youth", canManage: false };
+    return {
+      supported: false,
+      dmMode: "open",
+      viewerClass: "youth",
+      canManage: false,
+      teamChatEnabled: true,
+    };
   }
-  const [dmMode, viewerClass, canManage] = await Promise.all([
+  const [dmMode, viewerClass, canManage, teamChatEnabled] = await Promise.all([
     readDmMode(client, orgId),
     memberChatClass(client, orgId, userId),
     isOrgChatAdmin(client, orgId, userId),
+    readTeamChatEnabled(client, orgId),
   ]);
-  return { supported, dmMode, viewerClass, canManage };
+  return { supported, dmMode, viewerClass, canManage, teamChatEnabled };
 }
 
 export async function GET(request: Request) {
@@ -1302,6 +1311,29 @@ export async function GET(request: Request) {
 
     const data = await withRls({ userId: session.user.id, orgId }, async (client) => {
       await requireMembership(client, orgId, session.user.id);
+
+      const youthProtection = await youthProtectionState(client, orgId, session.user.id);
+      if (!youthProtection.teamChatEnabled && mode !== "members") {
+        const role = await memberRole(client, orgId, session.user.id);
+        return {
+          currentUserId: session.user.id,
+          conversations: [],
+          unreadCount: 0,
+          canManageChannels: canManageChannels(role),
+          channelArchiveSupported: false,
+          messages: [],
+          pinned: [],
+          pinsSupported: false,
+          mentionsSupported: false,
+          youthProtection,
+          conversation: null,
+          supervisors: [] as SupervisorRef[],
+          supervisionNotice: "",
+          channels: [],
+          archiveSupported: false,
+          targets: [],
+        };
+      }
 
       if (mode === "members") {
         return { members: await listMembers(client, orgId, session.user.id) };
@@ -1421,6 +1453,10 @@ export async function POST(request: Request) {
 
     const data = await withRls({ userId: session.user.id, orgId }, async (client) => {
       await requireMembership(client, orgId, session.user.id);
+
+      if (!(await readTeamChatEnabled(client, orgId))) {
+        throw new Error("Team chat is off for this team.");
+      }
 
       if (action === "ensure_team") {
         const conversationId = await ensureTeamChannel(client, orgId, session.user.id);

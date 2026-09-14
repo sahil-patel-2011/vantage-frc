@@ -530,10 +530,10 @@ const TBA_RED = "#b91c1c";
 const TBA_BLUE = "#1d4ed8";
 
 const TBA_COMP_LABEL: Record<string, string> = {
-  qm: "Qual",
-  ef: "Eighth",
-  qf: "QF",
-  sf: "SF",
+  qm: "Qualification match",
+  ef: "Eighth-final",
+  qf: "Quarterfinal",
+  sf: "Semifinal",
   f: "Final",
 };
 
@@ -557,8 +557,8 @@ export function allianceTeamKeys(value: unknown): string[] {
 }
 
 export function tbaMatchTitle(compLevel: string, matchNumber: number, bumper: "red" | "blue"): string {
-  const label = TBA_COMP_LABEL[compLevel] ?? compLevel.toUpperCase();
-  return `${label} ${matchNumber} · ${bumper.toUpperCase()}`;
+  const label = TBA_COMP_LABEL[compLevel] ?? "Match";
+  return `${label} ${matchNumber} · ${bumper} bumpers`;
 }
 
 /**

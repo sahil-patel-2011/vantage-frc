@@ -126,6 +126,8 @@ export type MessagesReadyViewProps = {
   conversations: Conversation[];
   safetyOpen: boolean;
   setSafetyOpen: Dispatch<SetStateAction<boolean>>;
+  teamChatEnabled: boolean;
+  onTeamChatChange: (enabled: boolean) => void;
   active: Conversation | null;
   activeChannelArchived: boolean;
   supervisionNotice: string;
@@ -196,6 +198,8 @@ export function MessagesReadyView({
   conversations,
   safetyOpen,
   setSafetyOpen,
+  teamChatEnabled,
+  onTeamChatChange,
   active,
   activeChannelArchived,
   supervisionNotice,
@@ -268,14 +272,17 @@ export function MessagesReadyView({
       ) : (
         <div className="messages-layout">
           <aside className="chat-sidebar">
-            <button
-              type="button"
-              className="messages-new-dm"
-              onClick={() => void openMemberPicker()}
-              disabled={sending}
-            >
-              New Message
-            </button>
+            {teamChatEnabled ? (
+              <button
+                type="button"
+                className="messages-new-dm"
+                onClick={() => void openMemberPicker()}
+                disabled={sending}
+              >
+                New message
+              </button>
+            ) : null}
+            {teamChatEnabled ? (
             <div className="messages-group-heading">
               <span className="eyebrow">Channels</span>
               {canManageChannels ? (
@@ -289,8 +296,9 @@ export function MessagesReadyView({
                 </button>
               ) : null}
             </div>
+            ) : null}
 
-            {channelDraft?.mode === "create" ? (
+            {teamChatEnabled && channelDraft?.mode === "create" ? (
               <form
                 className="messages-channel-form"
                 onSubmit={(event) => {
@@ -318,7 +326,8 @@ export function MessagesReadyView({
               </form>
             ) : null}
 
-            {channels.map((item) => (
+            {teamChatEnabled
+              ? channels.map((item) => (
               <button
                 key={item.id}
                 type="button"
@@ -337,9 +346,10 @@ export function MessagesReadyView({
                 {labelFor(item)}
                 {item.lastBody ? <small className="messages-preview">{item.lastBody}</small> : null}
               </button>
-            ))}
+            ))
+              : null}
 
-            {channelArchiveSupported && !showArchivedChannels ? (
+            {teamChatEnabled && channelArchiveSupported && !showArchivedChannels ? (
               <button
                 type="button"
                 className="messages-channel-archive-toggle"
@@ -352,11 +362,14 @@ export function MessagesReadyView({
               </button>
             ) : null}
 
-            <div className="messages-group-heading">
-              <span className="eyebrow">Direct messages</span>
-            </div>
+            {teamChatEnabled ? (
+              <div className="messages-group-heading">
+                <span className="eyebrow">Direct messages</span>
+              </div>
+            ) : null}
 
-            {directMessages.map((item) => (
+            {teamChatEnabled
+              ? directMessages.map((item) => (
               <button
                 key={item.id}
                 type="button"
@@ -375,34 +388,44 @@ export function MessagesReadyView({
                 {labelFor(item)}
                 {item.lastBody ? <small className="messages-preview">{item.lastBody}</small> : null}
               </button>
-            ))}
+            ))
+              : null}
 
-            {directMessages.length === 0 ? (
+            {teamChatEnabled && directMessages.length === 0 ? (
               <p className="messages-group-empty">No private conversations yet.</p>
             ) : null}
 
-            {conversations.length === 0 ? (
+            {teamChatEnabled && conversations.length === 0 ? (
               <EmptyState
                 soft
                 title="No conversations yet"
                 description="Your team channel opens with this team."
               />
             ) : null}
-            {/* Visible to every member, not just admins: the people the rule applies to are the
-                ones who most need to be able to read it. */}
             <button
               type="button"
               className="chat-safety-toggle"
               onClick={() => setSafetyOpen((open) => !open)}
               aria-expanded={safetyOpen}
             >
-              {safetyOpen ? "Hide message settings" : "Message settings"}
+              {safetyOpen ? "Hide settings" : "Settings"}
             </button>
           </aside>
 
           <section className="chat-main">
             {safetyOpen ? (
-              <ChatSafetyPanel orgId={orgId} />
+              <ChatSafetyPanel orgId={orgId} onTeamChatChange={onTeamChatChange} />
+            ) : !teamChatEnabled ? (
+              <EmptyState
+                title="Team chat is off"
+                description="Mentors turned chat off for this team. Ask a mentor if you need it back."
+              >
+                {canManageChannels ? (
+                  <Button variant="primary" type="button" onClick={() => setSafetyOpen(true)}>
+                    Settings
+                  </Button>
+                ) : null}
+              </EmptyState>
             ) : !active ? (
               <EmptyState
                 soft

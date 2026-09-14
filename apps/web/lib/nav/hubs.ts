@@ -353,6 +353,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         // Nested under CAD rather than added as a workbench: hubs.test.ts pins
         // Build's four workbenches, and a training surface is not one of them.
         { id: "cad-learn", label: "Learn CAD", legacyHref: "/cad-learn", featured: true },
+        { id: "learn-resources", label: "Code & CAD", legacyHref: "/learn", featured: true },
       ]),
       { id: "code", label: "Code", legacyHref: "/code" },
       ...nest("code", [

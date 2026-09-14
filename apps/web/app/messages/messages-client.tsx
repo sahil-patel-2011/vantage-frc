@@ -115,6 +115,7 @@ export default function MessagesClient({
   // both parties must be able to see the second adult for the whole time the room exists.
   const [supervisionNotice, setSupervisionNotice] = useState("");
   const [safetyOpen, setSafetyOpen] = useState(false);
+  const [teamChatEnabled, setTeamChatEnabled] = useState(true);
   const [canManageChannels, setCanManageChannels] = useState(false);
   const [channelArchiveSupported, setChannelArchiveSupported] = useState(false);
   const [showArchivedChannels, setShowArchivedChannels] = useState(false);
@@ -152,6 +153,11 @@ export default function MessagesClient({
       setLinkPickerType(initialObjectLink.objectType);
     }
   }, [initialObjectLink]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("settings") === "1") setSafetyOpen(true);
+  }, []);
 
   const loadLinkTargets = useCallback(
     async (objectType: MessageObjectLink["objectType"], query: string) => {
@@ -220,6 +226,9 @@ export default function MessagesClient({
       setCachedAt(null);
       if (typeof data.pinsSupported === "boolean") setPinsSupported(data.pinsSupported);
       if (typeof data.canManageChannels === "boolean") setCanManageChannels(data.canManageChannels);
+      if (data.youthProtection && typeof data.youthProtection.teamChatEnabled === "boolean") {
+        setTeamChatEnabled(data.youthProtection.teamChatEnabled);
+      }
       if (typeof data.channelArchiveSupported === "boolean") {
         setChannelArchiveSupported(data.channelArchiveSupported);
       }
@@ -767,6 +776,11 @@ export default function MessagesClient({
       conversations={conversations}
       safetyOpen={safetyOpen}
       setSafetyOpen={setSafetyOpen}
+      teamChatEnabled={teamChatEnabled}
+      onTeamChatChange={(enabled) => {
+        setTeamChatEnabled(enabled);
+        if (enabled) void reloadMessages();
+      }}
       active={active}
       activeChannelArchived={activeChannelArchived}
       supervisionNotice={supervisionNotice}

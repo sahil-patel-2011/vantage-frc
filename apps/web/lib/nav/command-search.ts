@@ -228,6 +228,10 @@ const KEYWORDS: Record<string, string[]> = {
     "teach cad", "new to cad", "beginner cad", "cad onboarding", "mechanical onboarding",
     "design subteam", "sketching", "extrude", "fillet", "mates", "assemblies",
     "grade my part", "mass properties", "moment of inertia", "how do i start cad",
+    "onshape drawings", "shop drawing", "make a drawing",
+  ],
+  "build:learn-resources": [
+    "code and cad", "cad resources", "programming resources", "code cad hub",
   ],
   "build:sketch-to-brief": ["sketch", "napkin", "idea to brief", "concept"],
   "build:code": ["code", "programming", "software", "java", "python", "wpilib", "robot code"],
