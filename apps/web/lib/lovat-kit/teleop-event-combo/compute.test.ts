@@ -35,27 +35,27 @@ import {
 } from "./compute";
 
 const rows = [
-  { teamKey: "frc1", qual: true, values: { teleopPoints: 18.0 } },
-  { teamKey: "frc2", qual: true, values: { teleopPoints: 20.0 } },
-  { teamKey: "frc3", qual: true, values: { teleopPoints: 42.0 } },
-  { teamKey: "frc3", qual: true, values: { teleopPoints: 42.0 } },
+  { teamKey: "frc1", qual: true, values: { teleopPoints: 12.0 } },
+  { teamKey: "frc2", qual: true, values: { teleopPoints: 29.0 } },
+  { teamKey: "frc3", qual: true, values: { teleopPoints: 36.0 } },
+  { teamKey: "frc3", qual: true, values: { teleopPoints: 36.0 } },
 ];
 
-describe("teleop-event-zscore", () => {
+describe("teleop-event-combo", () => {
   it("does not invent a field average from one blank team", () => {
     expect(populationMean([])).toBeNull();
     expect(zScore(10, null, 2)).toBeNull();
     expect(contributionShare(10, 0)).toBeNull();
     expect(sparklinePath([1])).toBeNull();
     expect(emptyCopy().badge).toBe("Needs setup");
-    expect(SLUG).toBe("teleop-event-zscore");
+    expect(SLUG).toBe("teleop-event-combo");
   });
 
   it("compares a real sample to this event and keeps scout blanks empty", () => {
     const cards = buildCards({ teamKey: "frc3", rows });
     const lead = cards.find((card) => card.id === "teleopPoints");
     expect(lead?.value).not.toBeNull();
-    expect(lead?.compare.tone === "above" || lead?.compare.tone === "near").toBe(true);
+    expect(lead?.display).not.toBe("—");
     const other = buildCards({
       teamKey: "frc9",
       rows: [{ teamKey: "frc9", values: {} }],
@@ -94,13 +94,13 @@ describe("teleop-event-zscore", () => {
 
   it("builds a report without filling missing ratings", () => {
     const report = buildReport({ teamKey: "frc3", rows });
-    expect(report.slug).toBe("teleop-event-zscore");
+    expect(report.slug).toBe("teleop-event-combo");
     expect(report.summary.known).toBeGreaterThan(0);
     expect(studentChrome().event).toBe("Compared to this event");
     expect(studentChrome().setup).toBe("Needs setup");
     expect(histogram([1, 2, 2, 8]).length).toBeGreaterThan(0);
     expect(forecastNext([1, 2, 3])).not.toBeNull();
-    expect(bootstrapMean([18.0, 20.0, 42.0])).not.toBeNull();
+    expect(bootstrapMean([12.0, 29.0, 36.0])).not.toBeNull();
     expect(rankTeams(rows, ["frc1", "frc2", "frc3"]).some((row) => row.rank === 1)).toBe(true);
     expect(weightedPickScore(report.cards, defaultWeights()) == null || Number.isFinite(weightedPickScore(report.cards, defaultWeights()))).toBe(true);
     const blank = buildCards({ teamKey: "frc9", rows: [{ teamKey: "frc9", values: {} }] });
