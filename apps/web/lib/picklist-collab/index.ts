@@ -174,9 +174,9 @@ export function picklistToCsv(input: {
     "Name",
     "Tier",
     "Role",
-    "EPA",
-    "Auto EPA",
-    "Teleop EPA",
+    "Rating",
+    "Auto rating",
+    "Teleop rating",
     "Weighted score",
     "Note",
   ];
