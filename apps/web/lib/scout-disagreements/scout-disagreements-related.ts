@@ -88,7 +88,7 @@ export function scoutDisagreementsSetupSteps(orgId?: string | null): ScoutDisagr
     {
       id: "accuracy",
       label: "Open Accuracy",
-      detail: "TBA-verified ranks help decide which scout's value to trust when resolving.",
+      detail: "officially verified ranks help decide which scout's value to trust when resolving.",
       href: withOrgHref("/scout-accuracy", orgId),
     },
     {
@@ -221,7 +221,7 @@ export function scoutDisagreementsNextActions(input: {
         {
           id: "accuracy",
           label: "Open Accuracy",
-          detail: "TBA-verified ranks stay honest until real scout rows exist.",
+          detail: "officially verified ranks stay honest until real scout rows exist.",
           href: withOrgHref("/scout-accuracy", null),
         },
         {
@@ -243,7 +243,7 @@ export function scoutDisagreementsNextActions(input: {
       {
         id: "accuracy",
         label: "Open Accuracy",
-        detail: "Use TBA-verified ranks when choosing an authoritative value.",
+        detail: "Use officially verified ranks when choosing an authoritative value.",
         href: withOrgHref("/scout-accuracy", orgId),
       },
       {
@@ -303,7 +303,7 @@ export function scoutDisagreementsNextActions(input: {
       {
         id: "accuracy",
         label: "Open Accuracy",
-        detail: "Cross-check TBA-verified ranks before you need to resolve.",
+        detail: "Cross-check officially verified ranks before you need to resolve.",
         href: withOrgHref("/scout-accuracy", orgId),
       },
       {
@@ -344,7 +344,7 @@ export function scoutDisagreementsNextActions(input: {
     {
       id: "accuracy",
       label: "Open Accuracy",
-      detail: "Prefer TBA-accurate scouts when choosing an authoritative value.",
+      detail: "Prefer officially accurate scouts when choosing an authoritative value.",
       href: withOrgHref("/scout-accuracy", orgId),
     },
     {
