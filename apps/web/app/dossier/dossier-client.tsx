@@ -458,7 +458,7 @@ export default function DossierClient() {
                 <strong>
                   {view.referenceAccess.statbotics.cacheHasMetrics ? "Cached" : "Empty"}
                 </strong>
-                <small>Statbotics EPA</small>
+                <small>Team Data rating</small>
               </article>
             </div>
           ) : null}
