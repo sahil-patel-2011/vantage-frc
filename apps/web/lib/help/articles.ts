@@ -1227,7 +1227,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         body: [
           "Open the Media pillar from the Vantage island, drawer, or Cmd+K — search “Media”.",
           "You can also pin Media as one of your four island apps.",
-          "Pick a team first — Media belongs to this team like the other tools.",
+          "Choose your team first — Media belongs to this team like the other tools.",
         ],
       },
       {
