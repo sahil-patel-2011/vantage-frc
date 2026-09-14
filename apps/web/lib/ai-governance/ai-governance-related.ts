@@ -193,7 +193,7 @@ export function aiGovernanceShellCopy(kind: AiGovernanceShellKind): AiGovernance
     case "setup":
       return {
         kind,
-        badge: "Setup",
+        badge: "Needs setup",
         title: "Finish the policy you started",
         description:
           "A feature list or high-cost gate is on but incomplete (no features or tools selected, or no dollar threshold).",
