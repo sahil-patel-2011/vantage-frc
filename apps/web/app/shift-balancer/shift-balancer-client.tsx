@@ -332,7 +332,7 @@ function GeneratePlanForm({
         </p>
       ) : view.eventKey ? (
         <p className="app-muted" style={{ margin: 0 }}>
-          Active event {view.eventKey} has no qualification matches cached yet. Sync TBA or generate a numeric plan below.
+          Active event {view.eventKey} has no qualification matches cached yet. Sync Team Data or generate a numeric plan below.
         </p>
       ) : (
         <p className="app-muted" style={{ margin: 0 }}>
