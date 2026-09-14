@@ -158,7 +158,7 @@ export function seasonReportNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before logging entries.",
+          detail: "Choose your team before logging entries.",
           href: "/workspace",
           primary: true,
         },
