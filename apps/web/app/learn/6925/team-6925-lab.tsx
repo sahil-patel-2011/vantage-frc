@@ -8,7 +8,7 @@ export function Team6925Lab() {
       <PageHeader
         breadcrumbs={
           <>
-            <a href={withOrgHref("/build")}>Build</a>
+            <a href={withOrgHref("/build", null)}>Build</a>
             {" / Team 6925 lab"}
           </>
         }
@@ -16,13 +16,13 @@ export function Team6925Lab() {
         description="Official Limelight, WPILib, GitHub, and CAD Video Tutor links, then five paced weeks. Scores stay blank until a real grade exists."
       >
         <nav className="product-hub-related" aria-label="Related coding tools">
-          <Button as="a" variant="secondary" href={withOrgHref("/dev-setup")}>
+          <Button as="a" variant="secondary" href={withOrgHref("/dev-setup", null)}>
             Programming setup
           </Button>
-          <Button as="a" variant="secondary" href={withOrgHref("/cad-learn")}>
+          <Button as="a" variant="secondary" href={withOrgHref("/cad-learn", null)}>
             Learn CAD
           </Button>
-          <Button as="a" variant="secondary" href={withOrgHref("/code")}>
+          <Button as="a" variant="secondary" href={withOrgHref("/code", null)}>
             Code
           </Button>
         </nav>
@@ -72,7 +72,7 @@ export function Team6925Lab() {
             {week.links.map((link) => (
               <li key={link.href}>
                 <a
-                  href={link.href.startsWith("/") ? withOrgHref(link.href) : link.href}
+                  href={link.href.startsWith("/") ? withOrgHref(link.href, null) : link.href}
                   target={link.href.startsWith("/") ? undefined : "_blank"}
                   rel={link.href.startsWith("/") ? undefined : "noreferrer noopener"}
                   className={link.primary ? "lab-link-primary" : undefined}
