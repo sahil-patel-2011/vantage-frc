@@ -69,20 +69,6 @@ export type MyDaySetupStep = {
   href: string;
 };
 
-function myDayRelatedHrefs(orgId?: string | null): Set<string> {
-  return new Set(
-    myDayRelatedLinks(orgId, { include: [...MY_DAY_RELATED_INCLUDE] }).map((link) => link.href),
-  );
-}
-
-function dropRelatedStripDuplicates<T extends { href: string }>(
-  orgId: string | null | undefined,
-  items: T[],
-): T[] {
-  const related = myDayRelatedHrefs(orgId);
-  return items.filter((item) => !related.has(item.href));
-}
-
 export function myDaySetupSteps(orgId?: string | null): MyDaySetupStep[] {
   if (!orgId) {
     return [
