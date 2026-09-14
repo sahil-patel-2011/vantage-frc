@@ -5,7 +5,7 @@ import "./display.css";
 export const metadata = {
   title: "Display Mode",
   description:
-    "Build a single pit-TV board from TBA schedule and Strategy predictions. No demo filler.",
+    "Build a single pit-TV board from the official schedule and Strategy predictions. No demo filler.",
 };
 
 export default async function DisplayPage({
