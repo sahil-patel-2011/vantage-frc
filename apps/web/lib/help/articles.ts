@@ -562,7 +562,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
     slug: "team-profile",
     title: "Team profile — what the public record says about your team",
     summary:
-      "Built the first time an owner or admin opens it: where you are from, rookie year, seasons competed, awards, recent events, EPA and ranks — from The Blue Alliance and Statbotics.",
+      "Built the first time an owner or admin opens it: where you are from, rookie year, seasons competed, awards, recent events, EPA and ranks — from Team Data.",
     category: "team",
     keywords: ["team profile", "dossier", "rookie year", "awards", "epa", "rank", "statbotics", "blue alliance", "history"],
     relatedHref: "/team/profile",
