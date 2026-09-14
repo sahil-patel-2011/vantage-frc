@@ -153,7 +153,7 @@ export function decisionsNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before logging calls.",
+          detail: "Choose your team before logging calls.",
           href: "/workspace",
           primary: true,
         },
