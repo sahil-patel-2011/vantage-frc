@@ -790,7 +790,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "What it is for",
         body: [
-          "Strategy questions and match predictions from your scouting plus The Blue Alliance and Statbotics; design questions against your CAD and the parts catalog; writing for grants, sponsors and updates; and finding a meeting time from your attendance history.",
+          "Strategy questions and match predictions from your scouting plus Team Data; design questions against your CAD and the parts catalog; writing for grants, sponsors and updates; and finding a meeting time from your attendance history.",
           "It starts from the team profile, so it already knows where you are from, how long you have competed and how your seasons went.",
         ],
       },
