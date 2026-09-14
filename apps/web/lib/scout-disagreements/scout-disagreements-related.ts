@@ -338,7 +338,7 @@ export function scoutDisagreementsNextActions(input: {
     {
       id: "scouting",
       label: "Open Scouting",
-      detail: "Keep logging membership-bound match rows for fresher conflicts.",
+      detail: "Keep logging signed-in scout match rows for fresher conflicts.",
       href: hubHref("/competition", "scouting", orgId),
     },
     {
