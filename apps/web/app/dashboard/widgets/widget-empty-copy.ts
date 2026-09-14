@@ -132,7 +132,7 @@ export const WIDGET_EMPTY_COPY: Record<string, EmptyHint> = {
     body: "Choose your team, set the active event, then connect match data.",
   },
   onboarding_checklist: {
-    title: "Finish setup",
+    title: "Choose your team",
     body: "Choose your team, set the active event, then connect match data.",
     ctaHref: "/command",
     ctaLabel: "Set active event",
