@@ -135,6 +135,7 @@ function CreateEventForm({
 
   return (
     <form
+      id="att-create-event"
       className="att-create soft-panel"
       onSubmit={(event) => {
         event.preventDefault();
@@ -367,6 +368,7 @@ function SessionDetail({
             run={run}
           />
           <form
+            id="att-add-attendee"
             className="att-add"
             onSubmit={(formEvent) => {
               formEvent.preventDefault();
@@ -455,14 +457,9 @@ function SessionDetail({
           title="No attendees marked yet"
           description="Add people who showed up — totals stay empty until you mark them."
         >
-          <div className="att-empty-actions">
-            <Button as="a" variant="secondary" href={attendancePracticeHref(orgId)}>
-              Practice
-            </Button>
-            <Button as="a" variant="secondary" href={attendanceCalendarHref(orgId)}>
-              Calendar
-            </Button>
-          </div>
+          <Button as="a" variant="primary" href="#att-add-attendee">
+            Add an attendee
+          </Button>
         </EmptyState>
       ) : (
         <ul className="att-entries">
@@ -837,23 +834,15 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
               : "An owner or admin will create the first roll-call event."
           }
         >
-          <div className="att-empty-actions">
-            {canManage ? (
-              <Button variant="primary" type="button" onClick={() => setShowCreate(true)}>
-                New
-              </Button>
-            ) : (
-              <Button as="a" variant="secondary" href={`/team?tab=messages&orgId=${encodeURIComponent(orgId)}`}>
-                Ask in Messages
-              </Button>
-            )}
-            <Button as="a" variant="secondary" href={attendanceCalendarHref(orgId)}>
-              Schedule on Calendar
+          {canManage ? (
+            <Button variant="primary" type="button" onClick={() => setShowCreate(true)}>
+              New attendance event
             </Button>
-            <Button as="a" variant="secondary" href={attendancePracticeHref(orgId)}>
-              Open Practice
+          ) : (
+            <Button as="a" variant="primary" href={`/team?tab=messages&orgId=${encodeURIComponent(orgId)}`}>
+              Ask in Messages
             </Button>
-          </div>
+          )}
         </EmptyState>
       ) : (
         <>
@@ -883,7 +872,7 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
           </div>
 
           <div className="att-layout">
-            <aside className="att-session-picker" aria-label="Attendance sessions">
+            <aside className="att-session-picker" id="att-session-list" aria-label="Attendance sessions">
               <header className="att-picker-head">
                 <h2>Sessions · {seasonYear}</h2>
                 <p>
@@ -933,7 +922,11 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
                   run={run}
                 />
               ) : (
-                <EmptyState soft title="Pick a session" description="Choose a roll call from the session list to mark who showed up." />
+                <EmptyState soft title="Pick a session" description="Choose a roll call from the session list to mark who showed up.">
+                  <Button as="a" variant="primary" href="#att-session-list">
+                    View sessions
+                  </Button>
+                </EmptyState>
               )}
             </section>
 
@@ -944,7 +937,11 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
                   soft
                   title="Board is empty"
                   description="No marks yet — the board stays empty until someone is added to an event."
-                />
+                >
+                  <Button as="a" variant="primary" href="#att-session-list">
+                    Pick a session
+                  </Button>
+                </EmptyState>
               ) : (
                 <ul className="att-board">
                   {board.map((row, index) => (
