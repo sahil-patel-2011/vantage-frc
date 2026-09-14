@@ -687,7 +687,7 @@ function Composer({
             });
             setError("");
           } else if (!cutoff) {
-            setError("error" in data && data.error ? data.error : "FRC Assistant draft failed.");
+            setError("error" in data && data.error ? data.error : "Ask AI draft failed.");
           }
           return;
         }
@@ -702,7 +702,7 @@ function Composer({
           // generated it.
           setAiMeta(
             data.pitch.source === "ai"
-              ? "Metered FRC Assistant"
+              ? "Ask AI draft"
               : `Template + your team’s business facts · usage logged (${data.pitch.provider})`,
           );
           setAiProvenance(
@@ -828,7 +828,7 @@ function Composer({
           Compose from template
         </Button>
         <Button variant="primary" type="button" onClick={generateWithAssistant} disabled={busy}>
-          {busy ? "Drafting…" : "Draft with FRC Assistant"}
+          {busy ? "Drafting…" : "Draft with Ask AI"}
         </Button>
         <small className="app-muted">Uses this org&apos;s profile + business data only · metered usage ledger</small>
       </div>
