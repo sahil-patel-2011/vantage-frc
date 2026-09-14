@@ -706,7 +706,7 @@ export default function VideoRescoutClient() {
 
   const renderRescout = (review: RescoutReview) => (
     <div className="vid-rescout" id="video-timeline">
-      <Panel className="vid-team-assign">
+      <Panel className="vid-team-assign" id="video-team-assign">
         <strong>Assigned teams (1–{MAX_RESCOUT_TEAMS})</strong>
         <FormRow label="Team numbers" hint="Comma or space separated. Saved per review.">
           <input
@@ -750,7 +750,11 @@ export default function VideoRescoutClient() {
           </Button>
         </EmptyState>
       ) : !activeTeamKey ? (
-        <EmptyState soft title="Assign teams" description="Add up to four alliance teams, then tap score buttons at the playhead." />
+        <EmptyState soft title="Assign teams" description="Add up to four alliance teams, then tap score buttons at the playhead.">
+          <Button as="a" variant="primary" href="#video-team-assign">
+            Assign teams
+          </Button>
+        </EmptyState>
       ) : (
         <Panel className="vid-score-pad">
           <strong>
@@ -940,7 +944,11 @@ export default function VideoRescoutClient() {
             {detailTab === "notes" ? renderNotes(selected) : renderRescout(selected)}
           </Panel>
         ) : (
-          <EmptyState soft title="No reviews yet" description="Paste a YouTube match link and assign up to four teams to re-scout." />
+          <EmptyState soft title="No reviews yet" description="Paste a YouTube match link and assign up to four teams to re-scout.">
+            <Button as="a" variant="primary" href="#video-new-review">
+              Paste a YouTube link
+            </Button>
+          </EmptyState>
         )}
       </div>
 
