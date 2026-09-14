@@ -1,0 +1,21 @@
+.lk-teleop-quals-brier-board{display:grid;gap:12px;margin:4px 0 8px}
+.lk-teleop-quals-brier-board header h3{margin:0 0 4px}
+.lk-teleop-quals-brier-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr));gap:10px}
+.lk-teleop-quals-brier-tile{display:grid;gap:4px;padding:12px}
+.lk-teleop-quals-brier-tile strong{font-size:1.35rem;letter-spacing:-0.03em}
+.lk-teleop-quals-brier-tile em{font-style:normal;font-size:11px}
+.lk-teleop-quals-brier-spark{width:72px;height:28px;color:var(--accent)}
+.lk-teleop-quals-brier-vs{font-size:11px}
+.lk-teleop-quals-brier-vs-above{color:var(--good,#1b7f4e)}
+.lk-teleop-quals-brier-vs-below{color:var(--warn,#9a5b12)}
+.lk-teleop-quals-brier-vs-near,.lk-teleop-quals-brier-vs-unknown{color:var(--muted)}
+
+.lk-teleop-quals-brier-deep{display:grid;gap:12px;margin-top:8px}
+.lk-teleop-quals-brier-meters{display:grid;grid-template-columns:repeat(auto-fit,minmax(8.5rem,1fr));gap:8px;margin:0;padding:0;list-style:none}
+.lk-teleop-quals-brier-meter{display:grid;gap:2px;padding:8px 10px;border:1px solid var(--border,rgba(0,0,0,.08));border-radius:10px}
+.lk-teleop-quals-brier-split{display:grid;grid-template-columns:repeat(auto-fit,minmax(14rem,1fr));gap:10px}
+.lk-teleop-quals-brier-panel h4{margin:0 0 8px;font-size:13px}
+.lk-teleop-quals-brier-zones,.lk-teleop-quals-brier-colley,.lk-teleop-quals-brier-residual,.lk-teleop-quals-brier-pareto,.lk-teleop-quals-brier-setup{margin:0;padding:0;list-style:none;display:grid;gap:6px}
+.lk-teleop-quals-brier-zone{display:grid;grid-template-columns:7rem 1fr;gap:8px;align-items:center;font-size:12px}
+.lk-teleop-quals-brier-bar{display:block;height:8px;border-radius:999px;background:var(--accent,#3d6)}
+.lk-teleop-quals-brier-page{padding-bottom:24px}
