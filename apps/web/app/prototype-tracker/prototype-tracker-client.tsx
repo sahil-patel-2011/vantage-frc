@@ -404,14 +404,16 @@ export default function PrototypeTrackerClient(_props: { embedded?: boolean } = 
         </p>
       ) : null}
 
-      <NextActionsPanel
-        orgId={orgId}
-        seasonYear={view.seasonYear}
-        testCount={view.tests.length}
-        decisionCount={view.decisions.length}
-        draftDecisionCount={draftDecisionCount}
-        testsWithoutDecision={testsWithoutDecision}
-      />
+      {hasTests ? (
+        <NextActionsPanel
+          orgId={orgId}
+          seasonYear={view.seasonYear}
+          testCount={view.tests.length}
+          decisionCount={view.decisions.length}
+          draftDecisionCount={draftDecisionCount}
+          testsWithoutDecision={testsWithoutDecision}
+        />
+      ) : null}
 
       <StatusTiles view={view} />
 
@@ -426,11 +428,9 @@ export default function PrototypeTrackerClient(_props: { embedded?: boolean } = 
             title="Log your first prototype test"
             description="Outcomes, metrics, and decision confidence stay blank until you record a real test — nothing is pre-filled."
           >
-            <div className="ptk-empty-links">
-              <a href={hubHref("/build", "fmea", orgId)}>FMEA →</a>
-              <a href={hubHref("/build", "cad", orgId)}>CAD →</a>
-              <a href={hubHref("/build", "kickoff", orgId)}>Kickoff →</a>
-            </div>
+            <Button as="a" variant="primary" href="#ptk-log-test">
+              Log a test
+            </Button>
           </EmptyState>
         ) : (
           <TestsList view={view} busy={busy} mutate={mutate} />
@@ -551,10 +551,9 @@ function DecisionsList({
         title="No decision records drafted yet"
         description="Draft a decision from any logged test above. Recommendation and confidence come only from that test’s recorded outcome and metric."
       >
-        <div className="ptk-empty-links">
-          <a href={hubHref("/build", "cad", view.orgId)}>CAD →</a>
-          <a href={hubHref("/build", "fmea", view.orgId)}>FMEA →</a>
-        </div>
+        <Button as="a" variant="primary" href="#ptk-log-test">
+          Log a test
+        </Button>
       </EmptyState>
     );
   }
@@ -649,6 +648,7 @@ function LogTestForm({
   return (
     <Panel
       as="form"
+      id="ptk-log-test"
       className="ptk-panel"
       onSubmit={(event) => {
         event.preventDefault();
