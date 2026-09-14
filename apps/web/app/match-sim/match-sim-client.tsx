@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
-import { phaseLabel } from "../../lib/match-sim";
+import { flipMatchSimResult, phaseLabel } from "../../lib/match-sim";
 import type { MatchSimView } from "../../lib/match-sim/compute-match-sim";
 import type { AllianceColor, MatchSimRun } from "../../lib/match-sim/types";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
@@ -220,7 +220,7 @@ export default function MatchSimClient() {
       ) : (
         <div style={{ display: "grid", gap: 16 }}>
           <SimulateForm busy={busy} mutate={mutate} />
-          {view.active ? <ActiveRunResult view={view} run={view.active} /> : null}
+          {view.active ? <ActiveRunResult key={view.active.id} view={view} run={view.active} /> : null}
           <SavedRuns view={view} busy={busy} load={load} mutate={mutate} />
         </div>
       )}
@@ -235,10 +235,16 @@ function SimulateForm({
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => void;
 }) {
-  const empty = useMemo(
-    () => ({ label: "", eventKey: "", matchKey: "", redTeamKeys: "", blueTeamKeys: "" }),
-    [],
-  );
+  const empty = useMemo(() => {
+    const params = typeof window === "undefined" ? null : new URLSearchParams(window.location.search);
+    return {
+      label: "",
+      eventKey: params?.get("eventKey") ?? "",
+      matchKey: params?.get("matchKey") ?? "",
+      redTeamKeys: params?.get("red") ?? "",
+      blueTeamKeys: params?.get("blue") ?? "",
+    };
+  }, []);
   const [form, setForm] = useState(empty);
   const set = (key: keyof typeof form) => (event: { target: { value: string } }) =>
     setForm((prev) => ({ ...prev, [key]: event.target.value }));
@@ -298,7 +304,8 @@ function SimulateForm({
 }
 
 function ActiveRunResult({ view, run }: { view: LiveView; run: MatchSimRun }) {
-  const { result } = run;
+  const [flipped, setFlipped] = useState(false);
+  const result = flipped ? flipMatchSimResult(run.result) : run.result;
   const maxScore = Math.max(result.red.total, result.blue.total, 1);
   return (
     <Panel aria-label="Simulation result">
@@ -313,6 +320,9 @@ function ActiveRunResult({ view, run }: { view: LiveView; run: MatchSimRun }) {
             {result.finalMargin > 0 ? `Red +${result.finalMargin}` : result.finalMargin < 0 ? `Blue +${Math.abs(result.finalMargin)}` : "Even"}
           </small>
         </div>
+        <Button variant="secondary" size="sm" type="button" onClick={() => setFlipped((value) => !value)}>
+          Flip red / blue
+        </Button>
       </header>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 20, marginTop: 16 }}>

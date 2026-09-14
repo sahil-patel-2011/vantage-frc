@@ -5,6 +5,7 @@
 // tablets do not stack requests on a backgrounded page.
 
 import type { ScheduleContext, ScheduleMatch, ScheduleView } from "../schedule-board";
+import { attachSchedulePredictions } from "./schedule-predictions";
 
 /** Event-day cadence. At least 15s so venue Wi-Fi / tablet batteries are not hammered. */
 export const SCHEDULE_POLL_MS = 30_000;
@@ -114,6 +115,8 @@ export function buildScheduleView(input: {
   context: ScheduleContext;
   rows?: readonly TbaMatchCacheRow[];
   setupMessage?: string;
+  teamRatings?: ReadonlyMap<string, number>;
+  fieldStd?: number | null;
 }): ScheduleView {
   if (!input.context.orgId) {
     return {
@@ -129,9 +132,12 @@ export function buildScheduleView(input: {
       message: input.setupMessage ?? "Set your active event on Your team.",
     };
   }
+  const matches = mapTbaScheduleMatches(input.rows ?? []);
   return {
     status: "ready",
     context: input.context,
-    matches: mapTbaScheduleMatches(input.rows ?? []),
+    matches: input.teamRatings
+      ? attachSchedulePredictions(matches, input.teamRatings, input.fieldStd ?? null)
+      : matches,
   };
 }

@@ -1,6 +1,13 @@
 // Match Schedule Board — framework-free domain logic shared by the API route,
 // the client UI, and unit tests. No server or React imports belong here.
 
+export type ScheduleMatchPrediction = {
+  redPredicted: number;
+  bluePredicted: number;
+  redWinPct: number | null;
+  blueWinPct: number | null;
+};
+
 export type ScheduleMatch = {
   matchKey: string;
   compLevel: string;
@@ -13,6 +20,8 @@ export type ScheduleMatch = {
   blueScore: number | null;
   winningAlliance: "red" | "blue" | null;
   scoutCount: number;
+  /** Upcoming-match estimate from real event ratings. Null when any robot is missing. */
+  prediction?: ScheduleMatchPrediction | null;
 };
 
 export type ScheduleContext = {

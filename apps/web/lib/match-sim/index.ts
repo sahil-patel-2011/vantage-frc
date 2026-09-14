@@ -108,6 +108,11 @@ export function computeLever(red: AllianceCapability, blue: AllianceCapability):
   };
 }
 
+/** Swap the painted red/blue alliances without inventing new ratings. */
+export function flipMatchSimResult(result: MatchSimResult): MatchSimResult {
+  return computeMatchSimResult({ ...result.blue, color: "red" }, { ...result.red, color: "blue" });
+}
+
 export function computeMatchSimResult(red: AllianceCapability, blue: AllianceCapability): MatchSimResult {
   const timeline = buildTimeline(red, blue);
   const finalMargin = round1(red.total - blue.total);
