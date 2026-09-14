@@ -6,6 +6,7 @@ import type { SyncEntry } from "@vantage/scouting";
 import { applyFormResetBehavior } from "@vantage/scouting";
 import { isScoutIdentityField } from "@vantage/scouting/identity";
 import { lintSchemaBudget, type FieldTrustSummary } from "@vantage/scouting/trust";
+import { stripHiddenAnswers, visibleFields, withInferredPhaseRules } from "../../lib/scouting/context-visible";
 import { OfflineBanner } from "../../components/offline-banner";
 import { useVenueShortcuts } from "../../hooks/use-venue-shortcuts";
 import { useOnline } from "../../lib/offline/use-online";
@@ -301,8 +302,14 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
   );
 
   const formFields = useMemo(
-    () => schema?.definition.fields.filter((field) => !isScoutIdentityField(field)) ?? [],
-    [schema],
+    () =>
+      visibleFields(
+        withInferredPhaseRules(
+          schema?.definition.fields.filter((field) => !isScoutIdentityField(field)) ?? [],
+        ),
+        payload,
+      ),
+    [schema, payload],
   );
 
   const schemaBudget = useMemo(
@@ -378,7 +385,7 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
       matchKey: type === "match" ? matchKey : undefined,
       teamKey,
       schemaId: schema.id,
-      payload,
+      payload: stripHiddenAnswers(withInferredPhaseRules(schema.definition.fields), payload),
       confidence,
       source,
       updatedAt: new Date().toISOString(),

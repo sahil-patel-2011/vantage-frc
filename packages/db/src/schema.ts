@@ -3657,3 +3657,35 @@ export const autonomousAgentSteps = pgTable(
     index("autonomous_agent_steps_org_created_idx").on(table.orgId, table.createdAt),
   ],
 );
+
+export const teamLookupNotes = pgTable(
+  "team_lookup_notes",
+  {
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    teamKey: text("team_key").notNull(),
+    body: text("body").notNull().default(""),
+    updatedBy: uuid("updated_by")
+      .notNull()
+      .references(() => users.id),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.orgId, table.teamKey] }),
+    index("team_lookup_notes_org_updated_idx").on(table.orgId, table.updatedAt),
+  ],
+);
+
+export const orgAnalyticsSource = pgTable("org_analytics_source", {
+  orgId: uuid("org_id")
+    .primaryKey()
+    .references(() => organizations.id, { onDelete: "cascade" }),
+  mode: text("mode").notNull().default("all"),
+  teamKeys: text("team_keys").array().notNull().default(sql`'{}'::text[]`),
+  eventKeys: text("event_keys").array().notNull().default(sql`'{}'::text[]`),
+  updatedBy: uuid("updated_by")
+    .notNull()
+    .references(() => users.id),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});

@@ -51,3 +51,25 @@
   grid-template-columns:repeat(auto-fit,minmax(16rem,1fr));
   gap:12px;
 }
+.intel-lookup-board{display:grid;gap:12px;margin:4px 0 8px}
+.intel-lookup-board header h3{margin:0 0 4px}
+.intel-lookup-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr));
+  gap:10px;
+}
+.intel-lookup-tile{display:grid;gap:4px;padding:12px}
+.intel-lookup-tile strong{font-size:1.35rem;letter-spacing:-0.03em}
+.intel-lookup-tile em{font-style:normal;font-size:11px}
+.intel-spark{width:72px;height:28px;color:var(--accent)}
+.intel-vs{font-size:11px}
+.intel-vs-above{color:var(--good, #1b7f4e)}
+.intel-vs-below{color:var(--warn, #9a5b12)}
+.intel-vs-near,.intel-vs-unknown{color:var(--muted)}
+.intel-lookup-notes{display:grid;gap:8px}
+.intel-note-form{display:grid;gap:8px}
+.intel-note-form textarea{width:100%;min-height:6rem;resize:vertical}
+.intel-note-actions{display:flex;align-items:center;gap:10px}
+.intel-note-body{margin:0;white-space:pre-wrap}
+.lovat-source-picker{display:grid;gap:10px}
+.lovat-source-modes{display:flex;flex-wrap:wrap;gap:8px}

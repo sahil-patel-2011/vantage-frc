@@ -31,6 +31,12 @@ import {
   type IntelDetail,
   type IntelSearchTeam,
 } from "./intel-ready-view";
+import { DataSourcePicker } from "../analytics/data-source-picker";
+import { useAnalyticsSource } from "../../lib/analytics/use-analytics-source";
+import { filterRowsBySource } from "../../lib/analytics/lovat-data-source";
+import { parseLookupNote, type LookupNote } from "../../lib/intel/lookup-notes";
+import type { EventRatingRow } from "../../lib/intel/lovat-lookup";
+import { useAppleMotion } from "../../lib/motion/use-apple-motion";
 import "./intel.css";
 
 type IntelBoardView = {
@@ -38,6 +44,8 @@ type IntelBoardView = {
   similar: Array<IntelSearchTeam & { epaTotal: number }>;
   scoutNotes: IntelScoutNote[];
   activeEvent: IntelActiveEvent | null;
+  fieldRatings?: EventRatingRow[];
+  lookupNote?: LookupNote | null;
 };
 
 function isIntelBoardView(value: unknown): value is IntelBoardView {
@@ -86,6 +94,8 @@ export default function IntelClient() {
 }
 
 function IntelLive({ orgId }: { orgId: string }) {
+  const motion = useAppleMotion();
+  const source = useAnalyticsSource(orgId);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<IntelSearchTeam[]>([]);
   const [view, setView] = useState<IntelBoardView | null>(null);
@@ -192,6 +202,8 @@ function IntelLive({ orgId }: { orgId: string }) {
         similarTeams?: Array<IntelSearchTeam & { epaTotal: number }>;
         scoutObservations?: IntelScoutNote[];
         activeEvent?: IntelActiveEvent | null;
+        fieldRatings?: EventRatingRow[];
+        lookupNote?: unknown;
         error?: string;
       };
       if (!response.ok) {
@@ -235,6 +247,8 @@ function IntelLive({ orgId }: { orgId: string }) {
         similar: data.similarTeams ?? [],
         scoutNotes: data.scoutObservations ?? [],
         activeEvent: data.activeEvent ?? viewRef.current?.activeEvent ?? null,
+        fieldRatings: Array.isArray(data.fieldRatings) ? data.fieldRatings : [],
+        lookupNote: parseLookupNote(data.lookupNote ?? null, data.team.team.teamKey, Boolean((data.lookupNote as { canEdit?: boolean } | null)?.canEdit)),
       };
       setView(next);
       setSummary("");
@@ -353,6 +367,39 @@ function IntelLive({ orgId }: { orgId: string }) {
     }
   }, [orgId, pickName, view]);
 
+  const saveNote = useCallback(
+    async (body: string) => {
+      if (!view) return;
+      setSubmitting(true);
+      try {
+        const response = await fetch("/api/intel/lookup-notes", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+          body: JSON.stringify({ orgId, teamKey: view.intel.team.teamKey, body }),
+        });
+        const data = (await response.json()) as { note?: unknown; error?: string };
+        if (!response.ok) {
+          setStatus(data.error ?? "Could not save note");
+          setMessageKind("error");
+          return;
+        }
+        setView({
+          ...view,
+          lookupNote: parseLookupNote(data.note ?? { body }, view.intel.team.teamKey, true),
+        });
+        setStatus("Note saved.");
+        setMessageKind("success");
+      } catch {
+        setStatus("Network error — please try again.");
+        setMessageKind("error");
+      } finally {
+        setSubmitting(false);
+      }
+    },
+    [orgId, view],
+  );
+
   const shell = classifyIntelShell({
     loading: loadingTeam && !view,
     fetchFailed: fetchFailed && !view && results.length === 0,
@@ -393,7 +440,7 @@ function IntelLive({ orgId }: { orgId: string }) {
   const emptyCopy = intelShellCopy("empty");
 
   return (
-    <main className="module-page intel-page">
+    <main className={`module-page intel-page ${motion.classNames.page}`}>
       <PageHeader
         breadcrumbs="Competition / Research"
         title="Research"
@@ -426,28 +473,45 @@ function IntelLive({ orgId }: { orgId: string }) {
       ) : null}
 
       {shell === "ready" && view ? (
-        <IntelReadyView
-          intel={view.intel}
-          similar={view.similar}
-          summary={summary}
-          compare={compare}
-          comparison={comparison}
-          pickName={pickName}
-          toolsOpen={toolsOpen}
-          submitting={submitting}
-          scoutNotes={view.scoutNotes}
-          activeEvent={view.activeEvent}
-          readyActions={readyActions}
-          chemistryHref={chemistryHref}
-          onWriteBrief={() => void action("/api/intel/summary", "Writing a brief…")}
-          onFindNotes={() => void action("/api/research", "Looking up public notes…")}
-          onToggleTools={() => setToolsOpen((open) => !open)}
-          onCompareChange={setCompare}
-          onCompare={runComparison}
-          onPickNameChange={setPickName}
-          onSavePick={() => void savePick()}
-          onSelectSimilar={(teamNumber) => void select(teamNumber)}
-        />
+        <>
+          <DataSourcePicker
+            settings={source.settings}
+            ownTeamKey={null}
+            busy={source.busy}
+            onMode={source.setMode}
+            onTeams={source.setTeams}
+            onEvents={source.setEvents}
+          />
+          <IntelReadyView
+            intel={view.intel}
+            similar={view.similar}
+            summary={summary}
+            compare={compare}
+            comparison={comparison}
+            pickName={pickName}
+            toolsOpen={toolsOpen}
+            submitting={submitting}
+            scoutNotes={view.scoutNotes}
+            activeEvent={view.activeEvent}
+            readyActions={readyActions}
+            chemistryHref={chemistryHref}
+            fieldRatings={filterRowsBySource(
+              (view.fieldRatings ?? []).map((row) => ({ ...row, eventKey: view.activeEvent?.eventKey ?? null })),
+              source.settings,
+              null,
+            )}
+            lookupNote={view.lookupNote ?? parseLookupNote(null, view.intel.team.teamKey, false)}
+            onSaveNote={(body) => void saveNote(body)}
+            onWriteBrief={() => void action("/api/intel/summary", "Writing a brief…")}
+            onFindNotes={() => void action("/api/research", "Looking up public notes…")}
+            onToggleTools={() => setToolsOpen((open) => !open)}
+            onCompareChange={setCompare}
+            onCompare={runComparison}
+            onPickNameChange={setPickName}
+            onSavePick={() => void savePick()}
+            onSelectSimilar={(teamNumber) => void select(teamNumber)}
+          />
+        </>
       ) : null}
     </main>
   );

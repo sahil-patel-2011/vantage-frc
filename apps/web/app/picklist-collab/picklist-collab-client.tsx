@@ -25,6 +25,8 @@ import {
   type PicklistCollabEntryWithRating,
 } from "../../lib/picklist-collab";
 import { PicklistWeightSliders, usePicklistFieldWeights } from "./picklist-weight-sliders";
+import { DataSourcePicker } from "../analytics/data-source-picker";
+import { useAnalyticsSource } from "../../lib/analytics/use-analytics-source";
 import type { PicklistCollabView } from "../../lib/picklist-collab/compute-picklist-collab";
 import {
   PICKLIST_COLLAB_RELATED_INCLUDE,
@@ -263,6 +265,7 @@ export default function PicklistCollabClient() {
   }, [load]);
 
   const orgId = view && "orgId" in view ? view.orgId : null;
+  const source = useAnalyticsSource(orgId);
   const listCount = view?.status === "live" ? view.lists.length : 0;
   const totalEntries = view?.status === "live" ? view.summary.totalEntries : 0;
   const totalVotes = view?.status === "live" ? view.summary.totalVotes : 0;
@@ -437,6 +440,14 @@ export default function PicklistCollabClient() {
       ) : view?.status === "live" ? (
         <div className="picklist-collab-layout">
           <SummaryStatus view={view} />
+          <DataSourcePicker
+            settings={source.settings}
+            ownTeamKey={view.teamNumber != null ? `frc${view.teamNumber}` : null}
+            busy={source.busy}
+            onMode={source.setMode}
+            onTeams={source.setTeams}
+            onEvents={source.setEvents}
+          />
           <PicklistWeightSliders
             weights={fieldWeights.weights}
             fieldStats={view.fieldStats ?? {}}
