@@ -47,10 +47,10 @@ export function buildPartnerStrengths(
 ): string[] {
   const strengths: string[] = [];
   if (epa) {
-    if (epa.epaTotal != null) strengths.push(`EPA total ${epa.epaTotal.toFixed(1)} (${epa.source})`);
-    if (epa.epaAuto != null && epa.epaAuto > 0) strengths.push(`Auto EPA ${epa.epaAuto.toFixed(1)}`);
-    if (epa.epaTeleop != null && epa.epaTeleop > 0) strengths.push(`Teleop EPA ${epa.epaTeleop.toFixed(1)}`);
-    if (epa.epaEndgame != null && epa.epaEndgame > 0) strengths.push(`Endgame EPA ${epa.epaEndgame.toFixed(1)}`);
+    if (epa.epaTotal != null) strengths.push(`Rating ${epa.epaTotal.toFixed(1)} (${epa.source})`);
+    if (epa.epaAuto != null && epa.epaAuto > 0) strengths.push(`Auto rating ${epa.epaAuto.toFixed(1)}`);
+    if (epa.epaTeleop != null && epa.epaTeleop > 0) strengths.push(`Teleop rating ${epa.epaTeleop.toFixed(1)}`);
+    if (epa.epaEndgame != null && epa.epaEndgame > 0) strengths.push(`Endgame rating ${epa.epaEndgame.toFixed(1)}`);
     if (epa.rank != null) strengths.push(`Event rank #${epa.rank}`);
     const played = epa.wins + epa.losses + epa.ties;
     if (played > 0) strengths.push(`${epa.wins}-${epa.losses}-${epa.ties} at this event`);
