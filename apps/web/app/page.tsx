@@ -9,6 +9,8 @@ import { PricingStrip } from "../components/marketing/pricing-strip";
 import { marketingPageMetadata, organizationSoftwareJsonLd } from "../lib/marketing/seo";
 import "./marketing-showcase.css";
 
+export const revalidate = 86_400;
+
 export const metadata: Metadata = marketingPageMetadata({
   title: "Vantage — the FRC season in one login",
   description:

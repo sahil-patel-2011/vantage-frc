@@ -191,7 +191,7 @@ export const MARKETING_APP_FRAMES: { id: ProductFrameId; title: string; copy: st
   {
     id: "scouting",
     title: "Scouting",
-    copy: "Offline match and pit forms. Needs setup until you choose a team — never a fake coverage number.",
+    copy: "Offline match and pit forms. Needs setup until you choose a team. Coverage stays blank until you scout.",
   },
   {
     id: "cad",

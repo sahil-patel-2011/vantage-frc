@@ -11,6 +11,7 @@ function src(rel: string) {
 describe("marketing chrome", () => {
   it("landing hero has one primary CTA and a sign-in text link", () => {
     const page = src("app/page.tsx");
+    expect(page).toMatch(/export const revalidate = 86_400/);
     // Slice the hero section, not the HomeShowcase import at the top of the file.
     const heroStart = page.indexOf('className="lux-hero"');
     const heroEnd = page.indexOf("<HomeShowcase");
@@ -41,8 +42,11 @@ describe("marketing chrome", () => {
     expect(frames).toMatch(/gameBriefStatusBadge/);
     expect(frames).toMatch(/Ask about this game/);
     expect(frames).toMatch(/Needs setup/);
+    expect(frames).toMatch(/Coverage stays blank until you scout/);
+    expect(frames).not.toMatch(/never a fake/);
     expect(frames).toMatch(/Connect Claude Code/);
     expect(frames).toMatch(/CAD Video Tutor/);
+    expect(src("app/marketing-showcase.css")).toMatch(/color:var\(--m-on-accent/);
     expect(frames).not.toMatch(/Good evening/);
     expect(frames).not.toMatch(/\b\d{2,}%\b|\b\d{3,}\s+teams\b/i);
   });

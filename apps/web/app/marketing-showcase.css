@@ -187,7 +187,7 @@
 /* Signed-in app frames on the public homepage */
 .marketing-lux .mk-app-primary{
   display:inline-flex;align-items:center;min-height:32px;padding:0 12px;
-  border-radius:9px;background:var(--m-ink,#111);color:#fff;
+  border-radius:9px;background:var(--m-ink,#111);color:var(--m-on-accent,#fff);
   font:600 12px/1 var(--m-sans);letter-spacing:-.01em;
 }
 .marketing-lux .mk-app-gallery{
