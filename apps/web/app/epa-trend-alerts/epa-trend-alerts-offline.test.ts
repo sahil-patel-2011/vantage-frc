@@ -11,6 +11,6 @@ describe("EPA Trend Alerts last snapshot stays on the phone", () => {
     expect(src).toMatch(/putFeatureSnapshot/);
     expect(src).toMatch(/"epa-trend"/);
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
-    expect(src).toMatch(/feature="EPA Trend Alerts"/);
+    expect(src).toMatch(/feature="Rating alerts"/);
   });
 });
