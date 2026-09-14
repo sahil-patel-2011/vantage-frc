@@ -557,7 +557,11 @@ function ContactsPanel({
     <Panel>
       <h2 style={{ marginTop: 0 }}>Household contacts</h2>
       {view.contacts.length === 0 ? (
-        <EmptyState soft badge="No contacts" badgeTone="setup" title="No contacts recorded yet" />
+        <EmptyState soft title="No contacts recorded yet">
+          <Button as="a" variant="primary" href="#matching-gift-contacts">
+            Add a household contact
+          </Button>
+        </EmptyState>
       ) : (
         <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 10 }}>
           {view.contacts.map((contact) => (
@@ -615,7 +619,11 @@ function ProgramsPanel({
         current terms with the employer before submitting a request.
       </p>
       {view.programs.length === 0 ? (
-        <EmptyState soft badge="No programs" badgeTone="setup" title="No programs tracked yet" />
+        <EmptyState soft title="No programs tracked yet">
+          <Button as="a" variant="primary" href="#matching-gift-programs">
+            Add a program
+          </Button>
+        </EmptyState>
       ) : (
         <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 8 }}>
           {view.programs.map((program) => (

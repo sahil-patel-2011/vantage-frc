@@ -21,7 +21,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, PageHeader, Panel } from "../../components/ui";
+import { Button, EmptyState, PageHeader, Panel } from "../../components/ui";
 import {
   BUDGET_CLOSE_RATIO,
   describeBudgetLine,
@@ -421,7 +421,16 @@ export default function ReimbursementsClient() {
       ) : null}
 
       {view && view.status === "setup_required" ? (
-        <EmptyState title="Not set up yet" badge="Setup" badgeTone="setup" description={view.message} />
+        <EmptyState
+          title="Choose your team"
+          badge="Needs setup"
+          badgeTone="setup"
+          description={view.message}
+        >
+          <Button as="a" variant="primary" href="/workspace">
+            Choose your team
+          </Button>
+        </EmptyState>
       ) : null}
 
       {ready ? (
@@ -561,7 +570,11 @@ export default function ReimbursementsClient() {
               spent — orders, receipts, paid season costs, and paid reimbursements.
             </p>
             {budget && budget.status === "setup_required" ? (
-              <EmptyState soft title="Not available yet" description={budget.message} />
+              <EmptyState soft title="Not available yet" description={budget.message}>
+                <Button as="a" variant="primary" href={withOrgHref("/team/budgets", orgId)}>
+                  Open Budget
+                </Button>
+              </EmptyState>
             ) : budget && budget.status === "ready" && budget.hasData ? (
               <>
                 <div className="rb-budget-lines">

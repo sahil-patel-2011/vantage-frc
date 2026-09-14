@@ -1,6 +1,6 @@
 "use client";
 
-import { EmptyState, Panel } from "../../components/ui";
+import { Button, EmptyState, Panel } from "../../components/ui";
 import {
   AUDIENCE_LABEL,
   type ChecklistItem,
@@ -174,7 +174,13 @@ export function LogisticsDayPanel({
         <h2>Emergency contacts</h2>
         <p className="app-muted">Call these mentors first if something goes wrong on the trip.</p>
         {contacts.length === 0 ? (
-          <EmptyState soft title="No contacts posted yet" description="Mentors add primary phone numbers before travel." />
+          <EmptyState soft title="No contacts posted yet" description="Mentors add primary phone numbers before travel.">
+            {canManage ? (
+              <Button as="a" variant="primary" href="#log-add-contact">
+                Add a contact
+              </Button>
+            ) : null}
+          </EmptyState>
         ) : (
           <ul className="logistics-list">
             {[...contacts]

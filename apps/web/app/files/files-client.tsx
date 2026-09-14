@@ -313,7 +313,12 @@ export default function FilesClient() {
           </Button>
         </div>
         {canUpload ? (
-          <Button variant="primary" type="button" onClick={() => fileInput.current?.click()}>
+          <Button
+            id="drive-upload"
+            variant="primary"
+            type="button"
+            onClick={() => fileInput.current?.click()}
+          >
             Upload files
           </Button>
         ) : null}

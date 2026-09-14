@@ -302,6 +302,7 @@ export default function PartRequestsClient() {
           row; nobody else can file one in your name.
         </p>
         <form
+          id="pr-ask"
           onSubmit={(event) => {
             event.preventDefault();
             if (!title.trim() || !justification.trim()) {
@@ -450,7 +451,11 @@ export default function PartRequestsClient() {
             </p>
           ) : null}
           {view.queue.length === 0 ? (
-            <EmptyState compact title="Nothing waiting" description="No part requests need a decision right now." />
+            <EmptyState compact title="Nothing waiting" description="No part requests need a decision right now.">
+              <Button as="a" variant="primary" href="#pr-ask">
+                Ask for a part
+              </Button>
+            </EmptyState>
           ) : (
             <ul className="pr-list">
               {view.queue.map((request) => {
@@ -503,7 +508,11 @@ export default function PartRequestsClient() {
       <Panel>
         <h2>Your requests</h2>
         {view.mine.length === 0 ? (
-          <EmptyState compact title="You have not asked for anything yet" description="Requests you send appear here with their decision." />
+          <EmptyState compact title="You have not asked for anything yet" description="Requests you send appear here with their decision.">
+            <Button as="a" variant="primary" href="#pr-ask">
+              Ask for a part
+            </Button>
+          </EmptyState>
         ) : (
           <ul className="pr-list">
             {view.mine.map((request) => (

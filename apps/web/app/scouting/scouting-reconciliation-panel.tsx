@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, Panel, Button } from "../../components/ui";
+import { withOrgHref } from "../../lib/nav/product-nav";
 import type {
   DistributeByShareResult,
   ReconcileAlliance,
@@ -175,7 +176,11 @@ export default function ScoutingReconciliationPanel({
       <Panel>
         <span className="eyebrow">RECONCILIATION</span>
         <h2>Scouted vs official</h2>
-        <EmptyState title="Nothing to reconcile yet" description={view.message} />
+        <EmptyState title="Nothing to reconcile yet" description={view.message}>
+          <Button as="a" variant="primary" href={withOrgHref("/scouting", orgId)}>
+            Open Scouting
+          </Button>
+        </EmptyState>
       </Panel>
     );
   }

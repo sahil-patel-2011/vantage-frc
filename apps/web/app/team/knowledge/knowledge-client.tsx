@@ -981,7 +981,11 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
                   </Button>
                 </EmptyState>
               ) : (
-                <EmptyState soft title="Choose a page" />
+                <EmptyState soft title="Choose a page">
+                  <Button type="button" variant="primary" disabled={busy} onClick={beginCreate}>
+                    New page
+                  </Button>
+                </EmptyState>
               )
             ) : null}
           </div>
