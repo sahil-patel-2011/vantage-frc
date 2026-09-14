@@ -15,6 +15,18 @@
 .picklist-collab-entry{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}
 .picklist-collab-entry-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .picklist-collab-num{width:64px}
+.picklist-weight-sliders{display:grid;gap:12px}
+.picklist-weight-sliders header{display:grid;gap:6px}
+.picklist-weight-sliders-list{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.picklist-weight-sliders-list label{display:grid;grid-template-columns:minmax(12rem,1fr) minmax(8rem,1fr) 2.5rem;gap:10px;align-items:center}
+.picklist-weight-sliders-list label span{display:grid;gap:2px}
+.picklist-weight-sliders-list input[type="range"]:disabled{opacity:.45}
+@media(max-width:700px){
+  .picklist-weight-sliders-list label{grid-template-columns:1fr auto;grid-template-areas:"copy value" "slider slider"}
+  .picklist-weight-sliders-list label span{grid-area:copy}
+  .picklist-weight-sliders-list label input{grid-area:slider}
+  .picklist-weight-sliders-list label b{grid-area:value}
+}
 @media(max-width:900px){
   .picklist-collab-header-actions{justify-content:flex-start}
   .picklist-collab-next-actions li,.picklist-collab-setup-steps li{flex-direction:column;align-items:stretch}

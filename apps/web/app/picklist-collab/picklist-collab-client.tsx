@@ -14,7 +14,17 @@ import {
   SoftBlockSkeleton,
   StatTile,
 } from "../../components/ui";
-import { PICKLIST_COLLAB_TIERS, epaRoleLabel, picklistCollabTierLabel, picklistToCsv } from "../../lib/picklist-collab";
+import type { MetricWeight } from "@vantage/prediction-strategy";
+import {
+  PICKLIST_COLLAB_TIERS,
+  epaRoleLabel,
+  formatFieldRating,
+  picklistCollabTierLabel,
+  picklistToCsv,
+  sortEntriesWithFieldRating,
+  type PicklistCollabEntryWithRating,
+} from "../../lib/picklist-collab";
+import { PicklistWeightSliders, usePicklistFieldWeights } from "./picklist-weight-sliders";
 import type { PicklistCollabView } from "../../lib/picklist-collab/compute-picklist-collab";
 import {
   PICKLIST_COLLAB_RELATED_INCLUDE,
@@ -28,7 +38,7 @@ import {
   type PicklistCollabNextAction,
   type PicklistCollabShellKind,
 } from "../../lib/picklist-collab/picklist-collab-related";
-import type { PicklistCollabEntry, PicklistCollabTier } from "../../lib/picklist-collab/types";
+import type { PicklistCollabTier } from "../../lib/picklist-collab/types";
 import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
@@ -176,6 +186,8 @@ export default function PicklistCollabClient() {
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [listId, setListId] = useState<string | null>(null);
+  const activeListId = listId ?? (view?.status === "live" ? view.activeList?.id ?? null : null);
+  const fieldWeights = usePicklistFieldWeights(activeListId);
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
   const viewRef = useRef<PicklistCollabView | null>(null);
@@ -349,7 +361,7 @@ export default function PicklistCollabClient() {
           </>
         }
         title="Collaborative pick list"
-        description="Build the pick list together — rank teams into tiers, see FAST-style EPA roles from the cached event field, and export CSV for the drive team."
+        description="Build the pick list together — rank teams into tiers, weigh each rating against this event, and export CSV for the drive team."
       >
         <div className="picklist-collab-header-actions">
           {view?.status === "live" && view.lists.length > 0 ? (
@@ -425,8 +437,19 @@ export default function PicklistCollabClient() {
       ) : view?.status === "live" ? (
         <div className="picklist-collab-layout">
           <SummaryStatus view={view} />
+          <PicklistWeightSliders
+            weights={fieldWeights.weights}
+            fieldStats={view.fieldStats ?? {}}
+            onWeight={fieldWeights.setWeight}
+            onReset={fieldWeights.reset}
+          />
           <AddEntryForm busy={busy} mutate={mutate} />
-          <EntriesByTier view={view} busy={busy} mutate={mutate} />
+          <EntriesByTier
+            view={view}
+            busy={busy}
+            mutate={mutate}
+            weights={fieldWeights.weights}
+          />
           <CreateListForm busy={busy} mutate={mutate} collapsedLabel="Add another pick list" />
         </div>
       ) : null}
@@ -459,11 +482,14 @@ function EntriesByTier({
   view,
   busy,
   mutate,
+  weights,
 }: {
   view: LiveView;
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => void;
+  weights: MetricWeight[];
 }) {
+  const ranked = sortEntriesWithFieldRating(view.entries, weights, view.fieldStats ?? {});
   if (view.summary.totalEntries === 0) {
     return (
       <EmptyState
@@ -478,7 +504,7 @@ function EntriesByTier({
   return (
     <div id="picklist-collab-entries" className="picklist-collab-layout">
       {PICKLIST_COLLAB_TIERS.map((tier) => {
-        const entries = view.entries.filter((e) => e.tier === tier);
+        const entries = ranked.filter((e) => e.tier === tier);
         if (entries.length === 0) return null;
         return (
           <Panel key={tier} className="picklist-collab-panel">
@@ -501,7 +527,7 @@ function EntryRow({
   busy,
   mutate,
 }: {
-  entry: PicklistCollabEntry;
+  entry: PicklistCollabEntryWithRating;
   tier: PicklistCollabTier;
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => void;
@@ -517,7 +543,8 @@ function EntryRow({
           {entry.teamName ? ` — ${entry.teamName}` : ""}
         </strong>
         <small className="app-muted picklist-collab-tip">
-          Weighted score {entry.weightedScore} · {entry.votes.length} vote(s)
+          Compared to this event {formatFieldRating(entry.fieldRating)} · Weighted score {entry.weightedScore} ·{" "}
+          {entry.votes.length} vote(s)
           {entry.averageRankSuggestion != null ? ` · avg rank ${entry.averageRankSuggestion}` : ""}
           {entry.epaRole ? ` · ${epaRoleLabel(entry.epaRole)}` : ""}
         </small>

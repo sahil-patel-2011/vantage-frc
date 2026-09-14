@@ -1,6 +1,20 @@
 import { describe, expect, it } from "vitest";
-import { classifyEpaRole, fieldEpaBenchmarks, picklistToCsv } from ".";
+import { classifyEpaRole, fieldEpaBenchmarks, picklistToCsv, sortEntriesWithFieldRating } from ".";
 import type { PicklistCollabEntry } from "./types";
+
+function entry(partial: Partial<PicklistCollabEntry> & Pick<PicklistCollabEntry, "id" | "teamNumber">): PicklistCollabEntry {
+  return {
+    teamName: null,
+    tier: "first_pick",
+    position: 1,
+    note: null,
+    addedBy: "u",
+    votes: [],
+    weightedScore: 0,
+    averageRankSuggestion: null,
+    ...partial,
+  };
+}
 
 describe("classifyEpaRole", () => {
   it("returns null when EPA totals are missing instead of inventing a role", () => {
@@ -70,5 +84,33 @@ describe("picklistToCsv", () => {
     const csv = picklistToCsv({ listName: "Week 3", entries });
     expect(csv).toContain("List,Team,Name,Tier,Role,Rating,Auto rating,Teleop rating,Weighted score,Note");
     expect(csv).toContain("Week 3,254,Cheesy Poofs,First pick,Elite auto,60,28,20,3,Ask about auto");
+  });
+});
+
+describe("sortEntriesWithFieldRating", () => {
+  it("re-ranks by compared-to-event rating and leaves teams without numbers last", () => {
+    const ranked = sortEntriesWithFieldRating(
+      [
+        entry({ id: "low", teamNumber: 10, epaTotal: 20, weightedScore: 9, position: 1 }),
+        entry({ id: "high", teamNumber: 20, epaTotal: 60, weightedScore: 1, position: 2 }),
+        entry({ id: "blank", teamNumber: 30, weightedScore: 5, position: 3 }),
+      ],
+      [{ id: "totalPoints", weight: 1 }],
+      { totalPoints: { mean: 40, std: 20, n: 2 } },
+    );
+    expect(ranked.map((row) => row.teamNumber)).toEqual([20, 10, 30]);
+    expect(ranked[0]?.fieldRating).toBeGreaterThan(0);
+    expect(ranked[2]?.fieldRating).toBeNull();
+  });
+
+  it("keeps vote order when every slider is off", () => {
+    const ranked = sortEntriesWithFieldRating(
+      [
+        entry({ id: "voted", teamNumber: 10, epaTotal: 20, weightedScore: 4, position: 2 }),
+        entry({ id: "quiet", teamNumber: 20, epaTotal: 60, weightedScore: 1, position: 1 }),
+      ],
+      [{ id: "totalPoints", weight: 0 }],
+    );
+    expect(ranked.map((row) => row.teamNumber)).toEqual([10, 20]);
   });
 });

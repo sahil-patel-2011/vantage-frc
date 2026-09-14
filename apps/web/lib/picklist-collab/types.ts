@@ -39,7 +39,8 @@ export type PicklistCollabEntry = {
   epaTotal?: number | null;
   epaAuto?: number | null;
   epaTeleop?: number | null;
-  /** FAST-style role from cached Statbotics EPA shares — null when the cache has no row. */
+  epaEndgame?: number | null;
+  /** Compared-to-this-event role from cached event ratings — null when the cache has no row. */
   epaRole?: EpaRoleId | null;
 };
 

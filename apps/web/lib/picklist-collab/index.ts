@@ -1,5 +1,11 @@
 // Pure helper functions for collaborative pick-list computation — no I/O, unit-testable.
 
+import {
+  rankByWeightedZScores,
+  type FieldStats,
+  type MetricWeight,
+  type TeamMetricRow,
+} from "@vantage/prediction-strategy";
 import type {
   EpaRoleId,
   PicklistCollabEntry,
@@ -7,6 +13,10 @@ import type {
   PicklistCollabTier,
   PicklistCollabVote,
 } from "./types";
+
+export type PicklistCollabEntryWithRating = PicklistCollabEntry & {
+  fieldRating: number | null;
+};
 
 export const PICKLIST_COLLAB_TIERS: PicklistCollabTier[] = [
   "first_pick",
@@ -49,15 +59,16 @@ export function averageRankSuggestion(votes: PicklistCollabVote[]): number | nul
  * Order entries within their tier by weighted vote score (descending), falling back to the
  * manually-set position, then team number for stability.
  */
+const TIER_RANK: Record<PicklistCollabTier, number> = {
+  first_pick: 0,
+  second_pick: 1,
+  avoid: 3,
+  unranked: 2,
+};
+
 export function sortEntriesForDisplay(entries: PicklistCollabEntry[]): PicklistCollabEntry[] {
-  const tierRank: Record<PicklistCollabTier, number> = {
-    first_pick: 0,
-    second_pick: 1,
-    avoid: 3,
-    unranked: 2,
-  };
   return [...entries].sort((a, b) => {
-    const tierDiff = tierRank[a.tier] - tierRank[b.tier];
+    const tierDiff = TIER_RANK[a.tier] - TIER_RANK[b.tier];
     if (tierDiff !== 0) return tierDiff;
     const scoreDiff = b.weightedScore - a.weightedScore;
     if (scoreDiff !== 0) return scoreDiff;
@@ -65,6 +76,58 @@ export function sortEntriesForDisplay(entries: PicklistCollabEntry[]): PicklistC
     if (posDiff !== 0) return posDiff;
     return a.teamNumber - b.teamNumber;
   });
+}
+
+export function collabEntriesToMetricRows(entries: PicklistCollabEntry[]): TeamMetricRow[] {
+  return entries.map((entry) => ({
+    teamKey: `frc${entry.teamNumber}`,
+    values: {
+      totalPoints: entry.epaTotal,
+      autoPoints: entry.epaAuto,
+      teleopPoints: entry.epaTeleop,
+      endgameClimb: entry.epaEndgame,
+    },
+  }));
+}
+
+/**
+ * Re-rank inside each tier by weighted field comparison (Lovat sliders).
+ * Teams without real ratings stay at the bottom of their tier — never a 0 fill.
+ * When every slider is off or nobody has ratings, vote order is unchanged.
+ */
+export function sortEntriesWithFieldRating(
+  entries: PicklistCollabEntry[],
+  weights: readonly MetricWeight[],
+  field?: FieldStats,
+): PicklistCollabEntryWithRating[] {
+  const ranked = rankByWeightedZScores(collabEntriesToMetricRows(entries), weights, field);
+  const scoreByKey = new Map(ranked.map((row) => [row.teamKey, row.score]));
+  const withRating: PicklistCollabEntryWithRating[] = entries.map((entry) => ({
+    ...entry,
+    fieldRating: scoreByKey.get(`frc${entry.teamNumber}`) ?? null,
+  }));
+  const useField = weights.some((item) => Number.isFinite(item.weight) && item.weight !== 0);
+  return [...withRating].sort((a, b) => {
+    const tierDiff = TIER_RANK[a.tier] - TIER_RANK[b.tier];
+    if (tierDiff !== 0) return tierDiff;
+    if (useField) {
+      if (a.fieldRating == null && b.fieldRating == null) {
+        /* fall through to votes */
+      } else if (a.fieldRating == null) return 1;
+      else if (b.fieldRating == null) return -1;
+      else if (b.fieldRating !== a.fieldRating) return b.fieldRating - a.fieldRating;
+    }
+    const scoreDiff = b.weightedScore - a.weightedScore;
+    if (scoreDiff !== 0) return scoreDiff;
+    const posDiff = a.position - b.position;
+    if (posDiff !== 0) return posDiff;
+    return a.teamNumber - b.teamNumber;
+  });
+}
+
+export function formatFieldRating(value: number | null | undefined): string {
+  if (value == null || !Number.isFinite(value)) return "—";
+  return (Math.round(value * 100) / 100).toFixed(2);
 }
 
 export function summarizePicklistCollab(entries: PicklistCollabEntry[]): PicklistCollabSummary {
