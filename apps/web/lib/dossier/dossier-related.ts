@@ -180,7 +180,7 @@ export function dossierShellCopy(kind: DossierShellKind): DossierEmptyCopy {
         badge: "No facts yet",
         title: "Waiting on cited season facts",
         description:
-          "Enter a team number and sync TBA identity + Statbotics EPA. Cards stay blank until real rows exist. Cross-check Strategy, Scouting, and Pick desk.",
+          "Enter a team number and sync Team Data. Cards stay blank until real rows exist. Cross-check Strategy, Scouting, and Pick desk.",
       };
     default:
       return {
