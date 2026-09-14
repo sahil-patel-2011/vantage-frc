@@ -160,7 +160,7 @@ export function vendorsNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before adding suppliers.",
+          detail: "Choose your team before adding suppliers.",
           href: "/workspace",
           primary: true,
         },
