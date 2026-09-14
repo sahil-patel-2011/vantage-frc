@@ -32,9 +32,7 @@ type SettingsBarProps = {
 };
 
 function chipHref(item: SettingsNavItem, orgId: string | null | undefined): string {
-  return item.scope === "team" || item.id === "my-ai-keys"
-    ? withOrgHref(item.href, orgId ?? null)
-    : item.href;
+  return item.scope === "team" ? withOrgHref(item.href, orgId ?? null) : item.href;
 }
 
 function ChipGroup({

@@ -329,6 +329,7 @@ describe("TBA match calendar overlay", () => {
     expect(events).toHaveLength(1);
     expect(events[0]!.id).toBe("match-2026nhdur_qm12");
     expect(events[0]!.title).toBe(tbaMatchTitle("qm", 12, "red"));
+    expect(events[0]!.title).toBe("Qualification match 12 · red bumpers");
     expect(events[0]!.source).toBe("tba");
     expect(events[0]!.bumper).toBe("red");
     expect(events[0]!.notes).toBe("RED bumpers");

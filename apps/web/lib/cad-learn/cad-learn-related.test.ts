@@ -12,9 +12,9 @@ import {
 } from "./cad-learn-related";
 
 describe("cadLearnRelatedLinks", () => {
-  it("puts CAD vault, the workbench, and assembly manual in the header strip", () => {
+  it("puts CAD vault, the workbench, assembly manual, and Code & CAD in the header strip", () => {
     const links = cadLearnRelatedLinks("org-1", { include: [...CAD_LEARN_RELATED_INCLUDE] });
-    expect(links.map((link) => link.id)).toEqual(["cad-vault", "cad", "assembly-manual"]);
+    expect(links.map((link) => link.id)).toEqual(["cad-vault", "cad", "assembly-manual", "learn-hub"]);
     expect(links.find((link) => link.id === "cad-vault")?.href).toBe("/cad-vault?orgId=org-1");
   });
 });

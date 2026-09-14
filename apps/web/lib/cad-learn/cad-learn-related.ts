@@ -1,7 +1,7 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
-export type CadLearnRelatedId = "cad-vault" | "cad" | "assembly-manual" | "dev-setup";
+export type CadLearnRelatedId = "cad-vault" | "cad" | "assembly-manual" | "dev-setup" | "learn-hub";
 
 export type CadLearnRelatedLink = {
   id: CadLearnRelatedId;
@@ -13,12 +13,14 @@ export const CAD_LEARN_RELATED_INCLUDE: CadLearnRelatedId[] = [
   "cad-vault",
   "cad",
   "assembly-manual",
+  "learn-hub",
 ];
 
 const CAD_LEARN_RELATED_LINKS = [
   { id: "cad-vault" as const, label: "CAD vault", kind: "path" as const, path: "/cad-vault" },
   { id: "cad" as const, label: "CAD workbench", kind: "build" as const, tab: "cad" },
   { id: "assembly-manual" as const, label: "Assembly manual", kind: "path" as const, path: "/assembly-manual" },
+  { id: "learn-hub" as const, label: "Code & CAD", kind: "path" as const, path: "/learn" },
   { id: "dev-setup" as const, label: "Programming setup", kind: "path" as const, path: "/dev-setup" },
 ];
 

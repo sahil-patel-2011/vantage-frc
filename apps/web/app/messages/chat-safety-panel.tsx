@@ -18,6 +18,7 @@ type ModeCopy = { label: string; detail: string };
 type PolicyPayload = {
   supported: boolean;
   dmMode: DmMode;
+  teamChatEnabled: boolean;
   canManage: boolean;
   viewerClass: "adult" | "youth";
   updatedAt: string | null;
@@ -44,11 +45,18 @@ function formatWhen(value: string | null) {
   }
 }
 
-export default function ChatSafetyPanel({ orgId }: { orgId: string }) {
+export default function ChatSafetyPanel({
+  orgId,
+  onTeamChatChange,
+}: {
+  orgId: string;
+  onTeamChatChange?: (enabled: boolean) => void;
+}) {
   const [policy, setPolicy] = useState<PolicyPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [choice, setChoice] = useState<DmMode | null>(null);
+  const [chatOn, setChatOn] = useState(true);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState("");
 
@@ -71,6 +79,7 @@ export default function ChatSafetyPanel({ orgId }: { orgId: string }) {
       }
       setPolicy(data as PolicyPayload);
       setChoice((data as PolicyPayload).dmMode);
+      setChatOn((data as PolicyPayload).teamChatEnabled !== false);
     } catch {
       setError("Could not load chat safety settings.");
     } finally {
@@ -119,6 +128,7 @@ export default function ChatSafetyPanel({ orgId }: { orgId: string }) {
       }
       setPolicy(data as PolicyPayload);
       setChoice((data as PolicyPayload).dmMode);
+      setChatOn((data as PolicyPayload).teamChatEnabled !== false);
       setStatus("Saved. New private chats follow this rule immediately.");
     } catch {
       setStatus("Could not save the chat safety setting.");
@@ -226,10 +236,8 @@ export default function ChatSafetyPanel({ orgId }: { orgId: string }) {
       <header>
         <h2>Message settings</h2>
         <p>
-          How private messages between an adult (mentor, coach, or parent) and a student are
-          handled on this team. Student–student and adult–adult chats are never affected. Adult or
-          student is read from the team role each person chose at onboarding — it is a role, not a
-          verified age.
+          Turn team chat off if this team uses Slack, Discord, or in-person only. Private-message
+          rules below still apply when chat is on.
         </p>
         {policy.updatedAt ? (
           <p>
@@ -240,6 +248,51 @@ export default function ChatSafetyPanel({ orgId }: { orgId: string }) {
           <p>Never changed — this team is on the default, second adult required.</p>
         )}
       </header>
+
+      {policy.canManage ? (
+        <label className="chat-safety-mode">
+          <input
+            type="checkbox"
+            checked={chatOn}
+            disabled={saving}
+            onChange={(event) => {
+              const next = event.target.checked;
+              setChatOn(next);
+              void (async () => {
+                setSaving(true);
+                setStatus("");
+                try {
+                  const response = await fetch("/api/messages/policy", {
+                    method: "POST",
+                    headers: { "content-type": "application/json" },
+                    body: JSON.stringify({ orgId, teamChatEnabled: next }),
+                  });
+                  const data = await response.json();
+                  if (!response.ok) {
+                    setChatOn(!next);
+                    setStatus(data.error || "Could not change team chat.");
+                    return;
+                  }
+                  setPolicy(data as PolicyPayload);
+                  onTeamChatChange?.(next);
+                  setStatus(next ? "Team chat is on." : "Team chat is off for this team.");
+                } catch {
+                  setChatOn(!next);
+                  setStatus("Could not change team chat.");
+                } finally {
+                  setSaving(false);
+                }
+              })();
+            }}
+          />
+          <span>
+            <strong>Team chat is on</strong>
+            <small>Uncheck to hide channels and DMs for everyone on this team.</small>
+          </span>
+        </label>
+      ) : (
+        <p>{policy.teamChatEnabled === false ? "Team chat is off. Ask a mentor if you need it back." : null}</p>
+      )}
 
       <div className="chat-safety-modes" role="radiogroup" aria-label="Adult–student private chat policy">
         {modes.map((mode) => (

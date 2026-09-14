@@ -15,8 +15,10 @@ import {
   isOrgChatAdmin,
   memberChatClass,
   readDmMode,
+  readTeamChatEnabled,
   supportsYouthProtection,
   writeDmMode,
+  writeTeamChatEnabled,
 } from "../../../../lib/messages/supervision";
 import { DM_MODES, DM_MODE_COPY, normalizeDmMode } from "../../../../lib/messages/youth-protection";
 
@@ -47,6 +49,7 @@ async function policyPayload(client: PoolClient, orgId: string, userId: string) 
     return {
       supported: false,
       dmMode: "open" as const,
+      teamChatEnabled: true,
       canManage: false,
       viewerClass: "youth" as const,
       updatedAt: null as string | null,
@@ -68,16 +71,18 @@ async function policyPayload(client: PoolClient, orgId: string, userId: string) 
     [orgId],
   );
 
-  const [dmMode, viewerClass, canManage, candidates] = await Promise.all([
+  const [dmMode, viewerClass, canManage, candidates, teamChatEnabled] = await Promise.all([
     readDmMode(client, orgId),
     memberChatClass(client, orgId, userId),
     isOrgChatAdmin(client, orgId, userId),
     adultAdmins(client, orgId),
+    readTeamChatEnabled(client, orgId),
   ]);
 
   return {
     supported: true,
     dmMode,
+    teamChatEnabled,
     canManage,
     viewerClass,
     updatedAt: meta.rows[0]?.updatedAt ?? null,
@@ -111,18 +116,23 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const session = await requireSession();
-    const body = (await request.json()) as { orgId?: string; dmMode?: string };
+    const body = (await request.json()) as { orgId?: string; dmMode?: string; teamChatEnabled?: boolean };
     const orgId = String(body.orgId ?? "");
     if (!orgId) throw new Error("orgId is required");
-    // Explicit membership check: normalizeDmMode falls back to 'supervised', which would silently
-    // turn a typo into a policy change.
+    const wantsChatToggle = typeof body.teamChatEnabled === "boolean";
     const raw = typeof body.dmMode === "string" ? body.dmMode.trim().toLowerCase() : "";
-    if (!(DM_MODES as readonly string[]).includes(raw)) throw new Error("Choose a chat safety setting");
-    const dmMode = normalizeDmMode(raw);
+    if (!wantsChatToggle && !(DM_MODES as readonly string[]).includes(raw)) {
+      throw new Error("Choose a chat safety setting");
+    }
 
     const data = await withRls({ userId: session.user.id, orgId }, async (client) => {
       await requireMembership(client, orgId, session.user.id);
-      await writeDmMode(client, orgId, session.user.id, dmMode);
+      if (wantsChatToggle) {
+        await writeTeamChatEnabled(client, orgId, session.user.id, body.teamChatEnabled === true);
+      }
+      if ((DM_MODES as readonly string[]).includes(raw)) {
+        await writeDmMode(client, orgId, session.user.id, normalizeDmMode(raw));
+      }
       return policyPayload(client, orgId, session.user.id);
     });
     return Response.json(data);

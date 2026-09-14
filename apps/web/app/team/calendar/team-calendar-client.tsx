@@ -614,24 +614,29 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
                   </span>
                 </a>
               ) : null}
-              <button type="button" className="tc-text-link" onClick={() => setTab("sync")}>
-                Phone calendar
-              </button>
-              {showDuties ? (
-                <button type="button" className="tc-text-link" onClick={() => setTab("duties")}>
-                  Duties
-                </button>
-              ) : null}
-              {showTrip ? (
-                <button type="button" className="tc-text-link" onClick={() => setTab("trip")}>
-                  Trip
-                </button>
-              ) : null}
-              {canManage ? (
-                <button type="button" className="tc-text-link" onClick={() => setTab("subteams")}>
-                  Subteams
-                </button>
-              ) : null}
+              <details className="tc-more">
+                <summary>More</summary>
+                <div className="tc-more-menu">
+                  <button type="button" className="tc-text-link" onClick={() => setTab("sync")}>
+                    Phone calendar
+                  </button>
+                  {showDuties ? (
+                    <button type="button" className="tc-text-link" onClick={() => setTab("duties")}>
+                      Duties
+                    </button>
+                  ) : null}
+                  {showTrip ? (
+                    <button type="button" className="tc-text-link" onClick={() => setTab("trip")}>
+                      Trip
+                    </button>
+                  ) : null}
+                  {canManage ? (
+                    <button type="button" className="tc-text-link" onClick={() => setTab("subteams")}>
+                      Subteams
+                    </button>
+                  ) : null}
+                </div>
+              </details>
             </div>
           </div>
 
@@ -641,7 +646,7 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
                 listDays.length === 0 ? (
                   <div className="tc-empty tc-list-empty">
                     <strong>Nothing scheduled</strong>
-                    <p className="tc-muted">Click a time on the week grid to add one.</p>
+                    <p className="tc-muted">Add an event below, or switch to Week and click a time.</p>
                     <div className="tc-guide-actions">
                       <Button variant="primary" type="button" onClick={() => document.getElementById("tc-quick-add")?.scrollIntoView({ behavior: "smooth", block: "start" }) }>
                         Add event
