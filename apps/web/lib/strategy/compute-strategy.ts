@@ -455,23 +455,23 @@ export async function computeStrategyView(
     },
     {
       id: "tba",
-      label: "Sync TBA",
+      label: "Sync Team Data",
       detail: access.platformEnvKey
-        ? "The Blue Alliance key is set — rankings can sync"
+        ? "A Team Data key is set — rankings can sync"
         : access.credentialAvailable
-          ? "The Blue Alliance key is saved — tap Sync under Team → Data"
+          ? "A Team Data key is saved — tap Sync under Team → Data"
           : access.cacheHasSync
             ? "Saved rankings from an earlier sync"
-            : "Connect The Blue Alliance under Connectors, then sync",
+            : "Connect Team Data, then sync",
       href: dataHref,
       done: access.tbaConfigured,
     },
     {
       id: "statbotics",
-      label: "Cache Statbotics EPA",
+      label: "Sync ratings",
       detail: access.statbotics.cacheHasMetrics
-        ? `${access.statbotics.eventMetricRows} event + ${access.statbotics.yearMetricRows} year Statbotics rows saved`
-        : "No Statbotics numbers saved yet — tap Sync under Team → Data (no key needed). Strategy can still use The Blue Alliance numbers when they exist.",
+        ? `${access.statbotics.eventMetricRows} event + ${access.statbotics.yearMetricRows} year rating rows saved`
+        : "No ratings saved yet — tap Sync under Team → Data. Strategy can still use cached official-record numbers when they exist.",
       href: dataHref,
       done: access.statbotics.cacheHasMetrics,
     },
