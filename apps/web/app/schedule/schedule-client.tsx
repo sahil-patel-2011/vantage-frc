@@ -245,8 +245,8 @@ function ScheduleShell({
       {children}
       <EmptyState
         soft
-        badge={shell === "setup" ? "Setup" : shell === "error" ? "Unavailable" : shell === "empty" ? "No matches yet" : undefined}
-        badgeTone={shell === "setup" || shell === "empty" ? "setup" : ""}
+        badge={shell === "setup" ? "Needs setup" : shell === "error" ? "Unavailable" : shell === "empty" ? "No matches yet" : undefined}
+        badgeTone={shell === "setup" ? "setup" : ""}
         title={failure ? failure.title : title}
         description={failure ? failure.description : description}
         aria-busy={shell === "loading" || undefined}
