@@ -153,7 +153,7 @@ export function riskBurndownNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Pick a team before logging season risks.",
+          detail: "Choose your team before logging season risks.",
           href: "/workspace",
           primary: true,
         },
