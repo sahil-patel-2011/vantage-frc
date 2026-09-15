@@ -219,6 +219,24 @@
   color: var(--critical);
   border-color: currentColor;
 }
+.cad-step-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.cad-step-setup-badge {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--line);
+}
 
 @media (max-width: 480px) {
   .cad-activity-head {

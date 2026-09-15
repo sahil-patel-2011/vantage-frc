@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   // Root layout templates "%s — Vantage"; absolute keeps this from becoming
   // "Sign in · Vantage — Vantage".
   title: { absolute: "Sign in · Vantage" },
-  description: "Sign in with Google or email. Invite-only — no public signup.",
+  description: "Sign in with Google or email. Invite-only, or use a coach's join link. Same email is one account.",
 };
 
 export default async function SignInPage({

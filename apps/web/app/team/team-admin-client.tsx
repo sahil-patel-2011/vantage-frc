@@ -37,6 +37,7 @@ import { TeamAdminAccessPanel } from "./team-admin-access";
 import { MembershipNextActionsPanel } from "./team-admin-chrome";
 import { TeamAdminGitHubPanel } from "./team-admin-github";
 import { TeamAdminInvitesPanel } from "./team-admin-invites";
+import { TeamAdminJoinLinkPanel } from "./team-admin-join-link";
 import {
   type AccessRequest,
   type AdminTenure,
@@ -614,7 +615,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         <PageHeader
           breadcrumbs="Team / Admin"
           title="Team admin"
-          description="Invite teammates by exact email. People without an invite go to the waitlist."
+          description="Invite one email or share an open join link. People without a link go to the waitlist."
         >
           <nav className="product-hub-related team-admin-related" aria-label="Related account tools">
             {membershipRelated.map((link) => (
@@ -654,7 +655,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
       <PageHeader
         breadcrumbs="Team / Admin"
         title="Team admin"
-        description="Invite teammates by exact email. People without an invite go to the waitlist."
+          description="Invite one email or share an open join link. People without a link go to the waitlist."
       >
         <nav className="product-hub-related team-admin-related" aria-label="Related account tools">
           {membershipRelated.map((link) => (
@@ -866,6 +867,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         message={message}
         onReview={(requestId, decision, role) => void reviewAccess(requestId, decision, role)}
       />
+      <TeamAdminJoinLinkPanel orgId={orgId} />
       <TeamAdminInvitesPanel
         adminTenure={adminTenure}
         deliveryBanner={deliveryBanner}

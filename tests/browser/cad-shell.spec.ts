@@ -17,15 +17,15 @@ test("CAD hub still loads after the panel split", async ({ page }) => {
   if (!(await expectHubReadyOrGate(page, modes, recovery))) return;
 
   await expect(page.locator(".cad-agent-brand")).toHaveText("CAD");
-  await expect(modes.getByRole("button", { name: "Simple" })).toBeVisible();
+  await expect(modes.getByRole("button", { name: "Agent" })).toBeVisible();
   await expect(modes.getByRole("button", { name: "Plan" })).toBeVisible();
   await expect(modes.getByRole("button", { name: "Multitask" })).toBeVisible();
-  await expect(modes.getByRole("button", { name: "Simple" })).toBeEnabled({ timeout: 20_000 });
+  await expect(modes.getByRole("button", { name: "Agent" })).toBeEnabled({ timeout: 20_000 });
   await expect(modes.getByRole("tab")).toHaveCount(0);
 
   await modes.getByRole("button", { name: "Plan" }).click();
   await expect(modes.getByRole("button", { name: "Plan" })).toHaveAttribute("aria-pressed", "true");
-  await modes.getByRole("button", { name: "Simple" }).click();
+  await modes.getByRole("button", { name: "Agent" }).click();
 
   await expect(page.getByRole("region", { name: "Recent CAD activity" })).toBeVisible();
 

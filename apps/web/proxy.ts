@@ -7,6 +7,8 @@ import { safeAppPath } from "./lib/security/safe-navigation";
 const PUBLIC_PAGES = new Set([
   "/",
   "/invite",
+  "/join",
+  "/claim",
   "/features",
   "/features/cad",
   "/features/strategy",
@@ -29,6 +31,8 @@ const PUBLIC_PAGES = new Set([
 const PUBLIC_PREFIXES = [
   "/api/auth",
   "/api/invites/preview",
+  "/api/join/preview",
+  "/api/organizations/claim/start",
   "/api/waitlist",
   "/api/admin/bootstrap-owner",
   "/api/showcase/public",
@@ -259,8 +263,12 @@ export async function proxy(request: NextRequest) {
     if (
       pathname === "/onboarding" ||
       pathname === "/invite" ||
+      pathname === "/join" ||
+      pathname === "/claim" ||
       pathname.startsWith("/api/onboarding") ||
       pathname.startsWith("/api/invites") ||
+      pathname.startsWith("/api/join") ||
+      pathname.startsWith("/api/organizations/claim") ||
       pathname.startsWith("/api/auth") ||
       pathname.startsWith("/api/theme")
     ) {
@@ -273,9 +281,11 @@ export async function proxy(request: NextRequest) {
     if (
       pathname === "/onboarding" ||
       pathname === "/invite" ||
+      pathname === "/join" ||
       pathname === "/claim" ||
       pathname.startsWith("/api/onboarding") ||
       pathname.startsWith("/api/invites") ||
+      pathname.startsWith("/api/join") ||
       pathname.startsWith("/api/organizations/claim") ||
       pathname.startsWith("/api/auth") ||
       pathname.startsWith("/api/theme")

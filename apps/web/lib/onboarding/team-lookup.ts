@@ -145,7 +145,10 @@ export function lookupTeamNumber(input: TeamLookupInput): TeamLookupResult {
       tone: "good",
       teamNumber: parsed,
       title: `${input.lockedOrgName ?? "That team"} · Team ${parsed}`,
-      body: "This account is already tied to that team through an invitation or an open request, so the number can't change here.",
+      body:
+        input.accessStatus === "approved"
+          ? "You're already on this team. Pick how you help, then finish."
+          : "This account is already tied to that team through an invitation or an open request, so the number can't change here.",
       ok: true,
       action: null,
     };

@@ -19,13 +19,34 @@ describe("leftover Setup badges become Needs setup or drop the setup tone", () =
     expect(src("app/doc-roles/doc-roles-client.tsx")).toMatch(/Choose your team/);
   });
 
-  it("Display leftover empties do not say Setup or The Blue Alliance", () => {
+  it("Display leftover empties use Needs setup, one primary, and official scores", () => {
+    const page = src("app/display/page.tsx");
+    expect(page).toMatch(/badge="Needs setup"/);
+    expect(page).toMatch(/Choose your team/);
+    expect(page).not.toMatch(/VANTAGE \//);
+    expect(page).not.toMatch(/\bTBA\b/);
+    expect(page).not.toMatch(/The Blue Alliance/);
+    expect(page).not.toMatch(/Event Day/);
+    expect(page).not.toMatch(/tab=strategy/);
+    const inners = page.match(/<EmptyState[\s\S]*?<\/EmptyState>/g) ?? [];
+    expect(inners.length).toBe(1);
+    expect(inners[0]?.match(/<Button\b/g) ?? []).toHaveLength(1);
+
     const display = src("app/display/setup-client.tsx");
     expect(display).not.toMatch(/badge="Setup"/);
     expect(display).not.toMatch(/The Blue Alliance/);
+    expect(display).not.toMatch(/\bTBA\b/);
     expect(display).toMatch(/id="display-new-board"/);
     expect(display).toMatch(/#display-new-board/);
     expect(display).toMatch(/official scores/);
+    expect(display).toMatch(/boards\.length > 0 && activeEventKey/);
+    expect(display).toMatch(/boards\.length > 0 && !activeEventKey/);
+
+    const related = src("lib/display/display-related.ts");
+    expect(related).not.toMatch(/\bTBA\b/);
+    expect(src("lib/display.ts")).not.toMatch(/from TBA"/);
+    expect(src("lib/display.ts")).not.toMatch(/plus TBA /);
+    expect(src("app/display/kiosk/kiosk-client.tsx")).not.toMatch(/VANTAGE /);
   });
 
   it("Todos load-failure only uses Needs setup for the setup kind", () => {

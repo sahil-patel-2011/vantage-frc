@@ -8,15 +8,24 @@ import type { PoolClient } from "@neondatabase/serverless";
 import { isToolAllowed, loadOrgAiPolicy, meteredAI } from "@vantage/billing";
 import { estimateAdapterCostUsd, type ChatAdapter, type ContextItem } from "./index";
 import {
+  clampAutonomousMaxSteps,
   DEFAULT_MAX_STEPS,
+  failStaleRunningAutonomousRuns,
+  findRunningAutonomousRunByGoal,
   finishAutonomousRun,
+  getAutonomousRunWithSteps,
+  readAutonomousRunStatus,
   insertAutonomousRun,
   insertAutonomousStep,
+  nextAutonomousStepSequence,
+  reopenAutonomousHopTransaction,
   summarizeJson,
   truncateField,
+  updateAutonomousRunMaxSteps,
   MAX_ANSWER_CHARS,
   MAX_GOAL_CHARS,
   type AutonomousRunStatus,
+  type AutonomousStepRow,
   type AutonomousStepStatus,
 } from "./autonomous-agent-store";
 import {
@@ -24,11 +33,21 @@ import {
   loadOrgSessionFacts,
 } from "./org-session-context";
 import { executeWebFetch, executeWebSearch } from "./web-tools";
-import { annotateToolOutput, toolOutputsToContextContent } from "./auto-tools";
+import { annotateToolOutput } from "./auto-tools";
 import type { AIToolRegistry } from "./orchestrator";
-import { compactContextItems, contextTokenBudgetForAdapter } from "./context-compact";
+import { contextTokenBudgetForAdapter } from "./context-compact";
 import { executeDesignResearch } from "./design-research";
-import { evaluateRunCompletion, shouldRefuseEarlyFinal } from "./task-finish";
+import { extractGoalTasks, evaluateRunCompletion, shouldRefuseEarlyFinal } from "./task-finish";
+import {
+  assembleStepContext,
+  excerptToolResult,
+  type WorkingTodo,
+} from "./working-memory";
+import { listWorkingTodos, upsertSeedWorkingTodos } from "./working-todos";
+import {
+  applyWorkingTodoProgressAfterTool,
+  extractFirstJsonObject,
+} from "./autonomous-todo-progress";
 
 export const AUTONOMOUS_AGENT_TOOLS = ["web.search", "web.fetch", "design.research"] as const;
 
@@ -55,6 +74,7 @@ export type AutonomousAgentResult = {
   provider: string;
   model: string;
   stepCount: number;
+  resumed: boolean;
   errorClass?: string | null;
   errorMessage?: string | null;
   setupRequired?: boolean;
@@ -68,42 +88,34 @@ const REACT_INSTRUCTION = [
   "Use injected org session facts and prior tool results. Never invent DEMO metrics or pretend a tool succeeded.",
   "If a tool returned setup_required, say so honestly in the final answer and stop.",
   "Prefer web.search then web.fetch on allowlisted FRC docs when the goal needs public documentation.",
+  'You may include "todos":[{"id":"...","status":"in_progress"|"done"}] for matching open todos.',
+  "Never mark a todo done unless the tool result actually completed that item.",
 ].join("\n");
 
 /** Pure parser for model JSON actions — used by the loop and unit tests. */
 export function parseAutonomousAgentAction(text: string): AutonomousAgentAction | null {
-  const trimmed = text.trim();
-  if (!trimmed) return null;
-  const fence = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  const candidate = fence?.[1]?.trim() ?? trimmed;
-  const start = candidate.indexOf("{");
-  const end = candidate.lastIndexOf("}");
-  if (start < 0 || end <= start) return null;
-  try {
-    const parsed = JSON.parse(candidate.slice(start, end + 1)) as Record<string, unknown>;
-    if (parsed.type === "final" && typeof parsed.answer === "string") {
-      return { type: "final", answer: parsed.answer.trim() };
-    }
-    if (parsed.type === "tool_call" && typeof parsed.tool === "string") {
-      const input =
-        parsed.input && typeof parsed.input === "object" && !Array.isArray(parsed.input)
-          ? (parsed.input as Record<string, unknown>)
-          : {};
-      return { type: "tool_call", tool: parsed.tool.trim(), input };
-    }
-    // Soft aliases some models emit
-    if (typeof parsed.tool === "string" && parsed.answer == null) {
-      const input =
-        parsed.input && typeof parsed.input === "object" && !Array.isArray(parsed.input)
-          ? (parsed.input as Record<string, unknown>)
-          : {};
-      return { type: "tool_call", tool: String(parsed.tool).trim(), input };
-    }
-    if (typeof parsed.answer === "string") {
-      return { type: "final", answer: parsed.answer.trim() };
-    }
-  } catch {
-    return null;
+  const parsed = extractFirstJsonObject(text);
+  if (!parsed) return null;
+  if (parsed.type === "final" && typeof parsed.answer === "string") {
+    return { type: "final", answer: parsed.answer.trim() };
+  }
+  if (parsed.type === "tool_call" && typeof parsed.tool === "string") {
+    const input =
+      parsed.input && typeof parsed.input === "object" && !Array.isArray(parsed.input)
+        ? (parsed.input as Record<string, unknown>)
+        : {};
+    return { type: "tool_call", tool: parsed.tool.trim(), input };
+  }
+  // Soft aliases some models emit
+  if (typeof parsed.tool === "string" && parsed.answer == null) {
+    const input =
+      parsed.input && typeof parsed.input === "object" && !Array.isArray(parsed.input)
+        ? (parsed.input as Record<string, unknown>)
+        : {};
+    return { type: "tool_call", tool: String(parsed.tool).trim(), input };
+  }
+  if (typeof parsed.answer === "string") {
+    return { type: "final", answer: parsed.answer.trim() };
   }
   return null;
 }
@@ -208,38 +220,194 @@ export type RunAutonomousAgentInput = {
   adapter: ChatAdapter;
   requestId: string;
   maxSteps?: number;
+  /** Resume this running run (same user/org) instead of starting over. */
+  runId?: string;
   registry?: AIToolRegistry | null;
   promptCachingEnabled?: boolean;
   /** Extra context items (memories etc.) — never invent DEMO facts. */
   extraContext?: ContextItem[];
 };
 
+function toStepLog(row: AutonomousStepRow): AutonomousAgentStepLog {
+  return {
+    sequence: row.sequence,
+    kind: row.kind,
+    toolName: row.toolName ?? undefined,
+    argsSummary: row.argsSummary ?? undefined,
+    resultSummary: row.resultSummary ?? undefined,
+    resultExcerpt: row.resultExcerpt ?? undefined,
+    sourceUrl: row.sourceUrl ?? undefined,
+    status: row.status,
+  };
+}
+
+function excerptsFromPersistedTools(steps: readonly AutonomousStepRow[]): ContextItem[] {
+  return steps
+    .filter((step) => step.kind === "tool")
+    .map((step, index) =>
+      excerptToolResult(
+        {
+          excerpt: step.resultExcerpt,
+          summary: step.resultSummary,
+          status: step.status,
+          tool: step.toolName,
+        },
+        { toolName: step.toolName ?? undefined, status: step.status, index },
+      ),
+    );
+}
+
+function completedPlanHops(steps: readonly { kind: string }[]): number {
+  return steps.filter((step) => step.kind === "plan").length;
+}
+
+function toWorkingTodos(rows: { id: string; label: string; status: WorkingTodo["status"]; sortKey: number }[]): WorkingTodo[] {
+  return rows.map((row) => ({
+    id: row.id,
+    label: row.label,
+    status: row.status,
+    sortKey: row.sortKey,
+  }));
+}
+
+async function seedAutonomousWorkingTodos(
+  client: PoolClient,
+  input: { orgId: string; userId: string; runId: string; goal: string },
+): Promise<void> {
+  try {
+    await upsertSeedWorkingTodos(client, {
+      orgId: input.orgId,
+      userId: input.userId,
+      scope: "autonomous",
+      runId: input.runId,
+      labels: extractGoalTasks(input.goal).map((task) => task.label),
+    });
+  } catch {
+    // Table not migrated — run continues without durable todos.
+  }
+}
+
+async function resolveAutonomousRun(input: {
+  client: PoolClient;
+  orgId: string;
+  userId: string;
+  goal: string;
+  requestId: string;
+  maxSteps: number;
+  runId?: string;
+  provider: string;
+  model: string;
+}): Promise<{
+  runId: string;
+  goal: string;
+  resumed: boolean;
+  steps: AutonomousAgentStepLog[];
+  persistedSteps: AutonomousStepRow[];
+  usageEventIds: string[];
+}> {
+  const explicitRunId = input.runId?.trim();
+  if (explicitRunId) {
+    const detail = await getAutonomousRunWithSteps(input.client, input.orgId, explicitRunId);
+    if (!detail || detail.run.userId !== input.userId) {
+      throw new Error("Autonomous run not found");
+    }
+    if (detail.run.status !== "running") {
+      throw new Error("Autonomous run is not running");
+    }
+    await updateAutonomousRunMaxSteps(input.client, {
+      runId: detail.run.id,
+      orgId: input.orgId,
+      maxSteps: input.maxSteps,
+    });
+    return {
+      runId: detail.run.id,
+      goal: detail.run.goal,
+      resumed: true,
+      steps: detail.steps.map(toStepLog),
+      persistedSteps: detail.steps,
+      usageEventIds: [...detail.run.usageEventIds],
+    };
+  }
+
+  const running = await findRunningAutonomousRunByGoal(input.client, {
+    orgId: input.orgId,
+    userId: input.userId,
+    goal: input.goal,
+  });
+  if (running) {
+    const detail = await getAutonomousRunWithSteps(input.client, input.orgId, running.id);
+    const persisted = detail?.steps ?? [];
+    await updateAutonomousRunMaxSteps(input.client, {
+      runId: running.id,
+      orgId: input.orgId,
+      maxSteps: input.maxSteps,
+    });
+    return {
+      runId: running.id,
+      goal: running.goal,
+      resumed: true,
+      steps: persisted.map(toStepLog),
+      persistedSteps: persisted,
+      usageEventIds: [...running.usageEventIds],
+    };
+  }
+
+  await failStaleRunningAutonomousRuns(input.client, {
+    orgId: input.orgId,
+    userId: input.userId,
+    currentGoal: input.goal,
+  });
+  const runId = await insertAutonomousRun(input.client, {
+    orgId: input.orgId,
+    userId: input.userId,
+    goal: input.goal,
+    requestId: input.requestId,
+    maxSteps: input.maxSteps,
+    feature: "agent",
+    provider: input.provider,
+    model: input.model,
+  });
+  return {
+    runId,
+    goal: input.goal,
+    resumed: false,
+    steps: [],
+    persistedSteps: [],
+    usageEventIds: [],
+  };
+}
+
 /**
  * Multi-step ReAct loop with DB persistence + meteredAI per model step.
+ * Resumes a running run for the same user/org/goal (or explicit runId) from max(sequence)+1.
  */
 export async function runAutonomousAgent(
   input: RunAutonomousAgentInput,
 ): Promise<AutonomousAgentResult> {
-  const goal = truncateField(input.goal, MAX_GOAL_CHARS);
-  if (!goal) throw new Error("goal is required");
-  const maxSteps = Math.min(Math.max(input.maxSteps ?? DEFAULT_MAX_STEPS, 1), 20);
+  const requestedGoal = truncateField(input.goal, MAX_GOAL_CHARS);
+  if (!requestedGoal) throw new Error("goal is required");
+  const maxSteps = clampAutonomousMaxSteps(input.maxSteps ?? DEFAULT_MAX_STEPS);
   const { client, orgId, userId, adapter } = input;
 
-  const runId = await insertAutonomousRun(client, {
+  const resolved = await resolveAutonomousRun({
+    client,
     orgId,
     userId,
-    goal,
+    goal: requestedGoal,
     requestId: input.requestId,
     maxSteps,
-    feature: "agent",
+    runId: input.runId,
     provider: adapter.provider,
     model: adapter.model,
   });
+  const runId = resolved.runId;
+  const goal = resolved.goal;
+  const resumed = resolved.resumed;
 
-  const steps: AutonomousAgentStepLog[] = [];
-  const usageEventIds: string[] = [];
-  let sequence = 0;
-  let setupRequired = false;
+  const steps: AutonomousAgentStepLog[] = [...resolved.steps];
+  const usageEventIds: string[] = [...resolved.usageEventIds];
+  let sequence = nextAutonomousStepSequence(resolved.persistedSteps);
+  let setupRequired = resolved.persistedSteps.some((step) => step.status === "setup_required");
 
   const sessionFacts = await loadOrgSessionFacts(client, orgId);
   const sessionItem = buildOrgSessionContextItem({
@@ -248,7 +416,11 @@ export async function runAutonomousAgent(
     capability: "agent",
   });
 
-  const toolResultItems: ContextItem[] = [];
+  await seedAutonomousWorkingTodos(client, { orgId, userId, runId, goal });
+  // Run + todos must be visible to the 800ms GET poll before the first model hop.
+  await reopenAutonomousHopTransaction(client, userId, orgId);
+
+  const toolExcerpts: ContextItem[] = excerptsFromPersistedTools(resolved.persistedSteps);
   const activeRow = await client.query<{ active_event_key: string | null }>(
     `SELECT active_event_key FROM org_active_context WHERE org_id = $1::uuid`,
     [orgId],
@@ -263,28 +435,51 @@ export async function runAutonomousAgent(
   }
 
   try {
-    for (let stepIndex = 0; stepIndex < maxSteps; stepIndex++) {
+    const startHop = completedPlanHops(steps);
+    for (let stepIndex = startHop; stepIndex < maxSteps; stepIndex++) {
+      const liveStatus = await readAutonomousRunStatus(client, { orgId, runId });
+      if (liveStatus === "cancelled") {
+        return {
+          runId,
+          status: "cancelled",
+          finalAnswer: null,
+          steps,
+          provider: adapter.provider,
+          model: adapter.model,
+          stepCount: steps.length,
+          resumed,
+          errorClass: "cancelled",
+          errorMessage: "Stopped by the team",
+        };
+      }
       const stepRequestId = `${input.requestId}:step:${stepIndex}`;
-      const rawContext: ContextItem[] = [
-        ...(sessionItem ? [sessionItem] : []),
-        ...(input.extraContext ?? []),
-        ...toolResultItems,
-        {
-          type: "module_fact",
-          id: "available-tools",
-          content: JSON.stringify({
-            tools: [
-              ...AUTONOMOUS_AGENT_TOOLS.map((name) => ({ name })),
-              ...(input.registry?.list() ?? []).slice(0, 30),
-            ],
-          }),
-          importance: 400,
-        },
-      ];
-      const context = compactContextItems(
-        rawContext,
-        contextTokenBudgetForAdapter(adapter),
-      ).items;
+      let todos: WorkingTodo[] = [];
+      try {
+        todos = toWorkingTodos(await listWorkingTodos(client, { orgId, userId, scope: "autonomous", runId }));
+      } catch {
+        todos = [];
+      }
+      const context = assembleStepContext({
+        goal,
+        todos,
+        items: [
+          ...(sessionItem ? [sessionItem] : []),
+          ...(input.extraContext ?? []),
+          {
+            type: "module_fact",
+            id: "available-tools",
+            content: JSON.stringify({
+              tools: [
+                ...AUTONOMOUS_AGENT_TOOLS.map((name) => ({ name })),
+                ...(input.registry?.list() ?? []).slice(0, 30),
+              ],
+            }),
+            importance: 400,
+          },
+        ],
+        toolExcerpts,
+        tokenBudget: contextTokenBudgetForAdapter(adapter),
+      }).items;
 
       const message = buildStepMessage(goal, stepIndex, maxSteps);
       const estimatedPrompt =
@@ -371,6 +566,7 @@ export async function runAutonomousAgent(
           provider: adapter.provider,
           model: adapter.model,
           stepCount: steps.length,
+          resumed,
         };
       }
 
@@ -383,7 +579,7 @@ export async function runAutonomousAgent(
           feature: "agent",
         });
         if (shouldRefuseEarlyFinal(completion, goal, "agent") && stepIndex + 1 < maxSteps) {
-          toolResultItems.push({
+          toolExcerpts.push({
             type: "module_fact",
             id: `completion-gate-${stepIndex}`,
             content: JSON.stringify({
@@ -393,6 +589,7 @@ export async function runAutonomousAgent(
             }),
             importance: 1000,
           });
+          await reopenAutonomousHopTransaction(client, userId, orgId);
           continue;
         }
         await insertAutonomousStep(client, {
@@ -428,6 +625,7 @@ export async function runAutonomousAgent(
           provider: adapter.provider,
           model: adapter.model,
           stepCount: steps.length,
+          resumed,
           setupRequired,
           errorClass: setupRequired ? "setup_required" : null,
         };
@@ -470,21 +668,22 @@ export async function runAutonomousAgent(
         status: toolOut.status,
       });
 
-      const annotated = annotateToolOutput(action.tool, toolOut.output, action.input);
-      const injected = toolOutputsToContextContent([
-        {
-          ...annotated,
-          summary: toolOut.summary,
-          status: toolOut.status === "error" ? "empty" : toolOut.status,
-        },
-      ]);
-      toolResultItems.push(
-        ...injected.map((item, i) => ({
-          ...item,
-          id: `${item.id}:s${stepIndex}:${i}`,
-          importance: 900,
-        })),
+      toolExcerpts.push(
+        excerptToolResult(toolOut.output, {
+          toolName: action.tool,
+          status: toolOut.status,
+          index: toolExcerpts.length,
+        }),
       );
+      await applyWorkingTodoProgressAfterTool(client, {
+        orgId,
+        userId,
+        runId,
+        rawModelText: String(text),
+        toolName: action.tool,
+        toolInput: action.input,
+        toolSummary: toolOut.summary,
+      });
 
       await insertAutonomousStep(client, {
         orgId,
@@ -502,6 +701,7 @@ export async function runAutonomousAgent(
         resultSummary: `Injected ${action.tool} result into next step context`,
         status: toolOut.status,
       });
+      await reopenAutonomousHopTransaction(client, userId, orgId);
     }
 
     const answer =
@@ -525,10 +725,26 @@ export async function runAutonomousAgent(
       provider: adapter.provider,
       model: adapter.model,
       stepCount: steps.length,
+      resumed,
       setupRequired,
       errorClass: setupRequired ? "setup_required" : "max_steps",
     };
   } catch (error) {
+    const cancelled = (await readAutonomousRunStatus(client, { orgId, runId })) === "cancelled";
+    if (cancelled) {
+      return {
+        runId,
+        status: "cancelled",
+        finalAnswer: null,
+        steps,
+        provider: adapter.provider,
+        model: adapter.model,
+        stepCount: steps.length,
+        resumed,
+        errorClass: "cancelled",
+        errorMessage: "Stopped by the team",
+      };
+    }
     const message = error instanceof Error ? error.message : "Autonomous agent failed";
     const isSetup =
       /setup_required|No AI provider|No configured model|provider key/i.test(message) || setupRequired;
@@ -559,6 +775,7 @@ export async function runAutonomousAgent(
       provider: adapter.provider,
       model: adapter.model,
       stepCount: steps.length,
+      resumed,
       errorClass: isSetup ? "setup_required" : "error",
       errorMessage: message,
       setupRequired: isSetup,

@@ -7,7 +7,16 @@ import type { Phase } from "./kickoff";
 export const KICKOFF_INTELLIGENCE_MODEL = "vantage-kickoff-intelligence-v1";
 export const KICKOFF_ADVICE_LABEL = "Advice" as const;
 
-export type IntelligenceSourceKind = "manual" | "transcript" | "url";
+export type IntelligenceSourceKind = "manual" | "transcript" | "url" | "published";
+export type KickoffAnalysisMode = "standard" | "deep";
+
+export type KickoffForecastSections = {
+  manuals: Array<{ title: string; href: string; program: "frc" | "ftc" }>;
+  leakVsActual: Array<{ year: string; publicBeforeKickoff: string; whatShipped: string }>;
+  leakLessons: string[];
+  ftcCompare: string[];
+  guess: string[];
+};
 
 export type GamePiece = { name: string; notes: string };
 export type FieldElement = { name: string; notes: string };
@@ -35,10 +44,12 @@ export type GameIntelligenceSummary = {
   constraints: string[];
   openQuestions: string[];
   designDirections: DesignDirection[];
+  forecast?: KickoffForecastSections;
   provenance: {
     provider: string;
     model: string;
     sourceKinds: IntelligenceSourceKind[];
+    analysisMode?: KickoffAnalysisMode;
     adviceLabel: typeof KICKOFF_ADVICE_LABEL;
     disclaimer: string;
   };
@@ -352,6 +363,7 @@ export function structureGameIntelligence(input: IntelligenceIngest): GameIntell
       provider: "local",
       model: KICKOFF_INTELLIGENCE_MODEL,
       sourceKinds,
+      analysisMode: "deep",
       adviceLabel: KICKOFF_ADVICE_LABEL,
       disclaimer: DISCLAIMER,
     },
@@ -554,6 +566,7 @@ function yearValue(value: unknown) {
 export type KickoffIntelligenceAction =
   | {
       action: "analyze";
+      mode: KickoffAnalysisMode;
       orgId: string;
       seasonYear: number;
       manualText: string | null;
@@ -566,6 +579,13 @@ export type KickoffIntelligenceAction =
   | { action: "create_cad_brief"; orgId: string; id: string }
   | { action: "delete"; orgId: string; id: string };
 
+function parseAnalysisMode(value: unknown): KickoffAnalysisMode {
+  const raw = String(value ?? "").trim().toLowerCase();
+  if (raw === "standard") return "standard";
+  if (raw === "deep" || raw === "") return "deep";
+  throw new Error("Analysis mode must be standard or deep");
+}
+
 export function parseKickoffIntelligenceAction(input: unknown): KickoffIntelligenceAction {
   if (!input || typeof input !== "object" || Array.isArray(input)) {
     throw new Error("Invalid kickoff intelligence action");
@@ -576,22 +596,45 @@ export function parseKickoffIntelligenceAction(input: unknown): KickoffIntellige
 
   switch (action) {
     case "analyze": {
+      const mode = parseAnalysisMode(body.mode);
       const manualText = optionalText(body.manualText, 120_000);
       const transcriptText = optionalText(body.transcriptText, 120_000);
       const sourceUrl = optionalText(body.sourceUrl, 2_000);
-      if (!manualText && !transcriptText && !sourceUrl) {
-        throw new Error("Paste a game manual excerpt, kickoff transcript, or source URL before generating a summary");
+      switch (mode) {
+        case "deep":
+          if (!manualText && !transcriptText && !sourceUrl) {
+            throw new Error(
+              "Paste a game manual excerpt, kickoff transcript, or source URL before running deep analysis",
+            );
+          }
+          return {
+            action,
+            mode,
+            orgId,
+            seasonYear: yearValue(body.seasonYear),
+            manualText,
+            transcriptText,
+            sourceUrl,
+            createCadBrief: body.createCadBrief !== false,
+            applyDrafts: body.applyDrafts !== false,
+          };
+        case "standard":
+          return {
+            action,
+            mode,
+            orgId,
+            seasonYear: yearValue(body.seasonYear),
+            manualText,
+            transcriptText,
+            sourceUrl,
+            createCadBrief: body.createCadBrief === true,
+            applyDrafts: body.applyDrafts === true,
+          };
+        default: {
+          const exhaustive: never = mode;
+          return exhaustive;
+        }
       }
-      return {
-        action,
-        orgId,
-        seasonYear: yearValue(body.seasonYear),
-        manualText,
-        transcriptText,
-        sourceUrl,
-        createCadBrief: body.createCadBrief !== false,
-        applyDrafts: body.applyDrafts !== false,
-      };
     }
     case "apply":
     case "create_cad_brief":

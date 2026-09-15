@@ -189,7 +189,7 @@ export function teamAdminShellCopy(kind: TeamAdminShellKind): TeamAdminEmptyCopy
         badge: "Needs setup",
         title: "Choose your team",
         description:
-          "Choose your team before inviting people. People without an invite go to the waitlist.",
+          "Choose your team before inviting people or sharing a join link.",
       };
     case "empty":
       return {
@@ -197,14 +197,14 @@ export function teamAdminShellCopy(kind: TeamAdminShellKind): TeamAdminEmptyCopy
         badge: "No members yet",
         title: "Invite someone by exact email",
         description:
-          "Closed membership: only the email you invite can join. Everyone else lands on the waitlist.",
+          "Invite one email, or share an open join link for up to 50 people. They sign in with Google or that same email. People without a link stay on the waitlist.",
       };
     case "ready":
       return {
         kind,
         title: "Members and invites",
         description:
-          "Invite exact emails. People without an invite stay on the waitlist.",
+          "Invite exact emails, or share one join link for up to 50 people. People without a link stay on the waitlist.",
       };
     default: {
       const _never: never = kind;

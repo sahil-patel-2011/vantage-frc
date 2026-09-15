@@ -12,8 +12,10 @@
   padding: 36px 32px 28px;
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-pop);
-  border: 1px solid var(--line);
-  background: var(--surface);
+  border: 1px solid color-mix(in srgb, var(--line) 78%, transparent);
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  backdrop-filter: saturate(1.2) blur(16px);
+  -webkit-backdrop-filter: saturate(1.2) blur(16px);
 }
 
 .signin-brand {
@@ -173,7 +175,9 @@
   background: var(--surface);
   color: var(--ink);
   font: 600 22px var(--font-ibm-mono), ui-monospace, monospace;
-  transition: border-color 0.14s ease, box-shadow 0.14s ease;
+  transition:
+    border-color var(--qol-fast, 160ms) var(--qol-ease-io, ease),
+    box-shadow var(--qol, 240ms) var(--qol-ease, ease);
 }
 
 .signin-code-box.caret {
@@ -239,31 +243,36 @@
 .signin-method-tabs {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  gap: 2px;
   margin: 0 0 16px;
+  padding: 3px;
+  border: 1px solid color-mix(in srgb, var(--line) 85%, transparent);
+  border-radius: var(--radius-pill);
+  background: var(--bg);
 }
 
 .signin-method-tabs button {
   min-height: 42px;
-  border: 1px solid var(--line);
+  border: 0;
   border-radius: var(--radius-pill);
-  background: var(--bg);
+  background: transparent;
   color: var(--muted);
   font: 600 13px var(--font-source-sans), ui-sans-serif;
   cursor: pointer;
-  transition: border-color 0.16s ease, background 0.16s ease, color 0.16s ease;
+  transition:
+    background-color var(--qol-fast, 160ms) var(--qol-ease-io, ease),
+    color var(--qol-fast, 160ms) var(--qol-ease-io, ease),
+    box-shadow var(--qol, 240ms) var(--qol-ease, ease);
 }
 
 .signin-method-tabs button:hover {
-  border-color: var(--ink);
   color: var(--ink);
 }
 
 .signin-method-tabs button[aria-pressed="true"] {
-  border-color: var(--accent);
-  background: var(--accent-soft);
-  color: var(--accent);
-  box-shadow: none;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow);
 }
 
 .signin-method-panel {
@@ -323,7 +332,11 @@
 }
 
 .signin-google {
-  transition: border-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
+  border-radius: var(--radius-sm);
+  transition:
+    border-color var(--qol-fast, 160ms) var(--qol-ease-io, ease),
+    box-shadow var(--qol, 240ms) var(--qol-ease, ease),
+    transform var(--qol-fast, 160ms) var(--qol-ease, ease);
 }
 
 .signin-google:not(:disabled):hover {
@@ -408,6 +421,15 @@
   color: var(--ink);
   font: 600 13px var(--font-source-sans), ui-sans-serif;
   text-decoration: none;
+  transition:
+    transform var(--qol-fast, 160ms) var(--qol-ease, ease),
+    border-color var(--qol-fast, 160ms) var(--qol-ease-io, ease),
+    background-color var(--qol-fast, 160ms) var(--qol-ease-io, ease);
+}
+
+.signin-cta-row a:hover {
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--line));
+  background: color-mix(in srgb, var(--accent-soft) 40%, var(--bg));
 }
 
 .signin-cta-row a.primary {
@@ -490,14 +512,36 @@
   }
 }
 
+.signin-submit {
+  border-radius: var(--radius-sm);
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.signin-submit:not(:disabled):hover {
+  background: var(--accent-hover);
+  box-shadow: 0 10px 22px color-mix(in srgb, var(--accent) 26%, transparent);
+}
+
+.signin-price-strip li {
+  transition: background-color var(--qol-fast, 160ms) var(--qol-ease-io, ease);
+}
+
+.signin-price-strip li:hover {
+  background: color-mix(in srgb, var(--accent-soft) 28%, var(--bg));
+}
+
 @media (prefers-reduced-motion: reduce) {
   .signin-google,
   .signin-code-box,
-  .signin-method-tabs button {
+  .signin-method-tabs button,
+  .signin-cta-row a,
+  .signin-submit,
+  .signin-price-strip li {
     transition: none;
   }
 
-  .signin-google:not(:disabled):hover {
+  .signin-google:not(:disabled):hover,
+  .signin-cta-row a:hover {
     transform: none;
   }
 }

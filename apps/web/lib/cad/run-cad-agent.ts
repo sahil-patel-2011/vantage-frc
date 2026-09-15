@@ -14,12 +14,24 @@ import {
   summarizeCadAgentSteps,
   WEB_CAD_AGENT_INSTRUCTIONS,
   WEB_CAD_AGENT_MAX_STEPS,
+  WEB_CAD_SUBAGENT_MAX_STEPS,
   type CadAgentMode,
   type CadAgentStep,
+  type CadTask,
   type ClaudeCadRuntime,
   type ClaudeCadSession,
 } from "@vantage/cad";
-import { getOrgPromptCachingEnabled, resolveOrgChatAdapter, type ContextItem } from "@vantage/agent";
+import {
+  contextTokenBudgetForAdapter,
+  getOrgPromptCachingEnabled,
+  listWorkingTodos,
+  markWorkingTodoStatus,
+  resolveOrgChatAdapter,
+  upsertSeedWorkingTodos,
+  type ContextItem,
+  type WorkingTodo,
+} from "@vantage/agent";
+import { listAgentConfigItems } from "../agent-config/store";
 import { createBridgeTransport } from "../ai-bridge/transport";
 import { meteredAI } from "@vantage/billing";
 import {
@@ -30,6 +42,17 @@ import {
   type CadAgentModeState,
   type CadStoredPlan,
 } from "./agent-mode-session";
+import {
+  assembleCadHopContext,
+  CAD_WORKING_SCOPE,
+  cadWorkingTodoLabels,
+  checkpointCadSessionMessages,
+  createChildToolExcerpts,
+  excerptCadToolResult,
+  parentTaskHandoff,
+  reopenCadHopTransaction,
+  workingStatusFromCadTask,
+} from "./cad-agent-checkpoint";
 import { loadCadAgentSession, saveCadAgentSession, type CadAgentChatMessage } from "./cad-agent-session";
 import { loadCadAgentOnshape } from "./onshape-tokens";
 
@@ -161,22 +184,32 @@ export async function runCadAgentTurn(input: {
     bridgeTransport: createBridgeTransport(),
   });
 
-  const boundDocumentItem: ContextItem = {
-    type: "module_fact",
-    id: "cad-bound-document",
-    content: JSON.stringify({
-      bound: session.documentId
-        ? {
-            documentId: session.documentId,
-            workspaceId: session.workspaceId,
-            elementId: session.elementId,
-            documentName: session.documentName ?? null,
-          }
-        : null,
-      via: onshape.via,
-    }),
-    importance: 700,
+  const cadTodoKey = {
+    orgId: input.orgId,
+    userId: input.userId,
+    scope: CAD_WORKING_SCOPE,
+    runId: stored?.jobId ?? null,
   };
+  const tokenBudget = contextTokenBudgetForAdapter(adapter);
+
+  function boundDocumentItem(): ContextItem {
+    return {
+      type: "module_fact",
+      id: "cad-bound-document",
+      content: JSON.stringify({
+        bound: session.documentId
+          ? {
+              documentId: session.documentId,
+              workspaceId: session.workspaceId,
+              elementId: session.elementId,
+              documentName: session.documentName ?? null,
+            }
+          : null,
+        via: onshape.via,
+      }),
+      importance: 700,
+    };
+  }
   const historyItems: ContextItem[] = history.map((item, index) => ({
     type: "module_fact" as const,
     id: `cad-history-${index}`,
@@ -210,28 +243,95 @@ export async function runCadAgentTurn(input: {
   // Narrated steps for the session pane. Every tool call appends exactly one,
   // including failures, so the pane never shows a shorter story than what ran.
   const narratedSteps: CadAgentStep[] = [];
-  const toolResultItems: ContextItem[] = [];
   let stepsUsed = 0;
 
+  async function loadCadTodos(): Promise<WorkingTodo[]> {
+    const rows = await listWorkingTodos(input.client, cadTodoKey);
+    return rows.map((row) => ({
+      id: row.id,
+      label: row.label,
+      status: row.status,
+      sortKey: row.sortKey,
+    }));
+  }
+
+  async function seedCadTodos(labels: readonly string[]): Promise<void> {
+    if (!labels.length) return;
+    try {
+      await upsertSeedWorkingTodos(input.client, { ...cadTodoKey, labels });
+    } catch {
+      // agent_working_todos is optional until migration 0658 is applied.
+    }
+  }
+
+  async function markCadTodoByLabel(label: string, status: CadTask["status"]): Promise<void> {
+    try {
+      const match = (await listWorkingTodos(input.client, cadTodoKey)).find((row) => row.label === label);
+      if (!match) return;
+      await markWorkingTodoStatus(input.client, {
+        orgId: input.orgId,
+        userId: input.userId,
+        todoId: match.id,
+        status: workingStatusFromCadTask(status),
+      });
+    } catch {
+      // Same optional-table rule as seed.
+    }
+  }
+
+  async function persistHopCheckpoint(userText: string): Promise<void> {
+    const steps = narratedSteps.length ? narratedSteps : (stored?.steps ?? []);
+    stored = await saveCadAgentSession(input.client, {
+      orgId: input.orgId,
+      userId: input.userId,
+      connectionId: onshape.connectionId,
+      session,
+      url: stored?.url,
+      messages: checkpointCadSessionMessages({
+        history,
+        userText,
+        steps: narratedSteps,
+      }),
+      steps,
+    });
+    await reopenCadHopTransaction(input.client, input.userId, input.orgId);
+  }
+
   /** The Claude-CodeCad tool loop, shared by every mode. Returns the final reply ("" if the budget ran out). */
-  async function runToolLoop(brief: string, extraItems: ContextItem[], maxSteps: number, usageTag: string): Promise<string> {
+  async function runToolLoop(opts: {
+    brief: string;
+    extraItems: ContextItem[];
+    /** Caller-owned excerpt buffer — parent and each child pass a different array. */
+    toolExcerpts: ContextItem[];
+    maxSteps: number;
+    usageTag: string;
+    checkpointUserText: string;
+    goalBrief: string;
+    plan?: CadStoredPlan | null;
+  }): Promise<string> {
     let reply = "";
-    for (let hop = 0; hop < maxSteps; hop++) {
+    for (let hop = 0; hop < opts.maxSteps; hop++) {
       const step = stepsUsed++;
-      const context: ContextItem[] = [
-        { type: "module_fact", id: "cad-agent-instructions", content: WEB_CAD_AGENT_INSTRUCTIONS, importance: 900 },
-        boundDocumentItem,
-        ...extraItems,
-        ...historyItems,
-        ...toolResultItems,
-      ];
+      const context = assembleCadHopContext({
+        brief: opts.goalBrief,
+        plan: opts.plan,
+        todos: await loadCadTodos(),
+        items: [
+          { type: "module_fact", id: "cad-agent-instructions", content: WEB_CAD_AGENT_INSTRUCTIONS, importance: 900 },
+          boundDocumentItem(),
+          ...opts.extraItems,
+          ...historyItems,
+        ],
+        toolExcerpts: opts.toolExcerpts,
+        tokenBudget,
+      });
       const text = await aiComplete(
         `step:${step}`,
         hop === 0
-          ? `${WEB_CAD_AGENT_INSTRUCTIONS}\n\nUser brief:\n${brief}`
+          ? `${WEB_CAD_AGENT_INSTRUCTIONS}\n\nUser brief:\n${opts.brief}`
           : "Continue the CAD job. Prior tool results are in context. Reply with one JSON hop.",
         context,
-        usageTag,
+        opts.usageTag,
       );
       const action = parseCadAgentAction(text);
       if (!action || action.type === "final") {
@@ -254,12 +354,10 @@ export async function runCadAgentTurn(input: {
       narratedSteps.push(
         cadAgentStep({ index: narratedSteps.length + 1, tool: action.tool, result, ok }),
       );
-      toolResultItems.push({
-        type: "module_fact",
-        id: `cad-tool-${step}-${action.tool}`,
-        content: JSON.stringify({ tool: action.tool, ok, result: clip(result) }),
-        importance: 600,
-      });
+      opts.toolExcerpts.push(
+        excerptCadToolResult({ tool: action.tool, result, ok, index: step }),
+      );
+      await persistHopCheckpoint(opts.checkpointUserText);
     }
     return reply;
   }
@@ -331,13 +429,19 @@ export async function runCadAgentTurn(input: {
     await saveCadAgentPlan(input.client, { orgId: input.orgId, userId: input.userId, plan });
     const preamble = cadPlanExecutionPreamble({ steps: plan.steps, questions: plan.questions, answers: plan.answers });
     const brief = `${preamble}\n\nOriginal brief:\n${plan.brief || input.message}`;
-    const reply = await runToolLoop(
+    const checkpointUserText = input.message.trim() || "Approved the build plan — execute it.";
+    await seedCadTodos(cadWorkingTodoLabels({ plan }));
+    const reply = await runToolLoop({
       brief,
-      [{ type: "module_fact", id: "cad-plan-execution", content: preamble, importance: 850 }],
-      WEB_CAD_AGENT_MAX_STEPS,
-      "cad.agent.plan",
-    );
-    return finishTurn(input.message.trim() || "Approved the build plan — execute it.", reply);
+      extraItems: [{ type: "module_fact", id: "cad-plan-execution", content: preamble, importance: 850 }],
+      toolExcerpts: createChildToolExcerpts(),
+      maxSteps: WEB_CAD_AGENT_MAX_STEPS,
+      usageTag: "cad.agent.plan",
+      checkpointUserText,
+      goalBrief: plan.brief || input.message,
+      plan,
+    });
+    return finishTurn(checkpointUserText, reply);
   }
 
   // ---- Plan mode: produce/revise the plan (no tool calls) -----------------
@@ -354,7 +458,7 @@ export async function runCadAgentTurn(input: {
     ]
       .filter(Boolean)
       .join("\n\n");
-    const text = await aiComplete("plan", planPrompt, [boundDocumentItem, ...historyItems], "cad.agent.plan");
+    const text = await aiComplete("plan", planPrompt, [boundDocumentItem(), ...historyItems], "cad.agent.plan");
     const parsed = parseCadPlanResponse(text);
     if (!parsed) {
       // Honest fallback: surface the model's own words (often a question) rather than inventing a plan.
@@ -378,7 +482,7 @@ export async function runCadAgentTurn(input: {
   // ---- Multitask mode: decompose, then work the checklist sequentially ----
   if (modeState.mode === "multitask") {
     const decomposePrompt = `${CAD_MULTITASK_DECOMPOSE_INSTRUCTIONS}\n\nUser brief:\n${input.message}`;
-    const decomposeText = await aiComplete("decompose", decomposePrompt, [boundDocumentItem, ...historyItems], "cad.agent.multitask");
+    const decomposeText = await aiComplete("decompose", decomposePrompt, [boundDocumentItem(), ...historyItems], "cad.agent.multitask");
     const tasks = parseCadTasksResponse(decomposeText);
     if (!tasks) {
       return finishTurn(
@@ -387,43 +491,73 @@ export async function runCadAgentTurn(input: {
       );
     }
     await saveCadAgentTasks(input.client, { orgId: input.orgId, userId: input.userId, tasks });
+    await seedCadTodos(cadWorkingTodoLabels({ tasks }));
 
-    const summaries: string[] = [];
+    const customAgents = (await listAgentConfigItems(input.client, input.orgId).catch(() => [])).filter(
+      (item) => item.kind === "subagent" && item.formatValid,
+    );
+
+    // Sequential on one Onshape session. Each child gets a fresh excerpt buffer;
+    // the parent only receives {taskId, summary, ok} — never child tool dumps.
+    const parentHandoffs: ContextItem[] = [];
     for (let index = 0; index < tasks.length; index++) {
       const task = tasks[index]!;
-      if (stepsUsed >= WEB_CAD_AGENT_MAX_STEPS) {
-        task.note = "Not started — this turn's step budget ran out. Send another message to continue.";
-        continue;
-      }
       task.status = "in_progress";
       await saveCadAgentTasks(input.client, { orgId: input.orgId, userId: input.userId, tasks });
+      await markCadTodoByLabel(task.title, "in_progress");
       const before = toolTrace.length;
       const preamble = cadMultitaskExecutionPreamble(task, index + 1, tasks.length);
-      const reply = await runToolLoop(
-        `${preamble}\n\nFull brief:\n${input.message}`,
-        [{ type: "module_fact", id: `cad-task-${task.id}`, content: preamble, importance: 850 }],
-        WEB_CAD_AGENT_MAX_STEPS - stepsUsed,
-        "cad.agent.multitask",
-      );
+      const assigned = customAgents.length ? customAgents[index % customAgents.length] : undefined;
+      const custom = assigned
+        ? `Custom agent "${assigned.name}":\n${assigned.content.slice(0, 2_000)}`
+        : "";
+      const childExcerpts = createChildToolExcerpts();
+      const reply = await runToolLoop({
+        brief: `${preamble}\n\n${custom}\n\nFull brief:\n${input.message}`,
+        extraItems: [
+          { type: "module_fact", id: `cad-task-${task.id}`, content: preamble, importance: 850 },
+          ...parentHandoffs,
+        ],
+        toolExcerpts: childExcerpts,
+        maxSteps: WEB_CAD_SUBAGENT_MAX_STEPS,
+        usageTag: "cad.agent.multitask",
+        checkpointUserText: input.message,
+        goalBrief: input.message,
+      });
       const failedTools = toolTrace.slice(before).some((t) => !t.ok);
       if (!reply) {
         task.note = "Step budget ran out mid-task. Send another message to continue.";
       } else {
         task.status = failedTools ? "failed" : "done";
         task.note = clip(reply, 400);
-        summaries.push(`${task.title}: ${reply}`);
       }
+      parentHandoffs.push(
+        parentTaskHandoff({
+          taskId: task.id,
+          summary: task.note || reply,
+          ok: task.status === "done",
+        }),
+      );
+      await markCadTodoByLabel(task.title, task.status);
       await saveCadAgentTasks(input.client, { orgId: input.orgId, userId: input.userId, tasks });
     }
     const done = tasks.filter((t) => t.status === "done").length;
     const overall = [
-      `Worked the checklist sequentially through one Onshape session — ${done}/${tasks.length} sub-tasks done.`,
+      `Spawned ${tasks.length} CAD subagents on one Onshape session — ${done}/${tasks.length} done.`,
       ...tasks.map((t) => `[${t.status}] ${t.title}${t.note ? ` — ${clip(t.note, 200)}` : ""}`),
     ].join("\n");
     return finishTurn(input.message, overall);
   }
 
   // ---- Simple mode: the original single-request loop ----------------------
-  const reply = await runToolLoop(input.message, [], WEB_CAD_AGENT_MAX_STEPS, "cad.agent");
+  const reply = await runToolLoop({
+    brief: input.message,
+    extraItems: [],
+    toolExcerpts: createChildToolExcerpts(),
+    maxSteps: WEB_CAD_AGENT_MAX_STEPS,
+    usageTag: "cad.agent",
+    checkpointUserText: input.message,
+    goalBrief: input.message,
+  });
   return finishTurn(input.message, reply);
 }

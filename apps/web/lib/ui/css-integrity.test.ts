@@ -475,6 +475,14 @@ describe("stylesheet integrity", () => {
     expect(theme).not.toMatch(/import AppShell from/);
     const signIn = readFileSync(join(__dirname, "..", "..", "app", "sign-in", "sign-in-client.tsx"), "utf8");
     expect(signIn).toMatch(/product-styles/);
+    const joinClient = readFileSync(join(__dirname, "..", "..", "app", "join", "join-client.tsx"), "utf8");
+    expect(joinClient).toMatch(/product-styles/);
+    const claim = readFileSync(join(__dirname, "..", "..", "app", "claim", "claim-client.tsx"), "utf8");
+    expect(claim).toMatch(/product-styles/);
+    const onboarding = readFileSync(join(__dirname, "..", "..", "app", "onboarding", "onboarding-client.tsx"), "utf8");
+    expect(onboarding).toMatch(/product-styles/);
+    const invite = readFileSync(join(__dirname, "..", "..", "app", "invite", "invite-client.tsx"), "utf8");
+    expect(invite).toMatch(/product-styles/);
     const kiosk = readFileSync(join(__dirname, "..", "..", "app", "display", "kiosk", "kiosk-client.tsx"), "utf8");
     expect(kiosk).toMatch(/product-styles/);
     const offline = readFileSync(join(__dirname, "..", "..", "app", "offline", "offline-client.tsx"), "utf8");

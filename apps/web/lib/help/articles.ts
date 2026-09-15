@@ -159,14 +159,14 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "1 · Get a team",
         body: [
-          "Access is closed: a platform admin provisions each team and its owner, or — when your FRC team number is not claimed yet — an owner can self-serve it at /claim with a verified email.",
-          "Everyone else joins by invite. There is no open sign-up; unknown emails land on the waitlist.",
+          "Access is closed: a platform admin provisions each team and its owner, or a coach claims an unused FRC team number at /claim after signing in with Google or an email code.",
+          "Everyone else joins by exact-email invite or a coach's open join link (up to 50 people). Unknown emails land on the waitlist.",
         ],
       },
       {
         heading: "2 · Invite your people",
         body: [
-          "Owners and admins invite exact emails from Team admin (/team/admin) with a role per person.",
+          "Owners and admins invite exact emails from Team admin (/team/admin), or share one join link for the whole team.",
           "The live Getting started checklist (/team/getting-started) tracks members, calendar, knowledge, and setup signals as you go.",
         ],
       },
@@ -903,7 +903,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
     slug: "team-invites",
     title: "Invite teammates by email",
     summary:
-      "Owners and admins send an exact-email invite, copy the link if needed, and the recipient signs in with that address to join.",
+      "Owners and admins send an exact-email invite, or share one open join link for up to 50 people. Recipients sign in with Google or that same email.",
     category: "account-access",
     keywords: [
       "invite",
@@ -913,6 +913,8 @@ export const HELP_ARTICLES: HelpArticle[] = [
       "add teammate",
       "resend invite",
       "copy invite link",
+      "join link",
+      "open link",
     ],
     relatedHref: "/team/admin",
     sections: [
@@ -929,6 +931,13 @@ export const HELP_ARTICLES: HelpArticle[] = [
         body: [
           "The recipient opens /invite?token=…, signs in with the invited email, and taps Accept invitation.",
           "Wrong account? Sign out and switch to the invited address. Team numbers never join a team by themselves.",
+        ],
+      },
+      {
+        heading: "Open join link",
+        body: [
+          "On Team admin, create one join link and send it in chat or email. Up to 50 people can use it.",
+          "Each person signs in with Google or an email code. The same email is one account. They land on the team, then finish a short You → Team → Finish setup.",
         ],
       },
     ],
@@ -1373,8 +1382,8 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "Chat only, or everything",
         body: [
-          "Coverage is chosen per device by the person who paired it. The default, “Interactive chat only”, routes chat, writer, and troubleshooting-coach turns through the bridge; long batch jobs stay on the team's own keys.",
-          "Flipping a device to “Everything” routes every AI feature platform-wide — including long jobs like season reports and CAD plans — through the subscription while the device is online. That burns the plan's usage window fastest.",
+          "Coverage is chosen per device by the person who paired it. New pairings start on “Everything” so Ask AI, CAD Agent/Plan/Multitask, and the other AI tools use that Claude Code plan. You can switch a device back to interactive-only (chat, writer, troubleshooting, CAD, Agent).",
+          "“Everything” also runs long jobs like season reports through the subscription while the computer is online. That uses the plan's window fastest.",
         ],
       },
       {
@@ -1647,7 +1656,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "Getting and running a team",
         body: [
-          "Teams are provisioned by a platform admin, or self-served at /claim when the FRC team number is unclaimed and the claimant's email is verified. Membership is closed: exact-email invites only.",
+          "Teams are provisioned by a platform admin, or self-served at /claim when the FRC team number is unclaimed and the coach's email is verified. Membership is closed: exact-email invites or one open join link (up to 50 people).",
           "A workspace always keeps at least one owner/admin — demoting the last one is blocked. Until a second admin exists (or for the first 14 days), the UI nudges you to invite a co-admin.",
         ],
       },

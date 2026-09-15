@@ -10,7 +10,9 @@ export const MAX_ANSWER_CHARS = 16_000;
 export const MAX_SUMMARY_CHARS = 2000;
 export const MAX_EXCERPT_CHARS = 8000;
 export const MAX_ERROR_CHARS = 2000;
-export const DEFAULT_MAX_STEPS = 8;
+export const DEFAULT_MAX_STEPS = 24;
+export const HARD_MAX_STEPS = 48;
+export const STALE_RUNNING_RUN_MINUTES = 15;
 
 export type AutonomousRunStatus =
   | "running"
@@ -87,6 +89,17 @@ export function sanitizeErrorMessage(message: string): string {
   )!;
 }
 
+export function clampAutonomousMaxSteps(maxSteps?: number): number {
+  if (maxSteps == null || !Number.isFinite(maxSteps)) return DEFAULT_MAX_STEPS;
+  return Math.min(Math.max(Math.floor(maxSteps), 1), HARD_MAX_STEPS);
+}
+
+/** Next persist sequence is max(sequence)+1 — no resume_cursor column. */
+export function nextAutonomousStepSequence(steps: readonly { sequence: number }[]): number {
+  if (!steps.length) return 0;
+  return Math.max(...steps.map((step) => step.sequence)) + 1;
+}
+
 export async function insertAutonomousRun(
   client: PoolClient,
   input: {
@@ -113,7 +126,7 @@ export async function insertAutonomousRun(
       goal,
       input.feature ?? "agent",
       input.requestId,
-      input.maxSteps ?? DEFAULT_MAX_STEPS,
+      clampAutonomousMaxSteps(input.maxSteps),
       input.provider ?? null,
       input.model ?? null,
     ],
@@ -187,7 +200,8 @@ export async function finishAutonomousRun(
        model = COALESCE($8, model),
        usage_event_ids = COALESCE($9::jsonb, usage_event_ids),
        finished_at = now()
-     WHERE id = $1::uuid`,
+     WHERE id = $1::uuid
+       AND status = 'running'`,
     [
       input.runId,
       input.status,
@@ -295,4 +309,160 @@ export async function getAutonomousRunWithSteps(
   } catch {
     return null;
   }
+}
+
+const RUN_SELECT = `id, org_id AS "orgId", user_id AS "userId", goal, status, feature,
+              request_id AS "requestId", provider, model,
+              step_count AS "stepCount", max_steps AS "maxSteps",
+              final_answer AS "finalAnswer", error_class AS "errorClass",
+              error_message AS "errorMessage",
+              COALESCE(usage_event_ids, '[]'::jsonb) AS "usageEventIds",
+              started_at AS "startedAt", finished_at AS "finishedAt",
+              created_at AS "createdAt"`;
+
+function mapRunRow(run: AutonomousRunRow): AutonomousRunRow {
+  return {
+    ...run,
+    usageEventIds: Array.isArray(run.usageEventIds) ? run.usageEventIds : [],
+  };
+}
+
+/** Latest running run for the same user/org/goal — used to resume without runId. */
+export async function findRunningAutonomousRunByGoal(
+  client: PoolClient,
+  input: { orgId: string; userId: string; goal: string },
+): Promise<AutonomousRunRow | null> {
+  const goal = truncateField(input.goal, MAX_GOAL_CHARS);
+  if (!goal) return null;
+  try {
+    const result = await client.query<AutonomousRunRow>(
+      `SELECT ${RUN_SELECT}
+         FROM autonomous_agent_runs
+        WHERE org_id = $1::uuid
+          AND user_id = $2::uuid
+          AND status = 'running'
+          AND goal = $3
+        ORDER BY started_at DESC
+        LIMIT 1`,
+      [input.orgId, input.userId, goal],
+    );
+    const run = result.rows[0];
+    return run ? mapRunRow(run) : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function readAutonomousRunStatus(
+  client: PoolClient,
+  input: { orgId: string; runId: string },
+): Promise<AutonomousRunStatus | null> {
+  try {
+    const result = await client.query<{ status: AutonomousRunStatus }>(
+      `SELECT status FROM autonomous_agent_runs
+        WHERE id = $1::uuid AND org_id = $2::uuid`,
+      [input.runId, input.orgId],
+    );
+    return result.rows[0]?.status ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** Stop a live run. Separate request from the POST so the hop loop can see it after COMMIT. */
+export async function cancelAutonomousRun(
+  client: PoolClient,
+  input: { orgId: string; userId: string; runId: string },
+): Promise<AutonomousRunRow | null> {
+  try {
+    const result = await client.query<AutonomousRunRow>(
+      `UPDATE autonomous_agent_runs
+          SET status = 'cancelled',
+              finished_at = COALESCE(finished_at, now()),
+              error_class = COALESCE(error_class, 'cancelled'),
+              error_message = COALESCE(error_message, $4)
+        WHERE id = $1::uuid
+          AND org_id = $2::uuid
+          AND user_id = $3::uuid
+          AND status = 'running'
+        RETURNING ${RUN_SELECT}`,
+      [input.runId, input.orgId, input.userId, sanitizeErrorMessage("Stopped by the team")],
+    );
+    const row = result.rows[0];
+    return row ? mapRunRow(row) : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function updateAutonomousRunMaxSteps(
+  client: PoolClient,
+  input: { runId: string; orgId: string; maxSteps: number },
+): Promise<void> {
+  const maxSteps = clampAutonomousMaxSteps(input.maxSteps);
+  await client.query(
+    `UPDATE autonomous_agent_runs
+        SET max_steps = $3::integer
+      WHERE id = $1::uuid
+        AND org_id = $2::uuid
+        AND max_steps < $3::integer`,
+    [input.runId, input.orgId, maxSteps],
+  );
+}
+
+/**
+ * Fail crashed/abandoned running runs only when starting a *new* goal.
+ * Same-goal running rows are left alone so resume can continue them.
+ */
+export async function failStaleRunningAutonomousRuns(
+  client: PoolClient,
+  input: {
+    orgId: string;
+    userId: string;
+    currentGoal: string;
+    olderThanMinutes?: number;
+  },
+): Promise<number> {
+  const minutes = Math.max(1, Math.floor(input.olderThanMinutes ?? STALE_RUNNING_RUN_MINUTES));
+  const currentGoal = truncateField(input.currentGoal, MAX_GOAL_CHARS);
+  if (!currentGoal) return 0;
+  try {
+    const result = await client.query(
+      `UPDATE autonomous_agent_runs
+          SET status = 'failed',
+              error_class = 'stale',
+              error_message = $5,
+              finished_at = now()
+        WHERE org_id = $1::uuid
+          AND user_id = $2::uuid
+          AND status = 'running'
+          AND started_at < now() - make_interval(mins => $3::integer)
+          AND goal IS DISTINCT FROM $4`,
+      [
+        input.orgId,
+        input.userId,
+        minutes,
+        currentGoal,
+        sanitizeErrorMessage("Stale running run failed because a new goal was started"),
+      ],
+    );
+    return result.rowCount ?? 0;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Commit the current hop so GET /api/agent/autonomous can read live steps
+ * while the POST is still running, then reopen RLS SET LOCAL.
+ */
+export async function reopenAutonomousHopTransaction(
+  client: PoolClient,
+  userId: string,
+  orgId: string,
+): Promise<void> {
+  await client.query("COMMIT");
+  await client.query("BEGIN");
+  await client.query("SELECT set_config('app.user_id', $1, true)", [userId]);
+  await client.query("SELECT set_config('app.org_id', $1, true)", [orgId]);
 }

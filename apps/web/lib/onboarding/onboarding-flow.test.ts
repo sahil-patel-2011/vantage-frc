@@ -40,6 +40,7 @@ describe("onboarding Soft-UI flow helpers", () => {
     ]);
     // Each dot carries its own one-line explanation for the header hint.
     expect(buildOnboardingStepMeta("profile").every((s) => s.description.length > 10)).toBe(true);
+    expect(buildOnboardingStepMeta("team", true, "Robodogs")[1]?.description).toMatch(/already on Robodogs/);
   });
 
   it("asks for consent unless BOTH documents were already accepted", () => {
@@ -133,6 +134,7 @@ describe("onboarding Soft-UI flow helpers", () => {
     expect(onboardingMembershipNote("none").body).not.toMatch(/workspace/i);
     expect(onboardingMembershipNote("none", { preferredTeamNumber: 254 }).body).toMatch(/approval/i);
     expect(onboardingMembershipNote("none", { preferredTeamNumber: 254 }).body).not.toMatch(/\bTBA\b|\/claim/);
+    expect(onboardingMembershipNote("approved").body).toMatch(/already added you/i);
     expect(onboardingMembershipNote("invited").body).toMatch(/invite/i);
     expect(onboardingMembershipNote("pending").body).toMatch(/owners|approve/i);
   });

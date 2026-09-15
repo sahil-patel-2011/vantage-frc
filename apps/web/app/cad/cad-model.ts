@@ -70,16 +70,16 @@ export type ChatResponse = {
 };
 
 export const MODE_LABELS: Record<AgentMode, string> = {
-  simple: "Simple",
+  simple: "Agent",
   plan: "Plan",
   multitask: "Multitask",
 };
 
 export const TASK_STATUS_LABELS: Record<AgentTask["status"], string> = {
-  pending: "Pending",
-  in_progress: "In progress",
+  pending: "To do",
+  in_progress: "Working",
   done: "Done",
-  failed: "Failed",
+  failed: "Error",
 };
 
 export type CadLoadFailure = { status: number | null; message: string };

@@ -310,7 +310,7 @@ export function CadReadyView({
                 {mode === "plan"
                   ? " Plan mode: the agent writes a numbered build plan and asks its questions before touching Onshape."
                   : mode === "multitask"
-                    ? " Multitask mode: the brief is split into a checklist of sub-tasks worked one at a time."
+                    ? " Multitask mode: each sub-task spins up its own CAD subagent on your Claude Code plan."
                     : ""}
               </div>
             ) : (
@@ -381,7 +381,13 @@ export function CadReadyView({
                   </div>
                 ) : null}
                 <div className="cad-plan-actions">
-                  <Button variant="primary" type="button" disabled={busy !== null} onClick={() => void approvePlan()}>
+                  <Button
+                    variant="primary"
+                    type="button"
+                    className="qol-press"
+                    disabled={busy !== null}
+                    onClick={() => void approvePlan()}
+                  >
                     Approve &amp; build
                   </Button>
                   <span className="cad-agent-hint">Or send a message below to revise the plan.</span>
@@ -393,8 +399,12 @@ export function CadReadyView({
               <div className="cad-task-list">
                 <b>Sub-task checklist</b>
                 <ul>
-                  {tasks.map((task) => (
-                    <li key={task.id} className={`cad-task cad-task--${task.status}`}>
+                  {tasks.map((task, index) => (
+                    <li
+                      key={task.id}
+                      className={`cad-task cad-task--${task.status} qol-stagger-row`}
+                      style={{ ["--qol-i" as string]: index }}
+                    >
                       <span className="cad-task-status">{TASK_STATUS_LABELS[task.status]}</span>
                       <span className="cad-task-title">{task.title}</span>
                       {task.note ? <span className="cad-task-note">{task.note}</span> : null}
@@ -402,13 +412,18 @@ export function CadReadyView({
                   ))}
                 </ul>
                 <p className="cad-agent-hint">
-                  Sub-tasks run one at a time through a single Onshape session — multitask is decomposition and progress
-                  tracking, not parallel writes.
+                  Each sub-task is a spawned CAD subagent on one Onshape session. Custom
+                  team agents are used when you have them. One session at a time — tracking,
+                  not parallel writes.
                 </p>
               </div>
             ) : null}
 
-            <CadStepPane steps={state?.steps ?? []} />
+            <CadStepPane
+              steps={state?.steps ?? []}
+              setupRequired={!onshapeOk}
+              bound={boundOk}
+            />
 
             {busy === "chat" ? <p className="cad-agent-hint">Working in Onshape…</p> : null}
           </div>
@@ -431,6 +446,7 @@ export function CadReadyView({
               <Button
                 variant="primary"
                 type="button"
+                className="qol-press"
                 disabled={!prompt.trim() || busy !== null || pendingProposal !== null}
                 onClick={() => void send()}
               >
@@ -452,7 +468,7 @@ export function CadReadyView({
           {geometryError}
         </p>
       ) : null}
-      <Button variant="primary" type="button" onClick={() => void refreshBoundGeometry()}>
+      <Button variant="primary" type="button" className="qol-press" onClick={() => void refreshBoundGeometry()}>
         Refresh geometry
       </Button>
       <CadCheckpointNote checkpointId={lastCheckpointId} />

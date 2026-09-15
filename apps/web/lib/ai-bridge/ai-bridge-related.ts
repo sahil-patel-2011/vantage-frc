@@ -5,7 +5,7 @@ export const AI_BRIDGE_FEATURE_LABEL = "Claude Code";
 export const AI_BRIDGE_SETUP_STEPS = [
   "On a computer that stays on, install Claude Code and sign in with the Claude plan you already pay for.",
   "Start the Vantage Claude connector on that same computer. It shows an 8-character code.",
-  "Type the code here and approve it. Chat then uses that computer — no API key.",
+  "Type the code here and approve it. Ask AI, CAD (Agent, Plan, Multitask), and Agent then use that Claude Code plan — no API key.",
 ] as const;
 
 export function aiBridgeShellCopy(kind: "no-team" | "setup" | "ready"): {
@@ -25,13 +25,13 @@ export function aiBridgeShellCopy(kind: "no-team" | "setup" | "ready"): {
         badge: "Needs setup",
         title: "Pair Claude Code",
         description:
-          "A mentor signs in to Claude Code on one computer and pastes the code here. Ask AI then runs on that plan.",
+          "A mentor signs in to Claude Code on one computer and pastes the code here. Ask AI, CAD Agent/Plan/Multitask, and the other AI tools then run on that plan.",
       };
     case "ready":
       return {
         badge: "Connected",
         title: "Claude Code",
-        description: "This computer answers Ask AI while it is online. Revoke it here to stop.",
+        description: "This computer answers Ask AI and CAD while it is online. Revoke it here to stop.",
       };
     default: {
       const _exhaustive: never = kind;

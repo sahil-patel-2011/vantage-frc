@@ -33,7 +33,7 @@ export const ONBOARDING_STEP_COPY: Record<
   team: {
     label: "Your team",
     shortLabel: "Team",
-    description: "Team number is optional. Entering one requests that team's approval — it never joins you.",
+    description: "If a coach sent you a join link, you are already on the team. Otherwise a team number only asks for approval.",
   },
   preferences: {
     label: "Finish",
@@ -71,11 +71,26 @@ export function onboardingStepPhase(
 }
 
 /** Soft-UI stepper metadata for the 3 setup steps. */
-export function buildOnboardingStepMeta(current: OnboardingFlowStep): OnboardingStepMeta[] {
+export function onboardingTeamStepDescription(alreadyOnTeam: boolean, teamName: string | null): string {
+  if (alreadyOnTeam && teamName) {
+    return `You're already on ${teamName}. Pick how you help, then finish.`;
+  }
+  if (alreadyOnTeam) {
+    return "You're already on this team. Pick how you help, then finish.";
+  }
+  return ONBOARDING_STEP_COPY.team.description;
+}
+
+export function buildOnboardingStepMeta(
+  current: OnboardingFlowStep,
+  alreadyOnTeam = false,
+  teamName: string | null = null,
+): OnboardingStepMeta[] {
   return ONBOARDING_SETUP_STEPS.map((id, index) => ({
     id,
     index,
     ...ONBOARDING_STEP_COPY[id],
+    description: id === "team" ? onboardingTeamStepDescription(alreadyOnTeam, teamName) : ONBOARDING_STEP_COPY[id].description,
     phase: onboardingStepPhase(id, current),
   }));
 }
@@ -156,7 +171,7 @@ export function onboardingLoadCopy(kind: OnboardingLoadKind, detail?: string | n
       title: "Sign in to continue",
       description:
         detail?.trim() ||
-        "Sign in with Google or an email code. A team number never lets you in by itself — you need an invite or owner approval.",
+        "Sign in with Google or an email code. A team number never lets you in by itself — you need a join link, an invite, or owner approval.",
       badge: "Needs setup",
     };
   }
@@ -176,6 +191,12 @@ export function onboardingMembershipNote(
   accessStatus: "approved" | "invited" | "pending" | "declined" | "withdrawn" | "none" | null | undefined,
   options?: { preferredTeamNumber?: number | null },
 ): { title: string; body: string } {
+  if (accessStatus === "approved") {
+    return {
+      title: "You're on this team",
+      body: "A coach already added you. Finish these steps and you can open the team.",
+    };
+  }
   if (accessStatus === "invited") {
     return {
       title: "Invitation path",
@@ -202,6 +223,6 @@ export function onboardingMembershipNote(
   }
   return {
     title: "Closed membership",
-    body: "Entering a team number only requests that team's approval. If the team already exists, their owners decide — members still also join by exact-email invite. Mentors can claim an unused team number.",
+      body: "Entering a team number only requests that team's approval. If the team already exists, their owners decide. Coaches can also send a join link. Mentors can claim an unused team number.",
   };
 }

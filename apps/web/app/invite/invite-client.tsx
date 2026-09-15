@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { AppleQolBoot } from "../../components/apple-qol-boot";
 import { VantageLogo } from "../../components/brand";
 import { LegalAgreementCheckbox } from "../../components/legal-agreement-checkbox";
 import {
@@ -18,6 +19,7 @@ import {
 } from "../../lib/invite";
 import { legalConsentMessage } from "../../lib/legal";
 import { signOutAndRedirect } from "../../lib/sign-out";
+import "../product-styles";
 import "./invite-flow.css";
 
 /** Kept for onboarding handoff (`PENDING_INVITE_KEY` import). */
@@ -306,6 +308,7 @@ export default function InviteClient() {
 
   return (
     <main className="onboarding-page invite-flow-page">
+      <AppleQolBoot />
       <section className="onboarding-card invite-flow-card" aria-labelledby="invite-title">
         <header className="invite-flow-header">
           <div className="onboarding-brand">

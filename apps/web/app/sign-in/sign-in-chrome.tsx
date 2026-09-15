@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type ReactNode, type RefObject } from "react";
+import { AppleQolBoot } from "../../components/apple-qol-boot";
 import { VantageLogo } from "../../components/brand";
 import {
   OTP_LENGTH,
@@ -26,6 +27,7 @@ export function SignInCard({
 }) {
   return (
     <main className="signin-page">
+      <AppleQolBoot />
       <section className="signin-card" aria-labelledby={titleId}>
         <div className="signin-brand">
           <VantageLogo />

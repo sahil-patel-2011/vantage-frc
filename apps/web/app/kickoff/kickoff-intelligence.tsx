@@ -5,6 +5,13 @@ import { MeteredAiCutoffBanner } from "../../components/metered-ai-cutoff-banner
 import { EmptyState, Button } from "../../components/ui";
 import { resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 import type { KickoffIntelligenceRecord } from "../../lib/kickoff-intelligence";
+import {
+  analysisModeLabel,
+  intelligenceAnalysisMode,
+  intelligenceSourceLine,
+  kickoffIntelligenceEmptyMessage,
+  scoringEmptyLine,
+} from "../../lib/kickoff/season-forecast";
 import { kickoffPipelineLinks } from "../../lib/kickoff-related";
 import { hubHref } from "../../lib/nav/hubs";
 import type { ProviderSetupStep } from "./kickoff-model";
@@ -35,9 +42,8 @@ export function IntelligenceSection({
   const [sourceUrl, setSourceUrl] = useState("");
   const [records, setRecords] = useState<KickoffIntelligenceRecord[]>([]);
   const [intelStatus, setIntelStatus] = useState<"ready" | "empty" | "loading">("loading");
-  const [emptyMessage, setEmptyMessage] = useState(
-    "Upload a game manual excerpt or kickoff transcript to generate the season intelligence summary.",
-  );
+  const [emptyMessage, setEmptyMessage] = useState(kickoffIntelligenceEmptyMessage(false));
+  const [canDeepAnalyze, setCanDeepAnalyze] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [providerSetup, setProviderSetup] = useState<{ message: string; steps: ProviderSetupStep[] } | null>(
     null,
@@ -55,6 +61,8 @@ export function IntelligenceSection({
         status?: string;
         message?: string | null;
         records?: KickoffIntelligenceRecord[];
+        canDeepAnalyze?: boolean;
+        teamNumber?: number | null;
         error?: string;
         code?: string;
         reason?: string;
@@ -69,12 +77,11 @@ export function IntelligenceSection({
         return;
       }
       const nextRecords = data.records ?? [];
+      const nextCanDeep = data.canDeepAnalyze === true;
       setRecords(nextRecords);
+      setCanDeepAnalyze(nextCanDeep);
       setIntelStatus(nextRecords.length ? "ready" : "empty");
-      setEmptyMessage(
-        data.message ??
-          "Upload a game manual excerpt or kickoff transcript to generate the season intelligence summary.",
-      );
+      setEmptyMessage(data.message ?? kickoffIntelligenceEmptyMessage(nextCanDeep));
       if (nextRecords.length) {
         setSelectedId((current) => current ?? nextRecords[0]!.id);
         onIntelMeta({
@@ -175,9 +182,10 @@ export function IntelligenceSection({
         <div>
           <h2>Game release intelligence</h2>
           <p className="app-muted">
-            Paste the game manual and kickoff transcript (or a text URL). Vantage structures a season summary, seeds
-            Strategy design priorities, and opens a CAD brief. Everything it writes is marked as an{" "}
-            <strong>AI suggestion</strong> — check it against the manual before you build on it.
+            Standard analysis collects official manuals, compares how past public leaks lined up with the real FRC game,
+            compares this year&apos;s FTC game with FRC, and writes a labeled best guess. Deep analysis is Team 6925
+            only — it reads a pasted manual and transcript, then seeds Strategy and CAD. Everything here is{" "}
+            <strong>advice</strong> until you check it against the official FRC manual.
           </p>
         </div>
         <nav className="kick-pipeline-links" aria-label="Kickoff pipeline">
@@ -192,25 +200,15 @@ export function IntelligenceSection({
       <MeteredAiCutoffBanner orgId={orgId} errorCode={cutoffCode} compact />
 
       {providerSetup ? (
-        <EmptyState
-          soft
-          badge="Needs setup"
-          badgeTone="setup"
-          title="Team AI isn't connected yet"
-          description={providerSetup.message}
-        >
-          {providerSetup.steps[0] ? (
-            <Button as="a" variant="primary" href={providerSetup.steps[0].href}>
-              {providerSetup.steps[0].label}
-            </Button>
-          ) : (
-            <Button as="a" variant="primary" href="/team/ai-bridge">
-              Connect Claude Code
-            </Button>
-          )}
-        </EmptyState>
+        <p className="app-muted" role="status">
+          {providerSetup.message} Deep analysis needs team AI. Standard analysis still runs from official FIRST pages.{" "}
+          <Button as="a" variant="secondary" href={providerSetup.steps[0]?.href ?? "/team/ai-bridge"}>
+            {providerSetup.steps[0]?.label ?? "Connect Claude Code"}
+          </Button>
+        </p>
       ) : null}
 
+      {canDeepAnalyze ? (
       <form
         className="kick-intel-form"
         onSubmit={(event) => {
@@ -218,6 +216,7 @@ export function IntelligenceSection({
           void runIntel(
             {
               action: "analyze",
+              mode: "deep",
               orgId,
               seasonYear,
               manualText: manualText.trim() || null,
@@ -275,30 +274,50 @@ export function IntelligenceSection({
           />
         </label>
         <div className="kick-intel-submit">
-          <Button variant="primary" type="submit" disabled={busy || !canGenerate}>
-            {busyKey === "intel-analyze" ? "Generating…" : "Generate summary → Strategy seeds → CAD"}
+          <Button variant="secondary" type="submit" disabled={busy || !canGenerate}>
+            {busyKey === "intel-analyze" ? "Generating…" : "Run Team 6925 deep analysis"}
           </Button>
           <span className="app-muted">
-            Seeds priorities and opens a CAD brief when generation succeeds. Chat pauses if the team is at its limit.
+            Reads the pasted manual and transcript, then seeds Strategy and a CAD brief. Chat pauses if the team is at
+            its limit.
           </span>
         </div>
       </form>
+      ) : null}
 
       {intelStatus === "loading" && !selected ? (
         <EmptyState soft title="Loading intelligence…" description="Checking for a saved release summary." aria-busy />
       ) : !selected ? (
-        <EmptyState soft badge="Empty" title="No structured summary yet" description={emptyMessage}>
-          <p className="app-muted">
-            Paste the {seasonYear} game manual and kickoff transcript above to fill this in.
-          </p>
+        <EmptyState soft badge="Empty" title="No season analysis yet" description={emptyMessage}>
+          <Button
+            variant="primary"
+            type="button"
+            disabled={busy}
+            onClick={() =>
+              void runIntel(
+                {
+                  action: "analyze",
+                  mode: "standard",
+                  orgId,
+                  seasonYear,
+                  createCadBrief: false,
+                  applyDrafts: false,
+                },
+                "intel-standard",
+              )
+            }
+          >
+            {busyKey === "intel-standard" ? "Building guess…" : "Run standard analysis"}
+          </Button>
         </EmptyState>
       ) : (
         <article className="kick-intel-result">
           <header className="kick-intel-result-head">
             <div>
+              <span className="kick-chip kick-phase-auto">{analysisModeLabel(intelligenceAnalysisMode(selected.summary))}</span>
               <span className="kick-chip kick-phase-auto">{selected.adviceLabel}</span>
               <h3>{selected.title}</h3>
-              <p className="app-muted">From your team&apos;s AI</p>
+              <p className="app-muted">{intelligenceSourceLine(intelligenceAnalysisMode(selected.summary))}</p>
             </div>
             <div className="kick-intel-result-actions">
               {records.length > 1 ? (
@@ -329,6 +348,51 @@ export function IntelligenceSection({
           </header>
 
           <p>{selected.summary.overview}</p>
+
+          {selected.summary.forecast ? (
+            <div className="kick-intel-grid">
+              <div>
+                <h4>Official manuals</h4>
+                <ul className="kick-list">
+                  {selected.summary.forecast.manuals.map((manual) => (
+                    <li key={manual.href}>
+                      <a href={manual.href} target="_blank" rel="noreferrer">
+                        {manual.title}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <h4>Leaks vs what shipped</h4>
+                <ul className="kick-list">
+                  {selected.summary.forecast.leakVsActual.map((row) => (
+                    <li key={row.year}>
+                      <strong>{row.year}</strong>
+                      <div className="app-muted">Public before kickoff: {row.publicBeforeKickoff}</div>
+                      <div className="app-muted">What shipped: {row.whatShipped}</div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <h4>FTC compared with FRC</h4>
+                <ul className="kick-list">
+                  {selected.summary.forecast.ftcCompare.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <h4>Best guess</h4>
+                <ul className="kick-list">
+                  {selected.summary.forecast.guess.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          ) : null}
 
           <div className="kick-intel-grid">
             <div>
@@ -361,7 +425,7 @@ export function IntelligenceSection({
                     </li>
                   ))
                 ) : (
-                  <li className="app-muted">No numeric scoring lines found — add them below.</li>
+                  <li className="app-muted">{scoringEmptyLine(intelligenceAnalysisMode(selected.summary))}</li>
                 )}
               </ul>
             </div>
@@ -417,6 +481,26 @@ export function IntelligenceSection({
           <p className="app-muted kick-intel-disclaimer">{selected.summary.provenance.disclaimer}</p>
 
           <div className="kick-add">
+            <Button
+              variant="secondary"
+              type="button"
+              disabled={busy}
+              onClick={() =>
+                void runIntel(
+                  {
+                    action: "analyze",
+                    mode: "standard",
+                    orgId,
+                    seasonYear,
+                    createCadBrief: false,
+                    applyDrafts: false,
+                  },
+                  "intel-standard",
+                )
+              }
+            >
+              {busyKey === "intel-standard" ? "Building guess…" : "Run standard analysis again"}
+            </Button>
             <Button variant="secondary" type="button" disabled={busy} onClick={() => void runIntel({ action: "apply", orgId, id: selected.id }, "intel-apply")}>
               Re-seed Strategy priorities
             </Button>

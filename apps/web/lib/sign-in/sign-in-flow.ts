@@ -125,7 +125,7 @@ export function signInSetupCopy(
 
 /** One line under the title — buttons do the rest. */
 export function signInSubtitle(_status?: Pick<SignInAuthStatus, "email2faEnforced" | "emailOtpAvailable">) {
-  return "Google or an email code. Invite-only.";
+  return "Google or an email code. Invite-only — or use a coach's join link. Same email is one account.";
 }
 
 /**

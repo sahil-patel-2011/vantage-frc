@@ -367,15 +367,15 @@ export function classifyOtpFailure(input: FailureInput): OtpFailure {
  * Why a correct-looking email never receives a code.
  *
  * `send-verification-otp` answers 200 for every address (it refuses to leak who
- * has an account), and `disableSignUp` then makes sign-in reject the code as
- * `INVALID_OTP`. After a couple of failures on the first factor that silence is
- * the likeliest explanation, so say it plainly instead of repeating "wrong code".
+ * has an account). New emails are still gated by the user-create hook (invite,
+ * join link, coach claim, existing user, or platform owner). After a couple of
+ * failures that silence is the likeliest explanation, so say it plainly.
  */
 export function invitedOnlyHint(state: SignInFlowState): string | null {
   if (state.channel !== "email-otp") return null;
   if (state.failedAttempts < 2) return null;
   if (state.failure?.kind !== "wrong_code" && state.failure?.kind !== "expired") return null;
-  return "No code in your inbox? Vantage access is invite-only — codes are sent only to addresses a team owner has already invited. Join the waitlist and a team can add you.";
+  return "No code in your inbox? Access is invite-only unless a coach sent you a join link. Join the waitlist and a team can add you.";
 }
 
 /* -------------------------------- destinations -------------------------------- */

@@ -228,9 +228,11 @@ export default function KickoffClient(_props: { embedded?: boolean } = {}) {
         title="Kickoff & Game Analysis"
         description={
           <>
-            Start from the {year} manual and kickoff transcript for {view.context.orgName ?? "your team"}
-            {view.context.teamNumber ? ` (Team ${view.context.teamNumber})` : ""} — structure the game, seed Strategy
-            priorities, and hand a CAD brief to Onshape/Fusion paths.
+            Start from official FIRST pages for {view.context.orgName ?? "your team"}
+            {view.context.teamNumber ? ` (Team ${view.context.teamNumber})` : ""} — run a standard season guess
+            {view.context.teamNumber === 6925
+              ? ", or paste the manual for Team 6925 deep analysis."
+              : ". Deep analysis stays with Team 6925."}
           </>
         }
       >

@@ -25,10 +25,11 @@ sha256-hashed device token, heartbeats, and SECURITY DEFINER job-lease functions
   (including the reset time when present) and the turn **falls back to the team's configured AI
   keys** automatically (`degraded: bridge-rate-limited`).
 - **Coverage is the pairer's choice** (`/team/ai-bridge`, per device, `0488` migration):
-  - `chat` (default) — only **interactive chat-class features** route through the bridge (see
+  - `chat` — only **interactive chat-class features** route through the bridge (see
     `BRIDGE_CHAT_FEATURES` in `packages/agent/src/resolve-chat-adapter.ts`: chat, writer,
-    troubleshoot-coach). Long/batch features (dreams, Bugbot scans, season reports) use the
+    troubleshoot-coach, cad, agent). Long/batch features (dreams, Bugbot scans, season reports) use the
     team's own keys — they run for minutes and would burn the plan's usage window.
+    New pairings default to `everything` so Claude Code can power every AI tool, including CAD.
   - `everything` — **every AI feature platform-wide** rides the subscription while the device is
     online, including long jobs (season reports, CAD plans, nightly dreams, digests — worker jobs
     included). Heavy jobs enqueue the `BRIDGE_HEAVY_CLI_TIMEOUT_MS` budget (~210 s), the job lease

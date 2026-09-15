@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "../../components/ui";
+import { labelCadStepStatus } from "../../lib/cad/cad-step-pane";
 import { activityRelativeTime } from "./cad-model";
 
 type ActivityRow = {
@@ -223,15 +224,17 @@ export function CadActivityPanel({ orgId }: { orgId: string }) {
                         {detail.steps.length ? (
                           <ol className="cad-step-list">
                             {detail.steps.map((step) => (
-                              <li key={`${detail.id}-${step.index}`} className={`cad-step cad-step--${step.status}`}>
+                              <li
+                                key={`${detail.id}-${step.index}`}
+                                className={`cad-step cad-step--${step.status} qol-stagger-row`}
+                                style={{ ["--qol-i" as string]: step.index }}
+                              >
                                 <span className="cad-step-index">{step.index}</span>
                                 <span className="cad-step-body">
                                   <span className="cad-step-title">{step.title}</span>
                                   {step.detail ? <span className="cad-step-detail">{step.detail}</span> : null}
                                 </span>
-                                <span className="cad-step-status">
-                                  {step.status === "failed" ? "Failed" : "Done"}
-                                </span>
+                                <span className="cad-step-status">{labelCadStepStatus(step.status)}</span>
                               </li>
                             ))}
                           </ol>

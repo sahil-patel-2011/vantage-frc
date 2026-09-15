@@ -1,4 +1,5 @@
 import { resolveActiveSeasonYear } from "./season-year";
+import { excerptToolResult } from "./working-memory";
 
 export type PlannedToolCall = { name: string; input: unknown };
 
@@ -815,21 +816,32 @@ export function annotateToolOutput(name: string, output: unknown, input?: unknow
   };
 }
 
+function excerptBodyFromToolOutput(output: unknown): string {
+  if (output == null) return "";
+  if (typeof output === "string") return output;
+  if (typeof output === "number" || typeof output === "boolean") return String(output);
+  try {
+    return JSON.stringify(output) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+/** Excerpt + status only — never the uncapped tool `data` dump. */
 export function toolOutputsToContextContent(items: AnnotatedToolOutput[]) {
-  return items.map((item, index) => ({
-    type: "module_fact" as const,
-    id: `${item.name}:${index}`,
-    content: JSON.stringify({
-      tool: item.name,
-      status: item.status,
-      classification: item.classification,
-      summary: item.summary,
-      input: item.input ?? null,
-      data: item.output,
-      dataSource: item.dataSource ?? null,
-    }),
-    importance: 1,
-  }));
+  return items.map((item, index) =>
+    excerptToolResult(
+      {
+        summary: item.summary,
+        excerpt: excerptBodyFromToolOutput(item.output),
+        status: item.status,
+        classification: item.classification,
+        input: item.input ?? null,
+        dataSource: item.dataSource ?? null,
+      },
+      { toolName: item.name, status: item.status, index },
+    ),
+  );
 }
 
 export function formatGroundedReply(message: string, tools: AnnotatedToolOutput[]) {

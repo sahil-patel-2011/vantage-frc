@@ -338,7 +338,7 @@ export default function AiBridgeClient({
                                 checked={device.coverage !== "everything"}
                                 onChange={() => void patchDevice(device.id, { coverage: "chat" })}
                               />
-                              Interactive chat only (chat, writer, troubleshooting)
+                              Interactive only (Ask AI, writer, troubleshooting, CAD Agent/Plan/Multitask)
                             </label>
                             <label className="ai-bridge-toggle">
                               <input

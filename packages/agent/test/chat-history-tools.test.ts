@@ -1,9 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   HttpChatAdapter,
+  annotateToolOutput,
   boundRecentThreadMessages,
   estimateAdapterCostUsd,
   planChatToolCalls,
+  toolOutputsToContextContent,
 } from "../src";
 
 describe("bounded multi-turn chat history", () => {
@@ -103,5 +105,16 @@ describe("tool fallback and preflight pricing", () => {
       prices: { inputPerMillionUsd: 2, outputPerMillionUsd: 8 },
     });
     expect(estimateAdapterCostUsd(adapter, 1_000, 500)).toBeCloseTo(0.006);
+  });
+
+  it("injects tool excerpts instead of full JSON data dumps", () => {
+    const dump = "x".repeat(12_000);
+    const ctx = toolOutputsToContextContent([
+      annotateToolOutput("scouting.team", { rows: [{ note: dump }] }, { teamKey: "frc254" }),
+    ]);
+    expect(ctx[0]?.content).toContain("tool: scouting.team");
+    expect(ctx[0]?.content).toContain("status: ok");
+    expect(ctx[0]?.content).not.toContain(`"data":`);
+    expect(ctx[0]?.content.length).toBeLessThan(dump.length);
   });
 });

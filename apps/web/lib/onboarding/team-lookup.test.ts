@@ -90,6 +90,16 @@ describe("live team-number feedback", () => {
     expect(result.tone).toBe("good");
     expect(result.title).toContain("Robo Rangers");
     expect(result.ok).toBe(true);
+    expect(
+      lookupTeamNumber({
+        ...BASE,
+        raw: "254",
+        locked: true,
+        lockedTeamNumber: 254,
+        lockedOrgName: "Robo Rangers",
+        accessStatus: "approved",
+      }).body,
+    ).toMatch(/already on this team/i);
   });
 
   it("reflects server-confirmed request states for the same number only", () => {

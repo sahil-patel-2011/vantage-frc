@@ -65,10 +65,11 @@ export const WEB_CAD_AGENT_INSTRUCTIONS = [
  * Step budget for one turn. A realistic FRC brief ("plate with a 4x pattern of
  * 5 mm holes and filleted corners") is sketch → extrude → points → hole →
  * fillet → final = 6 hops, so the budget has to clear that with room to recover
- * from one failed hop. Multitask mode still shares this single budget across all
- * of its sub-tasks, so the cap is enforced overall, not per sub-task.
+ * from one failed hop. Multitask mode gives each spawned subagent its own
+ * smaller budget so one stuck task cannot consume the whole turn.
  */
 export const WEB_CAD_AGENT_MAX_STEPS = 14;
+export const WEB_CAD_SUBAGENT_MAX_STEPS = 8;
 
 /** Parse Claude-CodeCad JSON hops and the autonomous-agent aliases. */
 export function parseCadAgentAction(text: string): CadAgentAction | null {

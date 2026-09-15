@@ -1,0 +1,197 @@
+/* Super-small Apple-like QoL. Product chrome only (loaded via product-styles). */
+
+:root {
+  --qol-fast: 160ms;
+  --qol: 240ms;
+  --qol-slow: 360ms;
+  --qol-rise: 6px;
+  --qol-tile-rise: 3px;
+  --qol-press: 0.985;
+  --qol-stagger: 28ms;
+  --qol-focus: 4px;
+  --qol-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --qol-ease-io: cubic-bezier(0.45, 0, 0.55, 1);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* One page fade — not every nested panel. */
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) body.has-app-shell #main-content,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) .signin-page,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) .onboarding-page,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) .qol-page {
+    animation: qol-page-in var(--qol-slow) var(--qol-ease) both;
+  }
+
+  /* Resting cards: shadow and hairline only. Rise is for things you can press. */
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) body.has-app-shell .app-card,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) body.has-app-shell .soft-panel,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) body.has-app-shell .dash-widget,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) body.has-app-shell .app-empty,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) .qol-lift {
+    transition:
+      transform var(--qol) var(--qol-ease),
+      box-shadow var(--qol) var(--qol-ease),
+      border-color var(--qol-fast) var(--qol-ease-io);
+  }
+
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) body.has-app-shell .app-card:hover,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) body.has-app-shell .soft-panel:hover {
+    box-shadow: var(--shadow-lift);
+  }
+
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) body.has-app-shell a.app-card:hover,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) body.has-app-shell button.app-card:hover,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) body.has-app-shell .qol-lift:hover,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) body.has-app-shell .dash-widget-hit:hover .dash-widget {
+    transform: translateY(calc(var(--qol-tile-rise) * -1));
+  }
+
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) body.has-app-shell .app-button,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) body.has-app-shell .soft-nav-group a,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) body.has-app-shell .soft-icon-btn,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) body.has-app-shell .soft-account-pop a,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) body.has-app-shell .soft-account-pop button,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) .auth-mode button,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) .signin-submit,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) .signin-google,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) .signin-cta-row a,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) .qol-press {
+    transition:
+      transform var(--qol-fast) var(--qol-ease),
+      background-color var(--qol-fast) var(--qol-ease-io),
+      border-color var(--qol-fast) var(--qol-ease-io),
+      color var(--qol-fast) var(--qol-ease-io),
+      box-shadow var(--qol) var(--qol-ease),
+      filter var(--qol-fast) var(--qol-ease-io);
+  }
+
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) body.has-app-shell .app-button:not(:disabled):hover,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) .signin-submit:not(:disabled):hover,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) .qol-press:not(:disabled):hover {
+    filter: brightness(0.97);
+  }
+
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) body.has-app-shell .app-button:not(:disabled):active,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) body.has-app-shell .soft-nav-group a:active,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) body.has-app-shell .soft-icon-btn:active,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) body.has-app-shell .soft-account-pop a:active,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) body.has-app-shell .soft-account-pop button:active,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) .auth-mode button:active,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) .signin-submit:not(:disabled):active,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) .signin-google:not(:disabled):active,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) .signin-cta-row a:active,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) .signin-method-tabs button:active,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) .qol-press:not(:disabled):active {
+    transform: scale(var(--qol-press));
+  }
+
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) body.has-app-shell .soft-account-pop,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) body.has-app-shell .command-dialog > div,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) body.has-app-shell .soft-toast,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) body.has-app-shell .soft-drawer {
+    animation: qol-sheet-in var(--qol) var(--qol-ease) both;
+  }
+
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) .signin-field,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) .signin-code-box,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) .signin-method-tabs button,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) body.has-app-shell input,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) body.has-app-shell select,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) body.has-app-shell textarea {
+    transition:
+      border-color var(--qol-fast) var(--qol-ease-io),
+      box-shadow var(--qol) var(--qol-ease),
+      background-color var(--qol-fast) var(--qol-ease-io);
+  }
+
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) .signin-field:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 var(--qol-focus) color-mix(in srgb, var(--accent) 16%, transparent);
+  }
+
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) .signin-field:focus-within {
+    background: color-mix(in srgb, var(--accent-soft) 38%, var(--surface));
+  }
+
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) .signin-link,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) .signin-waitlist a {
+    transition: color var(--qol-fast) var(--qol-ease-io);
+  }
+
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) .signin-link:hover,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) .signin-waitlist a:hover {
+    color: var(--accent);
+  }
+
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) .signin-code-box.caret {
+    animation: qol-caret var(--qol-slow) var(--qol-ease-io) infinite;
+  }
+
+  /* Step / todo rows — 28ms stagger, same sheet-in, no bounce. */
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) .qol-stagger-row {
+    animation: qol-sheet-in var(--qol) var(--qol-ease) both;
+    animation-delay: calc(var(--qol-stagger) * var(--qol-i, 0));
+  }
+}
+
+@keyframes qol-page-in {
+  from {
+    opacity: 0.72;
+    transform: translateY(var(--qol-rise));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes qol-sheet-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.992);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes qol-caret {
+  0%,
+  100% {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 10%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-qol],
+  html[data-qol] *,
+  .qol-page,
+  .qol-lift,
+  .qol-press,
+  .qol-stagger-row,
+  .signin-page,
+  .onboarding-page,
+  .signin-field,
+  .signin-submit,
+  .signin-google,
+  .signin-code-box,
+  .signin-method-tabs button {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+html[data-motion="reduced"] .qol-page,
+html[data-qol="reduce"] .qol-page,
+html[data-motion="reduced"] body.has-app-shell #main-content,
+html[data-qol="reduce"] body.has-app-shell #main-content,
+html[data-motion="reduced"] .signin-page,
+html[data-qol="reduce"] .signin-page,
+html[data-motion="reduced"] .onboarding-page,
+html[data-qol="reduce"] .onboarding-page {
+  animation: none !important;
+}

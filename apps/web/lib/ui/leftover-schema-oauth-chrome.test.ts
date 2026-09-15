@@ -48,6 +48,13 @@ describe("leftover schema / OAuth / Setup required student chrome", () => {
       expect(src, rel).not.toMatch(/Connect Onshape with OAuth/);
       expect(src, rel).not.toMatch(/Server API keys do not count/);
       expect(src, rel).not.toMatch(/API keys alone are not a connected workspace/);
+      if (rel.includes("kickoff-intelligence")) {
+        expect(src, rel).toMatch(/Run standard analysis/);
+        expect(src, rel).toMatch(/canDeepAnalyze/);
+        expect(src, rel).toMatch(/mode: "deep"/);
+        expect(src, rel).toMatch(/Run Team 6925 deep analysis/);
+        expect(src, rel).not.toMatch(/Generate summary → Strategy/);
+      }
       if (rel.includes("inspection-copilot-client")) {
         expect(src, rel).not.toMatch(/>Subsystems</);
       }

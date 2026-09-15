@@ -93,6 +93,8 @@ export const BRIDGE_CHAT_FEATURES: ReadonlySet<string> = new Set([
   "chat",
   "writer",
   "troubleshoot-coach",
+  "cad",
+  "agent",
 ]);
 
 /** A bridge device counts as online while its last heartbeat is under 3 minutes old. */

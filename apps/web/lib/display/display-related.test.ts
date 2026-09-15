@@ -26,13 +26,14 @@ describe("display Soft-UI helpers", () => {
     expect(displaySetupNextActions({ boardCount: 0 }).map((a) => a.id)).toEqual(["workspace"]);
   });
 
-  it("asks for first board when empty — never DEMO metrics", () => {
+  it("asks for first board when empty — never DEMO metrics or TBA jargon", () => {
     const actions = displaySetupNextActions({ orgId: "org-1", boardCount: 0, activeTokenCount: 0 });
     expect(actions[0]?.id).toBe("create-board");
     expect(actions[0]?.primary).toBe(true);
     expect(actions.map((a) => a.id)).toContain("command");
     expect(actions.map((a) => a.id)).toContain("strategy");
     expect(actions.every((a) => !/demo/i.test(`${a.label} ${a.detail}`))).toBe(true);
+    expect(JSON.stringify(actions)).not.toMatch(/\bTBA\b|Blue Alliance/);
   });
 
   it("prioritizes TV pairing after a board exists", () => {

@@ -3,6 +3,7 @@
 import "../app/product-styles";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AppleQolBoot } from "./apple-qol-boot";
 import { AppShellNavPanel } from "./app-shell-nav-panel";
 import { AppShellEventFocus, AppShellIsland, AppShellIslandEditor } from "./app-shell-island";
 import { AppShellTopbar } from "./app-shell-topbar";
@@ -493,6 +494,7 @@ export default function AppShell() {
 
   return (
     <>
+      <AppleQolBoot />
       <a className="soft-skip-link" href="#main-content">
         Skip to main content
       </a>

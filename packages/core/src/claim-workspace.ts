@@ -1,5 +1,14 @@
 import type { PoolClient } from "@neondatabase/serverless";
 
+export async function peekClaimableFrcTeam(client: PoolClient, teamNumber: number): Promise<boolean> {
+  if (!Number.isInteger(teamNumber) || teamNumber < 1 || teamNumber > 99999) return false;
+  const result = await client.query<{ claimable: boolean }>(
+    `SELECT peek_claimable_frc_team($1::int) AS claimable`,
+    [teamNumber],
+  );
+  return Boolean(result.rows[0]?.claimable);
+}
+
 export async function claimFrcTeamWorkspace(
   client: PoolClient,
   actorUserId: string,

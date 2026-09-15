@@ -329,7 +329,7 @@ export const CAD_MULTITASK_DECOMPOSE_INSTRUCTIONS = [
   'Reply with ONLY one JSON object, no markdown fences: {"tasks":[{"id":"t1","title":"..."}]}',
   "Split the brief into 2 to 6 independent sub-tasks (e.g. plate outline / hole pattern / corner fillets / pocketing).",
   "Each sub-task must be buildable from these primitives: " + CAD_PLAN_PRIMITIVES.join("; ") + ".",
-  "Each title is one concrete deliverable. They will run sequentially through one Onshape session and share one step budget.",
+  "Each title is one concrete deliverable. Each task spins up its own CAD subagent with its own step budget, then applies geometry in order on one Onshape Part Studio.",
 ].join("\n");
 
 export function cadPlanExecutionPreamble(input: {
@@ -355,8 +355,9 @@ export function cadPlanExecutionPreamble(input: {
 
 export function cadMultitaskExecutionPreamble(task: CadTask, position: number, total: number): string {
   return [
-    `Sub-task ${position} of ${total}: ${task.title} (id ${task.id}).`,
-    "Work ONLY on this sub-task now. Sub-tasks run sequentially through one Onshape session.",
+    `Subagent ${position} of ${total}: ${task.title} (id ${task.id}).`,
+    "You are one spawned CAD subagent. Work ONLY on this sub-task. Other subagents handle the rest.",
+    "Geometry still applies to one shared Onshape Part Studio, so stay inside this deliverable.",
     "When this sub-task's geometry is done (or blocked), reply with a final message summarising exactly what happened for this sub-task.",
   ].join("\n");
 }

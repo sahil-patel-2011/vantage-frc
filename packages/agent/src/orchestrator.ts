@@ -11,9 +11,9 @@ import {
   annotateToolOutput,
   attachDataSourceNote,
   planChatToolCalls,
-  toolOutputsToContextContent,
   type AnnotatedToolOutput,
 } from "./auto-tools";
+import { assembleChatCompletionContext, chatWorkingTodoRunId } from "./chat-working-memory";
 import { loadToolDataSourceNote } from "./data-source-note";
 import { toolUsesOrgData } from "./feature-context";
 import {
@@ -21,6 +21,7 @@ import {
   loadOrgSessionFacts,
 } from "./org-session-context";
 import { loadOrgAgentRulesContextItem } from "./org-agent-rules";
+import { listWorkingTodos } from "./working-todos";
 
 export type ClaimClassification="hard_metric"|"scout_observation"|"researched_claim"|"model_inference";
 export type ContextSource=ContextItem&{classification:ClaimClassification|"private_memory"|"team_memory"|"artifact"|"github_file"|"vscode_selection";sourceUrl?:string;observedAt?:string;label?:string};
@@ -164,7 +165,21 @@ export class AIOrchestrator{
         ...(teamRulesItem?[teamRulesItem]:[]),
         ...request.contextSources,
       ];
-      const context=buildUnifiedContext(contextSourcesWithSession,request.tokenBudget??4000);
+      const tokenBudget=request.tokenBudget??4000;
+      const context=buildUnifiedContext(contextSourcesWithSession,tokenBudget);
+      const chatTodos=await listWorkingTodos(this.client,{
+        orgId:request.orgId,
+        userId:request.userId,
+        scope:"chat",
+        runId:chatWorkingTodoRunId(request.threadId),
+      });
+      const completionContext=(tools:AnnotatedToolOutput[])=>assembleChatCompletionContext({
+        message:request.message,
+        items:context.items,
+        todos:chatTodos,
+        toolOutputs:tools,
+        tokenBudget,
+      });
       const history=request.conversationHistory??[];
       const historyTokens=history.reduce((sum,item)=>sum+Math.ceil(item.content.length/4)+4,0);
       const historyProvenance=history.map((item,index)=>({
@@ -175,7 +190,7 @@ export class AIOrchestrator{
         sourceUrl:undefined as string|undefined,
         observedAt:undefined as string|undefined,
       }));
-      await this.client.query(`INSERT INTO ai_run_steps(org_id,run_id,sequence,kind,input,output,provenance) VALUES($1,$2,$3,'context',$4::jsonb,$5::jsonb,$6::jsonb)`,[request.orgId,runId,sequence++,JSON.stringify({tokenBudget:request.tokenBudget??4000,historyTurns:history.length}),JSON.stringify({estimatedTokens:context.estimatedTokens+historyTokens}),JSON.stringify([...context.provenance,...historyProvenance])]);
+      await this.client.query(`INSERT INTO ai_run_steps(org_id,run_id,sequence,kind,input,output,provenance) VALUES($1,$2,$3,'context',$4::jsonb,$5::jsonb,$6::jsonb)`,[request.orgId,runId,sequence++,JSON.stringify({tokenBudget,historyTurns:history.length,chatTodos:chatTodos.length}),JSON.stringify({estimatedTokens:context.estimatedTokens+historyTokens}),JSON.stringify([...context.provenance,...historyProvenance])]);
       let dataSourceNote:Awaited<ReturnType<typeof loadToolDataSourceNote>>|null=null;
       const annotatedTools:AnnotatedToolOutput[]=[];
       const executeCalls=async(calls:Array<{name:string;input:unknown}>)=>{
@@ -193,13 +208,13 @@ export class AIOrchestrator{
       if(!nativeToolPlanning)await executeCalls(plannedToolCalls);
       const candidateNames=new Set(fallbackToolCalls.map((call)=>call.name));
       const nativeDefinitions=this.registry.list().filter((tool)=>candidateNames.has(tool.name));
-      const deterministicToolTokens=nativeToolPlanning?0:toolOutputsToContextContent(annotatedTools).reduce((sum,item)=>sum+Math.ceil(item.content.length/4),0);
+      const deterministicToolTokens=nativeToolPlanning?0:completionContext(annotatedTools).reduce((sum,item)=>sum+Math.ceil(item.content.length/4),0);
       const basePromptTokens=Math.ceil(request.message.length/4)+context.estimatedTokens+historyTokens+deterministicToolTokens;
       const estimatedPromptTokens=basePromptTokens*(nativeToolPlanning?2:1);
       const estimatedCompletionTokens=nativeToolPlanning?1400:700;
       const estimatedCostUsd=estimateAdapterCostUsd(request.adapter,estimatedPromptTokens,estimatedCompletionTokens);
       const text=await meteredAI({client:this.client,orgId:request.orgId,userId:request.userId,feature:usageFeature,requestId:request.requestId,estimatedCostUsd,estimatedPromptTokens,estimatedCompletionTokens,provider:request.adapter.provider,model:request.adapter.model,billingOwner,metadata:{runId,threadId:request.threadId,activeEventKey:active,contextSources:[...context.provenance,...historyProvenance],tools:fallbackToolCalls.map((item)=>({name:item.name})),toolPlanning:nativeToolPlanning?"provider_native":"deterministic",usageTag:fallbackToolCalls.some((t)=>t.name.startsWith("scouting."))?"chat.scouting":fallbackToolCalls.some((t)=>t.name.startsWith("strategy."))?"chat.strategy":fallbackToolCalls.length?"chat.tools":"chat",promptCachingEnabled:request.promptCachingEnabled??true},invoke:async()=>{
-        const first=await request.adapter.complete({message:request.message,context:nativeToolPlanning?context.items:[...context.items,...toolOutputsToContextContent(annotatedTools)],history,tools:nativeToolPlanning?nativeDefinitions:undefined,promptCachingEnabled:request.promptCachingEnabled});
+        const first=await request.adapter.complete({message:request.message,context:nativeToolPlanning?completionContext([]):completionContext(annotatedTools),history,tools:nativeToolPlanning?nativeDefinitions:undefined,promptCachingEnabled:request.promptCachingEnabled});
         if(!nativeToolPlanning||!first.toolCalls?.length){
           return{value:first.text,...first,provider:request.adapter.provider,model:request.adapter.model};
         }
@@ -208,7 +223,7 @@ export class AIOrchestrator{
           if(!candidateNames.has(call.name))throw new Error(`AI tool is not authorized for this request: ${call.name}`);
         }
         await executeCalls(plannedToolCalls);
-        const second=await request.adapter.complete({message:request.message,context:[...context.items,...toolOutputsToContextContent(annotatedTools)],history,promptCachingEnabled:request.promptCachingEnabled});
+        const second=await request.adapter.complete({message:request.message,context:completionContext(annotatedTools),history,promptCachingEnabled:request.promptCachingEnabled});
         return{
           value:second.text,
           text:second.text,

@@ -3612,7 +3612,7 @@ export const autonomousAgentRuns = pgTable(
     provider: text("provider"),
     model: text("model"),
     stepCount: integer("step_count").notNull().default(0),
-    maxSteps: integer("max_steps").notNull().default(8),
+    maxSteps: integer("max_steps").notNull().default(24),
     finalAnswer: text("final_answer"),
     errorClass: text("error_class"),
     errorMessage: text("error_message"),

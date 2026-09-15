@@ -1,4 +1,5 @@
 import {
+  cancelAutonomousRun,
   createVantageToolRegistry,
   getOrgPromptCachingEnabled,
   getAutonomousRunWithSteps,
@@ -74,6 +75,7 @@ export async function POST(request: Request) {
       orgId?: string;
       goal?: string;
       maxSteps?: number;
+      runId?: string;
     };
     if (!body.orgId) return Response.json({ error: "orgId is required" }, { status: 400 });
     const goal = String(body.goal ?? "").trim();
@@ -99,6 +101,7 @@ export async function POST(request: Request) {
         adapter,
         requestId: crypto.randomUUID(),
         maxSteps: body.maxSteps,
+        runId: body.runId?.trim() || undefined,
         registry: createVantageToolRegistry(),
         promptCachingEnabled,
       });
@@ -111,6 +114,42 @@ export async function POST(request: Request) {
       };
     });
     return Response.json(data, { status: 201 });
+  } catch (error) {
+    return fail(error);
+  }
+}
+
+export async function PATCH(request: Request) {
+  try {
+    const session = await current();
+    const body = (await request.json()) as {
+      orgId?: string;
+      runId?: string;
+      action?: string;
+    };
+    if (!body.orgId) return Response.json({ error: "orgId is required" }, { status: 400 });
+    const runId = body.runId?.trim() ?? "";
+    if (!runId) return Response.json({ error: "runId is required" }, { status: 400 });
+    if (body.action !== "cancel") {
+      return Response.json({ error: "action must be cancel" }, { status: 400 });
+    }
+    const orgId = body.orgId;
+    const data = await withRls({ userId: session.user.id, orgId }, async (client) => {
+      const membership = await client.query("SELECT 1 FROM memberships WHERE org_id=$1::uuid", [orgId]);
+      if (!membership.rowCount) throw new Error("Organization access denied");
+      const cancelled = await cancelAutonomousRun(client, {
+        orgId,
+        userId: session.user.id,
+        runId,
+      });
+      if (cancelled) return { run: cancelled, cancelled: true };
+      const detail = await getAutonomousRunWithSteps(client, orgId, runId);
+      if (!detail || detail.run.userId !== session.user.id) {
+        throw new Error("Autonomous run not found");
+      }
+      return { run: detail.run, cancelled: detail.run.status === "cancelled" };
+    });
+    return Response.json(data);
   } catch (error) {
     return fail(error);
   }

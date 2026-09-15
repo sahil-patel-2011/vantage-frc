@@ -8,7 +8,14 @@ import { MeteredAiCutoffBanner } from "../../components/metered-ai-cutoff-banner
 import { SponsoredPromoBanner } from "../../components/sponsored-promo-banner";
 import { AIAttribution, ModelProvenance, Button } from "../../components/ui";
 import { resolveCutoffErrorCode, UsageCutoffBanner } from "../../components/usage-cutoff-banner";
+import {
+  autonomousCancelBody,
+  autonomousStartBody,
+  isAutonomousRunLive,
+} from "../../lib/agent/autonomous-live-poll";
 import { hubHref } from "../../lib/nav/hubs";
+import { AutonomousTodoList, type AutonomousTodoItem } from "./autonomous-todo-list";
+import { useAutonomousLivePoll } from "./use-autonomous-live-poll";
 import "./autonomous-agent.css";
 
 type RunSummary = {
@@ -116,6 +123,9 @@ export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
   const [webSearchConfigured, setWebSearchConfigured] = useState(false);
   const [webBrowseEnabled, setWebBrowseEnabled] = useState(true);
   const [generatedAt, setGeneratedAt] = useState<string | null>(null);
+  const [todos, setTodos] = useState<AutonomousTodoItem[]>([]);
+  const [todosSetupRequired, setTodosSetupRequired] = useState(false);
+  const livePoll = useAutonomousLivePoll();
 
   const loadRuns = useCallback(async () => {
     setLoading(true);
@@ -167,6 +177,23 @@ export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
       setSelectedId(runId);
       setSelectedRun(data.run ?? null);
       setSteps(data.steps ?? []);
+      try {
+        const todoRes = await fetch(
+          `/api/agent/todos?orgId=${encodeURIComponent(orgId)}&runId=${encodeURIComponent(runId)}&scope=autonomous`,
+        );
+        const todoData = (await todoRes.json()) as {
+          todos?: AutonomousTodoItem[];
+          setup_required?: boolean;
+          code?: string;
+        };
+        setTodosSetupRequired(
+          todoData.setup_required === true || todoData.code === "setup_required" || todoRes.status === 503,
+        );
+        setTodos(todoRes.ok ? (todoData.todos ?? []) : []);
+      } catch {
+        setTodosSetupRequired(false);
+        setTodos([]);
+      }
     },
     [orgId],
   );
@@ -175,6 +202,44 @@ export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
     void loadRuns();
   }, [loadRuns]);
 
+  function applyLiveTick(tick: {
+    run: {
+      id: string;
+      goal: string;
+      status: string;
+      finishedAt: string | null;
+      provider?: string | null;
+      model?: string | null;
+      stepCount?: number;
+      finalAnswer?: string | null;
+      errorClass?: string | null;
+      errorMessage?: string | null;
+    };
+    steps: unknown[];
+    todos: AutonomousTodoItem[];
+    todosSetupRequired: boolean;
+  }) {
+    setSelectedId(tick.run.id);
+    setSelectedRun((prev) => ({
+      id: tick.run.id,
+      goal: tick.run.goal || prev?.goal || goal,
+      status: tick.run.status,
+      provider: tick.run.provider ?? prev?.provider ?? null,
+      model: tick.run.model ?? prev?.model ?? null,
+      stepCount: Array.isArray(tick.steps) ? tick.steps.length : (tick.run.stepCount ?? prev?.stepCount ?? 0),
+      finalAnswer: tick.run.finalAnswer ?? prev?.finalAnswer ?? null,
+      errorClass: tick.run.errorClass ?? prev?.errorClass ?? null,
+      errorMessage: tick.run.errorMessage ?? prev?.errorMessage ?? null,
+      startedAt: prev?.startedAt ?? new Date().toISOString(),
+      finishedAt: tick.run.finishedAt,
+    }));
+    if (Array.isArray(tick.steps) && tick.steps.length) {
+      setSteps(tick.steps as StepRow[]);
+    }
+    setTodos(tick.todos);
+    setTodosSetupRequired(tick.todosSetupRequired);
+  }
+
   async function onRun() {
     const trimmed = goal.trim();
     if (!trimmed || busy) return;
@@ -182,11 +247,37 @@ export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
     setError(null);
     setErrorCode(null);
     setCutoffCode(null);
+    setTodos([]);
+    setTodosSetupRequired(false);
+    setSteps([]);
+    const resumeId =
+      selectedRun && isAutonomousRunLive(selectedRun) && selectedRun.goal.trim() === trimmed
+        ? selectedRun.id
+        : undefined;
+    setSelectedRun({
+      id: resumeId ?? "",
+      goal: trimmed,
+      status: "running",
+      provider: null,
+      model: null,
+      stepCount: 0,
+      finalAnswer: null,
+      errorClass: null,
+      errorMessage: null,
+      startedAt: new Date().toISOString(),
+      finishedAt: null,
+    });
+    const poll = livePoll.start({
+      orgId,
+      goal: trimmed,
+      runId: resumeId,
+      onTick: applyLiveTick,
+    });
     try {
       const response = await fetch("/api/agent/autonomous", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ orgId, goal: trimmed, maxSteps: 8 }),
+        body: JSON.stringify(autonomousStartBody({ orgId, goal: trimmed, runId: resumeId })),
       });
       setHttpStatus(response.status);
       const data = (await response.json()) as {
@@ -196,6 +287,7 @@ export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
         steps?: StepRow[];
         run?: RunSummary | null;
         persistedSteps?: StepRow[];
+        resumed?: boolean;
         error?: string;
         code?: string;
         message?: string;
@@ -203,10 +295,17 @@ export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
         provider?: string;
         model?: string;
       };
+      livePoll.stop();
       if (!response.ok) {
         setError(data.error ?? data.message ?? "Agent run failed");
         setErrorCode(data.code ?? null);
         setCutoffCode(resolveCutoffErrorCode(response.status, data) ?? null);
+        if (data.code === "setup_required" || data.setupRequired || data.status === "setup_required") {
+          setErrorCode("setup_required");
+          setSelectedRun((prev) =>
+            prev ? { ...prev, status: "setup_required", finishedAt: prev.finishedAt ?? new Date().toISOString() } : prev,
+          );
+        }
         return;
       }
       setGeneratedAt(new Date().toISOString());
@@ -225,19 +324,46 @@ export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
             errorClass: data.setupRequired ? "setup_required" : null,
             errorMessage: null,
             startedAt: new Date().toISOString(),
-            finishedAt: new Date().toISOString(),
+            finishedAt: data.status === "running" ? null : new Date().toISOString(),
           },
         );
         setSteps(data.persistedSteps ?? data.steps ?? []);
+        await loadRunDetail(data.runId);
       }
       if (data.setupRequired || data.status === "setup_required") {
         setErrorCode("setup_required");
       }
     } catch (err) {
+      livePoll.stop();
+      if (err instanceof DOMException && err.name === "AbortError") return;
       setError(err instanceof Error ? err.message : "Agent run failed");
     } finally {
+      livePoll.stop();
+      void poll.catch(() => undefined);
       setBusy(false);
     }
+  }
+
+  async function onStop() {
+    livePoll.stop();
+    const runId = selectedRun?.id?.trim();
+    if (runId) {
+      try {
+        await fetch("/api/agent/autonomous", {
+          method: "PATCH",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(autonomousCancelBody({ orgId, runId })),
+        });
+      } catch {
+        // POST/poll still settle the row; the button must unblock the composer.
+      }
+      setSelectedRun((prev) =>
+        prev && prev.id === runId
+          ? { ...prev, status: "cancelled", finishedAt: prev.finishedAt ?? new Date().toISOString() }
+          : prev,
+      );
+    }
+    setBusy(false);
   }
 
   const shell = classifyShell({ loading, status: httpStatus, error, code: errorCode });
@@ -319,12 +445,24 @@ export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
           maxLength={4000}
         />
         <div className="aa-compose-actions">
-          <Button variant="primary" type="button" onClick={() => void onRun()} disabled={busy || !goal.trim()}>
+          <Button
+            variant="primary"
+            type="button"
+            className="qol-press"
+            onClick={() => void onRun()}
+            disabled={busy || !goal.trim()}
+          >
             {busy ? "Running…" : "Run this goal"}
           </Button>
-          <Button variant="secondary" type="button" onClick={() => void loadRuns()} disabled={busy}>
-            Refresh history
-          </Button>
+          {busy ? (
+            <Button variant="secondary" type="button" className="qol-press" onClick={() => void onStop()}>
+              Stop
+            </Button>
+          ) : (
+            <Button variant="secondary" type="button" onClick={() => void loadRuns()} disabled={busy}>
+              Refresh history
+            </Button>
+          )}
         </div>
       </section>
 
@@ -339,11 +477,11 @@ export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
             <p className="aa-muted">No runs yet for this team.</p>
           ) : (
             <ul className="aa-run-list">
-              {runs.map((run) => (
-                <li key={run.id}>
+              {runs.map((run, index) => (
+                <li key={run.id} className="qol-stagger-row" style={{ ["--qol-i" as string]: index }}>
                   <button
                     type="button"
-                    className={selectedId === run.id ? "aa-run active" : "aa-run"}
+                    className={selectedId === run.id ? "aa-run active qol-press" : "aa-run qol-press"}
                     onClick={() => void loadRunDetail(run.id)}
                   >
                     <strong>{run.goal.slice(0, 80)}{run.goal.length > 80 ? "…" : ""}</strong>
@@ -386,9 +524,14 @@ export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
                   {selectedRun.errorMessage}
                 </p>
               ) : null}
+              <AutonomousTodoList todos={todos} setupRequired={todosSetupRequired} selected />
               <ol className="aa-steps">
-                {steps.map((step) => (
-                  <li key={`${step.sequence}-${step.kind}-${step.toolName ?? ""}`}>
+                {steps.map((step, index) => (
+                  <li
+                    key={`${step.sequence}-${step.kind}-${step.toolName ?? ""}`}
+                    className="qol-stagger-row"
+                    style={{ ["--qol-i" as string]: index }}
+                  >
                     <div className="aa-step-head">
                       <strong>
                         #{step.sequence} {labelAgentStepKind(step.kind)}

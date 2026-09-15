@@ -61,7 +61,9 @@ import {
   writeStoredAssemblyElementId,
   writeStoredVariableStudioElementId,
 } from "./cad-session";
+import { mergeCadLiveSession } from "../../lib/cad/cad-live-poll";
 import { CadReadyView } from "./cad-ready-view";
+import { useCadLivePoll } from "./use-cad-live-poll";
 import { type CadToolRow } from "./cad-tools-panel";
 import "./cad-agent.css";
 import "./cad-setup.css";
@@ -312,6 +314,12 @@ export default function CadWorkspace({
         : prev,
     );
   }
+
+  const applyLiveSession = useCallback((incoming: AgentState) => {
+    setState((prev) => mergeCadLiveSession(prev, incoming));
+  }, []);
+
+  useCadLivePoll({ orgId, busy, apply: applyLiveSession });
 
   function applyShadedPng(png: unknown) {
     if (typeof png === "string" && png.trim()) {
@@ -605,7 +613,7 @@ export default function CadWorkspace({
     : mode === "plan"
       ? "Plan mode: the agent plans and asks before building"
       : mode === "multitask"
-        ? "Multitask mode: sub-tasks run one at a time"
+        ? "Multitask mode: each sub-task spins up its own CAD subagent"
         : "Ctrl+Enter to send";
 
   async function onAppendComposer(payload: Record<string, unknown>) {

@@ -19,6 +19,14 @@ import {
   type KickoffIntelligenceRecord,
   type StrategyAdviceBundle,
 } from "../../../../lib/kickoff-intelligence";
+import {
+  buildStandardSeasonForecast,
+  canRunDeepKickoffAnalysis,
+  deepAnalysisForbiddenMessage,
+  forecastToIntelligenceSummary,
+  kickoffIntelligenceEmptyMessage,
+  KICKOFF_STANDARD_MODEL,
+} from "../../../../lib/kickoff/season-forecast";
 import { failMeteredAi } from "../../../../lib/metered-ai-fail";
 
 class HttpError extends Error {
@@ -39,6 +47,14 @@ async function requireSession() {
 async function requireMembership(client: PoolClient, orgId: string, userId: string) {
   const row = await client.query(`SELECT 1 FROM memberships WHERE org_id = $1 AND user_id = $2 LIMIT 1`, [orgId, userId]);
   if (!row.rowCount) throw new HttpError(403, "Organization membership required");
+}
+
+async function loadOrgTeamNumber(client: PoolClient, orgId: string): Promise<number | null> {
+  const row = await client.query<{ teamNumber: number | null }>(
+    `SELECT team_number AS "teamNumber" FROM organizations WHERE id = $1::uuid`,
+    [orgId],
+  );
+  return row.rows[0]?.teamNumber ?? null;
 }
 
 function fail(error: unknown) {
@@ -305,13 +321,15 @@ export async function GET(request: Request) {
 
     const payload = await withRls({ userId: session.user.id, orgId }, async (client) => {
       await requireMembership(client, orgId, session.user.id);
+      const teamNumber = await loadOrgTeamNumber(client, orgId);
+      const canDeepAnalyze = canRunDeepKickoffAnalysis(teamNumber);
       const records = await loadRecords(client, orgId, seasonYear);
       return {
         status: records.length ? ("ready" as const) : ("empty" as const),
-        message: records.length
-          ? null
-          : "Upload a game manual excerpt or kickoff transcript to generate the season intelligence summary.",
+        message: records.length ? null : kickoffIntelligenceEmptyMessage(canDeepAnalyze),
         records,
+        canDeepAnalyze,
+        teamNumber,
       };
     });
 
@@ -332,6 +350,102 @@ export async function POST(request: Request) {
 
       switch (action.action) {
         case "analyze": {
+          const teamNumber = await loadOrgTeamNumber(client, action.orgId);
+          switch (action.mode) {
+            case "standard": {
+              const forecast = buildStandardSeasonForecast(action.seasonYear);
+              const summary = forecastToIntelligenceSummary(forecast);
+              const priorCapabilities = await loadPriorCapabilities(client, action.orgId, action.seasonYear);
+              const strategy = buildStrategyFromIntelligence({ summary, priorCapabilities });
+              const cadSeed = buildCadBriefFromIntelligence({ summary, strategy });
+              const ingest = {
+                seasonYear: action.seasonYear,
+                manualText: `${KICKOFF_STANDARD_MODEL}:${action.seasonYear}`,
+                transcriptText: "",
+                sourceUrl: null,
+              };
+
+              const inserted = await client.query<{ id: string }>(
+                `INSERT INTO kickoff_game_intelligence (
+                   org_id, season_year, status, title, summary, strategy_advice,
+                   design_priorities_draft, cad_brief_request, ai_run_id, ai_artifact_id,
+                   provider, model, source_manual_excerpt, source_transcript_excerpt,
+                   source_url, source_checksum, advice_label, created_by
+                 ) VALUES (
+                   $1, $2, 'ready', $3, $4::jsonb, $5::jsonb, $6::jsonb, $7,
+                   NULL, NULL, 'local', $8, $9, '', NULL, $10, $11, $12
+                 ) RETURNING id`,
+                [
+                  action.orgId,
+                  action.seasonYear,
+                  forecast.title,
+                  JSON.stringify(summary),
+                  JSON.stringify(strategy),
+                  JSON.stringify(strategy.designPriorities),
+                  cadSeed.request,
+                  KICKOFF_STANDARD_MODEL,
+                  excerpt(forecast.overview),
+                  sourceChecksum(ingest),
+                  KICKOFF_ADVICE_LABEL,
+                  userId,
+                ],
+              );
+              const intelligenceId = inserted.rows[0]!.id;
+
+              let applied: { scoringActions: number; priorities: number; ruleNotes: number } | null = null;
+              if (action.applyDrafts) {
+                applied = await applyDraftsToWorkspace(client, {
+                  orgId: action.orgId,
+                  userId,
+                  seasonYear: action.seasonYear,
+                  summary,
+                  directions: strategy.designPriorities,
+                });
+                await client.query(
+                  `UPDATE kickoff_game_intelligence
+                   SET status = 'applied', applied_at = now(), updated_at = now()
+                   WHERE id = $1 AND org_id = $2`,
+                  [intelligenceId, action.orgId],
+                );
+              }
+
+              let cadJobId: string | null = null;
+              if (action.createCadBrief) {
+                const cad = await createCadBriefFor(client, {
+                  orgId: action.orgId,
+                  userId,
+                  summary,
+                  strategy,
+                  intelligenceId,
+                });
+                cadJobId = cad.cadJobId;
+                await client.query(
+                  `UPDATE kickoff_game_intelligence
+                   SET cad_job_id = $3, cad_brief_request = $4, updated_at = now()
+                   WHERE id = $1 AND org_id = $2`,
+                  [intelligenceId, action.orgId, cad.cadJobId, cad.request],
+                );
+              }
+
+              const [record] = await loadRecords(client, action.orgId, action.seasonYear);
+              return {
+                ok: true,
+                id: intelligenceId,
+                mode: "standard" as const,
+                adviceLabel: KICKOFF_ADVICE_LABEL,
+                applied,
+                cadJobId,
+                record: record ?? null,
+                summary,
+                strategyAdvice: strategy,
+              };
+            }
+
+            case "deep": {
+              if (!canRunDeepKickoffAnalysis(teamNumber)) {
+                throw new HttpError(403, deepAnalysisForbiddenMessage());
+              }
+
           let manualText = action.manualText ?? "";
           const transcriptText = action.transcriptText ?? "";
           if (action.sourceUrl && !manualText) {
@@ -481,6 +595,7 @@ export async function POST(request: Request) {
           return {
             ok: true,
             id: intelligenceId,
+            mode: "deep" as const,
             adviceLabel: KICKOFF_ADVICE_LABEL,
             applied,
             cadJobId,
@@ -488,6 +603,13 @@ export async function POST(request: Request) {
             summary,
             strategyAdvice: strategy,
           };
+            }
+
+            default: {
+              const exhaustive: never = action.mode;
+              throw new HttpError(400, `Unsupported analysis mode: ${String(exhaustive)}`);
+            }
+          }
         }
 
         case "apply": {

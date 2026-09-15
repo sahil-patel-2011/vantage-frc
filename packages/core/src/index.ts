@@ -1,4 +1,3 @@
-import { createHash, randomBytes } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
@@ -25,6 +24,8 @@ import {
   WAITLIST_ONLY_MESSAGE,
   resolveAuthEmailAccess,
 } from "./auth-access";
+import { currentClaimIntentToken } from "./claim-context";
+import { currentJoinLinkToken } from "./join-link-context";
 import { desktopLinkSessions } from "./desktop-link-plugin";
 
 /**
@@ -110,7 +111,10 @@ function buildAuth() {
     user: {
       create: {
         before: async (user) => {
-          const access = await resolveAuthEmailAccess(user.email);
+          const access = await resolveAuthEmailAccess(user.email, {
+            joinToken: currentJoinLinkToken(),
+            claimToken: currentClaimIntentToken(),
+          });
           if (!access.allowed) {
             throw new Error(WAITLIST_ONLY_MESSAGE);
           }
@@ -140,7 +144,9 @@ function buildAuth() {
       allowedAttempts: OTP_POLICY.allowedAttempts,
       storeOTP: "hashed",
       resendStrategy: "rotate",
-      disableSignUp: true,
+      // Hook above still gates new users (invite, join link, existing, owner).
+      // Email and Google must both be able to create the same users row.
+      disableSignUp: false,
       rateLimit: {
         window: OTP_POLICY.requestWindowSeconds,
         max: OTP_POLICY.requestLimit,
@@ -258,21 +264,12 @@ export async function getActiveContext(client: PoolClient, orgId: string): Promi
     : null;
 }
 
-/** Raw invite tokens are 32-byte base64url (typically 43 chars). Accept a bounded charset so email clients cannot break accept. */
-export const INVITE_TOKEN_PATTERN = /^[A-Za-z0-9_-]{32,128}$/;
-
-export function isInviteTokenShape(token: string | null | undefined): token is string {
-  return Boolean(token && INVITE_TOKEN_PATTERN.test(token.trim()));
-}
-
-export function createInviteToken(): { token: string; tokenHash: string } {
-  const token = randomBytes(32).toString("base64url");
-  return { token, tokenHash: hashInviteToken(token) };
-}
-
-export function hashInviteToken(token: string) {
-  return createHash("sha256").update(token).digest("hex");
-}
+export {
+  INVITE_TOKEN_PATTERN,
+  createInviteToken,
+  hashInviteToken,
+  isInviteTokenShape,
+} from "./invite-token";
 
 export async function writeAdminAction(
   client: PoolClient,
@@ -310,3 +307,7 @@ export * from "./platform-admin";
 export * from "./platform-partners";
 
 export * from "./legal";
+export * from "./claim-context";
+export * from "./claim-intent";
+export * from "./join-link-context";
+export * from "./join-links";

@@ -87,6 +87,7 @@ describe("structureGameIntelligence", () => {
     expect(summary.designDirections.length).toBeGreaterThanOrEqual(3);
     expect(summary.designDirections.every((direction) => direction.adviceLabel === KICKOFF_ADVICE_LABEL)).toBe(true);
     expect(summary.provenance.provider).toBe("local");
+    expect(summary.provenance.analysisMode).toBe("deep");
     expect(summary.provenance.sourceKinds).toEqual(expect.arrayContaining(["manual", "transcript"]));
     expectPlainCopy(summary.provenance.disclaimer);
   });
@@ -150,10 +151,31 @@ describe("buildCadBriefFromIntelligence", () => {
 });
 
 describe("parseKickoffIntelligenceAction", () => {
-  it("requires at least one source for analyze", () => {
+  it("requires at least one source for deep analyze", () => {
     expect(() =>
       parseKickoffIntelligenceAction({ action: "analyze", orgId: ORG, seasonYear: 2027 }),
     ).toThrow(/manual|transcript|URL/i);
+  });
+
+  it("allows standard analyze with no upload", () => {
+    expect(
+      parseKickoffIntelligenceAction({
+        action: "analyze",
+        mode: "standard",
+        orgId: ORG,
+        seasonYear: 2027,
+      }),
+    ).toEqual({
+      action: "analyze",
+      mode: "standard",
+      orgId: ORG,
+      seasonYear: 2027,
+      manualText: null,
+      transcriptText: null,
+      sourceUrl: null,
+      createCadBrief: false,
+      applyDrafts: false,
+    });
   });
 
   it("parses analyze / apply / create_cad_brief", () => {
@@ -168,6 +190,7 @@ describe("parseKickoffIntelligenceAction", () => {
       }),
     ).toEqual({
       action: "analyze",
+      mode: "deep",
       orgId: ORG,
       seasonYear: 2027,
       manualText: null,

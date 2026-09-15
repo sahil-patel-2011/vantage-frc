@@ -268,7 +268,7 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
           </>
         }
         title="Pit TV boards"
-        description="Pick a preset, save a board, then pair a TV or Raspberry Pi with a read-only token. Empty boards stay empty until TBA, Strategy, and Pit ops sync real data."
+        description="Pick a preset, save a board, then pair a TV or Raspberry Pi with a read-only token. Empty boards stay empty until official scores, Strategy, and Pit ops sync."
       />
 
       <div className="disp-related">
@@ -296,7 +296,7 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
         </EmptyState>
       ) : (
         <div className="disp-stack">
-          <NextActionsPanel actions={nextActions} />
+          {boards.length > 0 && activeEventKey ? <NextActionsPanel actions={nextActions} /> : null}
 
           <section className="display-steps" aria-label="Display setup steps">
             <article className={step >= 1 ? "active" : undefined}>
@@ -316,7 +316,19 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
             </article>
           </section>
 
-          {!loading && !activeEventKey ? (
+          {!loading && !boards.length ? (
+            <EmptyState
+              soft
+              title="Create your first display board"
+              description="Choose a preset below and save. Countdowns, ranks, and predictions stay blank until official scores land on this event."
+            >
+              <Button as="a" variant="primary" href="#display-new-board">
+                Name this board
+              </Button>
+            </EmptyState>
+          ) : null}
+
+          {!loading && boards.length > 0 && !activeEventKey ? (
             <EmptyState
               soft
               title="No active event yet"
@@ -324,18 +336,6 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
             >
               <Button as="a" variant="primary" href={hubHref("/competition", "command", orgId)}>
                 Open Event Day
-              </Button>
-            </EmptyState>
-          ) : null}
-
-          {!loading && !boards.length ? (
-            <EmptyState
-              soft
-              title="Create your first display board"
-              description="Choose a preset below and save. Countdowns, ranks, and predictions stay blank until this board has an event."
-            >
-              <Button as="a" variant="primary" href="#display-new-board">
-                Name this board
               </Button>
             </EmptyState>
           ) : null}
@@ -573,7 +573,7 @@ function NextActionsPanel({
     <Panel className="disp-next-actions">
       <header>
         <h2>Next actions</h2>
-        <p>Real Event Day and Strategy paths only — boards stay blank until TBA and scored data exist.</p>
+        <p>Real Event Day and Strategy paths only — boards stay blank until official scores exist.</p>
       </header>
       <ol>
         {actions.map((action) => (

@@ -6,7 +6,10 @@ import {
   configuredPlatformOwnerEmail,
   isDatabaseConfigured,
   normalizeEmail,
+  resolveAuthSecret,
 } from "./access-policy";
+import { parseClaimIntentToken } from "./claim-intent";
+import { hashInviteToken, isInviteTokenShape } from "./invite-token";
 
 export const WAITLIST_ONLY_MESSAGE =
   "Vantage is waitlist-only right now. Join the waitlist for access, or sign in with an authorized account.";
@@ -15,6 +18,8 @@ export type AuthEmailAccessReason =
   | "platform_owner"
   | "existing_user"
   | "pending_invite"
+  | "open_join_link"
+  | "coach_claim"
   | "denied";
 
 export type AuthEmailAccess = {
@@ -34,9 +39,13 @@ export function isPlatformOwnerEmail(email: string) {
 
 /**
  * Resolve whether an email may authenticate under waitlist-only policy.
- * Allowed: platform owner, existing user, or non-expired pending invite.
+ * Allowed: platform owner, existing user, pending invite, open join link,
+ * or a signed coach-claim intent for an unused official team number.
  */
-export async function resolveAuthEmailAccess(email: string): Promise<AuthEmailAccess> {
+export async function resolveAuthEmailAccess(
+  email: string,
+  options?: { joinToken?: string | null; claimToken?: string | null },
+): Promise<AuthEmailAccess> {
   const normalized = normalizeEmail(email);
   if (!normalized) {
     return { allowed: false, reason: "denied", email: normalized };
@@ -72,6 +81,33 @@ export async function resolveAuthEmailAccess(email: string): Promise<AuthEmailAc
     );
     if (invite.rows[0]) {
       return { allowed: true, reason: "pending_invite", email: normalized };
+    }
+
+    const joinToken = options?.joinToken?.trim() ?? "";
+    if (isInviteTokenShape(joinToken)) {
+      const join = await pool.query<{ id: string }>(
+        `SELECT id FROM team_join_links
+          WHERE token_hash = $1
+            AND revoked_at IS NULL
+            AND expires_at > now()
+            AND use_count < max_uses
+          LIMIT 1`,
+        [hashInviteToken(joinToken)],
+      );
+      if (join.rows[0]) {
+        return { allowed: true, reason: "open_join_link", email: normalized };
+      }
+    }
+
+    const claimTeamNumber = parseClaimIntentToken(options?.claimToken, resolveAuthSecret());
+    if (claimTeamNumber != null) {
+      const claimable = await pool.query<{ claimable: boolean }>(
+        `SELECT peek_claimable_frc_team($1::int) AS claimable`,
+        [claimTeamNumber],
+      );
+      if (claimable.rows[0]?.claimable) {
+        return { allowed: true, reason: "coach_claim", email: normalized };
+      }
     }
 
     return { allowed: false, reason: "denied", email: normalized };

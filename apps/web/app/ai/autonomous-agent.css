@@ -219,3 +219,53 @@
   color: var(--muted);
   font-size: 13px;
 }
+.aa-todos {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 14px;
+}
+.aa-todos h3 {
+  margin: 0;
+  font-size: var(--title-3);
+}
+.aa-todo-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.aa-todo {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 8px;
+  align-items: center;
+  min-height: 36px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+}
+.aa-todo-mark {
+  color: var(--muted);
+  font-weight: 700;
+}
+.aa-todo--done .aa-todo-mark {
+  color: var(--accent);
+}
+.aa-todo-status {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.aa-todo-setup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}

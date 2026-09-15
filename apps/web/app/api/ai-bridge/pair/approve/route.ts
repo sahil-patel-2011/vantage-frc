@@ -37,8 +37,8 @@ export async function POST(request: Request) {
     const tokenHash = createHash("sha256").update(token).digest("hex");
     const encrypted = await encryptSecret(token, createKms());
     const device = await relay.query<{ id: string }>(
-      `INSERT INTO ai_bridge_devices(org_id, paired_by, name, token_hash, bridge_version, status, last_heartbeat_at)
-       VALUES($1,$2,$3,$4,$5,'paired',now()) RETURNING id`,
+      `INSERT INTO ai_bridge_devices(org_id, paired_by, name, token_hash, bridge_version, status, last_heartbeat_at, coverage)
+       VALUES($1,$2,$3,$4,$5,'paired',now(),'everything') RETURNING id`,
       [body.orgId, session.user.id, row.machine_name, tokenHash, row.bridge_version],
     );
     await relay.query(

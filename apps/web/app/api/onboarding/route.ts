@@ -1,6 +1,13 @@
-import { auth, completeOnboarding, getOnboardingState, saveOnboardingProgress } from "@vantage/core";
+import {
+  auth,
+  completeOnboarding,
+  getOnboardingState,
+  JOIN_LINK_COOKIE,
+  saveOnboardingProgress,
+  tryRedeemTeamJoinLink,
+} from "@vantage/core";
 import { withRls } from "@vantage/db";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { z } from "zod";
 import { anonymizeIp, clientIp, createRateLimiter, rateLimitedResponse } from "../../../lib/rate-limit";
 import { parseSecureJson, securityErrorResponse } from "../../../lib/security/request";
@@ -76,9 +83,12 @@ export async function GET() {
   const current = await session();
   if (!current) return Response.json({ error: "Unauthorized" }, { status: 401 });
   try {
-    const state = await withRls({ userId: current.user.id }, (client) =>
-      getOnboardingState(client, current.user.id),
-    );
+    const jar = await cookies();
+    const joinToken = jar.get(JOIN_LINK_COOKIE)?.value ?? null;
+    const state = await withRls({ userId: current.user.id }, async (client) => {
+      await tryRedeemTeamJoinLink(client, joinToken);
+      return getOnboardingState(client, current.user.id);
+    });
     return privateJson(state);
   } catch (error) {
     return Response.json(

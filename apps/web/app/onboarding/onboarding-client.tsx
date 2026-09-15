@@ -40,6 +40,7 @@ import {
 } from "./onboarding-model";
 import { PendingPanel } from "./onboarding-pending";
 import { PreferencesForm, ProfileForm, TeamForm } from "./onboarding-steps";
+import "../product-styles";
 import "./onboarding-flow.css";
 
 export default function OnboardingClient() {
@@ -212,7 +213,11 @@ export default function OnboardingClient() {
     termsAcceptedAt: state?.termsAcceptedAt,
     privacyAcceptedAt: state?.privacyAcceptedAt,
   });
-  const stepMeta = useMemo(() => buildOnboardingStepMeta(step), [step]);
+  const alreadyOnTeam = Boolean(state?.lockedOrgId && state.accessStatus === "approved");
+  const stepMeta = useMemo(
+    () => buildOnboardingStepMeta(step, alreadyOnTeam, state?.lockedOrgName ?? null),
+    [alreadyOnTeam, state?.lockedOrgName, step],
+  );
   const progressLabel = onboardingProgressLabel(step);
   const membershipNote = onboardingMembershipNote(state?.accessStatus ?? "none", {
     preferredTeamNumber: state?.preferredTeamNumber ?? lookup.teamNumber,

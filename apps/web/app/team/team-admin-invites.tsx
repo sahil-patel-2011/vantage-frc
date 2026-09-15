@@ -44,8 +44,8 @@ export function TeamAdminInvitesPanel({
         <span className="eyebrow">INVITE BY EMAIL</span>
         <h2>Add a teammate</h2>
         <p>
-          Send an invite to one email. They sign in with that address and accept the link. Team
-          numbers never grant access. People without an invite go to the waitlist.
+          Send an invite to one email, or share the open join link above for a whole group. They sign
+          in with Google or that same email — one email is one account. Team numbers never grant access.
         </p>
         {adminTenure?.inviteHint ? (
           <p className="app-muted team-admin-tenure-hint" role="note">
