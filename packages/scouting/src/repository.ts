@@ -7,6 +7,7 @@ import {
   pitSchemaForYear,
   validatePayload,
   type EntryType,
+  type SchemaDefinition,
   type ScoutSchema,
   type SyncEntry,
 } from "./index";
@@ -26,6 +27,81 @@ export type SyncAcknowledgement = {
   table?: string;
   validations: FieldValidation[];
 };
+
+export type EventAnswerRow = {
+  type: EntryType;
+  eventKey: string;
+  matchKey: string | null;
+  teamKey: string;
+  scoutName: string;
+  source: string;
+  confidence: string;
+  updatedAt: string;
+  payload: Record<string, unknown>;
+};
+
+export type EventAnswersList = {
+  eventKey: string | null;
+  matchDefinition: SchemaDefinition | null;
+  pitDefinition: SchemaDefinition | null;
+  rows: EventAnswerRow[];
+};
+
+type PublishedSchemaRow = { type: EntryType; definition: SchemaDefinition };
+
+type AnswerSqlRow = {
+  eventKey: string;
+  matchKey?: string | null;
+  teamKey: string;
+  confidence: string;
+  source: string;
+  updatedAt: Date | string;
+  scoutName: string | null;
+  payload: unknown;
+};
+
+function isoTimestamp(value: unknown): string {
+  if (value instanceof Date && !Number.isNaN(value.getTime())) return value.toISOString();
+  if (typeof value === "string") return value;
+  return "";
+}
+
+function payloadRecord(value: unknown): Record<string, unknown> {
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  if (typeof value === "string" && value.trim()) {
+    try {
+      const parsed: unknown = JSON.parse(value);
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        return parsed as Record<string, unknown>;
+      }
+    } catch {
+      return {};
+    }
+  }
+  return {};
+}
+
+function publishedDefinition(rows: PublishedSchemaRow[], type: EntryType): SchemaDefinition | null {
+  const row = rows.find((item) => item.type === type);
+  if (!row?.definition) return null;
+  return stripScoutIdentityFields(row.definition).definition;
+}
+
+function toEventAnswerRow(type: EntryType, row: AnswerSqlRow): EventAnswerRow {
+  return {
+    type,
+    eventKey: row.eventKey,
+    matchKey: type === "match" ? row.matchKey ?? null : null,
+    teamKey: row.teamKey,
+    scoutName: row.scoutName?.trim() || "",
+    source: row.source,
+    confidence: row.confidence,
+    updatedAt: isoTimestamp(row.updatedAt),
+    payload: payloadRecord(row.payload),
+  };
+}
 
 export class ScoutingRepository {
   constructor(private readonly client: PoolClient) {}
@@ -155,6 +231,63 @@ export class ScoutingRepository {
         [orgId, year, entry.type, JSON.stringify(entry.definition), userId],
       );
     }
+  }
+
+  /**
+   * Every synced match + pit answer for the active event, plus the published
+   * schemas that name the wide CSV columns. No LIMIT — empty event is an empty
+   * list, never placeholder rows.
+   */
+  async listEventAnswers(orgId: string): Promise<EventAnswersList> {
+    const context = await this.client.query<{ activeEventKey: string | null }>(
+      `SELECT active_event_key AS "activeEventKey"
+       FROM org_active_context WHERE org_id = $1::uuid`,
+      [orgId],
+    );
+    const eventKey = context.rows[0]?.activeEventKey ?? null;
+    if (!eventKey) {
+      return { eventKey: null, matchDefinition: null, pitDefinition: null, rows: [] };
+    }
+
+    const [schemas, matchEntries, pitEntries] = await Promise.all([
+      this.client.query<PublishedSchemaRow>(
+        `SELECT DISTINCT ON (type) type, schema AS definition
+         FROM scout_schemas
+         WHERE org_id = $1::uuid AND year = (SELECT year FROM events_ref WHERE event_key = $2)
+         ORDER BY type, version DESC`,
+        [orgId, eventKey],
+      ),
+      this.client.query<AnswerSqlRow>(
+        `SELECT e.event_key AS "eventKey", e.match_key AS "matchKey", e.team_key AS "teamKey",
+          e.confidence, e.source, e.updated_at AS "updatedAt",
+          u.name AS "scoutName", e.payload
+         FROM match_scout_entries e
+         LEFT JOIN users u ON u.id = e.scout_user_id
+         WHERE e.org_id = $1::uuid AND e.event_key = $2
+         ORDER BY e.match_key, e.team_key, e.updated_at, e.id`,
+        [orgId, eventKey],
+      ),
+      this.client.query<AnswerSqlRow>(
+        `SELECT e.event_key AS "eventKey", e.team_key AS "teamKey",
+          e.confidence, e.source, e.updated_at AS "updatedAt",
+          u.name AS "scoutName", e.payload
+         FROM pit_scout_entries e
+         LEFT JOIN users u ON u.id = e.scout_user_id
+         WHERE e.org_id = $1::uuid AND e.event_key = $2
+         ORDER BY e.team_key, e.updated_at, e.id`,
+        [orgId, eventKey],
+      ),
+    ]);
+
+    return {
+      eventKey,
+      matchDefinition: publishedDefinition(schemas.rows, "match"),
+      pitDefinition: publishedDefinition(schemas.rows, "pit"),
+      rows: [
+        ...matchEntries.rows.map((row) => toEventAnswerRow("match", row)),
+        ...pitEntries.rows.map((row) => toEventAnswerRow("pit", row)),
+      ],
+    };
   }
 
   async getSchema(orgId: string, schemaId: string): Promise<ScoutSchema> {

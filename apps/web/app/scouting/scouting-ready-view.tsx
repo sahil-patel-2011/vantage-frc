@@ -5,7 +5,7 @@ import { applyVoiceTranscriptToForm, isLayoutOnlyField, type ScoutSchema } from 
 import { SCOUT_IDENTITY_LOCK_COPY } from "@vantage/scouting/identity";
 import { fieldConfidenceHint, type FieldTrustSummary, type SchemaBudget } from "@vantage/scouting/trust";
 import { EmptyState, FormRow, PageHeader, Panel, ToolStrip, Button } from "../../components/ui";
-import { ExportButton } from "../../components/ui/export-button";
+import { ScoutingEventAnswersExport } from "./scouting-event-answers-export";
 import { CopyShareLink } from "../../components/copy-share-link";
 import { OfflineBanner } from "../../components/offline-banner";
 import { VenueShortcutCheatsheet, type VenueShortcut } from "../../hooks/use-venue-shortcuts";
@@ -20,13 +20,7 @@ import {
 } from "../../lib/scouting/scouting-related";
 import { ScoutingRelatedStrip } from "./scouting-chrome";
 import { Field } from "./scouting-field";
-import {
-  SCOUT_ENTRY_CSV_COLUMNS,
-  type Bootstrap,
-  type ConflictCandidate,
-  type OfficialFlag,
-  type ScoutTab,
-} from "./scouting-model";
+import type { Bootstrap, ConflictCandidate, OfficialFlag, ScoutTab } from "./scouting-model";
 import { ScoutQuarantinePanel } from "./scouting-quarantine";
 import { ScoutReportViewer } from "./scout-report-viewer";
 import ScoutHandoffPanel from "./scout-handoff-panel";
@@ -252,6 +246,12 @@ return (
       <Panel className="scout-event-strip" style={{ minHeight: "auto", marginBottom: 14 }}>
         <strong>{data.eventKey}</strong>
         <span className="app-muted">Forms and assignments are cached on this device.</span>
+        <ScoutingEventAnswersExport
+          orgId={orgId}
+          eventKey={data.eventKey}
+          online={online}
+          revision={`${data.recentEntries?.length ?? 0}:${data.recentEntries?.[0]?.updatedAt ?? ""}`}
+        />
       </Panel>
     ) : null}
 
@@ -651,25 +651,12 @@ return (
               Open a report to see the stored stats and any timed actions. Team leads can delete a report.
             </p>
             {data?.recentEntries && shouldShowScoutingRecentEntries(data.recentEntries.length) ? (
-              <>
-                <ExportButton
-                  rows={data.recentEntries}
-                  columns={SCOUT_ENTRY_CSV_COLUMNS}
-                  feature="Scouting entries"
-                  orgLabel={data.eventKey}
-                  orgId={orgId}
-                  size="sm"
-                  provenance={`${
-                    data.eventKey ?? "Active event"
-                  } — the 30 most recent synced entries only. Anything still queued offline, and the rest of the event, is in the full export.`}
-                />
-                <ScoutReportViewer
-                  entries={data.recentEntries}
-                  orgId={orgId}
-                  canDelete={Boolean(data.canManageSchemas)}
-                  onDeleted={() => void sync()}
-                />
-              </>
+              <ScoutReportViewer
+                entries={data.recentEntries}
+                orgId={orgId}
+                canDelete={Boolean(data.canManageSchemas)}
+                onDeleted={() => void sync()}
+              />
             ) : (
               <p className="app-muted">No entries yet for this event.</p>
             )}

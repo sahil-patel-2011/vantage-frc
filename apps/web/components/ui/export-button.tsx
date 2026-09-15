@@ -25,6 +25,13 @@ type ExportButtonProps<Row> = {
   disabled?: boolean;
   /** One line naming where these rows came from — shown above the column list. */
   provenance?: string;
+  /**
+   * Allow a header-only file when `rows` is empty. Default false so an on-screen
+   * table never invents a download of nothing unless the caller means "empty CSV".
+   */
+  allowEmpty?: boolean;
+  /** Replaces the default "exactly as filtered on screen" subtitle. */
+  description?: string;
 };
 
 const ARROW = (
@@ -60,6 +67,8 @@ export function ExportButton<Row>({
   className,
   disabled = false,
   provenance,
+  allowEmpty = false,
+  description,
 }: ExportButtonProps<Row>) {
   const [open, setOpen] = useState(false);
   const [anchor, setAnchor] = useState<CSSProperties | null>(null);
@@ -70,7 +79,7 @@ export function ExportButton<Row>({
 
   const columnLines = useMemo(() => describeCsvColumns(columns), [columns]);
   const count = rows.length;
-  const empty = count === 0 || columns.length === 0;
+  const empty = columns.length === 0 || (count === 0 && !allowEmpty);
   const exportsHref = orgId ? `/exports?orgId=${encodeURIComponent(orgId)}` : "/exports";
 
   const close = useCallback((returnFocus: boolean) => {
@@ -134,7 +143,7 @@ export function ExportButton<Row>({
         className="vex-btn"
         onClick={run}
         disabled={disabled || empty}
-        title={empty ? "Nothing to export yet" : `Download these ${count} rows as a CSV`}
+        title={empty ? "Nothing to export yet" : count === 0 ? "Download headers (no answers yet)" : `Download these ${count} rows as a CSV`}
         data-testid="export-csv"
       >
         {ARROW}
@@ -162,8 +171,8 @@ export function ExportButton<Row>({
             <div ref={panelRef} id={panelId} className="vex-panel" style={anchor ?? { top: -9999, left: -9999 }}>
               <strong className="vex-panel-title">What&apos;s in this file</strong>
               <p className="vex-panel-sub">
-                {feature} — {count} {count === 1 ? "row" : "rows"} exactly as filtered on screen. UTF-8 CSV,
-                opens in Sheets, Excel, or Tableau.
+                {description ??
+                  `${feature} — ${count} ${count === 1 ? "row" : "rows"} exactly as filtered on screen. UTF-8 CSV, opens in Sheets, Excel, or Tableau.`}
               </p>
               {provenance ? <p className="vex-panel-sub">{provenance}</p> : null}
               <ul className="vex-panel-cols">
