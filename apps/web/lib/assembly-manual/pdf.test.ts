@@ -362,7 +362,7 @@ describe("renderManualPdf", () => {
       },
       { partName: "Gearbox plate", material: "6061", quantity: 2, length: "6.00 in", profile: null, confirmed: true },
     ],
-    hardware: [{ partName: "10-32 x 1.00 SHCS", quantity: 24 }],
+    hardware: [{ partName: "10-32 x 1.00 SHCS", quantity: 24, length: "1.00 in", confirmed: true }],
     steps: [
       {
         stepNumber: 1,
@@ -375,6 +375,13 @@ describe("renderManualPdf", () => {
           { text: "Drill dia 0.196 in (#9) through, 4 places", confirmed: true },
           { text: "No material assigned in CAD - confirm - not specified in CAD", confirmed: false },
         ],
+        checks: [
+          { passed: true, detail: "Mates to 1 part(s) already placed." },
+          { passed: true, detail: "No hardware in this step." },
+          { passed: true, detail: "Can be brought in along +X, -X." },
+          { passed: true, detail: "No fastener axis to check." },
+          { passed: true, detail: "Remaining parts still have a path in, and remaining fasteners still have driver access." },
+        ],
         notes: [],
         png: makePng(30, 20),
         renderNote: "",
@@ -386,6 +393,9 @@ describe("renderManualPdf", () => {
         sentence: "Fit the bearing block.",
         parts: [{ name: "Bearing block", quantity: 1, detail: "" }],
         fabrication: [],
+        checks: [
+          { passed: true, detail: "Onshape reported no bounding box for this part, so reach was not checked." },
+        ],
         notes: ["Onshape reported no bounding box, so reach was not checked."],
         png: null,
         renderNote: "Onshape returned no shaded view for this step.",
@@ -428,6 +438,12 @@ describe("renderManualPdf", () => {
     expect(text).toContain("Onshape returned no shaded view");
     // Exactly two images: the cover and step 1. Step 2 got none.
     expect(text.match(/\/Subtype \/Image/g)).toHaveLength(2);
+  });
+
+  it("prints passing and failing self-checks on the step page", () => {
+    const text = renderManualPdf(input).toString("latin1");
+    expect(text).toContain("(Self-checks) Tj");
+    expect(text).toContain("(OK - Mates to 1 part\\(s\\) already placed.) Tj");
   });
 
   it("reports the checks and the disagreements rather than only the good news", () => {

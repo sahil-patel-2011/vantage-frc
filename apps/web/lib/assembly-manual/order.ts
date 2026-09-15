@@ -1,5 +1,12 @@
 import { fastenerTargets, instanceBulk, type AssemblyGraph } from "./graph";
-import { boxExtent, boxesOverlap, type BoxMm, type FeasibilityCheck, type InstanceFacts } from "./model";
+import {
+  boxExtent,
+  boxesOverlap,
+  type BoxMm,
+  type FeasibilityCheck,
+  type InstanceFacts,
+  type StepAction,
+} from "./model";
 
 /**
  * The build order, derived twice and then checked a third time.
@@ -17,28 +24,42 @@ import { boxExtent, boxesOverlap, type BoxMm, type FeasibilityCheck, type Instan
  *
  * WHAT "FEASIBLE" MEANS HERE
  *
- * Not a vibe. Four checks, all against boxes Onshape measured:
+ * Not a vibe. Five checks, all against boxes Onshape measured:
  *
  *   prerequisites   every part this step depends on is already placed
  *   fastener_order  a fastener never precedes the parts it joins
- *   reachable       the part can be brought in from at least one direction
- *                   without passing through something already placed
+ *   reachable       the part (or fastener) can be brought in from at least
+ *                   one direction without passing through something already placed
  *   head_clear      a fastener has a clear run along its own axis for at least
  *                   one of its two ends, so a driver can reach the head
+ *   leaves_path     putting this on now would not trap a remaining part, and
+ *                   would not block driver access for hardware that still has
+ *                   to go in ("if A goes on first, can B still go on?")
  *
- * `reachable` and `head_clear` sweep the part's axis-aligned box along each of
- * the six axes and look for a placed box in the way. That is coarse — a box is
- * bigger than the part inside it — but it is coarse in the safe direction: it
- * can warn about a step that would actually have been fine, and it cannot clear
- * a step that is genuinely enclosed.
+ * `reachable`, `head_clear` and `leaves_path` sweep axis-aligned boxes along
+ * each of the six axes and look for a placed box in the way. That is coarse —
+ * a box is bigger than the part inside it — but it is coarse in the safe
+ * direction: it can warn about a step that would actually have been fine, and it
+ * cannot clear a step that is genuinely enclosed.
+ *
+ * Each step is one action: fit a part, or fasten hardware. Hardware is never
+ * bundled into the fit of the last part it joins.
  */
 
 export type OrderStrategy = "mate" | "geometry";
 
 export type OrderStep = {
-  /** The part this step is about. */
+  /** Fit a part, or install hardware. Never both. */
+  kind: StepAction;
+  /** The instance this step is about: the part being fitted, or the first fastener. */
   primaryId: string;
-  /** Fasteners installed in the same step, because they join the primary. */
+  /**
+   * The structural part whose position this step follows. Repair moves this id
+   * in the part order — a failing fasten step moves the host it was assigned to,
+   * not the screw (which is not in the part order).
+   */
+  hostId: string;
+  /** Fasteners installed in a fasten step. Empty on a fit step. */
   fastenerIds: string[];
   checks: FeasibilityCheck[];
 };
@@ -171,45 +192,130 @@ function placedBoxes(graph: AssemblyGraph, placed: Set<string>, exclude: Set<str
   return boxes;
 }
 
+export type CheckStepOptions = {
+  /**
+   * `fasten` means the host is already on the bench and this step only installs
+   * hardware. Default `fit` places `primaryId` (and, when `fastenerIds` is
+   * non-empty, also treats those fasteners as going in with it — the shape the
+   * unit tests use to probe a bundled check).
+   */
+  kind?: StepAction;
+};
+
+function remainingAfter(
+  graph: AssemblyGraph,
+  placed: Set<string>,
+  exclude: Set<string>,
+): { parts: string[]; fasteners: string[] } {
+  const parts: string[] = [];
+  const fasteners: string[] = [];
+  for (const id of graph.instances.keys()) {
+    if (placed.has(id) || exclude.has(id)) continue;
+    if (graph.fasteners.has(id)) fasteners.push(id);
+    else parts.push(id);
+  }
+  return { parts, fasteners };
+}
+
+function fastenerBlocked(
+  graph: AssemblyGraph,
+  placed: Set<string>,
+  fastenerId: string,
+  extraExclude: string[],
+): boolean {
+  const fastener = graph.instances.get(fastenerId);
+  const fastenerBox = fastener?.worldBoxMm;
+  if (!fastener || !fastenerBox) return false;
+  const axis = dominantAxis(fastenerBox);
+  const exclude = new Set([fastenerId, ...extraExclude, ...fastenerTargets(graph, fastenerId)]);
+  const obstacles = placedBoxes(graph, placed, exclude);
+  return escapeDirections(fastenerBox, obstacles, axis).length === 0;
+}
+
+function newlyTrapped(
+  graph: AssemblyGraph,
+  before: Set<string>,
+  after: Set<string>,
+  partId: string,
+): boolean {
+  const instance = graph.instances.get(partId);
+  const box = instance?.worldBoxMm;
+  if (!box) return false;
+  const beforeEscapes = escapeDirections(box, placedBoxes(graph, before, new Set([partId])));
+  if (!beforeEscapes.length) return false;
+  const afterEscapes = escapeDirections(box, placedBoxes(graph, after, new Set([partId])));
+  return afterEscapes.length === 0;
+}
+
 /**
- * Run the four checks for placing `instanceId` (plus its fasteners) into a
- * partial assembly. Pure: no mutation of `placed`.
+ * Run the five checks for one action against a partial assembly. Pure: no
+ * mutation of `placed`.
  */
 export function checkStep(
   graph: AssemblyGraph,
   placed: Set<string>,
   primaryId: string,
   fastenerIds: string[],
+  options: CheckStepOptions = {},
 ): FeasibilityCheck[] {
+  const kind: StepAction = options.kind ?? "fit";
   const checks: FeasibilityCheck[] = [];
   const instance = graph.instances.get(primaryId);
   if (!instance) {
     return [{ id: "prerequisites", passed: false, detail: `Instance ${primaryId} is not in the assembly.` }];
   }
 
+  const goingOn = kind === "fasten" ? fastenerIds : [primaryId, ...fastenerIds];
+  const excludeGoingOn = new Set(goingOn);
+
   // --- prerequisites -----------------------------------------------------
-  const neighbours = [...(graph.adjacency.get(primaryId) ?? [])].filter((id) => !graph.fasteners.has(id));
-  const placedNeighbours = neighbours.filter((id) => placed.has(id));
-  if (!placed.size) {
-    checks.push({ id: "prerequisites", passed: true, detail: "First part on the bench — nothing to attach to yet." });
-  } else if (!neighbours.length) {
-    checks.push({
-      id: "prerequisites",
-      passed: true,
-      detail: `"${instance.name}" has no mates in CAD, so nothing constrains when it goes on.`,
-    });
-  } else if (placedNeighbours.length) {
-    checks.push({
-      id: "prerequisites",
-      passed: true,
-      detail: `Mates to ${placedNeighbours.length} part(s) already placed.`,
-    });
+  if (kind === "fasten") {
+    const missingTargets: string[] = [];
+    for (const fastenerId of fastenerIds) {
+      for (const targetId of fastenerTargets(graph, fastenerId)) {
+        if (!placed.has(targetId)) missingTargets.push(graph.instances.get(targetId)?.name ?? targetId);
+      }
+    }
+    const uniqueMissing = [...new Set(missingTargets)];
+    checks.push(
+      uniqueMissing.length
+        ? {
+            id: "prerequisites",
+            passed: false,
+            detail: `Hardware would go in before ${uniqueMissing.slice(0, 3).join(", ")} ${uniqueMissing.length === 1 ? "is" : "are"} on the bench.`,
+          }
+        : {
+            id: "prerequisites",
+            passed: true,
+            detail: fastenerIds.length
+              ? "The parts this hardware joins are already on the bench."
+              : "No hardware in this step.",
+          },
+    );
   } else {
-    checks.push({
-      id: "prerequisites",
-      passed: false,
-      detail: `"${instance.name}" mates only to parts that are not on the bench yet.`,
-    });
+    const neighbours = [...(graph.adjacency.get(primaryId) ?? [])].filter((id) => !graph.fasteners.has(id));
+    const placedNeighbours = neighbours.filter((id) => placed.has(id));
+    if (!placed.size) {
+      checks.push({ id: "prerequisites", passed: true, detail: "First part on the bench — nothing to attach to yet." });
+    } else if (!neighbours.length) {
+      checks.push({
+        id: "prerequisites",
+        passed: true,
+        detail: `"${instance.name}" has no mates in CAD, so nothing constrains when it goes on.`,
+      });
+    } else if (placedNeighbours.length) {
+      checks.push({
+        id: "prerequisites",
+        passed: true,
+        detail: `Mates to ${placedNeighbours.length} part(s) already placed.`,
+      });
+    } else {
+      checks.push({
+        id: "prerequisites",
+        passed: false,
+        detail: `"${instance.name}" mates only to parts that are not on the bench yet.`,
+      });
+    }
   }
 
   // --- fastener order ----------------------------------------------------
@@ -237,25 +343,53 @@ export function checkStep(
   );
 
   // --- reachable ---------------------------------------------------------
-  const box = instance.worldBoxMm;
-  if (!box) {
-    checks.push({
-      id: "reachable",
-      passed: true,
-      detail: "Onshape reported no bounding box for this part, so reach was not checked.",
-    });
-  } else {
-    const obstacles = placedBoxes(graph, placed, new Set([primaryId, ...fastenerIds]));
-    const escapes = escapeDirections(box, obstacles);
+  if (kind === "fasten") {
+    const blocked: string[] = [];
+    let checked = 0;
+    for (const fastenerId of fastenerIds) {
+      const fastener = graph.instances.get(fastenerId);
+      const box = fastener?.worldBoxMm;
+      if (!fastener || !box) continue;
+      checked += 1;
+      const obstacles = placedBoxes(graph, placed, new Set([fastenerId, ...fastenerTargets(graph, fastenerId)]));
+      if (!escapeDirections(box, obstacles).length) blocked.push(fastener.name);
+    }
     checks.push(
-      escapes.length
-        ? { id: "reachable", passed: true, detail: `Can be brought in along ${escapes.map((d) => d.label).join(", ")}.` }
-        : {
+      blocked.length
+        ? {
             id: "reachable",
             passed: false,
-            detail: `"${instance.name}" would be enclosed by parts already placed — there is no straight path in along any axis.`,
+            detail: `${blocked.slice(0, 3).join(", ")} would be enclosed by parts already placed — there is no straight path in along any axis.`,
+          }
+        : {
+            id: "reachable",
+            passed: true,
+            detail: checked
+              ? "Hardware can be brought in along an open axis."
+              : "Onshape reported no bounding box for this hardware, so reach was not checked.",
           },
     );
+  } else {
+    const box = instance.worldBoxMm;
+    if (!box) {
+      checks.push({
+        id: "reachable",
+        passed: true,
+        detail: "Onshape reported no bounding box for this part, so reach was not checked.",
+      });
+    } else {
+      const obstacles = placedBoxes(graph, placed, excludeGoingOn);
+      const escapes = escapeDirections(box, obstacles);
+      checks.push(
+        escapes.length
+          ? { id: "reachable", passed: true, detail: `Can be brought in along ${escapes.map((d) => d.label).join(", ")}.` }
+          : {
+              id: "reachable",
+              passed: false,
+              detail: `"${instance.name}" would be enclosed by parts already placed — there is no straight path in along any axis.`,
+            },
+      );
+    }
   }
 
   // --- fastener head clearance -------------------------------------------
@@ -266,10 +400,9 @@ export function checkStep(
     const fastenerBox = fastener?.worldBoxMm;
     if (!fastener || !fastenerBox) continue;
     headChecked += 1;
-    const axis = dominantAxis(fastenerBox);
-    const exclude = new Set([fastenerId, primaryId, ...fastenerTargets(graph, fastenerId)]);
-    const obstacles = placedBoxes(graph, placed, exclude);
-    if (!escapeDirections(fastenerBox, obstacles, axis).length) blockedHeads.push(fastener.name);
+    if (fastenerBlocked(graph, placed, fastenerId, kind === "fasten" ? [] : [primaryId])) {
+      blockedHeads.push(fastener.name);
+    }
   }
   checks.push(
     blockedHeads.length
@@ -286,6 +419,44 @@ export function checkStep(
             : "No fastener axis to check.",
         },
   );
+
+  // --- leaves path -------------------------------------------------------
+  const after = new Set(placed);
+  for (const id of goingOn) after.add(id);
+  const leftover = remainingAfter(graph, placed, excludeGoingOn);
+  const trappedParts = leftover.parts
+    .filter((id) => newlyTrapped(graph, placed, after, id))
+    .map((id) => graph.instances.get(id)?.name ?? id);
+  const blockedLater = leftover.fasteners
+    .filter((id) => fastenerBlocked(graph, after, id, []))
+    .map((id) => graph.instances.get(id)?.name ?? id);
+
+  if (!leftover.parts.length && !leftover.fasteners.length) {
+    checks.push({
+      id: "leaves_path",
+      passed: true,
+      detail: "Nothing left to go on after this step.",
+    });
+  } else if (trappedParts.length || blockedLater.length) {
+    const bits: string[] = [];
+    if (trappedParts.length) {
+      bits.push(`${trappedParts.slice(0, 3).join(", ")} would have no path in`);
+    }
+    if (blockedLater.length) {
+      bits.push(`driver access for ${blockedLater.slice(0, 3).join(", ")} would be blocked`);
+    }
+    checks.push({
+      id: "leaves_path",
+      passed: false,
+      detail: `If "${instance.name}" goes on now, ${bits.join(" and ")}.`,
+    });
+  } else {
+    checks.push({
+      id: "leaves_path",
+      passed: true,
+      detail: "Remaining parts still have a path in, and remaining fasteners still have driver access.",
+    });
+  }
 
   return checks;
 }
@@ -384,10 +555,10 @@ export function orderByGeometry(graph: AssemblyGraph): string[] {
 }
 
 /**
- * Attach each fastener to the step of the LAST part it joins, so hardware
- * always follows every part it passes through. A fastener whose targets never
- * all get placed (it joins something outside this assembly) goes on the end
- * with the reason recorded.
+ * Attach each fastener to the LAST part it joins, so hardware always follows
+ * every part it passes through. A fastener whose targets never all get placed
+ * (it joins something outside this assembly) is returned as an orphan and
+ * becomes a last fasten step — never dropped.
  */
 function assignFasteners(
   graph: AssemblyGraph,
@@ -410,26 +581,54 @@ function assignFasteners(
   for (const ids of byPrimary.values()) {
     ids.sort((a, b) => (graph.instances.get(a)?.name ?? a).localeCompare(graph.instances.get(b)?.name ?? b));
   }
+  orphans.sort((a, b) => (graph.instances.get(a)?.name ?? a).localeCompare(graph.instances.get(b)?.name ?? b));
   return { byPrimary, orphans };
+}
+
+function pushFastenStep(
+  graph: AssemblyGraph,
+  placed: Set<string>,
+  hostId: string,
+  fastenerIds: string[],
+): OrderStep | null {
+  if (!fastenerIds.length) return null;
+  const checks = checkStep(graph, placed, fastenerIds[0]!, fastenerIds, { kind: "fasten" });
+  const step: OrderStep = {
+    kind: "fasten",
+    primaryId: fastenerIds[0]!,
+    hostId,
+    fastenerIds,
+    checks,
+  };
+  for (const fastenerId of fastenerIds) placed.add(fastenerId);
+  return step;
 }
 
 /** Walk an order from an empty bench and total up what the checks say. */
 export function simulate(graph: AssemblyGraph, order: string[]): { steps: OrderStep[]; run: number; passed: number } {
-  const { byPrimary } = assignFasteners(graph, order);
+  const { byPrimary, orphans } = assignFasteners(graph, order);
   const placed = new Set<string>();
   const steps: OrderStep[] = [];
   let run = 0;
   let passed = 0;
 
+  const tally = (step: OrderStep) => {
+    run += step.checks.length;
+    passed += step.checks.filter((check) => check.passed).length;
+    steps.push(step);
+  };
+
   for (const primaryId of order) {
-    const fastenerIds = byPrimary.get(primaryId) ?? [];
-    const checks = checkStep(graph, placed, primaryId, fastenerIds);
-    run += checks.length;
-    passed += checks.filter((check) => check.passed).length;
-    steps.push({ primaryId, fastenerIds, checks });
+    const fitChecks = checkStep(graph, placed, primaryId, [], { kind: "fit" });
+    tally({ kind: "fit", primaryId, hostId: primaryId, fastenerIds: [], checks: fitChecks });
     placed.add(primaryId);
-    for (const fastenerId of fastenerIds) placed.add(fastenerId);
+    const fasten = pushFastenStep(graph, placed, primaryId, byPrimary.get(primaryId) ?? []);
+    if (fasten) tally(fasten);
   }
+
+  const orphanStep = pushFastenStep(graph, placed, order[order.length - 1] ?? orphans[0] ?? "", orphans);
+  if (orphanStep) tally(orphanStep);
+
   return { steps, run, passed };
 }
 
@@ -455,8 +654,10 @@ export function revalidate(
     const failing = best.steps.find((step) => step.checks.some((check) => !check.passed));
     if (!failing) break;
 
-    const failingIndex = current.indexOf(failing.primaryId);
-    const without = current.filter((id) => id !== failing.primaryId);
+    const hostId = failing.hostId;
+    const failingIndex = current.indexOf(hostId);
+    if (failingIndex < 0) break;
+    const without = current.filter((id) => id !== hostId);
 
     // Only nearby positions are tried. Moving a part halfway across a 200-step
     // book to satisfy one check produces a manual nobody can follow, and the
@@ -468,7 +669,7 @@ export function revalidate(
     let winner: { position: number; run: ReturnType<typeof simulate> } | null = null;
     for (let position = from; position <= to; position += 1) {
       if (position === failingIndex) continue;
-      const candidate = [...without.slice(0, position), failing.primaryId, ...without.slice(position)];
+      const candidate = [...without.slice(0, position), hostId, ...without.slice(position)];
       const trial = simulate(graph, candidate);
       // The comparison is over the WHOLE order, not just the moved step. An
       // earlier version accepted any move that fixed the failing step, and
@@ -480,9 +681,9 @@ export function revalidate(
     if (!winner || winner.run.passed <= best.passed) break;
 
     repairs.push(
-      `Moved "${graph.instances.get(failing.primaryId)?.name ?? failing.primaryId}" from step ${failingIndex + 1} to step ${winner.position + 1}; that order passes ${winner.run.passed} checks instead of ${best.passed}.`,
+      `Moved "${graph.instances.get(hostId)?.name ?? hostId}" from step ${failingIndex + 1} to step ${winner.position + 1}; that order passes ${winner.run.passed} checks instead of ${best.passed}.`,
     );
-    current = [...without.slice(0, winner.position), failing.primaryId, ...without.slice(winner.position)];
+    current = [...without.slice(0, winner.position), hostId, ...without.slice(winner.position)];
     best = winner.run;
   }
 
@@ -544,7 +745,7 @@ export function deriveBuildOrder(graph: AssemblyGraph): OrderResult {
   const { orphans } = assignFasteners(graph, validated.order);
   if (orphans.length) {
     notes.push(
-      `${orphans.length} fastener(s) mate only to other hardware, so there is no part they can follow. They are listed in the loose-hardware callout instead of a step.`,
+      `${orphans.length} fastener(s) mate only to other hardware, so there is no part they can follow. They appear as a last fasten step rather than being dropped.`,
     );
   }
   if (graph.unmated.length) {

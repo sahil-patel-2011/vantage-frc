@@ -2,10 +2,13 @@ import { describe, expect, it } from "vitest";
 import { box, part } from "./fixtures";
 import {
   buildCutList,
+  buildHardwareList,
   cutLine,
   fabricationFor,
+  fastenerLengthFor,
   holeLines,
   materialLine,
+  parseFastenerLengthFromName,
   threadDesignation,
   unspecifiedCutNotes,
 } from "./fabrication";
@@ -255,5 +258,41 @@ describe("buildCutList", () => {
   it("drops a part no instance uses rather than listing stock nobody needs", () => {
     const rows = buildCutList([part({ key: "a", name: "Unused" })], new Map(), new Map(), new Set());
     expect(rows).toEqual([]);
+  });
+});
+
+describe("fastener length from CAD", () => {
+  it("reads a length the designer wrote in the part name", () => {
+    expect(parseFastenerLengthFromName("10-32 x 1.00 SHCS")).toEqual({
+      text: "1.00 in",
+      lengthMm: 25.4,
+    });
+    expect(parseFastenerLengthFromName("M5 x 16")).toEqual({ text: "16 mm", lengthMm: 16 });
+    expect(fastenerLengthFor(part({ key: "s", name: "10-32 x 1.00 SHCS" })).confirmed).toBe(true);
+  });
+
+  it("refuses to treat a bounding box as a specified screw length", () => {
+    const unnamed = part({ key: "s", name: "SHCS", bboxMm: box(0, 25.4, 0, 5, 0, 5) });
+    const length = fastenerLengthFor(unnamed);
+    expect(length.confirmed).toBe(false);
+    expect(length.text).toContain(NOT_IN_CAD);
+    expect(length.source).toBe("boundingBox");
+  });
+
+  it("prints hardware length on the hardware list, never a torque", () => {
+    const rows = buildHardwareList(
+      [part({ key: "bolt", name: "10-32 x 1.00 SHCS" }), part({ key: "plain", name: "SHCS", bboxMm: box(0, 20, 0, 5, 0, 5) })],
+      new Map([
+        ["bolt", 8],
+        ["plain", 2],
+      ]),
+      new Set(["bolt", "plain"]),
+    );
+    expect(rows).toHaveLength(2);
+    expect(rows[0]!.lengthConfirmed).toBe(true);
+    expect(rows[0]!.lengthText).toBe("1.00 in");
+    expect(rows[1]!.lengthConfirmed).toBe(false);
+    expect(rows[1]!.lengthText).toContain(NOT_IN_CAD);
+    expect(JSON.stringify(rows)).not.toMatch(/torque|loctite/i);
   });
 });

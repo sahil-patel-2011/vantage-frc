@@ -39,9 +39,11 @@ export type StepWriteFacts = {
   primaryName: string;
   quantity: number;
   subassembly: string;
+  /** Fit a part, or install hardware. Never both. */
+  kind: "fit" | "fasten";
   /** Names of the parts this one mates to that are already on the bench. */
   attachesTo: string[];
-  /** "4 × 10-32 x 1.00 SHCS" style summary lines. */
+  /** "4 × 10-32 x 1.00 SHCS" style summary lines. Empty on a fit step. */
   hardware: string[];
   /** Fabrication line texts, already carrying their own caveats. */
   fabrication: string[];
@@ -54,6 +56,7 @@ const MAX_SENTENCE = 320;
 export function factSheet(facts: StepWriteFacts): string {
   const lines = [
     `step: ${facts.stepNumber}`,
+    `action: ${facts.kind}`,
     `part: ${facts.primaryName}`,
     `quantity: ${facts.quantity}`,
   ];
@@ -71,12 +74,18 @@ export function factSheet(facts: StepWriteFacts): string {
  * true, because it is assembled from the same facts.
  */
 export function deterministicSentence(facts: StepWriteFacts): string {
+  if (facts.kind === "fasten") {
+    const hardware = facts.hardware.length ? facts.hardware.join(", ") : facts.primaryName;
+    const onto = facts.attachesTo.length
+      ? ` into ${facts.attachesTo.slice(0, 3).join(", ")}${facts.attachesTo.length > 3 ? ` and ${facts.attachesTo.length - 3} more` : ""}`
+      : "";
+    return `Secure with ${hardware}${onto}.`.replace(/\s+/g, " ").trim();
+  }
   const count = facts.quantity > 1 ? `${facts.quantity} × ` : "";
   const attach = facts.attachesTo.length
     ? ` onto ${facts.attachesTo.slice(0, 3).join(", ")}${facts.attachesTo.length > 3 ? ` and ${facts.attachesTo.length - 3} more` : ""}`
     : "";
-  const hardware = facts.hardware.length ? ` Secure with ${facts.hardware.join(", ")}.` : "";
-  return `Fit ${count}${facts.primaryName}${attach}.${hardware}`.replace(/\s+/g, " ").trim();
+  return `Fit ${count}${facts.primaryName}${attach}.`.replace(/\s+/g, " ").trim();
 }
 
 /** Numeric tokens in a sentence, normalised for comparison. */
@@ -110,9 +119,10 @@ export function sentenceIsGrounded(sentence: string, facts: StepWriteFacts): boo
 const SYSTEM = [
   "You write one short imperative sentence per assembly step for a printed FRC robot build manual.",
   "You are given facts already measured from the team's CAD. Use ONLY those facts.",
+  "Each step is ONE action: either Fit (place a part) or Secure (install hardware). Never both in one sentence.",
   "Never state a torque, a thread-locker, a lubricant, a tolerance, or any number that is not in the facts.",
   "Do not add safety boilerplate.",
-  "Write like a person who has built one: 12-28 words, present imperative, no step number, no bullet.",
+  "Write like a person who has built one: 8-22 words, present imperative, no step number, no bullet.",
   'Reply with ONLY a JSON array of objects: [{"step": 1, "sentence": "..."}]. No prose, no code fence.',
 ].join("\n");
 

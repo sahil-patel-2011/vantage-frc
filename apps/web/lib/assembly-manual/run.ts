@@ -1,13 +1,14 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import type { OnshapeHttp } from "@vantage/cad";
-import { buildCutList, buildHardwareList, fabricationFor } from "./fabrication";
-import { buildAssemblyGraph, subAssemblyOf, type AssemblyGraph } from "./graph";
+import { buildCutList, buildHardwareList, fabricationFor, fastenerLengthLine } from "./fabrication";
+import { buildAssemblyGraph, fastenerTargets, subAssemblyOf, type AssemblyGraph } from "./graph";
 import { ingestAssembly, IngestIncomplete, type IngestCache } from "./ingest";
 import {
   boxExtent,
   type AssemblyFacts,
   type FabricationLine,
   type FeasibilityCheck,
+  type StepAction,
   type StepPart,
 } from "./model";
 import { deriveBuildOrder, type Disagreement, type Unresolved } from "./order";
@@ -42,13 +43,14 @@ export type RunStage = "ingest" | "graph" | "order" | "fabrication" | "render" |
 
 export type PlanStep = {
   stepNumber: number;
+  kind: StepAction;
   primaryId: string;
   fastenerIds: string[];
   subassembly: string;
   title: string;
   parts: StepPart[];
   fabrication: FabricationLine[];
-  feasibility: { prerequisites: string[]; checks: FeasibilityCheck[]; notes: string[] };
+  feasibility: { action: StepAction; prerequisites: string[]; checks: FeasibilityCheck[]; notes: string[] };
   disagreement: { otherPosition: number; strategy: string; note: string } | null;
 };
 
@@ -154,43 +156,27 @@ function extentOf(graph: AssemblyGraph, instanceId: string) {
   return boxExtent(box).slice().sort((a, b) => b - a) as [number, number, number];
 }
 
-function stepPartsFor(graph: AssemblyGraph, primaryId: string, fastenerIds: string[]): StepPart[] {
-  const primary = graph.instances.get(primaryId);
-  const parts: StepPart[] = [];
-  if (primary) {
-    parts.push({
-      instanceId: primary.id,
-      partKey: primary.partKey,
-      name: primary.name,
-      quantity: 1,
-      massKg: primary.massKg,
-      extentMm: extentOf(graph, primary.id),
-      cots: lookupCotsPart(primary.name),
-    });
-  }
-  // Identical hardware collapses into one callout line with a count, the way a
-  // real instruction sheet reads: "4 x 10-32 x 1.00 SHCS", not four rows.
+function stepPartsFor(graph: AssemblyGraph, instanceIds: string[]): StepPart[] {
   const byName = new Map<string, StepPart>();
-  for (const id of fastenerIds) {
-    const fastener = graph.instances.get(id);
-    if (!fastener) continue;
-    const existing = byName.get(fastener.name);
+  for (const id of instanceIds) {
+    const instance = graph.instances.get(id);
+    if (!instance) continue;
+    const existing = byName.get(instance.name);
     if (existing) {
       existing.quantity += 1;
       continue;
     }
-    byName.set(fastener.name, {
-      instanceId: fastener.id,
-      partKey: fastener.partKey,
-      name: fastener.name,
+    byName.set(instance.name, {
+      instanceId: instance.id,
+      partKey: instance.partKey,
+      name: instance.name,
       quantity: 1,
-      massKg: fastener.massKg,
-      extentMm: extentOf(graph, fastener.id),
-      cots: lookupCotsPart(fastener.name),
+      massKg: instance.massKg,
+      extentMm: extentOf(graph, instance.id),
+      cots: lookupCotsPart(instance.name),
     });
   }
-  parts.push(...byName.values());
-  return parts;
+  return [...byName.values()];
 }
 
 // ---------------------------------------------------------------------------
@@ -330,25 +316,52 @@ export async function advanceRun(context: RunContext): Promise<AdvanceResult> {
     const plan: PlanStep[] = ordered.steps.map((step, index) => {
       const primary = graph.instances.get(step.primaryId);
       const part = primary?.partKey ? (graph.parts.get(primary.partKey) ?? null) : null;
-      const sub = subAssemblyOf(graph, step.primaryId);
-      const disagreement = disagreementById.get(step.primaryId);
+      const sub = subAssemblyOf(graph, step.kind === "fasten" ? step.hostId : step.primaryId);
+      const disagreement = step.kind === "fit" ? disagreementById.get(step.primaryId) : null;
+      const instanceIds = step.kind === "fasten" ? step.fastenerIds : [step.primaryId];
+      const parts = stepPartsFor(graph, instanceIds);
+      const firstPart = parts[0];
+      const hardwareTitle = firstPart
+        ? `${firstPart.quantity > 1 ? `${firstPart.quantity} × ` : ""}${firstPart.name}`
+        : (primary?.name ?? step.primaryId);
+      const targetNames = [
+        ...new Set(
+          step.fastenerIds.flatMap((id) =>
+            fastenerTargets(graph, id).map((targetId) => graph.instances.get(targetId)?.name ?? targetId),
+          ),
+        ),
+      ];
+      const fitPrereqs = [...(graph.adjacency.get(step.primaryId) ?? [])]
+        .filter((id) => !graph.fasteners.has(id))
+        .map((id) => graph.instances.get(id)?.name ?? id);
+      const seenFastenerParts = new Set<string>();
+      const fabrication =
+        step.kind === "fasten"
+          ? step.fastenerIds.flatMap((id) => {
+              const fastener = graph.instances.get(id);
+              const fastenerPart = fastener?.partKey ? graph.parts.get(fastener.partKey) : null;
+              if (!fastenerPart || seenFastenerParts.has(fastenerPart.key)) return [];
+              seenFastenerParts.add(fastenerPart.key);
+              return [fastenerLengthLine(fastenerPart)];
+            })
+          : fabricationFor({
+              part,
+              features: part ? (featuresByElement.get(part.elementId) ?? []) : [],
+              partsInStudio: part ? (partsPerElement.get(part.elementId) ?? 1) : 1,
+              isFastener: graph.fasteners.has(step.primaryId),
+            });
       return {
         stepNumber: index + 1,
+        kind: step.kind,
         primaryId: step.primaryId,
         fastenerIds: step.fastenerIds,
         subassembly: sub ? (subNames.get(sub.id) ?? sub.name) : "",
-        title: primary?.name ?? step.primaryId,
-        parts: stepPartsFor(graph, step.primaryId, step.fastenerIds),
-        fabrication: fabricationFor({
-          part,
-          features: part ? (featuresByElement.get(part.elementId) ?? []) : [],
-          partsInStudio: part ? (partsPerElement.get(part.elementId) ?? 1) : 1,
-          isFastener: graph.fasteners.has(step.primaryId),
-        }),
+        title: step.kind === "fasten" ? hardwareTitle : (primary?.name ?? step.primaryId),
+        parts,
+        fabrication,
         feasibility: {
-          prerequisites: [...(graph.adjacency.get(step.primaryId) ?? [])]
-            .filter((id) => !graph.fasteners.has(id))
-            .map((id) => graph.instances.get(id)?.name ?? id),
+          action: step.kind,
+          prerequisites: step.kind === "fasten" ? targetNames : fitPrereqs,
           checks: step.checks,
           notes: step.checks.filter((check) => !check.passed).map((check) => check.detail),
         },
@@ -507,12 +520,14 @@ export async function advanceRun(context: RunContext): Promise<AdvanceResult> {
       const facts0: StepWriteFacts[] = batch.map((step) => ({
         stepNumber: step.stepNumber,
         primaryName: step.title,
-        quantity: 1,
+        quantity: step.kind === "fasten" ? (step.parts[0]?.quantity ?? 1) : 1,
+        kind: step.kind,
         subassembly: step.subassembly,
         attachesTo: step.feasibility.prerequisites.slice(0, 4),
-        hardware: step.parts
-          .filter((part) => part.instanceId !== step.primaryId)
-          .map((part) => `${part.quantity} x ${part.name}`),
+        hardware:
+          step.kind === "fasten"
+            ? step.parts.map((part) => `${part.quantity} x ${part.name}`)
+            : [],
         fabrication: step.fabrication.map((line) => line.text),
         cautions: step.feasibility.notes,
       }));
@@ -554,7 +569,7 @@ export async function advanceRun(context: RunContext): Promise<AdvanceResult> {
       sentence: string;
       parts: StepPart[];
       fabrication: FabricationLine[];
-      feasibility: { notes?: string[] };
+      feasibility: { action?: string; notes?: string[]; checks?: FeasibilityCheck[] };
       renderNote: string;
       png: Buffer | null;
     }>(
@@ -581,6 +596,10 @@ export async function advanceRun(context: RunContext): Promise<AdvanceResult> {
             : "",
       })),
       fabrication: (step.fabrication ?? []).map((line) => ({ text: line.text, confirmed: line.confirmed })),
+      checks: (step.feasibility?.checks ?? []).map((check) => ({
+        passed: check.passed,
+        detail: check.detail,
+      })),
       notes: step.feasibility?.notes ?? [],
       png: step.png ?? null,
       renderNote: step.renderNote,
@@ -600,7 +619,13 @@ export async function advanceRun(context: RunContext): Promise<AdvanceResult> {
         profile: entry.profile,
         confirmed: entry.lengthConfirmed,
       })),
-      hardware: report.hardware,
+      hardware: report.hardware.map((entry) => ({
+        partName: entry.partName,
+        quantity: entry.quantity,
+        length: entry.lengthConfirmed ? (entry.lengthMm === null ? null : formatInches(entry.lengthMm)) : null,
+        confirmed: entry.lengthConfirmed,
+        lengthNote: entry.lengthConfirmed ? null : entry.lengthText,
+      })),
       steps,
       report: {
         checksRun: report.checksRun,
@@ -663,7 +688,7 @@ async function persistPlan(context: RunContext, plan: PlanStep[]): Promise<void>
         step.title,
         // A placeholder that is already true. If the writing stage never runs,
         // the manual still reads correctly rather than showing empty steps.
-        `Fit ${step.title}.`,
+        step.kind === "fasten" ? `Secure with ${step.title}.` : `Fit ${step.title}.`,
         JSON.stringify(step.parts),
         JSON.stringify(step.fabrication),
         JSON.stringify(step.feasibility),

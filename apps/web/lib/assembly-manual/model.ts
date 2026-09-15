@@ -116,11 +116,24 @@ export type StepPart = {
   cots: { name: string; vendor: string; sku: string } | null;
 };
 
+/** The five checks every step carries. Missing one is a bug, not a pass. */
+export const FEASIBILITY_CHECK_IDS = [
+  "prerequisites",
+  "fastener_order",
+  "reachable",
+  "head_clear",
+  "leaves_path",
+] as const;
+
+export type FeasibilityCheckId = (typeof FEASIBILITY_CHECK_IDS)[number];
+
 export type FeasibilityCheck = {
-  id: string;
+  id: FeasibilityCheckId;
   passed: boolean;
   detail: string;
 };
+
+export type StepAction = "fit" | "fasten";
 
 export type ManualStep = {
   stepNumber: number;
@@ -131,6 +144,8 @@ export type ManualStep = {
   parts: StepPart[];
   fabrication: FabricationLine[];
   feasibility: {
+    /** One action: place a part, or install hardware. Never both. */
+    action: StepAction;
     prerequisites: string[];
     checks: FeasibilityCheck[];
     notes: string[];

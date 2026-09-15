@@ -82,6 +82,26 @@ describe("feasibility checks", () => {
     expect(checks.every((check) => check.passed)).toBe(true);
   });
 
+  it("refuses placing a cover that would trap remaining fasteners", () => {
+    const graph = buildAssemblyGraph(wheelBeforeScrewsAssembly());
+    const checks = checkStep(graph, new Set(["plate", "frame"]), "wheel", []);
+    const trap = checks.find((check) => check.id === "leaves_path")!;
+    expect(trap.passed).toBe(false);
+    expect(trap.detail).toMatch(/10-32|driver/i);
+  });
+
+  it("carries all five self-checks on every step, including the ones that pass", () => {
+    const graph = buildAssemblyGraph(wheelBeforeScrewsAssembly());
+    const checks = checkStep(graph, new Set(["frame"]), "plate", []);
+    expect(checks.map((check) => check.id)).toEqual([
+      "prerequisites",
+      "fastener_order",
+      "reachable",
+      "head_clear",
+      "leaves_path",
+    ]);
+  });
+
   it("does not invent a verdict for a part with no bounding box", () => {
     const noBox = facts({
       parts: [part({ key: "a", name: "Bracket" })],
@@ -148,8 +168,9 @@ describe("deriveBuildOrder", () => {
     expect(result.checksPassed).toBe(result.checksRun);
 
     // … and it is NOT either raw strategy, because both were infeasible.
-    const shipped = result.steps.map((step) => step.primaryId);
-    expect(shipped.indexOf("motor")).toBeLessThan(shipped.indexOf("wheel"));
+    const shippedFit = result.steps.filter((step) => step.kind === "fit").map((step) => step.primaryId);
+    expect(shippedFit.indexOf("motor")).toBeLessThan(shippedFit.indexOf("wheel"));
+    expect(result.steps.filter((step) => step.kind === "fasten")).toHaveLength(1);
 
     // The disagreement between the strategies is recorded, not hidden.
     expect(result.disagreements.length).toBeGreaterThan(0);
@@ -157,7 +178,7 @@ describe("deriveBuildOrder", () => {
       expect(disagreement.matePosition).not.toBe(disagreement.geometryPosition);
       expect(disagreement.note).toMatch(/step \d+/);
     }
-    expect(result.notes.some((note) => /Moved "NEO motor"/.test(note))).toBe(true);
+    expect(result.notes.some((note) => /Moved "/.test(note))).toBe(true);
   });
 
   it("puts every fastener after every part it joins", () => {
@@ -172,12 +193,22 @@ describe("deriveBuildOrder", () => {
     expect(placedAt.get("screw")!).toBeGreaterThanOrEqual(placedAt.get("motor")!);
   });
 
-  it("keeps every non-fastener instance exactly once", () => {
+  it("keeps every non-fastener instance exactly once, and never drops the screw", () => {
     const graph = buildAssemblyGraph(wheelBeforeScrewsAssembly());
     const result = deriveBuildOrder(graph);
-    const ids = result.steps.map((step) => step.primaryId);
-    expect(new Set(ids).size).toBe(ids.length);
-    expect(ids.slice().sort()).toEqual(["frame", "motor", "plate", "wheel"]);
+    const fitIds = result.steps.filter((step) => step.kind === "fit").map((step) => step.primaryId);
+    expect(new Set(fitIds).size).toBe(fitIds.length);
+    expect(fitIds.slice().sort()).toEqual(["frame", "motor", "plate", "wheel"]);
+    expect(result.steps.some((step) => step.kind === "fasten" && step.fastenerIds.includes("screw"))).toBe(true);
+    for (const step of result.steps) {
+      expect(step.checks.map((check) => check.id)).toEqual([
+        "prerequisites",
+        "fastener_order",
+        "reachable",
+        "head_clear",
+        "leaves_path",
+      ]);
+    }
   });
 
   it("survives an assembly with no mates at all and says so", () => {

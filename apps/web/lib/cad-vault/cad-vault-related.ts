@@ -140,7 +140,7 @@ export function cadVaultNextActions(input: {
     actions.push({
       id: "assembly",
       label: "Build an assembly manual",
-      detail: "A vault document with an Onshape link can become the shop step book.",
+      detail: "Pick a linked Onshape assembly to start the book without re-pasting, or paste a link on that page.",
       href: withOrgHref("/assembly-manual", input.orgId),
       primary: actions.length === 0,
     });
