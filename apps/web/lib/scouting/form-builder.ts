@@ -29,6 +29,8 @@ import {
   type FormResetBehavior,
   type SchemaDefinition,
   type TimerMode,
+  type ScoutFieldUse,
+  normalizeScoutFieldUses,
 } from "@vantage/scouting";
 import {
   inferRoleForFieldKey,
@@ -190,6 +192,10 @@ export type DraftQuestion = {
   /** What happens to this answer after a save — preserve / reset / increment. */
   reset: FormResetBehavior;
   settings: DraftFieldSettings;
+  /** What scouts should watch, and what not to count. */
+  helpText: string;
+  /** Who uses this answer after save. */
+  helps: ScoutFieldUse[];
 };
 
 export const COUNTER_STEPS_TEXT = DEFAULT_COUNTER_STEPS.join(", ");
@@ -234,6 +240,8 @@ export function newDraftQuestion(partial?: Partial<DraftQuestion>): DraftQuestio
     role: partial?.role ?? "none",
     reset: partial?.reset ?? "reset",
     settings: { ...defaultSettingsForKind(kind), ...(partial?.settings ?? {}) },
+    helpText: partial?.helpText ?? "",
+    helps: normalizeScoutFieldUses(partial?.helps),
   };
 }
 
@@ -469,6 +477,8 @@ export function draftFromDefinition(definition: SchemaDefinition): {
         role: fieldStrategyRole(field),
         reset: fieldResetBehavior(field),
         settings: settingsFromField(field),
+        helpText: field.helpText ?? "",
+        helps: normalizeScoutFieldUses(field.helps),
       }),
     ),
   };
@@ -559,6 +569,9 @@ export function previewFieldForQuestion(question: DraftQuestion): FieldDefinitio
     widget: question.kind,
   };
   if (Object.keys(config).length) field.config = config;
+  if (question.helpText?.trim()) field.helpText = question.helpText.trim();
+  const helps = normalizeScoutFieldUses(question.helps);
+  if (helps.length) field.helps = helps;
   if (
     type === "multiple_choice" ||
     type === "dropdown" ||
@@ -709,9 +722,12 @@ export function definitionFromDraft(
             ? [...DEFAULT_DRIVETRAIN_OPTIONS]
             : options;
     }
-    if (type === "robot_image") {
+    if (type === "robot_image" && !question.helpText?.trim()) {
       field.helpText = "Upload or capture pit photos of the robot.";
     }
+    if (question.helpText?.trim()) field.helpText = question.helpText.trim();
+    const helps = normalizeScoutFieldUses(question.helps);
+    if (helps.length) field.helps = helps;
     return field;
   });
   return { title: title.trim() || "Scouting form", fields };
@@ -761,6 +777,7 @@ function stableDefinitionFingerprint(definition: SchemaDefinition): string {
       options: field.options ?? [],
       widget: field.widget ?? null,
       helpText: field.helpText ?? null,
+      helps: normalizeScoutFieldUses(field.helps),
       config: stableConfigFingerprint(field),
       // Effective role (explicit config.role, else key inference) so publishing
       // roles onto a legacy schema does not flag a phantom draft change.

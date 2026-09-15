@@ -3,6 +3,8 @@
  * Only real payload keys are shown. Missing timeline / empty payload stay empty.
  */
 
+import { isLayoutOnlyField, type SchemaDefinition } from "@vantage/scouting";
+
 export type ScoutReportStat = {
   key: string;
   label: string;
@@ -28,13 +30,27 @@ function humanLabel(key: string): string {
     .replace(/^\w/, (char) => char.toUpperCase());
 }
 
-function formatStatValue(value: unknown): string | null {
+function formatStatValue(key: string, value: unknown): string | null {
   if (value == null) return null;
+  if (key === "robot_images") {
+    const count = Array.isArray(value)
+      ? value.filter((item) => typeof item === "string" && item.length > 0).length
+      : typeof value === "string" && value.trim()
+        ? 1
+        : 0;
+    return count > 0 ? `${count} photo${count === 1 ? "" : "s"}` : null;
+  }
   if (typeof value === "boolean") return value ? "Yes" : "No";
   if (typeof value === "number" && Number.isFinite(value)) return String(value);
   if (typeof value === "string") {
     const trimmed = value.trim();
-    return trimmed.length ? trimmed : null;
+    return trimmed.length ? trimmed.replaceAll("_", " ") : null;
+  }
+  if (Array.isArray(value)) {
+    const parts = value
+      .map((item) => formatStatValue(key, item))
+      .filter((item): item is string => Boolean(item));
+    return parts.length ? parts.join(", ") : null;
   }
   return null;
 }
@@ -77,21 +93,36 @@ export function timelineFromPayload(payload: Record<string, unknown>): ScoutRepo
   });
 }
 
-export function statsFromPayload(payload: Record<string, unknown>): ScoutReportStat[] {
+export function statsFromPayload(
+  payload: Record<string, unknown>,
+  schema?: SchemaDefinition | null,
+): ScoutReportStat[] {
   const stats: ScoutReportStat[] = [];
+  const seen = new Set<string>();
+  const fields = schema?.fields ?? [];
+  for (const field of fields) {
+    if (isLayoutOnlyField(field) || TIMELINE_KEYS.has(field.key)) continue;
+    const formatted = formatStatValue(field.key, payload[field.key]);
+    if (formatted == null) continue;
+    seen.add(field.key);
+    stats.push({ key: field.key, label: field.label, value: formatted });
+  }
   for (const [key, value] of Object.entries(payload)) {
-    if (TIMELINE_KEYS.has(key)) continue;
-    const formatted = formatStatValue(value);
+    if (seen.has(key) || TIMELINE_KEYS.has(key)) continue;
+    const formatted = formatStatValue(key, value);
     if (formatted == null) continue;
     stats.push({ key, label: humanLabel(key), value: formatted });
   }
   return stats.sort((a, b) => a.label.localeCompare(b.label));
 }
 
-export function scoutReportFromPayload(payload: Record<string, unknown> | null | undefined): ScoutReportView {
+export function scoutReportFromPayload(
+  payload: Record<string, unknown> | null | undefined,
+  schema?: SchemaDefinition | null,
+): ScoutReportView {
   if (!payload || typeof payload !== "object") return { stats: [], timeline: [] };
   return {
-    stats: statsFromPayload(payload),
+    stats: statsFromPayload(payload, schema),
     timeline: timelineFromPayload(payload),
   };
 }

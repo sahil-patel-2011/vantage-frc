@@ -135,6 +135,20 @@
   gap: 12px;
 }
 
+.sfb-helps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.sfb-helps legend {
+  padding: 0 4px;
+}
+
 .sfb-question {
   display: grid;
   gap: 10px;

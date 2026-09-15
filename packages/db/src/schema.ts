@@ -2196,7 +2196,9 @@ export type ScoutFieldDefinition = {
   options?: string[];
   disagreementThreshold?: number;
   helpText?: string;
+  helps?: Array<"pick_list" | "alliance" | "pit" | "repair">;
   config?: Record<string, unknown>;
+  widget?: string;
 };
 
 export type ScoutSchemaDefinition = {

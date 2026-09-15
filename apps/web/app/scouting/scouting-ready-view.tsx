@@ -666,6 +666,7 @@ return (
                 <ScoutReportViewer
                   entries={data.recentEntries}
                   orgId={orgId}
+                  schemas={data.schemas}
                   canDelete={Boolean(data.canManageSchemas)}
                   onDeleted={() => void sync()}
                 />

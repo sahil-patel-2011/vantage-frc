@@ -1,5 +1,6 @@
-import { type EntryType, type ScoutSchema } from "@vantage/scouting";
-import { DRIVETRAIN_OPTIONS_TEXT, newDraftQuestion, type DraftQuestion } from "../../../lib/scouting/form-builder";
+import { type EntryType, type ScoutSchema, matchSchemaForYear, pitSchemaForYear } from "@vantage/scouting";
+import { currentSeasonYear } from "@vantage/game-year";
+import { draftFromDefinition, newDraftQuestion, type DraftQuestion } from "../../../lib/scouting/form-builder";
 
 export type SchemasPayload = {
   eventKey: string | null;
@@ -10,36 +11,11 @@ export type SchemasPayload = {
 
 export type FormBuilderMode = "edit" | "preview";
 
-export function defaultQuestions(type: EntryType): DraftQuestion[] {
-  if (type === "pit") {
-    return [
-      newDraftQuestion({
-        label: "Drivetrain",
-        kind: "drivetrain",
-        optionsText: DRIVETRAIN_OPTIONS_TEXT,
-      }),
-      newDraftQuestion({
-        label: "Programming language",
-        kind: "dropdown",
-        optionsText: "java, c++, python, labview, other",
-      }),
-      newDraftQuestion({ label: "Drivetrain motors", kind: "short" }),
-      newDraftQuestion({ label: "Driver seasons of experience", kind: "number" }),
-      newDraftQuestion({ label: "Coach seasons of experience", kind: "number" }),
-      newDraftQuestion({ label: "Robot images", kind: "robot_image" }),
-      newDraftQuestion({ label: "Notes", kind: "free", role: "notes" }),
-    ];
-  }
-  // Default roles so an untouched starter form feeds strategy out of the box.
-  return [
-    newDraftQuestion({ label: "Auto score", kind: "number", role: "auto_score" }),
-    newDraftQuestion({ label: "Teleop score", kind: "number", role: "teleop_score" }),
-    newDraftQuestion({
-      label: "Endgame",
-      kind: "dropdown",
-      optionsText: "none, partial, full",
-      role: "endgame",
-    }),
-    newDraftQuestion({ label: "Notes", kind: "free", role: "notes" }),
-  ];
+/** Starter draft from the season pack so unpublished forms still scout the intended thing. */
+export function defaultQuestions(type: EntryType, year?: number | null): DraftQuestion[] {
+  const packYear = year ?? currentSeasonYear();
+  const schema = type === "pit" ? pitSchemaForYear(packYear) : matchSchemaForYear(packYear);
+  const draft = draftFromDefinition(schema);
+  if (draft.questions.length) return draft.questions;
+  return [newDraftQuestion({ label: "Notes", kind: "free", role: "notes" })];
 }

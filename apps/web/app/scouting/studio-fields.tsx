@@ -9,6 +9,7 @@ import {
   fieldPositionCellLabel,
   fieldPositionCellCount,
   fieldPositionConfig,
+  formatScoutFieldHelp,
   formatTimerSeconds,
   isFieldPositionCellAllowed,
   multiCounterConfig,
@@ -35,6 +36,10 @@ import {
  * timers). Nothing here fabricates a value — an untouched field stays undefined
  * so the payload never claims an observation that was not made.
  */
+
+function studioHint(field: FieldDefinition, fallback?: string): string | undefined {
+  return formatScoutFieldHelp(field) ?? fallback;
+}
 
 type FieldProps = {
   field: FieldDefinition;
@@ -64,7 +69,7 @@ export function StudioSectionHeader({ field }: { field: FieldDefinition }) {
   return (
     <div className="scout-studio-section">
       <h3>{field.label}</h3>
-      {field.helpText ? <p className="app-muted">{field.helpText}</p> : null}
+      {formatScoutFieldHelp(field) ? <p className="app-muted">{formatScoutFieldHelp(field)}</p> : null}
     </div>
   );
 }
@@ -107,7 +112,7 @@ export function CounterField({ field, value, onChange, label }: FieldProps & { l
   return (
     <StudioShell
       label={label}
-      hint={field.helpText ?? (config.max != null ? `Max ${config.max}` : undefined)}
+      hint={studioHint(field, config.max != null ? `Max ${config.max}` : undefined)}
       headline={
         <output className="scout-studio-readout" aria-live="polite">
           {current}
@@ -187,7 +192,7 @@ export function MultiCounterField({ field, value, onChange, label }: FieldProps 
   return (
     <StudioShell
       label={label}
-      hint={field.helpText ?? (config.max != null ? `Max ${config.max} each` : undefined)}
+      hint={studioHint(field, config.max != null ? `Max ${config.max} each` : undefined)}
       headline={
         <output className="scout-studio-readout" aria-live="polite">
           {touched ? multiCounterTotal(value, config) : 0}
@@ -300,10 +305,12 @@ export function TimerField({ field, value, onChange, label }: FieldProps & { lab
     <StudioShell
       label={label}
       hint={
-        field.helpText ??
-        (config.mode === "lap"
-          ? "Each start-stop records one lap; the total and average come from the laps."
-          : "Start-stop adds to a single running total.")
+        studioHint(
+          field,
+          config.mode === "lap"
+            ? "Each start-stop records one lap; the total and average come from the laps."
+            : "Start-stop adds to a single running total.",
+        )
       }
       headline={
         <output className="scout-studio-readout" aria-live="off">
@@ -364,7 +371,7 @@ export function RatingField({ field, value, onChange, label }: FieldProps & { la
   return (
     <StudioShell
       label={label}
-      hint={field.helpText ?? "Tap the same star again to clear the rating."}
+      hint={studioHint(field, "Tap the same star again to clear the rating.")}
       headline={
         <output className="scout-studio-readout small" aria-live="polite">
           {current ? `${current}/${config.max}` : "—"}
@@ -414,7 +421,7 @@ export function MultiSelectField({ field, value, onChange, label }: FieldProps &
   return (
     <StudioShell
       label={label}
-      hint={field.helpText ?? "Pick any number — all of them are stored."}
+      hint={studioHint(field, "Pick any number — all of them are stored.")}
       headline={
         <output className="scout-studio-readout small" aria-live="polite">
           {picked.length ? `${picked.length} picked` : "none"}
@@ -451,7 +458,7 @@ export function SliderField({ field, value, onChange, label }: FieldProps & { la
   return (
     <StudioShell
       label={label}
-      hint={field.helpText}
+      hint={studioHint(field)}
       headline={
         <output className="scout-studio-readout small" aria-live="polite">
           {touched ? current : "—"}
@@ -512,8 +519,10 @@ export function FieldPositionField({
     <StudioShell
       label={label}
       hint={
-        field.helpText ??
-        `Tap where it happened. ${config.gridCols} × ${config.gridRows} grid — only cell numbers are stored.`
+        studioHint(
+          field,
+          `Tap where it happened. ${config.gridCols} × ${config.gridRows} grid — only cell numbers are stored.`,
+        )
       }
       headline={
         <output className="scout-studio-readout small" aria-live="polite">

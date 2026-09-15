@@ -12,6 +12,7 @@ import { resolveReferenceAccess } from "../strategy/compute-strategy";
 import type { DataSourceHealthView } from "../reference-health";
 import type { ReferenceAccessInfo } from "../strategy/types";
 import { dossierSetupSteps } from "./dossier-related";
+import { scoutAnswerCards, type ScoutAnswerPayload } from "./scout-answer-cards";
 import { withOrgHref } from "../nav/product-nav";
 
 export type DossierSetupStep = {
@@ -50,20 +51,22 @@ async function loadSeasonScoutOps(
   client: PoolClient,
   orgId: string,
   teamKey: string,
-): Promise<TeamOperationalSignal[]> {
+): Promise<{ operations: TeamOperationalSignal[]; answers: ScoutAnswerPayload[] }> {
   const rows = await client.query<{
+    entryType: "match" | "pit";
     payload: Record<string, unknown>;
     confidence: string | null;
   }>(
-    `SELECT payload, confidence FROM match_scout_entries
-     WHERE org_id = $1 AND team_key = $2
-     UNION ALL
-     SELECT payload, confidence FROM pit_scout_entries
-     WHERE org_id = $1 AND team_key = $2
+    `(SELECT 'match' AS "entryType", payload, confidence, updated_at FROM match_scout_entries
+      WHERE org_id = $1::uuid AND team_key = $2
+      UNION ALL
+      SELECT 'pit', payload, confidence, updated_at FROM pit_scout_entries
+      WHERE org_id = $1::uuid AND team_key = $2)
+     ORDER BY updated_at DESC NULLS LAST
      LIMIT 200`,
     [orgId, teamKey],
   );
-  if (!rows.rows.length) return [];
+  if (!rows.rows.length) return { operations: [], answers: [] };
   const observations = rows.rows.map((row) => ({
     payload: row.payload ?? {},
     confidence:
@@ -73,14 +76,20 @@ async function loadSeasonScoutOps(
   }));
   const reliability = deriveReliability(observations);
   const foulRisk = deriveFoulRisk(observations);
-  return [
-    {
-      teamKey,
-      scoutSample: observations.length,
-      reliability: reliability.score ?? undefined,
-      foulRate: foulRisk.rate ?? undefined,
-    },
-  ];
+  return {
+    operations: [
+      {
+        teamKey,
+        scoutSample: observations.length,
+        reliability: reliability.score ?? undefined,
+        foulRate: foulRisk.rate ?? undefined,
+      },
+    ],
+    answers: rows.rows.map((row) => ({
+      entryType: row.entryType,
+      payload: row.payload ?? {},
+    })),
+  };
 }
 
 export async function computeTeamDossier(
@@ -207,7 +216,7 @@ export async function computeTeamDossier(
   }
 
   const year = new Date().getFullYear();
-  const [yearMetrics, eventMetrics, operations] = await Promise.all([
+  const [yearMetrics, eventMetrics, scout] = await Promise.all([
     client.query<{
       teamKey: string;
       year: number;
@@ -289,24 +298,27 @@ export async function computeTeamDossier(
     syncedAt: metric.syncedAt,
   }));
 
-  const cards = buildTeamDossierFacts({
-    identity: {
-      teamKey: team.teamKey,
-      teamNumber: team.teamNumber,
-      nickname: team.nickname,
-      name: team.name,
-      city: team.city,
-      stateProv: team.stateProv,
-      country: team.country,
-      rookieYear: team.rookieYear,
-      source: "tba",
-      syncedAt: team.syncedAt,
-    },
-    yearMetrics: yearRows,
-    eventMetrics: eventRows,
-    operations,
-    maxSeasonYears: 4,
-  });
+  const cards = [
+    ...buildTeamDossierFacts({
+      identity: {
+        teamKey: team.teamKey,
+        teamNumber: team.teamNumber,
+        nickname: team.nickname,
+        name: team.name,
+        city: team.city,
+        stateProv: team.stateProv,
+        country: team.country,
+        rookieYear: team.rookieYear,
+        source: "tba",
+        syncedAt: team.syncedAt,
+      },
+      yearMetrics: yearRows,
+      eventMetrics: eventRows,
+      operations: scout.operations,
+      maxSeasonYears: 4,
+    }),
+    ...scoutAnswerCards(team.teamKey, scout.answers),
+  ];
 
   const hasReferenceFacts = dossierHasReferenceFacts(cards);
   if (!hasReferenceFacts && !access.statbotics.cacheHasMetrics && !access.cacheHasSync) {

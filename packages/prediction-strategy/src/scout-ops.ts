@@ -146,6 +146,7 @@ const AUTO_KEYS = [
   "autoPieces",
   "autoCoral",
   "autoNotes",
+  "auto_fuel",
   "mobility",
   "autoMobility",
 ] as const;
@@ -157,8 +158,9 @@ const TELEOP_KEYS = [
   "teleopCycles",
   "gamePieces",
   "teleopCoral",
+  "teleop_fuel",
 ] as const;
-const ENDGAME_KEYS = ["climb", "endgame", "park", "trap", "climbLevel", "endgamePoints"] as const;
+const ENDGAME_KEYS = ["climb", "endgame", "park", "trap", "climbLevel", "endgamePoints", "tower_level"] as const;
 const NOTE_KEYS = ["notes", "note", "comments", "pitNotes", "observations", "summary"] as const;
 
 const finite = (value: unknown): value is number =>
@@ -172,9 +174,15 @@ const finite = (value: unknown): value is number =>
 export function inferRoleForFieldKey(key: string): StrategyFieldRole {
   const norm = normalizeSignalKey(key);
   if (!norm) return "none";
+  // Auto climb is its own lookup tile — do not mix it into auto scoring.
+  if (norm.includes("autoclimb") || (norm.startsWith("auto") && norm.includes("climb"))) {
+    return "none";
+  }
+  if (norm.includes("endgame") || norm.includes("climb") || norm === "park") {
+    return "endgame";
+  }
   if (norm.startsWith("auto")) return "auto_score";
   if (norm.startsWith("teleop")) return "teleop_score";
-  if (norm.includes("endgame") || norm.includes("climb") || norm === "park") return "endgame";
   if (norm.includes("defense") || norm.includes("defence")) return "defense";
   if (norm.includes("foul") || norm.includes("penalt")) return "fouls";
   if (norm.includes("note") || norm.includes("comment") || norm.includes("observation")) {
@@ -218,17 +226,23 @@ const ENDGAME_TEXT_SIGNALS: Record<string, number> = {
   no: 0,
   fail: 0,
   failed: 0,
+  not_attempted: 0,
+  "not attempted": 0,
   partial: 0.5,
   park: 0.5,
   parked: 0.5,
   attempt: 0.5,
   attempted: 0.5,
+  l1: 1 / 3,
+  l2: 2 / 3,
+  l3: 1,
   full: 1,
   climb: 1,
   climbed: 1,
   hang: 1,
   hung: 1,
   success: 1,
+  succeeded: 1,
   yes: 1,
 };
 
@@ -296,7 +310,7 @@ function truthySignal(value: unknown): boolean {
 
 /** Robot-failure flag across exact and normalized key spellings (noShow == no_show). */
 function anyFailureFlag(payload: Record<string, unknown>, roles?: ScoutFieldRoleMap): boolean {
-  const failureNorms = new Set(["disabled", "breakdown", "noshow", "brokedown"]);
+  const failureNorms = new Set(["disabled", "breakdown", "noshow", "brokedown", "robotbroke"]);
   for (const [key, value] of Object.entries(payload)) {
     if (roles?.[key] === "none") continue;
     if (failureNorms.has(normalizeSignalKey(key)) && truthySignal(value)) return true;
