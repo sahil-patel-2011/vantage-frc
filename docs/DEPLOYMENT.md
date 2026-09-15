@@ -169,8 +169,8 @@ Notes:
 
 ## 4b. Connectors: every variable, callback URL and provider permission
 
-Vantage talks to ten outside services. Every one of them degrades to a named setup state rather than
-an error, and **`/connectors`** (Settings → Connectors) is the page that shows all ten at once with the
+Vantage talks to twelve outside services. Every one of them degrades to a named setup state rather than
+an error, and **`/connectors`** (Settings → Connectors) is the page that shows all twelve at once with the
 exact callback URL to register, the variables that are missing, the permissions to grant, and working
 Connect / Disconnect buttons. It reads the same catalog this table is generated from —
 `apps/web/lib/connectors/catalog.ts` — so if the two ever disagree, the file is right and this table is
@@ -201,6 +201,7 @@ is the most common cause of `redirect_uri_mismatch` an hour later.
 | Team storage node | `DATABASE_CAD_RELAY_URL` (the `vantage_pairing` role; may point at `DATABASE_URL` until a dedicated role exists) | **none** — the node polls `/api/storage-node/pair/poll` | Run the storage-node agent on the team machine; it prints a pairing code | A pairing code approved by an owner or admin, at `/team/storage` |
 | Fusion 360 relay | `FUSION_RELAY_SIGNING_SECRET`, `DATABASE_CAD_RELAY_URL` | **none** | Install the Vantage Fusion add-in on the laptop | A pairing code approved by an owner or admin, at `/cad/connections` |
 | Free relay (Pi) | `DATABASE_CAD_RELAY_URL` (pairing pool), plus on the Pi: `FREE_RELAY_BASE_URL`, `FREE_RELAY_API_KEY`, `FREE_RELAY_MODEL` | **none** — the Pi polls `/api/relay/pair/poll` | Pair at `/team/relays`. Do not paste a Freebuff website cookie. | Owner/admin pairing code. Chat / agent / video roles. See `docs/FREEBUFF.md` |
+| Claude Code | **none** | **none** — the computer polls `/api/ai-bridge/device/pair/poll` | Install Claude Code, start the Vantage Claude connector, then approve the code | A pairing code approved by the person who signed in on that computer |
 
 ## 4c. Desktop installers and auto-update
 
