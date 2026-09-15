@@ -12,6 +12,9 @@ import { VenueShortcutCheatsheet, type VenueShortcut } from "../../hooks/use-ven
 import { formatDraftSavedAgo, payloadHasDraftContent } from "../../lib/scouting/draft-autosave";
 import { scoutingPostSaveNextSteps } from "../../lib/scouting/form-builder";
 import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import { ScoutMatchJobFields } from "./scout-match-job-fields";
+import { ScoutNextAssignment } from "./scout-next-assignment";
 import type { QuarantinedItem } from "../../lib/scout-offline";
 import {
   formatScoutingMetric,
@@ -58,6 +61,14 @@ export type ScoutingReadyViewProps = {
   formFields: ScoutSchema["definition"]["fields"];
   schemaBudget: SchemaBudget | null;
   matchOptions: MatchOption[];
+  assignmentQueue: Array<{
+    matchKey: string;
+    teamKey: string;
+    compLevel: string;
+    matchNumber: number;
+  }>;
+  nextAssignment: { matchKey: string; teamKey: string; compLevel: string; matchNumber: number } | null;
+  remainingAssignments: number;
   matchKey: string;
   teamKey: string;
   payload: Record<string, unknown>;
@@ -89,6 +100,7 @@ export type ScoutingReadyViewProps = {
   setCheatOpen: (open: boolean) => void;
   setMatchKey: (key: string) => void;
   setTeamKey: (key: string) => void;
+  onSelectAssignment: (matchKey: string, teamKey: string) => void;
   setPayload: Dispatch<SetStateAction<Record<string, unknown>>>;
   setConfidence: (value: "high" | "normal" | "low") => void;
   setSource: (value: "manual" | "voice") => void;
@@ -128,6 +140,9 @@ export function ScoutingReadyView({
   formFields,
   schemaBudget,
   matchOptions,
+  assignmentQueue,
+  nextAssignment,
+  remainingAssignments,
   matchKey,
   teamKey,
   payload,
@@ -151,6 +166,7 @@ export function ScoutingReadyView({
   setCheatOpen,
   setMatchKey,
   setTeamKey,
+  onSelectAssignment,
   setPayload,
   setConfidence,
   setSource,
@@ -412,7 +428,11 @@ return (
           <header className="scout-form-heading">
             <div>
               <h2>{schema?.definition.title ?? `No ${type} form`}</h2>
-              <p className="app-muted">Primary action: fill the form, then save.</p>
+              <p className="app-muted">
+                {type === "match"
+                  ? "Scout the assigned robot: auto, teleop, endgame, then notes. Save uploads; QR is the backup."
+                  : "Confirm this robot in the pit, then save. Photos queue on this phone until they upload."}
+              </p>
             </div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
               {payloadHasDraftContent(payload) || draftSavedAt ? (
@@ -443,38 +463,54 @@ return (
           ) : null}
 
           {type === "match" ? (
-            <FormRow
-              label="Assignment"
-              hint={
-                !matchOptions.length
-                  ? "No assignments or synced matches yet — the list fills in after the event schedule is set."
-                  : undefined
-              }
-            >
-              <select
-                value={`${matchKey}|${teamKey}`}
-                onChange={(event) => {
-                  const [match, team] = event.target.value.split("|");
-                  setMatchKey(match ?? "");
-                  setTeamKey(team ?? "");
-                }}
-              >
-                <option value="|">Select match and team</option>
-                {matchOptions.map((option) => (
-                  <option key={`${option.matchKey}-${option.teamKey}`} value={`${option.matchKey}|${option.teamKey}`}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </FormRow>
-          ) : (
-            <FormRow label="Team key">
-              <input
-                value={teamKey}
-                onChange={(event) => setTeamKey(event.target.value)}
-                placeholder="254"
+            <>
+              <ScoutNextAssignment
+                assignments={assignmentQueue}
+                matchKey={matchKey}
+                teamKey={teamKey}
+                next={nextAssignment}
+                remaining={remainingAssignments}
+                lineupHref={withOrgHref("/scouting/lineup", orgId)}
+                onSelect={onSelectAssignment}
               />
-            </FormRow>
+              {!assignmentQueue.length ? (
+                <FormRow
+                  label="Match and team"
+                  hint={
+                    !matchOptions.length
+                      ? "No assignments or synced matches yet — the list fills in after the event schedule is set."
+                      : "Pick from the event schedule until a lead assigns your robot."
+                  }
+                >
+                  <select
+                    value={`${matchKey}|${teamKey}`}
+                    onChange={(event) => {
+                      const [match, team] = event.target.value.split("|");
+                      setMatchKey(match ?? "");
+                      setTeamKey(team ?? "");
+                    }}
+                  >
+                    <option value="|">Select match and team</option>
+                    {matchOptions.map((option) => (
+                      <option key={`${option.matchKey}-${option.teamKey}`} value={`${option.matchKey}|${option.teamKey}`}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </FormRow>
+              ) : null}
+            </>
+          ) : (
+            <div className="scout-next-robot">
+              <span className="eyebrow">Pit robot</span>
+              <FormRow label="Team" hint="The robot you are standing in front of.">
+                <input
+                  value={teamKey}
+                  onChange={(event) => setTeamKey(event.target.value)}
+                  placeholder="254"
+                />
+              </FormRow>
+            </div>
           )}
 
           {liveConflicts.length ? (
@@ -500,23 +536,27 @@ return (
             </div>
           ) : null}
 
-          {formFields.map((field) => (
-            <Field
-              key={field.key}
-              field={field}
-              value={payload[field.key]}
-              flags={flagsByField.get(field.key) ?? []}
-              historyHint={fieldConfidenceHint(trustByField.get(field.key))}
-              disagreementRate={trustByField.get(field.key)?.disagreementRate ?? null}
-              orgId={orgId}
-              onChange={(value) => setPayload((current) => ({ ...current, [field.key]: value }))}
-              onAttachRobotImage={
-                field.type === "robot_image" || field.widget === "robot_image"
-                  ? (file) => attachMedia(file, { fieldKey: field.key, tags: ["robot"] })
-                  : undefined
-              }
-            />
-          ))}
+          <ScoutMatchJobFields
+            entryType={type}
+            fields={formFields}
+            renderField={(field) => (
+              <Field
+                key={field.key}
+                field={field}
+                value={payload[field.key]}
+                flags={flagsByField.get(field.key) ?? []}
+                historyHint={fieldConfidenceHint(trustByField.get(field.key))}
+                disagreementRate={trustByField.get(field.key)?.disagreementRate ?? null}
+                orgId={orgId}
+                onChange={(value) => setPayload((current) => ({ ...current, [field.key]: value }))}
+                onAttachRobotImage={
+                  field.type === "robot_image" || field.widget === "robot_image"
+                    ? (file) => attachMedia(file, { fieldKey: field.key, tags: ["robot"] })
+                    : undefined
+                }
+              />
+            )}
+          />
 
           <FormRow label="Scout confidence">
             <select
@@ -591,11 +631,21 @@ return (
                 </strong>
                 <small className="app-muted">
                   {saveReceipt.offline
-                    ? "Saved on this phone. It will upload when you have signal."
-                    : "Saved. You can scout the next one."}
+                    ? "Saved on this phone. It will upload when you have signal — or show a QR for a lead to take it."
+                    : "Saved and uploading. You can scout the next assigned robot."}
                 </small>
               </div>
               <ul className="scout-save-next">
+                {saveReceipt.offline ? (
+                  <li>
+                    <Button variant="secondary" type="button" onClick={() => onTabChange("handoff")}>
+                      Show QR
+                    </Button>
+                    <small className="app-muted">
+                      A lead with signal can scan this report instead of waiting on venue Wi-Fi.
+                    </small>
+                  </li>
+                ) : null}
                 {scoutingPostSaveNextSteps(orgId, {
                   eventKey: data?.eventKey,
                   entryType: saveReceipt.entryType,
@@ -646,9 +696,10 @@ return (
           </Panel>
 
           <Panel id="recent-entries" className="scout-activity" style={{ minHeight: "auto" }}>
-            <h2 style={{ marginTop: 0 }}>Recent entries</h2>
+            <h2 style={{ marginTop: 0 }}>This event's reports</h2>
             <p className="app-muted">
-              Open a report to see the stored stats and any timed actions. Team leads can delete a report.
+              Tap or hold a row to open stats, notes, and any timed actions. Team leads can delete a
+              report.
             </p>
             {data?.recentEntries && shouldShowScoutingRecentEntries(data.recentEntries.length) ? (
               <>
