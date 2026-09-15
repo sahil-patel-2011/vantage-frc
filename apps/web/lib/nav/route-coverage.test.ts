@@ -162,6 +162,21 @@ function isReachable(route: string): boolean {
 }
 
 describe("route inventory", () => {
+  it("skips leftover kit trees in next build the same way as this inventory", () => {
+    const pkg = JSON.parse(
+      readFileSync(join(__dirname, "..", "..", "package.json"), "utf8"),
+    ) as { scripts?: { build?: string } };
+    const build = pkg.scripts?.build ?? "";
+    expect(build).toContain("build-without-leftover-kits.mjs");
+    const wrapper = readFileSync(
+      join(__dirname, "..", "..", "scripts", "build-without-leftover-kits.mjs"),
+      "utf8",
+    );
+    expect(wrapper).toContain("win-kit");
+    expect(wrapper).toContain("lovat-kit");
+    expect(wrapper).toContain("agent-kit");
+  });
+
   it("finds the app's routes on disk", () => {
     expect(routes.length).toBeGreaterThan(150);
     expect(routes).toContain("/dashboard");
