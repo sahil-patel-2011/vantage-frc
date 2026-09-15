@@ -64,6 +64,31 @@ describe("apple-qol", () => {
     expect(css).toMatch(/prefers-reduced-motion: reduce/);
     expect(css).toMatch(/\.qol-stagger-row/);
     expect(css).toMatch(/--qol-stagger/);
+    expect(css).toMatch(/--qol-hairline/);
+    expect(css).toMatch(/\.intel-win-result/);
+    expect(css).toMatch(/\.intel-win-bar i/);
     expect(css).not.toMatch(/body\.has-app-shell \.app-card:hover \{\s*transform: translateY/);
+  });
+
+  it("presses intel lookup tiles and phase chips, and reduce kills the detail pane", () => {
+    const css = readFileSync(join(__dirname, "..", "..", "app", "apple-qol.css"), "utf8");
+    const intel = readFileSync(join(__dirname, "..", "..", "app", "intel", "intel.css"), "utf8");
+    const board = readFileSync(join(__dirname, "..", "..", "app", "intel", "intel-lookup-board.tsx"), "utf8");
+    expect(css).toMatch(/\.app-button:focus-visible/);
+    expect(css).toMatch(/\.app-button\.primary:not\(:disabled\):not\(\[aria-disabled="true"\]\):hover/);
+    expect(css).toMatch(/\.intel-lookup-tile:hover/);
+    expect(css).toMatch(/\.intel-lookup-tile:active/);
+    expect(css).toMatch(/\.intel-phase:not\(:disabled\):active/);
+    expect(css).toMatch(/scale\(var\(--qol-press\)\)/);
+    expect(css).toMatch(/--qol-tile-rise/);
+    expect(board).toMatch(/qol-stagger-row/);
+    expect(board).toMatch(/--qol-i/);
+    const reduceAt = css.indexOf("prefers-reduced-motion: reduce");
+    expect(reduceAt).toBeGreaterThan(-1);
+    expect(css.slice(reduceAt)).toMatch(/\.intel-lookup-detail/);
+    expect(intel).toMatch(/intel-lookup-detail/);
+    const intelReduceAt = intel.indexOf("prefers-reduced-motion: reduce");
+    expect(intelReduceAt).toBeGreaterThan(-1);
+    expect(intel.slice(intelReduceAt)).toMatch(/intel-lookup-detail/);
   });
 });

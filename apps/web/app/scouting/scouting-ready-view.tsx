@@ -31,6 +31,7 @@ import { ScoutQuarantinePanel } from "./scouting-quarantine";
 import ScoutHandoffPanel from "./scout-handoff-panel";
 import ScoutVoiceNotesPanel from "./scout-voice-notes-panel";
 import ScoutingTrustPanel from "./scouting-trust-panel";
+import { MatchPadPanel } from "./match-pad-panel";
 
 type MatchOption = { matchKey: string; teamKey: string; label: string };
 type SaveReceipt = {
@@ -559,6 +560,28 @@ return (
               void sync();
             }}
           />
+
+          {type === "match" ? (
+            <MatchPadPanel
+              key={`${matchKey}|${teamKey}`}
+              matchKey={matchKey || undefined}
+              teamKey={teamKey || undefined}
+              initialPayload={payload}
+              onApply={(applied) => {
+                setPayload((current) => {
+                  const next: Record<string, unknown> = {
+                    ...current,
+                    ...applied,
+                  };
+                  if (!applied.autoPath || applied.autoPath.length < 2) {
+                    delete next.autoPath;
+                  }
+                  return next;
+                });
+                setMessage("Match pad saved onto this form. Use Save this match when you are done.");
+              }}
+            />
+          ) : null}
 
           {type === "pit" ? (
             <label className="scout-media">

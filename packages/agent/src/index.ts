@@ -286,5 +286,6 @@ export * from "./design-research";
 export * from "./task-finish";
 export * from "./working-todos";
 export * from "./working-memory";
+export * from "./working-retrieve";
 export * from "./autonomous-todo-progress";
 export * from "./chat-working-memory";

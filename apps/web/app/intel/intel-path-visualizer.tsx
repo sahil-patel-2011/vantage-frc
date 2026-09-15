@@ -87,7 +87,7 @@ export function IntelPathVisualizer({ payloads }: { payloads: Array<Record<strin
           <div className="intel-path-controls">
             <button
               type="button"
-              className="intel-phase"
+              className="intel-phase qol-press"
               aria-pressed={playing}
               onClick={() => setPlaying((value) => !value)}
             >

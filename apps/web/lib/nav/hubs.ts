@@ -367,6 +367,12 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
           legacyHref: "/learn/6925",
           featured: true,
         },
+        {
+          id: "software-track",
+          label: "Software track",
+          legacyHref: "/learn/software",
+          featured: true,
+        },
         { id: "code-deploy-log", label: "Deploy log", legacyHref: "/code-deploy-log" },
         { id: "agent-config", label: "Team agent config", legacyHref: "/team/agent-config" },
         { id: "code-perf", label: "Code vs match", legacyHref: "/code-perf" },

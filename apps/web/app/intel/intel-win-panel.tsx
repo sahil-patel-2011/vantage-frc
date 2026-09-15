@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { predictUnscoredMatch } from "@vantage/prediction-strategy";
+import { predictUnscoredMatchPlus } from "@vantage/prediction-strategy";
 import { Button, FormRow, Panel } from "../../components/ui";
 import { eventStdFor, type EventRatingRow } from "../../lib/intel/lovat-lookup";
 
@@ -41,7 +41,7 @@ export function IntelWinPanel({
     if (!redKeys.length || !blueKeys.length) return null;
     const left = (flipped ? blueKeys : redKeys).map((key) => ({ teamKey: key, mean: meanFor(key, fieldRatings) }));
     const right = (flipped ? redKeys : blueKeys).map((key) => ({ teamKey: key, mean: meanFor(key, fieldRatings) }));
-    return predictUnscoredMatch({ red: left, blue: right, fieldStd });
+    return predictUnscoredMatchPlus({ red: left, blue: right, fieldStd });
   }, [blueRaw, fieldRatings, fieldStd, flipped, redRaw]);
 
   const redPct = prediction?.redWinPct ?? null;
@@ -51,8 +51,8 @@ export function IntelWinPanel({
     <Panel className="intel-win" style={{ minHeight: "auto" }}>
       <h3 style={{ marginTop: 0 }}>Match predictor</h3>
       <p className="app-muted">
-        Predicted scores are the sum of team means. Win % is the left tail of red minus blue — skipped when a robot
-        has no rating.
+        Predicted scores are the sum of team means. Win % uses the published Normal tail with a tighter Φ and a
+        small-sample widen so 99% calls need more robots. Skipped when a robot has no rating.
       </p>
       <div className="intel-win-inputs">
         <FormRow label="Red" hint="Team numbers, comma-separated.">
@@ -63,19 +63,19 @@ export function IntelWinPanel({
         </FormRow>
       </div>
       <Button variant="secondary" type="button" onClick={() => setFlipped((value) => !value)}>
-        Flip red and blue
+        Swap alliances
       </Button>
       {!fieldRatings.length ? (
         <p className="app-muted">Needs setup — no event ratings on file yet.</p>
       ) : prediction ? (
         <div className="intel-win-result">
           <div className="intel-win-alliances">
-            <div className="intel-win-side is-red">
+            <div className="intel-win-side is-red qol-lift">
               <span>Red predicted</span>
               <strong>{prediction.redPredicted.toFixed(1)}</strong>
               <em>{redPct == null ? "Win % —" : `Win ${pctLabel(redPct)}`}</em>
             </div>
-            <div className="intel-win-side is-blue">
+            <div className="intel-win-side is-blue qol-lift">
               <span>Blue predicted</span>
               <strong>{prediction.bluePredicted.toFixed(1)}</strong>
               <em>{bluePct == null ? "Win % —" : `Win ${pctLabel(bluePct)}`}</em>

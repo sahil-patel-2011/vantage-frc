@@ -179,10 +179,32 @@
   .scout-tap{font-size:17px}
   .scout-field-grid{gap:3px;padding:4px}
   .scout-field-cell{font-size:10px}
+  .match-pad-identity,.match-pad-quals{grid-template-columns:1fr}
 }
+.match-pad{display:grid;gap:12px;margin:16px 0;padding:14px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--bg)}
+.match-pad-heading{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:12px}
+.match-pad-heading h3{margin:0 0 4px}
+.match-pad-moving{display:grid;gap:2px;margin:0;text-align:right}
+.match-pad-moving .eyebrow{font:700 10px/1 var(--font-source-sans),ui-sans-serif;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.match-pad-identity,.match-pad-quals{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.match-pad-phases,.match-pad-actions,.match-pad-toolbar,.match-pad-note-row{display:flex;flex-wrap:wrap;gap:8px}
+.match-pad-action{min-width:7.5rem;min-height:52px}
+.match-pad-note-row{align-items:center}
+.match-pad-note-row input{flex:1;min-width:10rem}
+.match-pad-empty{margin:0;color:var(--muted)}
+.match-pad-auto-path{display:grid;gap:8px;justify-items:start}
+.match-pad-field{display:block;width:100%;max-width:32rem;padding:0;border:1px solid var(--line);border-radius:var(--radius-sm);background:transparent;cursor:crosshair}
+.match-pad-field svg{display:block;width:100%;aspect-ratio:54/27}
+.match-pad-field-floor{fill:color-mix(in srgb, var(--accent-soft) 22%, var(--surface));stroke:var(--line);stroke-width:.4}
+.match-pad-field-half{stroke:var(--line);stroke-dasharray:.8 .8;stroke-width:.25}
+.match-pad-field-line{stroke:var(--accent);stroke-width:.6;stroke-linecap:round;stroke-linejoin:round;fill:none}
+.match-pad-field-dot{fill:var(--accent)}
+.match-pad-events{margin:0;padding:0;list-style:none;display:grid;gap:8px}
+.match-pad-events li{display:grid;gap:2px;padding-top:8px;border-top:1px solid var(--line)}
+.match-pad-events li:first-child{border-top:0;padding-top:0}
 @media(prefers-reduced-motion:reduce){
-  .scout-tap,.scout-timer-toggle{transition:none}
-  .scout-tap:active,.scout-timer-toggle:active{transform:none}
+  .scout-tap,.scout-timer-toggle,.match-pad .qol-press{transition:none}
+  .scout-tap:active,.scout-timer-toggle:active,.match-pad .qol-press:active{transform:none}
 }
 @media print{
   .scout-page .scout-related,.scout-page .scout-header-meta .app-button,.scout-page .scout-sync-pill,.scout-page .scout-next-actions{display:none!important}

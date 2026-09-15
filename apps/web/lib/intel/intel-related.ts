@@ -1,6 +1,12 @@
 import { hubHref } from "../nav/hubs";
 import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
+import {
+  MATCH_PAD_EVENTS_KEY,
+  actionLabel,
+  eventsFromPayload,
+  type MatchPadEventType,
+} from "../scouting/match-pad";
 
 /** Related surfaces for Research (never DEMO research). */
 export const INTEL_RELATED_LINKS = [
@@ -104,7 +110,50 @@ const NOTE_NUMBER_LABELS: ReadonlyArray<readonly [string, string]> = [
   ["totalPoints", "points"],
   ["score", "score"],
   ["fouls", "fouls"],
+  ["estimatedTotalFuelScored", "Estimated fuel scored"],
+  ["totalFuelFed", "Total fuel fed"],
+  ["feedingRate", "Feeding rate"],
+  ["scoringRate", "Scoring rate"],
+  ["driverAbility", "Driver ability"],
+  ["defenseEffectiveness", "Defense effectiveness"],
 ];
+
+const PAD_COUNT_TYPES = ["score", "feed", "defend"] as const satisfies readonly MatchPadEventType[];
+
+function padEventCountParts(payload: Record<string, unknown>): string[] {
+  if (!Array.isArray(payload[MATCH_PAD_EVENTS_KEY])) return [];
+  const counts: Record<(typeof PAD_COUNT_TYPES)[number], number> = {
+    score: 0,
+    feed: 0,
+    defend: 0,
+  };
+  for (const event of eventsFromPayload(payload)) {
+    switch (event.type) {
+      case "score":
+        counts.score += 1;
+        break;
+      case "feed":
+        counts.feed += 1;
+        break;
+      case "defend":
+        counts.defend += 1;
+        break;
+      case "climb":
+      case "note":
+        break;
+      default: {
+        const exhaustive: never = event.type;
+        return exhaustive;
+      }
+    }
+  }
+  const parts: string[] = [];
+  for (const type of PAD_COUNT_TYPES) {
+    const count = counts[type];
+    if (count > 0) parts.push(`${actionLabel(type)} ${count}`);
+  }
+  return parts;
+}
 
 function intelRelatedHrefs(orgId?: string | null): Set<string> {
   return new Set(
@@ -281,6 +330,10 @@ export function intelScoutNoteLines(notes: IntelScoutNote[]): IntelScoutNoteLine
       if (typeof value === "number" && Number.isFinite(value)) {
         parts.push(`${label} ${value}`);
       }
+    }
+    parts.push(...padEventCountParts(note.payload));
+    if (note.payload.scoresWhileMoving === 1) {
+      parts.push("Scored while moving");
     }
     for (const key of NOTE_STRING_KEYS) {
       const value = note.payload[key];

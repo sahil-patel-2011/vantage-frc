@@ -26,7 +26,11 @@ describe("leftover Research / Lovat lookup chrome", () => {
       /Needs setup — no auto paths on file yet/,
     );
     expect(src("app/intel/intel-win-panel.tsx")).toMatch(/Match predictor/);
-    expect(src("app/intel/intel-win-panel.tsx")).toMatch(/Flip red and blue/);
+    expect(src("app/intel/intel-win-panel.tsx")).toMatch(/Swap alliances/);
+    expect(src("app/intel/intel-win-panel.tsx")).not.toMatch(/Flip red and blue/);
+    expect(src("app/intel/intel-win-panel.tsx")).not.toMatch(/Lovat/);
+    expect(src("app/intel/intel-picklist-sliders.tsx")).toMatch(/Adjust order/);
+    expect(src("app/intel/intel-lookup-board.tsx")).toMatch(/intel-lookup-detail/);
     expect(src("app/intel/intel.css")).toMatch(/minmax\(5\.35rem,1fr\)/);
   });
 });

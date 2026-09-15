@@ -129,6 +129,83 @@ export function lookupMetricLabel(id: LovatLookupMetricId): string {
   return LOVAT_LOOKUP_METRICS.find((metric) => metric.id === id)?.label ?? picklistMetricLabel(id as PicklistMetricId);
 }
 
+export function lookupSourceLabel(source: LovatLookupSource): string {
+  switch (source) {
+    case "event":
+      return "Event";
+    case "scout":
+      return "Our scouting";
+    default: {
+      const exhaustive: never = source;
+      return exhaustive;
+    }
+  }
+}
+
+export function lookupContributionLabel(contribution: number | null): string | null {
+  if (contribution == null || !Number.isFinite(contribution)) return null;
+  return `${Math.round(contribution * 100)}% of this event`;
+}
+
+export function selectedLookupCard(
+  cards: readonly LookupCard[],
+  id: LovatLookupMetricId | null,
+): LookupCard | null {
+  if (id == null) return null;
+  return cards.find((card) => card.id === id) ?? null;
+}
+
+export type PicklistMoveDirection = "up" | "down";
+
+/** Display-only reorder. Scores stay on the computed rows — never invented. */
+export function applyPicklistDisplayOrder<T extends { teamKey: string }>(
+  ranked: readonly T[],
+  overrideKeys: readonly string[] | null,
+): T[] {
+  if (!overrideKeys?.length) return [...ranked];
+  const byKey = new Map(ranked.map((row) => [row.teamKey, row]));
+  const seen = new Set<string>();
+  const ordered: T[] = [];
+  for (const key of overrideKeys) {
+    const row = byKey.get(key);
+    if (!row || seen.has(key)) continue;
+    seen.add(key);
+    ordered.push(row);
+  }
+  for (const row of ranked) {
+    if (!seen.has(row.teamKey)) ordered.push(row);
+  }
+  return ordered;
+}
+
+export function movePicklistKey(
+  keys: readonly string[],
+  teamKey: string,
+  direction: PicklistMoveDirection,
+): string[] {
+  const index = keys.indexOf(teamKey);
+  if (index < 0) return [...keys];
+  let nextIndex: number;
+  switch (direction) {
+    case "up":
+      nextIndex = index - 1;
+      break;
+    case "down":
+      nextIndex = index + 1;
+      break;
+    default: {
+      const exhaustive: never = direction;
+      return exhaustive;
+    }
+  }
+  if (nextIndex < 0 || nextIndex >= keys.length) return [...keys];
+  const next = [...keys];
+  const [moved] = next.splice(index, 1);
+  if (moved == null) return [...keys];
+  next.splice(nextIndex, 0, moved);
+  return next;
+}
+
 export function formatLookupValue(value: number | null | undefined, digits = 1): string {
   if (value == null || !Number.isFinite(value)) return "—";
   return Number.isInteger(value) ? String(value) : value.toFixed(digits);

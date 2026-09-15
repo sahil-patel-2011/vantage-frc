@@ -8,15 +8,26 @@
 import type { ContextItem } from "./index";
 import { MAX_EXCERPT_CHARS, MAX_SUMMARY_CHARS } from "./autonomous-agent-store";
 import { compactContextItems, estimateItemTokens } from "./context-compact";
+import {
+  DEFAULT_RELEVANT_EVIDENCE_COUNT,
+  DEFAULT_REFLECTION_EVERY_HOPS,
+  extractiveReflection,
+  selectWorkingEvidence,
+  shouldReflectOnHop,
+} from "./working-retrieve";
 
 export const PINNED_GOAL_IMPORTANCE = 990;
 export const PINNED_TODOS_IMPORTANCE = 980;
+export const PINNED_REFLECTION_IMPORTANCE = 970;
 export const RECENT_TOOL_EXCERPT_IMPORTANCE = 900;
+export const RELEVANT_OLDER_EXCERPT_IMPORTANCE = 220;
 export const OLDER_TOOL_DUMP_IMPORTANCE = 40;
 export const RECENT_TOOL_EXCERPT_COUNT = 3;
+export const RELEVANT_OLDER_EXCERPT_COUNT = DEFAULT_RELEVANT_EVIDENCE_COUNT;
 
 export const WORKING_GOAL_ITEM_ID = "working-goal";
 export const WORKING_TODOS_ITEM_ID = "working-todos";
+export const WORKING_REFLECTION_ITEM_ID = "working-reflection";
 export const TOOL_EXCERPT_ID_PREFIX = "tool-excerpt:";
 
 export const WORKING_MEMORY_SUMMARY_CHARS = MAX_SUMMARY_CHARS;
@@ -46,6 +57,11 @@ export type AssembleStepContextInput = {
   toolExcerpts?: readonly ContextItem[];
   tokenBudget: number;
   recentExcerptCount?: number;
+  /** Top-k older excerpts that overlap the goal / open todos (retrieve-before-dump). */
+  relevantExcerptCount?: number;
+  /** 0-based hop index; reflection pins every 6 hops when excerpts exist. */
+  hopIndex?: number;
+  reflectEveryHops?: number;
 };
 
 export type AssembledStepContext = {
@@ -126,22 +142,43 @@ export function excerptToolResult(result: unknown, options?: ExcerptToolResultOp
 export function assembleStepContext(input: AssembleStepContextInput): AssembledStepContext {
   const goalItem = resolveGoalItem(input.goal);
   const todosItem = resolveTodosItem(input.todos);
-  const pinned: ContextItem[] = todosItem ? [goalItem, todosItem] : [goalItem];
-  const pinnedIds = new Set(pinned.map((item) => item.id));
-  const pinnedTokens = pinned.reduce((sum, item) => sum + estimateItemTokens(item), 0);
-
+  const goalText = goalTextForRetrieve(input.goal);
+  const scoringTodos = scoringTodosForRetrieve(input.todos);
   const incoming = [...(input.items ?? []), ...(input.toolExcerpts ?? [])];
   const excerpts: ContextItem[] = [];
   const other: ContextItem[] = [];
+  const skipIds = new Set<string>([WORKING_GOAL_ITEM_ID, WORKING_TODOS_ITEM_ID, WORKING_REFLECTION_ITEM_ID]);
   for (const item of incoming) {
-    if (pinnedIds.has(item.id)) continue;
+    if (skipIds.has(item.id)) continue;
     if (isToolExcerptItem(item)) excerpts.push(item);
     else other.push(item);
   }
 
+  const reflectionItem = maybePinReflection({
+    hopIndex: input.hopIndex,
+    every: input.reflectEveryHops,
+    goal: goalText,
+    todos: scoringTodos,
+    excerpts,
+  });
+  const pinned: ContextItem[] = [goalItem];
+  if (todosItem) pinned.push(todosItem);
+  if (reflectionItem) pinned.push(reflectionItem);
+  const pinnedIds = new Set(pinned.map((item) => item.id));
+  const pinnedTokens = pinned.reduce((sum, item) => sum + estimateItemTokens(item), 0);
+  const restOther = other.filter((item) => !pinnedIds.has(item.id));
+
   const recentCount = input.recentExcerptCount ?? RECENT_TOOL_EXCERPT_COUNT;
-  const rankedExcerpts = rankToolExcerpts(excerpts, recentCount);
-  const rest = [...other, ...rankedExcerpts];
+  const relevantCount = input.relevantExcerptCount ?? RELEVANT_OLDER_EXCERPT_COUNT;
+  const evidence = selectWorkingEvidence({
+    goal: goalText,
+    todos: scoringTodos,
+    excerpts,
+    recentCount,
+    relevantCount,
+  });
+  const rankedExcerpts = rankToolExcerpts(excerpts, evidence, recentCount);
+  const rest = [...restOther, ...rankedExcerpts];
   const restBudget = Math.max(0, input.tokenBudget - pinnedTokens);
   const compacted = compactContextItems(rest, restBudget);
 
@@ -192,13 +229,58 @@ function resolveTodosItem(todos: AssembleStepContextInput["todos"]): ContextItem
   };
 }
 
-function rankToolExcerpts(excerpts: ContextItem[], recentCount: number): ContextItem[] {
+function rankToolExcerpts(
+  excerpts: ContextItem[],
+  evidence: { recent: readonly ContextItem[]; relevant: readonly ContextItem[] },
+  recentCount: number,
+): ContextItem[] {
   const keep = Math.max(0, recentCount);
-  return excerpts.map((item, index) => ({
-    ...item,
-    importance:
-      index >= excerpts.length - keep ? RECENT_TOOL_EXCERPT_IMPORTANCE : OLDER_TOOL_DUMP_IMPORTANCE,
-  }));
+  const relevantKeys = new Set(evidence.relevant.map(excerptKey));
+  return excerpts.map((item, index) => {
+    const isRecent = index >= excerpts.length - keep;
+    if (isRecent) {
+      return { ...item, importance: RECENT_TOOL_EXCERPT_IMPORTANCE };
+    }
+    if (relevantKeys.has(excerptKey(item))) {
+      return { ...item, importance: RELEVANT_OLDER_EXCERPT_IMPORTANCE };
+    }
+    return { ...item, importance: OLDER_TOOL_DUMP_IMPORTANCE };
+  });
+}
+
+function excerptKey(item: Pick<ContextItem, "id" | "content">): string {
+  return `${item.id}\0${item.content}`;
+}
+
+function goalTextForRetrieve(goal: string | ContextItem): string {
+  if (typeof goal === "string") return goal;
+  return goal.content.replace(/^Goal:\s*/i, "");
+}
+
+function scoringTodosForRetrieve(todos: AssembleStepContextInput["todos"]): WorkingTodo[] {
+  if (todos == null) return [];
+  if (isTodoList(todos)) return [...todos];
+  return [{ id: todos.id, label: todos.content, status: "pending" }];
+}
+
+function maybePinReflection(input: {
+  hopIndex?: number;
+  every?: number;
+  goal: string;
+  todos: readonly WorkingTodo[];
+  excerpts: readonly ContextItem[];
+}): ContextItem | null {
+  if (input.hopIndex == null) return null;
+  if (!shouldReflectOnHop(input.hopIndex, input.every ?? DEFAULT_REFLECTION_EVERY_HOPS)) return null;
+  if (!input.excerpts.length) return null;
+  const content = extractiveReflection(input.goal, input.todos, input.excerpts);
+  if (!content) return null;
+  return {
+    type: "module_fact",
+    id: WORKING_REFLECTION_ITEM_ID,
+    importance: PINNED_REFLECTION_IMPORTANCE,
+    content,
+  };
 }
 
 function pickStringField(value: unknown, keys: readonly string[]): string | undefined {

@@ -1,0 +1,92 @@
+.software-track-page {
+  display: block;
+  max-width: 74ch;
+}
+
+.software-track-lead {
+  margin: 0 0 16px;
+  color: var(--muted);
+}
+
+.software-track-progress {
+  margin: 0 0 24px;
+  font-weight: 700;
+}
+
+.software-track-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.software-track-unit {
+  margin: 0 0 28px;
+  padding: 12px 12px 20px;
+  margin-left: -12px;
+  margin-right: -12px;
+  border-bottom: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  transition:
+    border-color var(--qol-fast, 160ms) var(--qol-ease-io, ease),
+    background-color var(--qol, 240ms) var(--qol-ease, ease),
+    box-shadow var(--qol, 240ms) var(--qol-ease, ease);
+}
+
+.software-track-unit.is-next {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+  box-shadow: 0 0 0 var(--qol-hairline, 0.4px) color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.software-track-up-next {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.software-track-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-weight: 700;
+}
+
+.software-track-check input {
+  margin-top: 4px;
+}
+
+.software-track-check em {
+  display: inline-block;
+  margin-left: 8px;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.software-track-unit p,
+.software-track-unit li {
+  line-height: 1.55;
+}
+
+.software-track-links {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.software-track-links a {
+  color: var(--ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .software-track-unit {
+    transition: none;
+  }
+
+  .software-track-page .qol-press:active {
+    transform: none;
+  }
+}

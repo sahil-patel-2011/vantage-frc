@@ -10,7 +10,14 @@ import {
   type TeamMetricRow,
 } from "@vantage/prediction-strategy";
 import { Button, Panel } from "../../components/ui";
-import { eventRowsToMetricRows, type EventRatingRow, type ScoutAverageRow } from "../../lib/intel/lovat-lookup";
+import {
+  applyPicklistDisplayOrder,
+  eventRowsToMetricRows,
+  movePicklistKey,
+  type EventRatingRow,
+  type PicklistMoveDirection,
+  type ScoutAverageRow,
+} from "../../lib/intel/lovat-lookup";
 
 const PRESETS: ReadonlyArray<{ id: PicklistPresetId; label: string }> = [
   { id: "event", label: "Event ratings" },
@@ -33,6 +40,7 @@ export function IntelPicklistSliders({
   scout?: ScoutAverageRow | null;
 }) {
   const [weights, setWeights] = useState<MetricWeight[]>(() => picklistPresetWeights("event"));
+  const [orderOverride, setOrderOverride] = useState<string[] | null>(null);
   const rows = useMemo(
     () => eventRowsToMetricRows(fieldRatings).map((row) => mergeScout(row, scout)),
     [fieldRatings, scout],
@@ -40,9 +48,16 @@ export function IntelPicklistSliders({
   const ranked = useMemo(() => rankByWeightedZScores(rows, weights), [rows, weights]);
   const self = ranked.find((row) => row.teamKey === teamKey);
   const placed = ranked.filter((row) => row.score != null);
+  const displayRows = applyPicklistDisplayOrder(placed, orderOverride);
 
   function setPreset(id: PicklistPresetId) {
     setWeights(picklistPresetWeights(id));
+    setOrderOverride(null);
+  }
+
+  function moveTeam(key: string, direction: PicklistMoveDirection) {
+    const keys = orderOverride ?? placed.map((row) => row.teamKey);
+    setOrderOverride(movePicklistKey(keys, key, direction));
   }
 
   function setWeight(id: MetricWeight["id"], weight: number) {
@@ -55,8 +70,8 @@ export function IntelPicklistSliders({
     <Panel className="intel-picklist" style={{ minHeight: "auto" }}>
       <h3 style={{ marginTop: 0 }}>Picklist</h3>
       <p className="app-muted">
-        Drag sliders to weight this event. Teams without a real number for a slider are skipped. Order stays computed
-        — open the pick desk to save a list.
+        Drag sliders to weight this event. Teams without a real number for a slider are skipped. Adjust order only
+        changes this screen — scores stay computed. Save from the pick desk or Save as #1 pick.
       </p>
       <div className="intel-phase-row" role="group" aria-label="Picklist presets">
         {PRESETS.map((preset) => (
@@ -101,15 +116,50 @@ export function IntelPicklistSliders({
         <p className="app-muted">Needs setup — sync event ratings before ranking this field.</p>
       )}
       {placed.length ? (
-        <ol className="intel-pick-rank">
-          {placed.map((row, index) => (
-            <li key={row.teamKey} className={row.teamKey === teamKey ? "is-self" : undefined}>
-              <span>{index + 1}</span>
-              <b>{row.teamKey.replace(/^frc/i, "")}</b>
-              <em>{row.score?.toFixed(2)}</em>
-            </li>
-          ))}
-        </ol>
+        <>
+          <div className="intel-pick-adjust">
+            <h4>Adjust order</h4>
+            {orderOverride ? (
+              <Button variant="secondary" type="button" onClick={() => setOrderOverride(null)}>
+                Reset to computed
+              </Button>
+            ) : null}
+          </div>
+          <ol className="intel-pick-rank">
+            {displayRows.map((row, index) => {
+              const number = row.teamKey.replace(/^frc/i, "");
+              return (
+                <li key={row.teamKey} className={row.teamKey === teamKey ? "is-self" : undefined}>
+                  <span>{index + 1}</span>
+                  <b>{number}</b>
+                  <em>{row.score?.toFixed(2)}</em>
+                  {displayRows.length > 1 ? (
+                    <span className="intel-pick-move">
+                      <button
+                        type="button"
+                        className="qol-press"
+                        aria-label={`Move ${number} up`}
+                        disabled={index === 0}
+                        onClick={() => moveTeam(row.teamKey, "up")}
+                      >
+                        Up
+                      </button>
+                      <button
+                        type="button"
+                        className="qol-press"
+                        aria-label={`Move ${number} down`}
+                        disabled={index === displayRows.length - 1}
+                        onClick={() => moveTeam(row.teamKey, "down")}
+                      >
+                        Down
+                      </button>
+                    </span>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ol>
+        </>
       ) : null}
     </Panel>
   );

@@ -16,14 +16,17 @@ export function Team6925Lab() {
         description="Official Limelight, WPILib, GitHub, and CAD Video Tutor links, then five paced weeks. Scores stay blank until a real grade exists."
       >
         <nav className="product-hub-related" aria-label="Related coding tools">
-          <Button as="a" variant="secondary" href={withOrgHref("/dev-setup", null)}>
+          <Button as="a" variant="secondary" className="qol-press" href={withOrgHref("/dev-setup", null)}>
             Programming setup
           </Button>
-          <Button as="a" variant="secondary" href={withOrgHref("/cad-learn", null)}>
+          <Button as="a" variant="secondary" className="qol-press" href={withOrgHref("/cad-learn", null)}>
             Learn CAD
           </Button>
-          <Button as="a" variant="secondary" href={withOrgHref("/code", null)}>
+          <Button as="a" variant="secondary" className="qol-press" href={withOrgHref("/code", null)}>
             Code
+          </Button>
+          <Button as="a" variant="secondary" className="qol-press" href={withOrgHref("/learn/software", null)}>
+            Software track
           </Button>
         </nav>
       </PageHeader>

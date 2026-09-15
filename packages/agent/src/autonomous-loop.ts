@@ -43,6 +43,7 @@ import {
   excerptToolResult,
   type WorkingTodo,
 } from "./working-memory";
+import { alreadyObservedContextItem, memoryHitsForQuery } from "./working-retrieve";
 import { listWorkingTodos, upsertSeedWorkingTodos } from "./working-todos";
 import {
   applyWorkingTodoProgressAfterTool,
@@ -479,6 +480,7 @@ export async function runAutonomousAgent(
         ],
         toolExcerpts,
         tokenBudget: contextTokenBudgetForAdapter(adapter),
+        hopIndex: stepIndex,
       }).items;
 
       const message = buildStepMessage(goal, stepIndex, maxSteps);
@@ -634,6 +636,18 @@ export async function runAutonomousAgent(
       // tool_call
       if (aiPolicy && !isToolAllowed(aiPolicy, action.tool)) {
         throw new Error(`AI tool is not allowed by organization policy: ${action.tool}`);
+      }
+
+      if (action.tool === "web.search") {
+        const query = String(action.input.query ?? "");
+        const memoryHits = memoryHitsForQuery(query, toolExcerpts, todos);
+        const observed = alreadyObservedContextItem(memoryHits);
+        if (observed) {
+          toolExcerpts.push({
+            ...observed,
+            id: `${observed.id}:${toolExcerpts.length}`,
+          });
+        }
       }
 
       const toolOut = await invokeNamedTool(action.tool, action.input, input.registry ?? null, {

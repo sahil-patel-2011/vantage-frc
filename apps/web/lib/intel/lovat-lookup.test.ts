@@ -1,15 +1,20 @@
 import { describe, expect, it } from "vitest";
 import {
   LOVAT_LOOKUP_METRIC_IDS,
+  applyPicklistDisplayOrder,
   buildLookupCards,
   contributionShare,
   fieldCompare,
   fieldStatsFromEventRows,
   formatLookupValue,
   lookupCardVisible,
+  lookupContributionLabel,
+  lookupSourceLabel,
+  movePicklistKey,
   scoutAveragesFromPayloads,
   scoutMetricVisibleWhen,
   scoutSeriesFromPayloads,
+  selectedLookupCard,
   sparklinePath,
   type EventRatingRow,
 } from "./lovat-lookup";
@@ -118,6 +123,50 @@ describe("lookupCardVisible", () => {
     expect(lookupCardVisible("auto", auto)).toBe(true);
     expect(lookupCardVisible("auto", driver)).toBe(false);
     expect(lookupCardVisible("teleop", driver)).toBe(true);
+  });
+});
+
+describe("selectedLookupCard", () => {
+  it("returns the tapped card's real numbers and skips a blank select", () => {
+    const cards = buildLookupCards({
+      teamKey: "frc3",
+      event: field[2]!,
+      field: fieldStatsFromEventRows(field),
+      history: [20, 40, 60],
+    });
+    const total = selectedLookupCard(cards, "totalPoints");
+    expect(total?.label).toBe("Total points");
+    expect(total?.display).toBe("60");
+    expect(total?.compare.label).toMatch(/this event/);
+    expect(lookupContributionLabel(total?.contribution ?? null)).toMatch(/% of this event/);
+    expect(total?.sparkline).toMatch(/^M/);
+    expect(lookupSourceLabel(total!.source)).toBe("Event");
+    const driver = selectedLookupCard(cards, "driverAbility");
+    expect(driver?.display).toBe("—");
+    expect(lookupCardVisible("all", driver!)).toBe(false);
+    expect(lookupContributionLabel(null)).toBeNull();
+    expect(selectedLookupCard(cards, null)).toBeNull();
+  });
+});
+
+describe("applyPicklistDisplayOrder", () => {
+  it("reorders display without inventing or rewriting scores", () => {
+    const ranked = [
+      { teamKey: "frc3", score: 1.2 },
+      { teamKey: "frc2", score: 0.4 },
+      { teamKey: "frc1", score: -0.8 },
+    ];
+    const moved = applyPicklistDisplayOrder(ranked, ["frc1", "frc3", "frc2"]);
+    expect(moved.map((row) => row.teamKey)).toEqual(["frc1", "frc3", "frc2"]);
+    expect(moved.find((row) => row.teamKey === "frc3")?.score).toBe(1.2);
+    expect(moved.find((row) => row.teamKey === "frc1")?.score).toBe(-0.8);
+    const unknown = applyPicklistDisplayOrder(ranked, ["frc9", "frc2"]);
+    expect(unknown.map((row) => row.teamKey)).toEqual(["frc2", "frc3", "frc1"]);
+    expect(unknown.every((row) => ranked.some((item) => item.teamKey === row.teamKey && item.score === row.score))).toBe(
+      true,
+    );
+    expect(movePicklistKey(["frc3", "frc2", "frc1"], "frc1", "up")).toEqual(["frc3", "frc1", "frc2"]);
+    expect(movePicklistKey(["frc3", "frc2", "frc1"], "frc3", "up")).toEqual(["frc3", "frc2", "frc1"]);
   });
 });
 

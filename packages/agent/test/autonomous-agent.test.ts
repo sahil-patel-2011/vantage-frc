@@ -35,6 +35,7 @@ import {
   executeWebSearch,
   resolveWebSearchProvider,
 } from "../src/web-tools";
+import { parseAutonomousAgentAction } from "../src/autonomous-loop";
 
 vi.mock("@vantage/billing", async () => {
   const actual = await vi.importActual<typeof import("@vantage/billing")>("@vantage/billing");
@@ -114,8 +115,7 @@ describe("web search / fetch setup_required", () => {
 });
 
 describe("tool-result injection helpers", () => {
-  it("parses ReAct JSON actions", { timeout: 15_000 }, async () => {
-    const { parseAutonomousAgentAction } = await import("../src/autonomous-loop");
+  it("parses ReAct JSON actions", () => {
     expect(parseAutonomousAgentAction('{"type":"final","answer":"Done"}')).toEqual({
       type: "final",
       answer: "Done",

@@ -40,7 +40,15 @@ export const LEARN_RESOURCE_CARDS: LearnResourceCard[] = [
     href: "/learn/6925",
     primary: "Open Team 6925 lab",
   },
+  {
+    id: "software-track",
+    title: "Software track",
+    description:
+      "Java through PID, then motion, swerve, Choreo, PhotonVision, and gains. Official docs only.",
+    href: "/learn/software",
+    primary: "Open Software track",
+  },
 ];
 
 export const LEARN_PAGE_DESCRIPTION =
-  "Programming setup, Learn Onshape, shop drawings, and the Team 6925 lab — one list, official docs only.";
+  "Programming setup, Learn Onshape, shop drawings, the Team 6925 lab, and the Software track — one list, official docs only.";

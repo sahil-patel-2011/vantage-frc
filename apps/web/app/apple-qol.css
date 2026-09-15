@@ -9,8 +9,26 @@
   --qol-press: 0.985;
   --qol-stagger: 28ms;
   --qol-focus: 4px;
+  --qol-hairline: 0.4px;
   --qol-ease: cubic-bezier(0.22, 1, 0.36, 1);
   --qol-ease-io: cubic-bezier(0.45, 0, 0.55, 1);
+}
+
+/* Focus is chrome, not motion — keep the 4px accent ring when reduce is on. */
+.app-button:focus-visible,
+.intel-phase:focus-visible,
+.intel-pick-move button:focus-visible,
+.intel-lookup-tile:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 var(--qol-focus) color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+.app-button:disabled,
+.app-button[aria-disabled="true"],
+.qol-press:disabled,
+.intel-pick-move button:disabled {
+  transform: none;
+  filter: none;
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -55,7 +73,10 @@
   html:not([data-motion="reduced"]):not([data-qol="reduce"]) .signin-submit,
   html:not([data-motion="reduced"]):not([data-qol="reduce"]) .signin-google,
   html:not([data-motion="reduced"]):not([data-qol="reduce"]) .signin-cta-row a,
-  html:not([data-motion="reduced"]):not([data-qol="reduce"]) .qol-press {
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) .qol-press,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) .intel-phase,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) .intel-pick-move button,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) .intel-lookup-tile {
     transition:
       transform var(--qol-fast) var(--qol-ease),
       background-color var(--qol-fast) var(--qol-ease-io),
@@ -65,13 +86,28 @@
       filter var(--qol-fast) var(--qol-ease-io);
   }
 
-  html:not([data-motion="reduced"]):not([data-qol="reduce"]) body.has-app-shell .app-button:not(:disabled):hover,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) body.has-app-shell .app-button:not(:disabled):not([aria-disabled="true"]):hover,
   html:not([data-motion="reduced"]):not([data-qol="reduce"]) .signin-submit:not(:disabled):hover,
-  html:not([data-motion="reduced"]):not([data-qol="reduce"]) .qol-press:not(:disabled):hover {
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) .qol-press:not(:disabled):hover,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) .intel-phase:not(:disabled):hover {
     filter: brightness(0.97);
   }
 
-  html:not([data-motion="reduced"]):not([data-qol="reduce"]) body.has-app-shell .app-button:not(:disabled):active,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) body.has-app-shell .app-button.primary:not(:disabled):not([aria-disabled="true"]):hover,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) body.has-app-shell .app-button.is-primary:not(:disabled):not([aria-disabled="true"]):hover {
+    box-shadow:
+      0 1px 2px color-mix(in srgb, var(--ink) 8%, transparent),
+      0 0 0 var(--qol-hairline) color-mix(in srgb, var(--accent) 22%, transparent);
+  }
+
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) body.has-app-shell .app-button.primary:not(:disabled):not([aria-disabled="true"]):hover:focus-visible,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) body.has-app-shell .app-button.is-primary:not(:disabled):not([aria-disabled="true"]):hover:focus-visible {
+    box-shadow:
+      0 1px 2px color-mix(in srgb, var(--ink) 8%, transparent),
+      0 0 0 var(--qol-focus) color-mix(in srgb, var(--accent) 16%, transparent);
+  }
+
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) body.has-app-shell .app-button:not(:disabled):not([aria-disabled="true"]):active,
   html:not([data-motion="reduced"]):not([data-qol="reduce"]) body.has-app-shell .soft-nav-group a:active,
   html:not([data-motion="reduced"]):not([data-qol="reduce"]) body.has-app-shell .soft-icon-btn:active,
   html:not([data-motion="reduced"]):not([data-qol="reduce"]) body.has-app-shell .soft-account-pop a:active,
@@ -81,7 +117,10 @@
   html:not([data-motion="reduced"]):not([data-qol="reduce"]) .signin-google:not(:disabled):active,
   html:not([data-motion="reduced"]):not([data-qol="reduce"]) .signin-cta-row a:active,
   html:not([data-motion="reduced"]):not([data-qol="reduce"]) .signin-method-tabs button:active,
-  html:not([data-motion="reduced"]):not([data-qol="reduce"]) .qol-press:not(:disabled):active {
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) .qol-press:not(:disabled):active,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) .intel-phase:not(:disabled):active,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) .intel-pick-move button:not(:disabled):active,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) .intel-lookup-tile:active {
     transform: scale(var(--qol-press));
   }
 
@@ -107,10 +146,14 @@
   html:not([data-motion="reduced"]):not([data-qol="reduce"]) .signin-field:focus-within {
     border-color: var(--accent);
     box-shadow: 0 0 0 var(--qol-focus) color-mix(in srgb, var(--accent) 16%, transparent);
+    background: color-mix(in srgb, var(--accent-soft) 38%, var(--surface));
   }
 
-  html:not([data-motion="reduced"]):not([data-qol="reduce"]) .signin-field:focus-within {
-    background: color-mix(in srgb, var(--accent-soft) 38%, var(--surface));
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) .intel-win-inputs .soft-form-row:focus-within input,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) .intel-lookup-row:focus-within input,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) .intel-lookup-notes:focus-within textarea {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 var(--qol-focus) color-mix(in srgb, var(--accent) 16%, transparent);
   }
 
   html:not([data-motion="reduced"]):not([data-qol="reduce"]) .signin-link,
@@ -131,6 +174,32 @@
   html:not([data-motion="reduced"]):not([data-qol="reduce"]) .qol-stagger-row {
     animation: qol-sheet-in var(--qol) var(--qol-ease) both;
     animation-delay: calc(var(--qol-stagger) * var(--qol-i, 0));
+  }
+
+  /* Intel predictor: 6px rise in, bar width eases at 240ms. */
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) .intel-win-result {
+    animation: qol-page-in var(--qol) var(--qol-ease) both;
+  }
+
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) .intel-win-bar i {
+    transition: width var(--qol) var(--qol-ease);
+  }
+
+  /* Lookup tiles: 3px rise + 0.985 press. Detail close is instant. */
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) .intel-lookup-tile:hover {
+    transform: translateY(calc(var(--qol-tile-rise) * -1));
+    z-index: 1;
+  }
+
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) .intel-lookup-tile:active {
+    transform: scale(var(--qol-press));
+  }
+
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) .intel-slider-list input[type="range"]::-webkit-slider-thumb,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) .intel-slider-list input[type="range"]::-moz-range-thumb,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) .intel-path-playhead input[type="range"]::-webkit-slider-thumb,
+  html:not([data-motion="reduced"]):not([data-qol="reduce"]) .intel-path-playhead input[type="range"]::-moz-range-thumb {
+    transition: border-color var(--qol-fast) var(--qol-ease-io);
   }
 }
 
@@ -179,7 +248,19 @@
   .signin-submit,
   .signin-google,
   .signin-code-box,
-  .signin-method-tabs button {
+  .signin-method-tabs button,
+  .intel-win-result,
+  .intel-win-bar i,
+  .intel-lookup-tile,
+  .intel-lookup-detail,
+  .intel-phase,
+  .intel-pick-move button,
+  .intel-pick-rank li,
+  .intel-slider-list input[type="range"],
+  .intel-path-playhead input[type="range"],
+  .intel-win-inputs,
+  .intel-lookup-row,
+  .intel-lookup-notes {
     animation: none !important;
     transition: none !important;
   }
@@ -192,6 +273,12 @@ html[data-qol="reduce"] body.has-app-shell #main-content,
 html[data-motion="reduced"] .signin-page,
 html[data-qol="reduce"] .signin-page,
 html[data-motion="reduced"] .onboarding-page,
-html[data-qol="reduce"] .onboarding-page {
+html[data-qol="reduce"] .onboarding-page,
+html[data-motion="reduced"] .intel-lookup-detail,
+html[data-qol="reduce"] .intel-lookup-detail,
+html[data-motion="reduced"] .intel-lookup-tile,
+html[data-qol="reduce"] .intel-lookup-tile,
+html[data-motion="reduced"] .intel-win-result,
+html[data-qol="reduce"] .intel-win-result {
   animation: none !important;
 }

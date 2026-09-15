@@ -5,7 +5,10 @@ import {
   excerptToolResult,
   OLDER_TOOL_DUMP_IMPORTANCE,
   PINNED_GOAL_IMPORTANCE,
+  PINNED_REFLECTION_IMPORTANCE,
   PINNED_TODOS_IMPORTANCE,
+  RELEVANT_OLDER_EXCERPT_IMPORTANCE,
+  WORKING_REFLECTION_ITEM_ID,
   pinGoal,
   RECENT_TOOL_EXCERPT_IMPORTANCE,
   TOOL_EXCERPT_ID_PREFIX,
@@ -149,6 +152,56 @@ describe("assembleStepContext", () => {
       true,
     );
     expect(assembled.items[0]).not.toBe(assembled.items[1]);
+  });
+
+  it("pins extractive reflection below todos on hop 6 without dropping the goal", () => {
+    const excerpts = [
+      excerptToolResult("WCP sells 2 inch compliant wheels for intakes", {
+        toolName: "web.search",
+        index: 0,
+      }),
+    ];
+    const assembled = assembleStepContext({
+      goal: GOAL,
+      todos: TODOS,
+      toolExcerpts: excerpts,
+      tokenBudget: 50_000,
+      hopIndex: 6,
+    });
+    expect(assembled.items[0]?.id).toBe(WORKING_GOAL_ITEM_ID);
+    expect(assembled.items[1]?.id).toBe(WORKING_TODOS_ITEM_ID);
+    const reflection = assembled.items.find((item) => item.id === WORKING_REFLECTION_ITEM_ID);
+    expect(reflection).toBeDefined();
+    expect(reflection!.importance).toBe(PINNED_REFLECTION_IMPORTANCE);
+    expect(reflection!.content).toContain("WCP sells 2 inch compliant wheels for intakes");
+    expect(reflection!.content).toContain("Research COTS intake rollers");
+    expect(reflection!.content).not.toMatch(/94\.2%|EPA 99|win probability/i);
+    expect(assembled.items.some((item) => item.content.includes(GOAL))).toBe(true);
+  });
+
+  it("promotes an older excerpt that overlaps the goal above unrelated dumps", () => {
+    const excerpts = [
+      excerptToolResult("Cafeteria lunch schedule and weather notes", { toolName: "web.fetch", index: 0 }),
+      excerptToolResult("Andymark COTS intake rollers on a swerve chassis", {
+        toolName: "web.search",
+        index: 1,
+      }),
+      excerptToolResult("unrelated recency a", { toolName: "web.search", index: 2 }),
+      excerptToolResult("unrelated recency b", { toolName: "web.search", index: 3 }),
+      excerptToolResult("unrelated recency c", { toolName: "web.search", index: 4 }),
+    ];
+    const assembled = assembleStepContext({
+      goal: GOAL,
+      todos: TODOS,
+      toolExcerpts: excerpts,
+      tokenBudget: 50_000,
+    });
+    const ranked = assembled.items.filter((item) => item.id.startsWith(TOOL_EXCERPT_ID_PREFIX));
+    const relevant = ranked.find((item) => item.content.includes("Andymark COTS intake rollers"));
+    const dump = ranked.find((item) => item.content.includes("Cafeteria lunch schedule"));
+    expect(relevant?.importance).toBe(RELEVANT_OLDER_EXCERPT_IMPORTANCE);
+    expect(dump?.importance).toBe(OLDER_TOOL_DUMP_IMPORTANCE);
+    expect(ranked.filter((item) => item.importance === RECENT_TOOL_EXCERPT_IMPORTANCE)).toHaveLength(3);
   });
 
   it("marks only the last three tool excerpts high-importance so older dumps compact first", () => {

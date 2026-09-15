@@ -48,6 +48,15 @@ export type {
   TeamScoreSpread,
 } from "./lovat-win";
 export {
+  allianceStdWithCorr,
+  blendEventAndRecentMean,
+  lovatWinProbabilityPlus,
+  predictUnscoredMatchPlus,
+  smallSampleTemperature,
+  standardNormalCdfPlus,
+} from "./lovat-win-plus";
+export type { WinPlusOptions } from "./lovat-win-plus";
+export {
   PICKLIST_METRICS,
   PICKLIST_METRIC_IDS,
   defaultPicklistWeights,

@@ -158,6 +158,45 @@ describe("intelScoutNoteLines", () => {
     expect(lines[1]?.detail).toBe("Logged from our scouting.");
     expect(JSON.stringify(lines)).not.toMatch(/DEMO/i);
   });
+
+  it("summarizes pad events and quals without inventing zeros", () => {
+    const lines = intelScoutNoteLines([
+      {
+        payload: {
+          matchPadEvents: [
+            { id: "s1", type: "score", phase: "auto", at: "2026-09-15T12:00:00.000Z" },
+            { id: "s2", type: "score", phase: "teleop", at: "2026-09-15T12:00:10.000Z" },
+            { id: "f1", type: "feed", phase: "teleop", at: "2026-09-15T12:00:20.000Z" },
+          ],
+          scoresWhileMoving: 1,
+          estimatedTotalFuelScored: 2,
+          totalFuelFed: 1,
+          feedingRate: 3,
+          scoringRate: 6,
+          driverAbility: 4,
+          defenseEffectiveness: 5,
+        },
+        confidence: "high",
+        matchKey: "2026txho_qm2",
+      },
+      {
+        payload: { matchPadEvents: "nope", scoresWhileMoving: 0 },
+        confidence: "normal",
+      },
+    ]);
+    expect(lines[0]?.detail).toContain("Score 2");
+    expect(lines[0]?.detail).toContain("Feed 1");
+    expect(lines[0]?.detail).not.toMatch(/Defend/);
+    expect(lines[0]?.detail).toContain("Scored while moving");
+    expect(lines[0]?.detail).toContain("Estimated fuel scored 2");
+    expect(lines[0]?.detail).toContain("Total fuel fed 1");
+    expect(lines[0]?.detail).toContain("Feeding rate 3");
+    expect(lines[0]?.detail).toContain("Scoring rate 6");
+    expect(lines[0]?.detail).toContain("Driver ability 4");
+    expect(lines[0]?.detail).toContain("Defense effectiveness 5");
+    expect(lines[0]?.detail).not.toMatch(/\bEPA\b/);
+    expect(lines[1]?.detail).toBe("Logged from our scouting.");
+  });
 });
 
 describe("intelSourceTypeLabel", () => {
