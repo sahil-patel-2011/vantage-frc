@@ -68,7 +68,11 @@ describe("section help registry", () => {
       for (const link of entry.related) {
         const route = link.href.split(/[?#]/)[0].replace(/^\/+/, "");
         const page = route ? resolve(appDir, route, "page.tsx") : resolve(appDir, "page.tsx");
-        if (!existsSync(page)) dead.push(`${entry.id} → ${link.href}`);
+        const helpArticle =
+          route.split("/").length === 2 &&
+          route.startsWith("help/") &&
+          existsSync(resolve(appDir, "help/[slug]/page.tsx"));
+        if (!existsSync(page) && !helpArticle) dead.push(`${entry.id} → ${link.href}`);
       }
     }
     expect(dead).toEqual([]);
