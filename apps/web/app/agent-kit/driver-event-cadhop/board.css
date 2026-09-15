@@ -1,0 +1,27 @@
+.ak-driver-event-cadhop-board{display:grid;gap:12px;margin:4px 0 8px}
+.ak-driver-event-cadhop-board header h3{margin:0 0 4px}
+.ak-driver-event-cadhop-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr));gap:10px}
+.ak-driver-event-cadhop-tile{display:grid;gap:4px;padding:12px}
+.ak-driver-event-cadhop-tile strong{font-size:1.35rem;letter-spacing:-0.03em}
+.ak-driver-event-cadhop-tile em{font-style:normal;font-size:11px}
+.ak-driver-event-cadhop-spark{width:72px;height:28px;color:var(--accent)}
+.ak-driver-event-cadhop-vs{font-size:11px}
+.ak-driver-event-cadhop-vs-above{color:var(--good,#1b7f4e)}
+.ak-driver-event-cadhop-vs-below{color:var(--warn,#9a5b12)}
+.ak-driver-event-cadhop-vs-near,.ak-driver-event-cadhop-vs-unknown{color:var(--muted)}
+
+.ak-driver-event-cadhop-deep{display:grid;gap:12px;margin-top:8px}
+.ak-driver-event-cadhop-meters{display:grid;grid-template-columns:repeat(auto-fit,minmax(8.5rem,1fr));gap:8px;margin:0;padding:0;list-style:none}
+.ak-driver-event-cadhop-meter{display:grid;gap:2px;padding:8px 10px;border:1px solid var(--border,rgba(0,0,0,.08));border-radius:10px}
+.ak-driver-event-cadhop-split{display:grid;grid-template-columns:repeat(auto-fit,minmax(14rem,1fr));gap:10px}
+.ak-driver-event-cadhop-panel h4{margin:0 0 8px;font-size:13px}
+.ak-driver-event-cadhop-zones,.ak-driver-event-cadhop-colley,.ak-driver-event-cadhop-residual,.ak-driver-event-cadhop-pareto,.ak-driver-event-cadhop-setup{margin:0;padding:0;list-style:none;display:grid;gap:6px}
+.ak-driver-event-cadhop-zone{display:grid;grid-template-columns:7rem 1fr;gap:8px;align-items:center;font-size:12px}
+.ak-driver-event-cadhop-bar{display:block;height:8px;border-radius:999px;background:var(--accent,#3d6)}
+.ak-driver-event-cadhop-page{padding-bottom:24px}
+
+.ak-driver-event-cadhop-wide{display:grid;gap:12px;margin-top:10px}
+.ak-driver-event-cadhop-wide-meters{display:grid;grid-template-columns:repeat(auto-fit,minmax(8.5rem,1fr));gap:8px;margin:0;padding:0;list-style:none}
+.ak-driver-event-cadhop-slots,.ak-driver-event-cadhop-scouts{margin:0;padding-left:1.1rem;display:grid;gap:4px;font-size:12px}
+
+.ak-driver-event-cadhop-lovat{display:grid;gap:12px;margin-top:12px}
