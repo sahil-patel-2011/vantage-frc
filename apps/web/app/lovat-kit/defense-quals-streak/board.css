@@ -1,0 +1,27 @@
+.lk-defense-quals-streak-board{display:grid;gap:12px;margin:4px 0 8px}
+.lk-defense-quals-streak-board header h3{margin:0 0 4px}
+.lk-defense-quals-streak-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr));gap:10px}
+.lk-defense-quals-streak-tile{display:grid;gap:4px;padding:12px}
+.lk-defense-quals-streak-tile strong{font-size:1.35rem;letter-spacing:-0.03em}
+.lk-defense-quals-streak-tile em{font-style:normal;font-size:11px}
+.lk-defense-quals-streak-spark{width:72px;height:28px;color:var(--accent)}
+.lk-defense-quals-streak-vs{font-size:11px}
+.lk-defense-quals-streak-vs-above{color:var(--good,#1b7f4e)}
+.lk-defense-quals-streak-vs-below{color:var(--warn,#9a5b12)}
+.lk-defense-quals-streak-vs-near,.lk-defense-quals-streak-vs-unknown{color:var(--muted)}
+
+.lk-defense-quals-streak-deep{display:grid;gap:12px;margin-top:8px}
+.lk-defense-quals-streak-meters{display:grid;grid-template-columns:repeat(auto-fit,minmax(8.5rem,1fr));gap:8px;margin:0;padding:0;list-style:none}
+.lk-defense-quals-streak-meter{display:grid;gap:2px;padding:8px 10px;border:1px solid var(--border,rgba(0,0,0,.08));border-radius:10px}
+.lk-defense-quals-streak-split{display:grid;grid-template-columns:repeat(auto-fit,minmax(14rem,1fr));gap:10px}
+.lk-defense-quals-streak-panel h4{margin:0 0 8px;font-size:13px}
+.lk-defense-quals-streak-zones,.lk-defense-quals-streak-colley,.lk-defense-quals-streak-residual,.lk-defense-quals-streak-pareto,.lk-defense-quals-streak-setup{margin:0;padding:0;list-style:none;display:grid;gap:6px}
+.lk-defense-quals-streak-zone{display:grid;grid-template-columns:7rem 1fr;gap:8px;align-items:center;font-size:12px}
+.lk-defense-quals-streak-bar{display:block;height:8px;border-radius:999px;background:var(--accent,#3d6)}
+.lk-defense-quals-streak-page{padding-bottom:24px}
+
+.lk-defense-quals-streak-wide{display:grid;gap:12px;margin-top:10px}
+.lk-defense-quals-streak-wide-meters{display:grid;grid-template-columns:repeat(auto-fit,minmax(8.5rem,1fr));gap:8px;margin:0;padding:0;list-style:none}
+.lk-defense-quals-streak-slots,.lk-defense-quals-streak-scouts{margin:0;padding-left:1.1rem;display:grid;gap:4px;font-size:12px}
+
+.lk-defense-quals-streak-lovat{display:grid;gap:12px;margin-top:12px}
