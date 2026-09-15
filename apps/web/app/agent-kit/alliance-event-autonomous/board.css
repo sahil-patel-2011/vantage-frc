@@ -1,0 +1,27 @@
+.ak-alliance-event-autonomous-board{display:grid;gap:12px;margin:4px 0 8px}
+.ak-alliance-event-autonomous-board header h3{margin:0 0 4px}
+.ak-alliance-event-autonomous-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr));gap:10px}
+.ak-alliance-event-autonomous-tile{display:grid;gap:4px;padding:12px}
+.ak-alliance-event-autonomous-tile strong{font-size:1.35rem;letter-spacing:-0.03em}
+.ak-alliance-event-autonomous-tile em{font-style:normal;font-size:11px}
+.ak-alliance-event-autonomous-spark{width:72px;height:28px;color:var(--accent)}
+.ak-alliance-event-autonomous-vs{font-size:11px}
+.ak-alliance-event-autonomous-vs-above{color:var(--good,#1b7f4e)}
+.ak-alliance-event-autonomous-vs-below{color:var(--warn,#9a5b12)}
+.ak-alliance-event-autonomous-vs-near,.ak-alliance-event-autonomous-vs-unknown{color:var(--muted)}
+
+.ak-alliance-event-autonomous-deep{display:grid;gap:12px;margin-top:8px}
+.ak-alliance-event-autonomous-meters{display:grid;grid-template-columns:repeat(auto-fit,minmax(8.5rem,1fr));gap:8px;margin:0;padding:0;list-style:none}
+.ak-alliance-event-autonomous-meter{display:grid;gap:2px;padding:8px 10px;border:1px solid var(--border,rgba(0,0,0,.08));border-radius:10px}
+.ak-alliance-event-autonomous-split{display:grid;grid-template-columns:repeat(auto-fit,minmax(14rem,1fr));gap:10px}
+.ak-alliance-event-autonomous-panel h4{margin:0 0 8px;font-size:13px}
+.ak-alliance-event-autonomous-zones,.ak-alliance-event-autonomous-colley,.ak-alliance-event-autonomous-residual,.ak-alliance-event-autonomous-pareto,.ak-alliance-event-autonomous-setup{margin:0;padding:0;list-style:none;display:grid;gap:6px}
+.ak-alliance-event-autonomous-zone{display:grid;grid-template-columns:7rem 1fr;gap:8px;align-items:center;font-size:12px}
+.ak-alliance-event-autonomous-bar{display:block;height:8px;border-radius:999px;background:var(--accent,#3d6)}
+.ak-alliance-event-autonomous-page{padding-bottom:24px}
+
+.ak-alliance-event-autonomous-wide{display:grid;gap:12px;margin-top:10px}
+.ak-alliance-event-autonomous-wide-meters{display:grid;grid-template-columns:repeat(auto-fit,minmax(8.5rem,1fr));gap:8px;margin:0;padding:0;list-style:none}
+.ak-alliance-event-autonomous-slots,.ak-alliance-event-autonomous-scouts{margin:0;padding-left:1.1rem;display:grid;gap:4px;font-size:12px}
+
+.ak-alliance-event-autonomous-lovat{display:grid;gap:12px;margin-top:12px}
