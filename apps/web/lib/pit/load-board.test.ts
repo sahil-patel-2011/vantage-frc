@@ -28,7 +28,7 @@ function emptyHandler(): Handler {
 }
 
 function liveHandler(): Handler {
-  return (sql) => {
+  return (sql, params = []) => {
     if (sql.includes("FROM organizations")) {
       return { rows: [{ eventKey: EVENT, eventName: "Houston" }] };
     }
@@ -83,6 +83,26 @@ function liveHandler(): Handler {
             compLevel: "qm",
             matchNumber: 4,
             scheduledTime: "2026-03-07T18:12:00.000Z",
+            redAlliance: { teamKeys: ["frc254", "frc1678", "frc118"] },
+            blueAlliance: { teamKeys: ["frc2056", "frc1114", "frc1323"] },
+          },
+        ],
+      };
+    }
+    if (sql.includes("FROM pit_scout_entries")) {
+      expect(params[0]).toBe(ORG);
+      expect(params[1]).toBe(EVENT);
+      expect(params[2]).toEqual(["frc1678", "frc118"]);
+      return {
+        rows: [
+          {
+            teamKey: "frc1678",
+            payload: {
+              drivetrain_type: "swerve",
+              programming_language: "java",
+              driver_seasons: 2,
+              robot_images: ["img-1"],
+            },
           },
         ],
       };
@@ -109,6 +129,7 @@ describe("loadPitBoard", () => {
     expect(payload.turnaround).toBeNull();
     expect(payload.gate.state).toBe("empty");
     expect(payload.repeatAlerts).toEqual([]);
+    expect(payload.onDeckRobots).toEqual([]);
     expect(JSON.stringify(payload)).not.toMatch(/DEMO/i);
   });
 
@@ -125,6 +146,25 @@ describe("loadPitBoard", () => {
     expect(payload.batteries[0]?.assetTag).toBe("COMP-04");
     expect(payload.maintenance).toHaveLength(1);
     expect(payload.nextMatch?.matchKey).toBe(`${EVENT}_qm4`);
+    expect(payload.onDeckRobots).toEqual([
+      {
+        teamKey: "frc1678",
+        drivetrain: "swerve",
+        programmingLanguage: "java",
+        driverSeasons: 2,
+        photoCount: 1,
+        hasPayload: true,
+      },
+      {
+        teamKey: "frc118",
+        drivetrain: null,
+        programmingLanguage: null,
+        driverSeasons: null,
+        photoCount: 0,
+        hasPayload: false,
+      },
+    ]);
+    expect(payload.onDeckRobots.find((row) => row.teamKey === "frc118")?.drivetrain).toBeNull();
     expect(payload.turnaround).toEqual({ minutes: 12, seconds: 0, overdue: false });
     expect(payload.context.eventKey).toBe(EVENT);
     expect(JSON.stringify(payload)).not.toMatch(/DEMO/i);

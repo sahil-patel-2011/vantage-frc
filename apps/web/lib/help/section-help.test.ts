@@ -120,6 +120,26 @@ describe("section help lookups", () => {
     expect(sectionHelpFor("competition", null)).toBeUndefined();
   });
 
+  it("names the Saturday scouting path and does not send scouts to Ask AI", () => {
+    const entry = sectionHelpById("competition.scouting");
+    expect(entry?.related.map((link) => link.label)).toEqual([
+      "Assign",
+      "Match",
+      "Pit",
+      "Conflicts",
+      "Pick list",
+    ]);
+    expect(entry?.related.map((link) => link.href)).toEqual([
+      "/scouting/lineup",
+      "/scouting?scoutTab=match",
+      "/scouting?scoutTab=pit",
+      "/scouting?scoutTab=conflicts",
+      "/strategy?tab=picks",
+    ]);
+    expect(JSON.stringify(entry?.related)).not.toMatch(/Ask AI/i);
+    expect(JSON.stringify(entry?.related)).not.toMatch(/\/ai/);
+  });
+
   it("keeps same-named tabs in different hubs distinct", () => {
     expect(sectionHelpFor("business", "impact")?.title).toBe("Impact log");
     expect(sectionHelpFor("media", "impact")?.title).toBe("Media impact");

@@ -53,6 +53,15 @@ export type PitNextMatch = {
   scheduledTime: string | null;
 };
 
+export type PitOnDeckRobot = {
+  teamKey: string;
+  drivetrain: string | null;
+  programmingLanguage: string | null;
+  driverSeasons: number | null;
+  photoCount: number;
+  hasPayload: boolean;
+};
+
 export type PitBoardGateState = "empty" | "go" | "check" | "hold";
 
 export type PitBoardGate = {
@@ -114,6 +123,83 @@ export function pitTurnaroundLabel(turnaround: PitTurnaround | null): string | n
     return `${Math.floor(turnaround.minutes / 60)}h ${turnaround.minutes % 60}m`;
   }
   return `${turnaround.minutes}m ${turnaround.seconds}s`;
+}
+
+function allianceTeamKeys(value: unknown): string[] {
+  if (!value || typeof value !== "object") return [];
+  const keys = (value as { teamKeys?: unknown }).teamKeys;
+  if (!Array.isArray(keys)) return [];
+  return keys.filter((key): key is string => typeof key === "string" && key.length > 0);
+}
+
+/** Same-alliance partners for the queued match — never invents teams. */
+export function nextMatchAlliancePartners(input: {
+  ourTeamKey: string | null;
+  redAlliance: unknown;
+  blueAlliance: unknown;
+}): string[] {
+  if (!input.ourTeamKey) return [];
+  const red = allianceTeamKeys(input.redAlliance);
+  const blue = allianceTeamKeys(input.blueAlliance);
+  const side = red.includes(input.ourTeamKey)
+    ? red
+    : blue.includes(input.ourTeamKey)
+      ? blue
+      : [];
+  return side.filter((key) => key !== input.ourTeamKey);
+}
+
+function payloadString(payload: Record<string, unknown>, key: string): string | null {
+  const value = payload[key];
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed.length ? trimmed : null;
+}
+
+function payloadNumber(payload: Record<string, unknown>, key: string): number | null {
+  const value = payload[key];
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim() && Number.isFinite(Number(value))) {
+    return Number(value);
+  }
+  return null;
+}
+
+function payloadPhotoCount(payload: Record<string, unknown>): number {
+  const images = payload.robot_images;
+  if (Array.isArray(images)) {
+    return images.filter((item) => item != null && String(item).trim().length > 0).length;
+  }
+  if (typeof images === "string" && images.trim()) return 1;
+  return 0;
+}
+
+/**
+ * Map a stored pit-scout payload onto the command card. Missing keys stay null —
+ * never a default drivetrain, language, or photo.
+ */
+export function pitOnDeckFromPayload(
+  teamKey: string,
+  payload: Record<string, unknown> | null | undefined,
+): PitOnDeckRobot {
+  if (!payload) {
+    return {
+      teamKey,
+      drivetrain: null,
+      programmingLanguage: null,
+      driverSeasons: null,
+      photoCount: 0,
+      hasPayload: false,
+    };
+  }
+  return {
+    teamKey,
+    drivetrain: payloadString(payload, "drivetrain_type"),
+    programmingLanguage: payloadString(payload, "programming_language"),
+    driverSeasons: payloadNumber(payload, "driver_seasons"),
+    photoCount: payloadPhotoCount(payload),
+    hasPayload: true,
+  };
 }
 
 function countedBatteries(rows: readonly PitBatteryRow[]) {

@@ -58,6 +58,15 @@ export function pitRelatedLinks(
   });
 }
 
+/** Hub Pit form for a queued alliance robot — never invents a team key. */
+export function pitScoutThisRobotHref(
+  orgId: string | null | undefined,
+  teamKey: string,
+): string {
+  const trimmed = teamKey.trim();
+  return withOrgHref(`/scouting?scoutTab=pit&teamKey=${encodeURIComponent(trimmed)}`, orgId);
+}
+
 export type PitShellKind = "loading" | "error" | "setup" | "empty" | "ready";
 
 export type PitNextAction = {

@@ -28,6 +28,7 @@ import {
   formatPitMetric,
   pitNextActions,
   pitRelatedLinks,
+  pitScoutThisRobotHref,
   pitShellCopy,
   shouldShowPitSummaryTiles,
   type PitNextAction,
@@ -86,6 +87,14 @@ type Data = {
   }>;
   rules: { battery: string; hold: string };
   updatedAt: string;
+  onDeckRobots?: Array<{
+    teamKey: string;
+    drivetrain: string | null;
+    programmingLanguage: string | null;
+    driverSeasons: number | null;
+    photoCount: number;
+    hasPayload: boolean;
+  }>;
 };
 
 type Form = { kind: "battery" | "issue" | "maintenance" | "resolve"; id?: string } | null;
@@ -129,6 +138,8 @@ const matchLabel = (value: Data["nextMatch"]) =>
       ? `Qualification ${value.matchNumber}`
       : `${value.compLevel.toUpperCase()} ${value.matchNumber}`;
 
+const teamNumberLabel = (teamKey: string) => teamKey.replace(/^frc/i, "");
+
 const countdown = (
   data: Pick<Data, "turnaround" | "flags" | "nextMatch">,
   now: number,
@@ -156,6 +167,51 @@ function PitRelatedStrip({ orgId }: { orgId?: string | null }) {
         </Button>
       ))}
     </nav>
+  );
+}
+
+function PitOnDeckSection({
+  orgId,
+  robots,
+}: {
+  orgId?: string | null;
+  robots: NonNullable<Data["onDeckRobots"]>;
+}) {
+  if (!robots.length) return null;
+  return (
+    <section className="pit-on-deck" aria-label="Alliance on deck">
+      <header>
+        <div>
+          <span>ALLIANCE ON DECK</span>
+          <h2>Pit scout notes</h2>
+        </div>
+      </header>
+      <ul>
+        {robots.map((robot) => {
+          const facts = [
+            robot.drivetrain ? `Drivetrain ${robot.drivetrain}` : null,
+            robot.programmingLanguage ? `Language ${robot.programmingLanguage}` : null,
+            robot.driverSeasons != null ? `Driver seasons ${robot.driverSeasons}` : null,
+            robot.photoCount > 0
+              ? `${robot.photoCount} photo${robot.photoCount === 1 ? "" : "s"}`
+              : null,
+          ].filter((fact): fact is string => Boolean(fact));
+          return (
+            <li key={robot.teamKey}>
+              <strong>Team {teamNumberLabel(robot.teamKey)}</strong>
+              {robot.hasPayload && facts.length ? (
+                <span>{facts.join(" · ")}</span>
+              ) : (
+                <span>No pit form for this robot yet.</span>
+              )}
+              <Button as="a" variant={robot.hasPayload ? "secondary" : "primary"} href={pitScoutThisRobotHref(orgId, robot.teamKey)}>
+                Scout this robot
+              </Button>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }
 
@@ -536,6 +592,8 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
           
         </>
       ) : null}
+
+      <PitOnDeckSection orgId={orgId} robots={data.onDeckRobots ?? []} />
 
       <section className={`pit-gate ${data.gate.state}`}>
         <div className="pit-gate-state">

@@ -24,8 +24,11 @@ describe("commandCatalog", () => {
 
   it("gives nested tabs a hub breadcrumb so labels are unambiguous", () => {
     const coverage = catalog.find((entry) => entry.href === "/competition?tab=scout-coverage-live");
-    expect(coverage?.label).toBe("Coverage");
+    expect(coverage?.label).toBe("Live coverage");
     expect(coverage?.context).toBe("Competition › Scouting");
+    const assign = catalog.find((entry) => entry.href === "/competition?tab=lineup");
+    expect(assign?.label).toBe("Assign");
+    expect(assign?.context).toBe("Competition › Scouting");
   });
 
   it("lists Media library so search opens a real destination", () => {

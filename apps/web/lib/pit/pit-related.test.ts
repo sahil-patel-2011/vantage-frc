@@ -7,6 +7,7 @@ import {
   isPitBoardEmpty,
   pitNextActions,
   pitRelatedLinks,
+  pitScoutThisRobotHref,
   pitSetupSteps,
   pitShellCopy,
   shouldShowPitSummaryTiles,
@@ -38,6 +39,14 @@ describe("pitRelatedLinks", () => {
     const blob = JSON.stringify(pitRelatedLinks("org-1"));
     expect(blob).not.toMatch(/DEMO/i);
     expect(blob).not.toMatch(/demo/i);
+  });
+});
+
+describe("pitScoutThisRobotHref", () => {
+  it("opens hub Pit with the real team key", () => {
+    expect(pitScoutThisRobotHref("org-1", "frc1678")).toBe(
+      "/scouting?scoutTab=pit&teamKey=frc1678&orgId=org-1",
+    );
   });
 });
 

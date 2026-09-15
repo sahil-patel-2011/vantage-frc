@@ -73,6 +73,10 @@
 .scout-draft-chip.dirty{color:var(--warning);border-color:color-mix(in srgb,var(--warning) 40%,var(--line));background:color-mix(in srgb,var(--warning) 12%,var(--surface))}
 .scout-draft-chip.saved{color:var(--positive);border-color:color-mix(in srgb,var(--positive) 45%,var(--line));background:color-mix(in srgb,var(--positive) 12%,var(--surface))}
 .scout-form-heading{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:10px}
+.scout-next-assignment{display:grid;gap:8px;margin-bottom:14px;padding:16px 18px}
+.scout-next-assignment .eyebrow{font:700 10px/1 var(--font-source-sans),ui-sans-serif;letter-spacing:.05em;text-transform:uppercase;color:var(--accent)}
+.scout-next-assignment strong{font-size:1.15rem;letter-spacing:-.02em}
+.scout-next-assignment .app-button{justify-self:start}
 
 /* ---------------------------------------------------------------------------
  * Scouting input studio — competition-day controls.

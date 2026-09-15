@@ -68,6 +68,7 @@ export class ScoutingRepository {
         matches: [],
         recentEntries: [],
         canManageSchemas,
+        role,
         scoutIdentity,
       };
     }
@@ -128,6 +129,7 @@ export class ScoutingRepository {
       matches: matches.rows,
       recentEntries: recentEntries.rows,
       canManageSchemas,
+      role,
       scoutIdentity,
     };
   }

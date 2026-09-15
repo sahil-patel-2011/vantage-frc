@@ -309,14 +309,15 @@ describe("product hubs", () => {
     }
     expect(hubStripTabs(competition, "scouting").map((tab) => tab.id)).toEqual([
       "scouting",
-      "forms",
-      "scout-coverage-live",
-      "shift-balancer",
-      "scout-p2p-relay",
-      "scout-training-mode",
-      "scout-field-budget",
-      "data-quality-scorecard",
+      "lineup",
     ]);
+    expect(competition.tabs.find((tab) => tab.id === "lineup")?.label).toBe("Assign");
+    expect(competition.tabs.find((tab) => tab.id === "lineup")?.legacyHref).toBe("/scouting/lineup");
+    expect(competition.tabs.find((tab) => tab.id === "scout-coverage-live")?.label).toBe(
+      "Live coverage",
+    );
+    expect(competition.tabs.find((tab) => tab.id === "scout-coverage-live")?.inStrip).toBe(false);
+    expect(hubStripTabs(competition, "scouting").map((tab) => tab.label)).not.toContain("Coverage");
     expect(competition.tabs.find((tab) => tab.id === "scout-p2p-relay")?.label).toBe("Pit link");
     expect(competition.tabs.find((tab) => tab.id === "scout-field-budget")?.label).toBe(
       "Field value",
