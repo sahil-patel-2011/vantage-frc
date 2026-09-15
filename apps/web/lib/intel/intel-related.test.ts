@@ -146,17 +146,22 @@ describe("intelNextActions", () => {
 });
 
 describe("intelScoutNoteLines", () => {
-  it("prints only logged fields and never invents a score", () => {
+  it("prints notes, rates, and raw answers — empty payloads stay out", () => {
     const lines = intelScoutNoteLines([
-      { payload: { cycles: 9, notes: "Strong intake" }, confidence: "high", matchKey: "2026txho_qm1" },
+      {
+        payload: { auto_fuel: 4, teleop_fuel: 11, notes: "Strong intake" },
+        confidence: "high",
+        matchKey: "2026txho_qm1",
+      },
       { payload: {}, confidence: "normal" },
     ]);
+    expect(lines).toHaveLength(1);
     expect(lines[0]?.title).toBe("Match 2026txho_qm1");
-    expect(lines[0]?.detail).toContain("cycles 9");
     expect(lines[0]?.detail).toContain("Strong intake");
-    expect(lines[1]?.title).toBe("Pit notes");
-    expect(lines[1]?.detail).toBe("Logged from our scouting.");
+    expect(lines[0]?.detail).toContain("Estimated fuel scored 15");
+    expect(lines[0]?.detail).toContain("Auto fuel 4");
     expect(JSON.stringify(lines)).not.toMatch(/DEMO/i);
+    expect(JSON.stringify(lines)).not.toMatch(/Logged from our scouting/);
   });
 });
 

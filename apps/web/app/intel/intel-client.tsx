@@ -35,7 +35,7 @@ import { DataSourcePicker } from "../analytics/data-source-picker";
 import { useAnalyticsSource } from "../../lib/analytics/use-analytics-source";
 import { filterRowsBySource } from "../../lib/analytics/lovat-data-source";
 import { parseLookupNote, type LookupNote } from "../../lib/intel/lookup-notes";
-import type { EventRatingRow } from "../../lib/intel/lovat-lookup";
+import type { EventRatingRow, ScoutAverageRow } from "../../lib/intel/lovat-lookup";
 import { useAppleMotion } from "../../lib/motion/use-apple-motion";
 import "./intel.css";
 
@@ -45,6 +45,7 @@ type IntelBoardView = {
   scoutNotes: IntelScoutNote[];
   activeEvent: IntelActiveEvent | null;
   fieldRatings?: EventRatingRow[];
+  eventScoutAverages?: ScoutAverageRow[];
   lookupNote?: LookupNote | null;
 };
 
@@ -203,6 +204,7 @@ function IntelLive({ orgId }: { orgId: string }) {
         scoutObservations?: IntelScoutNote[];
         activeEvent?: IntelActiveEvent | null;
         fieldRatings?: EventRatingRow[];
+        eventScoutAverages?: ScoutAverageRow[];
         lookupNote?: unknown;
         error?: string;
       };
@@ -248,6 +250,7 @@ function IntelLive({ orgId }: { orgId: string }) {
         scoutNotes: data.scoutObservations ?? [],
         activeEvent: data.activeEvent ?? viewRef.current?.activeEvent ?? null,
         fieldRatings: Array.isArray(data.fieldRatings) ? data.fieldRatings : [],
+        eventScoutAverages: Array.isArray(data.eventScoutAverages) ? data.eventScoutAverages : [],
         lookupNote: parseLookupNote(data.lookupNote ?? null, data.team.team.teamKey, Boolean((data.lookupNote as { canEdit?: boolean } | null)?.canEdit)),
       };
       setView(next);
@@ -497,6 +500,14 @@ function IntelLive({ orgId }: { orgId: string }) {
             chemistryHref={chemistryHref}
             fieldRatings={filterRowsBySource(
               (view.fieldRatings ?? []).map((row) => ({ ...row, eventKey: view.activeEvent?.eventKey ?? null })),
+              source.settings,
+              null,
+            )}
+            eventScoutAverages={filterRowsBySource(
+              (view.eventScoutAverages ?? []).map((row) => ({
+                ...row,
+                eventKey: view.activeEvent?.eventKey ?? null,
+              })),
               source.settings,
               null,
             )}

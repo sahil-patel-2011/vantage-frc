@@ -1,6 +1,6 @@
 import { IntelResearchRepository } from "@vantage/intel-research/repository";
 import { intelErrorResponse, intelSession, withIntelRequest } from "../../../../lib/intel-auth";
-import type { EventRatingRow } from "../../../../lib/intel/lovat-lookup";
+import { scoutAveragesByTeam, type EventRatingRow } from "../../../../lib/intel/lovat-lookup";
 import { canEditLookupNotes, parseLookupNote } from "../../../../lib/intel/lookup-notes";
 
 export async function GET(request: Request) {
@@ -16,7 +16,7 @@ export async function GET(request: Request) {
         if (Number.isInteger(teamNumber) && teamNumber > 0) {
           const intel = await repository.getTeamIntel(orgId!, teamNumber);
           if (!intel) return { team: null, activeEvent };
-          const [observations, similarTeams, field] = await Promise.all([
+          const [observations, similarTeams, field, eventScout] = await Promise.all([
             repository.getScoutObservations(orgId!, intel.team.teamKey),
             repository.getSimilarTeams(intel.team.teamKey),
             activeEvent?.eventKey
@@ -36,6 +36,19 @@ export async function GET(request: Request) {
                   [activeEvent.eventKey],
                 )
               : Promise.resolve({ rows: [] as EventRatingRow[] }),
+            activeEvent?.eventKey
+              ? client.query<{ teamKey: string; payload: Record<string, unknown> }>(
+                  `SELECT team_key AS "teamKey", payload
+                     FROM match_scout_entries
+                    WHERE org_id = $1::uuid
+                      AND event_key = $2::text
+                      AND confidence <> 'low'
+                    LIMIT 2000`,
+                  [orgId, activeEvent.eventKey],
+                )
+              : Promise.resolve({
+                  rows: [] as Array<{ teamKey: string; payload: Record<string, unknown> }>,
+                }),
           ]);
           const session = await intelSession();
           const role = await client.query<{ role: string }>(
@@ -53,7 +66,7 @@ export async function GET(request: Request) {
             );
             lookupNote = parseLookupNote(note.rows[0] ?? null, intel.team.teamKey, canEdit);
           } catch {
-            lookupNote = parseLookupNote(null, intel.team.teamKey, canEdit);
+            // Keep the empty note — the table is setup-required on some deploys.
           }
           return {
             team: intel,
@@ -61,6 +74,7 @@ export async function GET(request: Request) {
             similarTeams,
             activeEvent,
             fieldRatings: field.rows,
+            eventScoutAverages: scoutAveragesByTeam(eventScout.rows),
             lookupNote,
           };
         }

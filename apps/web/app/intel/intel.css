@@ -66,7 +66,31 @@
 .intel-vs-above{color:var(--good, #1b7f4e)}
 .intel-vs-below{color:var(--warn, #9a5b12)}
 .intel-vs-near,.intel-vs-unknown{color:var(--muted)}
-.intel-lookup-notes{display:grid;gap:8px}
+.intel-scout-reports{
+  list-style:none;
+  margin:10px 0 0;
+  padding:0;
+  display:grid;
+  gap:14px;
+}
+.intel-scout-reports li{
+  display:grid;
+  gap:6px;
+  padding-bottom:12px;
+  border-bottom:1px solid var(--line);
+}
+.intel-scout-reports li:last-child{border-bottom:0;padding-bottom:0}
+.intel-report-rates,.intel-report-raw{
+  margin:0;
+  display:grid;
+  gap:4px;
+}
+.intel-report-rates div,.intel-report-raw div{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+}
+.intel-report-raw{color:var(--muted);font-size:12px}
 .intel-note-form{display:grid;gap:8px}
 .intel-note-form textarea{width:100%;min-height:6rem;resize:vertical}
 .intel-note-actions{display:flex;align-items:center;gap:10px}

@@ -201,7 +201,7 @@ export default function OfflineShellClient() {
           <ReadinessPanel view={view} />
           <SummaryTiles view={view} loaded />
           <LogCacheEventForm busy={busy} mutate={mutate} />
-          <RecentEvents view={view} busy={busy} mutate={mutate} orgId={orgId} shell={shell} />
+          <RecentEvents view={view} busy={busy} mutate={mutate} orgId={orgId} />
         </div>
       )}
     </main>
@@ -279,13 +279,11 @@ function RecentEvents({
   busy,
   mutate,
   orgId,
-  shell,
 }: {
   view: LiveView;
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => void;
   orgId: string | null;
-  shell: OfflineShellKind;
 }) {
   if (view.summary.totalEvents === 0) {
     const copy = offlineShellCopy("empty");

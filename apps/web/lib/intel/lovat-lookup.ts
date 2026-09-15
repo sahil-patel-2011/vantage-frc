@@ -228,6 +228,7 @@ export function buildLookupCards(input: {
   field: LookupFieldStats;
   scout?: ScoutAverageRow | null;
   history?: Array<number | null>;
+  scoutSeries?: Partial<Record<LovatLookupMetricId, Array<number | null>>>;
 }): LookupCard[] {
   const eventValues = input.event ? ratingToMetricValues(input.event) : {};
   const scoutValues = input.scout?.values ?? {};
@@ -236,14 +237,17 @@ export function buildLookupCards(input: {
     const stat = input.field[metric.id];
     const compare = fieldCompare(value, stat?.mean ?? null, stat?.std ?? null, invertBetter.has(metric.id));
     const contribution = invertBetter.has(metric.id) ? null : contributionShare(value, stat?.mean ?? null);
-    const spark = metric.id === "totalPoints" ? sparklinePath(input.history ?? []) : null;
+    const spark =
+      metric.id === "totalPoints"
+        ? sparklinePath(input.history ?? [])
+        : sparklinePath(input.scoutSeries?.[metric.id] ?? []);
     return {
       id: metric.id,
       label: metric.label,
       source: metric.source,
       detail: metric.source === "scout" && value == null ? "Needs setup — no scout rows yet" : metric.detail,
       value,
-      display: formatLookupValue(value, metric.id === "rank" || metric.id === "wins" ? 0 : 1),
+      display: formatLookupValue(value, metric.id === "rank" || metric.id === "wins" ? 0 : metric.id === "estimatedSuccessfulFuelRate" ? 2 : 1),
       compare,
       contribution,
       sparkline: spark,
@@ -256,16 +260,239 @@ export function lookupCardsWithValues(cards: LookupCard[]): LookupCard[] {
   return cards.filter((card) => card.value != null);
 }
 
+export const SCOUT_LOOKUP_METRIC_IDS = LOVAT_LOOKUP_METRICS.filter((metric) => metric.source === "scout").map(
+  (metric) => metric.id,
+);
+
+const DRIVER_ABILITY_LABELS: Record<string, number> = {
+  exceptional: 5,
+  great: 4,
+  average: 3,
+  belowaverage: 2,
+  poor: 1,
+};
+
+const DEFENSE_EFFECTIVENESS_LABELS: Record<string, number> = {
+  great: 5,
+  good: 4,
+  average: 3,
+  poor: 2,
+  terrible: 1,
+};
+
+const AUTO_CLIMB_LABELS: Record<string, number> = {
+  succeeded: 1,
+  success: 1,
+  yes: 1,
+  failed: 0.5,
+  fail: 0.5,
+  notattempted: 0,
+  none: 0,
+  no: 0,
+};
+
+const ACCURACY_LABELS: Record<string, number> = {
+  "90100": 0.95,
+  "8090": 0.85,
+  "7080": 0.75,
+  "6070": 0.65,
+  "5060": 0.55,
+  "50": 0.4,
+};
+
+function normalizeLookupKey(key: string): string {
+  return key.toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function flattenPayloadValues(payload: Record<string, unknown>): Map<string, unknown> {
+  const index = new Map<string, unknown>();
+  const put = (norm: string, value: unknown) => {
+    if (!norm || index.has(norm)) return;
+    index.set(norm, value);
+  };
+  for (const [key, value] of Object.entries(payload)) {
+    put(normalizeLookupKey(key), value);
+    if (value && typeof value === "object" && !Array.isArray(value)) {
+      for (const [innerKey, inner] of Object.entries(value as Record<string, unknown>)) {
+        put(normalizeLookupKey(`${key}${innerKey}`), inner);
+      }
+    }
+  }
+  return index;
+}
+
+function asFiniteNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim() !== "") {
+    const numeric = Number(value);
+    if (Number.isFinite(numeric)) return numeric;
+  }
+  if (Array.isArray(value)) {
+    const parts = value.map(asFiniteNumber).filter((part): part is number => part != null);
+    if (parts.length === 0) return null;
+    return parts.reduce((sum, part) => sum + part, 0);
+  }
+  return null;
+}
+
+function firstNumber(index: Map<string, unknown>, aliases: readonly string[]): number | null {
+  for (const alias of aliases) {
+    const value = asFiniteNumber(index.get(normalizeLookupKey(alias)));
+    if (value != null) return value;
+  }
+  return null;
+}
+
+function firstPresent(index: Map<string, unknown>, aliases: readonly string[]): unknown {
+  for (const alias of aliases) {
+    const key = normalizeLookupKey(alias);
+    if (index.has(key)) return index.get(key);
+  }
+  return undefined;
+}
+
+function labelToNumber(value: unknown, table: Record<string, number>): number | null {
+  if (typeof value !== "string") return null;
+  const norm = normalizeLookupKey(value);
+  if (table[norm] != null) return table[norm]!;
+  for (const [key, mapped] of Object.entries(table)) {
+    if (norm.includes(key)) return mapped;
+  }
+  return null;
+}
+
+function truthyFlag(value: unknown): boolean {
+  if (value === true) return true;
+  if (typeof value === "number") return value > 0;
+  if (typeof value !== "string") return false;
+  const norm = value.trim().toLowerCase();
+  return norm !== "" && !["no", "false", "none", "0", "n/a"].includes(norm);
+}
+
+function sumPresent(parts: Array<number | null>): number | null {
+  const finite = parts.filter((part): part is number => part != null && Number.isFinite(part));
+  if (finite.length === 0) return null;
+  return finite.reduce((sum, part) => sum + part, 0);
+}
+
+function rateFromCountAndDuration(count: number | null, durationSeconds: number | null): number | null {
+  if (count == null || durationSeconds == null || durationSeconds <= 0) return null;
+  return count / durationSeconds;
+}
+
+/**
+ * One Collection-style payload → the scout half of the 22 lookup metrics.
+ * Counts, timers, and qualitative answers stay blank when those keys are absent.
+ * Rates need an explicit rate or a stored duration — match length is never invented.
+ */
+export function scoutMetricsFromPayload(
+  payload: Record<string, unknown> | null | undefined,
+): Partial<Record<LovatLookupMetricId, number | null>> {
+  if (!payload || typeof payload !== "object") return {};
+  const index = flattenPayloadValues(payload);
+
+  const driverAbility =
+    firstNumber(index, ["driverAbility", "driver_ability", "driver_skill"]) ??
+    labelToNumber(firstPresent(index, ["driverAbility", "driver_ability", "driver_skill"]), DRIVER_ABILITY_LABELS);
+
+  const autoClimb =
+    firstNumber(index, ["autoClimb", "auto_climb"]) ??
+    labelToNumber(firstPresent(index, ["autoClimb", "auto_climb"]), AUTO_CLIMB_LABELS);
+
+  const defenseEffectiveness =
+    firstNumber(index, ["defenseEffectiveness", "defense_effectiveness", "defense_rating", "defense"]) ??
+    labelToNumber(
+      firstPresent(index, ["defenseEffectiveness", "defense_effectiveness", "defense_rating"]),
+      DEFENSE_EFFECTIVENESS_LABELS,
+    );
+
+  const contactDefenseTime = firstNumber(index, ["contactDefenseTime", "contact_defense", "contact_defense_time"]);
+  const campingDefenseTime = firstNumber(index, ["campingDefenseTime", "camping", "camping_defense_time"]);
+  const totalDefenseTime =
+    firstNumber(index, ["totalDefenseTime", "defenseTime", "defense_time", "total_defense_time"]) ??
+    sumPresent([contactDefenseTime, campingDefenseTime]);
+
+  const autoFuel = firstNumber(index, ["auto_fuel", "autoFuel"]);
+  const teleopFuel = firstNumber(index, ["teleop_fuel", "teleopFuel"]);
+  const estimatedTotalFuelScored =
+    firstNumber(index, ["estimatedTotalFuelScored", "fuel_scored", "fuelScored"]) ??
+    sumPresent([autoFuel, teleopFuel]);
+  const totalFuelFed = firstNumber(index, ["totalFuelFed", "fuel_passed", "fuelPassed", "fed"]);
+  const totalFuelThroughput =
+    firstNumber(index, ["totalFuelThroughput", "throughput"]) ??
+    sumPresent([estimatedTotalFuelScored, totalFuelFed]);
+
+  const scoringDuration = firstNumber(index, ["scoringTime", "scoring_time", "shoot_time", "shootDuration"]);
+  const feedingDuration = firstNumber(index, ["feedingTime", "feeding_time", "feed_duration"]);
+  const scoringRate =
+    firstNumber(index, ["scoringRate", "scoring_rate", "cycle_rate"]) ??
+    rateFromCountAndDuration(estimatedTotalFuelScored, scoringDuration);
+  const feedingRate =
+    firstNumber(index, ["feedingRate", "feeding_rate", "feed_rate"]) ??
+    rateFromCountAndDuration(totalFuelFed, feedingDuration);
+
+  const accuracy =
+    firstNumber(index, ["estimatedSuccessfulFuelRate", "success_rate", "accuracy"]) ??
+    labelToNumber(firstPresent(index, ["accuracy", "shot_accuracy", "shotAccuracy"]), ACCURACY_LABELS);
+  const estimatedSuccessfulFuelRate = accuracy;
+
+  const explicitReliability = firstNumber(index, ["reliability"]);
+  const failure = firstPresent(index, [
+    "disabled",
+    "breakdown",
+    "noShow",
+    "no_show",
+    "robotBroke",
+    "robot_broke",
+    "broke",
+  ]);
+  const reliability =
+    explicitReliability != null
+      ? explicitReliability
+      : failure === undefined
+        ? null
+        : truthyFlag(failure)
+          ? 0
+          : 1;
+
+  return {
+    driverAbility,
+    autoClimb,
+    defenseEffectiveness,
+    contactDefenseTime,
+    campingDefenseTime,
+    totalDefenseTime,
+    totalFuelThroughput,
+    totalFuelFed,
+    feedingRate,
+    scoringRate,
+    estimatedSuccessfulFuelRate,
+    estimatedTotalFuelScored,
+    reliability,
+  };
+}
+
 export function averageScoutMetric(
   rows: Array<Record<string, unknown>>,
   keys: string[],
 ): number | null {
   const values: number[] = [];
   for (const row of rows) {
+    const derived = scoutMetricsFromPayload(row);
+    let found: number | null = null;
     for (const key of keys) {
+      const fromDerived = derived[key as LovatLookupMetricId];
+      if (typeof fromDerived === "number" && Number.isFinite(fromDerived)) {
+        found = fromDerived;
+        break;
+      }
       const value = row[key];
-      if (typeof value === "number" && Number.isFinite(value)) values.push(value);
+      if (typeof value === "number" && Number.isFinite(value)) {
+        found = value;
+        break;
+      }
     }
+    if (found != null) values.push(found);
   }
   return populationMean(values);
 }
@@ -275,24 +502,62 @@ export function scoutAveragesFromPayloads(
   payloads: Array<Record<string, unknown>>,
 ): ScoutAverageRow | null {
   if (payloads.length === 0) return null;
-  const values: ScoutAverageRow["values"] = {
-    driverAbility: averageScoutMetric(payloads, ["driverAbility", "driver", "driver_skill"]),
-    autoClimb: averageScoutMetric(payloads, ["autoClimb", "auto_climb"]),
-    defenseEffectiveness: averageScoutMetric(payloads, ["defenseEffectiveness", "defense", "defense_rating"]),
-    contactDefenseTime: averageScoutMetric(payloads, ["contactDefenseTime", "contact_defense"]),
-    campingDefenseTime: averageScoutMetric(payloads, ["campingDefenseTime", "camping"]),
-    totalDefenseTime: averageScoutMetric(payloads, ["totalDefenseTime", "defenseTime", "defense_time"]),
-    totalFuelThroughput: averageScoutMetric(payloads, ["totalFuelThroughput", "throughput"]),
-    totalFuelFed: averageScoutMetric(payloads, ["totalFuelFed", "fed"]),
-    feedingRate: averageScoutMetric(payloads, ["feedingRate", "feed_rate"]),
-    scoringRate: averageScoutMetric(payloads, ["scoringRate", "cycle_rate"]),
-    estimatedSuccessfulFuelRate: averageScoutMetric(payloads, ["estimatedSuccessfulFuelRate", "success_rate"]),
-    estimatedTotalFuelScored: averageScoutMetric(payloads, ["estimatedTotalFuelScored", "fuel_scored"]),
-    reliability: averageScoutMetric(payloads, ["reliability"]),
-  };
-  const any = Object.values(values).some((value) => value != null);
-  if (!any) return { teamKey, values, sample: payloads.length };
+  const perMatch = payloads.map((payload) => scoutMetricsFromPayload(payload));
+  const values: ScoutAverageRow["values"] = {};
+  for (const id of SCOUT_LOOKUP_METRIC_IDS) {
+    const numbers = perMatch
+      .map((row) => row[id])
+      .filter((value): value is number => value != null && Number.isFinite(value));
+    values[id] = populationMean(numbers);
+  }
   return { teamKey, values, sample: payloads.length };
+}
+
+export function scoutSeriesFromPayloads(
+  payloads: Array<Record<string, unknown>>,
+): Partial<Record<LovatLookupMetricId, Array<number | null>>> {
+  const series: Partial<Record<LovatLookupMetricId, Array<number | null>>> = {};
+  for (const id of SCOUT_LOOKUP_METRIC_IDS) {
+    series[id] = payloads.map((payload) => scoutMetricsFromPayload(payload)[id] ?? null);
+  }
+  return series;
+}
+
+export function scoutAveragesByTeam(
+  rows: Array<{ teamKey: string; payload: Record<string, unknown> | null | undefined }>,
+): ScoutAverageRow[] {
+  const byTeam = new Map<string, Record<string, unknown>[]>();
+  for (const row of rows) {
+    const list = byTeam.get(row.teamKey) ?? [];
+    list.push(row.payload && typeof row.payload === "object" ? row.payload : {});
+    byTeam.set(row.teamKey, list);
+  }
+  return [...byTeam.entries()]
+    .map(([teamKey, payloads]) => scoutAveragesFromPayloads(teamKey, payloads))
+    .filter((row): row is ScoutAverageRow => row != null);
+}
+
+export function fieldStatsFromScoutRows(rows: ScoutAverageRow[]): LookupFieldStats {
+  const picklist = fieldStatsFromRows(
+    rows.map((row) => ({
+      teamKey: row.teamKey,
+      values: row.values,
+    })),
+  );
+  const extra: LookupFieldStats = { ...picklist };
+  const reliabilityValues = rows
+    .map((row) => row.values.reliability)
+    .filter((value): value is number => value != null && Number.isFinite(value));
+  const mean = populationMean(reliabilityValues);
+  const std = populationStdDev(reliabilityValues);
+  if (mean != null && std != null) {
+    extra.reliability = { mean, std, n: reliabilityValues.length };
+  }
+  return extra;
+}
+
+export function mergeLookupFieldStats(...parts: LookupFieldStats[]): LookupFieldStats {
+  return Object.assign({}, ...parts);
 }
 
 export function eventStdFor(id: LovatLookupMetricId, rows: EventRatingRow[]): number | null {

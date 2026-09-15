@@ -21,6 +21,13 @@ export default tseslint.config(
       // the vitest config had.
       "**/.claude/worktrees/**",
       "**/.freebuff/**",
+      // Leftover volume kits: cloned compute.ts + board.tsx trees. The named
+      // CI failure is unused formatTier / lovatExactWin under win-kit; lovat-kit
+      // and agent-kit are the same leftover clones. Ignore the trees — do not
+      // mass-edit them. Same class of skip as worktrees.
+      "**/win-kit/**",
+      "**/lovat-kit/**",
+      "**/agent-kit/**",
     ],
   },
   js.configs.recommended,
