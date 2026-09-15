@@ -223,7 +223,7 @@ function logisticsShellNextActionCandidates(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Finish membership or migration setup so Logistics can resolve your org.",
+        detail: "Finish membership setup so Logistics can resolve your org.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
       },
