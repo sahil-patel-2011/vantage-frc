@@ -158,7 +158,9 @@ function buildAuth() {
           : ({ email, type }) => deterministicLocalOtp(email, type),
       sendVerificationOTP: async (message) => {
         if (!isEmailProviderConfigured()) {
-          throw new Error("Email sign-in is unavailable until RESEND_API_KEY and AUTH_EMAIL_FROM are configured.");
+          throw new Error(
+            "Email sign-in is unavailable until RESEND_API_KEY and AUTH_EMAIL_FROM, or GMAIL_SMTP_USER and GMAIL_SMTP_APP_PASSWORD, are configured.",
+          );
         }
         const emailProvider = createEmailProvider();
         await emailProvider.sendOtp(message);

@@ -22,15 +22,60 @@ export function runtimeEnv(name: string) {
   return value;
 }
 
-/** Local OTP can use the in-memory mailbox. Production delivery needs Resend. */
+/** First non-empty runtime env among aliases people actually set on Vercel. */
+export function firstRuntimeEnv(...names: string[]) {
+  for (const name of names) {
+    const value = runtimeEnv(name);
+    if (value) return value;
+  }
+  return "";
+}
+
+export function resendApiKey() {
+  return firstRuntimeEnv("RESEND_API_KEY", "RESEND_KEY");
+}
+
+export function authEmailFrom() {
+  return firstRuntimeEnv("AUTH_EMAIL_FROM", "EMAIL_FROM", "MAIL_FROM", "FROM_EMAIL");
+}
+
+export function gmailSmtpUser() {
+  return firstRuntimeEnv("GMAIL_SMTP_USER", "GMAIL_USER", "SMTP_USER", "SMTP_USERNAME");
+}
+
+export function gmailSmtpPassword() {
+  return firstRuntimeEnv("GMAIL_SMTP_APP_PASSWORD", "GMAIL_APP_PASSWORD", "SMTP_PASSWORD", "SMTP_PASS");
+}
+
+/** Resend cannot deliver from consumer mailboxes; the API accepts the call and Gmail drops it. */
+export function isConsumerMailboxFrom(from: string) {
+  return /@(gmail|googlemail|yahoo|outlook|hotmail|live|icloud|msn)\./i.test(from);
+}
+
+/** Local OTP can use the in-memory mailbox. Production delivery needs Resend or Gmail SMTP. */
 export function isEmailProviderConfigured() {
   if (process.env.NODE_ENV !== "production") return true;
   return isEmailDeliveryConfigured();
 }
 
-/** Real outbound email (Resend). Password sign-in must not wait on this. */
+export function isGmailSmtpConfigured() {
+  return Boolean(gmailSmtpUser() && gmailSmtpPassword());
+}
+
+export function isResendConfigured() {
+  const from = authEmailFrom();
+  return Boolean(resendApiKey() && from && !isConsumerMailboxFrom(from));
+}
+
+/** Real outbound email (Resend or Gmail SMTP). Password sign-in must not wait on this. */
 export function isEmailDeliveryConfigured() {
-  return Boolean(runtimeEnv("RESEND_API_KEY") && runtimeEnv("AUTH_EMAIL_FROM"));
+  return isResendConfigured() || isGmailSmtpConfigured();
+}
+
+/** Tests stay on the in-memory mailbox. Dev/prod send when a provider is configured. */
+export function shouldDeliverOutboundEmail() {
+  if (process.env.NODE_ENV === "test") return false;
+  return isEmailDeliveryConfigured();
 }
 
 export function isGoogleAuthConfigured() {
@@ -67,6 +112,21 @@ function stripTrailingSlash(value: string) {
   return value.replace(/\/$/, "");
 }
 
+/** The project production alias people actually open. The old `vantage-frc-web` host is gone. */
+export const LIVE_AUTH_ORIGIN = "https://vantagefrc.vercel.app";
+
+const RETIRED_AUTH_HOSTS = new Set(["vantage-frc-web.vercel.app"]);
+
+function canonicalizeAuthOrigin(value: string) {
+  try {
+    const url = new URL(value.includes("://") ? value : `https://${value}`);
+    if (RETIRED_AUTH_HOSTS.has(url.hostname.toLowerCase())) return LIVE_AUTH_ORIGIN;
+    return `${url.protocol}//${url.host}`;
+  } catch {
+    return stripTrailingSlash(value);
+  }
+}
+
 function isLocalhostAuthOrigin(value: string) {
   try {
     const url = new URL(value.includes("://") ? value : `https://${value}`);
@@ -92,14 +152,30 @@ export function resolveAuthBaseURL() {
     if (isLocalAuthRuntime() && !isLocalhostAuthOrigin(explicit)) {
       return "http://localhost:3001";
     }
-    return stripTrailingSlash(explicit);
+    return canonicalizeAuthOrigin(explicit);
   }
   const productionHost = runtimeEnv("VERCEL_PROJECT_PRODUCTION_URL");
-  if (productionHost) return `https://${stripTrailingSlash(productionHost)}`;
+  if (productionHost) return canonicalizeAuthOrigin(`https://${stripTrailingSlash(productionHost)}`);
   const deploymentHost = runtimeEnv("VERCEL_URL");
-  if (deploymentHost) return `https://${stripTrailingSlash(deploymentHost)}`;
+  if (deploymentHost) return canonicalizeAuthOrigin(`https://${stripTrailingSlash(deploymentHost)}`);
   return "http://localhost:3001";
 }
+
+/**
+ * Vanity hosts already attached on the Vercel project. Better Auth logs
+ * "Invalid origin" and rejects CSRF when someone signs in from these instead
+ * of `vantage-frc-web.vercel.app`. Google OAuth on Vercel does not add them.
+ */
+export const PRODUCTION_AUTH_ALIASES = [
+  "https://vantage-frc-web.vercel.app",
+  "https://vantagefrc.vercel.app",
+  "https://frcvantage.vercel.app",
+  "https://teamvantage.vercel.app",
+  "https://vantagefrcweb.vercel.app",
+  "https://vantagerobotics.vercel.app",
+  "https://vantage-frc-web-sahil-patel-s-projects1.vercel.app",
+  "https://vantage-frc-web-git-main-sahil-patel-s-projects1.vercel.app",
+] as const;
 
 /** Origins allowed for Better Auth CSRF / callback checks. */
 export function resolveAuthTrustedOrigins(baseURL: string) {
@@ -115,7 +191,7 @@ export function resolveAuthTrustedOrigins(baseURL: string) {
     }
   };
   addOrigin(baseURL);
-  addOrigin("https://vantage-frc-web.vercel.app");
+  for (const alias of PRODUCTION_AUTH_ALIASES) addOrigin(alias);
   addOrigin(runtimeEnv("NEXT_PUBLIC_APP_URL"));
   addOrigin(runtimeEnv("NEXT_PUBLIC_SITE_URL"));
   const productionHost = runtimeEnv("VERCEL_PROJECT_PRODUCTION_URL");
@@ -226,7 +302,7 @@ export function getAuthCapabilities(): AuthCapabilityReport {
     emailOtpReason: !databaseConfigured
       ? "Email verification is unavailable until DATABASE_AUTH_URL, DATABASE_URL, or POSTGRES_URL is configured."
       : !emailProvider
-        ? "Email 2FA / OTP is unavailable until RESEND_API_KEY and AUTH_EMAIL_FROM are configured."
+        ? "Email 2FA / OTP is unavailable until RESEND_API_KEY and AUTH_EMAIL_FROM, or Gmail SMTP, are configured."
         : null,
     passwordReason: !databaseConfigured
       ? "Password sign-in is unavailable until the production database is configured."

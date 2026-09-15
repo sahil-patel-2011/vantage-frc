@@ -203,7 +203,7 @@ export const CONNECTORS: readonly ConnectorDefinition[] = [
     powers: "Invites, dues reminders, announcement digests and Drive share notices.",
     scope: "platform",
     requiredEnv: ["RESEND_API_KEY", "AUTH_EMAIL_FROM"],
-    optionalEnv: [],
+    optionalEnv: ["GMAIL_SMTP_USER", "GMAIL_SMTP_APP_PASSWORD"],
     callbackPath: null,
     callbackLabel: "",
     providerConsole: "resend.com → API Keys, and Domains → verify the sending domain",
@@ -329,6 +329,20 @@ export function missingConnectorEnv(
   def: ConnectorDefinition,
   env: Record<string, string | undefined>,
 ): string[] {
+  if (def.id === "email") {
+    const gmailUser = env.GMAIL_SMTP_USER?.trim() || env.GMAIL_USER?.trim() || env.SMTP_USER?.trim();
+    const gmailPass =
+      env.GMAIL_SMTP_APP_PASSWORD?.trim() || env.GMAIL_APP_PASSWORD?.trim() || env.SMTP_PASSWORD?.trim();
+    if (gmailUser && gmailPass) return [];
+    const from =
+      env.AUTH_EMAIL_FROM?.trim() || env.EMAIL_FROM?.trim() || env.MAIL_FROM?.trim() || env.FROM_EMAIL?.trim();
+    const key = env.RESEND_API_KEY?.trim() || env.RESEND_KEY?.trim();
+    const consumerFrom = /@(gmail|googlemail|yahoo|outlook|hotmail|live|icloud|msn)\./i.test(from ?? "");
+    return [
+      ...(key ? [] : ["RESEND_API_KEY"]),
+      ...(from && !consumerFrom ? [] : ["AUTH_EMAIL_FROM"]),
+    ];
+  }
   return def.requiredEnv.filter((name) => !env[name]?.trim());
 }
 

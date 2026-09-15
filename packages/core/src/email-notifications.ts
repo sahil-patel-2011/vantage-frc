@@ -1,7 +1,14 @@
 import { randomBytes } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
 import { withSavepoint } from "@vantage/db/savepoint";
-import { isEmailProviderConfigured, resolveAuthBaseURL, runtimeEnv } from "./access-policy";
+import {
+  authEmailFrom,
+  isConsumerMailboxFrom,
+  isEmailProviderConfigured,
+  isGmailSmtpConfigured,
+  resendApiKey,
+  resolveAuthBaseURL,
+} from "./access-policy";
 import { createEmailProvider } from "./email";
 
 /**
@@ -704,31 +711,58 @@ export function preferenceKeyForCategory(category: EmailNotificationCategory) {
 /**
  * Whether email will actually leave the building, and what to do if it will not.
  *
- * `missingEnv` is reported in every branch, including the development one:
- * outside production `createEmailProvider()` returns the in-memory
- * `LocalMailboxProvider`, so a send "succeeds" and nobody receives anything.
- * Reporting that as plain `available` with no further detail is how a
- * self-hosted non-production deployment ends up believing its dues reminders are
- * going out.
+ * Vitest (`NODE_ENV=test`) always uses the in-memory mailbox. Dev and production
+ * deliver when Resend or Gmail SMTP is configured.
  */
 export function emailNotificationsSetupStatus() {
-  const apiKey = runtimeEnv("RESEND_API_KEY");
-  const from = runtimeEnv("AUTH_EMAIL_FROM");
-  const missingEnv = [
+  const apiKey = resendApiKey();
+  const from = authEmailFrom();
+  const gmailReady = isGmailSmtpConfigured();
+  const consumerFrom = Boolean(from && isConsumerMailboxFrom(from));
+  const resendMissing = [
     ...(apiKey ? [] : ["RESEND_API_KEY"]),
-    ...(from ? [] : ["AUTH_EMAIL_FROM"]),
+    ...(from && !consumerFrom ? [] : ["AUTH_EMAIL_FROM"]),
   ];
+  const missingEnv = gmailReady ? [] : resendMissing;
+  const production = process.env.NODE_ENV === "production";
 
-  if (process.env.NODE_ENV !== "production") {
+  if (!production) {
+    const deliverHere =
+      process.env.NODE_ENV !== "test" && (Boolean(apiKey && from && !consumerFrom) || gmailReady);
+    if (deliverHere) {
+      return {
+        status: "available" as const,
+        missingEnv,
+        detail: gmailReady && resendMissing.length
+          ? "Gmail SMTP will send sign-in codes from this development process."
+          : "Resend will send sign-in codes from this development process. The AUTH_EMAIL_FROM domain must be verified or Gmail will drop the message.",
+      };
+    }
     return {
       status: "available" as const,
-      missingEnv,
-      detail: missingEnv.length
-        ? `Development build: mail is written to an in-memory local mailbox and is NOT delivered to anyone. Set ${missingEnv.join(" and ")} and run a production build to send for real.`
+      missingEnv: resendMissing,
+      detail: resendMissing.length
+        ? `Development build: mail is written to an in-memory local mailbox and is NOT delivered to anyone. Set ${resendMissing.join(" and ")} or GMAIL_SMTP_USER and GMAIL_SMTP_APP_PASSWORD to send for real.`
         : "Development build: mail is written to an in-memory local mailbox and is NOT delivered, even though Resend credentials are present.",
     };
   }
-  if (!missingEnv.length) {
+  if (gmailReady) {
+    return {
+      status: "available" as const,
+      missingEnv,
+      detail:
+        "Gmail SMTP is sending sign-in codes and notices. Use a Google App Password, not the account password. AUTH_EMAIL_FROM should be that Gmail address.",
+    };
+  }
+  if (apiKey && consumerFrom) {
+    return {
+      status: "setup_required" as const,
+      missingEnv: ["GMAIL_SMTP_USER", "GMAIL_SMTP_APP_PASSWORD"],
+      detail:
+        "AUTH_EMAIL_FROM is a consumer mailbox (for example @gmail.com). Resend accepts that From and Gmail drops the message. Set GMAIL_SMTP_USER and GMAIL_SMTP_APP_PASSWORD to a Google App Password, or change AUTH_EMAIL_FROM to a domain verified at resend.com → Domains. Google OAuth client IDs do not send mail. Until this is set, invites, dues reminders, announcement digests and Drive share notices are not delivered.",
+    };
+  }
+  if (!resendMissing.length) {
     return {
       status: "available" as const,
       missingEnv,
@@ -738,7 +772,7 @@ export function emailNotificationsSetupStatus() {
   }
   return {
     status: "setup_required" as const,
-    missingEnv,
-    detail: `Setup required — set ${missingEnv.join(" and ")} in your deployment environment (Vercel → Project → Settings → Environment Variables), then redeploy. Create the key at resend.com → API Keys, and verify the sending domain at resend.com → Domains so it matches AUTH_EMAIL_FROM (for example "Vantage <access@your-team.org>"). Email needs no callback URL. Until this is set, invites, dues reminders, announcement digests and Drive share notices are not delivered.`,
+    missingEnv: resendMissing,
+    detail: `Setup required — set ${resendMissing.join(" and ")} in your deployment environment (Vercel → Project → Settings → Environment Variables), then redeploy. Create the key at resend.com → API Keys, and verify the sending domain at resend.com → Domains so it matches AUTH_EMAIL_FROM (for example "Vantage <access@your-team.org>"). Or set GMAIL_SMTP_USER and GMAIL_SMTP_APP_PASSWORD to send codes from Gmail. Google OAuth is not the mailer. Email needs no callback URL. Until this is set, invites, dues reminders, announcement digests and Drive share notices are not delivered.`,
   };
 }

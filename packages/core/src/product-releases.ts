@@ -4,7 +4,12 @@ import {
   emailNotificationsSetupStatus,
   ensureUserEmailPreferences,
 } from "./email-notifications";
-import { isEmailProviderConfigured, resolveAuthBaseURL, runtimeEnv } from "./access-policy";
+import {
+  authEmailFrom,
+  isEmailProviderConfigured,
+  resendApiKey,
+  resolveAuthBaseURL,
+} from "./access-policy";
 import { createEmailProvider } from "./email";
 import { emitPreferredNotification } from "./in-app-notifications";
 
@@ -669,8 +674,8 @@ export function productReleaseDeliverySetupStatus() {
   if (process.env.NODE_ENV !== "production") {
     return { status: "available" as const, detail: "Local mailbox provider (development)." };
   }
-  const apiKey = runtimeEnv("RESEND_API_KEY");
-  const from = runtimeEnv("AUTH_EMAIL_FROM");
+  const apiKey = resendApiKey();
+  const from = authEmailFrom();
   if (apiKey && from) {
     return { status: "available" as const, detail: "Resend is configured for release emails." };
   }
