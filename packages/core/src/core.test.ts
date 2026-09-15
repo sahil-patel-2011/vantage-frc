@@ -80,6 +80,8 @@ describe("waitlist-only auth access policy", () => {
       from: process.env.AUTH_EMAIL_FROM,
       bypass: process.env.ENABLE_EMAIL_2FA_BYPASS,
       db: process.env.DATABASE_AUTH_URL,
+      gmailUser: process.env.GMAIL_SMTP_USER,
+      gmailPass: process.env.GMAIL_SMTP_APP_PASSWORD,
     };
     process.env.NODE_ENV = "production";
     delete process.env.RESEND_API_KEY;
@@ -109,11 +111,33 @@ describe("waitlist-only auth access policy", () => {
     process.env.ENABLE_EMAIL_2FA_BYPASS = "true";
     expect(getAuthCapabilities().email2faEnforced).toBe(false);
 
+    delete process.env.RESEND_API_KEY;
+    delete process.env.AUTH_EMAIL_FROM;
+    delete process.env.ENABLE_EMAIL_2FA_BYPASS;
+    process.env.GMAIL_SMTP_USER = "sahil@gmail.com";
+    process.env.GMAIL_SMTP_APP_PASSWORD = "abcd efgh ijkl mnop";
+    expect(isEmailProviderConfigured()).toBe(true);
+    expect(getAuthCapabilities().emailOtpAvailable).toBe(true);
+    expect(getAuthCapabilities().email2faEnforced).toBe(true);
+    delete process.env.GMAIL_SMTP_USER;
+    delete process.env.GMAIL_SMTP_APP_PASSWORD;
+
+    process.env.RESEND_API_KEY = "re_test";
+    process.env.AUTH_EMAIL_FROM = "Vantage <sahil@gmail.com>";
+    expect(isEmailProviderConfigured()).toBe(false);
+    expect(getAuthCapabilities().emailOtpAvailable).toBe(false);
+    delete process.env.RESEND_API_KEY;
+    delete process.env.AUTH_EMAIL_FROM;
+
     process.env.NODE_ENV = previous.nodeEnv;
     process.env.RESEND_API_KEY = previous.resend;
     process.env.AUTH_EMAIL_FROM = previous.from;
     process.env.ENABLE_EMAIL_2FA_BYPASS = previous.bypass;
     process.env.DATABASE_AUTH_URL = previous.db;
+    if (previous.gmailUser == null) delete process.env.GMAIL_SMTP_USER;
+    else process.env.GMAIL_SMTP_USER = previous.gmailUser;
+    if (previous.gmailPass == null) delete process.env.GMAIL_SMTP_APP_PASSWORD;
+    else process.env.GMAIL_SMTP_APP_PASSWORD = previous.gmailPass;
   });
 
   it("always allowlists the platform owner email for password and Google access", async () => {
@@ -199,9 +223,9 @@ describe("waitlist-only auth access policy", () => {
     const { resolveAuthBaseURL, resolveAuthTrustedOrigins, isGoogleAuthConfigured } = await import(
       "./access-policy"
     );
-    expect(resolveAuthBaseURL()).toBe("https://vantage-frc-web.vercel.app");
+    expect(resolveAuthBaseURL()).toBe("https://vantagefrc.vercel.app");
     expect(resolveAuthTrustedOrigins(resolveAuthBaseURL())).toContain(
-      "https://vantage-frc-web.vercel.app",
+      "https://vantagefrc.vercel.app",
     );
     process.env.GOOGLE_CLIENT_ID = "  ";
     process.env.GOOGLE_CLIENT_SECRET = "GOCSPX-example";
@@ -213,6 +237,15 @@ describe("waitlist-only auth access policy", () => {
     process.env.VERCEL_URL = previous.vercelUrl;
     process.env.GOOGLE_CLIENT_ID = previous.googleId;
     process.env.GOOGLE_CLIENT_SECRET = previous.googleSecret;
+  });
+
+  it("trusts the Vercel vanity hosts people actually open", async () => {
+    const { resolveAuthTrustedOrigins, PRODUCTION_AUTH_ALIASES } = await import("./access-policy");
+    const origins = resolveAuthTrustedOrigins("https://vantage-frc-web.vercel.app");
+    expect(PRODUCTION_AUTH_ALIASES).toContain("https://vantagefrc.vercel.app");
+    expect(origins).toContain("https://vantagefrc.vercel.app");
+    expect(origins).toContain("https://frcvantage.vercel.app");
+    expect(origins).toContain("https://vantage-frc-web-sahil-patel-s-projects1.vercel.app");
   });
 
   it("trusts the local Next and Playwright origins outside production", async () => {
@@ -239,7 +272,7 @@ describe("waitlist-only auth access policy", () => {
     process.env.BETTER_AUTH_URL_LOCAL = "http://127.0.0.1:3001";
     expect(resolveAuthBaseURL()).toBe("http://127.0.0.1:3001");
     process.env.VERCEL = "1";
-    expect(resolveAuthBaseURL()).toBe("https://vantage-frc-web.vercel.app");
+    expect(resolveAuthBaseURL()).toBe("https://vantagefrc.vercel.app");
     if (previous.betterAuth == null) delete process.env.BETTER_AUTH_URL;
     else process.env.BETTER_AUTH_URL = previous.betterAuth;
     if (previous.local == null) delete process.env.BETTER_AUTH_URL_LOCAL;

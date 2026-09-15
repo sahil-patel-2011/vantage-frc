@@ -138,6 +138,21 @@ describe("missingConnectorEnv", () => {
       }),
     ).toEqual([]);
   });
+
+  it("treats a Gmail App Password as enough and rejects a Gmail From on Resend", () => {
+    expect(
+      missingConnectorEnv(connectorById("email"), {
+        GMAIL_USER: "sahil@gmail.com",
+        GMAIL_APP_PASSWORD: "abcd efgh ijkl mnop",
+      }),
+    ).toEqual([]);
+    expect(
+      missingConnectorEnv(connectorById("email"), {
+        RESEND_API_KEY: "re_x",
+        AUTH_EMAIL_FROM: "Vantage <sahil@gmail.com>",
+      }),
+    ).toEqual(["AUTH_EMAIL_FROM"]);
+  });
 });
 
 describe("joinEnvNames", () => {

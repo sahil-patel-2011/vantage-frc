@@ -40,13 +40,13 @@ The authoritative annotated catalog is `.env.example`; the machine-checkable ver
 | `DATABASE_ADMIN_URL` | migrations + cron/worker jobs (`vantage_worker`) — must be **unpooled** |
 | `DATABASE_AUTH_URL` | Better Auth session store — sign-in |
 | `BETTER_AUTH_SECRET` | session signing |
-| `BETTER_AUTH_URL` | OAuth callbacks / trusted origin (`https://vantage-frc-web.vercel.app` or custom domain) |
+| `BETTER_AUTH_URL` | OAuth callbacks / trusted origin (`https://vantage-frc-web.vercel.app` or a vanity host such as `https://vantagefrc.vercel.app`) |
 | `NEXT_PUBLIC_APP_URL` | absolute links (invites, calendar feeds, shares) |
 | `NEXT_PUBLIC_SITE_URL` | metadataBase / OG / sitemap / robots |
 | `CRON_SECRET` | every `/api/cron/*` route returns 503 |
 
 **Strongly recommended (real feature degrades to setup_required):** `RESEND_API_KEY` + `AUTH_EMAIL_FROM`
-(auth emails / email 2FA), `GOOGLE_CLIENT_ID/SECRET` (Google sign-in), `TBA_AUTH_KEY` (all event/match
+(email sign-in codes — **not** the same as Google OAuth; a `@gmail.com` From is dropped by Resend — use Gmail SMTP instead), `GOOGLE_CLIENT_ID/SECRET` (Google sign-in only), `TBA_AUTH_KEY` (all event/match
 reference data), `MFA_ENCRYPTION_KEY`, `MFA_RECOVERY_PEPPER`, `EXPORT_ENCRYPTION_KEY`,
 `AWS_KMS_KEY_ID` + AWS credentials (BYOK — **the local dev KMS refuses to init in production**, so BYOK
 key saves fail without real KMS), `STRIPE_SECRET_KEY` + `STRIPE_WEBHOOK_SECRET`,
@@ -219,10 +219,10 @@ says the build is unsigned. Details: `docs/DESKTOP.md`.
 Notes that cost time when they are missed:
 
 - **Resend accepts the call and drops the message** when the domain in `AUTH_EMAIL_FROM` is not verified.
-  A green API key is not proof that mail is arriving.
-- **Outside production, email is never delivered at all.** `createEmailProvider()` returns an in-memory
-  local mailbox when `NODE_ENV !== "production"`, whatever `RESEND_API_KEY` says. The status on
-  `/connectors` states this explicitly rather than reporting a healthy connector.
+  A green API key is not proof that mail is arriving. Set `GMAIL_SMTP_USER` + `GMAIL_SMTP_APP_PASSWORD`
+  (Google App Password) to send sign-in codes from Gmail instead.
+- **`NODE_ENV=test` never delivers.** Dev and production send when Resend or Gmail SMTP is configured.
+  Without those keys, the in-memory local mailbox still swallows mail.
 - **Stripe's webhook answers 503, not 400, when its variables are missing**, and names them. A 400 is
   reserved for a payload we genuinely do not trust — and Stripe does not retry a 400, so a setup problem
   reported as one would silently drop the events that arrive while you fix it. A failure *after* the

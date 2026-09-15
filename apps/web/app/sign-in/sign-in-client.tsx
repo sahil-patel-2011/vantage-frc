@@ -11,6 +11,7 @@ import {
   clearRememberedAccount,
   codeSecondsRemaining,
   emailOtpSetupRequired,
+  shouldStartOnPassword,
   googleReady as isGoogleReady,
   initialSignInState,
   inviteTokenFromNext,
@@ -82,7 +83,9 @@ export default function SignInClient({
   const [inviteToken, setInviteToken] = useState<string | null>(null);
   const [invitePreview, setInvitePreview] = useState<InvitePreview | null>(null);
   const [resolvedNext, setResolvedNext] = useState(() => safeAppPath(nextPath, "/dashboard"));
-  const [passwordPanel, setPasswordPanel] = useState<PasswordPanel>("closed");
+  const [passwordPanel, setPasswordPanel] = useState<PasswordPanel>(() =>
+    shouldStartOnPassword(initialStatus) ? "password" : "closed",
+  );
   const [password, setPassword] = useState("");
   const [passwordMessage, setPasswordMessage] = useState("");
   const [resetSent, setResetSent] = useState(false);
@@ -629,6 +632,7 @@ export default function SignInClient({
       <div className="signin-footer">
         <SignInPasswordFooter
           passwordSignInAvailable={status.passwordSignInAvailable}
+          emailAvailable={emailAvailable}
           identityStep={flow.step === "identity"}
           passwordPanel={passwordPanel}
           onUsePassword={() => {
