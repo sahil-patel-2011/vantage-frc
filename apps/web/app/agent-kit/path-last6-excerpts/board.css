@@ -1,0 +1,27 @@
+.ak-path-last6-excerpts-board{display:grid;gap:12px;margin:4px 0 8px}
+.ak-path-last6-excerpts-board header h3{margin:0 0 4px}
+.ak-path-last6-excerpts-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr));gap:10px}
+.ak-path-last6-excerpts-tile{display:grid;gap:4px;padding:12px}
+.ak-path-last6-excerpts-tile strong{font-size:1.35rem;letter-spacing:-0.03em}
+.ak-path-last6-excerpts-tile em{font-style:normal;font-size:11px}
+.ak-path-last6-excerpts-spark{width:72px;height:28px;color:var(--accent)}
+.ak-path-last6-excerpts-vs{font-size:11px}
+.ak-path-last6-excerpts-vs-above{color:var(--good,#1b7f4e)}
+.ak-path-last6-excerpts-vs-below{color:var(--warn,#9a5b12)}
+.ak-path-last6-excerpts-vs-near,.ak-path-last6-excerpts-vs-unknown{color:var(--muted)}
+
+.ak-path-last6-excerpts-deep{display:grid;gap:12px;margin-top:8px}
+.ak-path-last6-excerpts-meters{display:grid;grid-template-columns:repeat(auto-fit,minmax(8.5rem,1fr));gap:8px;margin:0;padding:0;list-style:none}
+.ak-path-last6-excerpts-meter{display:grid;gap:2px;padding:8px 10px;border:1px solid var(--border,rgba(0,0,0,.08));border-radius:10px}
+.ak-path-last6-excerpts-split{display:grid;grid-template-columns:repeat(auto-fit,minmax(14rem,1fr));gap:10px}
+.ak-path-last6-excerpts-panel h4{margin:0 0 8px;font-size:13px}
+.ak-path-last6-excerpts-zones,.ak-path-last6-excerpts-colley,.ak-path-last6-excerpts-residual,.ak-path-last6-excerpts-pareto,.ak-path-last6-excerpts-setup{margin:0;padding:0;list-style:none;display:grid;gap:6px}
+.ak-path-last6-excerpts-zone{display:grid;grid-template-columns:7rem 1fr;gap:8px;align-items:center;font-size:12px}
+.ak-path-last6-excerpts-bar{display:block;height:8px;border-radius:999px;background:var(--accent,#3d6)}
+.ak-path-last6-excerpts-page{padding-bottom:24px}
+
+.ak-path-last6-excerpts-wide{display:grid;gap:12px;margin-top:10px}
+.ak-path-last6-excerpts-wide-meters{display:grid;grid-template-columns:repeat(auto-fit,minmax(8.5rem,1fr));gap:8px;margin:0;padding:0;list-style:none}
+.ak-path-last6-excerpts-slots,.ak-path-last6-excerpts-scouts{margin:0;padding-left:1.1rem;display:grid;gap:4px;font-size:12px}
+
+.ak-path-last6-excerpts-lovat{display:grid;gap:12px;margin-top:12px}
