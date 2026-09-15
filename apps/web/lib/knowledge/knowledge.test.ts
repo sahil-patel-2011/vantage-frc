@@ -55,6 +55,12 @@ describe("knowledge wiki helpers", () => {
     });
     expect(named.body).toContain("Cheesy Poofs");
     expect(named.body).toContain("2026");
+    const shopSop = applyKnowledgeTemplate("assembly_sop", 254);
+    expect(TEMPLATE_KIND_LABEL.assembly_sop).toMatch(/assembly/i);
+    expect(shopSop.body).toMatch(/Torque|thread-locker/i);
+    expect(shopSop.body).toContain("/assembly-manual");
+    expect(shopSop.body).not.toMatch(/Ask AI|Chat/i);
+    expect(shopSop.tags).toContain("assembly");
   });
 
   it("builds snippets and hrefs", () => {

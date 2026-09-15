@@ -127,6 +127,16 @@ describe("help articles", () => {
     expect(helpArticleHref("byok-automode")).toBe("/help/byok-automode");
     expect(getHelpArticle("offline-at-events")?.relatedHref).toBe("/competition");
     expect(getHelpArticle("missing")).toBeUndefined();
+    expect(getHelpArticle("saturday-scouting")?.relatedHref).toBe("/scouting");
+  });
+
+  it("does not claim Lovat lacks a CSV export", () => {
+    const migrate = getHelpArticle("migrate");
+    expect(migrate).toBeDefined();
+    const text = articleText(migrate!);
+    expect(text).not.toMatch(/Lovat has no documented export/i);
+    expect(text).toMatch(/Lovat exports CSV/i);
+    expect(text).toMatch(/wide answers/i);
   });
 });
 
@@ -216,6 +226,7 @@ describe("help search index", () => {
     );
     expect(searchHelpArticles("my kit")[0]?.slug).toBe("my-kit");
     expect(searchHelpArticles("import notion trello").map((hit) => hit.slug)).toContain("migrate");
+    expect(searchHelpArticles("assign quals saturday")[0]?.slug).toBe("saturday-scouting");
     expect(searchHelpArticles("venue wifi")[0]?.slug).toBe("offline-at-events");
     expect(searchHelpArticles("packing list")[0]?.slug).toBe("packing-lists");
     expect(searchHelpArticles("battery logs")[0]?.slug).toBe("batteries-at-events");
