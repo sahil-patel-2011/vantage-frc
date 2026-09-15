@@ -1,0 +1,27 @@
+.wk-defense-last12-picklist-board{display:grid;gap:12px;margin:4px 0 8px}
+.wk-defense-last12-picklist-board header h3{margin:0 0 4px}
+.wk-defense-last12-picklist-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr));gap:10px}
+.wk-defense-last12-picklist-tile{display:grid;gap:4px;padding:12px}
+.wk-defense-last12-picklist-tile strong{font-size:1.35rem;letter-spacing:-0.03em}
+.wk-defense-last12-picklist-tile em{font-style:normal;font-size:11px}
+.wk-defense-last12-picklist-spark{width:72px;height:28px;color:var(--accent)}
+.wk-defense-last12-picklist-vs{font-size:11px}
+.wk-defense-last12-picklist-vs-above{color:var(--good,#1b7f4e)}
+.wk-defense-last12-picklist-vs-below{color:var(--warn,#9a5b12)}
+.wk-defense-last12-picklist-vs-near,.wk-defense-last12-picklist-vs-unknown{color:var(--muted)}
+
+.wk-defense-last12-picklist-deep{display:grid;gap:12px;margin-top:8px}
+.wk-defense-last12-picklist-meters{display:grid;grid-template-columns:repeat(auto-fit,minmax(8.5rem,1fr));gap:8px;margin:0;padding:0;list-style:none}
+.wk-defense-last12-picklist-meter{display:grid;gap:2px;padding:8px 10px;border:1px solid var(--border,rgba(0,0,0,.08));border-radius:10px}
+.wk-defense-last12-picklist-split{display:grid;grid-template-columns:repeat(auto-fit,minmax(14rem,1fr));gap:10px}
+.wk-defense-last12-picklist-panel h4{margin:0 0 8px;font-size:13px}
+.wk-defense-last12-picklist-zones,.wk-defense-last12-picklist-colley,.wk-defense-last12-picklist-residual,.wk-defense-last12-picklist-pareto,.wk-defense-last12-picklist-setup{margin:0;padding:0;list-style:none;display:grid;gap:6px}
+.wk-defense-last12-picklist-zone{display:grid;grid-template-columns:7rem 1fr;gap:8px;align-items:center;font-size:12px}
+.wk-defense-last12-picklist-bar{display:block;height:8px;border-radius:999px;background:var(--accent,#3d6)}
+.wk-defense-last12-picklist-page{padding-bottom:24px}
+
+.wk-defense-last12-picklist-wide{display:grid;gap:12px;margin-top:10px}
+.wk-defense-last12-picklist-wide-meters{display:grid;grid-template-columns:repeat(auto-fit,minmax(8.5rem,1fr));gap:8px;margin:0;padding:0;list-style:none}
+.wk-defense-last12-picklist-slots,.wk-defense-last12-picklist-scouts{margin:0;padding-left:1.1rem;display:grid;gap:4px;font-size:12px}
+
+.wk-defense-last12-picklist-lovat{display:grid;gap:12px;margin-top:12px}
