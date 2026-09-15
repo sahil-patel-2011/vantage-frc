@@ -77,4 +77,28 @@ describe("buildLookupCards", () => {
     expect(cards.find((card) => card.id === "driverAbility")?.value).toBe(5);
     expect(formatLookupValue(null)).toBe("—");
   });
+
+  it("reads 2026 REBUILT payload keys into lookup tiles", () => {
+    const scout = scoutAveragesFromPayloads("frc3", [
+      {
+        auto_fuel: 3,
+        teleop_fuel: 9,
+        fuel_passed: 2,
+        driver_ability: 4,
+        auto_climb: "succeeded",
+        defense_time: 12,
+        camping_time: 4,
+        disabled: false,
+        robot_broke: false,
+      },
+    ]);
+    expect(scout?.values.driverAbility).toBe(4);
+    expect(scout?.values.autoClimb).toBe(1);
+    expect(scout?.values.contactDefenseTime).toBe(12);
+    expect(scout?.values.campingDefenseTime).toBe(4);
+    expect(scout?.values.totalDefenseTime).toBe(16);
+    expect(scout?.values.estimatedTotalFuelScored).toBe(12);
+    expect(scout?.values.totalFuelFed).toBe(2);
+    expect(scout?.values.reliability).toBe(100);
+  });
 });

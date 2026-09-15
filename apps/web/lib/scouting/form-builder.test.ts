@@ -94,6 +94,22 @@ describe("form-builder", () => {
     ]);
   });
 
+  it("persists scout help and who the answer helps", () => {
+    const definition = definitionFromDraft("Match", [
+      newDraftQuestion({
+        label: "Auto fuel scored",
+        kind: "counter",
+        helpText: "Fuel this robot scored during auto.",
+        helps: ["pick_list"],
+      }),
+    ]);
+    expect(definition.fields[0]?.helpText).toMatch(/auto/i);
+    expect(definition.fields[0]?.helps).toEqual(["pick_list"]);
+    const back = draftFromDefinition(definition);
+    expect(back.questions[0]?.helpText).toMatch(/auto/i);
+    expect(back.questions[0]?.helps).toEqual(["pick_list"]);
+  });
+
   it("reorders questions", () => {
     const a = newDraftQuestion({ id: "a", label: "A" });
     const b = newDraftQuestion({ id: "b", label: "B" });

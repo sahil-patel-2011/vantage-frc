@@ -1,4 +1,15 @@
-import { currentSeasonYear, defaultMatchSchema, defaultPitSchema, type GameField } from "@vantage/game-year";
+import {
+  currentSeasonYear,
+  defaultMatchSchema,
+  defaultPitSchema,
+  formatScoutFieldHelp,
+  isScoutFieldUse,
+  normalizeScoutFieldUses,
+  SCOUT_FIELD_USE_LABELS,
+  SCOUT_FIELD_USES,
+  type GameField,
+  type ScoutFieldUse,
+} from "@vantage/game-year";
 import { lockScoutPayload } from "./identity";
 import {
   assertStorageKeyForOrg,
@@ -99,12 +110,23 @@ export type FieldDefinition = {
   options?: string[];
   disagreementThreshold?: number;
   helpText?: string;
+  /** Who uses this answer after save: pick list, alliance, pit, or repair. */
+  helps?: ScoutFieldUse[];
   config?: Record<string, unknown>;
   /** Soft-UI form builder presentation; ignored by payload validation. */
   widget?: FieldWidget;
 };
 
 export type SchemaDefinition = { title: string; fields: FieldDefinition[] };
+
+export {
+  formatScoutFieldHelp,
+  isScoutFieldUse,
+  normalizeScoutFieldUses,
+  SCOUT_FIELD_USE_LABELS,
+  SCOUT_FIELD_USES,
+};
+export type { ScoutFieldUse };
 
 /* ------------------------------------------------------------------------- *
  * Scouting input studio — config readers, math, and shape guards.
@@ -513,13 +535,51 @@ export function applyFormResetBehavior(
   return next;
 }
 
+function widgetForGameField(field: GameField): FieldWidget | undefined {
+  switch (field.widget) {
+    case "drivetrain":
+    case "robot_image":
+    case "counter":
+    case "timer":
+    case "rating":
+    case "multi_select":
+    case "section":
+    case "free":
+    case "short":
+    case "yesno":
+    case "mc":
+    case "dropdown":
+    case "number":
+    case "multi_counter":
+    case "slider":
+    case "field_position":
+      return field.widget;
+    default:
+      break;
+  }
+  switch (field.type) {
+    case "drivetrain_type":
+      return "drivetrain";
+    case "robot_image":
+      return "robot_image";
+    case "counter":
+      return "counter";
+    case "timer":
+      return "timer";
+    case "rating":
+      return "rating";
+    case "multi_select":
+      return "multi_select";
+    case "section_header":
+      return "section";
+    default:
+      return undefined;
+  }
+}
+
 function gameFieldToDefinition(field: GameField): FieldDefinition {
-  const widget: FieldWidget | undefined =
-    field.type === "drivetrain_type"
-      ? "drivetrain"
-      : field.type === "robot_image"
-        ? "robot_image"
-        : undefined;
+  const widget = widgetForGameField(field);
+  const helps = normalizeScoutFieldUses(field.helps);
   return {
     key: field.key,
     label: field.label,
@@ -527,6 +587,8 @@ function gameFieldToDefinition(field: GameField): FieldDefinition {
     required: field.required,
     options: field.options,
     helpText: field.helpText,
+    ...(helps.length ? { helps } : {}),
+    ...(field.config && Object.keys(field.config).length ? { config: field.config } : {}),
     widget,
   };
 }
@@ -535,16 +597,43 @@ function gameFieldToDefinition(field: GameField): FieldDefinition {
 export const DEFAULT_MATCH_SCHEMA: SchemaDefinition = {
   title: "Match scouting",
   fields: [
-    { key: "auto_score", label: "Auto score", type: "number" },
-    { key: "teleop_score", label: "Teleop score", type: "number" },
+    {
+      key: "auto_score",
+      label: "Auto score",
+      type: "number",
+      helpText: "Official auto points this robot scored this match. Leave blank if you could not see it.",
+      helps: ["pick_list"],
+    },
+    {
+      key: "teleop_score",
+      label: "Teleop score",
+      type: "number",
+      helpText: "Official teleop points this robot scored this match.",
+      helps: ["pick_list"],
+    },
     {
       key: "endgame",
       label: "Endgame",
       type: "select",
       options: ["none", "partial", "full"],
+      helpText: "What they completed at the end of this match. Use none if they never tried.",
+      helps: ["pick_list", "alliance"],
     },
-    { key: "disabled", label: "Disabled", type: "boolean" },
-    { key: "notes", label: "Notes", type: "text" },
+    {
+      key: "disabled",
+      label: "Disabled",
+      type: "boolean",
+      helpText: "Robot was dead, e-stopped, or fully out for a stretch of this match.",
+      helps: ["pick_list", "repair"],
+    },
+    {
+      key: "notes",
+      label: "Notes",
+      type: "text",
+      helpText: "Only what the other questions missed. Keep it short and specific.",
+      helps: ["pick_list", "alliance", "repair"],
+      widget: "free",
+    },
   ],
 };
 
@@ -557,6 +646,8 @@ export const DEFAULT_PIT_SCHEMA: SchemaDefinition = {
       type: "drivetrain_type",
       options: [...DEFAULT_DRIVETRAIN_OPTIONS],
       widget: "drivetrain",
+      helpText: "What drive they built. Pushing matches and spare-parts planning.",
+      helps: ["pick_list", "alliance", "repair"],
     },
     {
       key: "robot_images",
@@ -564,10 +655,30 @@ export const DEFAULT_PIT_SCHEMA: SchemaDefinition = {
       type: "robot_image",
       widget: "robot_image",
       helpText: "Upload or capture pit photos of the robot.",
+      helps: ["pick_list", "pit", "repair"],
     },
-    { key: "cycle_time", label: "Cycle time (s)", type: "number" },
-    { key: "reliable", label: "Reliable", type: "boolean" },
-    { key: "notes", label: "Notes", type: "text" },
+    {
+      key: "cycle_time",
+      label: "Cycle time (s)",
+      type: "number",
+      helpText: "Observed cycle time in this pit visit, if you timed one. Leave blank rather than guessing.",
+      helps: ["pick_list"],
+    },
+    {
+      key: "reliable",
+      label: "Reliable",
+      type: "boolean",
+      helpText: "Did the robot look mechanically sound in the pit?",
+      helps: ["repair", "pick_list"],
+    },
+    {
+      key: "notes",
+      label: "Notes",
+      type: "text",
+      helpText: "Observable pit facts the other questions miss.",
+      helps: ["repair", "pick_list", "pit"],
+      widget: "free",
+    },
   ],
 };
 

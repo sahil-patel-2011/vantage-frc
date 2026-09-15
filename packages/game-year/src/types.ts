@@ -1,12 +1,21 @@
 /** Year-agnostic FRC game pack. Scoring keys stay empty until a real manual exists. */
 
+import type { ScoutFieldUse } from "./scout-intent";
+
+export type { ScoutFieldUse } from "./scout-intent";
+
 export type GameFieldType =
   | "number"
   | "boolean"
   | "text"
   | "select"
   | "drivetrain_type"
-  | "robot_image";
+  | "robot_image"
+  | "counter"
+  | "timer"
+  | "rating"
+  | "multi_select"
+  | "section_header";
 
 export type GameField = {
   key: string;
@@ -15,6 +24,12 @@ export type GameField = {
   required?: boolean;
   options?: string[];
   helpText?: string;
+  /** Who uses this answer after save: pick list, alliance briefing, pit, or repair. */
+  helps?: ScoutFieldUse[];
+  /** Studio widget when it differs from `type` (drivetrain, robot_image, counter, …). */
+  widget?: string;
+  /** Published field config (timer mode, rating max, strategy role). */
+  config?: Record<string, unknown>;
 };
 
 export type GameSchema = {

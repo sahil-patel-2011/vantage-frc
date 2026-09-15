@@ -21,6 +21,15 @@ describe("game-year packs", () => {
     expect(pitKeys).not.toContain("fuel_capacity");
     expect(pitKeys).not.toContain("tower_capability");
     expect(pack.brief?.headline).toMatch(/tower/i);
+    for (const field of [...pack.matchSchema.fields, ...pack.pitSchema.fields]) {
+      expect(field.helpText?.length, field.key).toBeGreaterThan(12);
+      expect(field.helps?.length, field.key).toBeGreaterThan(0);
+    }
+    expect(pack.matchSchema.fields.length).toBeLessThanOrEqual(20);
+    expect(pack.pitSchema.fields.length).toBeLessThanOrEqual(20);
+    expect(pack.matchSchema.fields.some((field) => field.key === "driver_ability")).toBe(true);
+    expect(pack.matchSchema.fields.some((field) => field.key === "defense_time")).toBe(true);
+    expect(pack.pitSchema.fields.some((field) => field.key === "intake_visible")).toBe(true);
   });
 
   it("points 2027 at last published REBUILT", () => {
@@ -35,6 +44,10 @@ describe("game-year packs", () => {
     expect(pack.scoringKeys).toEqual([]);
     expect(pack.strategyTemplates).toEqual([]);
     expect(isManualPublished(2027)).toBe(false);
+    for (const field of [...pack.matchSchema.fields, ...pack.pitSchema.fields]) {
+      expect(field.helpText?.length).toBeGreaterThan(12);
+      expect(field.helps?.length).toBeGreaterThan(0);
+    }
   });
 
   it("falls back to generic schemas for unknown years", () => {

@@ -101,10 +101,6 @@ function queryOf(href: string): URLSearchParams {
   return new URLSearchParams(href.slice(queryIndex + 1));
 }
 
-function tabOf(href: string): string | null {
-  return queryOf(href).get("tab");
-}
-
 /**
  * Entries the given role may see, in Personal-then-Team order. When a team
  * entry covers the same page as a personal one, the team entry wins so an

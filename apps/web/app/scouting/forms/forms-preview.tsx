@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { DEFAULT_DRIVETRAIN_OPTIONS } from "@vantage/scouting";
+import { DEFAULT_DRIVETRAIN_OPTIONS, formatScoutFieldHelp } from "@vantage/scouting";
 import { StudioField } from "../studio-fields";
 import { FormRow } from "../../../components/ui";
 import {
@@ -37,12 +37,15 @@ export function PreviewField({ question }: { question: DraftQuestion }) {
       <label className="sfb-check">
         <input type="checkbox" disabled />
         <span>{label}</span>
+        {formatScoutFieldHelp(question) ? (
+          <small className="app-muted">{formatScoutFieldHelp(question)}</small>
+        ) : null}
       </label>
     );
   }
   if (question.kind === "mc") {
     return (
-      <FormRow label={label}>
+      <FormRow label={label} hint={formatScoutFieldHelp(question)}>
         <div className="sfb-radio-row" role="radiogroup">
           {(options.length ? options : ["Option A", "Option B"]).map((option) => (
             <label key={option}>
@@ -62,9 +65,12 @@ export function PreviewField({ question }: { question: DraftQuestion }) {
           : [...DEFAULT_DRIVETRAIN_OPTIONS]
         : options;
     return (
-      <FormRow label={label}>
+      <FormRow
+        label={label}
+        hint={formatScoutFieldHelp(question) ?? "Choose from the list"}
+      >
         <select disabled defaultValue="">
-          <option value="">Select…</option>
+          <option value="">Choose…</option>
           {choices.map((option) => (
             <option key={option}>{option}</option>
           ))}
@@ -74,7 +80,10 @@ export function PreviewField({ question }: { question: DraftQuestion }) {
   }
   if (question.kind === "robot_image") {
     return (
-      <FormRow label={label} hint="Camera or gallery — stored with this team">
+      <FormRow
+        label={label}
+        hint={formatScoutFieldHelp(question) ?? "Camera or gallery — stored with this team"}
+      >
         <div className="sfb-robot-image-preview">
           <div className="sfb-robot-image-actions">
             <span className="app-button secondary" aria-disabled>
@@ -91,13 +100,13 @@ export function PreviewField({ question }: { question: DraftQuestion }) {
   }
   if (question.kind === "free") {
     return (
-      <FormRow label={label}>
+      <FormRow label={label} hint={formatScoutFieldHelp(question)}>
         <textarea disabled placeholder="Free-text notes…" />
       </FormRow>
     );
   }
   return (
-    <FormRow label={label}>
+    <FormRow label={label} hint={formatScoutFieldHelp(question)}>
       <input
         type={question.kind === "number" ? "number" : "text"}
         disabled

@@ -28,8 +28,18 @@ describe("scoutReportFromPayload", () => {
     expect(formatReportClock(report.timeline[2]?.atSeconds ?? null)).toBe("—");
   });
 
-  it("returns empty instead of inventing a report", () => {
-    expect(scoutReportFromPayload(null)).toEqual({ stats: [], timeline: [] });
-    expect(scoutReportFromPayload({})).toEqual({ stats: [], timeline: [] });
+  it("formats lists and uses schema labels when a form is provided", () => {
+    const report = scoutReportFromPayload(
+      { robot_roles: ["cycling", "feeding"], auto_fuel: 4 },
+      {
+        title: "2026",
+        fields: [
+          { key: "auto_fuel", label: "Auto fuel scored", type: "counter" },
+          { key: "robot_roles", label: "Roles this match", type: "multi_select" },
+        ],
+      },
+    );
+    expect(report.stats.find((stat) => stat.key === "auto_fuel")?.label).toBe("Auto fuel scored");
+    expect(report.stats.find((stat) => stat.key === "robot_roles")?.value).toBe("cycling, feeding");
   });
 });

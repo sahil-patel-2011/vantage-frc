@@ -10,7 +10,9 @@ export const FIELD_CENTRIC_FIELDS: GameField[] = [
     label: "Alliance station",
     type: "select",
     options: ["red1", "red2", "red3", "blue1", "blue2", "blue3"],
-    helpText: "Field-centric seat for this entry.",
+    helpText:
+      "Which driver station you watched from. Leads use this to re-scout the same angle.",
+    helps: ["alliance"],
   },
 ];
 

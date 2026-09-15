@@ -1,7 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { type EntryType, type FormResetBehavior, type SchemaDefinition, type ScoutSchema } from "@vantage/scouting";
+import {
+  formatScoutFieldHelp,
+  SCOUT_FIELD_USE_LABELS,
+  SCOUT_FIELD_USES,
+  type EntryType,
+  type FormResetBehavior,
+  type SchemaDefinition,
+  type ScoutFieldUse,
+  type ScoutSchema,
+} from "@vantage/scouting";
 import "../scouting.css";
 import { OfflineBanner } from "../../../components/offline-banner";
 import { EmptyState, FormRow, PageHeader, Panel, ToolStrip, Button } from "../../../components/ui";
@@ -83,7 +92,11 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
   // so the imported draft beats — rather than races — the initial schema fetch.
   const importedDraftRef = useRef<SchemaDefinition | null | undefined>(undefined);
 
-  const loadSchemaIntoDraft = useCallback((schema: ScoutSchema | undefined, nextType: EntryType) => {
+  const loadSchemaIntoDraft = useCallback((
+    schema: ScoutSchema | undefined,
+    nextType: EntryType,
+    seasonYear?: number | null,
+  ) => {
     if (importedDraftRef.current === undefined) {
       importedDraftRef.current = null;
       try {
@@ -94,7 +107,7 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
           const draft = draftFromDefinition(imported);
           importedDraftRef.current = imported;
           setTitle(draft.title);
-          setQuestions(draft.questions.length ? draft.questions : defaultQuestions(nextType));
+          setQuestions(draft.questions.length ? draft.questions : defaultQuestions(nextType, seasonYear));
           setMessage("Imported from QRScout — review every question, then Publish. Nothing is live yet.");
           return;
         }
@@ -105,12 +118,12 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
     if (schema?.definition) {
       const draft = draftFromDefinition(schema.definition);
       setTitle(draft.title);
-      setQuestions(draft.questions.length ? draft.questions : defaultQuestions(nextType));
+      setQuestions(draft.questions.length ? draft.questions : defaultQuestions(nextType, schema.year));
       setYear(schema.year);
       return;
     }
     setTitle(nextType === "pit" ? "Pit scouting" : "Match scouting");
-    setQuestions(defaultQuestions(nextType));
+    setQuestions(defaultQuestions(nextType, seasonYear));
   }, []);
 
   const load = useCallback(async () => {
@@ -121,7 +134,7 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
         setPayload(cached.data);
         if (cached.data.year != null) setYear(cached.data.year);
         const active = cached.data.schemas.find((schema) => schema.type === type);
-        loadSchemaIntoDraft(active, type);
+        loadSchemaIntoDraft(active, type, cached.data.year);
         setFromCache(true);
         setCachedAt(cached.cachedAt);
         hadCache = true;
@@ -167,7 +180,7 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
       setPayload(body);
       if (body.year != null) setYear(body.year);
       const active = body.schemas.find((schema) => schema.type === type);
-      loadSchemaIntoDraft(active, type);
+      loadSchemaIntoDraft(active, type, body.year);
       setFromCache(false);
       setCachedAt(null);
       await persistScoutFormsSnapshot(orgId, body);
@@ -193,7 +206,7 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
     setMessage("");
     setAcknowledgeBudget(false);
     const schema = payload?.schemas.find((entry) => entry.type === next);
-    loadSchemaIntoDraft(schema, next);
+    loadSchemaIntoDraft(schema, next, payload?.year);
     if (payload?.year != null) setYear(payload.year);
   }
 
@@ -204,6 +217,18 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
    */
   function retypeQuestionById(id: string, kind: AnswerKind) {
     setQuestions((prev) => prev.map((q) => (q.id === id ? retypeQuestion(q, kind) : q)));
+  }
+
+  function toggleQuestionHelp(id: string, use: ScoutFieldUse, on: boolean) {
+    setQuestions((prev) =>
+      prev.map((question) => {
+        if (question.id !== id) return question;
+        const next = on
+          ? SCOUT_FIELD_USES.filter((item) => question.helps.includes(item) || item === use)
+          : question.helps.filter((item) => item !== use);
+        return { ...question, helps: next };
+      }),
+    );
   }
 
   function updateQuestion(id: string, patch: Partial<DraftQuestion>) {
@@ -516,7 +541,8 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
                 <div>
                   <h2 style={{ margin: 0 }}>Questions</h2>
                   <p className="app-muted" style={{ margin: "4px 0 0" }}>
-                    Toggle required, edit MC/dropdown options, and reorder with Move up / Move down.
+                    Write what to watch, mark who uses the answer (pick list, alliance, pit, repair),
+                    and reorder with Move up / Move down.
                   </p>
                 </div>
               </header>
@@ -618,6 +644,40 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
                         </select>
                       </FormRow>
                     </div>
+                    <FormRow
+                      label="Scout help"
+                      hint={
+                        formatScoutFieldHelp(question) ??
+                        "What to watch this match, and who uses the answer after save."
+                      }
+                      wide
+                    >
+                      <textarea
+                        value={question.helpText}
+                        disabled={!payload.canManageSchemas}
+                        maxLength={280}
+                        placeholder="What should the scout look for? What should they not count?"
+                        onChange={(event) =>
+                          updateQuestion(question.id, { helpText: event.target.value })
+                        }
+                      />
+                    </FormRow>
+                    <fieldset className="sfb-helps">
+                      <legend className="app-muted">Helps after save</legend>
+                      {SCOUT_FIELD_USES.map((use) => (
+                        <label key={use} className="sfb-check">
+                          <input
+                            type="checkbox"
+                            checked={question.helps.includes(use)}
+                            disabled={!payload.canManageSchemas}
+                            onChange={(event) =>
+                              toggleQuestionHelp(question.id, use, event.target.checked)
+                            }
+                          />
+                          <span>{SCOUT_FIELD_USE_LABELS[use]}</span>
+                        </label>
+                      ))}
+                    </fieldset>
                     {needsOptionEditor(question.kind) ? (
                       <OptionEditor
                         optionsText={question.optionsText}
@@ -737,7 +797,7 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
                       {currentSchema.definition.fields.length} fields
                     </span>
                   </span>
-                  <Button variant="secondary" type="button" onClick={() => loadSchemaIntoDraft(currentSchema, type)}>
+                  <Button variant="secondary" type="button" onClick={() => loadSchemaIntoDraft(currentSchema, type, currentSchema.year)}>
                     Load
                   </Button>
                 </li>

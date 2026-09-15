@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { ScoutSchema } from "@vantage/scouting";
 import { Button } from "../../components/ui";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { formatReportClock, scoutReportFromPayload } from "../../lib/scouting/scout-report";
@@ -11,11 +12,13 @@ export function ScoutReportViewer({
   orgId,
   canDelete,
   onDeleted,
+  schemas = [],
 }: {
   entries: RecentEntry[];
   orgId: string;
   canDelete: boolean;
   onDeleted: () => void;
+  schemas?: ScoutSchema[];
 }) {
   const [openId, setOpenId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -25,7 +28,12 @@ export function ScoutReportViewer({
     <ul className="scout-entry-list">
       {entries.map((entry) => {
         const open = openId === entry.id;
-        const report = open ? scoutReportFromPayload(entry.payload) : null;
+        const report = open
+          ? scoutReportFromPayload(
+              entry.payload,
+              schemas.find((schema) => schema.type === type)?.definition,
+            )
+          : null;
         const type = entry.type === "pit" ? "pit" : "match";
         return (
           <li key={entry.id}>

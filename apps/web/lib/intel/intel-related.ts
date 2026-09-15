@@ -104,6 +104,11 @@ const NOTE_NUMBER_LABELS: ReadonlyArray<readonly [string, string]> = [
   ["totalPoints", "points"],
   ["score", "score"],
   ["fouls", "fouls"],
+  ["auto_fuel", "auto fuel"],
+  ["teleop_fuel", "teleop fuel"],
+  ["fuel_passed", "fuel passed"],
+  ["driver_ability", "driver"],
+  ["defense_time", "defense s"],
 ];
 
 function intelRelatedHrefs(orgId?: string | null): Set<string> {

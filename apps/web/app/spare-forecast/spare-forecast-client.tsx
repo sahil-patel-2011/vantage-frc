@@ -129,8 +129,6 @@ function SpareForecastShell({
   const buildHref = withOrgHref("/build", orgId);
   const copy = spareForecastShellCopy(shell);
   const inventoryHref = withOrgHref("/inventory", orgId);
-  const ordersHref = hubHref("/business", "orders", orgId);
-  const subsystemsHref = withOrgHref("/subsystems", orgId);
 
   return (
     <main className="module-page spare-forecast-page soft-gate">

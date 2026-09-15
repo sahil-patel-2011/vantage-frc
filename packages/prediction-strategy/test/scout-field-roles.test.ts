@@ -118,6 +118,9 @@ describe("field role resolution ladder", () => {
     expect(inferRoleForFieldKey("foul_count")).toBe("fouls");
     expect(inferRoleForFieldKey("match_notes")).toBe("notes");
     expect(inferRoleForFieldKey("drivetrain_type")).toBe("none");
+    expect(inferRoleForFieldKey("auto_climb")).toBe("none");
+    expect(inferRoleForFieldKey("tower_level")).toBe("none");
+    expect(inferRoleForFieldKey("auto_fuel")).toBe("auto_score");
     expect(isStrategyFieldRole("auto_score")).toBe(true);
     expect(isStrategyFieldRole("made_up")).toBe(false);
   });

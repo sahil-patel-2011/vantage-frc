@@ -263,11 +263,83 @@ export function averageScoutMetric(
   const values: number[] = [];
   for (const row of rows) {
     for (const key of keys) {
-      const value = row[key];
-      if (typeof value === "number" && Number.isFinite(value)) values.push(value);
+      const value = coerceScoutNumber(row[key]);
+      if (value != null) values.push(value);
     }
   }
   return populationMean(values);
+}
+
+/** Sum listed keys on each payload, then average those row totals. Empty stays empty. */
+export function averageScoutRowSum(
+  rows: Array<Record<string, unknown>>,
+  keys: string[],
+): number | null {
+  const values: number[] = [];
+  for (const row of rows) {
+    const parts: number[] = [];
+    for (const key of keys) {
+      const value = coerceScoutNumber(row[key]);
+      if (value != null) parts.push(value);
+    }
+    if (parts.length) values.push(parts.reduce((sum, item) => sum + item, 0));
+  }
+  return populationMean(values);
+}
+
+const CLIMB_TEXT: Record<string, number> = {
+  succeeded: 1,
+  success: 1,
+  climbed: 1,
+  l3: 1,
+  l2: 2 / 3,
+  l1: 1 / 3,
+  failed: 0,
+  fail: 0,
+  not_attempted: 0,
+  none: 0,
+};
+
+function coerceScoutNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "boolean") return value ? 1 : 0;
+  if (Array.isArray(value)) {
+    const parts = value
+      .map((item) => (typeof item === "number" && Number.isFinite(item) ? item : null))
+      .filter((item): item is number => item != null);
+    return parts.length ? parts.reduce((sum, item) => sum + item, 0) : null;
+  }
+  if (typeof value === "string" && value.trim()) {
+    const numeric = Number(value);
+    if (Number.isFinite(numeric)) return numeric;
+    const mapped = CLIMB_TEXT[value.trim().toLowerCase().replace(/\s+/g, "_")];
+    return mapped ?? null;
+  }
+  return null;
+}
+
+function truthyFlag(value: unknown): boolean | null {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number" && Number.isFinite(value)) return value > 0;
+  if (typeof value === "string") {
+    const trimmed = value.trim().toLowerCase();
+    if (trimmed === "true" || trimmed === "yes" || trimmed === "broke") return true;
+    if (trimmed === "false" || trimmed === "no") return false;
+  }
+  return null;
+}
+
+function reliabilityFromFlags(payloads: Array<Record<string, unknown>>): number | null {
+  const scores: number[] = [];
+  for (const row of payloads) {
+    if (!("disabled" in row) && !("robot_broke" in row) && !("breakdown" in row)) continue;
+    const failed =
+      truthyFlag(row.disabled) === true ||
+      truthyFlag(row.robot_broke) === true ||
+      truthyFlag(row.breakdown) === true;
+    scores.push(failed ? 0 : 100);
+  }
+  return populationMean(scores);
 }
 
 export function scoutAveragesFromPayloads(
@@ -276,19 +348,35 @@ export function scoutAveragesFromPayloads(
 ): ScoutAverageRow | null {
   if (payloads.length === 0) return null;
   const values: ScoutAverageRow["values"] = {
-    driverAbility: averageScoutMetric(payloads, ["driverAbility", "driver", "driver_skill"]),
+    driverAbility: averageScoutMetric(payloads, ["driverAbility", "driver", "driver_skill", "driver_ability"]),
     autoClimb: averageScoutMetric(payloads, ["autoClimb", "auto_climb"]),
-    defenseEffectiveness: averageScoutMetric(payloads, ["defenseEffectiveness", "defense", "defense_rating"]),
-    contactDefenseTime: averageScoutMetric(payloads, ["contactDefenseTime", "contact_defense"]),
-    campingDefenseTime: averageScoutMetric(payloads, ["campingDefenseTime", "camping"]),
-    totalDefenseTime: averageScoutMetric(payloads, ["totalDefenseTime", "defenseTime", "defense_time"]),
-    totalFuelThroughput: averageScoutMetric(payloads, ["totalFuelThroughput", "throughput"]),
-    totalFuelFed: averageScoutMetric(payloads, ["totalFuelFed", "fed"]),
+    defenseEffectiveness: averageScoutMetric(payloads, [
+      "defenseEffectiveness",
+      "defense",
+      "defense_rating",
+      "defense_effectiveness",
+    ]),
+    contactDefenseTime: averageScoutMetric(payloads, [
+      "contactDefenseTime",
+      "contact_defense",
+      "defense_time",
+    ]),
+    campingDefenseTime: averageScoutMetric(payloads, ["campingDefenseTime", "camping", "camping_time"]),
+    totalDefenseTime:
+      averageScoutMetric(payloads, ["totalDefenseTime", "defenseTime"]) ??
+      averageScoutRowSum(payloads, ["defense_time", "camping_time", "contact_defense", "camping"]),
+    totalFuelThroughput:
+      averageScoutMetric(payloads, ["totalFuelThroughput", "throughput"]) ??
+      averageScoutRowSum(payloads, ["auto_fuel", "teleop_fuel", "fuel_passed"]),
+    totalFuelFed: averageScoutMetric(payloads, ["totalFuelFed", "fed", "fuel_passed"]),
     feedingRate: averageScoutMetric(payloads, ["feedingRate", "feed_rate"]),
     scoringRate: averageScoutMetric(payloads, ["scoringRate", "cycle_rate"]),
     estimatedSuccessfulFuelRate: averageScoutMetric(payloads, ["estimatedSuccessfulFuelRate", "success_rate"]),
-    estimatedTotalFuelScored: averageScoutMetric(payloads, ["estimatedTotalFuelScored", "fuel_scored"]),
-    reliability: averageScoutMetric(payloads, ["reliability"]),
+    estimatedTotalFuelScored:
+      averageScoutMetric(payloads, ["estimatedTotalFuelScored", "fuel_scored"]) ??
+      averageScoutRowSum(payloads, ["auto_fuel", "teleop_fuel"]),
+    reliability:
+      averageScoutMetric(payloads, ["reliability"]) ?? reliabilityFromFlags(payloads),
   };
   const any = Object.values(values).some((value) => value != null);
   if (!any) return { teamKey, values, sample: payloads.length };
