@@ -24,7 +24,7 @@ describe("Team 6925 lab", () => {
 
   it("passes orgId into withOrgHref so the lab typechecks", () => {
     const lab = readFileSync(join(__dirname, "../../app/learn/6925/team-6925-lab.tsx"), "utf8");
-    expect(lab).not.toMatch(/withOrgHref\([^,\)]+\)/);
+    expect(lab).not.toMatch(/withOrgHref\([^,)]+\)/);
     expect(lab).toMatch(/withOrgHref\("\/build", null\)/);
   });
 
