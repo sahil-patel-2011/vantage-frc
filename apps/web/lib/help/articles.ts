@@ -368,6 +368,8 @@ export const HELP_ARTICLES: HelpArticle[] = [
       "stims",
       "roster",
       "switch tools",
+      "lovat",
+      "export csv",
     ],
     relatedHref: "/migrate",
     sections: [
@@ -390,7 +392,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "What cannot come in",
         body: [
-          "Lovat has no documented export, so there is no Lovat importer — if your instance can produce a CSV, use the Scouting CSV path and map columns by hand.",
+          "Lovat exports CSV (raw reports + notes, or team averages). Bring those in here with Scouting CSV and map columns. On the Scouting hub, Download this event’s answers is the wide CSV of published match/pit fields. Takeout at /exports still stores payload as JSON. This page only imports.",
           "After committing, dual-run both tools for a week before turning the old one off.",
         ],
       },
@@ -398,6 +400,72 @@ export const HELP_ARTICLES: HelpArticle[] = [
   },
 
   // --------------------------------------------------------------- Competition
+  {
+    id: "saturday-scouting",
+    slug: "saturday-scouting",
+    title: "Saturday scouting",
+    summary:
+      "Assign quals, Save this match / Save this pit, Conflicts, then Lock this list — one loop for the event.",
+    category: "competition",
+    keywords: [
+      "saturday scouting",
+      "assign quals",
+      "save this match",
+      "save this pit",
+      "conflicts",
+      "lock this list",
+      "lineup",
+      "pick desk",
+      "pit scouting",
+    ],
+    relatedHref: "/scouting",
+    sections: [
+      {
+        heading: "Assign quals",
+        body: [
+          "Open Lineup (/scouting/lineup) once the schedule is posted.",
+          "Assign first through last official match so every qual has a named scout.",
+          "Do not start at Training, Coverage, or Ask AI — the board is Lineup.",
+        ],
+      },
+      {
+        heading: "Save this match",
+        body: [
+          "Open your assignment on Scouting. Fill the published match form for that team and match.",
+          "Press Save this match. The row queues on this phone if the venue link is down.",
+        ],
+      },
+      {
+        heading: "Save this pit",
+        body: [
+          "Open the Pit strip on the same hub. Fill drivetrain, language, and photos.",
+          "Press Save this pit. Pit is not claimed scoring — do not treat it as a match sheet.",
+        ],
+      },
+      {
+        heading: "Conflicts",
+        body: [
+          "Open Conflicts on the Scouting hub (Match / Pit / QR / Conflicts / Trust).",
+          "Conflicts are entry-backed: pick the winning field when two scouts disagree.",
+          "Stay on this hub. /scout-disagreements is a satellite, not the Saturday door.",
+        ],
+      },
+      {
+        heading: "Lock this list",
+        body: [
+          "After quals are in, open Pick desk (/strategy?tab=picks).",
+          "Rank, pick, then Lock this list. That locked list is the alliance-hour input — not Alliance desk, not Ask AI.",
+        ],
+      },
+      {
+        heading: "If signal dies",
+        body: [
+          "The outbox is the normal path at a venue. Save anyway; Sync now when the link returns.",
+          "QR pit-link is recovery when a device cannot sync, not the default Saturday loop. Details are in Scouting and offline.",
+        ],
+      },
+    ],
+  },
   {
     id: "scouting-offline",
     slug: "scouting-offline",
@@ -421,6 +489,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "Where to scout",
         body: [
+          "The Saturday loop is assign quals → Save this match / Save this pit → Conflicts → Lock this list. Open Saturday scouting in Help for that path; this page is only venue Wi-Fi.",
           "Open Competition → Scouting, or the Scouting Hub route under Competition.",
           "Build or edit forms under Competition → Scouting → Forms before expecting match/pit sheets.",
         ],
