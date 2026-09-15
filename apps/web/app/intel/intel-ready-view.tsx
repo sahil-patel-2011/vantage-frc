@@ -3,7 +3,6 @@
 import { type FormEvent } from "react";
 import { FormRow, Panel, Button } from "../../components/ui";
 import {
-  intelScoutNoteLines,
   intelSourceTypeLabel,
   type IntelActiveEvent,
   type IntelNextAction,
@@ -14,9 +13,14 @@ import { IntelLookupBoard } from "./intel-lookup-board";
 import { IntelLookupNotes } from "./intel-lookup-notes";
 import {
   fieldStatsFromEventRows,
+  fieldStatsFromScoutRows,
+  mergeLookupFieldStats,
   scoutAveragesFromPayloads,
+  scoutSeriesFromPayloads,
   type EventRatingRow,
+  type ScoutAverageRow,
 } from "../../lib/intel/lovat-lookup";
+import { scoutReportFromPayload } from "../../lib/scouting/scout-report";
 import type { LookupNote } from "../../lib/intel/lookup-notes";
 
 export type IntelSearchTeam = {
@@ -148,6 +152,7 @@ export function IntelReadyView({
   onPickNameChange,
   onSavePick,
   fieldRatings,
+  eventScoutAverages,
   lookupNote,
   onSaveNote,
   onSelectSimilar,
@@ -173,6 +178,7 @@ export function IntelReadyView({
   onSavePick: () => void;
   onSelectSimilar: (teamNumber: number) => void;
   fieldRatings?: EventRatingRow[];
+  eventScoutAverages?: ScoutAverageRow[];
   lookupNote?: LookupNote | null;
   onSaveNote?: (body: string) => void;
 }) {
@@ -189,8 +195,13 @@ export function IntelReadyView({
         }
       : null);
   const findingCount = intel.findings.length;
-  const noteLines = intelScoutNoteLines(scoutNotes);
   const eventLabel = activeEvent?.eventName?.trim() || activeEvent?.eventKey || null;
+  const payloads = scoutNotes.map((note) => note.payload);
+  const scout = scoutAveragesFromPayloads(intel.team.teamKey, payloads);
+  const field = mergeLookupFieldStats(
+    fieldStatsFromEventRows(fieldRatings ?? []),
+    fieldStatsFromScoutRows(eventScoutAverages ?? []),
+  );
 
   return (
     <div className="intel-detail">
@@ -225,12 +236,10 @@ export function IntelReadyView({
       <IntelLookupBoard
         teamKey={intel.team.teamKey}
         event={eventRow}
-        field={fieldStatsFromEventRows(fieldRatings ?? [])}
-        scout={scoutAveragesFromPayloads(
-          intel.team.teamKey,
-          scoutNotes.map((note) => note.payload),
-        )}
+        field={field}
+        scout={scout}
         history={intel.trajectory.map((point) => point.epa)}
+        scoutSeries={scoutSeriesFromPayloads(payloads)}
       />
 
       {lookupNote && onSaveNote ? (
@@ -316,19 +325,56 @@ export function IntelReadyView({
 
       <Panel>
         <h3 style={{ marginTop: 0 }}>From our scouting</h3>
-        {noteLines.length ? (
-          <ul className="intel-findings">
-            {noteLines.map((line) => (
-              <li key={line.id}>
-                <div>
-                  <strong>{line.title}</strong>
-                </div>
-                <p>{line.detail}</p>
-              </li>
-            ))}
+        <p className="app-muted">
+          Each report is the stored answers, notes, and rates derived from those answers. Empty
+          until this team has scout rows.
+        </p>
+        {scoutNotes.length ? (
+          <ul className="intel-scout-reports">
+            {scoutNotes.map((note, index) => {
+              const report = scoutReportFromPayload(note.payload);
+              const empty =
+                report.stats.length === 0 && report.notes.length === 0 && report.rates.length === 0;
+              return (
+                <li key={`${note.matchKey ?? "pit"}-${index}`}>
+                  <strong>{note.matchKey ? `Match ${note.matchKey}` : "Pit report"}</strong>
+                  {empty ? (
+                    <p className="app-muted">No answers stored on this report.</p>
+                  ) : (
+                    <>
+                      {report.notes.length ? (
+                        <p>{report.notes.join(" · ")}</p>
+                      ) : (
+                        <p className="app-muted">No notes on this report.</p>
+                      )}
+                      {report.rates.length ? (
+                        <dl className="intel-report-rates">
+                          {report.rates.map((rate) => (
+                            <div key={rate.id}>
+                              <dt>{rate.label}</dt>
+                              <dd>{rate.value}</dd>
+                            </div>
+                          ))}
+                        </dl>
+                      ) : null}
+                      {report.stats.length ? (
+                        <dl className="intel-report-raw">
+                          {report.stats.map((stat) => (
+                            <div key={stat.key}>
+                              <dt>{stat.label}</dt>
+                              <dd>{stat.value}</dd>
+                            </div>
+                          ))}
+                        </dl>
+                      ) : null}
+                    </>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         ) : (
-          <p className="app-muted">No match or pit notes on this team yet. Log them in Scouting.</p>
+          <p className="app-muted">No match or pit reports on this team yet. Log them in Scouting.</p>
         )}
       </Panel>
 

@@ -1,6 +1,7 @@
 import { hubHref } from "../nav/hubs";
 import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
+import { scoutReportFromPayload } from "../scouting/scout-report";
 
 /** Related surfaces for Research (never DEMO research). */
 export const INTEL_RELATED_LINKS = [
@@ -96,15 +97,6 @@ export type IntelActiveEvent = {
   eventKey: string;
   eventName: string | null;
 };
-
-const NOTE_STRING_KEYS = ["notes", "comments", "comment", "note", "observation"] as const;
-const NOTE_NUMBER_LABELS: ReadonlyArray<readonly [string, string]> = [
-  ["cycles", "cycles"],
-  ["gamePieces", "game pieces"],
-  ["totalPoints", "points"],
-  ["score", "score"],
-  ["fouls", "fouls"],
-];
 
 function intelRelatedHrefs(orgId?: string | null): Set<string> {
   return new Set(
@@ -271,29 +263,23 @@ export function intelNextActions(input: {
   }
 }
 
-/** Lines from real scout payloads only — skip empty notes, never invent scores. */
+/** One line per real report: notes, derived rates, then raw answers. Empty payloads drop out. */
 export function intelScoutNoteLines(notes: IntelScoutNote[]): IntelScoutNoteLine[] {
-  return notes.map((note, index) => {
-    const title = note.matchKey ? `Match ${note.matchKey}` : "Pit notes";
-    const parts: string[] = [];
-    for (const [key, label] of NOTE_NUMBER_LABELS) {
-      const value = note.payload[key];
-      if (typeof value === "number" && Number.isFinite(value)) {
-        parts.push(`${label} ${value}`);
-      }
-    }
-    for (const key of NOTE_STRING_KEYS) {
-      const value = note.payload[key];
-      if (typeof value === "string" && value.trim()) {
-        parts.push(value.trim());
-        break;
-      }
-    }
-    return {
-      id: `${note.matchKey ?? "pit"}-${index}`,
-      title,
-      detail: parts.join(" · ") || "Logged from our scouting.",
-    };
+  return notes.flatMap((note, index) => {
+    const report = scoutReportFromPayload(note.payload);
+    const parts = [
+      ...report.notes,
+      ...report.rates.slice(0, 6).map((rate) => `${rate.label} ${rate.value}`),
+      ...report.stats.slice(0, 8).map((stat) => `${stat.label} ${stat.value}`),
+    ];
+    if (parts.length === 0) return [];
+    return [
+      {
+        id: `${note.matchKey ?? "pit"}-${index}`,
+        title: note.matchKey ? `Match ${note.matchKey}` : "Pit report",
+        detail: parts.join(" · "),
+      },
+    ];
   });
 }
 

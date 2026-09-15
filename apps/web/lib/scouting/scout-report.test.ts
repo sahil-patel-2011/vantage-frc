@@ -11,7 +11,23 @@ describe("scoutReportFromPayload", () => {
     });
     expect(report.stats.map((stat) => stat.label)).toEqual(["Auto Coral", "Climb", "Defense"]);
     expect(report.stats.find((stat) => stat.key === "defense")?.value).toBe("Yes");
+    expect(report.notes).toEqual([]);
     expect(report.timeline).toEqual([]);
+  });
+
+  it("keeps notes and derived rates off the raw stats list", () => {
+    const report = scoutReportFromPayload({
+      auto_fuel: 3,
+      teleop_fuel: 9,
+      fuel_passed: 4,
+      notes: "Long range from the trench",
+      scoring_time: 10,
+    });
+    expect(report.notes).toEqual(["Long range from the trench"]);
+    expect(report.stats.map((stat) => stat.key)).toEqual(["auto_fuel", "fuel_passed", "scoring_time", "teleop_fuel"]);
+    expect(report.rates.find((rate) => rate.id === "estimatedTotalFuelScored")?.value).toBe("12");
+    expect(report.rates.find((rate) => rate.id === "totalFuelFed")?.value).toBe("4");
+    expect(report.rates.find((rate) => rate.id === "scoringRate")?.value).toBe("1.2");
   });
 
   it("builds a timeline from recorded actions and leaves missing clocks as —", () => {
@@ -29,7 +45,7 @@ describe("scoutReportFromPayload", () => {
   });
 
   it("returns empty instead of inventing a report", () => {
-    expect(scoutReportFromPayload(null)).toEqual({ stats: [], timeline: [] });
-    expect(scoutReportFromPayload({})).toEqual({ stats: [], timeline: [] });
+    expect(scoutReportFromPayload(null)).toEqual({ stats: [], notes: [], rates: [], timeline: [] });
+    expect(scoutReportFromPayload({})).toEqual({ stats: [], notes: [], rates: [], timeline: [] });
   });
 });

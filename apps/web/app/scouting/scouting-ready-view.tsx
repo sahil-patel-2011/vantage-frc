@@ -648,7 +648,8 @@ return (
           <Panel id="recent-entries" className="scout-activity" style={{ minHeight: "auto" }}>
             <h2 style={{ marginTop: 0 }}>Recent entries</h2>
             <p className="app-muted">
-              Open a report to see the stored stats and any timed actions. Team leads can delete a report.
+              Open a report to see the raw answers, notes, and rates derived from this form. Team
+              leads can delete a report.
             </p>
             {data?.recentEntries && shouldShowScoutingRecentEntries(data.recentEntries.length) ? (
               <>

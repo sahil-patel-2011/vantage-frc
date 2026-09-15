@@ -2366,7 +2366,7 @@ body.has-app-shell .strategy-demo-optin{
 .scout-report-viewer{display:grid;gap:10px;padding-top:8px}
 .scout-report-tabs{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
 .scout-report-tabs h3{margin:0 0 6px;font-size:13px}
-.scout-report-tabs dl,.scout-report-tabs ol{margin:0;padding:0;display:grid;gap:6px}
+.scout-report-tabs dl,.scout-report-tabs ol,.scout-report-tabs ul{margin:0;padding:0;display:grid;gap:6px}
 .scout-report-tabs dl div{display:flex;justify-content:space-between;gap:10px}
 .scout-report-tabs ol{list-style:none}
 .scout-report-tabs li{display:flex;gap:10px}

@@ -38,21 +38,23 @@ export function IntelLookupBoard({
   field,
   scout,
   history,
+  scoutSeries,
 }: {
   teamKey: string;
   event: EventRatingRow | null;
   field: LookupFieldStats;
   scout?: ScoutAverageRow | null;
   history?: Array<number | null>;
+  scoutSeries?: Partial<Record<LookupCard["id"], Array<number | null>>>;
 }) {
-  const cards = buildLookupCards({ teamKey, event, field, scout, history });
+  const cards = buildLookupCards({ teamKey, event, field, scout, history, scoutSeries });
   return (
     <section className="intel-lookup-board" aria-label="Compared to this event">
       <header>
         <h3>Compared to this event</h3>
         <p className="app-muted">
-          Event ratings use synced numbers. Scout ratings stay blank until this team has real
-          scout rows.
+          Event ratings use synced numbers. Scout ratings come from this team&apos;s reports —
+          raw answers, notes, and rates — and stay blank until those rows exist.
         </p>
       </header>
       <div className="intel-lookup-grid">

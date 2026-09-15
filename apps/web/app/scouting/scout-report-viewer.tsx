@@ -53,7 +53,7 @@ export function ScoutReportViewer({
                 ) : null}
                 <div className="scout-report-tabs">
                   <section aria-label="Reported stats">
-                    <h3>Stats</h3>
+                    <h3>Raw report</h3>
                     {report.stats.length === 0 ? (
                       <p className="app-muted">This report has no stored numbers yet.</p>
                     ) : (
@@ -62,6 +62,33 @@ export function ScoutReportViewer({
                           <div key={stat.key}>
                             <dt>{stat.label}</dt>
                             <dd>{stat.value}</dd>
+                          </div>
+                        ))}
+                      </dl>
+                    )}
+                  </section>
+                  <section aria-label="Reported notes">
+                    <h3>Notes</h3>
+                    {report.notes.length === 0 ? (
+                      <p className="app-muted">No notes on this report.</p>
+                    ) : (
+                      <ul>
+                        {report.notes.map((note) => (
+                          <li key={note}>{note}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </section>
+                  <section aria-label="Derived rates">
+                    <h3>Rates</h3>
+                    {report.rates.length === 0 ? (
+                      <p className="app-muted">No rates yet — counts and timers on this report stay blank until filled.</p>
+                    ) : (
+                      <dl>
+                        {report.rates.map((rate) => (
+                          <div key={rate.id}>
+                            <dt>{rate.label}</dt>
+                            <dd>{rate.value}</dd>
                           </div>
                         ))}
                       </dl>
