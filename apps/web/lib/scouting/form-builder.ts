@@ -51,7 +51,7 @@ export const ANSWER_KIND_OPTIONS: Array<{
   { kind: "mc", label: "Multiple choice", hint: "Tap one option (radio)" },
   { kind: "short", label: "Short answer", hint: "Single-line text" },
   { kind: "free", label: "Free text", hint: "Longer notes" },
-  { kind: "dropdown", label: "Dropdown", hint: "Select from a list" },
+  { kind: "dropdown", label: "Dropdown", hint: "Choose from a list" },
   { kind: "number", label: "Number", hint: "Counts and scores" },
   { kind: "yesno", label: "Yes / No", hint: "Checkbox" },
   {

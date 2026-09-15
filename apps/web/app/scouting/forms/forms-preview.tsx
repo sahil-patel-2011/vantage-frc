@@ -67,10 +67,10 @@ export function PreviewField({ question }: { question: DraftQuestion }) {
     return (
       <FormRow
         label={label}
-        hint={formatScoutFieldHelp(question) ?? "Select from the list"}
+        hint={formatScoutFieldHelp(question) ?? "Choose from the list"}
       >
         <select disabled defaultValue="">
-          <option value="">Select…</option>
+          <option value="">Choose…</option>
           {choices.map((option) => (
             <option key={option}>{option}</option>
           ))}

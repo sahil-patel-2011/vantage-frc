@@ -135,9 +135,9 @@ export function Field({
       const options =
         field.options?.length ? field.options : [...DEFAULT_DRIVETRAIN_OPTIONS];
       return (
-        <FormRow label={label} hint={help ?? "Select the robot drivetrain"}>
+        <FormRow label={label} hint={help ?? "Choose the robot drivetrain"}>
           <select value={String(value ?? "")} onChange={(event) => onChange(event.target.value)}>
-            <option value="">Select drivetrain…</option>
+            <option value="">Choose drivetrain…</option>
             {options.map((option) => (
               <option key={option} value={option}>
                 {option.replaceAll("_", " ")}
@@ -237,7 +237,7 @@ export function Field({
       return (
         <FormRow label={label} hint={help}>
           <select value={String(value ?? "")} onChange={(event) => onChange(event.target.value)}>
-            <option value="">Select…</option>
+            <option value="">Choose…</option>
             {field.options?.map((option) => (
               <option key={option} value={option}>
                 {option}
