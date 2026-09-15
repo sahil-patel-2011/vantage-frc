@@ -41,6 +41,12 @@ export default defineConfig({
       // against code that is not what is committed here.
       "**/.claude/worktrees/**",
       "**/.freebuff/**",
+      // Leftover volume kits: thousands of cloned compute.test.ts files.
+      // After eslint/tsconfig started skipping these trees, `npm test` still
+      // loaded them and OOM'd in CI. Same skip — do not mass-edit the kits.
+      "**/win-kit/**",
+      "**/lovat-kit/**",
+      "**/agent-kit/**",
     ],
   }
 });
