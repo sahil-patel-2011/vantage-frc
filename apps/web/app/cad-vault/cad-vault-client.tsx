@@ -577,6 +577,7 @@ export default function CadVaultClient() {
           <DocumentCard
             key={doc.id}
             doc={doc}
+            orgId={view.orgId}
             subsystems={subsystems}
             busy={busy}
             onPatch={patchDocument}

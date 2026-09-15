@@ -2,17 +2,24 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
+import {
+  FUSION_CANNOT_FEED_BOOK,
+  assemblyRunShowsLiveProgress,
+  assemblyWorkerWaitingCopy,
+  classifyAssemblyManualShell,
+} from "../../lib/assembly-manual/assembly-manual-related";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { assemblyPdfOfflineKey, keepOfflineFile } from "../../lib/offline/file-bytes";
+import { AssemblyManualEmptyCard, AssemblyManualRelated, ConnectOnshapeCard } from "./assembly-manual-chrome";
 
 /**
  * The assembly manual surface.
  *
  * Three states, and the page never blurs the line between them: nothing set up
- * (no Onshape, no relay), a run in flight (progress, and the ability to stop
- * it), and a finished book (steps to read on screen, a PDF to print, and a
- * report saying how it was checked).
+ * (no team, no Onshape), a run in flight (honest waiting until a worker checks
+ * in, then live progress), and a finished book (steps to read on screen, a PDF
+ * to print, and a report saying how it was checked).
  *
  * The design rule that matters here is the same one the engine follows: a step
  * with no render shows a labelled placeholder saying which Onshape call failed,
@@ -78,12 +85,23 @@ type Step = {
   hasRender: boolean;
 };
 
+type VaultDoc = {
+  id: string;
+  title: string;
+  externalUrl: string;
+  seasonYear: number;
+  bound?: boolean;
+};
+
 type Overview = {
+  status?: "ok" | "setup_required";
+  orgId?: string | null;
   orgName: string;
   canStart: boolean;
   onshape: { connected: boolean; configured: boolean; message: string };
   worker: { lastCheckIn: string | null; message: string };
-  vault: Array<{ id: string; title: string; externalUrl: string; seasonYear: number }>;
+  vault: VaultDoc[];
+  vaultFusionOnly?: boolean;
   runs: Run[];
 };
 
@@ -142,6 +160,7 @@ function when(value: string | null): string {
 export default function AssemblyManualClient() {
   const [overview, setOverview] = useState<Overview | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [authBlocked, setAuthBlocked] = useState(false);
   const [openRunId, setOpenRunId] = useState<string | null>(null);
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
@@ -153,7 +172,7 @@ export default function AssemblyManualClient() {
     let hadCache = Boolean(overviewRef.current);
     try {
       const cached = orgId ? await getFeatureSnapshot<Overview>("assembly-manual", orgId) : null;
-      if (!overviewRef.current && cached?.data && isAssemblyOverview(cached.data)) {
+      if (!overviewRef.current && cached?.data && isAssemblyOverview(cached.data) && cached.data.status !== "setup_required") {
         setOverview(cached.data);
         setFromCache(true);
         setCachedAt(cached.cachedAt);
@@ -168,14 +187,23 @@ export default function AssemblyManualClient() {
         signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
       const body = (await response.json()) as Overview & { error?: string };
+      if (response.status === 401 || response.status === 403) {
+        setAuthBlocked(true);
+        setOverview(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setLoadError(null);
+        return;
+      }
       if (!response.ok || !isAssemblyOverview(body)) {
         throw new Error(typeof body.error === "string" ? body.error : "Could not load assembly manual runs.");
       }
+      setAuthBlocked(false);
       setOverview(body);
       setLoadError(null);
       setFromCache(false);
       setCachedAt(null);
-      if (orgId) {
+      if (orgId && body.status !== "setup_required") {
         try {
           await putFeatureSnapshot("assembly-manual", orgId, body);
         } catch {
@@ -228,77 +256,69 @@ export default function AssemblyManualClient() {
     return () => clearInterval(timer);
   }, [hasActive, load]);
 
+  const shell = overview
+    ? classifyAssemblyManualShell({
+        status: overview.status === "setup_required" ? "setup_required" : "ok",
+        orgId: overview.orgId ?? null,
+        authBlocked,
+      })
+    : classifyAssemblyManualShell({
+        loading: !loadError,
+        fetchFailed: Boolean(loadError),
+        authBlocked,
+      });
+
   return (
     <main className="module-page am-page">
       <header className="am-hero">
         <p className="am-kicker">Build · CAD</p>
         <h1>Assembly manual</h1>
         <p className="am-lead">
-          Point this at your Onshape assembly and it produces a build book: numbered steps, a render of each
-          one, the parts that go on, and the cutting, drilling and tapping the CAD actually specifies. Every
-          measurement comes out of the model. Anything the model does not say is printed as{" "}
-          <em>&ldquo;confirm &mdash; not specified in CAD&rdquo;</em> rather than guessed.
+          Paste an Onshape assembly link and Connect Onshape. That starts turning the whole build — even a huge
+          robot — into a step book: numbered steps, a render of each one, the parts that go on, and the cutting,
+          drilling and tapping the CAD actually specifies. Every measurement comes out of the model. Anything the
+          model does not say is printed as <em>&ldquo;confirm &mdash; not specified in CAD&rdquo;</em> rather than
+          guessed.
         </p>
+        <AssemblyManualRelated orgId={overview?.orgId} />
       </header>
 
       <OfflineBanner feature="Assembly manual" fromCache={fromCache} cachedAt={cachedAt} />
 
-      {loadError ? <p className="am-error">{loadError}</p> : null}
+      {loadError && overview ? <p className="am-error">{loadError}</p> : null}
 
-      {overview ? (
+      {shell === "setup" || shell === "error" || shell === "loading" ? (
+        <AssemblyManualEmptyCard
+          shell={shell}
+          onRetry={shell === "error" ? () => void load() : undefined}
+        />
+      ) : overview ? (
         <>
-          <Setup overview={overview} />
-          <StartPanel overview={overview} onStarted={(runId) => {
-            setOpenRunId(runId);
-            void load();
-          }} />
-          <RunList runs={overview.runs} openRunId={openRunId} onOpen={setOpenRunId} />
-          {openRunId ? <RunDetail runId={openRunId} canCancel={overview.canStart} onChanged={load} /> : null}
+          <StartPanel
+            overview={overview}
+            onStarted={(runId) => {
+              setOpenRunId(runId);
+              void load();
+            }}
+          />
+          <RunList
+            runs={overview.runs}
+            openRunId={openRunId}
+            workerLastCheckIn={overview.worker.lastCheckIn}
+            onOpen={setOpenRunId}
+          />
+          {openRunId ? (
+            <RunDetail
+              runId={openRunId}
+              canCancel={overview.canStart}
+              workerLastCheckIn={overview.worker.lastCheckIn}
+              workerMessage={overview.worker.message}
+              onChanged={load}
+            />
+          ) : null}
         </>
-      ) : loadError ? null : (
-        <p className="am-muted">Loading…</p>
-      )}
+      ) : null}
     </main>
-  );
-}
-
-function Setup({ overview }: { overview: Overview }) {
-  const problems: Array<{ title: string; body: React.ReactNode }> = [];
-
-  if (!overview.onshape.connected) {
-    problems.push({
-      title: "Connect Onshape",
-      body: (
-        <>
-          <p>{overview.onshape.message}</p>
-          <p>
-            <a className="am-link" href="/cad/connections">
-              Open CAD connections
-            </a>
-          </p>
-        </>
-      ),
-    });
-  }
-
-  if (!overview.worker.lastCheckIn) {
-    problems.push({
-      title: "No worker has picked up a run yet",
-      body: <p>{overview.worker.message}</p>,
-    });
-  }
-
-  if (!problems.length) return null;
-
-  return (
-    <section className="am-setup" aria-label="Setup needed">
-      {problems.map((problem) => (
-        <div key={problem.title} className="am-setup-card">
-          <h2>{problem.title}</h2>
-          {problem.body}
-        </div>
-      ))}
-    </section>
   );
 }
 
@@ -308,9 +328,14 @@ function StartPanel({ overview, onStarted }: { overview: Overview; onStarted: (r
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [choices, setChoices] = useState<StartResult | null>(null);
+  const autoStarted = useRef(false);
+  const workerWaiting = assemblyWorkerWaitingCopy(overview.worker.lastCheckIn, overview.worker.message);
 
   const start = useCallback(
-    async (elementId?: string) => {
+    async (opts?: { elementId?: string; documentId?: string; url?: string }) => {
+      const nextUrl = (opts?.url ?? url).trim();
+      const nextDocumentId = opts?.documentId ?? documentId;
+      const elementId = opts?.elementId;
       setBusy(true);
       setMessage(null);
       try {
@@ -319,8 +344,8 @@ function StartPanel({ overview, onStarted }: { overview: Overview; onStarted: (r
           headers: { "content-type": "application/json" },
           body: JSON.stringify({
             action: "start",
-            ...(url.trim() ? { url: url.trim() } : {}),
-            ...(documentId ? { documentId } : {}),
+            ...(nextUrl ? { url: nextUrl } : {}),
+            ...(nextDocumentId ? { documentId: nextDocumentId } : {}),
             ...(elementId ? { elementId } : {}),
           }),
         });
@@ -328,7 +353,11 @@ function StartPanel({ overview, onStarted }: { overview: Overview; onStarted: (r
         if (!response.ok) throw new Error(body.error ?? "Could not start a run.");
         if (body.status === "queued") {
           setChoices(null);
-          setMessage(`Queued. "${body.assemblyName}" will be built on your team's relay.`);
+          setMessage(
+            workerWaiting
+              ? `Queued "${body.assemblyName}". ${workerWaiting}`
+              : `Queued. "${body.assemblyName}" is waiting for the assembly-manual worker.`,
+          );
           onStarted(body.runId);
           return;
         }
@@ -345,72 +374,100 @@ function StartPanel({ overview, onStarted }: { overview: Overview; onStarted: (r
         setBusy(false);
       }
     },
-    [documentId, onStarted, url],
+    [documentId, onStarted, url, workerWaiting],
   );
 
-  if (!overview.canStart) {
-    return (
-      <section className="am-card">
-        <h2>Starting a run</h2>
-        <p className="am-muted">
-          A run uses the team&apos;s Onshape connection, so owners and admins start them. Ask a lead, or
-          open a finished run below.
-        </p>
-      </section>
-    );
-  }
+  useEffect(() => {
+    const fromVault = new URLSearchParams(window.location.search).get("documentId")?.trim() ?? "";
+    if (!fromVault) return;
+    if (!overview.vault.some((document) => document.id === fromVault)) return;
+    setDocumentId(fromVault);
+    if (autoStarted.current) return;
+    if (!overview.canStart || !overview.onshape.connected) return;
+    autoStarted.current = true;
+    void start({ documentId: fromVault });
+  }, [overview.canStart, overview.onshape.connected, overview.vault, start]);
 
   return (
     <section className="am-card">
-      <h2>Build a manual</h2>
+      <h2>Build the book</h2>
+      <p className="am-muted">
+        Paste your Onshape assembly link. Connect Onshape if you have not yet. That starts the book.
+      </p>
 
-      {overview.vault.length ? (
-        <label className="am-field">
-          <span>From a CAD vault document</span>
-          <select
-            value={documentId}
-            onChange={(event) => {
-              setDocumentId(event.target.value);
-              setUrl("");
-              setChoices(null);
-            }}
-          >
-            <option value="">Paste a link instead</option>
-            {overview.vault.map((document) => (
-              <option key={document.id} value={document.id}>
-                {document.seasonYear} · {document.title}
-              </option>
-            ))}
-          </select>
-        </label>
-      ) : (
-        <p className="am-muted">
-          No CAD vault document has an Onshape link on it yet, so paste the assembly URL here.
-        </p>
+      {overview.onshape.connected ? null : (
+        <ConnectOnshapeCard
+          orgId={overview.orgId}
+          configured={overview.onshape.configured}
+          message={overview.onshape.message}
+        />
       )}
 
-      <label className="am-field">
-        <span>Or paste the Onshape assembly link</span>
-        <input
-          type="url"
-          placeholder="https://cad.onshape.com/documents/…/w/…/e/…"
-          value={url}
-          onChange={(event) => {
-            setUrl(event.target.value);
-            setDocumentId("");
-            setChoices(null);
-          }}
-        />
-      </label>
+      {overview.vaultFusionOnly ? <p className="am-note">{FUSION_CANNOT_FEED_BOOK}</p> : null}
 
-      <button
-        type="button"
-        className="am-primary"
-        disabled={busy || (!url.trim() && !documentId)}
-        onClick={() => void start()}
-      >
-        {busy ? "Starting…" : "Build the manual"}
-      </button>
+      {overview.canStart ? (
+        <>
+          <label className="am-field">
+            <span>Onshape assembly link</span>
+            <input
+              type="url"
+              placeholder="https://cad.onshape.com/documents/…/w/…/e/…"
+              value={url}
+              onChange={(event) => {
+                setUrl(event.target.value);
+                setDocumentId("");
+                setChoices(null);
+              }}
+            />
+          </label>
+
+          {overview.vault.length ? (
+            <label className="am-field">
+              <span>Or pick a linked assembly from the CAD vault</span>
+              <select
+                value={documentId}
+                onChange={(event) => {
+                  const next = event.target.value;
+                  setDocumentId(next);
+                  setUrl("");
+                  setChoices(null);
+                  if (next && overview.onshape.connected) void start({ documentId: next });
+                }}
+              >
+                <option value="">Paste a link instead</option>
+                {overview.vault.map((document) => (
+                  <option key={document.id} value={document.id}>
+                    {document.seasonYear} · {document.title}
+                    {document.bound ? "" : " · pick assembly"}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : (
+            <p className="am-muted">
+              No Onshape assembly is linked in the CAD vault yet. Paste a link above, or{" "}
+              <a className="am-link" href="/cad-vault">
+                link one in the vault
+              </a>{" "}
+              so the next person can start the book without re-pasting.
+            </p>
+          )}
+
+          <button
+            type="button"
+            className="am-primary"
+            disabled={busy || !overview.onshape.connected || (!url.trim() && !documentId)}
+            onClick={() => void start()}
+          >
+            {busy ? "Starting…" : "Build the book"}
+          </button>
+        </>
+      ) : (
+        <p className="am-muted">
+          A run uses the team&apos;s Onshape connection, so owners and admins start them. Ask a lead, or open a
+          finished run below.
+        </p>
+      )}
 
       {choices?.status === "choose_assembly" ? (
         <div className="am-choices">
@@ -418,7 +475,7 @@ function StartPanel({ overview, onStarted }: { overview: Overview; onStarted: (r
           <ul>
             {choices.assemblies.map((assembly) => (
               <li key={assembly.id}>
-                <button type="button" disabled={busy} onClick={() => void start(assembly.id)}>
+                <button type="button" disabled={busy} onClick={() => void start({ elementId: assembly.id })}>
                   {assembly.name}
                 </button>
               </li>
@@ -429,10 +486,11 @@ function StartPanel({ overview, onStarted }: { overview: Overview; onStarted: (r
 
       {message ? <p className="am-note">{message}</p> : null}
 
+      {workerWaiting ? <p className="am-muted am-fineprint">{workerWaiting}</p> : null}
+
       <p className="am-muted am-fineprint">
-        This runs on your team&rsquo;s relay, not in this page. A full robot is hours of Onshape calls, so the
-        run checkpoints as it goes and picks up where it left off if the relay restarts. You can close this
-        tab.
+        This runs on the assembly-manual worker, not in this page. A full robot is hours of Onshape calls, so the
+        run checkpoints as it goes. If no worker has checked in, the book stays Waiting. You can close this tab.
       </p>
     </section>
   );
@@ -441,10 +499,12 @@ function StartPanel({ overview, onStarted }: { overview: Overview; onStarted: (r
 function RunList({
   runs,
   openRunId,
+  workerLastCheckIn,
   onOpen,
 }: {
   runs: Run[];
   openRunId: string | null;
+  workerLastCheckIn: string | null;
   onOpen: (runId: string) => void;
 }) {
   if (!runs.length) {
@@ -475,6 +535,12 @@ function RunList({
           {runs.map((run) => {
             const total = run.progress?.stepsTotal ?? 0;
             const rendered = run.progress?.rendersDone ?? 0;
+            const hideLiveCounts =
+              ACTIVE.includes(run.status) &&
+              !assemblyRunShowsLiveProgress({
+                status: run.status,
+                workerLastCheckIn,
+              });
             return (
               <tr key={run.id} className={run.id === openRunId ? "am-row-open" : undefined}>
                 <td>
@@ -492,13 +558,14 @@ function RunList({
                   {run.error ? <div className="am-small am-error-text">{run.error}</div> : null}
                 </td>
                 <td className="am-small">
-                  {run.progress?.stage ? <div>{run.progress.stage}</div> : null}
-                  {total ? (
+                  {!hideLiveCounts && run.progress?.stage ? <div>{run.progress.stage}</div> : null}
+                  {!hideLiveCounts && total ? (
                     <div>
                       {rendered} of {total} steps rendered
                     </div>
                   ) : null}
-                  {run.progress?.note ? <div className="am-muted">{run.progress.note}</div> : null}
+                  {hideLiveCounts ? <div className="am-muted">Waiting for a worker to check in</div> : null}
+                  {!hideLiveCounts && run.progress?.note ? <div className="am-muted">{run.progress.note}</div> : null}
                 </td>
                 <td className="am-small">
                   {when(run.createdAt)}
@@ -529,10 +596,14 @@ function RunList({
 function RunDetail({
   runId,
   canCancel,
+  workerLastCheckIn,
+  workerMessage,
   onChanged,
 }: {
   runId: string;
   canCancel: boolean;
+  workerLastCheckIn: string | null;
+  workerMessage: string;
   onChanged: () => Promise<void> | void;
 }) {
   const [run, setRun] = useState<Run | null>(null);
@@ -620,10 +691,14 @@ function RunDetail({
 
       {ACTIVE.includes(run.status) ? (
         <p className="am-note">
-          {run.progress?.note || "Waiting for a shop Pi to start this book."}
-          {run.progress?.stepsTotal
-            ? ` · ${run.progress.rendersDone ?? 0} of ${run.progress.stepsTotal} steps rendered`
-            : ""}
+          {assemblyRunShowsLiveProgress({ status: run.status, workerLastCheckIn })
+            ? `${run.progress?.note || "The worker is building this book."}${
+                run.progress?.stepsTotal
+                  ? ` · ${run.progress.rendersDone ?? 0} of ${run.progress.stepsTotal} steps rendered`
+                  : ""
+              }`
+            : assemblyWorkerWaitingCopy(workerLastCheckIn, workerMessage) ||
+              "Waiting for a worker to check in. This book will not start until it does."}
         </p>
       ) : null}
 

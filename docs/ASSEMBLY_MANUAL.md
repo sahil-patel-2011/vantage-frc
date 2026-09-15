@@ -5,6 +5,12 @@
 Turns a team's Onshape assembly into a printable, step-by-step build book — the
 LEGO-instructions idea, applied to a real FRC mechanism.
 
+Primary start path: paste an Onshape assembly URL and Connect Onshape (the
+existing browser OAuth session). A linked CAD vault assembly can be picked to
+start the same book without re-pasting; the first successful run binds that
+vault row to the assembly tab. Fusion cannot feed this book. If no worker has
+checked in, the page stays on Waiting rather than showing progress that has not happened.
+
 Route: `/assembly-manual` (Build › CAD). Engine: `apps/web/lib/assembly-manual`.
 Queue: `packages/free-relay/src/assembly-manual.ts`. Table: `assembly_manual_runs`
 + `assembly_manual_steps` (`packages/db/migrations/0642_assembly_manual.sql`).
@@ -255,8 +261,8 @@ finished run ends up marked cancelled.
 
 | Method | Path | Who | Does |
 | --- | --- | --- | --- |
-| `GET` | `/api/assembly-manual` | member | runs, vault documents with Onshape links, Onshape connection state, last worker check-in |
-| `POST` | `/api/assembly-manual` | owner/admin | `action: "start"` queues a run (resolving the assembly element, or returning a picker); `action: "rewrite-step"` re-words one step through `meteredAI` |
+| `GET` | `/api/assembly-manual` | member | runs, Onshape vault documents (with bind flag), Fusion-only flag, Onshape connection state, last worker check-in. No org → `setup_required` (Choose your team), not a 403. |
+| `POST` | `/api/assembly-manual` | owner/admin | `action: "start"` queues a run from a pasted Onshape URL or a vault document id (resolving the assembly element, or returning a picker, then binding the vault row); `action: "rewrite-step"` re-words one step through `meteredAI` |
 | `GET` | `/api/assembly-manual/[runId]` | member | the run, its report, and a page of steps (no images) |
 | `DELETE` | `/api/assembly-manual/[runId]` | owner/admin | request a cancel |
 | `GET` | `/api/assembly-manual/[runId]/step/[n]` | member | that step's PNG |

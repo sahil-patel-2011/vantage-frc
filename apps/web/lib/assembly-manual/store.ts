@@ -31,7 +31,7 @@ export function failResponse(error: unknown, fallback: string): Response {
 
 export type Membership = { orgId: string; orgName: string; role: string };
 
-export async function resolveMembership(client: PoolClient, userId: string): Promise<Membership> {
+export async function tryResolveMembership(client: PoolClient, userId: string): Promise<Membership | null> {
   const result = await client.query<Membership>(
     `SELECT m.org_id AS "orgId", o.name AS "orgName", m.role
        FROM memberships m JOIN organizations o ON o.id = m.org_id
@@ -40,7 +40,11 @@ export async function resolveMembership(client: PoolClient, userId: string): Pro
       LIMIT 1`,
     [userId],
   );
-  const membership = result.rows[0];
+  return result.rows[0] ?? null;
+}
+
+export async function resolveMembership(client: PoolClient, userId: string): Promise<Membership> {
+  const membership = await tryResolveMembership(client, userId);
   if (!membership) throw new HttpError(403, "Organization membership required");
   return membership;
 }
@@ -277,8 +281,8 @@ export async function lastWorkerCheckIn(client: PoolClient, orgId: string): Prom
   return result.rows[0]?.at ?? null;
 }
 
-/** Vault documents whose external_url points at Onshape — the start form's picker. */
-export async function listOnshapeVaultDocuments(
+/** Active vault documents that have a live CAD link (Onshape or Fusion). */
+export async function listLinkedVaultDocuments(
   client: PoolClient,
   orgId: string,
 ): Promise<Array<{ id: string; title: string; externalUrl: string; seasonYear: number }>> {
@@ -288,10 +292,22 @@ export async function listOnshapeVaultDocuments(
       WHERE org_id = $1::uuid
         AND status = 'active'
         AND external_url IS NOT NULL
-        AND external_url ILIKE '%onshape.com/documents/%'
       ORDER BY season_year DESC, title
       LIMIT 100`,
     [orgId],
   );
   return result.rows;
+}
+
+/** Persist the chosen Onshape assembly tab on a vault row so the next pick starts the book. */
+export async function bindVaultAssembly(
+  client: PoolClient,
+  input: { orgId: string; userId: string; documentId: string; onshapeUrl: string },
+): Promise<void> {
+  await client.query(
+    `UPDATE cad_documents
+        SET external_url = $3::text, updated_by = $4::uuid, updated_at = now()
+      WHERE id = $1::uuid AND org_id = $2::uuid AND status = 'active'`,
+    [input.documentId, input.orgId, input.onshapeUrl, input.userId],
+  );
 }

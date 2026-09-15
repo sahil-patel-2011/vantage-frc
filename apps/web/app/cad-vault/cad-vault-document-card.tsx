@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { Button, Panel } from "../../components/ui";
-import { cadLinkKind, cadLinkLabel } from "../../lib/cad-vault/cad-link";
+import { FUSION_CANNOT_FEED_BOOK, assemblyManualFromVaultHref } from "../../lib/assembly-manual/assembly-manual-related";
 import { fusionEditHref } from "../../lib/cad/fusion-edit-link";
 import { onshapeEditHref } from "../../lib/cad/onshape-edit-link";
+import { cadLinkKind, cadLinkLabel } from "../../lib/cad-vault/cad-link";
 import { cadKindLabel, type CadDocumentSummary, type SubsystemOption } from "../../lib/cad-vault/view";
 import { FusionEditButton } from "../cad/fusion-edit-board";
 import { OnshapeDocumentEmbed, OnshapeEditButton } from "../cad/onshape-edit-board";
@@ -39,6 +40,7 @@ function OnshapeCardPreview({
 
 export function DocumentCard({
   doc,
+  orgId,
   subsystems,
   busy,
   onPatch,
@@ -46,6 +48,7 @@ export function DocumentCard({
   onUploadVersion,
 }: {
   doc: CadDocumentSummary;
+  orgId?: string | null;
   subsystems: SubsystemOption[];
   busy: boolean;
   onPatch: (documentId: string, payload: Record<string, unknown>) => void;
@@ -93,6 +96,11 @@ export function DocumentCard({
           ) : null}
         </div>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {onshapeHref ? (
+            <Button as="a" variant="secondary" href={assemblyManualFromVaultHref(orgId, doc.id)}>
+              Build the book
+            </Button>
+          ) : null}
           {latest ? (
             <Button as="a" variant="secondary" href={`/api/cad-vault/file/${latest.publicId}`}>
               Download v{latest.version}
@@ -122,7 +130,7 @@ export function DocumentCard({
           <small>
             {doc.externalUrl
               ? linkKind === "fusion"
-                ? "Linked live model — Edit in Fusion opens the document. Printable files are optional."
+                ? `Linked live model — Edit in Fusion opens the document. ${FUSION_CANNOT_FEED_BOOK} Printable files are optional.`
                 : "Linked live model — Edit in Onshape opens the document. Printable files are optional."
               : "No file uploaded yet — this document is an empty shell."}
           </small>
