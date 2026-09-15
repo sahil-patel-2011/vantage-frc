@@ -18,6 +18,8 @@ const MATCH_KEY_RE = /\b\d{4}[a-z0-9]+_(?:qm|qf|sf|f)\d+(?:m\d+)?\b/gi;
 const QUAL_MATCH_RE = /\b(?:qual(?:ification)?|qm)\s*#?\s*(\d{1,3})\b/gi;
 const PLAYOFF_MATCH_RE = /\b(?:qf|sf|f|quarter|semi|final)s?\s*#?\s*(\d{1,2})(?:\s*m(?:atch)?\s*(\d))?\b/gi;
 
+const FRC_FUNDAMENTALS_RE =
+  /\b(?:what\s+is\s+frc|what\s+is\s+first(?:\s+robotics)?|first\s+robotics\s+competition|how\s+(?:does\s+)?(?:an?\s+)?frc\s+match|how\s+(?:an?\s+)?match\s+works|frc\s+season|autonomous\s+period|teleoperated|ranking\s+points?|rebuilt|biocore|game\s+year|frc\s+fundamentals|current\s+(?:frc\s+)?game)\b/i;
 const SCOUT_RE = /\b(scout(?:ing)?|pit\s*scout|match\s*scout|observation|observed|defense|foul|climb|endgame|auto\s*cycle)\b/i;
 const METRIC_RE = /\b(epa|pepa|pEPA|metric|stat(?:s|istics)?|rank(?:ing)?|opr|compare|capability|capabilities)\b/i;
 const STRATEGY_RE = /\b(strateg(?:y|ies|ic)|matchup|prediction|win\s*prob|playbook|game\s*plan|alliance\s*plan|why we (?:win|lose)|counter[- ]pick|private\s*edge|opponent profile|digital twin)\b/i;
@@ -203,9 +205,12 @@ export function planChatToolCalls(message: string, options: ChatToolPlanOptions 
     add("kickoff.intelligence", { seasonYear });
     add("strategy.design", { seasonYear });
     add("kickoff.rules", { seasonYear });
+    add("frc.fundamentals", { seasonYear });
     if (isCadSurface || wantsRules || wantsCad) {
       add("rules.compliance", { proposal: text.slice(0, 8_000), seasonYear });
     }
+  } else if (FRC_FUNDAMENTALS_RE.test(text)) {
+    add("frc.fundamentals", { seasonYear });
   }
 
   if (isCadSurface || wantsCad) {
@@ -337,6 +342,7 @@ export function annotateToolOutput(name: string, output: unknown, input?: unknow
       : name === "research.findings" ||
           name === "kickoff.intelligence" ||
           name === "kickoff.rules" ||
+          name === "frc.fundamentals" ||
           name === "web.search" ||
           name === "web.fetch"
         ? ("researched_claim" as const)
@@ -613,6 +619,35 @@ export function annotateToolOutput(name: string, output: unknown, input?: unknow
       };
     }
     return { name, status: "ok", classification, summary: "Kickoff intelligence summary available", output, input };
+  }
+
+  if (name === "frc.fundamentals") {
+    const row = output && typeof output === "object" ? (output as Record<string, unknown>) : {};
+    const currentGame = row.currentGame && typeof row.currentGame === "object" ? (row.currentGame as Record<string, unknown>) : null;
+    if (!currentGame) {
+      return {
+        name,
+        status: "empty",
+        classification,
+        summary: "No FRC game-year pack was returned.",
+        output,
+        input,
+      };
+    }
+    const gameName = String(currentGame.gameName ?? "FRC");
+    const status = String(currentGame.status ?? "");
+    const year = currentGame.year ?? row.seasonYear ?? "?";
+    return {
+      name,
+      status: "ok",
+      classification,
+      summary:
+        status === "awaiting_manual"
+          ? `${gameName} ${year} — Game Manual scoring is not published yet`
+          : `${gameName} ${year} fundamentals (${status || "published"})`,
+      output,
+      input,
+    };
   }
 
   if (name === "kickoff.rules") {

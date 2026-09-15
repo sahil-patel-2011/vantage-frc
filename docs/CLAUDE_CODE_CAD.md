@@ -440,3 +440,7 @@ Onshape), and Multitask (a checklist worked through one Onshape session, sharing
   `usesUnverifiedProfile` and tells you to print a coupon.
 - Not certified engineering software: no stress analysis, no manufacturing certification, no
   competition-legal ruling.
+
+Related Cursor/Claude skills on disk: `.agents/skills/cad-onshape`, `.agents/skills/cad-fusion`,
+and `.agents/skills/frc-fundamentals` (FRC match/season/game year — not CAD). Team-sync still writes
+additional skills under `.cursor/skills/vantage/` from `/team/agent-config`.

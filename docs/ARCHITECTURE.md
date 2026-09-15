@@ -110,9 +110,9 @@ Competition venues have bad networks, so the web app is built to keep working wi
 | `reference` | TBA and Statbotics clients, coordinated rate-limited ingest, team dossiers |
 | `scouting` | Form schemas, QR envelopes, trust and conflict rules, imports |
 | `prediction-strategy` | Match prediction and strategy math (see `docs/PREDICTION_RESULTS.md`) |
-| `game-year` | Year-specific game packs |
+| `game-year` | Year-specific game packs and FRC fundamentals for Cursor/Claude skills + the `frc.fundamentals` agent tool |
 | `cad` | Onshape OAuth and API, Fusion relay protocol, mass properties, CAD tool catalog |
-| `agent` | Chat adapters, system prompts, tools, context compaction, Bugbot |
+| `agent` | Chat adapters, system prompts, tools (including `frc.fundamentals`), context compaction, Bugbot |
 | `free-relay` | The Pi worker: job leasing, chat streaming, assembly manual, video analysis |
 | `connector` | Shared core of the downloadable connector (pairing, device identity, capabilities) |
 | `storage-node` | The self-hosted file node |

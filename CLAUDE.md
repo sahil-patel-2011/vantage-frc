@@ -40,6 +40,7 @@ and build are intentionally credential-free; RLS integration tests need a real P
 - `packages/billing` — credit enforcement, usage ledger, BYO-key envelope encryption, Stripe contract.
 - `packages/reference` — TBA/Statbotics clients + worker-only idempotent writers + authenticated read repos.
 - `packages/cad` (+ `vantage-cad-cli`, `fusion360-official-connector`). Claude Code CAD: `docs/CLAUDE_CODE_CAD.md`.
+- `.agents/skills`, `.cursor/skills`, `.claude/skills` — Cursor/Claude Code skills on disk (CAD connectors, FRC fundamentals). Team-authored skills still sync via `vantage-cad agent sync` into `.cursor/skills/vantage/`.
 
 ## Non-negotiable conventions
 

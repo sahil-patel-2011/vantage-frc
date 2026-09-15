@@ -1,7 +1,8 @@
+import { frcFundamentals } from "@vantage/game-year";
+import { isFinanceInAiAllowed, loadOrgAiPolicy } from "@vantage/billing";
 import { AIToolRegistry, type ToolDefinition } from "./orchestrator";
 import { checkGameRuleCompliance } from "./rule-compliance";
 import { FINANCE_IN_AI_DENIED, sanitizeFinancePayloadForAi } from "./finance-redact";
-import { isFinanceInAiAllowed, loadOrgAiPolicy } from "@vantage/billing";
 import { resolveActiveSeasonYear } from "./season-year";
 
 const object = (value: unknown) => {
@@ -56,6 +57,7 @@ function tool<I, O>(value: ToolDefinition<I, O>) {
 export const SHARED_STRATEGY_CAD_TOOLS = [
   "kickoff.intelligence",
   "kickoff.rules",
+  "frc.fundamentals",
   "rules.compliance",
   "strategy.design",
   "strategy.match",
@@ -760,6 +762,19 @@ export function createVantageToolRegistry(): AIToolRegistry {
           } catch {
             return { page: null, links: [], setup_required: true };
           }
+        },
+      }),
+    )
+    .register(
+      tool({
+        name: "frc.fundamentals",
+        description:
+          "FRC orientation plus the current game-year pack (what FRC is, match/season/ranking/awards at a high level, published scoring keys, Vantage scouting/CAD/code map). Summaries only — never a Game Manual substitute. Empty scoring keys when that year is awaiting_manual.",
+        parseInput: seasonInput,
+        parseOutput: objectOutput,
+        async execute({ activeEventKey }, input) {
+          const seasonYear = lockSeasonYear(input.seasonYear, activeEventKey);
+          return frcFundamentals(seasonYear);
         },
       }),
     )

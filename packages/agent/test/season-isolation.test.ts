@@ -55,7 +55,7 @@ describe("season isolation fixtures", () => {
       activeEventKey: "2027nysu",
     });
     const seasonCalls = calls.filter((call) =>
-      ["kickoff.intelligence", "kickoff.rules", "strategy.design", "rules.compliance"].includes(call.name),
+      ["kickoff.intelligence", "kickoff.rules", "frc.fundamentals", "strategy.design", "rules.compliance"].includes(call.name),
     );
     expect(seasonCalls.length).toBeGreaterThan(0);
     for (const call of seasonCalls) {
@@ -71,6 +71,7 @@ describe("season isolation fixtures", () => {
     expect(calls).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ name: "kickoff.rules", input: { seasonYear: 2027 } }),
+        expect.objectContaining({ name: "frc.fundamentals", input: { seasonYear: 2027 } }),
         expect.objectContaining({ name: "strategy.design", input: { seasonYear: 2027 } }),
       ]),
     );

@@ -92,11 +92,12 @@ export function planCadStrategyToolCalls(
   if (!preferred.some((call) => call.name === "scouting.schema")) {
     preferred.push({ name: "scouting.schema", input: { seasonYear } });
   }
-  if (preferred.length) return preferred.slice(0, 12);
+  if (preferred.length) return preferred.slice(0, 13);
   const fallback: Array<{ name: string; input: unknown }> = [
     { name: "kickoff.intelligence", input: { seasonYear } },
     { name: "strategy.design", input: { seasonYear } },
     { name: "kickoff.rules", input: { seasonYear } },
+    { name: "frc.fundamentals", input: { seasonYear } },
     { name: "fmea.open_risks", input: { seasonYear, limit: 12 } },
     { name: "rules.compliance", input: { proposal: request.trim().slice(0, 8_000), seasonYear } },
     { name: "scouting.schema", input: { seasonYear } },

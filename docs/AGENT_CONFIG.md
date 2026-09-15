@@ -1,6 +1,6 @@
 # Team-shared agent configuration
 
-*For contributors and operators configuring agent bundles. Last updated 2026-08-24.*
+*For contributors and operators configuring agent bundles. Last updated 2026-09-15.*
 
 A team authors its coding-agent setup **once** at `/team/agent-config` — rules,
 reusable subagent definitions, MCP server entries, permission snippets, and
@@ -11,6 +11,16 @@ skills — and every member's agent consumes it:
 | Claude Code | `vantage-cad agent sync` in the repo (below) |
 | Any custom agent | `GET /api/agent-config/bundle` (typed JSON, below) |
 | Vantage in-app agent | automatic — valid `rules` items are injected into every AI run as a labeled context source |
+
+Repo-shipped skills (not team-authored) live on disk next to the CAD skills, so Cursor and Claude Code
+load them without `/team/agent-config` sync:
+
+- `.agents/skills/frc-fundamentals/SKILL.md` — Cursor Agents (same folder as `cad-onshape` / `cad-fusion`)
+- `.cursor/skills/frc-fundamentals/SKILL.md` — Cursor's native skill path
+- `.claude/skills/frc-fundamentals/SKILL.md` — Claude Code
+
+The hosted agent has a matching **`frc.fundamentals`** tool (`packages/agent`, data from `@vantage/game-year`).
+That is a tool the agent may call — not a wall of FRC text injected into product chat.
 
 ## Item kinds and their real formats
 
