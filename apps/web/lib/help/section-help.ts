@@ -1055,6 +1055,31 @@ export const SECTION_HELP: SectionHelpEntry[] = [
     ],
   },
   {
+    id: "build.assembly-manual",
+    hub: "build",
+    tab: "assembly-manual",
+    title: "Assembly manual",
+    what: "A CAD-derived build book: numbered steps, cut and hardware lists, Onshape renders, and a PDF.",
+    why: "The person holding the wrench needs the book at the bench, not a generic CAD workspace.",
+    when: "Build season, once a vault Onshape assembly exists.",
+    moments: ["build", "pre-comp"],
+    how: [
+      "Open Build → CAD → Assembly manual.",
+      "Start a run from a CAD vault document with an Onshape link.",
+      "Status is Waiting, then Building the book, then Ready — print PDF or keep on this device.",
+      "Treat “confirm — not specified in CAD” as a real gap, not a style.",
+      "Write torque, Loctite, lube, and helper notes on a Playbook shop SOP — CAD does not know shop torque.",
+    ],
+    tips: [
+      "Every measurement traces to a CAD fact. Unstated facts print “confirm — not specified in CAD”.",
+      "Torque, thread-locker, adhesive, and “hold this while…” belong on the shop SOP, not in CAD.",
+    ],
+    related: [
+      { label: "CAD vault", href: "/cad-vault" },
+      { label: "Playbook", href: "/team?tab=knowledge" },
+    ],
+  },
+  {
     id: "build.code",
     hub: "build",
     tab: "code",

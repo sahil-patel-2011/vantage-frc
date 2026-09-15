@@ -28,6 +28,7 @@ describe("CAD strategy brief wiring", () => {
         expect.objectContaining({ name: "kickoff.intelligence" }),
         expect.objectContaining({ name: "strategy.design" }),
         expect.objectContaining({ name: "kickoff.rules" }),
+        expect.objectContaining({ name: "frc.fundamentals" }),
       ]),
     );
   });

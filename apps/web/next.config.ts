@@ -2,6 +2,10 @@ import type { NextConfig } from "next";
 import { expandLegacyRedirects } from "./lib/nav/legacy-redirects";
 
 const config: NextConfig = {
+  // Leftover volume kits under app/win-kit, app/lovat-kit, app/agent-kit are
+  // moved out of app/ for `next build` by scripts/build-without-leftover-kits.mjs
+  // (same skip as eslint / tsconfig / vitest / copy-lint / route-coverage). Do
+  // not mass-edit the kits — compiling those ~1780 cloned pages OOMs CI.
   // Vercel Preview Comments cannot patch Next 16.3 immutable static output
   // (IMMUTABLE_STATIC_PATCH_PREVIEW_COMMENTS). Restore the default after
   // Preview Comments are off on the project.

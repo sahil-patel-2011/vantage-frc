@@ -240,6 +240,34 @@ function fromKickoffRules(data: unknown): {
   return { constraints: unique(constraints), assumptions: assumptions.slice(0, 8), risks: unique(risks) };
 }
 
+function fromFrcFundamentals(data: unknown): {
+  requirements: string[];
+  scoringTasks: string[];
+  constraints: string[];
+} {
+  const row = asRecord(data);
+  const currentGame = asRecord(row?.currentGame);
+  if (!currentGame) return { requirements: [], scoringTasks: [], constraints: [] };
+  const year = String(currentGame.year ?? row?.seasonYear ?? "").trim();
+  const gameName = String(currentGame.gameName ?? "").trim();
+  const status = String(currentGame.status ?? "").trim();
+  const headline = String(currentGame.headline ?? "").trim();
+  const requirements = headline ? [headline] : [];
+  const scoringLabels = asStringList(currentGame.scoringLabels);
+  const scoutFirst = asStringList(currentGame.scoutFirst);
+  const scoringTasks =
+    status === "awaiting_manual"
+      ? [
+          `${gameName || "This season"} ${year} scoring keys are not published yet — do not invent a scoring table`.trim(),
+        ]
+      : [...scoringLabels.map((label) => `Published scout/design key: ${label}`), ...scoutFirst.slice(0, 4)];
+  const constraints =
+    status === "awaiting_manual"
+      ? [`${year || "This season"} Game Manual is not in the Vantage pack yet — confirm scoring on firstinspires.org`]
+      : asStringList(currentGame.whatWeKnow).slice(0, 4);
+  return { requirements, scoringTasks: unique(scoringTasks), constraints: unique(constraints) };
+}
+
 function fromRulesCompliance(data: unknown): { constraints: string[]; risks: string[] } {
   const row = asRecord(data);
   if (!row) return { constraints: [], risks: [] };
@@ -392,6 +420,7 @@ export type BriefFromToolsInput = {
 const SEASON_LOCKED_TOOLS = new Set([
   "kickoff.intelligence",
   "kickoff.rules",
+  "frc.fundamentals",
   "rules.compliance",
   "strategy.design",
 ]);
@@ -459,6 +488,12 @@ export function buildEngineeringBriefFromTools(input: BriefFromToolsInput): Engi
       scoringTasks.push(...mapped.scoringTasks);
       constraints.push(...mapped.constraints);
       risks.push(...mapped.risks);
+    } else if (tool === "frc.fundamentals") {
+      sawSeasonRules = true;
+      const mapped = fromFrcFundamentals(fact.data);
+      requirements.push(...mapped.requirements);
+      scoringTasks.push(...mapped.scoringTasks);
+      constraints.push(...mapped.constraints);
     } else if (tool === "kickoff.rules") {
       sawSeasonRules = true;
       const mapped = fromKickoffRules(fact.data);

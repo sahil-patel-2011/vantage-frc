@@ -83,6 +83,7 @@ const KNOWN_TOOLS = [
   "artifacts.related",
   "kickoff.intelligence",
   "kickoff.rules",
+  "frc.fundamentals",
   "rules.compliance",
   "cad.briefs",
   "fmea.repeat",

@@ -21,6 +21,7 @@ describe("cross-feature AI tool graph", () => {
         "strategy.design",
         "kickoff.intelligence",
         "kickoff.rules",
+        "frc.fundamentals",
         "fmea.open_risks",
         "fmea.repeat",
         "finance.summary",
