@@ -269,7 +269,7 @@ async function rewriteStep(userId: string, body: RewriteBody): Promise<Response>
       subassembly: string;
       parts: Array<{ instanceId: string; name: string; quantity: number }>;
       fabrication: Array<{ text: string }>;
-      feasibility: { prerequisites?: string[]; notes?: string[] };
+      feasibility: { action?: "fit" | "fasten"; prerequisites?: string[]; notes?: string[] };
     }>(
       `SELECT s.title, s.subassembly, s.parts, s.fabrication, s.feasibility
          FROM assembly_manual_steps s
@@ -279,15 +279,20 @@ async function rewriteStep(userId: string, body: RewriteBody): Promise<Response>
     const step = stepRow.rows[0];
     if (!step) throw new HttpError(404, "That step is not in this run.");
 
+    const kind = step.feasibility?.action === "fasten" ? "fasten" : "fit";
     const facts: StepWriteFacts = {
       stepNumber,
       primaryName: step.title,
       quantity: 1,
+      kind,
       subassembly: step.subassembly,
       attachesTo: (step.feasibility?.prerequisites ?? []).slice(0, 4),
-      hardware: (step.parts ?? [])
-        .filter((part) => part.name !== step.title)
-        .map((part) => `${part.quantity} x ${part.name}`),
+      hardware:
+        kind === "fasten"
+          ? (step.parts ?? []).map((part) => `${part.quantity} x ${part.name}`)
+          : (step.parts ?? [])
+              .filter((part) => part.name !== step.title)
+              .map((part) => `${part.quantity} x ${part.name}`),
       fabrication: (step.fabrication ?? []).map((line) => line.text),
       cautions: step.feasibility?.notes ?? [],
     };
@@ -303,9 +308,11 @@ async function rewriteStep(userId: string, body: RewriteBody): Promise<Response>
 
     const prompt = [
       "Rewrite this one assembly-manual step as a single short imperative sentence for a printed build book.",
+      `This step is one ${kind} action. Write only that action. Do not combine fitting a part with installing hardware.`,
       "Use ONLY the facts below. Never state a torque, thread-locker, lubricant, tolerance or any number not present.",
       "Reply with ONLY the sentence.",
       "",
+      `action: ${kind}`,
       `part: ${facts.primaryName}`,
       facts.subassembly ? `sub-assembly: ${facts.subassembly}` : "",
       facts.attachesTo.length ? `attaches to: ${facts.attachesTo.join(", ")}` : "",

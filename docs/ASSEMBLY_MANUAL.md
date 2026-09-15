@@ -1,6 +1,6 @@
 # Assembly manual
 
-*For teams turning an Onshape assembly into a build book, and contributors working on the engine behind it. Last updated 2026-09-09.*
+*For teams turning an Onshape assembly into a build book, and contributors working on the engine behind it. Last updated 2026-09-15.*
 
 Turns a team's Onshape assembly into a printable, step-by-step build book — the
 LEGO-instructions idea, applied to a real FRC mechanism.
@@ -22,14 +22,15 @@ Queue: `packages/free-relay/src/assembly-manual.ts`. Table: `assembly_manual_run
 * **A materials and cut list** up front: one row per distinct part, with the
   count the assembly uses, the length and section measured from CAD, and the
   material Onshape has assigned.
-* **A hardware list**: every part classified as a fastener, counted.
-* **Numbered steps**, one per part instance. Each step carries
+* **A hardware list**: every part classified as a fastener, counted, with screw
+  length only when the CAD part name states one.
+* **Numbered steps**, one action each (fit a part, or install hardware). Each step carries
   * a render from Onshape of the real geometry,
   * a parts callout with quantities (identical hardware collapses into one line),
   * fabrication instructions where the CAD supports them — "Cut 1.00 in × 1.00 in
     stock to 17.50 in", "Drill Ø0.196 in (#9) through, 4 places", "Tap 10-32,
-    4 places (tap drill #21)",
-  * any feasibility check that failed, in plain English.
+    4 places (tap drill #21)", and fastener lengths only when the CAD name states them,
+  * every feasibility self-check, passing and failing, in plain English.
 * **A run report** — how the build order was derived, how many checks passed,
   where the two ordering strategies disagreed, and what the CAD could not say.
 * **A PDF** to print, and the same steps to read on the page.
@@ -88,6 +89,7 @@ So the rules are structural, not a matter of care:
 | a tap drill | the published table for that named thread |
 | a mass | Onshape `/massproperties` for that part |
 | a material | the material assigned to the part in Onshape |
+| a fastener length | the length written in the CAD part name ("10-32 x 1.00 SHCS") |
 | the build order | the assembly's mates and the parts' bounding boxes |
 
 ### Where the CAD does not say, the manual says so
@@ -110,16 +112,18 @@ designation at all.
 
 ### Feasibility is checked, not assumed
 
-Four checks run for every step, against boxes Onshape measured:
+Five checks run for every step, against boxes Onshape measured:
 
 * `prerequisites` — the parts this one mates to are already on the bench;
 * `fastener_order` — a fastener never precedes a part it joins;
-* `reachable` — the part can be brought in along at least one axis without
-  passing through something already placed;
+* `reachable` — the part (or fastener) can be brought in along at least one axis
+  without passing through something already placed;
 * `head_clear` — a fastener has a clear run along its own axis at one end, so a
-  driver can reach it.
+  driver can reach it;
+* `leaves_path` — putting this on now would not trap a remaining part, and would
+  not block driver access for hardware that still has to go in.
 
-`reachable` and `head_clear` sweep the part's axis-aligned bounding box. That is
+`reachable`, `head_clear` and `leaves_path` sweep axis-aligned bounding boxes. That is
 coarse, and coarse in the safe direction: a box is bigger than the part inside
 it, so the check can warn about a step that would have been fine, but cannot
 clear a step that is genuinely enclosed.

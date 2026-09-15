@@ -13,17 +13,34 @@ const step: StepWriteFacts = {
   stepNumber: 3,
   primaryName: "1x1 box tube",
   quantity: 1,
+  kind: "fit",
+  subassembly: "Drive rail",
+  attachesTo: ["Gearbox plate", "Frame rail"],
+  hardware: [],
+  fabrication: ["Cut 1.00 in x 1.00 in stock to 17.50 in"],
+  cautions: [],
+};
+
+const fastenStep: StepWriteFacts = {
+  stepNumber: 4,
+  primaryName: "10-32 x 1.00 SHCS",
+  quantity: 4,
+  kind: "fasten",
   subassembly: "Drive rail",
   attachesTo: ["Gearbox plate", "Frame rail"],
   hardware: ["4 x 10-32 x 1.00 SHCS"],
-  fabrication: ["Cut 1.00 in x 1.00 in stock to 17.50 in"],
+  fabrication: ["Length 1.00 in (from the CAD part name)"],
   cautions: [],
 };
 
 describe("deterministicSentence", () => {
   it("says what the step does, from the facts and nothing else", () => {
-    expect(deterministicSentence(step)).toBe(
-      "Fit 1x1 box tube onto Gearbox plate, Frame rail. Secure with 4 x 10-32 x 1.00 SHCS.",
+    expect(deterministicSentence(step)).toBe("Fit 1x1 box tube onto Gearbox plate, Frame rail.");
+  });
+
+  it("keeps a fasten step as one Secure action, not a Fit", () => {
+    expect(deterministicSentence(fastenStep)).toBe(
+      "Secure with 4 x 10-32 x 1.00 SHCS into Gearbox plate, Frame rail.",
     );
   });
 
@@ -45,7 +62,7 @@ describe("deterministicSentence", () => {
 
 describe("sentenceIsGrounded", () => {
   it("accepts a sentence whose numbers all appear in the facts", () => {
-    expect(sentenceIsGrounded("Bolt the 1x1 box tube to the gearbox plate with 4 screws.", step)).toBe(true);
+    expect(sentenceIsGrounded("Bolt the 1x1 box tube to the gearbox plate.", step)).toBe(true);
   });
 
   it("rejects a number the CAD never mentioned", () => {
@@ -70,10 +87,16 @@ describe("sentenceIsGrounded", () => {
 
   it("puts every fact in the sheet the model is graded against", () => {
     const sheet = factSheet(step);
+    expect(sheet).toContain("action: fit");
     expect(sheet).toContain("part: 1x1 box tube");
     expect(sheet).toContain("attaches to: Gearbox plate, Frame rail");
-    expect(sheet).toContain("hardware: 4 x 10-32 x 1.00 SHCS");
     expect(sheet).toContain("fabrication: Cut 1.00 in x 1.00 in stock to 17.50 in");
+  });
+
+  it("puts fasten-step hardware on the sheet the model is graded against", () => {
+    const sheet = factSheet(fastenStep);
+    expect(sheet).toContain("action: fasten");
+    expect(sheet).toContain("hardware: 4 x 10-32 x 1.00 SHCS");
   });
 });
 

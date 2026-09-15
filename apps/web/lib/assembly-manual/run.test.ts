@@ -243,7 +243,15 @@ describe("advanceRun", () => {
     expect(result.stage).toBe("done");
     expect(db.run.status).toBe("completed");
     expect(db.run.pdf!.subarray(0, 8).toString("latin1")).toBe("%PDF-1.4");
-    expect(db.steps.size).toBe(4);
+    expect(db.steps.size).toBe(5);
+
+    const sentences = [...db.steps.values()].map((step) => step.sentence);
+    expect(sentences.some((sentence) => sentence.startsWith("Fit "))).toBe(true);
+    expect(sentences.some((sentence) => sentence.startsWith("Secure with "))).toBe(true);
+    for (const step of db.steps.values()) {
+      const checks = (step.feasibility as { checks?: unknown[] }).checks ?? [];
+      expect(checks).toHaveLength(5);
+    }
 
     // Every step got a real Onshape render, and the mode is recorded so a
     // reader knows what they are looking at.
@@ -272,8 +280,10 @@ describe("advanceRun", () => {
     expect(report.checksRun).toBeGreaterThan(0);
     expect(report.checksPassed).toBe(report.checksRun);
     expect(report.disagreements.length).toBeGreaterThan(0);
-    expect(report.renderModes.part).toBe(4);
+    expect(report.renderModes.part).toBe(5);
     expect(report.hardware).toHaveLength(1);
+    expect((report.hardware[0] as { lengthConfirmed?: boolean; lengthText?: string }).lengthConfirmed).toBe(true);
+    expect((report.hardware[0] as { lengthText?: string }).lengthText).toBe("1.00 in");
     expect(report.cutList.length).toBeGreaterThan(0);
   });
 
@@ -288,11 +298,11 @@ describe("advanceRun", () => {
     expect(first.finished).toBe(false);
     expect(first.stage).toBe("render");
     expect(db.run.checkpoint!.stage).toBe("render");
-    expect(db.run.checkpoint!.plan).toHaveLength(4);
+    expect(db.run.checkpoint!.plan).toHaveLength(5);
 
     const renderedFirst = [...db.steps.values()].filter((step) => step.render_png).length;
     expect(renderedFirst).toBeGreaterThan(0);
-    expect(renderedFirst).toBeLessThan(4);
+    expect(renderedFirst).toBeLessThan(5);
     expect(db.run.checkpoint!.cursor).toBe(renderedFirst);
     // The cover PNG is kept on the checkpoint, so the resume does not re-fetch it.
     expect(db.run.checkpoint!.coverPng).toBeTruthy();
@@ -310,7 +320,7 @@ describe("advanceRun", () => {
     const allPaths = [...firstPaths, ...secondPaths];
     expect(allPaths.filter((path) => path === "GET /assemblies/d/doc/w/ws/e/asm/shadedviews")).toHaveLength(1);
     expect(allPaths.filter((path) => path.startsWith("POST"))).toHaveLength(1);
-    expect(allPaths.filter((path) => path.includes("/parts/"))).toHaveLength(4);
+    expect(allPaths.filter((path) => path.includes("/parts/"))).toHaveLength(5);
   });
 
   it("stops without writing a PDF when a cancel has been asked for", async () => {
@@ -332,7 +342,7 @@ describe("advanceRun", () => {
     await advanceRun(context(db, fakeShadedViews([]), 120_000));
     for (const step of db.steps.values()) {
       expect(step.sentence_source).toBe("deterministic");
-      expect(step.sentence).toMatch(/^Fit /);
+      expect(step.sentence).toMatch(/^(Fit |Secure with )/);
     }
     const report = db.run.report as { notes: string[] };
     expect(report.notes.some((note) => /No AI model was available/.test(note))).toBe(true);

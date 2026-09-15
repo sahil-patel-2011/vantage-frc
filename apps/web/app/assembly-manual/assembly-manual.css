@@ -334,6 +334,47 @@
   line-height: 1.5;
 }
 
+.am-checks {
+  margin-top: 16px;
+}
+
+.am-checks h4 {
+  margin: 0 0 6px;
+}
+
+.am-checks ul {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+  line-height: 1.5;
+}
+
+.am-check-mark {
+  display: inline-block;
+  min-width: 5.5em;
+  margin-right: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.am-check-pass {
+  color: var(--muted);
+}
+
+.am-check-fail {
+  padding: 6px 8px;
+  margin: 0 0 6px;
+  border-left: 3px solid #b98900;
+  border-radius: 0 6px 6px 0;
+  background: var(--bg);
+}
+
+.am-check-fail .am-check-mark {
+  color: #8a6800;
+}
+
 /* ---------- report ---------- */
 
 .am-report {

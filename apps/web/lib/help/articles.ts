@@ -712,7 +712,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         heading: "How a run works",
         body: [
           "Paste an Onshape assembly link and Connect Onshape to start. Owners and admins can also pick a CAD vault document that already has an Onshape link — after the first run, that vault row is bound to the assembly tab so the next person starts the book without re-pasting. Fusion cannot feed this book. The job runs on the assembly-manual worker and checkpoints as it goes, so a long robot can take hours. If no worker has checked in, the page stays on Waiting rather than showing fake progress.",
-          "Two different ordering strategies are run and reconciled; every step is checked for feasibility (a part must be reachable, fasteners follow the parts they join). Disagreements are listed in the run report.",
+          "Two different ordering strategies are run and reconciled; every step is one action (fit or fasten) and carries five feasibility self-checks (reachable, fastener order, head clearance, and whether later parts can still go on). Disagreements are listed in the run report.",
         ],
       },
       {

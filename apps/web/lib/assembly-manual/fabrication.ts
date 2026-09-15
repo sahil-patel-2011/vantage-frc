@@ -5,7 +5,7 @@ import {
   type FeatureFacts,
   type PartFacts,
 } from "./model";
-import { drillDesignation, formatDiameterInches, formatInches, quantityToMm, tapDrillFor } from "./units";
+import { drillDesignation, formatDiameterInches, formatInches, inchToMm, quantityToMm, tapDrillFor } from "./units";
 
 /**
  * Turning CAD features into shop instructions — and refusing to when the CAD
@@ -352,19 +352,127 @@ export function buildCutList(
     .sort((a, b) => (b.lengthMm ?? 0) - (a.lengthMm ?? 0) || a.partName.localeCompare(b.partName));
 }
 
-/** The hardware table: purchased parts, counted, never dimensioned by us. */
+/** The hardware table: purchased parts, counted, with length only from CAD facts. */
+export type HardwareRow = {
+  partName: string;
+  quantity: number;
+  massKg: number | null;
+  /** Shop length when CAD stated one; otherwise null. */
+  lengthMm: number | null;
+  /** True only when the part name itself states a length. Bounding box is never enough. */
+  lengthConfirmed: boolean;
+  /** Printable length line, already carrying NOT_IN_CAD when unconfirmed. */
+  lengthText: string;
+};
+
 export function buildHardwareList(
   parts: PartFacts[],
   instanceCountByPartKey: Map<string, number>,
   fastenerPartKeys: Set<string>,
-): Array<{ partName: string; quantity: number; massKg: number | null }> {
+): HardwareRow[] {
   return parts
     .filter((part) => fastenerPartKeys.has(part.key))
-    .map((part) => ({
-      partName: part.name,
-      quantity: instanceCountByPartKey.get(part.key) ?? 0,
-      massKg: part.massKg,
-    }))
+    .map((part) => {
+      const length = fastenerLengthFor(part);
+      return {
+        partName: part.name,
+        quantity: instanceCountByPartKey.get(part.key) ?? 0,
+        massKg: part.massKg,
+        lengthMm: length.lengthMm,
+        lengthConfirmed: length.confirmed,
+        lengthText: length.text,
+      };
+    })
     .filter((row) => row.quantity > 0)
     .sort((a, b) => b.quantity - a.quantity || a.partName.localeCompare(b.partName));
+}
+
+function inchTokenToMm(token: string): number | null {
+  const cleaned = token.trim();
+  const mixed = /^(\d+)\s+(\d+)\/(\d+)$/.exec(cleaned);
+  if (mixed) return inchToMm(Number(mixed[1]) + Number(mixed[2]) / Number(mixed[3]));
+  const hyphenMixed = /^(\d+)-(\d+)\/(\d+)$/.exec(cleaned);
+  if (hyphenMixed) return inchToMm(Number(hyphenMixed[1]) + Number(hyphenMixed[2]) / Number(hyphenMixed[3]));
+  const frac = /^(\d+)\/(\d+)$/.exec(cleaned);
+  if (frac) {
+    const denominator = Number(frac[2]);
+    if (!denominator) return null;
+    return inchToMm(Number(frac[1]) / denominator);
+  }
+  const value = Number(cleaned);
+  return Number.isFinite(value) && value > 0 ? inchToMm(value) : null;
+}
+
+/**
+ * A screw length the designer wrote in the part name. Never inferred from a
+ * typical size, a catalog, or "what FRC usually uses".
+ */
+export function parseFastenerLengthFromName(name: string): { text: string; lengthMm: number } | null {
+  const metric = /\bM\d+(?:\.\d+)?\s*[x×]\s*(\d+(?:\.\d+)?)\s*(?:mm)?\b/i.exec(name);
+  if (metric) {
+    const mm = Number(metric[1]);
+    if (!Number.isFinite(mm) || mm <= 0) return null;
+    return { text: `${mm} mm`, lengthMm: mm };
+  }
+  const imperial = /(?:^|[\s,])(?:x|×)\s*((?:\d+-\d+\/\d+)|(?:\d+\s+\d+\/\d+)|(?:\d+\/\d+)|(?:\d+(?:\.\d+)?))\s*(?:in(?:ch(?:es)?)?|"|”)?/i.exec(
+    ` ${name}`,
+  );
+  if (imperial) {
+    const mm = inchTokenToMm(imperial[1]!);
+    if (mm === null) return null;
+    return { text: formatInches(mm), lengthMm: mm };
+  }
+  const bareInch = /(\d+(?:\.\d+)?)\s*(?:in(?:ch(?:es)?)?|")\b/i.exec(name);
+  if (bareInch) {
+    const mm = inchTokenToMm(bareInch[1]!);
+    if (mm === null) return null;
+    return { text: formatInches(mm), lengthMm: mm };
+  }
+  return null;
+}
+
+export type FastenerLength = {
+  text: string;
+  confirmed: boolean;
+  source: "name" | "boundingBox" | "none";
+  lengthMm: number | null;
+};
+
+/**
+ * Screw / fastener length from CAD facts only. A bounding box is a model
+ * measurement, not a specified length, so it stays unconfirmed.
+ */
+export function fastenerLengthFor(part: PartFacts): FastenerLength {
+  const fromName = parseFastenerLengthFromName(part.name);
+  if (fromName) {
+    return { text: fromName.text, confirmed: true, source: "name", lengthMm: fromName.lengthMm };
+  }
+  if (part.bboxMm) {
+    const longest = boxExtent(part.bboxMm).slice().sort((a, b) => b - a)[0]!;
+    return {
+      text: unconfirmed(
+        `"${part.name}" measures ${formatInches(longest)} along its long axis in CAD, but the name does not state a length`,
+      ),
+      confirmed: false,
+      source: "boundingBox",
+      lengthMm: longest,
+    };
+  }
+  return {
+    text: unconfirmed(`No length for "${part.name}" is stated in the part name or a bounding box`),
+    confirmed: false,
+    source: "none",
+    lengthMm: null,
+  };
+}
+
+/** A fabrication note for a fasten step, so the length sits next to the action. */
+export function fastenerLengthLine(part: PartFacts): FabricationLine {
+  const length = fastenerLengthFor(part);
+  return {
+    kind: "note",
+    text: length.confirmed ? `Length ${length.text} (from the CAD part name)` : length.text,
+    confirmed: length.confirmed,
+    source: length.source === "name" ? "assembly" : length.source === "boundingBox" ? "boundingBox" : "assembly",
+  };
 }

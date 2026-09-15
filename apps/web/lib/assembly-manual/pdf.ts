@@ -457,6 +457,8 @@ export type ManualPdfStep = {
   sentence: string;
   parts: Array<{ name: string; quantity: number; detail: string }>;
   fabrication: Array<{ text: string; confirmed: boolean }>;
+  /** Every self-check, passing and failing. Never omit a passing one. */
+  checks: Array<{ passed: boolean; detail: string }>;
   notes: string[];
   /** Raw PNG bytes, or null when the step has no render. */
   png: Buffer | null;
@@ -477,7 +479,13 @@ export type ManualPdfInput = {
     profile: string | null;
     confirmed: boolean;
   }>;
-  hardware: Array<{ partName: string; quantity: number }>;
+  hardware: Array<{
+    partName: string;
+    quantity: number;
+    length: string | null;
+    confirmed: boolean;
+    lengthNote?: string | null;
+  }>;
   steps: ManualPdfStep[];
   report: {
     checksRun: number;
@@ -581,12 +589,21 @@ export function renderManualPdf(input: ManualPdfInput): Buffer {
       writer.text(MARGIN, 72, pageIndex === 0 ? "Hardware" : "Hardware (continued)", { size: 16, bold: true });
       let rowY = 104;
       writer.text(MARGIN, rowY, "Part", { size: 9, bold: true });
-      writer.text(MARGIN + 380, rowY, "Qty", { size: 9, bold: true });
+      writer.text(MARGIN + 300, rowY, "Qty", { size: 9, bold: true });
+      writer.text(MARGIN + 340, rowY, "Length", { size: 9, bold: true });
       writer.line(MARGIN, rowY + 4, LETTER.widthPt - MARGIN, rowY + 4, { gray: 0.6 });
       rowY += 16;
       for (const row of rows) {
-        writer.text(MARGIN, rowY, truncate(row.partName, 370, 9), { size: 9 });
-        writer.text(MARGIN + 380, rowY, String(row.quantity), { size: 9 });
+        writer.text(MARGIN, rowY, truncate(row.partName, 290, 9), { size: 9 });
+        writer.text(MARGIN + 300, rowY, String(row.quantity), { size: 9 });
+        writer.text(MARGIN + 340, rowY, row.length ?? "-", { size: 9 });
+        if (!row.confirmed) {
+          rowY += 11;
+          writer.text(MARGIN + 12, rowY, truncate(row.lengthNote || "confirm - not specified in CAD", CONTENT_WIDTH - 24, 8), {
+            size: 8,
+            gray: 0.35,
+          });
+        }
         rowY += 14;
       }
       footer(writer, `${input.assemblyName} - hardware`);
@@ -647,6 +664,21 @@ export function renderManualPdf(input: ManualPdfInput): Buffer {
           if (cursor > LETTER.heightPt - 80) break;
         }
         if (cursor > LETTER.heightPt - 80) break;
+      }
+      cursor += 6;
+    }
+
+    if (step.checks.length) {
+      writer.text(MARGIN, cursor, "Self-checks", { size: 10, bold: true });
+      cursor += 14;
+      for (const check of step.checks) {
+        if (cursor > LETTER.heightPt - 70) break;
+        const prefix = check.passed ? "OK - " : "Check this - ";
+        for (const wrapped of wrapText(`${prefix}${check.detail}`, CONTENT_WIDTH - 8, 9)) {
+          writer.text(MARGIN + 8, cursor, wrapped, { size: 9, gray: check.passed ? 0.35 : 0.15 });
+          cursor += 11;
+          if (cursor > LETTER.heightPt - 70) break;
+        }
       }
       cursor += 6;
     }

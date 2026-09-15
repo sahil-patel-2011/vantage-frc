@@ -65,7 +65,13 @@ type Report = {
     profile: string | null;
     lengthConfirmed: boolean;
   }>;
-  hardware?: Array<{ partName: string; quantity: number }>;
+  hardware?: Array<{
+    partName: string;
+    quantity: number;
+    lengthMm?: number | null;
+    lengthConfirmed?: boolean;
+    lengthText?: string;
+  }>;
 };
 
 type StepPart = { name: string; quantity: number; extentMm: number[] | null; cots: { vendor: string; sku: string } | null };
@@ -744,7 +750,8 @@ function RunDetail({
 }
 
 function StepView({ runId, step }: { runId: string; step: Step }) {
-  const failing = (step.feasibility?.checks ?? []).filter((check) => !check.passed);
+  const checks = step.feasibility?.checks ?? [];
+  const failing = checks.filter((check) => !check.passed);
 
   return (
     <article className="am-step">
@@ -807,12 +814,15 @@ function StepView({ runId, step }: { runId: string; step: Step }) {
           </>
         ) : null}
 
-        {failing.length ? (
-          <div className="am-warn">
-            <h4>Check this step before you build it</h4>
+        {checks.length ? (
+          <div className={failing.length ? "am-checks am-checks-has-fail" : "am-checks"}>
+            <h4>Self-checks</h4>
             <ul>
-              {failing.map((check) => (
-                <li key={check.id}>{check.detail}</li>
+              {checks.map((check) => (
+                <li key={check.id} className={check.passed ? "am-check-pass" : "am-check-fail"}>
+                  <span className="am-check-mark">{check.passed ? "OK" : "Check this"}</span>
+                  {check.detail}
+                </li>
               ))}
             </ul>
           </div>
@@ -950,13 +960,26 @@ function ReportView({ report }: { report: Report }) {
       {report.hardware?.length ? (
         <details className="am-details">
           <summary>Hardware ({report.hardware.length})</summary>
-          <ul>
-            {report.hardware.map((row) => (
-              <li key={row.partName}>
-                {row.quantity}&times; {row.partName}
-              </li>
-            ))}
-          </ul>
+          <table className="am-table">
+            <thead>
+              <tr>
+                <th>Part</th>
+                <th>Qty</th>
+                <th>Length</th>
+              </tr>
+            </thead>
+            <tbody>
+              {report.hardware.map((row) => (
+                <tr key={row.partName} className={row.lengthConfirmed ? undefined : "am-unconfirmed-row"}>
+                  <td>{row.partName}</td>
+                  <td>{row.quantity}</td>
+                  <td>
+                    {row.lengthConfirmed && row.lengthMm != null ? inches(row.lengthMm) : (row.lengthText ?? "—")}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </details>
       ) : null}
     </section>
