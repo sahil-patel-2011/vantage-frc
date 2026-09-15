@@ -1,0 +1,27 @@
+.lk-driver-quals-interfere-board{display:grid;gap:12px;margin:4px 0 8px}
+.lk-driver-quals-interfere-board header h3{margin:0 0 4px}
+.lk-driver-quals-interfere-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr));gap:10px}
+.lk-driver-quals-interfere-tile{display:grid;gap:4px;padding:12px}
+.lk-driver-quals-interfere-tile strong{font-size:1.35rem;letter-spacing:-0.03em}
+.lk-driver-quals-interfere-tile em{font-style:normal;font-size:11px}
+.lk-driver-quals-interfere-spark{width:72px;height:28px;color:var(--accent)}
+.lk-driver-quals-interfere-vs{font-size:11px}
+.lk-driver-quals-interfere-vs-above{color:var(--good,#1b7f4e)}
+.lk-driver-quals-interfere-vs-below{color:var(--warn,#9a5b12)}
+.lk-driver-quals-interfere-vs-near,.lk-driver-quals-interfere-vs-unknown{color:var(--muted)}
+
+.lk-driver-quals-interfere-deep{display:grid;gap:12px;margin-top:8px}
+.lk-driver-quals-interfere-meters{display:grid;grid-template-columns:repeat(auto-fit,minmax(8.5rem,1fr));gap:8px;margin:0;padding:0;list-style:none}
+.lk-driver-quals-interfere-meter{display:grid;gap:2px;padding:8px 10px;border:1px solid var(--border,rgba(0,0,0,.08));border-radius:10px}
+.lk-driver-quals-interfere-split{display:grid;grid-template-columns:repeat(auto-fit,minmax(14rem,1fr));gap:10px}
+.lk-driver-quals-interfere-panel h4{margin:0 0 8px;font-size:13px}
+.lk-driver-quals-interfere-zones,.lk-driver-quals-interfere-colley,.lk-driver-quals-interfere-residual,.lk-driver-quals-interfere-pareto,.lk-driver-quals-interfere-setup{margin:0;padding:0;list-style:none;display:grid;gap:6px}
+.lk-driver-quals-interfere-zone{display:grid;grid-template-columns:7rem 1fr;gap:8px;align-items:center;font-size:12px}
+.lk-driver-quals-interfere-bar{display:block;height:8px;border-radius:999px;background:var(--accent,#3d6)}
+.lk-driver-quals-interfere-page{padding-bottom:24px}
+
+.lk-driver-quals-interfere-wide{display:grid;gap:12px;margin-top:10px}
+.lk-driver-quals-interfere-wide-meters{display:grid;grid-template-columns:repeat(auto-fit,minmax(8.5rem,1fr));gap:8px;margin:0;padding:0;list-style:none}
+.lk-driver-quals-interfere-slots,.lk-driver-quals-interfere-scouts{margin:0;padding-left:1.1rem;display:grid;gap:4px;font-size:12px}
+
+.lk-driver-quals-interfere-lovat{display:grid;gap:12px;margin-top:12px}
