@@ -2,14 +2,5 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": { "plugins": [{ "name": "next" }], "noEmit": true },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": [
-    "node_modules",
-    "**/*.test.ts",
-    // Leftover volume kits: thousands of cloned compute.ts / board.tsx files.
-    // tsc OOM'd in CI after eslint started ignoring these same trees. Skip them
-    // — do not mass-edit win-kit / lovat-kit / agent-kit.
-    "**/win-kit/**",
-    "**/lovat-kit/**",
-    "**/agent-kit/**"
-  ]
+  "exclude": ["node_modules", "**/*.test.ts"]
 }
