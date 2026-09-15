@@ -279,13 +279,12 @@ function RecentEvents({
   busy,
   mutate,
   orgId,
-  shell,
 }: {
   view: LiveView;
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => void;
   orgId: string | null;
-  shell: OfflineShellKind;
+  shell?: OfflineShellKind;
 }) {
   if (view.summary.totalEvents === 0) {
     const copy = offlineShellCopy("empty");
