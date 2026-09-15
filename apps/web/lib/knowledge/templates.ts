@@ -277,7 +277,7 @@ export const KNOWLEDGE_TEMPLATES: KnowledgeTemplate[] = [
 3.
 
 ## Torque and thread-locker
-CAD will not invent these. Fill what the shop actually uses.
+Fill what the shop actually uses. CAD does not know shop torque.
 
 | Fastener / joint | Torque | Thread-locker / lube | Notes |
 |---|---|---|---|

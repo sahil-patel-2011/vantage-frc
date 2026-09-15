@@ -1071,7 +1071,7 @@ export const SECTION_HELP: SectionHelpEntry[] = [
       "Start a run from a CAD vault document with an Onshape link.",
       "Status is Waiting, then Building the book, then Ready — print PDF or keep on this device.",
       "Treat “confirm — not specified in CAD” as a real gap, not a style.",
-      "Write torque, Loctite, lube, and helper notes on a Playbook shop SOP — this book will not invent them.",
+      "Write torque, Loctite, lube, and helper notes on a Playbook shop SOP — CAD does not know shop torque.",
     ],
     tips: [
       "Every measurement traces to a CAD fact. Unstated facts print “confirm — not specified in CAD”.",
