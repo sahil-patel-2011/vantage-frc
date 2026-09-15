@@ -8,6 +8,7 @@ import {
   robotArchetypes,
   scoreAllianceChemistry,
 } from "../src/analytics";
+import { buildIntelTeamMatch, matchResultForAlliance, teamNumberFromKey } from "../src/team-board";
 import { FixtureSearchProvider, LocalSummaryProvider, isLiveResearchSearchConfigured } from "../src/providers";
 import { canonicalizeUrl } from "../src/worker";
 
@@ -116,6 +117,29 @@ describe("deterministic providers and provenance", () => {
       if (previous.key == null) delete process.env.RESEARCH_SEARCH_API_KEY;
       else process.env.RESEARCH_SEARCH_API_KEY = previous.key;
     }
+  });
+});
+
+describe("team board match rows", () => {
+  it("reads alliance partners and official scores", () => {
+    expect(teamNumberFromKey("frc254")).toBe(254);
+    expect(matchResultForAlliance("red", "blue", 10, 20)).toBe("loss");
+    const match = buildIntelTeamMatch({
+      teamKey: "frc1678",
+      matchKey: "2026casj_qm3",
+      eventKey: "2026casj",
+      eventName: "San Jose",
+      year: 2026,
+      compLevel: "qm",
+      setNumber: 1,
+      matchNumber: 3,
+      redAlliance: { teamKeys: ["frc254", "frc1678", "frc118"], score: 80 },
+      blueAlliance: { teamKeys: ["frc1323", "frc4414", "frc973"], score: 80 },
+      winningAlliance: "tie",
+      playedAt: null,
+    });
+    expect(match?.result).toBe("tie");
+    expect(match?.partners).toEqual([254, 118]);
   });
 });
 

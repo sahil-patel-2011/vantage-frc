@@ -51,3 +51,202 @@
   grid-template-columns:repeat(auto-fit,minmax(16rem,1fr));
   gap:12px;
 }
+.intel-match-list,
+.intel-event-list{
+  list-style:none;
+  margin:0;
+  padding:0;
+  display:grid;
+  gap:12px;
+}
+.intel-match-list li,
+.intel-event-list li{
+  display:grid;
+  gap:4px;
+  padding-bottom:12px;
+  border-bottom:1px solid var(--line);
+}
+.intel-match-list li:last-child,
+.intel-event-list li:last-child{
+  border-bottom:0;
+  padding-bottom:0;
+}
+.intel-match-list li > div:first-child,
+.intel-event-list li > div:first-child{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:space-between;
+  gap:8px;
+}
+.intel-match-score{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:baseline;
+  gap:8px;
+}
+.intel-match-win b{color:var(--ok, #1f7a4d)}
+.intel-match-loss b{color:var(--danger, #a33)}
+.intel-match-unplayed em{font-style:normal}
+.intel-lookup-board{display:grid;gap:var(--space-3);margin:4px 0 var(--space-3)}
+.intel-lookup-board header h3{
+  margin:0 0 2px;
+  font-size:var(--title-3);
+  letter-spacing:var(--tracking-tight);
+}
+.intel-lookup-lanes{
+  display:grid;
+  grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);
+  gap:var(--space-3);
+}
+.intel-lookup-lane h4{
+  margin:0 0 6px;
+  font-size:var(--text-xs);
+  letter-spacing:var(--tracking-kicker);
+  text-transform:uppercase;
+  color:var(--muted);
+  font-weight:600;
+}
+.intel-lookup-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(7.1rem,1fr));
+  gap:0;
+  border-top:1px solid var(--hairline);
+  border-left:1px solid var(--hairline);
+  background:var(--surface);
+}
+.intel-lookup-tile{
+  display:grid;
+  align-content:start;
+  gap:1px;
+  min-height:7.25rem;
+  padding:8px 9px 6px;
+  border-right:1px solid var(--hairline);
+  border-bottom:1px solid var(--hairline);
+  background:var(--surface);
+}
+.intel-lookup-tile strong{
+  font-size:1.5rem;
+  letter-spacing:var(--tracking-display);
+  line-height:1.05;
+  font-variant-numeric:tabular-nums;
+}
+.intel-lookup-label{
+  font-size:var(--text-2xs);
+  color:var(--ink);
+  line-height:1.25;
+}
+.intel-lookup-source{
+  font-size:10px;
+  letter-spacing:var(--tracking-kicker);
+  text-transform:uppercase;
+  color:var(--muted);
+}
+.intel-lookup-share{font-size:10px;color:var(--muted)}
+.intel-lookup-empty{
+  margin:0;
+  padding:12px;
+  border:1px dashed var(--line);
+  background:var(--surface);
+  color:var(--muted);
+  font-size:var(--text-sm);
+}
+.intel-spark{
+  width:100%;
+  height:22px;
+  margin-top:4px;
+  color:var(--accent);
+}
+.intel-spark-slot{display:block;height:22px;margin-top:4px}
+.intel-vs{font-size:10px;line-height:1.3}
+.intel-vs-above{color:var(--positive)}
+.intel-vs-below{color:var(--warning)}
+.intel-vs-near,.intel-vs-unknown{color:var(--muted)}
+.intel-phase-row{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 0}
+.intel-phase{
+  border:1px solid var(--line);
+  background:var(--surface);
+  color:inherit;
+  border-radius:var(--radius-xs);
+  padding:3px 8px;
+  font-size:var(--text-xs);
+  cursor:pointer;
+}
+.intel-phase.is-on{border-color:var(--ink);background:var(--surface-2)}
+.intel-lookup-notes{display:grid;gap:6px}
+.intel-lookup-notes h4{margin:0;font-size:var(--title-4)}
+.intel-lookup-notes textarea{
+  width:100%;
+  min-height:5.5rem;
+  resize:vertical;
+  padding:8px 10px;
+  border:1px solid var(--line);
+  background:var(--surface);
+  color:var(--ink);
+  font:inherit;
+}
+.intel-lookup-notes-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.intel-slider-list{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:4px}
+.intel-slider-list li{display:grid;grid-template-columns:1fr minmax(7.5rem,1.4fr) 2.2rem;gap:6px;align-items:center}
+.intel-slider-list label{display:grid;gap:0}
+.intel-slider-list em{font-style:normal;font-size:10px}
+.intel-slider-list b{font-variant-numeric:tabular-nums;font-size:var(--text-2xs);text-align:right}
+.intel-pick-self{margin:8px 0 0;font-size:var(--text-sm)}
+.intel-pick-rank{
+  list-style:none;
+  margin:8px 0 0;
+  padding:0;
+  display:grid;
+  max-height:18rem;
+  overflow:auto;
+  border-top:1px solid var(--hairline);
+}
+.intel-pick-rank li{
+  display:grid;
+  grid-template-columns:1.4rem 1fr auto;
+  gap:8px;
+  padding:5px 2px;
+  border-bottom:1px solid var(--hairline);
+  font-size:var(--text-sm);
+  font-variant-numeric:tabular-nums;
+}
+.intel-pick-rank .is-self{font-weight:600;background:var(--accent-soft)}
+.intel-win-result{margin-top:8px;display:grid;gap:8px}
+.intel-win-alliances{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--hairline)}
+.intel-win-side{display:grid;gap:2px;padding:10px 12px;text-align:center}
+.intel-win-side span{
+  font-size:10px;
+  letter-spacing:var(--tracking-kicker);
+  text-transform:uppercase;
+  color:var(--muted);
+}
+.intel-win-side strong{
+  font-size:1.7rem;
+  letter-spacing:var(--tracking-display);
+  font-variant-numeric:tabular-nums;
+  line-height:1.05;
+}
+.intel-win-side.is-red{border-right:1px solid var(--hairline)}
+.intel-win-side.is-red strong{color:var(--tone-red)}
+.intel-win-side.is-blue strong{color:var(--tone-blue)}
+.intel-win-bar{
+  height:8px;
+  background:color-mix(in srgb, var(--tone-blue) 55%, var(--surface));
+  overflow:hidden;
+}
+.intel-win-bar i{display:block;height:100%;background:var(--tone-red)}
+.intel-picklist,.intel-win,.intel-path{display:grid;gap:8px}
+.intel-path-field{
+  width:100%;
+  max-height:14rem;
+  border:1px solid var(--hairline);
+  background:color-mix(in srgb, var(--accent-soft) 40%, var(--surface));
+}
+.intel-path-floor{fill:color-mix(in srgb, var(--accent-soft) 35%, var(--surface));stroke:var(--line);stroke-width:2}
+.intel-path-line{stroke:var(--accent);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.intel-path-bot{fill:var(--ink)}
+.intel-path-bot.is-close{fill:var(--critical)}
+.intel-path-playhead{display:grid;grid-template-columns:auto 1fr 2.4rem;gap:8px;align-items:center}
+.intel-path-warn{margin:0;color:var(--warning);font-size:var(--text-sm)}
+@media (max-width: 780px){
+  .intel-lookup-lanes{grid-template-columns:1fr}
+}

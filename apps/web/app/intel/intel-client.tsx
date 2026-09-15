@@ -31,6 +31,7 @@ import {
   type IntelDetail,
   type IntelSearchTeam,
 } from "./intel-ready-view";
+import type { EventRatingRow } from "../../lib/intel/lovat-lookup";
 import "./intel.css";
 
 type IntelBoardView = {
@@ -38,6 +39,7 @@ type IntelBoardView = {
   similar: Array<IntelSearchTeam & { epaTotal: number }>;
   scoutNotes: IntelScoutNote[];
   activeEvent: IntelActiveEvent | null;
+  fieldRatings?: EventRatingRow[];
 };
 
 function isIntelBoardView(value: unknown): value is IntelBoardView {
@@ -157,12 +159,21 @@ function IntelLive({ orgId }: { orgId: string }) {
         setMessageKind("error");
         return;
       }
-      setResults(data.teams ?? []);
+      const teams = data.teams ?? [];
+      setResults(teams);
       if (data.activeEvent) {
         setView((current) => (current ? { ...current, activeEvent: data.activeEvent ?? current.activeEvent } : current));
       }
       setStatus("");
       setMessageKind("success");
+      const exact = Number(query.trim());
+      const exactHit =
+        Number.isInteger(exact) && exact > 0
+          ? teams.find((team) => team.teamNumber === exact)
+          : teams.length === 1
+            ? teams[0]
+            : undefined;
+      if (exactHit) void select(exactHit.teamNumber);
     } catch {
       if (viewRef.current) {
         setFromCache(true);
@@ -192,6 +203,7 @@ function IntelLive({ orgId }: { orgId: string }) {
         similarTeams?: Array<IntelSearchTeam & { epaTotal: number }>;
         scoutObservations?: IntelScoutNote[];
         activeEvent?: IntelActiveEvent | null;
+        fieldRatings?: EventRatingRow[];
         error?: string;
       };
       if (!response.ok) {
@@ -235,6 +247,7 @@ function IntelLive({ orgId }: { orgId: string }) {
         similar: data.similarTeams ?? [],
         scoutNotes: data.scoutObservations ?? [],
         activeEvent: data.activeEvent ?? viewRef.current?.activeEvent ?? null,
+        fieldRatings: Array.isArray(data.fieldRatings) ? data.fieldRatings : [],
       };
       setView(next);
       setSummary("");
@@ -427,6 +440,7 @@ function IntelLive({ orgId }: { orgId: string }) {
 
       {shell === "ready" && view ? (
         <IntelReadyView
+          orgId={orgId}
           intel={view.intel}
           similar={view.similar}
           summary={summary}
@@ -447,6 +461,7 @@ function IntelLive({ orgId }: { orgId: string }) {
           onPickNameChange={setPickName}
           onSavePick={() => void savePick()}
           onSelectSimilar={(teamNumber) => void select(teamNumber)}
+          fieldRatings={view.fieldRatings ?? []}
         />
       ) : null}
     </main>

@@ -198,14 +198,14 @@ export function intelShellCopy(kind: IntelShellKind): IntelEmptyCopy {
         badge: "Look up a team",
         title: "Look up a team",
         description:
-          "Type a team number or name. Season scores, our scouting, and public notes stay blank until they are on file.",
+          "Type a team number or name. Matches, rank, season scores, and our scouting stay blank until they are on file.",
       };
     case "ready":
       return {
         kind,
         title: "Research",
         description:
-          "Season scores and public notes stay blank until they exist. Check Strategy before locking a pick.",
+          "Matches, rank, and season scores stay blank until they exist. Check Strategy before locking a pick.",
       };
     default: {
       const _exhaustive: never = kind;

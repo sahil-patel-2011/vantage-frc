@@ -1,5 +1,11 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { deriveFoulRisk, deriveReliability, historicalTrajectory, robotArchetypes } from "./analytics";
+import {
+  buildIntelTeamMatch,
+  sortEventStandings,
+  type IntelEventStanding,
+  type IntelTeamMatch,
+} from "./team-board";
 import type { Finding, Metric, ScoutObservation, TeamIntel } from "./types";
 
 type TeamRow = TeamIntel["team"] & { atActiveEvent: boolean };
@@ -44,10 +50,12 @@ export class IntelResearchRepository {
     );
     const row = teamResult.rows[0];
     if (!row) return null;
-    const [metrics, findings, scoutObservations] = await Promise.all([
+    const [metrics, findings, scoutObservations, matches, events] = await Promise.all([
       this.getMetrics(row.teamKey),
       this.getFindings(row.teamKey),
       this.getScoutObservations(orgId, row.teamKey),
+      this.getTeamMatches(row.teamKey),
+      this.getTeamEventStandings(row.teamKey),
     ]);
     return {
       team: {
@@ -67,7 +75,72 @@ export class IntelResearchRepository {
       archetypes: robotArchetypes(metrics, scoutObservations),
       reliability: deriveReliability(scoutObservations),
       foulRisk: deriveFoulRisk(scoutObservations),
+      matches,
+      events,
     };
+  }
+
+  async getTeamMatches(teamKey: string, limit = 24): Promise<IntelTeamMatch[]> {
+    const result = await this.client.query<{
+      matchKey: string;
+      eventKey: string;
+      eventName: string | null;
+      year: number;
+      compLevel: string;
+      setNumber: number;
+      matchNumber: number;
+      redAlliance: unknown;
+      blueAlliance: unknown;
+      winningAlliance: string | null;
+      playedAt: string | null;
+    }>(
+      `SELECT m.match_key AS "matchKey", m.event_key AS "eventKey", e.name AS "eventName",
+              e.year, m.comp_level AS "compLevel", m.set_number AS "setNumber",
+              m.match_number AS "matchNumber", m.red_alliance AS "redAlliance",
+              m.blue_alliance AS "blueAlliance", m.winning_alliance AS "winningAlliance",
+              COALESCE(m.actual_time, m.predicted_time, m.event_time)::text AS "playedAt"
+         FROM matches_ref m
+         JOIN events_ref e ON e.event_key = m.event_key
+        WHERE (m.red_alliance->'teamKeys' ? $1 OR m.blue_alliance->'teamKeys' ? $1)
+        ORDER BY COALESCE(m.actual_time, m.predicted_time, m.event_time) DESC NULLS LAST,
+                 e.year DESC, m.match_number DESC
+        LIMIT $2`,
+      [teamKey, Math.min(Math.max(limit, 1), 40)],
+    );
+    return result.rows
+      .map((row) =>
+        buildIntelTeamMatch({
+          teamKey,
+          matchKey: row.matchKey,
+          eventKey: row.eventKey,
+          eventName: row.eventName,
+          year: row.year,
+          compLevel: row.compLevel,
+          setNumber: row.setNumber,
+          matchNumber: row.matchNumber,
+          redAlliance: row.redAlliance,
+          blueAlliance: row.blueAlliance,
+          winningAlliance: row.winningAlliance,
+          playedAt: row.playedAt,
+        }),
+      )
+      .filter((row): row is IntelTeamMatch => row != null);
+  }
+
+  async getTeamEventStandings(teamKey: string): Promise<IntelEventStanding[]> {
+    const result = await this.client.query<IntelEventStanding>(
+      `SELECT DISTINCT ON (m.event_key)
+              m.event_key AS "eventKey", e.name AS "eventName", e.year,
+              m.rank, m.wins, m.losses, m.ties, m.epa_total AS "rating"
+         FROM team_event_metrics m
+         JOIN events_ref e ON e.event_key = m.event_key
+        WHERE m.team_key = $1
+        ORDER BY m.event_key,
+                 CASE WHEN m.rank IS NOT NULL THEN 0 ELSE 1 END,
+                 m.synced_at DESC NULLS LAST`,
+      [teamKey],
+    );
+    return sortEventStandings(result.rows);
   }
 
   async getMetrics(teamKey: string): Promise<Metric[]> {

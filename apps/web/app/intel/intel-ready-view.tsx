@@ -1,7 +1,19 @@
 "use client";
 
 import { type FormEvent } from "react";
+import type { IntelEventStanding, IntelTeamMatch } from "@vantage/intel-research";
 import { FormRow, Panel, Button } from "../../components/ui";
+import {
+  intelAllianceLabel,
+  intelCurrentStanding,
+  intelLastPlayedMatch,
+  intelMatchLabel,
+  intelMatchResultLabel,
+  intelPartnerLine,
+  intelRankLine,
+  intelRecordLine,
+  intelScoreLine,
+} from "../../lib/intel/intel-board";
 import {
   intelScoutNoteLines,
   intelSourceTypeLabel,
@@ -10,6 +22,16 @@ import {
   type IntelScoutNote,
 } from "../../lib/intel/intel-related";
 import { IntelNextActionsPanel } from "./intel-chrome";
+import { IntelLookupBoard } from "./intel-lookup-board";
+import { IntelPathVisualizer } from "./intel-path-visualizer";
+import { IntelPicklistSliders } from "./intel-picklist-sliders";
+import { IntelWinPanel } from "./intel-win-panel";
+import {
+  fieldStatsFromEventRows,
+  scoutAveragesFromPayloads,
+  scoutSeriesFromPayloads,
+  type EventRatingRow,
+} from "../../lib/intel/lovat-lookup";
 
 export type IntelSearchTeam = {
   teamKey: string;
@@ -46,6 +68,8 @@ export type IntelDetail = {
   archetypes: string[];
   reliability: { score: number | null; consistency: number | null; sampleSize: number; evidence: string };
   foulRisk: { level: string; rate: number | null; sampleSize: number; evidence: string };
+  matches?: IntelTeamMatch[];
+  events?: IntelEventStanding[];
 };
 
 export type IntelCompareResult = {
@@ -120,6 +144,7 @@ export function IntelSearchResults({
 }
 
 export function IntelReadyView({
+  orgId,
   intel,
   similar,
   summary,
@@ -140,7 +165,9 @@ export function IntelReadyView({
   onPickNameChange,
   onSavePick,
   onSelectSimilar,
+  fieldRatings,
 }: {
+  orgId: string;
   intel: IntelDetail;
   similar: Array<IntelSearchTeam & { epaTotal: number }>;
   summary: string;
@@ -161,11 +188,33 @@ export function IntelReadyView({
   onPickNameChange: (value: string) => void;
   onSavePick: () => void;
   onSelectSimilar: (teamNumber: number) => void;
+  fieldRatings?: EventRatingRow[];
 }) {
   const metric = intel.metrics[0];
+  const ratings = fieldRatings ?? [];
+  const eventRow =
+    ratings.find((row) => row.teamKey === intel.team.teamKey) ??
+    (metric
+      ? {
+          teamKey: intel.team.teamKey,
+          epaTotal: metric.epaTotal,
+          epaAuto: metric.epaAuto,
+          epaTeleop: metric.epaTeleop,
+          epaEndgame: metric.epaEndgame,
+        }
+      : null);
+  const scoutPayloads = scoutNotes.map((note) => note.payload);
+  const scoutAverages = scoutAveragesFromPayloads(intel.team.teamKey, scoutPayloads);
+  const scoutSeries = scoutSeriesFromPayloads(scoutPayloads);
   const findingCount = intel.findings.length;
   const noteLines = intelScoutNoteLines(scoutNotes);
   const eventLabel = activeEvent?.eventName?.trim() || activeEvent?.eventKey || null;
+  const matches = intel.matches ?? [];
+  const events = intel.events ?? [];
+  const standing = intelCurrentStanding(events, activeEvent?.eventKey ?? null);
+  const lastMatch = intelLastPlayedMatch(matches);
+  const record = intelRecordLine(standing?.wins, standing?.losses, standing?.ties);
+  const rank = intelRankLine(standing?.rank);
 
   return (
     <div className="intel-detail">
@@ -176,7 +225,9 @@ export function IntelReadyView({
             <h2>{intel.team.nickname ?? intel.team.name}</h2>
             <p className="app-muted">
               {[intel.team.city, intel.team.stateProv, intel.team.country].filter(Boolean).join(" · ")}
+              {intel.team.rookieYear ? ` · rookie ${intel.team.rookieYear}` : ""}
               {intel.atActiveEvent ? " · at your event" : ""}
+              {standing?.eventName ? ` · ${standing.eventName}` : ""}
             </p>
           </div>
           <div className="intel-primary-actions">
@@ -197,25 +248,107 @@ export function IntelReadyView({
         </Panel>
       ) : null}
 
-      <section className="intel-metric-grid" aria-label="Season scores">
-        {(
-          [
-            ["Season rating", metric?.epaTotal],
-            ["Auto", metric?.epaAuto],
-            ["Teleop", metric?.epaTeleop],
-            ["Endgame", metric?.epaEndgame],
-            ["Reliability", intel.reliability.score],
-            ["Consistency", intel.reliability.consistency],
-          ] as const
-        ).map(([label, value]) => (
-          <Panel key={label} style={{ minHeight: "auto", textAlign: "center" }}>
-            <span className="app-muted">{label}</span>
-            <strong style={{ display: "block", fontSize: "1.6rem", letterSpacing: "-0.03em" }}>
-              {fmt(value)}
-            </strong>
-          </Panel>
-        ))}
+      <IntelLookupBoard
+        orgId={orgId}
+        teamKey={intel.team.teamKey}
+        event={eventRow}
+        field={fieldStatsFromEventRows(ratings)}
+        scout={scoutAverages}
+        history={intel.trajectory.map((point) => point.epa)}
+        series={scoutSeries}
+      />
+
+      <section className="intel-metric-grid" aria-label="Team snapshot">
+        <Panel style={{ minHeight: "auto", textAlign: "center" }}>
+          <span className="app-muted">Rank</span>
+          <strong style={{ display: "block", fontSize: "1.6rem", letterSpacing: "-0.03em" }}>
+            {rank ? rank.replace("Rank ", "") : "—"}
+          </strong>
+        </Panel>
+        <Panel style={{ minHeight: "auto", textAlign: "center" }}>
+          <span className="app-muted">Record</span>
+          <strong style={{ display: "block", fontSize: "1.6rem", letterSpacing: "-0.03em" }}>
+            {record ?? "—"}
+          </strong>
+        </Panel>
+        <Panel style={{ minHeight: "auto", textAlign: "center" }}>
+          <span className="app-muted">Last match</span>
+          <strong style={{ display: "block", fontSize: "1.6rem", letterSpacing: "-0.03em" }}>
+            {lastMatch ? intelScoreLine(lastMatch) : "—"}
+          </strong>
+          {lastMatch ? (
+            <small className="app-muted">
+              {intelMatchResultLabel(lastMatch.result)} · {intelAllianceLabel(lastMatch.alliance)}
+            </small>
+          ) : null}
+        </Panel>
       </section>
+
+      <div className="intel-panels">
+        <IntelPicklistSliders teamKey={intel.team.teamKey} fieldRatings={ratings} scout={scoutAverages} />
+        <IntelWinPanel teamKey={intel.team.teamKey} fieldRatings={ratings} />
+        <IntelPathVisualizer payloads={scoutPayloads} />
+      </div>
+
+      <div className="intel-panels">
+        <Panel>
+          <h3 style={{ marginTop: 0 }}>Recent matches</h3>
+          {matches.length ? (
+            <ul className="intel-match-list">
+              {matches.map((match) => (
+                <li key={match.matchKey}>
+                  <div>
+                    <strong>{intelMatchLabel(match)}</strong>
+                    <span className="app-muted">
+                      {match.eventName ?? match.eventKey}
+                      {match.year ? ` · ${match.year}` : ""}
+                    </span>
+                  </div>
+                  <div className={`intel-match-score intel-match-${match.result}`}>
+                    <b>{intelScoreLine(match)}</b>
+                    <em>
+                      {intelMatchResultLabel(match.result)} · {intelAllianceLabel(match.alliance)}
+                    </em>
+                  </div>
+                  <small className="app-muted">
+                    {intelPartnerLine(match.partners)
+                      ? `With ${intelPartnerLine(match.partners)}`
+                      : "Alliance partners not on file"}
+                    {match.opponents.length ? ` · vs ${match.opponents.join(" · ")}` : ""}
+                  </small>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="app-muted">No match scores on file yet for this team.</p>
+          )}
+        </Panel>
+
+        <Panel>
+          <h3 style={{ marginTop: 0 }}>Events and rankings</h3>
+          {events.length ? (
+            <ul className="intel-event-list">
+              {events.map((event) => (
+                <li key={event.eventKey}>
+                  <div>
+                    <strong>{event.eventName ?? event.eventKey}</strong>
+                    <span className="app-muted">{event.year}</span>
+                  </div>
+                  <b>{intelRankLine(event.rank) ?? "Rank —"}</b>
+                  <small className="app-muted">
+                    {intelRecordLine(event.wins, event.losses, event.ties) ?? "Record not on file"}
+                    {event.rating != null && Number.isFinite(event.rating)
+                      ? ` · rating ${event.rating.toFixed(1)}`
+                      : ""}
+                  </small>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="app-muted">No event ranks on file yet for this team.</p>
+          )}
+        </Panel>
+      </div>
 
       <div className="intel-panels">
         <Panel>

@@ -1,3 +1,5 @@
+import type { IntelEventStanding, IntelTeamMatch } from "./team-board";
+
 export type Metric = {
   eventKey?: string;
   year: number;
@@ -90,4 +92,6 @@ export type TeamIntel = {
     sampleSize: number;
     evidence: string;
   };
+  matches: IntelTeamMatch[];
+  events: IntelEventStanding[];
 };

@@ -36,6 +36,44 @@ export type {
   TeamScoreFeatures,
 } from "./calibrated-score";
 export {
+  allianceScoreSpread,
+  flipAllianceWin,
+  lovatWinProbability,
+  predictUnscoredMatch,
+  standardNormalCdf,
+} from "./lovat-win";
+export type {
+  AllianceScoreSpread,
+  LovatWinPrediction,
+  TeamScoreSpread,
+} from "./lovat-win";
+export {
+  PICKLIST_METRICS,
+  PICKLIST_METRIC_IDS,
+  defaultPicklistWeights,
+  fieldStatsFromRows,
+  finiteValues,
+  picklistMetricLabel,
+  picklistPresetWeights,
+  populationMean,
+  populationStdDev,
+  rankByWeightedZScores,
+  scoreTeamAgainstField,
+  zScore,
+} from "./zscore-picklist";
+export type {
+  FieldStat,
+  FieldStats,
+  MetricWeight,
+  PicklistMetricDef,
+  PicklistMetricId,
+  PicklistMetricSource,
+  PicklistPresetId,
+  PicklistScoreBreakdown,
+  RankedPicklistTeam,
+  TeamMetricRow,
+} from "./zscore-picklist";
+export {
   PLAN_TO_ENGINE_ID,
   normalizePlanCode,
   selectStrategyEngine,
