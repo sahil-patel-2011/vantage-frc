@@ -53,7 +53,7 @@ export async function GET(request: Request) {
             );
             lookupNote = parseLookupNote(note.rows[0] ?? null, intel.team.teamKey, canEdit);
           } catch {
-            // Keep the empty note — the table is setup-required on some deploys.
+            lookupNote = parseLookupNote(null, intel.team.teamKey, canEdit);
           }
           return {
             team: intel,
