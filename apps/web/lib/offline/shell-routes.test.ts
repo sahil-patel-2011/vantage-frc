@@ -264,7 +264,7 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/alliance-sim")).toBe("Alliance Sim");
     expect(offlineCapableLabel("/briefing")).toBe("Pre-match briefing");
     expect(offlineCapableLabel("/award-tracker")).toBe("Award Tracker");
-    expect(offlineCapableLabel("/epa-trend-alerts")).toBe("EPA Trend Alerts");
+    expect(offlineCapableLabel("/epa-trend-alerts")).toBe("Rating alerts");
     expect(offlineCapableLabel("/rankings")).toBe("Rankings");
     expect(offlineCapableLabel("/grant-report")).toBe("Grant Report");
     expect(offlineCapableLabel("/media-kit")).toBe("Media Kit");

@@ -703,7 +703,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
     slug: "assembly-manual",
     title: "Assembly manual — a build book from your CAD",
     summary:
-      "Point it at your Onshape assembly and it produces a step-by-step build book: parts per step, cut and drill and tap lines, pictures, a materials list, and a PDF.",
+      "Paste an Onshape assembly link and Connect Onshape. That starts a step-by-step build book: parts per step, cut and drill and tap lines, pictures, a materials list, and a PDF. Pick a linked vault assembly to start without re-pasting. Fusion cannot feed this book.",
     category: "build",
     keywords: ["assembly", "manual", "build book", "instructions", "lego", "onshape", "pdf", "cut list", "bom"],
     relatedHref: "/assembly-manual",
@@ -711,7 +711,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "How a run works",
         body: [
-          "An owner or admin starts a run from a CAD vault document with an Onshape link, or by pasting one. The job runs on your team's relay and checkpoints as it goes, so a long robot can take hours and survive a restart.",
+          "Paste an Onshape assembly link and Connect Onshape to start. Owners and admins can also pick a CAD vault document that already has an Onshape link — after the first run, that vault row is bound to the assembly tab so the next person starts the book without re-pasting. Fusion cannot feed this book. The job runs on the assembly-manual worker and checkpoints as it goes, so a long robot can take hours. If no worker has checked in, the page stays on Waiting rather than showing fake progress.",
           "Two different ordering strategies are run and reconciled; every step is checked for feasibility (a part must be reachable, fasteners follow the parts they join). Disagreements are listed in the run report.",
         ],
       },

@@ -9,13 +9,21 @@ import { createBridgeTransport } from "../../../lib/ai-bridge/transport";
 import { loadCadAgentOnshape } from "../../../lib/cad/onshape-tokens";
 import { listAssemblyElements } from "../../../lib/assembly-manual/ingest";
 import {
+  classifyVaultDocuments,
+  canonicalOnshapeAssemblyUrl,
+  findVaultDocumentForOnshape,
+  vaultCadPlatform,
+} from "../../../lib/assembly-manual/vault";
+import {
   HttpError,
+  bindVaultAssembly,
   failResponse,
   lastWorkerCheckIn,
-  listOnshapeVaultDocuments,
+  listLinkedVaultDocuments,
   listRuns,
   requireLead,
   resolveMembership,
+  tryResolveMembership,
   startRun,
 } from "../../../lib/assembly-manual/store";
 import { deterministicSentence, sentenceIsGrounded, type StepWriteFacts } from "../../../lib/assembly-manual/write";
@@ -58,15 +66,39 @@ export async function GET() {
     if (!session) throw new HttpError(401, "Authentication required");
 
     const payload = await withRls({ userId: session.user.id }, async (client) => {
-      const membership = await resolveMembership(client, session.user.id);
-      const [runs, vault, workerSeen] = await Promise.all([
+      const membership = await tryResolveMembership(client, session.user.id);
+      if (!membership) {
+        return {
+          status: "setup_required" as const,
+          orgId: null,
+          orgName: "",
+          canStart: false,
+          onshape: {
+            connected: false,
+            configured: isOnshapeOAuthConfigured(),
+            message: "Choose your team before pasting an Onshape assembly link.",
+          },
+          worker: {
+            lastCheckIn: null,
+            message: "No worker has picked up a run for your team yet.",
+          },
+          vault: [],
+          vaultFusionOnly: false,
+          runs: [],
+        };
+      }
+
+      const [runs, linked, workerSeen] = await Promise.all([
         listRuns(client, membership.orgId),
-        listOnshapeVaultDocuments(client, membership.orgId),
+        listLinkedVaultDocuments(client, membership.orgId),
         lastWorkerCheckIn(client, membership.orgId),
       ]);
+      const classified = classifyVaultDocuments(linked);
 
       const onshape = await onshapeFor(client, membership.orgId, session.user.id);
       return {
+        status: "ok" as const,
+        orgId: membership.orgId,
         orgName: membership.orgName,
         canStart: membership.role === "owner" || membership.role === "admin",
         onshape: {
@@ -79,9 +111,10 @@ export async function GET() {
           lastCheckIn: workerSeen,
           message: workerSeen
             ? `A worker last picked up one of your runs at ${workerSeen}.`
-            : "No worker has picked up a run for your team yet. This job runs on your team's relay — start it, or ask whoever runs the relay to bring it up.",
+            : "No worker has picked up a run for your team yet. This book will not start until the assembly-manual worker checks in.",
         },
-        vault,
+        vault: classified.onshape,
+        vaultFusionOnly: classified.fusionOnly,
         runs,
       };
     });
@@ -123,14 +156,23 @@ async function startFromUrl(userId: string, body: StartBody): Promise<Response> 
     const membership = await resolveMembership(client, userId);
     requireLead(membership);
 
+    const linked = await listLinkedVaultDocuments(client, membership.orgId);
+    const classified = classifyVaultDocuments(linked);
+
     let url = String(body.url ?? "").trim();
-    if (!url && body.documentId) {
-      const vault = await listOnshapeVaultDocuments(client, membership.orgId);
-      const document = vault.find((entry) => entry.id === body.documentId);
-      if (!document) throw new HttpError(404, "That CAD vault document is not one of your team's.");
+    let sourceDocumentId = String(body.documentId ?? "").trim() || null;
+    if (!url && sourceDocumentId) {
+      const document = classified.onshape.find((entry) => entry.id === sourceDocumentId);
+      if (!document) {
+        const fusion = linked.find((entry) => entry.id === sourceDocumentId);
+        if (fusion && vaultCadPlatform(fusion.externalUrl) === "fusion") {
+          throw new HttpError(400, "Fusion cannot feed this book. Paste an Onshape assembly link.");
+        }
+        throw new HttpError(404, "That CAD vault document is not one of your team's Onshape links.");
+      }
       url = document.externalUrl;
     }
-    if (!url) throw new HttpError(400, "Paste an Onshape assembly link, or pick a CAD vault document.");
+    if (!url) throw new HttpError(400, "Paste an Onshape assembly link, or pick a linked assembly from the CAD vault.");
 
     let parsed;
     try {
@@ -173,12 +215,25 @@ async function startFromUrl(userId: string, body: StartBody): Promise<Response> 
       };
     }
 
+    const onshapeUrl = canonicalOnshapeAssemblyUrl(parsed.documentId, parsed.workspaceId, chosen.id);
+    if (!sourceDocumentId) {
+      sourceDocumentId = findVaultDocumentForOnshape(classified.onshape, parsed.documentId)?.id ?? null;
+    }
+    if (sourceDocumentId) {
+      await bindVaultAssembly(client, {
+        orgId: membership.orgId,
+        userId,
+        documentId: sourceDocumentId,
+        onshapeUrl,
+      });
+    }
+
     const run = await startRun(client, {
       orgId: membership.orgId,
       userId,
-      sourceKind: body.documentId ? "vault" : "url",
-      sourceDocumentId: body.documentId ?? null,
-      onshapeUrl: `https://cad.onshape.com/documents/${parsed.documentId}/w/${parsed.workspaceId}/e/${chosen.id}`,
+      sourceKind: sourceDocumentId ? "vault" : "url",
+      sourceDocumentId,
+      onshapeUrl,
       documentId: parsed.documentId,
       workspaceId: parsed.workspaceId,
       elementId: chosen.id,

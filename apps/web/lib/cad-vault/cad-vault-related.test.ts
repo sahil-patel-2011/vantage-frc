@@ -36,6 +36,18 @@ describe("cadVaultNextActions", () => {
     expect(actions[0]?.href).toBe("#link-cad");
     expect(actions.some((action) => action.id === "learn")).toBe(true);
   });
+
+  it("on ready points assembly manual at picking a linked Onshape assembly", () => {
+    const actions = cadVaultNextActions({
+      orgId: "org-1",
+      shell: "ready",
+      documentCount: 2,
+      linkedCount: 1,
+    });
+    const assembly = actions.find((action) => action.id === "assembly");
+    expect(assembly?.href).toBe("/assembly-manual?orgId=org-1");
+    expect(assembly?.detail).toMatch(/without re-pasting/);
+  });
 });
 
 describe("cadVaultShellCopy", () => {

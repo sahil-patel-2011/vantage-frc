@@ -4,7 +4,7 @@
   "scripts": {
     "dev": "next dev --port 3001",
     "dev:test": "next dev --port 3310 --hostname 127.0.0.1",
-    "build": "next build",
+    "build": "node ./scripts/build-without-leftover-kits.mjs",
     "start": "next start --port 3001",
     "typecheck": "tsc --noEmit"
   },
