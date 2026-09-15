@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -14,6 +14,25 @@ import {
 } from "./section-help";
 
 const MOMENT_IDS = new Set(SEASON_MOMENTS.map((moment) => moment.id));
+
+/** True when href maps to an app page.tsx, including Next.js [param] folders. */
+function appPageExists(appDir: string, href: string): boolean {
+  const route = href.split(/[?#]/)[0]!.replace(/^\/+/, "");
+  return matchAppPage(appDir, route ? route.split("/") : []);
+}
+
+function matchAppPage(dir: string, parts: string[]): boolean {
+  if (parts.length === 0) return existsSync(resolve(dir, "page.tsx"));
+  const [head, ...rest] = parts;
+  const exact = resolve(dir, head!);
+  if (existsSync(exact) && matchAppPage(exact, rest)) return true;
+  if (!existsSync(dir)) return false;
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (!entry.isDirectory() || !/^\[[^\]]+\]$/.test(entry.name)) continue;
+    if (matchAppPage(resolve(dir, entry.name), rest)) return true;
+  }
+  return false;
+}
 
 describe("section help registry", () => {
   it("gives every entry a non-empty what / why / when", () => {
@@ -66,13 +85,7 @@ describe("section help registry", () => {
     const dead: string[] = [];
     for (const entry of SECTION_HELP) {
       for (const link of entry.related) {
-        const route = link.href.split(/[?#]/)[0].replace(/^\/+/, "");
-        const page = route ? resolve(appDir, route, "page.tsx") : resolve(appDir, "page.tsx");
-        const helpArticle =
-          route.split("/").length === 2 &&
-          route.startsWith("help/") &&
-          existsSync(resolve(appDir, "help/[slug]/page.tsx"));
-        if (!existsSync(page) && !helpArticle) dead.push(`${entry.id} → ${link.href}`);
+        if (!appPageExists(appDir, link.href)) dead.push(`${entry.id} → ${link.href}`);
       }
     }
     expect(dead).toEqual([]);
@@ -122,6 +135,11 @@ describe("section help lookups", () => {
     expect(sectionHelpFor("competition", "not-a-tab")).toBeUndefined();
     expect(sectionHelpFor(null, "command")).toBeUndefined();
     expect(sectionHelpFor("competition", null)).toBeUndefined();
+    expect(sectionHelpFor("build", "assembly-manual")?.id).toBe("build.assembly-manual");
+    expect(sectionHelpFor("build", "assembly-manual")?.related.some((link) => link.href === "/help/assembly-manual")).toBe(
+      true,
+    );
+    expect(sectionHelpFor("build", "cad")?.related.some((link) => link.href === "/assembly-manual")).toBe(true);
   });
 
   it("keeps same-named tabs in different hubs distinct", () => {
