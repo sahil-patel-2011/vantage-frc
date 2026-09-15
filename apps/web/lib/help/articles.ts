@@ -392,7 +392,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "What cannot come in",
         body: [
-          "Lovat exports CSV (raw reports + notes, or team averages). Bring those in here with Scouting CSV and map columns. On the Scouting hub, Download this event’s answers is the wide CSV of published match/pit fields. Takeout at /exports still stores payload as JSON. This page only imports.",
+          "Lovat exports CSV (raw reports + notes, or team averages). Bring those in here with Scouting CSV and map columns. Wide answers live on the Scouting hub: Download this event’s answers is the CSV of published match/pit fields. Takeout at /exports still stores payload as JSON. This page only imports.",
           "After committing, dual-run both tools for a week before turning the old one off.",
         ],
       },
