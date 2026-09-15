@@ -1,0 +1,27 @@
+.lk-endgame-last4-trimmed-board{display:grid;gap:12px;margin:4px 0 8px}
+.lk-endgame-last4-trimmed-board header h3{margin:0 0 4px}
+.lk-endgame-last4-trimmed-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr));gap:10px}
+.lk-endgame-last4-trimmed-tile{display:grid;gap:4px;padding:12px}
+.lk-endgame-last4-trimmed-tile strong{font-size:1.35rem;letter-spacing:-0.03em}
+.lk-endgame-last4-trimmed-tile em{font-style:normal;font-size:11px}
+.lk-endgame-last4-trimmed-spark{width:72px;height:28px;color:var(--accent)}
+.lk-endgame-last4-trimmed-vs{font-size:11px}
+.lk-endgame-last4-trimmed-vs-above{color:var(--good,#1b7f4e)}
+.lk-endgame-last4-trimmed-vs-below{color:var(--warn,#9a5b12)}
+.lk-endgame-last4-trimmed-vs-near,.lk-endgame-last4-trimmed-vs-unknown{color:var(--muted)}
+
+.lk-endgame-last4-trimmed-deep{display:grid;gap:12px;margin-top:8px}
+.lk-endgame-last4-trimmed-meters{display:grid;grid-template-columns:repeat(auto-fit,minmax(8.5rem,1fr));gap:8px;margin:0;padding:0;list-style:none}
+.lk-endgame-last4-trimmed-meter{display:grid;gap:2px;padding:8px 10px;border:1px solid var(--border,rgba(0,0,0,.08));border-radius:10px}
+.lk-endgame-last4-trimmed-split{display:grid;grid-template-columns:repeat(auto-fit,minmax(14rem,1fr));gap:10px}
+.lk-endgame-last4-trimmed-panel h4{margin:0 0 8px;font-size:13px}
+.lk-endgame-last4-trimmed-zones,.lk-endgame-last4-trimmed-colley,.lk-endgame-last4-trimmed-residual,.lk-endgame-last4-trimmed-pareto,.lk-endgame-last4-trimmed-setup{margin:0;padding:0;list-style:none;display:grid;gap:6px}
+.lk-endgame-last4-trimmed-zone{display:grid;grid-template-columns:7rem 1fr;gap:8px;align-items:center;font-size:12px}
+.lk-endgame-last4-trimmed-bar{display:block;height:8px;border-radius:999px;background:var(--accent,#3d6)}
+.lk-endgame-last4-trimmed-page{padding-bottom:24px}
+
+.lk-endgame-last4-trimmed-wide{display:grid;gap:12px;margin-top:10px}
+.lk-endgame-last4-trimmed-wide-meters{display:grid;grid-template-columns:repeat(auto-fit,minmax(8.5rem,1fr));gap:8px;margin:0;padding:0;list-style:none}
+.lk-endgame-last4-trimmed-slots,.lk-endgame-last4-trimmed-scouts{margin:0;padding-left:1.1rem;display:grid;gap:4px;font-size:12px}
+
+.lk-endgame-last4-trimmed-lovat{display:grid;gap:12px;margin-top:12px}
