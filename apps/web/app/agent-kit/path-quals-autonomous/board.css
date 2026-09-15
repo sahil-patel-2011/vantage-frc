@@ -1,0 +1,27 @@
+.ak-path-quals-autonomous-board{display:grid;gap:12px;margin:4px 0 8px}
+.ak-path-quals-autonomous-board header h3{margin:0 0 4px}
+.ak-path-quals-autonomous-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr));gap:10px}
+.ak-path-quals-autonomous-tile{display:grid;gap:4px;padding:12px}
+.ak-path-quals-autonomous-tile strong{font-size:1.35rem;letter-spacing:-0.03em}
+.ak-path-quals-autonomous-tile em{font-style:normal;font-size:11px}
+.ak-path-quals-autonomous-spark{width:72px;height:28px;color:var(--accent)}
+.ak-path-quals-autonomous-vs{font-size:11px}
+.ak-path-quals-autonomous-vs-above{color:var(--good,#1b7f4e)}
+.ak-path-quals-autonomous-vs-below{color:var(--warn,#9a5b12)}
+.ak-path-quals-autonomous-vs-near,.ak-path-quals-autonomous-vs-unknown{color:var(--muted)}
+
+.ak-path-quals-autonomous-deep{display:grid;gap:12px;margin-top:8px}
+.ak-path-quals-autonomous-meters{display:grid;grid-template-columns:repeat(auto-fit,minmax(8.5rem,1fr));gap:8px;margin:0;padding:0;list-style:none}
+.ak-path-quals-autonomous-meter{display:grid;gap:2px;padding:8px 10px;border:1px solid var(--border,rgba(0,0,0,.08));border-radius:10px}
+.ak-path-quals-autonomous-split{display:grid;grid-template-columns:repeat(auto-fit,minmax(14rem,1fr));gap:10px}
+.ak-path-quals-autonomous-panel h4{margin:0 0 8px;font-size:13px}
+.ak-path-quals-autonomous-zones,.ak-path-quals-autonomous-colley,.ak-path-quals-autonomous-residual,.ak-path-quals-autonomous-pareto,.ak-path-quals-autonomous-setup{margin:0;padding:0;list-style:none;display:grid;gap:6px}
+.ak-path-quals-autonomous-zone{display:grid;grid-template-columns:7rem 1fr;gap:8px;align-items:center;font-size:12px}
+.ak-path-quals-autonomous-bar{display:block;height:8px;border-radius:999px;background:var(--accent,#3d6)}
+.ak-path-quals-autonomous-page{padding-bottom:24px}
+
+.ak-path-quals-autonomous-wide{display:grid;gap:12px;margin-top:10px}
+.ak-path-quals-autonomous-wide-meters{display:grid;grid-template-columns:repeat(auto-fit,minmax(8.5rem,1fr));gap:8px;margin:0;padding:0;list-style:none}
+.ak-path-quals-autonomous-slots,.ak-path-quals-autonomous-scouts{margin:0;padding-left:1.1rem;display:grid;gap:4px;font-size:12px}
+
+.ak-path-quals-autonomous-lovat{display:grid;gap:12px;margin-top:12px}
