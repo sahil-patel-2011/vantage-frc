@@ -1,0 +1,27 @@
+.wk-teleop-event-temperature-board{display:grid;gap:12px;margin:4px 0 8px}
+.wk-teleop-event-temperature-board header h3{margin:0 0 4px}
+.wk-teleop-event-temperature-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr));gap:10px}
+.wk-teleop-event-temperature-tile{display:grid;gap:4px;padding:12px}
+.wk-teleop-event-temperature-tile strong{font-size:1.35rem;letter-spacing:-0.03em}
+.wk-teleop-event-temperature-tile em{font-style:normal;font-size:11px}
+.wk-teleop-event-temperature-spark{width:72px;height:28px;color:var(--accent)}
+.wk-teleop-event-temperature-vs{font-size:11px}
+.wk-teleop-event-temperature-vs-above{color:var(--good,#1b7f4e)}
+.wk-teleop-event-temperature-vs-below{color:var(--warn,#9a5b12)}
+.wk-teleop-event-temperature-vs-near,.wk-teleop-event-temperature-vs-unknown{color:var(--muted)}
+
+.wk-teleop-event-temperature-deep{display:grid;gap:12px;margin-top:8px}
+.wk-teleop-event-temperature-meters{display:grid;grid-template-columns:repeat(auto-fit,minmax(8.5rem,1fr));gap:8px;margin:0;padding:0;list-style:none}
+.wk-teleop-event-temperature-meter{display:grid;gap:2px;padding:8px 10px;border:1px solid var(--border,rgba(0,0,0,.08));border-radius:10px}
+.wk-teleop-event-temperature-split{display:grid;grid-template-columns:repeat(auto-fit,minmax(14rem,1fr));gap:10px}
+.wk-teleop-event-temperature-panel h4{margin:0 0 8px;font-size:13px}
+.wk-teleop-event-temperature-zones,.wk-teleop-event-temperature-colley,.wk-teleop-event-temperature-residual,.wk-teleop-event-temperature-pareto,.wk-teleop-event-temperature-setup{margin:0;padding:0;list-style:none;display:grid;gap:6px}
+.wk-teleop-event-temperature-zone{display:grid;grid-template-columns:7rem 1fr;gap:8px;align-items:center;font-size:12px}
+.wk-teleop-event-temperature-bar{display:block;height:8px;border-radius:999px;background:var(--accent,#3d6)}
+.wk-teleop-event-temperature-page{padding-bottom:24px}
+
+.wk-teleop-event-temperature-wide{display:grid;gap:12px;margin-top:10px}
+.wk-teleop-event-temperature-wide-meters{display:grid;grid-template-columns:repeat(auto-fit,minmax(8.5rem,1fr));gap:8px;margin:0;padding:0;list-style:none}
+.wk-teleop-event-temperature-slots,.wk-teleop-event-temperature-scouts{margin:0;padding-left:1.1rem;display:grid;gap:4px;font-size:12px}
+
+.wk-teleop-event-temperature-lovat{display:grid;gap:12px;margin-top:12px}
