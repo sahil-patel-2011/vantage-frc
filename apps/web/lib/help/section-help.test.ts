@@ -15,7 +15,7 @@ import {
 
 const MOMENT_IDS = new Set(SEASON_MOMENTS.map((moment) => moment.id));
 
-/** True when `href` maps to `app/**/page.tsx`, including Next.js `[param]` folders. */
+/** True when href maps to an app page.tsx, including Next.js [param] folders. */
 function appPageExists(appDir: string, href: string): boolean {
   const route = href.split(/[?#]/)[0]!.replace(/^\/+/, "");
   return matchAppPage(appDir, route ? route.split("/") : []);
