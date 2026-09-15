@@ -10,6 +10,7 @@ export const KNOWLEDGE_TEMPLATE_KINDS = [
   "software",
   "cad_conventions",
   "inventory_handoff",
+  "assembly_sop",
   "other",
 ] as const;
 export type KnowledgeTemplateKind = (typeof KNOWLEDGE_TEMPLATE_KINDS)[number];
@@ -24,6 +25,7 @@ export const TEMPLATE_KIND_LABEL: Record<KnowledgeTemplateKind, string> = {
   software: "Software stack",
   cad_conventions: "CAD conventions",
   inventory_handoff: "Inventory handoff",
+  assembly_sop: "Subsystem assembly (shop)",
   other: "Other",
 };
 
