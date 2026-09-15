@@ -44,17 +44,14 @@ function stashKits() {
 restoreKits();
 stashKits();
 
-let status = 1;
+const nextBin = require.resolve("next/dist/bin/next");
 try {
-  const nextBin = require.resolve("next/dist/bin/next");
   const result = spawnSync(process.execPath, [nextBin, "build"], {
     cwd: webRoot,
     stdio: "inherit",
     env: process.env,
   });
-  status = result.status ?? 1;
+  process.exit(result.status ?? 1);
 } finally {
   restoreKits();
 }
-
-process.exit(status);
