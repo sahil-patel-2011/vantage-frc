@@ -1075,7 +1075,6 @@ export const SECTION_HELP: SectionHelpEntry[] = [
       "Torque, thread-locker, adhesive, and “hold this while…” belong on the shop SOP, not in CAD.",
     ],
     related: [
-      { label: "How a build book works", href: "/help/assembly-manual" },
       { label: "CAD vault", href: "/cad-vault" },
       { label: "Playbook", href: "/team?tab=knowledge" },
     ],
