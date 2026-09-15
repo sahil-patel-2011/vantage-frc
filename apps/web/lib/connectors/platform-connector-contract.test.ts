@@ -17,6 +17,8 @@ const ORIGINAL = { ...process.env };
 beforeEach(() => {
   delete process.env.RESEND_API_KEY;
   delete process.env.AUTH_EMAIL_FROM;
+  delete process.env.GMAIL_SMTP_USER;
+  delete process.env.GMAIL_SMTP_APP_PASSWORD;
   delete process.env.STRIPE_SECRET_KEY;
   delete process.env.STRIPE_WEBHOOK_SECRET;
 });
@@ -66,6 +68,22 @@ describe("email delivery status", () => {
       const status = emailNotificationsSetupStatus();
       expect(status.status).toBe("available");
       expect(status.detail).toMatch(/verified/);
+    } finally {
+      Object.defineProperty(process.env, "NODE_ENV", { value: previous, configurable: true });
+    }
+  });
+
+  it("refuses a Gmail AUTH_EMAIL_FROM on Resend and asks for an App Password", () => {
+    const previous = process.env.NODE_ENV;
+    Object.defineProperty(process.env, "NODE_ENV", { value: "production", configurable: true });
+    process.env.RESEND_API_KEY = "re_x";
+    process.env.AUTH_EMAIL_FROM = "Vantage <sahil@gmail.com>";
+    try {
+      const status = emailNotificationsSetupStatus();
+      expect(status.status).toBe("setup_required");
+      expect(status.missingEnv).toEqual(["GMAIL_SMTP_USER", "GMAIL_SMTP_APP_PASSWORD"]);
+      expect(status.detail).toMatch(/App Password/i);
+      expect(status.detail).toMatch(/invites, dues reminders/i);
     } finally {
       Object.defineProperty(process.env, "NODE_ENV", { value: previous, configurable: true });
     }
@@ -129,6 +147,16 @@ describe("the connectors page agrees with each connector's own setup check", () 
     expect(status.callbackUrl).toBe("https://vantage.example.com/api/stripe/webhook");
     expect(status.permissions).toContain("checkout.session.completed");
     expect(status.statusLine).toBe("Not configured — set STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET");
+  });
+
+  it("treats a Gmail App Password as enough for the email connector", () => {
+    const status = describeConnector(connectorById("email"), {
+      BETTER_AUTH_URL: "https://vantage.example.com",
+      GMAIL_USER: "sahil@gmail.com",
+      GMAIL_APP_PASSWORD: "abcd efgh ijkl mnop",
+    });
+    expect(status.missingEnv).toEqual([]);
+    expect(status.state).toBe("connected");
   });
 
   it("gives email no callback URL and points at the Resend consoles", () => {

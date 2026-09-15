@@ -1,7 +1,18 @@
 import { createHash, createHmac } from "node:crypto";
 import { createSqlPool } from "@vantage/db/pool";
 import { firstConfiguredEnv } from "@vantage/db/postgres-url";
-import { resolveAuthBaseURL, runtimeEnv } from "./access-policy";
+import {
+  authEmailFrom,
+  gmailSmtpPassword,
+  gmailSmtpUser,
+  isConsumerMailboxFrom,
+  isGmailSmtpConfigured,
+  isResendConfigured,
+  resendApiKey,
+  resolveAuthBaseURL,
+  shouldDeliverOutboundEmail,
+} from "./access-policy";
+import { gmailSmtpFrom, sendGmailSmtp } from "./gmail-smtp";
 
 export type OtpEmail = {
   email: string;
@@ -52,89 +63,155 @@ export class LocalMailboxProvider implements EmailProvider {
   }
 }
 
+async function assertResendAccepted(response: Response) {
+  if (response.ok) return;
+  let hint = "";
+  try {
+    const body = (await response.json()) as { message?: unknown };
+    if (typeof body.message === "string" && body.message.trim()) {
+      hint = `: ${body.message.replace(/\s+/g, " ").trim().slice(0, 160)}`;
+    }
+  } catch {
+    // Keep the status-only error when Resend returns a non-JSON body.
+  }
+  throw new Error(`Email provider returned ${response.status}${hint}`);
+}
+
 export class ResendEmailProvider implements EmailProvider {
   readonly name = "resend";
   constructor(
     private readonly apiKey: string,
     private readonly from: string,
   ) {}
-  async sendOtp(message: OtpEmail) {
+  private async postEmail(body: Record<string, unknown>) {
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
         authorization: `Bearer ${this.apiKey}`,
         "content-type": "application/json",
       },
-      body: JSON.stringify({
-        from: this.from,
-        to: [message.email],
-        subject: "Your Vantage verification code",
-        text: `Your Vantage verification code is ${message.otp}. It expires in 5 minutes. If you did not request this, you can ignore this email.`,
-      }),
+      body: JSON.stringify(body),
     });
-    if (!response.ok) throw new Error(`Email provider returned ${response.status}`);
+    await assertResendAccepted(response);
+  }
+  async sendOtp(message: OtpEmail) {
+    await this.postEmail({
+      from: this.from,
+      to: [message.email],
+      subject: "Your Vantage verification code",
+      text: `Your Vantage verification code is ${message.otp}. It expires in 5 minutes. If you did not request this, you can ignore this email.`,
+    });
   }
   async sendInvite(message: InviteEmail) {
     const acceptUrl = inviteAcceptUrl(message.token);
     const role = message.role.trim() || "member";
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        authorization: `Bearer ${this.apiKey}`,
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        from: this.from,
-        to: [message.email],
-        subject: `Join ${message.organization} on Vantage`,
-        text:
-          `You were invited to join ${message.organization} on Vantage as ${role}.\n\n` +
-          `Sign in with ${message.email}, then open this link to accept:\n${acceptUrl}\n\n` +
-          `This invite expires ${message.expiresAt.toUTCString()}. If you were not expecting this, you can ignore it.`,
-      }),
+    await this.postEmail({
+      from: this.from,
+      to: [message.email],
+      subject: `Join ${message.organization} on Vantage`,
+      text:
+        `You were invited to join ${message.organization} on Vantage as ${role}.\n\n` +
+        `Sign in with ${message.email}, then open this link to accept:\n${acceptUrl}\n\n` +
+        `This invite expires ${message.expiresAt.toUTCString()}. If you were not expecting this, you can ignore it.`,
     });
-    if (!response.ok) throw new Error(`Email provider returned ${response.status}`);
   }
   async sendSecurityNotice(message: SecurityNotice) {
-    const response=await fetch("https://api.resend.com/emails",{method:"POST",headers:{authorization:`Bearer ${this.apiKey}`,"content-type":"application/json"},body:JSON.stringify({from:this.from,to:[message.email],subject:message.subject,text:message.message})});
-    if(!response.ok)throw new Error(`Email provider returned ${response.status}`);
+    await this.postEmail({
+      from: this.from,
+      to: [message.email],
+      subject: message.subject,
+      text: message.message,
+    });
   }
   async sendFreeform(message: FreeformEmail) {
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { authorization: `Bearer ${this.apiKey}`, "content-type": "application/json" },
-      body: JSON.stringify({
-        from: this.from,
-        to: [message.to],
-        subject: message.subject,
-        text: message.text,
-        ...(message.html ? { html: message.html } : {}),
-      }),
+    await this.postEmail({
+      from: this.from,
+      to: [message.to],
+      subject: message.subject,
+      text: message.text,
+      ...(message.html ? { html: message.html } : {}),
     });
-    if (!response.ok) throw new Error(`Email provider returned ${response.status}`);
   }
 }
 
 class UnconfiguredProductionEmailProvider implements EmailProvider {
   readonly name = "unconfigured";
   async sendOtp() {
-    throw new Error("RESEND_API_KEY and AUTH_EMAIL_FROM are required for production email");
+    throw new Error("RESEND_API_KEY and AUTH_EMAIL_FROM, or GMAIL_SMTP_USER and GMAIL_SMTP_APP_PASSWORD, are required for production email");
   }
   async sendInvite() {
-    throw new Error("RESEND_API_KEY and AUTH_EMAIL_FROM are required for production email");
+    throw new Error("RESEND_API_KEY and AUTH_EMAIL_FROM, or GMAIL_SMTP_USER and GMAIL_SMTP_APP_PASSWORD, are required for production email");
   }
-  async sendSecurityNotice(){throw new Error("RESEND_API_KEY and AUTH_EMAIL_FROM are required for production email");}
-  async sendFreeform(){throw new Error("RESEND_API_KEY and AUTH_EMAIL_FROM are required for production email");}
+  async sendSecurityNotice(){throw new Error("RESEND_API_KEY and AUTH_EMAIL_FROM, or GMAIL_SMTP_USER and GMAIL_SMTP_APP_PASSWORD, are required for production email");}
+  async sendFreeform(){throw new Error("RESEND_API_KEY and AUTH_EMAIL_FROM, or GMAIL_SMTP_USER and GMAIL_SMTP_APP_PASSWORD, are required for production email");}
+}
+
+export class GmailSmtpEmailProvider implements EmailProvider {
+  readonly name = "gmail-smtp";
+  constructor(
+    private readonly user: string,
+    private readonly appPassword: string,
+    private readonly from: string,
+  ) {}
+  private async send(to: string, subject: string, text: string) {
+    await sendGmailSmtp({
+      user: this.user,
+      appPassword: this.appPassword,
+      from: this.from,
+      to,
+      subject,
+      text,
+    });
+  }
+  async sendOtp(message: OtpEmail) {
+    await this.send(
+      message.email,
+      "Your Vantage verification code",
+      `Your Vantage verification code is ${message.otp}. It expires in 5 minutes. If you did not request this, you can ignore this email.`,
+    );
+  }
+  async sendInvite(message: InviteEmail) {
+    const acceptUrl = inviteAcceptUrl(message.token);
+    const role = message.role.trim() || "member";
+    await this.send(
+      message.email,
+      `Join ${message.organization} on Vantage`,
+      `You were invited to join ${message.organization} on Vantage as ${role}.\n\n` +
+        `Sign in with ${message.email}, then open this link to accept:\n${acceptUrl}\n\n` +
+        `This invite expires ${message.expiresAt.toUTCString()}. If you were not expecting this, you can ignore it.`,
+    );
+  }
+  async sendSecurityNotice(message: SecurityNotice) {
+    await this.send(message.email, message.subject, message.message);
+  }
+  async sendFreeform(message: FreeformEmail) {
+    await this.send(message.to, message.subject, message.text);
+  }
+}
+
+export function resolveOutboundEmailProvider(): EmailProvider | null {
+  const resendKey = resendApiKey();
+  const from = authEmailFrom();
+  const gmailUser = gmailSmtpUser();
+  const gmailPass = gmailSmtpPassword();
+  const gmailReady = Boolean(gmailUser && gmailPass);
+  const resendReady = Boolean(resendKey && from && !isConsumerMailboxFrom(from));
+  if (gmailReady && isConsumerMailboxFrom(from || gmailUser)) {
+    return new GmailSmtpEmailProvider(gmailUser, gmailPass, gmailSmtpFrom(gmailUser, from));
+  }
+  if (resendReady) return new ResendEmailProvider(resendKey, from);
+  if (gmailReady) return new GmailSmtpEmailProvider(gmailUser, gmailPass, gmailSmtpFrom(gmailUser, from));
+  return null;
 }
 
 export function createEmailProvider(): EmailProvider {
-  if (process.env.NODE_ENV === "production") {
-    const apiKey = runtimeEnv("RESEND_API_KEY");
-    const from = runtimeEnv("AUTH_EMAIL_FROM");
-    if (!apiKey || !from) return new UnconfiguredProductionEmailProvider();
-    return new ResendEmailProvider(apiKey, from);
+  if (!shouldDeliverOutboundEmail()) {
+    if (process.env.NODE_ENV === "production" && !isResendConfigured() && !isGmailSmtpConfigured()) {
+      return new UnconfiguredProductionEmailProvider();
+    }
+    return new LocalMailboxProvider();
   }
-  return new LocalMailboxProvider();
+  return resolveOutboundEmailProvider() ?? new UnconfiguredProductionEmailProvider();
 }
 
 export function deterministicLocalOtp(email: string, type: string) {

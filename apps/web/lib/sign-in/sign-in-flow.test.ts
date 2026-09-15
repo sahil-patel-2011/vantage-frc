@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   emailOtpSetupRequired,
   googleReady,
+  shouldStartOnPassword,
   oauthErrorMessage,
   publicEmailUnavailableCopy,
   raisedPricingStrip,
@@ -18,6 +19,12 @@ describe("sign-in Soft-UI helpers", () => {
       /RESEND|AUTH_EMAIL_FROM/,
     );
     expect(emailOtpSetupRequired({ emailOtpAvailable: false })).toBe(true);
+    expect(
+      shouldStartOnPassword({ emailOtpAvailable: false, passwordSignInAvailable: true }),
+    ).toBe(true);
+    expect(
+      shouldStartOnPassword({ emailOtpAvailable: true, passwordSignInAvailable: true }),
+    ).toBe(false);
     expect(signInSetupCopy("email_otp").badge).toBe("Needs setup");
     expect(signInSetupCopy("email_otp").title).toMatch(/email codes are off/i);
     expect(signInSetupCopy("database").title).toMatch(/isn’t ready/i);

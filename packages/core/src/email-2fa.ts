@@ -22,7 +22,7 @@ export function isEmail2faBypassEnabled() {
   return runtimeEnv("ENABLE_EMAIL_2FA_BYPASS") === "true";
 }
 
-/** Enforce email OTP second factor only when Resend can actually deliver. */
+/** Enforce email OTP second factor only when Resend or Gmail SMTP can deliver. */
 export function isEmail2faEnforced() {
   if (isEmail2faBypassEnabled()) return false;
   return isEmailDeliveryConfigured();

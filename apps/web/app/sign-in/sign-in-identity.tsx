@@ -88,7 +88,7 @@ export function SignInIdentityStep({
                 spellCheck={false}
                 placeholder="you@example.com"
                 value={email}
-                disabled={!emailAvailable || working}
+                disabled={working}
                 autoFocus={preferred === "email" && !rememberedEmail}
                 onChange={(event) => onEmailChange(event.target.value)}
                 onBlur={(event) => onEmailBlur(event.target.value)}
@@ -170,6 +170,7 @@ export function SignInIdentityStep({
 
 export function SignInPasswordFooter({
   passwordSignInAvailable,
+  emailAvailable,
   identityStep,
   passwordPanel,
   onUsePassword,
@@ -177,6 +178,7 @@ export function SignInPasswordFooter({
   onForgotPassword,
 }: {
   passwordSignInAvailable: boolean;
+  emailAvailable: boolean;
   identityStep: boolean;
   passwordPanel: PasswordPanel;
   onUsePassword: () => void;
@@ -192,9 +194,11 @@ export function SignInPasswordFooter({
         </button>
       ) : (
         <>
-          <button type="button" className="signin-link" onClick={onBackToCodes}>
-            Back to email codes
-          </button>
+          {emailAvailable ? (
+            <button type="button" className="signin-link" onClick={onBackToCodes}>
+              Back to email codes
+            </button>
+          ) : null}
           {passwordPanel === "password" ? (
             <button type="button" className="signin-link" onClick={onForgotPassword}>
               Forgot password?

@@ -15,6 +15,7 @@ export {
   signInProgressLabel,
   signInSetupCopy,
   signInSubtitle,
+  shouldStartOnPassword,
   signInUnavailableCopy,
   type RaisedPriceItem,
   type SignInAuthStatus,

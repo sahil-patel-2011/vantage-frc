@@ -93,7 +93,7 @@ export type IntegrationHealthInputs = {
   auth: {
     betterAuthConfigured: boolean;
     googleOAuthConfigured: boolean;
-    email: { status: "available" | "setup_required"; detail: string };
+    email: { status: "available" | "setup_required"; detail: string; missingEnv?: string[] };
   };
   reference: {
     /** Already-computed TBA/Statbotics rows from `loadDataSourceHealth`. */
@@ -229,7 +229,12 @@ export function buildIntegrationHealthReport(input: IntegrationHealthInputs): In
     remediation:
       input.auth.email.status === "available"
         ? null
-        : { label: "Set RESEND_API_KEY / AUTH_EMAIL_FROM", href: "/admin" },
+        : {
+            label: input.auth.email.missingEnv?.includes("GMAIL_SMTP_USER")
+              ? "Set Gmail App Password"
+              : "Set RESEND_API_KEY / AUTH_EMAIL_FROM",
+            href: "/admin",
+          },
   });
 
   // ---- Reference data (TBA / Statbotics / Nexus / FIRST) ----

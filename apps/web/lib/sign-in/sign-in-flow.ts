@@ -82,6 +82,13 @@ export function emailOtpSetupRequired(status: Pick<SignInAuthStatus, "emailOtpAv
   return !status.emailOtpAvailable;
 }
 
+/** When codes cannot be sent, open the password form so the email field stays usable. */
+export function shouldStartOnPassword(
+  status: Pick<SignInAuthStatus, "emailOtpAvailable" | "passwordSignInAvailable">,
+) {
+  return !status.emailOtpAvailable && status.passwordSignInAvailable;
+}
+
 export function passwordSetupRequired(status: Pick<SignInAuthStatus, "passwordSignInAvailable">) {
   return !status.passwordSignInAvailable;
 }
