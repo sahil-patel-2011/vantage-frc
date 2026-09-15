@@ -6,7 +6,13 @@ import type { SyncEntry } from "@vantage/scouting";
 import { applyFormResetBehavior } from "@vantage/scouting";
 import { isScoutIdentityField } from "@vantage/scouting/identity";
 import { lintSchemaBudget, type FieldTrustSummary } from "@vantage/scouting/trust";
-import { stripHiddenAnswers, visibleFields, withInferredPhaseRules } from "../../lib/scouting/context-visible";
+import { stripHiddenAnswers, visibleFields } from "../../lib/scouting/context-visible";
+import {
+  advanceAfterMatchSave,
+  nextUnscoutedAssignment,
+  remainingUnscoutedCount,
+  scoutedAssignmentKeys,
+} from "../../lib/scouting/next-assignment";
 import { OfflineBanner } from "../../components/offline-banner";
 import { useVenueShortcuts } from "../../hooks/use-venue-shortcuts";
 import { useOnline } from "../../lib/offline/use-online";
@@ -262,11 +268,12 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
   }, [searchParams]);
 
   useEffect(() => {
-    const assignment = data?.assignments[0];
-    if (assignment && !matchKey && !searchParams.get("matchKey")) {
-      setMatchKey(assignment.matchKey);
-      setTeamKey(assignment.teamKey);
-    }
+    if (!data?.assignments.length || matchKey || searchParams.get("matchKey")) return;
+    const scouted = scoutedAssignmentKeys(data.recentEntries, data.scoutIdentity?.userId);
+    const next = nextUnscoutedAssignment(data.assignments, scouted) ?? data.assignments[0];
+    if (!next) return;
+    setMatchKey(next.matchKey);
+    setTeamKey(next.teamKey);
   }, [data, matchKey, searchParams]);
 
   const matchOptions = useMemo(() => {
@@ -304,12 +311,33 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
   const formFields = useMemo(
     () =>
       visibleFields(
-        withInferredPhaseRules(
-          schema?.definition.fields.filter((field) => !isScoutIdentityField(field)) ?? [],
-        ),
+        schema?.definition.fields.filter((field) => !isScoutIdentityField(field)) ?? [],
         payload,
       ),
     [schema, payload],
+  );
+
+  const scoutedKeys = useMemo(
+    () =>
+      scoutedAssignmentKeys(
+        data?.recentEntries ?? [],
+        data?.scoutIdentity?.userId,
+        saveReceipt?.matchKey && saveReceipt.teamKey
+          ? [{ matchKey: saveReceipt.matchKey, teamKey: saveReceipt.teamKey }]
+          : [],
+      ),
+    [data?.recentEntries, data?.scoutIdentity?.userId, saveReceipt],
+  );
+
+  const nextAssignment = useMemo(
+    () => nextUnscoutedAssignment(data?.assignments ?? [], scoutedKeys),
+    [data?.assignments, scoutedKeys],
+  );
+
+  const remainingAssignments = remainingUnscoutedCount(
+    data?.assignments ?? [],
+    matchKey && teamKey ? { matchKey, teamKey } : null,
+    scoutedKeys,
   );
 
   const schemaBudget = useMemo(
@@ -385,7 +413,7 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
       matchKey: type === "match" ? matchKey : undefined,
       teamKey,
       schemaId: schema.id,
-      payload: stripHiddenAnswers(withInferredPhaseRules(schema.definition.fields), payload),
+      payload: stripHiddenAnswers(schema.definition.fields, payload),
       confidence,
       source,
       updatedAt: new Date().toISOString(),
@@ -397,8 +425,20 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
     // match number box steps too, so the next match is one tap away.
     setPayload(applyFormResetBehavior(schema.definition, payload));
     if (type === "match") {
-      const stepped = nextMatchKey(matchKey);
-      if (stepped) setMatchKey(stepped);
+      const advanced = advanceAfterMatchSave({
+        assignments: data.assignments,
+        saved: { matchKey, teamKey },
+        scouted: scoutedAssignmentKeys(
+          data.recentEntries,
+          data.scoutIdentity?.userId,
+          [{ matchKey, teamKey }],
+        ),
+        stepMatchKey: nextMatchKey,
+      });
+      if (advanced) {
+        setMatchKey(advanced.matchKey);
+        setTeamKey(advanced.teamKey);
+      }
     }
     setSource("manual");
     setEntryClientId(stableClientId());
@@ -702,6 +742,9 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
       formFields={formFields}
       schemaBudget={schemaBudget}
       matchOptions={matchOptions}
+      assignmentQueue={data?.assignments ?? []}
+      nextAssignment={nextAssignment}
+      remainingAssignments={remainingAssignments}
       matchKey={matchKey}
       teamKey={teamKey}
       payload={payload}
@@ -725,6 +768,10 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
       setCheatOpen={setCheatOpen}
       setMatchKey={setMatchKey}
       setTeamKey={setTeamKey}
+      onSelectAssignment={(match, team) => {
+        setMatchKey(match);
+        setTeamKey(team);
+      }}
       setPayload={setPayload}
       setConfidence={setConfidence}
       setSource={setSource}

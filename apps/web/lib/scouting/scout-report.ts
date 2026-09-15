@@ -1,7 +1,16 @@
 /**
- * Lovat Match Data Viewer shape: a scout report as stats + an action timeline.
- * Only real payload keys are shown. Missing timeline / empty payload stay empty.
+ * Match report viewer: stats grouped like the stand job (auto / teleop / endgame / notes)
+ * plus an action timeline. Only real payload keys are shown. Missing timeline / empty
+ * payload stay empty — never invent numbers.
  */
+
+import {
+  classifyMatchJobPhase,
+  isMatchJobNotesField,
+  MATCH_JOB_PHASE_COPY,
+  MATCH_JOB_PHASE_ORDER,
+  type MatchJobPhase,
+} from "./match-job-layout";
 
 export type ScoutReportStat = {
   key: string;
@@ -14,9 +23,17 @@ export type ScoutReportEvent = {
   label: string;
 };
 
+export type ScoutReportGroup = {
+  phase: MatchJobPhase;
+  title: string;
+  stats: ScoutReportStat[];
+};
+
 export type ScoutReportView = {
   stats: ScoutReportStat[];
   timeline: ScoutReportEvent[];
+  notes: string | null;
+  groups: ScoutReportGroup[];
 };
 
 const TIMELINE_KEYS = new Set(["timeline", "actions", "events", "actionLog"]);
@@ -77,10 +94,21 @@ export function timelineFromPayload(payload: Record<string, unknown>): ScoutRepo
   });
 }
 
+export function notesFromPayload(payload: Record<string, unknown>): string | null {
+  const parts: string[] = [];
+  for (const [key, value] of Object.entries(payload)) {
+    if (!isMatchJobNotesField(key)) continue;
+    const formatted = formatStatValue(value);
+    if (formatted) parts.push(formatted);
+  }
+  return parts.length ? parts.join("\n") : null;
+}
+
 export function statsFromPayload(payload: Record<string, unknown>): ScoutReportStat[] {
   const stats: ScoutReportStat[] = [];
   for (const [key, value] of Object.entries(payload)) {
     if (TIMELINE_KEYS.has(key)) continue;
+    if (isMatchJobNotesField(key)) continue;
     const formatted = formatStatValue(value);
     if (formatted == null) continue;
     stats.push({ key, label: humanLabel(key), value: formatted });
@@ -88,11 +116,42 @@ export function statsFromPayload(payload: Record<string, unknown>): ScoutReportS
   return stats.sort((a, b) => a.label.localeCompare(b.label));
 }
 
+export function groupsFromStats(stats: ScoutReportStat[]): ScoutReportGroup[] {
+  const buckets: Record<MatchJobPhase, ScoutReportStat[]> = {
+    auto: [],
+    teleop: [],
+    endgame: [],
+    other: [],
+    notes: [],
+  };
+  for (const stat of stats) {
+    const phase = classifyMatchJobPhase({ key: stat.key, label: stat.label, type: "text" }) ?? "other";
+    buckets[phase].push(stat);
+  }
+  const groups: ScoutReportGroup[] = [];
+  for (const phase of MATCH_JOB_PHASE_ORDER) {
+    if (phase === "notes") continue;
+    const grouped = buckets[phase];
+    if (!grouped.length) continue;
+    groups.push({
+      phase,
+      title: MATCH_JOB_PHASE_COPY[phase].title,
+      stats: grouped,
+    });
+  }
+  return groups;
+}
+
+const EMPTY_REPORT: ScoutReportView = { stats: [], timeline: [], notes: null, groups: [] };
+
 export function scoutReportFromPayload(payload: Record<string, unknown> | null | undefined): ScoutReportView {
-  if (!payload || typeof payload !== "object") return { stats: [], timeline: [] };
+  if (!payload || typeof payload !== "object") return EMPTY_REPORT;
+  const stats = statsFromPayload(payload);
   return {
-    stats: statsFromPayload(payload),
+    stats,
     timeline: timelineFromPayload(payload),
+    notes: notesFromPayload(payload),
+    groups: groupsFromStats(stats),
   };
 }
 

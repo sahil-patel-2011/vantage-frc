@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "../../components/ui";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { formatReportClock, scoutReportFromPayload } from "../../lib/scouting/scout-report";
 import type { RecentEntry } from "./scouting-model";
+
+const HOLD_MS = 480;
 
 export function ScoutReportViewer({
   entries,
@@ -20,6 +22,15 @@ export function ScoutReportViewer({
   const [openId, setOpenId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const holdTimer = useRef<number | null>(null);
+  const openedByHold = useRef(false);
+
+  function clearHold() {
+    if (holdTimer.current != null) {
+      window.clearTimeout(holdTimer.current);
+      holdTimer.current = null;
+    }
+  }
 
   return (
     <ul className="scout-entry-list">
@@ -32,7 +43,25 @@ export function ScoutReportViewer({
             <button
               type="button"
               className="text-button scout-report-open"
-              onClick={() => setOpenId(open ? null : entry.id)}
+              aria-expanded={open}
+              title="Tap or hold to open this report"
+              onPointerDown={() => {
+                clearHold();
+                holdTimer.current = window.setTimeout(() => {
+                  openedByHold.current = true;
+                  setOpenId(entry.id);
+                }, HOLD_MS);
+              }}
+              onPointerUp={clearHold}
+              onPointerCancel={clearHold}
+              onPointerLeave={clearHold}
+              onClick={() => {
+                if (openedByHold.current) {
+                  openedByHold.current = false;
+                  return;
+                }
+                setOpenId(open ? null : entry.id);
+              }}
             >
               <strong>
                 {entry.matchKey ?? "PIT"} · {entry.teamKey}
@@ -54,8 +83,22 @@ export function ScoutReportViewer({
                 <div className="scout-report-tabs">
                   <section aria-label="Reported stats">
                     <h3>Stats</h3>
-                    {report.stats.length === 0 ? (
+                    {report.groups.length === 0 && report.stats.length === 0 ? (
                       <p className="app-muted">This report has no stored numbers yet.</p>
+                    ) : report.groups.length ? (
+                      report.groups.map((group) => (
+                        <div key={group.phase} className="scout-report-group">
+                          <h4>{group.title}</h4>
+                          <dl>
+                            {group.stats.map((stat) => (
+                              <div key={stat.key}>
+                                <dt>{stat.label}</dt>
+                                <dd>{stat.value}</dd>
+                              </div>
+                            ))}
+                          </dl>
+                        </div>
+                      ))
                     ) : (
                       <dl>
                         {report.stats.map((stat) => (
@@ -67,6 +110,12 @@ export function ScoutReportViewer({
                       </dl>
                     )}
                   </section>
+                  {report.notes ? (
+                    <section aria-label="Reported notes">
+                      <h3>Notes</h3>
+                      <p className="scout-report-notes">{report.notes}</p>
+                    </section>
+                  ) : null}
                   <section aria-label="Reported actions">
                     <h3>Timeline</h3>
                     {report.timeline.length === 0 ? (
