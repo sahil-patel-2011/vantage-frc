@@ -1,0 +1,27 @@
+.ak-alliance-quals-cadhop-board{display:grid;gap:12px;margin:4px 0 8px}
+.ak-alliance-quals-cadhop-board header h3{margin:0 0 4px}
+.ak-alliance-quals-cadhop-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr));gap:10px}
+.ak-alliance-quals-cadhop-tile{display:grid;gap:4px;padding:12px}
+.ak-alliance-quals-cadhop-tile strong{font-size:1.35rem;letter-spacing:-0.03em}
+.ak-alliance-quals-cadhop-tile em{font-style:normal;font-size:11px}
+.ak-alliance-quals-cadhop-spark{width:72px;height:28px;color:var(--accent)}
+.ak-alliance-quals-cadhop-vs{font-size:11px}
+.ak-alliance-quals-cadhop-vs-above{color:var(--good,#1b7f4e)}
+.ak-alliance-quals-cadhop-vs-below{color:var(--warn,#9a5b12)}
+.ak-alliance-quals-cadhop-vs-near,.ak-alliance-quals-cadhop-vs-unknown{color:var(--muted)}
+
+.ak-alliance-quals-cadhop-deep{display:grid;gap:12px;margin-top:8px}
+.ak-alliance-quals-cadhop-meters{display:grid;grid-template-columns:repeat(auto-fit,minmax(8.5rem,1fr));gap:8px;margin:0;padding:0;list-style:none}
+.ak-alliance-quals-cadhop-meter{display:grid;gap:2px;padding:8px 10px;border:1px solid var(--border,rgba(0,0,0,.08));border-radius:10px}
+.ak-alliance-quals-cadhop-split{display:grid;grid-template-columns:repeat(auto-fit,minmax(14rem,1fr));gap:10px}
+.ak-alliance-quals-cadhop-panel h4{margin:0 0 8px;font-size:13px}
+.ak-alliance-quals-cadhop-zones,.ak-alliance-quals-cadhop-colley,.ak-alliance-quals-cadhop-residual,.ak-alliance-quals-cadhop-pareto,.ak-alliance-quals-cadhop-setup{margin:0;padding:0;list-style:none;display:grid;gap:6px}
+.ak-alliance-quals-cadhop-zone{display:grid;grid-template-columns:7rem 1fr;gap:8px;align-items:center;font-size:12px}
+.ak-alliance-quals-cadhop-bar{display:block;height:8px;border-radius:999px;background:var(--accent,#3d6)}
+.ak-alliance-quals-cadhop-page{padding-bottom:24px}
+
+.ak-alliance-quals-cadhop-wide{display:grid;gap:12px;margin-top:10px}
+.ak-alliance-quals-cadhop-wide-meters{display:grid;grid-template-columns:repeat(auto-fit,minmax(8.5rem,1fr));gap:8px;margin:0;padding:0;list-style:none}
+.ak-alliance-quals-cadhop-slots,.ak-alliance-quals-cadhop-scouts{margin:0;padding-left:1.1rem;display:grid;gap:4px;font-size:12px}
+
+.ak-alliance-quals-cadhop-lovat{display:grid;gap:12px;margin-top:12px}
