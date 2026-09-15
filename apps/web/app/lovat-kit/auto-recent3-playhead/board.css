@@ -1,0 +1,27 @@
+.lk-auto-recent3-playhead-board{display:grid;gap:12px;margin:4px 0 8px}
+.lk-auto-recent3-playhead-board header h3{margin:0 0 4px}
+.lk-auto-recent3-playhead-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr));gap:10px}
+.lk-auto-recent3-playhead-tile{display:grid;gap:4px;padding:12px}
+.lk-auto-recent3-playhead-tile strong{font-size:1.35rem;letter-spacing:-0.03em}
+.lk-auto-recent3-playhead-tile em{font-style:normal;font-size:11px}
+.lk-auto-recent3-playhead-spark{width:72px;height:28px;color:var(--accent)}
+.lk-auto-recent3-playhead-vs{font-size:11px}
+.lk-auto-recent3-playhead-vs-above{color:var(--good,#1b7f4e)}
+.lk-auto-recent3-playhead-vs-below{color:var(--warn,#9a5b12)}
+.lk-auto-recent3-playhead-vs-near,.lk-auto-recent3-playhead-vs-unknown{color:var(--muted)}
+
+.lk-auto-recent3-playhead-deep{display:grid;gap:12px;margin-top:8px}
+.lk-auto-recent3-playhead-meters{display:grid;grid-template-columns:repeat(auto-fit,minmax(8.5rem,1fr));gap:8px;margin:0;padding:0;list-style:none}
+.lk-auto-recent3-playhead-meter{display:grid;gap:2px;padding:8px 10px;border:1px solid var(--border,rgba(0,0,0,.08));border-radius:10px}
+.lk-auto-recent3-playhead-split{display:grid;grid-template-columns:repeat(auto-fit,minmax(14rem,1fr));gap:10px}
+.lk-auto-recent3-playhead-panel h4{margin:0 0 8px;font-size:13px}
+.lk-auto-recent3-playhead-zones,.lk-auto-recent3-playhead-colley,.lk-auto-recent3-playhead-residual,.lk-auto-recent3-playhead-pareto,.lk-auto-recent3-playhead-setup{margin:0;padding:0;list-style:none;display:grid;gap:6px}
+.lk-auto-recent3-playhead-zone{display:grid;grid-template-columns:7rem 1fr;gap:8px;align-items:center;font-size:12px}
+.lk-auto-recent3-playhead-bar{display:block;height:8px;border-radius:999px;background:var(--accent,#3d6)}
+.lk-auto-recent3-playhead-page{padding-bottom:24px}
+
+.lk-auto-recent3-playhead-wide{display:grid;gap:12px;margin-top:10px}
+.lk-auto-recent3-playhead-wide-meters{display:grid;grid-template-columns:repeat(auto-fit,minmax(8.5rem,1fr));gap:8px;margin:0;padding:0;list-style:none}
+.lk-auto-recent3-playhead-slots,.lk-auto-recent3-playhead-scouts{margin:0;padding-left:1.1rem;display:grid;gap:4px;font-size:12px}
+
+.lk-auto-recent3-playhead-lovat{display:grid;gap:12px;margin-top:12px}
