@@ -51,6 +51,8 @@ const INTENTIONALLY_UNLISTED = new Map<string, string>([
 
 /** Directory names that are not user-facing routes. */
 const SKIP_SEGMENTS = new Set(["api", "admin"]);
+/** Leftover volume kits: cloned page trees. Same skip as eslint/tsconfig/vitest. */
+const LEFTOVER_KIT_DIRS = new Set(["win-kit", "lovat-kit", "agent-kit"]);
 
 function collectRoutes(dir: string, prefix = ""): string[] {
   const routes: string[] = [];
@@ -65,7 +67,7 @@ function collectRoutes(dir: string, prefix = ""): string[] {
 
   for (const entry of entries) {
     if (entry.startsWith("_") || entry.startsWith(".")) continue;
-    if (SKIP_SEGMENTS.has(entry)) continue;
+    if (SKIP_SEGMENTS.has(entry) || LEFTOVER_KIT_DIRS.has(entry)) continue;
     // Dynamic segments ([slug]) are detail views reached from their index.
     if (entry.startsWith("[")) continue;
     const full = join(dir, entry);
@@ -114,6 +116,7 @@ function collectSourceFiles(dir: string, acc: string[] = []): string[] {
   }
   for (const entry of entries) {
     if (entry.startsWith(".") || entry === "node_modules") continue;
+    if (LEFTOVER_KIT_DIRS.has(entry)) continue;
     const full = join(dir, entry);
     let stats;
     try {

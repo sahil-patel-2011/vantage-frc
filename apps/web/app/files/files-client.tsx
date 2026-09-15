@@ -315,8 +315,7 @@ export default function FilesClient() {
         {canUpload ? (
           <Button
             id="drive-upload"
-            variant="primary"
-            type="button"
+            variant="primary" type="button"
             onClick={() => fileInput.current?.click()}
           >
             Upload files
