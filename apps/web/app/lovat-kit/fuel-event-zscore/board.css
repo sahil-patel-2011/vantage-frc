@@ -1,0 +1,27 @@
+.lk-fuel-event-zscore-board{display:grid;gap:12px;margin:4px 0 8px}
+.lk-fuel-event-zscore-board header h3{margin:0 0 4px}
+.lk-fuel-event-zscore-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr));gap:10px}
+.lk-fuel-event-zscore-tile{display:grid;gap:4px;padding:12px}
+.lk-fuel-event-zscore-tile strong{font-size:1.35rem;letter-spacing:-0.03em}
+.lk-fuel-event-zscore-tile em{font-style:normal;font-size:11px}
+.lk-fuel-event-zscore-spark{width:72px;height:28px;color:var(--accent)}
+.lk-fuel-event-zscore-vs{font-size:11px}
+.lk-fuel-event-zscore-vs-above{color:var(--good,#1b7f4e)}
+.lk-fuel-event-zscore-vs-below{color:var(--warn,#9a5b12)}
+.lk-fuel-event-zscore-vs-near,.lk-fuel-event-zscore-vs-unknown{color:var(--muted)}
+
+.lk-fuel-event-zscore-deep{display:grid;gap:12px;margin-top:8px}
+.lk-fuel-event-zscore-meters{display:grid;grid-template-columns:repeat(auto-fit,minmax(8.5rem,1fr));gap:8px;margin:0;padding:0;list-style:none}
+.lk-fuel-event-zscore-meter{display:grid;gap:2px;padding:8px 10px;border:1px solid var(--border,rgba(0,0,0,.08));border-radius:10px}
+.lk-fuel-event-zscore-split{display:grid;grid-template-columns:repeat(auto-fit,minmax(14rem,1fr));gap:10px}
+.lk-fuel-event-zscore-panel h4{margin:0 0 8px;font-size:13px}
+.lk-fuel-event-zscore-zones,.lk-fuel-event-zscore-colley,.lk-fuel-event-zscore-residual,.lk-fuel-event-zscore-pareto,.lk-fuel-event-zscore-setup{margin:0;padding:0;list-style:none;display:grid;gap:6px}
+.lk-fuel-event-zscore-zone{display:grid;grid-template-columns:7rem 1fr;gap:8px;align-items:center;font-size:12px}
+.lk-fuel-event-zscore-bar{display:block;height:8px;border-radius:999px;background:var(--accent,#3d6)}
+.lk-fuel-event-zscore-page{padding-bottom:24px}
+
+.lk-fuel-event-zscore-wide{display:grid;gap:12px;margin-top:10px}
+.lk-fuel-event-zscore-wide-meters{display:grid;grid-template-columns:repeat(auto-fit,minmax(8.5rem,1fr));gap:8px;margin:0;padding:0;list-style:none}
+.lk-fuel-event-zscore-slots,.lk-fuel-event-zscore-scouts{margin:0;padding-left:1.1rem;display:grid;gap:4px;font-size:12px}
+
+.lk-fuel-event-zscore-lovat{display:grid;gap:12px;margin-top:12px}
