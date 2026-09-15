@@ -1,0 +1,27 @@
+.ak-driver-last12-cadhop-board{display:grid;gap:12px;margin:4px 0 8px}
+.ak-driver-last12-cadhop-board header h3{margin:0 0 4px}
+.ak-driver-last12-cadhop-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr));gap:10px}
+.ak-driver-last12-cadhop-tile{display:grid;gap:4px;padding:12px}
+.ak-driver-last12-cadhop-tile strong{font-size:1.35rem;letter-spacing:-0.03em}
+.ak-driver-last12-cadhop-tile em{font-style:normal;font-size:11px}
+.ak-driver-last12-cadhop-spark{width:72px;height:28px;color:var(--accent)}
+.ak-driver-last12-cadhop-vs{font-size:11px}
+.ak-driver-last12-cadhop-vs-above{color:var(--good,#1b7f4e)}
+.ak-driver-last12-cadhop-vs-below{color:var(--warn,#9a5b12)}
+.ak-driver-last12-cadhop-vs-near,.ak-driver-last12-cadhop-vs-unknown{color:var(--muted)}
+
+.ak-driver-last12-cadhop-deep{display:grid;gap:12px;margin-top:8px}
+.ak-driver-last12-cadhop-meters{display:grid;grid-template-columns:repeat(auto-fit,minmax(8.5rem,1fr));gap:8px;margin:0;padding:0;list-style:none}
+.ak-driver-last12-cadhop-meter{display:grid;gap:2px;padding:8px 10px;border:1px solid var(--border,rgba(0,0,0,.08));border-radius:10px}
+.ak-driver-last12-cadhop-split{display:grid;grid-template-columns:repeat(auto-fit,minmax(14rem,1fr));gap:10px}
+.ak-driver-last12-cadhop-panel h4{margin:0 0 8px;font-size:13px}
+.ak-driver-last12-cadhop-zones,.ak-driver-last12-cadhop-colley,.ak-driver-last12-cadhop-residual,.ak-driver-last12-cadhop-pareto,.ak-driver-last12-cadhop-setup{margin:0;padding:0;list-style:none;display:grid;gap:6px}
+.ak-driver-last12-cadhop-zone{display:grid;grid-template-columns:7rem 1fr;gap:8px;align-items:center;font-size:12px}
+.ak-driver-last12-cadhop-bar{display:block;height:8px;border-radius:999px;background:var(--accent,#3d6)}
+.ak-driver-last12-cadhop-page{padding-bottom:24px}
+
+.ak-driver-last12-cadhop-wide{display:grid;gap:12px;margin-top:10px}
+.ak-driver-last12-cadhop-wide-meters{display:grid;grid-template-columns:repeat(auto-fit,minmax(8.5rem,1fr));gap:8px;margin:0;padding:0;list-style:none}
+.ak-driver-last12-cadhop-slots,.ak-driver-last12-cadhop-scouts{margin:0;padding-left:1.1rem;display:grid;gap:4px;font-size:12px}
+
+.ak-driver-last12-cadhop-lovat{display:grid;gap:12px;margin-top:12px}
