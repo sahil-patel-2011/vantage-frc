@@ -1,0 +1,27 @@
+.lk-driver-quals-notes-board{display:grid;gap:12px;margin:4px 0 8px}
+.lk-driver-quals-notes-board header h3{margin:0 0 4px}
+.lk-driver-quals-notes-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr));gap:10px}
+.lk-driver-quals-notes-tile{display:grid;gap:4px;padding:12px}
+.lk-driver-quals-notes-tile strong{font-size:1.35rem;letter-spacing:-0.03em}
+.lk-driver-quals-notes-tile em{font-style:normal;font-size:11px}
+.lk-driver-quals-notes-spark{width:72px;height:28px;color:var(--accent)}
+.lk-driver-quals-notes-vs{font-size:11px}
+.lk-driver-quals-notes-vs-above{color:var(--good,#1b7f4e)}
+.lk-driver-quals-notes-vs-below{color:var(--warn,#9a5b12)}
+.lk-driver-quals-notes-vs-near,.lk-driver-quals-notes-vs-unknown{color:var(--muted)}
+
+.lk-driver-quals-notes-deep{display:grid;gap:12px;margin-top:8px}
+.lk-driver-quals-notes-meters{display:grid;grid-template-columns:repeat(auto-fit,minmax(8.5rem,1fr));gap:8px;margin:0;padding:0;list-style:none}
+.lk-driver-quals-notes-meter{display:grid;gap:2px;padding:8px 10px;border:1px solid var(--border,rgba(0,0,0,.08));border-radius:10px}
+.lk-driver-quals-notes-split{display:grid;grid-template-columns:repeat(auto-fit,minmax(14rem,1fr));gap:10px}
+.lk-driver-quals-notes-panel h4{margin:0 0 8px;font-size:13px}
+.lk-driver-quals-notes-zones,.lk-driver-quals-notes-colley,.lk-driver-quals-notes-residual,.lk-driver-quals-notes-pareto,.lk-driver-quals-notes-setup{margin:0;padding:0;list-style:none;display:grid;gap:6px}
+.lk-driver-quals-notes-zone{display:grid;grid-template-columns:7rem 1fr;gap:8px;align-items:center;font-size:12px}
+.lk-driver-quals-notes-bar{display:block;height:8px;border-radius:999px;background:var(--accent,#3d6)}
+.lk-driver-quals-notes-page{padding-bottom:24px}
+
+.lk-driver-quals-notes-wide{display:grid;gap:12px;margin-top:10px}
+.lk-driver-quals-notes-wide-meters{display:grid;grid-template-columns:repeat(auto-fit,minmax(8.5rem,1fr));gap:8px;margin:0;padding:0;list-style:none}
+.lk-driver-quals-notes-slots,.lk-driver-quals-notes-scouts{margin:0;padding-left:1.1rem;display:grid;gap:4px;font-size:12px}
+
+.lk-driver-quals-notes-lovat{display:grid;gap:12px;margin-top:12px}
