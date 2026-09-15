@@ -3,6 +3,8 @@ import {
   SCOUTING_RELATED_INCLUDE,
   classifyScoutingShell,
   formatScoutingMetric,
+  isScoutRoleFirstScreen,
+  nextScoutAssignment,
   scoutingNextActions,
   scoutingOfflineBannerDetail,
   scoutingRelatedLinks,
@@ -12,25 +14,51 @@ import {
 } from "./scouting-related";
 
 describe("scoutingRelatedLinks", () => {
-  it("builds Forms / Coverage / Strategy / Offline via hubHref / withOrgHref", () => {
+  it("builds Assign / Match / Pit / Conflicts / Pick list via withOrgHref", () => {
     const links = scoutingRelatedLinks("org-1", {
       include: [...SCOUTING_RELATED_INCLUDE],
     });
-    expect(links.map((l) => l.id)).toEqual(["forms", "coverage", "strategy", "offline"]);
-    expect(links.find((l) => l.id === "forms")?.href).toBe(
-      "/competition?tab=forms&orgId=org-1",
+    expect(links.map((l) => l.id)).toEqual(["assign", "match", "pit", "conflicts", "picks"]);
+    expect(links.find((l) => l.id === "assign")?.href).toBe("/scouting/lineup?orgId=org-1");
+    expect(links.find((l) => l.id === "match")?.href).toBe("/scouting?scoutTab=match&orgId=org-1");
+    expect(links.find((l) => l.id === "pit")?.href).toBe("/scouting?scoutTab=pit&orgId=org-1");
+    expect(links.find((l) => l.id === "conflicts")?.href).toBe(
+      "/scouting?scoutTab=conflicts&orgId=org-1",
     );
-    expect(links.find((l) => l.id === "coverage")?.href).toBe("/scouting/lineup?orgId=org-1");
-    expect(links.find((l) => l.id === "strategy")?.href).toBe(
-      "/competition?tab=strategy&orgId=org-1",
-    );
-    expect(links.find((l) => l.id === "offline")?.href).toBe("/offline?orgId=org-1");
+    expect(links.find((l) => l.id === "picks")?.href).toBe("/strategy?tab=picks&orgId=org-1");
+    expect(links.every((l) => !/Ask AI/i.test(l.label))).toBe(true);
+    expect(links.every((l) => !/scout-coverage-live/.test(l.href))).toBe(true);
   });
 
   it("never uses DEMO labels or hrefs", () => {
     const blob = JSON.stringify(scoutingRelatedLinks("org-1"));
     expect(blob).not.toMatch(/DEMO/i);
     expect(blob).not.toMatch(/demo/i);
+  });
+});
+
+describe("nextScoutAssignment", () => {
+  it("returns the first real assignment row and nothing when the list is empty", () => {
+    expect(nextScoutAssignment([])).toBeNull();
+    expect(nextScoutAssignment(undefined)).toBeNull();
+    expect(
+      nextScoutAssignment([
+        { matchKey: "2026txho_qm4", teamKey: "frc1678", compLevel: "qm", matchNumber: 4 },
+        { matchKey: "2026txho_qm7", teamKey: "frc118", compLevel: "qm", matchNumber: 7 },
+      ]),
+    ).toEqual({
+      matchKey: "2026txho_qm4",
+      teamKey: "frc1678",
+      compLevel: "qm",
+      matchNumber: 4,
+    });
+  });
+
+  it("treats scout/viewer as first-screen roles and owners as leads", () => {
+    expect(isScoutRoleFirstScreen({ role: "scout" })).toBe(true);
+    expect(isScoutRoleFirstScreen({ role: "viewer" })).toBe(true);
+    expect(isScoutRoleFirstScreen({ role: "admin", canManageSchemas: true })).toBe(false);
+    expect(isScoutRoleFirstScreen({ role: "owner", canManageSchemas: true })).toBe(false);
   });
 });
 

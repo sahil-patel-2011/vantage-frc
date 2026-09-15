@@ -42,6 +42,7 @@ import { prepareScoutMediaFile, scoutMediaKind } from "../../lib/scouting/prepar
 import { nextMatchKey } from "../../lib/scouting/form-builder";
 import {
   classifyScoutingShell,
+  isScoutRoleFirstScreen,
   scoutingOfflineBannerDetail,
 } from "../../lib/scouting/scouting-related";
 import { asMediaFile, downscaleImageInBrowser } from "./scouting-media-browser";
@@ -277,6 +278,14 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
         teamKey: assignment.teamKey,
         label: `${assignment.compLevel.toUpperCase()} ${assignment.matchNumber} · ${scoutTeamLabel(assignment.teamKey)}`,
       }));
+    }
+    if (
+      isScoutRoleFirstScreen({
+        role: data.role,
+        canManageSchemas: data.canManageSchemas,
+      })
+    ) {
+      return [];
     }
     const options: Array<{ matchKey: string; teamKey: string; label: string }> = [];
     for (const match of data.matches) {

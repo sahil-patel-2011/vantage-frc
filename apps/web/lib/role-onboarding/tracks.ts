@@ -91,9 +91,9 @@ export const ONBOARDING_TRACKS: OnboardingTrackTemplate[] = [
     summary: "Stand scouting, coverage, and strategy handoff.",
     source: "subteam",
     checks: checks([
-      ["scout_hub", "Open the Scouting Hub", "Forms, assignments, and quality checks.", "/scouting"],
+      ["scout_hub", "Open the Scouting Hub", "Assign, match, pit, conflicts, then lock the pick list.", "/scouting"],
       ["lineup", "Check lineup and coverage", "Who is scouting which matches.", "/scouting/lineup"],
-      ["strategy", "Read Strategy and AI", "How stand data feeds alliance picks.", "/strategy"],
+      ["picks", "Lock pick list", "Rank and lock the alliance list from stand data.", "/strategy?tab=picks"],
       ["video", "Try video review", "Re-scout a match clip when stand notes disagree.", "/video"],
     ]),
   },

@@ -12,9 +12,12 @@ import { VenueShortcutCheatsheet, type VenueShortcut } from "../../hooks/use-ven
 import { formatDraftSavedAgo, payloadHasDraftContent } from "../../lib/scouting/draft-autosave";
 import { scoutingPostSaveNextSteps } from "../../lib/scouting/form-builder";
 import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
 import type { QuarantinedItem } from "../../lib/scout-offline";
 import {
   formatScoutingMetric,
+  isScoutRoleFirstScreen,
+  nextScoutAssignment,
   shouldShowScoutingRecentEntries,
   type ScoutingShellKind,
 } from "../../lib/scouting/scouting-related";
@@ -172,6 +175,15 @@ export function ScoutingReadyView({
   saveFormula,
   setMessage,
 }: ScoutingReadyViewProps) {
+  const assignHref = withOrgHref("/scouting/lineup", orgId);
+  const picksHref = withOrgHref("/strategy?tab=picks", orgId);
+  const nextAssignment = nextScoutAssignment(data?.assignments);
+  const scoutFirst = isScoutRoleFirstScreen({
+    role: data?.role,
+    canManageSchemas: data?.canManageSchemas,
+  });
+  const scoutEmptyPrimary = type === "match" && scoutFirst && !nextAssignment && shell === "ready";
+
 return (
   <main className={`module-page scout-page${embedded ? " is-embedded" : ""}`}>
     {embedded ? (
@@ -256,14 +268,39 @@ return (
     ) : null}
 
     <ToolStrip
-      aria-label="Scouting views"
+      aria-label="Saturday scouting path"
       value={tab}
       onChange={onTabChange}
+      visibleCount={5}
+      describe={(id) => {
+        switch (id) {
+          case "assign":
+            return "Who covers each qual.";
+          case "match":
+            return "Save this match from the stand.";
+          case "pit":
+            return "Save this pit for a robot you walk.";
+          case "conflicts":
+            return "Pick which scout was right.";
+          case "picks":
+            return "Lock the alliance list.";
+          case "handoff":
+            return "QR copy when venue Wi-Fi drops.";
+          case "trust":
+            return "Accuracy and coverage detail.";
+          default:
+            return undefined;
+        }
+      }}
       items={[
-        { id: "match", label: "Match" },
-        { id: "pit", label: "Pit" },
+        { id: "assign", label: "Assign", href: assignHref, featured: true },
+        { id: "match", label: "Match", featured: true },
+        { id: "pit", label: "Pit", featured: true },
+        { id: "conflicts", label: "Conflicts", featured: true },
+        { id: "picks", label: "Pick list", href: picksHref, featured: true },
+        // QR / Trust stay behind More. Form Field widgets and ScoutReportViewer
+        // below are extension points for other workers — do not rewrite them here.
         { id: "handoff", label: "QR handoff" },
-        { id: "conflicts", label: "Conflicts" },
         { id: "trust", label: "Trust & coverage" },
       ]}
     />
@@ -408,6 +445,40 @@ return (
       </Panel>
     ) : (
       <div className="scout-workbench">
+        {scoutEmptyPrimary ? (
+          <EmptyState
+            soft
+            className="scout-shell-empty"
+            badge="No assignment yet"
+            title="No assignment yet"
+            description="A lead assigns quals on Assign. This screen stays empty until you have a real row."
+          >
+            <Button as="a" variant="primary" href={assignHref}>
+              Open Assign
+            </Button>
+          </EmptyState>
+        ) : (
+          <>
+        {type === "match" && nextAssignment ? (
+          <Panel className="scout-next-assignment" style={{ minHeight: "auto" }}>
+            <span className="eyebrow">Next assignment</span>
+            <strong>
+              {nextAssignment.compLevel.toUpperCase()} {nextAssignment.matchNumber} ·{" "}
+              {nextAssignment.teamKey.replace(/^frc/i, "")}
+            </strong>
+            <p className="app-muted">Real row from Assign. Fill the form, then save this match.</p>
+            <Button
+              variant="primary"
+              type="button"
+              onClick={() => {
+                setMatchKey(nextAssignment.matchKey);
+                setTeamKey(nextAssignment.teamKey);
+              }}
+            >
+              Scout this match
+            </Button>
+          </Panel>
+        ) : null}
         <Panel as="section" className="scout-form-panel">
           <header className="scout-form-heading">
             <div>
@@ -618,6 +689,8 @@ return (
             </div>
           ) : null}
         </Panel>
+          </>
+        )}
 
         <aside className="scout-side">
           <Panel className="scout-activity" style={{ minHeight: "auto" }}>

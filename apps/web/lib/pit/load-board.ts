@@ -12,9 +12,12 @@ import { loadRepeatFailureAlerts, type RepeatFailureAlert } from "../fmea/repeat
 import { loadBatteryFleet } from "../load-battery-fleet";
 import {
   assemblePitBoard,
+  nextMatchAlliancePartners,
+  pitOnDeckFromPayload,
   type PitBatteryRow,
   type PitBoardView,
   type PitNextMatch,
+  type PitOnDeckRobot,
   type PitQueueRow,
   type PitRepairRow,
 } from "./board";
@@ -31,6 +34,7 @@ export type PitBoardPayload = PitBoardView & {
   repeatAlerts: RepeatFailureAlert[];
   rules: { battery: string; hold: string };
   updatedAt: string;
+  onDeckRobots: PitOnDeckRobot[];
 };
 
 export async function loadPitBoard(
@@ -76,13 +80,16 @@ export async function loadPitBoard(
 
   const context = contextQuery.rows[0] ?? { eventKey: null, eventName: null };
   const teamKey = input.member.teamNumber ? `frc${input.member.teamNumber}` : null;
-  const nextMatch: PitNextMatch | null =
+  type NextMatchRow = PitNextMatch & { redAlliance: unknown; blueAlliance: unknown };
+  const nextMatchRow: NextMatchRow | null =
     context.eventKey && teamKey
       ? (
-          await client.query<PitNextMatch>(
+          await client.query<NextMatchRow>(
             `SELECT match_key AS "matchKey",comp_level AS "compLevel",
                     match_number AS "matchNumber",
-                    COALESCE(predicted_time,event_time)::text AS "scheduledTime"
+                    COALESCE(predicted_time,event_time)::text AS "scheduledTime",
+                    red_alliance AS "redAlliance",
+                    blue_alliance AS "blueAlliance"
              FROM matches_ref
              WHERE event_key=$1
                AND (red_alliance->'teamKeys' ? $2 OR blue_alliance->'teamKeys' ? $2)
@@ -93,6 +100,43 @@ export async function loadPitBoard(
           )
         ).rows[0] ?? null
       : null;
+
+  const nextMatch: PitNextMatch | null = nextMatchRow
+    ? {
+        matchKey: nextMatchRow.matchKey,
+        compLevel: nextMatchRow.compLevel,
+        matchNumber: nextMatchRow.matchNumber,
+        scheduledTime: nextMatchRow.scheduledTime,
+      }
+    : null;
+
+  const partnerKeys = nextMatchAlliancePartners({
+    ourTeamKey: teamKey,
+    redAlliance: nextMatchRow?.redAlliance,
+    blueAlliance: nextMatchRow?.blueAlliance,
+  });
+
+  const pitRows =
+    context.eventKey && partnerKeys.length
+      ? (
+          await client.query<{ teamKey: string; payload: Record<string, unknown> | null }>(
+            `SELECT DISTINCT ON (team_key)
+                    team_key AS "teamKey",
+                    payload
+             FROM pit_scout_entries
+             WHERE org_id=$1::uuid
+               AND event_key=$2
+               AND team_key = ANY($3::text[])
+             ORDER BY team_key, synced_at DESC`,
+            [input.orgId, context.eventKey, partnerKeys],
+          )
+        ).rows
+      : [];
+
+  const pitByTeam = new Map(pitRows.map((row) => [row.teamKey, row.payload]));
+  const onDeckRobots: PitOnDeckRobot[] = partnerKeys.map((partnerKey) =>
+    pitOnDeckFromPayload(partnerKey, pitByTeam.get(partnerKey) ?? null),
+  );
 
   const batteries: PitBatteryRow[] = fleet.packs.map((pack) => ({
     id: pack.id,
@@ -128,5 +172,6 @@ export async function loadPitBoard(
     repeatAlerts: board.status === "live" ? repeatAlerts : [],
     rules: { battery: BATTERY_READY_RULE, hold: "Any unresolved disabled or safety issue" },
     updatedAt: now.toISOString(),
+    onDeckRobots,
   };
 }

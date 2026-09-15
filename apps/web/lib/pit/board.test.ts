@@ -3,7 +3,9 @@ import {
   assemblePitBoard,
   classifyPitBoardFlags,
   isPitBoardLive,
+  nextMatchAlliancePartners,
   pitBoardGate,
+  pitOnDeckFromPayload,
   pitTurnaroundFromSchedule,
   pitTurnaroundLabel,
   type PitBatteryRow,
@@ -248,5 +250,64 @@ describe("assemblePitBoard empty vs live", () => {
     expect(noTime.turnaround).toBeNull();
     expect(pitTurnaroundLabel(noTime.turnaround)).toBeNull();
     expect(JSON.stringify(noTime)).not.toMatch(/DEMO/i);
+  });
+});
+
+describe("nextMatchAlliancePartners", () => {
+  it("returns same-alliance partners only, never invents teams", () => {
+    expect(
+      nextMatchAlliancePartners({
+        ourTeamKey: "frc254",
+        redAlliance: { teamKeys: ["frc254", "frc1678", "frc118"] },
+        blueAlliance: { teamKeys: ["frc2056", "frc1114", "frc1323"] },
+      }),
+    ).toEqual(["frc1678", "frc118"]);
+    expect(
+      nextMatchAlliancePartners({
+        ourTeamKey: null,
+        redAlliance: { teamKeys: ["frc254"] },
+        blueAlliance: { teamKeys: ["frc1678"] },
+      }),
+    ).toEqual([]);
+  });
+});
+
+describe("pitOnDeckFromPayload", () => {
+  it("paints drivetrain, language, seasons, and photos only when the payload has them", () => {
+    expect(pitOnDeckFromPayload("frc1678", null)).toEqual({
+      teamKey: "frc1678",
+      drivetrain: null,
+      programmingLanguage: null,
+      driverSeasons: null,
+      photoCount: 0,
+      hasPayload: false,
+    });
+    expect(pitOnDeckFromPayload("frc1678", {})).toEqual({
+      teamKey: "frc1678",
+      drivetrain: null,
+      programmingLanguage: null,
+      driverSeasons: null,
+      photoCount: 0,
+      hasPayload: true,
+    });
+    expect(
+      pitOnDeckFromPayload("frc1678", {
+        drivetrain_type: "swerve",
+        programming_language: "java",
+        driver_seasons: 3,
+        robot_images: ["img-1", "img-2"],
+      }),
+    ).toEqual({
+      teamKey: "frc1678",
+      drivetrain: "swerve",
+      programmingLanguage: "java",
+      driverSeasons: 3,
+      photoCount: 2,
+      hasPayload: true,
+    });
+    const empty = pitOnDeckFromPayload("frc118", { notes: "walked the pit" });
+    expect(empty.drivetrain).toBeNull();
+    expect(empty.programmingLanguage).toBeNull();
+    expect(JSON.stringify(empty)).not.toMatch(/swerve|west_coast|tank|mecanum/i);
   });
 });

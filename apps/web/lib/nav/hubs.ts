@@ -82,13 +82,18 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
       ]),
       { id: "scouting", label: "Scouting", legacyHref: "/scouting" },
       ...nest("scouting", [
-        { id: "forms", label: "Forms", legacyHref: "/scouting/forms" },
-        { id: "scout-coverage-live", label: "Coverage", legacyHref: "/scout-coverage-live" },
-        { id: "shift-balancer", label: "Shifts", legacyHref: "/shift-balancer" },
-        { id: "scout-p2p-relay", label: "Pit link", legacyHref: "/scout-p2p-relay" },
-        { id: "scout-training-mode", label: "Training", legacyHref: "/scout-training-mode" },
-        { id: "scout-field-budget", label: "Field value", legacyHref: "/scout-field-budget" },
-        { id: "data-quality-scorecard", label: "Data quality", legacyHref: "/data-quality-scorecard" },
+        // Saturday door on the strip: Assign quals on lineup.
+        // Nested rows below stay registered (search, help, deep links) so other
+        // workers can grow form questions, live coverage, and Collection-like
+        // reports without a second Coverage chip or a new route.
+        { id: "lineup", label: "Assign", legacyHref: "/scouting/lineup" },
+        { id: "forms", label: "Forms", legacyHref: "/scouting/forms", inStrip: false },
+        { id: "scout-coverage-live", label: "Live coverage", legacyHref: "/scout-coverage-live", inStrip: false },
+        { id: "shift-balancer", label: "Shifts", legacyHref: "/shift-balancer", inStrip: false },
+        { id: "scout-p2p-relay", label: "Pit link", legacyHref: "/scout-p2p-relay", inStrip: false },
+        { id: "scout-training-mode", label: "Training", legacyHref: "/scout-training-mode", inStrip: false },
+        { id: "scout-field-budget", label: "Field value", legacyHref: "/scout-field-budget", inStrip: false },
+        { id: "data-quality-scorecard", label: "Data quality", legacyHref: "/data-quality-scorecard", inStrip: false },
         // Meta analysis of scouting — routes and Cmd+K stay; the strip does not.
         { id: "scout-accuracy", label: "Accuracy", legacyHref: "/scout-accuracy", inStrip: false },
         { id: "scout-crossval", label: "Cross-check", legacyHref: "/scout-crossval", inStrip: false },

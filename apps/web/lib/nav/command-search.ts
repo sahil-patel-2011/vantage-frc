@@ -46,8 +46,9 @@ const KEYWORDS: Record<string, string[]> = {
   "competition:drive-team-signals": ["drive team", "driver", "operator", "coach", "signals", "board"],
   // --- Competition · Scouting ---
   "competition:scouting": ["scout", "scouting", "data", "collect", "match data", "tablet"],
+  "competition:lineup": ["assign", "lineup", "coverage", "who is scouting", "assignments", "quals"],
   "competition:forms": ["form builder", "schema", "pit scouting", "match form", "questions", "fields"],
-  "competition:scout-coverage-live": ["coverage", "gaps", "who is scouting", "assignments", "unscouted"],
+  "competition:scout-coverage-live": ["coverage", "gaps", "who is scouting", "assignments", "unscouted", "live coverage"],
   "competition:shift-balancer": ["shifts", "rotation", "schedule scouts", "fatigue", "breaks", "lunch"],
   "competition:scout-p2p-relay": ["offline", "mesh", "peer to peer", "sync", "no wifi", "qr", "relay"],
   "competition:scout-training-mode": ["training", "practice scouting", "onboard scouts", "teach"],

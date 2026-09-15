@@ -16,6 +16,7 @@ export type Bootstrap = {
   eventKey: string | null;
   schemas: ScoutSchema[];
   canManageSchemas?: boolean;
+  role?: string;
   assignments: Array<{
     matchKey: string;
     teamKey: string;

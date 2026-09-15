@@ -3,6 +3,11 @@ import { withOrgHref } from "../nav/product-nav";
 
 /** Soft-UI related surfaces for main Scouting Hub (never DEMO entries). */
 export const SCOUTING_RELATED_LINKS = [
+  { id: "assign", label: "Assign", kind: "path" as const, path: "/scouting/lineup" },
+  { id: "match", label: "Match", kind: "path" as const, path: "/scouting?scoutTab=match" },
+  { id: "pit", label: "Pit", kind: "path" as const, path: "/scouting?scoutTab=pit" },
+  { id: "conflicts", label: "Conflicts", kind: "path" as const, path: "/scouting?scoutTab=conflicts" },
+  { id: "picks", label: "Pick list", kind: "path" as const, path: "/strategy?tab=picks" },
   { id: "forms", label: "Form builder", kind: "hub" as const, tab: "forms" },
   { id: "coverage", label: "Coverage", kind: "path" as const, path: "/scouting/lineup" },
   { id: "strategy", label: "Strategy", kind: "hub" as const, tab: "strategy" },
@@ -20,16 +25,43 @@ export type ScoutingRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — Forms · Coverage · Strategy · Offline. */
+/** Saturday path — Assign · Match · Pit · Conflicts · Pick list. */
 export const SCOUTING_RELATED_INCLUDE: ScoutingRelatedId[] = [
-  "forms",
-  "coverage",
-  "strategy",
-  "offline",
+  "assign",
+  "match",
+  "pit",
+  "conflicts",
+  "picks",
 ];
 
+export type ScoutAssignmentRow = {
+  matchKey: string;
+  teamKey: string;
+  compLevel: string;
+  matchNumber: number;
+};
+
+/** Leads assign quals; scout/viewer first paint is the next real assignment row. */
+export function isScoutRoleFirstScreen(input: {
+  role?: string | null;
+  canManageSchemas?: boolean;
+}): boolean {
+  if (input.canManageSchemas) return false;
+  const role = input.role ?? "viewer";
+  return role === "scout" || role === "viewer";
+}
+
+/** Next qual on this scout's list — never invents a match when the array is empty. */
+export function nextScoutAssignment(
+  assignments: readonly ScoutAssignmentRow[] | null | undefined,
+): ScoutAssignmentRow | null {
+  const row = assignments?.[0];
+  if (!row?.matchKey || !row.teamKey) return null;
+  return row;
+}
+
 /**
- * Soft-UI cross-links from Scouting → Forms / Coverage / Strategy / Offline.
+ * Soft-UI cross-links from Scouting → Assign / Match / Pit / Conflicts / Pick list.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function scoutingRelatedLinks(
