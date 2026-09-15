@@ -16,7 +16,7 @@ import { IntelLookupNotes } from "./intel-lookup-notes";
 function Spark({ path }: { path: string }) {
   return (
     <svg className="intel-spark" viewBox="0 0 72 28" aria-hidden="true" preserveAspectRatio="none">
-      <path d={path} fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      <path d={path} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
     </svg>
   );
 }
@@ -86,6 +86,7 @@ export function IntelLookupBoard({
   series?: Partial<Record<LovatLookupMetricId, Array<number | null>>>;
 }) {
   const [phase, setPhase] = useState<ScoutContextPhase | "all">("all");
+  const [pane, setPane] = useState<"stats" | "notes">("stats");
   const cards = buildLookupCards({ teamKey, event, field, scout, history, series });
   const visible = cards.filter((card) => lookupCardVisible(phase, card));
   const eventCards = visible.filter((card) => card.source === "event");
@@ -96,37 +97,64 @@ export function IntelLookupBoard({
       <header>
         <h3>Compared to this event</h3>
         <p className="app-muted">
-          {phase === "all"
-            ? "Event ratings use synced numbers. Scout ratings stay blank until this team has real scout rows."
-            : "Only the actions this robot can do in this phase. Event standing ratings stay on the board."}
+          {pane === "notes"
+            ? "Shared notes for this lookup. Blank until someone writes one."
+            : phase === "all"
+              ? "Event ratings use synced numbers. Scout ratings stay blank until this team has real scout rows."
+              : "Only the actions this robot can do in this phase. Event standing ratings stay on the board."}
         </p>
-        <div className="intel-phase-row" role="group" aria-label="Scout phase">
-          {PHASES.map(([id, label]) => (
-            <button
-              key={id}
-              type="button"
-              className={phase === id ? "intel-phase is-on" : "intel-phase"}
-              aria-pressed={phase === id}
-              onClick={() => setPhase(id)}
-            >
-              {label}
-            </button>
-          ))}
+        <div className="intel-lookup-tabs" role="tablist" aria-label="Lookup board">
+          <button
+            type="button"
+            role="tab"
+            className={pane === "stats" ? "intel-phase is-on" : "intel-phase"}
+            aria-selected={pane === "stats"}
+            onClick={() => setPane("stats")}
+          >
+            Stats
+          </button>
+          <button
+            type="button"
+            role="tab"
+            className={pane === "notes" ? "intel-phase is-on" : "intel-phase"}
+            aria-selected={pane === "notes"}
+            onClick={() => setPane("notes")}
+          >
+            Notes
+          </button>
         </div>
+        {pane === "stats" ? (
+          <div className="intel-phase-row" role="group" aria-label="Scout phase">
+            {PHASES.map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                className={phase === id ? "intel-phase is-on" : "intel-phase"}
+                aria-pressed={phase === id}
+                onClick={() => setPhase(id)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        ) : null}
       </header>
-      <div className="intel-lookup-lanes">
-        <LookupLane
-          title="Event"
-          cards={eventCards}
-          empty="Needs setup — no event ratings on file yet."
-        />
-        <LookupLane
-          title="Our scouting"
-          cards={scoutCards}
-          empty="Needs setup — no scout rows yet for this phase."
-        />
-      </div>
-      <IntelLookupNotes orgId={orgId} teamKey={teamKey} />
+      {pane === "notes" ? (
+        <IntelLookupNotes orgId={orgId} teamKey={teamKey} />
+      ) : (
+        <div className="intel-lookup-lanes">
+          <LookupLane
+            title="Event"
+            cards={eventCards}
+            empty="Needs setup — no event ratings on file yet."
+          />
+          <LookupLane
+            title="Our scouting"
+            cards={scoutCards}
+            empty="Needs setup — no scout rows yet for this phase."
+          />
+        </div>
+      )}
     </section>
   );
 }

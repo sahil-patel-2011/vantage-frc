@@ -338,7 +338,7 @@ export function IntelReadyView({
                   <small className="app-muted">
                     {intelRecordLine(event.wins, event.losses, event.ties) ?? "Record not on file"}
                     {event.rating != null && Number.isFinite(event.rating)
-                      ? ` · rating ${event.rating.toFixed(1)}`
+                      ? ` · Rating ${event.rating.toFixed(1)}`
                       : ""}
                   </small>
                 </li>
@@ -396,7 +396,7 @@ export function IntelReadyView({
                   <button type="button" onClick={() => onSelectSimilar(team.teamNumber)}>
                     <b>{team.teamNumber}</b>
                     <span>{team.nickname}</span>
-                    <em>{team.epaTotal.toFixed(1)} rating</em>
+                    <em>{team.epaTotal.toFixed(1)} Rating</em>
                   </button>
                 </li>
               ))}

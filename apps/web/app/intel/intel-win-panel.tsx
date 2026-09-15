@@ -54,12 +54,14 @@ export function IntelWinPanel({
         Predicted scores are the sum of team means. Win % is the left tail of red minus blue — skipped when a robot
         has no rating.
       </p>
-      <FormRow label="Red" hint="Team numbers, comma-separated.">
-        <input value={redRaw} onChange={(event) => setRedRaw(event.target.value)} aria-label="Red alliance teams" />
-      </FormRow>
-      <FormRow label="Blue" hint="Team numbers, comma-separated.">
-        <input value={blueRaw} onChange={(event) => setBlueRaw(event.target.value)} aria-label="Blue alliance teams" />
-      </FormRow>
+      <div className="intel-win-inputs">
+        <FormRow label="Red" hint="Team numbers, comma-separated.">
+          <input value={redRaw} onChange={(event) => setRedRaw(event.target.value)} aria-label="Red alliance teams" />
+        </FormRow>
+        <FormRow label="Blue" hint="Team numbers, comma-separated.">
+          <input value={blueRaw} onChange={(event) => setBlueRaw(event.target.value)} aria-label="Blue alliance teams" />
+        </FormRow>
+      </div>
       <Button variant="secondary" type="button" onClick={() => setFlipped((value) => !value)}>
         Flip red and blue
       </Button>
@@ -69,14 +71,14 @@ export function IntelWinPanel({
         <div className="intel-win-result">
           <div className="intel-win-alliances">
             <div className="intel-win-side is-red">
-              <span>Red</span>
+              <span>Red predicted</span>
               <strong>{prediction.redPredicted.toFixed(1)}</strong>
-              <em>{pctLabel(redPct)}</em>
+              <em>{redPct == null ? "Win % —" : `Win ${pctLabel(redPct)}`}</em>
             </div>
             <div className="intel-win-side is-blue">
-              <span>Blue</span>
+              <span>Blue predicted</span>
               <strong>{prediction.bluePredicted.toFixed(1)}</strong>
-              <em>{pctLabel(bluePct)}</em>
+              <em>{bluePct == null ? "Win % —" : `Win ${pctLabel(bluePct)}`}</em>
             </div>
           </div>
           {redPct != null && bluePct != null ? (

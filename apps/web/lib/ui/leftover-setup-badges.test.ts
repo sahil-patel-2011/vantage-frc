@@ -55,4 +55,17 @@ describe("leftover Setup badges become Needs setup or drop the setup tone", () =
     expect(shell).toMatch(/badge="Needs setup"/);
     expect(shell).not.toMatch(/badge="Setup"/);
   });
+
+  it("Research leftover lookup keeps Needs setup, Choose your team, Compared to this event, and Rating", () => {
+    const related = src("lib/intel/intel-related.ts");
+    expect(related).toMatch(/badge: "Needs setup"/);
+    expect(related).toMatch(/Choose your team/);
+    expect(src("app/intel/intel-lookup-board.tsx")).toMatch(/Compared to this event/);
+    expect(src("app/intel/intel-ready-view.tsx")).toMatch(/\bRating\b/);
+    expect(src("app/intel/intel-ready-view.tsx")).not.toMatch(/\bEPA\b/);
+    expect(src("app/intel/intel-path-visualizer.tsx")).toMatch(
+      /Needs setup — no auto paths on file yet/,
+    );
+    expect(src("app/intel/intel.css")).toMatch(/minmax\(5\.35rem,1fr\)/);
+  });
 });

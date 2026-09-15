@@ -80,7 +80,7 @@ export function IntelLookupNotes({ orgId, teamKey }: { orgId: string; teamKey: s
         <p className="app-muted">Shared with this team. Blank until someone writes one.</p>
       </header>
       {setup ? (
-        <p className="app-muted">Needs setup — lookup notes are not on this database yet.</p>
+        <p className="intel-lookup-empty">Needs setup — lookup notes are not on this database yet.</p>
       ) : (
         <>
           <textarea
