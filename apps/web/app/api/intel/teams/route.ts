@@ -43,7 +43,7 @@ export async function GET(request: Request) {
             [orgId, session.user.id],
           );
           const canEdit = canEditLookupNotes(role.rows[0]?.role ?? null);
-          let lookupNote = parseLookupNote(null, intel.team.teamKey, canEdit);
+          let lookupNote;
           try {
             const note = await client.query<{ body: string; updatedAt: string; updatedBy: string }>(
               `SELECT body, updated_at AS "updatedAt", updated_by::text AS "updatedBy"

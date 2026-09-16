@@ -100,7 +100,7 @@ export function visitNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Finish membership or migration setup so Visit Invites can resolve your org.",
+        detail: "Pick the team you are on, and the visits you invited people to show up here.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
       },
