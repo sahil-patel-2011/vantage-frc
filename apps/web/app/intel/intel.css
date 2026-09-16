@@ -66,6 +66,71 @@
 .intel-vs-above{color:var(--good, #1b7f4e)}
 .intel-vs-below{color:var(--warn, #9a5b12)}
 .intel-vs-near,.intel-vs-unknown{color:var(--muted)}
+
+/* --- Field position bar ---------------------------------------------------
+   The track is this event's field, the tick is the event average, the dot is
+   this team. It only renders when a real percentile exists, so there is no
+   "empty bar" state to style. Colour follows the same above/near/below tone as
+   the text label, so the bar is never the only carrier of the comparison. */
+.intel-fieldbar{display:grid;gap:3px;margin:2px 0 1px}
+.intel-fieldbar-track{
+  position:relative;
+  height:6px;
+  border-radius:999px;
+  background:color-mix(in srgb, var(--line) 62%, transparent);
+  overflow:visible;
+}
+.intel-fieldbar-fill{
+  position:absolute;
+  inset:0 auto 0 0;
+  border-radius:999px;
+  background:currentColor;
+  opacity:.34;
+  transform-origin:left center;
+  animation:intel-fieldbar-grow var(--motion-slow) var(--motion-ease) both;
+}
+/* Event average. A field is roughly symmetric around its mean, so the tick
+   sits at the midpoint of the percentile scale. */
+.intel-fieldbar-mean{
+  position:absolute;
+  left:50%;
+  top:-2px;
+  bottom:-2px;
+  width:1px;
+  background:color-mix(in srgb, var(--ink) 38%, transparent);
+}
+.intel-fieldbar-dot{
+  position:absolute;
+  top:50%;
+  width:9px;
+  height:9px;
+  margin-left:-4.5px;
+  border-radius:50%;
+  background:currentColor;
+  border:2px solid var(--surface);
+  transform:translateY(-50%);
+  animation:intel-fieldbar-pop var(--motion) var(--motion-ease) both;
+  animation-delay:calc(var(--motion-fast) / 2);
+}
+.intel-fieldbar-above{color:var(--good, #1b7f4e)}
+.intel-fieldbar-below{color:var(--warn, #9a5b12)}
+.intel-fieldbar-near,.intel-fieldbar-unknown{color:var(--accent)}
+@keyframes intel-fieldbar-grow{
+  from{transform:scaleX(0)}
+  to{transform:scaleX(1)}
+}
+@keyframes intel-fieldbar-pop{
+  from{opacity:0;transform:translateY(-50%) scale(.4)}
+  to{opacity:1;transform:translateY(-50%) scale(1)}
+}
+@media (prefers-reduced-motion: reduce){
+  .intel-fieldbar-fill,
+  .intel-fieldbar-dot{
+    animation:none !important;
+    transform:translateY(0);
+  }
+  .intel-fieldbar-dot{transform:translateY(-50%)}
+}
 .intel-lookup-notes{display:grid;gap:8px}
 .intel-note-form{display:grid;gap:8px}
 .intel-note-form textarea{width:100%;min-height:6rem;resize:vertical}

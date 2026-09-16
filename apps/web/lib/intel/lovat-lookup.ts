@@ -9,6 +9,7 @@ import {
   picklistMetricLabel,
   populationMean,
   populationStdDev,
+  standardNormalCdf,
   zScore,
   type FieldStat,
   type PicklistMetricId,
@@ -98,6 +99,8 @@ export type LookupCard = {
   display: string;
   compare: FieldCompare;
   contribution: number | null;
+  /** 0–1 position in this event's field, or null when there is no field yet. */
+  percentile: number | null;
   sparkline: string | null;
   sample: number;
 };
@@ -144,6 +147,31 @@ export function fieldCompare(value: number | null, mean: number | null, std: num
   }
   if (delta > 0) return { tone: "above", label: "Above this event", delta, z };
   return { tone: "below", label: "Below this event", delta, z };
+}
+
+/**
+ * Where this team sits in the event field, 0–1, from the z-score `fieldCompare`
+ * already computed. `fieldCompare` orients z so higher is always better (it
+ * flips the arguments for rank and DPR), so the percentile needs no second
+ * inversion here.
+ *
+ * Null when there is no z — one team at an event has no field to sit in, and a
+ * bar drawn at 50% would be a number we made up. The tile renders nothing then.
+ */
+export function fieldPercentile(z: number | null): number | null {
+  if (z == null || !Number.isFinite(z)) return null;
+  return Math.min(1, Math.max(0, standardNormalCdf(z)));
+}
+
+/** "83rd" / "1st" / "22nd" — for the bar's label and its screen-reader text. */
+export function ordinalPercentile(percentile: number | null): string | null {
+  if (percentile == null) return null;
+  // Keep a real 100th percentile off the board: with a normal tail it is never
+  // exactly certain, and "100th" reads as a guarantee.
+  const n = Math.min(99, Math.max(1, Math.round(percentile * 100)));
+  const teen = n % 100 >= 11 && n % 100 <= 13;
+  const suffix = teen ? "th" : n % 10 === 1 ? "st" : n % 10 === 2 ? "nd" : n % 10 === 3 ? "rd" : "th";
+  return `${n}${suffix}`;
 }
 
 /** Team value as a share of the event average. Null when either number is missing. */
@@ -246,6 +274,7 @@ export function buildLookupCards(input: {
       display: formatLookupValue(value, metric.id === "rank" || metric.id === "wins" ? 0 : 1),
       compare,
       contribution,
+      percentile: fieldPercentile(compare.z),
       sparkline: spark,
       sample: sampleFor(metric.id, metric.source, stat?.n ?? 0, input.scout?.sample ?? 0),
     };
