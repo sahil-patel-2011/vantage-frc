@@ -88,7 +88,7 @@
   --measure-prose: 58ch;
   --measure-narrow: 760px;
   --gutter: clamp(14px, 3vw, 28px);
-  --island: rgba(255, 255, 255, .94);
+  --island: rgba(255, 255, 255, .86);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --island-clearance: 88px;
   --glyph-warning: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23000' stroke-width='1.6' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M8 2 15 14H1L8 2Z'/%3E%3Cpath d='M8 6.4v3.2M8 11.8v.1'/%3E%3C/svg%3E");
@@ -149,7 +149,7 @@
   --warning: #ffb936;
   --tone-plate-mix: 24%;
   --tone-ink-mix: 42%;
-  --island: rgba(21, 27, 36, .94);
+  --island: rgba(21, 27, 36, .86);
   --shadow: 0 12px 36px rgba(0, 0, 0, .4);
   --shadow-lift: 0 16px 42px rgba(0, 0, 0, .5);
   --shadow-pop: 0 20px 50px rgba(0, 0, 0, .55);
@@ -187,7 +187,7 @@ body {
     --warning: #ffb936;
     --tone-plate-mix: 24%;
     --tone-ink-mix: 42%;
-    --island: rgba(21, 27, 36, .94);
+    --island: rgba(21, 27, 36, .86);
     --shadow: 0 12px 36px rgba(0, 0, 0, .4);
     --shadow-lift: 0 16px 42px rgba(0, 0, 0, .5);
     --shadow-pop: 0 20px 50px rgba(0, 0, 0, .55);

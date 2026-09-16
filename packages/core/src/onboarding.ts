@@ -404,11 +404,14 @@ export async function getOnboardingState(client: PoolClient, userId: string): Pr
       sponsorsAllowed: boolean | null;
       fundingModel: FundingModelOption | null;
     }>(
+      // Read through to_jsonb so onboarding still loads on a deployment whose
+      // migrations have not run yet: a missing column raises 42703 and would
+      // otherwise lock every new member out of the flow that gates the app.
       `SELECT team_affiliation AS "teamAffiliation",
               school_funded AS "schoolFunded",
               outside_grants AS "outsideGrants",
               sponsors_allowed AS "sponsorsAllowed",
-              funding_model AS "fundingModel"
+              to_jsonb(organizations) ->> 'funding_model' AS "fundingModel"
        FROM organizations WHERE id = $1::uuid`,
       [locked.orgId],
     );

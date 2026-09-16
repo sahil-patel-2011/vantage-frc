@@ -371,8 +371,11 @@ body.soft-nav-panel-open .soft-island{
    banner would otherwise sit on top of it. */
 .soft-island{
   position:fixed;z-index:95;left:50%;bottom:calc(12px + var(--safe-bottom));transform:translateX(-50%);
-  display:flex;align-items:stretch;gap:2px;width:min(420px,calc(100vw - 28px));
-  padding:6px;border-radius:28px;background:var(--island);
+  /* Slightly smaller and a touch more translucent than it was: it floats over
+     the page, so it should read as glass rather than a second toolbar. The
+     blur below is what keeps text legible at this opacity. */
+  display:flex;align-items:stretch;gap:2px;width:min(384px,calc(100vw - 32px));
+  padding:5px;border-radius:26px;background:var(--island);
   border:1px solid color-mix(in srgb,var(--line) 55%,transparent);
   box-shadow:var(--shadow-pop);
   backdrop-filter:saturate(1.8) blur(22px);-webkit-backdrop-filter:saturate(1.8) blur(22px);
@@ -380,7 +383,7 @@ body.soft-nav-panel-open .soft-island{
 }
 .soft-island a,.soft-island-more{
   position:relative;flex:1 1 0;display:grid;justify-items:center;gap:3px;
-  min-width:0;min-height:52px;padding:8px 4px;border-radius:var(--radius-lg);
+  min-width:0;min-height:48px;padding:7px 4px;border-radius:var(--radius-lg);
   color:var(--muted);text-decoration:none;font:600 10px/1 var(--font-source-sans),ui-sans-serif;
   transition:background .18s ease,color .18s ease,transform .18s ease;
   border:0;background:transparent;cursor:pointer;place-content:center;
@@ -1811,11 +1814,11 @@ body.has-app-shell{
 .soft-drawer-brand strong{font-size:16px}
 .soft-nav-group a:not(.soft-drawer-hub),.soft-nav-group span.planned{min-height:40px;padding:6px 10px;font-size:13px}
 .soft-island{
-  gap:2px;padding:6px;max-width:calc(100vw - 24px);
+  gap:2px;padding:5px;max-width:calc(100vw - 32px);
   box-shadow:var(--shadow-pop);
 }
 .soft-island a,.soft-island-more{
-  display:grid;justify-items:center;gap:2px;min-width:0;min-height:52px;padding:8px 4px;border-radius:var(--radius-lg);
+  display:grid;justify-items:center;gap:2px;min-width:0;min-height:48px;padding:7px 4px;border-radius:var(--radius-lg);
   color:var(--muted);text-decoration:none;font:600 10px/1 var(--font-source-sans),ui-sans-serif;
   background:transparent;border:0;cursor:pointer;place-content:center;
 }
@@ -2886,3 +2889,23 @@ body.has-app-shell .soft-ask-ai-label{display:none}
     transform:none !important;
   }
 }
+
+/* Wordmark in the top bar. It is the way back to Home, which is what a logo
+   does everywhere else, so it needs no explaining. Hidden on the narrowest
+   phones where the row has to belong to the actions. */
+.soft-brand-link{
+  display:none;
+  align-items:center;
+  padding:0 10px;
+  min-height:40px;
+  border-radius:var(--radius-sm);
+  color:var(--ink);
+  text-decoration:none;
+  font:700 13px/1 var(--font-source-sans),ui-sans-serif;
+  letter-spacing:-0.01em;
+  white-space:nowrap;
+  transition:background .15s ease,color .15s ease;
+}
+.soft-brand-link:hover{background:color-mix(in srgb,var(--surface) 88%,var(--line))}
+.soft-brand-link:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media(min-width:560px){.soft-brand-link{display:inline-flex}}

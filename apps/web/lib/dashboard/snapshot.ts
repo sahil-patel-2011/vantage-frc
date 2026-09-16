@@ -47,8 +47,14 @@ export async function loadDashboardSnapshot(
       eventName: string | null;
       fundingModel: string | null;
     }>(
+      // funding_model is read through to_jsonb so Home survives a deployment
+      // whose migrations have not been run yet. Selecting the column directly
+      // raises 42703 ("column o.funding_model does not exist"), and because
+      // this runs inside a Promise.all that killed the whole dashboard — every
+      // student saw a raw Postgres error instead of their team. to_jsonb yields
+      // NULL for a column that is not there and the real value once 0651 lands.
       `SELECT o.name, o.team_number AS "teamNumber", c.active_event_key AS "eventKey", e.name AS "eventName",
-              o.funding_model::text AS "fundingModel"
+              to_jsonb(o) ->> 'funding_model' AS "fundingModel"
        FROM organizations o
        LEFT JOIN org_active_context c ON c.org_id = o.id
        LEFT JOIN events_ref e ON e.event_key = c.active_event_key

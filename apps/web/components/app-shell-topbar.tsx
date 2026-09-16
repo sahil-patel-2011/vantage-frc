@@ -79,13 +79,32 @@ export function AppShellTopbar({
             ) : (
               <>
                 <p className="soft-topbar-title">{title ?? "Vantage"}</p>
-                <small className="soft-org-crumb">{showBack ? crumbHint : orgLabel}</small>
+                {/* The line under the title is the team, or the crumb when
+                    there is a back button. Either can repeat the title —
+                    "6925" over "6925" — which reads as a rendering bug rather
+                    than a hierarchy, so the second line is dropped when it
+                    would only say the same thing again. */}
+                {(() => {
+                  const sub = showBack ? crumbHint : orgLabel;
+                  if (!sub) return null;
+                  const same = sub.trim().toLowerCase() === (title ?? "").trim().toLowerCase();
+                  return same ? null : <small className="soft-org-crumb">{sub}</small>;
+                })()}
               </>
             )}
           </div>
         </div>
       </div>
       <div className="soft-topbar-actions">
+        {/* The wordmark doubles as the way home — the convention everywhere
+            else on the web, so nobody has to learn it. */}
+        <a
+          className="soft-brand-link"
+          href={withOrgHref("/dashboard", orgId || null)}
+          aria-label="VantageFRC — go to Home"
+        >
+          VantageFRC
+        </a>
         <ShellOutboxStatus orgId={orgId || null} />
         <a
           className="soft-icon-btn soft-ask-ai"
@@ -97,15 +116,23 @@ export function AppShellTopbar({
           <span className="soft-ask-ai-label">Ask AI</span>
         </a>
         {navOpen ? null : (
+          // One control, not two. This used to be a "Search" button that opened
+          // the nav panel — a magnifier that produced a menu. The panel leads
+          // with its search box, so the hamburger says what it does and the
+          // keyboard shortcut still opens it straight into search.
           <button
-            className="soft-icon-btn soft-search-btn"
+            className="soft-icon-btn soft-menu-btn"
             type="button"
-            aria-label="Search Vantage"
+            aria-label="Menu and search"
+            aria-expanded={navOpen}
             aria-keyshortcuts="Control+K Meta+K"
             onClick={onOpenNav}
           >
-            <Icon name="search" />
-            <span className="soft-search-label">Search</span>
+            <span className="soft-burger" aria-hidden="true">
+              <i />
+              <i />
+              <i />
+            </span>
             <kbd className="soft-search-kbd" aria-hidden="true">
               {shortcutHint}
             </kbd>
