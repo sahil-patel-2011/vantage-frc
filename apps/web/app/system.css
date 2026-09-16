@@ -411,6 +411,16 @@ html[data-density="compact"] body.has-app-shell {
   letter-spacing: var(--tracking-kicker);
   text-transform: uppercase;
 }
+/* A crumb is the one control that takes a student back up a level, and 267 of
+   them are real links. At 11px the anchor's box is 14px tall — under the 24px
+   minimum target size (WCAG 2.5.8) and far under the 44px the rest of this
+   chrome keeps. Pad the hit area and take the padding back out of the margin,
+   so the target grows without the header moving. */
+:where(.breadcrumbs) a {
+  display: inline-block;
+  padding-block: 7px;
+  margin-block: -7px;
+}
 
 /* --- Type scale ------------------------------------------------------------
    Defaults for headings inside product surfaces. Before this, an <h2> with no

@@ -1029,6 +1029,16 @@
 }
 .marketing-lux .nav nav a:hover,
 .marketing-lux .marketing-footer a:hover{color:var(--m-ink)!important}
+/* A nav item and a standalone CTA are targets, not prose. At 13–14px their
+   boxes came out 20–22px tall, under the 24px minimum target size (WCAG 2.5.8);
+   .marketing-footer-col already did this. Links inside a sentence keep their
+   inline size — that case is exempt, and padding there would break the line. */
+.nav nav a,
+.nav .sign-in-link,
+.marketing-footer a:not(.wordmark),
+a.text-link{
+  min-height:24px;display:inline-flex;align-items:center;
+}
 .marketing-lux .nav nav a[aria-current="page"]{
   color:var(--m-ink);
   box-shadow:inset 0 -1.5px var(--m-ink);

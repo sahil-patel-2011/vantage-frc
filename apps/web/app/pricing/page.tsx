@@ -40,7 +40,7 @@ export default function PricingPage() {
             <a className="button primary" href="/#waitlist">
               Join the waitlist
             </a>
-            <a className="text-link" href="#credits">
+            <a className="text-link" href="#usage">
               How AI credits work
             </a>
           </div>
@@ -48,7 +48,10 @@ export default function PricingPage() {
 
         <PricingCatalog />
 
-        <section className="payg" id="credits">
+        {/* PricingCatalog already owns #credits (the packs a cut-off CTA links
+            to). Two sections answering to one id sent this explainer's link to
+            the packs instead. */}
+        <section className="payg" id="usage">
           <div>
             <h2>How usage works</h2>
           </div>

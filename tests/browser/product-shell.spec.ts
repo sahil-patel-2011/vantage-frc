@@ -212,3 +212,15 @@ test("code route requires a real team and never falls back to fixture findings",
   await expect(page.getByRole("heading", { name: "Choose your team" })).toBeVisible();
   await expect(page.getByText("blocking robot loop")).toHaveCount(0);
 });
+
+test("a breadcrumb link is a real target, not an 11px line of text", async ({ page }) => {
+  // The crumb is how a student goes back up a level. Its 11px uppercase text
+  // left a 14px-tall anchor — under the 24px minimum target size (WCAG 2.5.8).
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/pit");
+  const crumb = page.locator(".breadcrumbs a").first();
+  await expect(crumb).toBeVisible({ timeout: 20_000 });
+  const box = await crumb.boundingBox();
+  expect(box).not.toBeNull();
+  expect(box!.height).toBeGreaterThanOrEqual(24);
+});
