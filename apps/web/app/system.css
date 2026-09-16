@@ -339,6 +339,22 @@ html[data-theme="dark"] .marketing-lux {
   scroll-margin-bottom: calc(var(--island-clearance, 88px) + 8px);
 }
 
+/* Height of the product top bar. soft-ui.css paints the bar; scroll targets and
+   tap-to-place need the number, because a `position:fixed` bar is outside the
+   scroll flow and silently covers whatever lands at the top of the viewport.
+   `css-integrity.test.ts` holds these in step with the .soft-topbar rules. */
+body.has-app-shell {
+  --topbar-h: 56px;
+}
+@media (max-width: 650px) {
+  body.has-app-shell {
+    --topbar-h: 52px;
+  }
+}
+html[data-density="compact"] body.has-app-shell {
+  --topbar-h: 50px;
+}
+
 /* --- Overflow guards -------------------------------------------------------
    No page may scroll the body sideways. Media and long unbroken strings (team
    URLs, Onshape document ids, API keys) are the two things that do it. */

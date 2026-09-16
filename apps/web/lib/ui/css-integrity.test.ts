@@ -197,6 +197,36 @@ describe("stylesheet integrity", () => {
     ).toEqual([]);
   });
 
+  it("keeps --topbar-h in step with the height the top bar is painted at", () => {
+    // The bar is `position:fixed`, so scroll targets subtract this token to
+    // avoid parking under it. If the two drift, the board's first row hides
+    // behind the bar again and a tap lands on the bar instead of a slot.
+    const soft = scrub(
+      readFileSync(join(__dirname, "..", "..", "app", "soft-ui.css"), "utf8"),
+    );
+    const system = scrub(readFileSync(join(__dirname, "..", "..", "app", "system.css"), "utf8"));
+
+    const paintedHeights = [...soft.matchAll(/\.soft-topbar\s*\{[^}]*?height:\s*(\d+)px/g)].map(
+      (match) => Number(match[1]),
+    );
+    const compactHeights = [
+      ...soft.matchAll(/html\[data-density=""\][^{]*\.soft-topbar\s*\{[^}]*?height:\s*(\d+)px/g),
+    ].map((match) => Number(match[1]));
+    const tokenValues = [...system.matchAll(/--topbar-h:\s*(\d+)px/g)].map((match) =>
+      Number(match[1]),
+    );
+
+    expect(paintedHeights.length, "soft-ui.css should paint .soft-topbar at a pixel height").
+      toBeGreaterThan(0);
+    expect(tokenValues.length, "system.css should declare --topbar-h").toBeGreaterThan(0);
+    for (const painted of [...paintedHeights, ...compactHeights]) {
+      expect(
+        tokenValues,
+        `.soft-topbar is painted at ${painted}px with no matching --topbar-h`,
+      ).toContain(painted);
+    }
+  });
+
   it("keeps product TSX off --soft-* aliases", () => {
     // Canonical names are --bg/--line/--accent. Aliases stay in system.css so
     // leftover stylesheets still resolve. New inline styles should not add a

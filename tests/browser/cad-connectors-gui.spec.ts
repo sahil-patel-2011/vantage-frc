@@ -32,11 +32,19 @@ test("Connectors, CAD connections, and pair pages stay student-usable", async ({
   });
   await expect(page.getByText("Organization / workspace")).toHaveCount(0);
   await expect(page.getByText("OAuth")).toHaveCount(0);
+  // A no-team page shows both the "Choose your team" heading and its primary
+  // link, so the or-chain matches more than one node — take the first.
   await expect(
-    page.getByRole("combobox", { name: "Team" }).or(page.getByRole("link", { name: "Choose your team" })),
+    page
+      .getByRole("combobox", { name: "Team" })
+      .or(page.getByRole("link", { name: "Choose your team" }))
+      .first(),
   ).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Approve pairing" }).or(page.getByRole("link", { name: "Choose your team" })),
+    page
+      .getByRole("button", { name: "Approve pairing" })
+      .or(page.getByRole("link", { name: "Choose your team" }))
+      .first(),
   ).toBeVisible();
 
   await page.goto("/editor/pair");
@@ -47,6 +55,7 @@ test("Connectors, CAD connections, and pair pages stay student-usable", async ({
     page
       .getByRole("combobox", { name: "Team" })
       .or(page.getByRole("heading", { name: "Choose your team" }))
-      .or(page.getByRole("link", { name: "Choose your team" })),
+      .or(page.getByRole("link", { name: "Choose your team" }))
+      .first(),
   ).toBeVisible();
 });

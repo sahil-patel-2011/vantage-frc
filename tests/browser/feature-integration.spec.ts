@@ -47,7 +47,8 @@ test.describe("one control per destination", () => {
     await expect(title.or(missing).first()).toBeVisible();
     if (await missing.count()) return;
     const main = page.locator("main");
-    for (const label of ["Account", "Discord", "Account Connections"]) {
+    // Renamed to match the page it opens (ed72529): /connectors is "Connectors".
+    for (const label of ["Account", "Discord", "Connectors"]) {
       await expect(main.getByRole("link", { name: label, exact: true })).toHaveCount(1);
     }
     await expect(main.getByRole("link", { name: "Choose your team", exact: true })).toHaveCount(1);

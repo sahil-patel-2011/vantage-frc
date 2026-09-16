@@ -247,6 +247,15 @@
 .dash-home .dash-pgrid>.dash-grid-item.is-editing .dash-widget,
 .dash-home .dash-pgrid>.dash-grid-item.is-editing .app-card{overflow:hidden}
 
+/* "Tap a slot on the board to place X" means the whole board is a slot. Remove
+   and the drag handle sit in the top-left of every card, so a tap aimed at a
+   slot that already holds a widget deleted that widget instead of placing the
+   pending one. The card's own controls go inert until the placement resolves. */
+.dash-home .dash-pgrid[data-pending-place]:not([data-pending-place=""]) .dash-item-tools,
+.dash-home .dash-pgrid[data-pending-place]:not([data-pending-place=""]) .dash-item-tools button{
+  pointer-events:none;
+}
+
 /* The live drop target: the dragged card's slot, emptied out. Children are
    hidden rather than the card faded, so the dashed gap stays visible. */
 .dash-home .dash-pgrid>.dash-grid-item.is-dragging{

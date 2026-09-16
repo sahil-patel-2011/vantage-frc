@@ -37,6 +37,7 @@ import {
   type GridCell,
   type NudgeDirection,
 } from "../../lib/dashboard/grid-drag";
+import { revealBelowStickyChrome } from "../../lib/ui/sticky-clearance";
 import { ARROW_DIRECTION, resolveGrid } from "./dashboard-canvas";
 import type { BoardMeta, BoardState } from "./dashboard-board-types";
 
@@ -137,6 +138,9 @@ export function useDashboardBoardOps(input: {
       setMessageKind("success");
       setMessage(`Tap a slot on the board to place ${entry.label}.`);
       setAnnounce(`Tap a slot on the board to place ${entry.label}.`);
+      // Telling a student to tap the board is only actionable if the board is
+      // out from under the fixed top bar.
+      revealBelowStickyChrome(canvasNode);
       return;
     }
     addWidget(entry.type);

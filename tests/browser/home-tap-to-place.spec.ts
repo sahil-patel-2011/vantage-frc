@@ -49,8 +49,18 @@ test.describe("Home tap-to-place", () => {
     await firstAdd.click();
     await expect(page.getByText(/Tap a slot on the board to place/i).first()).toBeVisible();
     const canvas = page.getByTestId("dash-place-canvas");
-    if (await canvas.count()) {
-      await canvas.click({ position: { x: 24, y: 24 } });
-    }
+    await expect(canvas).toBeVisible();
+
+    // Tap where a student can actually see a slot. `canvas.click()` asks the
+    // browser to scroll the point into view first, which parks the board's top
+    // row under the fixed top bar and then clicks the bar instead.
+    const board = await canvas.boundingBox();
+    const bar = await page.locator(".soft-topbar").boundingBox();
+    expect(board).not.toBeNull();
+    const slotX = board!.x + 24;
+    const slotY = Math.max(board!.y + 24, (bar?.height ?? 0) + 24);
+    await page.mouse.click(slotX, slotY);
+
+    await expect(page.getByText(/added to the board/i).first()).toBeVisible();
   });
 });

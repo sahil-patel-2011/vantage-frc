@@ -775,7 +775,12 @@ body.soft-nav-panel-open .soft-island{
 .dash-catalog button:hover:not(:disabled){border-color:color-mix(in srgb,var(--accent) 40%,var(--line));background:var(--accent-soft)}
 .dash-catalog button:disabled{opacity:.5;cursor:default}
 
-.dash-grid-wrap{min-height:280px;transition:background .2s ease,box-shadow .2s ease}
+/* The board is a scroll target (deep link, tap-to-place). The top bar is fixed,
+   so `block:"start"` alone parks the first row of slots underneath it. */
+.dash-grid-wrap{
+  min-height:280px;transition:background .2s ease,box-shadow .2s ease;
+  scroll-margin-top:calc(var(--topbar-h,56px) + 12px);
+}
 .dash-grid-wrap.editing{
   padding:10px;border-radius:var(--radius-lg);
   background:

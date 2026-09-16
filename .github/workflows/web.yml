@@ -50,12 +50,20 @@ jobs:
         run: npm run build --workspace=@vantage/web
 
   browser:
-    name: Playwright
+    name: Playwright (shard ${{ matrix.shard }}/4)
     # Private-repo Actions minutes: skip Chromium on draft pushes.
     # Full suite runs when the PR is marked ready, or via workflow_dispatch.
     if: github.event_name == 'workflow_dispatch' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
+    # The suite is one worker by contract (two starve Next's compiler), so ~300
+    # specs against `next dev` ran past 30 minutes and the job was cancelled
+    # mid-run — a timeout reported as a test failure. Split the specs instead of
+    # raising the ceiling, so a shard stays well inside it.
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
     env:
       CI: "true"
       NODE_ENV: "development"
@@ -81,12 +89,13 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
       - name: Run browser tests
-        run: npm run test:browser -- --reporter=line,html
+        run: npm run test:browser -- --shard=${{ matrix.shard }}/4 --reporter=line,html
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
+          # Per shard: one shared name makes the upload fail on the second shard.
+          name: playwright-report-shard-${{ matrix.shard }}
           path: |
             playwright-report/
             test-results/
