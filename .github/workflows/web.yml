@@ -5,6 +5,16 @@ on:
     paths-ignore:
       - "**/*.md"
       - "docs/**"
+  # Also build what actually landed. 2,495 commits once reached main while CI
+  # ran on pull_request only: every small PR passed on its own branch, and the
+  # accumulated result — which no longer typechecked or tested at all — was
+  # never built once. Per-PR green does not mean main is green.
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
   workflow_dispatch:
 
 permissions:

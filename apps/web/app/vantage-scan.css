@@ -33,7 +33,10 @@
 :root[data-theme="dark"] {
   --scan-navy: #9ec0e8;
   --scan-navy-deep: #0c1624;
-  --scan-navy-soft: #152033;
+  /* Was a hardcoded well a shade off system.css's --surface, which is the
+     drift css-integrity exists to stop. One palette owns dark mode; the scan
+     overlay borrows it. */
+  --scan-navy-soft: var(--surface);
   --scan-gold: #f0c84a;
   --scan-gold-ink: #0c1118;
   --scan-rail: #101a28;
