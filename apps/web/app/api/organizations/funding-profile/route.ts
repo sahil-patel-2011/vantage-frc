@@ -25,6 +25,15 @@ type FundingRow = {
   role: string;
 };
 
+/** 42703 undefined_column, 42704 undefined_object (the enum 0651 also adds). */
+function isMissingFundingModel(error: unknown): boolean {
+  if (typeof error !== "object" || error === null) return false;
+  const code = (error as { code?: unknown }).code;
+  if (code !== "42703" && code !== "42704") return false;
+  const message = (error as { message?: unknown }).message;
+  return typeof message === "string" && /funding_model/.test(message);
+}
+
 function toView(orgId: string, row: FundingRow, canEdit: boolean): FundingProfileView {
   const teamAffiliation: FundingAffiliation = isFundingAffiliation(row.teamAffiliation)
     ? row.teamAffiliation
@@ -52,11 +61,15 @@ export async function GET(request: Request) {
 
     const view = await withRls({ userId: user.user.id, orgId }, async (client) => {
       const result = await client.query<FundingRow>(
+        // funding_model is read through to_jsonb for the same reason Home is
+        // (see lib/dashboard/snapshot.ts): on a deployment that has not run
+        // 0651 the column raises 42703 and the whole profile fails, where
+        // NULL just falls back to the school_funded / sponsors_allowed flags.
         `SELECT o.team_affiliation AS "teamAffiliation",
                 o.school_funded AS "schoolFunded",
                 o.outside_grants AS "outsideGrants",
                 o.sponsors_allowed AS "sponsorsAllowed",
-                o.funding_model AS "fundingModel",
+                to_jsonb(o) ->> 'funding_model' AS "fundingModel",
                 m.role
          FROM organizations o
          JOIN memberships m ON m.org_id = o.id AND m.user_id = $2::uuid
@@ -88,23 +101,34 @@ export async function POST(request: Request) {
 
     await withRls({ userId: user.user.id, orgId }, async (client) => {
       await assertOrgCapability(client, orgId, "manage_team_settings");
-      await client.query(
-        `UPDATE organizations
-         SET team_affiliation = $2,
-             school_funded = $3,
-             outside_grants = $4,
-             sponsors_allowed = $5,
-             funding_model = $6::org_funding_model
-         WHERE id = $1::uuid`,
-        [
-          orgId,
-          payload.teamAffiliation,
-          payload.schoolFunded,
-          payload.outsideGrants,
-          payload.sponsorsAllowed,
-          payload.fundingModel,
-        ],
-      );
+      try {
+        await client.query(
+          `UPDATE organizations
+           SET team_affiliation = $2,
+               school_funded = $3,
+               outside_grants = $4,
+               sponsors_allowed = $5,
+               funding_model = $6::org_funding_model
+           WHERE id = $1::uuid`,
+          [
+            orgId,
+            payload.teamAffiliation,
+            payload.schoolFunded,
+            payload.outsideGrants,
+            payload.sponsorsAllowed,
+            payload.fundingModel,
+          ],
+        );
+      } catch (error) {
+        // Reading tolerates the missing column; writing cannot. Name the
+        // migration instead of surfacing raw 42703 / 42704 to a mentor.
+        if (isMissingFundingModel(error)) {
+          throw new Error("Saving how the team is funded requires migration 0651_funding_model", {
+            cause: error,
+          });
+        }
+        throw error;
+      }
       await client.query(
         `INSERT INTO auth_policy_audit_events(org_id, actor_user_id, action, metadata)
          VALUES ($1::uuid, $2::uuid, 'org.funding_profile.updated', $3::jsonb)`,

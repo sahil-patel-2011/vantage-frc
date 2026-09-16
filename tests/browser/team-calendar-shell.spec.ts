@@ -14,12 +14,15 @@ test("Team calendar hub still loads after the panel split", async ({ page }) => 
 
   const viewGroup = page.getByRole("group", { name: "Calendar view" });
   const recoveryTitle = page.locator(".tc-empty strong");
-  await expect(viewGroup.or(recoveryTitle)).toBeVisible({ timeout: 15_000 });
+  // A session with no team gets the shared org gate rather than the tab's own
+  // recovery card. Both are honest; only a blank panel would be a bug.
+  const setupGate = page.getByRole("heading", { name: /Choose your team/i });
+  await expect(viewGroup.or(recoveryTitle).or(setupGate).first()).toBeVisible({ timeout: 15_000 });
 
   if ((await viewGroup.count()) === 0) {
     // Fixture cookie is not a Better Auth session, so the API answers 401
-    // and the extracted shell still paints an honest recovery card.
-    await expect(recoveryTitle).toBeVisible();
+    // and the extracted shell still paints an honest state.
+    await expect(recoveryTitle.or(setupGate).first()).toBeVisible();
     return;
   }
 

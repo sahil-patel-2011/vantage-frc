@@ -1,10 +1,13 @@
 import { expect, test } from "@playwright/test";
 import { expectHubReadyOrGate, loadFailureHeading } from "./hub-org-gate";
+import { waitForLoadingGone } from "./ready";
 import { signInAs, signInFixture } from "./session";
 
+let realSession = false;
+
 test.beforeEach(async ({ context }) => {
-  const signed = await signInAs(context, "owner");
-  if (!signed) await signInFixture(context);
+  realSession = await signInAs(context, "owner");
+  if (!realSession) await signInFixture(context);
 });
 
 const SURFACES = [
@@ -30,14 +33,26 @@ const SURFACES = [
     heading: "Claude Code",
     crumb: "Team / Claude Code",
     ready: "Pair this computer",
+    // Redirects to /signin when there is no Better Auth session, and the
+    // fixture cookie mints none — the proxy then lands the walk on Home.
+    needsRealSession: true,
   },
 ] as const;
 
 for (const surface of SURFACES) {
   test(`${surface.path} loads without engineering copy`, async ({ page }) => {
+    test.skip(
+      "needsRealSession" in surface && surface.needsRealSession === true && !realSession,
+      `${surface.path} needs a real Better Auth session`,
+    );
     await page.goto(surface.path);
     const main = page.locator("#main-content");
-    await expect(main.getByRole("heading", { level: 1 })).toHaveText(surface.heading);
+    // `next dev` compiles each route on first request, which outruns the
+    // default 5s expect. Wait for the shell, then assert with room to spare.
+    await waitForLoadingGone(page);
+    await expect(main.getByRole("heading", { level: 1 })).toHaveText(surface.heading, {
+      timeout: 20_000,
+    });
     if ("crumb" in surface && surface.crumb) {
       if (typeof surface.crumb === "string") {
         await expect(main.locator(".breadcrumbs")).toHaveText(surface.crumb);

@@ -124,22 +124,24 @@ test("product shell keeps four favorite apps plus an explicit all-apps button", 
 });
 
 test("search is one affordance per width and shares the navigation panel", async ({ page }) => {
-  const searchButton = page.getByRole("button", { name: "Search Vantage" });
+  // The bar used to carry a magnifier labelled "Search" that opened a menu.
+  // It is now one hamburger at every width, and the panel it opens leads with
+  // the only search field (538f3df).
+  const menuButton = page.getByRole("button", { name: "Menu and search" });
   const field = page.getByRole("combobox", { name: /Search pages, tools/ });
 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/dashboard");
-  // Under 900px the bar has no room for a field, so the panel carries the only one.
-  await expect(searchButton).toBeHidden();
+  await expect(menuButton).toBeVisible();
   await page.getByRole("button", { name: "Open all apps" }).click();
   await expect(field).toBeVisible();
   await page.keyboard.press("Escape");
 
   await page.setViewportSize({ width: 1400, height: 900 });
-  await expect(searchButton).toBeVisible();
-  await searchButton.click();
+  await expect(menuButton).toBeVisible();
+  await menuButton.click();
   // The bar's control steps aside so its field and the panel's are never both up.
-  await expect(searchButton).toHaveCount(0);
+  await expect(menuButton).toHaveCount(0);
   await expect(field).toBeFocused();
   await field.fill("pick list");
   await expect(page.locator("#soft-nav-row-0")).toContainText("Pick list");

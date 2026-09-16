@@ -9,7 +9,9 @@ test.beforeEach(async ({ context }) => {
 
 test("Inspection Copilot still loads after the panel split", async ({ page }) => {
   await page.goto("/inspection-copilot");
-  await expect(page.getByRole("heading", { name: "Inspection" })).toBeVisible({
+  // Not exact: while the panel is still loading the page also carries
+  // <h2>Loading inspection…</h2>, and two matches is a strict-mode error.
+  await expect(page.getByRole("heading", { name: "Inspection", exact: true })).toBeVisible({
     timeout: 20_000,
   });
   await expect(page.locator("body")).not.toContainText("Application error");
