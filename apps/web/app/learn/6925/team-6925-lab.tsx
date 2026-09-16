@@ -1,5 +1,11 @@
 import { Button, PageHeader } from "../../../components/ui";
-import { TEAM_6925_RESOURCES, TEAM_6925_WEEKS, totalLabMinutes } from "../../../lib/team-resources/frc6925";
+import {
+  TEAM_6925_RESOURCES,
+  TEAM_6925_SETUP_COMMAND,
+  TEAM_6925_WEEKS,
+  totalLabMinutes,
+} from "../../../lib/team-resources/frc6925";
+import { CopyCommand } from "./copy-command";
 import { withOrgHref } from "../../../lib/nav/product-nav";
 
 export function Team6925Lab() {
@@ -34,6 +40,12 @@ export function Team6925Lab() {
         <section key={group.id} className="lab-unit" id={group.id}>
           <h2>{group.title}</h2>
           <p>{group.blurb}</p>
+          {group.id === "laptop-setup" ? (
+            <CopyCommand
+              command={TEAM_6925_SETUP_COMMAND}
+              label="Open PowerShell and run:"
+            />
+          ) : null}
           <ul className="lab-links">
             {group.links.map((link) => (
               <li key={link.href}>

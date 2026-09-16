@@ -29,7 +29,35 @@ export type PacedWeek = {
   links: TeamResourceLink[];
 };
 
+/**
+ * One command that sets a Windows laptop up for robot code, or brings an old
+ * one current. Paste it into PowerShell.
+ *
+ * It resolves WPILib and PathPlanner from their official release feeds at run
+ * time rather than pinning a version here, so it does not go stale mid-season.
+ * The script is `apps/web/public/team-setup.ps1`.
+ */
+export const TEAM_6925_SETUP_COMMAND =
+  "irm https://vantage-frc-web.vercel.app/team-setup.ps1 | iex";
+
 export const TEAM_6925_RESOURCES: TeamResourceGroup[] = [
+  {
+    id: "laptop-setup",
+    title: "Set up your laptop",
+    blurb:
+      "One command installs VS Code, Git, WPILib and PathPlanner — and updates them if you already have them. Run it in PowerShell. WPILib is about 2.5 GB, so do it on home Wi-Fi, not at an event.",
+    links: [
+      {
+        label: "Zero to Robot — the official walkthrough",
+        href: "https://docs.wpilib.org/en/stable/docs/zero-to-robot/introduction.html",
+        primary: true,
+      },
+      {
+        label: "FRC Game Tools (Driver Station — needs an NI account)",
+        href: "https://docs.wpilib.org/en/stable/docs/zero-to-robot/step-2/frc-game-tools.html",
+      },
+    ],
+  },
   {
     id: "vision",
     title: "Limelight and vision",
