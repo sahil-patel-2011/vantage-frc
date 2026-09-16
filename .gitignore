@@ -17,3 +17,12 @@ test-results/
 
 # Written by scripts/run-migrations.mjs on a failed apply; local diagnostics, never committed.
 scripts/migration-failures.log
+
+# Agent worktrees. Each is a full checkout with its own .git, and they carry
+# node_modules junctions into this repo — committing them once added 860 files
+# and an embedded-repo warning. .claude/launch.json and .claude/skills stay
+# tracked, so this ignores the worktrees only.
+.claude/worktrees/
+
+# Local free-relay project id. Machine-specific, never shared.
+.freebuff/
