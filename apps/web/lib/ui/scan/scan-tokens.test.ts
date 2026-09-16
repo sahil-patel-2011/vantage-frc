@@ -33,6 +33,13 @@ describe("vantage scan tokens", () => {
     expect(CSS).toContain("text-align: left");
   });
 
+  it("auth overlay uses gold setup chips and navy primary", () => {
+    const auth = readFileSync(join(__dirname, "../../../app/vantage-scan-auth.css"), "utf8");
+    expect(auth).toContain("--scan-gold");
+    expect(auth).toContain(".signin-setup-shell");
+    expect(auth).toContain(".signin-submit");
+  });
+
   it("does not invent demo metrics or leftover kit chrome", () => {
     const blob = `${CSS}\n${MARKETING}`;
     expect(blob).not.toMatch(/\bTBA\b/);

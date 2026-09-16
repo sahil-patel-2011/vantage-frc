@@ -41,6 +41,7 @@ import {
 import { PendingPanel } from "./onboarding-pending";
 import { PreferencesForm, ProfileForm, TeamForm } from "./onboarding-steps";
 import "./onboarding-flow.css";
+import "../vantage-scan-auth.css";
 
 export default function OnboardingClient() {
   const searchParams = useSearchParams();
