@@ -6,11 +6,13 @@ import {
   computeShiftBalancerView,
   deletePlan,
   generatePlan,
+  linkScoutToMember,
+  publishPlan,
   removeScout,
   setScoutActive,
   type ShiftBalancerView,
 } from "../../../lib/shift-balancer/compute-shift-balancer";
-import { DEFAULT_STATIONS } from "../../../lib/shift-balancer";
+import { DEFAULT_STATIONS, describePublish } from "../../../lib/shift-balancer";
 
 export type { ShiftBalancerView };
 
@@ -86,6 +88,7 @@ export async function POST(request: Request) {
       ]);
       if (!member.rowCount) throw new Error("forbidden");
 
+      let published: string | null = null;
       switch (action) {
         case "add-scout": {
           const name = trimmedOrNull(body.name, 120);
@@ -129,11 +132,27 @@ export async function POST(request: Request) {
           await deletePlan(client, { orgId, planId });
           break;
         }
+        case "link-scout": {
+          const scoutId = trimmedOrNull(body.scoutId, 64);
+          if (!scoutId) throw new Error("scoutId is required");
+          // An empty memberId clears the link — someone can stop being a member
+          // without their past shifts disappearing.
+          const memberId = trimmedOrNull(body.memberId, 64);
+          await linkScoutToMember(client, { orgId, scoutId, memberId });
+          break;
+        }
+        case "publish-plan": {
+          const planId = trimmedOrNull(body.planId, 64);
+          if (!planId) throw new Error("planId is required");
+          published = describePublish(await publishPlan(client, { orgId, planId }));
+          break;
+        }
         default:
           throw new Error("Unknown action");
       }
 
-      return computeShiftBalancerView(client, { userId, requestedOrg: orgId });
+      const next = await computeShiftBalancerView(client, { userId, requestedOrg: orgId });
+      return published ? { ...next, published } : next;
     });
 
     return Response.json(view);

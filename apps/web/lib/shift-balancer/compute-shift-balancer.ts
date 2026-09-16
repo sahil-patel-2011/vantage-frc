@@ -3,9 +3,11 @@ import {
   DEFAULT_STATIONS,
   generateRotation,
   overlayScheduleOnRotation,
+  publishableAssignments,
   scheduleSlotsFromQuals,
   summarizePlan,
 } from ".";
+import type { PublishPreview, ShiftBalancerAssignment } from ".";
 import type { ShiftBalancerPlan, ShiftBalancerScout, ShiftBalancerSummary } from "./types";
 
 export type ShiftBalancerSetupStep = {
@@ -29,6 +31,8 @@ export type ShiftBalancerView =
       eventKey: string | null;
       qualMatchCount: number;
       scouts: ShiftBalancerScout[];
+      /** Team members a scout row can be linked to, so a plan can reach them. */
+      members: Array<{ id: string; name: string }>;
       plans: ShiftBalancerPlan[];
       latestSummary: ShiftBalancerSummary | null;
       computedAt: string;
@@ -38,6 +42,7 @@ type ScoutRow = {
   id: string;
   name: string;
   active: boolean;
+  userId: string | null;
 };
 
 type PlanRow = {
@@ -51,7 +56,7 @@ type PlanRow = {
 };
 
 function mapScout(row: ScoutRow): ShiftBalancerScout {
-  return { id: row.id, name: row.name, active: row.active };
+  return { id: row.id, name: row.name, active: row.active, userId: row.userId ?? null };
 }
 
 function mapPlan(row: PlanRow): ShiftBalancerPlan {
@@ -104,9 +109,9 @@ export async function computeShiftBalancerView(
     };
   }
 
-  const [scoutResult, planResult, eventResult, qualResult] = await Promise.all([
+  const [scoutResult, planResult, eventResult, qualResult, memberResult] = await Promise.all([
     client.query<ScoutRow>(
-      `SELECT id, name, active
+      `SELECT id, name, active, user_id AS "userId"
        FROM shift_balancer_scouts
        WHERE org_id = $1
        ORDER BY name`,
@@ -133,6 +138,15 @@ export async function computeShiftBalancerView(
          AND comp_level = 'qm'`,
       [org.orgId],
     ),
+    client.query<{ id: string; name: string | null; email: string }>(
+      `SELECT u.id, p.display_name AS name, u.email
+       FROM memberships m
+       JOIN users u ON u.id = m.user_id
+       LEFT JOIN profiles p ON p.user_id = u.id
+       WHERE m.org_id = $1::uuid
+       ORDER BY COALESCE(p.display_name, u.email)`,
+      [org.orgId],
+    ),
   ]);
 
   const scouts = scoutResult.rows.map(mapScout);
@@ -154,6 +168,9 @@ export async function computeShiftBalancerView(
     eventKey: eventResult.rows[0]?.eventKey ?? null,
     qualMatchCount: Number(qualResult.rows[0]?.qualCount) || 0,
     scouts,
+    // Email is the fallback label, not a second field: a member who has not set
+    // a display name still has to be pickable.
+    members: memberResult.rows.map((row) => ({ id: row.id, name: row.name || row.email })),
     plans,
     latestSummary,
     computedAt: new Date().toISOString(),
@@ -181,6 +198,76 @@ export async function setScoutActive(
     input.scoutId,
     input.orgId,
   ]);
+}
+
+/**
+ * Point a scout row at the team member it actually is, or clear the link.
+ *
+ * Guarded by a membership check rather than trusting the id in the request: the
+ * caller could otherwise link a shift to a user in another team, and every
+ * surface that reads scout_assignments would then show that person a duty.
+ */
+export async function linkScoutToMember(
+  client: PoolClient,
+  input: { orgId: string; scoutId: string; memberId: string | null },
+): Promise<void> {
+  if (input.memberId) {
+    const member = await client.query(
+      `SELECT 1 FROM memberships WHERE org_id = $1::uuid AND user_id = $2::uuid LIMIT 1`,
+      [input.orgId, input.memberId],
+    );
+    if (member.rowCount === 0) throw new Error("That person is not on this team");
+  }
+  await client.query(
+    `UPDATE shift_balancer_scouts SET user_id = $1::uuid WHERE id = $2::uuid AND org_id = $3::uuid`,
+    [input.memberId, input.scoutId, input.orgId],
+  );
+}
+
+/**
+ * Write a saved plan into scout_assignments, which is what the schedule, the
+ * briefing, Event Day command and the dashboard already read.
+ *
+ * Idempotent by the table's own unique key, so publishing the same plan twice
+ * updates the station and time rather than erroring or duplicating a duty.
+ */
+export async function publishPlan(
+  client: PoolClient,
+  input: { orgId: string; planId: string },
+): Promise<PublishPreview> {
+  const plan = await client.query<{ assignments: unknown }>(
+    `SELECT assignments FROM shift_balancer_plans WHERE id = $1::uuid AND org_id = $2::uuid`,
+    [input.planId, input.orgId],
+  );
+  if (plan.rowCount === 0) throw new Error("That plan no longer exists");
+
+  const scouts = await client.query<{ id: string; userId: string | null }>(
+    `SELECT id, user_id AS "userId" FROM shift_balancer_scouts WHERE org_id = $1::uuid`,
+    [input.orgId],
+  );
+  const event = await client.query<{ eventKey: string | null }>(
+    `SELECT active_event_key AS "eventKey" FROM org_active_context WHERE org_id = $1::uuid`,
+    [input.orgId],
+  );
+  const eventKey = event.rows[0]?.eventKey ?? null;
+  if (!eventKey) throw new Error("Set the active event before publishing");
+
+  const raw = plan.rows[0]?.assignments;
+  const preview = publishableAssignments(
+    Array.isArray(raw) ? (raw as ShiftBalancerAssignment[]) : [],
+    scouts.rows,
+  );
+
+  for (const row of preview.rows) {
+    await client.query(
+      `INSERT INTO scout_assignments (org_id, event_key, user_id, match_key, team_key, role, starts_at)
+       VALUES ($1::uuid, $2::text, $3::uuid, $4::text, $5::text, $6::text, $7::timestamptz)
+       ON CONFLICT (org_id, user_id, match_key, team_key)
+       DO UPDATE SET role = EXCLUDED.role, starts_at = EXCLUDED.starts_at`,
+      [input.orgId, eventKey, row.userId, row.matchKey, row.teamKey, row.station, row.startsAt],
+    );
+  }
+  return preview;
 }
 
 export async function removeScout(

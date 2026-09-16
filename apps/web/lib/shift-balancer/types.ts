@@ -6,6 +6,12 @@ export type ShiftBalancerScout = {
   id: string;
   name: string;
   active: boolean;
+  /**
+   * The team member this scout is, when they have an account. Null for a
+   * volunteer without one — they still rotate in the plan and still get a
+   * tablet sheet, they just cannot receive a personal assignment.
+   */
+  userId?: string | null;
 };
 
 export type ShiftBalancerAssignment = {
