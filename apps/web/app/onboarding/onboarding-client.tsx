@@ -415,7 +415,7 @@ export default function OnboardingClient() {
           };
 
   return (
-    <main className="onboarding-page onboarding-flow-page">
+    <main className="onboarding-page onboarding-flow-page scan-workbench scan-hub--onboarding">
       <section className={`onboarding-card onboarding-flow-card${step === "pending" || step === "done" ? " pending" : ""}`} aria-labelledby="onboarding-title">
         <header className="onboarding-flow-header">
           <div className="onboarding-brand"><VantageLogo /></div>
@@ -427,7 +427,7 @@ export default function OnboardingClient() {
         {setupStep ? (
           <div className="onboarding-progress-block">
             <p className="onboarding-progress-label" aria-live="polite">{progressLabel}</p>
-            <ol className="onboarding-steps onboarding-steps-simple" aria-label="Onboarding progress">
+            <ol className="onboarding-steps onboarding-steps-simple scan-rail" aria-label="Onboarding progress">
               {stepMeta.map((item) => (
                 <li key={item.id} className={item.phase} aria-current={item.phase === "current" ? "step" : undefined}>
                   <b aria-hidden="true">{item.phase === "done" ? "✓" : item.index + 1}</b>

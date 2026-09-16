@@ -6,6 +6,7 @@ import Script from "next/script";
 // and the public shells that need them — not from this root layout — so
 // marketing routes do not download scout/intel/kiosk chrome.
 import "./system.css";
+import "./vantage-scan.css";
 import PwaRegister from "./pwa-register";
 import ThemeProvider from "./theme-provider";
 import { ConsentBanner } from "../components/consent-banner";

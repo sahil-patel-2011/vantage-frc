@@ -16,7 +16,7 @@ type PageHeaderProps = {
 export function PageHeader({ breadcrumbs, navPath, title, description, children, className }: PageHeaderProps) {
   const crumb = breadcrumbs ?? (navPath ? breadcrumbForPath(navPath) : null);
   return (
-    <header className={["app-page-header", className].filter(Boolean).join(" ")}>
+    <header className={["app-page-header", "scan-header", className].filter(Boolean).join(" ")}>
       <div>
         {crumb ? <span className="breadcrumbs">{crumb}</span> : null}
         <h1>{title}</h1>

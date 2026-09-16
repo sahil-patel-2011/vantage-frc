@@ -1,0 +1,180 @@
+/* =============================================================================
+   Scan polish — picklist-justifier (compete)
+   ADHD contract: one title, grouped THIS MATCH / SCOUTING / RELATED, navy active,
+   gold setup chip, dashed honest empty. Matches installer hierarchy
+   (clear steps, grouped lists, one primary) without copying that window.
+   Empty stays empty. No demo metrics.
+   ========================================================================== */
+
+.product-hub--picklist-justifier,
+.scan-hub--picklist-justifier,
+.picklist-justifier-page,
+.picklist-justifier-layout {
+  --scan-group-a: "THIS MATCH";
+  --scan-group-b: "SCOUTING";
+  --scan-group-c: "RELATED";
+  display: grid;
+  gap: var(--scan-stack, 18px);
+  min-width: 0;
+}
+
+.product-hub--picklist-justifier .app-page-header,
+.product-hub--picklist-justifier .picklist-justifier-card-header,
+.product-hub--picklist-justifier .picklist-justifier-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px 18px;
+  margin: 0 0 4px;
+}
+
+.product-hub--picklist-justifier .app-page-header h1,
+.product-hub--picklist-justifier h1 {
+  margin: 0;
+  font-size: var(--scan-title, clamp(22px, 2.6vw, 30px));
+  letter-spacing: -0.03em;
+  color: var(--scan-navy, var(--ink));
+  line-height: 1.12;
+}
+
+.product-hub--picklist-justifier .app-page-header p,
+.product-hub--picklist-justifier .app-muted {
+  max-width: 62ch;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.product-hub--picklist-justifier .picklist-justifier-tip,
+.product-hub--picklist-justifier .picklist-justifier-card,
+.product-hub--picklist-justifier .picklist-justifier-list,
+.picklist-justifier-page,
+.product-hub--picklist-justifier .picklist-justifier-panel,
+.product-hub--picklist-justifier .picklist-justifier-stats,
+.picklist-justifier-layout,
+.product-hub--picklist-justifier .picklist-justifier-select,
+.product-hub--picklist-justifier .picklist-justifier-related,
+.product-hub--picklist-justifier .picklist-justifier-sources {
+  background: var(--surface);
+  border: 1px solid color-mix(in srgb, var(--scan-navy, var(--ink)) 10%, var(--line));
+  border-radius: var(--scan-radius, 16px);
+  box-shadow: var(--scan-shadow, 0 10px 28px rgba(13, 53, 96, 0.06));
+}
+
+.product-hub--picklist-justifier .soft-empty {
+  justify-items: start;
+  text-align: left;
+  border: 1px dashed color-mix(in srgb, var(--scan-navy, var(--ink)) 22%, var(--line));
+  background: color-mix(in srgb, var(--scan-navy, var(--ink)) 3%, var(--surface));
+  padding: clamp(20px, 3vw, 32px);
+}
+
+.product-hub--picklist-justifier .picklist-justifier-related,
+.product-hub--picklist-justifier .picklist-justifier-next-actions,
+.product-hub--picklist-justifier .picklist-justifier-header-actions,
+.product-hub--picklist-justifier .edc-next-actions,
+.product-hub--picklist-justifier .product-hub-related {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.product-hub--picklist-justifier .app-badge.setup,
+.product-hub--picklist-justifier .app-badge[data-tone='setup'] {
+  color: var(--scan-gold-ink, var(--ink));
+  background: var(--scan-gold, #e8b923);
+  border-color: transparent;
+}
+
+.product-hub--picklist-justifier table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.product-hub--picklist-justifier th {
+  color: var(--scan-navy, var(--ink));
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.product-hub--picklist-justifier input {
+  min-height: 44px;
+}
+
+.product-hub--picklist-justifier .product-hub-related,
+.product-hub--picklist-justifier [class*='-related'] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.product-hub--picklist-justifier [class*='-next-actions'] {
+  display: grid;
+  gap: 8px;
+}
+
+.product-hub--picklist-justifier [class*='-next-actions'] li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 48px;
+  padding: 10px 0;
+  border-top: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
+}
+
+/* Group kickers for picklist-justifier: three scannable bands. */
+.product-hub--picklist-justifier .scan-group[data-band='a']::before { content: var(--scan-group-a); }
+.product-hub--picklist-justifier .scan-group[data-band='b']::before { content: var(--scan-group-b); }
+.product-hub--picklist-justifier .scan-group[data-band='c']::before { content: var(--scan-group-c); }
+
+@media (max-width: 720px) {
+  .product-hub--picklist-justifier,
+.scan-hub--picklist-justifier,
+.picklist-justifier-page,
+.picklist-justifier-layout {
+    gap: 14px;
+    padding-inline: max(12px, env(safe-area-inset-left)) max(12px, env(safe-area-inset-right));
+  }
+  .product-hub--picklist-justifier .app-page-header,
+  .product-hub--picklist-justifier .picklist-justifier-card-header,
+.product-hub--picklist-justifier .picklist-justifier-header-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .product-hub--picklist-justifier table {
+    display: block;
+    overflow-x: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .product-hub--picklist-justifier,
+.scan-hub--picklist-justifier,
+.picklist-justifier-page,
+.picklist-justifier-layout *, .product-hub--picklist-justifier,
+.scan-hub--picklist-justifier,
+.picklist-justifier-page,
+.picklist-justifier-layout *::before, .product-hub--picklist-justifier,
+.scan-hub--picklist-justifier,
+.picklist-justifier-page,
+.picklist-justifier-layout *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+:root[data-theme='dark'] .product-hub--picklist-justifier,
+.scan-hub--picklist-justifier,
+.picklist-justifier-page,
+.picklist-justifier-layout {
+  --scan-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
+}
+
+:root[data-theme='dark'] .product-hub--picklist-justifier .soft-empty {
+  background: color-mix(in srgb, var(--scan-navy, #7aa2d6) 8%, var(--surface));
+}
+

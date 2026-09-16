@@ -1,0 +1,104 @@
+/* =============================================================================
+   Vantage scan polish — marketing / legal / waitlist.
+   Same hierarchy as product (navy titles, gold season chip, one primary)
+   without turning the public site into the installer window.
+   ========================================================================== */
+
+.marketing-site {
+  --scan-navy: #0d3560;
+  --scan-navy-deep: #092848;
+  --scan-gold: #e8b923;
+  --scan-gold-ink: #14243a;
+}
+.marketing-site .nav {
+  background: color-mix(in srgb, #fff 88%, #e7eef6);
+  border-bottom-color: color-mix(in srgb, var(--scan-navy) 10%, var(--m-line, #ccd6e4));
+}
+.marketing-site .wordmark {
+  letter-spacing: 0.12em;
+}
+.marketing-site .nav nav a[aria-current="page"] {
+  color: var(--scan-navy);
+  box-shadow: inset 0 -2px 0 var(--scan-navy);
+}
+.marketing-site .button.primary,
+.marketing-site .button.compact {
+  background: var(--scan-navy);
+  color: #fff;
+}
+.marketing-site .button.primary:hover,
+.marketing-site .button.compact:hover {
+  background: var(--scan-navy-deep);
+  opacity: 1;
+}
+.marketing-site .lux-kicker,
+.marketing-site .lux-eyebrow,
+.marketing-site .eyebrow {
+  color: var(--scan-navy);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.marketing-site h1,
+.marketing-site .lux-hero h1 {
+  color: var(--scan-navy);
+  letter-spacing: -0.035em;
+}
+.marketing-site .lux-hero-note,
+.marketing-site .hero-copy {
+  max-width: 62ch;
+}
+.marketing-site .hero-waitlist,
+.marketing-site .waitlist-form,
+.marketing-site .confirmation {
+  border-radius: 16px;
+  border-color: color-mix(in srgb, var(--scan-navy) 12%, var(--m-line, #ccd6e4));
+  box-shadow: 0 10px 28px rgba(13, 53, 96, 0.06);
+}
+.marketing-site .status-badge.setup {
+  color: var(--scan-gold-ink);
+  background: var(--scan-gold);
+  border-color: transparent;
+}
+.marketing-site .legal h1,
+.marketing-site .pricing-hero h1,
+.marketing-site .route-hero h1 {
+  color: var(--scan-navy);
+}
+.marketing-site .pricing-grid article {
+  border-radius: 16px;
+  border-color: color-mix(in srgb, var(--scan-navy) 10%, var(--m-line, #ccd6e4));
+}
+.marketing-site .mk-hero-proof {
+  display: grid;
+  gap: 6px;
+  padding: 0;
+  margin: 18px 0 0;
+  list-style: none;
+  color: var(--m-muted, #44536b);
+  font-size: 13px;
+}
+.marketing-site .mk-hero-proof li {
+  padding-left: 18px;
+  position: relative;
+}
+.marketing-site .mk-hero-proof li::before {
+  content: "";
+  position: absolute;
+  margin-left: -18px;
+  width: 8px;
+  height: 8px;
+  margin-top: 6px;
+  border-radius: 99px;
+  background: var(--scan-gold);
+}
+
+@media (max-width: 720px) {
+  .marketing-site .nav {
+    padding-inline: 16px;
+  }
+  .marketing-site .lux-hero-inner,
+  .marketing-site .hero {
+    gap: 28px;
+  }
+}

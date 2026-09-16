@@ -32,7 +32,7 @@ export function EmptyState({
   compact = false,
   "aria-busy": ariaBusy,
 }: EmptyStateProps) {
-  const shell = compact ? "soft-empty-compact" : soft ? "soft-empty" : "app-card soft-panel";
+  const shell = compact ? "soft-empty-compact" : soft ? "soft-empty scan-empty" : "app-card soft-panel scan-empty";
   return (
     <section className={[shell, className].filter(Boolean).join(" ")} aria-busy={ariaBusy}>
       {badge != null && badge !== "" ? (

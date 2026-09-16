@@ -200,7 +200,7 @@ export function ProductHubShell({
 
   if (access.ready && hubDenied) {
     return (
-      <main className={`module-page product-hub product-hub--${hub.id} soft-gate`}>
+      <main className={`module-page product-hub product-hub--${hub.id} scan-workbench scan-hub--${hub.id} soft-gate`}>
         <PageHeader breadcrumbs={breadcrumbs} title={hub.title} description={hub.description || undefined}>
           {headerActions}
         </PageHeader>
@@ -224,7 +224,7 @@ export function ProductHubShell({
     primaryTabs.some((entry) => entry.id === tab || entry.id === workbenchId);
 
   return (
-    <main className={`module-page product-hub product-hub--${hub.id}`}>
+    <main className={`module-page product-hub product-hub--${hub.id} scan-workbench scan-hub--${hub.id}`}>
       <PageHeader breadcrumbs={breadcrumbs} title={hub.title} description={hub.description || undefined}>
         {headerActions}
       </PageHeader>

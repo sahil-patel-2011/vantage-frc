@@ -264,7 +264,7 @@ export function DashboardHomeView(props: {
   const now = homeNowFromWidgets({ orgId, nextMatchData, widgets });
 
   return (
-    <main className={`dash-home${editing ? " is-editing" : ""}`} data-grid={grid.label} data-cols={cols}>
+    <main className={`dash-home scan-workbench scan-hub--dashboard${editing ? " is-editing" : ""}`} data-grid={grid.label} data-cols={cols}>
       <p className="dash-live-region" role="status" aria-live="polite">
         {announce}
       </p>

@@ -18,6 +18,8 @@ export { Panel } from "./panel";
 export { TabBar, type SoftTab } from "./tab-bar";
 export { ToolStrip, type ToolStripItem } from "./tool-strip";
 
+export { ScanRail, ScanGroup, ScanKicker, ScanWorkbench } from "./scan";
+
 // --- New primitives (design-system) ---
 export { Card } from "./card";
 export { SectionHeading } from "./section-heading";
