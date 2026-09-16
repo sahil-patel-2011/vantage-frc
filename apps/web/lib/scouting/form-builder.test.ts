@@ -287,7 +287,10 @@ describe("form-builder", () => {
         validation: ok,
         acknowledgeBudget: false,
       }),
-    ).toMatch(/owner or admin/i);
+      // Changed on purpose: scouting forms are open to the whole team now
+      // (migration 0658), so the only person this blocks is someone who has not
+      // joined a team yet — not a student whose role is too low.
+    ).toMatch(/choose your team/i);
     expect(
       formBuilderPublishBlockedReason({
         canManageSchemas: true,

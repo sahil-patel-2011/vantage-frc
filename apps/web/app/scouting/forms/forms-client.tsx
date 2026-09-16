@@ -349,10 +349,10 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
         <OfflineBanner feature="Scout forms" fromCache={fromCache} cachedAt={cachedAt} />
         {!payload.canManageSchemas ? (
           <EmptyState
-            badge="Coach role"
+            badge="Needs setup"
             badgeTone="setup"
-            title="View only"
-            description="Owners and admins publish scouting forms. You can still preview drafts after an event is set."
+            title="Choose your team"
+            description="Pick the team you are on and you can build scouting forms with everyone else."
           />
         ) : null}
       </FormBuilderShell>
@@ -393,10 +393,10 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
 
       {!payload.canManageSchemas ? (
         <EmptyState
-          badge="Coach role"
+          badge="Needs setup"
           badgeTone="setup"
-          title="View only"
-          description="Owners and admins publish scouting forms. You can still preview the draft below."
+          title="Choose your team"
+          description="Pick the team you are on and you can build scouting forms with everyone else."
         />
       ) : null}
 

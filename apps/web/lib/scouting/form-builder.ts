@@ -1142,10 +1142,10 @@ export function formBuilderNextActions(input: {
     return [
       {
         id: "publish",
-        label: input.canManageSchemas ? `Publish ${typeLabel} form` : "Ask an owner to publish",
+        label: input.canManageSchemas ? `Publish ${typeLabel} form` : "Choose your team",
         detail: input.canManageSchemas
           ? `Publish a real ${typeLabel} form so Scouting and Coverage can use it.`
-          : `Owners and admins publish ${typeLabel} forms — you can still preview the draft.`,
+          : `Join a team and you can build ${typeLabel} forms with everyone else.`,
         href: hubHref("/competition", "forms", orgId),
         primary: true,
       },
@@ -1218,7 +1218,9 @@ export function formBuilderPublishBlockedReason(input: {
   acknowledgeBudget: boolean;
 }): string | null {
   if (!input.canManageSchemas) {
-    return "Owner or admin role is required to publish forms.";
+    // Anyone on the team may build and publish a form; the only people this
+    // stops are those who have not joined one yet.
+    return "Choose your team before publishing a form.";
   }
   if (!input.eventKey || input.year == null) {
     return "Set an active event so the season year is known before publishing.";

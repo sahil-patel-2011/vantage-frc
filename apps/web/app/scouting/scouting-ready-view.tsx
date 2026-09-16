@@ -232,7 +232,7 @@ return (
           description={
             data?.canManageSchemas
               ? "Create starter match and pit forms for this season, or build a custom form and publish it."
-              : "Ask an owner or admin to publish scouting forms for this event."
+              : "Build a scouting form for this event — anyone on the team can."
           }
         >
           {data?.canManageSchemas ? (
