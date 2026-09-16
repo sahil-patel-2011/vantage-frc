@@ -164,6 +164,34 @@
   gap: 6px;
 }
 
+/* Remove is recoverable: the deleted question and its place are held until the
+   builder is told otherwise, so a fully configured field is never lost to one
+   mis-tap. Announced with role="status" so it is not a visual-only rescue. */
+.sfb-undo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm, 12px);
+  background: color-mix(in srgb, var(--surface) 88%, var(--line));
+  animation: sfb-undo-in var(--motion) var(--motion-ease) both;
+}
+.sfb-undo span {
+  flex: 1;
+  min-width: 12rem;
+  font-size: 13px;
+}
+@keyframes sfb-undo-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sfb-undo { animation: none !important; }
+}
+
 .sfb-question-actions button {
   min-height: 44px;
   padding: 0 12px;

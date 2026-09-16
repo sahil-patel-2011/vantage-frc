@@ -16,6 +16,7 @@ import {
   formBuilderPublishBlockedReason,
   formBuilderPublishLabel,
   formBuilderShellCopy,
+  duplicateQuestion,
   moveQuestion,
   needsOptionEditor,
   needsSettingsEditor,
@@ -66,6 +67,12 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
   const [mode, setMode] = useState<FormBuilderMode>("edit");
   const [title, setTitle] = useState("Match scouting");
   const [questions, setQuestions] = useState(() => defaultQuestions("match"));
+  /**
+   * The last removed question and where it sat, so Remove is recoverable.
+   * Deleting a configured field — options, settings, strategy role — used to
+   * throw all of it away with no way back.
+   */
+  const [removed, setRemoved] = useState<{ question: DraftQuestion; index: number } | null>(null);
   const [year, setYear] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -516,10 +523,42 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
                 <div>
                   <h2 style={{ margin: 0 }}>Questions</h2>
                   <p className="app-muted" style={{ margin: "4px 0 0" }}>
-                    Toggle required, edit MC/dropdown options, and reorder with Move up / Move down.
+                    Toggle required, edit options, copy a question with Duplicate, and reorder with
+                    Move up / Move down.
                   </p>
                 </div>
               </header>
+              {removed ? (
+                <div className="sfb-undo" role="status">
+                  <span>
+                    Removed <strong>{removed.question.label || "a question"}</strong>.
+                  </span>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    type="button"
+                    onClick={() => {
+                      setQuestions((prev) => {
+                        const next = prev.slice();
+                        next.splice(Math.min(removed.index, next.length), 0, removed.question);
+                        return next;
+                      });
+                      setRemoved(null);
+                    }}
+                  >
+                    Undo
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    type="button"
+                    aria-label="Dismiss"
+                    onClick={() => setRemoved(null)}
+                  >
+                    Dismiss
+                  </Button>
+                </div>
+              ) : null}
               <div className="sfb-questions">
                 {questions.map((question, index) => (
                   <article key={question.id} className="sfb-question">
@@ -552,10 +591,19 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
                         </button>
                         <button
                           type="button"
+                          disabled={!payload.canManageSchemas}
+                          aria-label={`Duplicate question ${index + 1}`}
+                          onClick={() => setQuestions((prev) => duplicateQuestion(prev, index))}
+                        >
+                          Duplicate
+                        </button>
+                        <button
+                          type="button"
                           disabled={!payload.canManageSchemas || questions.length <= 1}
-                          onClick={() =>
-                            setQuestions((prev) => prev.filter((entry) => entry.id !== question.id))
-                          }
+                          onClick={() => {
+                            setRemoved({ question, index });
+                            setQuestions((prev) => prev.filter((entry) => entry.id !== question.id));
+                          }}
                         >
                           Remove
                         </button>

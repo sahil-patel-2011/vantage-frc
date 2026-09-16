@@ -717,6 +717,38 @@ export function definitionFromDraft(
   return { title: title.trim() || "Scouting form", fields };
 }
 
+/**
+ * Copy a question in place, directly below the original.
+ *
+ * A scouting form is mostly near-identical fields — the same counter for auto
+ * and for teleop, the same rating for three subsystems — so rebuilding each one
+ * by hand is where the time goes.
+ *
+ * The copy deliberately drops `key`. That is the stable published identifier
+ * every stored answer is filed under; two questions carrying one key would make
+ * saved payloads ambiguous the moment the schema is published. A fresh field
+ * earns its own key at publish time, from its label.
+ *
+ * The label gets a " copy" suffix for the same reason: labels become keys, and
+ * two fields named identically would publish into one.
+ */
+export function duplicateQuestion(questions: DraftQuestion[], index: number): DraftQuestion[] {
+  const source = questions[index];
+  if (!source) return questions;
+  const copy: DraftQuestion = {
+    ...source,
+    id: `q_${Math.random().toString(36).slice(2, 10)}`,
+    key: undefined,
+    label: source.label ? `${source.label} copy` : "",
+    // Settings are a nested object; a shared reference would make editing the
+    // copy silently edit the original.
+    settings: { ...source.settings },
+  };
+  const next = questions.slice();
+  next.splice(index + 1, 0, copy);
+  return next;
+}
+
 export function moveQuestion(questions: DraftQuestion[], from: number, to: number): DraftQuestion[] {
   if (from < 0 || from >= questions.length) return questions;
   if (to < 0 || to >= questions.length) return questions;
