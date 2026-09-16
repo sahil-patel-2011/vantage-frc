@@ -61,6 +61,7 @@ import {
 import { SignInSessionView } from "./sign-in-session";
 import "../product-styles";
 import "./sign-in-flow.css";
+import "../vantage-scan-auth.css";
 
 type AuthStatus = SignInAuthStatus;
 
