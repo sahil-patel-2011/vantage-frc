@@ -72,9 +72,7 @@ function RelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related dts-related" aria-label="Related competition tools">
       {links.map((link) => (
-        <Button as="a" variant="secondary" key={link.id} href={link.href}>
-          {link.label}
-        </Button>
+        <a key={link.id} href={link.href}>{link.label}</a>
       ))}
     </nav>
   );
@@ -90,13 +88,10 @@ function NextActionsPanel({ actions }: { actions: DriveTeamSignalsNextAction[] }
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>

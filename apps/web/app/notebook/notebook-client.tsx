@@ -92,15 +92,9 @@ function CiteMedia({ asset, compact }: { asset: NotebookImageAttachment; compact
 function NotebookRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related playbook tools">
-      <Button as="a" variant="secondary" href={hubHref("/team", "files", orgId)}>
-        Files
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/team", "writer", orgId)}>
-        Writer
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/business", "impact", orgId)}>
-        Community Impact
-      </Button>
+      <a href={hubHref("/team", "files", orgId)}>Files</a>
+      <a href={hubHref("/team", "writer", orgId)}>Writer</a>
+      <a href={hubHref("/business", "impact", orgId)}>Community Impact</a>
     </nav>
   );
 }
@@ -130,13 +124,10 @@ function NotebookNextActions({ orgId }: { orgId: string }) {
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>

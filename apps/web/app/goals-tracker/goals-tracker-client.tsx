@@ -67,15 +67,9 @@ async function persistGoalsTrackerSnapshot(
 function GoalsTrackerRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related team tools">
-      <Button as="a" variant="secondary" href={hubHref("/team", "standup-digest", orgId)}>
-        Standup
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/team", "meeting-autopilot", orgId)}>
-        Meeting agenda
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/team", "season-planning-workspace", orgId)}>
-        Season plan
-      </Button>
+      <a href={hubHref("/team", "standup-digest", orgId)}>Standup</a>
+      <a href={hubHref("/team", "meeting-autopilot", orgId)}>Meeting agenda</a>
+      <a href={hubHref("/team", "season-planning-workspace", orgId)}>Season plan</a>
     </nav>
   );
 }
@@ -98,13 +92,10 @@ function GoalsTrackerNextActions() {
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>

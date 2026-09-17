@@ -369,7 +369,11 @@ export function AppShellNavPanel({
                           }
                           onClick={closeNav}
                         >
-                          {entry.label}
+                          <span>{entry.label}</span>
+                          {/* Every row that takes you somewhere says so. These
+                              were bare words in a list, indistinguishable from
+                              the group headings above them. */}
+                          <Icon name="chevron" />
                         </a>
                       ))}
                     </div>

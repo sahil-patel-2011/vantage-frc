@@ -106,15 +106,9 @@ function conflictText(conflict: WiringConflict): string {
 function WiringRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related build tools">
-      <Button as="a" variant="secondary" href={withOrgHref("/inventory", orgId)}>
-        Inventory
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/build", "batteries", orgId)}>
-        Batteries
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/build", "power-budget", orgId)}>
-        Power budget
-      </Button>
+      <a href={withOrgHref("/inventory", orgId)}>Inventory</a>
+      <a href={hubHref("/build", "batteries", orgId)}>Batteries</a>
+      <a href={hubHref("/build", "power-budget", orgId)}>Power budget</a>
     </nav>
   );
 }
@@ -137,13 +131,10 @@ function WiringNextActions() {
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>

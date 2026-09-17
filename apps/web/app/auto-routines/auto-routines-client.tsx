@@ -95,15 +95,9 @@ async function persistAutoRoutinesSnapshot(orgHint: string, seasonHint: string, 
 function AutoRoutinesRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related competition tools">
-      <Button as="a" variant="secondary" href={hubHref("/build", "auton-path-library", orgId)}>
-        Auton paths
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/build", "code", orgId)}>
-        Code
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/competition", "strategy", orgId)}>
-        Strategy
-      </Button>
+      <a href={hubHref("/build", "auton-path-library", orgId)}>Auton paths</a>
+      <a href={hubHref("/build", "code", orgId)}>Code</a>
+      <a href={hubHref("/competition", "strategy", orgId)}>Strategy</a>
     </nav>
   );
 }
@@ -126,13 +120,10 @@ function AutoRoutinesNextActions() {
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>

@@ -83,16 +83,10 @@ export default function HelpClient({ sectionGuide }: HelpClientProps = {}) {
         }
       >
         <nav className="product-hub-related" aria-label="Related account tools">
-          <Button as="a" variant="secondary" href="/whats-new">
-            What’s new
-          </Button>
-          <Button as="a" variant="secondary" href="/support">
-            Support tickets
-          </Button>
+          <a href="/whats-new">What’s new</a>
+          <a href="/support">Support tickets</a>
           {!hasGuide ? (
-            <Button as="a" variant="secondary" href="/docs?view=sections">
-              Section-by-section guide
-            </Button>
+            <a href="/docs?view=sections">Section-by-section guide</a>
           ) : null}
         </nav>
       </PageHeader>

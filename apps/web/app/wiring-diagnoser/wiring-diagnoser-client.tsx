@@ -65,15 +65,9 @@ async function persistWiringDiagnoserSnapshot(
 function WiringDiagnoserRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related robot tools">
-      <Button as="a" variant="secondary" href={hubHref("/build", "readiness-score", orgId)}>
-        Readiness
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/build", "power-budget", orgId)}>
-        Power budget
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/build", "wiring-map", orgId)}>
-        CAN-bus map
-      </Button>
+      <a href={hubHref("/build", "readiness-score", orgId)}>Readiness</a>
+      <a href={hubHref("/build", "power-budget", orgId)}>Power budget</a>
+      <a href={hubHref("/build", "wiring-map", orgId)}>CAN-bus map</a>
     </nav>
   );
 }
@@ -96,13 +90,10 @@ function WiringDiagnoserNextActions() {
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>

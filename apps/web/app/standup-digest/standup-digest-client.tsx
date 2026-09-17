@@ -58,15 +58,9 @@ async function persistStandupSnapshot(
 function StandupRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related team tools">
-      <Button as="a" variant="secondary" href={withOrgHref("/hours", orgId)}>
-        Hours
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/team", "goals-tracker", orgId)}>
-        Season Goals
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/team", "meeting-autopilot", orgId)}>
-        Meeting agenda
-      </Button>
+      <a href={withOrgHref("/hours", orgId)}>Hours</a>
+      <a href={hubHref("/team", "goals-tracker", orgId)}>Season Goals</a>
+      <a href={hubHref("/team", "meeting-autopilot", orgId)}>Meeting agenda</a>
     </nav>
   );
 }

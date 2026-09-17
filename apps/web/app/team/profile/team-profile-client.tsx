@@ -60,15 +60,9 @@ async function persistTeamProfileSnapshot(orgHint: string, data: View): Promise<
 function TeamProfileRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related team tools">
-      <Button as="a" variant="secondary" href={hubHref("/competition", "district-advancement", orgId)}>
-        Districts
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/business", "mock-judging", orgId)}>
-        Mock judging
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/business", "award-tracker", orgId)}>
-        Award tracker
-      </Button>
+      <a href={hubHref("/competition", "district-advancement", orgId)}>Districts</a>
+      <a href={hubHref("/business", "mock-judging", orgId)}>Mock judging</a>
+      <a href={hubHref("/business", "award-tracker", orgId)}>Award tracker</a>
     </nav>
   );
 }

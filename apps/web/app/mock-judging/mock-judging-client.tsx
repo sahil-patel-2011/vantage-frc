@@ -71,15 +71,9 @@ async function persistMockJudgingSnapshot(
 function MockJudgingRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related judging tools">
-      <Button as="a" variant="secondary" href={hubHref("/business", "judge-sim", orgId)}>
-        Judge pitch
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/business", "impact-essay", orgId)}>
-        Impact essay
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/competition", "district-advancement", orgId)}>
-        Districts
-      </Button>
+      <a href={hubHref("/business", "judge-sim", orgId)}>Judge pitch</a>
+      <a href={hubHref("/business", "impact-essay", orgId)}>Impact essay</a>
+      <a href={hubHref("/competition", "district-advancement", orgId)}>Districts</a>
     </nav>
   );
 }
@@ -102,13 +96,10 @@ function MockJudgingNextActions() {
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>

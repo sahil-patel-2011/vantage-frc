@@ -179,15 +179,9 @@ export default function RolesClient() {
 
   const related = (
     <nav className="product-hub-related" aria-label="Related people tools">
-      <Button as="a" variant="secondary" href={hubHref("/team", "attendance", orgId)}>
-        Attendance
-      </Button>
-      <Button as="a" variant="secondary" href={withOrgHref("/training", orgId)}>
-        Training
-      </Button>
-      <Button as="a" variant="secondary" href={withOrgHref("/subteams", orgId)}>
-        Subteams
-      </Button>
+      <a href={hubHref("/team", "attendance", orgId)}>Attendance</a>
+      <a href={withOrgHref("/training", orgId)}>Training</a>
+      <a href={withOrgHref("/subteams", orgId)}>Subteams</a>
     </nav>
   );
 

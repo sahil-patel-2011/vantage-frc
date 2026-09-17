@@ -90,15 +90,9 @@ async function persistSoftwareVersionsSnapshot(orgHint: string, seasonHint: stri
 function SoftwareVersionsRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related build tools">
-      <Button as="a" variant="secondary" href={hubHref("/build", "wiring-map", orgId)}>
-        CAN-bus map
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/build", "code", orgId)}>
-        Code
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/build", "tuning-log", orgId)}>
-        Tuning log
-      </Button>
+      <a href={hubHref("/build", "wiring-map", orgId)}>CAN-bus map</a>
+      <a href={hubHref("/build", "code", orgId)}>Code</a>
+      <a href={hubHref("/build", "tuning-log", orgId)}>Tuning log</a>
     </nav>
   );
 }
@@ -121,13 +115,10 @@ function SoftwareVersionsNextActions() {
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>

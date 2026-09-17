@@ -54,15 +54,9 @@ async function persistSchemaAbSnapshot(orgHint: string, data: SchemaAbView): Pro
 function SchemaAbRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related scouting tools">
-      <Button as="a" variant="secondary" href={hubHref("/competition", "scouting", orgId)}>
-        Scouting
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/competition", "scout-schema-negotiate", orgId)}>
-        Schema sync
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/competition", "forms", orgId)}>
-        Forms
-      </Button>
+      <a href={hubHref("/competition", "scouting", orgId)}>Scouting</a>
+      <a href={hubHref("/competition", "scout-schema-negotiate", orgId)}>Schema sync</a>
+      <a href={hubHref("/competition", "forms", orgId)}>Forms</a>
     </nav>
   );
 }
@@ -85,13 +79,10 @@ function SchemaAbNextActions() {
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>

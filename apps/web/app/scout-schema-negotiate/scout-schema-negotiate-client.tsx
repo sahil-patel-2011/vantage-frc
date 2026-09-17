@@ -58,15 +58,9 @@ async function persistSchemaNegotiateSnapshot(
 function SchemaSyncRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related scouting tools">
-      <Button as="a" variant="secondary" href={hubHref("/competition", "scouting", orgId)}>
-        Scouting
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/competition", "scout-p2p-relay", orgId)}>
-        Pit mesh
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/competition", "scouting-schema-ab", orgId)}>
-        Schema A/B
-      </Button>
+      <a href={hubHref("/competition", "scouting", orgId)}>Scouting</a>
+      <a href={hubHref("/competition", "scout-p2p-relay", orgId)}>Pit mesh</a>
+      <a href={hubHref("/competition", "scouting-schema-ab", orgId)}>Schema A/B</a>
     </nav>
   );
 }
@@ -89,13 +83,10 @@ function SchemaSyncNextActions() {
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>

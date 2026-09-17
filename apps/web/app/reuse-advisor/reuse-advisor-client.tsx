@@ -67,15 +67,9 @@ async function persistReuseAdvisorSnapshot(
 function ReuseAdvisorRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related build tools">
-      <Button as="a" variant="secondary" href={hubHref("/build", "subsystems", orgId)}>
-        Subsystems
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/build", "fmea", orgId)}>
-        FMEA
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/build", "readiness-score", orgId)}>
-        Readiness
-      </Button>
+      <a href={hubHref("/build", "subsystems", orgId)}>Subsystems</a>
+      <a href={hubHref("/build", "fmea", orgId)}>FMEA</a>
+      <a href={hubHref("/build", "readiness-score", orgId)}>Readiness</a>
     </nav>
   );
 }

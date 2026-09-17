@@ -50,9 +50,7 @@ function KnowledgeRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related team tools">
       {links.map((link) => (
-        <Button as="a" variant="secondary" key={link.id} href={link.href}>
-          {link.label}
-        </Button>
+        <a href={link.href}>{link.label}</a>
       ))}
     </nav>
   );

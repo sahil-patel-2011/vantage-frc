@@ -80,15 +80,9 @@ async function persistReviewsSnapshot(orgHint: string, seasonHint: string, data:
 function ReviewsRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related build tools">
-      <Button as="a" variant="secondary" href={hubHref("/build", "cad-vault", orgId)}>
-        CAD vault
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/build", "prototype", orgId)}>
-        Prototypes
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/build", "subsystems", orgId)}>
-        Subsystem specs
-      </Button>
+      <a href={hubHref("/build", "cad-vault", orgId)}>CAD vault</a>
+      <a href={hubHref("/build", "prototype", orgId)}>Prototypes</a>
+      <a href={hubHref("/build", "subsystems", orgId)}>Subsystem specs</a>
     </nav>
   );
 }
@@ -111,13 +105,10 @@ function ReviewsNextActions() {
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>

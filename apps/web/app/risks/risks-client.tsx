@@ -55,9 +55,7 @@ function RisksRelated({ orgId }: { orgId: string }) {
     <div className="risks-related">
       <nav className="product-hub-related risks-hub-related" aria-label="Related reliability tools">
         {primary.map((link) => (
-          <Button as="a" variant="secondary" key={link.id} href={link.href}>
-            {link.label}
-          </Button>
+          <a href={link.href}>{link.label}</a>
         ))}
       </nav>
       <TeamHubRelated orgId={orgId} include={[...RISKS_TEAM_RELATED_INCLUDE]} />
@@ -97,13 +95,10 @@ function NextActions({
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>

@@ -1,4 +1,4 @@
-import { Button, PageHeader } from "../../../components/ui";
+import { PageHeader } from "../../../components/ui";
 import {
   TEAM_6925_RESOURCES,
   TEAM_6925_SETUP_COMMAND,
@@ -22,15 +22,9 @@ export function Team6925Lab() {
         description="Official Limelight, WPILib, GitHub, and CAD Video Tutor links, then five paced weeks. Scores stay blank until a real grade exists."
       >
         <nav className="product-hub-related" aria-label="Related coding tools">
-          <Button as="a" variant="secondary" href={withOrgHref("/dev-setup", null)}>
-            Programming setup
-          </Button>
-          <Button as="a" variant="secondary" href={withOrgHref("/cad-learn", null)}>
-            Learn CAD
-          </Button>
-          <Button as="a" variant="secondary" href={withOrgHref("/code", null)}>
-            Code
-          </Button>
+          <a href={withOrgHref("/dev-setup", null)}>Programming setup</a>
+          <a href={withOrgHref("/cad-learn", null)}>Learn CAD</a>
+          <a href={withOrgHref("/code", null)}>Code</a>
         </nav>
       </PageHeader>
 

@@ -58,15 +58,9 @@ async function persistMeetingAutopilotSnapshot(
 function MeetingAutopilotRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related team tools">
-      <Button as="a" variant="secondary" href={hubHref("/team", "calendar", orgId)}>
-        Calendar
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/team", "standup-digest", orgId)}>
-        Standup
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/team", "goals-tracker", orgId)}>
-        Season Goals
-      </Button>
+      <a href={hubHref("/team", "calendar", orgId)}>Calendar</a>
+      <a href={hubHref("/team", "standup-digest", orgId)}>Standup</a>
+      <a href={hubHref("/team", "goals-tracker", orgId)}>Season Goals</a>
     </nav>
   );
 }

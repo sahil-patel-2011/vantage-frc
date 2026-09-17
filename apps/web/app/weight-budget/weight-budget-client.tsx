@@ -74,15 +74,9 @@ async function persistWeightBudgetSnapshot(orgHint: string, seasonHint: string, 
 function WeightBudgetRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related build tools">
-      <Button as="a" variant="secondary" href={hubHref("/build", "robot-weigh-in", orgId)}>
-        Weigh-in
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/build", "gearbox", orgId)}>
-        Gearbox calculator
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/build", "inspection-copilot", orgId)}>
-        Inspection
-      </Button>
+      <a href={hubHref("/build", "robot-weigh-in", orgId)}>Weigh-in</a>
+      <a href={hubHref("/build", "gearbox", orgId)}>Gearbox calculator</a>
+      <a href={hubHref("/build", "inspection-copilot", orgId)}>Inspection</a>
     </nav>
   );
 }
@@ -105,13 +99,10 @@ function WeightBudgetNextActions() {
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>

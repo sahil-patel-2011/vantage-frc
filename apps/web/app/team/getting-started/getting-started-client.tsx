@@ -203,15 +203,9 @@ async function persistGettingStartedSnapshot(orgHint: string, data: GettingStart
 function GettingStartedRelated({ orgId }: { orgId: string }) {
   return (
     <nav className="product-hub-related" aria-label="Related team tools">
-      <Button as="a" variant="secondary" href={withOrgHref("/start", orgId)}>
-        Your path
-      </Button>
-      <Button as="a" variant="secondary" href={withOrgHref("/team/knowledge", orgId)}>
-        Playbook
-      </Button>
-      <Button as="a" variant="secondary" href={withOrgHref("/team/calendar", orgId)}>
-        Calendar
-      </Button>
+      <a href={withOrgHref("/start", orgId)}>Your path</a>
+      <a href={withOrgHref("/team/knowledge", orgId)}>Playbook</a>
+      <a href={withOrgHref("/team/calendar", orgId)}>Calendar</a>
     </nav>
   );
 }
@@ -234,13 +228,10 @@ function GettingStartedNextActions({ orgId }: { orgId: string }) {
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>

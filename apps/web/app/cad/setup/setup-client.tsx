@@ -106,15 +106,9 @@ function targetLabel(target: CadTarget): string {
 export function CadSetupRelated({ orgId }: { orgId: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related CAD tools">
-      <Button as="a" variant="secondary" href={withOrgHref("/cad", orgId)}>
-        CAD
-      </Button>
-      <Button as="a" variant="secondary" href={withOrgHref("/cad/connections", orgId)}>
-        CAD connections
-      </Button>
-      <Button as="a" variant="secondary" href={withOrgHref("/cad-vault", orgId)}>
-        CAD Vault
-      </Button>
+      <a href={withOrgHref("/cad", orgId)}>CAD</a>
+      <a href={withOrgHref("/cad/connections", orgId)}>CAD connections</a>
+      <a href={withOrgHref("/cad-vault", orgId)}>CAD Vault</a>
     </nav>
   );
 }
@@ -143,13 +137,10 @@ function CadSetupNextActions({
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>

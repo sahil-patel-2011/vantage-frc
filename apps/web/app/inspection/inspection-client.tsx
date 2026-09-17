@@ -343,12 +343,8 @@ export default function InspectionClient() {
               weigh it, then work the copilot's flags. It used to end here with
               no way forward. */}
           <nav className="product-hub-related" aria-label="Related inspection tools">
-            <Button as="a" variant="secondary" href={withOrgHref("/robot-weigh-in", orgId || null)}>
-              Weigh-in
-            </Button>
-            <Button as="a" variant="secondary" href={withOrgHref("/inspection-copilot", orgId || null)}>
-              Inspection
-            </Button>
+            <a href={withOrgHref("/robot-weigh-in", orgId || null)}>Weigh-in</a>
+            <a href={withOrgHref("/inspection-copilot", orgId || null)}>Inspection</a>
           </nav>
         </div>
       </header>

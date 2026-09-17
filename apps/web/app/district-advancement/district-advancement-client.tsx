@@ -56,15 +56,9 @@ async function persistDistrictAdvancementSnapshot(
 function DistrictAdvancementRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related competition tools">
-      <Button as="a" variant="secondary" href={hubHref("/competition", "ranking-projection", orgId)}>
-        Rank projection
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/business", "mock-judging", orgId)}>
-        Mock judging
-      </Button>
-      <Button as="a" variant="secondary" href={withOrgHref("/strategy", orgId)}>
-        Strategy
-      </Button>
+      <a href={hubHref("/competition", "ranking-projection", orgId)}>Rank projection</a>
+      <a href={hubHref("/business", "mock-judging", orgId)}>Mock judging</a>
+      <a href={withOrgHref("/strategy", orgId)}>Strategy</a>
     </nav>
   );
 }

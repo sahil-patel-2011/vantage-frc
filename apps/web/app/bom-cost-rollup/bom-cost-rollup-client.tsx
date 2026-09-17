@@ -90,15 +90,9 @@ async function persistBomCostRollupSnapshot(
 function BomCostRollupRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related build tools">
-      <Button as="a" variant="secondary" href={hubHref("/build", "budget-reconciler", orgId)}>
-        Budget check
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/business", "costs", orgId)}>
-        Season costs
-      </Button>
-      <Button as="a" variant="secondary" href={withOrgHref("/inventory", orgId)}>
-        Inventory
-      </Button>
+      <a href={hubHref("/build", "budget-reconciler", orgId)}>Budget check</a>
+      <a href={hubHref("/business", "costs", orgId)}>Season costs</a>
+      <a href={withOrgHref("/inventory", orgId)}>Inventory</a>
     </nav>
   );
 }
@@ -121,13 +115,10 @@ function BomCostRollupNextActions() {
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>

@@ -58,15 +58,9 @@ async function persistIncidentHeatmapSnapshot(
 function IncidentHeatmapRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related robot tools">
-      <Button as="a" variant="secondary" href={hubHref("/build", "failure-patterns", orgId)}>
-        Failure patterns
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/build", "fmea", orgId)}>
-        FMEA
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/team", "safety", orgId)}>
-        Safety log
-      </Button>
+      <a href={hubHref("/build", "failure-patterns", orgId)}>Failure patterns</a>
+      <a href={hubHref("/build", "fmea", orgId)}>FMEA</a>
+      <a href={hubHref("/team", "safety", orgId)}>Safety log</a>
     </nav>
   );
 }
@@ -89,13 +83,10 @@ function IncidentHeatmapNextActions() {
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>

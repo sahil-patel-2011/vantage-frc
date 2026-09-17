@@ -64,9 +64,7 @@ function GoalsRelated({ orgId }: { orgId: string }) {
     <div className="goals-related">
       <nav className="product-hub-related goals-hub-related" aria-label="Related team tools">
         {primary.map((link) => (
-          <Button as="a" variant="secondary" key={link.id} href={link.href}>
-            {link.label}
-          </Button>
+          <a href={link.href}>{link.label}</a>
         ))}
       </nav>
       <TeamHubRelated orgId={orgId} include={[...GOALS_TEAM_RELATED_INCLUDE]} />
@@ -103,13 +101,10 @@ function NextActions({
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>

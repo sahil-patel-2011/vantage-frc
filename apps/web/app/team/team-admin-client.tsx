@@ -618,9 +618,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         >
           <nav className="product-hub-related team-admin-related" aria-label="Related account tools">
             {membershipRelated.map((link) => (
-              <Button as="a" variant="secondary" key={link.id} href={link.href}>
-                {link.label}
-              </Button>
+              <a key={link.id} href={link.href}>{link.label}</a>
             ))}
           </nav>
         </PageHeader>
@@ -658,9 +656,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
       >
         <nav className="product-hub-related team-admin-related" aria-label="Related account tools">
           {membershipRelated.map((link) => (
-            <Button as="a" variant="secondary" key={link.id} href={link.href}>
-              {link.label}
-            </Button>
+            <a key={link.id} href={link.href}>{link.label}</a>
           ))}
         </nav>
       </PageHeader>
@@ -749,9 +745,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         <p className="app-muted">{membershipCopy.description}</p>
         <nav className="product-hub-related team-admin-related" aria-label="Related membership tools">
           {membershipRelated.map((link) => (
-            <Button as="a" variant="secondary" key={link.id} href={link.href}>
-              {link.label}
-            </Button>
+            <a key={link.id} href={link.href}>{link.label}</a>
           ))}
         </nav>
 

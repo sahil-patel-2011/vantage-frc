@@ -165,15 +165,9 @@ export default function TeamTagsClient() {
       <OfflineBanner feature="Drive-team tags" fromCache={fromCache} cachedAt={cachedAt} />
 
       <nav className="product-hub-related" aria-label="Related qualitative tools">
-        <Button as="a" variant="secondary" href={orgId ? withOrgHref("/pairwise", orgId) : "/pairwise"}>
-          Pairwise ranking
-        </Button>
-        <Button as="a" variant="secondary" href={orgId ? hubHref("/competition", "scouting", orgId) : "/scouting"}>
-          Scouting
-        </Button>
-        <Button as="a" variant="secondary" href={orgId ? hubHref("/competition", "pick-clock", orgId) : "/pick-clock"}>
-          Pick clock
-        </Button>
+        <a href={orgId ? withOrgHref("/pairwise", orgId) : "/pairwise"}>Pairwise ranking</a>
+        <a href={orgId ? hubHref("/competition", "scouting", orgId) : "/scouting"}>Scouting</a>
+        <a href={orgId ? hubHref("/competition", "pick-clock", orgId) : "/pick-clock"}>Pick clock</a>
       </nav>
 
       {error && view ? <p className="app-muted" role="alert">{error}</p> : null}

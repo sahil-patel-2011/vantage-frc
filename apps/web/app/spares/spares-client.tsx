@@ -78,15 +78,9 @@ async function persistSparesSnapshot(orgHint: string, data: SparesView): Promise
 function SparesRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related consumables tools">
-      <Button as="a" variant="secondary" href={hubHref("/business", "orders", orgId)}>
-        Orders
-      </Button>
-      <Button as="a" variant="secondary" href={withOrgHref("/packing", orgId)}>
-        Packing list
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/build", "spare-forecast", orgId)}>
-        Spares forecast
-      </Button>
+      <a href={hubHref("/business", "orders", orgId)}>Orders</a>
+      <a href={withOrgHref("/packing", orgId)}>Packing list</a>
+      <a href={hubHref("/build", "spare-forecast", orgId)}>Spares forecast</a>
     </nav>
   );
 }
@@ -109,13 +103,10 @@ function SparesNextActions() {
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>

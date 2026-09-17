@@ -15,9 +15,7 @@ export function RelatedStrip({ orgId }: { orgId: string }) {
   return (
     <nav className="product-hub-related ai-keys-related" aria-label="Related AI settings">
       {links.map((link) => (
-        <Button as="a" variant="secondary" key={link.id} href={link.href}>
-          {link.label}
-        </Button>
+        <a key={link.id} href={link.href}>{link.label}</a>
       ))}
     </nav>
   );

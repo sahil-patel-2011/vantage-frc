@@ -329,9 +329,7 @@ export default function FilesClient() {
   const related = (
     <nav className="product-hub-related" aria-label="Related files tools">
       {filesRelatedLinks(activeOrgId, { include: [...FILES_RELATED_INCLUDE] }).map((link) => (
-        <Button as="a" variant="secondary" key={link.id} href={link.href}>
-          {link.label}
-        </Button>
+        <a key={link.id} href={link.href}>{link.label}</a>
       ))}
     </nav>
   );

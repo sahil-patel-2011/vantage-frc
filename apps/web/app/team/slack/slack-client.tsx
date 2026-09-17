@@ -246,9 +246,7 @@ export default function TeamSlackClient({ orgId }: { orgId: string }) {
       <OfflineBanner feature="Slack" fromCache={fromCache} cachedAt={cachedAt} />
       <nav className="product-hub-related team-discord-related" aria-label="Related team tools">
         {related.map((link) => (
-          <Button as="a" variant="secondary" key={link.id} href={link.href}>
-            {link.label}
-          </Button>
+          <a key={link.id} href={link.href}>{link.label}</a>
         ))}
       </nav>
 
@@ -386,13 +384,10 @@ export default function TeamSlackClient({ orgId }: { orgId: string }) {
         <ol>
           {actions.map((action) => (
             <li key={action.id} className={action.primary ? "primary" : undefined}>
-              <div>
-                <strong>{action.label}</strong>
-                <span>{action.detail}</span>
-              </div>
-              <Button as="a" variant="secondary" href={action.href}>
-                Open
-              </Button>
+              <a className="edc-next-action" href={action.href}>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </a>
             </li>
           ))}
         </ol>

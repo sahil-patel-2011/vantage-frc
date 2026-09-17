@@ -71,15 +71,9 @@ async function persistCadConnectionsSnapshot(orgHint: string, data: CadConnectio
 export function CadConnectionsRelated({ orgId }: { orgId: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related CAD tools">
-      <Button as="a" variant="secondary" href={withOrgHref("/cad", orgId)}>
-        CAD
-      </Button>
-      <Button as="a" variant="secondary" href={withOrgHref("/cad-vault", orgId)}>
-        CAD Vault
-      </Button>
-      <Button as="a" variant="secondary" href={withOrgHref("/cad-learn", orgId)}>
-        Learn CAD
-      </Button>
+      <a href={withOrgHref("/cad", orgId)}>CAD</a>
+      <a href={withOrgHref("/cad-vault", orgId)}>CAD Vault</a>
+      <a href={withOrgHref("/cad-learn", orgId)}>Learn CAD</a>
     </nav>
   );
 }
@@ -114,13 +108,10 @@ function CadConnectionsNextActions({
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>

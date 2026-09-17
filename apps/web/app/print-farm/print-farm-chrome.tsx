@@ -103,15 +103,9 @@ export function FarmShell({
         description={description}
       >
         <nav className="product-hub-related" aria-label="Related build tools">
-          <Button as="a" variant="secondary" href={hubHref("/build", "cad", orgId)}>
-            CAD
-          </Button>
-          <Button as="a" variant="secondary" href={withOrgHref("/files", orgId)}>
-            Files
-          </Button>
-          <Button as="a" variant="secondary" href={withOrgHref("/inventory", orgId)}>
-            Inventory
-          </Button>
+          <a href={hubHref("/build", "cad", orgId)}>CAD</a>
+          <a href={withOrgHref("/files", orgId)}>Files</a>
+          <a href={withOrgHref("/inventory", orgId)}>Inventory</a>
         </nav>
       </PageHeader>
       {children}
@@ -142,15 +136,9 @@ export function PrintFarmReadyHeader({
         description="Queue prints, report printer status, and track filament by hand — nothing here is live machine data."
       >
         <nav className="product-hub-related" aria-label="Related build tools">
-          <Button as="a" variant="secondary" href={hubHref("/build", "cad", orgId)}>
-            CAD
-          </Button>
-          <Button as="a" variant="secondary" href={withOrgHref("/files", orgId)}>
-            Files
-          </Button>
-          <Button as="a" variant="secondary" href={withOrgHref("/inventory", orgId)}>
-            Inventory
-          </Button>
+          <a href={hubHref("/build", "cad", orgId)}>CAD</a>
+          <a href={withOrgHref("/files", orgId)}>Files</a>
+          <a href={withOrgHref("/inventory", orgId)}>Inventory</a>
         </nav>
       </PageHeader>
       {error ? (

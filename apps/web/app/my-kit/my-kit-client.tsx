@@ -205,15 +205,9 @@ export default function MyKitClient() {
         description="What you need tonight — assignments and packing that belong to you. Read-only, never a template kit."
       >
         <nav className="product-hub-related mk-related" aria-label="Related personal views">
-          <Button as="a" variant="secondary" href={withOrgHref("/my-day", orgId)}>
-            My Day
-          </Button>
-          <Button as="a" variant="secondary" href={withOrgHref("/hours-self-view", orgId)}>
-            My Hours
-          </Button>
-          <Button as="a" variant="secondary" href={withOrgHref("/start", orgId)}>
-            Getting started
-          </Button>
+          <a href={withOrgHref("/my-day", orgId)}>My Day</a>
+          <a href={withOrgHref("/hours-self-view", orgId)}>My Hours</a>
+          <a href={withOrgHref("/start", orgId)}>Getting started</a>
         </nav>
       </PageHeader>
 

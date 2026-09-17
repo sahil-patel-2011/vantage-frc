@@ -217,9 +217,7 @@ export function CadReadyView({
       </header>
       <nav className="product-hub-related cad-related" aria-label="Related CAD tools">
         {cadHubRelatedLinks(orgId, { include: [...CAD_HUB_RELATED_INCLUDE] }).map((link) => (
-          <Button as="a" variant="secondary" key={link.id} href={link.href}>
-            {link.label}
-          </Button>
+          <a key={link.id} href={link.href}>{link.label}</a>
         ))}
       </nav>
 

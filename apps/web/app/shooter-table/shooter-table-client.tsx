@@ -66,15 +66,9 @@ async function persistShooterTableSnapshot(orgHint: string, seasonHint: string, 
 function ShooterTableRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related build tools">
-      <Button as="a" variant="secondary" href={hubHref("/build", "subsystems", orgId)}>
-        Subsystem specs
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/build", "tuning-log", orgId)}>
-        Tuning log
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/build", "power-budget", orgId)}>
-        Power budget
-      </Button>
+      <a href={hubHref("/build", "subsystems", orgId)}>Subsystem specs</a>
+      <a href={hubHref("/build", "tuning-log", orgId)}>Tuning log</a>
+      <a href={hubHref("/build", "power-budget", orgId)}>Power budget</a>
     </nav>
   );
 }
@@ -97,13 +91,10 @@ function ShooterTableNextActions() {
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>

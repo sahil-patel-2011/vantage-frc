@@ -61,15 +61,9 @@ async function persistExitInterviewSnapshot(
 function ExitInterviewRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related people tools">
-      <Button as="a" variant="secondary" href={hubHref("/team", "alumni-network", orgId)}>
-        Alumni Network
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/team", "mentor-hours", orgId)}>
-        Mentor hours
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/team", "roadmap", orgId)}>
-        Season roadmap
-      </Button>
+      <a href={hubHref("/team", "alumni-network", orgId)}>Alumni Network</a>
+      <a href={hubHref("/team", "mentor-hours", orgId)}>Mentor hours</a>
+      <a href={hubHref("/team", "roadmap", orgId)}>Season roadmap</a>
     </nav>
   );
 }
@@ -92,13 +86,10 @@ function ExitInterviewNextActions() {
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>

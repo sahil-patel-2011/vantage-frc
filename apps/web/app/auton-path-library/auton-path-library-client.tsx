@@ -67,15 +67,9 @@ async function persistAutonPathSnapshot(
 function AutonPathRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related robot tools">
-      <Button as="a" variant="secondary" href={hubHref("/build", "tuning-log", orgId)}>
-        Tuning log
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/build", "code-perf", orgId)}>
-        Code vs match
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/build", "bringup", orgId)}>
-        Bring-up
-      </Button>
+      <a href={hubHref("/build", "tuning-log", orgId)}>Tuning log</a>
+      <a href={hubHref("/build", "code-perf", orgId)}>Code vs match</a>
+      <a href={hubHref("/build", "bringup", orgId)}>Bring-up</a>
     </nav>
   );
 }
@@ -98,13 +92,10 @@ function AutonPathNextActions() {
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>

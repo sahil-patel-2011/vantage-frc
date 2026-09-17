@@ -260,16 +260,12 @@ export function LivePanel({ view }: { view: Extract<StrategyView, { status: "liv
     <section className="strategy-workbench strategy-live-grid">
       <nav className="strategy-coverage-links product-hub-related" aria-label="Pick desk, Scouting, Event Day">
         {relatedLinks.map((link) => (
-          <Button as="a" variant="secondary" key={link.id} href={link.href}>
-            {link.label}
-          </Button>
+          <a key={link.id} href={link.href}>{link.label}</a>
         ))}
       </nav>
       <nav className="strategy-coverage-links product-hub-related" aria-label="Explainability and coverage">
         {coverageLinks.map((link) => (
-          <Button as="a" variant="secondary" key={link.id} href={link.href}>
-            {link.label}
-          </Button>
+          <a key={link.id} href={link.href}>{link.label}</a>
         ))}
       </nav>
       <Panel className="strategy-primary">

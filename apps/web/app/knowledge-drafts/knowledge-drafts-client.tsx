@@ -60,15 +60,9 @@ async function persistKnowledgeDraftsSnapshot(orgHint: string, data: CaptureView
 function KnowledgeDraftsRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related playbook tools">
-      <Button as="a" variant="secondary" href={hubHref("/team", "knowledge", orgId)}>
-        Playbook
-      </Button>
-      <Button as="a" variant="secondary" href={withOrgHref("/decisions", orgId)}>
-        Decisions
-      </Button>
-      <Button as="a" variant="secondary" href={withOrgHref("/team/getting-started", orgId)}>
-        Getting started
-      </Button>
+      <a href={hubHref("/team", "knowledge", orgId)}>Playbook</a>
+      <a href={withOrgHref("/decisions", orgId)}>Decisions</a>
+      <a href={withOrgHref("/team/getting-started", orgId)}>Getting started</a>
     </nav>
   );
 }

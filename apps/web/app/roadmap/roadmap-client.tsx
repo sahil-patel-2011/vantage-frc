@@ -70,15 +70,9 @@ async function persistRoadmapSnapshot(orgHint: string, data: RoadmapView): Promi
 function RoadmapRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related team tools">
-      <Button as="a" variant="secondary" href={hubHref("/team", "season-planning-workspace", orgId)}>
-        Season plan
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/team", "goals", orgId)}>
-        Objectives
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/team", "exit-interview", orgId)}>
-        Exit interviews
-      </Button>
+      <a href={hubHref("/team", "season-planning-workspace", orgId)}>Season plan</a>
+      <a href={hubHref("/team", "goals", orgId)}>Objectives</a>
+      <a href={hubHref("/team", "exit-interview", orgId)}>Exit interviews</a>
     </nav>
   );
 }
@@ -101,13 +95,10 @@ function RoadmapNextActions() {
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>

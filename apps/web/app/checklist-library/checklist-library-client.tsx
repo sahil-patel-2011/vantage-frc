@@ -58,15 +58,9 @@ async function persistChecklistLibrarySnapshot(
 function ChecklistLibraryRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related pit tools">
-      <Button as="a" variant="secondary" href={hubHref("/team", "tool-checkout", orgId)}>
-        Tool checkout
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/team", "equipment-maintenance", orgId)}>
-        Equipment
-      </Button>
-      <Button as="a" variant="secondary" href={withOrgHref("/match-checklist", orgId)}>
-        Pit checklist
-      </Button>
+      <a href={hubHref("/team", "tool-checkout", orgId)}>Tool checkout</a>
+      <a href={hubHref("/team", "equipment-maintenance", orgId)}>Equipment</a>
+      <a href={withOrgHref("/match-checklist", orgId)}>Pit checklist</a>
     </nav>
   );
 }
@@ -89,13 +83,10 @@ function ChecklistLibraryNextActions() {
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>

@@ -137,13 +137,9 @@ export default function AdminOutreachClient() {
       >
         <nav className="admin-related" aria-label="Related admin">
           {related.map((link) => (
-            <Button as="a" variant="secondary" key={link.id} href={link.href}>
-              {link.label}
-            </Button>
+            <a key={link.id} href={link.href}>{link.label}</a>
           ))}
-          <Button as="a" variant="secondary" href="/admin/partners">
-            App partners
-          </Button>
+          <a href="/admin/partners">App partners</a>
         </nav>
       </PageHeader>
 

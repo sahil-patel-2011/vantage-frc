@@ -47,15 +47,9 @@ async function persistStartSnapshot(orgHint: string, data: RoleOnboardingView): 
 function StartRelated({ orgId }: { orgId: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related team tools">
-      <Button as="a" variant="secondary" href={withOrgHref("/team/getting-started", orgId)}>
-        Team setup
-      </Button>
-      <Button as="a" variant="secondary" href={withOrgHref("/team/calendar", orgId)}>
-        Calendar
-      </Button>
-      <Button as="a" variant="secondary" href="/security">
-        Security
-      </Button>
+      <a href={withOrgHref("/team/getting-started", orgId)}>Team setup</a>
+      <a href={withOrgHref("/team/calendar", orgId)}>Calendar</a>
+      <a href="/security">Security</a>
     </nav>
   );
 }

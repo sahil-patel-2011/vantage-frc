@@ -65,15 +65,9 @@ async function persistScoutP2pSnapshot(
 function PitMeshRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related scouting tools">
-      <Button as="a" variant="secondary" href={hubHref("/competition", "scouting", orgId)}>
-        Scouting
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/competition", "scout-schema-negotiate", orgId)}>
-        Schema sync
-      </Button>
-      <Button as="a" variant="secondary" href={withOrgHref("/scouting/lineup", orgId)}>
-        Coverage
-      </Button>
+      <a href={hubHref("/competition", "scouting", orgId)}>Scouting</a>
+      <a href={hubHref("/competition", "scout-schema-negotiate", orgId)}>Schema sync</a>
+      <a href={withOrgHref("/scouting/lineup", orgId)}>Coverage</a>
     </nav>
   );
 }
@@ -96,13 +90,10 @@ function PitMeshNextActions() {
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>

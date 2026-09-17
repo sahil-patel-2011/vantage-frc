@@ -89,15 +89,9 @@ async function persistPowerBudgetSnapshot(orgHint: string, seasonHint: string, d
 function PowerBudgetRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related build tools">
-      <Button as="a" variant="secondary" href={hubHref("/build", "wiring-map", orgId)}>
-        CAN-bus map
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/build", "batteries", orgId)}>
-        Batteries
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/build", "subsystems", orgId)}>
-        Subsystem specs
-      </Button>
+      <a href={hubHref("/build", "wiring-map", orgId)}>CAN-bus map</a>
+      <a href={hubHref("/build", "batteries", orgId)}>Batteries</a>
+      <a href={hubHref("/build", "subsystems", orgId)}>Subsystem specs</a>
     </nav>
   );
 }
@@ -120,13 +114,10 @@ function PowerBudgetNextActions() {
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>

@@ -33,9 +33,7 @@ export default async function ScoutingFormsPage({
         >
           <nav className="product-hub-related sfb-related" aria-label="Related competition tools">
             {links.map((link) => (
-              <Button as="a" variant="secondary" key={link.id} href={link.href}>
-                {link.label}
-              </Button>
+              <a key={link.id} href={link.href}>{link.label}</a>
             ))}
           </nav>
         </PageHeader>

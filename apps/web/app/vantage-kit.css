@@ -398,3 +398,205 @@
 .settings-tabs {
   margin: 0 0 18px;
 }
+
+/* --------------------------------------------------------------- related -- */
+
+/**
+ * "Related tools" as a quiet row of links.
+ *
+ * These were rows of secondary buttons at the top of nearly every page, which
+ * gave the whole product the look of a control panel and put the same visual
+ * weight on "go somewhere else" as on "do the thing you came here to do".
+ * They are navigation, so they now look like navigation.
+ *
+ * Still a real 44px target on a touch screen: quiet is not the same as small,
+ * and these get tapped in a pit.
+ */
+.product-hub-related,
+.admin-related,
+.settings-inline-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 4px;
+}
+
+.product-hub-related > a,
+.admin-related > a,
+.settings-inline-links > a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 4px 8px;
+  border-radius: 9px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    color var(--motion-fast, 160ms) var(--motion-ease, ease),
+    background var(--motion-fast, 160ms) var(--motion-ease, ease);
+}
+
+.product-hub-related > a:hover,
+.admin-related > a:hover,
+.settings-inline-links > a:hover {
+  background: color-mix(in srgb, var(--surface) 86%, var(--line));
+  color: var(--ink);
+}
+
+.product-hub-related > a:focus-visible,
+.admin-related > a:focus-visible,
+.settings-inline-links > a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* A middot between links, so a row of them reads as one list rather than as
+   several loose words. Never before the first. */
+.product-hub-related > a + a::before,
+.admin-related > a + a::before,
+.settings-inline-links > a + a::before {
+  content: "\00b7";
+  margin-right: 8px;
+  color: var(--line);
+  font-weight: 700;
+}
+
+@media (pointer: coarse) {
+  .product-hub-related > a,
+  .admin-related > a,
+  .settings-inline-links > a {
+    min-height: 44px;
+    padding: 6px 10px;
+  }
+}
+
+/* ---------------------------------------------------------------- drawer -- */
+
+/**
+ * Navigation groups as cards, and every destination with a chevron.
+ *
+ * The group headings and the pages under them used to look the same — bare
+ * words in a column — so the drawer read as one long undifferentiated list and
+ * you had to know the structure already to use it. Cards give each group an
+ * edge, and the chevron says which lines take you somewhere.
+ */
+.soft-drawer-flat .soft-nav-group {
+  padding: 6px;
+  border: 1px solid var(--line-soft);
+  border-radius: 18px;
+  background: var(--surface);
+}
+
+.soft-drawer-flat .soft-nav-group + .soft-nav-group {
+  margin-top: 10px;
+}
+
+.soft-drawer-flat .soft-nav-items > a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  /* A row in a pit gets tapped with a glove on. */
+  min-height: 44px;
+}
+
+.soft-drawer-flat .soft-nav-items > a svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--muted);
+  opacity: 0.65;
+}
+
+.soft-drawer-flat .soft-nav-items > a[aria-current="page"] svg {
+  color: var(--accent);
+  opacity: 1;
+}
+
+/* ----------------------------------------------------------- next action -- */
+
+/**
+ * A next-action row is one link, not a sentence with a button beside it.
+ *
+ * Each of these used to end in a small "Open" button, which was the only
+ * target on the row. On a phone that means aiming at a 70-pixel word at the
+ * far end of a line you have already finished reading. The row is the link
+ * now, which removed a button from a hundred and seventy screens and made
+ * every one of those rows easier to hit rather than harder.
+ */
+.edc-next-actions li .edc-next-action {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 2px 14px;
+  width: 100%;
+  min-height: 52px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  color: inherit;
+  text-decoration: none;
+  transition: background var(--motion-fast, 160ms) var(--motion-ease, ease);
+}
+
+.edc-next-actions li .edc-next-action strong {
+  grid-column: 1;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.edc-next-actions li .edc-next-action span {
+  grid-column: 1;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+/* Drawn rather than imported, so this needed no new import in 168 files. */
+.edc-next-actions li .edc-next-action::after {
+  content: "";
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  width: 9px;
+  height: 9px;
+  border-top: 2px solid var(--muted);
+  border-right: 2px solid var(--muted);
+  border-radius: 1px;
+  opacity: 0.65;
+  transform: rotate(45deg);
+}
+
+.edc-next-actions li .edc-next-action:hover {
+  background: color-mix(in srgb, var(--surface) 88%, var(--line));
+}
+
+.edc-next-actions li .edc-next-action:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* The primary action keeps its emphasis; it just no longer needs a button to
+   carry it. */
+.edc-next-actions li.primary .edc-next-action strong {
+  color: var(--accent);
+}
+
+/* vantage-scan.css sets these anchors to full navy at a higher specificity,
+   from when the strip rendered buttons. Related navigation should recede — it
+   is the least important thing on any screen it appears on — so the colour is
+   reclaimed here rather than by editing that older sheet, which other strips
+   still depend on. */
+body.has-app-shell .product-hub-related > a,
+body.has-app-shell .admin-related > a,
+body.has-app-shell .settings-inline-links > a {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+body.has-app-shell .product-hub-related > a:hover,
+body.has-app-shell .admin-related > a:hover,
+body.has-app-shell .settings-inline-links > a:hover {
+  color: var(--ink);
+}

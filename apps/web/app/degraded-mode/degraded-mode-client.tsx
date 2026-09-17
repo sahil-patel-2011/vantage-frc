@@ -57,15 +57,9 @@ async function persistDegradedModeSnapshot(orgHint: string, data: DegradedModeVi
 function DataSourceHealthRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related team tools">
-      <Button as="a" variant="secondary" href={withOrgHref("/team/data", orgId)}>
-        Team Data
-      </Button>
-      <Button as="a" variant="secondary" href={withOrgHref("/rankings", orgId)}>
-        Rankings
-      </Button>
-      <Button as="a" variant="secondary" href={withOrgHref("/schedule", orgId)}>
-        Schedule
-      </Button>
+      <a href={withOrgHref("/team/data", orgId)}>Team Data</a>
+      <a href={withOrgHref("/rankings", orgId)}>Rankings</a>
+      <a href={withOrgHref("/schedule", orgId)}>Schedule</a>
     </nav>
   );
 }

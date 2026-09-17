@@ -75,15 +75,9 @@ async function persistBringupSnapshot(orgHint: string, seasonHint: string, data:
 function BringupRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related robot tools">
-      <Button as="a" variant="secondary" href={hubHref("/build", "inspection-copilot", orgId)}>
-        Inspection
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/build", "wiring-map", orgId)}>
-        CAN-bus map
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/build", "robot", orgId)}>
-        Blueprint
-      </Button>
+      <a href={hubHref("/build", "inspection-copilot", orgId)}>Inspection</a>
+      <a href={hubHref("/build", "wiring-map", orgId)}>CAN-bus map</a>
+      <a href={hubHref("/build", "robot", orgId)}>Blueprint</a>
     </nav>
   );
 }
@@ -106,13 +100,10 @@ function BringupNextActions() {
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>

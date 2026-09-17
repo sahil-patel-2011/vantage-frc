@@ -44,16 +44,10 @@ async function persistSecuritySnapshot(data: SecurityView): Promise<void> {
 function SecurityRelated({ orgId }: { orgId?: string }) {
   return (
     <nav className="product-hub-related" aria-label="Related settings">
-      <Button as="a" variant="secondary" href="/account">
-        Account
-      </Button>
-      <Button as="a" variant="secondary" href="/notifications/preferences">
-        Notification prefs
-      </Button>
+      <a href="/account">Account</a>
+      <a href="/notifications/preferences">Notification prefs</a>
       {orgId ? (
-        <Button as="a" variant="secondary" href={`/team/security?orgId=${encodeURIComponent(orgId)}`}>
-          Team security
-        </Button>
+        <a href={`/team/security?orgId=${encodeURIComponent(orgId)}`}>Team security</a>
       ) : null}
     </nav>
   );

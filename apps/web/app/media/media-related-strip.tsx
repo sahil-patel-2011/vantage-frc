@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "../../components/ui";
+
 import { MEDIA_RELATED_INCLUDE, mediaRelatedLinks } from "../../lib/media/media-related";
 
 /**
@@ -23,9 +23,7 @@ export function MediaRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related media-related" aria-label="Related media tools">
       {links.map((link) => (
-        <Button as="a" variant="secondary" key={link.id} href={link.href}>
-          {link.label}
-        </Button>
+        <a href={link.href}>{link.label}</a>
       ))}
     </nav>
   );
