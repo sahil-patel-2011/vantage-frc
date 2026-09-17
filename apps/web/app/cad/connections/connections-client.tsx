@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { ClaudeConnectorWalkthrough } from "./claude-connector-walkthrough";
 import { OfflineBanner } from "../../../components/offline-banner";
 import { Button, EmptyState, PageHeader } from "../../../components/ui";
 import {
@@ -452,6 +453,7 @@ export default function CadConnections({ orgId }: { orgId: string }) {
               ))
             )}
           </section>
+          <ClaudeConnectorWalkthrough />
           <CadConnectionsNextActions
             orgId={orgId}
             hasDesktop={view.devices.some((d) => !d.revokedAt)}
