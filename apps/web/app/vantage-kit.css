@@ -1,0 +1,382 @@
+/**
+ * The shared visual language: tiles, micro-labels, stat blocks, chevron rows.
+ *
+ * Every screen in the product was assembling these shapes by hand, which is
+ * why no two of them looked quite alike — one card had a 16px radius and the
+ * next had 22, one row put its chevron in a button and the next used an arrow
+ * glyph. These are the same handful of shapes, declared once.
+ *
+ * Tokens come from system.css. Nothing here invents a colour; the tones below
+ * are named roles that map onto the existing palette, so dark mode and the
+ * per-team accent keep working without this sheet knowing about either.
+ */
+
+/* Tones used by tiles and stat numbers. Named for what they are, not what they
+   look like, so a theme can move them without renaming call sites. */
+:root {
+  --kit-tone-blue: var(--tone-blue);
+  --kit-tone-green: var(--tone-green);
+  --kit-tone-teal: var(--tone-teal);
+  --kit-tone-amber: var(--tone-amber);
+  --kit-tone-red: var(--tone-red);
+  --kit-tone-violet: #6d28d9;
+  --kit-tone-cyan: #0e7490;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    /* Lifted so they hold contrast against a dark surface rather than sinking
+       into it. Same hues, more light. */
+    --kit-tone-violet: #a78bfa;
+    --kit-tone-cyan: #22d3ee;
+  }
+}
+
+:root[data-theme="dark"] {
+  --kit-tone-violet: #a78bfa;
+  --kit-tone-cyan: #22d3ee;
+}
+
+/* ---------------------------------------------------------------- page ---- */
+
+/* One centred column. Reading a dashboard is reading, and a line of text
+   stretched across a 27-inch monitor is not read, it is scanned and lost. */
+.kit-page {
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+/* --------------------------------------------------------------- eyebrow -- */
+
+/* The small uppercase label above a group. Quiet enough to skip, present
+   enough to tell you where one section ends and the next begins. */
+.kit-eyebrow {
+  display: block;
+  margin: 0 0 10px;
+  padding-left: 2px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+/* ------------------------------------------------------------------ card -- */
+
+.kit-card {
+  border: 1px solid var(--line-soft);
+  border-radius: 22px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.kit-card + .kit-card,
+.kit-card + .kit-eyebrow,
+.kit-stack > * + * {
+  margin-top: 16px;
+}
+
+.kit-stack {
+  display: block;
+}
+
+/* ------------------------------------------------------------------ tile -- */
+
+/**
+ * The tinted rounded square that sits at the head of a row.
+ *
+ * It is the fastest thing on the screen to recognise — people learn the colour
+ * long before they read the label — so the tone is part of the meaning and not
+ * decoration. Set it with data-tone.
+ */
+.kit-tile {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--kit-tile, var(--accent)) 13%, var(--surface));
+  color: var(--kit-tile, var(--accent));
+}
+
+.kit-tile svg {
+  width: 21px;
+  height: 21px;
+  display: block;
+}
+
+.kit-tile[data-tone="blue"] { --kit-tile: var(--kit-tone-blue); }
+.kit-tile[data-tone="green"] { --kit-tile: var(--kit-tone-green); }
+.kit-tile[data-tone="teal"] { --kit-tile: var(--kit-tone-teal); }
+.kit-tile[data-tone="amber"] { --kit-tile: var(--kit-tone-amber); }
+.kit-tile[data-tone="red"] { --kit-tile: var(--kit-tone-red); }
+.kit-tile[data-tone="violet"] { --kit-tile: var(--kit-tone-violet); }
+.kit-tile[data-tone="cyan"] { --kit-tile: var(--kit-tone-cyan); }
+
+.kit-tile[data-size="lg"] {
+  width: 56px;
+  height: 56px;
+  border-radius: 17px;
+}
+
+.kit-tile[data-size="lg"] svg {
+  width: 26px;
+  height: 26px;
+}
+
+/* ------------------------------------------------------------------- row -- */
+
+/**
+ * Tile, title, subtitle, chevron. The whole row is the target, because a
+ * 44-pixel chevron at the end of a 600-pixel row is a needlessly small thing
+ * to ask a thumb to find.
+ */
+.kit-rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.kit-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 14px 16px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background var(--motion-fast, 160ms) var(--motion-ease, ease);
+}
+
+.kit-row:hover {
+  background: color-mix(in srgb, var(--surface) 90%, var(--line));
+}
+
+.kit-row:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* Hairlines between rows, never above the first or below the last, so a card
+   never looks like it has a stray line floating inside it. */
+.kit-rows > li + li .kit-row,
+.kit-row + .kit-row {
+  border-top: 1px solid var(--line-soft);
+}
+
+.kit-row-body {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.kit-row-title {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.kit-row-sub {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.kit-row-chevron {
+  flex: none;
+  color: var(--muted);
+  opacity: 0.7;
+}
+
+.kit-row-chevron svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+/* A destructive row keeps the same shape and changes only its colour, so it
+   reads as the same kind of thing with a different consequence. */
+.kit-row[data-tone="red"] .kit-row-title {
+  color: var(--critical);
+}
+
+/* ------------------------------------------------------------------ stat -- */
+
+/**
+ * A big number over a small caption.
+ *
+ * The number is the point, so it is set large and tabular; the caption is
+ * uppercase and quiet because you only read it once, to learn what the number
+ * means, and never again.
+ */
+.kit-stats {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+}
+
+.kit-stat {
+  padding: 18px 12px;
+  text-align: center;
+}
+
+.kit-stat + .kit-stat {
+  border-left: 1px solid var(--line-soft);
+}
+
+.kit-stat b {
+  display: block;
+  color: var(--kit-stat, var(--ink));
+  font-size: 26px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+}
+
+.kit-stat small {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  line-height: 1.3;
+  text-transform: uppercase;
+}
+
+.kit-stat[data-tone="blue"] { --kit-stat: var(--kit-tone-blue); }
+.kit-stat[data-tone="green"] { --kit-stat: var(--kit-tone-green); }
+.kit-stat[data-tone="teal"] { --kit-stat: var(--kit-tone-teal); }
+.kit-stat[data-tone="amber"] { --kit-stat: var(--kit-tone-amber); }
+.kit-stat[data-tone="red"] { --kit-stat: var(--kit-tone-red); }
+.kit-stat[data-tone="violet"] { --kit-stat: var(--kit-tone-violet); }
+.kit-stat[data-tone="cyan"] { --kit-stat: var(--kit-tone-cyan); }
+
+/* Three numbers side by side stop being readable well before the screen runs
+   out of room, so they go to two columns and then one. */
+@media (max-width: 560px) {
+  .kit-stats {
+    grid-auto-flow: row;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .kit-stat + .kit-stat {
+    border-left: 0;
+  }
+
+  .kit-stat:nth-child(n + 2) {
+    border-top: 1px solid var(--line-soft);
+  }
+
+  .kit-stat:nth-child(even) {
+    border-left: 1px solid var(--line-soft);
+  }
+}
+
+/* --------------------------------------------------------------- segment -- */
+
+/* Two or three exclusive choices, in a recessed track. */
+.kit-segment {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 4px;
+  padding: 5px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--bg) 70%, var(--line));
+}
+
+.kit-segment button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background var(--motion-fast, 160ms) var(--motion-ease, ease),
+    color var(--motion-fast, 160ms) var(--motion-ease, ease);
+}
+
+.kit-segment button svg {
+  width: 17px;
+  height: 17px;
+}
+
+.kit-segment button[aria-selected="true"],
+.kit-segment button[aria-pressed="true"] {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+}
+
+.kit-segment button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* ---------------------------------------------------------------- footer -- */
+
+.kit-footnote {
+  margin: 22px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+/* ------------------------------------------------------------------ grid -- */
+
+/**
+ * Destinations as a two-up grid of cards rather than one long list.
+ *
+ * A list of twelve places is read top to bottom and the bottom four are never
+ * reached. Two columns halves the scroll and lets the tinted tiles form a
+ * pattern people navigate by colour instead of by reading every label.
+ */
+.kit-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.kit-grid > li {
+  display: flex;
+}
+
+.kit-grid .kit-row {
+  border: 1px solid var(--line-soft);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+/* The grid's rows are separate cards, so the hairline that separates stacked
+   rows inside one card must not appear here. */
+.kit-grid .kit-row + .kit-row {
+  border-top: 1px solid var(--line-soft);
+}
+
+@media (max-width: 620px) {
+  .kit-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

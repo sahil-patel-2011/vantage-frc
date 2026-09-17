@@ -43,6 +43,17 @@ export type ProductNavGroup = {
 };
 
 export type ProductNavIcon =
+  // Added for the shared row/tile kit: the shapes a settings or admin screen
+  // needs, which the navigation set never had because navigation never needed
+  // a bin or a sign-out arrow.
+  | "sparkles"
+  | "play"
+  | "logout"
+  | "trash"
+  | "shield"
+  | "activity"
+  | "database"
+  | "globe"
   | "menu"
   | "search"
   | "bell"

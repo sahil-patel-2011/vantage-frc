@@ -127,6 +127,7 @@ export function AppShellNavPanel({
             <span className="mark">v</span>
             <div>
               <strong>Vantage</strong>
+              <small>Navigation</small>
             </div>
           </div>
           <button
@@ -335,6 +336,9 @@ export function AppShellNavPanel({
           </div>
         ) : (
           <nav className="soft-drawer-flat" aria-label="Hubs">
+            {/* Says what this list is and what it is not: the few places you go
+                often, never every screen. Everything else is behind search. */}
+            <p className="soft-drawer-hint">Only the main places you use most.</p>
             {visibleNavGroups.map((group) => {
               const item = group.items[0];
               if (!item || item.state === "planned") return null;

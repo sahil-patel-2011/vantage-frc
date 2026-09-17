@@ -10,6 +10,8 @@ import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { SettingsBar } from "../../components/settings-bar";
 import { signOutAndRedirect } from "../../lib/sign-out";
+import { KitCard, KitEyebrow, KitRow } from "../../components/ui/kit";
+import { TOUR_STORAGE_KEY } from "../../lib/tour/tour-steps";
 import { AccountNotificationsPanel } from "./account-notifications-panel";
 import { AccountProfilePanel } from "./account-profile-panel";
 import { AccountRelated, NextActions, OrgContextCard } from "./account-shell";
@@ -355,19 +357,35 @@ export default function AccountClient() {
           "which toggle" rather than "whose account is this" — which matters on
           a shared shop laptop. No join date here: nothing in the session
           carries one, and a made-up "member since" is worse than no line. */}
-      <section className="account-identity" aria-label="Signed in as">
-        <span className="account-identity-avatar" aria-hidden="true">
+      {/* Centred, and the avatar is the biggest thing on the screen, because
+          the first question this page answers is "whose account am I looking
+          at" — which matters most on the shared shop laptop where it is
+          usually somebody else's. */}
+      <section className="acct-hero" aria-label="Signed in as">
+        <span className="acct-avatar" aria-hidden="true">
           {(displayName.trim() || "?").charAt(0).toUpperCase()}
         </span>
-        <div>
-          <strong>{displayName.trim() || "Your account"}</strong>
-          {org.role ? (
-            <p className="account-identity-role">
-              Role <b>{org.role}</b>
-              {org.orgName ? <> · {org.orgName}</> : null}
-            </p>
-          ) : null}
-        </div>
+        <h2 className="acct-name">{displayName.trim() || "Your account"}</h2>
+        {account?.email ? <p className="acct-email">{account.email}</p> : null}
+        {/* Role and team only. The reference shows a join date here and the
+            session does not carry one; a plausible-looking invented date is
+            worse than a shorter row. */}
+        {org.role || org.orgName ? (
+          <dl className="acct-facts">
+            {org.role ? (
+              <div>
+                <dt>Role</dt>
+                <dd>{org.role}</dd>
+              </div>
+            ) : null}
+            {org.orgName ? (
+              <div>
+                <dt>Team</dt>
+                <dd>{org.orgName}</dd>
+              </div>
+            ) : null}
+          </dl>
+        ) : null}
       </section>
 
       <SettingsBar
@@ -573,6 +591,49 @@ export default function AccountClient() {
           ) : null}
         </>
       ) : null}
+
+      {/* The three things people come to this page to do that are not a
+          toggle. One card, one shape each, chevrons so they read as somewhere
+          you go rather than something that happens on tap.
+
+          No "Delete account" row: the reference has one and this deployment
+          has no endpoint behind it, and a destructive-looking button that
+          silently does nothing is worse than its absence. */}
+      <KitEyebrow>Account</KitEyebrow>
+      <KitCard className="acct-actions">
+        <KitRow
+          icon="sparkles"
+          tone="violet"
+          title="What’s new"
+          subtitle="Recent updates and features"
+          href="/whats-new"
+        />
+        <KitRow
+          icon="play"
+          tone="blue"
+          title="Replay the tour"
+          subtitle="Walk through the five stops on Home again"
+          onClick={() => {
+            try {
+              window.localStorage.removeItem(TOUR_STORAGE_KEY);
+            } catch {
+              // Private windows throw. Reloading still shows the tour for the
+              // rest of this session, which is what was asked for.
+            }
+            window.location.assign("/dashboard");
+          }}
+        />
+        <KitRow
+          icon="logout"
+          tone="cyan"
+          title="Sign out"
+          subtitle="End this session on this device"
+          onClick={() => void signOut()}
+          chevron={false}
+        />
+      </KitCard>
+
+      <p className="kit-footnote">Vantage · FRC scouting and strategy</p>
     </main>
   );
 }

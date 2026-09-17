@@ -388,3 +388,93 @@
   font-size: 13px;
   line-height: 1.55;
 }
+
+/* Account identity, centred.
+   The first question this page answers is whose account it is, which matters
+   most on the shared shop laptop where it is usually somebody else's. So the
+   avatar is the biggest thing on the screen and everything centres under it. */
+.acct-hero {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  margin: 6px 0 22px;
+  text-align: center;
+}
+
+.acct-avatar {
+  display: grid;
+  place-items: center;
+  width: 108px;
+  height: 108px;
+  margin-bottom: 14px;
+  border-radius: 50%;
+  background: linear-gradient(
+    160deg,
+    var(--accent),
+    color-mix(in srgb, var(--accent) 62%, #0b2f8f)
+  );
+  color: #fff;
+  font-size: 44px;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: var(--shadow-lift);
+}
+
+.acct-name {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  line-height: 1.15;
+}
+
+.acct-email {
+  margin: 0;
+  color: var(--muted);
+  font-size: 15px;
+  word-break: break-word;
+}
+
+/* Label above value, which is the opposite of the stat blocks elsewhere — here
+   the label is the question you arrived with and the value is the answer. */
+.acct-facts {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 34px;
+  margin: 16px 0 0;
+}
+
+.acct-facts div {
+  display: grid;
+  gap: 2px;
+}
+
+.acct-facts dt {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.acct-facts dd {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.acct-actions {
+  overflow: hidden;
+}
+
+@media (max-width: 480px) {
+  .acct-avatar {
+    width: 88px;
+    height: 88px;
+    font-size: 36px;
+  }
+
+  .acct-name {
+    font-size: 25px;
+  }
+}
