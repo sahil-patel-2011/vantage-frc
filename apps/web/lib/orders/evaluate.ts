@@ -48,6 +48,11 @@ export type OrderSubmitInput = {
   title: string;
   justification: string;
   estimateUsd: number;
+  /**
+   * False when nobody has costed this yet, and the zero above is a placeholder
+   * rather than a free part. The budget must be able to tell those apart.
+   */
+  priced: boolean;
   vendor: string;
   itemUrl: string | null;
   quantity: number;
@@ -70,8 +75,18 @@ export function validateOrderSubmit(
     return { ok: false, error: "Quantity must be a whole number from 1 to 9999." };
   }
 
-  const estimateUsd = Number(input.estimateUsd ?? input.unitCostUsd);
-  if (!Number.isFinite(estimateUsd) || estimateUsd < 0 || estimateUsd > 1_000_000) {
+  // The price is optional, and deliberately so. A student can link the part and
+  // say how many; what it actually costs once shipping, tax and the school's
+  // supplier are applied is not visible from a product page, and making them
+  // guess is how a season budget ends up built out of guesses. A mentor sets
+  // the real figure when they approve.
+  const estimateProvided =
+    input.estimateUsd !== undefined && input.estimateUsd !== null && input.estimateUsd !== "";
+  const unitCostProvided =
+    input.unitCostUsd !== undefined && input.unitCostUsd !== null && input.unitCostUsd !== "";
+  const priced = estimateProvided || unitCostProvided;
+  const estimateUsd = priced ? Number(input.estimateUsd ?? input.unitCostUsd) : 0;
+  if (priced && (!Number.isFinite(estimateUsd) || estimateUsd < 0 || estimateUsd > 1_000_000)) {
     return { ok: false, error: "Estimate must be a non-negative dollar amount." };
   }
 
@@ -101,6 +116,7 @@ export function validateOrderSubmit(
       title: title.slice(0, 200),
       justification: justification.slice(0, 2000),
       estimateUsd: round2(estimateUsd),
+      priced,
       vendor: vendor || "unspecified",
       itemUrl,
       quantity: quantityRaw,

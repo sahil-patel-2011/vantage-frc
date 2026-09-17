@@ -14,6 +14,16 @@ import {
 
 export type { OrdersView };
 
+function moneyOrNull(value: unknown): number | null {
+  if (value === undefined || value === null || value === "") return null;
+  const n = Number(value);
+  // Refused rather than clamped: a mentor who typed a negative or a nonsense
+  // figure should see the refusal, not a number they did not intend in the
+  // season budget.
+  if (!Number.isFinite(n) || n < 0 || n > 1_000_000) return null;
+  return Math.round(n * 100) / 100;
+}
+
 function uuidOrNull(value: unknown): string | null {
   if (typeof value !== "string") return null;
   const trimmed = value.trim();
@@ -110,6 +120,8 @@ export async function POST(request: Request) {
             decision: "approved",
             reviewNotes: body.reviewNotes === undefined ? null : trimmedOrNull(body.reviewNotes, 1000),
             buyerUserId,
+            // The approver's figure is the one the budget uses.
+            totalCostUsd: moneyOrNull(body.totalCostUsd),
           });
           break;
         }
