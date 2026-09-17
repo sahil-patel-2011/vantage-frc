@@ -8,6 +8,7 @@ import {
 } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { toDataURL as qrDataUrl } from "qrcode";
 import { z } from "zod";
 import { anonymizeIp, clientIp, createRateLimiter, rateLimitedResponse } from "../../../../lib/rate-limit";
 import { parseSecureJson, securityErrorResponse } from "../../../../lib/security/request";
@@ -91,7 +92,29 @@ export async function POST(request: Request) {
     const result = await withRls({ userId: session.user.id, orgId }, async (client) => {
       let output: unknown;
       if (body.action === "begin") {
-        output = await beginMfaEnrollment(client, { id: session.user.id, email: session.user.email });
+        const enrollment = await beginMfaEnrollment(client, {
+          id: session.user.id,
+          email: session.user.email,
+        });
+        // Rendered here rather than in the browser: the QR encodes exactly the
+        // otpauth URI that is already in this response, so it adds no exposure,
+        // and it keeps a barcode renderer out of the client bundle. If drawing
+        // it fails the enrollment still works — the setup key below the QR is
+        // the same secret, typed instead of scanned.
+        let qrDataUri: string | null;
+        try {
+          qrDataUri = await qrDataUrl(enrollment.uri, {
+            margin: 1,
+            width: 240,
+            // Authenticator QRs get scanned off a laptop screen at arm's length,
+            // often in a room with bad light. The higher correction level costs
+            // a little density and buys a lot of first-try scans.
+            errorCorrectionLevel: "M",
+          });
+        } catch {
+          qrDataUri = null;
+        }
+        output = { ...enrollment, qrDataUri };
       } else if (body.action === "confirm") {
         output = { recoveryCodes: await confirmMfaEnrollment(client, session.user.id, body.code) };
       } else if (body.action === "regenerate") {

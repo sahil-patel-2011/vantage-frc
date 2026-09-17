@@ -69,7 +69,12 @@ export default function SecurityClient({
   returnTo?: string;
 }) {
   const [view, setView] = useState<SecurityView | null>(null);
-  const [setup, setSetup] = useState<{ secret: string; uri: string } | null>(null);
+  const [setup, setSetup] = useState<{
+    secret: string;
+    uri: string;
+    /** Absent when the barcode could not be drawn; the setup key still works. */
+    qrDataUri?: string | null;
+  } | null>(null);
   const [code, setCode] = useState("");
   const [recovery, setRecovery] = useState<string[]>([]);
   const [message, setMessage] = useState("");
@@ -293,11 +298,42 @@ export default function SecurityClient({
               ) : null}
               {setup ? (
                 <>
-                  <label>
-                    Setup key
-                    <output className="secret-output">{setup.secret}</output>
-                  </label>
-                  <p>Add this key or URI to your authenticator app, then confirm a current code.</p>
+                  {/* Scanning is the path nearly everyone takes: open Microsoft
+                      Authenticator, add a work account, point the phone at the
+                      screen. Typing a thirty-two character secret on a phone
+                      keyboard is the fallback, so it sits below and folded away. */}
+                  {setup.qrDataUri ? (
+                    <div className="mfa-qr">
+                      {/* A data URI, not a served asset, so next/image has
+                          nothing to optimise here. */}
+                      <img
+                        src={setup.qrDataUri}
+                        alt="QR code for adding this account to your authenticator app"
+                        width={240}
+                        height={240}
+                      />
+                      <p>
+                        In <strong>Microsoft Authenticator</strong>, tap <strong>+</strong> →{" "}
+                        <strong>Work or school account</strong> → <strong>Scan a QR code</strong>,
+                        then point your phone at this. Google Authenticator, 1Password and Authy
+                        read the same code.
+                      </p>
+                    </div>
+                  ) : null}
+                  <details className="mfa-manual">
+                    <summary>
+                      {setup.qrDataUri ? "Can’t scan it? Enter the key by hand" : "Enter the key by hand"}
+                    </summary>
+                    <label>
+                      Setup key
+                      <output className="secret-output">{setup.secret}</output>
+                    </label>
+                    <p className="app-muted">
+                      Choose “Enter code manually” in your authenticator app and paste this. The
+                      account name is your email; the issuer is Vantage.
+                    </p>
+                  </details>
+                  <p>Then enter the six-digit code your app shows.</p>
                   <label>
                     6-digit code
                     <input
