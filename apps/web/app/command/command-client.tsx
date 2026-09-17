@@ -14,7 +14,7 @@ import {
   EventDayShell,
   classifyEventDayShell,
 } from "./command-chrome";
-import { CommandEventPicker } from "./command-event-picker";
+import { CommandEventPicker, type CustomEventSubmission } from "./command-event-picker";
 import {
   COMMAND_POLL_MS,
   commandHrefsFromSnap,
@@ -210,6 +210,29 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
     }
   }
 
+  async function createCustomEvent(draft: CustomEventSubmission) {
+    if (!orgId) return;
+    setEventBusy(true);
+    setEventMessage("");
+    try {
+      const response = await fetch("/api/context/event", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orgId, create: draft }),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setEventMessage(body.error ?? "Could not add that event");
+        return;
+      }
+      setEventOpen(false);
+      setEventMessage(`Active event set to ${body.eventName ?? draft.name}`);
+      await load(orgId);
+    } finally {
+      setEventBusy(false);
+    }
+  }
+
   const hrefs = commandHrefsFromSnap(snap, orgId || null);
   const next = snap?.matches[0] ?? null;
   const after = snap?.matches[1] ?? null;
@@ -228,6 +251,8 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
       onQuery={setEventQ}
       onSelect={(eventKey) => void setActiveEvent(eventKey)}
       onClear={() => void setActiveEvent(null)}
+      year={new Date().getFullYear()}
+      onCreate={(draft) => void createCustomEvent(draft)}
     />
   );
 

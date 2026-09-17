@@ -17,6 +17,8 @@ export type EventOption = {
   city: string | null;
   stateProv: string | null;
   year: number;
+  /** True for an event this team added itself; no Blue Alliance results arrive. */
+  custom?: boolean;
 };
 
 export const COMMAND_POLL_MS = 20_000;

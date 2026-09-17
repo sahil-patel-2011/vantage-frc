@@ -3081,3 +3081,93 @@ body.has-app-shell .soft-ask-ai-label{display:none}
   .tour-card{animation:none !important}
   .tour-spotlight{transition:none !important}
 }
+
+/* Adding an event The Blue Alliance does not carry — an offseason like GRITS.
+   Lives inside the existing Set-active-event modal rather than on a page of its
+   own: it is the same decision, reached at the moment the list comes up short. */
+.edc-event-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: space-between;
+  margin-top: 12px;
+}
+
+/* A team-made event will never receive Blue Alliance results. This chip is the
+   only place in the product where that difference is visible. */
+.edc-event-own {
+  margin-left: 8px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.edc-add-event {
+  display: grid;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.edc-add-event label {
+  display: grid;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.edc-add-event input {
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 400;
+}
+
+.edc-add-event input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.edc-add-event-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.edc-add-event-problems {
+  margin: 0;
+  padding: 10px 12px 10px 28px;
+  border-radius: 11px;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.edc-add-event-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+/* A phone in a venue is the common case for adding one of these, so the paired
+   fields stack rather than shrinking to nothing. */
+@media (max-width: 460px) {
+  .edc-add-event-row {
+    grid-template-columns: 1fr;
+  }
+
+  .edc-add-event-actions,
+  .edc-event-footer {
+    flex-direction: column-reverse;
+  }
+}
