@@ -1,4 +1,5 @@
 import type { AllianceIndependence } from "./alliance-independence";
+import type { Distribution } from "./distribution";
 import type { TeamOperationalSignal, TeamSeasonSignal } from "./types";
 
 /** TBA / Statbotics-shaped event metric row used to build model inputs (fixtures or Neon cache). */
@@ -441,6 +442,11 @@ export type PickCandidate = {
    * "not enough matches" case rather than this being faked to a default.
    */
   independence?: AllianceIndependence | null;
+  /**
+   * Match-by-match spread, so a pick list can tell a metronome from a coin
+   * flip. Null when nobody has recorded a score for this team.
+   */
+  consistency?: Distribution | null;
 };
 
 export type PickDataModeInfo = {

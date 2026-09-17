@@ -12,6 +12,7 @@ import {
 import { observationsForStrategyTrust } from "@vantage/scouting/trust";
 import type { SchemaDefinition } from "@vantage/scouting";
 import { loadScoutFieldRoles } from "./scout-field-roles";
+import { teamScoreDistribution } from "@vantage/prediction-strategy";
 import { buildIndependence } from "./independence-from-matches";
 import {
   findFieldPositionFields,
@@ -207,10 +208,13 @@ export async function loadPickDesk(
     ? await client.query<{
         id: string;
         teamKey: string;
+        // Selected so consistency is measured per match, not per entry. Two
+        // scouts on one match is one match's worth of evidence.
+        matchKey: string | null;
         payload: Record<string, unknown>;
         confidence: string | null;
       }>(
-        `SELECT id, team_key AS "teamKey", payload, confidence
+        `SELECT id, team_key AS "teamKey", match_key AS "matchKey", payload, confidence
          FROM match_scout_entries
          WHERE org_id = $1 AND event_key = $2 AND team_key = ANY($3::text[])
          ORDER BY updated_at DESC
@@ -221,6 +225,7 @@ export async function loadPickDesk(
         rows: [] as Array<{
           id: string;
           teamKey: string;
+          matchKey: string | null;
           payload: Record<string, unknown>;
           confidence: string | null;
         }>,
@@ -257,14 +262,25 @@ export async function loadPickDesk(
 
   const byTeam = new Map<
     string,
-    Array<{ payload: Record<string, unknown>; confidence: "high" | "normal" | "low" }>
+    Array<{
+      payload: Record<string, unknown>;
+      confidence: "high" | "normal" | "low";
+      // Kept so consistency can be measured per match rather than per entry.
+      // Two scouts on one match is one match's worth of evidence. Optional
+      // rather than nullable to match ScoutObservation, which this feeds.
+      matchKey?: string;
+    }>
   >();
   for (const scout of scoutRows.rows) {
     const confidence =
       scout.confidence === "high" || scout.confidence === "low" ? scout.confidence : "normal";
     const list = byTeam.get(scout.teamKey) ?? [];
     const trusted = trustedByEntry.get(scout.id);
-    list.push({ payload: trusted?.trustedPayload ?? scout.payload ?? {}, confidence });
+    list.push({
+      payload: trusted?.trustedPayload ?? scout.payload ?? {},
+      confidence,
+      matchKey: scout.matchKey ?? undefined,
+    });
     byTeam.set(scout.teamKey, list);
   }
 
@@ -308,6 +324,7 @@ export async function loadPickDesk(
       tbaConflictCount: conflicts?.conflictCount ?? 0,
       tbaConflictFields: conflicts?.conflictFields ?? [],
       independence: independenceByTeam.get(metric.teamKey) ?? null,
+      consistency: trusted.length ? teamScoreDistribution(trusted, fieldRoles) : null,
     };
   });
 

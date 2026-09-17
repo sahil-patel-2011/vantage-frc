@@ -1,7 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { independenceLabel } from "@vantage/prediction-strategy";
+import {
+  CONSISTENCY_LABEL,
+  describeDistribution,
+  independenceLabel,
+} from "@vantage/prediction-strategy";
 import type { PickCandidate, PickTier } from "@vantage/prediction-strategy";
 import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
 import { OfflineBanner } from "../../components/offline-banner";
@@ -117,6 +121,31 @@ function IndependenceChip({ candidate }: { candidate: PickCandidate | undefined 
   return (
     <span className={`pick-independence pick-independence-${verdict.verdict}`} title={verdict.summary}>
       {independenceLabel(verdict.verdict)}
+    </span>
+  );
+}
+
+/**
+ * Whether the average is telling the truth.
+ *
+ * Two teams averaging ten points are not the same team: one scores ten every
+ * match, the other nothing twice and twenty twice. A pick list that shows only
+ * the average cannot tell them apart, and which one you want depends entirely
+ * on whether you need a floor or a ceiling.
+ *
+ * Hidden below six matches. Quartiles of four matches are noise with decimal
+ * places, and a confident "steady" from a sample that small is worse than
+ * nothing, because somebody will pick on it. The hover carries the numbers.
+ */
+function ConsistencyChip({ candidate }: { candidate: PickCandidate | undefined }) {
+  const shape = candidate?.consistency;
+  if (!shape || shape.consistency === "unknown") return null;
+  return (
+    <span
+      className={`pick-consistency pick-consistency-${shape.consistency}`}
+      title={describeDistribution(shape)}
+    >
+      {CONSISTENCY_LABEL[shape.consistency]}
     </span>
   );
 }
@@ -734,6 +763,7 @@ export function PickListWorkbench({
                       </strong>
                       <small>{metricLine(candidate)}</small>
                   <IndependenceChip candidate={candidate} />
+                  <ConsistencyChip candidate={candidate} />
                     </div>
                     <div className="strategy-pick-row-actions">
                       <button type="button" onClick={() => shiftRank(entry.teamKey, -1)} aria-label="Move up">
@@ -801,6 +831,7 @@ export function PickListWorkbench({
                   <strong>{teamLabel(candidate)}</strong>
                   <small>{metricLine(candidate)}</small>
                   <IndependenceChip candidate={candidate} />
+                  <ConsistencyChip candidate={candidate} />
                   {candidate.suggestedTier ? (
                     <em className="strategy-suggest">Suggested {candidate.suggestedTier}</em>
                   ) : (

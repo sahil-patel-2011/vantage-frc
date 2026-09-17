@@ -90,6 +90,15 @@ export {
   rateTeam,
 } from "./alliance-outcome";
 export {
+  CONSISTENCY_LABEL,
+  MIN_FOR_CENTRE,
+  MIN_FOR_SPREAD,
+  comparePick,
+  describeDistribution,
+  summariseDistribution,
+} from "./distribution";
+export type { Consistency, Distribution, PickComparison, PickNeed } from "./distribution";
+export {
   DEFAULT_LOGISTIC_SCALE,
   MIN_FIT_SAMPLE,
   brierScore,
