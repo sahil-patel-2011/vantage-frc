@@ -74,7 +74,7 @@ function ExitInterviewRelated({ orgId }: { orgId?: string | null }) {
   );
 }
 
-function ExitInterviewNextActions({ orgId }: { orgId: string }) {
+function ExitInterviewNextActions() {
   const actions = [
     {
       id: "capture",
@@ -82,20 +82,6 @@ function ExitInterviewNextActions({ orgId }: { orgId: string }) {
       detail: "Submitted interviews write a season-handoff wiki page.",
       href: "#exit-interview-log",
       primary: true,
-    },
-    {
-      id: "alumni",
-      label: "Open Alumni Network",
-      detail: "Keep graduates reachable after the handoff page is published.",
-      href: hubHref("/team", "alumni-network", orgId),
-      primary: false,
-    },
-    {
-      id: "roadmap",
-      label: "Open Season roadmap",
-      detail: "The next season's kickoff-to-event list lives here.",
-      href: hubHref("/team", "roadmap", orgId),
-      primary: false,
     },
   ];
   return (
@@ -357,7 +343,7 @@ export default function ExitInterviewClient() {
           {error}
         </p>
       ) : null}
-      <ExitInterviewNextActions orgId={view.orgId} />
+      <ExitInterviewNextActions />
       <div style={{ display: "grid", gap: 16 }}>
         <SummaryTiles view={view} />
         <LogResponseForm busy={busy} mutate={mutate} />

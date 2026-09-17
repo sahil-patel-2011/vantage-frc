@@ -103,7 +103,7 @@ function BomCostRollupRelated({ orgId }: { orgId?: string | null }) {
   );
 }
 
-function BomCostRollupNextActions({ orgId }: { orgId: string }) {
+function BomCostRollupNextActions() {
   const actions = [
     {
       id: "add",
@@ -111,20 +111,6 @@ function BomCostRollupNextActions({ orgId }: { orgId: string }) {
       detail: "Log a purchased part so the season total is real.",
       href: "#bom-cost-add",
       primary: true,
-    },
-    {
-      id: "check",
-      label: "Open Budget check",
-      detail: "Weight and power drift sit next to this parts total.",
-      href: hubHref("/build", "budget-reconciler", orgId),
-      primary: false,
-    },
-    {
-      id: "costs",
-      label: "Open Season costs",
-      detail: "Event fees and subscriptions are a separate spend log.",
-      href: hubHref("/business", "costs", orgId),
-      primary: false,
     },
   ];
   return (
@@ -373,7 +359,7 @@ export default function BomCostRollupClient() {
           {error}
         </p>
       ) : null}
-      <BomCostRollupNextActions orgId={view.orgId} />
+      <BomCostRollupNextActions />
       <div style={{ display: "grid", gap: 16 }}>
         <SummaryTiles view={view} busy={busy} mutate={mutate} />
         <AddItemForm busy={busy} mutate={mutate} />

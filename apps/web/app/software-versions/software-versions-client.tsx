@@ -103,7 +103,7 @@ function SoftwareVersionsRelated({ orgId }: { orgId?: string | null }) {
   );
 }
 
-function SoftwareVersionsNextActions({ orgId }: { orgId: string }) {
+function SoftwareVersionsNextActions() {
   const actions = [
     {
       id: "save",
@@ -111,20 +111,6 @@ function SoftwareVersionsNextActions({ orgId }: { orgId: string }) {
       detail: "Installed vs target for WPILib, images, and vendor libraries.",
       href: "#software-version",
       primary: true,
-    },
-    {
-      id: "code",
-      label: "Open Code",
-      detail: "Flash and review sit next to the versions you logged.",
-      href: hubHref("/build", "code", orgId),
-      primary: false,
-    },
-    {
-      id: "wiring",
-      label: "Open CAN-bus map",
-      detail: "Device firmware should match the hardware on the map.",
-      href: hubHref("/build", "wiring-map", orgId),
-      primary: false,
     },
   ];
   return (
@@ -509,7 +495,7 @@ export default function SoftwareVersionsClient({ orgId }: { orgId: string | null
         )}
       </Panel>
 
-      <SoftwareVersionsNextActions orgId={view.context.orgId} />
+      <SoftwareVersionsNextActions />
     </main>
   );
 }

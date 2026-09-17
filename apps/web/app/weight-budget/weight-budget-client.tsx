@@ -87,7 +87,7 @@ function WeightBudgetRelated({ orgId }: { orgId?: string | null }) {
   );
 }
 
-function WeightBudgetNextActions({ orgId }: { orgId: string }) {
+function WeightBudgetNextActions() {
   const actions = [
     {
       id: "add",
@@ -95,20 +95,6 @@ function WeightBudgetNextActions({ orgId }: { orgId: string }) {
       detail: "Log the heavy items first — drivetrain, battery mount, superstructure.",
       href: "#weight-add",
       primary: true,
-    },
-    {
-      id: "weigh-in",
-      label: "Open Weigh-in",
-      detail: "Planned vs scale stays blank until someone logs a real weigh-in.",
-      href: hubHref("/build", "robot-weigh-in", orgId),
-      primary: false,
-    },
-    {
-      id: "inspection",
-      label: "Open Inspection",
-      detail: "Cut weight before inspection if the planned total is over the limit.",
-      href: hubHref("/build", "inspection-copilot", orgId),
-      primary: false,
     },
   ];
   return (
@@ -489,7 +475,7 @@ export default function WeightBudgetClient({ orgId }: { orgId: string | null }) 
         )}
       </Panel>
 
-      <WeightBudgetNextActions orgId={view.context.orgId} />
+      <WeightBudgetNextActions />
     </main>
   );
 }

@@ -90,7 +90,7 @@ function SubsystemsRelated({ orgId }: { orgId?: string | null }) {
   );
 }
 
-function SubsystemsNextActions({ orgId }: { orgId: string }) {
+function SubsystemsNextActions() {
   const actions = [
     {
       id: "save",
@@ -98,20 +98,6 @@ function SubsystemsNextActions({ orgId }: { orgId: string }) {
       detail: "Name the motors and reduction so the next person does not re-derive them from CAD.",
       href: "#subsystem-spec",
       primary: true,
-    },
-    {
-      id: "wiring",
-      label: "Open CAN-bus map",
-      detail: "Each mechanism here should match a device on the wiring map.",
-      href: hubHref("/build", "wiring-map", orgId),
-      primary: false,
-    },
-    {
-      id: "power",
-      label: "Open Power budget",
-      detail: "Typical and peak amps for these motors live on the budget.",
-      href: hubHref("/build", "power-budget", orgId),
-      primary: false,
     },
   ];
   return (
@@ -478,7 +464,7 @@ export default function SubsystemsClient({ orgId }: { orgId: string | null }) {
         )}
       </Panel>
 
-      <SubsystemsNextActions orgId={view.context.orgId} />
+      <SubsystemsNextActions />
     </main>
   );
 }

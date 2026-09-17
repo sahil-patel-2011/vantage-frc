@@ -121,28 +121,18 @@ export function CadSetupRelated({ orgId }: { orgId: string | null }) {
 
 function CadSetupNextActions({
   orgId,
-  onshapeConnected,
   hasDesktop,
 }: {
   orgId: string;
-  onshapeConnected: boolean;
   hasDesktop: boolean;
 }) {
   const actions = [
-    {
-      id: "cad",
-      label: "Open CAD",
-      detail: onshapeConnected
-        ? "Pick a document after Onshape is connected."
-        : "Open CAD after you connect Onshape or pair Fusion.",
-      href: withOrgHref("/cad", orgId),
-      primary: true as const,
-    },
     {
       id: "desktop",
       label: hasDesktop ? "Review paired computers" : "Pair Fusion",
       detail: CAD_SETUP_FUSION,
       href: withOrgHref("/cad/pair", orgId),
+      primary: true,
     },
   ];
   return (
@@ -552,7 +542,6 @@ export default function CadSetupWizard({ orgId }: { orgId: string }) {
       {step === 3 ? (
         <CadSetupNextActions
           orgId={orgId}
-          onshapeConnected={view.onshapeConnected}
           hasDesktop={view.devices.some((device) => !device.revokedAt)}
         />
       ) : null}

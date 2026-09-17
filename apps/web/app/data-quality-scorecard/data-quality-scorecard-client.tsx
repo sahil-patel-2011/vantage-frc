@@ -98,7 +98,7 @@ function DataQualityRelated({ orgId }: { orgId?: string | null }) {
   );
 }
 
-function DataQualityNextActions({ orgId }: { orgId: string }) {
+function DataQualityNextActions() {
   const actions = [
     {
       id: "log",
@@ -106,20 +106,6 @@ function DataQualityNextActions({ orgId }: { orgId: string }) {
       detail: "Record how complete a scouted match was, and whether a cross-check agreed.",
       href: "#data-quality-log",
       primary: true,
-    },
-    {
-      id: "scouting",
-      label: "Open Scouting",
-      detail: "Live match and pit entries are the rows this scorecard grades.",
-      href: hubHref("/competition", "scouting", orgId),
-      primary: false,
-    },
-    {
-      id: "training",
-      label: "Open Training",
-      detail: "New scouts practice on completed matches before they scout live.",
-      href: hubHref("/competition", "scout-training-mode", orgId),
-      primary: false,
     },
   ];
   return (
@@ -384,7 +370,7 @@ export default function DataQualityScorecardClient() {
           {error}
         </p>
       ) : null}
-      <DataQualityNextActions orgId={view.orgId} />
+      <DataQualityNextActions />
       <div style={{ display: "grid", gap: 16 }}>
         <ScorecardPanel view={view} />
         <SummaryTiles view={view} />

@@ -79,7 +79,7 @@ function ShooterTableRelated({ orgId }: { orgId?: string | null }) {
   );
 }
 
-function ShooterTableNextActions({ orgId }: { orgId: string }) {
+function ShooterTableNextActions() {
   const actions = [
     {
       id: "point",
@@ -87,20 +87,6 @@ function ShooterTableNextActions({ orgId }: { orgId: string }) {
       detail: "Log RPM and hood at a known distance so lookup stays honest.",
       href: "#shooter-table-point",
       primary: true,
-    },
-    {
-      id: "tuning",
-      label: "Open Tuning log",
-      detail: "Offsets and gains that go with this table live there.",
-      href: hubHref("/build", "tuning-log", orgId),
-      primary: false,
-    },
-    {
-      id: "subsystems",
-      label: "Open Subsystem specs",
-      detail: "Attach the shooter motors and reduction to the spec sheet.",
-      href: hubHref("/build", "subsystems", orgId),
-      primary: false,
     },
   ];
   return (
@@ -488,7 +474,7 @@ export default function ShooterTableClient({ orgId }: { orgId: string | null }) 
         )}
       </Panel>
 
-      <ShooterTableNextActions orgId={view.context.orgId} />
+      <ShooterTableNextActions />
     </main>
   );
 }

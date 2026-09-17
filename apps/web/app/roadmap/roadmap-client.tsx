@@ -83,7 +83,7 @@ function RoadmapRelated({ orgId }: { orgId?: string | null }) {
   );
 }
 
-function RoadmapNextActions({ orgId }: { orgId: string }) {
+function RoadmapNextActions() {
   const actions = [
     {
       id: "kickoff",
@@ -91,20 +91,6 @@ function RoadmapNextActions({ orgId }: { orgId: string }) {
       detail: "Every window below turns into real dates from the Saturday you enter.",
       href: "#roadmap-kickoff",
       primary: true,
-    },
-    {
-      id: "plan",
-      label: "Open Season plan",
-      detail: "Milestones and dated work live beside this kickoff-to-event list.",
-      href: hubHref("/team", "season-planning-workspace", orgId),
-      primary: false,
-    },
-    {
-      id: "goals",
-      label: "Open Objectives",
-      detail: "Season goals stay a separate list from this checklist.",
-      href: hubHref("/team", "goals", orgId),
-      primary: false,
     },
   ];
   return (
@@ -368,7 +354,7 @@ export default function RoadmapClient() {
           {error}
         </p>
       ) : null}
-      <RoadmapNextActions orgId={view.orgId} />
+      <RoadmapNextActions />
       <KickoffPanel
         live={view}
         value={kickoffInput}

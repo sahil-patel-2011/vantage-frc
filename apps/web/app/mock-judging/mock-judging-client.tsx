@@ -84,7 +84,7 @@ function MockJudgingRelated({ orgId }: { orgId?: string | null }) {
   );
 }
 
-function MockJudgingNextActions({ orgId }: { orgId: string }) {
+function MockJudgingNextActions() {
   const actions = [
     {
       id: "session",
@@ -92,20 +92,6 @@ function MockJudgingNextActions({ orgId }: { orgId: string }) {
       detail: "Answer a judging question and get a rubric-scored breakdown.",
       href: "#mock-judging-session",
       primary: true,
-    },
-    {
-      id: "pitch",
-      label: "Open Judge pitch",
-      detail: "Timed pitch practice uses the same award prep as this board.",
-      href: hubHref("/business", "judge-sim", orgId),
-      primary: false,
-    },
-    {
-      id: "essay",
-      label: "Open Impact essay",
-      detail: "Written award drafts sit next to these practice sessions.",
-      href: hubHref("/business", "impact-essay", orgId),
-      primary: false,
     },
   ];
   return (
@@ -365,7 +351,7 @@ export default function MockJudgingClient() {
           {error}
         </p>
       ) : null}
-      {view.readiness.totalSessions > 0 ? <MockJudgingNextActions orgId={view.orgId} /> : null}
+      {view.readiness.totalSessions > 0 ? <MockJudgingNextActions /> : null}
       <div style={{ display: "grid", gap: 16 }}>
         {view.readiness.totalSessions > 0 ? <ReadinessPanel view={view} /> : null}
         <RunSessionForm busy={busy} mutate={mutate} />

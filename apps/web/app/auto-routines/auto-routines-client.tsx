@@ -108,7 +108,7 @@ function AutoRoutinesRelated({ orgId }: { orgId?: string | null }) {
   );
 }
 
-function AutoRoutinesNextActions({ orgId }: { orgId: string }) {
+function AutoRoutinesNextActions() {
   const actions = [
     {
       id: "add",
@@ -116,20 +116,6 @@ function AutoRoutinesNextActions({ orgId }: { orgId: string }) {
       detail: "Name it, pick a start position, and mark when it is competition-ready.",
       href: "#auto-routine",
       primary: true,
-    },
-    {
-      id: "paths",
-      label: "Open Auton paths",
-      detail: "Field drawings for the routines you catalog here.",
-      href: hubHref("/build", "auton-path-library", orgId),
-      primary: false,
-    },
-    {
-      id: "code",
-      label: "Open Code",
-      detail: "The programs that run these autos live next to this list.",
-      href: hubHref("/build", "code", orgId),
-      primary: false,
     },
   ];
   return (
@@ -528,7 +514,7 @@ export default function AutoRoutinesClient({ orgId }: { orgId: string | null }) 
         )}
       </Panel>
 
-      <AutoRoutinesNextActions orgId={view.context.orgId} />
+      <AutoRoutinesNextActions />
     </main>
   );
 }

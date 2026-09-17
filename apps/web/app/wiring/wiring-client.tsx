@@ -119,7 +119,7 @@ function WiringRelated({ orgId }: { orgId?: string | null }) {
   );
 }
 
-function WiringNextActions({ orgId }: { orgId: string }) {
+function WiringNextActions() {
   const actions = [
     {
       id: "add",
@@ -127,20 +127,6 @@ function WiringNextActions({ orgId }: { orgId: string }) {
       detail: "Name the controller, CAN ID, and power port before you power on.",
       href: "#wiring-device",
       primary: true,
-    },
-    {
-      id: "power",
-      label: "Open Power budget",
-      detail: "Breaker amps on this map should match the load on the budget.",
-      href: hubHref("/build", "power-budget", orgId),
-      primary: false,
-    },
-    {
-      id: "batteries",
-      label: "Open Batteries",
-      detail: "A mapped robot still needs a healthy pack.",
-      href: hubHref("/build", "batteries", orgId),
-      primary: false,
     },
   ];
   return (
@@ -562,7 +548,7 @@ export default function WiringClient({ orgId }: { orgId: string | null }) {
         )}
       </Panel>
 
-      <WiringNextActions orgId={view.context.orgId} />
+      <WiringNextActions />
     </main>
   );
 }

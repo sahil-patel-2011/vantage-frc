@@ -80,7 +80,7 @@ function AutonPathRelated({ orgId }: { orgId?: string | null }) {
   );
 }
 
-function AutonPathNextActions({ orgId }: { orgId: string }) {
+function AutonPathNextActions() {
   const actions = [
     {
       id: "add",
@@ -88,20 +88,6 @@ function AutonPathNextActions({ orgId }: { orgId: string }) {
       detail: "Name each starting position so runs have somewhere to land.",
       href: "#auton-path-form",
       primary: true,
-    },
-    {
-      id: "tuning",
-      label: "Open Tuning log",
-      detail: "Constants that made a path work belong next to the success rate.",
-      href: hubHref("/build", "tuning-log", orgId),
-      primary: false,
-    },
-    {
-      id: "code",
-      label: "Open Code vs match",
-      detail: "Which deploy actually ran this path.",
-      href: hubHref("/build", "code-perf", orgId),
-      primary: false,
     },
   ];
   return (
@@ -374,7 +360,7 @@ export default function AutonPathLibraryClient() {
           {error}
         </p>
       ) : null}
-      <AutonPathNextActions orgId={view.orgId} />
+      <AutonPathNextActions />
       <div style={{ display: "grid", gap: 16 }}>
         <SummaryTiles view={view} />
         <CreatePathForm busy={busy} mutate={mutate} />

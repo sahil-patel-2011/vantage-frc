@@ -93,7 +93,7 @@ function ReviewsRelated({ orgId }: { orgId?: string | null }) {
   );
 }
 
-function ReviewsNextActions({ orgId }: { orgId: string }) {
+function ReviewsNextActions() {
   const actions = [
     {
       id: "schedule",
@@ -101,20 +101,6 @@ function ReviewsNextActions({ orgId }: { orgId: string }) {
       detail: "Start from the standard checklist, then tailor the blockers.",
       href: "#reviews-add",
       primary: true,
-    },
-    {
-      id: "vault",
-      label: "Open CAD vault",
-      detail: "The files under review live with the printable parts.",
-      href: hubHref("/build", "cad-vault", orgId),
-      primary: false,
-    },
-    {
-      id: "prototypes",
-      label: "Open Prototypes",
-      detail: "A review gate should match a real prototype decision.",
-      href: hubHref("/build", "prototype", orgId),
-      primary: false,
     },
   ];
   return (
@@ -370,7 +356,7 @@ export default function ReviewsClient() {
           {error}
         </p>
       ) : null}
-      <ReviewsNextActions orgId={view.orgId} />
+      <ReviewsNextActions />
       <div style={{ display: "grid", gap: 16 }}>
         <SummaryTiles view={view} />
         {view.summary.needsAttention.length > 0 ? <NeedsAttention view={view} /> : null}

@@ -80,7 +80,7 @@ function BudgetReconcilerRelated({ orgId }: { orgId?: string | null }) {
   );
 }
 
-function BudgetReconcilerNextActions({ orgId }: { orgId: string }) {
+function BudgetReconcilerNextActions() {
   const actions = [
     {
       id: "run",
@@ -88,20 +88,6 @@ function BudgetReconcilerNextActions({ orgId }: { orgId: string }) {
       detail: "Compare logged weight and current draw to the season limits.",
       href: "#budget-check-run",
       primary: true,
-    },
-    {
-      id: "weight",
-      label: "Open Weight budget",
-      detail: "Subsystem masses feed this board.",
-      href: hubHref("/build", "weight-budget", orgId),
-      primary: false,
-    },
-    {
-      id: "bom",
-      label: "Open BOM cost",
-      detail: "Part dollars are a separate rollup from weight and power.",
-      href: hubHref("/build", "bom-cost-rollup", orgId),
-      primary: false,
     },
   ];
   return (
@@ -365,7 +351,7 @@ export default function BudgetReconcilerClient() {
           {error}
         </p>
       ) : null}
-      <BudgetReconcilerNextActions orgId={view.orgId} />
+      <BudgetReconcilerNextActions />
       <div style={{ display: "grid", gap: 16 }}>
         <BudgetTiles view={view} />
         <RunPanel view={view} busy={busy} mutate={mutate} />

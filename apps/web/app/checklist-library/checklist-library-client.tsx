@@ -71,7 +71,7 @@ function ChecklistLibraryRelated({ orgId }: { orgId?: string | null }) {
   );
 }
 
-function ChecklistLibraryNextActions({ orgId }: { orgId: string }) {
+function ChecklistLibraryNextActions() {
   const actions = [
     {
       id: "template",
@@ -79,20 +79,6 @@ function ChecklistLibraryNextActions({ orgId }: { orgId: string }) {
       detail: "Pit, transport, and load-in SOPs start as a named list of cues.",
       href: "#checklist-library-new",
       primary: true,
-    },
-    {
-      id: "pit",
-      label: "Open pit checklist",
-      detail: "Timed pre-queue runs live on Event Day, not as a second copy here.",
-      href: withOrgHref("/match-checklist", orgId),
-      primary: false,
-    },
-    {
-      id: "tools",
-      label: "Open Tool checkout",
-      detail: "Hand tools that leave the shop sit beside these SOPs.",
-      href: hubHref("/team", "tool-checkout", orgId),
-      primary: false,
     },
   ];
   return (
@@ -334,7 +320,7 @@ export default function ChecklistLibraryClient() {
           {error}
         </p>
       ) : null}
-      <ChecklistLibraryNextActions orgId={view.orgId} />
+      <ChecklistLibraryNextActions />
       <div style={{ display: "grid", gap: 16 }}>
         <SummaryTiles view={view} />
         {view.lastPitInstantiation ? <PitOpenedNotice view={view} /> : null}

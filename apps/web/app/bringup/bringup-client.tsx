@@ -88,7 +88,7 @@ function BringupRelated({ orgId }: { orgId?: string | null }) {
   );
 }
 
-function BringupNextActions({ orgId }: { orgId: string }) {
+function BringupNextActions() {
   const actions = [
     {
       id: "checklist",
@@ -96,20 +96,6 @@ function BringupNextActions({ orgId }: { orgId: string }) {
       detail: "Pass, fail, or skip each first-power check before the robot drives.",
       href: "#bringup-checklist",
       primary: true,
-    },
-    {
-      id: "inspection",
-      label: "Open Inspection",
-      detail: "Event weigh-in and binder checks sit next to this first-power list.",
-      href: hubHref("/build", "inspection-copilot", orgId),
-      primary: false,
-    },
-    {
-      id: "wiring",
-      label: "Open CAN-bus map",
-      detail: "Wiring that failed bring-up should match the map.",
-      href: hubHref("/build", "wiring-map", orgId),
-      primary: false,
     },
   ];
   return (
@@ -456,7 +442,7 @@ export default function BringupClient({ orgId }: { orgId: string | null }) {
             </Button>
           </Panel>
 
-          <BringupNextActions orgId={view.context.orgId} />
+          <BringupNextActions />
         </>
       )}
     </main>

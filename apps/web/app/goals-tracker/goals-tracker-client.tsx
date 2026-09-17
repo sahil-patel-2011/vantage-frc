@@ -80,7 +80,7 @@ function GoalsTrackerRelated({ orgId }: { orgId?: string | null }) {
   );
 }
 
-function GoalsTrackerNextActions({ orgId }: { orgId: string }) {
+function GoalsTrackerNextActions() {
   const actions = [
     {
       id: "goal",
@@ -88,20 +88,6 @@ function GoalsTrackerNextActions({ orgId }: { orgId: string }) {
       detail: "Define a target, then log check-ins over the season to track real progress.",
       href: "#goals-tracker-new",
       primary: true,
-    },
-    {
-      id: "standup",
-      label: "Open Standup",
-      detail: "Yesterday's hours and task movement compile into the morning digest.",
-      href: hubHref("/team", "standup-digest", orgId),
-      primary: false,
-    },
-    {
-      id: "meeting",
-      label: "Open Meeting agenda",
-      detail: "Agenda and minutes attach to a calendar meeting.",
-      href: hubHref("/team", "meeting-autopilot", orgId),
-      primary: false,
     },
   ];
   return (
@@ -366,7 +352,7 @@ export default function GoalsTrackerClient() {
           {error}
         </p>
       ) : null}
-      <GoalsTrackerNextActions orgId={view.orgId} />
+      <GoalsTrackerNextActions />
       <div style={{ display: "grid", gap: 16 }}>
         <SummaryTiles view={view} />
         <CreateGoalForm busy={busy} mutate={mutate} />

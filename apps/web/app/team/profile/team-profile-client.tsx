@@ -73,53 +73,6 @@ function TeamProfileRelated({ orgId }: { orgId?: string | null }) {
   );
 }
 
-function TeamProfileNextActions({ orgId }: { orgId: string }) {
-  const actions = [
-    {
-      id: "districts",
-      label: "Open District advancement",
-      detail: "Remaining district points use the same public record this page shows.",
-      href: hubHref("/competition", "district-advancement", orgId),
-      primary: true,
-    },
-    {
-      id: "mock",
-      label: "Open Mock judging",
-      detail: "Practice award interviews with notes from this team's record.",
-      href: hubHref("/business", "mock-judging", orgId),
-      primary: false,
-    },
-    {
-      id: "awards",
-      label: "Open Award tracker",
-      detail: "Season award submissions sit next to the public awards list.",
-      href: hubHref("/business", "award-tracker", orgId),
-      primary: false,
-    },
-  ];
-  return (
-    <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
-      <header>
-        <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
-      </header>
-      <ol>
-        {actions.map((action) => (
-          <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
-              <strong>{action.label}</strong>
-              <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
-          </li>
-        ))}
-      </ol>
-    </section>
-  );
-}
-
 /**
  * What the world already knows about this team.
  *
@@ -372,8 +325,6 @@ export default function TeamProfileClient() {
           The last build failed: {view.error ?? "neither source answered"}.
         </p>
       ) : null}
-
-      {view.status === "ready" && view.orgId ? <TeamProfileNextActions orgId={view.orgId} /> : null}
 
       <div className="tp-grid">
         <Panel className="tp-card">

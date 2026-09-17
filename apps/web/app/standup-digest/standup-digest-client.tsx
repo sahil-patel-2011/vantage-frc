@@ -71,53 +71,6 @@ function StandupRelated({ orgId }: { orgId?: string | null }) {
   );
 }
 
-function StandupNextActions({ orgId }: { orgId: string }) {
-  const actions = [
-    {
-      id: "hours",
-      label: "Clock hours",
-      detail: "Yesterday's digest is compiled from hours that actually closed.",
-      href: withOrgHref("/hours", orgId),
-      primary: true,
-    },
-    {
-      id: "goals",
-      label: "Open Season Goals",
-      detail: "Season targets sit beside this morning summary.",
-      href: hubHref("/team", "goals-tracker", orgId),
-      primary: false,
-    },
-    {
-      id: "meeting",
-      label: "Open Meeting agenda",
-      detail: "Agenda and minutes attach to a calendar meeting.",
-      href: hubHref("/team", "meeting-autopilot", orgId),
-      primary: false,
-    },
-  ];
-  return (
-    <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
-      <header>
-        <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
-      </header>
-      <ol>
-        {actions.map((action) => (
-          <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
-              <strong>{action.label}</strong>
-              <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
-          </li>
-        ))}
-      </ol>
-    </section>
-  );
-}
-
 export default function StandupDigestClient() {
   const [view, setView] = useState<StandupView | null>(null);
   const [error, setError] = useState("");
@@ -333,7 +286,7 @@ export default function StandupDigestClient() {
           {error}
         </p>
       ) : null}
-      <StandupNextActions orgId={view.orgId} />
+
       <LiveDigest view={view} />
     </main>
   );

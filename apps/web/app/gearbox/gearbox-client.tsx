@@ -77,7 +77,7 @@ function GearboxRelated({ orgId }: { orgId?: string | null }) {
   );
 }
 
-function GearboxNextActions({ orgId }: { orgId: string }) {
+function GearboxNextActions() {
   const actions = [
     {
       id: "save",
@@ -85,20 +85,6 @@ function GearboxNextActions({ orgId }: { orgId: string }) {
       detail: "Name the reduction and the stages so the next person can reuse it.",
       href: "#gearbox-design",
       primary: true,
-    },
-    {
-      id: "weight",
-      label: "Open Weight budget",
-      detail: "Heavy gearboxes show up on the planned-weight board.",
-      href: hubHref("/build", "weight-budget", orgId),
-      primary: false,
-    },
-    {
-      id: "subsystems",
-      label: "Open Subsystem specs",
-      detail: "Attach this reduction to the subsystem it drives.",
-      href: hubHref("/build", "subsystems", orgId),
-      primary: false,
     },
   ];
   return (
@@ -461,7 +447,7 @@ export default function GearboxClient({ orgId }: { orgId: string | null }) {
         )}
       </Panel>
 
-      <GearboxNextActions orgId={view.context.orgId} />
+      <GearboxNextActions />
     </main>
   );
 }

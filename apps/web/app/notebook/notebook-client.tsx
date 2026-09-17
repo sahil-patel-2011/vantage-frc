@@ -121,13 +121,6 @@ function NotebookNextActions({ orgId }: { orgId: string }) {
       href: withOrgHref("/media-library", orgId),
       primary: false,
     },
-    {
-      id: "files",
-      label: "Open Files",
-      detail: "Approved write-ups live in the team file space.",
-      href: hubHref("/team", "files", orgId),
-      primary: false,
-    },
   ];
   return (
     <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">

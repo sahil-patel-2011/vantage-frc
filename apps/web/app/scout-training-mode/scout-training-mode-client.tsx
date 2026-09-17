@@ -78,7 +78,7 @@ function ScoutTrainingRelated({ orgId }: { orgId?: string | null }) {
   );
 }
 
-function ScoutTrainingNextActions({ orgId }: { orgId: string }) {
+function ScoutTrainingNextActions() {
   const actions = [
     {
       id: "practice",
@@ -86,20 +86,6 @@ function ScoutTrainingNextActions({ orgId }: { orgId: string }) {
       detail: "Call the winner and scores on a completed match before you scout live.",
       href: "#scout-training-practice",
       primary: true,
-    },
-    {
-      id: "scouting",
-      label: "Open Scouting",
-      detail: "Live match and pit entries are logged on the scouting board.",
-      href: hubHref("/competition", "scouting", orgId),
-      primary: false,
-    },
-    {
-      id: "quality",
-      label: "Open Data quality",
-      detail: "Coverage and cross-scout checks sit beside this practice board.",
-      href: hubHref("/competition", "data-quality-scorecard", orgId),
-      primary: false,
     },
   ];
   return (
@@ -333,7 +319,7 @@ export default function ScoutTrainingModeClient() {
           {error}
         </p>
       ) : null}
-      <ScoutTrainingNextActions orgId={view.orgId} />
+      <ScoutTrainingNextActions />
       <div style={{ display: "grid", gap: 16 }}>
         <SummaryTiles view={view} />
         <PracticeForm view={view} busy={busy} mutate={mutate} />

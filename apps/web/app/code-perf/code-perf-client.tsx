@@ -73,7 +73,7 @@ function CodePerfRelated({ orgId }: { orgId?: string | null }) {
   );
 }
 
-function CodePerfNextActions({ orgId }: { orgId: string }) {
+function CodePerfNextActions() {
   const actions = [
     {
       id: "log",
@@ -81,20 +81,6 @@ function CodePerfNextActions({ orgId }: { orgId: string }) {
       detail: "Record a commit, version bump, or tuning change beside match scores.",
       href: "#code-perf-log",
       primary: true,
-    },
-    {
-      id: "code",
-      label: "Open Code Coach",
-      detail: "Review robot code before you log a change here.",
-      href: hubHref("/build", "code", orgId),
-      primary: false,
-    },
-    {
-      id: "deploy",
-      label: "Open Deploy log",
-      detail: "Firmware deploys sit next to this match-linked board.",
-      href: hubHref("/build", "code-deploy-log", orgId),
-      primary: false,
     },
   ];
   return (
@@ -352,7 +338,7 @@ export default function CodePerfClient() {
           {error}
         </p>
       ) : null}
-      <CodePerfNextActions orgId={view.orgId} />
+      <CodePerfNextActions />
       <div style={{ display: "grid", gap: 16 }}>
         <SummaryTiles view={view} />
         <LogChangeForm busy={busy} mutate={mutate} />

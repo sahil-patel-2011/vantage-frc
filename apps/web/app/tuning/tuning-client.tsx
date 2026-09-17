@@ -92,7 +92,7 @@ function TuningRelated({ orgId }: { orgId?: string | null }) {
   );
 }
 
-function TuningNextActions({ orgId }: { orgId: string }) {
+function TuningNextActions() {
   const actions = [
     {
       id: "save",
@@ -100,20 +100,6 @@ function TuningNextActions({ orgId }: { orgId: string }) {
       detail: "Offsets and gains that hurt to lose belong here, not on a lost laptop.",
       href: "#tuning-constant",
       primary: true,
-    },
-    {
-      id: "subsystems",
-      label: "Open Subsystem specs",
-      detail: "Name the mechanism this constant belongs to.",
-      href: hubHref("/build", "subsystems", orgId),
-      primary: false,
-    },
-    {
-      id: "shooter",
-      label: "Open Shooter table",
-      detail: "Distance lookup is a different page from these constants.",
-      href: hubHref("/build", "shooter-table", orgId),
-      primary: false,
     },
   ];
   return (
@@ -462,7 +448,7 @@ export default function TuningClient({ orgId }: { orgId: string | null }) {
         </Panel>
       ) : null}
 
-      <TuningNextActions orgId={view.context.orgId} />
+      <TuningNextActions />
     </main>
   );
 }

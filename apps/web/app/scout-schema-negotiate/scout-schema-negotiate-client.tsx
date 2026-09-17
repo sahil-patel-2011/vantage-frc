@@ -71,7 +71,7 @@ function SchemaSyncRelated({ orgId }: { orgId?: string | null }) {
   );
 }
 
-function SchemaSyncNextActions({ orgId }: { orgId: string }) {
+function SchemaSyncNextActions() {
   const actions = [
     {
       id: "register",
@@ -79,20 +79,6 @@ function SchemaSyncNextActions({ orgId }: { orgId: string }) {
       detail: "Name the fields on the form this team is using so older tablets can still submit.",
       href: "#schema-sync-register",
       primary: true,
-    },
-    {
-      id: "scouting",
-      label: "Open Scouting",
-      detail: "Live match and pit entries are the rows this page keeps.",
-      href: hubHref("/competition", "scouting", orgId),
-      primary: false,
-    },
-    {
-      id: "mesh",
-      label: "Open Pit mesh",
-      detail: "Tablets share entries in the pit when venue Wi-Fi drops.",
-      href: hubHref("/competition", "scout-p2p-relay", orgId),
-      primary: false,
     },
   ];
   return (
@@ -329,7 +315,7 @@ export default function ScoutSchemaNegotiateClient() {
           {error}
         </p>
       ) : null}
-      <SchemaSyncNextActions orgId={view.orgId} />
+      <SchemaSyncNextActions />
       <div style={{ display: "grid", gap: 16 }}>
         <SummaryTiles view={view} />
         <RegisterVersionForm busy={busy} mutate={mutate} />

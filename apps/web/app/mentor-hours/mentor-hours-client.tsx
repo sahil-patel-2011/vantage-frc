@@ -92,7 +92,7 @@ function MentorHoursRelated({ orgId }: { orgId?: string | null }) {
   );
 }
 
-function MentorHoursNextActions({ orgId }: { orgId: string }) {
+function MentorHoursNextActions() {
   const actions = [
     {
       id: "log",
@@ -100,20 +100,6 @@ function MentorHoursNextActions({ orgId }: { orgId: string }) {
       detail: "Adult volunteer time is the evidence trail for grant reporting.",
       href: "#mentor-hours-log",
       primary: true,
-    },
-    {
-      id: "my-hours",
-      label: "Open My hours",
-      detail: "Student shop hours stay on a separate clock.",
-      href: hubHref("/team", "hours-self-view", orgId),
-      primary: false,
-    },
-    {
-      id: "alumni",
-      label: "Open Alumni Network",
-      detail: "Alumni mentors who offered office hours live there.",
-      href: hubHref("/team", "alumni-network", orgId),
-      primary: false,
     },
   ];
   return (
@@ -394,7 +380,7 @@ export default function MentorHoursClient() {
           {error}
         </p>
       ) : null}
-      <MentorHoursNextActions orgId={view.orgId} />
+      <MentorHoursNextActions />
       <div style={{ display: "grid", gap: 16 }}>
         <EngagementPanel view={view} />
         <SummaryTiles view={view} />

@@ -67,7 +67,7 @@ function SchemaAbRelated({ orgId }: { orgId?: string | null }) {
   );
 }
 
-function SchemaAbNextActions({ orgId }: { orgId: string }) {
+function SchemaAbNextActions() {
   const actions = [
     {
       id: "add",
@@ -75,20 +75,6 @@ function SchemaAbNextActions({ orgId }: { orgId: string }) {
       detail: "Register the two (or more) scouting forms you want to compare this season.",
       href: "#schema-ab-add",
       primary: true,
-    },
-    {
-      id: "scouting",
-      label: "Open Scouting",
-      detail: "Live match and pit entries are what these forms collect.",
-      href: hubHref("/competition", "scouting", orgId),
-      primary: false,
-    },
-    {
-      id: "sync",
-      label: "Open Schema sync",
-      detail: "Older tablet forms are kept here instead of being dropped.",
-      href: hubHref("/competition", "scout-schema-negotiate", orgId),
-      primary: false,
     },
   ];
   return (
@@ -339,7 +325,7 @@ export default function ScoutingSchemaAbClient() {
           {error}
         </p>
       ) : null}
-      <SchemaAbNextActions orgId={view.orgId} />
+      <SchemaAbNextActions />
       <div style={{ display: "grid", gap: 16 }}>
         <NewCandidateForm busy={busy} mutate={mutate} />
         {view.candidates.length === 0 ? (

@@ -85,29 +85,19 @@ export function CadConnectionsRelated({ orgId }: { orgId: string | null }) {
 
 function CadConnectionsNextActions({
   orgId,
-  onshapeConnected,
   hasDesktop,
 }: {
   orgId: string;
-  onshapeConnected: boolean;
   hasDesktop: boolean;
 }) {
   const actions = [
-    !onshapeConnected
-      ? {
-          id: "onshape",
-          label: "Connect Onshape",
-          detail: "Authorize in the browser. Never type your password in a terminal.",
-          href: "#onshape",
-          primary: true as const,
-        }
-      : {
-          id: "cad",
-          label: "Open CAD",
-          detail: "Pick a document after Onshape is connected.",
-          href: withOrgHref("/cad", orgId),
-          primary: true as const,
-        },
+    {
+      id: "onshape",
+      label: "Connect Onshape",
+      detail: "Authorize in the browser. Never type your password in a terminal.",
+      href: "#onshape",
+      primary: true as const,
+    },
     {
       id: "desktop",
       label: hasDesktop ? "Review paired computers" : "Pair this computer",
@@ -464,7 +454,6 @@ export default function CadConnections({ orgId }: { orgId: string }) {
           </section>
           <CadConnectionsNextActions
             orgId={orgId}
-            onshapeConnected={onshapeConnected}
             hasDesktop={view.devices.some((d) => !d.revokedAt)}
           />
         </main>

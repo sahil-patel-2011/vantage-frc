@@ -110,12 +110,6 @@ function TeamBackgroundNextActions({ orgId }: { orgId: string }) {
       primary: true,
     },
     {
-      id: "writer",
-      label: "Open Writer",
-      detail: "Award and sponsor drafts pull mission and history from this page.",
-      href: withOrgHref("/writer", orgId),
-    },
-    {
       id: "setup",
       label: "Open Getting started",
       detail: "The team setup checklist ticks location once city and state are saved.",

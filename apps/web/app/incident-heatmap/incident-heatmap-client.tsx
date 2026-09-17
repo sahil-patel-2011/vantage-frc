@@ -71,7 +71,7 @@ function IncidentHeatmapRelated({ orgId }: { orgId?: string | null }) {
   );
 }
 
-function IncidentHeatmapNextActions({ orgId }: { orgId: string }) {
+function IncidentHeatmapNextActions() {
   const actions = [
     {
       id: "log",
@@ -79,20 +79,6 @@ function IncidentHeatmapNextActions({ orgId }: { orgId: string }) {
       detail: "Subsystem and when it broke — the heatmap is only as honest as this log.",
       href: "#incident-heatmap-form",
       primary: true,
-    },
-    {
-      id: "fmea",
-      label: "Open FMEA",
-      detail: "Repeat failures should match the risk rows.",
-      href: hubHref("/build", "fmea", orgId),
-      primary: false,
-    },
-    {
-      id: "patterns",
-      label: "Open Failure patterns",
-      detail: "Same mechanism across events lives next to this heatmap.",
-      href: hubHref("/build", "failure-patterns", orgId),
-      primary: false,
     },
   ];
   return (
@@ -370,7 +356,7 @@ export default function IncidentHeatmapClient() {
           {error}
         </p>
       ) : null}
-      <IncidentHeatmapNextActions orgId={view.orgId} />
+      <IncidentHeatmapNextActions />
       <div style={{ display: "grid", gap: 16 }}>
         <SummaryTiles view={view} />
         <LogIncidentForm busy={busy} mutate={mutate} />

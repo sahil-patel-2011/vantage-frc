@@ -70,53 +70,6 @@ function DataSourceHealthRelated({ orgId }: { orgId?: string | null }) {
   );
 }
 
-function DataSourceHealthNextActions({ orgId }: { orgId: string }) {
-  const actions = [
-    {
-      id: "data",
-      label: "Open Team Data",
-      detail: "The last saved schedule and rankings live on Team Data.",
-      href: withOrgHref("/team/data", orgId),
-      primary: true,
-    },
-    {
-      id: "rankings",
-      label: "Open Rankings",
-      detail: "Check whether the current ranking board is using the last saved copy.",
-      href: withOrgHref("/rankings", orgId),
-      primary: false,
-    },
-    {
-      id: "schedule",
-      label: "Open Schedule",
-      detail: "Match times stay on the last saved copy when the live source is stale.",
-      href: withOrgHref("/schedule", orgId),
-      primary: false,
-    },
-  ];
-  return (
-    <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
-      <header>
-        <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
-      </header>
-      <ol>
-        {actions.map((action) => (
-          <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
-              <strong>{action.label}</strong>
-              <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
-          </li>
-        ))}
-      </ol>
-    </section>
-  );
-}
-
 export default function DegradedModeClient() {
   const [view, setView] = useState<DegradedModeView | null>(null);
   const [error, setError] = useState("");
@@ -322,7 +275,7 @@ export default function DegradedModeClient() {
           {error}
         </p>
       ) : null}
-      <DataSourceHealthNextActions orgId={view.orgId} />
+
       <div style={{ display: "grid", gap: 16 }}>
         <BannerPanel view={view} busy={busy} mutate={mutate} />
         <SourcesPanel view={view} />

@@ -102,7 +102,7 @@ function PowerBudgetRelated({ orgId }: { orgId?: string | null }) {
   );
 }
 
-function PowerBudgetNextActions({ orgId }: { orgId: string }) {
+function PowerBudgetNextActions() {
   const actions = [
     {
       id: "add",
@@ -110,20 +110,6 @@ function PowerBudgetNextActions({ orgId }: { orgId: string }) {
       detail: "Log typical and peak amps so brownout risk is real, not guessed.",
       href: "#power-budget-load",
       primary: true,
-    },
-    {
-      id: "wiring",
-      label: "Open CAN-bus map",
-      detail: "Breaker size on a branch should match the device on that port.",
-      href: hubHref("/build", "wiring-map", orgId),
-      primary: false,
-    },
-    {
-      id: "batteries",
-      label: "Open Batteries",
-      detail: "A tired pack browns out sooner than the budget says.",
-      href: hubHref("/build", "batteries", orgId),
-      primary: false,
     },
   ];
   return (
@@ -539,7 +525,7 @@ export default function PowerBudgetClient({ orgId }: { orgId: string | null }) {
         )}
       </Panel>
 
-      <PowerBudgetNextActions orgId={view.context.orgId} />
+      <PowerBudgetNextActions />
     </main>
   );
 }

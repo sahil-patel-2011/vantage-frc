@@ -76,7 +76,7 @@ function AlumniNetworkRelated({ orgId }: { orgId?: string | null }) {
   );
 }
 
-function AlumniNetworkNextActions({ orgId }: { orgId: string }) {
+function AlumniNetworkNextActions() {
   const actions = [
     {
       id: "add",
@@ -84,20 +84,6 @@ function AlumniNetworkNextActions({ orgId }: { orgId: string }) {
       detail: "Record a graduate who still wants to hear from the team.",
       href: "#alumni-add-profile",
       primary: true,
-    },
-    {
-      id: "exit",
-      label: "Open Exit interviews",
-      detail: "Graduation handoff pages become the alumni knowledge trail.",
-      href: hubHref("/team", "exit-interview", orgId),
-      primary: false,
-    },
-    {
-      id: "hours",
-      label: "Open Mentor hours",
-      detail: "Adult volunteer time is a separate ledger from student shop hours.",
-      href: hubHref("/team", "mentor-hours", orgId),
-      primary: false,
     },
   ];
   return (
@@ -328,7 +314,7 @@ export default function AlumniNetworkClient() {
           {error}
         </p>
       ) : null}
-      <AlumniNetworkNextActions orgId={view.orgId} />
+      <AlumniNetworkNextActions />
       <div style={{ display: "grid", gap: 16 }}>
         <SummaryTiles view={view} />
         {view.teamDirectory.length > 0 ? (

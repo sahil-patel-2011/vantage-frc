@@ -78,7 +78,7 @@ function PitMeshRelated({ orgId }: { orgId?: string | null }) {
   );
 }
 
-function PitMeshNextActions({ orgId }: { orgId: string }) {
+function PitMeshNextActions() {
   const actions = [
     {
       id: "start",
@@ -86,20 +86,6 @@ function PitMeshNextActions({ orgId }: { orgId: string }) {
       detail: "Open a session so scout tablets can share entries when venue Wi-Fi drops.",
       href: "#pit-mesh-start",
       primary: true,
-    },
-    {
-      id: "scouting",
-      label: "Open Scouting",
-      detail: "Live match and pit entries are what this mesh merges.",
-      href: hubHref("/competition", "scouting", orgId),
-      primary: false,
-    },
-    {
-      id: "schema",
-      label: "Open Schema sync",
-      detail: "Older tablet forms are reconciled here instead of being dropped.",
-      href: hubHref("/competition", "scout-schema-negotiate", orgId),
-      primary: false,
     },
   ];
   return (
@@ -364,7 +350,7 @@ export default function ScoutP2pRelayClient() {
           {error}
         </p>
       ) : null}
-      <PitMeshNextActions orgId={view.orgId} />
+      <PitMeshNextActions />
       <div style={{ display: "grid", gap: 16 }}>
         <SummaryTiles view={view} />
         <StartSessionForm busy={busy} mutate={mutate} />

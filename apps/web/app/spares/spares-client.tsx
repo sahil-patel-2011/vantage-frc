@@ -91,7 +91,7 @@ function SparesRelated({ orgId }: { orgId?: string | null }) {
   );
 }
 
-function SparesNextActions({ orgId }: { orgId: string }) {
+function SparesNextActions() {
   const actions = [
     {
       id: "add",
@@ -99,20 +99,6 @@ function SparesNextActions({ orgId }: { orgId: string }) {
       detail: "On-hand counts and reorder points stay blank until you stock the shelf.",
       href: "#spares-add",
       primary: true,
-    },
-    {
-      id: "orders",
-      label: "Open Orders",
-      detail: "A reorder point that fires becomes a purchase request.",
-      href: hubHref("/business", "orders", orgId),
-      primary: false,
-    },
-    {
-      id: "packing",
-      label: "Open Packing list",
-      detail: "Competition load-out is what runs this bin dry.",
-      href: withOrgHref("/packing", orgId),
-      primary: false,
     },
   ];
   return (
@@ -352,7 +338,7 @@ export default function SparesClient() {
           {error}
         </p>
       ) : null}
-      <SparesNextActions orgId={view.orgId} />
+      <SparesNextActions />
       <div style={{ display: "grid", gap: 16 }}>
         <SummaryTiles view={view} />
         {view.summary.reorderList.length > 0 ? <ReorderList view={view} /> : null}

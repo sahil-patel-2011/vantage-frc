@@ -78,7 +78,7 @@ function WiringDiagnoserRelated({ orgId }: { orgId?: string | null }) {
   );
 }
 
-function WiringDiagnoserNextActions({ orgId }: { orgId: string }) {
+function WiringDiagnoserNextActions() {
   const actions = [
     {
       id: "check",
@@ -86,20 +86,6 @@ function WiringDiagnoserNextActions({ orgId }: { orgId: string }) {
       detail: "Compare the board you see against the stored diagram before a match.",
       href: "#wiring-diagnoser-form",
       primary: true,
-    },
-    {
-      id: "readiness",
-      label: "Open Readiness",
-      detail: "Wiring flags feed the ship-readiness index.",
-      href: hubHref("/build", "readiness-score", orgId),
-      primary: false,
-    },
-    {
-      id: "map",
-      label: "Open CAN-bus map",
-      detail: "Expected channels come from the stored map.",
-      href: hubHref("/build", "wiring-map", orgId),
-      primary: false,
     },
   ];
   return (
@@ -404,7 +390,7 @@ export default function WiringDiagnoserClient() {
           {error}
         </p>
       ) : null}
-      <WiringDiagnoserNextActions orgId={view.orgId} />
+      <WiringDiagnoserNextActions />
       <div style={{ display: "grid", gap: 16 }}>
         <NewCheckForm busy={busy} mutate={mutate} wiringMap={view.wiringMap} />
         {view.checks.length > 0 ? (

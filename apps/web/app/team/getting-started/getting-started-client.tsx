@@ -219,23 +219,11 @@ function GettingStartedRelated({ orgId }: { orgId: string }) {
 function GettingStartedNextActions({ orgId }: { orgId: string }) {
   const actions = [
     {
-      id: "path",
-      label: "Open Your path",
-      detail: "Personal first-week steps for your role, not the whole team.",
-      href: withOrgHref("/start", orgId),
-      primary: true,
-    },
-    {
-      id: "playbook",
-      label: "Open Playbook",
-      detail: "Team Knowledge is what Ask AI reads on every chat.",
-      href: withOrgHref("/team/knowledge", orgId),
-    },
-    {
       id: "background",
       label: "Open Team background",
       detail: "Mission, location, and funding facts used by grants and sponsor drafts.",
       href: withOrgHref("/team/background", orgId),
+      primary: true,
     },
   ];
   return (
