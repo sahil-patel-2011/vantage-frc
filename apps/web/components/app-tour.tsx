@@ -60,14 +60,30 @@ export function AppTour() {
   // Decide once, after paint, so the targets have actually rendered.
   useEffect(() => {
     if (readDismissed()) return;
-    const id = window.setTimeout(() => {
+    // Poll rather than fire once: the consent banner is the other thing that
+    // wants an answer on a first visit, and both appearing together meant a
+    // brand new user met two overlapping dialogs before seeing a single word
+    // of their own data. The tour waits for the banner to be gone.
+    const consentShowing = () =>
+      document.querySelector(".consent-banner") != null;
+
+    let elapsed = 0;
+    const id = window.setInterval(() => {
+      elapsed += 400;
+      if (consentShowing()) {
+        // Give up after a while rather than waiting forever on someone who
+        // never answers: the tour simply does not run this visit.
+        if (elapsed > 60_000) window.clearInterval(id);
+        return;
+      }
+      window.clearInterval(id);
       const present = (name: string) =>
         document.querySelector(`[data-tour="${name}"]`) != null;
       const usable = availableSteps(TOUR_STEPS, present);
       // One lonely step is not a tour worth interrupting anyone for.
       if (usable.length >= 2) setSteps(usable);
-    }, 600);
-    return () => window.clearTimeout(id);
+    }, 400);
+    return () => window.clearInterval(id);
   }, []);
 
   const step = steps?.[index] ?? null;

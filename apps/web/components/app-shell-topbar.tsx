@@ -15,7 +15,8 @@ export function AppShellTopbar({
   crumbHint,
   orgId,
   navOpen,
-  onOpenNav,
+  onOpenNav,
+
   unreadCount,
   accountMenuOpen,
   onToggleAccount,
@@ -40,7 +41,8 @@ export function AppShellTopbar({
   crumbHint: string | null;
   orgId: string;
   navOpen: boolean;
-  onOpenNav: () => void;
+  onOpenNav: () => void;
+
   unreadCount: number;
   accountMenuOpen: boolean;
   onToggleAccount: () => void;
@@ -104,8 +106,15 @@ export function AppShellTopbar({
                 {(() => {
                   const sub = showBack ? crumbHint : orgLabel;
                   if (!sub) return null;
-                  const same = sub.trim().toLowerCase() === (title ?? "").trim().toLowerCase();
-                  return same ? null : <small className="soft-org-crumb">{sub}</small>;
+                  const heading = (title ?? "").trim().toLowerCase();
+                  const crumb = sub.trim().toLowerCase();
+                  // A crumb reading "Settings / Account" under a title reading
+                  // "Account" ends in the word it sits beneath. Comparing the
+                  // whole string missed that, so the page said its own name
+                  // twice, one line apart.
+                  const tail = crumb.split("/").pop()?.trim() ?? crumb;
+                  if (crumb === heading || tail === heading) return null;
+                  return <small className="soft-org-crumb">{sub}</small>;
                 })()}
               </>
             )}

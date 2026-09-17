@@ -74,6 +74,7 @@ export function KitRow({
   onClick,
   chevron = true,
   disabled,
+  danger,
 }: {
   icon?: IconName;
   tone?: KitTone;
@@ -83,6 +84,8 @@ export function KitRow({
   onClick?: () => void;
   chevron?: boolean;
   disabled?: boolean;
+  /** Renders the title in alarm red. Reserved for actions that destroy data. */
+  danger?: boolean;
 }) {
   const body = (
     <>
@@ -101,13 +104,20 @@ export function KitRow({
 
   if (href && !disabled) {
     return (
-      <a className="kit-row" data-tone={tone} href={href}>
+      <a className="kit-row" data-tone={tone} data-danger={danger ? "true" : undefined} href={href}>
         {body}
       </a>
     );
   }
   return (
-    <button className="kit-row" data-tone={tone} type="button" onClick={onClick} disabled={disabled}>
+    <button
+      className="kit-row"
+      data-tone={tone}
+      data-danger={danger ? "true" : undefined}
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+    >
       {body}
     </button>
   );

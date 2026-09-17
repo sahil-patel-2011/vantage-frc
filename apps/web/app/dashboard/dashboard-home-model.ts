@@ -44,7 +44,9 @@ export function homeHeaderDetail(input: {
   eventName: unknown;
 }): string {
   if (!input.meLoaded) return "Loading your team…";
-  if (!input.orgId) return "Choose your team to see your day.";
+  // Silent: the card below is headed "Choose your team" and its button says
+  // the same words again. Three sightings of one instruction on one screen.
+  if (!input.orgId) return "";
   if (input.tbaConfigured === false) {
     return "Your week — next match, hours, and what to do now. Match times fill in after a mentor connects the event.";
   }

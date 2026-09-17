@@ -204,8 +204,12 @@
 }
 
 /* A destructive row keeps the same shape and changes only its colour, so it
-   reads as the same kind of thing with a different consequence. */
-.kit-row[data-tone="red"] .kit-row-title {
+   reads as the same kind of thing with a different consequence.
+
+   Keyed on data-danger, not on the tone. Tone is which colour the tile is;
+   danger is what happens when you press it. Tying the two made "Security"
+   render in alarm red purely because its tile was red. */
+.kit-row[data-danger="true"] .kit-row-title {
   color: var(--critical);
 }
 
@@ -296,6 +300,7 @@
   background: color-mix(in srgb, var(--bg) 70%, var(--line));
 }
 
+.kit-segment a,
 .kit-segment button {
   display: flex;
   align-items: center;
@@ -314,11 +319,13 @@
     color var(--motion-fast, 160ms) var(--motion-ease, ease);
 }
 
+.kit-segment a svg,
 .kit-segment button svg {
   width: 17px;
   height: 17px;
 }
 
+.kit-segment a[aria-selected="true"],
 .kit-segment button[aria-selected="true"],
 .kit-segment button[aria-pressed="true"] {
   background: var(--surface);
@@ -326,6 +333,7 @@
   box-shadow: var(--shadow);
 }
 
+.kit-segment a:focus-visible,
 .kit-segment button:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
@@ -379,4 +387,14 @@
   .kit-grid {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+/* The account tabs are links, not buttons, so they need the anchor reset the
+   segment's buttons get for free. */
+.kit-segment a {
+  text-decoration: none;
+}
+
+.settings-tabs {
+  margin: 0 0 18px;
 }

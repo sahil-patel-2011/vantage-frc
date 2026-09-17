@@ -24,7 +24,7 @@ describe("homeHeaderDetail", () => {
       tbaConfigured: undefined,
       setupRequired: false,
       eventName: null,
-    })).toBe("Choose your team to see your day.");
+    })).toBe("");
     expect(homeHeaderDetail({
       meLoaded: true,
       orgId: "org-1",

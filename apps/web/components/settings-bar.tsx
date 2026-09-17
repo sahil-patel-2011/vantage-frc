@@ -16,6 +16,7 @@ import {
 } from "../lib/nav/settings-nav";
 import { withOrgHref } from "../lib/nav/product-nav";
 import "./settings-bar.css";
+import { KitCard, KitEyebrow, KitRow, type KitTone } from "./ui/kit";
 
 type SettingsBarProps = {
   /** Raw org role from the page's own data ("owner" | "admin" | "scout" | …, or null). */
@@ -35,38 +36,58 @@ function chipHref(item: SettingsNavItem, orgId: string | null | undefined): stri
   return item.scope === "team" ? withOrgHref(item.href, orgId ?? null) : item.href;
 }
 
-function ChipGroup({
+/**
+ * Settings, as two different things instead of ten identical pills.
+ *
+ * This was one flat wall of chips — ten of them, in two rows, at the top of
+ * the page. They looked alike and behaved differently: three were tabs of the
+ * page you were already on, and the other seven were links to other pages
+ * entirely. Nothing on screen told you which was which, so every one of them
+ * was a small gamble about whether the page was about to change under you.
+ *
+ * Now the tabs are a segmented control, because that is what a set of views of
+ * one page looks like, and the destinations are rows with chevrons, because
+ * that is what going somewhere looks like.
+ */
+function isOnAccountPage(item: SettingsNavItem): boolean {
+  return item.href === "/account" || item.href.startsWith("/account?");
+}
+
+const ROW_TONES: Record<string, KitTone> = {
+  security: "teal",
+  connectors: "violet",
+  "team-admin": "blue",
+  "member-access": "amber",
+  chat: "cyan",
+  "team-ai-keys": "violet",
+  "data-export": "green",
+};
+
+function RowGroup({
   label,
   items,
-  activeId,
   orgId,
 }: {
   label: string;
   items: SettingsNavItem[];
-  activeId: string | null;
   orgId: string | null | undefined;
 }) {
-  if (items.length === 0) return null;
+  if (!items.length) return null;
   return (
-    <div className="settings-bar-group" role="group" aria-label={`${label} settings`}>
-      <span className="settings-bar-group-label" aria-hidden>
-        {label}
-      </span>
-      {items.map((item) => {
-        const active = item.id === activeId;
-        return (
-          <a
+    <>
+      <KitEyebrow>{label}</KitEyebrow>
+      <KitCard>
+        {items.map((item) => (
+          <KitRow
             key={item.id}
-            className={`settings-bar-chip${active ? " is-active" : ""}`}
+            icon={item.icon}
+            tone={ROW_TONES[item.id] ?? "blue"}
+            title={item.label}
             href={chipHref(item, orgId)}
-            aria-current={active ? "page" : undefined}
-          >
-            <Icon name={item.icon} />
-            <span>{item.label}</span>
-          </a>
-        );
-      })}
-    </div>
+          />
+        ))}
+      </KitCard>
+    </>
   );
 }
 
@@ -74,15 +95,31 @@ export function SettingsBar({ role, orgId, pathname, activeTab }: SettingsBarPro
   const items = visibleSettingsNav(role);
   const search = activeTab ? `tab=${activeTab}` : "";
   const activeId = activeSettingsId(items, pathname, search);
-  const personal = items.filter((item) => item.scope === "personal");
-  const team = items.filter((item) => item.scope === "team");
+
+  const tabs = items.filter(isOnAccountPage);
+  const personal = items.filter((item) => item.scope === "personal" && !isOnAccountPage(item));
+  const team = items.filter((item) => item.scope === "team" && !isOnAccountPage(item));
 
   return (
-    <nav className="settings-bar" aria-label="All settings">
-      <div className="settings-bar-scroll">
-        <ChipGroup label="Personal" items={personal} activeId={activeId} orgId={orgId} />
-        <ChipGroup label="Team" items={team} activeId={activeId} orgId={orgId} />
-      </div>
-    </nav>
+    <>
+      {tabs.length > 1 ? (
+        <nav className="kit-segment settings-tabs" aria-label="Account sections">
+          {tabs.map((item) => (
+            <a
+              key={item.id}
+              href={chipHref(item, orgId)}
+              aria-current={item.id === activeId ? "page" : undefined}
+              aria-selected={item.id === activeId}
+            >
+              <Icon name={item.icon} />
+              {item.label}
+            </a>
+          ))}
+        </nav>
+      ) : null}
+
+      <RowGroup label="Your settings" items={personal} orgId={orgId} />
+      <RowGroup label="Team settings" items={team} orgId={orgId} />
+    </>
   );
 }

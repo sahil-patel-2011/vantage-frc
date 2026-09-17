@@ -14,7 +14,7 @@ import { KitCard, KitEyebrow, KitRow } from "../../components/ui/kit";
 import { TOUR_STORAGE_KEY } from "../../lib/tour/tour-steps";
 import { AccountNotificationsPanel } from "./account-notifications-panel";
 import { AccountProfilePanel } from "./account-profile-panel";
-import { AccountRelated, NextActions, OrgContextCard } from "./account-shell";
+import { NextActions, OrgContextCard } from "./account-shell";
 import {
   DEFAULT_EMAIL_PREFS,
   DEFAULT_NOTIFICATION_PREFS,
@@ -335,20 +335,12 @@ export default function AccountClient() {
   return (
     <main className="module-page account-page">
       <PageHeader
-        breadcrumbs="Account / Settings"
+        /* The top bar already says "Account" and the page is titled
+           "Your settings". A breadcrumb reading "Account / Settings" made it
+           four sightings of the same word above the fold. */
         title="Your settings"
-        description="Personal profile and prefs for this login. Billing, AI usage, and team connectors follow your team."
-      >
-        {/* "Support" used to sit here pointing at /support, while the related
-            strip one line below called the same page "Help & Support". Two
-            names for one destination on one screen reads as two destinations.
-            What's new stays: the strip does not carry it. */}
-        <div className="account-header-actions">
-          <Button as="a" variant="secondary" href="/whats-new">
-            What’s new
-          </Button>
-        </div>
-      </PageHeader>
+        description="Profile, appearance and alerts for this login."
+      />
 
       <OfflineBanner feature="Account" fromCache={fromCache} cachedAt={cachedAt} />
 
@@ -395,7 +387,16 @@ export default function AccountClient() {
         activeTab={tab === "profile" ? null : tab}
       />
 
-      <AccountRelated orgId={orgId} />
+      {/* These were a strip of small pills while the destinations directly
+          above them were tiled rows — same kind of thing, two appearances, on
+          one screen. "AI keys" is dropped here because the team settings rows
+          above already carry it and it points at the same page. */}
+      <KitEyebrow>Billing and help</KitEyebrow>
+      <KitCard>
+        <KitRow icon="bolt" tone="amber" title="Billing" href={withOrgHref("/ai?tab=budgets", orgId || null)} />
+        <KitRow icon="stats" tone="teal" title="AI usage" href="/team/usage" />
+        <KitRow icon="chat" tone="cyan" title="Help and support" href="/support" />
+      </KitCard>
 
       {message ? (
         <p className={`telemetry-status${messageOk ? " success" : ""}`} role="status">
