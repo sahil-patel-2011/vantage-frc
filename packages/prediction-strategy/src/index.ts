@@ -16,6 +16,8 @@ export type {
 export * from "./signals";
 export * from "./scout-ops";
 export * from "./dossier";
+export * from "./alliance-independence";
+export * from "./season-form";
 export {
   DEFAULT_ERROR_BAND,
   FIXTURE_ERROR_BAND,
