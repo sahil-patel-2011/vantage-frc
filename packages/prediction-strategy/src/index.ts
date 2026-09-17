@@ -84,10 +84,19 @@ export {
 } from "./engine-tier";
 export { seasonWeight } from "./season-weight";
 export {
+  allianceWinProbability,
   buildAllianceWinBreakdown,
   citeMatchResults,
   rateTeam,
 } from "./alliance-outcome";
+export {
+  DEFENCE_SHARE_FLOOR,
+  DEFENCE_SUPPRESSION,
+  MIN_LEVER_GAIN_PP,
+  NO_LEVERS_COPY,
+  winLevers,
+} from "./win-levers";
+export type { LeverId, WinLever, WinLeverInput } from "./win-levers";
 export {
   MIN_PEPA_SAMPLE,
   PRIVATE_EPA_PUBLIC_WEIGHT,

@@ -130,3 +130,87 @@
     box-shadow: none !important;
   }
 }
+
+/* "What would move this" — the levers under the win probability.
+   Numbers first and hard left so the list can be ranked by eye in the two
+   minutes between matches; the reasoning sits underneath for the ride back. */
+.lever-note {
+  margin: 0 0 8px;
+  font-size: 12px;
+}
+
+.lever-list {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 18px;
+  padding: 0;
+  list-style: none;
+}
+
+.lever-list li {
+  display: grid;
+  grid-template-columns: 62px 1fr;
+  align-items: baseline;
+  gap: 4px 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.lever-list b {
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  color: var(--tone-green);
+}
+
+.lever-list b i {
+  display: block;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.lever-list span {
+  font-weight: 600;
+}
+
+/* A ceiling is the arithmetic limit of a number you control, not a forecast.
+   Saying so on the row is the difference between a tool and a fortune teller. */
+.lever-ceiling {
+  margin-left: 8px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.lever-list small {
+  grid-column: 2;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+/* The exchange-rate row is context, not an action — it reads quieter. */
+.lever-list li[data-lever="scoring-rate"] b {
+  color: var(--muted);
+}
+
+@media (max-width: 560px) {
+  .lever-list li {
+    grid-template-columns: 1fr;
+  }
+
+  .lever-list small {
+    grid-column: 1;
+  }
+}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { runWhatIf } from "@vantage/prediction-strategy";
+import { NO_LEVERS_COPY, runWhatIf } from "@vantage/prediction-strategy";
 import { EmptyState, Panel, Button } from "../../components/ui";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { strategyCoverageLinks } from "../../lib/strategy/competition-related";
@@ -328,6 +328,31 @@ export function LivePanel({ view }: { view: Extract<StrategyView, { status: "liv
             </ul>
           </div>
         </div>
+        <h3>What would move this</h3>
+        <p className="app-muted lever-note">
+          Each line re-runs the rating model with one measured number changed. A
+          lever only appears when we have actually measured the thing behind it.
+        </p>
+        {view.levers.length ? (
+          <ul className="lever-list">
+            {view.levers.map((lever) => (
+              <li key={lever.id} data-lever={lever.id}>
+                <b>
+                  {lever.gain > 0 ? "+" : ""}
+                  {lever.gain}
+                  <i>pts</i>
+                </b>
+                <span>
+                  {lever.title}
+                  {lever.isCeiling ? <em className="lever-ceiling">ceiling</em> : null}
+                </span>
+                <small>{lever.detail}</small>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="app-muted">{NO_LEVERS_COPY}</p>
+        )}
         <h3>Key factors</h3>
         <ul className="factor-table">
           {view.prediction.keyFactors.map((factor) => (

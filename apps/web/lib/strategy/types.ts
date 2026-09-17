@@ -8,6 +8,7 @@ import type {
   ScoutProvenanceRef,
   StrategyEngineSummary,
   TeamOperationalSignal,
+  WinLever,
 } from "@vantage/prediction-strategy";
 import type { DataSourceHealthView } from "../reference-health";
 
@@ -131,6 +132,12 @@ export type StrategyView =
       prediction: MatchPrediction;
       /** 3v3 win probability with per-team leave-one-out contribution (MODEL). */
       allianceBreakdown: AllianceWinBreakdown;
+      /**
+       * Ranked changes that would move this result, derived by re-running the
+       * rating engine with one measured input changed. Empty when nothing about
+       * our team has been measured yet — never padded with generic advice.
+       */
+      levers: WinLever[];
       playbook: StrategyPlaybookView;
       matchup: AllianceMatchup;
       tendencies: OpponentTendency[];

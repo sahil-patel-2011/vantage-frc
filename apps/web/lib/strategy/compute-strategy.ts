@@ -3,6 +3,7 @@ import { withSavepoint } from "@vantage/db";
 import {
   buildAllianceMatchup,
   buildAllianceWinBreakdown,
+  winLevers,
   buildOperationsFromScoutEntries,
   buildStrategyPlaybook,
   formatScoutProvenance,
@@ -987,6 +988,25 @@ export async function computeStrategyView(
     undefined,
   );
 
+  // What the drive team could actually change. Derived from the same ratings the
+  // prediction above used, so the advice and the number can never disagree.
+  const ourSide = ourAlliance === "red" ? allianceBreakdown.red : allianceBreakdown.blue;
+  const theirSide = ourAlliance === "red" ? allianceBreakdown.blue : allianceBreakdown.red;
+  const levers = winLevers({
+    teamKey: ourTeamKey,
+    currentYear: year,
+    seasons,
+    operational: operations.find((op) => op.teamKey === ourTeamKey),
+    partnerRating: ourSide
+      .filter((contribution) => contribution.teamKey !== ourTeamKey)
+      .reduce((total, contribution) => total + contribution.rating, 0),
+    opponents: theirSide.map((contribution) => ({
+      teamKey: contribution.teamKey,
+      rating: contribution.rating,
+    })),
+    engineId: enginePolicy.engineId,
+  });
+
   return {
     status: "live",
     orgId: row.orgId,
@@ -1004,6 +1024,7 @@ export async function computeStrategyView(
     blue,
     prediction,
     allianceBreakdown,
+    levers,
     playbook,
     matchup,
     tendencies,

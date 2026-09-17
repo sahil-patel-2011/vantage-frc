@@ -138,9 +138,21 @@ export function rateTeam(
   };
 }
 
-function logisticPRed(redRating: number, blueRating: number) {
-  const margin = redRating - blueRating;
+/**
+ * The engine's win curve: rating margin in, probability out.
+ *
+ * Exported so that anything reasoning about "what would change this result"
+ * bends the same curve the prediction was drawn on. A second copy of this
+ * arithmetic elsewhere would drift the moment either is tuned, and advice that
+ * disagrees with the number above it is worse than no advice.
+ */
+export function allianceWinProbability(ourRating: number, theirRating: number) {
+  const margin = ourRating - theirRating;
   return clamp(1 / (1 + Math.exp(-margin / 12)), 0.02, 0.98);
+}
+
+function logisticPRed(redRating: number, blueRating: number) {
+  return allianceWinProbability(redRating, blueRating);
 }
 
 function sumRatings(teams: TeamRatingDetail[]) {
