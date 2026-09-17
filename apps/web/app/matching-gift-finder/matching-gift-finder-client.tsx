@@ -351,7 +351,7 @@ export default function MatchingGiftFinderClient() {
           </>
         }
         title="Matching Gift Multiplier Finder"
-        description="Match household-employer contacts against employer matching-gift programs, draft HR request letters, and track pledge status. Cross-check Sponsor CRM, Renewal ROI, and Impact."
+        description="Match household-employer contacts against employer matching-gift programs, draft HR request letters, and track pledge status."
       >
         <div className="mgf-header-actions">
           {relatedLinks.map((link) => (

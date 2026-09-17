@@ -348,7 +348,7 @@ export default function VendorsClient() {
           </>
         }
         title="Vendor Directory"
-        description="Your team's known suppliers — COTS, raw stock, tools, and services — with contacts, lead times, and ratings. Purchase orders pick a vendor from this directory. Cross-check Orders and Vendor Lead Times."
+        description="Your team's known suppliers — COTS, raw stock, tools, and services — with contacts, lead times, and ratings. Purchase orders pick a vendor from this directory."
       >
         <div className="vendors-header-actions">
           {relatedLinks.map((link) => (

@@ -371,7 +371,7 @@ export default function PitRepairTriageClient() {
           </>
         }
         title="Pit repair triage"
-        description="Log a pit failure against real FMEA history and spare stock. Cross-check Command and Spare Kit."
+        description="Log a pit failure against real FMEA history and spare stock."
       >
         <div className="prt-header-actions">
           <RelatedStrip orgId={orgId} />

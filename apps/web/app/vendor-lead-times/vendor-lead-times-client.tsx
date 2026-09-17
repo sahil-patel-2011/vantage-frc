@@ -338,7 +338,7 @@ export default function VendorLeadTimesClient() {
           </>
         }
         title="Vendor Lead Times"
-        description="Track real vendor shipping lead times and calculate the latest date to reorder parts so they still arrive in time. Cross-check Orders, Spare Forecast, and Vendors."
+        description="Track real vendor shipping lead times and calculate the latest date to reorder parts so they still arrive in time."
       >
         <div className="vendor-lead-times-header-actions">
           {relatedLinks.map((link) => (

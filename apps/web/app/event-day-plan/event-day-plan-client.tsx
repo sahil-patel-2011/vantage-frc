@@ -390,7 +390,7 @@ export default function EventDayPlanClient() {
           </>
         }
         title="Event-Day Stress Planner"
-        description="A per-hour overlay of qual matches, battery charges, scout shifts, pit-repair windows, and logistics — with automatic conflict alerts. Cross-check Command, Battery Rotation, and Pit Repair."
+        description="A per-hour overlay of qual matches, battery charges, scout shifts, pit-repair windows, and logistics — with automatic conflict alerts."
       >
         <div className="edp-header-actions">
           <label className="app-muted edp-filter">

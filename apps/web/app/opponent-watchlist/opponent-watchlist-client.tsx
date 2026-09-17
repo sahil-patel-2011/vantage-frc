@@ -349,7 +349,7 @@ export default function OpponentWatchlistClient() {
           </>
         }
         title="Opponent Watchlist"
-        description="Track opponent teams personally and get notified when their stored rating or next scheduled match changes. Cross-check Strategy, Rating alerts, and Scouting."
+        description="Track opponent teams personally and get notified when their stored rating or next scheduled match changes."
       >
         <div className="opponent-watchlist-header-actions">
           {relatedLinks.map((link) => (

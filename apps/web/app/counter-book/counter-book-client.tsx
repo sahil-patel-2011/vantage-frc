@@ -325,7 +325,7 @@ export default function CounterBookClient() {
           </>
         }
         title="Opponent Counter-book"
-        description="One-page counter-strategy per likely playoff opponent — tendencies and failure triggers pulled only from your team's own scouted matches. Cross-check Strategy and Scouting."
+        description="One-page counter-strategy per likely playoff opponent — tendencies and failure triggers pulled only from your team's own scouted matches."
       >
         <div className="counter-book-header-actions">
           {relatedLinks.map((link) => (

@@ -361,7 +361,7 @@ export default function AlliancePartnerBriefClient() {
           </>
         }
         title="Alliance-Partner Brief"
-        description="Once alliance selection is finalized, an auto-brief on your actual partners' roles and strengths — grounded in event metrics and your own scouting. Cross-check Strategy, Alliance board, and Scouting."
+        description="Once alliance selection is finalized, an auto-brief on your actual partners' roles and strengths — grounded in event metrics and your own scouting."
       >
         <div className="alliance-partner-brief-header-actions">
           {relatedLinks.map((link) => (

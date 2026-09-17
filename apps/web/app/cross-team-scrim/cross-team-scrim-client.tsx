@@ -361,7 +361,7 @@ export default function CrossTeamScrimClient() {
           </>
         }
         title="Cross-Team Scrim Scheduling"
-        description="Propose scrimmages with nearby teams and agree on what data — match results, video, or full scouting sheets — will be shared. Cross-check Calendar, Scouting, and Team Data."
+        description="Propose scrimmages with nearby teams and agree on what data — match results, video, or full scouting sheets — will be shared."
       >
         <div className="cross-team-scrim-header-actions">
           {view.seasons.length > 0 ? (

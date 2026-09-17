@@ -385,7 +385,7 @@ export default function RuleImpactClient() {
           </>
         }
         title="Rule Impact Analyzer"
-        description="Log this season's game-manual rule changes and diff them against your subsystem library — still-legal, rework, or blocked from logged rules only. Cross-check Kickoff, CAD, and Subsystems."
+        description="Log this season's game-manual rule changes and diff them against your subsystem library — still-legal, rework, or blocked from logged rules only."
       >
         <div className="rule-impact-header-actions">
           {view.seasons.length > 0 ? (

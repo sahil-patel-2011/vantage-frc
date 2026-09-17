@@ -367,7 +367,7 @@ export default function RiskBurndownClient() {
           </>
         }
         title="Risk-Register Burndown"
-        description="Track season risks — technical, schedule, budget, personnel, logistics, safety — and watch the register burn down as mitigations close them out. Cross-check Risks and FMEA."
+        description="Track season risks — technical, schedule, budget, personnel, logistics, safety — and watch the register burn down as mitigations close them out."
       >
         <div className="risk-burndown-header-actions">
           {view.seasons.length > 0 ? (

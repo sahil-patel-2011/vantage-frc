@@ -338,7 +338,7 @@ export default function EpaTrendAlertsClient() {
           </>
         }
         title="Rating alerts"
-        description="Watch teams you might face and get flagged when their stored rating moves meaningfully between events. Cross-check Strategy and Opponent Watchlist."
+        description="Watch teams you might face and get flagged when their stored rating moves meaningfully between events."
       >
         <div className="epa-trend-alerts-header-actions">
           {relatedLinks.map((link) => (

@@ -504,7 +504,7 @@ export default function AllianceSelectionDeskClient() {
           </>
         }
         title="Alliance selection desk"
-        description="Live pick board with shared slots, scout evidence attach, ranking conflict flags, and drive-team export. Cross-check Strategy, Collaborative pick list, and Pick clock."
+        description="Live pick board with shared slots, scout evidence attach, ranking conflict flags, and drive-team export."
       >
         <div className="alliance-desk-header-actions">
           {view?.status === "live" ? (

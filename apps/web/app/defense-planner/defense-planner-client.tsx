@@ -382,7 +382,7 @@ export default function DefensePlannerClient() {
           </>
         }
         title="Defense planner"
-        description="Weigh our mass and drivetrain against scouted opponent cycles to decide whether — and whom — to play defense. Cross-check Strategy, Scouting, and Counter-book."
+        description="Weigh our mass and drivetrain against scouted opponent cycles to decide whether — and whom — to play defense."
       >
         <div className="defense-planner-header-actions">
           {view.seasons.length > 0 ? (

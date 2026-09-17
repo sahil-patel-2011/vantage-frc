@@ -424,7 +424,7 @@ export default function ReadinessScoreClient() {
           </>
         }
         title="Robot readiness score"
-        description="One grounded ship-readiness index across subsystem wiring/code state, weight & power headroom, the bring-up checklist, and open FMEA. Cross-check FMEA, Inspection, and Code."
+        description="One grounded ship-readiness index across subsystem wiring/code state, weight & power headroom, the bring-up checklist, and open FMEA."
       >
         <div className="readiness-score-header-actions">
           {view.seasons.length > 0 ? (

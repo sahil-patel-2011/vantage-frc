@@ -327,7 +327,7 @@ export default function ScoutAssistedCountClient() {
           </>
         }
         title="Scout-Assisted Count"
-        description="Tap a counter during a match instead of typing — every tap is audited. Cross-check Scouting and Forms."
+        description="Tap a counter during a match instead of typing — every tap is audited."
       >
         <RelatedStrip orgId={orgId} />
       </PageHeader>

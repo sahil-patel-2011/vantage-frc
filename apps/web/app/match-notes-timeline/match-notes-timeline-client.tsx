@@ -299,7 +299,7 @@ export default function MatchNotesTimelineClient() {
           </>
         }
         title="Match Note Timeline"
-        description="Log timestamped notes synced to the match clock — auto, teleop, endgame — for film review and drive-coach debriefs. Cross-check Schedule, Strategy, and Scouting."
+        description="Log timestamped notes synced to the match clock — auto, teleop, endgame — for film review and drive-coach debriefs."
       >
         <div className="match-notes-timeline-header-actions">
           {view.seasons.length > 0 ? (

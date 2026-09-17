@@ -346,7 +346,7 @@ export default function PicklistJustifierClient() {
           </>
         }
         title="Pick-list Auto-Justifier"
-        description="Source-cited rationale for every pick-list slot, and a contradiction guard that flags picks leaning on scouting your own TBA match record disagrees with. Cross-check Strategy, Collaborative Pick List, and Scouting."
+        description="Source-cited rationale for every pick-list slot, and a contradiction guard that flags picks leaning on scouting your own TBA match record disagrees with."
       >
         <div className="picklist-justifier-header-actions">
           {view.pickLists.length > 0 ? (

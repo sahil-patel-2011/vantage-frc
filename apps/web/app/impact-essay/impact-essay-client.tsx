@@ -369,7 +369,7 @@ export default function ImpactEssayClient() {
           </>
         }
         title="FIRST Impact Essay Generator"
-        description="Draft the Impact and Engineering Inspiration essays strictly from your logged outreach, hours, sponsors, and events — every claim cites a real record. Cross-check Community Impact, Awards, and Writer."
+        description="Draft the Impact and Engineering Inspiration essays strictly from your logged outreach, hours, sponsors, and events — every claim cites a real record."
       >
         <div className="impact-essay-header-actions">
           {view.seasons.length > 0 ? (

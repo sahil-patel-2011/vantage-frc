@@ -362,7 +362,7 @@ export default function SketchToBriefClient() {
           </>
         }
         title="Sketch-to-Brief"
-        description="Transcribe a kickoff whiteboard sketch and get a grounded first-pass CAD brief plus a rule-compliance check — from your team's Kickoff notes and design priorities only. Cross-check Kickoff and CAD."
+        description="Transcribe a kickoff whiteboard sketch and get a grounded first-pass CAD brief plus a rule-compliance check — from your team's Kickoff notes and design priorities only."
       >
         <div className="sketch-to-brief-header-actions">
           {view.seasons.length > 0 ? (

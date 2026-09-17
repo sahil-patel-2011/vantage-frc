@@ -336,7 +336,7 @@ export default function SponsorWallClient() {
           </>
         }
         title="Sponsor Wall"
-        description="Build a public thank-you wall for your sponsors — logos, tiers, and shout-outs from real entries only. Cross-check Sponsor CRM and Sponsorship."
+        description="Build a public thank-you wall for your sponsors — logos, tiers, and shout-outs from real entries only."
       >
         <div className="sponsor-wall-header-actions">
           {relatedLinks.map((link) => (

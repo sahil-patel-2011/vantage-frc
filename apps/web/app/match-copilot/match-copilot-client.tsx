@@ -345,7 +345,7 @@ export default function MatchCopilotClient() {
           </>
         }
         title="Match Copilot"
-        description="A glanceable 60-second brief for your next match — fusing opponent ratings, your stored strategy plan, open FMEA risks, and live battery health into prioritized do-this callouts. Cross-check Strategy, Command, and FMEA."
+        description="A glanceable 60-second brief for your next match — fusing opponent ratings, your stored strategy plan, open FMEA risks, and live battery health into prioritized do-this callouts."
       >
         <div className="match-copilot-header-actions">
           {relatedLinks.map((link) => (

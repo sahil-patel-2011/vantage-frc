@@ -350,7 +350,7 @@ export default function GrantReportClient() {
           </>
         }
         title="Grant Report"
-        description="Post-grant impact reports generated from your team's own logged outreach and finance records. Cross-check Grants and Community Impact."
+        description="Post-grant impact reports generated from your team's own logged outreach and finance records."
       >
         <div className="grant-report-header-actions">
           {view.seasons.length > 0 ? (

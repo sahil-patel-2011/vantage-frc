@@ -362,7 +362,7 @@ export default function BuildBurndownClient() {
           </>
         }
         title="Build-Season Burndown"
-        description="Chart remaining build tasks against the kickoff-plan timeline. Readiness uses only what you record. Cross-check Task board, Kickoff, and FMEA."
+        description="Chart remaining build tasks against the kickoff-plan timeline. Readiness uses only what you record."
       >
         <div className="build-burndown-header-actions">
           {view.seasons.length > 0 ? (

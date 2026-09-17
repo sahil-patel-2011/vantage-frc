@@ -348,7 +348,7 @@ export default function FailurePatternsClient() {
           </>
         }
         title="Repeat Failure Patterns"
-        description="Clusters FMEA and equipment incidents by subsystem. Cross-check FMEA and Spare Kit."
+        description="Clusters FMEA and equipment incidents by subsystem."
       >
         <div className="fp-header-actions">
           <RelatedStrip orgId={orgId} />

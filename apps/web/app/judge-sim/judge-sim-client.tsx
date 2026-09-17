@@ -361,7 +361,7 @@ export default function JudgeSimClient() {
           </>
         }
         title="Judge-Pitch Simulator"
-        description="Practice judge Q&A and get graded against your own logged evidence — any claim you can't back gets flagged before a real judge catches it. Cross-check Community Impact, Impact Essay, and Awards."
+        description="Practice judge Q&A and get graded against your own logged evidence — any claim you can't back gets flagged before a real judge catches it."
       >
         <div className="judge-sim-header-actions">
           {view.seasons.length > 0 ? (

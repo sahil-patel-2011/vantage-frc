@@ -318,7 +318,7 @@ export default function MatchVideoIndexClient() {
           </>
         }
         title="Match Video Index"
-        description="Auto-index your match videos by match key for quick review. Cross-check Scouting and Match Notes."
+        description="Auto-index your match videos by match key for quick review."
       >
         <RelatedStrip orgId={orgId} />
       </PageHeader>

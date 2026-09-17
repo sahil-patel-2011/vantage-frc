@@ -378,7 +378,7 @@ export default function AwardTrackerClient() {
           </>
         }
         title="Award Tracker"
-        description="Track award submissions across events with deadlines. Cross-check Awards and Impact Essay."
+        description="Track award submissions across events with deadlines."
       >
         <div className="award-tracker-header-actions">
           {view.seasons.length > 0 ? (

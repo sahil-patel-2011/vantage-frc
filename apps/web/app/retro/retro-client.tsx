@@ -375,7 +375,7 @@ export default function RetroClient() {
           </>
         }
         title="Team Retrospective"
-        description="Structured start/stop/continue retros with voting and tracked action items — plus an auto-compiled season postmortem from your decisions, risks, incidents, and FMEA log. Cross-check Messages, FMEA, and Decisions."
+        description="Structured start/stop/continue retros with voting and tracked action items — plus an auto-compiled season postmortem from your decisions, risks, incidents, and FMEA log."
       >
         <div className="retro-header-actions">
           {view.sessions.length > 0 ? (
