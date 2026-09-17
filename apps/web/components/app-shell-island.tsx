@@ -112,6 +112,7 @@ export function AppShellIsland({
     <nav
       className="soft-island"
       data-testid="soft-island"
+      data-tour="island"
       aria-label="Primary apps"
       title="Press and hold or right-click to change these four apps"
       onContextMenu={(event) => {

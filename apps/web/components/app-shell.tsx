@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppShellNavPanel } from "./app-shell-nav-panel";
 import { AppShellEventFocus, AppShellIsland, AppShellIslandEditor } from "./app-shell-island";
+import { AppTour } from "./app-tour";
 import { AppShellTopbar } from "./app-shell-topbar";
 import {
   ISLAND_TAB_CATALOG,
@@ -577,6 +578,7 @@ export default function AppShell() {
         signingOut={signingOut}
         onSignOut={() => void handleSignOut()}
       />
+      <AppTour />
       <AppShellIsland
         orgId={orgId}
         islandTabs={islandTabs}

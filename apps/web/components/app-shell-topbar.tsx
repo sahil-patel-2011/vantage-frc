@@ -65,6 +65,7 @@ export function AppShellTopbar({
         {navOpen ? null : (
           <button
             className="soft-icon-btn soft-menu-btn"
+            data-tour="menu"
             type="button"
             aria-label="Menu and search"
             aria-expanded={navOpen}
@@ -124,6 +125,7 @@ export function AppShellTopbar({
         <ShellOutboxStatus orgId={orgId || null} />
         <a
           className="soft-icon-btn soft-ask-ai"
+          data-tour="ask-ai"
           href={withOrgHref("/ai?tab=chat", orgId || null)}
           aria-label="Ask AI"
           title="Ask AI — strategy, match predictions, design help"

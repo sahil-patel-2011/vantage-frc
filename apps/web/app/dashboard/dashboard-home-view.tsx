@@ -308,7 +308,7 @@ export function DashboardHomeView(props: {
               single most looked-up fact on this page during a competition.
               Absent until an event is actually set; there is no placeholder. */}
           {typeof eventName === "string" && eventName.trim() ? (
-            <a className="dash-hero-event" href={withOrgHref("/command", orgId || null)}>
+            <a className="dash-hero-event" data-tour="event" href={withOrgHref("/command", orgId || null)}>
               <Icon name="pin" />
               <span>{eventName}</span>
               <Icon name="chevron" />
@@ -332,6 +332,7 @@ export function DashboardHomeView(props: {
               variant="secondary"
               className="dash-edit-trigger"
               data-testid="dash-customize"
+              data-tour="customise"
               aria-label="Edit Home — rearrange, add, or remove widgets"
               onClick={enterEditMode}
             >

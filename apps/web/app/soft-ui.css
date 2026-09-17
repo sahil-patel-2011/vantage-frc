@@ -3037,3 +3037,47 @@ body.has-app-shell .soft-ask-ai-label{display:none}
 .account-identity span{display:block;color:var(--muted);font-size:13px}
 .account-identity-role{margin:3px 0 0;color:var(--muted);font-size:12px}
 .account-identity-role b{color:var(--ink);text-transform:capitalize}
+
+/* Guided tour. Shown once, leaves on Escape, a Skip, or a click outside.
+   The spotlight is a ring plus a huge outward shadow, which dims the rest of
+   the page without a second overlay element to keep in sync. */
+.tour-root{position:fixed;inset:0;z-index:200;pointer-events:none}
+.tour-scrim{
+  position:fixed;inset:0;border:0;padding:0;
+  background:transparent;cursor:default;pointer-events:auto;
+}
+.tour-spotlight{
+  position:fixed;border-radius:14px;pointer-events:none;
+  border:2px solid var(--accent);
+  box-shadow:0 0 0 9999px rgba(8,14,24,.55);
+  transition:top .22s var(--motion-ease),left .22s var(--motion-ease),
+             width .22s var(--motion-ease),height .22s var(--motion-ease);
+}
+.tour-card{
+  position:fixed;width:min(320px,calc(100vw - 32px));
+  padding:16px;border-radius:var(--radius-sm);
+  background:var(--surface);color:var(--ink);
+  border:1px solid var(--line);box-shadow:var(--shadow-pop);
+  pointer-events:auto;
+  animation:tour-card-in var(--motion) var(--motion-ease) both;
+}
+.tour-progress{
+  display:block;color:var(--accent);
+  font:800 10px/1 var(--font-source-sans),ui-sans-serif;letter-spacing:.09em;text-transform:uppercase;
+}
+.tour-card h2{margin:6px 0 4px;font-size:16px;letter-spacing:-.02em}
+.tour-card p{margin:0;color:var(--muted);font-size:13px;line-height:1.5}
+.tour-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:14px}
+.tour-move{display:flex;gap:6px}
+.tour-card button{
+  min-height:36px;padding:0 14px;border-radius:var(--radius-xs, 9px);
+  border:1px solid var(--line);background:var(--surface);color:var(--ink);
+  font:700 13px var(--font-source-sans),ui-sans-serif;cursor:pointer;
+}
+.tour-card .tour-skip{border-color:transparent;background:transparent;color:var(--muted)}
+.tour-card .tour-next{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+@keyframes tour-card-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion: reduce){
+  .tour-card{animation:none !important}
+  .tour-spotlight{transition:none !important}
+}
