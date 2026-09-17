@@ -15,8 +15,7 @@ export function AppShellTopbar({
   crumbHint,
   orgId,
   navOpen,
-  onOpenNav,
-  shortcutHint,
+  onOpenNav,
   unreadCount,
   accountMenuOpen,
   onToggleAccount,
@@ -41,8 +40,7 @@ export function AppShellTopbar({
   crumbHint: string | null;
   orgId: string;
   navOpen: boolean;
-  onOpenNav: () => void;
-  shortcutHint: string;
+  onOpenNav: () => void;
   unreadCount: number;
   accountMenuOpen: boolean;
   onToggleAccount: () => void;
@@ -62,6 +60,24 @@ export function AppShellTopbar({
   return (
     <header className={`soft-topbar${accountMenuOpen ? " account-menu-open" : ""}`}>
       <div className={`soft-topbar-lead${showBack ? " has-back" : ""}`}>
+        {/* Navigation opens from the left, where a hamburger lives on every
+            other app. The right side is for things you act on. */}
+        {navOpen ? null : (
+          <button
+            className="soft-icon-btn soft-menu-btn"
+            type="button"
+            aria-label="Menu and search"
+            aria-expanded={navOpen}
+            aria-keyshortcuts="Control+K Meta+K"
+            onClick={onOpenNav}
+          >
+            <span className="soft-burger" aria-hidden="true">
+              <i />
+              <i />
+              <i />
+            </span>
+          </button>
+        )}
         <div className="soft-page-head">
           {showBack ? (
             <button
@@ -115,29 +131,6 @@ export function AppShellTopbar({
           <Icon name="bolt" />
           <span className="soft-ask-ai-label">Ask AI</span>
         </a>
-        {navOpen ? null : (
-          // One control, not two. This used to be a "Search" button that opened
-          // the nav panel — a magnifier that produced a menu. The panel leads
-          // with its search box, so the hamburger says what it does and the
-          // keyboard shortcut still opens it straight into search.
-          <button
-            className="soft-icon-btn soft-menu-btn"
-            type="button"
-            aria-label="Menu and search"
-            aria-expanded={navOpen}
-            aria-keyshortcuts="Control+K Meta+K"
-            onClick={onOpenNav}
-          >
-            <span className="soft-burger" aria-hidden="true">
-              <i />
-              <i />
-              <i />
-            </span>
-            <kbd className="soft-search-kbd" aria-hidden="true">
-              {shortcutHint}
-            </kbd>
-          </button>
-        )}
         <a
           className="soft-icon-btn soft-notif"
           href="/notifications"

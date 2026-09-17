@@ -271,17 +271,25 @@ export function DashboardHomeView(props: {
 
       <header className="dash-home-header">
         <div>
-          <span className="breadcrumbs">
-            {me.orgName ?? "Your team"} {me.teamNumber ? `· ${me.teamNumber}` : ""}
+          {/* The team number is the thing you are looking at; the greeting is
+              a courtesy above it. It used to be the other way round — the
+              number sat in small grey breadcrumb text while "Good morning"
+              took the headline, which is the wrong way up for a page you open
+              at an event. */}
+          <span className="dash-greeting">
+            {greeting()}, {firstName}
             {board && !board.isDefault ? (
               <span className="dash-scope-pill" data-scope={scope}>
                 {scope === "org" ? "Team board" : "Personal board"}
               </span>
             ) : null}
           </span>
-          <h1>
-            {greeting()}, {firstName}
+          <h1 className="dash-hero-team">
+            {me.teamNumber ? String(me.teamNumber) : (me.orgName ?? "Your team")}
           </h1>
+          {me.teamNumber && me.orgName ? (
+            <p className="dash-hero-org">{me.orgName}</p>
+          ) : null}
           {orgId && board && !board.isDefault && switcherBoards.length > 1 ? (
             <p className="dash-board-current">
               <strong>{board.name}</strong>
@@ -296,6 +304,16 @@ export function DashboardHomeView(props: {
               eventName,
             })}
           </p>
+          {/* The event you are at, as its own row you can tap — it is the
+              single most looked-up fact on this page during a competition.
+              Absent until an event is actually set; there is no placeholder. */}
+          {typeof eventName === "string" && eventName.trim() ? (
+            <a className="dash-hero-event" href={withOrgHref("/command", orgId || null)}>
+              <Icon name="pin" />
+              <span>{eventName}</span>
+              <Icon name="chevron" />
+            </a>
+          ) : null}
         </div>
         <div className="dash-home-actions">
           {nextMatchData && !editing && !viewLayout.some((item) => item.type === "next_match") ? (

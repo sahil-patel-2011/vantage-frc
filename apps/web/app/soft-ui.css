@@ -2939,3 +2939,29 @@ body.has-app-shell .soft-ask-ai-label{display:none}
 .dash-split-dot{width:7px;height:7px;border-radius:50%;flex:none}
 @keyframes dash-split-grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
 @media (prefers-reduced-motion: reduce){.dash-split-seg{animation:none !important}}
+
+/* Home hero. The team number is the headline because that is the fact you open
+   this page for at an event; the greeting is a courtesy line above it. */
+.dash-greeting{
+  display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap;
+  color:var(--muted);font-size:13px;font-weight:600;
+}
+.dash-hero-team{
+  margin:2px 0 0 !important;
+  font-size:clamp(38px,6vw,56px) !important;
+  font-weight:800;letter-spacing:-.045em;line-height:1 !important;
+}
+.dash-hero-org{margin:4px 0 0;color:var(--muted);font-size:13px}
+/* The event, as one tappable row. Only rendered when an event is really set. */
+.dash-hero-event{
+  display:inline-flex;align-items:center;gap:8px;
+  margin-top:10px;padding:9px 12px;
+  border:1px solid var(--line);border-radius:var(--radius-sm);
+  background:var(--surface);color:var(--ink);text-decoration:none;
+  font-size:13px;max-width:100%;
+  transition:border-color .15s ease,background .15s ease;
+}
+.dash-hero-event:hover{border-color:color-mix(in srgb,var(--accent) 35%,var(--line));background:var(--accent-soft)}
+.dash-hero-event span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dash-hero-event svg{width:16px;height:16px;flex:none;color:var(--muted)}
+.dash-hero-event svg:last-child{margin-left:auto}

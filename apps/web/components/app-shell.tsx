@@ -506,7 +506,6 @@ export default function AppShell() {
         orgId={orgId}
         navOpen={navOpen}
         onOpenNav={() => openNav({ focusSearch: true })}
-        shortcutHint={shortcutHint}
         unreadCount={unreadCount}
         accountMenuOpen={accountMenuOpen}
         onToggleAccount={() => setAccountMenuOpen((value) => !value)}
