@@ -115,3 +115,173 @@
 .kick-next-actions li{flex-direction:column;align-items:stretch}
 .kick-intel-result-actions{justify-items:start;width:100%}
 }
+
+/* Next-season signals. A ledger of what the team noticed, grouped by what each
+   note points at — never a prediction of the game. */
+.ns-reads {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0 18px;
+  padding: 0;
+  list-style: none;
+}
+
+.ns-reads li {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-left-width: 3px;
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.ns-reads li > div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+}
+
+.ns-reads strong {
+  font-size: 14px;
+}
+
+.ns-reads em {
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.ns-reads small {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* Confidence is the whole point of the panel, so it is carried by colour as
+   well as by the word — but never by colour alone. */
+.ns-reads li[data-confidence="well-supported"] {
+  border-left-color: var(--tone-green);
+}
+
+.ns-reads li[data-confidence="well-supported"] em {
+  color: var(--tone-green);
+}
+
+.ns-reads li[data-confidence="worth-planning-for"] {
+  border-left-color: var(--tone-amber);
+}
+
+.ns-reads li[data-confidence="worth-planning-for"] em {
+  color: var(--tone-amber);
+}
+
+.ns-reads li[data-confidence="thin"] {
+  border-left-color: var(--line);
+}
+
+.ns-reads li[data-confidence="thin"] em {
+  color: var(--muted);
+}
+
+.ns-form {
+  display: grid;
+  gap: 12px;
+  margin: 4px 0 16px;
+}
+
+.ns-form label {
+  display: grid;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.ns-form input,
+.ns-form select {
+  min-height: 42px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 400;
+}
+
+.ns-form-row {
+  display: grid;
+  grid-template-columns: 2fr 1.2fr 1fr;
+  gap: 10px;
+}
+
+.ns-capabilities {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.ns-capabilities legend {
+  padding: 0 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.ns-capabilities label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 400;
+  color: var(--ink);
+}
+
+.ns-capabilities input {
+  min-height: 0;
+  width: 16px;
+  height: 16px;
+}
+
+.ns-log {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ns-log li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.ns-log small {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+@media (max-width: 640px) {
+  .ns-form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .ns-log li {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

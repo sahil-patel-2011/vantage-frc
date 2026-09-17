@@ -14,6 +14,7 @@ import { NextActionsPanel, useHubEmbed } from "./kickoff-chrome";
 import { IntelligenceSection } from "./kickoff-intelligence";
 import type { ActionBody } from "./kickoff-model";
 import { PrioritySection } from "./kickoff-priority";
+import { NextSeasonSection } from "./kickoff-next-season";
 import { RulesSection } from "./kickoff-rules";
 import { GameBriefSection } from "./kickoff-game-brief";
 import { ScoringSection } from "./kickoff-scoring";
@@ -219,6 +220,9 @@ export default function KickoffClient(_props: { embedded?: boolean } = {}) {
   const priorities = view.priorities.filter((entry) => entry.seasonYear === year);
   const ruleNotes = view.ruleNotes.filter((entry) => entry.seasonYear === year);
   const summary = kickoffSummary(actions, priorities, ruleNotes);
+  // Next-season notes are not filtered by the year picker: they are about the
+  // season after this one, and there is only ever one of those to look at.
+  const nextSeasonSignals = view.nextSeasonSignals ?? [];
   const showTiles = shouldShowKickoffSummaryTiles(summary);
 
   return (
@@ -313,6 +317,15 @@ export default function KickoffClient(_props: { embedded?: boolean } = {}) {
       <ScoringSection actions={actions} orgId={orgId} seasonYear={year} busyKey={busyKey} run={run} />
       <PrioritySection priorities={priorities} actions={actions} orgId={orgId} seasonYear={year} busyKey={busyKey} run={run} />
       <RulesSection ruleNotes={ruleNotes} orgId={orgId} seasonYear={year} busyKey={busyKey} run={run} />
+      {/* Last on the page on purpose: next year matters, but not before this
+          year's rules questions are answered. */}
+      <NextSeasonSection
+        signals={nextSeasonSignals}
+        orgId={orgId}
+        seasonYear={year + 1}
+        busyKey={busyKey}
+        run={run}
+      />
     </main>
   );
 }
