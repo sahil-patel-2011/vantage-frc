@@ -8,6 +8,7 @@ import type {
   Ref,
 } from "react";
 import dynamic from "next/dynamic";
+import { orgNameAddsDetail } from "../../components/app-shell-model";
 import { prefersTapToPlace } from "../../lib/dashboard/tap-to-place";
 import {
   catalogEntry,
@@ -287,7 +288,10 @@ export function DashboardHomeView(props: {
           <h1 className="dash-hero-team">
             {me.teamNumber ? String(me.teamNumber) : (me.orgName ?? "Your team")}
           </h1>
-          {me.teamNumber && me.orgName ? (
+          {/* The number above is already six feet tall. A line reading
+              "Team 6925" under a huge "6925" is the same fact twice, so the
+              name only appears when it is actually a name. */}
+          {me.teamNumber && orgNameAddsDetail(me.teamNumber, me.orgName) ? (
             <p className="dash-hero-org">{me.orgName}</p>
           ) : null}
           {orgId && board && !board.isDefault && switcherBoards.length > 1 ? (
@@ -295,15 +299,16 @@ export function DashboardHomeView(props: {
               <strong>{board.name}</strong>
             </p>
           ) : null}
-          <p>
-            {homeHeaderDetail({
+          {(() => {
+            const detail = homeHeaderDetail({
               meLoaded,
               orgId,
               tbaConfigured,
               setupRequired,
               eventName,
-            })}
-          </p>
+            });
+            return detail ? <p>{detail}</p> : null;
+          })()}
           {/* The event you are at, as its own row you can tap — it is the
               single most looked-up fact on this page during a competition.
               Absent until an event is actually set; there is no placeholder. */}
@@ -367,10 +372,15 @@ export function DashboardHomeView(props: {
       </header>
       {!editing ? (
         <section className="dash-now" aria-label="What to do now" data-testid="dash-now">
+          {/* This card used to carry an eyebrow reading "What to do now", a
+              heading, a sentence, and a button — four ways of saying one
+              thing, stacked. The heading says it, the button does it, and the
+              section keeps its aria-label so nothing is lost to a screen
+              reader. The sentence stays only when it adds a fact the other
+              two do not. */}
           <div>
-            <span>What to do now</span>
             <strong>{now.title}</strong>
-            <p>{now.detail}</p>
+            {now.detail ? <p>{now.detail}</p> : null}
           </div>
           <Button as="a" variant="primary" href={withOrgHref(now.href, orgId || null)}>
             {now.cta}

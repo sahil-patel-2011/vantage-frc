@@ -48,7 +48,10 @@ export function homeHeaderDetail(input: {
   if (input.tbaConfigured === false) {
     return "Your week — next match, hours, and what to do now. Match times fill in after a mentor connects the event.";
   }
-  if (input.setupRequired) return "Set the event you’re at so match times can show.";
+  // Deliberately silent. The SETUP card below is driven by this same state and
+  // carries the instruction plus the button that acts on it; saying it up here
+  // as well meant the first two things on the page were the same sentence.
+  if (input.setupRequired) return "";
   if (input.eventName) return String(input.eventName);
   return "Your week. Cards fill in as the team adds matches, hours, and duties.";
 }
@@ -120,7 +123,9 @@ export function homeNowAction(input: {
   if (Number.isInteger(todos) && todos > 0) {
     return {
       title: todos === 1 ? "One thing on your list" : `${todos} things on your list`,
-      detail: "Open Todos and knock one out.",
+      // No sentence here: the heading counts them and the button opens them.
+      // "Open Todos and knock one out." sat between the two saying neither.
+      detail: "",
       href: "/todos",
       cta: "Open todos",
     };

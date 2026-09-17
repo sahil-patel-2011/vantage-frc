@@ -45,7 +45,9 @@ describe("homeHeaderDetail", () => {
       tbaConfigured: true,
       setupRequired: true,
       eventName: null,
-    })).toBe("Set the event you’re at so match times can show.");
+      // Silent on purpose: the SETUP card below says this and gives the
+      // button. Two instructions were the first two things on the page.
+    })).toBe("");
     expect(homeHeaderDetail({
       meLoaded: true,
       orgId: "org-1",
