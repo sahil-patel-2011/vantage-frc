@@ -77,7 +77,6 @@ function JustifierNextActionsPanel({ actions }: { actions: PicklistJustifierNext
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (

@@ -9,7 +9,6 @@ export function MembershipNextActionsPanel({ actions }: { actions: TeamAdminNext
     <section className="app-card soft-panel team-admin-next-actions" aria-label="Membership next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (

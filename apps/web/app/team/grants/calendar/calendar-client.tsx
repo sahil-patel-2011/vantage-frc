@@ -132,7 +132,6 @@ function GrantCalendarNextActions({ orgId }: { orgId: string }) {
     <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (

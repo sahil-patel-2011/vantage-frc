@@ -416,7 +416,11 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
                   widgets.map((item, index) => (
                     <article key={item}>
                       <strong>{WIDGET_LABEL[item] ?? item.replaceAll("_", " ")}</strong>
-                      <small>{index === 0 ? "Top left — read first" : "Authorized module data only"}</small>
+                      {/* Only the first panel gets a caption. "Authorized module
+                          data only" was on every one of them: internal policy
+                          language, repeated, telling a mentor nothing about the
+                          board they are arranging. */}
+                      {index === 0 ? <small>Top left — read first</small> : null}
                     </article>
                   ))
                 ) : (
