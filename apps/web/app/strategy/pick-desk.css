@@ -101,3 +101,18 @@
   border-radius: 3px;
   border: 1px solid var(--line);
 }
+
+/* Does this team's result hold up beside weak partners? The word carries the
+   meaning, so the colour is a second channel and not the only one. The chip is
+   absent — not grey — until the event has enough played matches to split. */
+.pick-independence{
+  display:inline-flex;align-items:center;
+  margin-top:4px;padding:2px 8px;
+  border-radius:999px;
+  border:1px solid currentColor;
+  font-size:10px;font-weight:800;letter-spacing:.02em;
+  white-space:nowrap;
+}
+.pick-independence-carries{color:var(--tone-green, #15803d)}
+.pick-independence-needs-partners{color:var(--tone-amber, #b45309)}
+.pick-independence-steady{color:var(--muted)}

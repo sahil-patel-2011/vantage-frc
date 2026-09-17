@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { independenceLabel } from "@vantage/prediction-strategy";
 import type { PickCandidate, PickTier } from "@vantage/prediction-strategy";
 import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
 import { OfflineBanner } from "../../components/offline-banner";
@@ -102,6 +103,22 @@ function metricLine(candidate: PickCandidate | undefined) {
       : null,
   ].filter(Boolean);
   return parts.join(" · ") || "No numbers yet";
+}
+
+/**
+ * Whether this team's results hold up beside weak partners — the question a
+ * pick actually turns on, which rank and rating cannot answer. Hidden until the
+ * event has enough played matches to split; the chip never guesses, and the
+ * word carries the meaning so the colour is a second channel.
+ */
+function IndependenceChip({ candidate }: { candidate: PickCandidate | undefined }) {
+  const verdict = candidate?.independence;
+  if (!verdict || verdict.verdict === "unknown") return null;
+  return (
+    <span className={`pick-independence pick-independence-${verdict.verdict}`} title={verdict.summary}>
+      {independenceLabel(verdict.verdict)}
+    </span>
+  );
 }
 
 function PickDeskRelatedStrip({ orgId }: { orgId?: string | null }) {
@@ -716,6 +733,7 @@ export function PickListWorkbench({
                         #{entry.rank} {teamLabel(entry)}
                       </strong>
                       <small>{metricLine(candidate)}</small>
+                  <IndependenceChip candidate={candidate} />
                     </div>
                     <div className="strategy-pick-row-actions">
                       <button type="button" onClick={() => shiftRank(entry.teamKey, -1)} aria-label="Move up">
@@ -782,6 +800,7 @@ export function PickListWorkbench({
                 <div>
                   <strong>{teamLabel(candidate)}</strong>
                   <small>{metricLine(candidate)}</small>
+                  <IndependenceChip candidate={candidate} />
                   {candidate.suggestedTier ? (
                     <em className="strategy-suggest">Suggested {candidate.suggestedTier}</em>
                   ) : (

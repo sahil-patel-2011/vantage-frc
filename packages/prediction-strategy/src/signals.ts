@@ -1,3 +1,4 @@
+import type { AllianceIndependence } from "./alliance-independence";
 import type { TeamOperationalSignal, TeamSeasonSignal } from "./types";
 
 /** TBA / Statbotics-shaped event metric row used to build model inputs (fixtures or Neon cache). */
@@ -434,6 +435,12 @@ export type PickCandidate = {
   /** Scout fields that contradicted TBA official results (desk callout). */
   tbaConflictCount?: number;
   tbaConflictFields?: string[];
+  /**
+   * Whether this team's results hold up beside weak partners. Absent until the
+   * event has enough played matches to split — the verdict itself carries the
+   * "not enough matches" case rather than this being faked to a default.
+   */
+  independence?: AllianceIndependence | null;
 };
 
 export type PickDataModeInfo = {
