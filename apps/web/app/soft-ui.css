@@ -2990,3 +2990,50 @@ body.has-app-shell .soft-ask-ai-label{display:none}
   border-radius:2px;background:var(--accent);
 }
 .admin-nav .admin-subnav{margin:0 !important}
+
+/* Quick actions: bigger targets and a visible way in.
+   These were flat 12px tiles where the label was the smallest text on the card
+   and nothing said they were clickable. The detail leads now, the category sits
+   above it, and an arrow appears on hover so the affordance is not colour only. */
+.dash-actions a{
+  position:relative;
+  min-height:64px;
+  padding:14px 34px 14px 14px !important;
+  align-content:center;
+}
+.dash-actions a strong{font-size:15px;line-height:1.25;letter-spacing:-.01em}
+.dash-actions a::after{
+  content:"";
+  position:absolute;right:14px;top:50%;
+  width:7px;height:7px;
+  border-right:2px solid currentColor;border-top:2px solid currentColor;
+  transform:translateY(-50%) rotate(45deg);
+  color:var(--muted);
+  opacity:.5;
+  transition:opacity .15s ease,right .15s ease,color .15s ease;
+}
+.dash-actions a:hover::after{opacity:1;right:11px;color:var(--accent)}
+@media (prefers-reduced-motion: reduce){
+  .dash-actions a::after,.dash-actions a:hover::after{transition:none;right:14px}
+}
+
+/* Account: who you are signed in as, said once at the top. The page used to
+   open straight into settings rows, so the first thing it answered was "which
+   toggle" rather than "whose account is this" — which matters on a shop laptop
+   several people share. */
+.account-identity{
+  display:flex;align-items:center;gap:14px;
+  margin:0 0 16px;padding:14px 16px;
+  border:1px solid var(--line);border-radius:var(--radius-sm);
+  background:var(--surface);
+}
+.account-identity-avatar{
+  display:grid;place-items:center;flex:none;
+  width:52px;height:52px;border-radius:var(--radius-pill);
+  background:var(--accent);color:var(--accent-ink);
+  font:700 22px var(--font-source-sans),ui-sans-serif;
+}
+.account-identity strong{display:block;font-size:18px;letter-spacing:-.02em}
+.account-identity span{display:block;color:var(--muted);font-size:13px}
+.account-identity-role{margin:3px 0 0;color:var(--muted);font-size:12px}
+.account-identity-role b{color:var(--ink);text-transform:capitalize}

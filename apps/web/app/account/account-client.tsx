@@ -349,6 +349,26 @@ export default function AccountClient() {
 
       <OfflineBanner feature="Account" fromCache={fromCache} cachedAt={cachedAt} />
 
+      {/* Who you are signed in as, said once and plainly. The page opened
+          straight into settings rows, so the first question it answered was
+          "which toggle" rather than "whose account is this" — which matters on
+          a shared shop laptop. No join date here: nothing in the session
+          carries one, and a made-up "member since" is worse than no line. */}
+      <section className="account-identity" aria-label="Signed in as">
+        <span className="account-identity-avatar" aria-hidden="true">
+          {(displayName.trim() || "?").charAt(0).toUpperCase()}
+        </span>
+        <div>
+          <strong>{displayName.trim() || "Your account"}</strong>
+          {org.role ? (
+            <p className="account-identity-role">
+              Role <b>{org.role}</b>
+              {org.orgName ? <> · {org.orgName}</> : null}
+            </p>
+          ) : null}
+        </div>
+      </section>
+
       <SettingsBar
         role={org.role}
         orgId={org.orgId}
