@@ -709,3 +709,132 @@
     gap: 1.5rem;
   }
 }
+
+/* Arranging the panels on a pit board. Order is not decoration here: the first
+   panel is the one people read from six feet away. */
+.dwe {
+  display: grid;
+  gap: 12px;
+  margin: 14px 0;
+}
+
+.dwe-head {
+  display: grid;
+  gap: 2px;
+}
+
+.dwe-head h3 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.dwe-head small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.dwe-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dwe-item {
+  display: grid;
+  grid-template-columns: auto auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.dwe-item[draggable="true"] {
+  cursor: grab;
+}
+
+.dwe-item.dragging {
+  opacity: 0.45;
+  cursor: grabbing;
+}
+
+/* The drop target is marked on its leading edge rather than by moving anything,
+   so the list does not jump around under the pointer mid-drag. */
+.dwe-item.over {
+  border-color: var(--accent);
+  box-shadow: inset 3px 0 0 0 var(--accent);
+}
+
+.dwe-grip {
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1;
+}
+
+/* The position number is the point of the whole panel, so it reads as a number
+   and not as decoration. */
+.dwe-position {
+  min-width: 20px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: var(--muted);
+  text-align: center;
+}
+
+.dwe-name {
+  font-weight: 600;
+}
+
+.dwe-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.dwe-problem {
+  margin: 0;
+  color: var(--tone-amber);
+  font-size: 13px;
+}
+
+.dwe-add {
+  display: grid;
+  gap: 6px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.dwe-add > span {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.dwe-add-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.dwe-full,
+.dwe-customised {
+  margin: 0;
+  font-size: 12px;
+}
+
+/* On a phone the action buttons wrap under the name rather than squeezing it
+   to nothing. Boards do get edited from a phone in a pit. */
+@media (max-width: 560px) {
+  .dwe-item {
+    grid-template-columns: auto auto 1fr;
+  }
+
+  .dwe-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+  }
+}
