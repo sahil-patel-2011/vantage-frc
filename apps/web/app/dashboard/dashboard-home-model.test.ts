@@ -54,7 +54,10 @@ describe("homeHeaderDetail", () => {
       tbaConfigured: true,
       setupRequired: false,
       eventName: "Houston",
-    })).toBe("Houston");
+      // Silent: the event row directly below the hero is these same words with
+      // a pin icon and a link on it, so returning the name here put the event
+      // on screen twice, one line apart.
+    })).toBe("");
     expect(homeHeaderDetail({
       meLoaded: true,
       orgId: "org-1",

@@ -1,6 +1,7 @@
 "use client";
 
 import { nextMatchDriverLines, nextMatchScoreLine } from "../../../lib/dashboard/next-match-copy";
+import { numericOrNull } from "../../../lib/strategy/numeric-or-null";
 import { predictionWinDisplay } from "../../../lib/strategy/prediction-display";
 import { LiveCountdown } from "./live-countdown";
 
@@ -14,13 +15,16 @@ export function NextMatchLive({ data }: { data: Record<string, unknown> }) {
   const scheduled = data.scheduledTime as string | undefined;
   const alliance = data.ourAlliance === "red" || data.ourAlliance === "blue" ? data.ourAlliance : null;
   const win = predictionWinDisplay({
-    pRed: typeof data.pRed === "number" ? data.pRed : Number(data.pRed),
-    pBlue: typeof data.pBlue === "number" ? data.pBlue : Number(data.pBlue),
+    // numericOrNull, not Number(): a null probability coerces to 0, and the
+    // widget then told the drive team "0% chance we win" for a match nobody
+    // had predicted yet.
+    pRed: numericOrNull(data.pRed),
+    pBlue: numericOrNull(data.pBlue),
     alliance,
     modelVersion: typeof data.modelVersion === "string" ? data.modelVersion : null,
   });
-  const low = typeof data.confidenceLow === "number" ? data.confidenceLow : Number(data.confidenceLow);
-  const high = typeof data.confidenceHigh === "number" ? data.confidenceHigh : Number(data.confidenceHigh);
+  const low = numericOrNull(data.confidenceLow);
+  const high = numericOrNull(data.confidenceHigh);
   const drivers = nextMatchDriverLines(data);
 
   return (
@@ -56,7 +60,7 @@ export function NextMatchLive({ data }: { data: Record<string, unknown> }) {
       {win ? (
         <p className="app-muted">
           {win.label} chance we win
-          {Number.isFinite(low) && Number.isFinite(high)
+          {low != null && high != null
             ? ` · typical range ${Math.round(low * 100)}–${Math.round(high * 100)}%`
             : ""}
         </p>

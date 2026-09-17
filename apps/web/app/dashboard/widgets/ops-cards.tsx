@@ -6,6 +6,7 @@ import { hubHref } from "../../../lib/nav/hubs";
 import { withOrgHref } from "../../../lib/nav/product-nav";
 import { parseYouTubeEmbed } from "../../../lib/youtube";
 import { ratingSplit, ratingValue, splitWidths } from "../../../lib/dashboard/rating-split";
+import { numericOrNull } from "../../../lib/strategy/numeric-or-null";
 import { predictionWinDisplay } from "../../../lib/strategy/prediction-display";
 import { LiveCountdown } from "./live-countdown";
 import { emptyHintFor, WidgetShell as Shell } from "./widget-shell";
@@ -189,8 +190,8 @@ export function renderOpsWidget({
     case "prediction_summary": {
       const alliance = data.ourAlliance === "blue" ? "blue" : data.ourAlliance === "red" ? "red" : null;
       const win = predictionWinDisplay({
-        pRed: typeof data.pRed === "number" ? data.pRed : Number(data.pRed),
-        pBlue: typeof data.pBlue === "number" ? data.pBlue : Number(data.pBlue),
+        pRed: numericOrNull(data.pRed),
+        pBlue: numericOrNull(data.pBlue),
         alliance,
         modelVersion: typeof data.modelVersion === "string" ? data.modelVersion : null,
       });

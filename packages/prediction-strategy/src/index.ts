@@ -177,6 +177,14 @@ import { buildAllianceWinBreakdown, rateTeam } from "./alliance-outcome";
 
 const clamp = (value: number, min = 0, max = 1) => Math.min(max, Math.max(min, value));
 const round = (value: number) => Math.round(value * 10_000) / 10_000;
+/**
+ * The same number, for a person to read.
+ *
+ * Stored values keep four decimal places because a later comparison may need
+ * them. Prose does not: "rating margin -48.5562" puts the model's internal
+ * precision on a screen somebody is reading between matches.
+ */
+const readable = (value: number) => Math.round(value * 10) / 10;
 
 function citeSources(
   seasons: MatchPredictionInput["seasons"],
@@ -319,7 +327,7 @@ export function predictMatch(input: MatchPredictionInput): MatchPrediction {
       name: "weighted scoring",
       alliance: margin >= 0 ? "red" : "blue",
       impact: round(Math.abs(margin)),
-      evidence: `MODEL ${policy.engineId}${eventBit}: ${seasonBit}. Alliance rating margin ${round(margin)} from ${citation}.`,
+      evidence: `MODEL ${policy.engineId}${eventBit}: ${seasonBit}. Alliance rating margin ${readable(margin)} from ${citation}.`,
       kind: "model",
     },
   ];
@@ -329,7 +337,7 @@ export function predictMatch(input: MatchPredictionInput): MatchPrediction {
       name: "autonomous",
       alliance: autoMargin > 0 ? "red" : "blue",
       impact: round(Math.abs(autoMargin)),
-      evidence: `MODEL: Weighted autonomous EPA margin ${round(autoMargin)} (${citation}).${
+      evidence: `MODEL: Weighted autonomous EPA margin ${readable(autoMargin)} (${citation}).${
         autoCapTeams.length ? ` Scout auto-capable: ${autoCapTeams.join(", ")}.` : ""
       }`,
       kind: "model",
@@ -341,7 +349,7 @@ export function predictMatch(input: MatchPredictionInput): MatchPrediction {
       name: "foul exposure",
       alliance: foulMargin > 0 ? "blue" : "red",
       impact: round(Math.abs(foulMargin)),
-      evidence: `MODEL: Org scout foul penalty (capped) margin ${round(Math.abs(foulMargin))}; not a TBA fact.${scoutProvenanceBit}`,
+      evidence: `MODEL: Org scout foul penalty (capped) margin ${readable(Math.abs(foulMargin))}; not a TBA fact.${scoutProvenanceBit}`,
       kind: "model",
       scoutEntryIds: foulEntryIds.length ? foulEntryIds : undefined,
     });
@@ -373,7 +381,7 @@ export function predictMatch(input: MatchPredictionInput): MatchPrediction {
       name: "TBA+scout trust blend",
       alliance: "neutral",
       impact: round(Math.min(6, policy.maxScoutBlend * 10 * avgQuality)),
-      evidence: `MODEL ${policy.engineId}: TBA/Statbotics base with scout trust blend capped at ${Math.round(policy.maxScoutBlend * 100)}% (mean quality weight ${round(avgQuality)}).${
+      evidence: `MODEL ${policy.engineId}: TBA/Statbotics base with scout trust blend capped at ${Math.round(policy.maxScoutBlend * 100)}% (mean quality weight ${readable(avgQuality)}).${
         qualityNotes.length ? ` Quality notes: ${qualityNotes.slice(0, 3).join("; ")}.` : ""
       }`,
       kind: "model",

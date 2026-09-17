@@ -54,7 +54,10 @@ export function homeHeaderDetail(input: {
   // carries the instruction plus the button that acts on it; saying it up here
   // as well meant the first two things on the page were the same sentence.
   if (input.setupRequired) return "";
-  if (input.eventName) return String(input.eventName);
+  // Deliberately silent. The event row directly below this is the same words
+  // with a pin icon and a link on it, so printing the name here as well put
+  // the event on screen twice, one line apart.
+  if (input.eventName) return "";
   return "Your week. Cards fill in as the team adds matches, hours, and duties.";
 }
 
