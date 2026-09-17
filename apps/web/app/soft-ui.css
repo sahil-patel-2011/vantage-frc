@@ -2965,3 +2965,28 @@ body.has-app-shell .soft-ask-ai-label{display:none}
 .dash-hero-event span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dash-hero-event svg{width:16px;height:16px;flex:none;color:var(--muted)}
 .dash-hero-event svg:last-child{margin-left:auto}
+
+/* Says what the drawer is, and what it is not: the few places you go often.
+   Everything else lives behind the search box above it. */
+.soft-drawer-hint{
+  margin:0 2px 10px;color:var(--muted);font-size:12px;
+}
+
+/* Platform admin: four tabs for four jobs, then only that group's pages.
+   The row used to hold all fourteen destinations at once. */
+.admin-nav{display:grid;gap:8px;margin:0 0 14px}
+.admin-tabs{display:flex;flex-wrap:wrap;gap:18px;border-bottom:1px solid var(--line)}
+.admin-tabs a{
+  position:relative;padding:8px 2px 10px;
+  color:var(--muted);text-decoration:none;
+  font:700 14px var(--font-source-sans),ui-sans-serif;
+  transition:color .15s ease;
+}
+.admin-tabs a:hover{color:var(--ink)}
+.admin-tabs a.is-open{color:var(--accent)}
+/* The underline is the second channel; the colour is not carrying it alone. */
+.admin-tabs a.is-open::after{
+  content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;
+  border-radius:2px;background:var(--accent);
+}
+.admin-nav .admin-subnav{margin:0 !important}
