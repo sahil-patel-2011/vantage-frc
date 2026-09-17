@@ -23,6 +23,7 @@ import {
   type Tab,
 } from "./account-types";
 import AppearancePanel from "./appearance-panel";
+import { LocalModelPanel } from "./local-model-panel";
 import "../product-hub.css";
 import "./account.css";
 
@@ -553,6 +554,10 @@ export default function AccountClient() {
               <AppearancePanel />
             </Panel>
           ) : null}
+
+          {/* Lives beside appearance because it is the same kind of setting: a
+              per-person, per-machine choice about how Vantage behaves here. */}
+          {tab === "appearance" ? <LocalModelPanel /> : null}
 
           {tab === "notifications" ? (
             <AccountNotificationsPanel
