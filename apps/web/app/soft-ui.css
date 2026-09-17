@@ -3230,3 +3230,84 @@ body.has-app-shell .soft-ask-ai-label{display:none}
   margin: 6px 0 0;
   font-size: 12px;
 }
+
+/* Scouting a robot by typing its number. The only path at an offseason event,
+   and on the first morning of any event before the schedule lands. */
+.scout-by-hand {
+  display: grid;
+  gap: 10px;
+  margin: 10px 0 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.scout-by-hand > .app-muted {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.scout-by-hand-row {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr 1fr;
+  gap: 10px;
+}
+
+.scout-by-hand-row label {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.scout-by-hand-row input,
+.scout-by-hand-row select {
+  /* Thumb-sized: this gets tapped standing up, in a crowd, on a phone. */
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 400;
+}
+
+.scout-by-hand-row [aria-invalid="true"] {
+  border-color: var(--tone-amber);
+}
+
+.scout-by-hand-problem {
+  margin: 0;
+  color: var(--tone-amber);
+  font-size: 13px;
+}
+
+.scout-by-hand-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.scout-by-hand-current {
+  margin: 0;
+  font-size: 12px;
+}
+
+.scout-by-hand-toggle {
+  margin: 8px 0 12px;
+}
+
+@media (max-width: 520px) {
+  .scout-by-hand-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .scout-by-hand-row label:first-child {
+    grid-column: 1 / -1;
+  }
+}

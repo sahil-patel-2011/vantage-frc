@@ -8,6 +8,8 @@ import { EmptyState, FormRow, PageHeader, Panel, ToolStrip, Button } from "../..
 import { ExportButton } from "../../components/ui/export-button";
 import { CopyShareLink } from "../../components/copy-share-link";
 import { OfflineBanner } from "../../components/offline-banner";
+import { ASSIGNMENTS_ARE_SUGGESTIONS_COPY } from "../../lib/scouting/scout-target";
+import { ScoutTargetByHand } from "./scout-target-by-hand";
 import { VenueShortcutCheatsheet, type VenueShortcut } from "../../hooks/use-venue-shortcuts";
 import { formatDraftSavedAgo, payloadHasDraftContent } from "../../lib/scouting/draft-autosave";
 import { scoutingPostSaveNextSteps } from "../../lib/scouting/form-builder";
@@ -33,7 +35,13 @@ import ScoutHandoffPanel from "./scout-handoff-panel";
 import ScoutVoiceNotesPanel from "./scout-voice-notes-panel";
 import ScoutingTrustPanel from "./scouting-trust-panel";
 
-type MatchOption = { matchKey: string; teamKey: string; label: string };
+type MatchOption = {
+  matchKey: string;
+  teamKey: string;
+  label: string;
+  /** One of yours. Sorted first and marked; never a restriction. */
+  assigned?: boolean;
+};
 type SaveReceipt = {
   teamKey: string;
   matchKey?: string;
@@ -443,30 +451,54 @@ return (
           ) : null}
 
           {type === "match" ? (
-            <FormRow
-              label="Assignment"
-              hint={
-                !matchOptions.length
-                  ? "No assignments or synced matches yet — the list fills in after the event schedule is set."
-                  : undefined
-              }
-            >
-              <select
-                value={`${matchKey}|${teamKey}`}
-                onChange={(event) => {
-                  const [match, team] = event.target.value.split("|");
-                  setMatchKey(match ?? "");
-                  setTeamKey(team ?? "");
+            <>
+              {/* Scouting is not assignment-gated. The list is a convenience:
+                  your matches first, then every other robot on the schedule,
+                  and a typed team number for anything not on it at all. */}
+              {matchOptions.length ? (
+                <FormRow
+                  label="Who are you scouting?"
+                  hint={
+                    matchOptions.some((option) => option.assigned)
+                      ? ASSIGNMENTS_ARE_SUGGESTIONS_COPY
+                      : undefined
+                  }
+                >
+                  <select
+                    value={`${matchKey}|${teamKey}`}
+                    onChange={(event) => {
+                      const [match, team] = event.target.value.split("|");
+                      setMatchKey(match ?? "");
+                      setTeamKey(team ?? "");
+                    }}
+                  >
+                    <option value="|">Select match and team</option>
+                    {matchOptions.map((option) => (
+                      <option
+                        key={`${option.matchKey}-${option.teamKey}`}
+                        value={`${option.matchKey}|${option.teamKey}`}
+                      >
+                        {option.assigned ? `★ ${option.label} · yours` : option.label}
+                      </option>
+                    ))}
+                  </select>
+                </FormRow>
+              ) : null}
+
+              {/* The only path at an offseason event, and on the first morning
+                  of any event before the schedule lands. Previously an empty
+                  dropdown meant match scouting was simply impossible. */}
+              <ScoutTargetByHand
+                eventKey={data?.eventKey ?? ""}
+                matchKey={matchKey}
+                teamKey={teamKey}
+                startOpen={!matchOptions.length}
+                onPick={(nextMatch, nextTeam) => {
+                  setMatchKey(nextMatch);
+                  setTeamKey(nextTeam);
                 }}
-              >
-                <option value="|">Select match and team</option>
-                {matchOptions.map((option) => (
-                  <option key={`${option.matchKey}-${option.teamKey}`} value={`${option.matchKey}|${option.teamKey}`}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </FormRow>
+              />
+            </>
           ) : (
             <FormRow label="Team key">
               <input

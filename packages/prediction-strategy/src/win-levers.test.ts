@@ -36,8 +36,8 @@ describe("winLevers", () => {
       blue: ["frc254"],
       seasons: [season("frc6925", 45), season("frc254", 60)],
     });
-    const redTotal = breakdown.red[0].rating;
-    const blueTotal = breakdown.blue[0].rating;
+    const redTotal = breakdown.red[0]?.rating ?? 0;
+    const blueTotal = breakdown.blue[0]?.rating ?? 0;
     expect(allianceWinProbability(redTotal, blueTotal)).toBeCloseTo(breakdown.pRed, 3);
   });
 
@@ -107,10 +107,8 @@ describe("winLevers", () => {
       ...BASE,
       operational: { teamKey: "frc6925", scoutSample: 40, foulRate: 8, reliability: 55 },
     });
-    const ranked = levers.filter((l) => l.id !== "scoring-rate");
-    for (let i = 1; i < ranked.length; i += 1) {
-      expect(ranked[i - 1].gain).toBeGreaterThanOrEqual(ranked[i].gain);
-    }
+    const gains = levers.filter((l) => l.id !== "scoring-rate").map((l) => l.gain);
+    expect(gains).toEqual([...gains].sort((a, b) => b - a));
   });
 
   it("hides levers too small to be worth an afternoon", () => {
@@ -130,7 +128,7 @@ describe("winLevers", () => {
     expect(rate).toBeDefined();
     expect(rate?.gain).toBeGreaterThan(0);
     // It is context, not an action — it must never outrank a real lever.
-    expect(levers[levers.length - 1].id).toBe("scoring-rate");
+    expect(levers.at(-1)?.id).toBe("scoring-rate");
   });
 
   it("returns nothing at all when neither alliance has been rated", () => {
@@ -158,8 +156,9 @@ describe("winLevers", () => {
     });
     expect(levers.length).toBeGreaterThan(1);
     const baselines = levers.map((l) => l.probabilityAfter - l.gain / 100);
+    const first = baselines[0] ?? 0;
     for (const baseline of baselines) {
-      expect(baseline).toBeCloseTo(baselines[0], 2);
+      expect(baseline).toBeCloseTo(first, 2);
     }
   });
 });
