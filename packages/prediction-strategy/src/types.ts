@@ -73,6 +73,15 @@ export type MatchPredictionInput = {
    * Defaults to weighted-current-v1 (Free / Access baseline).
    */
   engineId?: StrategyEngineId;
+  /**
+   * Small-sample correction, computed across everyone playing the event.
+   *
+   * Absent means every rating is taken at face value however few matches it
+   * rests on — which is what produced two-match teams topping pick lists on a
+   * Friday morning. The centre and pull belong to the event because six robots
+   * are not a field.
+   */
+  shrink?: { centre: number; k: number };
 };
 
 /** Deterministic explainability step (Max tier). Never invents DEMO metrics. */

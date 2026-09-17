@@ -2,7 +2,10 @@ import type { PoolClient } from "@neondatabase/serverless";
 import { withSavepoint } from "@vantage/db";
 import {
   buildAllianceMatchup,
+  MIN_FIELD_SIZE,
   buildAllianceWinBreakdown,
+  fieldCentre,
+  shrinkageConstant,
   winLevers,
   buildOperationsFromScoutEntries,
   buildStrategyPlaybook,
@@ -758,6 +761,37 @@ export async function computeStrategyView(
     };
   });
 
+  // Small-sample correction needs a field, and the field is the event — not the
+  // six robots in this match. A rookie who drew two strong alliances tops the
+  // rankings on Friday morning, and without this every pick list built that
+  // morning inherits the mistake.
+  const fieldResult = await client.query<{ teamKey: string; epaTotal: number | null; matches: number | null }>(
+    `SELECT DISTINCT ON (team_key)
+        team_key AS "teamKey",
+        epa_total AS "epaTotal",
+        NULLIF((source_payload->>'matches')::int, 0) AS matches
+     FROM team_event_metrics
+     WHERE event_key = $1
+     ORDER BY team_key,
+       CASE source WHEN 'statbotics' THEN 0 WHEN 'tba' THEN 1 ELSE 2 END,
+       synced_at DESC NULLS LAST`,
+    [row.eventKey],
+  );
+  const fieldSamples = fieldResult.rows
+    .filter((metric) => metric.epaTotal != null && Number(metric.matches ?? 0) > 0)
+    .map((metric) => ({
+      teamKey: metric.teamKey,
+      rating: Number(metric.epaTotal),
+      matches: Number(metric.matches),
+    }));
+  const fieldMiddle = fieldCentre(fieldSamples.map((sample) => sample.rating));
+  // Below a real field there is nothing to regress toward, and shrinking a
+  // handful of teams toward their own average only makes them look alike.
+  const shrink =
+    fieldMiddle != null && fieldSamples.length >= MIN_FIELD_SIZE
+      ? { centre: fieldMiddle, k: shrinkageConstant(fieldSamples).k }
+      : undefined;
+
   const predictionInput = {
     matchKey: upcoming.matchKey,
     currentYear: year,
@@ -768,6 +802,7 @@ export async function computeStrategyView(
     operations,
     matchResults,
     engineId: enginePolicy.engineId,
+    shrink,
   };
 
   const prediction = predictMatch(predictionInput);

@@ -90,6 +90,33 @@ export {
   rateTeam,
 } from "./alliance-outcome";
 export {
+  DEFAULT_LOGISTIC_SCALE,
+  MIN_FIT_SAMPLE,
+  brierScore,
+  calibrationReport,
+  fitLogisticScale,
+  logLoss,
+  reliabilityBuckets,
+  winProbabilityAt,
+} from "./calibration";
+export type { CalibrationReport, Outcome, ReliabilityBucket, ScaleFit } from "./calibration";
+export {
+  DEFAULT_SHRINKAGE_MATCHES,
+  MIN_FIELD_SIZE,
+  fieldCentre,
+  shrinkRatings,
+  shrinkageConstant,
+  shrinkageNote,
+} from "./shrinkage";
+export type { ShrinkageConstant, ShrunkRating, TeamSample } from "./shrinkage";
+export {
+  SEASON_ALGORITHMS,
+  algorithmForSeason,
+  algorithmProvenance,
+  newestAlgorithm,
+} from "./season-algorithm";
+export type { ResolvedAlgorithm, SeasonAlgorithm } from "./season-algorithm";
+export {
   DEFENCE_SHARE_FLOOR,
   DEFENCE_SUPPRESSION,
   MIN_LEVER_GAIN_PP,

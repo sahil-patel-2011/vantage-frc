@@ -15,6 +15,8 @@ import {
   type StrategyEnginePolicy,
 } from "./engine-tier";
 import { seasonWeight } from "./season-weight";
+import { DEFAULT_LOGISTIC_SCALE } from "./calibration";
+import { algorithmForSeason, algorithmProvenance } from "./season-algorithm";
 
 const clamp = (value: number, min = 0, max = 1) => Math.min(max, Math.max(min, value));
 const round = (value: number) => Math.round(value * 10_000) / 10_000;
@@ -146,13 +148,15 @@ export function rateTeam(
  * arithmetic elsewhere would drift the moment either is tuned, and advice that
  * disagrees with the number above it is worse than no advice.
  */
-export function allianceWinProbability(ourRating: number, theirRating: number) {
+export function allianceWinProbability(
+  ourRating: number,
+  theirRating: number,
+  scale: number = DEFAULT_LOGISTIC_SCALE,
+) {
   const margin = ourRating - theirRating;
-  return clamp(1 / (1 + Math.exp(-margin / 12)), 0.02, 0.98);
-}
-
-function logisticPRed(redRating: number, blueRating: number) {
-  return allianceWinProbability(redRating, blueRating);
+  // A scale of zero or less is not a curve; fall back rather than divide by it.
+  const usable = Number.isFinite(scale) && scale > 0 ? scale : DEFAULT_LOGISTIC_SCALE;
+  return clamp(1 / (1 + Math.exp(-margin / usable)), 0.02, 0.98);
 }
 
 function sumRatings(teams: TeamRatingDetail[]) {
@@ -238,13 +242,40 @@ export function buildAllianceWinBreakdown(
 ): AllianceWinBreakdown {
   const policy = resolvePolicy(input.engineId);
   const operations = new Map((input.operations ?? []).map((value) => [value.teamKey, value]));
+
+  // Which maths this game gets. Registered by season, so a new game is one row
+  // in the table rather than an edit to every caller, and last season's stored
+  // predictions keep reproducing because their row never changed.
+  const algorithm = algorithmForSeason(input.currentYear);
+
+  /**
+   * Pull a thin record toward the field.
+   *
+   * The field is the event, not this match — six robots are not a field, and
+   * regressing them toward their own average would only make them look alike.
+   * So the caller supplies the centre and the pull, computed across everyone
+   * playing; without it, nothing is shrunk and the rating stands as measured.
+   */
+  const shrink = algorithm.shrinkage ? input.shrink : undefined;
+  const applyShrink = (detail: TeamRatingDetail): TeamRatingDetail => {
+    if (!shrink || !(detail.sample > 0)) return detail;
+    const k = Number.isFinite(shrink.k) && shrink.k > 0 ? shrink.k : algorithm.shrinkageFallbackMatches;
+    const ownWeight = detail.sample / (detail.sample + k);
+    return { ...detail, rating: ownWeight * detail.rating + (1 - ownWeight) * shrink.centre };
+  };
+
   const rate = (teamKey: string) =>
-    rateTeam(teamKey, input.currentYear, input.seasons, operations.get(teamKey), policy);
+    applyShrink(
+      rateTeam(teamKey, input.currentYear, input.seasons, operations.get(teamKey), policy),
+    );
 
   const redDetails = input.red.map(rate);
   const blueDetails = input.blue.map(rate);
   const redTotal = sumRatings(redDetails);
   const blueTotal = sumRatings(blueDetails);
+  const scale = algorithm.effectiveScale;
+  const logisticPRed = (redRating: number, blueRating: number) =>
+    allianceWinProbability(redRating, blueRating, scale);
   const pRedFull = logisticPRed(redTotal, blueTotal);
   const sample = sumSample(redDetails) + sumSample(blueDetails);
   const intervalBase = policy.tier === "max" ? 0.24 : policy.tier === "pro" ? 0.26 : 0.28;
@@ -380,6 +411,7 @@ export function buildAllianceWinBreakdown(
     caveats: [
       "MODEL output — not an official TBA result.",
       `Engine ${policy.engineId} (depth ${policy.depth}).`,
+      algorithmProvenance(algorithm),
       "Per-team Δp values are leave-one-out MODEL attributions, not TBA facts.",
       ...(policy.thisSeasonOnly
         ? ["This-season rules only — prior-year EPA is not blended."]
