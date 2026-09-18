@@ -423,7 +423,8 @@
 
 .product-hub-related > a,
 .admin-related > a,
-.settings-inline-links > a {
+.settings-inline-links > a,
+.biz-detail-link > a {
   display: inline-flex;
   align-items: center;
   min-height: 34px;
@@ -441,14 +442,16 @@
 
 .product-hub-related > a:hover,
 .admin-related > a:hover,
-.settings-inline-links > a:hover {
+.settings-inline-links > a:hover,
+.biz-detail-link > a:hover {
   background: color-mix(in srgb, var(--surface) 86%, var(--line));
   color: var(--ink);
 }
 
 .product-hub-related > a:focus-visible,
 .admin-related > a:focus-visible,
-.settings-inline-links > a:focus-visible {
+.settings-inline-links > a:focus-visible,
+.biz-detail-link > a:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
@@ -457,7 +460,8 @@
    several loose words. Never before the first. */
 .product-hub-related > a + a::before,
 .admin-related > a + a::before,
-.settings-inline-links > a + a::before {
+.settings-inline-links > a + a::before,
+.biz-detail-link > a + a::before {
   content: "\00b7";
   margin-right: 8px;
   color: var(--line);
@@ -467,7 +471,8 @@
 @media (pointer: coarse) {
   .product-hub-related > a,
   .admin-related > a,
-  .settings-inline-links > a {
+  .settings-inline-links > a,
+  .biz-detail-link > a {
     min-height: 44px;
     padding: 6px 10px;
   }

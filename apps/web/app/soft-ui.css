@@ -876,7 +876,20 @@ body.has-app-shell .dash-widget:hover{
 body.has-app-shell .dash-widget.is-empty{box-shadow:none}
 .dash-widget.is-empty .dash-widget-title{gap:0}
 .dash-widget-msg{margin:0;font-size:13px}
-.dash-widget-link{margin-top:auto;color:var(--tone-ink);font:700 12px var(--font-source-sans),ui-sans-serif;text-decoration:none}
+/* Every widget's footer link goes through this class, and it was rendering as
+   a 17px-tall target — measured on a 375px phone. That is under half the 44px
+   the rest of the product uses, on the screen most likely to be tapped with
+   cold or gloved hands in a pit. The text stays the same size; the box around
+   it grows to the small-control height so there is something to hit. */
+.dash-widget-link{
+  margin-top:auto;color:var(--tone-ink);
+  font:700 12px var(--font-source-sans),ui-sans-serif;text-decoration:none;
+  display:inline-flex;align-items:center;min-height:var(--control-h-sm);
+  /* Negative inline margin keeps the text flush with the card's other content
+     while the padding extends the tap area past it. */
+  padding-inline:6px;margin-inline:-6px;
+  align-self:flex-start;
+}
 .dash-widget-link:hover{text-decoration:underline}
 .dash-empty{display:grid;gap:6px;flex:1;align-content:center;min-height:96px;padding:4px 2px}
 .dash-empty strong{font:700 14px/1.3 var(--font-source-sans),ui-sans-serif;letter-spacing:-.01em}
