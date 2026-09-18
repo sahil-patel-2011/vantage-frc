@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   KICKOFF_BUILD_RELATED_INCLUDE,
   kickoffNextActions,
-  kickoffPipelineLinks,
   shouldShowKickoffSummaryTiles,
 } from "./kickoff-related";
 import { expectPlainCopy } from "./ui/copy-assertions";
@@ -62,14 +61,19 @@ describe("kickoff-related Soft-UI helpers", () => {
     expectPlainCopy(actions.find((a) => a.id === "rules-qa")?.detail);
   });
 
-  it("builds pipeline links to Strategy seeds and CAD", () => {
-    const links = kickoffPipelineLinks({ orgId: "org-1", cadJobId: "job-9" });
-    expect(links.find((l) => l.id === "strategy-seeds")?.href).toBe(
-      "/competition?tab=strategy&orgId=org-1",
-    );
-    expect(links.find((l) => l.id === "cad-brief")?.label).toBe("Open CAD brief");
-    expect(links.find((l) => l.id === "cad-brief")?.href).toBe("/build?tab=cad&orgId=org-1");
-    expect(links.every((l) => !/demo/i.test(l.label))).toBe(true);
+  it("routes to Strategy and CAD through the next actions, not a second nav", () => {
+    // The Kickoff header used to carry a "pipeline" nav with the same two
+    // destinations. Measured on the rendered page it sat 250-390px BELOW the
+    // Next actions panel and repeated it with worse copy, so on a page with
+    // nine links, four went to Strategy. Next actions is the single route now.
+    const actions = kickoffNextActions({
+      orgId: "org-1",
+      hasSeason: true,
+      summary: { actions: 2, bestAction: null, committed: 1, openQuestions: 0 },
+    });
+    const hrefs = actions.map((action) => action.href);
+    expect(hrefs.filter((href) => href.includes("tab=strategy")).length).toBeLessThanOrEqual(1);
+    expect(hrefs.filter((href) => href.includes("tab=cad")).length).toBeLessThanOrEqual(1);
   });
 
   it("hides zeroed summary tiles until real rows exist", () => {

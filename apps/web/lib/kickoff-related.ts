@@ -1,6 +1,5 @@
 import type { BuildRelatedId } from "./build/build-related";
 import { hubHref } from "./nav/hubs";
-import { withOrgHref } from "./nav/product-nav";
 import type { KickoffSummary } from "./kickoff";
 
 /** Focused Soft-UI Build strip when Kickoff is open (never DEMO placeholders). */
@@ -19,9 +18,6 @@ export type KickoffNextAction = {
   primary?: boolean;
 };
 
-function withOrg(path: string, orgId?: string | null): string {
-  return withOrgHref(path, orgId);
-}
 
 /**
  * Readable Soft-UI next actions for the kickoff → strategy → CAD pipeline.
@@ -151,30 +147,6 @@ export function kickoffNextActions(input: {
   return actions.slice(0, 5);
 }
 
-/** Pipeline deep-links shown beside a ready intelligence summary. */
-export function kickoffPipelineLinks(input: {
-  orgId: string;
-  cadJobId?: string | null;
-}): Array<{ id: string; label: string; href: string }> {
-  const { orgId } = input;
-  return [
-    {
-      id: "strategy-seeds",
-      label: "Strategy seeds",
-      href: hubHref("/competition", "strategy", orgId),
-    },
-    {
-      id: "cad-brief",
-      label: input.cadJobId ? "Open CAD brief" : "CAD briefs",
-      href: hubHref("/build", "cad", orgId),
-    },
-    {
-      id: "competition",
-      label: "Competition hub",
-      href: withOrg("/competition", orgId),
-    },
-  ];
-}
 
 /** Hide zeroed summary tiles when nothing has been logged — avoids DEMO counters. */
 export function shouldShowKickoffSummaryTiles(summary: KickoffSummary): boolean {

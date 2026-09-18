@@ -5,7 +5,6 @@ import { MeteredAiCutoffBanner } from "../../components/metered-ai-cutoff-banner
 import { EmptyState, Button } from "../../components/ui";
 import { resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 import type { KickoffIntelligenceRecord } from "../../lib/kickoff-intelligence";
-import { kickoffPipelineLinks } from "../../lib/kickoff-related";
 import { hubHref } from "../../lib/nav/hubs";
 import type { ProviderSetupStep } from "./kickoff-model";
 
@@ -44,7 +43,6 @@ export function IntelligenceSection({
   );
   const busy = busyKey != null;
   const selected = records.find((record) => record.id === selectedId) ?? records[0] ?? null;
-  const pipeline = kickoffPipelineLinks({ orgId, cadJobId: selected?.cadJobId ?? null });
 
   const loadIntel = useCallback(async () => {
     try {
@@ -180,13 +178,6 @@ export function IntelligenceSection({
             <strong>AI suggestion</strong> — check it against the manual before you build on it.
           </p>
         </div>
-        <nav className="kick-pipeline-links" aria-label="Kickoff pipeline">
-          {pipeline.map((link) => (
-            <Button as="a" variant="secondary" key={link.id} href={link.href}>
-              {link.label}
-            </Button>
-          ))}
-        </nav>
       </header>
 
       <MeteredAiCutoffBanner orgId={orgId} errorCode={cutoffCode} compact />
