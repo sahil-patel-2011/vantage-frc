@@ -21,7 +21,6 @@ import {
   pickDeskRelatedLinks,
   pickDeskSetupSteps,
   pickDeskShellCopy,
-  shouldShowPickDeskSummaryTiles,
   type PickDeskNextAction,
   type PickDeskShellKind,
 } from "../../lib/strategy/pick-desk-related";
@@ -597,7 +596,6 @@ export function PickListWorkbench({
     );
   }
 
-  const showTiles = shouldShowPickDeskSummaryTiles(desk.candidates.length);
   const readyActions = pickDeskNextActions({
     orgId: desk.orgId,
     shell: "ready",
@@ -647,56 +645,6 @@ export function PickListWorkbench({
         </p>
       ) : null}
 
-      {showTiles ? (
-        <div className="pick-desk-kpis" aria-label="Pick desk counts">
-          <article>
-            <strong>{formatPickDeskMetric(desk.candidates.length, true)}</strong>
-            <small>event teams</small>
-          </article>
-          <article>
-            <strong>{formatPickDeskMetric(desk.scoutedTeams, true)}</strong>
-            <small>with scout depth</small>
-          </article>
-          <article>
-            <strong>{formatPickDeskMetric(desk.pickLists.length, true)}</strong>
-            <small>saved lists</small>
-          </article>
-        </div>
-      ) : null}
-
-      <article className="app-card strategy-pick-seats" aria-label="Strategy meeting seats">
-        <header>
-          <h3>Strategy meeting seats</h3>
-          <small>
-            Top calibrated scouts rotate into this pick-desk conversation so they see their product used.
-          </small>
-          {desk.canEdit ? (
-            <Button variant="secondary" type="button" onClick={() => void seatTopScouts()} disabled={seating}>
-              {seating ? "Seating…" : "Seat top scouts"}
-            </Button>
-          ) : null}
-        </header>
-        {(desk.strategySeats ?? []).length ? (
-          <ul>
-            {(desk.strategySeats ?? []).map((seat) => (
-              <li key={`${seat.userId}-${seat.meetingOn}`}>
-                <strong>
-                  {seat.name}
-                  {seat.isMe ? " (you)" : ""}
-                </strong>
-                <small>
-                  {seat.meetingOn} · {seat.reason}
-                </small>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="app-muted">
-            No seats yet
-            {desk.canEdit ? " — use Seat top scouts after validations exist." : "."}
-          </p>
-        )}
-      </article>
 
       <div className="strategy-pick-toolbar app-card">
         <label>
@@ -844,6 +792,40 @@ export function PickListWorkbench({
               </li>
             ))}
           </ul>
+        )}
+      </article>
+
+      <article className="app-card strategy-pick-seats" aria-label="Strategy meeting seats">
+        <header>
+          <h3>Strategy meeting seats</h3>
+          <small>
+            Top calibrated scouts rotate into this pick-desk conversation so they see their product used.
+          </small>
+          {desk.canEdit ? (
+            <Button variant="secondary" type="button" onClick={() => void seatTopScouts()} disabled={seating}>
+              {seating ? "Seating…" : "Seat top scouts"}
+            </Button>
+          ) : null}
+        </header>
+        {(desk.strategySeats ?? []).length ? (
+          <ul>
+            {(desk.strategySeats ?? []).map((seat) => (
+              <li key={`${seat.userId}-${seat.meetingOn}`}>
+                <strong>
+                  {seat.name}
+                  {seat.isMe ? " (you)" : ""}
+                </strong>
+                <small>
+                  {seat.meetingOn} · {seat.reason}
+                </small>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="app-muted">
+            No seats yet
+            {desk.canEdit ? " — use Seat top scouts after validations exist." : "."}
+          </p>
         )}
       </article>
 

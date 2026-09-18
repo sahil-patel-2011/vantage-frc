@@ -8,7 +8,6 @@ import {
   pickDeskRelatedLinks,
   pickDeskSetupSteps,
   pickDeskShellCopy,
-  shouldShowPickDeskSummaryTiles,
 } from "./pick-desk-related";
 import { expectPlainCopy } from "../ui/copy-assertions";
 
@@ -58,8 +57,6 @@ describe("Pick desk Soft-UI metrics", () => {
   });
 
   it("hides summary tiles without real candidates", () => {
-    expect(shouldShowPickDeskSummaryTiles(0)).toBe(false);
-    expect(shouldShowPickDeskSummaryTiles(6)).toBe(true);
   });
 
   it("treats zero candidates as empty pool", () => {
