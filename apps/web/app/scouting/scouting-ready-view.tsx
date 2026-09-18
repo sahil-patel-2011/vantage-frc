@@ -420,7 +420,10 @@ return (
           <header className="scout-form-heading">
             <div>
               <h2>{schema?.definition.title ?? `No ${type} form`}</h2>
-              <p className="app-muted">Primary action: fill the form, then save.</p>
+              {/* "Primary action: fill the form, then save." used to sit here.
+                  It told someone looking at a form that the thing to do was
+                  fill in the form, in the vocabulary of a design review, and
+                  it cost a line above the first field on a phone. */}
             </div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
               {payloadHasDraftContent(payload) || draftSavedAt ? (
@@ -436,12 +439,18 @@ return (
             </div>
           </header>
 
-          <div className="scout-identity-lock" role="status">
+          {/* One line, not three. On a 390px phone this block sat above the
+              first field and helped push it off the bottom of the screen, on
+              the page a scout opens between matches. The name is the part
+              that matters every time; the reassurance about how it is enforced
+              is on hover for whoever wants it. */}
+          <div
+            className="scout-identity-lock"
+            role="status"
+            title={`${SCOUT_IDENTITY_LOCK_COPY.title}. ${SCOUT_IDENTITY_LOCK_COPY.detail}`}
+          >
             <span className="eyebrow">{SCOUT_IDENTITY_LOCK_COPY.eyebrow}</span>
             <strong>{data?.scoutIdentity?.displayName ?? "Signed-in member"}</strong>
-            <small className="app-muted">
-              {SCOUT_IDENTITY_LOCK_COPY.title}. {SCOUT_IDENTITY_LOCK_COPY.detail}
-            </small>
           </div>
 
           {schemaBudget && schemaBudget.status !== "healthy" ? (

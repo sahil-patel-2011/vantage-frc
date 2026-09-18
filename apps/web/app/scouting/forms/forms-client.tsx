@@ -507,9 +507,9 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
               <div className="sfb-identity-lock" role="status">
                 <span className="eyebrow">{SCOUT_IDENTITY_LOCK_COPY.eyebrow}</span>
                 <strong>Signed-in member</strong>
-                <small className="app-muted">
-                  Live entry binds to membership userId — no free-text scout name field.
-                </small>
+                {/* The preview shows what the scout sees, from the same source
+                    as the live form, so the two cannot drift apart. */}
+                <small className="app-muted">{SCOUT_IDENTITY_LOCK_COPY.detail}</small>
               </div>
               <div className="sfb-preview-fields">
                 {questions.map((question) => (

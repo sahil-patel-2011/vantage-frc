@@ -1338,7 +1338,7 @@ export function validateDraft(
     if (!question.label.trim()) errors.push(`Question ${n} needs a label.`);
     if (isScoutIdentityField({ key: question.label, label: question.label })) {
       errors.push(
-        `Question ${n} (“${question.label.trim()}”) is a free-text scout identity field — identity locks to membership userId.`,
+        `Question ${n} (“${question.label.trim()}”) asks the scout for their own name. Remove it — every entry is already signed with the name of whoever is filling it in.`,
       );
     }
     const labelKey = question.label.trim().toLowerCase();

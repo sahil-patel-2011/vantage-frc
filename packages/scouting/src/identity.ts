@@ -15,11 +15,27 @@ function compact(value: string): string {
 }
 export type ScoutIdentity = { userId: string; displayName: string; email?: string | null };
 
-/** Soft-UI copy shared by entry form + custom form builder. */
+/**
+ * Copy shared by the entry form and the custom form builder.
+ *
+ * This used to read "Scout identity locked / Bound to membership userId /
+ * Free-text scout names are rejected. Entries always attribute to the
+ * signed-in member." — three lines of implementation vocabulary, above the
+ * first field, on every entry a student makes on a phone at a competition.
+ * "userId" is a column name; "free-text scout names are rejected" describes a
+ * validator. Neither is something the person holding the phone can act on.
+ *
+ * What they need to know is one fact: their name goes on what they record. So
+ * that is what it says, and it fits on one line.
+ *
+ * (The old wording sat in `packages/`, just outside the roots copy-lint scans,
+ * which is how engineering vocabulary reached a student-facing screen in a
+ * product that has a test specifically to stop that.)
+ */
 export const SCOUT_IDENTITY_LOCK_COPY = {
-  eyebrow: "Scout identity locked",
-  title: "Bound to membership userId",
-  detail: "Free-text scout names are rejected. Entries always attribute to the signed-in member.",
+  eyebrow: "Scouting as",
+  title: "Your name goes on every entry",
+  detail: "Nobody can record under someone else's name.",
 } as const;
 
 export function isScoutIdentityField(field: Pick<FieldDefinition, "key" | "label">): boolean {
