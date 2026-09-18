@@ -32,6 +32,7 @@ import {
 } from "./dashboard-home-model";
 import { DashboardHomeView } from "./dashboard-home-view";
 import "./dashboard-dnd.css";
+import "./dash-layout.css";
 
 export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: string }) {
   const { setNode: setCanvasNode, node: canvasNode, width, mounted, measured } = useMeasuredCanvas();

@@ -1,0 +1,73 @@
+/**
+ * Home, composed for the width it actually has.
+ *
+ * Measured at 1280px before this: five sections stacked at 1233px each, every
+ * one full-bleed. "Nothing you have to do right now" occupied a 1233×114 band
+ * to say two lines, with roughly 890px of empty card beside the text. The page
+ * read as both sparse and busy at once — nothing was emphasised, because
+ * everything had the same enormous width.
+ *
+ * So the two things you read first now sit side by side: what you have to do
+ * (left, wider) and how the week looks (right). The widget board keeps the
+ * full width because it has its own grid and genuinely fills it.
+ *
+ * CSS only — the DOM order is unchanged, so this degrades to the original
+ * single column below the breakpoint and nothing depends on it.
+ */
+
+@media (min-width: 1000px) {
+  .dash-home.scan-workbench {
+    display: grid;
+    grid-template-columns: 1.45fr 1fr;
+    align-items: start;
+    column-gap: 18px;
+    grid-template-areas:
+      "header header"
+      "now    week"
+      "cue    week"
+      "board  board";
+  }
+
+  .dash-home > .dash-home-header {
+    grid-area: header;
+  }
+
+  .dash-home > .dash-now {
+    grid-area: now;
+    /* It is the one thing on the page asking to be acted on, so it holds its
+       own height rather than matching whatever is beside it. */
+    align-self: stretch;
+  }
+
+  .dash-home > .dash-role-strip {
+    grid-area: week;
+  }
+
+  /* "This week" was three tiles across 1203px — 396px each to hold a heading
+     and one line. In the narrower column they stack, which is how a list of
+     three unrelated facts wants to read anyway. */
+  .dash-home > .dash-role-strip > ul {
+    grid-template-columns: 1fr;
+  }
+
+  .dash-home > .dash-ready-cue {
+    grid-area: cue;
+  }
+
+  .dash-home > .dash-grid-wrap {
+    grid-area: board;
+  }
+}
+
+/**
+ * The AI-keys cue.
+ *
+ * It was a full-width band carrying one sentence of routing detail — visually
+ * equal to the match you are about to play. It is a footnote, so it reads like
+ * one now: smaller, quieter, and no longer competing with the things that
+ * change during an event.
+ */
+.dash-ready-cue {
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
