@@ -9,7 +9,7 @@ import "./parent-view.css";
  * number, upcoming events, and the linked student's own RSVP state.
  */
 export const metadata: Metadata = {
-  title: "Team schedule — Vantage",
+  title: "Team schedule",
   robots: { index: false, follow: false },
 };
 

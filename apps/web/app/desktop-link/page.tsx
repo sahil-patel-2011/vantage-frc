@@ -4,7 +4,7 @@ import DesktopLinkClient from "./desktop-link-client";
 import "./desktop-link.css";
 
 export const metadata: Metadata = {
-  title: "Approve desktop sign-in — Vantage",
+  title: "Approve desktop sign-in",
   robots: { index: false },
 };
 

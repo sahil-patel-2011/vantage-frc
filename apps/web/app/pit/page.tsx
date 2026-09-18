@@ -9,7 +9,7 @@ import "./pit-command.css";
 import PitCommandClient from "./pit-command-client";
 
 export const metadata: Metadata = {
-  title: "Pit Command — Vantage",
+  title: "Pit Command",
   description:
     "Robot release board from logged issues, maintenance, and battery evidence. Links to Batteries, Match checklist, and Event Day.",
 };

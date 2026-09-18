@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { EmptyState, Button } from "../components/ui";
 
 export const metadata: Metadata = {
-  title: "Page not found — Vantage",
+  title: "Page not found",
   robots: { index: false, follow: false },
 };
 
