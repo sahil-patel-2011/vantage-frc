@@ -3,17 +3,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 import { withOrgHref } from "../../lib/nav/product-nav";
-import { executeComposerOp } from "../../lib/cad/execute-composer";
 import {
-  parseExplainFeatures,
-  type DeleteFeaturePayload,
-  type ExplainedFeature,
-  type UpdateFeaturePayload,
 } from "../../lib/cad/feature-tree";
 import {
-  EMPTY_LISTED_ASSEMBLY,
-  listOnshapeAssemblyInstances,
-  type ListedOnshapeAssembly,
 } from "../../lib/cad/list-assembly";
 import {
   EMPTY_LISTED_ELEMENTS,
@@ -22,23 +14,11 @@ import {
   type ListedDocumentElements,
 } from "../../lib/cad/list-document-elements";
 import {
-  EMPTY_LISTED_ENTITIES,
-  completeDocumentRef,
-  listOnshapeEntities,
-  type ListedOnshapeEntities,
 } from "../../lib/cad/list-entities";
 import {
-  EMPTY_LISTED_VARIABLES,
-  listOnshapeVariables,
-  type ListedOnshapeVariables,
 } from "../../lib/cad/list-variables";
-import { rememberComposerFeature } from "../../lib/cad/remember-feature";
 import {
-  parametersForExecute,
-  rememberLastSketchFeatureId,
-  runComposerPlan,
 } from "../../lib/cad/run-composer-plan";
-import type { ComposerOp } from "../../lib/cad/composer-ops";
 import {
   type AgentMode,
   type AgentState,
@@ -47,17 +27,10 @@ import {
   type PlanStep,
 } from "./cad-model";
 import {
-  asParamRecord,
-  checkpointIdFromExecute,
   onshapeTabUrl,
   readStoredAssemblyElementId,
   readStoredVariableStudioElementId,
   realReturnedId,
-  rememberLastAssemblyElementId,
-  rememberLastInstanceIds,
-  withLastAssemblyElementId,
-  withLastInstanceIds,
-  withVariableStudio,
   writeStoredAssemblyElementId,
   writeStoredVariableStudioElementId,
 } from "./cad-session";
@@ -96,19 +69,11 @@ export default function CadWorkspace({
   const [countdown, setCountdown] = useState(15);
   const [planSteps, setPlanSteps] = useState<PlanStep[]>([]);
   const [planAnswers, setPlanAnswers] = useState<string[]>([]);
-  const [listedEntities, setListedEntities] = useState<ListedOnshapeEntities>(EMPTY_LISTED_ENTITIES);
-  const [explainedFeatures, setExplainedFeatures] = useState<ExplainedFeature[]>([]);
-  const [listedVariables, setListedVariables] = useState<ListedOnshapeVariables>(EMPTY_LISTED_VARIABLES);
-  const [listedAssembly, setListedAssembly] = useState<ListedOnshapeAssembly>(EMPTY_LISTED_ASSEMBLY);
   const [listedElements, setListedElements] = useState<ListedDocumentElements>(EMPTY_LISTED_ELEMENTS);
-  const [lastCheckpointId, setLastCheckpointId] = useState<string | null>(null);
-  const [geometryError, setGeometryError] = useState("");
   const answeringRef = useRef(false);
   const logRef = useRef<HTMLDivElement>(null);
-  const lastSketchFeatureId = useRef<string | undefined>(undefined);
   const lastAssemblyElementId = useRef<string | undefined>(undefined);
   const lastVariableStudioElementId = useRef<string | undefined>(undefined);
-  const lastInstanceIds = useRef<string[]>([]);
   const [workingTabId, setWorkingTabId] = useState("");
 
   const load = useCallback(async () => {
@@ -181,77 +146,7 @@ export default function CadWorkspace({
     lastAssemblyElementId.current = readStoredAssemblyElementId(orgId, boundDocumentId ?? "");
   }, [orgId, boundDocumentId]);
 
-  const refreshBoundGeometry = useCallback(async () => {
-    if (boundDocumentId && !lastAssemblyElementId.current) {
-      const stored = readStoredAssemblyElementId(orgId, boundDocumentId);
-      if (stored) lastAssemblyElementId.current = stored;
-    }
-    if (boundDocumentId && !lastVariableStudioElementId.current) {
-      const storedStudio = readStoredVariableStudioElementId(orgId, boundDocumentId);
-      if (storedStudio) lastVariableStudioElementId.current = storedStudio;
-    }
-    const documentRef = completeDocumentRef({
-      documentId: boundDocumentId,
-      workspaceId: boundWorkspaceId,
-      elementId: boundElementId,
-    });
-    if (!documentRef) {
-      setListedEntities(EMPTY_LISTED_ENTITIES);
-      setExplainedFeatures([]);
-      setListedVariables(EMPTY_LISTED_VARIABLES);
-      setListedAssembly(EMPTY_LISTED_ASSEMBLY);
-      setGeometryError("");
-      return;
-    }
-    try {
-      setListedEntities(await listOnshapeEntities({ orgId, documentRef }));
-      setGeometryError("");
-    } catch {
-      setListedEntities(EMPTY_LISTED_ENTITIES);
-      setGeometryError("Could not list Onshape entities. Bind a Part Studio and retry.");
-    }
-    try {
-      setListedVariables(
-        await listOnshapeVariables({
-          orgId,
-          documentRef,
-          variableStudioElementId: lastVariableStudioElementId.current || undefined,
-        }),
-      );
-    } catch {
-      setListedVariables(EMPTY_LISTED_VARIABLES);
-    }
-    try {
-      setListedAssembly(
-        await listOnshapeAssemblyInstances({
-          orgId,
-          documentRef,
-          assemblyElementId: lastAssemblyElementId.current || undefined,
-        }),
-      );
-    } catch {
-      setListedAssembly(EMPTY_LISTED_ASSEMBLY);
-    }
-    try {
-      const response = await fetch("/api/cad", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ action: "explain-onshape-features", orgId, documentRef }),
-      });
-      const data = (await response.json().catch(() => ({}))) as unknown;
-      if (!response.ok) {
-        setExplainedFeatures([]);
-        return;
-      }
-      setExplainedFeatures(parseExplainFeatures(data));
-    } catch {
-      setExplainedFeatures([]);
-    }
-  }, [orgId, boundDocumentId, boundWorkspaceId, boundElementId]);
 
-  useEffect(() => {
-    void refreshBoundGeometry();
-  }, [refreshBoundGeometry]);
 
   useEffect(() => {
     if (!boundDocumentId || !boundWorkspaceId) {
@@ -313,11 +208,6 @@ export default function CadWorkspace({
     );
   }
 
-  function applyShadedPng(png: unknown) {
-    if (typeof png === "string" && png.trim()) {
-      setState((prev) => (prev ? { ...prev, shadedPngBase64: png } : prev));
-    }
-  }
 
   async function bind() {
     setBusy("bind");
@@ -442,13 +332,11 @@ export default function CadWorkspace({
     if (kind === "assembly") {
       lastAssemblyElementId.current = listed.id;
       writeStoredAssemblyElementId(orgId, documentId, listed.id);
-      await refreshBoundGeometry();
       return;
     }
     if (kind === "variablestudio") {
       lastVariableStudioElementId.current = listed.id;
       writeStoredVariableStudioElementId(orgId, documentId, listed.id);
-      await refreshBoundGeometry();
       return;
     }
     await bindDocumentRef({ documentId, workspaceId, elementId: listed.id });
@@ -507,7 +395,6 @@ export default function CadWorkspace({
       }
       applyChatResponse(data);
       await load().catch(() => undefined);
-      void refreshBoundGeometry();
     } catch (err) {
       setError(err instanceof Error ? err.message : "CAD agent failed");
     } finally {
@@ -537,14 +424,13 @@ export default function CadWorkspace({
         }
         applyChatResponse(data);
         if (held.message) await load().catch(() => undefined);
-        void refreshBoundGeometry();
       } catch (err) {
         setError(err instanceof Error ? err.message : "CAD agent failed");
       } finally {
         setBusy(null);
       }
     },
-    [orgId, pendingProposal, load, refreshBoundGeometry],
+    [orgId, pendingProposal, load],
   );
 
   // 15-second countdown; expiry counts as No and the agent continues in the current mode.
@@ -587,7 +473,6 @@ export default function CadWorkspace({
       }
       applyChatResponse(data);
       await load().catch(() => undefined);
-      void refreshBoundGeometry();
     } catch (err) {
       setError(err instanceof Error ? err.message : "CAD agent failed");
     } finally {
@@ -608,171 +493,15 @@ export default function CadWorkspace({
         ? "Multitask mode: sub-tasks run one at a time"
         : "Ctrl+Enter to send";
 
-  async function onAppendComposer(payload: Record<string, unknown>) {
-    const operation = String(payload.operation ?? "");
-    const parameters = withLastInstanceIds(
-      operation,
-      withLastAssemblyElementId(
-        operation,
-        parametersForExecute(
-          { ...payload, operation, parameters: asParamRecord(payload.parameters) } as ComposerOp,
-          lastSketchFeatureId.current,
-        ),
-        lastAssemblyElementId.current,
-      ),
-      lastInstanceIds.current,
-    );
-    const executed = await executeComposerOp({
-      orgId,
-      payload: withVariableStudio(
-        { ...payload, parameters },
-        lastVariableStudioElementId.current || listedVariables.variableStudioElementId,
-      ),
-      documentRef: state?.bound ?? null,
-    });
-    applyShadedPng(executed.result.shadedPngBase64);
-    lastSketchFeatureId.current = rememberLastSketchFeatureId(
-      operation,
-      executed.featureId,
-      lastSketchFeatureId.current,
-    );
-    lastAssemblyElementId.current = rememberLastAssemblyElementId(
-      operation,
-      executed,
-      lastAssemblyElementId.current,
-    );
-    writeStoredAssemblyElementId(orgId, state?.bound?.documentId ?? "", lastAssemblyElementId.current);
-    lastInstanceIds.current = rememberLastInstanceIds(
-      operation,
-      executed,
-      lastInstanceIds.current,
-    );
-    const checkpointId = checkpointIdFromExecute(executed);
-    if (checkpointId) setLastCheckpointId(checkpointId);
-    rememberComposerFeature({ parameters }, executed);
-    void refreshBoundGeometry();
-    return executed;
-  }
 
-  async function onRunComposerPlan(ops: unknown) {
-    const ran = await runComposerPlan(ops, async (step) => {
-      const parameters = withLastInstanceIds(
-        step.operation,
-        withLastAssemblyElementId(
-          step.operation,
-          parametersForExecute(step, lastSketchFeatureId.current),
-          lastAssemblyElementId.current,
-        ),
-        lastInstanceIds.current,
-      );
-      const executed = await executeComposerOp({
-        orgId,
-        payload: withVariableStudio(
-          {
-            operation: step.operation,
-            parameters,
-            reason: step.reason,
-          },
-          lastVariableStudioElementId.current || listedVariables.variableStudioElementId,
-        ),
-        documentRef: state?.bound ?? null,
-      });
-      applyShadedPng(executed.result.shadedPngBase64);
-      rememberComposerFeature(step, executed);
-      lastSketchFeatureId.current = rememberLastSketchFeatureId(
-        step.operation,
-        executed.featureId,
-        lastSketchFeatureId.current,
-      );
-      lastAssemblyElementId.current = rememberLastAssemblyElementId(
-        step.operation,
-        executed,
-        lastAssemblyElementId.current,
-      );
-      writeStoredAssemblyElementId(orgId, state?.bound?.documentId ?? "", lastAssemblyElementId.current);
-      lastInstanceIds.current = rememberLastInstanceIds(
-        step.operation,
-        executed,
-        lastInstanceIds.current,
-      );
-      const checkpointId = checkpointIdFromExecute(executed);
-      if (checkpointId) setLastCheckpointId(checkpointId);
-      return executed;
-    });
-    void refreshBoundGeometry();
-    return ran;
-  }
 
-  async function onDeleteFeature(payload: DeleteFeaturePayload) {
-    try {
-      await executeComposerOp({
-        orgId,
-        payload: {
-          operation: "delete_feature",
-          parameters: { featureId: payload.featureId },
-          reason: "Delete native feature",
-        },
-        documentRef: state?.bound ?? null,
-      });
-      void refreshBoundGeometry();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Could not delete feature";
-      setError(message);
-      throw err;
-    }
-  }
 
-  async function onUpdateFeature(payload: UpdateFeaturePayload) {
-    const documentRef = completeDocumentRef(state?.bound ?? null);
-    if (!documentRef) {
-      throw new Error("Bind an Onshape document/workspace/element first");
-    }
-    const response = await fetch("/api/cad", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ ...payload, orgId, documentRef }),
-    });
-    const data = (await response.json().catch(() => ({}))) as {
-      error?: string;
-      message?: string;
-      shadedPngBase64?: string | null;
-    };
-    if (!response.ok) {
-      throw new Error(
-        (typeof data.error === "string" && data.error.trim()) ||
-          (typeof data.message === "string" && data.message.trim()) ||
-          "CAD request failed",
-      );
-    }
-    applyShadedPng(data.shadedPngBase64);
-    void refreshBoundGeometry();
-    return data;
-  }
 
-  async function onSetVariable(payload: {
-    name: string;
-    expression: string;
-    variableStudioElementId?: string;
-  }) {
-    const studioId =
-      payload.variableStudioElementId ||
-      lastVariableStudioElementId.current ||
-      listedVariables.variableStudioElementId;
-    await executeComposerOp({
-      orgId,
-      payload: {
-        operation: "set_variable",
-        parameters: {
-          name: payload.name,
-          expression: payload.expression,
-          ...(studioId ? { variableStudioElementId: studioId } : {}),
-        },
-        reason: `Update variable ${payload.name}`,
-      },
-      documentRef: state?.bound ?? null,
-    });
-    void refreshBoundGeometry();
-  }
+
+
+
+
+
 
   return (
     <CadReadyView
@@ -812,19 +541,6 @@ export default function CadWorkspace({
       setPrompt={setPrompt}
       send={send}
       composerHint={composerHint}
-      geometryError={geometryError}
-      refreshBoundGeometry={refreshBoundGeometry}
-      lastCheckpointId={lastCheckpointId}
-      listedEntities={listedEntities}
-      explainedFeatures={explainedFeatures}
-      listedAssembly={listedAssembly}
-      listedVariables={listedVariables}
-      lastVariableStudioElementId={lastVariableStudioElementId}
-      onAppendComposer={onAppendComposer}
-      onRunComposerPlan={onRunComposerPlan}
-      onDeleteFeature={onDeleteFeature}
-      onUpdateFeature={onUpdateFeature}
-      onSetVariable={onSetVariable}
     />
   );
 }

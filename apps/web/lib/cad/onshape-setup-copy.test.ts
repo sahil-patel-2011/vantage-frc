@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { cadNextActions } from "./cad-related";
 import {
   hostedOnshapeAgentStatus,
   hostedOnshapeEnvStatus,
@@ -161,5 +162,42 @@ describe("hosted Onshape setup copy", () => {
     expect(spoken).not.toMatch(/demo stl|sample document|placeholder export|invented geometry/i);
     expect(ONSHAPE_NO_INVENTED_EXPORTS).toMatch(/appear only after a real connected run/i);
     expect(ONSHAPE_LOCAL_PLAYWRIGHT_HINT).toMatch(/desktop CAD app/);
+  });
+});
+
+describe("the desktop-app route is actually offered, not just available", () => {
+  /**
+   * `withLocalPlaywrightHint` and its tests existed for a while with no caller
+   * in the product: the desktop app allowlists onshape.com and can sign in
+   * inside its own window, and nothing on screen ever said so. A helper only
+   * its own test calls is a feature nobody can find.
+   */
+  it("puts the hint in the Connect Onshape next action", () => {
+    const actions = cadNextActions({
+      orgId: "6925a000-0000-4000-8000-000000000001",
+      jobCount: 0,
+      onshapeConfigured: false,
+      onshapeConnected: false,
+      fusionRelayOnline: false,
+    });
+    const connect = actions.find((action) => action.id === "onshape-connect");
+    expect(connect).toBeDefined();
+    expect(connect?.detail).toContain("desktop CAD app");
+  });
+
+  it("says nothing about the desktop app once Onshape is connected", () => {
+    const actions = cadNextActions({
+      orgId: "6925a000-0000-4000-8000-000000000001",
+      jobCount: 2,
+      onshapeConfigured: true,
+      onshapeConnected: true,
+      fusionRelayOnline: true,
+    });
+    expect(actions.some((action) => action.id === "onshape-connect")).toBe(false);
+  });
+
+  it("does not repeat itself when the message already mentions the route", () => {
+    const once = withLocalPlaywrightHint("Ask a mentor to finish Onshape setup.");
+    expect(withLocalPlaywrightHint(once)).toBe(once);
   });
 });

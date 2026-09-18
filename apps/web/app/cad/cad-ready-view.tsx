@@ -1,21 +1,13 @@
 "use client";
 
-import type { Dispatch, MutableRefObject, RefObject, SetStateAction } from "react";
+import type { Dispatch, RefObject, SetStateAction } from "react";
 import { Button } from "../../components/ui";
 import { UsageCutoffBanner } from "../../components/usage-cutoff-banner";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { CAD_HUB_RELATED_INCLUDE, cadHubRelatedLinks } from "../../lib/cad/cad-related";
 import { withOrgHref } from "../../lib/nav/product-nav";
-import { completeDocumentRef, type ListedOnshapeEntities } from "../../lib/cad/list-entities";
-import type { ListedOnshapeAssembly } from "../../lib/cad/list-assembly";
 import type { ListedDocumentElements } from "../../lib/cad/list-document-elements";
-import type { ListedOnshapeVariables } from "../../lib/cad/list-variables";
-import type { ExplainedFeature, DeleteFeaturePayload, UpdateFeaturePayload } from "../../lib/cad/feature-tree";
 import { CadPurchaseRequestPanel } from "./cad-purchase-request";
-import { CadFeatureTree } from "./cad-feature-tree";
-import { CadOperationComposer } from "./cad-operation-composer";
-import { CadCheckpointNote } from "./cad-checkpoint-note";
-import { CadVariableTable } from "./cad-variable-table";
 import { CadViewport } from "./cad-viewport";
 import { CadActivityPanel } from "./cad-activity-panel";
 import { CadStepPane } from "./cad-step-pane";
@@ -77,23 +69,6 @@ export type CadReadyViewProps = {
   setPrompt: (value: string) => void;
   send: () => Promise<void>;
   composerHint: string;
-  geometryError: string;
-  refreshBoundGeometry: () => Promise<void>;
-  lastCheckpointId: string | null;
-  listedEntities: ListedOnshapeEntities;
-  explainedFeatures: ExplainedFeature[];
-  listedAssembly: ListedOnshapeAssembly;
-  listedVariables: ListedOnshapeVariables;
-  lastVariableStudioElementId: MutableRefObject<string | undefined>;
-  onAppendComposer: (payload: Record<string, unknown>) => Promise<unknown>;
-  onRunComposerPlan: (ops: unknown) => Promise<{ ok?: boolean; error?: string } | void>;
-  onDeleteFeature: (payload: DeleteFeaturePayload) => Promise<unknown>;
-  onUpdateFeature: (payload: UpdateFeaturePayload) => Promise<unknown>;
-  onSetVariable: (payload: {
-    name: string;
-    expression: string;
-    variableStudioElementId?: string;
-  }) => Promise<unknown>;
 };
 
 export function CadReadyView({
@@ -133,19 +108,6 @@ export function CadReadyView({
   setPrompt,
   send,
   composerHint,
-  geometryError,
-  refreshBoundGeometry,
-  lastCheckpointId,
-  listedEntities,
-  explainedFeatures,
-  listedAssembly,
-  listedVariables,
-  lastVariableStudioElementId,
-  onAppendComposer,
-  onRunComposerPlan,
-  onDeleteFeature,
-  onUpdateFeature,
-  onSetVariable,
 }: CadReadyViewProps) {
   const editHref = onshapeEditHref(state?.openUrl || url);
   return (
@@ -445,44 +407,8 @@ export function CadReadyView({
         />
       </div>
 
-      {geometryError ? (
-        <p className="app-muted" role="alert">
-          {geometryError}
-        </p>
-      ) : null}
-      <Button variant="primary" type="button" onClick={() => void refreshBoundGeometry()}>
-        Refresh geometry
-      </Button>
-      <CadCheckpointNote checkpointId={lastCheckpointId} />
-      <CadOperationComposer
-        platform="onshape"
-        disabled={!onshapeOk || !boundOk || busy !== null}
-        entities={listedEntities}
-        features={explainedFeatures}
-        instances={listedAssembly.instances}
-        onAppend={onAppendComposer}
-        onRunPlan={onRunComposerPlan}
-      />
 
-      {completeDocumentRef(state?.bound) ? (
-        <CadFeatureTree
-          features={explainedFeatures}
-          disabled={!onshapeOk || !boundOk || busy !== null}
-          onDelete={onDeleteFeature}
-          onUpdate={onUpdateFeature}
-        />
-      ) : null}
 
-      {completeDocumentRef(state?.bound) ? (
-        <CadVariableTable
-          variables={listedVariables.variables}
-          variableStudioElementId={
-            lastVariableStudioElementId.current || listedVariables.variableStudioElementId
-          }
-          disabled={!onshapeOk || !boundOk || busy !== null}
-          onSet={onSetVariable}
-        />
-      ) : null}
 
       <CadToolsPanel tools={tools} />
 

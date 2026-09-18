@@ -1,6 +1,7 @@
 import { EmptyState, Button } from "../../components/ui";
 import { OnshapeDocumentEmbed, OnshapeEditButton } from "./onshape-edit-board";
 import { onshapeEditHref } from "../../lib/cad/onshape-edit-link";
+import { withLocalPlaywrightHint } from "../../lib/cad/onshape-setup-strings";
 
 export type CadViewportProps = {
   pngBase64?: string | null;
@@ -50,7 +51,12 @@ export function CadViewport({ pngBase64, openUrl, setupRequired = false }: CadVi
           title={setupRequired ? "Connect Onshape" : "No picture yet"}
           description={
             setupRequired
-              ? "Ask a mentor to finish Onshape setup, or paste a document link to edit it in Onshape."
+              // The desktop app allowlists onshape.com and can sign in inside
+              // its own window, no API keys needed — but nothing on screen said
+              // so, so this route existed and nobody could find it.
+              ? withLocalPlaywrightHint(
+                  "Ask a mentor to finish Onshape setup, or paste a document link to edit it in Onshape.",
+                )
               : "Paste an Onshape document link to edit it here. The viewport stays empty until a document is open."
           }
           badge={setupRequired ? "Needs setup" : undefined}
