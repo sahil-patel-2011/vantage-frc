@@ -19,7 +19,7 @@
 }
 
 .product-hub--admin .app-page-header,
-.product-hub--admin header {
+.product-hub--admin > header {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
@@ -29,7 +29,7 @@
 }
 
 .product-hub--admin .app-page-header h1,
-.product-hub--admin h1 {
+.product-hub--admin > header h1 {
   margin: 0;
   font-size: var(--scan-title, clamp(22px, 2.6vw, 30px));
   letter-spacing: -0.03em;
@@ -137,7 +137,7 @@
     padding-inline: max(12px, env(safe-area-inset-left)) max(12px, env(safe-area-inset-right));
   }
   .product-hub--admin .app-page-header,
-  .product-hub--admin header {
+  .product-hub--admin > header {
     flex-direction: column;
     align-items: stretch;
   }

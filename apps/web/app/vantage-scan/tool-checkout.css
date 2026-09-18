@@ -18,7 +18,7 @@
 }
 
 .product-hub--tool-checkout .app-page-header,
-.product-hub--tool-checkout header {
+.product-hub--tool-checkout > header {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
@@ -28,7 +28,7 @@
 }
 
 .product-hub--tool-checkout .app-page-header h1,
-.product-hub--tool-checkout h1 {
+.product-hub--tool-checkout > header h1 {
   margin: 0;
   font-size: var(--scan-title, clamp(22px, 2.6vw, 30px));
   letter-spacing: -0.03em;
@@ -129,7 +129,7 @@
     padding-inline: max(12px, env(safe-area-inset-left)) max(12px, env(safe-area-inset-right));
   }
   .product-hub--tool-checkout .app-page-header,
-  .product-hub--tool-checkout header {
+  .product-hub--tool-checkout > header {
     flex-direction: column;
     align-items: stretch;
   }

@@ -17,7 +17,7 @@
 }
 
 .product-hub--wiring .app-page-header,
-.product-hub--wiring header {
+.product-hub--wiring > header {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
@@ -27,7 +27,7 @@
 }
 
 .product-hub--wiring .app-page-header h1,
-.product-hub--wiring h1 {
+.product-hub--wiring > header h1 {
   margin: 0;
   font-size: var(--scan-title, clamp(22px, 2.6vw, 30px));
   letter-spacing: -0.03em;
@@ -123,7 +123,7 @@
     padding-inline: max(12px, env(safe-area-inset-left)) max(12px, env(safe-area-inset-right));
   }
   .product-hub--wiring .app-page-header,
-  .product-hub--wiring header {
+  .product-hub--wiring > header {
     flex-direction: column;
     align-items: stretch;
   }

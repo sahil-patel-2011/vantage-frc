@@ -31,7 +31,7 @@
 }
 
 .product-hub--logistics .app-page-header h1,
-.product-hub--logistics h1 {
+.product-hub--logistics > header h1 {
   margin: 0;
   font-size: var(--scan-title, clamp(22px, 2.6vw, 30px));
   letter-spacing: -0.03em;

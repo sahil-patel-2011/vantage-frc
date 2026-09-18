@@ -182,16 +182,7 @@ export function ScoutingReadyView({
 }: ScoutingReadyViewProps) {
 return (
   <main className={`module-page scout-page${embedded ? " is-embedded" : ""}`}>
-    {embedded ? (
-      <div className="scout-header-meta scout-header-meta-embedded">
-        <span className={`scout-sync-pill ${online ? "online" : "offline"}`}>
-          {online ? "Online" : "Offline"} · {formatScoutingMetric(counts.entries, true)} queued
-        </span>
-        <Button variant="secondary" type="button" onClick={() => void sync()}>
-          Sync now
-        </Button>
-      </div>
-    ) : (
+    {embedded ? null : (
     <PageHeader
       breadcrumbs="Competition / Scouting"
       title="Scouting"
@@ -203,16 +194,32 @@ return (
         <Button variant="secondary" type="button" onClick={() => window.print()}>
           Print
         </Button>
-        <span className={`scout-sync-pill ${online ? "online" : "offline"}`}>
-          {online ? "Online" : "Offline"} · {formatScoutingMetric(counts.entries, true)} entries ·{" "}
-          {formatScoutingMetric(counts.media, true)} media
-        </span>
-        <Button variant="secondary" type="button" onClick={() => void sync()}>
-          Sync now
-        </Button>
       </div>
     </PageHeader>
     )}
+
+    {/*
+      Which event, whether we are online, and how much is still waiting to
+      leave this phone are one question — "can I record right now, and is my
+      work safe?" — so they share one line.
+
+      They used to be two bands: a right-aligned pill with a Sync button, and
+      below it an 86px card holding the event key and the sentence "Forms and
+      assignments are cached on this device." On a 390×844 phone that pair cost
+      144px of the 807px of chrome standing between a scout and the first form
+      field. The sentence is also reassurance rather than information — the
+      queue count says the same thing and says it with a number.
+    */}
+    <div className="scout-status-bar">
+      {data?.eventKey ? <strong className="scout-status-event">Event {data.eventKey}</strong> : null}
+      <span className={`scout-sync-pill ${online ? "online" : "offline"}`}>
+        {online ? "Online" : "Offline"} · {formatScoutingMetric(counts.entries, true)} queued
+        {embedded ? null : <> · {formatScoutingMetric(counts.media, true)} media</>}
+      </span>
+      <Button variant="secondary" type="button" onClick={() => void sync()}>
+        Sync now
+      </Button>
+    </div>
     <VenueShortcutCheatsheet open={cheatOpen} onClose={() => setCheatOpen(false)} shortcuts={shortcuts} />
 
     <OfflineBanner
@@ -254,13 +261,6 @@ return (
           )}
         </EmptyState>
       </>
-    ) : null}
-
-    {data?.eventKey ? (
-      <Panel className="scout-event-strip" style={{ minHeight: "auto", marginBottom: 14 }}>
-        <strong>{data.eventKey}</strong>
-        <span className="app-muted">Forms and assignments are cached on this device.</span>
-      </Panel>
     ) : null}
 
     <ToolStrip

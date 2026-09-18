@@ -18,7 +18,7 @@
 }
 
 .product-hub--inventory .app-page-header,
-.product-hub--inventory header {
+.product-hub--inventory > header {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
@@ -28,7 +28,7 @@
 }
 
 .product-hub--inventory .app-page-header h1,
-.product-hub--inventory h1 {
+.product-hub--inventory > header h1 {
   margin: 0;
   font-size: var(--scan-title, clamp(22px, 2.6vw, 30px));
   letter-spacing: -0.03em;
@@ -130,7 +130,7 @@
     padding-inline: max(12px, env(safe-area-inset-left)) max(12px, env(safe-area-inset-right));
   }
   .product-hub--inventory .app-page-header,
-  .product-hub--inventory header {
+  .product-hub--inventory > header {
     flex-direction: column;
     align-items: stretch;
   }

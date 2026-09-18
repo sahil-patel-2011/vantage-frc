@@ -1081,7 +1081,15 @@ body.has-app-shell .dash-widget.is-empty{box-shadow:none}
 .soft-admin-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:16px}
 /* Same card recipe as .app-card — radius, hairline and resting shadow all come
    from the tokens so both classes land on one surface in light and dark. */
-.soft-panel{display:grid;gap:12px;padding:18px;border-radius:var(--radius);background:var(--surface);border:1px solid color-mix(in srgb,var(--line) 85%,transparent);box-shadow:var(--shadow)}
+/* align-content:start is load-bearing. A panel is usually a grid item next to
+   another panel, and the taller one sets the row height — that part is wanted,
+   it keeps two cards the same height. But a grid container with auto rows and
+   the default `normal` alignment hands its spare height to the rows, so the
+   panel's own contents spread out to fill it. On the scouting page the form
+   panel sits beside a tall leaderboard and its 13 rows stretched from ~40px to
+   over 190px each: a heading, then 150px of nothing, then the next field.
+   Cards match heights; what is inside them stacks from the top. */
+.soft-panel{display:grid;align-content:start;gap:12px;padding:18px;border-radius:var(--radius);background:var(--surface);border:1px solid color-mix(in srgb,var(--line) 85%,transparent);box-shadow:var(--shadow)}
 .soft-panel label{display:grid;gap:6px;font:600 13px var(--font-source-sans),ui-sans-serif}
 .soft-panel input,.soft-admin-search input{min-height:44px;padding:0 12px;border:1px solid var(--line);border-radius:var(--radius-sm);font:500 14px var(--font-source-sans),ui-sans-serif;background:var(--surface);color:inherit}
 .soft-panel small{color:var(--muted);font-weight:500;font-size:12px}
@@ -2325,7 +2333,12 @@ body.has-app-shell .strategy-demo-optin{
 .scout-sync-pill{display:inline-flex;align-items:center;min-height:32px;padding:0 12px;border-radius:var(--radius-pill);border:1px solid var(--line);font:700 11px var(--font-source-sans),ui-sans-serif}
 .scout-sync-pill.online{color:var(--accent);background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent) 35%,var(--line))}
 .scout-sync-pill.offline{color:var(--warning);background:var(--warning-soft);border-color:color-mix(in srgb,var(--warning) 35%,var(--line))}
-.scout-event-strip{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+/* Event, connection and queue on one line. The event sits first because it is
+   the thing that changes least and anchors the other two; Sync is pushed to
+   the far end so the thumb finds it in the same place on every screen. */
+.scout-status-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 14px}
+.scout-status-bar .app-button{margin-left:auto}
+.scout-status-event{font:700 13px/1.2 var(--font-source-sans),ui-sans-serif;color:var(--ink)}
 .scout-workbench{display:grid;grid-template-columns:minmax(0,2fr) minmax(260px,1fr);gap:14px}
 .scout-form-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:8px}
 .scout-form-heading h2{margin:0 0 4px}
@@ -2333,6 +2346,15 @@ body.has-app-shell .strategy-demo-optin{
   display:grid;gap:4px;margin:0 0 14px;padding:14px 16px;
   border:1px solid color-mix(in srgb,var(--accent) 28%,var(--line));
   border-radius:var(--radius-sm);background:color-mix(in srgb,var(--accent-soft) 70%,var(--surface));
+}
+/* On the live form this is two words and a name — "Scouting as Sahil Patel".
+   Stacked and padded like a card it took 68px directly above the first field
+   on a phone, which is the one place in the app where vertical space is
+   actually scarce. One line says the same thing. The form builder's preview
+   keeps the stacked version: it also carries the explanatory line, and it is
+   read on a laptop where the height is free. */
+.scout-identity-lock{
+  display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 8px;padding:8px 12px;
 }
 .scout-identity-lock .eyebrow,.sfb-identity-lock .eyebrow{
   font:700 10px/1 var(--font-source-sans),ui-sans-serif;letter-spacing:.05em;text-transform:uppercase;color:var(--accent);

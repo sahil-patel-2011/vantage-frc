@@ -28,7 +28,7 @@
 }
 
 .product-hub--my-kit .app-page-header h1,
-.product-hub--my-kit h1 {
+.product-hub--my-kit > header h1 {
   margin: 0;
   font-size: var(--scan-title, clamp(22px, 2.6vw, 30px));
   letter-spacing: -0.03em;
