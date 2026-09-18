@@ -41,11 +41,18 @@ export default tseslint.config(
   },
   {
     // Register the plugins so inline eslint-disable comments naming their
-    // rules resolve. Deliberately no rules enabled here: spreading the
-    // recommended rule sets would surface a fresh wave of errors at sites
-    // that carry no disable comment.
+    // rules resolve. The recommended sets stay off — spreading them would
+    // surface a fresh wave of errors at sites that carry no disable comment.
     files: ["apps/web/**/*.{ts,tsx}"],
     plugins: { "@next/next": nextPlugin, "react-hooks": reactHooks },
+    rules: {
+      // The one exception, because this rule does not report style — it
+      // reports a crash. `ToolStrip` called two hooks after an early return
+      // on an empty tool list, so a hub whose tools arrive with its data
+      // would render empty once and then throw "rendered more hooks than
+      // during the previous render" on the next pass. Nothing flagged it.
+      "react-hooks/rules-of-hooks": "error",
+    },
   },
   {
     files: ["packages/**/*.{ts,tsx}"],
