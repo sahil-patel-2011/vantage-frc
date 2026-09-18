@@ -1,6 +1,7 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useCallback, useId, useState } from "react";
+import { useDismiss } from "../../hooks/use-dismiss";
 import { layoutToolStrip, type ToolStripEntry } from "../../lib/nav/tool-strip-layout";
 
 export type ToolStripItem = ToolStripEntry;
@@ -108,8 +109,13 @@ export function ToolStrip({
     );
   };
 
+  // The ref wraps the "More tools" button as well as the list it opens, so
+  // pressing the button to close does not read as a click outside the panel.
+  const closeOverflow = useCallback(() => setExpanded(false), []);
+  const stripRef = useDismiss<HTMLDivElement>(expanded, closeOverflow);
+
   return (
-    <div className="hub-tool-strip">
+    <div className="hub-tool-strip" ref={stripRef}>
       <nav className="hub-tool-strip-row" aria-label={ariaLabel}>
         {visible.map(renderChip)}
         {collapsible ? (

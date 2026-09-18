@@ -114,3 +114,46 @@ html[data-motion="reduced"] .soft-island-more:active,
 html[data-motion="reduced"] .kit-row:active {
   transform: none;
 }
+
+/* ------------------------------------------------------------- entrances --
+   Every scrim in the product faded at its own speed — .16s, .18s, .2s and
+   .22s for the same gesture — while the panel each one accompanies takes
+   380ms to arrive. So the dim always finished well before the drawer landed,
+   and no two of them agreed with each other. Four numbers, no decision behind
+   any of them.
+
+   One duration and one curve, shared with the panel, so the dim and the thing
+   it is dimming for read as a single movement instead of two events. */
+.soft-scrim,
+.soft-more-scrim,
+.soft-account-scrim,
+.soft-island-editor-scrim,
+.dash-library-scrim {
+  animation-duration: var(--dur-sheet);
+  animation-timing-function: var(--ease-out);
+}
+
+/* The account popover is small and opens beside the thing you pressed, so it
+   settles faster than a full-screen sheet — but on the same curve. */
+.soft-account-pop {
+  animation-duration: var(--dur-move);
+  animation-timing-function: var(--ease-settle);
+}
+
+/* "More tools" appeared instantly, which reads as a layout jump rather than a
+   panel opening. It pushes content down, so it rises into place from just
+   above rather than sliding a distance it does not travel. */
+@keyframes vantage-panel-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: none; }
+}
+
+.hub-tool-overflow {
+  animation: vantage-panel-in var(--dur-move) var(--ease-settle) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hub-tool-overflow { animation: none; }
+}
+
+html[data-motion="reduced"] .hub-tool-overflow { animation: none; }
