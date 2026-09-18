@@ -252,10 +252,22 @@ export default function KickoffClient(_props: { embedded?: boolean } = {}) {
 
       <BuildHubRelated orgId={orgId} active="kickoff" include={[...KICKOFF_BUILD_RELATED_INCLUDE]} />
       <OfflineBanner feature="Kickoff" fromCache={fromCache} cachedAt={cachedAt} />
+      {/*
+        This line used to be visible, and it said what the card directly below
+        it says: the game name and year are that card's heading, "from the
+        published manual" is its badge, "scoring on the sheet" is its next
+        paragraph, and "last season is below" is the heading of its last
+        section. On a phone it pushed the card it was describing down by a line
+        and read as a caption for nothing.
+
+        It stays in the accessibility tree because it is the live region that
+        announces a change from the season picker in the header — the card
+        re-renders silently otherwise.
+      */}
       {(() => {
         const pack = packForYear(year);
         return (
-          <p className="app-muted" role="status">
+          <p className="visually-hidden" role="status">
             {pack.gameName} {pack.year}
             {pack.status === "awaiting_manual"
               ? " — official scoring is not published yet. Last season is below so you can still practice."

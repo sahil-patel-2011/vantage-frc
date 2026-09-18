@@ -15,7 +15,11 @@ function BriefLists({
   return (
     <div className="kick-brief-grid">
       <section>
-        <h3>What the manual named</h3>
+        {/* Not "What the manual named": the card's badge already says "From
+            the manual" and the first line of this list says "The published
+            manual scores…", so the word landed three times in one card. The
+            three headings are what is true, what to record, what to decide. */}
+        <h3>How the game works</h3>
         <ul>
           {whatWeKnow.map((line) => (
             <li key={line}>{line}</li>
