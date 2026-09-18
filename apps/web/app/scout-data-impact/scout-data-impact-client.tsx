@@ -67,7 +67,7 @@ function ScoutDataImpactRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related scout-data-impact-related" aria-label="Related competition tools">
       {links.map((link) => (
-        <a href={link.href}>{link.label}</a>
+        <a key={link.href} href={link.href}>{link.label}</a>
       ))}
     </nav>
   );

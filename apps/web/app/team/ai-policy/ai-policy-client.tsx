@@ -88,7 +88,7 @@ function GovernanceRelatedStrip({ orgId }: { orgId: string }) {
   return (
     <nav className="product-hub-related ai-governance-related" aria-label="Related AI tools">
       {links.map((link) => (
-        <a href={link.href}>{link.label}</a>
+        <a key={link.href} href={link.href}>{link.label}</a>
       ))}
     </nav>
   );

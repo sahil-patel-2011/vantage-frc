@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   buildScoutTargets,
+  groupScoutTargets,
+  YOUR_MATCHES_GROUP_LABEL,
   manualMatchKey,
   normalizeTeamKey,
   type ScheduledMatch,
@@ -86,6 +88,59 @@ describe("buildScoutTargets", () => {
       ],
     });
     expect(options[0].label).toBe("MATCH 1 · 1");
+  });
+});
+
+describe("groupScoutTargets", () => {
+  /**
+   * A 36-match event is 216 robots. Flat, that is one scroll a scout does while
+   * the match they are about to watch is already starting.
+   */
+  it("splits the schedule into one group per match", () => {
+    const groups = groupScoutTargets(buildScoutTargets({ matches: SCHEDULE }));
+    expect(groups.map((g) => g.label)).toEqual(["QM 3", "QM 4"]);
+    expect(groups[0]?.options.length).toBe(6);
+    expect(groups[1]?.options.length).toBe(2);
+  });
+
+  it("keeps your assignments together at the top instead of scattering them", () => {
+    const groups = groupScoutTargets(buildScoutTargets({ assignments: [ASSIGNMENT], matches: SCHEDULE }));
+    expect(groups[0]?.label).toBe(YOUR_MATCHES_GROUP_LABEL);
+    expect(groups[0]?.options.map((o) => o.teamKey)).toEqual(["frc6925"]);
+    // ...and it is not repeated inside its own match's group.
+    const qm3 = groups.find((g) => g.label === "QM 3");
+    expect(qm3?.options.some((o) => o.teamKey === "frc6925")).toBe(false);
+  });
+
+  it("omits the assignments group entirely when there are none", () => {
+    const groups = groupScoutTargets(buildScoutTargets({ matches: SCHEDULE }));
+    expect(groups.some((g) => g.label === YOUR_MATCHES_GROUP_LABEL)).toBe(false);
+  });
+
+  it("holds every row — grouping must never drop a robot", () => {
+    const options = buildScoutTargets({ assignments: [ASSIGNMENT], matches: SCHEDULE });
+    const grouped = groupScoutTargets(options).flatMap((g) => g.options);
+    expect(grouped.length).toBe(options.length);
+  });
+
+  it("keeps the schedule in schedule order", () => {
+    const groups = groupScoutTargets(buildScoutTargets({ matches: [...SCHEDULE].reverse() }));
+    expect(groups.map((g) => g.label)).toEqual(["QM 4", "QM 3"]);
+  });
+
+  it("falls back to the label when a cached row predates matchLabel", () => {
+    // These arrive from an offline cache written by an older build, so the
+    // field can be missing. A group with no heading is worse than a derived one.
+    const groups = groupScoutTargets([
+      { matchKey: "2026gagai_qm9", label: "QM 9 · 254" },
+      { matchKey: "2026gagai_qm9", label: "QM 9 · 118" },
+    ]);
+    expect(groups).toHaveLength(1);
+    expect(groups[0]?.label).toBe("QM 9");
+  });
+
+  it("returns nothing for nothing", () => {
+    expect(groupScoutTargets([])).toEqual([]);
   });
 });
 

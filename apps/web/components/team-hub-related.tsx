@@ -32,7 +32,7 @@ export function TeamHubRelated({
       aria-label={ariaLabel}
     >
       {links.map((link) => (
-        <a href={link.href}>{link.label}</a>
+        <a key={link.href} href={link.href}>{link.label}</a>
       ))}
     </nav>
   );

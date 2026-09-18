@@ -64,7 +64,7 @@ function GoalsRelated({ orgId }: { orgId: string }) {
     <div className="goals-related">
       <nav className="product-hub-related goals-hub-related" aria-label="Related team tools">
         {primary.map((link) => (
-          <a href={link.href}>{link.label}</a>
+          <a key={link.href} href={link.href}>{link.label}</a>
         ))}
       </nav>
       <TeamHubRelated orgId={orgId} include={[...GOALS_TEAM_RELATED_INCLUDE]} />

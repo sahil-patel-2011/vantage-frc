@@ -21,7 +21,7 @@ export function CadVaultRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related cad-related" aria-label="Related CAD tools">
       {links.map((link) => (
-        <a href={link.href}>{link.label}</a>
+        <a key={link.href} href={link.href}>{link.label}</a>
       ))}
     </nav>
   );

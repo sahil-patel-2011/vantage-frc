@@ -100,7 +100,7 @@ function OutreachRelatedStrip({ orgId }: { orgId?: string | null }) {
       aria-label="Related business tools"
     >
       {links.map((link) => (
-        <a href={link.href}>{link.label}</a>
+        <a key={link.href} href={link.href}>{link.label}</a>
       ))}
     </nav>
   );

@@ -216,7 +216,7 @@ function PrefsRelated() {
     <nav className="product-hub-related notif-related" aria-label="Related account tools">
       <a href="/notifications">Inbox</a>
       {links.map((link) => (
-        <a href={link.href}>{link.label}</a>
+        <a key={link.href} href={link.href}>{link.label}</a>
       ))}
     </nav>
   );

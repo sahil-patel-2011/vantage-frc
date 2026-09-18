@@ -38,7 +38,7 @@ function PairRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related pair-related" aria-label="Related code tools">
       {links.map((link) => (
-        <a href={link.href}>{link.label}</a>
+        <a key={link.href} href={link.href}>{link.label}</a>
       ))}
     </nav>
   );

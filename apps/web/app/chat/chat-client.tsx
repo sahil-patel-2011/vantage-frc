@@ -72,7 +72,7 @@ function ChatRelatedStrip({ orgId }: { orgId: string }) {
   return (
     <nav className="product-hub-related ch-related" aria-label="Related AI and competition tools">
       {links.map((link) => (
-        <a href={link.href}>{link.label}</a>
+        <a key={link.href} href={link.href}>{link.label}</a>
       ))}
     </nav>
   );

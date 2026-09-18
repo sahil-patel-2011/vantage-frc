@@ -62,7 +62,7 @@ function ImpactEssayRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related impact-essay-related" aria-label="Related business tools">
       {links.map((link) => (
-        <a href={link.href}>{link.label}</a>
+        <a key={link.href} href={link.href}>{link.label}</a>
       ))}
     </nav>
   );

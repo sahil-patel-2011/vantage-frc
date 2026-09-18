@@ -75,7 +75,7 @@ function RiskBurndownRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related risk-burndown-related" aria-label="Related risk tools">
       {links.map((link) => (
-        <a href={link.href}>{link.label}</a>
+        <a key={link.href} href={link.href}>{link.label}</a>
       ))}
     </nav>
   );

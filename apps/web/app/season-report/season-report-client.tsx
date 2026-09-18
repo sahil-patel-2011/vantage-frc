@@ -78,7 +78,7 @@ function SeasonReportRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related season-report-related" aria-label="Related season tools">
       {links.map((link) => (
-        <a href={link.href}>{link.label}</a>
+        <a key={link.href} href={link.href}>{link.label}</a>
       ))}
     </nav>
   );

@@ -23,7 +23,7 @@ export function MediaRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related media-related" aria-label="Related media tools">
       {links.map((link) => (
-        <a href={link.href}>{link.label}</a>
+        <a key={link.href} href={link.href}>{link.label}</a>
       ))}
     </nav>
   );

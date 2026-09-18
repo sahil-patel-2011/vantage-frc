@@ -73,7 +73,7 @@ function SignoffRelated({ orgId }: { orgId: string }) {
     <div className="signoff-related">
       <nav className="product-hub-related signoff-hub-related" aria-label="Related build tools">
         {primary.map((link) => (
-          <a href={link.href}>{link.label}</a>
+          <a key={link.href} href={link.href}>{link.label}</a>
         ))}
       </nav>
       <BuildHubRelated orgId={orgId} include={[...SIGNOFF_BUILD_RELATED_INCLUDE]} />

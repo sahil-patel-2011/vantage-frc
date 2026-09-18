@@ -65,7 +65,7 @@ function BatteryHealthForecastRelatedStrip({ orgId }: { orgId?: string | null })
       aria-label="Related battery tools"
     >
       {links.map((link) => (
-        <a href={link.href}>{link.label}</a>
+        <a key={link.href} href={link.href}>{link.label}</a>
       ))}
     </nav>
   );

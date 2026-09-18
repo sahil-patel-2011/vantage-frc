@@ -6,6 +6,16 @@
 export type LegacyRedirect = {
   source: string;
   destination: string;
+  /**
+   * Inbound `?tab=` values that name a view *inside* the destination hub tab
+   * rather than a hub tab of their own.
+   *
+   * `/strategy?tab=picks` is the pick desk, but the destination already spends
+   * `tab` on `tab=strategy`, so the inbound value was silently dropped and
+   * every "Pick desk" link in the app landed on the matchup view instead.
+   * These are re-emitted as `?sub=`, which nothing else claims.
+   */
+  subTabs?: readonly string[];
 };
 
 export type ExpandedRedirect = {
@@ -28,7 +38,7 @@ export const LEGACY_HUB_REDIRECTS: LegacyRedirect[] = [
   { source: "/changes/:path*", destination: "/decisions" },
   { source: "/command", destination: "/competition?tab=command" },
   { source: "/my-day", destination: "/competition?tab=my-day" },
-  { source: "/strategy", destination: "/competition?tab=strategy" },
+  { source: "/strategy", destination: "/competition?tab=strategy", subTabs: ["picks"] },
   { source: "/scouting", destination: "/competition?tab=scouting" },
   { source: "/pick-clock", destination: "/competition?tab=pick-clock" },
   { source: "/chemistry", destination: "/competition?tab=chemistry" },
@@ -68,15 +78,34 @@ export const LEGACY_HUB_REDIRECTS: LegacyRedirect[] = [
 
 /** Next.js overwrites the request query when the destination already has one. */
 export function expandLegacyRedirects(entries: LegacyRedirect[] = LEGACY_HUB_REDIRECTS): ExpandedRedirect[] {
-  return entries.flatMap(({ source, destination }) => {
+  return entries.flatMap(({ source, destination, subTabs }) => {
     if (!destination.includes("?")) {
       return [{ source, destination, permanent: false as const }];
     }
     const join = destination.includes("?") ? "&" : "?";
-    return [
+    const orgIdMatch = { type: "query" as const, key: "orgId", value: "(?<orgId>[^&]+)" };
+    // Sub-tab rules go first: Next takes the first rule that matches, and these
+    // are strictly narrower than the catch-alls below. Each needs an orgId and
+    // a no-orgId form, because `has` is an AND.
+    const subRules = (subTabs ?? []).flatMap((sub) => [
       {
         source,
-        has: [{ type: "query" as const, key: "orgId", value: "(?<orgId>[^&]+)" }],
+        has: [{ type: "query" as const, key: "tab", value: sub }, orgIdMatch],
+        destination: `${destination}${join}sub=${sub}&orgId=:orgId`,
+        permanent: false as const,
+      },
+      {
+        source,
+        has: [{ type: "query" as const, key: "tab", value: sub }],
+        destination: `${destination}${join}sub=${sub}`,
+        permanent: false as const,
+      },
+    ]);
+    return [
+      ...subRules,
+      {
+        source,
+        has: [orgIdMatch],
         destination: `${destination}${join}orgId=:orgId`,
         permanent: false as const,
       },

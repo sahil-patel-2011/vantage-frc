@@ -80,7 +80,7 @@ function ScoutCoverageLiveRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related scout-coverage-live-related" aria-label="Related competition tools">
       {links.map((link) => (
-        <a href={link.href}>{link.label}</a>
+        <a key={link.href} href={link.href}>{link.label}</a>
       ))}
     </nav>
   );

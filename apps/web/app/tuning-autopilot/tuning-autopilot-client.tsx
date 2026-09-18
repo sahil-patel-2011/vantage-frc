@@ -66,7 +66,7 @@ function TuningRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related tuning-autopilot-related" aria-label="Related build tools">
       {links.map((link) => (
-        <a href={link.href}>{link.label}</a>
+        <a key={link.href} href={link.href}>{link.label}</a>
       ))}
     </nav>
   );

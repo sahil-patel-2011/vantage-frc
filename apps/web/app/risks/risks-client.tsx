@@ -55,7 +55,7 @@ function RisksRelated({ orgId }: { orgId: string }) {
     <div className="risks-related">
       <nav className="product-hub-related risks-hub-related" aria-label="Related reliability tools">
         {primary.map((link) => (
-          <a href={link.href}>{link.label}</a>
+          <a key={link.href} href={link.href}>{link.label}</a>
         ))}
       </nav>
       <TeamHubRelated orgId={orgId} include={[...RISKS_TEAM_RELATED_INCLUDE]} />

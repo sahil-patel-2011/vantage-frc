@@ -58,7 +58,7 @@ function VendorLeadTimesRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related vendor-lead-times-related" aria-label="Related procurement tools">
       {links.map((link) => (
-        <a href={link.href}>{link.label}</a>
+        <a key={link.href} href={link.href}>{link.label}</a>
       ))}
     </nav>
   );

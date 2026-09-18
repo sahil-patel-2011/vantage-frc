@@ -20,7 +20,7 @@ export function OvernightRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related overnight-intel-related" aria-label="Related competition tools">
       {links.map((link) => (
-        <a href={link.href}>{link.label}</a>
+        <a key={link.href} href={link.href}>{link.label}</a>
       ))}
     </nav>
   );

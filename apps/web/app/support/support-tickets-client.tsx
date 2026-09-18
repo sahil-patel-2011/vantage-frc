@@ -50,7 +50,7 @@ function SupportRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related support-tickets-related" aria-label="Related account tools">
       {links.map((link) => (
-        <a href={link.href}>{link.label}</a>
+        <a key={link.href} href={link.href}>{link.label}</a>
       ))}
     </nav>
   );

@@ -86,7 +86,7 @@ function AwardTrackerRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related award-tracker-related" aria-label="Related business tools">
       {links.map((link) => (
-        <a href={link.href}>{link.label}</a>
+        <a key={link.href} href={link.href}>{link.label}</a>
       ))}
     </nav>
   );

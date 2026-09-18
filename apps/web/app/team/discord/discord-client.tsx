@@ -90,12 +90,12 @@ function DiscordRelated({ orgId }: { orgId: string }) {
     <>
       <nav className="product-hub-related team-discord-related" aria-label="Related team tools">
         {links.map((link) => (
-          <a href={link.href}>{link.label}</a>
+          <a key={link.href} href={link.href}>{link.label}</a>
         ))}
       </nav>
       <nav className="product-hub-related team-discord-connections" aria-label="Related connection tools">
         {connectionLinks.map((link) => (
-          <a href={link.href}>{link.label}</a>
+          <a key={link.href} href={link.href}>{link.label}</a>
         ))}
       </nav>
     </>

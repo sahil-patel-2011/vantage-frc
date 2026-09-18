@@ -55,7 +55,7 @@ function BuddyRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related onboarding-buddy-related" aria-label="Related team tools">
       {links.map((link) => (
-        <a href={link.href}>{link.label}</a>
+        <a key={link.href} href={link.href}>{link.label}</a>
       ))}
     </nav>
   );

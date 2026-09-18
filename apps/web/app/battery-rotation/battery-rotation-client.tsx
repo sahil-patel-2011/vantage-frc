@@ -62,7 +62,7 @@ function BatteryRotationRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related battery-rotation-related" aria-label="Related battery tools">
       {links.map((link) => (
-        <a href={link.href}>{link.label}</a>
+        <a key={link.href} href={link.href}>{link.label}</a>
       ))}
     </nav>
   );

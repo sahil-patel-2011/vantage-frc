@@ -64,7 +64,7 @@ function FmeaRelated({ orgId }: { orgId: string }) {
     <div className="fmea-related">
       <nav className="product-hub-related fmea-hub-related" aria-label="Related reliability tools">
         {primary.map((link) => (
-          <a href={link.href}>{link.label}</a>
+          <a key={link.href} href={link.href}>{link.label}</a>
         ))}
       </nav>
       <TeamHubRelated orgId={orgId} active="fmea" include={[...FMEA_TEAM_RELATED_INCLUDE]} />

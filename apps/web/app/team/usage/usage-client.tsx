@@ -149,7 +149,7 @@ function UsageRelatedStrip({ orgId }: { orgId: string }) {
     <nav className="product-hub-related ai-budgets-related" aria-label="Related AI usage tools">
       <a href={budgetsHref}>Budgets</a>
       {links.map((link) => (
-        <a href={link.href}>{link.label}</a>
+        <a key={link.href} href={link.href}>{link.label}</a>
       ))}
     </nav>
   );

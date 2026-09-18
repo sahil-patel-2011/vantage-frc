@@ -52,6 +52,10 @@ function readTab(hub: ProductHubDef): string {
 function writeTabToUrl(tab: string, defaultTab: string) {
   if (typeof window === "undefined") return;
   const url = new URL(window.location.href);
+  // `sub` names a view inside whichever tab we are leaving, so it means
+  // nothing in the next one — carrying it over would make a reload land
+  // somewhere the user never chose.
+  url.searchParams.delete("sub");
   if (tab === defaultTab) url.searchParams.delete("tab");
   else url.searchParams.set("tab", tab);
   window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);

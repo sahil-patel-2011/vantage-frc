@@ -69,7 +69,7 @@ function DecisionsRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related decision-log-related" aria-label="Related decision tools">
       {links.map((link) => (
-        <a href={link.href}>{link.label}</a>
+        <a key={link.href} href={link.href}>{link.label}</a>
       ))}
     </nav>
   );

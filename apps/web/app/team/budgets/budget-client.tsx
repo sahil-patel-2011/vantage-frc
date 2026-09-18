@@ -54,7 +54,7 @@ function BudgetsRelatedStrip({ orgId }: { orgId: string }) {
   return (
     <nav className="product-hub-related ai-budgets-related" aria-label="Related AI budget tools">
       {links.map((link) => (
-        <a href={link.href}>{link.label}</a>
+        <a key={link.href} href={link.href}>{link.label}</a>
       ))}
     </nav>
   );

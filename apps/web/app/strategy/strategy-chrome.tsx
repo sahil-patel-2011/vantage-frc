@@ -22,7 +22,7 @@ export function StrategyRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related strategy-related" aria-label="Related strategy tools">
       {links.map((link) => (
-        <a href={link.href}>{link.label}</a>
+        <a key={link.href} href={link.href}>{link.label}</a>
       ))}
     </nav>
   );

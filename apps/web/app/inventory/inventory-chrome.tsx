@@ -31,7 +31,7 @@ export function InventoryRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related inventory-related" aria-label="Related inventory tools">
       {links.map((link) => (
-        <a href={link.href}>{link.label}</a>
+        <a key={link.href} href={link.href}>{link.label}</a>
       ))}
     </nav>
   );

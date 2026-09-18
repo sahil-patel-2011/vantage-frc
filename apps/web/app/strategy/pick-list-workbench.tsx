@@ -158,7 +158,9 @@ function PickDeskRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related pick-desk-related" aria-label="Related competition tools">
       {links.map((link) => (
-        <a href={link.href}>{link.label}</a>
+        <a key={link.id} href={link.href}>
+          {link.label}
+        </a>
       ))}
     </nav>
   );

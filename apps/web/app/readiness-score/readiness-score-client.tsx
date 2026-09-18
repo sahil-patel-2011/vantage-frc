@@ -114,7 +114,7 @@ function ReadinessRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related readiness-score-related" aria-label="Related build tools">
       {links.map((link) => (
-        <a href={link.href}>{link.label}</a>
+        <a key={link.href} href={link.href}>{link.label}</a>
       ))}
     </nav>
   );

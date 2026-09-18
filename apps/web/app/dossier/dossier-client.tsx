@@ -65,7 +65,7 @@ function DossierRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related dossier-related" aria-label="Related competition tools">
       {links.map((link) => (
-        <a href={link.href}>{link.label}</a>
+        <a key={link.href} href={link.href}>{link.label}</a>
       ))}
     </nav>
   );

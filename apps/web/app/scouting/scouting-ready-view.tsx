@@ -8,7 +8,7 @@ import { EmptyState, FormRow, PageHeader, Panel, ToolStrip, Button } from "../..
 import { ExportButton } from "../../components/ui/export-button";
 import { CopyShareLink } from "../../components/copy-share-link";
 import { OfflineBanner } from "../../components/offline-banner";
-import { ASSIGNMENTS_ARE_SUGGESTIONS_COPY } from "../../lib/scouting/scout-target";
+import { ASSIGNMENTS_ARE_SUGGESTIONS_COPY, groupScoutTargets } from "../../lib/scouting/scout-target";
 import { ScoutTargetByHand } from "./scout-target-by-hand";
 import { VenueShortcutCheatsheet, type VenueShortcut } from "../../hooks/use-venue-shortcuts";
 import { formatDraftSavedAgo, payloadHasDraftContent } from "../../lib/scouting/draft-autosave";
@@ -473,13 +473,20 @@ return (
                     }}
                   >
                     <option value="|">Select match and team</option>
-                    {matchOptions.map((option) => (
-                      <option
-                        key={`${option.matchKey}-${option.teamKey}`}
-                        value={`${option.matchKey}|${option.teamKey}`}
-                      >
-                        {option.assigned ? `★ ${option.label} · yours` : option.label}
-                      </option>
+                    {/* Grouped by match. Flat, a 36-match event is 216 rows in
+                        one scroll, and the scout is looking for one of them
+                        while the match they want is starting. */}
+                    {groupScoutTargets(matchOptions).map((group) => (
+                      <optgroup key={group.key} label={group.label}>
+                        {group.options.map((option) => (
+                          <option
+                            key={`${option.matchKey}-${option.teamKey}`}
+                            value={`${option.matchKey}|${option.teamKey}`}
+                          >
+                            {option.assigned ? `★ ${option.label} · yours` : option.label}
+                          </option>
+                        ))}
+                      </optgroup>
                     ))}
                   </select>
                 </FormRow>

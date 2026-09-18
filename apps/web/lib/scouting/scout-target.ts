@@ -34,9 +34,29 @@ export type ScoutTargetOption = {
   matchKey: string;
   teamKey: string;
   label: string;
+  /** "QM 7" — the heading this row sits under when the list is grouped. */
+  matchLabel: string;
   /** True when this row is one of yours. Sorted first and labelled. */
   assigned: boolean;
 };
+
+/** The least a row needs for grouping — the select's own row type satisfies it. */
+export type GroupableTarget = {
+  matchKey: string;
+  label: string;
+  matchLabel?: string;
+  assigned?: boolean;
+};
+
+/** One `<optgroup>`: a heading and the rows under it. */
+export type ScoutTargetGroup<T extends GroupableTarget = ScoutTargetOption> = {
+  key: string;
+  label: string;
+  options: T[];
+};
+
+/** Heading for the group that holds a scout's own assignments. */
+export const YOUR_MATCHES_GROUP_LABEL = "Your matches";
 
 /** "frc254" → "254", for a label a human reads at a glance. */
 function teamLabel(teamKey: string): string {
@@ -61,10 +81,12 @@ export function buildScoutTargets(input: {
     const id = `${assignment.matchKey}|${assignment.teamKey}`;
     if (assigned.has(id)) continue;
     assigned.add(id);
+    const matchLabel = `${(assignment.compLevel || "match").toUpperCase()} ${assignment.matchNumber}`;
     options.push({
       matchKey: assignment.matchKey,
       teamKey: assignment.teamKey,
-      label: `${(assignment.compLevel || "match").toUpperCase()} ${assignment.matchNumber} · ${teamLabel(assignment.teamKey)}`,
+      label: `${matchLabel} · ${teamLabel(assignment.teamKey)}`,
+      matchLabel,
       assigned: true,
     });
   }
@@ -79,16 +101,62 @@ export function buildScoutTargets(input: {
       const id = `${match.matchKey}|${teamKey}`;
       if (assigned.has(id)) continue;
       assigned.add(id);
+      const matchLabel = `${(match.compLevel || "match").toUpperCase()} ${match.matchNumber}`;
       options.push({
         matchKey: match.matchKey,
         teamKey,
-        label: `${(match.compLevel || "match").toUpperCase()} ${match.matchNumber} · ${teamLabel(teamKey)}`,
+        label: `${matchLabel} · ${teamLabel(teamKey)}`,
+        matchLabel,
         assigned: false,
       });
     }
   }
 
   return options;
+}
+
+/**
+ * The same options, grouped for a `<select>`.
+ *
+ * A 36-match event puts 216 robots in one flat dropdown, which is what a scout
+ * was scrolling through to find the one they were about to watch. Grouping by
+ * match turns that into 36 headings of six, and the browser keeps the heading
+ * in view while you scroll inside it.
+ *
+ * Assignments keep their place at the top in a group of their own rather than
+ * being scattered back into the schedule, so "first in the list" still means
+ * what `buildScoutTargets` promises.
+ */
+export function groupScoutTargets<T extends GroupableTarget>(options: T[]): ScoutTargetGroup<T>[] {
+  const yours = options.filter((option) => option.assigned);
+  const groups: ScoutTargetGroup<T>[] = yours.length
+    ? [{ key: "assigned", label: YOUR_MATCHES_GROUP_LABEL, options: yours }]
+    : [];
+
+  // Insertion order, so the schedule stays in schedule order.
+  const byMatch = new Map<string, ScoutTargetGroup<T>>();
+  for (const option of options) {
+    if (option.assigned) continue;
+    const existing = byMatch.get(option.matchKey);
+    if (existing) existing.options.push(option);
+    else byMatch.set(option.matchKey, { key: option.matchKey, label: headingFor(option), options: [option] });
+  }
+
+  return [...groups, ...byMatch.values()];
+}
+
+/**
+ * The heading for a row's group.
+ *
+ * `matchLabel` is what `buildScoutTargets` produces, but these options also
+ * arrive from a cached API payload written before that field existed, so fall
+ * back to the part of the label before the team number rather than rendering a
+ * group with no heading at all.
+ */
+function headingFor(option: GroupableTarget): string {
+  if (option.matchLabel?.trim()) return option.matchLabel;
+  const [head] = option.label.split(" · ");
+  return head?.trim() || option.matchKey;
 }
 
 /**
