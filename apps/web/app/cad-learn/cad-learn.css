@@ -1,0 +1,772 @@
+/*
+ * CAD learning track — a documentation surface with one interactive panel.
+ *
+ * Tokens only (--soft-*), so both themes come from soft-ui.css.
+ *
+ * Scoped to .cl-page throughout, and that is not tidiness. The app shell sets
+ * `.module-page label { display: grid }` and `input { width: 100% }`, which
+ * turn the "Done" checkbox row into a ~200px-wide box with its label stacked
+ * underneath, and stretch the URL field's button beside it. Every rule that
+ * touches a label, an input or a button below is prefixed with .cl-page to win
+ * that specificity fight.
+ */
+
+.cl-page {
+  display: block;
+}
+
+.cl-shell {
+  display: grid;
+  grid-template-columns: minmax(200px, 240px) minmax(0, 1fr);
+  gap: 32px;
+  align-items: start;
+}
+
+/* ---------- left rail ---------- */
+
+.cl-side {
+  position: sticky;
+  top: 16px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  padding-right: 8px;
+  font-size: 13px;
+}
+
+.cl-side-title {
+  margin: 0 0 12px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--soft-muted);
+}
+
+.cl-side-group {
+  margin-bottom: 14px;
+}
+
+.cl-side-group > a {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 650;
+  color: var(--soft-ink);
+  text-decoration: none;
+}
+
+.cl-side-group ul {
+  margin: 0;
+  padding: 0 0 0 10px;
+  list-style: none;
+  border-left: 1px solid var(--soft-line);
+}
+
+.cl-side-group li a {
+  display: block;
+  padding: 3px 0 3px 8px;
+  color: var(--soft-muted);
+  text-decoration: none;
+  line-height: 1.35;
+}
+
+.cl-side-group li a:hover {
+  color: var(--soft-accent);
+}
+
+.cl-side-done {
+  opacity: 0.65;
+}
+
+/* ---------- main column ---------- */
+
+.cl-main {
+  min-width: 0;
+  /* Prose measure. Lesson instructions become unreadable full-bleed. */
+  max-width: 74ch;
+}
+
+.cl-kicker {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--soft-accent);
+}
+
+.cl-hero h1 {
+  margin: 0 0 10px;
+  font-size: clamp(26px, 3.4vw, 36px);
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+}
+
+.cl-lead {
+  margin: 0 0 18px;
+  color: var(--soft-muted);
+  line-height: 1.6;
+}
+
+.cl-progress {
+  margin: 14px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.cl-muted {
+  color: var(--soft-muted);
+  font-weight: 400;
+}
+
+/* ---------- units and lessons ---------- */
+
+.cl-unit {
+  margin-top: 40px;
+  padding-top: 24px;
+  border-top: 1px solid var(--soft-line);
+}
+
+.cl-unit h2 {
+  margin: 0 0 6px;
+  font-size: 21px;
+  letter-spacing: -0.01em;
+}
+
+.cl-blurb {
+  margin: 0 0 8px;
+  color: var(--soft-muted);
+  line-height: 1.6;
+}
+
+/* Visible on hover only, so headings stay clean and every lesson stays
+   linkable — this page gets shared one lesson at a time. */
+.cl-anchor {
+  margin-right: 6px;
+  color: var(--soft-line);
+  text-decoration: none;
+  opacity: 0;
+}
+
+.cl-unit h2:hover .cl-anchor,
+.cl-lesson h3:hover .cl-anchor,
+.cl-anchor:focus-visible {
+  opacity: 1;
+  color: var(--soft-accent);
+}
+
+.cl-lesson {
+  margin-top: 24px;
+  padding: 18px;
+  border: 1px solid var(--soft-line);
+  border-radius: var(--soft-radius, 16px);
+  background: var(--soft-card);
+  /* Anchored jumps otherwise land under the sticky app chrome. */
+  scroll-margin-top: 24px;
+}
+
+.cl-lesson-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cl-lesson-head h3 {
+  margin: 0 0 2px;
+  font-size: 17px;
+}
+
+.cl-page .cl-done {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  min-height: 36px;
+  font-size: 13px;
+  color: var(--soft-muted);
+}
+
+.cl-page .cl-done input[type="checkbox"] {
+  width: auto;
+  min-width: 0;
+  min-height: 0;
+  flex: 0 0 auto;
+}
+
+.cl-why {
+  margin: 12px 0;
+  padding: 10px 12px;
+  border-left: 3px solid var(--soft-accent);
+  background: var(--soft-bg);
+  line-height: 1.55;
+}
+
+.cl-steps {
+  margin: 12px 0;
+  padding-left: 20px;
+  line-height: 1.65;
+}
+
+.cl-steps li {
+  margin-bottom: 5px;
+}
+
+/* Every lesson makes something. The build line reads as the outcome, not as
+   another instruction in the list above it. */
+.cl-practice {
+  margin: 12px 0;
+  padding: 10px 12px;
+  border: 1px dashed var(--soft-line);
+  border-radius: var(--soft-radius-sm, 12px);
+  line-height: 1.55;
+  font-size: 14px;
+}
+
+.cl-verify {
+  margin: 12px 0 0;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+/* ---------- alternative methods ---------- */
+
+.cl-methods {
+  margin: 12px 0;
+}
+
+.cl-method-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin-bottom: -1px;
+}
+
+.cl-method-tab {
+  padding: 6px 14px;
+  border: 1px solid var(--soft-line);
+  border-bottom-color: transparent;
+  border-radius: 10px 10px 0 0;
+  background: var(--soft-bg);
+  color: var(--soft-muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cl-method-tab.active {
+  background: var(--soft-card);
+  color: var(--soft-ink);
+  border-bottom-color: var(--soft-card);
+}
+
+.cl-method-lines {
+  margin: 0;
+  padding: 12px 14px 12px 32px;
+  border: 1px solid var(--soft-line);
+  border-radius: 0 var(--soft-radius-sm, 12px) var(--soft-radius-sm, 12px) var(--soft-radius-sm, 12px);
+  background: var(--soft-bg);
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+
+.cl-method-note {
+  margin: 6px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--soft-muted);
+}
+
+/* ---------- callouts ---------- */
+
+.cl-callout {
+  margin: 12px 0;
+  padding: 12px 14px;
+  border-radius: var(--soft-radius-sm, 12px);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.cl-callout strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.cl-callout p {
+  margin: 0;
+}
+
+.cl-tip {
+  border: 1px solid var(--soft-line);
+  background: var(--soft-bg);
+}
+
+.cl-tip strong {
+  color: var(--soft-accent);
+}
+
+.cl-warn {
+  border: 1px solid var(--soft-warning-line, #e4d9c5);
+  background: var(--soft-warning-bg, #faf6ef);
+  color: var(--soft-warning-ink, #6b5a3a);
+}
+
+.cl-warn strong {
+  color: var(--soft-warning-ink, #6b5a3a);
+}
+
+html[data-theme="dark"] .cl-warn {
+  border-color: color-mix(in srgb, var(--soft-warning, #c8922a) 40%, transparent);
+  background: color-mix(in srgb, var(--soft-warning, #c8922a) 12%, transparent);
+  color: var(--soft-ink);
+}
+
+html[data-theme="dark"] .cl-warn strong {
+  color: var(--soft-warning, #c8922a);
+}
+
+/* ---------- links ---------- */
+
+.cl-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cl-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 1px solid var(--soft-line);
+  border-radius: var(--soft-radius-sm, 12px);
+  color: var(--soft-ink);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.cl-link:hover {
+  border-color: var(--soft-accent);
+  color: var(--soft-accent);
+}
+
+.cl-link-primary {
+  border-color: var(--soft-accent);
+  background: var(--soft-accent);
+  color: var(--soft-brand-ink, #fff);
+}
+
+.cl-link-primary:hover {
+  color: var(--soft-brand-ink, #fff);
+  filter: brightness(0.96);
+}
+
+/* ---------- the grader ---------- */
+
+.cl-grader {
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px solid var(--soft-line);
+  border-radius: var(--soft-radius-sm, 12px);
+  background: var(--soft-bg);
+}
+
+.cl-grader-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.cl-grader p {
+  margin: 6px 0;
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+
+/* The material assumption is stated on the control itself, not only in the
+   lesson: a comparison on two different materials is meaningless, and the
+   student needs to see that where they act, not where they read. */
+.cl-chip {
+  padding: 3px 10px;
+  border: 1px solid var(--soft-line);
+  border-radius: 999px;
+  background: var(--soft-card);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--soft-muted);
+  white-space: nowrap;
+}
+
+.cl-page .cl-field {
+  display: block;
+  margin: 10px 0 8px;
+  font-size: 13px;
+  color: var(--soft-muted);
+}
+
+.cl-page .cl-field > span {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.cl-page .cl-field input {
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid var(--soft-line);
+  border-radius: var(--soft-radius-sm, 12px);
+  background: var(--soft-card);
+  color: var(--soft-ink);
+  font: inherit;
+  font-size: 14px;
+}
+
+.cl-page .cl-button {
+  min-height: 38px;
+  padding: 8px 16px;
+  border: 1px solid var(--soft-accent);
+  border-radius: var(--soft-radius-sm, 12px);
+  background: var(--soft-accent);
+  color: var(--soft-brand-ink, #fff);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.cl-page .cl-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.cl-note {
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* ---------- results ---------- */
+
+.cl-grade {
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid var(--soft-line);
+  border-radius: var(--soft-radius-sm, 12px);
+  background: var(--soft-card);
+}
+
+.cl-grade-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+  font-size: 12.5px;
+}
+
+.cl-band {
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.cl-band-match {
+  background: color-mix(in srgb, var(--soft-success, #1a7f4b) 16%, transparent);
+  color: var(--soft-success, #1a7f4b);
+}
+
+.cl-band-close {
+  background: color-mix(in srgb, var(--soft-warning, #c8922a) 18%, transparent);
+  color: var(--soft-warning-ink, #8a6a20);
+}
+
+.cl-band-off {
+  background: color-mix(in srgb, var(--soft-danger, #b42318) 14%, transparent);
+  color: var(--soft-danger, #b42318);
+}
+
+html[data-theme="dark"] .cl-band-close {
+  color: var(--soft-warning, #c8922a);
+}
+
+.cl-factors {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.cl-factor {
+  padding: 12px;
+  border: 1px solid var(--soft-line);
+  border-radius: var(--soft-radius-sm, 12px);
+  background: var(--soft-bg);
+}
+
+.cl-factor-label {
+  margin: 0 0 4px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--soft-muted);
+}
+
+.cl-factor-value {
+  margin: 0 0 4px;
+  font-size: 26px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* "Not measured" is a full-size, first-class state next to the two real
+   numbers, rather than a missing card. A blank where a percentage should be
+   reads as a zero, and a zero here would be a score nothing earned. */
+.cl-factor-unknown .cl-factor-value {
+  font-size: 17px;
+  color: var(--soft-muted);
+}
+
+.cl-factor p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.cl-factor-band {
+  margin-top: 6px !important;
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.cl-axes {
+  margin: 10px 0 0;
+  font-size: 12.5px;
+  color: var(--soft-muted);
+}
+
+.cl-axis {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border: 1px solid var(--soft-line);
+  border-radius: 999px;
+  font-variant-numeric: tabular-nums;
+}
+
+.cl-density {
+  margin: 10px 0 0;
+  font-size: 12.5px;
+  color: var(--soft-muted);
+}
+
+.cl-density-bad {
+  color: var(--soft-danger, #b42318);
+  font-weight: 600;
+}
+
+.cl-what {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--soft-line);
+}
+
+.cl-what > strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--soft-accent);
+}
+
+.cl-what ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+
+/* ---------- could-not-measure states ---------- */
+
+.cl-notice {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: var(--soft-radius-sm, 12px);
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+
+.cl-notice strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.cl-notice p {
+  margin: 4px 0 0;
+}
+
+.cl-notice-setup {
+  border: 1px solid var(--soft-line);
+  background: var(--soft-card);
+}
+
+.cl-notice-setup strong {
+  color: var(--soft-accent);
+}
+
+.cl-notice-fail {
+  border: 1px solid var(--soft-warning-line, #e4d9c5);
+  background: var(--soft-warning-bg, #faf6ef);
+  color: var(--soft-warning-ink, #6b5a3a);
+}
+
+html[data-theme="dark"] .cl-notice-fail {
+  border-color: color-mix(in srgb, var(--soft-warning, #c8922a) 40%, transparent);
+  background: color-mix(in srgb, var(--soft-warning, #c8922a) 12%, transparent);
+  color: var(--soft-ink);
+}
+
+/* ---------- folds and tables ---------- */
+
+.cl-fold {
+  margin-top: 10px;
+  font-size: 14px;
+}
+
+.cl-fold > summary {
+  padding: 6px 0;
+  color: var(--soft-muted);
+  cursor: pointer;
+  list-style: revert;
+}
+
+.cl-fold > summary:hover {
+  color: var(--soft-accent);
+}
+
+.cl-fold-body {
+  padding: 8px 0 4px;
+}
+
+.cl-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.cl-table th {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--soft-line);
+  text-align: left;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--soft-muted);
+}
+
+.cl-table td {
+  padding: 7px 8px;
+  border-top: 1px solid var(--soft-line);
+  vertical-align: middle;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- reference table ---------- */
+
+.cl-ref {
+  margin-top: 18px;
+}
+
+.cl-ref h3 {
+  margin: 0 0 6px;
+  font-size: 14px;
+}
+
+.cl-ref-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+
+.cl-ref-table td {
+  padding: 8px 10px;
+  border-top: 1px solid var(--soft-line);
+  vertical-align: top;
+  line-height: 1.5;
+}
+
+/* The job is what gets scanned for here, not the tool — the reader knows what
+   they want to do and not what it is called, which is the reverse of the
+   programming guide's command table. */
+.cl-ref-table td:first-child {
+  width: 52%;
+}
+
+.cl-ref-table td:last-child {
+  color: var(--soft-muted);
+}
+
+.cl-ref-table code {
+  font-family: var(--soft-font-mono, ui-monospace, Menlo, Consolas, monospace);
+  font-size: 12.5px;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 900px) {
+  .cl-shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cl-side {
+    position: static;
+    max-height: none;
+    padding: 12px 14px;
+    border: 1px solid var(--soft-line);
+    border-radius: var(--soft-radius, 16px);
+  }
+
+  .cl-side-group ul {
+    display: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .cl-ref-table td:first-child {
+    width: auto;
+  }
+
+  .cl-ref-table tr {
+    display: grid;
+    padding: 6px 0;
+  }
+
+  .cl-ref-table td {
+    border-top: 0;
+    padding: 2px 0;
+  }
+
+  .cl-ref-table tr + tr {
+    border-top: 1px solid var(--soft-line);
+  }
+}

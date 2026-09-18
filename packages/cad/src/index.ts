@@ -27,6 +27,7 @@ export type { CadBrainMode, CadSetupTarget, CadTeamProfile, CadUserPreferences, 
 export * from "./mock-fusion-plugin";
 export * from "./agent-loop";
 export * from "./onshape";
+export * from "./mass-properties";
 export { firstPlannedId } from "./first-planned-id";
 export * from "./onshape-native-dispatch";
 export * from "./onshape-native-entities";
