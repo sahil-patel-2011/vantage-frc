@@ -102,6 +102,24 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
   const [tab, setTab] = useState<Tab>("calendar");
   const [filterSubteamId, setFilterSubteamId] = useState<string | null>(null);
   const [mode, setMode] = useState<CalendarViewMode>("week");
+  /**
+   * A phone opens on the list, not the week grid.
+   *
+   * The week grid is seven columns of a time axis. At 375px it is 640px wide
+   * inside a sideways scroller, so the calendar opened on Sunday through
+   * Tuesday and you dragged the grid sideways to find out when your next match
+   * is. A single day fits, but a day with nothing on it is a blank screen even
+   * when the week is full — which is what Friday looked like while sixteen
+   * matches sat on Thursday. The list shows whatever is actually scheduled,
+   * grouped by day, in the order it happens. Week is one tap away.
+   *
+   * This runs on mount only, so it sets the starting view and never overrides
+   * a mode the reader picked. Rotating a tablet does not yank the view either.
+   */
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") return;
+    if (window.matchMedia("(max-width: 720px)").matches) setMode("agenda");
+  }, []);
   const [anchor, setAnchor] = useState(() => new Date());
   const [quickDay, setQuickDay] = useState<string | null>(null);
   const [quickHour, setQuickHour] = useState<number | null>(null);

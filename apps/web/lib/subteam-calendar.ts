@@ -587,7 +587,11 @@ export function tbaMatchesToCalendarEvents(rows: TbaMatchCalendarRow[], teamKey:
       startsAt,
       endsAt: new Date(start.getTime() + TBA_MATCH_MS).toISOString(),
       location: row.eventName?.trim() || "",
-      notes: bumper === "red" ? "RED bumpers" : "BLUE bumpers",
+      // The bumper colour is already in the title (which is what an exported
+      // feed shows) and in `bumper`, which the card renders as a colour-coded
+      // RED/BLUE chip. A notes line saying "RED bumpers" made it three times
+      // in one row, the third as a paragraph directly under the second.
+      notes: "",
       subteamId: null,
       subteamName: null,
       subteamColor: bumper === "red" ? TBA_RED : TBA_BLUE,

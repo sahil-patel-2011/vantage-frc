@@ -22,7 +22,7 @@ import {
 } from "../../../lib/subteam-calendar";
 import { toLocalInputValue } from "../../../lib/calendar-ai/pick";
 import {
-  fmtWhen,
+  fmtRange,
   isSeriesEvent,
   type ActionBody,
   type EventPrefill,
@@ -202,8 +202,7 @@ export function EventCard({
       <div className="tc-event-meta">
         <span className="tc-chip">{event.source === "tba" ? "Match" : SUBTEAM_EVENT_KIND_LABELS[event.kind]}</span>
         <span>
-          {fmtWhen(event.startsAt)}
-          {event.endsAt ? ` → ${fmtWhen(event.endsAt)}` : ""}
+          {fmtRange(event.startsAt, event.endsAt)}
         </span>
         {event.source === "tba" ? (
           <span style={{ color: accent }}>{event.bumper === "red" ? "RED" : "BLUE"}</span>

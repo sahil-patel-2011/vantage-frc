@@ -332,7 +332,9 @@ describe("TBA match calendar overlay", () => {
     expect(events[0]!.title).toBe("Qualification match 12 · red bumpers");
     expect(events[0]!.source).toBe("tba");
     expect(events[0]!.bumper).toBe("red");
-    expect(events[0]!.notes).toBe("RED bumpers");
+    // No notes: the title carries the colour for an exported feed, and the
+    // card colour-codes `bumper`. A third copy was just a repeated line.
+    expect(events[0]!.notes).toBe("");
     expect(events[0]!.location).toBe("Week 1");
     expect(isReadonlyCalendarEvent(events[0]!)).toBe(true);
   });
