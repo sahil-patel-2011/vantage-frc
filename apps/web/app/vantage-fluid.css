@@ -1,0 +1,178 @@
+/**
+ * Motion and material tokens — the two things that make an interface feel
+ * built rather than assembled.
+ *
+ * Before this sheet the product had five easing curves and six durations,
+ * hardcoded at the call site: `.28s cubic-bezier(.2,.7,.2,1)` in one place,
+ * `.18s ease` in the next, `.32s cubic-bezier(.22,1,.36,1)` in a third. Three
+ * of those curves were drawing the same shape with different numbers, so the
+ * differences were not decisions — they were drift. Nothing shared a rhythm,
+ * and an interface where every element moves to its own beat reads as cheap
+ * no matter how good the pixels are.
+ *
+ * Two references set the brief:
+ *
+ * iOS 27 (WWDC 2026) walked Liquid Glass back from iOS 26 in a specific
+ * direction: *less* default transparency, and glass that diffuses what is
+ * behind it rather than merely showing it, because iOS 26 shipped surfaces
+ * people could not read. The materials below follow that correction — heavier
+ * tint, stronger blur and saturation, and an opaque fallback. Apple also added
+ * a user slider between clearer and more tinted glass; `data-clarity` is ours.
+ *
+ * Tesla's in-car UI is the other half: context first, few taps, big targets,
+ * colour spent on state rather than decoration. That mostly constrains what
+ * this sheet does NOT do — no gradient fills, no decorative motion, and glass
+ * only on chrome that floats over content, never on content itself. Blurring
+ * a card that holds a match score costs GPU and buys nothing.
+ *
+ * Tokens only. The rules that apply them live in vantage-chrome.css, which
+ * has to load after soft-ui.css; this file loads from the root layout so
+ * marketing routes get the curves too.
+ */
+
+:root {
+  /* -------------------------------------------------------------- easing --
+     One family. `--ease-out` is the curve twelve existing rules already used;
+     the nine that used cubic-bezier(.22,.8,.2,1) were drawing the same shape,
+     so both resolve here. */
+  --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+  /* A longer tail: travels fast, then settles. For anything entering the
+     screen, where the eye needs a moment to catch up with the arrival. */
+  --ease-settle: cubic-bezier(0.22, 1, 0.36, 1);
+  /* Symmetric, for something moving between two states it will move back
+     between — a toggle, a tab indicator. */
+  --ease-in-out: cubic-bezier(0.45, 0, 0.55, 1);
+  /* Leaving. Accelerates away; nothing needs to watch an exit finish. */
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+
+  /* A real spring, sampled. Overshoots ~1.7% and settles — the difference
+     between a control that responds and one that merely changes. Reserved for
+     press and pop, never for anything holding text at the moment it moves. */
+  --ease-spring: linear(
+    0, 0.006, 0.025 2.8%, 0.101 6.1%, 0.539 18.9%, 0.721 25.3%, 0.849 31.5%,
+    0.937 38.1%, 0.968 41.8%, 0.991 45.7%, 1.006 50.1%, 1.015 55%, 1.017 63.9%, 1.001
+  );
+
+  /* ----------------------------------------------------------- durations --
+     Tied to how far a thing travels, not to what kind of thing it is. A tint
+     change feels instant at 120ms; a drawer crossing the screen needs 380ms
+     or it teleports.
+
+     Deliberately NOT expressed as `calc(var(--motion) * …)`, which is what
+     this sheet tried first. `--motion` is declared twice in this codebase
+     with two incompatible meanings — `1` in system.css (a flag, so that
+     `html[data-motion="reduced"]` can zero it) and `240ms` in soft-ui.css
+     (a duration). soft-ui.css loads later and wins, so the flag is dead and
+     multiplying by it produced `calc(.24s * .26s)`: time times time, which is
+     invalid, which silently disables the transition. Reduced motion is
+     handled below instead, explicitly, in both of the places that express it. */
+  --dur-tint: 120ms;
+  --dur-press: 180ms;
+  --dur-move: 260ms;
+  --dur-sheet: 380ms;
+  --dur-page: 520ms;
+
+  /* ----------------------------------------------------------- materials --
+     `--mat-tint` is the share of solid background in the blend. iOS 26 sat
+     near 60% and was criticised for it; iOS 27's correction is roughly this.
+     Chrome that floats over scrolling content has to stay readable when a
+     photo or a dense table passes underneath. */
+  --mat-tint: 82%;
+  --mat-blur: 24px;
+  --mat-sat: 180%;
+
+  /* Three weights, same recipe. Thin for something small over a quiet page,
+     thick for a panel that has to win against whatever is behind it. */
+  --material-thin: color-mix(in srgb, var(--bg) calc(var(--mat-tint) - 12%), transparent);
+  --material: color-mix(in srgb, var(--bg) var(--mat-tint), transparent);
+  --material-thick: color-mix(in srgb, var(--bg) calc(var(--mat-tint) + 10%), transparent);
+  --material-filter: saturate(var(--mat-sat)) blur(var(--mat-blur));
+
+  /* The edge is what sells glass. A hairline of light along the top catches
+     like a bevel; without it a blurred panel reads as a smudge. */
+  --material-edge: inset 0 1px 0 color-mix(in srgb, #fff 55%, transparent);
+  --material-line: color-mix(in srgb, var(--line) 50%, transparent);
+}
+
+/* Dark surfaces need a brighter tint share, not a dimmer one: a dark
+   translucent panel over dark content has almost no contrast to work with. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --mat-tint: 86%;
+    --mat-sat: 150%;
+    --material-edge: inset 0 1px 0 color-mix(in srgb, #fff 12%, transparent);
+  }
+}
+
+:root[data-theme="dark"] {
+  --mat-tint: 86%;
+  --mat-sat: 150%;
+  --material-edge: inset 0 1px 0 color-mix(in srgb, #fff 12%, transparent);
+}
+
+/* ------------------------------------------------------------- clarity --
+   iOS 27 shipped a slider between clearer and more tinted glass, because the
+   right amount of transparency depends on the content behind it and on the
+   eyes in front of it. Same idea, three stops.
+
+   "solid" is not a downgrade — in a bright pit with a phone at arm's length
+   it is the legible choice, and it composites cheaper on an old tablet.
+
+   Each stop restates the three material colours outright instead of moving
+   `--mat-tint` and letting them re-derive. Deriving looked tidier and did not
+   work: a `background` whose value is `color-mix(in srgb, var(--bg)
+   var(--mat-tint), transparent)` keeps its original alpha when only
+   `--mat-tint` changes on the root — `backdrop-filter` tracked the change and
+   `background-color` did not, so "solid" stayed see-through. Restating them is
+   three more lines and it actually switches. */
+:root[data-clarity="clear"] {
+  --mat-tint: 66%;
+  --mat-blur: 30px;
+  --material-thin: color-mix(in srgb, var(--bg) 54%, transparent);
+  --material: color-mix(in srgb, var(--bg) 66%, transparent);
+  --material-thick: color-mix(in srgb, var(--bg) 76%, transparent);
+}
+
+:root[data-clarity="solid"] {
+  --mat-tint: 100%;
+  --mat-blur: 0px;
+  --mat-sat: 100%;
+  --material-thin: var(--bg);
+  --material: var(--bg);
+  --material-thick: var(--bg);
+  --material-filter: none;
+}
+
+/* Everything above assumes the browser can blur what is behind an element.
+   Where it cannot, transparency alone leaves text over text, so the materials
+   go solid rather than staying pretty. */
+@supports not (backdrop-filter: blur(1px)) {
+  :root {
+    --material-thin: var(--bg);
+    --material: var(--bg);
+    --material-thick: var(--bg);
+    --material-filter: none;
+  }
+}
+
+/* -------------------------------------------------------- reduced motion --
+   Two paths express this: the OS setting, and the in-app preference for the
+   JavaScript-driven animations a media query cannot reach. Both zero the
+   scale, so no rule that uses these tokens needs its own escape hatch. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-tint: 0ms;
+    --dur-press: 0ms;
+    --dur-move: 0ms;
+    --dur-sheet: 0ms;
+    --dur-page: 0ms;
+  }
+}
+
+html[data-motion="reduced"] {
+  --dur-tint: 0ms;
+  --dur-press: 0ms;
+  --dur-move: 0ms;
+  --dur-sheet: 0ms;
+  --dur-page: 0ms;
+}

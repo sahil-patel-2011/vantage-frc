@@ -288,7 +288,7 @@ export function DashboardHomeView(props: {
           <h1 className="dash-hero-team">
             {me.teamNumber ? String(me.teamNumber) : (me.orgName ?? "Your team")}
           </h1>
-          {/* The number above is already six feet tall. A line reading
+          {/* The number above still anchors the page. A line reading
               "Team 6925" under a huge "6925" is the same fact twice, so the
               name only appears when it is actually a name. */}
           {me.teamNumber && orgNameAddsDetail(me.teamNumber, me.orgName) ? (

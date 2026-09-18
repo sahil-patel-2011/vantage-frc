@@ -15,9 +15,23 @@ export type DensityPreference = (typeof DENSITY_KEYS)[number];
 export const MOTION_KEYS = ["full", "reduced"] as const;
 export type MotionPreference = (typeof MOTION_KEYS)[number];
 
+/**
+ * How translucent the floating chrome is — the top bar, the tab pill, the
+ * drawer.
+ *
+ * iOS 27 added a slider for exactly this after iOS 26 shipped glass people
+ * could not read, and the reason generalises: the right amount of
+ * transparency depends on what is behind it and on the eyes in front of it.
+ * "solid" is not a downgrade — outdoors, on a phone at arm's length, it is
+ * the legible choice, and it composites cheaper on an old tablet in the pit.
+ */
+export const CLARITY_KEYS = ["clear", "regular", "solid"] as const;
+export type ClarityPreference = (typeof CLARITY_KEYS)[number];
+
 export type AppearancePrefs = {
   density: DensityPreference;
   motion: MotionPreference;
+  clarity: ClarityPreference;
   /** false = ignore the team accent and stay on the neutral Vantage blue. */
   teamAccent: boolean;
 };
@@ -25,6 +39,7 @@ export type AppearancePrefs = {
 export const DEFAULT_APPEARANCE_PREFS: AppearancePrefs = {
   density: "comfortable",
   motion: "full",
+  clarity: "regular",
   teamAccent: true,
 };
 
@@ -59,6 +74,9 @@ export function appearanceAttributes(prefs: AppearancePrefs): Record<string, str
   return {
     "data-density": prefs.density === "compact" ? "compact" : null,
     "data-motion": prefs.motion === "reduced" ? "reduced" : null,
+    // "regular" is what the stylesheet already does, so it stays off the
+    // element — an attribute that changes nothing is a thing to debug later.
+    "data-clarity": prefs.clarity === "regular" ? null : prefs.clarity,
   };
 }
 
@@ -70,6 +88,10 @@ function isMotion(value: unknown): value is MotionPreference {
   return MOTION_KEYS.includes(value as MotionPreference);
 }
 
+function isClarity(value: unknown): value is ClarityPreference {
+  return CLARITY_KEYS.includes(value as ClarityPreference);
+}
+
 /** Tolerant of partial / legacy / hostile JSON — always returns a complete object. */
 export function parseAppearancePrefs(value: unknown): AppearancePrefs {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -79,6 +101,7 @@ export function parseAppearancePrefs(value: unknown): AppearancePrefs {
   return {
     density: isDensity(record.density) ? record.density : DEFAULT_APPEARANCE_PREFS.density,
     motion: isMotion(record.motion) ? record.motion : DEFAULT_APPEARANCE_PREFS.motion,
+    clarity: isClarity(record.clarity) ? record.clarity : DEFAULT_APPEARANCE_PREFS.clarity,
     teamAccent:
       typeof record.teamAccent === "boolean"
         ? record.teamAccent
@@ -88,5 +111,10 @@ export function parseAppearancePrefs(value: unknown): AppearancePrefs {
 
 /** True when the two preference sets would render identically. */
 export function appearanceEquals(a: AppearancePrefs, b: AppearancePrefs): boolean {
-  return a.density === b.density && a.motion === b.motion && a.teamAccent === b.teamAccent;
+  return (
+    a.density === b.density &&
+    a.motion === b.motion &&
+    a.clarity === b.clarity &&
+    a.teamAccent === b.teamAccent
+  );
 }

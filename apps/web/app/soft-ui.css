@@ -31,7 +31,7 @@ body.has-app-shell .app-topbar{display:none}
   padding:0 16px;padding-top:env(safe-area-inset-top);
   background:color-mix(in srgb,var(--bg) 78%,transparent);
   border-bottom:1px solid color-mix(in srgb,var(--line) 55%,transparent);
-  backdrop-filter:saturate(1.35) blur(14px);-webkit-backdrop-filter:saturate(1.35) blur(14px);
+  backdrop-filter:saturate(1.35) blur(14px);
 }
 .soft-topbar-lead{display:flex;align-items:center;gap:4px;min-width:0;flex:1}
 .soft-topbar-lead.has-back{gap:0}
@@ -56,7 +56,7 @@ body.has-app-shell .app-topbar{display:none}
 }
 .soft-burger i{
   display:block;height:2px;border-radius:2px;background:currentColor;
-  transition:transform .28s cubic-bezier(.22,1,.36,1),opacity .2s ease,width .28s ease;
+  transition:transform .28s var(--ease-settle),opacity .2s ease,width .28s ease;
 }
 .soft-burger i:nth-child(2){width:14px}
 .soft-menu-btn.is-open .soft-burger i:nth-child(1){transform:translateY(7px) rotate(45deg)}
@@ -122,14 +122,14 @@ body.has-app-shell .app-topbar{display:none}
      search box sat between the avatar and the page. Hidden visibility takes the
      panel out of the sequence, delayed so the slide-out still animates. */
   visibility:hidden;
-  transition:transform .32s cubic-bezier(.22,1,.36,1),visibility 0s linear .32s;
+  transition:transform .32s var(--ease-settle),visibility 0s linear .32s;
   box-shadow:none;will-change:transform;
   overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
   display:flex;flex-direction:column;
 }
 .soft-drawer.open{
   transform:translateX(0);box-shadow:24px 0 48px rgba(15,20,28,.14);
-  visibility:visible;transition:transform .32s cubic-bezier(.22,1,.36,1),visibility 0s;
+  visibility:visible;transition:transform .32s var(--ease-settle),visibility 0s;
 }
 .soft-drawer-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
 .soft-drawer-brand{display:flex;align-items:center;gap:10px}
@@ -320,7 +320,7 @@ body.has-app-shell .app-topbar{display:none}
 .soft-nav-group{margin:0}
 .soft-nav-caret{
   display:grid;place-items:center;width:18px;height:18px;color:var(--muted);
-  transform:rotate(0deg);transition:transform .22s cubic-bezier(.22,1,.36,1);
+  transform:rotate(0deg);transition:transform .22s var(--ease-settle);
 }
 .soft-nav-caret svg{width:14px;height:14px}
 .soft-nav-caret.open{transform:rotate(90deg)}
@@ -378,7 +378,7 @@ body.soft-nav-panel-open .soft-island{
   padding:5px;border-radius:26px;background:var(--island);
   border:1px solid color-mix(in srgb,var(--line) 55%,transparent);
   box-shadow:var(--shadow-pop);
-  backdrop-filter:saturate(1.8) blur(22px);-webkit-backdrop-filter:saturate(1.8) blur(22px);
+  backdrop-filter:saturate(1.8) blur(22px);
   touch-action:manipulation;
 }
 .soft-island a,.soft-island-more{
@@ -410,7 +410,7 @@ body.soft-nav-panel-open .soft-island{
   padding:10px 12px calc(14px + env(safe-area-inset-bottom,0px));border-radius:var(--radius-lg);background:var(--surface);
   border:1px solid var(--line);box-shadow:0 18px 48px rgba(15,20,28,.22);
   opacity:0;pointer-events:none;
-  transition:opacity .22s ease,transform .28s cubic-bezier(.22,1,.36,1);
+  transition:opacity .22s ease,transform .28s var(--ease-settle);
 }
 .soft-more-sheet.open{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0)}
 .soft-more-handle{width:36px;height:4px;margin:2px auto 10px;border-radius:var(--radius-pill);background:var(--line)}
@@ -949,7 +949,7 @@ body.has-app-shell .dash-widget.is-empty{box-shadow:none}
   padding:10px 12px;border-radius:var(--radius-lg);background:var(--island);
   border:1px solid color-mix(in srgb,var(--line) 70%,transparent);
   box-shadow:var(--shadow-pop);
-  backdrop-filter:saturate(1.4) blur(18px);-webkit-backdrop-filter:saturate(1.4) blur(18px);
+  backdrop-filter:saturate(1.4) blur(18px);
   animation:dash-dock-in .28s ease;
 }
 @keyframes dash-dock-in{
@@ -2839,8 +2839,8 @@ body.has-app-shell .soft-ask-ai-label{display:none}
   --motion-slow:360ms;
   --motion-rise:6px;
   --motion-press:0.985;
-  --motion-ease:cubic-bezier(0.22, 1, 0.36, 1);
-  --motion-ease-io:cubic-bezier(0.45, 0, 0.55, 1);
+  --motion-ease:var(--ease-settle);
+  --motion-ease-io:var(--ease-in-out);
 }
 @keyframes motion-page-in{
   from{opacity:0;transform:translateY(var(--motion-rise))}
@@ -2940,16 +2940,25 @@ body.has-app-shell .soft-ask-ai-label{display:none}
 @keyframes dash-split-grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
 @media (prefers-reduced-motion: reduce){.dash-split-seg{animation:none !important}}
 
-/* Home hero. The team number is the headline because that is the fact you open
-   this page for at an event; the greeting is a courtesy line above it. */
+/* Home hero.
+   This used to set the team number at clamp(38px,6vw,56px), on the reasoning
+   that it is the fact you open this page for at an event. Measured on the
+   rendered page, that made "6925" the largest text on screen at 38px — nearly
+   twice "Nothing you have to do right now" (20px) and "No upcoming match"
+   (20px) — while the same number already sits in the top bar as "Team 6925".
+
+   Your own team number is the one fact on this screen you cannot forget, and
+   spending the page's loudest position on it pushes the things that change
+   below the fold. It still anchors the page; it no longer outshouts the line
+   that tells you what to do. */
 .dash-greeting{
   display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap;
   color:var(--muted);font-size:13px;font-weight:600;
 }
 .dash-hero-team{
   margin:2px 0 0 !important;
-  font-size:clamp(38px,6vw,56px) !important;
-  font-weight:800;letter-spacing:-.045em;line-height:1 !important;
+  font-size:clamp(26px,3.4vw,34px) !important;
+  font-weight:800;letter-spacing:-.04em;line-height:1 !important;
 }
 .dash-hero-org{margin:4px 0 0;color:var(--muted);font-size:13px}
 /* The event, as one tappable row. Only rendered when an event is really set. */

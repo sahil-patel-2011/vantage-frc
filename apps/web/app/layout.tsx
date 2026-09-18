@@ -8,6 +8,8 @@ import Script from "next/script";
 import "./system.css";
 import "./vantage-scan.css";
 import "./vantage-kit.css";
+// Last: motion + material tokens that later sheets and components read.
+import "./vantage-fluid.css";
 import PwaRegister from "./pwa-register";
 import ThemeProvider from "./theme-provider";
 import { ConsentBanner } from "../components/consent-banner";

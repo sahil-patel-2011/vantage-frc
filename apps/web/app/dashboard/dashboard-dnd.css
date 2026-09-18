@@ -371,7 +371,7 @@
   /* Only once the canvas has been measured — otherwise every card animates out
      from the server-render fallback width on first paint. */
   .dash-home .dash-pgrid[data-measured="true"]>.dash-grid-item{
-    transition:transform .2s cubic-bezier(.2,.8,.2,1),width .2s cubic-bezier(.2,.8,.2,1),height .2s cubic-bezier(.2,.8,.2,1),box-shadow .18s ease;
+    transition:transform .2s var(--ease-out),width .2s var(--ease-out),height .2s var(--ease-out),box-shadow .18s ease;
   }
   .dash-home .dash-grid-wrap.dragging .dash-pgrid>.dash-grid-item.is-dragging{transition:none}
   .dash-drop-slot{transition:transform .12s linear,width .12s linear,height .12s linear}

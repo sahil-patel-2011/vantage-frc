@@ -169,7 +169,13 @@ body.has-app-shell {
     radial-gradient(80% 50% at 100% 0%, color-mix(in srgb, var(--scan-gold) 8%, transparent), transparent 48%);
 }
 body.has-app-shell .soft-topbar {
-  background: color-mix(in srgb, var(--bg) 72%, var(--scan-navy-soft));
+  /* Was an opaque navy-tinted mix, which cancelled the blur behind it — a
+     backdrop-filter under a solid fill does nothing at all. The tint is kept,
+     mixed into the translucent material instead of replacing it, so the bar
+     still reads as this product rather than as generic glass. This rule
+     outranks the plain .soft-topbar selector in vantage-chrome.css, so the
+     material has to come in here. */
+  background-color: color-mix(in srgb, var(--material) 88%, var(--scan-navy-soft));
   border-bottom-color: color-mix(in srgb, var(--scan-navy) 12%, var(--line));
 }
 body.has-app-shell .soft-page-head h1,
@@ -184,7 +190,11 @@ body.has-app-shell .soft-avatar {
 }
 body.has-app-shell .soft-island {
   border-color: color-mix(in srgb, var(--scan-navy) 14%, var(--line));
-  box-shadow: 0 12px 32px rgba(13, 53, 96, 0.12);
+  /* The hairline of light rides on top of the drop shadow: lit object above
+     the page, rather than a flat shape with a shadow under it. This rule owns
+     the island's shadow (it outranks the plain .soft-island selector in
+     vantage-chrome.css), so the edge has to be layered in here. */
+  box-shadow: var(--material-edge), 0 12px 32px rgba(13, 53, 96, 0.12);
 }
 body.has-app-shell .soft-island a[aria-current="page"],
 body.has-app-shell .soft-island-more.is-open {
