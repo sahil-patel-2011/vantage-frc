@@ -1,7 +1,7 @@
 import AccountClient from "./account-client";
 
 export const metadata = {
-  title: "Your settings",
+  title: "Account",
 };
 
 export default function AccountPage() {

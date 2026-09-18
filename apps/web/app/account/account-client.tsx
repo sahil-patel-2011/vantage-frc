@@ -335,11 +335,16 @@ export default function AccountClient() {
   return (
     <main className="module-page account-page">
       <PageHeader
-        /* The top bar already says "Account" and the page is titled
-           "Your settings". A breadcrumb reading "Account / Settings" made it
-           four sightings of the same word above the fold. */
-        title="Your settings"
-        description="Profile, appearance and alerts for this login."
+        /* "Account", not "Your settings".
+           The page lists two groups, "Your settings" and "Team settings", so
+           titling the whole page after one of them was both a duplicate of the
+           group label 440px below it and wrong about what the page holds.
+           "Account" is what the top bar calls this route, which is the point:
+           a page title that matches the thing you tapped to get here is not a
+           repetition. (The breadcrumb that used to make it a third sighting is
+           already gone.) */
+        title="Account"
+        description="Your profile and alerts, plus the team settings your role can reach."
       />
 
       <OfflineBanner feature="Account" fromCache={fromCache} cachedAt={cachedAt} />
