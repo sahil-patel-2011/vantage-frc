@@ -114,6 +114,7 @@ describe("AI usage shaping", () => {
     expect(keySourceGroup("byo")).toBe("byok");
     expect(keySourceGroup("local")).toBe("local");
     expect(keySourceGroup("local_cli")).toBe("local");
+    expect(keySourceGroup("public_swarm")).toBe("other");
     expect(keySourceGroup("mystery")).toBe("other");
   });
 

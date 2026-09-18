@@ -3,6 +3,7 @@
 import { type ReactNode } from "react";
 import { Button, EmptyState, PageHeader, Panel, ToolStrip } from "../../components/ui";
 import { ActionMenu, type ActionSpec } from "../../components/ui/action-menu";
+import { teamLabelFor } from "../../components/app-shell-model";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
@@ -227,7 +228,23 @@ export function InventoryReadyHeader({
         </>
       }
       title="Inventory & BOM"
-      description={`Parts & materials stock, storage locations, and per-mechanism bills of materials for ${orgName ?? "your team"}${teamNumber ? ` (Team ${teamNumber})` : ""}. Cross-check Vendors, Orders, and Spare Forecast.`}
+      /*
+        Two things were wrong with this line.
+
+        `${orgName} (Team ${teamNumber})` printed "for Team 6925 (Team 6925)",
+        because a team whose name is just its number makes the parenthetical a
+        copy of what precedes it. `teamLabelFor` is the helper for exactly
+        this: it appends the name only when the name says something the number
+        does not.
+
+        And it ended "Cross-check Vendors, Orders, and Spare Forecast", which
+        is the list of links rendered directly beneath it — and the same
+        sentence the empty-state card repeats verbatim further down. Three
+        copies for one idea, one of which is the links themselves.
+      */
+      description={`Parts and materials stock, storage locations, and per-mechanism bills of materials for ${
+        teamLabelFor(teamNumber, orgName) ?? "your team"
+      }.`}
     >
       <div className="inventory-header-actions">
         {lowStock > 0 ? (

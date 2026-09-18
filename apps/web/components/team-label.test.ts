@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { orgLabelFor, orgNameAddsDetail, teamLabelFor } from "./app-shell-model";
+import { orgLabelFor, orgNameAddsDetail, teamLabelFor, teamProseLabel } from "./app-shell-model";
 
 /**
  * "Team 6925 · Team 6925" was on the top bar of every page.
@@ -80,5 +80,34 @@ describe("orgLabelFor", () => {
   it("keeps the signed-out and no-team wording", () => {
     expect(orgLabelFor({}, "")).toBe("No team selected");
     expect(orgLabelFor({}, "org")).toBe("This team");
+  });
+});
+
+describe("teamProseLabel", () => {
+  it("does not print the team twice mid-sentence", () => {
+    // "Parts and materials stock … for Team 6925 (Team 6925)." shipped on
+    // Inventory, and the same shape was on eleven other page descriptions.
+    expect(teamProseLabel(6925, "Team 6925")).toBe("Team 6925");
+    expect(teamProseLabel(6925, "6925")).toBe("Team 6925");
+    expect(teamProseLabel(6925, "TEAM-6925")).toBe("Team 6925");
+  });
+
+  it("keeps a real name and puts the number beside it", () => {
+    expect(teamProseLabel(254, "Cheesy Poofs")).toBe("Cheesy Poofs (Team 254)");
+    expect(teamProseLabel(6925, "Team 6925 Robotics")).toBe("Team 6925 Robotics (Team 6925)");
+  });
+
+  it("falls back to whichever half it has", () => {
+    expect(teamProseLabel(6925, null)).toBe("Team 6925");
+    expect(teamProseLabel(6925, "   ")).toBe("Team 6925");
+    expect(teamProseLabel(null, "Cyber Falcons")).toBe("Cyber Falcons");
+    expect(teamProseLabel(null, null)).toBeNull();
+  });
+
+  it("is the prose spelling, not the label spelling", () => {
+    // The `·` separator belongs on the top bar, not in the middle of a
+    // sentence — that is what teamLabelFor is for.
+    expect(teamProseLabel(254, "Cheesy Poofs")).not.toContain("·");
+    expect(teamLabelFor(254, "Cheesy Poofs")).toContain("·");
   });
 });

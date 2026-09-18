@@ -1,4 +1,5 @@
 "use client";
+import { teamProseLabel } from "../../components/app-shell-model";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
@@ -438,8 +439,7 @@ export default function VideoClient() {
           <span className="breadcrumbs">Competition / Video Review</span>
           <h1>Match Video Review</h1>
           <p>
-            Re-watch match footage for {view.context.orgName ?? "your team"}
-            {view.context.teamNumber ? ` (Team ${view.context.teamNumber})` : ""} — timestamped notes seek the player when
+            Re-watch match footage for {teamProseLabel(view.context.teamNumber, view.context.orgName) ?? "your team"} — timestamped notes seek the player when
             clicked. This desk plays YouTube only. Hosted photos and clips live in the{" "}
             <a href={withOrgHref("/media-library", orgId)}>Media library</a>.
           </p>

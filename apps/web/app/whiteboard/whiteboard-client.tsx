@@ -18,6 +18,7 @@ import {
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import { teamProseLabel } from "../../components/app-shell-model";
 
 type ActionBody = Record<string, unknown> & { action: string; orgId: string };
 
@@ -427,8 +428,7 @@ export default function WhiteboardClient() {
           <span className="breadcrumbs">Competition / Whiteboard</span>
           <h1>Strategy Whiteboard</h1>
           <p>
-            Draw plays, drag the six robots, and save named strategies for {view.context.orgName ?? "your team"}
-            {view.context.teamNumber ? ` (Team ${view.context.teamNumber})` : ""}.
+            Draw plays, drag the six robots, and save named strategies for {teamProseLabel(view.context.teamNumber, view.context.orgName) ?? "your team"}.
           </p>
         </div>
         <div className="wb-header-actions">

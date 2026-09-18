@@ -14,6 +14,7 @@ import {
   PAGE_DESCRIPTION,
   QUALITY_NOTICE_BODY,
   REQUIRED_ENDPOINT_IDS,
+  PUBLIC_SWARM_FALLBACK_BODY,
 } from "./ai-keys-copy";
 
 describe("ENDPOINT_EXAMPLES", () => {

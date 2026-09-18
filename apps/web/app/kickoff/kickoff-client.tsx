@@ -18,6 +18,7 @@ import { NextSeasonSection } from "./kickoff-next-season";
 import { RulesSection } from "./kickoff-rules";
 import { GameBriefSection } from "./kickoff-game-brief";
 import { ScoringSection } from "./kickoff-scoring";
+import { teamProseLabel } from "../../components/app-shell-model";
 
 function isKickoffView(value: unknown): value is KickoffView {
   if (!value || typeof value !== "object") return false;
@@ -232,8 +233,7 @@ export default function KickoffClient(_props: { embedded?: boolean } = {}) {
         title="Kickoff & Game Analysis"
         description={
           <>
-            Start from the {year} manual and kickoff transcript for {view.context.orgName ?? "your team"}
-            {view.context.teamNumber ? ` (Team ${view.context.teamNumber})` : ""} — structure the game, seed Strategy
+            Start from the {year} manual and kickoff transcript for {teamProseLabel(view.context.teamNumber, view.context.orgName) ?? "your team"} — structure the game, seed Strategy
             priorities, and hand a CAD brief to Onshape/Fusion paths.
           </>
         }

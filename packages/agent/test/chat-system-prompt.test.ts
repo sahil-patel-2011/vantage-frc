@@ -27,4 +27,10 @@ describe("buildVantageChatSystemPrompt", () => {
     expect(prompt).toContain("2026mndu");
     expect(prompt).toContain("6925");
   });
+
+  it("warns that the public swarm leaves Vantage", () => {
+    const prompt = buildVantageChatSystemPrompt({ capability: "chat", answerPath: "public_swarm" });
+    expect(prompt).toMatch(/public Petals volunteer swarm/i);
+    expect(prompt).toMatch(/Prompts leave Vantage/);
+  });
 });

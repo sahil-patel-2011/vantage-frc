@@ -203,6 +203,28 @@ export function orgNameAddsDetail(
   return reduced !== String(teamNumber) && reduced.length > 0;
 }
 
+/**
+ * The team, written to sit inside a sentence: "Robotics Club (Team 6925)".
+ *
+ * A dozen page descriptions were built as `{orgName}{" (Team " + n + ")"}`,
+ * which reads "Parts and materials stock … for Team 6925 (Team 6925)" for
+ * every team that never renamed itself — the common case, and the one that
+ * looks like a bug rather than a name. When the name adds nothing the
+ * parenthetical is the whole label instead of a second copy of it.
+ *
+ * `teamLabelFor` is the other spelling, "Team 6925 · Robotics Club", for
+ * places that are a label rather than prose — the top bar, a card heading.
+ * The `·` does not belong in the middle of a sentence.
+ */
+export function teamProseLabel(
+  teamNumber: number | null | undefined,
+  orgName: string | null | undefined,
+): string | null {
+  const name = (orgName ?? "").trim();
+  if (teamNumber == null) return name || null;
+  return orgNameAddsDetail(teamNumber, orgName) ? `${name} (Team ${teamNumber})` : `Team ${teamNumber}`;
+}
+
 /** The one label for a team: its number, plus a real name when it has one. */
 export function teamLabelFor(
   teamNumber: number | null | undefined,

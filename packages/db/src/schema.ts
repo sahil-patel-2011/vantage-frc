@@ -50,6 +50,7 @@ export const keySource = pgEnum("key_source", [
   "local",
   "local_cli",
   "sponsored",
+  "public_swarm",
 ]);
 export const scoutSchemaType = pgEnum("scout_schema_type", ["match", "pit"]);
 export const scoutFormFieldType = pgEnum("scout_form_field_type", [

@@ -1,3 +1,4 @@
+import { teamProseLabel } from "../../components/app-shell-model";
 /**
  * Weekly parent digest builder. Pure and honest: when the period holds no real
  * events and no logistics note, it returns null and NOTHING is sent — an empty
@@ -118,8 +119,9 @@ export function buildParentDigest(input: ParentDigestInput): ParentDigest | null
 
   if (events.length === 0 && !note) return null;
 
-  const teamLabel =
-    input.teamNumber != null ? `${input.orgName} (Team ${input.teamNumber})` : input.orgName;
+  // The subject line of an email to a parent. "Team 6925 (Team 6925): 3
+  // upcoming events this week" is what the old spelling produced.
+  const teamLabel = teamProseLabel(input.teamNumber, input.orgName) ?? input.orgName;
   const subject =
     events.length > 0
       ? `${teamLabel}: ${events.length} upcoming ${events.length === 1 ? "event" : "events"} this week`

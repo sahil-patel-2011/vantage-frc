@@ -1,3 +1,4 @@
+import { teamProseLabel } from "../../components/app-shell-model";
 /**
  * The new-member onboarding sequence, decided from real state.
  *
@@ -103,7 +104,7 @@ export function renderOnboardingEmail(input: {
   baseUrl: string;
 }): OnboardingEmail | null {
   const base = input.baseUrl.replace(/\/$/, "");
-  const team = input.teamNumber ? `${input.orgName} (Team ${input.teamNumber})` : input.orgName;
+  const team = teamProseLabel(input.teamNumber, input.orgName) ?? input.orgName;
   const greeting = input.memberName?.trim() ? `${input.memberName.trim()}, ` : "";
   const outstanding = outstandingBlock(input.outstanding, base);
   const footer = `You can change which of these emails you get, or stop all of them, here:\n${base}/notifications/preferences`;

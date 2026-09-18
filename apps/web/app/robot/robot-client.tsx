@@ -1,4 +1,5 @@
 "use client";
+import { teamProseLabel } from "../../components/app-shell-model";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AiInsightPanel } from "../../components/ai-insight-panel";
@@ -429,8 +430,7 @@ export default function RobotClient() {
           <span className="breadcrumbs">Build / Robot</span>
           <h1>Robot Blueprint</h1>
           <p>
-            The digital twin for {view.context.orgName ?? "your team"}
-            {view.context.teamNumber ? ` (Team ${view.context.teamNumber})` : ""} — CAD, code, strategy, and ops per
+            The digital twin for {teamProseLabel(view.context.teamNumber, view.context.orgName) ?? "your team"} — CAD, code, strategy, and ops per
             subsystem, {view.context.seasonYear} season.
           </p>
         </div>

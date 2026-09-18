@@ -6,6 +6,7 @@
 // "link not valid" state; unreachable database -> "try again later".
 import { useEffect, useMemo, useState } from "react";
 import type { ParentViewEvent, ParentViewState } from "../../../lib/parent-comms/view";
+import { teamProseLabel } from "../../../components/app-shell-model";
 
 const RSVP_LABEL: Record<string, string> = {
   going: "Your student: going",
@@ -111,8 +112,7 @@ export default function ParentViewClient({ token }: { token: string }) {
     );
   }
 
-  const teamLabel =
-    state.teamNumber != null ? `${state.orgName} (Team ${state.teamNumber})` : state.orgName;
+  const teamLabel = teamProseLabel(state.teamNumber, state.orgName) ?? state.orgName;
 
   return (
     <main className="parent-view">

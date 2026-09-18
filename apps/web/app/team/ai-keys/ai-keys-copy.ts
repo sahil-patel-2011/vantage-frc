@@ -74,11 +74,15 @@ export const ALL_FEATURES_BODY =
 export const QUALITY_NOTICE_BODY =
   "Smaller models give shorter, plainer answers than frontier models do. Where that applies, Vantage says so on the answer itself instead of hiding it — you always know what wrote what.";
 
+export const PUBLIC_SWARM_FALLBACK_BODY =
+  "If no team key is set, Free chat can fall through to the public Petals volunteer swarm (no key, no Vantage charge). Prompts leave Vantage and the swarm is often slow or down — last resort, not unlimited compute.";
+
 /** Ordered bullets for the "bring any endpoint" panel. */
 export const ANY_ENDPOINT_POINTS: string[] = [
   ALL_FEATURES_BODY,
   QUALITY_NOTICE_BODY,
   "Keys are encrypted at rest and never shown again after you save them. Vantage calls your endpoint directly with them and stores nothing from the response beyond what the feature shows you.",
+  PUBLIC_SWARM_FALLBACK_BODY,
 ];
 
 // ---------------------------------------------------------------------------

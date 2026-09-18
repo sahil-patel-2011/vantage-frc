@@ -12,8 +12,8 @@ export type ChatSystemPromptInput = {
   teamFacts?: string[];
   /** Active event label, if one is selected. */
   activeEvent?: string | null;
-  /** Which path answered: relay, team keys, or hosted. */
-  answerPath?: "relay" | "team_keys" | "hosted";
+  /** Which path answered: relay, team keys, hosted, or public volunteer swarm. */
+  answerPath?: "relay" | "team_keys" | "hosted" | "public_swarm";
 };
 
 const HONESTY_RULES = [
@@ -33,14 +33,7 @@ const TOOL_LIMITS = [
 
 export function buildVantageChatSystemPrompt(input: ChatSystemPromptInput = {}): string {
   const capability = (input.capability ?? "chat").trim() || "chat";
-  const path =
-    input.answerPath === "relay"
-      ? "Answering via the team's paired relay."
-      : input.answerPath === "team_keys"
-        ? "Answering via the team's own keys."
-        : input.answerPath === "hosted"
-          ? "Answering via hosted keys (fallback)."
-          : null;
+  const path = describeAnswerPath(input.answerPath);
   const lines = [
     "You are Vantage, an FRC (FIRST Robotics Competition) team operations assistant.",
     `Current surface: ${capability}. Help with scouting, strategy, pit/competition ops, CAD briefs, knowledge, calendars, and team workflows when relevant.`,
@@ -60,6 +53,25 @@ export function buildVantageChatSystemPrompt(input: ChatSystemPromptInput = {}):
     if (trimmed) lines.push(trimmed);
   }
   return lines.join("\n");
+}
+
+function describeAnswerPath(answerPath: ChatSystemPromptInput["answerPath"]): string | null {
+  switch (answerPath) {
+    case "relay":
+      return "Answering via the team's paired relay.";
+    case "team_keys":
+      return "Answering via the team's own keys.";
+    case "hosted":
+      return "Answering via hosted keys (fallback).";
+    case "public_swarm":
+      return "Answering via the public Petals volunteer swarm. Prompts leave Vantage. Do not echo secrets, emails, or phone numbers. The swarm is often slow or offline — say so if you cannot complete the ask.";
+    case undefined:
+      return null;
+    default: {
+      const _exhaustive: never = answerPath;
+      return _exhaustive;
+    }
+  }
 }
 
 export const REQUIRED_SYSTEM_PROMPT_RULES = [

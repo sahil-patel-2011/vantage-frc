@@ -29,6 +29,7 @@ import {
   tryCreateOpenRouterFreeAdapter,
 } from "./hosted-platform-keys";
 import { tryCreateSponsoredFailoverAdapter } from "./sponsored-provider-pool";
+import { PetalsPublicPoolAdapter, tryCreatePetalsPublicAdapter } from "./petals-public-pool";
 import { isLocalOrLanOrigin } from "./model-tier";
 import {
   bridgeHeavyCliTimeoutMs,
@@ -54,7 +55,8 @@ export type ResolvedModelSource =
   | "sponsored"
   | "local-connector"
   | "local-fallback"
-  | "subscription-bridge";
+  | "subscription-bridge"
+  | "public-swarm";
 
 /**
  * Provenance of a resolved chat adapter. Additive metadata alongside the
@@ -112,7 +114,12 @@ export function chatAdapterProvenance(
   adapter: ChatAdapter,
   source: ResolvedModelSource,
 ): ResolvedModelProvenance {
-  const baseUrl = adapter instanceof HttpChatAdapter ? adapter.baseUrl : null;
+  const baseUrl =
+    adapter instanceof HttpChatAdapter
+      ? adapter.baseUrl
+      : adapter instanceof PetalsPublicPoolAdapter
+        ? adapter.generateUrl
+        : null;
   return {
     provider: adapter.provider,
     modelId: adapter.model,
@@ -658,7 +665,8 @@ async function resolveHostedPlatformChatAdapter(
 /**
  * Resolve a live HTTP chat adapter for an org.
  * Order: org BYOK / custom HTTPS → paid managed peek → paid Anthropic env →
- * free OpenRouter env → local-relay hard-fail → team 1111 sponsored pool.
+ * free OpenRouter env → local-relay hard-fail → team 1111 sponsored pool →
+ * Petals public volunteer swarm (last resort, no key).
  * Never falls back to LocalDeterministicChatAdapter — callers get an honest error
  * when no usable key exists. Metering still goes through meteredAI in the orchestrator.
  */
@@ -1096,12 +1104,17 @@ export async function resolveOrgChatAdapterWithProvenance(
       });
       if (sponsored) return resolved(sponsored, "sponsored");
     }
+    const petals = tryCreatePetalsPublicAdapter({
+      fetchImpl: input.fetchImpl,
+      capability: input.feature,
+    });
+    if (petals) return resolved(petals, "public-swarm");
     if (!promo.eligible && promo.reason === "promo_expired") {
       await maybeNotifySponsoredPromoExpired(client, input.orgId, promo);
       throw new ChatProviderResolutionError(sponsoredPromoExpiredMessage(promo.teamNumber ?? 1111));
     }
     throw new ChatProviderResolutionError(
-      "No AI provider key is configured for this organization. Free workspaces use the platform OpenRouter free pool when OPENROUTER_API_KEY is set, or your own OpenAI, Anthropic, Google, or OpenRouter key under Team → AI API keys (or a local OpenAI-compatible base URL for Ollama / LM Studio).",
+      "No AI provider key is configured for this organization. Free workspaces use the platform OpenRouter free pool when OPENROUTER_API_KEY is set, the public Petals volunteer swarm when PETALS_PUBLIC_POOL is on, or your own OpenAI, Anthropic, Google, or OpenRouter key under Team → AI API keys (or a local OpenAI-compatible base URL for Ollama / LM Studio).",
     );
   }
 

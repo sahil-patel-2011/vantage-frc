@@ -82,6 +82,8 @@ describe("pricing ladder catalog", () => {
     // Free's hosted allowance names only providers the sponsored/hosted path can actually route.
     expect(freeHostedModelClassCopy()).toMatch(/Mistral Small|Llama-class|OpenRouter/);
     expect(freeHostedModelClassCopy()).toMatch(/not frontier/i);
+    expect(freeHostedModelClassCopy()).toMatch(/Petals/);
+    expect(freeHostedModelClassCopy()).not.toMatch(/unlimited compute/i);
   });
 });
 

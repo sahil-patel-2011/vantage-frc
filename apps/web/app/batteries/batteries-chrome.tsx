@@ -12,6 +12,7 @@ import {
 } from "../../lib/battery/battery-related";
 import type { LoadFailureCopy } from "../../lib/ui/load-failure";
 import { batteryCrumbs, type HubEmbed, type ReadyView } from "./batteries-model";
+import { teamProseLabel } from "../../components/app-shell-model";
 
 export function BatteriesRelated({ orgId }: { orgId: string }) {
   return (
@@ -145,8 +146,7 @@ export function BatteriesReadyHeader({
         title="Batteries"
         description={
           <>
-            Charge cycles, assignment, and event readiness for {view.context.orgName ?? "your team"}
-            {view.context.teamNumber ? ` (Team ${view.context.teamNumber})` : ""}. Internal resistance and cycle counts come from the charges your team logs.
+            Charge cycles, assignment, and event readiness for {teamProseLabel(view.context.teamNumber, view.context.orgName) ?? "your team"}. Internal resistance and cycle counts come from the charges your team logs.
           </>
         }
       >
