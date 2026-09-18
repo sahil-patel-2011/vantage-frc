@@ -238,6 +238,23 @@ export const CAD_TOOL_CATALOG: readonly CadToolSpec[] = [
     mutating: false,
   },
   {
+    name: "onshape_feature_specs",
+    label: "List every Onshape feature",
+    group: "inspect",
+    description:
+      "Ask the bound Part Studio which features Onshape can build, and what each one takes. " +
+      "Returns every feature type available on this account with its full parameter schema — " +
+      "including any custom FeatureScript the team has added — so the answer is always current " +
+      "rather than a list somebody maintained by hand.",
+    params: [],
+    onshape: "supported",
+    fusion: "unsupported",
+    fusionNote:
+      "Onshape publishes its feature catalogue over the API; Fusion has no equivalent endpoint, " +
+      "so the add-in's operations are the fixed list in this catalogue.",
+    mutating: false,
+  },
+  {
     name: "onshape_describe",
     label: "Describe features",
     group: "inspect",
