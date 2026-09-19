@@ -51,6 +51,16 @@ export type {
   ScoutingConfidence,
 } from "./scouting-rating";
 export {
+  MIN_MATCHES_FOR_TREND,
+  pickListOrder,
+  profilesFromScouting,
+} from "./scouting-profile";
+export type {
+  ConsistencyLabel,
+  ScoutedTeamProfile,
+  TrendDirection,
+} from "./scouting-profile";
+export {
   allianceScoreSpread,
   lovatWinProbability,
   predictUnscoredMatch,
