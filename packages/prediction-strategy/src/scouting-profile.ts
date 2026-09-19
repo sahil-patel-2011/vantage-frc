@@ -20,6 +20,7 @@
  */
 
 import { summariseDistribution, type Distribution } from "./distribution";
+import { matchSdFromDistribution } from "./score-uncertainty";
 import {
   MIN_MATCHES_TO_STAND_ALONE,
   type ScoutedMatchRow,
@@ -69,14 +70,41 @@ function round(value: number): number {
  * An odd number of matches drops the middle one rather than putting it in both
  * halves, so a six-match and a seven-match team are compared the same way.
  */
-function trendFor(series: readonly number[]): ScoutedTeamProfile["trend"] {
+/**
+ * How many standard errors a half-to-half difference must clear before it is
+ * called a trend rather than noise. One is deliberately permissive — this is a
+ * pick-list hint, not a hypothesis test — but it is one *of this robot's own*
+ * standard errors, which is the part that was missing.
+ */
+const TREND_NOISE_MULTIPLE = 1;
+
+function trendFor(
+  series: readonly number[],
+  spread: number | null,
+): ScoutedTeamProfile["trend"] {
   if (series.length < MIN_MATCHES_FOR_TREND) return null;
   const half = Math.floor(series.length / 2);
   const early = series.slice(0, half);
   const late = series.slice(series.length - half);
   const delta = round(mean(late) - mean(early));
-  // Below a point either way is not a trend, it is rounding.
-  const direction: TrendDirection = delta > 1 ? "up" : delta < -1 ? "down" : "flat";
+
+  /**
+   * The threshold scales with how much this robot swings.
+   *
+   * It used to be a flat point either way, which reads the same difference two
+   * opposite ways depending on the robot. A boom-or-bust robot alternating 8
+   * and 52 had halves averaging 28.75 and 30.25 — a 1.5-point gap that is pure
+   * alternation — and got labelled "Improving" on a pick list. Meanwhile a
+   * metronome moving 2 points really has changed something.
+   *
+   * `sd * sqrt(2/half)` is the standard error of the difference between the
+   * two halves: the size of gap this robot produces by chance alone. The
+   * one-point floor stays, so a robot with no measurable spread still cannot
+   * trend on rounding.
+   */
+  const noise = spread == null || !Number.isFinite(spread) ? 0 : spread * Math.sqrt(2 / half);
+  const threshold = Math.max(1, round(TREND_NOISE_MULTIPLE * noise));
+  const direction: TrendDirection = delta > threshold ? "up" : delta < -threshold ? "down" : "flat";
   const note =
     direction === "up"
       ? `Scoring ${Math.abs(delta)} more per match than they were early on`
@@ -169,11 +197,14 @@ export function profilesFromScouting(rows: readonly ScoutedMatchRow[]): ScoutedT
 
   return ratings.map((rating) => {
     const series = seriesByTeam.get(rating.teamKey) ?? [];
+    const consistency = summariseDistribution(series);
     const base = {
       ...rating,
-      consistency: summariseDistribution(series),
+      consistency,
       percentile: percentileOf(rating.shrunkTotal),
-      trend: trendFor(series),
+      // The same spread the row is labelled with, so "Boom or bust" and
+      // "Improving" cannot be drawn from two different views of one sample.
+      trend: trendFor(series, matchSdFromDistribution(consistency)),
       series,
     };
     return { ...base, headline: headlineFor(base) };

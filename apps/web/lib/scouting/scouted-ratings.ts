@@ -40,7 +40,20 @@ export type ScoutEntryRow = {
 };
 
 export type ScoutedRatingsResult =
-  | { ok: true; ratings: ScoutedTeamRating[]; basis: "phase" | "total" }
+  | {
+      ok: true;
+      ratings: ScoutedTeamRating[];
+      /**
+       * The per-match rows the ratings were built from.
+       *
+       * Carried alongside because `profilesFromScouting` needs the rows, not
+       * the summary — a sparkline and a trend line cannot be recovered from an
+       * average. Converting twice would mean two places that decide what a
+       * scouting payload is worth.
+       */
+      rows: ScoutedMatchRow[];
+      basis: "phase" | "total";
+    }
   | { ok: false; reason: string; needsFormula: true };
 
 function normalise(name: string): string {
@@ -135,7 +148,7 @@ export function scoutedRowsFromEntries(
     return { ...base, teleop: evaluateFormula(total!, payload) };
   });
 
-  return { ok: true, ratings: ratingsFromScouting(rows), basis: hasPhases ? "phase" : "total" };
+  return { ok: true, ratings: ratingsFromScouting(rows), rows, basis: hasPhases ? "phase" : "total" };
 }
 
 export function isScoutedRatingsUnavailable(

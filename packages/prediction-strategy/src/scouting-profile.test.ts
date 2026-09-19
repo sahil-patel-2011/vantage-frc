@@ -93,6 +93,32 @@ describe("trend", () => {
     expect(byTeam(profiles, "frcFLAT").trend?.direction).toBe("flat");
   });
 
+  it("does not call an alternating robot improving over a two-point gap", () => {
+    // Caught by seeding a demo event and reading the screen. This robot
+    // alternates 8 and 52; its halves average 28.75 and 30.25, a 1.5-point
+    // difference that is pure alternation. A flat one-point threshold called
+    // that "Improving" and put it on a pick list as a rising robot.
+    const profiles = profilesFromScouting([
+      ...field(),
+      ...rows("frcALTERNATES", [8, 52, 6, 49, 11, 55, 4, 51]),
+    ]);
+    const swingy = byTeam(profiles, "frcALTERNATES");
+    expect(swingy.consistency?.consistency).toBe("boom-or-bust");
+    expect(swingy.trend?.direction).toBe("flat");
+  });
+
+  it("still calls the same gap a trend in a robot that does not swing", () => {
+    // The point is not "ignore small changes" — it is "small relative to what
+    // this robot does". Two points from a metronome is a real change.
+    const profiles = profilesFromScouting([
+      ...field(),
+      ...rows("frcSTEADYUP", [20, 20, 21, 23, 23, 24, 23, 24]),
+    ]);
+    const steady = byTeam(profiles, "frcSTEADYUP");
+    expect(steady.trend?.direction).toBe("up");
+    expect(Math.abs(steady.trend!.delta)).toBeLessThan(5);
+  });
+
   it("draws no trend line through too few matches", () => {
     const thin = MIN_MATCHES_FOR_TREND - 1;
     const profiles = profilesFromScouting([

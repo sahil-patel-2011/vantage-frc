@@ -1,0 +1,189 @@
+/* What your scouting says — one row per robot. See scouting-team-profiles.tsx. */
+.stp {
+  display: grid;
+  gap: 12px;
+}
+.stp-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+.stp-head h2 {
+  margin: 0;
+  font: 800 17px/1.2 var(--font-source-sans), ui-sans-serif;
+  letter-spacing: -0.02em;
+}
+.stp-head p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+.stp-sort {
+  display: flex;
+  gap: 4px;
+}
+.stp-sort button {
+  min-height: 30px;
+  padding: 0 11px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--muted);
+  font: 600 12px var(--font-source-sans), ui-sans-serif;
+  cursor: pointer;
+}
+.stp-sort button.is-active {
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.stp-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.stp-row {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  overflow: hidden;
+}
+/* The one thing a pick-list meeting looks for first: is this robot the same
+   robot every match. Carried on the row's edge so it reads down the list
+   without anybody having to compare numbers. */
+.stp-row[data-consistency="metronome"] { border-left: 3px solid var(--positive); }
+.stp-row[data-consistency="steady"] { border-left: 3px solid color-mix(in srgb, var(--positive) 55%, var(--line)); }
+.stp-row[data-consistency="streaky"] { border-left: 3px solid var(--warning); }
+.stp-row[data-consistency="boom-or-bust"] { border-left: 3px solid var(--critical); }
+.stp-row[data-consistency="unknown"] { border-left: 3px solid var(--line); }
+
+.stp-row-main {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 10px 14px 6px;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+.stp-row-main:hover {
+  background: color-mix(in srgb, var(--accent) 5%, transparent);
+}
+.stp-team {
+  min-width: 3.6rem;
+  color: var(--ink);
+  font: 800 19px/1 var(--font-source-sans), ui-sans-serif;
+  letter-spacing: -0.02em;
+}
+.stp-score {
+  display: grid;
+  min-width: 4.6rem;
+}
+.stp-score strong {
+  font: 700 16px/1.1 var(--font-source-sans), ui-sans-serif;
+}
+.stp-score small {
+  color: var(--muted);
+  font-size: 10.5px;
+}
+
+.stp-spark {
+  flex: 1 1 108px;
+  min-width: 70px;
+  max-width: 160px;
+  height: 26px;
+  color: var(--accent);
+}
+.stp-spark polyline {
+  stroke: currentColor;
+}
+.stp-spark circle {
+  fill: currentColor;
+}
+.stp-spark.is-thin {
+  display: inline-flex;
+  align-items: center;
+  color: var(--muted);
+  font-size: 10.5px;
+}
+
+.stp-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  justify-content: flex-end;
+  margin-left: auto;
+}
+.stp-tag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 8px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  color: var(--muted);
+  font: 700 10.5px var(--font-source-sans), ui-sans-serif;
+  white-space: nowrap;
+}
+.stp-tag[data-kind="up"] { background: color-mix(in srgb, var(--positive) 16%, transparent); color: var(--positive); }
+.stp-tag[data-kind="down"] { background: color-mix(in srgb, var(--warning) 18%, transparent); color: var(--warning); }
+.stp-tag[data-kind="risk"] { background: color-mix(in srgb, var(--critical) 15%, transparent); color: var(--critical); }
+.stp-tag[data-kind="rank"] { background: var(--accent-soft); color: var(--accent); }
+
+.stp-headline {
+  margin: 0;
+  padding: 0 14px 10px;
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.stp-detail {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px 18px;
+  margin: 0;
+  padding: 10px 14px 14px;
+  border-top: 1px solid var(--line);
+  background: var(--surface-2);
+}
+.stp-detail dt {
+  color: var(--muted);
+  font: 700 10px var(--font-source-sans), ui-sans-serif;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.stp-detail dd {
+  margin: 2px 0 0;
+  color: var(--ink);
+  font: 600 13px var(--font-source-sans), ui-sans-serif;
+}
+
+/* A phone reads this one robot at a time: the number and the shape stay on the
+   first line, the tags wrap under them rather than squeezing the sparkline to
+   nothing. */
+@media (max-width: 720px) {
+  .stp-row-main {
+    flex-wrap: wrap;
+    gap: 8px 10px;
+    padding: 10px 12px 6px;
+  }
+  .stp-spark {
+    flex-basis: 84px;
+  }
+  .stp-tags {
+    flex-basis: 100%;
+    justify-content: flex-start;
+    margin-left: 0;
+  }
+  .stp-headline {
+    padding: 0 12px 10px;
+  }
+}

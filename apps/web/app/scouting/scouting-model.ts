@@ -44,7 +44,7 @@ export type Bootstrap = {
   scoutIdentity?: ScoutIdentity;
 };
 
-export type ScoutTab = "match" | "pit" | "conflicts" | "handoff" | "trust";
+export type ScoutTab = "match" | "pit" | "conflicts" | "handoff" | "trust" | "teams";
 
 export type RecentEntry = NonNullable<Bootstrap["recentEntries"]>[number];
 

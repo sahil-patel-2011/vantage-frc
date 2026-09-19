@@ -5,6 +5,7 @@ import { applyVoiceTranscriptToForm, isLayoutOnlyField, type ScoutSchema } from 
 import { SCOUT_IDENTITY_LOCK_COPY } from "@vantage/scouting/identity";
 import { fieldConfidenceHint, type FieldTrustSummary, type SchemaBudget } from "@vantage/scouting/trust";
 import { EmptyState, FormRow, PageHeader, Panel, ToolStrip, Button } from "../../components/ui";
+import { ScoutingTeamProfiles } from "./scouting-team-profiles";
 import { ExportButton } from "../../components/ui/export-button";
 import { CopyShareLink } from "../../components/copy-share-link";
 import { OfflineBanner } from "../../components/offline-banner";
@@ -236,7 +237,7 @@ return (
       onDiscard={(clientId) => void discardQuarantineItem(clientId)}
     />
 
-    {shell === "empty" && tab !== "conflicts" && tab !== "handoff" && tab !== "trust" ? (
+    {shell === "empty" && tab !== "conflicts" && tab !== "handoff" && tab !== "trust" && tab !== "teams" ? (
       <>
         <EmptyState
           soft
@@ -272,11 +273,18 @@ return (
         { id: "pit", label: "Pit" },
         { id: "handoff", label: "QR handoff" },
         { id: "conflicts", label: "Conflicts" },
+        { id: "teams", label: "Robots", featured: true },
         { id: "trust", label: "Trust & coverage" },
       ]}
     />
 
-    {tab === "trust" ? (
+    {tab === "teams" ? (
+      /* The one screen that answers what the scouting was *for*. Everything
+         else under this strip is about the process — coverage, conflicts,
+         trust — and a team could finish a weekend able to say "94% covered"
+         and unable to say which robot to pick. */
+      <ScoutingTeamProfiles orgId={orgId} eventKey={data?.eventKey ?? null} />
+    ) : tab === "trust" ? (
       <ScoutingTrustPanel orgId={orgId} eventKey={data?.eventKey ?? null} />
     ) : tab === "handoff" ? (
       <ScoutHandoffPanel
