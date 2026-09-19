@@ -107,3 +107,27 @@ test("escape abandons a new entry, and an empty composer closes itself", async (
   await page.locator(".cal-grid-move h2").click();
   await expect(day.locator(".cal-grid-composer")).toHaveCount(0);
 });
+
+test("a day that already has something on it can still be added to", async ({ page }) => {
+  await openCalendar(page);
+
+  // The bug this pins: "add here" was an absolutely-positioned overlay across
+  // the whole cell, sitting *under* the chips. So the moment a day had an
+  // entry on it, the middle of that cell was covered and pressing it did
+  // nothing — which is every day you would most want to add a second thing to.
+  const day = page.locator('.cal-grid-day[data-in-month="yes"]').nth(11);
+  const first = `Occupied ${Date.now()}`;
+  await day.locator(".cal-grid-add").click();
+  await day.locator(".cal-grid-composer input").fill(first);
+  await day.locator(".cal-grid-composer input").press("Enter");
+  await expect(day.getByText(first, { exact: true })).toBeVisible({ timeout: 20_000 });
+
+  const second = `Also ${Date.now()}`;
+  await day.locator(".cal-grid-add").click({ timeout: 10_000 });
+  await day.locator(".cal-grid-composer input").fill(second);
+  await day.locator(".cal-grid-composer input").press("Enter");
+  await expect(day.getByText(second, { exact: true })).toBeVisible({ timeout: 20_000 });
+
+  // Both are on the same day, not one of them somewhere else.
+  await expect(day.getByText(first, { exact: true })).toBeVisible();
+});

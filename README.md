@@ -2,7 +2,10 @@
 
 **One login for everything an FRC team does.**
 
-Vantage is a free, open-source operations platform for FIRST Robotics Competition teams. It replaces
+Vantage is a free operations platform for FIRST Robotics Competition teams. The source is public and
+any team may read it, fork it, change it and run their own copy; the one thing the licence reserves
+is selling it. (That makes it *source-available* rather than OSI "open source" — the distinction,
+and why it was chosen, is under [License](#license-and-community).) It replaces
 the pile of spreadsheets, group chats, shared drives and paper scouting forms a team usually runs on
 with one place that already knows the FRC season — and it teaches new members on the way in.
 

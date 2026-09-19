@@ -166,29 +166,29 @@
   background:color-mix(in srgb,var(--accent) 3.5%,transparent);
 }
 
-/* The empty area of a cell is the add control. It is a button so it can be
-   tabbed to and announced with the day it would add to. */
+/* The leftover space under a day's chips is the add control — in normal flow,
+   growing to fill whatever the chips leave. As an absolute overlay it was
+   underneath them, so any day that already had something on it could not be
+   pressed in the middle. `min-height` keeps a target on the fullest day. */
 .cal-grid-add{
-  position:absolute;inset:0;z-index:0;
-  display:block;width:100%;padding:0;
-  border:0;background:transparent;text-align:left;cursor:pointer;
+  flex:1 1 auto;min-height:18px;width:100%;padding:0;
+  border:0;border-radius:3px;background:transparent;cursor:pointer;
 }
-.cal-grid-add:hover{background:color-mix(in srgb,var(--accent) 7%,transparent)}
+.cal-grid-add:hover{background:color-mix(in srgb,var(--accent) 9%,transparent)}
 .cal-grid-add:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 .cal-grid-num{
-  position:absolute;top:4px;left:6px;
-  color:var(--muted);font:700 12px var(--font-source-sans),ui-sans-serif;
+  color:var(--muted);font:700 12px/1.6 var(--font-source-sans),ui-sans-serif;
 }
 .cal-grid-day[data-today="yes"] .cal-grid-num{
   display:grid;place-items:center;
-  top:3px;left:3px;width:22px;height:22px;
+  width:22px;height:22px;line-height:1;
   border-radius:50%;background:var(--accent);color:var(--accent-ink,#fff);
 }
 
 .cal-grid-entries{
-  position:relative;z-index:1;
-  display:grid;gap:2px;margin:22px 0 0;padding:0;list-style:none;
+  display:grid;gap:2px;margin:0;padding:0;list-style:none;
 }
+.cal-grid-entries:empty{display:none}
 .cal-grid-chip{
   display:block;width:100%;padding:2px 6px;
   border:0;border-left:3px solid currentColor;border-radius:3px;
@@ -209,13 +209,13 @@
 .cal-grid-chip.kind-meeting,.cal-grid-chip.kind-outreach,.cal-grid-chip.kind-other{color:var(--muted)}
 
 .cal-grid-more{
-  position:relative;z-index:1;align-self:flex-start;
+  align-self:flex-start;
   padding:1px 4px;border:0;border-radius:3px;background:transparent;
   color:var(--muted);font:700 10px var(--font-source-sans),ui-sans-serif;cursor:pointer;
 }
 .cal-grid-more:hover{color:var(--accent);background:var(--accent-soft)}
 
-.cal-grid-composer{position:relative;z-index:2;margin-top:2px}
+.cal-grid-composer{margin-top:auto}
 .cal-grid-composer input{
   width:100%;min-height:26px;padding:3px 6px;
   border:1px solid var(--accent);border-radius:3px;
@@ -231,7 +231,7 @@
    squares that carry a count, and the agenda list below is the detail. */
 @media (max-width:720px){
   .cal-grid-day{min-height:62px;padding:3px}
-  .cal-grid-entries{margin-top:19px;gap:1px}
+  .cal-grid-entries{gap:1px}
   .cal-grid-chip{
     padding:1px 3px;border-left-width:2px;font-size:9.5px;
   }

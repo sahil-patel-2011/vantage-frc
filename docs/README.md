@@ -23,6 +23,7 @@ Start with the section that matches you. Each document says who it is for in its
 | [CAD_RELAY.md](CAD_RELAY.md) | The Fusion 360 desktop relay: what runs on the laptop and why |
 | [ASSEMBLY_MANUAL.md](ASSEMBLY_MANUAL.md) | Turning an Onshape assembly into a step-by-step build book |
 | [STORAGE_NODE.md](STORAGE_NODE.md) | Keeping large files on a machine the team owns |
+| [AI_COMPUTE.md](AI_COMPUTE.md) | Which model runs where, and why — including what we measured about Petals |
 | [LOCAL_AI.md](LOCAL_AI.md) | Running every AI feature on a local or free model endpoint |
 | [LOCAL_RELAY.md](LOCAL_RELAY.md) | How a hosted deployment reaches a model on your LAN (the relay contract) |
 | [FREEBUFF.md](FREEBUFF.md) | The Raspberry Pi relay fleet, and what Vantage will not do with Freebuff's hosted product |

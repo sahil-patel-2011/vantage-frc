@@ -232,21 +232,7 @@ function DayCell({
       data-today={day.isToday ? "yes" : "no"}
       data-weekend={day.isWeekend ? "yes" : "no"}
     >
-      {/*
-        The empty area of the cell is the "add here" control, which is why it
-        is a real button with a real accessible name rather than a click
-        handler on a div: it has to be reachable by tab and by a screen reader,
-        and it has to say which day it would add to.
-      */}
-      <button
-        type="button"
-        className="cal-grid-add"
-        aria-label={`Add to ${label}`}
-        disabled={busy}
-        onClick={onStartCompose}
-      >
-        <span className="cal-grid-num">{day.dayOfMonth}</span>
-      </button>
+      <span className="cal-grid-num">{day.dayOfMonth}</span>
 
       <ul className="cal-grid-entries">
         {visible.map((entry) => (
@@ -276,6 +262,28 @@ function DayCell({
           Show less
         </button>
       ) : null}
+
+      {/*
+        "Add here" is the leftover space under the day's chips, and it is a
+        real button with a real accessible name — reachable by tab, and it says
+        which day it would add to.
+
+        It was an absolutely-positioned overlay across the whole cell, which
+        looked equivalent and was not: the chips sit above it, so on any day
+        that already had something on it the middle of the cell was covered and
+        pressing there did nothing. In normal flow it takes the space the chips
+        do not, so there is always somewhere to press — and on a day with three
+        chips, that is the strip underneath them.
+      */}
+      {composing ? null : (
+        <button
+          type="button"
+          className="cal-grid-add"
+          aria-label={`Add to ${label}`}
+          disabled={busy}
+          onClick={onStartCompose}
+        />
+      )}
 
       {composing ? (
         <form
