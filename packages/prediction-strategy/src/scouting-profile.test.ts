@@ -31,6 +31,9 @@ function byTeam(profiles: ScoutedTeamProfile[], teamKey: string): ScoutedTeamPro
 }
 
 describe("consistency", () => {
+  // Spread comes from summariseDistribution: IQR over median, robust to the
+  // outlier a towed-off match creates. Labels are metronome / steady /
+  // streaky / boom-or-bust / unknown.
   it("separates the robot that does the same thing every match from the one that does not", () => {
     // Same mean (30), completely different robots to pick.
     const profiles = profilesFromScouting([
@@ -43,9 +46,9 @@ describe("consistency", () => {
     const swingy = byTeam(profiles, "frcSWINGY");
 
     expect(steady.meanTotal).toBeCloseTo(swingy.meanTotal, 0);
-    expect(steady.consistency.label).toBe("steady");
-    expect(swingy.consistency.label).toBe("swingy");
-    expect(swingy.consistency.stdDev).toBeGreaterThan(steady.consistency.stdDev * 5);
+    expect(steady.consistency?.consistency).toBe("metronome");
+    expect(swingy.consistency?.consistency).toBe("boom-or-bust");
+    expect(swingy.consistency!.dispersion!).toBeGreaterThan(steady.consistency!.dispersion! * 5);
   });
 
   it("measures spread against the robot's own output, not in bare points", () => {
@@ -55,15 +58,19 @@ describe("consistency", () => {
       ...rows("frcSMALL", [5, 10, 5, 10, 5, 10]),
       ...rows("frcBIG", [95, 100, 95, 100, 95, 100]),
     ]);
-    expect(byTeam(profiles, "frcSMALL").consistency.label).not.toBe("steady");
-    expect(byTeam(profiles, "frcBIG").consistency.label).toBe("steady");
+    // Five points of swing: a different robot every match at this scale…
+    expect(byTeam(profiles, "frcSMALL").consistency?.consistency).toBe("boom-or-bust");
+    // …and noise at that one.
+    expect(byTeam(profiles, "frcBIG").consistency?.consistency).toBe("metronome");
   });
 
-  it("calls a robot that never scores consistent rather than dividing by zero", () => {
+  it("says it does not know, rather than calling a robot that never scores reliable", () => {
+    // There is no median to divide by, and "perfectly consistent at zero" is
+    // not a thing to tell a pick-list meeting: nobody knows what it can do.
     const profiles = profilesFromScouting([...field(), ...rows("frcZERO", [0, 0, 0, 0, 0, 0])]);
     const zero = byTeam(profiles, "frcZERO");
-    expect(Number.isFinite(zero.consistency.spreadRatio)).toBe(true);
-    expect(zero.consistency.label).toBe("steady");
+    expect(zero.consistency?.dispersion).toBeNull();
+    expect(zero.consistency?.consistency).toBe("unknown");
   });
 });
 

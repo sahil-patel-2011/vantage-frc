@@ -19,6 +19,7 @@
  * three points.
  */
 
+import { summariseDistribution, type Distribution } from "./distribution";
 import {
   MIN_MATCHES_TO_STAND_ALONE,
   type ScoutedMatchRow,
@@ -26,18 +27,20 @@ import {
   ratingsFromScouting,
 } from "./scouting-rating";
 
-export type ConsistencyLabel = "steady" | "variable" | "swingy";
 export type TrendDirection = "up" | "down" | "flat";
 
 export type ScoutedTeamProfile = ScoutedTeamRating & {
   /**
-   * Match-to-match spread, and a word for it.
+   * Match-to-match spread, from `summariseDistribution`.
    *
-   * Measured as a share of the team's own mean rather than in raw points: five
-   * points of swing on a 10-point robot is a different robot every match, and
-   * five points on a 60-point robot is noise.
+   * This deliberately reuses the existing model rather than adding a second
+   * one. That model measures spread as the interquartile range over the
+   * median, which is the right choice here: a six-to-twelve match sample with
+   * a breakdown in it has outliers by construction, and a standard deviation
+   * over a mean lets one towed-off match rewrite the robot's character. It
+   * also already knows to say "unknown" rather than guess from three matches.
    */
-  consistency: { stdDev: number; spreadRatio: number; label: ConsistencyLabel };
+  consistency: Distribution | null;
   /** Where the shrunk total sits in this field, 0–100. Null with no field. */
   percentile: number | null;
   /** Later matches against earlier ones. Null until there are enough to split. */
@@ -51,43 +54,9 @@ export type ScoutedTeamProfile = ScoutedTeamRating & {
 /** Below this, splitting the matches in half compares noise with noise. */
 export const MIN_MATCHES_FOR_TREND = 6;
 
-/**
- * Spread thresholds, as a share of the team's own mean.
- *
- * A coefficient of variation under ~0.25 is a robot doing the same thing every
- * match. Over ~0.55 is a robot whose result depends on something other than
- * itself — a partner, a breakdown, a strategy that only works sometimes — and
- * that is the one you want to know about before you pick it.
- */
-const STEADY_MAX = 0.25;
-const VARIABLE_MAX = 0.55;
-
 function mean(values: readonly number[]): number {
   if (values.length === 0) return 0;
   return values.reduce((sum, value) => sum + value, 0) / values.length;
-}
-
-function stdDev(values: readonly number[]): number {
-  if (values.length < 2) return 0;
-  const centre = mean(values);
-  const variance =
-    values.reduce((sum, value) => sum + (value - centre) ** 2, 0) / (values.length - 1);
-  return Math.sqrt(variance);
-}
-
-function consistencyFor(series: readonly number[]): ScoutedTeamProfile["consistency"] {
-  const deviation = stdDev(series);
-  const centre = mean(series);
-  // A robot that scores nothing every match is perfectly consistent, and
-  // dividing by its zero mean is not the way to say so.
-  const spreadRatio = centre > 0 ? deviation / centre : 0;
-  const label: ConsistencyLabel =
-    series.length < 2 || spreadRatio <= STEADY_MAX
-      ? "steady"
-      : spreadRatio <= VARIABLE_MAX
-        ? "variable"
-        : "swingy";
-  return { stdDev: round(deviation), spreadRatio: round(spreadRatio), label };
 }
 
 function round(value: number): number {
@@ -145,13 +114,21 @@ function headlineFor(profile: Omit<ScoutedTeamProfile, "headline">): string {
     const pct = Math.round(profile.disabledRate * 100);
     return `${number} — dead on the field in ${pct}% of the matches we watched`;
   }
-  if (profile.consistency.label === "swingy") {
-    return `${number} — averages ${Math.round(profile.meanTotal)}, but swings a long way match to match`;
-  }
-  if (profile.trend?.direction === "up") {
+  // Trend is checked before spread on purpose. A robot that started at 10 and
+  // finished at 31 has a wide spread by construction, and calling that
+  // "swings a long way match to match" is the wrong story about a team that
+  // fixed something on Friday night — which is exactly the team you want to
+  // pick. Explained spread is not unpredictability.
+  if (profile.trend && profile.trend.direction !== "flat") {
     return `${number} — ${profile.trend.note.toLowerCase()}`;
   }
-  if (profile.consistency.label === "steady" && profile.matches >= MIN_MATCHES_FOR_TREND) {
+  if (profile.consistency?.consistency === "boom-or-bust") {
+    return `${number} — averages ${Math.round(profile.meanTotal)}, but swings a long way match to match`;
+  }
+  if (
+    (profile.consistency?.consistency === "metronome" || profile.consistency?.consistency === "steady") &&
+    profile.matches >= MIN_MATCHES_FOR_TREND
+  ) {
     return `${number} — ${Math.round(profile.meanTotal)} a match, and does it every match`;
   }
   return `${number} — ${Math.round(profile.meanTotal)} a match across ${profile.matches} scouted`;
@@ -194,7 +171,7 @@ export function profilesFromScouting(rows: readonly ScoutedMatchRow[]): ScoutedT
     const series = seriesByTeam.get(rating.teamKey) ?? [];
     const base = {
       ...rating,
-      consistency: consistencyFor(series),
+      consistency: summariseDistribution(series),
       percentile: percentileOf(rating.shrunkTotal),
       trend: trendFor(series),
       series,
@@ -214,7 +191,8 @@ export function pickListOrder(profiles: readonly ScoutedTeamProfile[]): ScoutedT
     // Both are expressed as a share of the robot's own output, so the sort
     // stays in one unit rather than trading points against percentages.
     const unreliability = Math.min(0.3, profile.disabledRate);
-    const swing = profile.consistency.label === "swingy" ? 0.12 : 0;
+    // Only the widest band is penalised. "streaky" is most good robots.
+    const swing = profile.consistency?.consistency === "boom-or-bust" ? 0.12 : 0;
     return profile.shrunkTotal * (unreliability + swing);
   };
   return [...rankable].sort(

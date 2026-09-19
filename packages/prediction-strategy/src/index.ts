@@ -55,11 +55,7 @@ export {
   pickListOrder,
   profilesFromScouting,
 } from "./scouting-profile";
-export type {
-  ConsistencyLabel,
-  ScoutedTeamProfile,
-  TrendDirection,
-} from "./scouting-profile";
+export type { ScoutedTeamProfile, TrendDirection } from "./scouting-profile";
 export {
   allianceScoreSpread,
   lovatWinProbability,

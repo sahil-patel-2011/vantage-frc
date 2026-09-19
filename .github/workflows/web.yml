@@ -62,7 +62,16 @@ jobs:
     # Full suite runs when the PR is marked ready, or via workflow_dispatch.
     if: github.event_name == 'workflow_dispatch' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # 30 was enough while the suite tested signed-out shells against no
+    # database. Now that it signs in and pages actually load data, a full pass
+    # is around 55 minutes — the job was being killed mid-run and reporting as
+    # a failure, which is the same misleading red the cancellations used to be.
+    #
+    # Left at one worker deliberately: the specs share one dev server and one
+    # database, and several create rows another spec then counts. Parallelising
+    # would be the way to cut this down, and it is a change that needs the
+    # fixtures isolated first rather than a flag flipped here.
+    timeout-minutes: 75
     # This job had no database, so Better Auth could not look a user up, every
     # sign-in failed, and the suite reported a wall of assertion failures that
     # had nothing to do with the code under test. `E2E_AUTH_FIXTURE` made it
