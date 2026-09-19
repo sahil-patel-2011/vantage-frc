@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { AIAttribution, Button, EmptyState } from "../../components/ui";
+import { AIAttribution, Button, EmptyState, PageHeader } from "../../components/ui";
 import {
   AI_EXPAND_IDLE,
   expandedDisplay,
@@ -181,9 +181,11 @@ export default function MatchDebriefClient({ orgId }: { orgId: string | null }) 
   if (view.status === "setup_required") {
     return (
       <main className="intel-app">
-        <header className="intel-header">
-          <div><span className="eyebrow">VANTAGE / MATCH LOG</span><h1>Match debrief</h1></div>
-        </header>
+        {/* The app shell already says which product this is and where the page
+            sits. A "VANTAGE / MATCH LOG" eyebrow inside the page said it a
+            second time, in a different voice, and left this one page looking
+            like it came from a different application. */}
+        <PageHeader breadcrumbs="Compete / Match debrief" title="Match debrief" />
         <OfflineBanner feature="Match debrief" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState badge="Needs setup" badgeTone="setup" soft title="Choose your team" description={view.message}>
           <Button as="a" variant="primary" href="/workspace">Choose your team</Button>
@@ -225,13 +227,16 @@ export default function MatchDebriefClient({ orgId }: { orgId: string | null }) 
 
   return (
     <main className="intel-app">
-      <header className="intel-header">
-        <div><span className="eyebrow">VANTAGE / MATCH LOG</span><h1>Our match debrief — {seasonYear}</h1></div>
+      <PageHeader
+        breadcrumbs="Compete / Match debrief"
+        title={`Our match debrief — ${seasonYear}`}
+        description="How our robot performed each match — separate from scouting other teams."
+      >
         <nav className="intel-actions"><a href={`/scouting${orgId ? `?orgId=${orgId}` : ""}`}>Scouting</a><a href={`/repairs${orgId ? `?orgId=${orgId}` : ""}`}>Repairs</a><a href="/workspace">Your team →</a></nav>
-      </header>
+      </PageHeader>
       <OfflineBanner feature="Match debrief" fromCache={fromCache} cachedAt={cachedAt} />
       {message && <p className="telemetry-status">{message}</p>}
-      <p className="telemetry-status">Log how <strong>our</strong> robot performed each match — separate from scouting other teams. Patterns here tell you what to fix before the next match.</p>
+      <p className="telemetry-status">Patterns here tell you what to fix before the next match.</p>
 
       <section className="metric-grid">
         <article><span>Record (W-L-T)</span><strong>{view.summary.record}</strong></article>

@@ -47,6 +47,14 @@ const INTENTIONALLY_UNLISTED = new Map<string, string>([
   ["/display", "wall display, opened once on a dedicated screen"],
   ["/whats-new", "reached from the account menu"],
   ["/desktop-link", "approval landing opened by the desktop app's sign-in flow"],
+  // Opened from a minted kiosk token, copied to the clipboard on the Display
+  // setup page and pasted into a pit TV or a Pi stick. There is no signed-in
+  // person to show a menu to.
+  ["/display/kiosk", "opened from a minted read-only kiosk token on a pit TV"],
+  ["/display/stage", "opened from a minted read-only kiosk token on a pit TV"],
+  // A shared snapshot. The page itself says the link only opens the board for
+  // the team that created it, so a menu entry would point at nothing.
+  ["/strategy/board", "opened from a shared board link, scoped to one team"],
 ]);
 
 /** Directory names that are not user-facing routes. */
@@ -104,6 +112,20 @@ for (const row of LEGACY_HUB_REDIRECTS) {
  * hours kiosk from Hours, CAD setup from CAD) is legitimately not in a menu —
  * what matters is that SOMETHING points at it. A page with neither a menu
  * entry nor a single inbound link is the real orphan.
+ *
+ * A *link*, though, and this is where the rule used to leak. It counted any
+ * string literal that happened to equal a route, so a page was "reachable"
+ * because `lib/offline/shell-routes.ts` listed it as cacheable, or because
+ * `robots.ts` told crawlers to stay off it. Neither of those is a way in for a
+ * person. The rule reported no orphans while /match-debrief — a complete
+ * feature with an API, offline support and its own browser specs — could be
+ * opened only by typing the URL.
+ *
+ * So: the mention has to be in something that navigates. An `href`, an
+ * `href:` in a related-links list, a `path:` in one (those become hrefs a few
+ * lines further down, through a helper this cannot see), a helper that builds
+ * one, or a redirect. And route registries are excluded outright, because
+ * listing a route is the one thing they all do.
  */
 function collectSourceFiles(dir: string, acc: string[] = []): string[] {
   let entries: string[];
@@ -127,6 +149,26 @@ function collectSourceFiles(dir: string, acc: string[] = []): string[] {
   return acc;
 }
 
+/**
+ * Files whose whole job is to list routes. A route appearing here says nothing
+ * about whether anybody can get to it.
+ */
+const ROUTE_REGISTRIES = [
+  "lib/offline/shell-routes.ts",
+  "lib/nav/route-coverage.test.ts",
+  "app/robots.ts",
+  "app/sitemap.ts",
+  "lib/offline/offline-related.ts",
+];
+
+/**
+ * `href="/x"`, `href={"/x"}`, `href={`/x`}`, `href: "/x"`, `path: "/x"` in a
+ * related-links list, a helper that builds one (`withOrgHref("/x", …)`,
+ * `hubHref("/x", …)`), or a redirect.
+ */
+const NAVIGATING_MENTION =
+  /(?:href|path)\s*[=:]\s*\{?\s*["'`](\/[a-z0-9][a-z0-9\-/]*)|(?:withOrgHref|hubHref|withOrg|redirect|push|replace)\(\s*["'`](\/[a-z0-9][a-z0-9\-/]*)/g;
+
 const linkedRoutes = new Set<string>();
 {
   const sources = [
@@ -142,9 +184,10 @@ const linkedRoutes = new Set<string>();
     } catch {
       continue;
     }
-    // Any in-app path that appears as a string literal in another route's code.
-    for (const match of text.matchAll(/["'`](\/[a-z0-9][a-z0-9\-/]*)(?:[?"'`#])/g)) {
-      const path = match[1]!.replace(/\/$/, "");
+    if (ROUTE_REGISTRIES.some((name) => file.split("\\").join("/").endsWith(name))) continue;
+    // An in-app path in a position that actually navigates somewhere.
+    for (const match of text.matchAll(NAVIGATING_MENTION)) {
+      const path = (match[1] ?? match[2])!.replace(/\/$/, "");
       if (!routeSet.has(path)) continue;
       // A page linking to itself does not make it discoverable.
       const owning = join(APP_DIR, ...path.split("/").filter(Boolean));
@@ -207,15 +250,36 @@ describe("R6 — the palette surfaces a tool from a short prefix", () => {
     expect(failures, `palette misses:\n  ${failures.join("\n  ")}`).toEqual([]);
   });
 
-  it("surfaces every destination from a 4-character prefix", () => {
-    // Eight tools begin with "Match", so no ranking can fit them all into a
-    // top-5; top-8 is the honest bar for a short, ambiguous prefix.
+  it("surfaces every destination from a four-letter prefix of one of its words", () => {
+    /*
+      Any word, not always the first, because that is what a person types.
+
+      Eight tools begin with "Match" and seven with "Season", so demanding
+      that the first four letters of the label surface the tool is demanding
+      that a ranking fit seven things into a top-8 alongside everything else
+      matching — and the bar has already been raised once to keep up. The next
+      "Season …" feature would raise it again, and each raise makes the rule
+      weaker for every tool that does not share a prefix with anything.
+
+      Somebody looking for Season rollover types "roll", which puts it first.
+      So the honest rule is that SOME short word-prefix finds it near the top;
+      a tool that no four letters of its own name can surface is the one that
+      cannot be found.
+    */
     const failures: string[] = [];
     for (const entry of catalog) {
-      const probe = entry.label.slice(0, Math.min(4, entry.label.length));
-      const top8 = searchCommands(probe, catalog, { limit: 8 }).map((hit) => hit.href);
-      if (!top8.includes(entry.href)) {
-        failures.push(`"${probe}" did not surface ${entry.label} (${entry.href})`);
+      const words = entry.label
+        .split(/[^A-Za-z0-9]+/)
+        .filter((word) => word.length >= 3)
+        .map((word) => word.slice(0, 4));
+      const probes = words.length ? words : [entry.label.slice(0, 4)];
+      const found = probes.some((probe) =>
+        searchCommands(probe, catalog, { limit: 8 })
+          .map((hit) => hit.href)
+          .includes(entry.href),
+      );
+      if (!found) {
+        failures.push(`no four letters of "${entry.label}" surface it (${entry.href})`);
       }
     }
     expect(failures, `palette misses:\n  ${failures.join("\n  ")}`).toEqual([]);

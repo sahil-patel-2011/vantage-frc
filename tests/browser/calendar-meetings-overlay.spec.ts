@@ -60,6 +60,23 @@ async function createMeeting(
   );
 }
 
+/**
+ * Opens a day that has collapsed some of what is on it.
+ *
+ * A cell shows three chips and hides the rest behind "N more", and milestones
+ * take those slots before meetings do. Running this spec on its own, the day
+ * was empty and the meeting was the only thing on it; running it after the
+ * rest of the suite, the same day already held three milestones somebody
+ * else's spec had put there and the meeting was real, correct and collapsed.
+ *
+ * Pressing "N more" is also what a person does, so this is not a workaround
+ * so much as the rest of the interaction.
+ */
+async function expandDay(page: import("@playwright/test").Page, date: string) {
+  const more = page.locator(`.cal-grid-day[data-date="${date}"] .cal-grid-more`);
+  if (await more.count()) await more.first().click();
+}
+
 async function walkTo(page: import("@playwright/test").Page, monthName: string) {
   const heading = page.locator(".cal-grid-move h2");
   await expect(heading).toBeVisible({ timeout: 20_000 });
@@ -99,6 +116,7 @@ test("a meeting made on the team calendar shows up on the season grid", async ({
   await page.reload();
   await walkTo(page, start.toLocaleDateString("en-US", { month: "long", year: "numeric" }));
 
+  await expandDay(page, localDay(start));
   const chip = page.locator(".cal-grid-meeting").filter({ hasText: title });
   await expect(chip.first()).toBeVisible({ timeout: 15_000 });
   // On the right square, and carrying the time — a season milestone has no
@@ -120,6 +138,7 @@ test("pressing a meeting goes to the calendar that owns it", async ({ page }) =>
   await page.reload();
   await walkTo(page, start.toLocaleDateString("en-US", { month: "long", year: "numeric" }));
 
+  await expandDay(page, localDay(start));
   const chip = page.locator(".cal-grid-meeting").filter({ hasText: title }).first();
   await expect(chip).toBeVisible({ timeout: 15_000 });
   // A link, not a button: it leaves for the calendar that can edit it, and it
