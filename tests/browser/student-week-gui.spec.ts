@@ -72,7 +72,13 @@ test.describe("student-week GUI path", () => {
     const setup = page.getByRole("heading", { name: /Choose your team|Needs setup/i }).or(
       page.getByRole("link", { name: /Choose your team|Set the event you’re at|Set active event/i }),
     );
-    const title = page.getByRole("heading", { name: /My Day|Next match/i });
+    /*
+      Under the Competition hub the page's own "My Day" h1 is display:none —
+      the hub supplies the h1 — so a role locator cannot see it, and this
+      passed only in the moment before the org resolved and the gate was still
+      on screen. "Our matches" is the heading the tab actually paints.
+    */
+    const title = page.getByRole("heading", { name: /My Day|Next match|Our matches/i });
     await expect(scout.or(setup).or(title).or(loadFailureHeading(page)).first()).toBeVisible({
       timeout: 15_000,
     });

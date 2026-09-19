@@ -22,7 +22,11 @@
 .cal-hero-week-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cal-hero-shop strong{font:700 15px/1.3 var(--font-source-sans),ui-sans-serif;color:var(--ink)}
 
-.cal-hero-progress{display:grid;gap:8px;align-content:start;min-width:220px;flex:1;max-width:320px;font-size:12px}
+/* `max-width` capped this at 320px, so on a width where the hero wraps it
+   landed alone on the second row as a half-finished stub under the date. It
+   fills whatever row it ends up on now: rightmost when the four blocks fit,
+   a full-width footer when they do not. */
+.cal-hero-progress{display:grid;gap:8px;align-content:start;min-width:220px;flex:1 1 220px;font-size:12px}
 .cal-track{height:8px;background:var(--surface-2);border-radius:var(--radius-pill);overflow:hidden}
 .cal-track i{display:block;height:100%;background:var(--accent)}
 .cal-track i.done{background:var(--positive)}
