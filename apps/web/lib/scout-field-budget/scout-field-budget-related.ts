@@ -1,11 +1,11 @@
 import { hubHref } from "../nav/hubs";
+import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 
 /** Soft-UI related surfaces for Scout Field-Count Budget (never DEMO field totals). */
 export const SCOUT_FIELD_BUDGET_RELATED_LINKS = [
   { id: "forms", label: "Form builder", kind: "hub" as const, tab: "forms" },
   { id: "scouting", label: "Scouting", kind: "hub" as const, tab: "scouting" },
-  { id: "schema-ab", label: "Schema A/B", kind: "hub" as const, tab: "scouting-schema-ab" },
   { id: "coverage", label: "Coverage Live", kind: "hub" as const, tab: "scout-coverage-live" },
 ] as const;
 
@@ -20,11 +20,11 @@ export type ScoutFieldBudgetRelatedLink = {
 export const SCOUT_FIELD_BUDGET_RELATED_INCLUDE: ScoutFieldBudgetRelatedId[] = [
   "forms",
   "scouting",
-  "schema-ab",
+  "coverage",
 ];
 
 /**
- * Soft-UI cross-links from Field-Count Budget → Forms / Scouting / Schema A/B.
+ * Soft-UI cross-links from Field-Count Budget → Forms / Scouting / Coverage.
  * Build with hubHref — never broken JSX href templates.
  */
 export function scoutFieldBudgetRelatedLinks(
@@ -86,12 +86,6 @@ export function scoutFieldBudgetSetupSteps(orgId?: string | null): ScoutFieldBud
       label: "Open Scouting",
       detail: "Live match forms stay blank until scouts log real rows.",
       href: hubHref("/competition", "scouting", orgId),
-    },
-    {
-      id: "schema-ab",
-      label: "Open Schema A/B",
-      detail: "Compare schema variants after you lint the field-count budget.",
-      href: hubHref("/competition", "scouting-schema-ab", orgId),
     },
   ];
 }
@@ -168,7 +162,7 @@ export function scoutFieldBudgetShellCopy(kind: ScoutFieldBudgetShellKind): Scou
 
 /**
  * Soft-UI next actions for Field-Count Budget empty/setup shells.
- * Points at Forms / Scouting / Schema A/B — never invents DEMO field totals.
+ * Points at Forms / Scouting / Coverage — never invents DEMO field totals.
  */
 export function scoutFieldBudgetNextActions(input: {
   orgId?: string | null;
@@ -180,51 +174,12 @@ export function scoutFieldBudgetNextActions(input: {
   const snapshotCount = input.snapshotCount ?? 0;
   const overBudgetCount = input.overBudgetCount ?? 0;
 
+  // One source for the setup path. These used to be two hand-written lists
+  // that happened to look like the setup steps, so removing a link from the
+  // steps left the actions saying something different — which is the drift
+  // `setupActionsFrom` exists to stop.
   if (!orgId || input.shell === "setup") {
-    if (!orgId) {
-      return [
-        {
-          id: "workspace",
-          label: "Choose your team",
-          detail: "Choose your team before linting schemas.",
-          href: "/workspace",
-          primary: true,
-        },
-        {
-          id: "forms",
-          label: "Open Form builder",
-          detail: "Schemas stay blank until your team drafts real forms.",
-          href: hubHref("/competition", "forms", null),
-        },
-        {
-          id: "scouting",
-          label: "Open Scouting",
-          detail: "Match forms stay empty until scouts log real rows.",
-          href: hubHref("/competition", "scouting", null),
-        },
-      ];
-    }
-    return [
-      {
-        id: "workspace",
-        label: "Choose your team",
-        detail: "Finish membership setup so Field-Count Budget can load.",
-        href: withOrgHref("/workspace", orgId),
-        primary: true,
-      },
-      {
-        id: "forms",
-        label: "Open Form builder",
-        detail: "Draft the schema you want to lint.",
-        href: hubHref("/competition", "forms", orgId),
-      },
-      {
-        id: "schema-ab",
-        label: "Open Schema A/B",
-        detail: "Compare variants after the first lint lands.",
-        href: hubHref("/competition", "scouting-schema-ab", orgId),
-      },
-    ];
+    return setupActionsFrom(scoutFieldBudgetSetupSteps(orgId));
   }
 
   if (input.shell === "error") {
@@ -265,12 +220,6 @@ export function scoutFieldBudgetNextActions(input: {
         label: "Open Form builder",
         detail: "Count fields from the live scouting form.",
         href: hubHref("/competition", "forms", orgId),
-      },
-      {
-        id: "schema-ab",
-        label: "Open Schema A/B",
-        detail: "A/B variants stay empty until schemas exist.",
-        href: hubHref("/competition", "scouting-schema-ab", orgId),
       },
     ];
   }

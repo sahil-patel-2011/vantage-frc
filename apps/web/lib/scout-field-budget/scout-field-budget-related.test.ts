@@ -11,11 +11,11 @@ import {
 import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("scoutFieldBudgetRelatedLinks", () => {
-  it("builds Forms / Scouting / Schema A/B cross-links", () => {
+  it("builds Forms / Scouting / Coverage cross-links", () => {
     const links = scoutFieldBudgetRelatedLinks("org-1", {
       include: [...SCOUT_FIELD_BUDGET_RELATED_INCLUDE],
     });
-    expect(links.map((l) => l.id)).toEqual(["forms", "scouting", "schema-ab"]);
+    expect(links.map((l) => l.id)).toEqual(["forms", "scouting", "coverage"]);
     expect(links.find((l) => l.id === "forms")?.href).toBe("/competition?tab=forms&orgId=org-1");
   });
 

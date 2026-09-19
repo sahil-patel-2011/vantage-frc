@@ -60,7 +60,6 @@ function SchemaSyncRelated({ orgId }: { orgId?: string | null }) {
     <nav className="product-hub-related" aria-label="Related scouting tools">
       <a href={hubHref("/competition", "scouting", orgId)}>Scouting</a>
       <a href={hubHref("/competition", "scout-p2p-relay", orgId)}>Pit mesh</a>
-      <a href={hubHref("/competition", "scouting-schema-ab", orgId)}>Schema A/B</a>
     </nav>
   );
 }

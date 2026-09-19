@@ -59,7 +59,6 @@ const KEYWORDS: Record<string, string[]> = {
   "competition:scout-assisted-count": ["assisted count", "counting help", "tally"],
   "competition:scout-schema-negotiate": ["schema sync", "share form", "other teams", "negotiate"],
   "competition:scouting-heat-signals": ["heat", "signals", "hot teams", "trends"],
-  "competition:scouting-schema-ab": ["a/b test", "experiment", "compare forms"],
   "competition:data-quality-scorecard": ["data quality", "scorecard", "clean data", "errors"],
   // --- Competition · Strategy ---
   "competition:strategy": ["strategy", "plan", "predictions", "win", "matchup", "analysis"],

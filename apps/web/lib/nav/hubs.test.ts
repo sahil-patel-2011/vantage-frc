@@ -300,7 +300,6 @@ describe("product hubs", () => {
       "scout-assisted-count",
       "scout-schema-negotiate",
       "scouting-heat-signals",
-      "scouting-schema-ab",
     ];
     const nested = hubNestedTabs(competition, "scouting").map((tab) => tab.id);
     for (const id of hidden) {

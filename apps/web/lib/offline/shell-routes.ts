@@ -208,7 +208,6 @@ export const OFFLINE_SHELL_ROUTES = [
   "/scout-p2p-relay",
   "/scout-schema-negotiate",
   "/scout-training-mode",
-  "/scouting-schema-ab",
   "/scouting/forms",
   "/search",
   "/season-rollover",
@@ -265,7 +264,6 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/scouting/lineup")) return "Lineup & coverage";
   if (bare.startsWith("/scouting/forms")) return "Scout forms";
   if (bare.startsWith("/scouting-heat-signals")) return "Scouting Heat Signals";
-  if (bare.startsWith("/scouting-schema-ab")) return "Schema A/B";
   if (bare.startsWith("/scout-schema-negotiate")) return "Schema sync";
   if (bare.startsWith("/scout-p2p-relay")) return "Pit mesh";
   if (bare.startsWith("/scout-training-mode")) return "Scout training mode";

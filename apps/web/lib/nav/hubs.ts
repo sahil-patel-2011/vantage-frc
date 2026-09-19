@@ -97,7 +97,6 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         { id: "scout-assisted-count", label: "Assisted count", legacyHref: "/scout-assisted-count", inStrip: false },
         { id: "scout-schema-negotiate", label: "Schema sync", legacyHref: "/scout-schema-negotiate", inStrip: false },
         { id: "scouting-heat-signals", label: "Heat signals", legacyHref: "/scouting-heat-signals", inStrip: false },
-        { id: "scouting-schema-ab", label: "Schema A/B", legacyHref: "/scouting-schema-ab", inStrip: false },
       ]),
       { id: "strategy", label: "Strategy", legacyHref: "/strategy" },
       ...nest("strategy", [
