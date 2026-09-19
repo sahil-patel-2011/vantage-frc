@@ -11,7 +11,18 @@ const BANNED = ["Setup required", "Hard cut-off", "Hosted by Vantage", "3D Print
 
 const LEAVES = [
   { path: "/team/usage", heading: /Where the team's AI spend goes|Choose your team|Usage/ },
-  { path: "/team/budgets", heading: /Chat limits|Choose your team/ },
+  /*
+    /team/budgets redirects into the AI hub, which supplies the page's h1 and
+    hides the feature's own with display:none — so "Chat limits" is not
+    something a person or a role locator can find there. This entry passed
+    only when the org had not resolved yet and the team gate was briefly on
+    screen, which is to say it passed by accident and failed the rest of the
+    time.
+
+    Every other leaf here shows its own heading; this is the one that does
+    not, so it names what the tab actually puts on screen.
+  */
+  { path: "/team/budgets", heading: /This tab · hard limits|Chat limits|Choose your team/ },
   { path: "/files", heading: "Files" },
   { path: "/media", heading: "Media" },
   { path: "/help", heading: "Help centre" },
