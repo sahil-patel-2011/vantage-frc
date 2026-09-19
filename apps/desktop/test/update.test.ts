@@ -307,3 +307,111 @@ describe("stale hosted page after a web deploy", () => {
     ).toBe(false);
   });
 });
+
+const REL = "https://github.com/sahil-patel-2011/vantage-frc/releases/download/desktop-v0.3.0";
+
+describe("picking the build for this machine", () => {
+  const multi = {
+    version: "0.3.0",
+    minimumVersion: "0.1.0",
+    downloads: {
+      win_nsis: `${REL}/Vantage-0.3.0-win-x64-setup.exe`,
+      mac_dmg: `${REL}/Vantage-0.3.0-mac-arm64.dmg`,
+    },
+    sha256: "a".repeat(64),
+    sha256ByDownload: { win_nsis: "a".repeat(64), mac_dmg: "b".repeat(64) },
+  };
+
+  it("hands Windows the installer and macOS the disk image", () => {
+    expect(parseManifest(multi, "win32")?.url).toContain("setup.exe");
+    expect(parseManifest(multi, "darwin")?.url).toContain(".dmg");
+  });
+
+  it("verifies the file it is actually downloading", () => {
+    // One top-level digest was only ever right while there was one download.
+    // With a Mac build published too it would check the wrong file and refuse
+    // every install.
+    expect(parseManifest(multi, "win32")?.sha256).toBe("a".repeat(64));
+    expect(parseManifest(multi, "darwin")?.sha256).toBe("b".repeat(64));
+  });
+
+  it("offers nothing rather than a file the machine cannot open", () => {
+    const winOnly = { ...multi, downloads: { win_nsis: multi.downloads.win_nsis }, sha256: "a".repeat(64) };
+    expect(parseManifest(winOnly, "darwin")).toBeNull();
+    expect(parseManifest(winOnly, "win32")).not.toBeNull();
+  });
+
+  it("still reads an old manifest that predates per-platform downloads", () => {
+    expect(parseManifest({ ...MANIFEST }, "win32")?.url).toBe(MANIFEST.url);
+    // That bare url is a Windows installer by construction, so a Mac must not
+    // be handed it.
+    expect(parseManifest({ ...MANIFEST }, "darwin")).toBeNull();
+  });
+});
+
+describe("release notes", () => {
+  const notes = {
+    headline: "Predictions now work at off-season events",
+    added: ["Match scores estimated from your own scouting"],
+    fixed: ["The calendar opened on a grid you had to drag sideways"],
+    next: ["Pit scouting on the same estimates"],
+  };
+
+  it("carries what changed, in three plain lists", () => {
+    const parsed = parseManifest({ ...MANIFEST, releaseNotes: notes });
+    expect(parsed?.releaseNotes).toEqual(notes);
+  });
+
+  it("is absent rather than empty when there is no headline", () => {
+    expect(parseManifest({ ...MANIFEST, releaseNotes: { added: ["x"] } })?.releaseNotes).toBeUndefined();
+    expect(parseManifest({ ...MANIFEST, releaseNotes: "nope" })?.releaseNotes).toBeUndefined();
+  });
+
+  it("drops anything that is not a line of text", () => {
+    const parsed = parseManifest({
+      ...MANIFEST,
+      releaseNotes: { headline: "Hi", added: ["real", 7, null, "  "], fixed: "not a list" },
+    });
+    expect(parsed?.releaseNotes?.added).toEqual(["real"]);
+    expect(parsed?.releaseNotes?.fixed).toEqual([]);
+  });
+
+  it("caps a manifest that tries to paste an essay into the window", () => {
+    const parsed = parseManifest({
+      ...MANIFEST,
+      releaseNotes: {
+        headline: "x".repeat(500),
+        added: Array.from({ length: 40 }, (_, i) => `line ${i}`),
+      },
+    });
+    expect(parsed?.releaseNotes?.headline.length).toBe(200);
+    expect(parsed?.releaseNotes?.added).toHaveLength(8);
+  });
+});
+
+describe("not stranding shells that are already installed", () => {
+  it("keeps reading the plain sha256 string an older manifest shape uses", () => {
+    // Shells in the wild validate `sha256` with a 64-hex regex. If a release
+    // ever publishes an object there instead, every one of them rejects the
+    // manifest and stops updating — permanently, and without saying so.
+    const legacy = {
+      version: "0.3.0",
+      minimumVersion: "0.1.0",
+      downloads: { win_nsis: `${REL}/Vantage-0.3.0-win-x64-setup.exe` },
+      sha256: "c".repeat(64),
+    };
+    expect(parseManifest(legacy, "win32")?.sha256).toBe("c".repeat(64));
+  });
+
+  it("never hands a non-Windows download the Windows digest", () => {
+    const missingMacDigest = {
+      version: "0.3.0",
+      minimumVersion: "0.1.0",
+      downloads: { mac_dmg: `${REL}/Vantage-0.3.0-mac-arm64.dmg` },
+      sha256: "c".repeat(64),
+    };
+    // Better to offer no update than to check a DMG against an .exe hash and
+    // either fail confusingly or, worse, pass something unverified.
+    expect(parseManifest(missingMacDigest, "darwin")).toBeNull();
+  });
+});

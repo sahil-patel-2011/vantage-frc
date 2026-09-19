@@ -1,0 +1,22 @@
+{
+  "$comment": "What each desktop release changed, written for the person deciding whether to press Update — not a changelog. The release workflow reads the entry matching apps/desktop/package.json version and publishes it in latest.json, which is what the update window renders. Keep every line in plain words: no selector names, no hook names, no file paths. If a line would not mean anything to a student in a pit, it does not belong here.",
+  "0.1.0": {
+    "headline": "Predictions now work at off-season events, and the app updates itself.",
+    "added": [
+      "Match scores are estimated from your own scouting when no official numbers exist — off-season events like GRITS, week-0 scrimmages, and the first morning of an event",
+      "A robot your scouts keep seeing break down is marked down automatically, which the official ratings cannot see",
+      "The app tells you when a new version is ready and what changed, instead of going quiet",
+      "Mac builds update themselves the same way Windows ones do"
+    ],
+    "fixed": [
+      "The team calendar opened on a week grid you had to drag sideways to read on a phone",
+      "The scouting form's first field sat below the bottom of a phone screen, so a scout saw no form at all",
+      "Pages showed your team's name twice, as \"Team 6925 (Team 6925)\"",
+      "The browser tab said Vantage twice on several pages"
+    ],
+    "next": [
+      "Pit scouting feeding the same score estimates",
+      "A colour scheme that reads as calmer and less blue"
+    ]
+  }
+}

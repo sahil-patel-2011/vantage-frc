@@ -93,7 +93,7 @@ export const UPDATE_STATUS_UNAVAILABLE_BODY = "Try again when you're online.";
 export const UPDATE_COPY = {
   none: {
     title: "Vantage is up to date",
-    body: "You're on the current Windows app. Team pages update on their own when you reopen them.",
+    body: "You're on the current version. Team pages update on their own when you reopen them.",
   },
   required: {
     title: "Update needed",

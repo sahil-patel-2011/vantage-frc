@@ -84,6 +84,20 @@
       button:disabled { opacity: 0.55; cursor: default; }
       .note { font-size: 0.82rem; }
       .note.warn { color: var(--danger); }
+      /* What changed, for the person deciding whether to press the button. */
+      .notes { margin: 18px 0 6px; }
+      .notes-headline { margin: 0 0 12px; font-weight: 650; }
+      .notes-group { margin: 0 0 12px; }
+      .notes-group h2 {
+        margin: 0 0 4px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        opacity: 0.65;
+      }
+      .notes-group ul { margin: 0; padding-left: 18px; }
+      .notes-group li { margin: 2px 0; font-size: 0.88rem; line-height: 1.45; }
       .safety {
         border-top: 1px solid var(--line);
         padding-top: 12px;
@@ -105,7 +119,7 @@
 
       <section class="card">
         <h1 id="title">Checking for updates…</h1>
-        <p id="body">Vantage is looking for a newer Windows app.</p>
+        <p id="body">Vantage is looking for a newer version of this app.</p>
         <div class="versions">
           <span>Installed <b id="current">—</b></span>
           <span id="available-wrap" hidden>Available <b id="available">—</b></span>
@@ -117,6 +131,28 @@
           <button id="recheck">Check again</button>
         </div>
         <p class="note" id="note" hidden></p>
+
+        <section class="notes" id="notes" hidden>
+          <p class="notes-headline" id="notes-headline"></p>
+          <div class="notes-group" id="group-added" hidden>
+            <h2>What's new</h2>
+            <ul id="list-added"></ul>
+          </div>
+          <div class="notes-group" id="group-fixed" hidden>
+            <h2>What this fixes</h2>
+            <ul id="list-fixed"></ul>
+          </div>
+          <div class="notes-group" id="group-next" hidden>
+            <h2>Coming next</h2>
+            <ul id="list-next"></ul>
+          </div>
+        </section>
+
+        <p class="safety">
+          <b>Nothing you have saved is removed by an update.</b> Your scouting, forms,
+          notes and sign-in stay exactly where they are — this replaces the app around
+          them, not the data inside.
+        </p>
         <p class="safety">
           Updates never install while Vantage is in use. A pending update is applied when
           you close the app, or after several minutes with the window idle and off a
@@ -147,7 +183,7 @@
         if (kind === "none") {
           $("title").textContent = "Vantage is up to date";
           $("body").textContent =
-            "You're on the current Windows app. Team pages update on their own when you reopen them.";
+            "You're on the current version. Team pages update on their own when you reopen them.";
         } else if (kind === "required") {
           $("title").textContent = "Update needed";
           $("body").textContent =
@@ -174,6 +210,8 @@
         show($("download"), kind !== "none" && (status.portable || Boolean(status.lastError)));
         show($("later"), kind === "optional" || kind === "overdue");
 
+        renderReleaseNotes(kind === "none" ? null : status.manifest && status.manifest.releaseNotes);
+
         const notes = [];
         if (status.portable) {
           notes.push("This copy of Vantage is a single file. Download the new file and replace this one.");
@@ -182,6 +220,39 @@
         $("note").className = "note" + (status.lastError ? " warn" : "");
         $("note").textContent = notes.join(" ");
         show($("note"), notes.length > 0);
+      }
+
+      /**
+       * Release notes are text from a manifest fetched over the network, so
+       * every line goes in as `textContent` and never as HTML. The whole
+       * section hides when a release ships without notes rather than showing
+       * three empty headings.
+       */
+      function renderReleaseNotes(release) {
+        const groups = [
+          ["added", "group-added", "list-added"],
+          ["fixed", "group-fixed", "list-fixed"],
+          ["next", "group-next", "list-next"],
+        ];
+        if (!release || !release.headline) {
+          show($("notes"), false);
+          return;
+        }
+        $("notes-headline").textContent = release.headline;
+        let anyGroup = false;
+        for (const [key, groupId, listId] of groups) {
+          const items = Array.isArray(release[key]) ? release[key] : [];
+          const list = $(listId);
+          list.textContent = "";
+          for (const item of items) {
+            const li = document.createElement("li");
+            li.textContent = item;
+            list.appendChild(li);
+          }
+          show($(groupId), items.length > 0);
+          if (items.length > 0) anyGroup = true;
+        }
+        show($("notes"), Boolean(release.headline) || anyGroup);
       }
 
       async function refresh(force) {
