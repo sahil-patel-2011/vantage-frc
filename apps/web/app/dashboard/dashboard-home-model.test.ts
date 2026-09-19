@@ -155,3 +155,31 @@ describe("dashboardBoardLists", () => {
     expect(lists.switcherBoards).toEqual([]);
   });
 });
+
+describe("before the widgets have arrived", () => {
+  it("says it is still working it out, not that there is nothing to do", () => {
+    // Every check in the card falls through when the widgets are empty, so an
+    // unloaded board used to read "Nothing you have to do right now" — the one
+    // answer that tells a student to stop looking — and then replace it with
+    // the real one a moment later.
+    const card = homeNowFromWidgets({ orgId: "org-1", widgets: {}, loaded: false });
+    expect(card.title).toBe("Working out what is next");
+    expect(card.title).not.toMatch(/Nothing you have to do/);
+  });
+
+  it("says there is nothing only once it has looked", () => {
+    const card = homeNowFromWidgets({ orgId: "org-1", widgets: {}, loaded: true });
+    expect(card.title).toBe("Nothing you have to do right now");
+  });
+
+  it("treats a missing flag as loaded, so nothing that does not pass it changes", () => {
+    const card = homeNowFromWidgets({ orgId: "org-1", widgets: {} });
+    expect(card.title).toBe("Nothing you have to do right now");
+  });
+
+  it("still asks for a team before anything else", () => {
+    // No org is not a loading state; it is an answer.
+    const card = homeNowFromWidgets({ orgId: "", widgets: {}, loaded: false });
+    expect(card.title).toBe("Choose your team");
+  });
+});

@@ -143,11 +143,31 @@ export function homeNowAction(input: {
   };
 }
 
+/**
+ * The card, from whatever the widgets have loaded.
+ *
+ * `loaded: false` matters. Before the widgets arrive there is nothing to read,
+ * and every check below falls through to "Nothing you have to do right now" —
+ * which the card then showed, and replaced a moment later with "You're in the
+ * shop". A student saw the wrong answer first, confidently, and it is the one
+ * answer that tells them to stop looking.
+ *
+ * So while it does not know, it says that instead.
+ */
 export function homeNowFromWidgets(input: {
   orgId: string;
   nextMatchData?: Record<string, unknown>;
   widgets: Record<string, { type: string; data?: Record<string, unknown> }>;
+  loaded?: boolean;
 }): HomeNowAction {
+  if (input.orgId && input.loaded === false) {
+    return {
+      title: "Working out what is next",
+      detail: "",
+      href: "/my-day",
+      cta: "Open My Day",
+    };
+  }
   const byType = (type: string) => Object.values(input.widgets).find((row) => row.type === type)?.data;
   const next = input.nextMatchData ?? byType("next_match");
   const matchBits = [firstString(next?.compLevel), firstString(String(next?.matchNumber ?? ""))].filter(Boolean);

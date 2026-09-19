@@ -236,6 +236,9 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
       viewLayout={viewLayout}
       displayLayout={displayLayout}
       widgets={home.widgets}
+      // Whether the widgets have arrived, so the "what to do now" card can
+      // say it is still working it out rather than saying there is nothing.
+      widgetsLoaded={dashShell !== "loading"}
       paletteEntries={paletteEntries}
       addableEntries={addableEntries}
       homeStripItems={homeStripItems}

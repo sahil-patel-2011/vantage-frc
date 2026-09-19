@@ -92,6 +92,7 @@ export function DashboardHomeView(props: {
   viewLayout: DashboardWidgetLayout[];
   displayLayout: DashboardWidgetLayout[];
   widgets: Record<string, WidgetPayload>;
+  widgetsLoaded?: boolean;
   paletteEntries: PaletteRow[];
   addableEntries: PaletteRow[];
   homeStripItems: HomeStripItem[];
@@ -184,6 +185,7 @@ export function DashboardHomeView(props: {
     viewLayout,
     displayLayout,
     widgets,
+    widgetsLoaded,
     paletteEntries,
     addableEntries,
     homeStripItems,
@@ -262,7 +264,7 @@ export function DashboardHomeView(props: {
 
   const firstName = (me.name ?? "coach").split(" ")[0] || "coach";
   const boardIsEmpty = layout.length === 0;
-  const now = homeNowFromWidgets({ orgId, nextMatchData, widgets });
+  const now = homeNowFromWidgets({ orgId, nextMatchData, widgets, loaded: widgetsLoaded });
 
   return (
     <main className={`dash-home scan-workbench scan-hub--dashboard${editing ? " is-editing" : ""}`} data-grid={grid.label} data-cols={cols}>

@@ -30,10 +30,45 @@ test("student this week can walk Home → My Day/Scout → Video paste → CAD l
   }
   const homeCta = now.getByRole("link").first();
   await expect(homeCta).toBeVisible();
-  const emptyNow = await now.getByText("Nothing you have to do right now").count();
-  if (emptyNow) {
-    await expect(homeCta).toHaveText(/Open My Day/i);
-  }
+  /*
+    The card is contextual: on duty, in the shop, things on your list, or
+    nothing to do — four states with four buttons. This used to count the
+    "nothing to do" text and then assert the button belonging to it, which is
+    two reads of a card that changes between them: the empty state paints
+    first and the real one replaces it a moment later, so the count said
+    "empty" and the button said "Open My Hours".
+
+    It also assumed the fixture owner is never clocked in, and an earlier
+    spec's clock-in is exactly the kind of thing that outlives its run.
+
+    One read now: whatever the card says, the button is the one that goes with
+    it, and it goes somewhere.
+  */
+  const CTA_FOR = new Map<RegExp, RegExp>([
+    [/Working out what is next/i, /Open My Day/i],
+    [/Nothing you have to do right now/i, /Open My Day/i],
+    [/You.re in the shop/i, /Open My Hours/i],
+    [/You.re on duty/i, /See duties/i],
+    [/thing(s)? on your list|One thing on your list/i, /Open todos/i],
+  ]);
+  // Polled, because the card is allowed to change once: it says it is
+  // working out what is next until the widgets land. What must never be true
+  // is the title and the button disagreeing.
+  await expect
+    .poll(
+      async () => {
+        const cardText = await now.innerText();
+        const label = (await homeCta.innerText()).trim();
+        for (const [title, cta] of CTA_FOR) {
+          if (title.test(cardText)) return cta.test(label);
+        }
+        // An unrecognised state is not a failure of this spec to describe.
+        return true;
+      },
+      { timeout: 20_000, message: "the card's button does not match what it says" },
+    )
+    .toBe(true);
+  await expect(homeCta).toHaveAttribute("href", /.+/);
 
   await homeCta.click();
   await waitForLoadingGone(page);
