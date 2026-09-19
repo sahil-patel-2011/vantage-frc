@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AiInsightPanel } from "../../components/ai-insight-panel";
+import { describeShopTime, shopTimeLeft } from "../../lib/calendar/shop-time-left";
 import { hubHref } from "../../lib/nav/hubs";
 import { CalendarMonth } from "./calendar-month";
 import { CalendarRepeat, useRepeatRule } from "./calendar-repeat";
@@ -584,6 +585,9 @@ function ReadyCalendar({
 }) {
   const orgId = view.context.orgId ?? "";
   const milestones = view.milestones;
+  // Recomputed from the same two lists the grid draws, so the sentence and the
+  // squares can never disagree.
+  const shopTime = shopTimeLeft(milestones, view.meetings ?? []);
   // Local to this form on purpose: a repeat rule is a thing you are typing,
   // not state the rest of the page has any use for.
   const repeat = useRepeatRule(startsOn);
@@ -654,6 +658,29 @@ function ReadyCalendar({
             </>
           )}
         </div>
+        {/*
+          "How many build nights are left before the competition" is the
+          question a team actually asks in January, and the grid could only
+          answer it by eye — squint, count the Tuesdays, forget the week
+          everyone is away for finals, be wrong in the optimistic direction.
+
+          Counted from entries the team really put on the calendar. When there
+          is nothing to count down to, or nothing scheduled to count, this is
+          absent rather than zero: a team that believes it has twenty nights
+          left will commit to a rebuild it cannot finish.
+        */}
+        {shopTime ? (
+          <div className="cal-hero-shop">
+            <span className="cal-hero-kicker">Shop time before {shopTime.targetTitle}</span>
+            <strong>{describeShopTime(shopTime)}</strong>
+            <span className="app-muted">
+              {shopTime.daysUntil === 0
+                ? "Today"
+                : `over ${shopTime.daysUntil} ${shopTime.daysUntil === 1 ? "day" : "days"}`}
+            </span>
+          </div>
+        ) : null}
+
         <div className="cal-hero-progress">
           <span className="app-muted">
             {progress.done}/{progress.total} milestones done · {progress.percent}%
