@@ -650,7 +650,10 @@ function ReadyCalendar({
   };
 
   return (
-    <main className="module-page cal-page">
+    // `data-seeded` decides the stacking order below: on a calendar that
+    // already has entries the once-a-season setup panels move under the grid,
+    // and on an empty one they stay where a new team will find them.
+    <main className="module-page cal-page" data-seeded={milestones.length > 0 ? "yes" : "no"}>
       <PageHeader breadcrumbs="Team / Calendar" title="Season calendar" />
       <OfflineBanner feature="Calendar" fromCache={fromCache} cachedAt={cachedAt} />
 

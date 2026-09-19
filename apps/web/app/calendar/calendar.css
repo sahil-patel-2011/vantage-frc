@@ -141,8 +141,22 @@
 }
 .cal-grid-today:hover{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
 
+/*
+  `minmax(0,1fr)`, not `1fr`.
+
+  `1fr` is `minmax(auto,1fr)`, so a column refuses to shrink below the
+  min-content width of what is in it — and the min-content of a chip is its
+  whole untruncated title, because `text-overflow:ellipsis` describes how to
+  paint an overflow, not how wide the element may be. One long entry title
+  therefore widened its weekday and squeezed the other six. A week with a
+  build night on Thursday came out with a wide Thursday and four columns too
+  narrow to read, which looked like a rendering fault and was arithmetic.
+
+  The heading row is matched to the same track sizing so the labels stay over
+  their own columns.
+*/
 .cal-grid-weekdays{
-  display:grid;grid-template-columns:repeat(7,1fr);
+  display:grid;grid-template-columns:repeat(7,minmax(0,1fr));
   border-bottom:1px solid var(--line);background:var(--surface-2);
 }
 .cal-grid-weekdays span{
@@ -150,11 +164,15 @@
   font:700 11px var(--font-source-sans),ui-sans-serif;
   letter-spacing:.06em;text-transform:uppercase;
 }
-.cal-grid-week{display:grid;grid-template-columns:repeat(7,1fr)}
+.cal-grid-week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
 .cal-grid-week + .cal-grid-week{border-top:1px solid var(--line)}
 
 .cal-grid-day{
   position:relative;display:flex;flex-direction:column;gap:3px;
+  /* Breaks the min-content chain a second time: the cell is itself a flex
+     container, and without this its children set its floor regardless of the
+     track. */
+  min-width:0;
   min-height:104px;padding:4px 5px 6px;
   border-left:1px solid var(--line);
 }
@@ -190,6 +208,8 @@
 
 .cal-grid-entries{
   display:grid;gap:2px;margin:0;padding:0;list-style:none;
+  /* And a third time: a grid's implicit column is auto-sized too. */
+  min-width:0;grid-template-columns:minmax(0,1fr);
 }
 .cal-grid-entries:empty{display:none}
 .cal-grid-chip{
@@ -374,3 +394,29 @@
   display:flex;align-items:baseline;justify-content:space-between;gap:12px;
   padding:0 2px;font-size:13px;
 }
+
+/*
+  What the page is for, first.
+
+  "Seed a season template" and the read-only business dates sat above the
+  calendar — a once-a-season setup step and a reference panel, in front of the
+  thing you open the page to look at. On a phone that put the grid below two
+  full-width panels, so the calendar was something you scrolled to find.
+
+  The page is already a grid with a gap, so this is ordering and nothing else:
+  no positioning, no layout to get wrong at a width nobody tested.
+
+  On a calendar with nothing on it the setup panels stay at the top, because
+  then they are the thing you came for.
+*/
+.cal-page[data-seeded="yes"] > .cal-grid{order:1}
+.cal-page[data-seeded="yes"] > .cal-list-scope,
+.cal-page[data-seeded="yes"] > .cal-month{order:2}
+.cal-page[data-seeded="yes"] > .cal-add{order:3}
+.cal-page[data-seeded="yes"] > .cal-linked{order:4}
+/* Named explicitly rather than left at the default: an unordered child sits
+   at 0, which would float the AI panel from the end of the page to just under
+   the hero — the reordering has to account for every child, not the ones it
+   is about. */
+.cal-page[data-seeded="yes"] > .aii-panel{order:6}
+.cal-page[data-seeded="yes"] > .cal-seed{order:5}

@@ -81,8 +81,36 @@ test("creates a practice schedule on exactly the days chosen", async ({ page }) 
   expect(dates[dates.length - 1]).toBe("2027-01-28");
 });
 
+/**
+ * Removes what earlier runs of this spec left behind.
+ *
+ * Each run adds five Wednesdays to March 2027, and a day cell shows three
+ * chips before it collapses the rest behind "N more" — so by the third run
+ * the entry this test had just created was real, correct, and not on screen.
+ * The spec was failing on its own litter rather than on the feature.
+ */
+async function clearLeftovers(page: import("@playwright/test").Page, prefix: string) {
+  await page.evaluate(async (needle) => {
+    const orgId = new URLSearchParams(location.search).get("orgId") ?? "";
+    const response = await fetch(`/api/calendar?orgId=${orgId}`, { cache: "no-store" });
+    if (!response.ok) return;
+    const body = (await response.json()) as { milestones?: { id: string; title: string }[] };
+    for (const row of body.milestones ?? []) {
+      if (!row.title.startsWith(needle)) continue;
+      await fetch(`/api/calendar?orgId=${orgId}`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "delete_milestone", orgId, id: row.id }),
+      });
+    }
+  }, prefix);
+}
+
 test("the schedule shows up on the grid it was added to", async ({ page }) => {
   await openCalendar(page);
+  await clearLeftovers(page, "Grid practice ");
+  await page.reload();
+  await expect(page.locator(".cal-repeat")).toBeVisible({ timeout: 20_000 });
 
   const title = `Grid practice ${Date.now()}`;
   await page.getByPlaceholder("e.g. Week 2 scrimmage").fill(title);
@@ -104,4 +132,8 @@ test("the schedule shows up on the grid it was added to", async ({ page }) => {
   });
   // Five Wednesdays in March 2027.
   await expect(page.locator(".cal-grid").getByText(title, { exact: true })).toHaveCount(5);
+
+  // And leave the month as it was found, so the next run starts from three
+  // free chip slots rather than from this run's five.
+  await clearLeftovers(page, "Grid practice ");
 });
