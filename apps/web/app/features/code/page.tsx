@@ -65,7 +65,7 @@ export default function CodeFeaturePage() {
             <h2>Related.</h2>
             <p>
               <a href="/features/strategy">Strategy & Assistant</a> · <a href="/features/cad">CAD agent</a> ·{" "}
-              <a href="/pricing">Pricing</a>
+              <a href="/pricing">What it costs</a>
             </p>
           </div>
           <div className="pricing-preview-actions">

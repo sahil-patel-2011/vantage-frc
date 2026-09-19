@@ -136,7 +136,7 @@ export function HomeShowcase() {
             {" · "}
             <a href="/workflow">How it works</a>
             {" · "}
-            <a href="/pricing">Pricing</a>
+            <a href="/pricing">What it costs</a>
             {" · "}
             <a href="/signin">Sign in</a>
           </p>

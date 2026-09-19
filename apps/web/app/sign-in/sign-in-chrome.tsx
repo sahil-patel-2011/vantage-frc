@@ -53,7 +53,7 @@ export function AccessFooter() {
     <p className="signin-waitlist">
       Need access? <a href="/#waitlist">Join the waitlist</a>
       <span aria-hidden="true"> · </span>
-      <a href="/pricing">Pricing</a>
+      <a href="/pricing">What it costs</a>
     </p>
   );
 }

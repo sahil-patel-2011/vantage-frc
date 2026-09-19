@@ -40,8 +40,11 @@ test("a signed-in account with no team is told what is happening, once", async (
   await expect(main).not.toContainText("Pick a team first");
   await expect(main).not.toContainText("setup_required");
 
-  // A dead end offers no shortcuts that are also dead ends. Pricing and Chat
-  // are not reachable for this account, so linking them here is a second wall.
+  // A dead end offers no shortcuts that are also dead ends. The cost page and
+  // Chat are not reachable for this account, so linking them here is a second
+  // wall. Both spellings, because the nav label changed and the assertion is
+  // about the destination, not the words on it.
   await expect(main.getByRole("link", { name: "Pricing" })).toHaveCount(0);
+  await expect(main.getByRole("link", { name: "What it costs" })).toHaveCount(0);
   await expect(main.getByRole("link", { name: "Chat" })).toHaveCount(0);
 });

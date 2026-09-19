@@ -24,8 +24,8 @@ export default function PricingPage() {
       <SiteHeader />
       <main className="pricing-page">
         <section className="lux-route-hero pricing-hero">
-          <p className="lux-kicker">Pricing</p>
-          <h1>Every feature on every plan. You are choosing how much AI you want.</h1>
+          <p className="lux-kicker">What it costs</p>
+          <h1>The software is free. You are choosing how much hosted AI you want.</h1>
           <p>
             Nothing is feature-gated: Free has the same scouting, event day, build and business tools as Max. Plans
             differ only in hosted AI allowance, and you can use your own AI on any plan — including Free. Usage
