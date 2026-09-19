@@ -37,7 +37,20 @@ export async function expectHubReadyOrGate(
   recovery?: Locator,
 ): Promise<boolean> {
   const gate = hubTeamGate(page);
-  const timeout = 20_000;
+  /*
+    Generous on purpose.
+
+    This runs against `next dev`, which compiles a route the first time it is
+    asked for, and by the end of a 350-spec run the server has been under
+    continuous load for nine minutes. Twenty seconds was enough for every
+    route in isolation — scouting paints in two — and not always enough at the
+    end of a full run, so the suite produced one failure per run, a different
+    one each time, each of which reads like a broken page.
+
+    A higher ceiling costs nothing except on a genuine failure, and costs a
+    diagnosis every time it is too low.
+  */
+  const timeout = 45_000;
   await waitForLoadingGone(page, timeout);
   const combined = recovery ? ready.or(recovery).or(gate) : ready.or(gate);
   // `.or()` is strict when two headings match (h1 "Match video" and
