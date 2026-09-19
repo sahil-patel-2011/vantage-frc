@@ -74,7 +74,14 @@ export const VERIFY_CAD_OPERATIONS = new Set<CadOperation>([
   "export_gltf",
 ]);
 
-const ALLOWLISTED: readonly CadOperation[] = [
+/**
+ * Every operation the agent may ever perform. Exported so a test can check
+ * that each one is classified as either verify-able or destructive — an
+ * operation in neither set is allowed, does not auto-run, and is not flagged
+ * as needing confirmation, which leaves whether it is gated up to whoever set
+ * `requiresApproval` on the action.
+ */
+export const ALLOWLISTED_CAD_OPERATIONS: readonly CadOperation[] = [
   "create_sketch",
   "create_extrude",
   "create_fillet",
@@ -229,7 +236,7 @@ export function sanitizeUntrustedCadText(input: string, maxLength = 8_000): stri
 }
 
 export function isAllowlistedCadOperation(operation: string): operation is CadOperation {
-  return (ALLOWLISTED as readonly string[]).includes(operation);
+  return (ALLOWLISTED_CAD_OPERATIONS as readonly string[]).includes(operation);
 }
 
 export function requiresDestructiveConfirmation(operation: CadOperation): boolean {
