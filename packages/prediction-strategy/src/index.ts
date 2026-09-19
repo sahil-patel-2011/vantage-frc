@@ -38,6 +38,30 @@ export type {
   ScorePredictionSkip,
   TeamScoreFeatures,
 } from "./calibrated-score";
+
+/**
+ * Per-match confidence. `calibrated-score` already uses it; exported so a
+ * screen explaining *why* a prediction is uncertain bends the same arithmetic
+ * the number was drawn from, rather than inventing a second opinion.
+ */
+export {
+  ALLIANCE_CORRELATION,
+  DEFAULT_MODEL_SD,
+  FALLBACK_DISPERSION,
+  MIN_OBSERVATIONS_FOR_MEAN,
+  MAX_WIN_PROBABILITY,
+  MIN_WIN_PROBABILITY,
+  allianceBelief,
+  describeConfidence,
+  matchBelief,
+  matchSdFromDistribution,
+  normalCdf,
+  teamVariance,
+  type AllianceBelief,
+  type MatchBelief,
+  type TeamScoreBelief,
+  type TeamVarianceBreakdown,
+} from "./score-uncertainty";
 export {
   CONFIDENT_MATCHES,
   MIN_MATCHES_TO_STAND_ALONE,

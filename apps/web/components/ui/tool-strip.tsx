@@ -17,7 +17,8 @@ type ToolStripProps = {
    * The rest are still one tap away and are listed with a description, so the
    * choice is made from what a tool is for rather than from opening it.
    *
-   * A phone shows fewer. See `PHONE_VISIBLE_COUNT`.
+   * Defaults to three — see `DESKTOP_VISIBLE_COUNT`. Surfaces whose strip is a
+   * short, complete set rather than the head of a long one pass their own.
    */
   visibleCount?: number;
   /** One line on what a tool is for, shown in the "More tools" list. */
@@ -36,6 +37,22 @@ type ToolStripProps = {
  * The active tool is never one of the ones that moves: `layoutToolStrip` ranks
  * it first, so whatever you are looking at stays on screen at any count.
  */
+/**
+ * Three chips, then one "More tools".
+ *
+ * This was six, and six near-identical pills in a row is not a menu — it is a
+ * wall. Scouting showed Forms · Coverage · Shifts · Pit link · Training ·
+ * Field value · More tools (1): seven controls, no hierarchy, nothing telling
+ * you which of them you actually want, and the "More" at the end holding a
+ * single item as if it were an afterthought rather than a category.
+ *
+ * Three is enough to show the shape of the section — the tool you are in is
+ * ranked first, so it is always one of them — and everything else is behind
+ * one control that opens a readable list with a line saying what each thing is
+ * for. That is a better way to find a tool you have not used than a sixth pill
+ * you have to read to rule out.
+ */
+const DESKTOP_VISIBLE_COUNT = 3;
 const PHONE_VISIBLE_COUNT = 3;
 const PHONE_QUERY = "(max-width: 720px)";
 
@@ -70,7 +87,7 @@ export function ToolStrip({
   value,
   onChange,
   "aria-label": ariaLabel,
-  visibleCount = 6,
+  visibleCount = DESKTOP_VISIBLE_COUNT,
   describe,
 }: ToolStripProps) {
   const [expanded, setExpanded] = useState(false);

@@ -77,7 +77,25 @@ function buildAuth() {
     disableSignUp: true,
     requireEmailVerification: false,
     revokeSessionsOnPasswordReset: true,
-    minPasswordLength: 12,
+    /**
+     * Six, for a student on a shared shop laptop.
+     *
+     * It was twelve. Twelve is the right number for a password that is the
+     * only thing between an attacker and an account, and that is not the
+     * shape of this one: sign-up is closed, every account is provisioned or
+     * invited by name, password sign-in is off by default at the
+     * organization level, 2FA is available and can be required, and sign-in
+     * attempts are rate limited. A team that wants a stronger floor turns
+     * password sign-in off and uses Google or an emailed code, which is what
+     * `DEFAULT_ORG_AUTH_POLICY` already does.
+     *
+     * Said plainly, because it is a real trade: six characters is weak on its
+     * own, and the reason it is acceptable here is everything around it. The
+     * platform-owner bootstrap secret in `bootstrap-owner.ts` stays at twelve
+     * — that one is a deployment credential that can provision any team, and
+     * nobody has to type it on a phone in a pit.
+     */
+    minPasswordLength: 6,
     onPasswordReset: async ({ user }) => {
       await auditAuthEvent({
         action: "password.reset",

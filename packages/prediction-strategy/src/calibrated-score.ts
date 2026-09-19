@@ -15,6 +15,11 @@ import {
   canStandAlone,
   type ScoutedTeamRating,
 } from "./scouting-rating";
+import {
+  describeConfidence,
+  matchBelief,
+  type TeamScoreBelief,
+} from "./score-uncertainty";
 
 export type ScoreFeatureRow = {
   matchKey: string;
@@ -48,6 +53,16 @@ export type TeamScoreFeatures = {
    * prediction on its own; when there is one it nudges it.
    */
   scouted?: ScoutedTeamRating | null;
+  /**
+   * This robot's match-to-match spread in points, when the caller has it —
+   * `matchSdFromDistribution(summariseDistribution(series))`.
+   *
+   * Optional because most callers do not have per-match rows to hand. Without
+   * it the uncertainty model falls back to a stated assumption and marks the
+   * estimate as unmeasured; with it, a metronome and a boom-or-bust robot with
+   * the same average stop producing the same confidence.
+   */
+  matchSd?: number | null;
 };
 
 export type AllianceScorePrediction = {
@@ -67,6 +82,21 @@ export type AllianceScorePrediction = {
    * `"mixed"`   — some of each.
    */
   basis: ScorePredictionBasis;
+  /**
+   * Per-match confidence, as opposed to `errorBand`, which is how well the
+   * model does on average.
+   *
+   * These move with the robots actually on the field: how much each one
+   * swings, how many matches it rests on, and whether it has been breaking
+   * down. Two matches with the same predicted scores can have very different
+   * numbers here, and that difference is the point.
+   */
+  redBand: number;
+  blueBand: number;
+  /** P(red wins), never 0 or 1 — robots break. */
+  redWinProbability: number;
+  /** One line naming the favourite and where the doubt is coming from. */
+  confidence: string;
 };
 
 export type ScorePredictionBasis = "official" | "scouting" | "mixed";
@@ -260,6 +290,32 @@ function driversFor(side: TeamScoreFeatures[], color: "red" | "blue"): string[] 
   return lines.slice(0, 3);
 }
 
+/**
+ * How many matches an official rating is treated as resting on.
+ *
+ * EPA and the OPR family are built from a season of results, so the *mean* is
+ * far better constrained than any scouting sample — but the number of matches
+ * behind it is not in the feature row. Twelve is a qualification schedule: it
+ * makes an official rating clearly firmer than three scouted matches without
+ * pretending it is exact. A stated assumption, like the rest of them.
+ */
+const OFFICIAL_OBSERVATIONS = 12;
+
+/** One robot, in the shape the uncertainty model reasons about. */
+function beliefFor(team: TeamScoreFeatures, mean: number): TeamScoreBelief {
+  const scouted = team.scouted ?? null;
+  const official = hasOfficialRating(team);
+  const scoutedMatches = scouted?.matches ?? 0;
+  return {
+    teamKey: team.teamKey,
+    mean,
+    observations: official ? Math.max(OFFICIAL_OBSERVATIONS, scoutedMatches) : scoutedMatches,
+    matchSd: team.matchSd ?? null,
+    disabledRate: scouted?.disabledRate ?? 0,
+    official,
+  };
+}
+
 export function predictAllianceScores(
   row: Omit<ScoreFeatureRow, "redScore" | "blueScore"> & { redScore?: number; blueScore?: number },
   options?: { errorBand?: number },
@@ -280,15 +336,40 @@ export function predictAllianceScores(
     // Say it on the card, not just in a field the UI might ignore.
     drivers.unshift("Estimated from your scouting — no official numbers exist for this event yet");
   }
+  // `errorBand` keeps its meaning — how well this model does on average, and
+  // what an explicit override sets. The per-match numbers below are a
+  // different question and get their own fields rather than redefining it.
+  const modelBand = widenForBasis(resolveErrorBand(options?.errorBand), basis);
+  const belief = matchBelief(
+    { mean: red.total, beliefs: beliefsFor(row.red) },
+    { mean: blue.total, beliefs: beliefsFor(row.blue) },
+    { modelSd: modelBand },
+  );
+
   return {
     matchKey: row.matchKey,
     redPredicted: Math.round(red.total * 10) / 10,
     bluePredicted: Math.round(blue.total * 10) / 10,
-    errorBand: widenForBasis(resolveErrorBand(options?.errorBand), basis),
+    errorBand: modelBand,
     drivers: drivers.slice(0, 3),
     modelVersion: MODEL_VERSION,
     basis,
+    redBand: belief.redBand,
+    blueBand: belief.blueBand,
+    redWinProbability: Math.round(belief.redWinProbability * 1000) / 1000,
+    confidence: describeConfidence(belief),
   };
+}
+
+/** Only robots that actually have a number carry uncertainty. */
+function beliefsFor(side: readonly TeamScoreFeatures[]): TeamScoreBelief[] {
+  const out: TeamScoreBelief[] = [];
+  for (const team of side) {
+    const contribution = teamContribution(team);
+    if (contribution == null) continue;
+    out.push(beliefFor(team, contribution));
+  }
+  return out;
 }
 
 function hasOfficialRating(team: TeamScoreFeatures): boolean {
