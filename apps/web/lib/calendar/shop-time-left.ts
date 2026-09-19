@@ -21,6 +21,21 @@ import type { OverlayMeeting } from "./meetings-overlay";
 /** The kinds that count as "the thing you are building for". */
 const TARGET_KINDS: readonly MilestoneKind[] = ["event", "deadline"];
 
+/**
+ * Season-calendar entries that are themselves shop time.
+ *
+ * A team that writes its practice schedule on the season calendar — which is
+ * what the repeat control there is for — was getting nothing from this,
+ * because it only counted meetings from the team calendar. Two features of
+ * ours, disagreeing about whether the team had scheduled anything.
+ *
+ * These are whole-day entries with no start or end, so they add a session and
+ * never an hour. That is exactly the case `sessionsWithoutEnd` already exists
+ * to be honest about, so the sentence stays truthful without a new concept:
+ * "14 sessions — 24 hours from the 8 with a time".
+ */
+const SESSION_KINDS: readonly MilestoneKind[] = ["practice", "build", "meeting"];
+
 export type ShopTimeLeft = {
   /** The milestone being counted down to. */
   targetTitle: string;
@@ -30,12 +45,13 @@ export type ShopTimeLeft = {
   daysUntil: number;
   /** Meetings scheduled between now and then. */
   sessions: number;
-  /** Hours from the sessions that have an end time. Rounded to a half hour. */
+  /** Hours from the sessions that have a start and an end. Rounded to a half hour. */
   hours: number;
   /**
-   * Sessions with no end time, which therefore contributed nothing to `hours`.
-   * Surfaced rather than hidden: a total that quietly omits four sessions is a
-   * number a team would plan against and be wrong.
+   * Sessions that contributed nothing to `hours` — a meeting with no end
+   * time, or a whole-day season entry that has no times at all. Surfaced
+   * rather than hidden: a total that quietly omits four sessions is a number
+   * a team would plan against and be wrong.
    */
   sessionsWithoutEnd: number;
 };
@@ -85,6 +101,18 @@ export function shopTimeLeft(
   let sessions = 0;
   let withoutEnd = 0;
   let millis = 0;
+
+  for (const milestone of milestones) {
+    if (!SESSION_KINDS.includes(milestone.kind)) continue;
+    if (milestone.done) continue;
+    const day = parseLocalDay(milestone.startsOn);
+    // A whole day counts while any of it is still ahead, so today's practice
+    // is not dropped at one minute past midnight.
+    if (day === null || day < todayStart || day >= targetStart) continue;
+    sessions += 1;
+    withoutEnd += 1;
+  }
+
   for (const meeting of meetings) {
     const start = new Date(meeting.startsAt);
     if (Number.isNaN(start.getTime())) continue;
@@ -131,7 +159,7 @@ export function describeShopTime(left: ShopTimeLeft): string {
   if (counted === 0) return sessions;
   const hours = `${left.hours} ${left.hours === 1 ? "hour" : "hours"}`;
   if (left.sessionsWithoutEnd > 0) {
-    return `${sessions} — ${hours} from the ${counted} with an end time`;
+    return `${sessions} — ${hours} from the ${counted} with a time`;
   }
   return `${sessions} — ${hours}`;
 }

@@ -121,6 +121,80 @@ describe("what is left before the competition", () => {
   });
 });
 
+describe("a practice schedule written on the season calendar", () => {
+  // The repeat control on /calendar creates whole-day milestones, not timed
+  // meetings. A team that used it was told nothing was scheduled.
+  const practice = (day: string) =>
+    milestone({ id: `p-${day}`, title: "Practice", kind: "practice", startsOn: day });
+
+  it("counts practice entries as sessions", () => {
+    const left = shopTimeLeft(
+      [milestone({ id: "comp", startsOn: "2027-01-22" }), practice("2027-01-12"), practice("2027-01-14")],
+      [],
+      NOW,
+    );
+    expect(left).toMatchObject({ sessions: 2, hours: 0, sessionsWithoutEnd: 2 });
+  });
+
+  it("adds them to the timed meetings rather than replacing them", () => {
+    const left = shopTimeLeft(
+      [milestone({ id: "comp", startsOn: "2027-01-22" }), practice("2027-01-12")],
+      [session("2027-01-14", 18, 21)],
+      NOW,
+    );
+    expect(left).toMatchObject({ sessions: 2, hours: 3, sessionsWithoutEnd: 1 });
+    expect(describeShopTime(left!)).toBe("2 sessions — 3 hours from the 1 with a time");
+  });
+
+  it("counts build and meeting entries too, and not a competition", () => {
+    const left = shopTimeLeft(
+      [
+        milestone({ id: "comp", startsOn: "2027-01-22" }),
+        milestone({ id: "b", title: "Build", kind: "build", startsOn: "2027-01-12" }),
+        milestone({ id: "m", title: "Meeting", kind: "meeting", startsOn: "2027-01-13" }),
+        milestone({ id: "o", title: "Outreach", kind: "outreach", startsOn: "2027-01-14" }),
+      ],
+      [],
+      NOW,
+    );
+    expect(left?.sessions).toBe(2);
+  });
+
+  it("does not count one that has already happened, or one past the competition", () => {
+    const left = shopTimeLeft(
+      [milestone({ id: "comp", startsOn: "2027-01-22" }), practice("2027-01-05"), practice("2027-01-25")],
+      [],
+      NOW,
+    );
+    expect(left).toBeNull();
+  });
+
+  it("counts today's practice, which has not happened yet at nine in the morning", () => {
+    // Meetings are counted from this instant because they have one. A
+    // whole-day entry does not, so dropping it at midnight would delete a
+    // practice the team is about to walk into.
+    const left = shopTimeLeft(
+      [milestone({ id: "comp", startsOn: "2027-01-22" }), practice("2027-01-11")],
+      [],
+      NOW,
+    );
+    expect(left?.sessions).toBe(1);
+  });
+
+  it("skips one already ticked off", () => {
+    const left = shopTimeLeft(
+      [
+        milestone({ id: "comp", startsOn: "2027-01-22" }),
+        { ...practice("2027-01-12"), done: true },
+        practice("2027-01-14"),
+      ],
+      [],
+      NOW,
+    );
+    expect(left?.sessions).toBe(1);
+  });
+});
+
 describe("the honest nulls", () => {
   it("says nothing when there is nothing to count down to", () => {
     expect(shopTimeLeft([], [session("2027-01-12", 18, 21)], NOW)).toBeNull();
@@ -204,7 +278,7 @@ describe("saying it in a sentence", () => {
     // "42 hours" beside fourteen sessions, four of which were not counted, is
     // a number a team would plan against and be wrong.
     expect(describeShopTime({ ...base, sessions: 14, hours: 30, sessionsWithoutEnd: 4 })).toBe(
-      "14 sessions — 30 hours from the 10 with an end time",
+      "14 sessions — 30 hours from the 10 with a time",
     );
   });
 
