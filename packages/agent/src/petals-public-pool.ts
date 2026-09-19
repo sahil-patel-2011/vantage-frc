@@ -26,6 +26,32 @@ export const PETALS_MAX_NEW_TOKENS = 256;
 const PRIVATE_CONTEXT_TYPES = new Set<ContextItem["type"]>(["private_memory"]);
 
 /**
+ * Say which kind of "no" the swarm gave, because they need different answers.
+ *
+ * The public swarm returns HTTP 200 with `ok:false` and a Python traceback for
+ * every failure, so without reading it a team that turned this on sees the
+ * same opaque message whether the swarm is busy or whether nobody is hosting
+ * the model at all.
+ *
+ * As measured on 2026-09-19, the second is the live case: `chat.petals.dev`
+ * has only `petals-team/StableBeluga2` registered, and asking for it returns
+ * `MissingBlocksError: No servers holding blocks [0..79] are online`. The
+ * health monitor at health.petals.dev refuses connections. A volunteer swarm
+ * with no volunteers is empty rather than slow, and telling somebody to wait
+ * for capacity that does not exist wastes their competition day.
+ */
+export function petalsFailureMessage(traceback: string | undefined, model: string): string {
+  const text = traceback ?? "";
+  if (text.includes("MissingBlocksError") || text.includes("No servers holding blocks")) {
+    return `No volunteer is hosting ${model} on the public Petals swarm right now, so it cannot answer. This is the swarm being empty rather than busy — waiting will not help. Add a provider key under Team → AI keys, or point Vantage at Ollama or LM Studio on your own machine.`;
+  }
+  if (/KeyError/.test(text)) {
+    return `The public Petals swarm does not serve ${model}. Set PETALS_MODEL to a model it actually hosts, or use a provider key instead.`;
+  }
+  return `The public Petals swarm could not answer with ${model}. It is volunteer-run and often unavailable; a provider key or a local model is the reliable path.`;
+}
+
+/**
  * Last-resort public volunteer swarm. **Off unless PETALS_PUBLIC_POOL is
  * explicitly turned on**, and deliberately so.
  *
@@ -210,10 +236,7 @@ export class PetalsPublicPoolAdapter implements ChatAdapter {
       traceback?: string;
     };
     if (payload.ok === false) {
-      throw new ProviderRateLimitError(
-        `Petals public swarm rejected the turn (model=${this.model})`,
-        503,
-      );
+      throw new ProviderRateLimitError(petalsFailureMessage(payload.traceback, this.model), 503);
     }
     const text = (payload.outputs ?? "").trim();
     if (!text) {

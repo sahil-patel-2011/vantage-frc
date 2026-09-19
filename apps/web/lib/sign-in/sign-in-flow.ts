@@ -9,8 +9,9 @@ import {
 export type SignInMode = "password" | "email-otp" | "reset";
 
 export type SignInAuthStatus = {
-  waitlistOnly: true;
-  publicSignup: false;
+  /** Mirrors `AuthCapabilityReport` — derived, not a literal. See packages/core/src/public-signup.ts. */
+  waitlistOnly: boolean;
+  publicSignup: boolean;
   databaseConfigured: boolean;
   emailOtpAvailable: boolean;
   email2faEnforced: boolean;

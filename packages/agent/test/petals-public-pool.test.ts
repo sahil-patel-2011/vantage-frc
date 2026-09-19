@@ -7,6 +7,7 @@ import {
   isPetalsPublicPoolEnabled,
   petalsGenerateUrl,
   sanitizePetalsContext,
+  petalsFailureMessage,
   tryCreatePetalsPublicAdapter,
 } from "../src/petals-public-pool";
 
@@ -121,5 +122,36 @@ describe("PetalsPublicPoolAdapter", () => {
     await expect(adapter.complete({ message: "Hi", context: [] })).rejects.toMatchObject({
       name: "ProviderRateLimitError",
     });
+  });
+});
+
+describe("what the swarm's refusals actually mean", () => {
+  it("says an empty swarm is empty, not busy", () => {
+    // Measured against chat.petals.dev on 2026-09-19: this is the live case.
+    const traceback =
+      "petals.client.routing.sequence_manager.MissingBlocksError: No servers holding blocks [0, 1, 2] are online.";
+    const message = petalsFailureMessage(traceback, "petals-team/StableBeluga2");
+    expect(message).toContain("No volunteer is hosting");
+    expect(message).toContain("waiting will not help");
+    // And points at something that does work.
+    expect(message).toMatch(/Ollama|LM Studio|provider key/);
+  });
+
+  it("distinguishes a model the swarm does not serve at all", () => {
+    const message = petalsFailureMessage("nKeyError: 'meta-llama/Meta-Llama-3.1-405B-Instruct'", "x");
+    expect(message).toContain("does not serve");
+    expect(message).toContain("PETALS_MODEL");
+  });
+
+  it("stays useful when the traceback is missing or unrecognised", () => {
+    expect(petalsFailureMessage(undefined, "m")).toContain("volunteer-run");
+    expect(petalsFailureMessage("some other python error", "m")).toContain("volunteer-run");
+  });
+
+  it("never leaks a Python traceback to a student", () => {
+    const traceback = 'File "/home/user/chat.petals.dev/http_api.py", line 37, in http_api_generate';
+    const message = petalsFailureMessage(traceback, "m");
+    expect(message).not.toContain("http_api.py");
+    expect(message).not.toContain("Traceback");
   });
 });
