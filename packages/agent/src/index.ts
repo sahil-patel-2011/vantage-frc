@@ -285,3 +285,6 @@ export * from "./auto-mode";
 export * from "./context-compact";
 export * from "./design-research";
 export * from "./task-finish";
+
+/* Which FRC season the model is answering about — see game-context.ts. */
+export { gameContextLines, seasonLabel, type GameContextInput } from "./game-context";

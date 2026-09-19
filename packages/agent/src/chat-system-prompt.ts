@@ -3,6 +3,8 @@
  * Pure builders only — no secrets, no fabricated metrics.
  */
 
+import { gameContextLines, type GameContextInput } from "./game-context";
+
 export type ChatSystemPromptInput = {
   /** Orchestrator capability surface (chat, strategy, cad, …). */
   capability?: string;
@@ -14,6 +16,13 @@ export type ChatSystemPromptInput = {
   activeEvent?: string | null;
   /** Which path answered: relay, team keys, hosted, or public volunteer swarm. */
   answerPath?: "relay" | "team_keys" | "hosted" | "public_swarm";
+  /**
+   * The season's game pack, so the model answers about *this* game.
+   *
+   * Without it the prompt never said which FRC season it was, and a model
+   * filled that in from training data — which is last season at best.
+   */
+  game?: GameContextInput | null;
 };
 
 const HONESTY_RULES = [
@@ -42,6 +51,7 @@ export function buildVantageChatSystemPrompt(input: ChatSystemPromptInput = {}):
     "Style: short paragraphs or tight bullets that a 15-year-old can act on.",
     "Use only grounded facts from the user message, injected org session context, memories, and tool outputs.",
   ];
+  lines.push(...gameContextLines(input.game));
   if (path) lines.push(path);
   if (input.activeEvent?.trim()) lines.push(`Active event: ${input.activeEvent.trim()}.`);
   for (const fact of input.teamFacts ?? []) {
