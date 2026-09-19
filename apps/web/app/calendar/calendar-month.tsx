@@ -61,6 +61,13 @@ export type MonthViewProps = {
   busy?: boolean;
   /** Fixed "today" for tests; real clock otherwise. */
   today?: string;
+  /**
+   * The month now on screen, `YYYY-MM`, whenever it changes.
+   *
+   * The grid still owns which month it is showing — this only reports it, so
+   * the list underneath can be about the same month the grid is about.
+   */
+  onMonthChange?: (month: string) => void;
 };
 
 export function CalendarMonth({
@@ -71,6 +78,7 @@ export function CalendarMonth({
   onOpen,
   busy,
   today,
+  onMonthChange,
 }: MonthViewProps) {
   const resolvedToday = today ?? localToday();
   const [month, setMonth] = useState(() => monthOf(resolvedToday));
@@ -88,6 +96,10 @@ export function CalendarMonth({
   // An overlay rather than a second entry source for the grid: the grid draws
   // multi-day milestone spans, and a timed meeting has no span to draw.
   const meetingsByDay = useMemo(() => groupMeetingsByDay(meetings ?? []), [meetings]);
+
+  useEffect(() => {
+    onMonthChange?.(month);
+  }, [month, onMonthChange]);
 
   const closeComposer = useCallback(() => {
     setComposingOn(null);

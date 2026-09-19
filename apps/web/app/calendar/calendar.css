@@ -368,3 +368,9 @@
   color:var(--accent);
   font:700 12px var(--font-source-sans),ui-sans-serif;
 }
+
+/* The line between the grid and the list, saying which one the list is about. */
+.cal-list-scope{
+  display:flex;align-items:baseline;justify-content:space-between;gap:12px;
+  padding:0 2px;font-size:13px;
+}

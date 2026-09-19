@@ -8,6 +8,7 @@ import {
   listSeasonTemplates,
   meetingProvider,
   milestoneWorkflowLinks,
+  milestonesInMonth,
   nextUpcoming,
   optionalMeetingUrl,
   parseCalendarAction,
@@ -436,5 +437,53 @@ describe("offline calendar writes", () => {
     expect(deleted.status).toBe("ready");
     if (deleted.status !== "ready") return;
     expect(deleted.milestones.map((row) => row.id)).toEqual(["33333333-3333-4333-8333-333333333333"]);
+  });
+});
+
+describe("the list under the grid, about the month the grid is about", () => {
+  const row = (id: string, startsOn: string, endsOn: string | null = null): Milestone => ({
+    id,
+    title: id,
+    kind: "event",
+    startsOn,
+    endsOn,
+    notes: "",
+    meetingUrl: null,
+    done: false,
+    doneAt: null,
+    doneByName: null,
+    createdByName: null,
+  });
+
+  it("takes only the month asked for", () => {
+    const rows = [row("jan", "2027-01-14"), row("feb", "2027-02-03"), row("mar", "2027-03-09")];
+    expect(milestonesInMonth(rows, "2027-02").map((m) => m.id)).toEqual(["feb"]);
+  });
+
+  it("keeps a competition that spans into the month", () => {
+    // Drawn on the March grid, so a March list without it looks like the list
+    // lost it.
+    const rows = [row("champs", "2027-02-27", "2027-03-02")];
+    expect(milestonesInMonth(rows, "2027-03").map((m) => m.id)).toEqual(["champs"]);
+    expect(milestonesInMonth(rows, "2027-02").map((m) => m.id)).toEqual(["champs"]);
+  });
+
+  it("keeps a span across a whole month it never starts or ends in", () => {
+    expect(milestonesInMonth([row("long", "2027-01-20", "2027-03-05")], "2027-02")).toHaveLength(1);
+  });
+
+  it("shows a row with a backwards end date rather than hiding it", () => {
+    // Bad data is a reason to show the row so somebody can fix it.
+    expect(milestonesInMonth([row("typo", "2027-02-10", "2027-01-01")], "2027-02")).toHaveLength(1);
+  });
+
+  it("sorts by date then title", () => {
+    const rows = [row("b", "2027-02-10"), row("a", "2027-02-10"), row("early", "2027-02-01")];
+    expect(milestonesInMonth(rows, "2027-02").map((m) => m.id)).toEqual(["early", "a", "b"]);
+  });
+
+  it("returns nothing for a month that is not a month", () => {
+    expect(milestonesInMonth([row("a", "2027-02-10")], "February")).toEqual([]);
+    expect(milestonesInMonth([row("a", "2027-02-10")], "")).toEqual([]);
   });
 });

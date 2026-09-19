@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AiInsightPanel } from "../../components/ai-insight-panel";
 import { describeShopTime, shopTimeLeft } from "../../lib/calendar/shop-time-left";
+import { monthLabel } from "../../lib/calendar/month-grid";
 import { hubHref } from "../../lib/nav/hubs";
 import { CalendarMonth } from "./calendar-month";
 import { CalendarRepeat, useRepeatRule } from "./calendar-repeat";
@@ -22,6 +23,7 @@ import {
   applyCalendarLocalWrite,
   daysUntil,
   groupByMonth,
+  milestonesInMonth,
   isCalendarQueueableAction,
   KIND_LABELS,
   meetingProvider,
@@ -596,6 +598,30 @@ function ReadyCalendar({
   const next = nextUpcoming(milestones, now);
   const progress = seasonProgress(milestones);
   const months = groupByMonth(milestones);
+  /**
+   * The list under the grid is about the month the grid is about.
+   *
+   * It used to be every milestone in the season, every time — eighty rows
+   * under a grid that was already showing them, and an "Add milestone" form
+   * at the far end of a twelve-thousand-pixel page. Two views of the same
+   * data, one of which you had to scroll past.
+   *
+   * Scoping it to the visible month makes the grid the way you navigate and
+   * the list the way you edit, and `Whole season` is still there for the
+   * once-a-year read-through.
+   */
+  const [visibleMonth, setVisibleMonth] = useState<string | null>(null);
+  const [wholeSeason, setWholeSeason] = useState(false);
+  const shownMonths =
+    wholeSeason || !visibleMonth
+      ? months
+      : [
+          {
+            month: visibleMonth,
+            label: monthLabel(visibleMonth),
+            items: milestonesInMonth(milestones, visibleMonth),
+          },
+        ];
   const selectedTemplate = view.templates.find((template) => template.id === templateId) ?? view.templates[0];
 
   const addMilestone = () => {
@@ -762,7 +788,21 @@ function ReadyCalendar({
           );
         }}
         onOpen={(milestone) => setEditingId(milestone.id)}
+        onMonthChange={setVisibleMonth}
       />
+
+      {months.length > 0 ? (
+        <div className="cal-list-scope">
+          <span className="app-muted">
+            {wholeSeason
+              ? `Whole season · ${milestones.length} ${milestones.length === 1 ? "entry" : "entries"}`
+              : `Showing ${visibleMonth ? monthLabel(visibleMonth) : "this month"}`}
+          </span>
+          <button type="button" className="cal-link" onClick={() => setWholeSeason((on) => !on)}>
+            {wholeSeason ? "Just this month" : "Whole season"}
+          </button>
+        </div>
+      ) : null}
 
       {months.length === 0 ? (
         <EmptyState
@@ -770,8 +810,14 @@ function ReadyCalendar({
           title="Nothing on the calendar yet"
           description="Press a day above to add something, or seed a season template from your kickoff date."
         />
+      ) : shownMonths.every((group) => group.items.length === 0) ? (
+        <EmptyState
+          soft
+          title={`Nothing in ${visibleMonth ? monthLabel(visibleMonth) : "this month"}`}
+          description="Press a day above to add something here, or read the whole season."
+        />
       ) : (
-        months.map((group) => (
+        shownMonths.map((group) => (
           <section key={group.month} className="cal-month">
             <h2>
               {group.label}

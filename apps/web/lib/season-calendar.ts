@@ -445,6 +445,28 @@ export function groupByMonth(milestones: Milestone[]): Array<{ month: string; la
     .sort((a, b) => a.month.localeCompare(b.month));
 }
 
+/**
+ * Everything the month grid draws for `month` (`YYYY-MM`), so the list under
+ * the grid can be about the same month the grid is about.
+ *
+ * A milestone that spans months belongs to every month it touches, not only
+ * the one it starts in. A competition running 27 February to 2 March is drawn
+ * on the March grid, and a March list that did not contain it would look like
+ * the list had lost it.
+ */
+export function milestonesInMonth(milestones: readonly Milestone[], month: string): Milestone[] {
+  if (!/^\d{4}-\d{2}$/.test(month)) return [];
+  return milestones
+    .filter((milestone) => {
+      const from = milestone.startsOn.slice(0, 7);
+      const to = (milestone.endsOn || milestone.startsOn).slice(0, 7);
+      // An end before the start is bad data, not a reason to hide the row.
+      const last = to < from ? from : to;
+      return from <= month && month <= last;
+    })
+    .sort((a, b) => a.startsOn.localeCompare(b.startsOn) || a.title.localeCompare(b.title));
+}
+
 export type SeasonProgress = { total: number; done: number; percent: number };
 
 export function seasonProgress(milestones: Milestone[]): SeasonProgress {
