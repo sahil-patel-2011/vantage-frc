@@ -487,3 +487,43 @@ describe("the list under the grid, about the month the grid is about", () => {
     expect(milestonesInMonth([row("a", "2027-02-10")], "")).toEqual([]);
   });
 });
+
+describe("deleting a whole repeat series", () => {
+  it("parses the action", () => {
+    expect(
+      parseCalendarAction({
+        action: "delete_series",
+        orgId: "11111111-1111-4111-8111-111111111111",
+        seriesId: "22222222-2222-4222-8222-222222222222",
+      }),
+    ).toEqual({
+      action: "delete_series",
+      orgId: "11111111-1111-4111-8111-111111111111",
+      seriesId: "22222222-2222-4222-8222-222222222222",
+    });
+  });
+
+  it("refuses a series id that is not an id", () => {
+    // It deletes every row that matches, so a loose value here is the
+    // difference between removing a practice schedule and removing nothing at
+    // all — or worse, something else.
+    for (const bad of ["", "all", "22222222-2222", null, 7]) {
+      expect(() =>
+        parseCalendarAction({
+          action: "delete_series",
+          orgId: "11111111-1111-4111-8111-111111111111",
+          seriesId: bad,
+        }),
+        String(bad),
+      ).toThrow();
+    }
+  });
+
+  it("stays online-only, like seeding a season", () => {
+    // Both write many rows at once. A queued delete of forty entries replayed
+    // against a calendar somebody else has edited is not something the local
+    // snapshot can honestly represent.
+    expect(isCalendarQueueableAction("delete_series")).toBe(false);
+    expect(isCalendarQueueableAction("delete_milestone")).toBe(true);
+  });
+});

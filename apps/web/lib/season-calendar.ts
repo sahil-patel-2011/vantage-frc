@@ -42,6 +42,13 @@ export type Milestone = {
   doneAt: string | null;
   doneByName: string | null;
   createdByName: string | null;
+  /**
+   * Shared by the entries one press of the repeat control created. Null for
+   * everything else, which is most entries. It records which press made the
+   * row and carries no cadence or end date, so it cannot disagree with the
+   * entries themselves.
+   */
+  seriesId?: string | null;
 };
 
 /** Read-only business / purchase dates surfaced beside the milestone plan (not seeded stats). */
@@ -602,7 +609,16 @@ export type CalendarAction =
     }
   | { action: "update_milestone"; orgId: string; id: string; patch: MilestonePatch }
   | { action: "toggle_done"; orgId: string; id: string; done: boolean }
-  | { action: "delete_milestone"; orgId: string; id: string };
+  | { action: "delete_milestone"; orgId: string; id: string }
+  /**
+   * Every entry one press of the repeat control created.
+   *
+   * The repeat control expands a schedule into real entries rather than
+   * storing a rule, which is right for a team whose Thursdays keep moving —
+   * but it made undoing one press take forty. This is the other half of that
+   * trade.
+   */
+  | { action: "delete_series"; orgId: string; seriesId: string };
 
 export function parseCalendarAction(input: unknown): CalendarAction {
   if (!input || typeof input !== "object" || Array.isArray(input)) throw new Error("Invalid calendar action");
@@ -635,6 +651,9 @@ export function parseCalendarAction(input: unknown): CalendarAction {
         repeatOn: repeatDates(body.repeatOn, startsOn),
       };
     }
+
+    case "delete_series":
+      return { action: "delete_series", orgId, seriesId: uuid(body.seriesId, "Series") };
 
     case "update_milestone": {
       const id = uuid(body.id, "Milestone");

@@ -228,7 +228,7 @@ export async function GET(request: Request) {
 
       const milestones = await client.query<Milestone>(
         `SELECT s.id, s.title, s.kind, s.starts_on::text AS "startsOn", s.ends_on::text AS "endsOn",
-                s.notes, s.meeting_url AS "meetingUrl",
+                s.notes, s.meeting_url AS "meetingUrl", s.series_id AS "seriesId",
                 s.done, s.done_at::text AS "doneAt", db.name AS "doneByName", cb.name AS "createdByName"
          FROM season_milestones s
          LEFT JOIN users db ON db.id = s.done_by
@@ -329,11 +329,27 @@ export async function POST(request: Request) {
 
           const starts = action.repeatOn;
           const ends = starts.map(endsFor);
-          const inserted = await client.query<{ id: string }>(
-            `INSERT INTO season_milestones (org_id, title, kind, starts_on, ends_on, notes, meeting_url, created_by)
-             SELECT $1, $2, $3, s.starts_on::date, NULLIF(s.ends_on, '')::date, $6, $7, $8
-               FROM unnest($4::text[], $5::text[]) AS s(starts_on, ends_on)
-             RETURNING id`,
+          /*
+            A series id, only when one press made more than one entry.
+
+            It records which press created these rows and nothing else — no
+            cadence, no end date, no exceptions — so there is no rule that can
+            drift out of step with the entries. The entries stay the truth;
+            this only makes "undo that whole schedule" one action instead of
+            forty. A single entry gets NULL, because a series of one is a
+            concept nobody needs.
+
+            Generated in Postgres rather than here so the id comes from the
+            same place every other id in this table does.
+          */
+          const asSeries = starts.length > 1;
+          const inserted = await client.query<{ id: string; seriesId: string | null }>(
+            `WITH s AS (SELECT CASE WHEN $9::boolean THEN gen_random_uuid() END AS series_id)
+             INSERT INTO season_milestones
+               (org_id, title, kind, starts_on, ends_on, notes, meeting_url, created_by, series_id)
+             SELECT $1, $2, $3, d.starts_on::date, NULLIF(d.ends_on, '')::date, $6, $7, $8, s.series_id
+               FROM unnest($4::text[], $5::text[]) AS d(starts_on, ends_on), s
+             RETURNING id, series_id AS "seriesId"`,
             [
               action.orgId,
               action.title,
@@ -343,9 +359,26 @@ export async function POST(request: Request) {
               action.notes,
               action.meetingUrl,
               userId,
+              asSeries,
             ],
           );
-          return { id: inserted.rows[0]!.id, added: inserted.rowCount ?? 0 };
+          return {
+            id: inserted.rows[0]!.id,
+            added: inserted.rowCount ?? 0,
+            seriesId: inserted.rows[0]?.seriesId ?? null,
+          };
+        }
+
+        case "delete_series": {
+          // Every entry one press created, including the ones somebody has
+          // since moved or renamed. "Created together" stays true however an
+          // entry is edited afterwards, and a team deleting the practice
+          // schedule does mean the Tuesday that moved to Wednesday as well.
+          const removed = await client.query(
+            `DELETE FROM season_milestones WHERE org_id = $1 AND series_id = $2::uuid`,
+            [action.orgId, action.seriesId],
+          );
+          return { deleted: removed.rowCount ?? 0 };
         }
 
         case "update_milestone": {

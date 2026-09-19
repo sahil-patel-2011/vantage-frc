@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AiInsightPanel } from "../../components/ai-insight-panel";
 import { describeShopTime, shopTimeLeft } from "../../lib/calendar/shop-time-left";
 import { moveToDate } from "../../lib/calendar/move-entry";
-import { monthLabel } from "../../lib/calendar/month-grid";
+import { localToday, monthLabel, monthOf } from "../../lib/calendar/month-grid";
 import { hubHref } from "../../lib/nav/hubs";
 import { CalendarMonth } from "./calendar-month";
 import { CalendarRepeat, useRepeatRule } from "./calendar-repeat";
@@ -164,6 +164,7 @@ function MilestoneRow({
   editingId,
   setEditingId,
   run,
+  seriesCount,
 }: {
   milestone: Milestone;
   orgId: string;
@@ -172,6 +173,8 @@ function MilestoneRow({
   editingId: string | null;
   setEditingId: (id: string | null) => void;
   run: (body: ActionBody, key: string) => Promise<void>;
+  /** How many entries this one was created alongside; 1 when it stands alone. */
+  seriesCount: number;
 }) {
   const busy = busyKey != null;
   const past = daysUntil(milestone.startsOn, now) < 0;
@@ -255,6 +258,37 @@ function MilestoneRow({
         >
           Delete
         </button>
+        {/*
+          The other half of expanding a schedule into real entries: one press
+          made forty of these, and without this it takes forty to undo. Offered
+          only where it means something — an entry that was created on its own
+          has no series to delete.
+
+          It says the number, because "Delete series" beside a Delete button is
+          two words that could plausibly mean the same thing, and only one of
+          them removes thirty-nine entries you are not looking at.
+        */}
+        {milestone.seriesId && seriesCount > 1 ? (
+          <button
+            type="button"
+            className="cal-link danger"
+            disabled={busy}
+            onClick={() => {
+              if (
+                confirm(
+                  `Delete all ${seriesCount} entries created with "${milestone.title}"? This cannot be undone.`,
+                )
+              ) {
+                void run(
+                  { action: "delete_series", orgId, seriesId: milestone.seriesId! },
+                  `delete-series:${milestone.seriesId}`,
+                );
+              }
+            }}
+          >
+            Delete all {seriesCount}
+          </button>
+        ) : null}
       </div>
     </li>
   );
@@ -611,18 +645,38 @@ function ReadyCalendar({
    * the list the way you edit, and `Whole season` is still there for the
    * once-a-year read-through.
    */
-  const [visibleMonth, setVisibleMonth] = useState<string | null>(null);
+  // How many entries share each series id, counted once over the whole
+  // season rather than per row: the button says the real number, including
+  // the entries in months the list is not showing.
+  const seriesCounts = new Map<string, number>();
+  for (const row of milestones) {
+    if (!row.seriesId) continue;
+    seriesCounts.set(row.seriesId, (seriesCounts.get(row.seriesId) ?? 0) + 1);
+  }
+
+  /*
+    Starts on this month, not on null.
+
+    The grid reports which month it is showing, and it can only do that after
+    it has mounted. Starting at null meant the first paint had no month to
+    scope to, so it fell back to the whole season and then collapsed to one
+    month a frame later — a page that visibly jumps, and a list that was
+    briefly showing eighty rows it was about to take away.
+
+    The grid opens on today unless somebody moves it, so this is the same
+    answer it is about to give.
+  */
+  const [visibleMonth, setVisibleMonth] = useState<string>(() => monthOf(localToday()));
   const [wholeSeason, setWholeSeason] = useState(false);
-  const shownMonths =
-    wholeSeason || !visibleMonth
-      ? months
-      : [
-          {
-            month: visibleMonth,
-            label: monthLabel(visibleMonth),
-            items: milestonesInMonth(milestones, visibleMonth),
-          },
-        ];
+  const shownMonths = wholeSeason
+    ? months
+    : [
+        {
+          month: visibleMonth,
+          label: monthLabel(visibleMonth),
+          items: milestonesInMonth(milestones, visibleMonth),
+        },
+      ];
   const selectedTemplate = view.templates.find((template) => template.id === templateId) ?? view.templates[0];
 
   const addMilestone = () => {
@@ -805,7 +859,7 @@ function ReadyCalendar({
           <span className="app-muted">
             {wholeSeason
               ? `Whole season · ${milestones.length} ${milestones.length === 1 ? "entry" : "entries"}`
-              : `Showing ${visibleMonth ? monthLabel(visibleMonth) : "this month"}`}
+              : `Showing ${monthLabel(visibleMonth)}`}
           </span>
           <button type="button" className="cal-link" onClick={() => setWholeSeason((on) => !on)}>
             {wholeSeason ? "Just this month" : "Whole season"}
@@ -822,7 +876,7 @@ function ReadyCalendar({
       ) : shownMonths.every((group) => group.items.length === 0) ? (
         <EmptyState
           soft
-          title={`Nothing in ${visibleMonth ? monthLabel(visibleMonth) : "this month"}`}
+          title={`Nothing in ${monthLabel(visibleMonth)}`}
           description="Press a day above to add something here, or read the whole season."
         />
       ) : (
@@ -843,6 +897,7 @@ function ReadyCalendar({
                   editingId={editingId}
                   setEditingId={setEditingId}
                   run={run}
+                  seriesCount={milestone.seriesId ? (seriesCounts.get(milestone.seriesId) ?? 1) : 1}
                 />
               ))}
             </ul>
