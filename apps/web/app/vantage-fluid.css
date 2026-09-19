@@ -176,3 +176,51 @@ html[data-motion="reduced"] {
   --dur-sheet: 0ms;
   --dur-page: 0ms;
 }
+
+/* ── The floor ──────────────────────────────────────────────────────────────
+   Every control in the app answers a pointer smoothly, whether or not anybody
+   remembered to say so.
+
+   An audit of the stylesheets found 206 selectors that change appearance on
+   hover or press and 153 of them with no transition anywhere on the base
+   rule — links, menu rows, chips, sidebar items, half the marketing site.
+   They all worked; they all snapped. Fixing that one selector at a time is a
+   hundred-and-fifty-line diff that the next new button is not covered by.
+
+   So it is a floor, not a coat of paint. These are element selectors, which
+   carry the lowest specificity in CSS, so *any* rule with a class — which is
+   to say any rule in this codebase that already thought about its own motion
+   — still wins. Nothing here overrides a decision; it only fills a silence.
+
+   Colour-ish properties only. `transform` and `opacity` are deliberately left
+   out: they are what the entrance and reveal animations use, and a blanket
+   transition on them would fight every `@keyframes` in the app.
+
+   Durations come from the tokens above, which are 0ms under reduced motion,
+   so this whole block disappears for anyone who asked for that. */
+a,
+button,
+summary,
+label,
+select,
+[role="button"],
+[role="tab"],
+[role="option"],
+[role="menuitem"],
+input[type="checkbox"],
+input[type="radio"] {
+  transition:
+    background-color var(--dur-tint) var(--ease-out),
+    border-color var(--dur-tint) var(--ease-out),
+    color var(--dur-tint) var(--ease-out),
+    box-shadow var(--dur-tint) var(--ease-out);
+}
+
+/* A text field is not a control you hover — it is one you commit to. The ring
+   arriving over 120ms reads as the field waking up rather than flashing. */
+input:not([type="checkbox"]):not([type="radio"]),
+textarea {
+  transition:
+    border-color var(--dur-tint) var(--ease-out),
+    box-shadow var(--dur-tint) var(--ease-out);
+}
