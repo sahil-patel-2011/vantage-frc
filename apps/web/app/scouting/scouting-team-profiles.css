@@ -274,3 +274,70 @@
     transform: none;
   }
 }
+
+/* ── What are you looking for? ───────────────────────────────────────────────
+   The sliders that decide the order. Short list on purpose: the ranking knows
+   seventeen metrics and scouting fills seven, and a wall of mostly-dead
+   sliders is how a tuning control becomes something nobody touches. */
+.stp-weights {
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+.stp-weights > header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.stp-weights h3 {
+  margin: 0;
+  font: 700 13px/1.2 var(--font-source-sans), ui-sans-serif;
+}
+.stp-weights > header button {
+  padding: 2px 8px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--accent);
+  font: 700 11.5px var(--font-source-sans), ui-sans-serif;
+  cursor: pointer;
+  transition: background-color var(--dur-tint) var(--ease-out);
+}
+.stp-weights > header button:hover {
+  background: var(--accent-soft);
+}
+.stp-weight-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 8px 18px;
+}
+.stp-weight-grid label {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 2px 8px;
+}
+.stp-weight-name {
+  color: var(--ink);
+  font: 600 12px var(--font-source-sans), ui-sans-serif;
+}
+.stp-weight-value {
+  justify-self: end;
+  color: var(--accent);
+  font: 700 11px var(--font-source-sans), ui-sans-serif;
+}
+/* A metric set to zero is not contributing, and the row should look like it
+   rather than reading as a quiet preference. */
+.stp-weight-value[data-off="yes"] {
+  color: var(--muted);
+}
+.stp-weight-grid input[type="range"] {
+  grid-column: 1 / -1;
+  width: 100%;
+  min-height: 24px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}

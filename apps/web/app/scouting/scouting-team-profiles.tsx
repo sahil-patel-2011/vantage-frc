@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { CONSISTENCY_LABEL, type ScoutedTeamProfile } from "@vantage/prediction-strategy";
+import {
+  CONSISTENCY_LABEL,
+  pickListRowsFromScouting,
+  rankByWeightedZScores,
+  type ScoutedTeamProfile,
+} from "@vantage/prediction-strategy";
+import { PickWeightSliders, usePickWeights } from "./scouting-pick-weights";
 import { EmptyState, Button } from "../../components/ui";
 import { apiErrorMessage, classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
@@ -42,6 +48,7 @@ export function ScoutingTeamProfiles({ orgId, eventKey }: { orgId: string; event
   const [view, setView] = useState<View | null>(null);
   const [error, setError] = useState<{ message: string; status: number | null } | null>(null);
   const [sort, setSort] = useState<Sort>("fit");
+  const { weights, update, reset, changed } = usePickWeights(orgId);
   const [open, setOpen] = useState<string | null>(null);
 
   useEffect(() => {
@@ -76,12 +83,19 @@ export function ScoutingTeamProfiles({ orgId, eventKey }: { orgId: string; event
     if (!view || view.status !== "ready") return [];
     if (sort === "fit") {
       /**
-       * The weighted order: scoring, then whether it is the same robot every
-       * match, then whether it survives. Falls back to the fixed pick order
-       * when the ranking produced nothing — an event with too little scouting
-       * to compare against a field.
+       * Ranked here, in the browser, against the weights on the sliders.
+       *
+       * The server sends a default order too, and that is what shows before
+       * anybody touches a slider — but re-ranking has to be instant. It is a
+       * pure function over data already on the page, so asking the server to
+       * redo it would be a round trip for arithmetic we can do in a frame.
        */
-      const ranked = view.weighted ?? [];
+      const ranked = weights.some((entry) => entry.weight > 0)
+        ? rankByWeightedZScores(pickListRowsFromScouting(view.profiles), weights).map((row) => ({
+            teamKey: row.teamKey,
+            score: row.score,
+          }))
+        : (view.weighted ?? []);
       if (!ranked.length) return view.pickOrder.length ? view.pickOrder : view.profiles;
       const byKey = new Map(view.profiles.map((profile) => [profile.teamKey, profile]));
       const ordered = ranked
@@ -95,7 +109,7 @@ export function ScoutingTeamProfiles({ orgId, eventKey }: { orgId: string; event
     const copy = [...view.profiles];
     if (sort === "average") return copy.sort((a, b) => b.shrunkTotal - a.shrunkTotal);
     return copy.sort((a, b) => teamNumber(a.teamKey) - teamNumber(b.teamKey));
-  }, [view, sort]);
+  }, [view, sort, weights]);
 
   if (error) {
     const copy = loadFailureCopy(
@@ -145,9 +159,7 @@ export function ScoutingTeamProfiles({ orgId, eventKey }: { orgId: string; event
             {view.thin > 0
               ? ` ${view.thin} ${view.thin === 1 ? "robot has" : "robots have"} too few matches to rank yet.`
               : ""}
-            {sort === "fit"
-              ? " Best fit weighs scoring first, then whether it is the same robot every match, then whether it finishes."
-              : ""}
+            {sort === "fit" ? " Best fit orders them by what you say you are looking for." : ""}
           </p>
         </div>
         <div className="stp-sort" role="group" aria-label="Sort robots">
@@ -171,6 +183,10 @@ export function ScoutingTeamProfiles({ orgId, eventKey }: { orgId: string; event
           ))}
         </div>
       </header>
+
+      {sort === "fit" ? (
+        <PickWeightSliders weights={weights} onChange={update} onReset={reset} changed={changed} />
+      ) : null}
 
       <ul className="stp-list">
         {rows.map((profile) => (

@@ -146,3 +146,66 @@ test("Best fit ranks on more than points, and is the order that opens", async ({
   // one, this test is asserting nothing and should say so rather than pass.
   expect(checked, "no unreliable robot in the fixture to check against").toBeGreaterThan(0);
 });
+
+test("the weights are yours, and they change the order in front of you", async ({ page }) => {
+  test.skip(!(await openRobots(page)), "no scouting seeded on this box");
+
+  const order = async () =>
+    (await page.locator(".stp-row .stp-team").allInnerTexts()).map((text) => text.trim());
+  const sliders = page.locator(".stp-weight-grid input[type='range']");
+  await expect(sliders).toHaveCount(6);
+  const before = await order();
+
+  /**
+   * Endgame climb, turned all the way up.
+   *
+   * The seeded event has exactly one robot written to climb every match, and
+   * it is not near the top on points. If weighting climb does not move it up,
+   * the sliders are not connected to the ranking — which is the failure mode
+   * worth a test, because a slider that does nothing still looks right.
+   */
+  await sliders.nth(3).fill("2");
+  await sliders.nth(0).fill("0.2");
+  await expect(page.getByRole("button", { name: "Reset" })).toBeVisible();
+  await page.waitForTimeout(400);
+  const byClimb = await order();
+
+  expect(byClimb).not.toEqual(before);
+  expect([...byClimb].sort()).toEqual([...before].sort());
+
+  const climber = await page
+    .locator(".stp-row")
+    .filter({ hasText: "does it every match" })
+    .first()
+    .locator(".stp-team")
+    .innerText();
+  expect(
+    byClimb.indexOf(climber.trim()),
+    `${climber.trim()} climbs and weighting climb did not move it up`,
+  ).toBeLessThanOrEqual(before.indexOf(climber.trim()));
+
+  // In words a student can act on, not a number they have to interpret.
+  await expect(page.locator(".stp-weight-value").nth(3)).toHaveText("Decides it");
+
+  // Reset puts it back, and takes itself away.
+  await page.getByRole("button", { name: "Reset" }).click();
+  await page.waitForTimeout(400);
+  expect(await order()).toEqual(before);
+  await expect(page.getByRole("button", { name: "Reset" })).toHaveCount(0);
+});
+
+test("a weighting survives a reload, because a pick meeting is not one page view", async ({
+  page,
+}) => {
+  test.skip(!(await openRobots(page)), "no scouting seeded on this box");
+
+  const sliders = page.locator(".stp-weight-grid input[type='range']");
+  await sliders.nth(2).fill("2");
+  await page.waitForTimeout(400);
+
+  await page.reload();
+  await page.getByRole("button", { name: "Robots", exact: true }).click();
+  await expect(page.locator(".stp-weight-grid input[type='range']").nth(2)).toHaveValue("2");
+
+  await page.getByRole("button", { name: "Reset" }).click();
+});
