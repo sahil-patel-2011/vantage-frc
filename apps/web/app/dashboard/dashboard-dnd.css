@@ -208,6 +208,30 @@
   --dash-guide:color-mix(in srgb,var(--accent) 16%,transparent);
 }
 
+/*
+  Room under the board for the edit dock to float over.
+
+  The dock is fixed 88px above the bottom of the viewport, and "Tap a slot on
+  the board to place" is the instruction on screen — so any slot that happened
+  to sit under the dock could not be tapped, and no amount of scrolling helped
+  because the last row had nothing below it to scroll into. Reserving the
+  dock's height means every slot can be brought out from under it.
+
+  Only while editing, and only where the dock floats: under 720px it is
+  sticky, in flow, and pushes the page down by itself.
+*/
+@media (min-width:721px){
+  .dash-home .dash-grid-wrap.editing{padding-bottom:160px}
+}
+/*
+  And room above it, for the sticky topbar.
+
+  Same bug at the other end: scrolling the board to the top puts its first row
+  under the header, where the menu button is what a tap lands on. This is what
+  scroll-margin exists for, and it costs nothing when nothing is scrolling.
+*/
+.dash-home .dash-grid-wrap{scroll-margin-top:96px}
+
 /* Accurate cell guides for whatever column count this screen is using.
    Overrides the fixed 12-column gradient painted by soft-ui.css. */
 .dash-home .dash-grid-wrap.editing{background-image:none}
