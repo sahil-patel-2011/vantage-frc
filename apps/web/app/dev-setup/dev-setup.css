@@ -23,7 +23,7 @@
 .ds-side {
   position: sticky;
   top: 16px;
-  max-height: calc(100vh - 48px);
+  max-height: calc(100dvh - 48px);
   overflow-y: auto;
   padding-right: 8px;
   font-size: 13px;

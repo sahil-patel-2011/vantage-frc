@@ -1,6 +1,6 @@
 /* Public parent view — standalone page, soft-ui tokens carry light + dark. */
 .parent-view {
-  min-height: 100vh;
+  min-height: 100dvh;
   background: var(--bg);
   color: var(--ink);
   padding: 32px 16px calc(48px + var(--safe-bottom, 0px));

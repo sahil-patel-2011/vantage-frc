@@ -437,7 +437,7 @@
 
 /* Kiosk — high-contrast TV (intentional dark surface) */
 .display-kiosk {
-  min-height: 100vh;
+  min-height: 100dvh;
   background: #050608;
   color: #f4f6f8;
   padding: 1.5rem 2rem 2rem;
