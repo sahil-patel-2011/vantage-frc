@@ -35,6 +35,10 @@ const PAGES = [
   "/business",
   "/match-debrief",
   "/parts-relay",
+  // The wiki's own bug needed a page open to show, which this sweep does not
+  // do — team-playbook.spec.ts covers that. Listed anyway so the empty case
+  // stays honest too.
+  "/team/knowledge",
 ] as const;
 
 for (const path of PAGES) {

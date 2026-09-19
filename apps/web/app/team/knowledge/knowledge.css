@@ -94,9 +94,14 @@
 .kb-row input[type="checkbox"]{width:auto;min-height:0}
 .kb-body{min-height:360px;font:13px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
 .kb-document{min-height:280px;padding:20px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--bg);color:var(--ink);line-height:1.65}
-.kb-document h1,.kb-document h2,.kb-document h3{margin:1.2em 0 .45em;line-height:1.25;letter-spacing:-.015em}
-.kb-document h1:first-child,.kb-document h2:first-child,.kb-document h3:first-child{margin-top:0}
-.kb-document h1{font-size:var(--title-1)}.kb-document h2{font-size:var(--title-2)}.kb-document h3{font-size:var(--title-3)}
+/* Sizes follow the markdown level, not the heading tag. A page's `#` is an h2
+   so it nests under the page it is on, and it should still look like the
+   title of the document it heads. */
+.kb-document h2,.kb-document h3,.kb-document h4{margin:1.2em 0 .45em;line-height:1.25;letter-spacing:-.015em}
+.kb-document h2:first-child,.kb-document h3:first-child,.kb-document h4:first-child{margin-top:0}
+.kb-document .kb-doc-1{font-size:var(--title-1)}
+.kb-document .kb-doc-2{font-size:var(--title-2)}
+.kb-document .kb-doc-3{font-size:var(--title-3)}
 .kb-document p,.kb-document ul,.kb-document ol,.kb-document blockquote,.kb-document pre{margin:.7em 0}
 .kb-document ul,.kb-document ol{padding-left:24px}
 .kb-document blockquote{padding:8px 12px;border-left:3px solid var(--accent);color:var(--muted);background:color-mix(in srgb,var(--accent) 6%,transparent)}
