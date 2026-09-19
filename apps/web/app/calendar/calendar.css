@@ -99,3 +99,141 @@
 .aii-error{margin:0;color:var(--critical);font-size:12px;font-weight:600}
 .aii-text{margin:0;padding:12px 14px;background:var(--bg);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:var(--radius-xs);font-size:13px;line-height:1.6;white-space:pre-wrap}
 .aii-meta{color:var(--muted);font-size:10px}
+
+/* ===========================================================================
+   The month grid.
+
+   Google Calendar's month view is the reference for the shape and nothing
+   else: seven columns, whole weeks, chips in the cells. What is different is
+   what has been left out — no time ruler (milestones are whole days), no
+   Create button (press the day), no guest/conference/repeat fields in the
+   quick composer (one input).
+   =========================================================================== */
+.cal-grid{
+  margin:0 0 20px;
+  border:1px solid var(--line);border-radius:var(--radius-sm);
+  background:var(--surface);overflow:hidden;
+}
+.cal-grid-head{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:12px 14px;border-bottom:1px solid var(--line);
+}
+.cal-grid-move{display:flex;align-items:center;gap:6px;min-width:0}
+.cal-grid-move h2{
+  margin:0;min-width:0;
+  font:800 17px/1.2 var(--font-source-sans),ui-sans-serif;letter-spacing:-.02em;
+}
+.cal-grid-arrow{
+  display:grid;place-items:center;width:32px;height:32px;
+  border:1px solid var(--line);border-radius:var(--radius-xs);
+  background:var(--surface);color:var(--muted);
+  font-size:18px;line-height:1;cursor:pointer;
+}
+.cal-grid-arrow:hover{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.cal-grid-today{
+  min-height:32px;padding:0 12px;
+  border:1px solid var(--line);border-radius:var(--radius-pill);
+  background:var(--surface);color:var(--ink);
+  font:700 12px var(--font-source-sans),ui-sans-serif;cursor:pointer;
+}
+.cal-grid-today:hover{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+
+.cal-grid-weekdays{
+  display:grid;grid-template-columns:repeat(7,1fr);
+  border-bottom:1px solid var(--line);background:var(--surface-2);
+}
+.cal-grid-weekdays span{
+  padding:7px 8px;text-align:center;color:var(--muted);
+  font:700 11px var(--font-source-sans),ui-sans-serif;
+  letter-spacing:.06em;text-transform:uppercase;
+}
+.cal-grid-week{display:grid;grid-template-columns:repeat(7,1fr)}
+.cal-grid-week + .cal-grid-week{border-top:1px solid var(--line)}
+
+.cal-grid-day{
+  position:relative;display:flex;flex-direction:column;gap:3px;
+  min-height:104px;padding:4px 5px 6px;
+  border-left:1px solid var(--line);
+}
+.cal-grid-day:first-child{border-left:0}
+/* Padding days from the neighbouring months are dimmed, not hidden: what is
+   on them is still real, and a 31st that vanishes reads as a bug. */
+.cal-grid-day[data-in-month="no"]{background:color-mix(in srgb,var(--surface-2) 55%,transparent)}
+.cal-grid-day[data-in-month="no"] .cal-grid-num{opacity:.45}
+/* A season happens at weekends, so they are marked — faintly, as information,
+   not as "closed". */
+.cal-grid-day[data-weekend="yes"][data-in-month="yes"]{
+  background:color-mix(in srgb,var(--accent) 3.5%,transparent);
+}
+
+/* The empty area of a cell is the add control. It is a button so it can be
+   tabbed to and announced with the day it would add to. */
+.cal-grid-add{
+  position:absolute;inset:0;z-index:0;
+  display:block;width:100%;padding:0;
+  border:0;background:transparent;text-align:left;cursor:pointer;
+}
+.cal-grid-add:hover{background:color-mix(in srgb,var(--accent) 7%,transparent)}
+.cal-grid-add:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.cal-grid-num{
+  position:absolute;top:4px;left:6px;
+  color:var(--muted);font:700 12px var(--font-source-sans),ui-sans-serif;
+}
+.cal-grid-day[data-today="yes"] .cal-grid-num{
+  display:grid;place-items:center;
+  top:3px;left:3px;width:22px;height:22px;
+  border-radius:50%;background:var(--accent);color:var(--accent-ink,#fff);
+}
+
+.cal-grid-entries{
+  position:relative;z-index:1;
+  display:grid;gap:2px;margin:22px 0 0;padding:0;list-style:none;
+}
+.cal-grid-chip{
+  display:block;width:100%;padding:2px 6px;
+  border:0;border-left:3px solid currentColor;border-radius:3px;
+  background:color-mix(in srgb,currentColor 13%,transparent);
+  font:600 11px/1.4 var(--font-source-sans),ui-sans-serif;
+  text-align:left;cursor:pointer;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.cal-grid-chip:hover{background:color-mix(in srgb,currentColor 22%,transparent)}
+/* A run of days reads as one bar: only the first day carries the left edge. */
+.cal-grid-chip.span-middle,.cal-grid-chip.span-end{border-left-color:transparent}
+.cal-grid-chip.is-done{opacity:.55;text-decoration:line-through}
+.cal-grid-chip.kind-kickoff,.cal-grid-chip.kind-design{color:var(--accent)}
+.cal-grid-chip.kind-build{color:var(--ink)}
+.cal-grid-chip.kind-practice{color:var(--positive)}
+.cal-grid-chip.kind-event{color:var(--warning)}
+.cal-grid-chip.kind-deadline{color:var(--critical)}
+.cal-grid-chip.kind-meeting,.cal-grid-chip.kind-outreach,.cal-grid-chip.kind-other{color:var(--muted)}
+
+.cal-grid-more{
+  position:relative;z-index:1;align-self:flex-start;
+  padding:1px 4px;border:0;border-radius:3px;background:transparent;
+  color:var(--muted);font:700 10px var(--font-source-sans),ui-sans-serif;cursor:pointer;
+}
+.cal-grid-more:hover{color:var(--accent);background:var(--accent-soft)}
+
+.cal-grid-composer{position:relative;z-index:2;margin-top:2px}
+.cal-grid-composer input{
+  width:100%;min-height:26px;padding:3px 6px;
+  border:1px solid var(--accent);border-radius:3px;
+  background:var(--surface);color:var(--ink);
+  font:600 11px var(--font-source-sans),ui-sans-serif;
+}
+.cal-grid-hint{
+  margin:0;padding:8px 14px;border-top:1px solid var(--line);
+  color:var(--muted);font-size:11.5px;
+}
+
+/* A phone cannot show seven readable columns of chips, so the cells become
+   squares that carry a count, and the agenda list below is the detail. */
+@media (max-width:720px){
+  .cal-grid-day{min-height:62px;padding:3px}
+  .cal-grid-entries{margin-top:19px;gap:1px}
+  .cal-grid-chip{
+    padding:1px 3px;border-left-width:2px;font-size:9.5px;
+  }
+  .cal-grid-hint{display:none}
+}

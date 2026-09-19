@@ -46,7 +46,18 @@ export async function addSessionCookies(context: BrowserContext, cookies: Cookie
   await dismissFirstRunOverlays(context);
 }
 
-/** The local E2E auth fixture session (`E2E_AUTH_FIXTURE=1`). */
+/**
+ * The local E2E auth fixture session (`E2E_AUTH_FIXTURE=1`).
+ *
+ * **Dev server only.** `proxy.ts` refuses the fixture outright when
+ * `NODE_ENV === "production"`, which is what `next start` sets — deliberately,
+ * so a cookie value pasted into a real deployment can never be a session. A
+ * spec that signs in this way and is then pointed at a production build with
+ * `PLAYWRIGHT_BASE_URL` is signed out: the proxy sends it to /signin and it
+ * fails on a missing heading, which reads like a product regression and is
+ * not one. Specs that must run against a build use `signInAs` instead, which
+ * mints a real Better Auth session and works in either mode.
+ */
 export async function signInFixture(context: BrowserContext) {
   await addSessionCookies(context, [
     { name: "vantage-e2e-session", value: "authenticated", httpOnly: true },

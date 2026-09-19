@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AiInsightPanel } from "../../components/ai-insight-panel";
+import { CalendarMonth } from "./calendar-month";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
@@ -695,11 +696,41 @@ function ReadyCalendar({
 
       <LinkedDeadlinesPanel items={view.linkedDeadlines ?? []} orgId={orgId} />
 
+      {/*
+        The grid first, then the same milestones as a list.
+
+        They are two readings of one set of entries, not two features: the grid
+        answers "what does February look like" and the list answers "what is
+        next, and let me edit it". The grid is not gated on there being
+        milestones — an empty February is a useful thing to look at, and it is
+        also where you add the first one.
+      */}
+      <CalendarMonth
+        milestones={milestones}
+        busy={busy}
+        onCreate={async ({ title: newTitle, startsOn: on }) => {
+          await run(
+            {
+              action: "add_milestone",
+              orgId,
+              title: newTitle,
+              kind: "other",
+              startsOn: on,
+              endsOn: null,
+              notes: "",
+              meetingUrl: null,
+            },
+            "add",
+          );
+        }}
+        onOpen={(milestone) => setEditingId(milestone.id)}
+      />
+
       {months.length === 0 ? (
         <EmptyState
           soft
-          title="No milestones yet"
-          description="Seed a template from your kickoff date, or add your first milestone below."
+          title="Nothing on the calendar yet"
+          description="Press a day above to add something, or seed a season template from your kickoff date."
         />
       ) : (
         months.map((group) => (
