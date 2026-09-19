@@ -237,3 +237,68 @@
   }
   .cal-grid-hint{display:none}
 }
+
+/* ---------------------------------------------------------------- motion --
+   Shared tokens from vantage-fluid.css, which zero under reduced motion — so
+   none of this needs a media query of its own.
+
+   A calendar is a grid you scan, so the restraint matters more here than
+   anywhere: cells tint, they do not lift, and the only thing that moves is
+   the thing you opened. */
+.cal-grid-day,
+.cal-grid-add {
+  transition: background-color var(--dur-tint) var(--ease-out);
+}
+.cal-grid-arrow,
+.cal-grid-today {
+  transition:
+    background-color var(--dur-tint) var(--ease-out),
+    border-color var(--dur-tint) var(--ease-out),
+    color var(--dur-tint) var(--ease-out),
+    transform var(--dur-press) var(--ease-out);
+}
+.cal-grid-arrow:active,
+.cal-grid-today:active {
+  transform: scale(0.94);
+}
+.cal-grid-chip {
+  transition:
+    background-color var(--dur-tint) var(--ease-out),
+    transform var(--dur-press) var(--ease-out);
+}
+.cal-grid-chip:active {
+  transform: scale(0.97);
+}
+/* The composer is the one moving part: it grows out of the cell you pressed,
+   which is what makes "press a day and type" feel like one gesture instead of
+   a form appearing. */
+.cal-grid-composer {
+  animation: cal-compose var(--dur-press) var(--ease-settle) both;
+  transform-origin: top center;
+}
+@keyframes cal-compose {
+  from {
+    opacity: 0;
+    transform: scaleY(0.7) translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+/* The overflow list is a menu: it settles down from its button rather than
+   snapping into existence under it. */
+.hub-bar .hub-tool-overflow {
+  animation: hub-overflow var(--dur-move) var(--ease-settle) both;
+  transform-origin: top right;
+}
+@keyframes hub-overflow {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

@@ -297,7 +297,17 @@ function Sparkline({ series, label }: { series: readonly number[]; label: string
       aria-label={`${label}: ${series.join(", ")}`}
       preserveAspectRatio="none"
     >
-      <polyline points={points} fill="none" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
+      {/* `pathLength="1"` normalises the geometry, so the draw-in animation in
+          the stylesheet can say "0 to 1" instead of needing this line's real
+          length in pixels — which it cannot know, because the viewBox is
+          stretched by `preserveAspectRatio="none"`. */}
+      <polyline
+        points={points}
+        pathLength="1"
+        fill="none"
+        strokeWidth="1.5"
+        vectorEffect="non-scaling-stroke"
+      />
       <circle cx={lastX} cy={lastY} r="2.2" />
     </svg>
   );

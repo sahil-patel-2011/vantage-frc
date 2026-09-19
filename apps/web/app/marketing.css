@@ -86,7 +86,7 @@
 
 .hero-product-visual{
   position:relative;z-index:1;justify-self:end;width:min(100%,460px);
-  animation:brand-mark-rise .85s .1s var(--ease-out) both;
+  animation:brand-mark-rise var(--dur-page) 100ms var(--ease-settle) both;
 }
 .hero-product-screen{
   border:1px solid var(--m-line);border-radius:18px;overflow:hidden;
@@ -1072,29 +1072,25 @@
 .marketing-lux .lux-kicker{
   margin:0 0 10px;color:var(--m-muted);
   font:600 12px/1.2 var(--m-sans);letter-spacing:.12em;text-transform:uppercase;
-  animation:lux-rise .75s .02s var(--ease-out) both;
 }
 .marketing-lux .lux-hero h1{
   max-width:16ch;margin:0 0 14px;
   font-weight:600;font-size:clamp(32px,4vw,48px);line-height:1.08;font-family:var(--m-sans);
   letter-spacing:-.038em;color:var(--m-ink);
-  animation:lux-rise .75s .04s var(--ease-out) both;
 }
 .marketing-lux .lux-hero-copy>p:not(.lux-wordmark):not(.lux-kicker){
   max-width:32rem;margin:0;color:var(--m-muted);
   font-size:clamp(15px,1.2vw,17px);line-height:1.55;
-  animation:lux-rise .75s .1s var(--ease-out) both;
 }
 .marketing-lux .lux-hero .actions{
   margin:26px 0 0;gap:12px;
-  animation:lux-rise .75s .16s var(--ease-out) both;
 }
 .marketing-lux .lux-hero-meta{display:none}
 
 /* Soft-UI hero shell — product chrome as the dominant visual */
 .marketing-lux .hero-soft-shell{
   justify-self:end;width:min(100%,600px);
-  animation:lux-rise .85s .1s var(--ease-out) both;
+  animation:lux-rise var(--dur-page) 100ms var(--ease-settle) both;
 }
 .marketing-lux .hero-soft-device{
   --sp-bg:#f2f3f5;--sp-card:#fff;--sp-ink:#14243a;--sp-muted:#5a6578;
@@ -2184,7 +2180,7 @@ html[data-theme="dark"] .marketing-lux .field input:focus{
   position:relative;z-index:1;justify-self:end;width:min(100%,478px);
   border:1px solid var(--m-line);border-radius:20px;overflow:hidden;
   background:var(--m-surface);box-shadow:var(--m-card-shadow-lg);
-  animation:lux-rise .85s .12s var(--ease-out) both;
+  animation:lux-rise var(--dur-page) 120ms var(--ease-settle) both;
 }
 .marketing-lux .hero-teach-chrome{
   display:flex;align-items:center;gap:10px;padding:12px 16px;
@@ -2445,8 +2441,12 @@ html[data-theme="dark"] .marketing-lux .payg>div:last-child{color:var(--m-muted)
 
 /* ── Reveal-on-scroll (armed by ScrollReveal; reduced-motion never arms) ── */
 html.reveal-armed .marketing-lux [data-reveal]{
-  opacity:0;transform:translateY(18px);
-  transition:opacity .7s ease,transform .7s var(--ease-out);
+  opacity:0;transform:translateY(14px);
+  /* Was `.7s ease` — a duration and a curve written by hand, so this was the
+     one thing on the site that did not share the product's rhythm. Seven
+     tenths of a second is also long enough to notice as an effect rather than
+     read as the page settling. */
+  transition:opacity var(--dur-page) var(--ease-out),transform var(--dur-page) var(--ease-settle);
 }
 html.reveal-armed .marketing-lux [data-reveal].is-in{opacity:1;transform:none}
 
@@ -2493,7 +2493,7 @@ html.reveal-armed .marketing-lux [data-reveal].is-in{opacity:1;transform:none}
   position:relative;z-index:1;justify-self:end;width:min(100%,500px);
   border:1px solid var(--m-line);border-radius:20px;overflow:hidden;
   background:var(--m-surface);box-shadow:var(--m-card-shadow-lg);
-  animation:lux-rise .85s .12s var(--ease-out) both;
+  animation:lux-rise var(--dur-page) 120ms var(--ease-settle) both;
 }
 .marketing-lux .mk-mock-chrome{
   display:flex;align-items:center;gap:10px;padding:11px 14px;
@@ -2712,4 +2712,55 @@ html.reveal-armed .marketing-lux [data-reveal].is-in{opacity:1;transform:none}
   letter-spacing:.08em;
   text-transform:uppercase;
   text-align:center;
+}
+
+/* ── The hero's entrance ────────────────────────────────────────────────────
+   One cascade, where there were five rules.
+
+   The hero did already animate — I looked at the page, decided it did not,
+   and wrote a second system on top of the first. Measuring the delays is what
+   caught it: two paragraphs came back at 100ms instead of their place in the
+   sequence, because `.lux-hero-copy>p:not(.lux-wordmark):not(.lux-kicker)`
+   outranks `:nth-child(n)` and was setting its own. Worse, the duplicate
+   `@keyframes lux-rise` I added silently replaced the original for all eight
+   things using that name.
+
+   So this is the consolidation rather than an addition: the five hand-written
+   `animation:lux-rise .75s .04s …` declarations are gone, the one keyframe
+   definition is the original, and the sequence lives in one place where it
+   can be read top to bottom.
+
+   Pure CSS on purpose. `ScrollReveal` hides `[data-reveal]` until JavaScript
+   arms it, which is right for content below the fold and wrong for the first
+   thing anybody sees — if that script never runs, the headline must still be
+   on the screen. So this animates *in* from a hidden start only while the
+   animation itself is running, and reduced motion removes the animation
+   entirely, which leaves every element at its natural, visible state.
+
+   The stagger is the whole character: kicker, headline, sentence, buttons,
+   proof — each a beat behind the one above, so the eye is led down the page
+   instead of everything arriving at once. */
+.marketing-lux .lux-hero-copy > *{
+  animation:lux-rise var(--dur-page) var(--ease-settle) both;
+}
+.marketing-lux .lux-hero-copy > :nth-child(1){animation-delay:40ms}
+.marketing-lux .lux-hero-copy > :nth-child(2){animation-delay:100ms}
+.marketing-lux .lux-hero-copy > :nth-child(3){animation-delay:160ms}
+.marketing-lux .lux-hero-copy > :nth-child(4){animation-delay:220ms}
+.marketing-lux .lux-hero-copy > :nth-child(5){animation-delay:280ms}
+.marketing-lux .lux-hero-copy > :nth-child(6){animation-delay:340ms}
+/* The product panel is the payoff, so it arrives last and from slightly
+   further away. */
+.marketing-lux .lux-hero-inner > :last-child{
+  animation:lux-panel var(--dur-page) var(--ease-settle) 200ms both;
+}
+@keyframes lux-panel{
+  from{opacity:0;transform:translateY(16px) scale(.985)}
+  to{opacity:1;transform:none}
+}
+@media(prefers-reduced-motion:reduce){
+  /* Not `animation-duration:0s` — removing the animation outright is what
+     guarantees the element sits at its own styles rather than at a keyframe. */
+  .marketing-lux .lux-hero-copy > *,
+  .marketing-lux .lux-hero-inner > :last-child{animation:none}
 }

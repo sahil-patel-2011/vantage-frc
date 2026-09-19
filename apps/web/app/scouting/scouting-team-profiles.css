@@ -187,3 +187,90 @@
     padding: 0 12px 10px;
   }
 }
+
+/* ---------------------------------------------------------------- motion --
+   Everything here uses the shared tokens in vantage-fluid.css, which zero
+   themselves under `html[data-motion="reduced"]` and
+   `prefers-reduced-motion`. That is why none of this is wrapped in a media
+   query: the durations already know.
+
+   The rule for the character: hover tints, press gives a couple of percent of
+   scale and springs back, and nothing travels more than a few pixels. A list
+   of robots should feel like paper under a finger, not like a menu opening. */
+.stp-row {
+  transition:
+    border-color var(--dur-tint) var(--ease-out),
+    box-shadow var(--dur-move) var(--ease-out),
+    transform var(--dur-press) var(--ease-out);
+}
+.stp-row:hover {
+  box-shadow: var(--shadow);
+}
+.stp-row-main {
+  transition: background-color var(--dur-tint) var(--ease-out);
+}
+/* The press lands on the row, not the button, so the whole card moves as one
+   object — pressing a label and having only the label react is the thing that
+   reads as a web page rather than a surface. */
+.stp-row:active {
+  transform: scale(0.994);
+}
+.stp-sort button,
+.stp-tag {
+  transition:
+    background-color var(--dur-tint) var(--ease-out),
+    border-color var(--dur-tint) var(--ease-out),
+    color var(--dur-tint) var(--ease-out);
+}
+.stp-sort button:active {
+  transform: scale(0.96);
+  transition: transform var(--dur-press) var(--ease-out);
+}
+/* The detail panel unfolds from the row rather than appearing on top of it. */
+.stp-detail {
+  animation: stp-unfold var(--dur-move) var(--ease-settle) both;
+}
+@keyframes stp-unfold {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+/* The sparkline is the one thing worth drawing rather than fading: the shape
+   is the information, and watching it arrive left-to-right is how you read
+   it. Short enough not to be a performance. */
+.stp-spark polyline {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  animation: stp-draw var(--dur-sheet) var(--ease-out) both;
+}
+.stp-spark circle {
+  /* An SVG element transforms about the *viewport* origin by default, so a
+     plain `scale()` would launch the dot toward the top-left instead of
+     growing it in place. `fill-box` makes the origin its own centre. */
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: stp-dot var(--dur-tint) var(--ease-out) var(--dur-sheet) both;
+}
+@keyframes stp-draw {
+  from {
+    stroke-dasharray: 0 1;
+  }
+  to {
+    stroke-dasharray: 1 0;
+  }
+}
+@keyframes stp-dot {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
