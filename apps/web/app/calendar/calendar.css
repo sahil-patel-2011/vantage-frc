@@ -302,3 +302,48 @@
     transform: none;
   }
 }
+
+/* ── Repeat ─────────────────────────────────────────────────────────────────
+   Seven buttons and a date, not a rule builder. An FRC team repeats one shape
+   of thing — some set of weeknights until a date on the season calendar — and
+   the other four options Google offers cost a dropdown and earn nothing. */
+.cal-repeat{
+  display:grid;gap:8px;
+  margin:0;padding:10px 12px;
+  border:1px solid var(--line);border-radius:var(--radius-sm);
+  background:var(--surface-2);
+}
+.cal-repeat > legend{
+  padding:0 4px;
+  color:var(--muted);
+  font:700 11px var(--font-source-sans),ui-sans-serif;
+  letter-spacing:.06em;text-transform:uppercase;
+}
+.cal-repeat-days{display:flex;flex-wrap:wrap;gap:4px}
+.cal-repeat-days button{
+  width:34px;min-height:34px;
+  border:1px solid var(--line);border-radius:50%;
+  background:var(--surface);color:var(--muted);
+  font:700 12px var(--font-source-sans),ui-sans-serif;cursor:pointer;
+  transition:
+    background-color var(--dur-tint) var(--ease-out),
+    border-color var(--dur-tint) var(--ease-out),
+    color var(--dur-tint) var(--ease-out),
+    transform var(--dur-press) var(--ease-out);
+}
+.cal-repeat-days button:hover{border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+.cal-repeat-days button:active{transform:scale(.92)}
+.cal-repeat-days button.is-on{
+  background:var(--accent);border-color:var(--accent);color:var(--accent-ink,#fff);
+}
+.cal-repeat-range{display:flex;flex-wrap:wrap;gap:10px 16px}
+.cal-repeat-range label{display:grid;gap:3px}
+.cal-repeat-range span{
+  color:var(--muted);
+  font:600 11px var(--font-source-sans),ui-sans-serif;
+}
+.cal-repeat-summary{
+  margin:0;
+  color:var(--accent);
+  font:700 12px var(--font-source-sans),ui-sans-serif;
+}

@@ -500,6 +500,39 @@ function seasonTemplateId(value: unknown): SeasonTemplateId {
   return text as SeasonTemplateId;
 }
 
+/**
+ * The dates a repeating entry lands on.
+ *
+ * Validated here rather than trusted, because these arrive over the wire and
+ * each one becomes a row. Every value must be a real date, duplicates
+ * collapse, the list is sorted so the series is written in the order it
+ * happens, and it is capped — the client caps it too, and a cap that only
+ * exists in the client is not a cap.
+ *
+ * The start date is **not** forced in. An earlier version seeded the set with
+ * it, on the reasoning that a series should always contain the day you picked.
+ * It should not: "every Tuesday and Thursday from Monday the 4th" is eight
+ * entries, and seeding produced nine — the eight plus a practice on the Monday
+ * nobody asked for. The client's expansion already decides that question, and
+ * two places deciding it differently is how the Monday got in.
+ *
+ * The fallback stays: an absent or unusable list means a single entry on the
+ * start date, which is the plain non-repeating case.
+ */
+const MAX_REPEAT_DATES = 200;
+
+function repeatDates(value: unknown, startsOn: string): string[] {
+  if (!Array.isArray(value) || value.length === 0) return [startsOn];
+  const seen = new Set<string>();
+  for (const entry of value) {
+    if (seen.size >= MAX_REPEAT_DATES) break;
+    if (typeof entry !== "string" || !entry.trim()) continue;
+    seen.add(isoDate(entry, "Repeat date"));
+  }
+  if (seen.size === 0) return [startsOn];
+  return [...seen].sort();
+}
+
 function optionalEndDate(value: unknown): string | null {
   if (value == null || String(value).trim() === "") return null;
   return isoDate(value, "End date");
@@ -525,6 +558,17 @@ export type CalendarAction =
       endsOn: string | null;
       notes: string;
       meetingUrl: string | null;
+      /**
+       * Extra dates to create the same entry on — a practice schedule,
+       * already expanded by `expandRepeat`.
+       *
+       * The expansion happens before this, not here, because the rule is a
+       * thing the person typed and the dates are a thing the server stores.
+       * Sending dates rather than a rule also means the server never has to
+       * know recurrence exists, and every entry it writes is an ordinary one
+       * that can be moved or cancelled on its own.
+       */
+      repeatOn: string[];
     }
   | { action: "update_milestone"; orgId: string; id: string; patch: MilestonePatch }
   | { action: "toggle_done"; orgId: string; id: string; done: boolean }
@@ -558,6 +602,7 @@ export function parseCalendarAction(input: unknown): CalendarAction {
         endsOn,
         notes: optionalText(body.notes, 2000) ?? "",
         meetingUrl: optionalMeetingUrl(body.meetingUrl),
+        repeatOn: repeatDates(body.repeatOn, startsOn),
       };
     }
 

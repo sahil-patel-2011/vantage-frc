@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AiInsightPanel } from "../../components/ai-insight-panel";
 import { CalendarMonth } from "./calendar-month";
+import { CalendarRepeat, useRepeatRule } from "./calendar-repeat";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
@@ -582,6 +583,9 @@ function ReadyCalendar({
 }) {
   const orgId = view.context.orgId ?? "";
   const milestones = view.milestones;
+  // Local to this form on purpose: a repeat rule is a thing you are typing,
+  // not state the rest of the page has any use for.
+  const repeat = useRepeatRule(startsOn);
   const busy = busyKey != null;
   const now = new Date();
   const next = nextUpcoming(milestones, now);
@@ -593,6 +597,7 @@ function ReadyCalendar({
     if (!title.trim() || !startsOn) return;
     void run(
       {
+        repeatOn: repeat.dates,
         action: "add_milestone",
         orgId,
         title: title.trim(),
@@ -609,6 +614,7 @@ function ReadyCalendar({
       setEndsOn("");
       setNotes("");
       setMeetingUrl("");
+      repeat.reset();
     });
   };
 
@@ -803,8 +809,12 @@ function ReadyCalendar({
             onChange={(event) => setMeetingUrl(event.target.value)}
           />
         </FormRow>
+
+        {/* A build season is mostly the same evening over and over, and this
+            form could only be told about one evening at a time. */}
+        <CalendarRepeat state={repeat} disabled={busy} startsOn={startsOn} />
         <Button variant="primary" type="submit" disabled={busy || !title.trim() || !startsOn}>
-          Add milestone
+          {repeat.dates.length > 1 ? `Add ${repeat.dates.length} entries` : "Add milestone"}
         </Button>
       </Panel>
 

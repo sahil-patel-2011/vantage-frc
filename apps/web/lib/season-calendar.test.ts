@@ -268,6 +268,61 @@ describe("parseCalendarAction", () => {
     expect(() => parseCalendarAction({ action: "seed_season", orgId: ORG, kickoffDate: "next saturday" })).toThrow(/valid date/);
   });
 
+  it("validates every repeat date rather than trusting the client", () => {
+    const base = { action: "add_milestone", orgId: ORG, title: "Practice", kind: "practice" as const };
+
+    // Duplicates collapse and the list is sorted, so the series is written in
+    // the order it happens.
+    const parsed = parseCalendarAction({
+      ...base,
+      startsOn: "2027-01-12",
+      repeatOn: ["2027-01-19", "2027-01-05", "2027-01-19", "2027-01-12"],
+    });
+    expect(parsed).toMatchObject({ repeatOn: ["2027-01-05", "2027-01-12", "2027-01-19"] });
+
+    // The start date is *not* forced in. "Every Tuesday and Thursday from
+    // Monday the 4th" is eight entries; forcing it in made nine, the extra one
+    // being a practice on the Monday nobody asked for.
+    const monday = parseCalendarAction({
+      ...base,
+      startsOn: "2027-01-04",
+      repeatOn: ["2027-01-05", "2027-01-07"],
+    });
+    expect((monday as { repeatOn: string[] }).repeatOn).toEqual(["2027-01-05", "2027-01-07"]);
+
+    // A date that is not a date is a rejection, not a silently dropped row:
+    // a schedule missing one Thursday for no visible reason is worse than an
+    // error saying which value was wrong.
+    expect(() =>
+      parseCalendarAction({ ...base, startsOn: "2027-01-12", repeatOn: ["2027-13-45"] }),
+    ).toThrow(/Repeat date/i);
+
+    // Anything that is not a list of dates falls back to the single entry.
+    for (const junk of [null, undefined, "2027-01-19", 7, {}]) {
+      expect(
+        parseCalendarAction({ ...base, startsOn: "2027-01-12", repeatOn: junk }),
+        String(junk),
+      ).toMatchObject({ repeatOn: ["2027-01-12"] });
+    }
+  });
+
+  it("caps a repeat series on the server, not only in the browser", () => {
+    // A cap that exists only in the client is not a cap.
+    const many = Array.from({ length: 400 }, (_, index) => {
+      const day = new Date(Date.UTC(2027, 0, 1) + index * 86_400_000);
+      return day.toISOString().slice(0, 10);
+    });
+    const parsed = parseCalendarAction({
+      action: "add_milestone",
+      orgId: ORG,
+      title: "Practice",
+      kind: "practice",
+      startsOn: "2027-01-01",
+      repeatOn: many,
+    });
+    expect((parsed as { repeatOn: string[] }).repeatOn.length).toBeLessThanOrEqual(200);
+  });
+
   it("parses add_milestone with defaults and validates the date range", () => {
     expect(
       parseCalendarAction({ action: "add_milestone", orgId: ORG, title: "Scrimmage", kind: "event", startsOn: "2027-02-20" }),
@@ -280,6 +335,10 @@ describe("parseCalendarAction", () => {
       endsOn: null,
       notes: "",
       meetingUrl: null,
+      // Always present, always containing the start date. A plain one-off
+      // entry is a series of one, so the server has a single insert path and
+      // never has to know whether something repeats.
+      repeatOn: ["2027-02-20"],
     });
     expect(() =>
       parseCalendarAction({

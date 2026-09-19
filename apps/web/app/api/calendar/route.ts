@@ -181,12 +181,46 @@ export async function POST(request: Request) {
         }
 
         case "add_milestone": {
+          /**
+           * One row per date, in one statement.
+           *
+           * A practice schedule is forty entries, and forty round trips from a
+           * phone on venue Wi-Fi is a different feature from one. `unnest`
+           * expands the date array server-side so the whole series is one
+           * insert and one transaction — either the schedule is there or none
+           * of it is, rather than a half-written season to clean up.
+           *
+           * `repeatOn` always contains the start date, so the plain
+           * single-entry path runs through here unchanged.
+           */
+          const span =
+            action.endsOn && action.startsOn
+              ? Date.parse(`${action.endsOn}T00:00:00Z`) - Date.parse(`${action.startsOn}T00:00:00Z`)
+              : null;
+          const endsFor = (startsOn: string) =>
+            span != null && span > 0
+              ? new Date(Date.parse(`${startsOn}T00:00:00Z`) + span).toISOString().slice(0, 10)
+              : action.endsOn;
+
+          const starts = action.repeatOn;
+          const ends = starts.map(endsFor);
           const inserted = await client.query<{ id: string }>(
             `INSERT INTO season_milestones (org_id, title, kind, starts_on, ends_on, notes, meeting_url, created_by)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
-            [action.orgId, action.title, action.kind, action.startsOn, action.endsOn, action.notes, action.meetingUrl, userId],
+             SELECT $1, $2, $3, s.starts_on::date, NULLIF(s.ends_on, '')::date, $6, $7, $8
+               FROM unnest($4::text[], $5::text[]) AS s(starts_on, ends_on)
+             RETURNING id`,
+            [
+              action.orgId,
+              action.title,
+              action.kind,
+              starts,
+              ends.map((value) => value ?? ""),
+              action.notes,
+              action.meetingUrl,
+              userId,
+            ],
           );
-          return { id: inserted.rows[0]!.id };
+          return { id: inserted.rows[0]!.id, added: inserted.rowCount ?? 0 };
         }
 
         case "update_milestone": {
