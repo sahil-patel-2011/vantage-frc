@@ -26,6 +26,20 @@ export type NextMatchScoreCard = {
   climb: string;
   /** Where the number came from, so the card can say so. */
   basis: ScorePredictionBasis;
+  /**
+   * How sure *this* match is, as opposed to `errorBand`, which is how well the
+   * model does on average.
+   *
+   * These move with the robots on the field — how much each one swings, how
+   * many matches it rests on, whether it has been breaking down — so a match
+   * between well-known robots and one between robots nobody has watched stop
+   * carrying the same ±.
+   */
+  redBand: number;
+  blueBand: number;
+  redWinProbability: number;
+  /** One line naming the favourite and where the doubt is coming from. */
+  confidence: string;
 };
 
 export function seasonYearFromEventKey(eventKey: string | null | undefined): number | null {
@@ -86,6 +100,10 @@ export function nextMatchScoreCard(input: {
     redPredicted: prediction.redPredicted,
     bluePredicted: prediction.bluePredicted,
     errorBand: prediction.errorBand,
+    redBand: prediction.redBand,
+    blueBand: prediction.blueBand,
+    redWinProbability: prediction.redWinProbability,
+    confidence: prediction.confidence,
     drivers: prediction.drivers,
     briefing: plan.briefing,
     auto: plan.auto,

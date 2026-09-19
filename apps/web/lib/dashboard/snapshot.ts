@@ -203,6 +203,11 @@ export async function loadDashboardSnapshot(
     let redPredicted: number | null = null;
     let bluePredicted: number | null = null;
     let errorBand: number | null = null;
+    // Per-match, as opposed to errorBand, which is the model's average. See
+    // score-uncertainty.ts.
+    let redBand: number | null = null;
+    let blueBand: number | null = null;
+    let confidence: string | null = null;
     let scoreDrivers: string[] = [];
     let briefing: string | null = null;
     if (year && (redKeys.length >= 2 || blueKeys.length >= 2)) {
@@ -235,6 +240,9 @@ export async function loadDashboardSnapshot(
         redPredicted = card.redPredicted;
         bluePredicted = card.bluePredicted;
         errorBand = card.errorBand;
+        redBand = card.redBand;
+        blueBand = card.blueBand;
+        confidence = card.confidence;
         scoreDrivers = card.drivers;
         briefing = card.briefing;
       }
@@ -261,6 +269,9 @@ export async function loadDashboardSnapshot(
       redPredicted,
       bluePredicted,
       errorBand,
+      redBand,
+      blueBand,
+      confidence,
       scoreDrivers,
       briefing,
     } as unknown as Record<string, unknown>);

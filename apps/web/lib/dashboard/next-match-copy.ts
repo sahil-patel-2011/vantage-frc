@@ -5,17 +5,38 @@
 
 import { typicalScoreErrorCopy } from "@vantage/prediction-strategy";
 
+const usable = (value: unknown): value is number =>
+  typeof value === "number" && Number.isFinite(value) && value > 0;
+
+/**
+ * Two alliance totals, each with the doubt that belongs to *this* match.
+ *
+ * It used to read "Red 94 · Blue 81 · typical error ±4 (last measured set)" —
+ * one number describing how the model does on average, printed identically on
+ * a match between robots with a season of history and one between robots
+ * nobody has watched. The average is a fact about the model; a person reading
+ * a card before a match is asking about the match.
+ *
+ * `redBand` / `blueBand` are preferred when the caller has them. The old line
+ * is kept as the fallback rather than dropped, because a stored prediction
+ * from before this change has only `errorBand`, and printing nothing would be
+ * worse than printing what it knew.
+ */
 export function nextMatchScoreLine(input: {
   redPredicted: number;
   bluePredicted: number;
   errorBand?: number | null;
+  redBand?: number | null;
+  blueBand?: number | null;
 }): string {
   const red = Math.round(input.redPredicted);
   const blue = Math.round(input.bluePredicted);
-  const band =
-    typeof input.errorBand === "number" && Number.isFinite(input.errorBand)
-      ? ` · ${typicalScoreErrorCopy(input.errorBand)}`
-      : "";
+
+  if (usable(input.redBand) && usable(input.blueBand)) {
+    return `Red ${red} ±${Math.round(input.redBand)} · Blue ${blue} ±${Math.round(input.blueBand)}`;
+  }
+
+  const band = usable(input.errorBand) ? ` · ${typicalScoreErrorCopy(input.errorBand)}` : "";
   return `Red ${red} · Blue ${blue}${band}`;
 }
 

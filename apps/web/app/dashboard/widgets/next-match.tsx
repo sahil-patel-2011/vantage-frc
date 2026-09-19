@@ -76,8 +76,16 @@ export function NextMatchLive({ data }: { data: Record<string, unknown> }) {
             redPredicted: Number(data.redPredicted),
             bluePredicted: Number(data.bluePredicted),
             errorBand: typeof data.errorBand === "number" ? data.errorBand : null,
+            redBand: numericOrNull(data.redBand),
+            blueBand: numericOrNull(data.blueBand),
           })}
         </p>
+      ) : null}
+      {/* Where the doubt is coming from, in one sentence — usually a named
+          robot that has been breaking down, which is the thing a drive team
+          can actually do something about before the match starts. */}
+      {typeof data.confidence === "string" && data.confidence.trim() ? (
+        <p className="app-muted dash-next-confidence">{data.confidence.trim()}</p>
       ) : null}
       {typeof data.briefing === "string" && data.briefing ? (
         <p className="dash-bumper-cue">{data.briefing}</p>
