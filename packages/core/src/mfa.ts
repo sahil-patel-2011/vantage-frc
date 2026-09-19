@@ -13,6 +13,33 @@ export function evaluateOrgAuthAccess(policy:OrgAuthPolicy,method:SignInMethod,m
   if(requiresMfa&&!stepUpValid)return{allowed:false,reason:"mfa_step_up_required" as const,requiresMfa:true};
   return{allowed:true,reason:null,requiresMfa};
 }
+/**
+ * The methods this org will actually accept, named.
+ *
+ * "Re-authenticate with a sign-in method allowed by this organization" does
+ * not tell anybody what to do. Password sign-in is off by default
+ * (`DEFAULT_ORG_AUTH_POLICY`), and the sign-in page offers it whenever a
+ * database is configured — so it is entirely possible to sign in with a
+ * password, land on the app, and have every org-scoped screen refuse you
+ * without ever saying that the password was the problem. Naming the methods
+ * is the difference between stuck and one click from fixed.
+ */
+export function allowedSignInMethodLabels(policy:OrgAuthPolicy):string[]{
+  const labels:string[]=[];
+  if(policy.allowGoogle)labels.push("Google");
+  if(policy.allowEmailOtp)labels.push("an emailed code");
+  if(policy.allowPassword)labels.push("a password");
+  return labels;
+}
+
+/** "Google or an emailed code" — an Oxford-free list for one sentence. */
+export function describeAllowedSignInMethods(policy:OrgAuthPolicy):string{
+  const labels=allowedSignInMethodLabels(policy);
+  if(labels.length===0)return"another sign-in method";
+  if(labels.length===1)return labels[0]!;
+  return `${labels.slice(0,-1).join(", ")} or ${labels[labels.length-1]}`;
+}
+
 export function validateOrgAuthPolicy(policy:OrgAuthPolicy){if(!policy.allowPassword&&!policy.allowGoogle&&!policy.allowEmailOtp)throw new Error("At least one sign-in method must remain enabled");if(policy.rememberedDeviceDays<0||policy.rememberedDeviceDays>90)throw new Error("Remembered-device duration must be 0–90 days");}
 
 const alphabet="ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
@@ -38,6 +65,6 @@ export async function assertOrgAuthentication(client:PoolClient,input:{userId:st
  const policyResult=await client.query<OrgAuthPolicy>(`SELECT allow_password AS "allowPassword",allow_google AS "allowGoogle",allow_email_otp AS "allowEmailOtp",mfa_policy AS "mfaPolicy",remembered_device_days AS "rememberedDeviceDays" FROM org_auth_policies WHERE org_id=$1`,[input.orgId]);const policy=policyResult.rows[0]??DEFAULT_ORG_AUTH_POLICY;
  const enrolled=Boolean((await client.query(`SELECT 1 FROM user_mfa_enrollments WHERE user_id=$1 AND confirmed_at IS NOT NULL`,[input.userId])).rowCount);let stepped=Boolean((await client.query(`SELECT 1 FROM mfa_step_up_sessions WHERE user_id=$1 AND session_id=$2 AND org_id=$3 AND expires_at>now()`,[input.userId,input.sessionId,input.orgId])).rowCount);
  if(!stepped&&input.rememberedDeviceToken){const hash=createHash("sha256").update(input.rememberedDeviceToken).digest("hex");const remembered=await client.query(`UPDATE remembered_mfa_devices SET last_used_at=now() WHERE user_id=$1 AND token_hash=$2 AND revoked_at IS NULL AND expires_at>now() RETURNING id`,[input.userId,hash]);stepped=Boolean(remembered.rowCount);}
- const result=evaluateOrgAuthAccess(policy,input.authMethod as SignInMethod,enrolled,stepped);if(!result.allowed){const messages={sign_in_method_not_allowed:"Re-authenticate with a sign-in method allowed by this organization.",mfa_enrollment_required:"This organization requires authenticator-app 2FA enrollment.",mfa_step_up_required:"Authenticator verification is required to enter this organization."};const reason=result.reason??"sign_in_method_not_allowed";const error=new Error(messages[reason]);(error as Error&{code?:string}).code=reason;throw error;}return{policy,mfaVerified:stepped};
+ const result=evaluateOrgAuthAccess(policy,input.authMethod as SignInMethod,enrolled,stepped);if(!result.allowed){const messages={sign_in_method_not_allowed:`This team does not allow the way you signed in. Sign in again with ${describeAllowedSignInMethods(policy)} to open this.`,mfa_enrollment_required:"This organization requires authenticator-app 2FA enrollment.",mfa_step_up_required:"Authenticator verification is required to enter this organization."};const reason=result.reason??"sign_in_method_not_allowed";const error=new Error(messages[reason]);(error as Error&{code?:string}).code=reason;throw error;}return{policy,mfaVerified:stepped};
 }
 export async function assertPlatformPrivilegeMfa(client:PoolClient,input:{userId:string;sessionId:string}){const enrolled=await client.query(`SELECT 1 FROM user_mfa_enrollments WHERE user_id=$1 AND confirmed_at IS NOT NULL`,[input.userId]);if(!enrolled.rowCount)return{bootstrap:true};const stepped=await client.query(`SELECT 1 FROM mfa_step_up_sessions WHERE user_id=$1 AND session_id=$2 AND expires_at>now() ORDER BY verified_at DESC LIMIT 1`,[input.userId,input.sessionId]);if(!stepped.rowCount)throw new Error("Authenticator step-up is required for this privileged action");return{bootstrap:false};}

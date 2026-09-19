@@ -107,15 +107,10 @@ export function ScoutingShell({
       <EmptyState
         soft
         className="scout-shell-empty"
-        badge={
-          shell === "setup"
-            ? "Needs setup"
-            : shell === "error"
-              ? "Unavailable"
-              : shell === "empty"
-                ? copy.badge
-                : copy.badge
-        }
+        // A failure names its own chip: "Unavailable" was wrong for every
+        // error this screen can show except an outage, and it was the first
+        // word an owner read when all they had to do was sign in again.
+        badge={failure ? failure.badge : shell === "setup" ? "Needs setup" : copy.badge}
         badgeTone="setup"
         title={failure ? failure.title : copy.title}
         description={failure ? failure.description : (error ?? copy.description)}

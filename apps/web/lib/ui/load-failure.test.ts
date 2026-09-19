@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { classifyLoadFailure, loadFailureCopy, signInHref } from "./load-failure";
+import { describeAllowedSignInMethods } from "@vantage/core";
+import { apiErrorMessage, classifyLoadFailure, loadFailureCopy, signInHref } from "./load-failure";
 
 describe("classifyLoadFailure", () => {
   it("treats 401 as a signed-out session", () => {
@@ -107,5 +108,135 @@ describe("loadFailureCopy", () => {
     expect(loadFailureCopy("unknown", { message: "   " }).description).toBe(
       "That did not load. Try again in a moment.",
     );
+  });
+});
+
+describe("a 403 about how you signed in is not a 403 about who you are", () => {
+  const REAUTH_MESSAGES = [
+    "Re-authenticate with a sign-in method allowed by this organization.",
+    "This organization requires authenticator-app 2FA enrollment.",
+    "Authenticator verification is required to enter this organization.",
+  ];
+
+  it("classifies every org auth-policy refusal as reauth, not forbidden", () => {
+    for (const message of REAUTH_MESSAGES) {
+      expect(classifyLoadFailure({ status: 403, message })).toBe("reauth");
+    }
+  });
+
+  it("never tells an owner their role is the problem when it is not", () => {
+    // The screenshot bug: an owner opening Scouting was told "Your team role
+    // does not include this section" and sent to a Security page with nothing
+    // wrong on it. Their role was fine; their sign-in method was not.
+    for (const message of REAUTH_MESSAGES) {
+      const copy = loadFailureCopy(classifyLoadFailure({ status: 403, message }), { message });
+      expect(copy.description).not.toContain("team role");
+      expect(copy.description).not.toContain("Security");
+      expect(copy.primary?.label).toBe("Sign in again");
+    }
+  });
+
+  it("repeats the API's own sentence, which says which method or which step", () => {
+    const message = "This organization requires authenticator-app 2FA enrollment.";
+    const copy = loadFailureCopy("reauth", { message });
+    expect(copy.description).toBe(message);
+  });
+
+  it("still calls a real role refusal forbidden", () => {
+    expect(classifyLoadFailure({ status: 403, message: "Insufficient role" })).toBe("forbidden");
+    expect(classifyLoadFailure({ status: 403, message: "Not a member of this organization" })).toBe(
+      "forbidden",
+    );
+    expect(classifyLoadFailure({ status: 403 })).toBe("forbidden");
+  });
+
+  it("does not offer a retry that cannot work", () => {
+    expect(loadFailureCopy("reauth", {}).showRetry).toBe(false);
+  });
+});
+
+describe("the classifier and the message that produces it cannot drift apart", () => {
+  it("classifies every message packages/core actually emits", () => {
+    // These live in a different package from the classifier, so nothing but
+    // this test stops somebody rewording one and silently turning an
+    // actionable "sign in again" back into "your role is wrong".
+    const policy = {
+      allowPassword: false,
+      allowGoogle: true,
+      allowEmailOtp: true,
+      mfaPolicy: "required" as const,
+      rememberedDeviceDays: 14,
+    };
+    const emitted = [
+      `This team does not allow the way you signed in. Sign in again with ${describeAllowedSignInMethods(policy)} to open this.`,
+      "This organization requires authenticator-app 2FA enrollment.",
+      "Authenticator verification is required to enter this organization.",
+    ];
+    for (const message of emitted) {
+      expect(classifyLoadFailure({ status: 403, message }), message).toBe("reauth");
+    }
+  });
+
+  it("names the methods that would actually work", () => {
+    expect(
+      describeAllowedSignInMethods({
+        allowPassword: false,
+        allowGoogle: true,
+        allowEmailOtp: true,
+        mfaPolicy: "optional",
+        rememberedDeviceDays: 14,
+      }),
+    ).toBe("Google or an emailed code");
+  });
+});
+
+describe("apiErrorMessage", () => {
+  const json = (body: unknown, status = 403) =>
+    new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
+
+  it("returns the sentence the route sent", async () => {
+    const refusal = "This team does not allow the way you signed in. Sign in again with Google or an emailed code to open this.";
+    expect(await apiErrorMessage(json({ error: refusal }))).toBe(refusal);
+  });
+
+  it("leaves the body readable for the caller", async () => {
+    // Callers parse the body themselves; reading the reason must not consume it.
+    const response = json({ error: "Nope", detail: 7 });
+    await apiErrorMessage(response);
+    expect(await response.json()).toEqual({ error: "Nope", detail: 7 });
+  });
+
+  it("returns null rather than throwing on a body that is not JSON", async () => {
+    expect(await apiErrorMessage(new Response("<html>502</html>", { status: 502 }))).toBeNull();
+    expect(await apiErrorMessage(new Response("", { status: 403 }))).toBeNull();
+    expect(await apiErrorMessage(json({ error: "   " }))).toBeNull();
+    expect(await apiErrorMessage(json({ message: "wrong field" }))).toBeNull();
+  });
+
+  /**
+   * The whole point of the helper, end to end: what the route actually sends
+   * has to survive the trip and come out as "sign in again", not "your role is
+   * wrong". This is the bug an owner hit on Competition → Scouting.
+   */
+  it("carries a real 403 through to the right advice", async () => {
+    const response = json({
+      error:
+        "This team does not allow the way you signed in. Sign in again with Google or an emailed code to open this.",
+    });
+    const message = await apiErrorMessage(response);
+    const kind = classifyLoadFailure({ status: 403, message });
+    expect(kind).toBe("reauth");
+
+    const copy = loadFailureCopy(kind, { nextPath: "/competition?tab=scouting", message });
+    expect(copy.title).toBe("Sign in again to open this");
+    expect(copy.description).toContain("Google or an emailed code");
+    expect(copy.primary?.href).toBe("/signin?next=%2Fcompetition%3Ftab%3Dscouting");
+    expect(copy.description).not.toContain("role");
+  });
+
+  it("falls back to the status when the route sent no reason", async () => {
+    // A bare 403 really is unexplained, and "your role" is the honest guess.
+    const message = await apiErrorMessage(json({}));
+    expect(classifyLoadFailure({ status: 403, message })).toBe("forbidden");
   });
 });

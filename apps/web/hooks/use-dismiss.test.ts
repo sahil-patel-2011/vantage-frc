@@ -108,7 +108,17 @@ describe("floating panels can be dismissed without their trigger", () => {
     const floating = floatingClasses();
     expect(floating.size).toBeGreaterThan(20);
     expect(floating.has("soft-topbar")).toBe(true); // position: fixed
-    expect(floating.has("hub-tool-overflow")).toBe(false); // expands in flow
+    // `.product-hub-more` is a <details> that pushes the page down when it
+    // opens — the accordion case this rule must not catch.
+    //
+    // This used to name `hub-tool-overflow`, which was the in-flow example
+    // until the hub chrome collapsed into one row: a list that expands in flow
+    // has nowhere to go inside a single-line bar, so it became a dropdown
+    // positioned against it. The rule then started applying to it, which is
+    // correct — and `ToolStrip` already closes it on an outside click through
+    // `useDismiss`, which is why the scan above still reports no offenders.
+    expect(floating.has("product-hub-more")).toBe(false);
+    expect(floating.has("hub-tool-overflow")).toBe(true); // now a dropdown
   });
 
   it("keeps the allowlist honest — every entry still exists and still matches", () => {
