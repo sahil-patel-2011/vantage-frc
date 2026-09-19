@@ -19,12 +19,32 @@ async function expectNoBanned(page: Page, label: string, extra: string[] = []) {
   }
 }
 
-/** Soft-island Team chip carries the fixture org when a real session exists. */
-async function orgIdFromIsland(page: Page): Promise<string | null> {
-  const islandTeam = page.getByTestId("soft-island").getByRole("link", { name: "Team", exact: true });
-  if (!(await islandTeam.isVisible().catch(() => false))) return null;
-  const href = await islandTeam.getAttribute("href");
-  return href ? new URL(href, page.url()).searchParams.get("orgId") : null;
+/**
+ * The active team, from the API the app itself asks.
+ *
+ * This used to read the island's "Team" chip and pull `orgId` out of its href.
+ * That chip is built with `withOrgHref`, which only appends an org when the
+ * *current URL* already has one — so on /dashboard it is plain `/team`, the
+ * helper returned null, and every caller then navigated without an org, landed
+ * on "Choose your team", and failed several steps later looking for a control
+ * that only exists once a team is chosen. It read as a broken CAD page.
+ *
+ * `/api/me` is where the product gets it, so it is where this gets it.
+ */
+async function activeOrgId(page: Page): Promise<string | null> {
+  try {
+    const me = await page.evaluate(async () => {
+      const response = await fetch("/api/me", { cache: "no-store" });
+      if (!response.ok) return null;
+      return (await response.json()) as { orgId?: string | null };
+    });
+    const orgId = me?.orgId;
+    return typeof orgId === "string" && orgId ? orgId : null;
+  } catch {
+    // Signed out, or no team on this account. Both are real states and the
+    // callers handle them.
+    return null;
+  }
 }
 
 test.describe("student-week GUI path", () => {
@@ -39,7 +59,10 @@ test.describe("student-week GUI path", () => {
     await openStudent(page, "/dashboard");
     const now = page.getByTestId("dash-now");
     await expect(now).toBeVisible();
-    await expect(now.getByText("What to do now")).toBeVisible();
+    // "What to do now" is the card's accessible name, not text on screen —
+    // d6d523a11 removed the visible eyebrow because the card said one thing
+    // four ways. A screen reader still hears it.
+    await expect(now).toHaveAttribute("aria-label", "What to do now");
     await expectNoBanned(page, "Home");
     const cta = now.getByRole("link").first();
     await expect(cta).toHaveCount(1);
@@ -75,12 +98,20 @@ test.describe("student-week GUI path", () => {
   test("Event day Packing is a real click from the related strip", async ({ page }) => {
     await openStudent(page, "/command");
     await expectNoBanned(page, "Event day");
-    const related = page.getByRole("navigation", { name: /Related/i }).first();
-    const packing = related.getByRole("link", { name: "Packing" });
+    // Packing used to sit in a "Related" strip below the page. Those strips
+    // were removed — they duplicated the hub's own tool row — so the tool row
+    // is where it lives, and with three chips on screen it may be behind
+    // "More tools". This is the real path a student takes.
+    const strip = page.locator(".hub-tool-strip");
+    const more = strip.getByRole("button", { name: /More tools/ });
+    if (await more.count()) await more.first().click();
+    const packing = strip.getByRole("link", { name: "Packing" }).or(
+      strip.getByRole("button", { name: "Packing" }),
+    );
     const setup = page.getByRole("link", { name: /Choose your team/i });
-    await expect(packing.or(setup).first()).toBeVisible({ timeout: 15_000 });
+    await expect(packing.first().or(setup.first()).first()).toBeVisible({ timeout: 15_000 });
     if (await packing.count()) {
-      await packing.click();
+      await packing.first().click();
       await waitForLoadingGone(page);
       await expect(page).toHaveURL(/\/packing/);
       await expect(page.locator("body")).not.toContainText("Application error");
@@ -139,7 +170,7 @@ test.describe("student-week GUI path", () => {
     await openStudent(page, "/team/admin");
     await expect(page.getByRole("heading", { level: 1, name: "Team admin" })).toBeVisible();
     await expectNoBanned(page, "Team admin", ["Join or pick a team", "Account Connections", "RLS"]);
-    const orgId = await orgIdFromIsland(page);
+    const orgId = await activeOrgId(page);
     if (orgId) {
       await openStudent(page, `/team/admin?orgId=${encodeURIComponent(orgId)}`);
       await expect(page.getByRole("heading", { name: "Add a teammate" })).toBeVisible();
@@ -179,7 +210,7 @@ test.describe("student-week GUI path", () => {
 
   test("CAD paste offers Edit in Onshape", async ({ page }) => {
     await openStudent(page, "/dashboard");
-    const orgId = await orgIdFromIsland(page);
+    const orgId = await activeOrgId(page);
     await openStudent(page, orgId ? `/cad/setup?orgId=${encodeURIComponent(orgId)}` : "/cad/setup");
     await expect(page.getByRole("heading", { level: 1, name: "CAD setup" })).toBeVisible({
       timeout: 20_000,
@@ -194,7 +225,7 @@ test.describe("student-week GUI path", () => {
       return;
     }
     await paste.fill(ONSHAPE_URL);
-    const edit = page.getByRole("link", { name: /Edit( .* )?in Onshape/i }).first();
+    const edit = page.getByRole("link", { name: /^Edit( .+)? in Onshape$/i }).first();
     await expect(edit).toBeVisible();
     await expect(edit).toHaveAttribute("href", /onshape\.com/);
 
@@ -207,7 +238,7 @@ test.describe("student-week GUI path", () => {
       const hubPaste = page.getByPlaceholder(/cad\.onshape\.com\/documents/i).first();
       if ((await hubPaste.count()) > 0) {
         await hubPaste.fill(ONSHAPE_URL);
-        const hubEdit = page.getByRole("link", { name: /Edit( .* )?in Onshape/i }).first();
+        const hubEdit = page.getByRole("link", { name: /^Edit( .+)? in Onshape$/i }).first();
         await expect(hubEdit).toBeVisible();
         await expect(hubEdit).toHaveAttribute("href", /onshape\.com/);
       }
@@ -216,7 +247,7 @@ test.describe("student-week GUI path", () => {
 
   test("CAD paste offers Edit in Fusion", async ({ page }) => {
     await openStudent(page, "/dashboard");
-    const orgId = await orgIdFromIsland(page);
+    const orgId = await activeOrgId(page);
     const path = orgId ? `/cad/connections?orgId=${encodeURIComponent(orgId)}` : "/cad/connections";
     await openStudent(page, path);
     await expect(page.getByRole("heading", { level: 1, name: "CAD connections" })).toBeVisible({
@@ -234,7 +265,7 @@ test.describe("student-week GUI path", () => {
     const paste = fusionTile.getByPlaceholder(/a360\.co/i);
     await expect(paste).toBeVisible();
     await paste.fill(FUSION_URL);
-    const edit = fusionTile.getByRole("link", { name: /Edit( .* )?in Fusion/i });
+    const edit = fusionTile.getByRole("link", { name: /^Edit( .+)? in Fusion$/i });
     await expect(edit).toBeVisible();
     await expect(edit).toHaveAttribute("href", /a360\.co|autodesk/i);
   });
