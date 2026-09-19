@@ -22,6 +22,17 @@ async function openCalendar(page: import("@playwright/test").Page) {
   // below read the API directly and need the org in the URL to do it.
   await gotoAsTeam(page, "/calendar");
   await expect(page.locator(".cal-repeat")).toBeVisible({ timeout: 20_000 });
+
+  /*
+    Clears what previous runs left. This spec creates eight entries a run and
+    used to leave every one of them, which put 225 practices across every
+    month of two years in the shared development database — and broke a
+    different spec entirely, one that needs to find a month with nothing in
+    it. A spec that quietly fills the fixture is a spec that will eventually
+    fail somebody else's assertion, a long way from here.
+  */
+  await clearMilestones(page, "Spec practice ");
+  await clearMilestones(page, "Preview only");
 }
 
 test("says how many entries it is about to create, before creating them", async ({ page }) => {

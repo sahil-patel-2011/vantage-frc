@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { gotoAsTeam } from "./active-org";
+import { clearMilestones } from "./calendar-cleanup";
 import { signInAs } from "./session";
 
 /**
@@ -36,6 +37,10 @@ async function columnSpreads(page: import("@playwright/test").Page): Promise<num
 test("one long title does not squeeze the other six days", async ({ page }) => {
   await gotoAsTeam(page, "/calendar");
   await expect(page.locator(".cal-grid-week").first()).toBeVisible({ timeout: 20_000 });
+  // The long title this adds is the widest thing in the database, and every
+  // run adds another one. They are the point of the test and not of anything
+  // else, so they go when it is done with them.
+  await clearMilestones(page, "An extremely long milestone title");
 
   // A day with nothing on it, so the composer is reachable.
   const empty = page

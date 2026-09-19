@@ -1,4 +1,6 @@
 import { expect, test } from "@playwright/test";
+import { gotoAsTeam } from "./active-org";
+import { clearMilestones } from "./calendar-cleanup";
 import { signInAs } from "./session";
 
 /**
@@ -14,8 +16,14 @@ test.beforeEach(async ({ context }) => {
 type Page = import("@playwright/test").Page;
 
 async function openCalendar(page: Page) {
-  await page.goto("/calendar");
+  await gotoAsTeam(page, "/calendar");
   await expect(page.locator(".cal-grid")).toBeVisible({ timeout: 20_000 });
+  // This file needs a month with nothing in it, and the entries it adds are
+  // exactly what fills months up. Leaving them behind is how it eventually
+  // starves itself.
+  for (const prefix of ["Grid check ", "Occupied ", "Also "]) {
+    await clearMilestones(page, prefix);
+  }
 }
 
 /**

@@ -2,10 +2,12 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AiInsightPanel } from "../../components/ai-insight-panel";
-import { describeShopTime, shopTimeLeft } from "../../lib/calendar/shop-time-left";
+import { shopTimeLeft } from "../../lib/calendar/shop-time-left";
+import { restOfWeek } from "../../lib/calendar/rest-of-week";
 import { moveToDate } from "../../lib/calendar/move-entry";
 import { localToday, monthLabel, monthOf } from "../../lib/calendar/month-grid";
 import { hubHref } from "../../lib/nav/hubs";
+import { CalendarHero } from "./calendar-hero";
 import { CalendarMonth } from "./calendar-month";
 import { CalendarRepeat, useRepeatRule } from "./calendar-repeat";
 import { OfflineBanner } from "../../components/offline-banner";
@@ -625,6 +627,9 @@ function ReadyCalendar({
   // Recomputed from the same two lists the grid draws, so the sentence and the
   // squares can never disagree.
   const shopTime = shopTimeLeft(milestones, view.meetings ?? []);
+  // The question a student actually opens this page with. Answered from the
+  // same two lists the grid draws, over the same week the grid is drawing.
+  const week = restOfWeek(milestones, view.meetings ?? []);
   // Local to this form on purpose: a repeat rule is a thing you are typing,
   // not state the rest of the page has any use for.
   const repeat = useRepeatRule(startsOn);
@@ -718,62 +723,16 @@ function ReadyCalendar({
         </p>
       ) : null}
 
-      <Panel className="cal-hero">
-        <div className="cal-hero-next">
-          <span className="cal-hero-kicker">Next milestone</span>
-          {next ? (
-            <>
-              <span className="cal-countdown">{countdownLabel(daysUntil(next.startsOn, now))}</span>
-              <div className="cal-hero-title">
-                <strong>{next.title}</strong>
-                <span className={`cal-chip kind-${next.kind}`}>{KIND_LABELS[next.kind]}</span>
-              </div>
-              <span className="app-muted">{fmtDate(next.startsOn)}</span>
-              {next.meetingUrl ? (
-                <a className="cal-join hero" href={next.meetingUrl} target="_blank" rel="noopener noreferrer">
-                  ▶ Join {meetingProvider(next.meetingUrl) ?? "meeting"}
-                </a>
-              ) : null}
-            </>
-          ) : (
-            <>
-              <strong>Nothing upcoming</strong>
-              <span className="app-muted">Opt into a season template below, or add a milestone.</span>
-            </>
-          )}
-        </div>
-        {/*
-          "How many build nights are left before the competition" is the
-          question a team actually asks in January, and the grid could only
-          answer it by eye — squint, count the Tuesdays, forget the week
-          everyone is away for finals, be wrong in the optimistic direction.
-
-          Counted from entries the team really put on the calendar. When there
-          is nothing to count down to, or nothing scheduled to count, this is
-          absent rather than zero: a team that believes it has twenty nights
-          left will commit to a rebuild it cannot finish.
-        */}
-        {shopTime ? (
-          <div className="cal-hero-shop">
-            <span className="cal-hero-kicker">Shop time before {shopTime.targetTitle}</span>
-            <strong>{describeShopTime(shopTime)}</strong>
-            <span className="app-muted">
-              {shopTime.daysUntil === 0
-                ? "Today"
-                : `over ${shopTime.daysUntil} ${shopTime.daysUntil === 1 ? "day" : "days"}`}
-            </span>
-          </div>
-        ) : null}
-
-        <div className="cal-hero-progress">
-          <span className="app-muted">
-            {progress.done}/{progress.total} milestones done · {progress.percent}%
-          </span>
-          <div className="cal-track" role="progressbar" aria-valuenow={progress.percent} aria-valuemin={0} aria-valuemax={100}>
-            <i style={{ width: `${progress.percent}%` }} className={progress.total > 0 && progress.done === progress.total ? "done" : undefined} />
-          </div>
-        </div>
-      </Panel>
+      <CalendarHero
+        next={next}
+        now={now}
+        shopTime={shopTime}
+        week={week}
+        progress={progress}
+        countdownLabel={countdownLabel}
+        daysUntil={daysUntil}
+        fmtDate={fmtDate}
+      />
 
       <Panel as="details" className="cal-seed" open={milestones.length === 0}>
         <summary>Seed a season template</summary>
