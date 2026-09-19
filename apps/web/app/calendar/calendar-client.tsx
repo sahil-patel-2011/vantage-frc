@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AiInsightPanel } from "../../components/ai-insight-panel";
+import { hubHref } from "../../lib/nav/hubs";
 import { CalendarMonth } from "./calendar-month";
 import { CalendarRepeat, useRepeatRule } from "./calendar-repeat";
 import { OfflineBanner } from "../../components/offline-banner";
@@ -713,6 +714,10 @@ function ReadyCalendar({
       */}
       <CalendarMonth
         milestones={milestones}
+        meetings={view.meetings}
+        // The workbench tab, not the legacy `/team/calendar`, which only
+        // redirects here — a chip should land where it says it lands.
+        meetingHref={hubHref("/team", "calendar", orgId)}
         busy={busy}
         onCreate={async ({ title: newTitle, startsOn: on }) => {
           await run(

@@ -2,6 +2,12 @@ import type { PoolClient } from "@neondatabase/serverless";
 import { auth } from "@vantage/core";
 import { withRls, withSavepoint } from "@vantage/db";
 import { headers } from "next/headers";
+import type { OverlayMeeting } from "../../../lib/calendar/meetings-overlay";
+import {
+  expandSeriesRows,
+  type SeriesRow,
+  type StoredException,
+} from "../../../lib/calendar/series";
 import {
   listSeasonTemplates,
   parseCalendarAction,
@@ -78,6 +84,116 @@ async function loadLinkedDeadlines(client: PoolClient, orgId: string): Promise<L
   return linked.slice(0, 16);
 }
 
+/**
+ * The team's real meetings, for the month grid to draw underneath the season.
+ *
+ * Read-only, and owned by `/team/calendar`. See the note at the top of
+ * `lib/calendar/meetings-overlay.ts` for why these two calendars stay separate
+ * and why the grid still has to show both.
+ *
+ * Recurring meetings are expanded here rather than shipped as rules: a build
+ * season is mostly one weekly rule, and a client that received the rule would
+ * have to reimplement the exception handling that `series.ts` already does.
+ */
+const OVERLAY_LOOKBACK_DAYS = 200;
+const OVERLAY_LOOKAHEAD_DAYS = 400;
+/** A season of three meetings a week is ~180; the ceiling is a runaway guard. */
+const MAX_OVERLAY_MEETINGS = 800;
+
+type OverlayEventRow = OverlayMeeting & SeriesRow;
+
+async function loadMeetingOverlay(client: PoolClient, orgId: string): Promise<OverlayMeeting[]> {
+  const now = Date.now();
+  const window = {
+    windowStart: new Date(now - OVERLAY_LOOKBACK_DAYS * 86_400_000).toISOString(),
+    windowEnd: new Date(now + OVERLAY_LOOKAHEAD_DAYS * 86_400_000).toISOString(),
+    maxPerSeries: 200,
+  };
+
+  const columns = `e.id, e.title, e.starts_at::text AS "startsAt", e.ends_at::text AS "endsAt",
+                   st.name AS "subteamName", st.color AS "subteamColor"`;
+  const joins = `FROM subteam_calendar_events e
+                 LEFT JOIN team_subteams st ON st.id = e.subteam_id`;
+
+  let rows: OverlayEventRow[];
+  try {
+    const result = await client.query<OverlayEventRow>(
+      `SELECT ${columns},
+              e.rrule, e.recurrence_end::text AS "recurrenceEnd",
+              e.series_id AS "seriesId", e.recurrence_timezone AS "recurrenceTimezone"
+       ${joins}
+       WHERE e.org_id = $1
+         AND (e.rrule IS NOT NULL OR e.starts_at >= $2::timestamptz)
+         AND e.starts_at < $3::timestamptz
+       ORDER BY e.starts_at
+       LIMIT $4`,
+      [orgId, window.windowStart, window.windowEnd, MAX_OVERLAY_MEETINGS],
+    );
+    rows = result.rows;
+  } catch {
+    // Pre-0456 database: no recurrence columns. The overlay still works, it
+    // just shows the stored rows — which is what that database has.
+    const result = await client.query<OverlayEventRow>(
+      `SELECT ${columns}, NULL::text AS "rrule", NULL::text AS "recurrenceEnd",
+              NULL::text AS "seriesId", NULL::text AS "recurrenceTimezone"
+       ${joins}
+       WHERE e.org_id = $1 AND e.starts_at >= $2::timestamptz AND e.starts_at < $3::timestamptz
+       ORDER BY e.starts_at
+       LIMIT $4`,
+      [orgId, window.windowStart, window.windowEnd, MAX_OVERLAY_MEETINGS],
+    );
+    rows = result.rows;
+  }
+
+  const exceptions = await withSavepoint(
+    client,
+    async () => {
+      const result = await client.query<StoredException>(
+        `SELECT series_id AS "seriesId", occurrence_date::text AS "occurrenceDate",
+                action, detached_event_id AS "detachedEventId"
+         FROM calendar_event_exceptions
+         WHERE org_id = $1`,
+        [orgId],
+      );
+      return result.rows;
+    },
+    [] as StoredException[],
+  );
+
+  const expanded = expandSeriesRows(rows, exceptions, window);
+  const meetings: OverlayMeeting[] = [];
+  for (const row of rows) {
+    const occurrences = expanded.get(row.id);
+    if (!occurrences) {
+      // A one-off, or a detached override that already stands on its own.
+      meetings.push(strip(row, row.startsAt, row.endsAt, row.id));
+      continue;
+    }
+    for (const occurrence of occurrences) {
+      if (meetings.length >= MAX_OVERLAY_MEETINGS) break;
+      meetings.push(strip(row, occurrence.startsAt, occurrence.endsAt, occurrence.id));
+    }
+  }
+  return meetings.slice(0, MAX_OVERLAY_MEETINGS);
+}
+
+/** An event row reduced to the six fields the season grid draws. */
+function strip(
+  row: OverlayEventRow,
+  startsAt: string,
+  endsAt: string | null,
+  id: string,
+): OverlayMeeting {
+  return {
+    id,
+    title: row.title,
+    startsAt,
+    endsAt,
+    subteamName: row.subteamName,
+    subteamColor: row.subteamColor,
+  };
+}
+
 export async function GET(request: Request) {
   try {
     const session = await requireSession();
@@ -131,6 +247,14 @@ export async function GET(request: Request) {
         [],
       );
 
+      // Savepointed for the same reason: a database without the team calendar
+      // tables is a partial setup, not a broken season calendar.
+      const meetings: OverlayMeeting[] = await withSavepoint(
+        client,
+        () => loadMeetingOverlay(client, row.orgId),
+        [],
+      );
+
       return {
         status: "ready",
         context: {
@@ -141,6 +265,7 @@ export async function GET(request: Request) {
         },
         milestones: milestones.rows,
         linkedDeadlines,
+        meetings,
         templates: listSeasonTemplates(),
       } satisfies CalendarView;
     });

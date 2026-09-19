@@ -1,6 +1,8 @@
 // Season Calendar & Milestones — framework-free domain logic shared by the API
 // route, the client UI, and unit tests. No server or React imports belong here.
 
+import type { OverlayMeeting } from "./calendar/meetings-overlay";
+
 export const MILESTONE_KINDS = [
   "kickoff",
   "design",
@@ -64,6 +66,12 @@ export type CalendarView =
       context: CalendarContext;
       milestones: Milestone[];
       linkedDeadlines: LinkedDeadline[];
+      /**
+       * The team's real meetings, read-only, drawn under the season on the
+       * month grid. Owned by `/team/calendar`; see `lib/calendar/meetings-overlay.ts`.
+       * Optional so a cached snapshot written before this existed still loads.
+       */
+      meetings?: OverlayMeeting[];
       templates: Array<{ id: SeasonTemplateId; label: string; description: string; entryCount: number }>;
     }
   | { status: "setup_required"; context: CalendarContext; message: string };

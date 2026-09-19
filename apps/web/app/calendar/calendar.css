@@ -208,6 +208,24 @@
 .cal-grid-chip.kind-deadline{color:var(--critical)}
 .cal-grid-chip.kind-meeting,.cal-grid-chip.kind-outreach,.cal-grid-chip.kind-other{color:var(--muted)}
 
+/*
+  A meeting from the team calendar. Deliberately quieter than a milestone chip:
+  no filled background, no left bar unless its subteam has a colour. A month
+  with three competitions and forty build nights should still read as a month
+  with three competitions.
+*/
+.cal-grid-meeting{
+  display:flex;gap:4px;align-items:baseline;width:100%;
+  padding:1px 6px 1px 5px;border-radius:3px;
+  border-left:3px solid var(--meeting-accent,transparent);
+  color:var(--muted);text-decoration:none;
+  font:500 11px/1.4 var(--font-source-sans),ui-sans-serif;
+  overflow:hidden;
+}
+.cal-grid-meeting:hover{background:var(--surface-2,color-mix(in srgb,currentColor 10%,transparent));color:var(--ink)}
+.cal-grid-meeting-time{flex:none;font-weight:700;font-variant-numeric:tabular-nums}
+.cal-grid-meeting-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
 .cal-grid-more{
   align-self:flex-start;
   padding:1px 4px;border:0;border-radius:3px;background:transparent;

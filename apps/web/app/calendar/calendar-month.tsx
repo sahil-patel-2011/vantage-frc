@@ -9,6 +9,11 @@ import {
   shiftMonth,
   type GridDay,
 } from "../../lib/calendar/month-grid";
+import {
+  groupMeetingsByDay,
+  type DayMeeting,
+  type OverlayMeeting,
+} from "../../lib/calendar/meetings-overlay";
 import { KIND_LABELS, type Milestone, type MilestoneKind } from "../../lib/season-calendar";
 
 /**
@@ -30,7 +35,11 @@ import { KIND_LABELS, type Milestone, type MilestoneKind } from "../../lib/seaso
  *     composer. One field. Everything else is on the milestone afterwards,
  *     where it is optional and most entries never need it.
  *
- * What it adds: weekends are marked, because an FRC season happens on them.
+ * What it adds: weekends are marked, because an FRC season happens on them —
+ * and the team's real meetings, drawn under the season's milestones. A student
+ * opening "the calendar" to find out whether there is practice on Thursday was
+ * previously shown an empty square and concluded there was not. Those are
+ * read-only here and owned by `/team/calendar`; see `meetings-overlay.ts`.
  */
 
 const MAX_CHIPS_PER_DAY = 3;
@@ -41,6 +50,10 @@ function kindClass(kind: MilestoneKind): string {
 
 export type MonthViewProps = {
   milestones: readonly Milestone[];
+  /** The team's meetings, shown but not editable here. */
+  meetings?: readonly OverlayMeeting[];
+  /** Where a meeting goes when pressed — the calendar that owns it. */
+  meetingHref?: string;
   /** Saves a new whole-day milestone on `date`. Resolves when it has landed. */
   onCreate: (input: { title: string; startsOn: string }) => Promise<void>;
   /** Opens an existing entry — the list below is still the place to edit. */
@@ -50,7 +63,15 @@ export type MonthViewProps = {
   today?: string;
 };
 
-export function CalendarMonth({ milestones, onCreate, onOpen, busy, today }: MonthViewProps) {
+export function CalendarMonth({
+  milestones,
+  meetings,
+  meetingHref,
+  onCreate,
+  onOpen,
+  busy,
+  today,
+}: MonthViewProps) {
   const resolvedToday = today ?? localToday();
   const [month, setMonth] = useState(() => monthOf(resolvedToday));
   const [composingOn, setComposingOn] = useState<string | null>(null);
@@ -63,6 +84,10 @@ export function CalendarMonth({ milestones, onCreate, onOpen, busy, today }: Mon
     () => buildMonthGrid(month, milestones, { today: resolvedToday }),
     [month, milestones, resolvedToday],
   );
+
+  // An overlay rather than a second entry source for the grid: the grid draws
+  // multi-day milestone spans, and a timed meeting has no span to draw.
+  const meetingsByDay = useMemo(() => groupMeetingsByDay(meetings ?? []), [meetings]);
 
   const closeComposer = useCallback(() => {
     setComposingOn(null);
@@ -156,6 +181,8 @@ export function CalendarMonth({ milestones, onCreate, onOpen, busy, today }: Mon
               <DayCell
                 key={day.date}
                 day={day}
+                meetings={meetingsByDay.get(day.date)}
+                meetingHref={meetingHref}
                 composing={composingOn === day.date}
                 draft={draft}
                 saving={saving}
@@ -189,6 +216,8 @@ export function CalendarMonth({ milestones, onCreate, onOpen, busy, today }: Mon
 
 function DayCell({
   day,
+  meetings,
+  meetingHref,
   composing,
   draft,
   saving,
@@ -203,6 +232,8 @@ function DayCell({
   composerRef,
 }: {
   day: GridDay;
+  meetings?: DayMeeting[];
+  meetingHref?: string;
   composing: boolean;
   draft: string;
   saving: boolean;
@@ -216,8 +247,15 @@ function DayCell({
   onOpen?: (milestone: Milestone) => void;
   composerRef: React.RefObject<HTMLInputElement | null>;
 }) {
+  const dayMeetings = meetings ?? [];
+  // Milestones take the visible slots first. A competition is the reason the
+  // square matters; the build night that week is the ordinary case, and the
+  // "N more" below counts whatever did not fit from either list.
   const visible = expanded ? day.entries : day.entries.slice(0, MAX_CHIPS_PER_DAY);
-  const hidden = day.entries.length - visible.length;
+  const meetingBudget = expanded ? dayMeetings.length : Math.max(0, MAX_CHIPS_PER_DAY - visible.length);
+  const visibleMeetings = dayMeetings.slice(0, meetingBudget);
+  const hidden =
+    day.entries.length - visible.length + (dayMeetings.length - visibleMeetings.length);
   const label = new Date(`${day.date}T00:00:00Z`).toLocaleDateString(undefined, {
     weekday: "long",
     month: "long",
@@ -254,6 +292,32 @@ function DayCell({
                   bar: a cell read on its own should still say what it is. */}
               <span>{entry.milestone.title}</span>
             </button>
+          </li>
+        ))}
+
+        {/*
+          A meeting is a link, not a button, because pressing it leaves for the
+          calendar that owns it. Making it look like the milestone chips beside
+          it and then behaving differently would be the worse lie — so it is
+          quieter: a time, the title, and the subteam's colour down the edge.
+        */}
+        {visibleMeetings.map((meeting) => (
+          <li key={`meeting-${meeting.id}`}>
+            <a
+              className="cal-grid-meeting"
+              href={meetingHref ?? "/team?tab=calendar"}
+              style={
+                meeting.subteamColor
+                  ? ({ "--meeting-accent": meeting.subteamColor } as React.CSSProperties)
+                  : undefined
+              }
+              title={`${meeting.timeLabel} ${meeting.title}${
+                meeting.subteamName ? ` — ${meeting.subteamName}` : ""
+              } (on the team calendar)`}
+            >
+              <span className="cal-grid-meeting-time">{meeting.timeLabel}</span>
+              <span className="cal-grid-meeting-title">{meeting.title}</span>
+            </a>
           </li>
         ))}
       </ul>
