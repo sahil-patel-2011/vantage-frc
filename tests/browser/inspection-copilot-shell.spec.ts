@@ -9,13 +9,17 @@ test.beforeEach(async ({ context }) => {
 
 test("Inspection Copilot still loads after the panel split", async ({ page }) => {
   await page.goto("/inspection-copilot");
-  await expect(page.getByRole("heading", { name: "Inspection" })).toBeVisible({
+  // `exact: true`. Playwright matches an accessible name as a *substring* by
+  // default, so "Inspection" also matched "Run your first inspection-readiness
+  // check" once the page had real content — two headings, strict-mode
+  // violation, and a failure that read like the page was broken.
+  await expect(page.getByRole("heading", { name: "Inspection", exact: true })).toBeVisible({
     timeout: 20_000,
   });
   await expect(page.locator("body")).not.toContainText("Application error");
 
   const form = page.locator("#inspection-copilot-form");
-  const readyHeading = page.getByRole("heading", { name: "Run an inspection-readiness check" });
+  const readyHeading = page.getByRole("heading", { name: "Run an inspection-readiness check", exact: true });
   const setup = page.getByRole("heading", { name: /Choose your team|Choose your team/i });
   const unavailable = loadFailureHeading(page);
   if (!(await expectHubReadyOrGate(page, readyHeading, setup.or(unavailable)))) {

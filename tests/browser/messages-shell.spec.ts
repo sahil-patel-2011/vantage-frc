@@ -17,12 +17,17 @@ test("Team chat still loads after the panel split", async ({ page }) => {
   if (!(await expectHubReadyOrGate(page, newMessage, recovery))) return;
 
   await expect(page.getByText("Channels", { exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Message settings" })).toBeVisible();
+  // The control is labelled "Settings" inside Chat — "Message settings" is the
+  // heading of the panel it opens, which is the part worth asserting. Checking
+  // the destination rather than the word on the button means a future rename
+  // of the label does not fail a test about the panel existing.
+  const chatSettings = page.locator("#main-content").getByRole("button", { name: "Settings", exact: true });
+  await expect(chatSettings).toBeVisible();
   await expect(page.locator(".chat-sidebar").getByRole("tab")).toHaveCount(0);
   await expect(page.locator(".chat-composer").getByRole("tab")).toHaveCount(0);
 
   if (process.env.MESSAGES_SHOT === "1") {
-    await page.screenshot({ path: "/opt/cursor/artifacts/messages-after-split.png", fullPage: true });
+    await page.screenshot({ path: "test-results/messages-after-split.png", fullPage: true });
   }
 
   await newMessage.click();
