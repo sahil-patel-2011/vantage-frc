@@ -32,6 +32,6 @@ test("Account, Pair VS Code, and leftover no-org gates stay student-usable", asy
   await expect(page.getByText("Organization / workspace")).toHaveCount(0);
 
   await page.goto("/account");
-  await expect(page.getByRole("heading", { name: "Your settings" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Account", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "No team selected" })).toHaveCount(0);
 });

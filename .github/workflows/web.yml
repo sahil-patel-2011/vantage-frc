@@ -22,7 +22,14 @@ permissions:
 
 concurrency:
   group: web-ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Superseding a PR run saves minutes and costs nothing: the branch moved on.
+  # Superseding a push to main destroys the only evidence that main works.
+  #
+  # Three pushes in a row here each cancelled the one before, and a cancelled
+  # run reports as a failure — so main showed red for twenty minutes of CI that
+  # had nothing wrong with it, and a genuine break would have looked exactly
+  # the same. main is what deploys; its runs finish.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   quality:

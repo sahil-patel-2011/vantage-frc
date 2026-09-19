@@ -186,7 +186,7 @@ test("onboarding route is reachable when authenticated fixture skips incomplete 
 
 test("account route keeps settings discoverable when the API session is unavailable", async ({ page }) => {
   await page.goto("/account");
-  await expect(page.getByRole("heading", { name: "Your settings" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Account", exact: true })).toBeVisible();
   await expect(page.getByRole("navigation", { name: "All settings" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Appearance" })).toBeVisible();
   await expect(page.getByRole("link", { name: "AI usage" })).toBeVisible();

@@ -385,12 +385,7 @@ export default function AccountClient() {
         ) : null}
       </section>
 
-      <SettingsBar
-        role={org.role}
-        orgId={org.orgId}
-        pathname="/account"
-        activeTab={tab === "profile" ? null : tab}
-      />
+      <SettingsBar role={org.role} orgId={org.orgId} />
 
       {/* These were a strip of small pills while the destinations directly
           above them were tiled rows — same kind of thing, two appearances, on
@@ -535,6 +530,12 @@ export default function AccountClient() {
             )}
           </nav>
 
+          {/* The one section switcher. `SettingsBar` used to render the same
+              three destinations as a second row of links with the same
+              accessible name, so the page carried two `navigation` landmarks
+              called "Account sections" and the browser test's locator matched
+              both. This is the copy that switches the panel in place; the
+              other one has been removed. */}
           <ToolStrip
             aria-label="Account sections"
             value={tab}

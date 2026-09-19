@@ -8,12 +8,7 @@
  * Fetches nothing: the mounting page passes the role it already loaded.
  */
 
-import { Icon } from "./icon";
-import {
-  activeSettingsId,
-  visibleSettingsNav,
-  type SettingsNavItem,
-} from "../lib/nav/settings-nav";
+import { visibleSettingsNav, type SettingsNavItem } from "../lib/nav/settings-nav";
 import { withOrgHref } from "../lib/nav/product-nav";
 import "./settings-bar.css";
 import { KitCard, KitEyebrow, KitRow, type KitTone } from "./ui/kit";
@@ -23,13 +18,6 @@ type SettingsBarProps = {
   role: string | null | undefined;
   /** This team, so team links keep their ?orgId= context. */
   orgId?: string | null;
-  /** Current route path, e.g. "/account". */
-  pathname: string;
-  /**
-   * Current ?tab= value when the page manages tabs client-side (the /account
-   * tabs use history.replaceState, so the mount passes its live tab state).
-   */
-  activeTab?: string | null;
 };
 
 function chipHref(item: SettingsNavItem, orgId: string | null | undefined): string {
@@ -91,33 +79,24 @@ function RowGroup({
   );
 }
 
-export function SettingsBar({ role, orgId, pathname, activeTab }: SettingsBarProps) {
+export function SettingsBar({ role, orgId }: SettingsBarProps) {
   const items = visibleSettingsNav(role);
-  const search = activeTab ? `tab=${activeTab}` : "";
-  const activeId = activeSettingsId(items, pathname, search);
-
-  const tabs = items.filter(isOnAccountPage);
   const personal = items.filter((item) => item.scope === "personal" && !isOnAccountPage(item));
   const team = items.filter((item) => item.scope === "team" && !isOnAccountPage(item));
 
   return (
     <>
-      {tabs.length > 1 ? (
-        <nav className="kit-segment settings-tabs" aria-label="Account sections">
-          {tabs.map((item) => (
-            <a
-              key={item.id}
-              href={chipHref(item, orgId)}
-              aria-current={item.id === activeId ? "page" : undefined}
-              aria-selected={item.id === activeId}
-            >
-              <Icon name={item.icon} />
-              {item.label}
-            </a>
-          ))}
-        </nav>
-      ) : null}
+      {/* The Profile / Appearance / Notifications switcher used to be here as
+          well, as a row of links labelled "Account sections".
 
+          The account page renders its own switcher for those three, with the
+          same accessible name, so the page carried two `navigation` landmarks
+          by that name — a duplicate control, and a locator for it matched two
+          elements, which is what had the account browser test failing. This
+          component is only ever used on that page, so its copy is the one
+          that goes: the page's own switcher is the one that changes the panel
+          in place without a reload. What stays here is the part the page does
+          not have — the rows that go somewhere else. */}
       <RowGroup label="Your settings" items={personal} orgId={orgId} />
       <RowGroup label="Team settings" items={team} orgId={orgId} />
     </>
