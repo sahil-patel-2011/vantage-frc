@@ -9,7 +9,7 @@ const links = [
   ["/workflow", "How it works"],
   ["/for-teams", "For teams"],
   ["/desktop", "Desktop"],
-  ["/pricing", "Pricing"],
+  ["/pricing", "What it costs"],
 ] as const;
 
 export function BrandLink({ href = "/" }: { href?: string }) {
@@ -90,7 +90,7 @@ export function SiteFooter() {
         </nav>
         <nav className="marketing-footer-col" aria-label="Company">
           <b>Company</b>
-          <a href="/pricing">Pricing</a>
+          <a href="/pricing">What it costs</a>
           <a href="/signin">Sign in</a>
           <a href="/#waitlist">Waitlist</a>
           <a href="mailto:sahiljpatel2011@gmail.com">Contact</a>

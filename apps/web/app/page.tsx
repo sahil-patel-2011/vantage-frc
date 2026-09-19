@@ -14,7 +14,7 @@ export const revalidate = 86_400;
 export const metadata: Metadata = marketingPageMetadata({
   title: "Vantage — the FRC season in one login",
   description:
-    "Invite-only FRC software: scouting, Kickoff, Learn CAD, Ask AI, and the shop — Google or an email code. Mentors invite exact emails. Everyone else joins the waitlist.",
+    "Free software for FIRST Robotics Competition teams: scouting that tells you which robot to pick, match predictions that say how sure they are, the build, the budget and the shop — in one login, and it keeps working when the venue Wi-Fi does not.",
   path: "/",
 });
 
@@ -31,12 +31,12 @@ export default function Home() {
           <div className="lux-hero-backdrop" aria-hidden="true" />
           <div className="lux-hero-inner">
             <div className="lux-hero-copy">
-              <p className="lux-kicker">Invite-only FRC operations</p>
-              <h1 id="lux-hero-title">The season, in one login.</h1>
+              <p className="lux-kicker">Free software for FRC teams</p>
+              <h1 id="lux-hero-title">Your season stops living in spreadsheets.</h1>
               <p>
-                Scouting, Kickoff, Learn CAD, Ask AI, and the shop. Claude Code answers without an API key. Kickoff
-                shows 2027 BIOCORE when the manual is not out, and 2026 REBUILT when you can study it. Mentors invite
-                exact emails.
+                Scouting, the schedule, the build, the budget and the shop — one place that already knows how an FRC
+                season works. Your scouts fill in tablets and you get back which robot to pick, not a percentage of
+                rows completed.
               </p>
               <div className="actions">
                 <a className="button primary" href="#waitlist">
@@ -46,10 +46,12 @@ export default function Home() {
                   Already invited? Sign in
                 </a>
               </div>
+              {/* Three things a team can check rather than three adjectives.
+                  Every one of them is a screen you can open. */}
               <ul className="mk-hero-proof">
-                <li>Works in the pit, offline</li>
-                <li>CAD Video Tutor + real Onshape progress</li>
-                <li>No public signup</li>
+                <li>Keeps working when the venue Wi-Fi does not</li>
+                <li>Match predictions that say how sure they are</li>
+                <li>Free, and your team&rsquo;s data stays your team&rsquo;s</li>
               </ul>
               <p className="lux-hero-note">
                 We bring teams on one at a time. Questions?{" "}

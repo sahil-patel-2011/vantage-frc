@@ -2701,3 +2701,15 @@ html.reveal-armed .marketing-lux [data-reveal].is-in{opacity:1;transform:none}
   .marketing-lux .mk-mock{animation:none!important}
   .marketing-lux .mk-pillars li:hover{transform:none}
 }
+
+/* "Hosted AI allowances — not feature tiers", above the ladder. Without this
+   label a row of monthly figures reads as the price of the product, which is
+   the one thing this section exists to correct. */
+.marketing-lux .mk-price-kicker{
+  margin:0 0 10px;
+  color:var(--sp-muted,#6b7280);
+  font:700 11px/1.3 var(--font-source-sans),ui-sans-serif;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  text-align:center;
+}

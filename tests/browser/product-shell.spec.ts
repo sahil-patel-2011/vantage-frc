@@ -175,12 +175,18 @@ test("scouting and Work strips hide meta jobs that still have routes", async ({ 
   await expect(page.getByRole("tab", { name: "Scouting" })).toBeVisible();
   const scoutingStrip = page.locator(".hub-tool-strip");
   await expect(scoutingStrip).toContainText("Forms");
-  await expect(scoutingStrip).toContainText("Field value");
+  // The strip shows three chips now, not six, so a tool being present and a
+  // tool being a chip are different claims. What this test is about is which
+  // tools the strip *offers at all* — so the ones further down are checked
+  // where they actually live, behind one control.
   await expect(scoutingStrip.getByText("Accuracy", { exact: true })).toHaveCount(0);
   await expect(scoutingStrip.getByText("Cross-check", { exact: true })).toHaveCount(0);
   await expect(scoutingStrip.getByText("Schema A/B", { exact: true })).toHaveCount(0);
   await scoutingStrip.getByRole("button", { name: /More tools/ }).click();
+  await expect(scoutingStrip).toContainText("Field value");
   await expect(scoutingStrip).toContainText("Data quality");
+  // Still hidden, even with everything open: these are meta jobs that keep a
+  // route but do not belong in a workbench strip.
   await expect(scoutingStrip.getByText("Accuracy", { exact: true })).toHaveCount(0);
 
   await page.goto("/team?tab=todos");
