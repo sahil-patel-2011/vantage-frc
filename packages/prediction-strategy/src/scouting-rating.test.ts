@@ -187,3 +187,51 @@ describe("canStandAlone", () => {
     expect(canStandAlone(undefined)).toBe(false);
   });
 });
+
+describe("the spread a prediction needs", () => {
+  it("measures how much a robot swings, so a band is not a guess", () => {
+    // `TeamScoreFeatures.matchSd` existed and nothing filled it, so every
+    // alliance band came from the assumed 30% dispersion. A metronome and a
+    // boom-or-bust robot produced identical confidence.
+    const steady = ratingsFromScouting(
+      [30, 31, 29, 30, 31, 29, 30, 31].map((teleop, index) => ({
+        teamKey: "frcSTEADY",
+        matchKey: `qm${index}`,
+        teleop,
+      })),
+    )[0]!;
+    const swingy = ratingsFromScouting(
+      [5, 55, 6, 54, 4, 56, 7, 53].map((teleop, index) => ({
+        teamKey: "frcSWINGY",
+        matchKey: `qm${index}`,
+        teleop,
+      })),
+    )[0]!;
+
+    expect(steady.matchSd).not.toBeNull();
+    expect(swingy.matchSd).not.toBeNull();
+    expect(swingy.matchSd!).toBeGreaterThan(steady.matchSd! * 5);
+    // Same average, so nothing else about them would have told the two apart.
+    expect(Math.abs(steady.meanTotal - swingy.meanTotal)).toBeLessThan(2);
+  });
+
+  it("says nothing rather than zero when the sample is too thin for a spread", () => {
+    // "We cannot tell yet" and "this robot never varies" are different, and a
+    // zero would claim certainty about a robot seen three times.
+    const thin = ratingsFromScouting(
+      [20, 22, 21].map((teleop, index) => ({ teamKey: "frcTHIN", matchKey: `qm${index}`, teleop })),
+    )[0]!;
+    expect(thin.matchSd).toBeNull();
+  });
+
+  it("is zero for a robot that has genuinely scored the same every time", () => {
+    const flat = ratingsFromScouting(
+      [20, 20, 20, 20, 20, 20].map((teleop, index) => ({
+        teamKey: "frcFLAT",
+        matchKey: `qm${index}`,
+        teleop,
+      })),
+    )[0]!;
+    expect(flat.matchSd).toBe(0);
+  });
+});

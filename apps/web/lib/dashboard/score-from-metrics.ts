@@ -68,6 +68,16 @@ export function featuresForAlliance(
       endgameEpa: row?.endgameEpa ?? null,
       opr: row?.opr ?? null,
       scouted: scouted?.get(teamKey) ?? null,
+      /**
+       * How much this robot actually swings, when the team has watched it
+       * enough times to know.
+       *
+       * Without this the uncertainty model falls back to a stated assumption —
+       * thirty percent of the robot's own output — for every robot on the
+       * field, so a metronome and a boom-or-bust robot produced identical
+       * confidence. It is the same spread the pick list calls "streaky".
+       */
+      matchSd: scouted?.get(teamKey)?.matchSd ?? null,
     };
   });
 }

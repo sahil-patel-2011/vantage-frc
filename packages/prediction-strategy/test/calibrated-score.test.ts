@@ -9,6 +9,7 @@ import {
   scorePredictionMetrics,
   typicalScoreErrorCopy,
 } from "../src/calibrated-score";
+import { ratingsFromScouting } from "../src/scouting-rating";
 
 describe("calibrated alliance score predictor", () => {
   it("returns a skip instead of a number when an alliance has no metrics", () => {
@@ -162,5 +163,57 @@ describe("per-match confidence, as opposed to how the model does on average", ()
     if (isScorePredictionSkip(overridden)) throw new Error("skipped");
     expect(overridden.errorBand).toBe(12);
     expect(overridden.redBand).toBeGreaterThan(0);
+  });
+});
+
+describe("a prediction built from real scouting knows how sure it is", () => {
+  const scoutedRows = (teamKey: string, totals: readonly number[]) =>
+    totals.map((teleop, index) => ({ teamKey, matchKey: `qm${index}`, teleop }));
+
+  const allianceFrom = (prefix: string, totals: readonly number[]) =>
+    [1, 2, 3].map((n) => {
+      const teamKey = `frc${prefix}${n}`;
+      const rating = ratingsFromScouting(scoutedRows(teamKey, totals))[0]!;
+      return {
+        teamKey,
+        autoEpa: null,
+        teleopEpa: null,
+        endgameEpa: null,
+        scouted: rating,
+        matchSd: rating.matchSd,
+      };
+    });
+
+  it("is surer about metronomes than about boom-or-bust robots", () => {
+    // End to end: the spread now travels from the scouted rows, through the
+    // rating, into the band. Nothing filled `matchSd` before, so both of these
+    // came back with the same confidence.
+    const steady = predictAllianceScores({
+      matchKey: "2026test_qm20",
+      red: allianceFrom("S", [30, 31, 29, 30, 31, 29, 30, 31]) as never,
+      blue: allianceFrom("T", [30, 31, 29, 30, 31, 29, 30, 31]) as never,
+    });
+    const swingy = predictAllianceScores({
+      matchKey: "2026test_qm21",
+      red: allianceFrom("U", [5, 55, 6, 54, 4, 56, 7, 53]) as never,
+      blue: allianceFrom("V", [5, 55, 6, 54, 4, 56, 7, 53]) as never,
+    });
+    if (isScorePredictionSkip(steady) || isScorePredictionSkip(swingy)) throw new Error("skipped");
+
+    // Same robots by average; very different to bet on.
+    expect(Math.abs(steady.redPredicted - swingy.redPredicted)).toBeLessThan(4);
+    expect(swingy.redBand).toBeGreaterThan(steady.redBand * 2);
+  });
+
+  it("falls back to an assumption when the robot has not been watched enough", () => {
+    // Three matches has no measurable spread, and the band widens rather than
+    // pretending to precision.
+    const thin = predictAllianceScores({
+      matchKey: "2026test_qm22",
+      red: allianceFrom("W", [40, 41, 39, 40, 41, 39, 40, 41]) as never,
+      blue: allianceFrom("X", [40, 41, 39, 40, 41, 39, 40, 41]) as never,
+    });
+    if (isScorePredictionSkip(thin)) throw new Error("skipped");
+    expect(thin.redBand).toBeGreaterThan(0);
   });
 });

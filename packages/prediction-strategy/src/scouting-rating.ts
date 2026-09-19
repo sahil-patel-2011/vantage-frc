@@ -24,6 +24,8 @@
  */
 
 import { shrinkRatings, type TeamSample } from "./shrinkage";
+import { summariseDistribution } from "./distribution";
+import { matchSdFromDistribution } from "./score-uncertainty";
 
 /**
  * One robot, one match, as this team's scouts recorded it.
@@ -65,6 +67,21 @@ export type ScoutedTeamRating = {
   disabledRate: number;
   /** Share of scouted matches where the robot was playing defense. */
   defenseRate: number;
+  /**
+   * This robot's match-to-match spread in points, or null when the sample is
+   * too thin to have one.
+   *
+   * Carried on the rating because the score predictor needs it and had no way
+   * to get it: `TeamScoreFeatures.matchSd` existed and nothing filled it, so
+   * every alliance band was computed from the *assumed* 30% dispersion rather
+   * than from how much the robot actually swings. A metronome and a
+   * boom-or-bust robot produced the same confidence.
+   *
+   * Same measure the pick list calls "streaky" — IQR over the median, via
+   * `summariseDistribution` — so a screen explaining a wide band and a screen
+   * labelling the robot cannot disagree.
+   */
+  matchSd: number | null;
   confidence: ScoutingConfidence;
   /** One line a student can read, naming the sample this rests on. */
   sampleNote: string;
@@ -209,6 +226,7 @@ export function ratingsFromScouting(rows: readonly ScoutedMatchRow[]): ScoutedTe
       climbRate: stat.climbRecorded > 0 ? stat.climbs / stat.climbRecorded : null,
       disabledRate: matches > 0 ? stat.disabled / matches : 0,
       defenseRate: matches > 0 ? stat.defense / matches : 0,
+      matchSd: matchSdFromDistribution(summariseDistribution(stat.totals)),
       confidence: confidenceFor(matches),
       sampleNote: sampleNoteFor(matches, stat.disabled),
     });
