@@ -3,6 +3,9 @@ import {
   LOCAL_OPENAI_COMPAT_KIND,
   LOCAL_OPENAI_COMPAT_LABEL,
   BYOK_MODEL_OPTIONS,
+  AI_HORDE_MODELS,
+  isAiHordeEnabled,
+  isAiHordeModel,
   validateOpenAiCompatibleBaseUrl,
 } from "@vantage/agent";
 import { createKms, encryptSecret } from "@vantage/billing";
@@ -85,6 +88,7 @@ async function loadRoutingPrefs(client: Parameters<Parameters<typeof withRls>[1]
     mode: "automode" as const,
     fixedModelId: null as string | null,
     enabledModelIds: BYOK_MODEL_OPTIONS.map((m) => m.id),
+    freeSwarmModel: null as string | null,
   };
   return withSavepoint(client, async () => {
     const row = (
@@ -92,10 +96,12 @@ async function loadRoutingPrefs(client: Parameters<Parameters<typeof withRls>[1]
         mode: string;
         fixedModelId: string | null;
         enabledModelIds: string[] | null;
+        freeSwarmModel: string | null;
       }>(
         `SELECT mode,
                 fixed_model_id AS "fixedModelId",
-                enabled_model_ids AS "enabledModelIds"
+                enabled_model_ids AS "enabledModelIds",
+                free_swarm_model AS "freeSwarmModel"
            FROM org_byok_routing_prefs
           WHERE org_id = $1::uuid`,
         [orgId],
@@ -109,6 +115,10 @@ async function loadRoutingPrefs(client: Parameters<Parameters<typeof withRls>[1]
         row.enabledModelIds && row.enabledModelIds.length
           ? row.enabledModelIds
           : BYOK_MODEL_OPTIONS.map((m) => m.id),
+      // Read through the allowlist, not trusted from the column. A value that
+      // is no longer one Vantage accepts reads as "any", which is the default
+      // and the safe answer.
+      freeSwarmModel: isAiHordeModel(row.freeSwarmModel) ? row.freeSwarmModel : null,
     };
   }, defaults);
 }
@@ -188,6 +198,17 @@ export async function GET(request: Request) {
         memberKeys: memberRows,
         localConnector,
         routing,
+        /*
+          The free swarm, and which of its models this team prefers.
+
+          Sent even when the pool is off so the page can say the option
+          exists and is not switched on, rather than leaving a team to
+          discover a free tier by reading the deployment's environment.
+        */
+        freeSwarm: {
+          enabled: isAiHordeEnabled(),
+          models: AI_HORDE_MODELS.map((m) => ({ id: m.id, label: m.label, note: m.note })),
+        },
         modelOptions: BYOK_MODEL_OPTIONS.map((m) => ({
           id: m.id,
           provider: m.provider,
@@ -234,6 +255,8 @@ export async function POST(request: Request) {
       mode?: "fixed" | "automode";
       fixedModelId?: string | null;
       enabledModelIds?: string[];
+      /** An AI Horde model id, or null/absent for any on the allowlist. */
+      freeSwarmModel?: string | null;
     };
     const { session, orgId } = await context(body.orgId);
     const action = body.action ?? "save_key";
@@ -530,23 +553,38 @@ export async function POST(request: Request) {
         throw new Error("Enable at least one model for Automode");
       }
 
+      /*
+        Validated here rather than taken from the request.
+
+        The swarm hosts models Vantage will not put in front of a student —
+        roleplay builds, and several advertising that they have had their
+        guardrails removed. The allowlist in `ai-horde-pool.ts` is what stops
+        one being used, so a value arriving from a browser is checked against
+        it and anything else becomes "any", which is the default. The adapter
+        checks again when it builds the request; neither check is the only one.
+      */
+      const freeSwarmModel = isAiHordeModel(body.freeSwarmModel)
+        ? body.freeSwarmModel
+        : null;
+
       await withRls({ userId: session.user.id, orgId }, async (client) => {
         await assertOrgCapability(client, orgId, "manage_api_keys");
         await client.query(
           `INSERT INTO org_byok_routing_prefs
-             (org_id, mode, fixed_model_id, enabled_model_ids, updated_by, updated_at)
-           VALUES ($1::uuid, $2, $3, $4::text[], $5::uuid, now())
+             (org_id, mode, fixed_model_id, enabled_model_ids, free_swarm_model, updated_by, updated_at)
+           VALUES ($1::uuid, $2, $3, $4::text[], $5, $6::uuid, now())
            ON CONFLICT (org_id) DO UPDATE SET
              mode = excluded.mode,
              fixed_model_id = excluded.fixed_model_id,
              enabled_model_ids = excluded.enabled_model_ids,
+             free_swarm_model = excluded.free_swarm_model,
              updated_by = excluded.updated_by,
              updated_at = now()`,
-          [orgId, mode, fixedModelId, enabledModelIds, session.user.id],
+          [orgId, mode, fixedModelId, enabledModelIds, freeSwarmModel, session.user.id],
         );
       });
 
-      return Response.json({ ok: true, mode, fixedModelId, enabledModelIds });
+      return Response.json({ ok: true, mode, fixedModelId, enabledModelIds, freeSwarmModel });
     }
 
     throw new Error("Unknown AI keys action");

@@ -259,6 +259,7 @@ export * from "./prompt-caching";
 export * from "./http-chat-adapter";
 export * from "./hosted-platform-keys";
 export * from "./petals-public-pool";
+export * from "./ai-horde-pool";
 export * from "./resolve-chat-adapter";
 export * from "./resolve-stt-endpoint";
 export * from "./model-tier";

@@ -678,7 +678,14 @@ export async function meteredAI<T>(input: MeteredAIInput<T>): Promise<T> {
     return receipt.value;
   }
 
-  if (input.keySource === "public_swarm" || input.provider === "petals") {
+  // A volunteer swarm costs the team nothing, so it is ledgered at zero and
+  // never touches the credit lock. `ai_horde` joined `petals` here when the
+  // Petals swarm was measured empty and this became the free path that works.
+  if (
+    input.keySource === "public_swarm" ||
+    input.provider === "petals" ||
+    input.provider === "ai_horde"
+  ) {
     const receipt = await input.invoke("public_swarm");
     await input.client.query(
       `INSERT INTO ai_usage_events
@@ -699,7 +706,7 @@ export async function meteredAI<T>(input: MeteredAIInput<T>): Promise<T> {
         JSON.stringify({
           ...(input.metadata ?? {}),
           vantageChargeUsd: 0,
-          path: "petals_public_pool",
+          path: input.provider === "ai_horde" ? "ai_horde_pool" : "petals_public_pool",
         }),
         receipt.cacheReadInputTokens ?? 0,
         receipt.cacheWriteInputTokens ?? 0,

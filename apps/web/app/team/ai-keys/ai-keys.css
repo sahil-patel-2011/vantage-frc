@@ -346,3 +346,48 @@
     width: 100%;
   }
 }
+
+/*
+  A choice and its label on the same line.
+
+  `.ai-keys-form label` is `display:grid`, which is right for a text field —
+  caption above, input below — and wrong for a checkbox or a radio, where the
+  control belongs beside the words it labels. Every row in the Automode pool
+  had its checkbox on the line under its own label, and adding radios for the
+  free swarm made it obvious: a radio is bigger, and the shared input rule
+  stretches it to the full width of the row, so it landed centred and enormous
+  with its label floating above.
+
+  Scoped to the rows that are choices — the mode radios, the Automode pool,
+  and the free swarm — so text fields keep the stacked layout they want.
+*/
+.ai-keys-mode label,
+.ai-keys-pool label,
+.ai-keys-models label {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  line-height: 1.45;
+}
+.ai-keys-mode input[type="checkbox"],
+.ai-keys-mode input[type="radio"],
+.ai-keys-pool input[type="checkbox"],
+.ai-keys-pool input[type="radio"],
+.ai-keys-models input[type="checkbox"],
+.ai-keys-models input[type="radio"] {
+  /* Undo the full-width, 44px-tall sizing meant for text inputs. */
+  flex: none;
+  width: 16px;
+  min-width: 16px;
+  height: 16px;
+  min-height: 0;
+  margin: 3px 0 0;
+  padding: 0;
+  accent-color: var(--accent);
+}
+.ai-keys-mode legend,
+.ai-keys-pool legend,
+.ai-keys-models legend {
+  font-weight: 700;
+  padding-inline: 4px;
+}

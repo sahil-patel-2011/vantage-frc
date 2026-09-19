@@ -30,6 +30,7 @@ import {
 } from "./hosted-platform-keys";
 import { tryCreateSponsoredFailoverAdapter } from "./sponsored-provider-pool";
 import { PetalsPublicPoolAdapter, tryCreatePetalsPublicAdapter } from "./petals-public-pool";
+import { isAiHordeModel, tryCreateAiHordeAdapter } from "./ai-horde-pool";
 import { isLocalOrLanOrigin } from "./model-tier";
 import {
   bridgeHeavyCliTimeoutMs,
@@ -221,6 +222,8 @@ type RoutingPrefs = {
   mode: "fixed" | "automode";
   fixedModelId: string | null;
   enabledModelIds: string[] | null;
+  /** Preferred volunteer-swarm model, or null for any on the allowlist. */
+  freeSwarmModel: string | null;
 };
 
 const DEFAULT_MODELS: Record<"openai" | "anthropic" | "openai-compatible", string> = {
@@ -402,24 +405,32 @@ async function loadRoutingPrefs(client: PoolClient, orgId: string): Promise<Rout
       mode: string;
       fixedModelId: string | null;
       enabledModelIds: string[] | null;
+      freeSwarmModel: string | null;
     }>(
       `SELECT mode,
               fixed_model_id AS "fixedModelId",
-              enabled_model_ids AS "enabledModelIds"
+              enabled_model_ids AS "enabledModelIds",
+              free_swarm_model AS "freeSwarmModel"
          FROM org_byok_routing_prefs
         WHERE org_id = $1::uuid`,
       [orgId],
     );
     const row = result.rows[0];
-    if (!row) return { mode: "automode", fixedModelId: null, enabledModelIds: null };
+    if (!row) {
+      return { mode: "automode", fixedModelId: null, enabledModelIds: null, freeSwarmModel: null };
+    }
     return {
       mode: row.mode === "fixed" ? "fixed" : "automode",
       fixedModelId: row.fixedModelId,
       enabledModelIds: row.enabledModelIds,
+      // Read through the allowlist. A stored model that is no longer one
+      // Vantage accepts becomes "any", which is the default and the safe
+      // answer — never an error a team has to go and fix before chat works.
+      freeSwarmModel: isAiHordeModel(row.freeSwarmModel) ? row.freeSwarmModel : null,
     };
   } catch {
     // Table may not exist yet before migration — degrade to automode defaults.
-    return { mode: "automode", fixedModelId: null, enabledModelIds: null };
+    return { mode: "automode", fixedModelId: null, enabledModelIds: null, freeSwarmModel: null };
   }
 }
 
@@ -427,6 +438,8 @@ type RawPrefsJson = {
   mode?: string | null;
   fixed_model_id?: string | null;
   enabled_model_ids?: string[] | null;
+  /** Absent on a database that predates 0665. */
+  free_swarm_model?: string | null;
 } | null;
 
 type RawPolicyJson = { mode?: string | null; allowed_model_ids?: string[] | null } | null;
@@ -458,8 +471,13 @@ async function loadRoutingPrefsAndPolicy(
             mode: prefsRaw.mode === "fixed" ? "fixed" : "automode",
             fixedModelId: prefsRaw.fixed_model_id ?? null,
             enabledModelIds: prefsRaw.enabled_model_ids ?? null,
+            // Through the allowlist here too. This path reads the row as
+            // jsonb, so the column arrives as whatever is stored.
+            freeSwarmModel: isAiHordeModel(prefsRaw.free_swarm_model)
+              ? prefsRaw.free_swarm_model
+              : null,
           }
-        : { mode: "automode", fixedModelId: null, enabledModelIds: null },
+        : { mode: "automode", fixedModelId: null, enabledModelIds: null, freeSwarmModel: null },
       policy: normalizeOrgModelPolicy(
         policyRaw
           ? { mode: policyRaw.mode, allowedModelIds: policyRaw.allowed_model_ids ?? null }
@@ -1104,6 +1122,23 @@ export async function resolveOrgChatAdapterWithProvenance(
       });
       if (sponsored) return resolved(sponsored, "sponsored");
     }
+    /*
+      The volunteer swarms, in the order of which one can actually answer.
+
+      AI Horde first: on 2026-09-19 the public Petals swarm was measured empty
+      — `MissingBlocksError: No servers holding blocks [0..79] are online`,
+      health monitor refusing connections, upstream last touched in September
+      2024 — while the Horde answered an anonymous request in eleven seconds.
+      Petals stays behind it for any deployment still pointing at a private
+      swarm of its own, which is the case where it still works.
+    */
+    const horde = tryCreateAiHordeAdapter({
+      fetchImpl: input.fetchImpl,
+      capability: input.feature,
+      model: storedPrefs.freeSwarmModel,
+    });
+    if (horde) return resolved(horde, "public-swarm");
+
     const petals = tryCreatePetalsPublicAdapter({
       fetchImpl: input.fetchImpl,
       capability: input.feature,
@@ -1114,7 +1149,7 @@ export async function resolveOrgChatAdapterWithProvenance(
       throw new ChatProviderResolutionError(sponsoredPromoExpiredMessage(promo.teamNumber ?? 1111));
     }
     throw new ChatProviderResolutionError(
-      "No AI provider key is configured for this organization. Free workspaces use the platform OpenRouter free pool when OPENROUTER_API_KEY is set, the public Petals volunteer swarm when PETALS_PUBLIC_POOL is on, or your own OpenAI, Anthropic, Google, or OpenRouter key under Team → AI API keys (or a local OpenAI-compatible base URL for Ollama / LM Studio).",
+      "No AI provider key is configured for this organization. Free workspaces use the platform OpenRouter free pool when OPENROUTER_API_KEY is set, the AI Horde volunteer swarm when AI_HORDE_POOL is on, or your own OpenAI, Anthropic, Google, or OpenRouter key under Team → AI API keys (or a local OpenAI-compatible base URL for Ollama / LM Studio).",
     );
   }
 
