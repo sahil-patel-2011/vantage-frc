@@ -87,3 +87,62 @@ test("sorts by pick order, average and team number", async ({ page }) => {
   await page.getByRole("button", { name: "Pick order" }).click();
   await expect(page.locator(".stp-row .stp-team").first()).toHaveText(byPick);
 });
+
+test("Best fit ranks on more than points, and is the order that opens", async ({ page }) => {
+  test.skip(!(await openRobots(page)), "no scouting seeded on this box");
+
+  const order = async () =>
+    (await page.locator(".stp-row .stp-team").allInnerTexts()).map((text) => text.trim());
+
+  // It opens on Best fit, because "which robot should we take" is the question
+  // the data was collected to answer.
+  await expect(page.getByRole("button", { name: "Best fit", exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  const fit = await order();
+
+  await page.getByRole("button", { name: "Average", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Average", exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  const average = await order();
+
+  // If weighting cannot change the answer it is decoration.
+  expect(fit).not.toEqual(average);
+  expect(fit.length).toBe(average.length);
+  expect([...fit].sort()).toEqual([...average].sort());
+
+  /**
+   * The thing raw points gets wrong, and a reason this sort exists.
+   *
+   * A robot towed off the field a third of the time looks acceptable on an
+   * average that has already absorbed those zeros — what the average cannot
+   * say is that you cannot plan around it. Best fit must never rank such a
+   * robot *higher* than points alone does.
+   *
+   * An earlier version of this also checked robots it thought were thinly
+   * scouted by looking for "Not enough matches" in the row. That is the
+   * *consistency* label, and a robot that scores zero every match carries it
+   * with a full sample — so the check fired on a robot that was not thin and
+   * failed on correct behaviour.
+   */
+  await page.getByRole("button", { name: "Best fit", exact: true }).click();
+  await page.waitForTimeout(300);
+
+  let checked = 0;
+  for (const row of await page.locator(".stp-row").all()) {
+    const text = await row.innerText();
+    if (!/Dead \d+%/.test(text)) continue;
+    const team = (await row.locator(".stp-team").innerText()).trim();
+    checked += 1;
+    expect(
+      fit.indexOf(team),
+      `${team} keeps dying and Best fit ranked it above where raw points did`,
+    ).toBeGreaterThanOrEqual(average.indexOf(team));
+  }
+  // The seeded event has a robot that keeps dying; if it ever stops having
+  // one, this test is asserting nothing and should say so rather than pass.
+  expect(checked, "no unreliable robot in the fixture to check against").toBeGreaterThan(0);
+});

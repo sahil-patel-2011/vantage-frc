@@ -2,7 +2,11 @@ import type { PoolClient } from "@neondatabase/serverless";
 import {
   MIN_MATCHES_TO_STAND_ALONE,
   pickListOrder,
+  pickListRowsFromScouting,
   profilesFromScouting,
+  rankByWeightedZScores,
+  scoutingPicklistWeights,
+  type MetricWeight,
   type ScoutedTeamProfile,
 } from "@vantage/prediction-strategy";
 import type { FormulaExpression } from "@vantage/scouting";
@@ -32,6 +36,14 @@ export type TeamProfilesView =
       profiles: ScoutedTeamProfile[];
       /** Only the teams watched enough times to rank. */
       pickOrder: ScoutedTeamProfile[];
+      /**
+       * The same robots, ordered by what this team said it is looking for.
+       *
+       * The weighted ranking has always existed; it was fed four EPA numbers
+       * and nothing a scout ever wrote down. This is the order the scouting
+       * produces, which is the only order there is at an off-season event.
+       */
+      weighted: { teamKey: string; score: number | null }[];
       /** How the points were derived, for the screen to say so. */
       basis: "phase" | "total";
       /** Teams seen, but not enough times to rank yet. */
@@ -112,11 +124,16 @@ export async function loadTeamProfiles(
 
   const profiles = profilesFromScouting(converted.rows);
   const pickOrder = pickListOrder(profiles);
+  const weighted = rankByWeightedZScores(
+    pickListRowsFromScouting(profiles),
+    scoutingPicklistWeights() as MetricWeight[],
+  ).map((row) => ({ teamKey: row.teamKey, score: row.score }));
   return {
     status: "ready",
     eventKey: input.eventKey,
     profiles,
     pickOrder,
+    weighted,
     basis: converted.basis,
     thin: profiles.filter((profile) => profile.matches < MIN_MATCHES_TO_STAND_ALONE).length,
   };

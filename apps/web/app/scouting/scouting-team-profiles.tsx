@@ -22,16 +22,26 @@ import "./scouting-team-profiles.css";
  * one sentence a pick-list meeting needs.
  */
 
+type WeightedRow = { teamKey: string; score: number | null };
+
 type View =
-  | { status: "ready"; profiles: ScoutedTeamProfile[]; pickOrder: ScoutedTeamProfile[]; basis: string; thin: number; eventKey: string }
+  | {
+      status: "ready";
+      profiles: ScoutedTeamProfile[];
+      pickOrder: ScoutedTeamProfile[];
+      weighted?: WeightedRow[];
+      basis: string;
+      thin: number;
+      eventKey: string;
+    }
   | { status: "empty" | "needs_formula" | "setup_required"; message: string };
 
-type Sort = "pick" | "average" | "number";
+type Sort = "fit" | "pick" | "average" | "number";
 
 export function ScoutingTeamProfiles({ orgId, eventKey }: { orgId: string; eventKey: string | null }) {
   const [view, setView] = useState<View | null>(null);
   const [error, setError] = useState<{ message: string; status: number | null } | null>(null);
-  const [sort, setSort] = useState<Sort>("pick");
+  const [sort, setSort] = useState<Sort>("fit");
   const [open, setOpen] = useState<string | null>(null);
 
   useEffect(() => {
@@ -64,6 +74,23 @@ export function ScoutingTeamProfiles({ orgId, eventKey }: { orgId: string; event
 
   const rows = useMemo(() => {
     if (!view || view.status !== "ready") return [];
+    if (sort === "fit") {
+      /**
+       * The weighted order: scoring, then whether it is the same robot every
+       * match, then whether it survives. Falls back to the fixed pick order
+       * when the ranking produced nothing — an event with too little scouting
+       * to compare against a field.
+       */
+      const ranked = view.weighted ?? [];
+      if (!ranked.length) return view.pickOrder.length ? view.pickOrder : view.profiles;
+      const byKey = new Map(view.profiles.map((profile) => [profile.teamKey, profile]));
+      const ordered = ranked
+        .map((row) => byKey.get(row.teamKey))
+        .filter((profile): profile is ScoutedTeamProfile => Boolean(profile));
+      // Anything the ranking did not mention still belongs on the list.
+      const seen = new Set(ordered.map((profile) => profile.teamKey));
+      return [...ordered, ...view.profiles.filter((profile) => !seen.has(profile.teamKey))];
+    }
     if (sort === "pick") return view.pickOrder.length ? view.pickOrder : view.profiles;
     const copy = [...view.profiles];
     if (sort === "average") return copy.sort((a, b) => b.shrunkTotal - a.shrunkTotal);
@@ -118,11 +145,15 @@ export function ScoutingTeamProfiles({ orgId, eventKey }: { orgId: string; event
             {view.thin > 0
               ? ` ${view.thin} ${view.thin === 1 ? "robot has" : "robots have"} too few matches to rank yet.`
               : ""}
+            {sort === "fit"
+              ? " Best fit weighs scoring first, then whether it is the same robot every match, then whether it finishes."
+              : ""}
           </p>
         </div>
         <div className="stp-sort" role="group" aria-label="Sort robots">
           {(
             [
+              ["fit", "Best fit"],
               ["pick", "Pick order"],
               ["average", "Average"],
               ["number", "Team number"],

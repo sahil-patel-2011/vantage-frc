@@ -593,3 +593,16 @@ export function predictionAccuracy(
     outcomes.length;
   return { count: outcomes.length, accuracy: round(correct / outcomes.length), brierScore: round(brier) };
 }
+
+/**
+ * The pick list, built from your own scouting rather than only from season
+ * ratings — see picklist-from-scouting.ts.
+ */
+export {
+  MIN_MATCHES_FOR_PICKLIST,
+  consistencyScore,
+  metricRowFromProfile,
+  pickListRowsFromScouting,
+  reliabilityScore,
+  scoutingPicklistWeights,
+} from "./picklist-from-scouting";
