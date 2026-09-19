@@ -63,11 +63,42 @@ jobs:
     if: github.event_name == 'workflow_dispatch' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # This job had no database, so Better Auth could not look a user up, every
+    # sign-in failed, and the suite reported a wall of assertion failures that
+    # had nothing to do with the code under test. `E2E_AUTH_FIXTURE` made it
+    # worse rather than better: proxy.ts lets pages render while every
+    # `/api/*` answers 404, so specs measured half-painted screens.
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
     env:
       CI: "true"
       NODE_ENV: "development"
-      E2E_AUTH_FIXTURE: "1"
       NEXT_TELEMETRY_DISABLED: "1"
+      # The database name has to contain "ci" or "test": tests/browser/origin.ts
+      # refuses to start Playwright against anything else, which is what stops
+      # a stray production URL from being pointed at a destructive seed.
+      PGBASE: postgresql://postgres:postgres@127.0.0.1:5432
+      DATABASE_DRIVER: pg
+      DATABASE_URL: postgresql://app_login:app@127.0.0.1:5432/vantage_ci?sslmode=disable
+      DATABASE_URL_UNPOOLED: postgresql://app_login:app@127.0.0.1:5432/vantage_ci?sslmode=disable
+      DATABASE_AUTH_URL: postgresql://auth_login:auth@127.0.0.1:5432/vantage_ci?sslmode=disable
+      DATABASE_ADMIN_URL: postgresql://postgres:postgres@127.0.0.1:5432/vantage_ci?sslmode=disable
+      MARKETING_DATABASE_URL: postgresql://app_login:app@127.0.0.1:5432/vantage_ci?sslmode=disable
+      BETTER_AUTH_SECRET: ci-only-secret-not-used-anywhere-else-0123456789
+      DEV_KMS_MASTER_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+      DEV_OTP_SECRET: ci-only-otp-secret
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -75,6 +106,24 @@ jobs:
           node-version: "22"
           cache: npm
       - run: npm ci
+      - name: Create the scratch database
+        run: |
+          psql "$PGBASE/postgres" -v ON_ERROR_STOP=1 -c \
+            "CREATE DATABASE vantage_ci TEMPLATE template0 LC_COLLATE 'C' LC_CTYPE 'C' ENCODING 'UTF8'"
+      - name: Apply migrations
+        run: node scripts/run-migrations.mjs
+      - name: Create the non-superuser logins the app connects as
+        env:
+          RLS_PROOF_SUPERUSER_URL: postgresql://postgres:postgres@127.0.0.1:5432/vantage_ci
+        run: |
+          RLS_PROOF_APP_URL=postgresql://app_login:app@127.0.0.1:5432/vantage_ci \
+            RLS_PROOF_SET_ROLE=vantage_app node scripts/rls-proof-prepare-app-login.mjs
+          RLS_PROOF_APP_URL=postgresql://auth_login:auth@127.0.0.1:5432/vantage_ci \
+            RLS_PROOF_SET_ROLE=vantage_auth node scripts/rls-proof-prepare-app-login.mjs
+      - name: Seed a team, an event, and two logins the suite can sign in as
+        run: |
+          node scripts/seed-dev.mjs
+          node scripts/seed-e2e-logins.mjs
       - name: Cache Playwright Chromium
         id: playwright-cache
         uses: actions/cache@v4

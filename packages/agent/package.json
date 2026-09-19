@@ -5,6 +5,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./model-tier": "./src/model-tier.ts",
+    "./reasoning-floor": "./src/reasoning-floor.ts",
     "./repository": "./src/repository.ts",
     "./coding-assistant": "./src/coding-assistant.ts",
     "./bugbot": "./src/bugbot.ts"
