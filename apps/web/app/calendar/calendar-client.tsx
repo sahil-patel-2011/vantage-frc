@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AiInsightPanel } from "../../components/ai-insight-panel";
 import { describeShopTime, shopTimeLeft } from "../../lib/calendar/shop-time-left";
+import { moveToDate } from "../../lib/calendar/move-entry";
 import { monthLabel } from "../../lib/calendar/month-grid";
 import { hubHref } from "../../lib/nav/hubs";
 import { CalendarMonth } from "./calendar-month";
@@ -792,6 +793,11 @@ function ReadyCalendar({
         }}
         onOpen={(milestone) => setEditingId(milestone.id)}
         onMonthChange={setVisibleMonth}
+        onMove={async (milestone, toDate) => {
+          const patch = moveToDate(milestone, toDate);
+          if (!patch) return;
+          await run({ action: "update_milestone", orgId, id: milestone.id, patch }, `move-${milestone.id}`);
+        }}
       />
 
       {months.length > 0 ? (

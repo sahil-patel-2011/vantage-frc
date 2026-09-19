@@ -420,3 +420,24 @@
    is about. */
 .cal-page[data-seeded="yes"] > .aii-panel{order:6}
 .cal-page[data-seeded="yes"] > .cal-seed{order:5}
+
+/*
+  Moving an entry.
+
+  The chip itself only says "grab" on hover — a permanently distinct cursor on
+  every chip would be noise on a grid that is mostly read. The day underneath
+  is what lights up, because the question during a drag is "where will this
+  land", and the answer is a square, not a chip.
+*/
+.cal-grid-chip[data-draggable="yes"]{cursor:grab;touch-action:none}
+.cal-grid-chip[data-draggable="yes"]:active{cursor:grabbing}
+.cal-grid-day[data-drop="yes"]{
+  background:var(--accent-soft);
+  box-shadow:inset 0 0 0 2px var(--accent);
+}
+/* The day under the pointer is found by hit-testing, so whatever is drawn
+   inside a candidate cell must not be what the hit-test returns. */
+.cal-grid-day[data-drop="yes"] .cal-grid-chip,
+.cal-grid-day[data-drop="yes"] .cal-grid-meeting,
+.cal-grid-day[data-drop="yes"] .cal-grid-add,
+.cal-grid-day[data-drop="yes"] .cal-grid-more{pointer-events:none}

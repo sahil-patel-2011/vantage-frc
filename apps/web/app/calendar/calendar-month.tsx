@@ -14,6 +14,7 @@ import {
   type DayMeeting,
   type OverlayMeeting,
 } from "../../lib/calendar/meetings-overlay";
+import { describeMove, moveByDays, moveToDate } from "../../lib/calendar/move-entry";
 import { KIND_LABELS, type Milestone, type MilestoneKind } from "../../lib/season-calendar";
 
 /**
@@ -58,6 +59,11 @@ export type MonthViewProps = {
   onCreate: (input: { title: string; startsOn: string }) => Promise<void>;
   /** Opens an existing entry — the list below is still the place to edit. */
   onOpen?: (milestone: Milestone) => void;
+  /**
+   * Moves an entry to a different day. Absent means the grid is read-only and
+   * nothing advertises a move it cannot do.
+   */
+  onMove?: (milestone: Milestone, toDate: string) => Promise<void>;
   busy?: boolean;
   /** Fixed "today" for tests; real clock otherwise. */
   today?: string;
@@ -76,6 +82,7 @@ export function CalendarMonth({
   meetingHref,
   onCreate,
   onOpen,
+  onMove,
   busy,
   today,
   onMonthChange,
@@ -101,6 +108,93 @@ export function CalendarMonth({
     onMonthChange?.(month);
   }, [month, onMonthChange]);
 
+  // The entry being dragged, and the day it is currently over. Both live here
+  // rather than in the cells so a drag that ends outside the grid still clears.
+  const [dragging, setDragging] = useState<Milestone | null>(null);
+  const [over, setOver] = useState<string | null>(null);
+  const [moved, setMoved] = useState("");
+
+  const move = useCallback(
+    async (milestone: Milestone, toDate: string) => {
+      if (!onMove) return;
+      const patch = moveToDate(milestone, toDate);
+      // Dropped where it already was, or onto something that is not a day.
+      // Not an error, and not a write.
+      if (!patch) return;
+      setMoved(`${milestone.title}: ${describeMove(patch)}`);
+      await onMove(milestone, toDate);
+    },
+    [onMove],
+  );
+
+  /**
+   * Dragging, on pointer events rather than HTML5 drag-and-drop.
+   *
+   * HTML5 DnD does not fire for touch at all, and a mentor rescheduling a
+   * scrimmage is usually doing it on a phone in the shop. Pointer events are
+   * one API for mouse, pen and finger, so the feature exists on the device
+   * people actually hold.
+   *
+   * The day under the pointer is found by hit-testing rather than by listening
+   * on each cell: during a pointer capture every event is delivered to the
+   * chip, so the cells never hear about the pointer crossing them.
+   */
+  const startDrag = useCallback(
+    (milestone: Milestone, event: PointerEvent) => {
+      if (!onMove || event.button !== 0) return;
+      const chip = event.currentTarget as HTMLElement | null;
+      const originX = event.clientX;
+      const originY = event.clientY;
+      let armed = false;
+
+      const dayUnder = (x: number, y: number): string | null => {
+        const element = document.elementFromPoint(x, y);
+        const cell = element?.closest?.(".cal-grid-day") as HTMLElement | null;
+        return cell?.dataset.date ?? null;
+      };
+
+      const onPointerMove = (moveEvent: PointerEvent) => {
+        if (!armed) {
+          // A press is a click until it has travelled far enough to be a
+          // drag. Without the threshold, opening an entry by tapping it
+          // becomes a move to wherever the finger settled.
+          if (Math.hypot(moveEvent.clientX - originX, moveEvent.clientY - originY) < 6) return;
+          armed = true;
+          setDragging(milestone);
+        }
+        moveEvent.preventDefault();
+        setOver(dayUnder(moveEvent.clientX, moveEvent.clientY));
+      };
+
+      const finish = (endEvent: PointerEvent) => {
+        chip?.releasePointerCapture?.(endEvent.pointerId);
+        window.removeEventListener("pointermove", onPointerMove);
+        window.removeEventListener("pointerup", finish);
+        window.removeEventListener("pointercancel", cancel);
+        if (!armed) return;
+        const date = dayUnder(endEvent.clientX, endEvent.clientY);
+        setDragging(null);
+        setOver(null);
+        // Dropped outside the grid: put it back rather than guessing.
+        if (date) void move(milestone, date);
+      };
+
+      const cancel = () => {
+        window.removeEventListener("pointermove", onPointerMove);
+        window.removeEventListener("pointerup", finish);
+        window.removeEventListener("pointercancel", cancel);
+        setDragging(null);
+        setOver(null);
+      };
+
+      chip?.setPointerCapture?.(event.pointerId);
+      window.addEventListener("pointermove", onPointerMove, { passive: false });
+      window.addEventListener("pointerup", finish);
+      window.addEventListener("pointercancel", cancel);
+    },
+    [onMove, move],
+  );
+
   const closeComposer = useCallback(() => {
     setComposingOn(null);
     setDraft("");
@@ -121,6 +215,35 @@ export function CalendarMonth({
       if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return;
       if (target?.isContentEditable) return;
       if (event.metaKey || event.ctrlKey || event.altKey) return;
+
+      /*
+        With an entry focused the arrows move the entry, not the month.
+
+        This is the whole keyboard path for moving something, and it has to be
+        the arrows: they are already under the finger of anybody who has
+        tabbed to a chip, and a separate "move mode" with its own modifier is
+        a thing people have to be told about. Left and right are a day, up and
+        down are a week — which is the shape of the grid, and also how a
+        schedule actually slips.
+      */
+      const chip = target?.closest?.(".cal-grid-chip") as HTMLElement | null;
+      const id = chip?.dataset.milestoneId;
+      if (id && onMove) {
+        const delta =
+          event.key === "ArrowLeft" ? -1 : event.key === "ArrowRight" ? 1
+          : event.key === "ArrowUp" ? -7 : event.key === "ArrowDown" ? 7 : 0;
+        if (delta !== 0) {
+          const milestone = milestones.find((row) => row.id === id);
+          const patch = milestone ? moveByDays(milestone, delta) : null;
+          if (milestone && patch?.startsOn) {
+            event.preventDefault();
+            setMoved(`${milestone.title}: ${describeMove(patch)}`);
+            void onMove(milestone, patch.startsOn);
+            return;
+          }
+        }
+      }
+
       if (event.key === "ArrowLeft") setMonth((current) => shiftMonth(current, -1));
       else if (event.key === "ArrowRight") setMonth((current) => shiftMonth(current, 1));
       else if (event.key.toLowerCase() === "t") setMonth(monthOf(resolvedToday));
@@ -129,7 +252,7 @@ export function CalendarMonth({
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [resolvedToday]);
+  }, [resolvedToday, milestones, onMove]);
 
   async function save(date: string) {
     const title = draft.trim();
@@ -195,6 +318,10 @@ export function CalendarMonth({
                 day={day}
                 meetings={meetingsByDay.get(day.date)}
                 meetingHref={meetingHref}
+                canMove={Boolean(onMove)}
+                dragging={dragging}
+                isOver={over === day.date}
+                onDragEntry={startDrag}
                 composing={composingOn === day.date}
                 draft={draft}
                 saving={saving}
@@ -219,8 +346,18 @@ export function CalendarMonth({
         ))}
       </div>
 
+      {/*
+        A move that leaves no trace is a move somebody has to go and verify.
+        Announced rather than shown as a toast: the grid already redraws, so
+        the only thing missing was for a screen reader to be told.
+      */}
+      <p className="sr-only cal-grid-said" aria-live="polite">
+        {moved}
+      </p>
+
       <p className="cal-grid-hint">
         Press a day to add something to it. Arrow keys change month; T comes back to today.
+        {onMove ? " Drag an entry to move it, or focus one and use the arrow keys." : ""}
       </p>
     </section>
   );
@@ -230,6 +367,10 @@ function DayCell({
   day,
   meetings,
   meetingHref,
+  canMove,
+  dragging,
+  isOver,
+  onDragEntry,
   composing,
   draft,
   saving,
@@ -246,6 +387,10 @@ function DayCell({
   day: GridDay;
   meetings?: DayMeeting[];
   meetingHref?: string;
+  canMove: boolean;
+  dragging: Milestone | null;
+  isOver: boolean;
+  onDragEntry: (milestone: Milestone, event: PointerEvent) => void;
   composing: boolean;
   draft: string;
   saving: boolean;
@@ -286,6 +431,7 @@ function DayCell({
       data-in-month={day.inMonth ? "yes" : "no"}
       data-today={day.isToday ? "yes" : "no"}
       data-weekend={day.isWeekend ? "yes" : "no"}
+      data-drop={isOver && dragging ? "yes" : undefined}
     >
       <span className="cal-grid-num">{day.dayOfMonth}</span>
 
@@ -297,7 +443,23 @@ function DayCell({
               className={`${kindClass(entry.milestone.kind)} span-${entry.span}${
                 entry.milestone.done ? " is-done" : ""
               }`}
-              title={`${entry.milestone.title} — ${KIND_LABELS[entry.milestone.kind]}`}
+              data-milestone-id={entry.milestone.id}
+              data-draggable={
+                canMove && (entry.span === "single" || entry.span === "start") ? "yes" : undefined
+              }
+              // Only the first day of a span is the handle. Dragging the
+              // middle of a three-day competition has no obvious meaning —
+              // does it move, or does it resize? — so it does not offer to.
+              onPointerDown={
+                canMove && (entry.span === "single" || entry.span === "start")
+                  ? (event) => onDragEntry(entry.milestone, event.nativeEvent)
+                  : undefined
+              }
+              title={
+                canMove
+                  ? `${entry.milestone.title} — ${KIND_LABELS[entry.milestone.kind]}. Drag to move, or focus it and use the arrow keys.`
+                  : `${entry.milestone.title} — ${KIND_LABELS[entry.milestone.kind]}`
+              }
               onClick={() => onOpen?.(entry.milestone)}
             >
               {/* A continued day repeats the title rather than showing a bare
