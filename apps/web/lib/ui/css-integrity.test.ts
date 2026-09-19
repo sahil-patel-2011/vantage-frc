@@ -422,7 +422,7 @@ describe("stylesheet integrity", () => {
     expect(start).toBeGreaterThan(-1);
     expect(end).toBeGreaterThan(start);
     const block = text.slice(start, end);
-    expect(block).not.toMatch(/#f7f6f2|#152033|#6b7280|#1f2937|#1457d9|#ffffff\b|#fff\b|#e2e0da|#14243a/i);
+    expect(block).not.toMatch(/#f7f6f2|#152033|#6b7280|#1f2937|#17457f|#ffffff\b|#fff\b|#e2e0da|#14243a/i);
     expect(block).toContain("var(--bg)");
     expect(block).toContain("var(--surface)");
     expect(block).toContain("var(--ink)");

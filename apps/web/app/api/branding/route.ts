@@ -156,7 +156,7 @@ export async function PUT(request: Request) {
     accentColor = normalizeHexColor(body.accentColor);
     if (!accentColor) {
       return Response.json(
-        { error: "Team colour must be a hex value like #1457d9." },
+        { error: "Team colour must be a hex value like #17457f." },
         { status: 400 },
       );
     }

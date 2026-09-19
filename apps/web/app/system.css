@@ -2,35 +2,49 @@
    Canonical tokens. This is the only stylesheet allowed to DECLARE
    --bg/--surface/--ink and the marketing --m-* palette.
 
-   Light: navy ink on cool paper, one house blue. Dark: surfaces step UP in
-   lightness (#0c1118 → #151b24 → #1c2430), borders lighten, shadows become
-   rims. No pure black on white. No neon.
+   Light: navy ink on neutral grey paper, one deep house blue. Dark: surfaces
+   step UP in lightness (#0c1118 → #151b24 → #1c2430), borders lighten, shadows
+   become rims. No pure black on white. No neon.
 
    Contrast (WCAG 2.1, measured against the fill they sit on):
-     #14243a on #eef2f7  ≈ 12.4:1  (body text)
-     #14243a on #ffffff   ≈ 13.7:1
-     #1457d9 on #ffffff    ≈  5.6:1  (accent as text)
-     #ffffff on #1457d9   ≈  5.6:1  (accent-ink on house blue)
-     #5a6578 on #eef2f7   ≈  5.1:1  (muted)
-     #98630a on #ffffff    ≈  5.2:1  (warning text)
-     #b91c1c on #ffffff    ≈  6.1:1  (critical text)
-     #15803d on #ffffff    ≈  4.6:1  (positive text)
-     #edf2f7 on #0c1118   ≈ 14.5:1  (dark body)
-     #0c1118 on #6e9bff   ≈  7.4:1  (dark accent-ink)
+     #14243a on #f2f3f5  ≈ 14.1:1  (body text)
+     #14243a on #ffffff  ≈ 15.6:1
+     #17457f on #ffffff  ≈  9.6:1  (accent as text)
+     #ffffff on #17457f  ≈  9.6:1  (accent-ink on house blue)
+     #5a6578 on #f2f3f5  ≈  5.3:1  (muted)
+     #98630a on #ffffff  ≈  5.1:1  (warning text)
+     #b91c1c on #ffffff  ≈  6.5:1  (critical text)
+     #15803d on #ffffff  ≈  5.0:1  (positive text)
+     #edf2f7 on #0c1118  ≈ 16.8:1  (dark body)
+     #0c1118 on #93b4e8  ≈  9.0:1  (dark accent-ink)
    Marketing copper #a34a07 is decoration + large type; it is not body text.
    ========================================================================== */
 
 :root {
+  /* The accent is a deep navy-blue, not a bright one, and the page under it is
+     grey rather than tinted.
+
+     It used to be #17457f on a #f2f3f5 page: a vivid cornflower primary on a
+     blue-washed background, with a pale blue behind every badge and active
+     chip. Three blues stacked on each other is what made the product read as
+     light blue overall, which is a colour scheme for a consumer app, not for
+     something a team runs a competition on.
+
+     Deepening the accent is also the accessible direction, which is unusual
+     enough to be worth saying: white on #17457f measures 6.2:1, and white on
+     #17457f measures 9.6:1. The page loses its blue cast, the badges lose
+     theirs, and the one thing that stays blue is the thing you are meant to
+     press. */
   --brand-navy: #14243a;
-  --brand-blue: #1457d9;
-  --brand-blue-soft: #e4ecfc;
-  --brand-paper: #eef2f7;
+  --brand-blue: #17457f;
+  --brand-blue-soft: #e6ebf3;
+  --brand-paper: #f2f3f5;
   --brand-white: #ffffff;
 
   --bg: var(--brand-paper);
   --surface: var(--brand-white);
   --surface-2: color-mix(in srgb, var(--bg) 82%, var(--line));
-  --line: #d5dde8;
+  --line: #dcdfe4;
   --ink: var(--brand-navy);
   --muted: #5a6578;
   --accent: var(--brand-blue);
@@ -63,7 +77,7 @@
   --shadow-pop: 0 4px 8px rgba(19, 32, 51, .09), 0 16px 38px rgba(19, 32, 51, .14);
   --space: 8px;
 
-  --tone-blue: #1457d9;
+  --tone-blue: #17457f;
   --tone-green: #15803d;
   --tone-teal: #0f766e;
   --tone-amber: #b45309;
@@ -100,7 +114,7 @@
   --glyph-warning: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23000' stroke-width='1.6' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M8 2 15 14H1L8 2Z'/%3E%3Cpath d='M8 6.4v3.2M8 11.8v.1'/%3E%3C/svg%3E");
   --glyph-check: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 8.5 6.5 12 13 4.5'/%3E%3C/svg%3E");
   --glow: radial-gradient(120% 80% at 12% -10%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 55%),
-    radial-gradient(90% 60% at 100% 0%, color-mix(in srgb, #38bdf8 8%, transparent), transparent 50%);
+    radial-gradient(90% 60% at 100% 0%, color-mix(in srgb, var(--brand-navy) 6%, transparent), transparent 50%);
   --density: 1;
   --motion: 1;
   --space-1: calc(4px * var(--density));
@@ -124,10 +138,10 @@
   --m-accent-soft: var(--brand-blue-soft);
   --m-graphite: var(--brand-navy);
   --m-blue: var(--brand-blue);
-  --m-soft: #e7edf5;
+  --m-soft: #e9ecf1;
   --m-muted: #44536b;
-  --m-line: #ccd6e4;
-  --m-accent-dark: #0f3f9e;
+  --m-line: #d3d7de;
+  --m-accent-dark: #0f3160;
   --m-graphite-mid: #334561;
   --m-radius: 14px;
   --m-radius-sm: 10px;
@@ -147,7 +161,7 @@
   --line: #273140;
   --ink: #edf2f7;
   --muted: #9aa7b5;
-  --accent: #6e9bff;
+  --accent: #93b4e8;
   --accent-ink: #0c1118;
   --accent-soft: #1a2740;
   --positive: #4ade80;
@@ -188,7 +202,7 @@ body {
     --line: #273140;
     --ink: #edf2f7;
     --muted: #9aa7b5;
-    --accent: #6e9bff;
+    --accent: #93b4e8;
     --accent-ink: #0c1118;
     --accent-soft: #1a2740;
     --positive: #4ade80;
@@ -223,7 +237,7 @@ html[data-motion="reduced"] {
 }
 
 .marketing-v2 {
-  --m-paper: #eef2f7;
+  --m-paper: #f2f3f5;
 }
 
 .marketing-lux {
@@ -240,7 +254,7 @@ html[data-motion="reduced"] {
   --m-on-accent: #ffffff;
   --m-accent: #14243a;
   --m-accent-dark: #000;
-  --m-blue: #1457d9;
+  --m-blue: #17457f;
   --m-pad-x: clamp(20px, 5.5vw, 88px);
   --m-pad-y: clamp(56px, 7vw, 88px);
   --m-section-gap: clamp(48px, 6vw, 72px);

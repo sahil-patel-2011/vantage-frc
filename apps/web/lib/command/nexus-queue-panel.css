@@ -36,7 +36,7 @@
   min-height: 44px;
   display: inline-flex;
   align-items: center;
-  color: var(--accent, #1457d9);
+  color: var(--accent, #17457f);
   font-size: 13px;
   font-weight: 600;
 }
@@ -86,8 +86,8 @@
   font-weight: 800;
   font-style: normal;
   letter-spacing: 0.08em;
-  background: var(--accent-soft, #e4ecfc);
-  color: var(--accent, #1457d9);
+  background: var(--accent-soft, #e6ebf3);
+  color: var(--accent, #17457f);
 }
 
 .nq-cue.cue-queue-soon,
@@ -138,7 +138,7 @@
 
 .nq-stage.done {
   color: var(--ink, #14243a);
-  border-color: color-mix(in srgb, var(--accent, #1457d9) 35%, transparent);
+  border-color: color-mix(in srgb, var(--accent, #17457f) 35%, transparent);
 }
 
 .nq-stage.current {
@@ -192,7 +192,7 @@
   min-height: 44px;
   padding: 8px 10px;
   border-radius: var(--radius-sm, 12px);
-  background: var(--bg, #eef2f7);
+  background: var(--bg, #f2f3f5);
   font-size: 14px;
   line-height: 1.45;
 }
@@ -211,12 +211,12 @@
   padding: 8px 10px;
   border-radius: var(--radius-sm, 12px);
   border: 1px solid var(--line, #d5dde8);
-  background: var(--bg, #eef2f7);
+  background: var(--bg, #f2f3f5);
 }
 
 .nq-parts li.is-near {
-  border-color: var(--accent, #1457d9);
-  background: var(--accent-soft, #e4ecfc);
+  border-color: var(--accent, #17457f);
+  background: var(--accent-soft, #e6ebf3);
 }
 
 .nq-parts strong {

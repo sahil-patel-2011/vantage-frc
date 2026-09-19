@@ -469,7 +469,7 @@ export default function ChemistryClient({
           <div className="edc-card-title">
             <span
               className="edc-icon"
-              style={{ ["--tone" as string]: "#1457d9", ["--tone-bg" as string]: "#e4ecfc" }}
+              style={{ ["--tone" as string]: "#17457f", ["--tone-bg" as string]: "#e6ebf3" }}
             >
               <Icon name="users" />
             </span>
@@ -505,7 +505,7 @@ export default function ChemistryClient({
               <div className="edc-card-title">
                 <span
                   className="edc-icon"
-                  style={{ ["--tone" as string]: "#1457d9", ["--tone-bg" as string]: "#e4ecfc" }}
+                  style={{ ["--tone" as string]: "#17457f", ["--tone-bg" as string]: "#e6ebf3" }}
                 >
                   <Icon name="bolt" />
                 </span>

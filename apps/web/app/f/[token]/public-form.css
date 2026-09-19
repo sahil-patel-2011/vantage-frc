@@ -13,9 +13,9 @@
   --pf-ink: #14243a;
   --pf-muted: #5a6578;
   --pf-line: #d5dde8;
-  --pf-accent: #1457d9;
+  --pf-accent: #17457f;
   --pf-card: #ffffff;
-  --pf-bg: #eef2f7;
+  --pf-bg: #f2f3f5;
 
   min-height: 100vh;
   padding: clamp(20px, 5vw, 56px) clamp(16px, 5vw, 32px);

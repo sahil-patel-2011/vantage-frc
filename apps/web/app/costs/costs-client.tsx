@@ -56,7 +56,7 @@ async function persistCostsSnapshot(orgHint: string, seasonHint: string, data: C
 }
 
 const SOURCE_COLOR: Record<string, string> = {
-  season: "#1457d9",
+  season: "#17457f",
   subscriptions: "#7a4fd6",
   api: "#1f7a3d",
 };

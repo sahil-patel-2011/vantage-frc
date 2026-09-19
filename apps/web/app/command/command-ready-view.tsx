@@ -132,7 +132,7 @@ export function CommandReadyView({
         <article className={`edc-card edc-next ${next ? "live" : "empty"}`}>
           <header>
             <div className="edc-card-title">
-              <span className="edc-icon" style={{ ["--tone" as string]: "#1457d9", ["--tone-bg" as string]: "#e4ecfc" }}>
+              <span className="edc-icon" style={{ ["--tone" as string]: "#17457f", ["--tone-bg" as string]: "#e6ebf3" }}>
                 <Icon name="swords" />
               </span>
               <div>
@@ -301,7 +301,7 @@ export function CommandReadyView({
         <article className="edc-card">
           <header>
             <div className="edc-card-title">
-              <span className="edc-icon" style={{ ["--tone" as string]: "#1457d9", ["--tone-bg" as string]: "#e4ecfc" }}>
+              <span className="edc-icon" style={{ ["--tone" as string]: "#17457f", ["--tone-bg" as string]: "#e6ebf3" }}>
                 <Icon name="bolt" />
               </span>
               <div>
@@ -514,7 +514,7 @@ export function CommandReadyView({
         <article className="edc-card">
           <header>
             <div className="edc-card-title">
-              <span className="edc-icon" style={{ ["--tone" as string]: "#1457d9", ["--tone-bg" as string]: "#e4ecfc" }}>
+              <span className="edc-icon" style={{ ["--tone" as string]: "#17457f", ["--tone-bg" as string]: "#e6ebf3" }}>
                 <Icon name="stats" />
               </span>
               <div>

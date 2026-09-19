@@ -68,7 +68,7 @@ function readStoredPreference(): ThemePreference {
 /** Keep the OS browser chrome on the same colour as --bg. */
 function syncBrowserColor(theme: Theme) {
   document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')
-    .forEach((meta) => { meta.content = theme === "dark" ? "#0c1118" : "#eef2f7"; });
+    .forEach((meta) => { meta.content = theme === "dark" ? "#0c1118" : "#f2f3f5"; });
 }
 
 function applyResolvedTheme(theme: Theme) {

@@ -125,7 +125,7 @@ describe("density token mapping", () => {
 
 describe("branding view helpers", () => {
   it("needs a colour, the team switch, and the member switch all on", () => {
-    const on = { accentColor: "#1457d9", applyAccentToApp: true };
+    const on = { accentColor: "#17457f", applyAccentToApp: true };
     expect(accentIsActive(on, { teamAccent: true })).toBe(true);
     expect(accentIsActive(on, { teamAccent: false })).toBe(false);
     expect(accentIsActive({ ...on, applyAccentToApp: false }, { teamAccent: true })).toBe(false);

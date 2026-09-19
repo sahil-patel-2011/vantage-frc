@@ -38,7 +38,7 @@ export const viewport: Viewport = {
   // Matches --bg in both themes, so the OS browser chrome does not paint a
   // different shade than the page behind it.
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#eef2f7" },
+    { media: "(prefers-color-scheme: light)", color: "#f2f3f5" },
     { media: "(prefers-color-scheme: dark)", color: "#0c1118" },
   ],
 };
