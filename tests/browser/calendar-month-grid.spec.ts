@@ -37,12 +37,23 @@ async function goToEmptyMonth(page: Page) {
   throw new Error("no empty month within two years — the fixture has too much data");
 }
 
-/** A day inside the open month with nothing on it yet. */
-function emptyDay(page: Page, index = 0) {
-  return page
+/**
+ * A day inside the open month with nothing on it yet, pinned by its date.
+ *
+ * Returning the filtered locator itself was wrong in a way that only shows up
+ * after the test does its job: `.filter({ hasNot: chip }).nth(9)` is
+ * re-evaluated on every use, so the moment the entry lands that day has a chip,
+ * drops out of the set, and the same expression points at a different cell.
+ * The assertion then looks for the new entry on a day that never had it.
+ */
+async function emptyDay(page: Page, index = 0) {
+  const candidate = page
     .locator('.cal-grid-day[data-in-month="yes"]')
     .filter({ hasNot: page.locator(".cal-grid-chip") })
     .nth(index);
+  const date = await candidate.getAttribute("data-date");
+  if (!date) throw new Error(`no empty day at index ${index}`);
+  return page.locator(`.cal-grid-day[data-date="${date}"]`);
 }
 
 test("the month is seven columns of whole weeks", async ({ page }) => {
@@ -102,7 +113,7 @@ test("pressing a day is how you add to it", async ({ page }) => {
   await openCalendar(page);
 
   await goToEmptyMonth(page);
-  const day = emptyDay(page, 9);
+  const day = await emptyDay(page, 9);
   const dayNumber = (await day.locator(".cal-grid-num").innerText()).trim();
   await day.locator(".cal-grid-add").click();
 
@@ -123,7 +134,7 @@ test("pressing a day is how you add to it", async ({ page }) => {
 test("escape abandons a new entry, and an empty composer closes itself", async ({ page }) => {
   await openCalendar(page);
   await goToEmptyMonth(page);
-  const day = emptyDay(page, 3);
+  const day = await emptyDay(page, 3);
 
   await day.locator(".cal-grid-add").click();
   await expect(day.locator(".cal-grid-composer input")).toBeVisible();
@@ -145,7 +156,7 @@ test("a day that already has something on it can still be added to", async ({ pa
   // entry on it, the middle of that cell was covered and pressing it did
   // nothing — which is every day you would most want to add a second thing to.
   await goToEmptyMonth(page);
-  const day = emptyDay(page, 11);
+  const day = await emptyDay(page, 11);
   const first = `Occupied ${Date.now()}`;
   await day.locator(".cal-grid-add").click();
   await day.locator(".cal-grid-composer input").fill(first);

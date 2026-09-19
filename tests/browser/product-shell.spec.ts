@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { signInFixture } from "./session";
+import { signInAs, signInFixture } from "./session";
 
 test.beforeEach(async ({ context }) => {
   await signInFixture(context);
@@ -123,27 +123,37 @@ test("product shell keeps four favorite apps and one way to see the rest", async
   await page.setViewportSize({ width: 1400, height: 900 });
   await expect(island).toBeVisible();
   await expect(island.getByRole("link")).toHaveCount(4);
-  await expect(island.getByRole("button", { name: "Open all apps" })).toBeVisible();
+  // Four at desktop width too, and still no fifth button.
+  await expect(island.getByRole("button")).toHaveCount(0);
 });
 
-test("search is one affordance per width and shares the navigation panel", async ({ page }) => {
-  const searchButton = page.getByRole("button", { name: "Search Vantage" });
+test("search is one affordance at every width, inside the navigation panel", async ({ page }) => {
   const field = page.getByRole("combobox", { name: /Search pages, tools/ });
 
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/dashboard");
-  // Under 900px the bar has no room for a field, so the panel carries the only one.
-  await expect(searchButton).toBeHidden();
-  await page.getByRole("button", { name: "Open all apps" }).click();
-  await expect(field).toBeVisible();
-  await page.keyboard.press("Escape");
+  // There is no separate search button at any width any more. 538f3df62 gave
+  // the top bar a real menu and folded search into it — one control labelled
+  // "Menu and search" — and this spec kept looking for the old button, so it
+  // had been failing on a shell that was behaving exactly as designed.
+  const oldButton = page.getByRole("button", { name: "Search Vantage" });
 
-  await page.setViewportSize({ width: 1400, height: 900 });
-  await expect(searchButton).toBeVisible();
-  await searchButton.click();
-  // The bar's control steps aside so its field and the panel's are never both up.
-  await expect(searchButton).toHaveCount(0);
-  await expect(field).toBeFocused();
+  for (const size of [
+    { width: 390, height: 844 },
+    { width: 1400, height: 900 },
+  ]) {
+    await page.setViewportSize(size);
+    await page.goto("/dashboard");
+    await expect(oldButton).toHaveCount(0);
+    await expect(field).toBeHidden();
+
+    await page.getByRole("button", { name: "Menu and search" }).click();
+    await expect(field).toBeVisible();
+    await expect(field).toBeFocused();
+    await page.keyboard.press("Escape");
+    await expect(field).toBeHidden();
+  }
+
+  // And it searches: the panel's field is the only one, so this is the path.
+  await page.getByRole("button", { name: "Menu and search" }).click();
   await field.fill("pick list");
   await expect(page.locator("#soft-nav-row-0")).toContainText("Pick list");
   await page.keyboard.press("Enter");
@@ -187,14 +197,59 @@ test("onboarding route is reachable when authenticated fixture skips incomplete 
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 });
 
-test("account route keeps settings discoverable when the API session is unavailable", async ({ page }) => {
+test("account keeps every setting reachable from one place", async ({ page, context }) => {
+  // A real session, not the fixture cookie the rest of this file uses. The
+  // fixture walks past the proxy but mints no Better Auth session, so every
+  // `/api/*` answers 401 and Account paints "your session ended" with no
+  // sections at all — which is a real state, tested below, and not the one
+  // this test is about.
+  test.skip(!(await signInAs(context, "owner")), "no owner fixture on this box");
   await page.goto("/account");
   await expect(page.getByRole("heading", { name: "Account", exact: true })).toBeVisible();
-  await expect(page.getByRole("navigation", { name: "All settings" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Appearance" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "AI usage" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Loading account" })).toBeHidden({ timeout: 20_000 });
-  await expect(page.getByRole("heading", { name: "Your session ended" })).toBeVisible();
+
+  // This used to look for a <nav aria-label="All settings">, which the
+  // settings switcher has not been since it became a card of rows. The point
+  // of the test is that the settings are reachable, so it checks that.
+  //
+  // Two kinds of destination, and they are not interchangeable: the account's
+  // own sections are tabs on this page, and everything else is a link away to
+  // its own surface. Asserting a link named "Appearance" failed for a while
+  // and looked like a missing feature — the panel was there all along, one
+  // tab across.
+  for (const tab of ["Profile", "Appearance", "Notifications"]) {
+    // Buttons in a ToolStrip, not a tablist — Account's sections switch in
+    // place but do not carry tab semantics.
+    await expect(page.getByRole("button", { name: tab, exact: true })).toBeVisible();
+  }
+  for (const link of ["Security", "AI usage", "Billing", "Connectors"]) {
+    await expect(page.getByRole("link", { name: link, exact: true }).first()).toBeVisible();
+  }
+
+  await page.getByRole("button", { name: "Appearance", exact: true }).click();
+  await expect(page.locator(".appearance-panel")).toBeVisible();
+});
+
+test("account says the session ended, rather than an empty page, when it has", async ({
+  page,
+  context,
+}) => {
+  // The state this pair of tests was originally written for. It used to be
+  // reached by accident — the fixtures could not hold a real session, so every
+  // signed-in page was this one. Now that they can, it has to be asked for.
+  await context.clearCookies();
+  await page.goto("/account");
+  await expect(
+    page
+      .getByRole("heading", { name: "Your session ended" })
+      .or(page.getByRole("heading", { name: /Sign in/i }))
+      .first(),
+  ).toBeVisible({ timeout: 20_000 });
+
+  // No unread count on a page that could not read anything. This assertion
+  // used to sit in the test above, where it only held because that test had no
+  // session either — with a real one the owner has notifications, and a badge
+  // showing them is the feature working.
   await expect(page.locator(".soft-notif b")).toHaveCount(0);
 });
 

@@ -228,6 +228,11 @@ function DayCell({
   return (
     <div
       className="cal-grid-day"
+      // The day this cell is, as itself. Without it the only way to point at a
+      // cell is by position among cells matching some condition, and the
+      // moment you change the cell — by adding to it — it stops matching and
+      // the same expression silently means a different day.
+      data-date={day.date}
       data-in-month={day.inMonth ? "yes" : "no"}
       data-today={day.isToday ? "yes" : "no"}
       data-weekend={day.isWeekend ? "yes" : "no"}
