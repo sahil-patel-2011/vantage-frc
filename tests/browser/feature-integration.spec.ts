@@ -1,10 +1,15 @@
 import { expect, test, type Page } from "@playwright/test";
 import { hubById, hubPrimaryTabs } from "../../apps/web/lib/nav/hubs";
-import { gotoReady } from "./ready";
-import { signInFixture } from "./session";
+import { gotoAsTeam } from "./active-org";
+import { signInAs, signInFixture } from "./session";
 
 test.beforeEach(async ({ context }) => {
-  await signInFixture(context);
+  // A real session when the box has one. The fixture cookie walks the proxy
+  // past its auth check but mints no Better Auth session, so `/api/me`
+  // answers 401 and there is no team to open these pages as — which is the
+  // state the "related destinations" this file is about do not exist in.
+  const signed = await signInAs(context, "owner");
+  if (!signed) await signInFixture(context);
 });
 
 /** Links a page renders in its own body — the shell's nav is not part of this. */
@@ -41,22 +46,53 @@ test.describe("one control per destination", () => {
    * Team calendar / Visit invites each appeared as two separate buttons.
    */
   test("team admin offers each related destination once", async ({ page }) => {
-    await gotoReady(page, "/team/admin");
+    // As the signed-in team. Without an org this page renders its "Choose
+    // your team" state perfectly well, and the related destinations it is
+    // about genuinely do not exist there — so the test failed three
+    // assertions later on a page that was behaving correctly.
+    await gotoAsTeam(page, "/team/admin");
     const title = page.getByRole("heading", { level: 1, name: "Team admin" });
     const missing = page.getByRole("heading", { name: "This page is not here" });
+    const chooseTeam = page.getByRole("heading", { name: "Choose your team", exact: true });
     await expect(title.or(missing).first()).toBeVisible();
     if (await missing.count()) return;
+    if (await chooseTeam.count()) {
+      // A real state, and the only thing to check in it is that it offers one
+      // way out rather than several.
+      await expect(page.locator("main").getByRole("link", { name: "Choose your team", exact: true })).toHaveCount(1);
+      return;
+    }
     const main = page.locator("main");
-    for (const label of ["Account", "Discord", "Account Connections"]) {
+    // "Connectors", not "Account Connections" — the link was renamed and this
+    // list was not. Each must appear exactly once: they used to appear three
+    // times, in the page header, a "more links" row and the membership panel.
+    for (const label of ["Account", "Discord", "Connectors"]) {
       await expect(main.getByRole("link", { name: label, exact: true })).toHaveCount(1);
     }
-    await expect(main.getByRole("link", { name: "Choose your team", exact: true })).toHaveCount(1);
-    await expect(main.getByRole("heading", { name: "Next actions" })).toHaveCount(0);
+    // None, not one. This page has a team — that is why the related links
+    // above exist at all. "Choose your team" belongs to the state handled by
+    // the early return above, and asserting it here required the page to be
+    // in two states at once.
+    await expect(main.getByRole("link", { name: "Choose your team", exact: true })).toHaveCount(0);
     await expect(main.getByRole("heading", { name: "Setup steps" })).toHaveCount(0);
+
+    // "Next actions" used to be asserted absent, because it once repeated the
+    // related strip. It is a real panel now — `teamAdminNextActions` runs
+    // `dropRelatedStripDuplicates` — so the thing worth checking is that
+    // guarantee, not the section's absence. A test that forbids a feature
+    // outlives the reason it was written.
+    const relatedHrefs = await main
+      .locator("nav.product-hub-related a")
+      .evaluateAll((els) => els.map((el) => el.getAttribute("href") ?? ""));
+    const nextActionHrefs = await main
+      .locator(".team-admin-next-actions a")
+      .evaluateAll((els) => els.map((el) => el.getAttribute("href") ?? ""));
+    const repeated = nextActionHrefs.filter((href) => href && relatedHrefs.includes(href));
+    expect(repeated, `next actions repeat the related strip: ${repeated.join(", ")}`).toEqual([]);
   });
 
   test("inventory offers each related destination once", async ({ page }) => {
-    await page.goto("/inventory");
+    await gotoAsTeam(page, "/inventory");
     await expect(page.getByRole("heading", { level: 1, name: "Inventory & BOM" })).toBeVisible();
     const main = page.locator("main");
     for (const label of ["Vendors", "Orders", "Spare Forecast"]) {
@@ -73,7 +109,7 @@ test.describe("one control per destination", () => {
   });
 
   test("logistics offers each related destination once", async ({ page }) => {
-    await page.goto("/logistics");
+    await gotoAsTeam(page, "/logistics");
     await expect(page.getByRole("heading", { level: 1, name: "Logistics" })).toBeVisible();
     const main = page.locator("main");
     for (const label of ["Event Day", "My Day", "Team calendar", "Visit invites", "Packing"]) {

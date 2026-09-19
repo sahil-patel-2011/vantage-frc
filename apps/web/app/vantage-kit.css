@@ -456,16 +456,26 @@
   outline-offset: 1px;
 }
 
-/* A middot between links, so a row of them reads as one list rather than as
-   several loose words. Never before the first. */
+/* A dot between links, so a row of them reads as one list rather than as
+   several loose words. Never before the first.
+
+   Drawn, not typed. This was `content: "\00b7"`, and generated content counts
+   toward an element's accessible name — so every link after the first was
+   announced as "middot Discord", and a test asking for a link named exactly
+   "Discord" found none, which is precisely what a screen-reader user would
+   have experienced. An empty `content` with a background is a separator that
+   is seen and not spoken, and needs no support detection to be right. */
 .product-hub-related > a + a::before,
 .admin-related > a + a::before,
 .settings-inline-links > a + a::before,
 .biz-detail-link > a + a::before {
-  content: "\00b7";
+  content: "";
+  flex: none;
+  width: 3px;
+  height: 3px;
   margin-right: 8px;
-  color: var(--line);
-  font-weight: 700;
+  border-radius: 50%;
+  background: var(--line);
 }
 
 @media (pointer: coarse) {

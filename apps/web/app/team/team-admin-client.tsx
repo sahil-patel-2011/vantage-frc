@@ -649,17 +649,17 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
 
   return (
     <main className="module-page team-admin-page">
+      {/* No related strip in the header.
+          `membershipRelated` was rendered here *and* inside the membership
+          panel below, so Account, Discord and Connectors were each two
+          buttons on one screen — and the "More team admin links" row repeated
+          all three a third time. The panel keeps its copy, because that is
+          where the links mean something: beside the members they relate to. */}
       <PageHeader
         breadcrumbs="Team / Admin"
         title="Team admin"
         description="Invite teammates by exact email. People without an invite go to the waitlist."
-      >
-        <nav className="product-hub-related team-admin-related" aria-label="Related account tools">
-          {membershipRelated.map((link) => (
-            <a key={link.id} href={link.href}>{link.label}</a>
-          ))}
-        </nav>
-      </PageHeader>
+      />
       <TeamOpsNav orgId={orgId} active="admin" />
       <OfflineBanner feature="Team admin" fromCache={fromCache} cachedAt={cachedAt} />
 
@@ -734,9 +734,9 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         <a href={withOrgHref("/exports", orgId)}>Export</a>
         <a href={withOrgHref("/showcase", orgId)}>Showcase</a>
         <a href="/security">Personal security</a>
-        <a href="/account?tab=profile">Account</a>
-        <a href={withOrgHref("/team/discord", orgId)}>Discord</a>
-        <a href="/connectors">Connections</a>
+        {/* Account, Discord and Connectors are in the membership panel's own
+            related row. A "more links" list is for things that are not
+            already on the page. */}
       </nav>
 
       <section className="compare-panel team-admin-membership" id="membership" aria-labelledby="membership-title">

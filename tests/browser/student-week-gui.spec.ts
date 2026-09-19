@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { loadFailureHeading } from "./hub-org-gate";
 import { waitForLoadingGone } from "./ready";
+import { activeOrgId } from "./active-org";
 import { signInAs, signInFixture } from "./session";
 
 const BANNED = ["Connect TBA", "The Blue Alliance", "TBA/Statbotics", "Setup required", "OAuth", "ONSHAPE_"];
@@ -16,34 +17,6 @@ async function openStudent(page: Page, path: string) {
 async function expectNoBanned(page: Page, label: string, extra: string[] = []) {
   for (const phrase of [...BANNED, ...extra]) {
     await expect(page.locator("body"), `${label} still shows ${phrase}`).not.toContainText(phrase);
-  }
-}
-
-/**
- * The active team, from the API the app itself asks.
- *
- * This used to read the island's "Team" chip and pull `orgId` out of its href.
- * That chip is built with `withOrgHref`, which only appends an org when the
- * *current URL* already has one — so on /dashboard it is plain `/team`, the
- * helper returned null, and every caller then navigated without an org, landed
- * on "Choose your team", and failed several steps later looking for a control
- * that only exists once a team is chosen. It read as a broken CAD page.
- *
- * `/api/me` is where the product gets it, so it is where this gets it.
- */
-async function activeOrgId(page: Page): Promise<string | null> {
-  try {
-    const me = await page.evaluate(async () => {
-      const response = await fetch("/api/me", { cache: "no-store" });
-      if (!response.ok) return null;
-      return (await response.json()) as { orgId?: string | null };
-    });
-    const orgId = me?.orgId;
-    return typeof orgId === "string" && orgId ? orgId : null;
-  } catch {
-    // Signed out, or no team on this account. Both are real states and the
-    // callers handle them.
-    return null;
   }
 }
 
