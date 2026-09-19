@@ -528,7 +528,10 @@ export default function ChatClient({
           {!thread ? (
             <div className="ch-empty">
               <span className="app-badge setup">{shellCopy.badge ?? "Start here"}</span>
-              <h1>{shell === "empty" ? shellCopy.title : "Pick or create a channel"}</h1>
+              {/* h2, not h1. Inside the AI hub this page is a tab, the hub
+                  supplies the page's h1, and a second visible h1 makes the
+                  document outline say these are two separate pages. */}
+              <h2>{shell === "empty" ? shellCopy.title : "Pick or create a channel"}</h2>
               <p>
                 {shell === "empty"
                   ? shellCopy.description
@@ -547,7 +550,9 @@ export default function ChatClient({
                   <span className="eyebrow">
                     {thread.scope === "team" ? "Team shared channel" : "Private channel"}
                   </span>
-                  <h1>{thread.title}</h1>
+                  {/* See above: the channel name is a heading within the
+                      page, not the name of the page. */}
+                  <h2>{thread.title}</h2>
                 </div>
                 {thread.scope === "team" ? (
                   <strong className="ch-shared-banner">Every message in this channel is shared</strong>

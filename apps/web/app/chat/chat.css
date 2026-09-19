@@ -151,7 +151,7 @@
   justify-items: start;
   padding: 18px 4px 8px;
 }
-.ch-empty h1 {
+.ch-empty h2 {
   margin: 0;
   font-size:var(--title-1);
   line-height: 1.2;
@@ -175,7 +175,7 @@
   gap: 12px;
   flex-wrap: wrap;
 }
-.ch-thread-head h1 {
+.ch-thread-head h2 {
   margin: 4px 0 0;
   font-size:var(--title-2);
 }
