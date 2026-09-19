@@ -6,6 +6,38 @@ import { AppShellAccountMenu } from "./app-shell-account-menu";
 import { withOrgHref } from "../lib/nav/product-nav";
 import type { Me, MembershipOption } from "./app-shell-model";
 
+/**
+ * The team you are in, rendered as the control that changes it.
+ *
+ * This was plain text. Switching teams lived behind the avatar menu and only
+ * appeared there when you already belonged to more than one team — so the
+ * label naming your team was inert, and from the one place you would think to
+ * look, there was no way to switch, leave, or join another. Same words, same
+ * position; now you can press it.
+ */
+function TeamChip({
+  label,
+  onOpen,
+  className,
+}: {
+  label: string;
+  onOpen: () => void;
+  className: string;
+}) {
+  return (
+    <button
+      type="button"
+      className={`${className} soft-topbar-team`}
+      onClick={onOpen}
+      aria-label={`${label} — switch team`}
+      title="Switch or join a team"
+    >
+      <span>{label}</span>
+      <Icon name="chevron" />
+    </button>
+  );
+}
+
 export function AppShellTopbar({
   showBack,
   onBack,
@@ -16,6 +48,7 @@ export function AppShellTopbar({
   orgId,
   navOpen,
   onOpenNav,
+  onOpenTeams,
 
   unreadCount,
   accountMenuOpen,
@@ -42,6 +75,8 @@ export function AppShellTopbar({
   orgId: string;
   navOpen: boolean;
   onOpenNav: () => void;
+  /** Opens the drawer with the team picker already expanded. */
+  onOpenTeams: () => void;
 
   unreadCount: number;
   accountMenuOpen: boolean;
@@ -94,7 +129,11 @@ export function AppShellTopbar({
           ) : null}
           <div className="soft-page-head-copy">
             {isHubRoot ? (
-              <p className="soft-topbar-title soft-topbar-org">{orgLabel}</p>
+              <TeamChip
+                label={orgLabel}
+                onOpen={onOpenTeams}
+                className="soft-topbar-title soft-topbar-org"
+              />
             ) : (
               <>
                 <p className="soft-topbar-title">{title ?? "Vantage"}</p>
@@ -114,7 +153,13 @@ export function AppShellTopbar({
                   // twice, one line apart.
                   const tail = crumb.split("/").pop()?.trim() ?? crumb;
                   if (crumb === heading || tail === heading) return null;
-                  return <small className="soft-org-crumb">{sub}</small>;
+                  // The crumb is a location; the team is a thing you can
+                  // change. Only the latter becomes a control.
+                  return showBack ? (
+                    <small className="soft-org-crumb">{sub}</small>
+                  ) : (
+                    <TeamChip label={sub} onOpen={onOpenTeams} className="soft-org-crumb" />
+                  );
                 })()}
               </>
             )}

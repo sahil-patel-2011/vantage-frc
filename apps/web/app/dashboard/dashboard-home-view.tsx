@@ -277,20 +277,21 @@ export function DashboardHomeView(props: {
               number sat in small grey breadcrumb text while "Good morning"
               took the headline, which is the wrong way up for a page you open
               at an event. */}
-          <span className="dash-greeting">
+          {/* The team number is not repeated here.
+              It is in the top bar on every page, including this one, and it
+              was the largest thing on the screen — "Team 6925" two rows above
+              a 56px "6925", telling you a fact you had just read and that
+              never changes while you are signed in. The greeting is what is
+              actually specific to opening the page, so it takes the line, and
+              the team name appears only when it says more than the number. */}
+          <h1 className="dash-hero-greeting">
             {greeting()}, {firstName}
-            {board && !board.isDefault ? (
-              <span className="dash-scope-pill" data-scope={scope}>
-                {scope === "org" ? "Team board" : "Personal board"}
-              </span>
-            ) : null}
-          </span>
-          <h1 className="dash-hero-team">
-            {me.teamNumber ? String(me.teamNumber) : (me.orgName ?? "Your team")}
           </h1>
-          {/* The number above still anchors the page. A line reading
-              "Team 6925" under a huge "6925" is the same fact twice, so the
-              name only appears when it is actually a name. */}
+          {board && !board.isDefault ? (
+            <span className="dash-scope-pill" data-scope={scope}>
+              {scope === "org" ? "Team board" : "Personal board"}
+            </span>
+          ) : null}
           {me.teamNumber && orgNameAddsDetail(me.teamNumber, me.orgName) ? (
             <p className="dash-hero-org">{me.orgName}</p>
           ) : null}
@@ -332,21 +333,26 @@ export function DashboardHomeView(props: {
               </b>
             </a>
           ) : null}
-          {!editing && !previewing ? (
-            <Button
-              variant="secondary"
-              className="dash-edit-trigger"
-              data-testid="dash-customize"
-              data-tour="customise"
-              aria-label="Edit Home — rearrange, add, or remove widgets"
-              onClick={enterEditMode}
-            >
-              Edit Home
-            </Button>
-          ) : null}
           <details className="dash-home-more">
             <summary aria-label="More home tools">More</summary>
             <div>
+              {/* Edit Home lives in here rather than beside the greeting.
+                  Arranging widgets is something you do once and then leave
+                  alone for a season, and it was one of only two controls on
+                  the page — so the quietest screen in the app opened with a
+                  button most people will never press again. */}
+              {!editing && !previewing ? (
+                <button
+                  type="button"
+                  className="dash-edit-trigger"
+                  data-testid="dash-customize"
+                  data-tour="customise"
+                  aria-label="Edit Home — rearrange, add, or remove widgets"
+                  onClick={enterEditMode}
+                >
+                  Edit Home
+                </button>
+              ) : null}
               <CopyShareLink orgId={orgId || null} />
               {orgId && meLoaded && !editing ? (
                 <button

@@ -8,7 +8,9 @@ test.beforeEach(async ({ context }) => {
 test("dashboard home is decluttered and exposes customize controls", async ({ page }) => {
   await page.goto("/dashboard");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  await expect(page.getByTestId("dash-customize")).toBeVisible();
+  // Decluttered means Edit Home is inside "More", not beside the greeting.
+  await expect(page.getByTestId("dash-customize")).not.toBeVisible();
+  await page.locator(".dash-home-more > summary").click();
   await expect(page.getByRole("button", { name: /Edit Home/ })).toBeVisible();
   await expect(page.getByText("Competition Command Center")).toHaveCount(0);
   await expect(page.getByRole("region", { name: "First-run setup" })).toBeVisible({ timeout: 20_000 });

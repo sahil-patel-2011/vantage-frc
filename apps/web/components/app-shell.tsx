@@ -507,6 +507,13 @@ export default function AppShell() {
         orgId={orgId}
         navOpen={navOpen}
         onOpenNav={() => openNav({ focusSearch: true })}
+        // Pressing the team name opens the drawer already showing the team
+        // picker, so switching, leaving and joining are one tap from every
+        // page rather than three from behind the avatar.
+        onOpenTeams={() => {
+          openNav();
+          setWorkspaceOpen(true);
+        }}
         unreadCount={unreadCount}
         accountMenuOpen={accountMenuOpen}
         onToggleAccount={() => setAccountMenuOpen((value) => !value)}
@@ -584,8 +591,6 @@ export default function AppShell() {
         islandTabs={islandTabs}
         activeIslandTabHref={activeIslandTabHref}
         unreadMessages={unreadMessages}
-        navOpen={navOpen}
-        onOpenNav={() => openNav()}
         onOpenEditor={openIslandEditor}
         islandPressTimer={islandPressTimer}
         islandPressOrigin={islandPressOrigin}

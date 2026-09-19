@@ -15,6 +15,9 @@ test("landing sign in reaches dashboard with local auth fixture", async ({ conte
   // closed navigation panel's "Customize island" — that panel sat off-canvas but
   // still in the accessible tree. It is properly hidden now, so assert the
   // dashboard's own control, which is what this test was trying to check.
+  // Edit Home is a row inside the "More" menu now — arranging widgets is a
+  // once-a-season job, not one of the two controls on the page.
+  await page.locator(".dash-home-more > summary").click();
   await expect(page.getByTestId("dash-customize")).toBeVisible();
 });
 

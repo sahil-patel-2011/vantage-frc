@@ -64,24 +64,31 @@ export async function signInFixture(context: BrowserContext) {
  * turns on *who* you are — a member answering a form, a non-admin being told
  * no — needs a real session.
  *
- * The defaults below are seeded into a throwaway local Postgres: three accounts
- * — an `owner`, a `scout`, and one on no team at all — each with a credential row so
- * the suite can sign in. The password is a fixture value that exists nowhere
+ * The defaults below are seeded into a throwaway local Postgres: four accounts
+ * — an `owner`, a `scout`, one on no team at all, and a platform admin — each
+ * with a credential row so the suite can sign in. The password is a fixture value that exists nowhere
  * but such a database. Point the suite at your own pair with the env vars.
  *
  *   VANTAGE_E2E_OWNER_EMAIL  / VANTAGE_E2E_OWNER_PASSWORD   (owner or admin)
  *   VANTAGE_E2E_MEMBER_EMAIL / VANTAGE_E2E_MEMBER_PASSWORD  (neither)
  *   VANTAGE_E2E_NOTEAM_EMAIL / VANTAGE_E2E_NOTEAM_PASSWORD  (signed in, no team)
+ *   VANTAGE_E2E_PLATFORM_EMAIL / VANTAGE_E2E_PLATFORM_PASSWORD (platform admin)
  *
  * Nothing fails when they are absent — the tests that need them skip.
  */
 export const LOCAL_FIXTURE_PASSWORD = "LocalE2EPassword123!";
 
-export type FixtureRole = "owner" | "member" | "no-team";
+export type FixtureRole = "owner" | "member" | "no-team" | "platform";
 
 export function fixtureAccount(role: FixtureRole): { email: string; password: string } {
   const prefix =
-    role === "owner" ? "VANTAGE_E2E_OWNER" : role === "member" ? "VANTAGE_E2E_MEMBER" : "VANTAGE_E2E_NOTEAM";
+    role === "owner"
+      ? "VANTAGE_E2E_OWNER"
+      : role === "member"
+        ? "VANTAGE_E2E_MEMBER"
+        : role === "platform"
+          ? "VANTAGE_E2E_PLATFORM"
+          : "VANTAGE_E2E_NOTEAM";
   return {
     email:
       process.env[`${prefix}_EMAIL`] ??
@@ -89,7 +96,9 @@ export function fixtureAccount(role: FixtureRole): { email: string; password: st
         ? "e2e-owner@vantage.local"
         : role === "member"
           ? "e2e-member@vantage.local"
-          : "e2e-no-team@vantage.local"),
+          : role === "platform"
+            ? "e2e-platform@vantage.local"
+            : "e2e-no-team@vantage.local"),
     password: process.env[`${prefix}_PASSWORD`] ?? LOCAL_FIXTURE_PASSWORD,
   };
 }
@@ -113,8 +122,34 @@ async function fetchSessionCookie(
     failOnStatusCode: false,
   });
   if (!response.ok()) return null;
-  const cookies = await context.cookies(baseOrigin());
-  return cookies.find((cookie) => cookie.name.includes("session_token"))?.value ?? null;
+  /**
+   * `cookies(url)` first, then the whole jar.
+   *
+   * Better Auth marks the session cookie `Secure` when it is running in
+   * production mode. Chromium treats 127.0.0.1 as a trustworthy origin and
+   * sends such a cookie over plain http anyway, but Playwright's URL filter
+   * does not make that exception — so against a `next start` build the jar
+   * held a perfectly good session and this returned null, `signInAs` reported
+   * false, and every signed-in spec skipped. A suite that skips itself is
+   * worse than one that fails: it reports success.
+   *
+   * The fallback is scoped to this origin's host, so it cannot pick up a
+   * cookie belonging to somewhere else.
+   */
+  const host = new URL(baseOrigin()).hostname;
+  // The whole jar, filtered by host — not `cookies(url)`, and not "fall back
+  // to the jar if the url query came back empty" either: the url query does
+  // return cookies here, just not the Secure one, so a length check on it
+  // never reaches the fallback. The session cookie is the thing being looked
+  // for, so look for it everywhere this origin's host could have put it.
+  const jar = await context.cookies();
+  return (
+    jar.find(
+      (cookie) =>
+        cookie.name.includes("session_token") &&
+        (cookie.domain === host || cookie.domain === `.${host}`),
+    )?.value ?? null
+  );
 }
 
 /**

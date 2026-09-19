@@ -3,6 +3,7 @@ import {
   assertPlatformPrivilegeMfa,
   auth,
   platformAdminDeniedResponse,
+  publicSignupStatus,
   writeAdminAction,
 } from "@vantage/core";
 import { withRls } from "@vantage/db";
@@ -28,17 +29,36 @@ async function runAdmin<T>(
 
 export async function GET(request: Request) {
   try {
+    /**
+     * Whether the doors are open ships with the list of people waiting at
+     * them. `publicSignupStatus` has existed and been tested since the switch
+     * was built, and nothing rendered it — so the only way to know what state
+     * sign-up was in, or which of the two conditions was still holding it
+     * closed, was to read the source and then go and read Vercel's
+     * environment variables. It is one line of JSON; it belongs here.
+     *
+     * Read on the server on purpose: `VANTAGE_PUBLIC_SIGNUP` is deployment
+     * configuration and is never shipped to a browser.
+     */
+    const signup = publicSignupStatus();
     if (waitlistBackend() === "unavailable") {
       return Response.json(
-        { error: waitlistUnavailableMessage(), status: "setup_required" },
+        { error: waitlistUnavailableMessage(), status: "setup_required", signup },
         { status: 503 },
       );
     }
     const q = new URL(request.url).searchParams.get("q") ?? undefined;
     const entries = await runAdmin(async () => createWaitlistStore().list({ q }));
-    return Response.json({ entries });
+    return Response.json({ entries, signup });
   } catch (error) {
-    return platformAdminDeniedResponse(error);
+    // Whether the doors are open does not depend on the waitlist store being
+    // reachable. A misconfigured MARKETING_DATABASE_URL used to take the
+    // sign-up status down with the list, which is the one moment an operator
+    // most needs to see it.
+    const denied = platformAdminDeniedResponse(error);
+    if (denied.status === 404) return denied;
+    const body = (await denied.json()) as Record<string, unknown>;
+    return Response.json({ ...body, signup: publicSignupStatus() }, { status: denied.status });
   }
 }
 

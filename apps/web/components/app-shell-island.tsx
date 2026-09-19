@@ -63,8 +63,6 @@ export function AppShellIsland({
   islandTabs,
   activeIslandTabHref,
   unreadMessages,
-  navOpen,
-  onOpenNav,
   onOpenEditor,
   islandPressTimer,
   islandPressOrigin,
@@ -74,8 +72,6 @@ export function AppShellIsland({
   islandTabs: IslandTabDefinition[];
   activeIslandTabHref: string | undefined;
   unreadMessages: number;
-  navOpen: boolean;
-  onOpenNav: () => void;
   onOpenEditor: () => void;
   islandPressTimer: { current: number | null };
   islandPressOrigin: { current: { x: number; y: number } | null };
@@ -145,16 +141,15 @@ export function AppShellIsland({
           ) : null}
         </a>
       ))}
-      <button
-        type="button"
-        className="soft-island-more"
-        aria-label="Open all apps"
-        aria-expanded={navOpen}
-        onClick={onOpenNav}
-      >
-        <Icon name="grid" />
-        <span>All</span>
-      </button>
+      {/*
+        No fifth "All" button.
+
+        It opened the same drawer the hamburger at the top-left already opens,
+        so the island spent a fifth of itself on a duplicate — and a duplicate
+        that read like a peer of Team, Compete, Scout and Build when it is not
+        one of your apps at all. Four apps you chose, and one way to see the
+        rest of them.
+      */}
     </nav>
   );
 }

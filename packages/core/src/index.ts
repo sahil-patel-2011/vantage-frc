@@ -312,3 +312,6 @@ export * from "./platform-admin";
 export * from "./platform-partners";
 
 export * from "./legal";
+
+/* The one switch that opens the doors — see public-signup.ts. */
+export * from "./public-signup";

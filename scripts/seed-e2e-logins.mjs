@@ -61,6 +61,26 @@ const ACCOUNTS = [
     role: null,
     id: "6925e2e0-0000-4000-8000-000000000003",
   },
+  {
+    /**
+     * A platform admin — the person who provisions teams, works the waitlist
+     * and decides when public sign-up opens.
+     *
+     * Every /admin surface requires a `platform_admins` row, and no fixture
+     * had one, so the whole console was untestable: a walkthrough signed in as
+     * an owner simply saw nothing there and could not tell "this is broken"
+     * from "you are not allowed to see this". This account is an owner of the
+     * same team as well, so it can also check that the admin console and the
+     * product do not leak into each other.
+     */
+    env: "VANTAGE_E2E_PLATFORM",
+    email: process.env.VANTAGE_E2E_PLATFORM_EMAIL ?? "e2e-platform@vantage.local",
+    password: process.env.VANTAGE_E2E_PLATFORM_PASSWORD ?? "LocalE2EPassword123!",
+    name: "E2E Platform Admin",
+    role: "owner",
+    platformAdmin: true,
+    id: "6925e2e0-0000-4000-8000-000000000004",
+  },
 ];
 
 const url = process.env.DATABASE_ADMIN_URL;
@@ -142,6 +162,18 @@ try {
       await db.query(`DELETE FROM memberships WHERE user_id = $1::uuid`, [account.id]);
     }
 
+    // Platform admin is granted, never inherited from a team role: an owner of
+    // a team must not be able to reach the console that provisions teams.
+    if (account.platformAdmin) {
+      await db.query(
+        `INSERT INTO platform_admins (user_id) VALUES ($1::uuid)
+         ON CONFLICT (user_id) DO NOTHING`,
+        [account.id],
+      );
+    } else {
+      await db.query(`DELETE FROM platform_admins WHERE user_id = $1::uuid`, [account.id]);
+    }
+
     const hashed = await hashPassword(account.password);
     await db.query(
       `INSERT INTO accounts (account_id, provider_id, user_id, password)
@@ -150,7 +182,8 @@ try {
       [account.id, account.id, hashed],
     );
 
-    console.log(`  ${(account.role ?? "no team").padEnd(7)} ${account.email}`);
+    const label = account.platformAdmin ? "admin" : (account.role ?? "no team");
+    console.log(`  ${label.padEnd(7)} ${account.email}`);
   }
 
   await db.query("COMMIT");

@@ -104,6 +104,11 @@ jobs:
       DATABASE_URL_UNPOOLED: postgresql://app_login:app@127.0.0.1:5432/vantage_ci?sslmode=disable
       DATABASE_AUTH_URL: postgresql://auth_login:auth@127.0.0.1:5432/vantage_ci?sslmode=disable
       DATABASE_ADMIN_URL: postgresql://postgres:postgres@127.0.0.1:5432/vantage_ci?sslmode=disable
+      # Unused here on purpose: `CI=true` puts the waitlist on the in-memory
+      # store, so nothing connects with this. Note that the role is wrong for
+      # the real thing — `waitlist_signups` is granted to `vantage_marketing`
+      # only, and a deployment that copies this line gets "permission denied
+      # for table waitlist_signups". The store now says so in as many words.
       MARKETING_DATABASE_URL: postgresql://app_login:app@127.0.0.1:5432/vantage_ci?sslmode=disable
       BETTER_AUTH_SECRET: ci-only-secret-not-used-anywhere-else-0123456789
       DEV_KMS_MASTER_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
