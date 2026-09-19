@@ -11,12 +11,24 @@ import {
 } from "../src/petals-public-pool";
 
 describe("Petals public pool config", () => {
-  it("is on by default and off only for explicit disable flags", () => {
-    expect(isPetalsPublicPoolEnabled({})).toBe(true);
-    expect(isPetalsPublicPoolEnabled({ PETALS_PUBLIC_POOL: "1" })).toBe(true);
+  it("is off until a team turns it on", () => {
+    // Petals' own docs say not to send confidential data to the public swarm:
+    // peers can read the input, read the output, and change the output. A
+    // missing API key must not be what opts a team into that.
+    expect(isPetalsPublicPoolEnabled({})).toBe(false);
+    expect(isPetalsPublicPoolEnabled({ PETALS_PUBLIC_POOL: "" })).toBe(false);
     expect(isPetalsPublicPoolEnabled({ PETALS_PUBLIC_POOL: "0" })).toBe(false);
     expect(isPetalsPublicPoolEnabled({ PETALS_PUBLIC_POOL: "false" })).toBe(false);
     expect(isPetalsPublicPoolEnabled({ PETALS_PUBLIC_POOL: "off" })).toBe(false);
+  });
+
+  it("turns on for explicit enable flags only", () => {
+    expect(isPetalsPublicPoolEnabled({ PETALS_PUBLIC_POOL: "1" })).toBe(true);
+    expect(isPetalsPublicPoolEnabled({ PETALS_PUBLIC_POOL: "true" })).toBe(true);
+    expect(isPetalsPublicPoolEnabled({ PETALS_PUBLIC_POOL: "on" })).toBe(true);
+    expect(isPetalsPublicPoolEnabled({ PETALS_PUBLIC_POOL: "YES" })).toBe(true);
+    // Not a typo-tolerant flag: anything unrecognised stays off.
+    expect(isPetalsPublicPoolEnabled({ PETALS_PUBLIC_POOL: "maybe" })).toBe(false);
   });
 
   it("appends the generate path when only an origin is configured", () => {
@@ -29,9 +41,17 @@ describe("Petals public pool config", () => {
     ).toBe("https://example.test/api/v1/generate");
   });
 
-  it("does not build an adapter when the pool is disabled", () => {
+  it("builds no adapter unless the pool was turned on", () => {
     expect(tryCreatePetalsPublicAdapter({ env: { PETALS_PUBLIC_POOL: "0" } })).toBeNull();
-    expect(tryCreatePetalsPublicAdapter({ env: {} })?.model).toBe(PETALS_DEFAULT_MODEL);
+    // The case that matters: nothing configured at all. A team that never
+    // opted in must not get an adapter that ships prompts to strangers.
+    expect(tryCreatePetalsPublicAdapter({ env: {} })).toBeNull();
+  });
+
+  it("builds the adapter once the pool is turned on", () => {
+    expect(tryCreatePetalsPublicAdapter({ env: { PETALS_PUBLIC_POOL: "1" } })?.model).toBe(
+      PETALS_DEFAULT_MODEL,
+    );
   });
 });
 

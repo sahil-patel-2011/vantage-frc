@@ -24,8 +24,10 @@ Add these to your Pi environment (systemd, .env, or shell profile):
   FREE_RELAY_PROVIDER=freebuff
   FREE_RELAY_INTERVAL_MS=300000
 
-Optional fallback when no local proxy:
+Optional fallbacks when no local proxy:
   OPENROUTER_API_KEY=sk-or-...
+  PETALS_PUBLIC_POOL=1          # off by default: volunteer peers can read and alter prompts
+  PETALS_MODEL=petals-team/StableBeluga2
 
 Run once:
   npm run free-relay:sweep

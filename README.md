@@ -96,8 +96,32 @@ prediction accuracy, in particular, is reported in
 
 ## License and community
 
-Vantage is **[MIT License](LICENSE)** (SPDX `MIT`). The npm `"private": true` field only means
-this monorepo is not published to the npm registry; it does not block self-hosting.
+Vantage is **[PolyForm Noncommercial 1.0.0](LICENSE)** (SPDX `PolyForm-Noncommercial-1.0.0`).
+
+**In plain English.** The source is public. Read it, run it, change it, self-host it for your
+team, and share your changes — all free, as long as what you are doing is not commercial. What
+you may **not** do is sell it, resell it, run it as a paid service, or ship it as your own
+product. Attribution stays with the project: the `Required Notice` at the bottom of
+[`LICENSE`](LICENSE) has to travel with any copy you pass on.
+
+An FRC team, a school, a mentor, a student, a nonprofit, or anyone learning from the code is
+squarely inside "noncommercial" and needs no permission. If you want a commercial licence,
+ask — that is the one thing this licence reserves.
+
+**This is source-available, not OSI "open source."** Every OSI-approved licence, MIT included,
+has to permit commercial use, so "nobody may sell it" and "OSI open source" cannot both be
+true. PolyForm Noncommercial is a real, standard, off-the-shelf licence that keeps the source
+open and the selling closed, which is the trade this project wants. If OSI status ever matters
+more than the no-selling rule, the nearest alternative is AGPL-3.0 — it is true open source and
+forces anyone running a modified copy as a service to publish their changes, but it does allow
+selling.
+
+Versions released before this change were published under the MIT licence and stay MIT; a
+licence cannot be withdrawn retroactively from code already shipped under it. This licence
+governs the current source and everything after it.
+
+The npm `"private": true` field only means this monorepo is not published to the npm registry;
+it does not block self-hosting.
 
 - [Contributing](CONTRIBUTING.md) — local run, Neon path, tenancy rules, how to help
 - [Code of Conduct](CODE_OF_CONDUCT.md)

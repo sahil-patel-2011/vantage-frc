@@ -26,13 +26,25 @@ export const PETALS_MAX_NEW_TOKENS = 256;
 const PRIVATE_CONTEXT_TYPES = new Set<ContextItem["type"]>(["private_memory"]);
 
 /**
- * Last-resort public volunteer swarm. On unless PETALS_PUBLIC_POOL is 0/false/off.
- * Not a key, not a quota grant, not unlimited — peers go offline constantly.
+ * Last-resort public volunteer swarm. **Off unless PETALS_PUBLIC_POOL is
+ * explicitly turned on**, and deliberately so.
+ *
+ * Petals' own documentation says not to use the public swarm for confidential
+ * data: the peers serving the model layers can recover the input and the
+ * output, and can alter the output on the way back. They also see your IP.
+ *
+ * Vantage is a closed, invite-only platform holding student names, team
+ * strategy and pick lists, and sponsor contacts. Sending any of that to
+ * anonymous volunteer GPUs is a decision a team has to make on purpose, with
+ * the trade in front of them — it is not something a missing API key should
+ * silently opt them into, which is what defaulting this to on did.
+ *
+ * Turning it on is still reasonable for a team that wants free AI and is
+ * only asking it about public match data. That is their call to make.
  */
 export function isPetalsPublicPoolEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
   const raw = env.PETALS_PUBLIC_POOL?.trim().toLowerCase();
-  if (raw === "0" || raw === "false" || raw === "off" || raw === "no") return false;
-  return true;
+  return raw === "1" || raw === "true" || raw === "on" || raw === "yes";
 }
 
 export function petalsGenerateUrl(env: NodeJS.ProcessEnv = process.env): string {

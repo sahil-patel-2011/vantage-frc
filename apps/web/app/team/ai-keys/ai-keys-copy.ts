@@ -75,7 +75,7 @@ export const QUALITY_NOTICE_BODY =
   "Smaller models give shorter, plainer answers than frontier models do. Where that applies, Vantage says so on the answer itself instead of hiding it — you always know what wrote what.";
 
 export const PUBLIC_SWARM_FALLBACK_BODY =
-  "If no team key is set, Free chat can fall through to the public Petals volunteer swarm (no key, no Vantage charge). Prompts leave Vantage and the swarm is often slow or down — last resort, not unlimited compute.";
+  "Your admin can switch on the public Petals swarm: free AI with no key, answered by volunteers' computers. Those volunteers can read what you send and what comes back, and can change the answer, so it is off until someone turns it on. It is also often slow or down. To get free AI that stays on your own machines, point Vantage at Ollama or LM Studio instead.";
 
 /** Ordered bullets for the "bring any endpoint" panel. */
 export const ANY_ENDPOINT_POINTS: string[] = [

@@ -169,6 +169,19 @@ export function classifyIntelShell(input: {
 }
 
 /** Empty / setup / error copy — never DEMO research, never ranking-source jargon. */
+/**
+ * What the page is, in every state — for the page header only.
+ *
+ * The header and the empty state below it both used `intelShellCopy(shell)
+ * .description`, so "Type a team number or name. Season scores, our scouting,
+ * and public notes stay blank until they are on file." was printed twice on
+ * one screen, 378px apart. They have different jobs: the header says what the
+ * page is, the empty state says what to do next. Only the second should change
+ * with the state.
+ */
+export const INTEL_PAGE_DESCRIPTION =
+  "Season scores and public notes stay blank until they exist. Check Strategy before locking a pick.";
+
 export function intelShellCopy(kind: IntelShellKind): IntelEmptyCopy {
   switch (kind) {
     case "loading":
@@ -204,8 +217,7 @@ export function intelShellCopy(kind: IntelShellKind): IntelEmptyCopy {
       return {
         kind,
         title: "Research",
-        description:
-          "Season scores and public notes stay blank until they exist. Check Strategy before locking a pick.",
+        description: INTEL_PAGE_DESCRIPTION,
       };
     default: {
       const _exhaustive: never = kind;

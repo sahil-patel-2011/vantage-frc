@@ -10,6 +10,7 @@ import { EmptyState, PageHeader } from "../../components/ui";
 import {
   classifyIntelShell,
   intelNextActions,
+  INTEL_PAGE_DESCRIPTION,
   intelShellCopy,
   type IntelActiveEvent,
   type IntelScoutNote,
@@ -444,7 +445,7 @@ function IntelLive({ orgId }: { orgId: string }) {
       <PageHeader
         breadcrumbs="Competition / Research"
         title="Research"
-        description={intelShellCopy(view ? "ready" : "empty").description}
+        description={INTEL_PAGE_DESCRIPTION}
       >
         <IntelRelatedStrip orgId={orgId} teamNumber={view?.intel.team.teamNumber ?? null} />
       </PageHeader>

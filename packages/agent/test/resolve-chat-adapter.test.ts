@@ -307,8 +307,30 @@ describe("resolveOrgChatAdapter", () => {
     expect(adapter.model).toBe("openrouter/free");
   });
 
-  it("uses the Petals public swarm when a free org has no keys", async () => {
+  it("refuses rather than reaching for the public swarm a team never enabled", async () => {
     delete process.env.PETALS_PUBLIC_POOL;
+    const client = fakeClient([
+      () => ({ rowCount: 0, rows: [] }),
+      () => ({ rowCount: 0, rows: [] }),
+      () => ({ rowCount: 0, rows: [] }),
+      () => ({ rowCount: 1, rows: [{ tier: "free" }] }),
+      () => ({ rowCount: 1, rows: [{ teamNumber: 254 }] }),
+    ]);
+
+    // Volunteer peers can read and rewrite what passes through the swarm, so a
+    // free org with no key gets an honest "configure a provider", not a silent
+    // hop onto strangers' GPUs.
+    await expect(
+      resolveOrgChatAdapter(client as never, {
+        orgId: "org-1",
+        promptCachingEnabled: false,
+        decrypt: async () => "unused",
+      }),
+    ).rejects.toThrow(/No AI provider key is configured/);
+  });
+
+  it("uses the Petals public swarm when a free org has no keys and turned it on", async () => {
+    process.env.PETALS_PUBLIC_POOL = "1";
     const client = fakeClient([
       () => ({ rowCount: 0, rows: [] }),
       () => ({ rowCount: 0, rows: [] }),

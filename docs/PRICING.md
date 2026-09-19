@@ -49,6 +49,21 @@ Only providers that are really wired (see `packages/agent/src/sponsored-provider
 Llama 3.1 — plus OpenRouter's free-model router when `OPENROUTER_API_KEY` is set. Never
 frontier models; the pricing page says so explicitly.
 
+When those hosted/sponsored paths are unset, Free can fall through to the **public Petals
+volunteer swarm** (`packages/agent/src/petals-public-pool.ts`) — but only if the operator
+turns it on with `PETALS_PUBLIC_POOL=1`. It is **off by default**.
+
+That path costs Vantage $0 and is not unlimited or SLA-backed: peers drop constantly and
+throughput is a few tokens a second. The reason it is opt-in is not reliability, though.
+Petals' own documentation says not to send confidential data to the public swarm — the
+peers serving the model layers can read the prompt, read the reply, and change the reply
+on the way back, and they see the caller's IP. A workspace holding student names, pick
+lists and sponsor contacts should not be opted into that by the absence of an API key.
+
+For a team that wants $0 AI and keeps its data on its own hardware, the better answer is a
+local OpenAI-compatible server (Ollama or LM Studio) pointed at by a base URL — same price,
+no third party. `scripts/pi/install-free-relay.sh` sets one up.
+
 ## Legacy plan codes and the 0481 remap
 
 Old codes were: Free $0 · Access $69 · Individual Pro $109 · Individual Max $159 ·

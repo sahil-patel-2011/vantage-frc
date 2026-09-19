@@ -130,12 +130,27 @@ describe("neon-preflight", () => {
 });
 
 describe("Neon OSS program evidence in-tree", () => {
-  it("has an MIT LICENSE at the repo root referenced from README", () => {
+  /**
+   * Neon's open-source program asks for a recognised open-source licence, a
+   * self-hostable project, and docs showing how to build on Neon.
+   *
+   * The licence moved from MIT to PolyForm Noncommercial 1.0.0, which is a
+   * recognised, standard licence but is source-available rather than
+   * OSI-approved — every OSI licence must permit commercial use, and this
+   * project deliberately does not. That may affect eligibility; it is a
+   * decision about the project, not a bug in it.
+   *
+   * So this asserts what is actually true and still in our control: a real
+   * licence file naming itself, and a README that points at the self-hosting
+   * and contributing docs the programme asks for.
+   */
+  it("has a named LICENSE at the repo root and the self-host docs README links", () => {
     const license = readFileSync("LICENSE", "utf8");
-    expect(license.startsWith("MIT License")).toBe(true);
-    expect(license).toContain("Permission is hereby granted");
+    expect(license.trim().length).toBeGreaterThan(400);
+    expect(license).toMatch(/^# PolyForm Noncommercial License 1\.0\.0/);
+    expect(license).toContain("Required Notice:");
     const readme = readFileSync("README.md", "utf8");
-    expect(readme).toMatch(/\[MIT(?: License)?\]\(LICENSE\)|MIT License/);
+    expect(readme).toMatch(/\[PolyForm Noncommercial 1\.0\.0\]\(LICENSE\)/);
     expect(readme).toContain("docs/NEON.md");
     expect(readme).toContain("CONTRIBUTING.md");
   });

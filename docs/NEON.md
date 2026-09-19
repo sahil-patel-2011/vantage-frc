@@ -216,7 +216,7 @@ them again.
 The same migrations and roles run on any Postgres 16/17 (Docker, a school
 server, a VM). Use `DATABASE_DRIVER=pg` (auto for non-`neon.tech` hosts).
 `sslmode=disable` is accepted only for localhost. That is the “freely hostable”
-path: MIT license + this repo + a Postgres you control.
+path: the PolyForm Noncommercial licence + this repo + a Postgres you control.
 
 A later **Supabase Postgres host** cutover is documented in
 `docs/SUPABASE_CUTOVER.md`. It is not the default. Do not put `anon` /
@@ -228,5 +228,6 @@ A later **Supabase Postgres host** cutover is documented in
   (and into Vercel Production when you deploy).
 - Set `CRON_SECRET` and the rest of the required vars in
   [`docs/DEPLOYMENT.md`](DEPLOYMENT.md).
-- GitHub’s license picker picks up root [`LICENSE`](../LICENSE) (MIT) on the
+- GitHub’s license picker picks up root [`LICENSE`](../LICENSE)
+  (PolyForm Noncommercial 1.0.0) on the
   default branch once this file is merged.

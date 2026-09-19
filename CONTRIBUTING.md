@@ -116,5 +116,11 @@ Open a GitHub issue. For anything security-related, see
 
 ## License
 
-By contributing you agree the work is released under the MIT License in
-[`LICENSE`](LICENSE).
+By contributing you agree the work is released under the PolyForm Noncommercial 1.0.0
+licence in [`LICENSE`](LICENSE) — the same terms the rest of the project uses, so what
+comes in can go back out.
+
+That licence keeps the source public and free for teams, schools and anyone learning from
+it, and reserves selling it. It is source-available rather than OSI "open source", because
+every OSI licence has to allow commercial use. The reasoning is in the
+[README](README.md#license-and-community).

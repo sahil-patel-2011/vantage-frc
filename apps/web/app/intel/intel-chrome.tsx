@@ -6,6 +6,7 @@ import {
   INTEL_RELATED_INCLUDE,
   intelRelatedLinks,
   intelSetupSteps,
+  INTEL_PAGE_DESCRIPTION,
   intelShellCopy,
   type IntelNextAction,
   type IntelShellKind,
@@ -94,7 +95,9 @@ export function IntelShell({
       <PageHeader
         breadcrumbs="Competition / Research"
         title="Research"
-        description={copy.description}
+        /* Not copy.description — that is the empty state's line, and it is
+           printed again by the EmptyState directly below this header. */
+        description={INTEL_PAGE_DESCRIPTION}
       >
         <IntelRelatedStrip orgId={orgId} />
       </PageHeader>
