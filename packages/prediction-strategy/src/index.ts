@@ -33,10 +33,23 @@ export type { MatchPlan } from "./match-plan";
 export type {
   AllianceScorePrediction,
   ScoreFeatureRow,
+  ScorePredictionBasis,
   ScorePredictionMetrics,
   ScorePredictionSkip,
   TeamScoreFeatures,
 } from "./calibrated-score";
+export {
+  CONFIDENT_MATCHES,
+  MIN_MATCHES_TO_STAND_ALONE,
+  canStandAlone,
+  ratingsByTeam,
+  ratingsFromScouting,
+} from "./scouting-rating";
+export type {
+  ScoutedMatchRow,
+  ScoutedTeamRating,
+  ScoutingConfidence,
+} from "./scouting-rating";
 export {
   allianceScoreSpread,
   lovatWinProbability,

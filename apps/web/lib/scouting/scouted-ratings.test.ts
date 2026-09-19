@@ -1,0 +1,154 @@
+import { describe, expect, it } from "vitest";
+import type { FormulaExpression } from "@vantage/scouting";
+import {
+  isScoutedRatingsUnavailable,
+  scoutedRowsFromEntries,
+  type OrgValueFormula,
+  type ScoutEntryRow,
+} from "./scouted-ratings";
+
+const field = (name: string): FormulaExpression => ({ op: "field", field: name });
+const times = (name: string, by: number): FormulaExpression => ({
+  op: "multiply",
+  args: [field(name), { op: "constant", value: by }],
+});
+
+const AUTO: OrgValueFormula = { name: "Auto", expression: times("auto_fuel", 4) };
+const TELEOP: OrgValueFormula = { name: "Teleop", expression: times("teleop_fuel", 2) };
+const TOTAL: OrgValueFormula = {
+  name: "Total points",
+  expression: { op: "add", args: [times("auto_fuel", 4), times("teleop_fuel", 2)] },
+};
+
+function entry(over: Partial<ScoutEntryRow> & { teamKey: string; matchKey: string }): ScoutEntryRow {
+  return { payload: {}, ...over };
+}
+
+/**
+ * Enough teams and matches for a rating to stand on its own.
+ *
+ * Auto is held constant so the total is strictly increasing in `t`. With auto
+ * varying, `auto*4 + teleop*2` ties teams 405 and 407 at 28 apiece and the
+ * ranking assertion below becomes a coin flip on the tiebreak.
+ */
+function eventEntries(): ScoutEntryRow[] {
+  const rows: ScoutEntryRow[] = [];
+  for (let t = 0; t < 8; t += 1) {
+    for (let m = 0; m < 4; m += 1) {
+      rows.push(
+        entry({
+          teamKey: `frc${400 + t}`,
+          matchKey: `qm${m}`,
+          payload: { auto_fuel: 2, teleop_fuel: 5 + t },
+        }),
+      );
+    }
+  }
+  return rows;
+}
+
+describe("scoutedRowsFromEntries", () => {
+  it("asks for a formula instead of guessing what a game action is worth", () => {
+    const result = scoutedRowsFromEntries(eventEntries(), []);
+
+    expect(isScoutedRatingsUnavailable(result)).toBe(true);
+    if (!isScoutedRatingsUnavailable(result)) return;
+    expect(result.needsFormula).toBe(true);
+    expect(result.reason).toContain("Scouting formulas");
+  });
+
+  it("scores entries with the team's own phase formulas", () => {
+    const result = scoutedRowsFromEntries(
+      [
+        entry({ teamKey: "frc1", matchKey: "qm1", payload: { auto_fuel: 3, teleop_fuel: 10 } }),
+        entry({ teamKey: "frc1", matchKey: "qm2", payload: { auto_fuel: 1, teleop_fuel: 10 } }),
+      ],
+      [AUTO, TELEOP],
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.basis).toBe("phase");
+    const rating = result.ratings[0]!;
+    expect(rating.meanAuto).toBe(8); // (12 + 4) / 2
+    expect(rating.meanTeleop).toBe(20);
+    expect(rating.meanTotal).toBe(28);
+  });
+
+  it("accepts a single total formula when there is no phase split", () => {
+    const result = scoutedRowsFromEntries(
+      [entry({ teamKey: "frc1", matchKey: "qm1", payload: { auto_fuel: 2, teleop_fuel: 6 } })],
+      [TOTAL],
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.basis).toBe("total");
+    expect(result.ratings[0]!.meanTotal).toBe(20);
+  });
+
+  it("matches formula names loosely so casing and spacing do not matter", () => {
+    const result = scoutedRowsFromEntries(
+      [entry({ teamKey: "frc1", matchKey: "qm1", payload: { auto_fuel: 1, teleop_fuel: 1 } })],
+      [{ name: "  TOTAL_POINTS  ", expression: TOTAL.expression }],
+    );
+    expect(result.ok).toBe(true);
+  });
+
+  it("carries a disabled robot through as a real zero", () => {
+    const result = scoutedRowsFromEntries(
+      [
+        entry({ teamKey: "frc1", matchKey: "qm1", payload: { teleop_fuel: 10 } }),
+        entry({ teamKey: "frc1", matchKey: "qm2", payload: { disabled: true, teleop_fuel: 0 } }),
+      ],
+      [TELEOP],
+    );
+
+    if (!result.ok) throw new Error("expected ratings");
+    expect(result.ratings[0]!.disabledRate).toBe(0.5);
+    expect(result.ratings[0]!.meanTotal).toBe(10);
+  });
+
+  it("reads the season's climb field without being told which one it is", () => {
+    const result = scoutedRowsFromEntries(
+      [
+        entry({ teamKey: "frc1", matchKey: "qm1", payload: { tower_level: "L2", teleop_fuel: 1 } }),
+        entry({ teamKey: "frc1", matchKey: "qm2", payload: { tower_level: "none", teleop_fuel: 1 } }),
+      ],
+      [TELEOP],
+    );
+
+    if (!result.ok) throw new Error("expected ratings");
+    expect(result.ratings[0]!.climbRate).toBe(0.5);
+  });
+
+  it("reports no climb rate when the form has no climb field", () => {
+    const result = scoutedRowsFromEntries(
+      [entry({ teamKey: "frc1", matchKey: "qm1", payload: { teleop_fuel: 1 } })],
+      [TELEOP],
+    );
+
+    if (!result.ok) throw new Error("expected ratings");
+    expect(result.ratings[0]!.climbRate).toBeNull();
+  });
+
+  it("rates a whole event's worth of entries", () => {
+    const result = scoutedRowsFromEntries(eventEntries(), [AUTO, TELEOP]);
+
+    if (!result.ok) throw new Error("expected ratings");
+    expect(result.ratings).toHaveLength(8);
+    expect(result.ratings[0]!.teamKey).toBe("frc407");
+    expect(result.ratings.every((rating) => rating.matches === 4)).toBe(true);
+    // Ranked strongest first, with no ties to break.
+    const totals = result.ratings.map((rating) => rating.shrunkTotal);
+    expect([...totals].sort((a, b) => b - a)).toEqual(totals);
+  });
+
+  it("treats a missing payload as an empty one rather than throwing", () => {
+    const result = scoutedRowsFromEntries(
+      [{ teamKey: "frc1", matchKey: "qm1", payload: undefined as never }],
+      [TELEOP],
+    );
+    expect(result.ok).toBe(true);
+  });
+});

@@ -2,6 +2,8 @@ import {
   isScorePredictionSkip,
   matchPlanFromPrediction,
   predictAllianceScores,
+  type ScorePredictionBasis,
+  type ScoutedTeamRating,
   type TeamScoreFeatures,
 } from "@vantage/prediction-strategy";
 
@@ -22,6 +24,8 @@ export type NextMatchScoreCard = {
   auto: string;
   defend: string;
   climb: string;
+  /** Where the number came from, so the card can say so. */
+  basis: ScorePredictionBasis;
 };
 
 export function seasonYearFromEventKey(eventKey: string | null | undefined): number | null {
@@ -30,7 +34,16 @@ export function seasonYearFromEventKey(eventKey: string | null | undefined): num
   return Number.isInteger(year) && year >= 1992 && year <= 2100 ? year : null;
 }
 
-export function featuresForAlliance(keys: string[], rows: readonly EpaMetricRow[]): TeamScoreFeatures[] {
+export function featuresForAlliance(
+  keys: string[],
+  rows: readonly EpaMetricRow[],
+  /**
+   * This team's own scouting, keyed by team. Supplying it is what makes a
+   * prediction possible at an event with no official numbers, and what lets
+   * reliability and climb rate inform one that has them.
+   */
+  scouted?: ReadonlyMap<string, ScoutedTeamRating>,
+): TeamScoreFeatures[] {
   const byKey = new Map(rows.map((row) => [row.teamKey, row]));
   return keys.map((teamKey) => {
     const row = byKey.get(teamKey);
@@ -40,22 +53,30 @@ export function featuresForAlliance(keys: string[], rows: readonly EpaMetricRow[
       teleopEpa: row?.teleopEpa ?? null,
       endgameEpa: row?.endgameEpa ?? null,
       opr: row?.opr ?? null,
+      scouted: scouted?.get(teamKey) ?? null,
     };
   });
 }
 
-/** Honest alliance-score card, or a skip when EPA/OPR is missing. */
+/**
+ * Honest alliance-score card, or a skip when there is nothing to predict from.
+ *
+ * "Nothing to predict from" now means no official rating *and* not enough of
+ * this team's own scouting — which is the change that makes the card work at
+ * an off-season event, where official ratings never arrive.
+ */
 export function nextMatchScoreCard(input: {
   matchKey: string;
   ourAlliance: "red" | "blue" | null;
   redKeys: string[];
   blueKeys: string[];
   rows: readonly EpaMetricRow[];
+  scouted?: ReadonlyMap<string, ScoutedTeamRating>;
 }): NextMatchScoreCard | { skipReason: string } {
   const prediction = predictAllianceScores({
     matchKey: input.matchKey,
-    red: featuresForAlliance(input.redKeys, input.rows),
-    blue: featuresForAlliance(input.blueKeys, input.rows),
+    red: featuresForAlliance(input.redKeys, input.rows, input.scouted),
+    blue: featuresForAlliance(input.blueKeys, input.rows, input.scouted),
   });
   if (isScorePredictionSkip(prediction)) {
     return { skipReason: prediction.skipReason };
@@ -70,6 +91,7 @@ export function nextMatchScoreCard(input: {
     auto: plan.auto,
     defend: plan.defend,
     climb: plan.climb,
+    basis: prediction.basis,
   };
 }
 

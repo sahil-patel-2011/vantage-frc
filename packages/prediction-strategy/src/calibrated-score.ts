@@ -9,6 +9,13 @@
  * reports the honest MAE / within-±3 rate on whatever rows you pass in.
  */
 
+
+import {
+  MIN_MATCHES_TO_STAND_ALONE,
+  canStandAlone,
+  type ScoutedTeamRating,
+} from "./scouting-rating";
+
 export type ScoreFeatureRow = {
   matchKey: string;
   eventType?: "week" | "district" | "regional" | "championship" | "other";
@@ -31,6 +38,16 @@ export type TeamScoreFeatures = {
   scoutCycles?: number | null;
   climbRate?: number | null;
   defenseFlag?: boolean;
+  /**
+   * What this team's own scouts recorded about this robot, already converted
+   * to points by the org's value formula.
+   *
+   * This is the only input that exists at an off-season event, a week-0
+   * scrimmage, or the first morning of week 1, where Statbotics and the OPR
+   * family have nothing yet. When there is no official rating it carries the
+   * prediction on its own; when there is one it nudges it.
+   */
+  scouted?: ScoutedTeamRating | null;
 };
 
 export type AllianceScorePrediction = {
@@ -41,7 +58,18 @@ export type AllianceScorePrediction = {
   errorBand: number;
   drivers: string[];
   modelVersion: "calibrated-linear-v2";
+  /**
+   * Where the number came from, so the screen can say so.
+   *
+   * `"official"` — every robot had a Statbotics or OPR-family rating.
+   * `"scouting"` — none did, and the estimate is built entirely from what this
+   *   team watched. This is the normal case at an off-season event.
+   * `"mixed"`   — some of each.
+   */
+  basis: ScorePredictionBasis;
 };
+
+export type ScorePredictionBasis = "official" | "scouting" | "mixed";
 
 export type ScorePredictionSkip = {
   matchKey: string;
@@ -100,13 +128,35 @@ function tanh(value: number): number {
   return (exp - 1) / (exp + 1);
 }
 
+/**
+ * How much a scouting-only rating is trusted as a stand-in for EPA.
+ *
+ * Not 1.0. A scouting mean is one team's view of a robot, from one vantage
+ * point, without the cross-checking a field-wide model gets — and the points
+ * come from the org's own formula, which may weight the game differently from
+ * the official breakdown. Discounting it slightly keeps a scouting-only
+ * prediction from reading as confidently as one built on a season of results.
+ */
+const SCOUTED_AS_RATING = 0.9;
+
 function teamContribution(team: TeamScoreFeatures): number | null {
   const auto = team.autoEpa;
   const teleop = team.teleopEpa;
   const endgame = team.endgameEpa;
-  if (auto == null && teleop == null && endgame == null && team.opr == null && team.ccwm == null) {
-    return null;
+  const hasOfficial =
+    auto != null || teleop != null || endgame != null || team.opr != null || team.ccwm != null;
+
+  if (!hasOfficial) {
+    // Nothing official exists for this robot. If the team watched it enough
+    // times, that is a real rating and the match is predictable after all —
+    // this is the whole point at an off-season event.
+    if (!canStandAlone(team.scouted)) return null;
+    const scouted = team.scouted!;
+    const climb = scouted.climbRate == null ? 0 : (scouted.climbRate - 0.5) * 6;
+    const defense = scouted.defenseRate >= 0.5 ? -2 : 0;
+    return scouted.shrunkTotal * SCOUTED_AS_RATING + climb + defense;
   }
+
   const epa = (auto ?? 0) + (teleop ?? 0) + (endgame ?? 0);
   let rating = epa;
   if (team.opr != null && team.ccwm != null) {
@@ -119,9 +169,51 @@ function teamContribution(team: TeamScoreFeatures): number | null {
   const form = tanh((team.recentFormDelta ?? 0) / 12) * 8;
   const scoutRaw =
     team.scoutCycles == null ? 0 : Math.min(12, Math.max(-8, team.scoutCycles - 8)) * 0.35;
-  const climb = team.climbRate == null ? 0 : (team.climbRate - 0.5) * 6;
-  const defense = team.defenseFlag ? -2 : 0;
-  return rating + form + scoutRaw * SCOUT_SHRINK + climb + defense;
+  const climb = (team.climbRate ?? team.scouted?.climbRate) == null
+    ? 0
+    : ((team.climbRate ?? team.scouted!.climbRate!) - 0.5) * 6;
+  const defense = team.defenseFlag || (team.scouted?.defenseRate ?? 0) >= 0.5 ? -2 : 0;
+  return rating + form + scoutRaw * SCOUT_SHRINK + climb + defense + reliabilityAdjustment(team, rating);
+}
+
+/**
+ * A robot that dies contributes nothing that match, and the official rating
+ * does not know it.
+ *
+ * EPA is built from final scores, so a breakdown shows up only as a bad match
+ * mixed in with good ones. The scouts watching know the difference between a
+ * robot having an off match and a robot that has been towed off the field
+ * twice today, and that difference is worth points in expectation.
+ *
+ * Scaled against the team's own rating rather than a flat penalty: losing a
+ * 60-point robot for a third of its matches costs far more than losing a
+ * 10-point one, and the adjustment is capped so a small sample of bad luck
+ * cannot erase a team.
+ */
+function reliabilityAdjustment(team: TeamScoreFeatures, rating: number): number {
+  const scouted = team.scouted;
+  if (!scouted || scouted.matches < MIN_MATCHES_TO_STAND_ALONE) return 0;
+  if (scouted.disabledRate <= 0) return 0;
+  return -Math.min(0.3, scouted.disabledRate) * Math.max(0, rating);
+}
+
+/**
+ * Why this robot has no number, in a form somebody can act on.
+ *
+ * "has no rating yet" is true and useless. At an off-season event nothing
+ * official is ever coming, so the only thing that can change the answer is
+ * scouting another match — and the message should say that, and say how close
+ * the team already is.
+ */
+function missingReason(team: TeamScoreFeatures): string {
+  const number = team.teamKey.replace(/^frc/, "");
+  const scouted = team.scouted;
+  if (scouted && scouted.matches > 0) {
+    const need = MIN_MATCHES_TO_STAND_ALONE - scouted.matches;
+    const plural = need === 1 ? "match" : "matches";
+    return `${number} has no official rating — scout ${need} more ${plural} and we can estimate it`;
+  }
+  return `${number} has no official rating and nobody has scouted it yet`;
 }
 
 function allianceTotal(
@@ -134,7 +226,7 @@ function allianceTotal(
   for (const team of side) {
     const contribution = teamContribution(team);
     if (contribution == null) {
-      missing.push(`${team.teamKey} has no rating yet`);
+      missing.push(missingReason(team));
       continue;
     }
     total += contribution;
@@ -182,14 +274,54 @@ export function predictAllianceScores(
   }
   const redDrivers = driversFor(row.red, "red");
   const blueDrivers = driversFor(row.blue, "blue");
+  const basis = basisFor([...row.red, ...row.blue]);
+  const drivers = [...redDrivers, ...blueDrivers].slice(0, 3);
+  if (basis === "scouting") {
+    // Say it on the card, not just in a field the UI might ignore.
+    drivers.unshift("Estimated from your scouting — no official numbers exist for this event yet");
+  }
   return {
     matchKey: row.matchKey,
     redPredicted: Math.round(red.total * 10) / 10,
     bluePredicted: Math.round(blue.total * 10) / 10,
-    errorBand: resolveErrorBand(options?.errorBand),
-    drivers: [...redDrivers, ...blueDrivers].slice(0, 3),
+    errorBand: widenForBasis(resolveErrorBand(options?.errorBand), basis),
+    drivers: drivers.slice(0, 3),
     modelVersion: MODEL_VERSION,
+    basis,
   };
+}
+
+function hasOfficialRating(team: TeamScoreFeatures): boolean {
+  return (
+    team.autoEpa != null ||
+    team.teleopEpa != null ||
+    team.endgameEpa != null ||
+    team.opr != null ||
+    team.ccwm != null
+  );
+}
+
+function basisFor(teams: readonly TeamScoreFeatures[]): ScorePredictionBasis {
+  const rated = teams.filter((team) => teamContribution(team) != null);
+  if (rated.length === 0) return "official";
+  const official = rated.filter(hasOfficialRating).length;
+  if (official === rated.length) return "official";
+  if (official === 0) return "scouting";
+  return "mixed";
+}
+
+/**
+ * A number built from one team's scouting deserves a wider band than one built
+ * from a season of results, and saying so is the difference between a useful
+ * estimate and a claim the product cannot back.
+ */
+const SCOUTING_BAND_MULTIPLIER = 1.6;
+const MIXED_BAND_MULTIPLIER = 1.25;
+
+function widenForBasis(band: number, basis: ScorePredictionBasis): number {
+  if (basis === "scouting") return Math.round(band * SCOUTING_BAND_MULTIPLIER);
+  if (basis === "mixed") return Math.round(band * MIXED_BAND_MULTIPLIER);
+  return band;
 }
 
 export function isScorePredictionSkip(
