@@ -1,4 +1,5 @@
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
+import { gotoAsTeam } from "./active-org";
 import { baseOrigin, signInAs } from "./session";
 
 /**
@@ -75,7 +76,12 @@ test("a part can be marked as a spare from the page that owns it, and Spare Fore
   const startingBins = Number(before.json.spareBinCount ?? 0);
   const name = `Spare gearbox ${Date.now()}`;
 
-  await owner.page.goto(withOrg("/inventory"));
+  // As the team, not merely with an org id in the query string. This context
+  // is created fresh in beforeAll and has no active team, so the page painted
+  // its "No team selected" state — with the h1 the spec waits for, and without
+  // the board underneath it. The failure then landed on the Add button and
+  // read as the button having been renamed.
+  await gotoAsTeam(owner.page, "/inventory");
   await expect(owner.page.getByRole("heading", { level: 1, name: "Inventory & BOM" })).toBeVisible();
   await owner.page.getByRole("button", { name: "Add item", exact: true }).click();
 

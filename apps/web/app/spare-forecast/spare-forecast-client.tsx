@@ -289,6 +289,7 @@ export default function SpareForecastClient() {
   });
   // Header strip drops destinations the Next-actions panel already offers.
   const nextActionHrefs = new Set(nextActions.map((action) => action.href));
+  const fmeaHref = hubHref("/build", "fmea", orgId);
   const relatedLinks = spareForecastRelatedLinks(orgId, {
     include: [...SPARE_FORECAST_RELATED_INCLUDE],
   }).filter((link) => !nextActionHrefs.has(link.href));
@@ -449,9 +450,15 @@ export default function SpareForecastClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <Button as="a" variant="primary" href={hubHref("/build", "fmea", orgId)}>
-            Open FMEA
-          </Button>
+          {/* Same rule the "no spare bins" state above already follows: only
+              what Next actions is not already offering. Both pointed at the
+              FMEA tab, one under the other, so the page asked twice for the
+              same thing in two different voices. */}
+          {nextActionHrefs.has(fmeaHref) ? null : (
+            <Button as="a" variant="primary" href={fmeaHref}>
+              Open FMEA
+            </Button>
+          )}
         </EmptyState>
       ) : null}
 
