@@ -127,6 +127,27 @@ try {
     throw new Error(`No seeded organization ${ORG_ID}. Run scripts/seed-dev.mjs first.`);
   }
 
+  /**
+   * Let this team sign in with a password.
+   *
+   * `DEFAULT_ORG_AUTH_POLICY` disallows it — correct for a real team, and the
+   * trigger on `organizations` applies that default to every new org
+   * including this one. The fixtures sign in with a password because that is
+   * the only method a script can drive, so every data-backed page answered
+   * 403 "This team does not allow the way you signed in" and the whole suite
+   * measured the re-authentication wall instead of the product. Signed-in
+   * specs were green while testing nothing.
+   *
+   * Scoped to this seeded org, in a database whose name must contain "test"
+   * or "ci" for the suite to run at all.
+   */
+  await db.query(
+    `INSERT INTO org_auth_policies (org_id, allow_password)
+     VALUES ($1::uuid, true)
+     ON CONFLICT (org_id) DO UPDATE SET allow_password = true, updated_at = now()`,
+    [ORG_ID],
+  );
+
   for (const account of ACCOUNTS) {
     await db.query(
       `INSERT INTO users (id, email, name, email_verified)

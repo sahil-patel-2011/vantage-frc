@@ -77,17 +77,18 @@ test("dashboard editor rearranges widgets with drag-and-drop", async ({ page }) 
   await expect(page.getByTestId("dash-grid-item")).toHaveCount(beforeCount + 1);
 });
 
-test("product shell keeps four favorite apps plus an explicit all-apps button", async ({ page }) => {
+test("product shell keeps four favorite apps and one way to see the rest", async ({ page }) => {
   const island = page.getByRole("navigation", { name: "Primary apps" });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/dashboard");
   await expect(island).toBeVisible();
   await expect(island.getByRole("link")).toHaveCount(4);
   await expect(island.getByRole("link", { name: "Home" })).toBeVisible();
-  await expect(island.getByRole("button", { name: "Open all apps" })).toBeVisible();
-  // The topbar hamburger used to open this same panel. One opener now.
-  await expect(page.getByRole("button", { name: /Open navigation/ })).toHaveCount(0);
-  await island.getByRole("button", { name: "Open all apps" }).click();
+  // Four apps and nothing else. The island used to carry a fifth "All" button
+  // that opened the drawer the hamburger already opens — a duplicate sitting
+  // among Team, Compete, Scout and Build as if it were one of your apps.
+  await expect(island.getByRole("button")).toHaveCount(0);
+  await page.getByRole("button", { name: "Menu and search" }).click();
   const drawer = page.getByRole("complementary", { name: "Product navigation" });
   await expect(drawer).toBeVisible();
   // Search is a field in the panel, not a button that opened a second overlay.

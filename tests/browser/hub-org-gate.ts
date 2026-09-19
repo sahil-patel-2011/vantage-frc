@@ -15,10 +15,18 @@ export function hubTeamGate(page: Page) {
  * Standalone pages that classify a 401 through `loadFailureCopy` paint this
  * instead of "Could not load X". The fixture cookie is not a Better Auth
  * session, so GHA without Postgres honestly says the session ended.
+ *
+ * Kept in step with `loadFailureCopy` in `apps/web/lib/ui/load-failure.ts` —
+ * every title it can produce belongs here. "Sign in again to open this" was
+ * added when 403s about *how* you signed in stopped being reported as a role
+ * problem; a team whose policy disallows password sign-in gets that one on
+ * every data-backed page, and until this matcher learned it, a whole family
+ * of "still loads after the split" specs failed on a page that was loading
+ * exactly as designed.
  */
 export function loadFailureHeading(page: Page) {
   return page.getByRole("heading", {
-    name: /Your session ended|You don't have access to this|You're offline|Could not load|Something went wrong|Not set up yet/i,
+    name: /Your session ended|Sign in again to open this|You don't have access to this|You're offline|Could not load|Something went wrong|Not set up yet/i,
   });
 }
 
