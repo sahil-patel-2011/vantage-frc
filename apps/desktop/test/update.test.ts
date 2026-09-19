@@ -53,36 +53,40 @@ describe("version parsing", () => {
   });
 });
 
+// Pinned to win32 throughout. These test *validation* — bad hosts, bad
+// digests, junk input — not platform selection, and `parseManifest` defaults
+// to `process.platform`. Left unpinned they passed on a Windows box and failed
+// on CI's Linux runner, which is the whole class of bug CI exists to catch.
 describe("manifest validation", () => {
   it("accepts a well-formed manifest", () => {
-    expect(parseManifest({ ...MANIFEST })).toEqual(MANIFEST);
+    expect(parseManifest({ ...MANIFEST }, "win32")).toEqual(MANIFEST);
   });
 
   it("refuses a non-https or off-allowlist download host", () => {
-    expect(parseManifest({ ...MANIFEST, url: "http://github.com/x/y/z.exe" })).toBeNull();
-    expect(parseManifest({ ...MANIFEST, url: "https://evil.example/Vantage-setup.exe" })).toBeNull();
+    expect(parseManifest({ ...MANIFEST, url: "http://github.com/x/y/z.exe" }, "win32")).toBeNull();
+    expect(parseManifest({ ...MANIFEST, url: "https://evil.example/Vantage-setup.exe" }, "win32")).toBeNull();
     expect(
-      parseManifest({ ...MANIFEST, url: "https://vantage-frc-web.vercel.app/downloads/setup.exe" }),
+      parseManifest({ ...MANIFEST, url: "https://vantage-frc-web.vercel.app/downloads/setup.exe" }, "win32"),
     ).not.toBeNull();
   });
 
   it("refuses a missing or malformed digest — the digest is the whole trust story", () => {
-    expect(parseManifest({ ...MANIFEST, sha256: "" })).toBeNull();
-    expect(parseManifest({ ...MANIFEST, sha256: "abc" })).toBeNull();
-    expect(parseManifest({ ...MANIFEST, sha256: "Z".repeat(64) })).toBeNull();
+    expect(parseManifest({ ...MANIFEST, sha256: "" }, "win32")).toBeNull();
+    expect(parseManifest({ ...MANIFEST, sha256: "abc" }, "win32")).toBeNull();
+    expect(parseManifest({ ...MANIFEST, sha256: "Z".repeat(64) }, "win32")).toBeNull();
   });
 
   it("defaults an absent floor to 0.0.0 and clamps one above the release", () => {
-    const noFloor = parseManifest({ ...MANIFEST, minimumVersion: undefined });
+    const noFloor = parseManifest({ ...MANIFEST, minimumVersion: undefined }, "win32");
     expect(noFloor?.minimumVersion).toBe("0.0.0");
-    const silly = parseManifest({ ...MANIFEST, minimumVersion: "9.9.9" });
+    const silly = parseManifest({ ...MANIFEST, minimumVersion: "9.9.9" }, "win32");
     expect(silly?.minimumVersion).toBe("0.3.0");
   });
 
   it("rejects junk", () => {
-    expect(parseManifest(null)).toBeNull();
-    expect(parseManifest("0.3.0")).toBeNull();
-    expect(parseManifest({ version: "nope", url: MANIFEST.url, sha256: MANIFEST.sha256 })).toBeNull();
+    expect(parseManifest(null, "win32")).toBeNull();
+    expect(parseManifest("0.3.0", "win32")).toBeNull();
+    expect(parseManifest({ version: "nope", url: MANIFEST.url, sha256: MANIFEST.sha256 }, "win32")).toBeNull();
   });
 
   it("builds the GitHub release manifest URL", () => {
@@ -358,20 +362,20 @@ describe("release notes", () => {
   };
 
   it("carries what changed, in three plain lists", () => {
-    const parsed = parseManifest({ ...MANIFEST, releaseNotes: notes });
+    const parsed = parseManifest({ ...MANIFEST, releaseNotes: notes }, "win32");
     expect(parsed?.releaseNotes).toEqual(notes);
   });
 
   it("is absent rather than empty when there is no headline", () => {
-    expect(parseManifest({ ...MANIFEST, releaseNotes: { added: ["x"] } })?.releaseNotes).toBeUndefined();
-    expect(parseManifest({ ...MANIFEST, releaseNotes: "nope" })?.releaseNotes).toBeUndefined();
+    expect(parseManifest({ ...MANIFEST, releaseNotes: { added: ["x"] } }, "win32")?.releaseNotes).toBeUndefined();
+    expect(parseManifest({ ...MANIFEST, releaseNotes: "nope" }, "win32")?.releaseNotes).toBeUndefined();
   });
 
   it("drops anything that is not a line of text", () => {
     const parsed = parseManifest({
       ...MANIFEST,
       releaseNotes: { headline: "Hi", added: ["real", 7, null, "  "], fixed: "not a list" },
-    });
+    }, "win32");
     expect(parsed?.releaseNotes?.added).toEqual(["real"]);
     expect(parsed?.releaseNotes?.fixed).toEqual([]);
   });
@@ -383,7 +387,7 @@ describe("release notes", () => {
         headline: "x".repeat(500),
         added: Array.from({ length: 40 }, (_, i) => `line ${i}`),
       },
-    });
+    }, "win32");
     expect(parsed?.releaseNotes?.headline.length).toBe(200);
     expect(parsed?.releaseNotes?.added).toHaveLength(8);
   });
@@ -413,5 +417,34 @@ describe("not stranding shells that are already installed", () => {
     // Better to offer no update than to check a DMG against an .exe hash and
     // either fail confusingly or, worse, pass something unverified.
     expect(parseManifest(missingMacDigest, "darwin")).toBeNull();
+  });
+});
+
+describe("the platform a manifest is read for", () => {
+  it("is an argument, so a test does not depend on the machine running it", () => {
+    // These six assertions were the CI failure. `parseManifest` defaults to
+    // `process.platform`, and the legacy fixture carries only a bare Windows
+    // `url`, so the same test passed on a Windows laptop and failed on CI's
+    // Linux runner. Asserting all three here means the behaviour is covered
+    // rather than inherited.
+    const legacy = { ...MANIFEST };
+    expect(parseManifest(legacy, "win32")).toEqual(MANIFEST);
+    expect(parseManifest(legacy, "darwin")).toBeNull();
+    expect(parseManifest(legacy, "linux")).toBeNull();
+  });
+
+  it("offers nothing on a platform with no build rather than the wrong file", () => {
+    const multi = {
+      version: "0.3.0",
+      minimumVersion: "0.1.0",
+      downloads: {
+        win_nsis: `${REL}/Vantage-0.3.0-win-x64-setup.exe`,
+        mac_dmg: `${REL}/Vantage-0.3.0-mac-arm64.dmg`,
+      },
+      sha256ByDownload: { win_nsis: "a".repeat(64), mac_dmg: "b".repeat(64) },
+      sha256: "a".repeat(64),
+    };
+    expect(parseManifest(multi, "linux")).toBeNull();
+    expect(parseManifest(multi, "freebsd")).toBeNull();
   });
 });
