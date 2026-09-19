@@ -69,9 +69,23 @@ The full list of screens is in [docs/FEATURE_MAP.md](docs/FEATURE_MAP.md).
   portable) and macOS (DMG) builds.
 - **Optional team hardware:** a storage node for large files, a Raspberry Pi relay for AI, and a
   Fusion 360 relay — all paired to a team with a code, never exposed to the internet.
-- **Packages:** shared logic lives in `packages/*` (database, auth and tenancy, billing, reference
-  data, scouting, prediction, CAD, agents, import/export). See
-  [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+- **Packages:** shared logic lives in `packages/*`. Each of the core ones has a README stating what
+  it is for and — more usefully — what it refuses to do:
+
+  | Package | What it owns | The rule that matters |
+  | --- | --- | --- |
+  | [`db`](packages/db/README.md) | Schema, migrations, both database roles | Every request query goes through `withRls`; product code never imports `/admin` |
+  | [`core`](packages/core/README.md) | Identity, membership, tenancy, notifications | Access is closed — provisioned owners, invited emails, waitlist for everyone else |
+  | [`billing`](packages/billing/README.md) | Credit caps, usage ledger, BYO keys | Balance is summed from the ledger; there is no cached counter to be wrong |
+  | [`agent`](packages/agent/README.md) | Choosing and calling a model | Nothing calls a provider outside `meteredAI`; the public swarm is opt-in |
+  | [`scouting`](packages/scouting/README.md) | Forms, entries, conflicts, coverage | A scout never types their own name |
+  | [`prediction-strategy`](packages/prediction-strategy/README.md) | Match prediction and pick-list maths | Never decides what a game action is worth, and skips rather than guesses |
+  | [`reference`](packages/reference/README.md) | TBA / Statbotics / FIRST data | A shared rate-limited cache — read Neon, never poll per page view |
+  | [`game-year`](packages/game-year/README.md) | Per-season packs and starting schemas | A season with no published manual has no scoring keys |
+  | [`cad`](packages/cad/README.md) | Onshape and Fusion automation | Modelling happens in Onshape; features are read from `featurespecs`, not hard-coded |
+
+  The wider map is [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md); where a feature lives on screen is
+  [docs/FEATURE_MAP.md](docs/FEATURE_MAP.md).
 
 ## Working on the code
 
