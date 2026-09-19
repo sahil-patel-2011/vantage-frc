@@ -14,9 +14,22 @@ async function openStudent(page: Page, path: string) {
   await expect(page.locator("body")).not.toContainText("Application error");
 }
 
+/**
+ * None of this jargon is *on screen*.
+ *
+ * `toContainText` reads textContent, which includes what is inside a closed
+ * `<details>`. The CAD page has one — "Drive CAD from Claude Code", collapsed,
+ * five terminal steps for the person who wants them — and a student who never
+ * opens it never sees a word of it. Reading through the disclosure made this
+ * fail on documentation nobody was being shown, and the only way to satisfy
+ * it would have been to delete the section or rename the CLI.
+ *
+ * `innerText` is what a person can read, which is the claim being made.
+ */
 async function expectNoBanned(page: Page, label: string, extra: string[] = []) {
+  const shown = await page.locator("body").innerText();
   for (const phrase of [...BANNED, ...extra]) {
-    await expect(page.locator("body"), `${label} still shows ${phrase}`).not.toContainText(phrase);
+    expect(shown, `${label} still shows ${phrase}`).not.toContain(phrase);
   }
 }
 
@@ -46,7 +59,10 @@ test.describe("student-week GUI path", () => {
     await expect(page.locator("body")).not.toContainText("Application error");
     // Fixture cookie is not Better Auth: /workspace redirects to /signin, and
     // the E2E fixture proxy then bounces /signin back to Home.
-    await expect(page).toHaveURL(/\/(dashboard|workspace|signin|invite|onboarding|my-day|hours)/);
+    // My Day and Hours are hub tabs now — /my-day is a redirect into
+    // /competition?tab=my-day — so the destination is the same place spelled
+    // the way the hubs spell it.
+    await expect(page).toHaveURL(/\/(dashboard|workspace|signin|invite|onboarding|my-day|hours)|[?&]tab=(my-day|hours)/);
   });
 
   test("My Day Scout this match is a real click or Needs setup", async ({ page }) => {
@@ -243,8 +259,33 @@ test.describe("student-week GUI path", () => {
     await expect(edit).toHaveAttribute("href", /a360\.co|autodesk/i);
   });
 
-  test("Connectors pair Approve pairing stays student-usable", async ({ page }) => {
+  test("Connectors pair Approve pairing stays student-usable", async ({ page, context }) => {
+    /*
+      This one really does need a student.
+
+      /connectors shows an operator the environment variables they have to
+      set — that is the point of the page for an owner, and
+      `connectorStatusLine` chooses that copy on purpose. A student gets "Ask
+      a mentor to finish setup" instead. Signed in as the owner, this test was
+      asserting the student wording against the operator audience and failing
+      on the product doing the right thing.
+
+      The rest of the file stays on the owner, whose team has the data the
+      other paths walk through.
+    */
+    const asStudent = await signInAs(context, "student");
+    test.skip(!asStudent, "needs a seeded student to check student-audience copy");
+
     await openStudent(page, "/connectors");
+    // Signing in is not the same as being on a team. The student fixture on
+    // this box is not attached to one, so every product page bounces it to
+    // /onboarding and there is no student-audience copy to look at. Skipping
+    // says that; asserting against the onboarding page would have "passed"
+    // while checking nothing.
+    test.skip(
+      /\/onboarding/.test(page.url()),
+      "the student fixture is not on a team — nothing to check the student audience against",
+    );
     await expect(page.getByRole("heading", { level: 1, name: "Connectors" })).toBeVisible({
       timeout: 20_000,
     });

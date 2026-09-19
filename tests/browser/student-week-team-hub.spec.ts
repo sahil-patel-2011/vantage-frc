@@ -34,10 +34,29 @@ test("student this week can walk Team hub People → Invites → Season roles", 
   for (const phrase of BANNED) {
     await expect(page.locator("body"), `People still shows ${phrase}`).not.toContainText(phrase);
   }
+  /*
+    Inside the hub, the feature's own "Next actions" panel is hidden —
+    `.product-hub-panel .att-next-actions` is display:none, because the hub
+    shows its own and two lists of next actions is the duplication the hubs
+    removed. That also takes it out of the accessibility tree, so the spec was
+    looking for a link that no person could see either.
+
+    What matters is that People offers a way to start a roll call, or says why
+    it cannot. Which control carries it is a layout decision; that a student
+    can act is not.
+  */
   const peoplePrimary = page
-    .getByRole("link", { name: /Choose your team|Create the first roll call|Ask an admin for a roll call|Sign in again/i })
-    .or(page.getByRole("button", { name: /Create the first roll call|Retry/i }));
-  await expect(peoplePrimary.first()).toBeVisible({ timeout: 12_000 });
+    .getByRole("link", { name: /Choose your team|Sign in again/i })
+    .or(page.getByRole("button", { name: /New attendance event|Create the first roll call|Retry/i }))
+    .or(page.getByRole("link", { name: /New attendance event|Create the first roll call/i }))
+    .locator("visible=true");
+  await expect(peoplePrimary.first()).toBeVisible({ timeout: 15_000 });
+
+  // And the hidden panel still points somewhere, for a standalone render.
+  const hiddenCta = page.locator(".att-next-actions a").first();
+  if (await hiddenCta.count()) {
+    await expect(hiddenCta).toHaveAttribute("href", /.+/);
+  }
 
   await page.goto("/team/admin");
   await expect(page.locator("body")).not.toContainText("Application error");

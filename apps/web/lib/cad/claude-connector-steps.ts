@@ -35,7 +35,10 @@ export const CONNECTOR_STEPS: readonly ConnectorStep[] = [
     body: "A real browser window opens and you sign in yourself — password, SSO, 2FA, whatever your school uses. Nothing is typed for you, and the session is saved only on this computer.",
     command: "npx vantage-cad login",
     gotcha:
-      "A signed-in browser session is the path Onshape does not charge against your team's annual API allowance. API keys and OAuth are charged.",
+      // "authorized apps", not "OAuth". This page is one a student opens, and
+      // the sentence is about what Onshape bills the team for — which is
+      // worth knowing whether or not you have met the word OAuth.
+      "A signed-in browser session is the path Onshape does not charge against your team's annual API allowance. API keys and authorized apps are charged.",
   },
   {
     id: "pair",
