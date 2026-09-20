@@ -30,12 +30,27 @@ export function snapshotWantsFullContext(url: URL): boolean {
  * Live widgets only. Ready Home hides setup cards, so polling them just burns
  * SQL on work the view will throw away.
  */
+/**
+ * Widgets the page asks for even when the board does not show them.
+ *
+ * "What to do now" reads today's calendar to say "Build night — today at
+ * 6 PM", and it is not a widget, so nothing in the layout asks for the data
+ * it needs. Without this the card could only mention a practice on boards
+ * that happened to have the Calendar card on them, which is a feature that
+ * works for some teams and silently does not for others.
+ *
+ * Deliberately a short list. Every entry is a query on every refresh for
+ * something that may not be on screen, so it earns its place by feeding a
+ * part of the page that is always there.
+ */
+export const HOME_ALWAYS_LOADED: DashboardWidgetType[] = ["calendar_today"];
+
 export function snapshotPollWidgetTypes(
   layout: Array<{ type: DashboardWidgetType }>,
   input: { shell: DashboardShellKind },
 ): DashboardWidgetType[] {
   const ready = input.shell === "ready";
-  return [...new Set(layout.map((item) => item.type))].filter(
+  return [...new Set([...layout.map((item) => item.type), ...HOME_ALWAYS_LOADED])].filter(
     (type) => !(ready && POLL_SKIP_WHEN_READY.has(type)),
   );
 }

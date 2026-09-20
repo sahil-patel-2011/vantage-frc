@@ -89,6 +89,8 @@ export function homeNowAction(input: {
   dutyTitle?: string | null;
   clockedIn?: boolean;
   openTodos?: number;
+  /** The next thing on today's calendar, already formatted. */
+  nextEventToday?: { title: string; whenLabel: string } | null;
 }): HomeNowAction {
   if (!input.orgId) {
     return {
@@ -124,6 +126,28 @@ export function homeNowAction(input: {
       cta: "Open My Hours",
     };
   }
+  /*
+    What the calendar says is on today.
+
+    This is the thing most students want from Home on most days, and the card
+    was the one place in the app that could not see it — the data was already
+    loaded, by the `calendar_today` widget, and simply never read. A build
+    night at six is more use than "3 things on your list", and less use than
+    a match starting or a shift you are already on, which is where it sits.
+
+    Today only. The widget returns a week, and "Practice tonight" is a
+    different claim from "practice on Thursday" — one of them you act on now.
+  */
+  const event = input.nextEventToday;
+  if (event?.title && event.whenLabel) {
+    return {
+      title: event.title,
+      detail: event.whenLabel,
+      href: "/team?tab=calendar",
+      cta: "Open Calendar",
+    };
+  }
+
   const todos = input.openTodos ?? 0;
   if (Number.isInteger(todos) && todos > 0) {
     return {
@@ -159,6 +183,8 @@ export function homeNowFromWidgets(input: {
   nextMatchData?: Record<string, unknown>;
   widgets: Record<string, { type: string; data?: Record<string, unknown> }>;
   loaded?: boolean;
+  /** Fixed clock for tests; the real one otherwise. */
+  now?: Date;
 }): HomeNowAction {
   if (input.orgId && input.loaded === false) {
     return {
@@ -188,5 +214,50 @@ export function homeNowFromWidgets(input: {
     dutyTitle,
     clockedIn,
     openTodos,
+    nextEventToday: nextEventToday(byType("calendar_today"), input.now ?? new Date()),
   });
+}
+
+
+/**
+ * The next thing on today's calendar, or null.
+ *
+ * The `calendar_today` widget loads a week, because that is what its own card
+ * shows. The "what to do now" card is about now, so this takes only what is
+ * still ahead *today* — a practice that finished an hour ago is not something
+ * to do, and Thursday's is not something to do yet.
+ *
+ * Local time throughout: which day an instant belongs to is a question about
+ * the person reading the screen, and they are standing in the shop.
+ */
+export function nextEventToday(
+  data: Record<string, unknown> | undefined,
+  now: Date,
+): { title: string; whenLabel: string } | null {
+  const items = Array.isArray(data?.items) ? data.items : [];
+  const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime();
+  let best: { title: string; at: Date } | null = null;
+  for (const raw of items) {
+    if (!raw || typeof raw !== "object") continue;
+    const row = raw as { title?: unknown; startsAt?: unknown };
+    const title = firstString(row.title);
+    if (!title || typeof row.startsAt !== "string") continue;
+    const at = new Date(row.startsAt);
+    if (Number.isNaN(at.getTime())) continue;
+    if (at.getTime() < now.getTime() || at.getTime() >= endOfDay) continue;
+    if (!best || at.getTime() < best.at.getTime()) best = { title, at };
+  }
+  if (!best) return null;
+  return { title: best.title, whenLabel: `Today at ${clockLabel(best.at)}` };
+}
+
+/** "6 PM", "6:30 PM" — the hour drops its zeroes. */
+function clockLabel(at: Date): string {
+  const hour = at.getHours();
+  const minute = at.getMinutes();
+  const meridiem = hour < 12 ? "AM" : "PM";
+  const twelve = hour % 12 === 0 ? 12 : hour % 12;
+  return minute === 0
+    ? `${twelve} ${meridiem}`
+    : `${twelve}:${`${minute}`.padStart(2, "0")} ${meridiem}`;
 }

@@ -30,6 +30,12 @@ describe("snapshotWantsFullContext", () => {
 });
 
 describe("snapshotPollWidgetTypes", () => {
+  /*
+    `calendar_today` is in every result whether or not the board shows it.
+    "What to do now" reads it to say "Build night — today at 6 PM", and that
+    card is on Home for everybody, so the data it needs cannot depend on which
+    widgets a team happens to have added.
+  */
   it("drops onboarding and quick actions once Home is ready", () => {
     expect(
       snapshotPollWidgetTypes(
@@ -41,13 +47,27 @@ describe("snapshotPollWidgetTypes", () => {
         ],
         { shell: "ready" },
       ),
-    ).toEqual(["next_match", "alerts"]);
+    ).toEqual(["next_match", "alerts", "calendar_today"]);
+  });
+
+  it("asks for the calendar even when no calendar widget is on the board", () => {
+    // The card that needs it is always there, so the data always loads.
+    expect(snapshotPollWidgetTypes([{ type: "next_match" }], { shell: "ready" })).toContain(
+      "calendar_today",
+    );
+    expect(snapshotPollWidgetTypes([], { shell: "ready" })).toEqual(["calendar_today"]);
+  });
+
+  it("does not ask for it twice when the board already shows it", () => {
+    expect(
+      snapshotPollWidgetTypes([{ type: "calendar_today" }], { shell: "ready" }),
+    ).toEqual(["calendar_today"]);
   });
 
   it("keeps setup widgets while the team is still configuring", () => {
     expect(
       snapshotPollWidgetTypes([{ type: "onboarding_checklist" }, { type: "next_match" }], { shell: "setup" }),
-    ).toEqual(["onboarding_checklist", "next_match"]);
+    ).toEqual(["onboarding_checklist", "next_match", "calendar_today"]);
   });
 });
 
