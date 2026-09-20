@@ -7,35 +7,48 @@ app lives in `apps/web`; shared logic is in `packages/*` (npm workspaces).
 
 ## Running here
 
-`docker compose -f docker-compose.base44.yml up -d` brings up two services:
+`docker compose -f docker-compose.base44.yml up -d` starts a source-mounted,
+live-reloading environment:
 
-- `install` — one-shot `npm install` at the repo root (sets up workspace symlinks).
-- `web` — `next dev` from `apps/web` on port 3000, bind-mounted from source with
-  live reload. Depends on `install` completing.
+- `db` — local Postgres 17 with a persistent `pgdata` volume.
+- `install` — one-shot root `npm install` for workspace links.
+- `db-setup` — one-shot migrations, RLS login creation, realistic season seed,
+  and local password-account seed. It is idempotent.
+- `web` — `next dev` from `apps/web` on port 3000.
 
-No database is required to boot. The app is designed to start without Postgres
-and show setup states on product screens (see README "npm run dev"). DB env vars
-fall back to `localhost:5432`; queries fail gracefully and pages render setup
-states. `BETTER_AUTH_SECRET` falls back to a local dev secret outside production.
+The database wiring mirrors `.github/workflows/web.yml`: migrations use the
+local superuser, while runtime product and auth queries use non-superuser
+`app_login` / `auth_login` accounts that automatically SET ROLE to
+`vantage_app` / `vantage_auth`. Do not replace runtime URLs with the admin URL;
+that would bypass RLS.
+
+## Seeded sign-in
+
+The local seed creates a populated Team 6925 season. For manual product checks,
+sign in with `e2e-platform@vantage.local` and the password documented in
+`scripts/seed-e2e-logins.mjs`. The dev flow may ask for a second factor; run
+`docker compose -f docker-compose.base44.yml exec -T web node /app/scripts/dev-otp.mjs e2e-platform@vantage.local`
+to obtain the local-only code.
 
 ## Key facts
 
 - Node 22+ required (compose uses `node:22`).
-- `legacy-peer-deps=true` is set in `.npmrc` (needed for the dependency tree).
-- Packages are TypeScript source consumed via `transpilePackages` in
-  `next.config.ts` — no package build step is needed.
-- `allowedDevOrigins` in `next.config.ts` references `BASE44_PUBLIC_HOST_SUFFIX`
-  so the preview origin can reach dev assets/HMR. Do not hardcode the host.
+- `legacy-peer-deps=true` is set in `.npmrc`.
+- Packages are TypeScript source consumed via `transpilePackages`; no package
+  build is needed for development.
+- `allowedDevOrigins` in `next.config.ts` references
+  `BASE44_PUBLIC_HOST_SUFFIX`; never hardcode the resolved preview host.
+- `.env.base44-defaults` contains development-only fallbacks and is loaded
+  before `/run/base44/app.env`, so dashboard-provided secrets always win.
+- External integrations rejected or not configured by the user remain in their
+  designed setup-required state; never fabricate provider credentials.
 
-## Optional: a real database
+## Verification
 
-To see product data instead of setup states, add a Postgres service, set
-`DATABASE_URL` / `DATABASE_ADMIN_URL` / `DATABASE_AUTH_URL`, and run
-`npm run db:migrate` with the admin URL. The self-hosting guide is
-`docs/SELF_HOSTING.md`; the runbook is `docs/DEPLOYMENT.md`.
-
-## Verifying it works
-
-- `docker compose -f docker-compose.base44.yml ps` — `web` should be healthy.
-- `curl -I http://localhost:3000` — should return 200.
-- The landing page at `/` is public; product routes redirect to sign-in.
+- `docker compose -f docker-compose.base44.yml ps -a` — `db` and `web` healthy;
+  `install` and `db-setup` exited 0.
+- `curl -I http://localhost:3000` — returns 200.
+- Production-style preflight from the repo root (explicitly omit local-only dev
+  keys):
+  `docker compose -f docker-compose.base44.yml exec -T web sh -lc 'cd /app && env -u DEV_KMS_MASTER_KEY -u DEV_OTP_SECRET NODE_ENV=production node scripts/deploy-preflight.mjs'`.
+- The landing page is public; product routes require one of the seeded logins.

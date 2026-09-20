@@ -2,5 +2,36 @@
   "previewPort": 3000,
   "healthPath": "/",
   "startCommand": "docker compose -f docker-compose.base44.yml up -d",
-  "secrets": []
+  "secrets": [
+    {
+      "name": "BETTER_AUTH_SECRET",
+      "description": "Signs Better Auth sessions.",
+      "requiredAtBoot": true,
+      "generatedForDevelopment": true
+    },
+    {
+      "name": "CRON_SECRET",
+      "description": "Authenticates scheduled job endpoints.",
+      "requiredAtBoot": true,
+      "generatedForDevelopment": true
+    },
+    {
+      "name": "MFA_ENCRYPTION_KEY",
+      "description": "Encrypts TOTP enrollment secrets.",
+      "requiredAtBoot": false,
+      "generatedForDevelopment": true
+    },
+    {
+      "name": "MFA_RECOVERY_PEPPER",
+      "description": "Keys MFA recovery-code hashes.",
+      "requiredAtBoot": false,
+      "generatedForDevelopment": true
+    },
+    {
+      "name": "EXPORT_ENCRYPTION_KEY",
+      "description": "Encrypts export archives.",
+      "requiredAtBoot": false,
+      "generatedForDevelopment": true
+    }
+  ]
 }
