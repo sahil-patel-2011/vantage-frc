@@ -55,3 +55,46 @@ export async function clearMilestonesAfter(page: Page, prefixes: readonly string
     // The page may already be closing; the next run clears these anyway.
   }
 }
+
+/**
+ * The same job for the *team* calendar, whose rows are meetings rather than
+ * milestones.
+ *
+ * The season grid overlays meetings on their day and stops at
+ * `MAX_MEETINGS_PER_DAY` (12). `calendar-meetings-overlay.spec.ts` put two
+ * meetings on the same two fixed Wednesdays every run and removed neither, so
+ * after eighteen runs a newly created meeting was past the cap and simply did
+ * not render. The spec then failed claiming the overlay was broken, when the
+ * overlay was correctly declining to draw a nineteenth chip in one square.
+ *
+ * The page must be on a URL carrying `orgId`, which `gotoAsTeam` guarantees.
+ */
+export async function clearTeamEvents(page: Page, prefixes: readonly string[]): Promise<number> {
+  return page.evaluate(async (needles) => {
+    const orgId = new URLSearchParams(location.search).get("orgId") ?? "";
+    if (!orgId) return 0;
+    const response = await fetch(`/api/team/calendar?orgId=${orgId}`, { cache: "no-store" });
+    if (!response.ok) return 0;
+    const body = (await response.json()) as { events?: { id: string; title: string }[] };
+    let removed = 0;
+    for (const row of body.events ?? []) {
+      if (!needles.some((needle) => row.title.startsWith(needle))) continue;
+      const deleted = await fetch(`/api/team/calendar?orgId=${orgId}`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "delete_event", orgId, id: row.id }),
+      });
+      if (deleted.ok) removed += 1;
+    }
+    return removed;
+  }, prefixes as readonly string[] as string[]);
+}
+
+/** Best-effort teardown twin of `clearTeamEvents`. */
+export async function clearTeamEventsAfter(page: Page, prefixes: readonly string[]): Promise<void> {
+  try {
+    await clearTeamEvents(page, prefixes);
+  } catch {
+    // The page may already be closing; the next run clears these anyway.
+  }
+}

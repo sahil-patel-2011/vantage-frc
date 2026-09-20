@@ -169,12 +169,24 @@ export function resolveAuthBaseURL() {
  * of `vantage-frc-web.vercel.app`. Google OAuth on Vercel does not add them.
  */
 export const PRODUCTION_AUTH_ALIASES = [
-  "https://vantage-frc-web.vercel.app",
+  // The five vanity hosts attached to the Vercel project. These are the ones a
+  // person is ever given; `apps/desktop`'s PRODUCTION_APP_HOSTS is the same set
+  // and a test asserts they agree.
   "https://vantagefrc.vercel.app",
   "https://frcvantage.vercel.app",
   "https://teamvantage.vercel.app",
   "https://vantagefrcweb.vercel.app",
   "https://vantagerobotics.vercel.app",
+  // Retired, and kept deliberately: a session or an OAuth round trip started
+  // before the host went away still arrives with this origin, and dropping it
+  // from the allowlist turns that into an "Invalid origin" rejection rather
+  // than the redirect `canonicalizeAuthOrigin` already performs.
+  "https://vantage-frc-web.vercel.app",
+  // Vercel's generated aliases. The team slug was renamed from
+  // `sahil-patel-s-projects1` to `sahil-patel-2011`; the old names still
+  // resolve for older deployments, so both are listed.
+  "https://vantage-frc-web-sahil-patel-2011.vercel.app",
+  "https://vantage-frc-web-git-main-sahil-patel-2011.vercel.app",
   "https://vantage-frc-web-sahil-patel-s-projects1.vercel.app",
   "https://vantage-frc-web-git-main-sahil-patel-s-projects1.vercel.app",
 ] as const;

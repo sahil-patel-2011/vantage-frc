@@ -1,5 +1,28 @@
-/** Production web app the desktop shell loads by default. */
-export const DEFAULT_PRODUCTION_ORIGIN = "https://vantage-frc-web.vercel.app";
+/**
+ * Production web app the desktop shell loads by default.
+ *
+ * This used to be `vantage-frc-web.vercel.app`, which is retired and answers
+ * `DEPLOYMENT_NOT_FOUND` — so the desktop app opened on a dead host, and
+ * `isAllowedAppOrigin` below accepted *only* that host, meaning even setting
+ * `VANTAGE_URL` to a working alias could not rescue it. The shell was broken
+ * end to end and said nothing more useful than a Vercel error page.
+ */
+export const DEFAULT_PRODUCTION_ORIGIN = "https://vantagefrc.vercel.app";
+
+/**
+ * Every vanity host attached to the Vercel project, so a window may start on
+ * whichever one a mentor was given. `packages/core`'s `PRODUCTION_AUTH_ALIASES`
+ * is the same set for Better Auth's origin checks; a test asserts the two agree,
+ * because a host the browser trusts and the shell refuses is indistinguishable
+ * from the app being down.
+ */
+export const PRODUCTION_APP_HOSTS = [
+  "vantagefrc.vercel.app",
+  "frcvantage.vercel.app",
+  "teamvantage.vercel.app",
+  "vantagefrcweb.vercel.app",
+  "vantagerobotics.vercel.app",
+] as const;
 
 const LOOPBACK = new Set(["localhost", "127.0.0.1", "[::1]", "::1"]);
 
@@ -42,7 +65,7 @@ export function isAllowedAppOrigin(url: URL): boolean {
   if (isLoopbackHost(host)) {
     return url.protocol === "http:" || url.protocol === "https:";
   }
-  return url.protocol === "https:" && host === "vantage-frc-web.vercel.app";
+  return url.protocol === "https:" && (PRODUCTION_APP_HOSTS as readonly string[]).includes(host);
 }
 
 /**
@@ -70,7 +93,7 @@ export function isAllowedNavigation(href: string): boolean {
   }
   if (url.protocol !== "https:") return false;
 
-  if (host === "vantage-frc-web.vercel.app") return true;
+  if ((PRODUCTION_APP_HOSTS as readonly string[]).includes(host)) return true;
   if (endsWithHost(host, "google.com")) return true;
   if (endsWithHost(host, "gstatic.com")) return true;
   if (endsWithHost(host, "googleusercontent.com")) return true;

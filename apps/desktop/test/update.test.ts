@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { PRODUCTION_APP_HOSTS } from "../src/allowlist";
 import {
   compareVersions,
   decideUpdate,
@@ -28,7 +29,7 @@ const BASE = {
   now: 1_000_000,
   idleMs: IDLE_BEFORE_INSTALL_MS + 1,
   windowFocused: false,
-  currentUrl: "https://vantage-frc-web.vercel.app/dashboard",
+  currentUrl: "https://vantagefrc.vercel.app/dashboard",
   online: true,
   portable: false,
 };
@@ -65,9 +66,15 @@ describe("manifest validation", () => {
   it("refuses a non-https or off-allowlist download host", () => {
     expect(parseManifest({ ...MANIFEST, url: "http://github.com/x/y/z.exe" }, "win32")).toBeNull();
     expect(parseManifest({ ...MANIFEST, url: "https://evil.example/Vantage-setup.exe" }, "win32")).toBeNull();
-    expect(
-      parseManifest({ ...MANIFEST, url: "https://vantage-frc-web.vercel.app/downloads/setup.exe" }, "win32"),
-    ).not.toBeNull();
+    // Against the shared list rather than a literal: this asserted
+    // `vantagefrc.vercel.app`, which is retired, so it was checking that
+    // a host nobody can reach is an acceptable place to fetch an installer.
+    for (const host of PRODUCTION_APP_HOSTS) {
+      expect(
+        parseManifest({ ...MANIFEST, url: `https://${host}/downloads/setup.exe` }, "win32"),
+        `${host} should be an allowed download host`,
+      ).not.toBeNull();
+    }
   });
 
   it("refuses a missing or malformed digest — the digest is the whole trust story", () => {
@@ -186,7 +193,7 @@ describe("competition-day safeguard", () => {
 
   it("never installs on a live-ops surface, however overdue", () => {
     for (const path of ["/matches", "/scouting/lineup", "/pit", "/display/pit", "/strategy", "/hours/kiosk"]) {
-      const url = `https://vantage-frc-web.vercel.app${path}`;
+      const url = `https://vantagefrc.vercel.app${path}`;
       expect(installWindow({ ...BASE, plan: required, currentUrl: url })).toEqual({
         install: false,
         reason: "live-ops-surface",
@@ -195,9 +202,9 @@ describe("competition-day safeguard", () => {
   });
 
   it("does not treat a lookalike path as live ops", () => {
-    expect(isLiveOpsUrl("https://vantage-frc-web.vercel.app/pitch-deck")).toBe(false);
-    expect(isLiveOpsUrl("https://vantage-frc-web.vercel.app/pit")).toBe(true);
-    expect(isLiveOpsUrl("https://vantage-frc-web.vercel.app/pit/notes")).toBe(true);
+    expect(isLiveOpsUrl("https://vantagefrc.vercel.app/pitch-deck")).toBe(false);
+    expect(isLiveOpsUrl("https://vantagefrc.vercel.app/pit")).toBe(true);
+    expect(isLiveOpsUrl("https://vantagefrc.vercel.app/pit/notes")).toBe(true);
     expect(isLiveOpsUrl("")).toBe(false);
   });
 
@@ -247,7 +254,7 @@ describe("stale hosted page after a web deploy", () => {
         staleAssetSeen: true,
         idleMs: 0,
         windowFocused: true,
-        currentUrl: "https://vantage-frc-web.vercel.app/scouting",
+        currentUrl: "https://vantagefrc.vercel.app/scouting",
         online: true,
         pageBroken: true,
       }),
@@ -260,7 +267,7 @@ describe("stale hosted page after a web deploy", () => {
         staleAssetSeen: true,
         idleMs: IDLE_BEFORE_WEB_RELOAD_MS * 2,
         windowFocused: true,
-        currentUrl: "https://vantage-frc-web.vercel.app/scouting",
+        currentUrl: "https://vantagefrc.vercel.app/scouting",
         online: true,
       }),
     ).toBe(false);
@@ -272,7 +279,7 @@ describe("stale hosted page after a web deploy", () => {
         staleAssetSeen: true,
         idleMs: 0,
         windowFocused: false,
-        currentUrl: "https://vantage-frc-web.vercel.app/scouting",
+        currentUrl: "https://vantagefrc.vercel.app/scouting",
         online: true,
       }),
     ).toBe(true);
@@ -284,7 +291,7 @@ describe("stale hosted page after a web deploy", () => {
         staleAssetSeen: false,
         idleMs: IDLE_BEFORE_WEB_RELOAD_MS,
         windowFocused: false,
-        currentUrl: "https://vantage-frc-web.vercel.app/dashboard",
+        currentUrl: "https://vantagefrc.vercel.app/dashboard",
         online: true,
       }),
     ).toBe(true);
@@ -296,7 +303,7 @@ describe("stale hosted page after a web deploy", () => {
         staleAssetSeen: true,
         idleMs: 0,
         windowFocused: false,
-        currentUrl: "https://vantage-frc-web.vercel.app/dashboard",
+        currentUrl: "https://vantagefrc.vercel.app/dashboard",
         online: false,
       }),
     ).toBe(false);

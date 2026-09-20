@@ -1,3 +1,4 @@
+import { PRODUCTION_APP_HOSTS } from "./allowlist";
 /**
  * Desktop update policy — pure decisions, no IO.
  *
@@ -5,7 +6,7 @@
  * them is how you end up shipping an updater that does nothing useful:
  *
  *  1. **The web app deployed.** Vantage is a hosted product; the window is a
- *     Chromium view of `vantage-frc-web.vercel.app`. A deploy reaches the user
+ *     Chromium view of the live app host. A deploy reaches the user
  *     the moment the page reloads. That needs no binary at all — see
  *     `shouldReloadWeb` / `WEB_*` below.
  *  2. **The shell itself is out of date.** The navigation allowlist, the deep
@@ -65,7 +66,9 @@ const DOWNLOAD_HOSTS = [
   "github.com",
   "objects.githubusercontent.com",
   "release-assets.githubusercontent.com",
-  "vantage-frc-web.vercel.app",
+  // The live app hosts. `vantage-frc-web.vercel.app` was here and is retired,
+  // so an installer served by the app itself had nowhere to come from.
+  ...PRODUCTION_APP_HOSTS,
 ];
 
 /**

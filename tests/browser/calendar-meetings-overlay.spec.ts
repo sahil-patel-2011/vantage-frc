@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { activeOrgId, gotoAsTeam } from "./active-org";
 import { signInAs } from "./session";
+import { clearTeamEvents, clearTeamEventsAfter } from "./calendar-cleanup";
 
 /**
  * Vantage has two calendars, and for a while only one of them was on the grid.
@@ -15,6 +16,12 @@ import { signInAs } from "./session";
  */
 test.beforeEach(async ({ context }) => {
   test.skip(!(await signInAs(context, "owner")), "no owner fixture on this box");
+});
+
+const OVERLAY_PROBES = ["Overlay spec ", "Overlay link "] as const;
+
+test.afterEach(async ({ page }) => {
+  await clearTeamEventsAfter(page, OVERLAY_PROBES);
 });
 
 /** A Wednesday well clear of today, so the assertions do not depend on the date. */
@@ -91,6 +98,9 @@ test("a meeting made on the team calendar shows up on the season grid", async ({
   await gotoAsTeam(page, "/calendar");
   const orgId = await activeOrgId(page);
   test.skip(!orgId, "no active org");
+  // Before as well as after: a run that dies half way through must not leave
+  // the next one a day already at the overlay's twelve-chip cap.
+  await clearTeamEvents(page, OVERLAY_PROBES);
 
   const start = wednesdayAfter(21);
   const title = `Overlay spec ${Date.now()}`;
@@ -130,6 +140,9 @@ test("pressing a meeting goes to the calendar that owns it", async ({ page }) =>
   await gotoAsTeam(page, "/calendar");
   const orgId = await activeOrgId(page);
   test.skip(!orgId, "no active org");
+  // Before as well as after: a run that dies half way through must not leave
+  // the next one a day already at the overlay's twelve-chip cap.
+  await clearTeamEvents(page, OVERLAY_PROBES);
 
   const start = wednesdayAfter(35);
   const title = `Overlay link ${Date.now()}`;

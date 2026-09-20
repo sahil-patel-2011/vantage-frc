@@ -46,7 +46,7 @@ Future signed MSI stub: `scripts/cad/windows/VantageCadRelay.wxs` (needs Authent
 
 ## Pair + run
 
-1. `export VANTAGE_URL=https://vantage-frc-web.vercel.app` (or local `http://localhost:3001`)
+1. `export VANTAGE_URL=https://vantagefrc.vercel.app` (or local `http://localhost:3001`)
 2. `vantage-cad setup` → approve code at `/cad/pair` for **Fusion 360**
 3. Open Fusion → run **VantageCadRelay** add-in
 4. `vantage-cad start` (keep running)
