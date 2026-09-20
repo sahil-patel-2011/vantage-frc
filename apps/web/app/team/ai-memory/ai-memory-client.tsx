@@ -1,5 +1,6 @@
 "use client";
 import { Button, EmptyState, PageHeader } from "../../../components/ui";
+import { PersonalMemories } from "./personal-memories";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AiHubRelated } from "../../../components/ai-hub-related";
@@ -377,6 +378,11 @@ export default function AiMemoryClient({ orgId }: { orgId: string }) {
               </article>
             ))}
           </section>
+
+          {/* The half of memory a person owns. Everything below this is the
+              team's shared memory and its admin policy; this is the part that
+              is only yours. */}
+          <PersonalMemories orgId={orgId} />
 
           <section className="metric-grid" aria-label="Team memory counts">
             <article>

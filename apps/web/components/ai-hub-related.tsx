@@ -39,16 +39,25 @@ export function AiHubRelated({
       className={["product-hub-related", "ai-hub-related", className].filter(Boolean).join(" ")}
       aria-label="Related AI and season tools"
     >
+      {/* Keyed by id. Both of these lists were rendered without one, which
+          logged a React error on every page in the AI hub and left
+          reconciliation to guess which anchor was which — the kind of thing
+          that is invisible until a list reorders and the wrong link keeps the
+          focus. */}
       {AI_TABS.map((link) => {
         if (link.id === active) return null;
         return (
-          <a href={hubHref("/ai", link.id, orgId)}>{link.label}</a>
+          <a key={link.id} href={hubHref("/ai", link.id, orgId)}>
+            {link.label}
+          </a>
         );
       })}
       {CROSS_HUB.map((link) => {
         if (link.id === active) return null;
         return (
-          <a href={withOrgHref(link.href, orgId)}>{link.label}</a>
+          <a key={link.id} href={withOrgHref(link.href, orgId)}>
+            {link.label}
+          </a>
         );
       })}
     </nav>
