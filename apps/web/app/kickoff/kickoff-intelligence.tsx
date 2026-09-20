@@ -231,8 +231,13 @@ export function IntelligenceSection({
               placeholder="Paste scoring tables, game pieces, constraints from the official manual…"
               onChange={(event) => setManualText(event.target.value)}
             />
+            {/* Named on the input itself. This label already wraps the
+                textarea above, and a label names only its first control — so
+                without this the file picker was the one control on the page
+                with no name at all. */}
             <input
               type="file"
+              aria-label="Upload the game manual as a .txt file"
               accept=".txt,.md,.markdown,text/plain"
               disabled={busy}
               onChange={(event) => onPickFile("manual", event.target.files?.[0] ?? null)}
@@ -249,6 +254,7 @@ export function IntelligenceSection({
             />
             <input
               type="file"
+              aria-label="Upload the kickoff transcript as a .txt file"
               accept=".txt,.md,.markdown,text/plain"
               disabled={busy}
               onChange={(event) => onPickFile("transcript", event.target.files?.[0] ?? null)}
