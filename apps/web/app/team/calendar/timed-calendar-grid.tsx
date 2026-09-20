@@ -33,7 +33,11 @@ export function TimedCalendarGrid({
   onTasksChanged: () => void;
   selectedEventId: string | null;
   onSelectEvent: (id: string) => void;
-  onPickSlot: (day: string, hour: number) => void;
+  /**
+   * A day was pressed. `hour` is null when the press carried no position —
+   * a keyboard activation — and the composer asks for a time instead.
+   */
+  onPickSlot: (day: string, hour: number | null) => void;
   onOpenDay: (day: string) => void;
 }) {
   return (
@@ -109,15 +113,43 @@ export function TimedCalendarGrid({
             const blocks = layoutTimedEventsForDay(cell.items);
             return (
               <div key={`c-${cell.day}`} className="tc-timed-col">
-                {CALENDAR_GRID_HOURS.map((hour) => (
-                  <button
-                    key={hour}
-                    type="button"
-                    className="tc-timed-slot"
-                    aria-label={`Add at ${formatHourLabel(hour)} on ${cell.day}`}
-                    onClick={() => onPickSlot(cell.day, hour)}
-                  />
-                ))}
+                {/*
+                  One target for the whole day, not one per hour.
+
+                  Fifteen hours across seven days is 105 buttons, and every one
+                  of them was in the tab order and the accessibility tree — so
+                  reaching anything below the grid by keyboard meant pressing
+                  Tab a hundred times through empty slots, and a screen reader
+                  read out "Add at 7 AM on Monday, Add at 8 AM on Monday…" for
+                  a minute before saying anything useful.
+
+                  The hour is where you pressed, which is what a calendar has
+                  always meant by clicking a time. The lines are painted rather
+                  than built out of elements, so it looks identical.
+
+                  A keyboard press has no position — `detail` is 0 — so it
+                  gives the day and leaves the time to the composer, which asks
+                  for one anyway. Nothing is lost: the composer below is a
+                  standing form, not something these buttons opened.
+                */}
+                <button
+                  type="button"
+                  className="tc-timed-surface"
+                  aria-label={`Add on ${cell.day}`}
+                  onClick={(event) => {
+                    if (event.detail === 0) {
+                      onPickSlot(cell.day, null);
+                      return;
+                    }
+                    const box = event.currentTarget.getBoundingClientRect();
+                    const share = box.height > 0 ? (event.clientY - box.top) / box.height : 0;
+                    const index = Math.min(
+                      CALENDAR_GRID_HOURS.length - 1,
+                      Math.max(0, Math.floor(share * CALENDAR_GRID_HOURS.length)),
+                    );
+                    onPickSlot(cell.day, CALENDAR_GRID_HOURS[index]!);
+                  }}
+                />
                 {blocks.map((block) => (
                   <button
                     key={block.event.id}

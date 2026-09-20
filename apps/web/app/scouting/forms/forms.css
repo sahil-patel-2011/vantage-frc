@@ -161,7 +161,16 @@
 .sfb-question-actions {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 6px;
+}
+/* The reorder pair: a square each, so the arrow is the whole control rather
+   than a character floating in a word-shaped button. */
+.sfb-move {
+  min-width: 30px;
+  min-height: 30px;
+  padding: 0;
+  line-height: 1;
 }
 
 /* Remove is recoverable: the deleted question and its place are held until the

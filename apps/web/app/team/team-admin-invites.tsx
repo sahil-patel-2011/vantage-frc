@@ -114,11 +114,25 @@ export function TeamAdminInvitesPanel({
                     ? `Accepted ${new Date(inviteRow.acceptedAt).toLocaleDateString()}`
                     : `Expires ${new Date(inviteRow.expiresAt).toLocaleString()}`}
                 </time>
+                {/*
+                  Each button says which invite it belongs to.
+
+                  Nineteen pending invites gave nineteen buttons reading
+                  "Resend & copy link" and nineteen reading "Revoke", with
+                  nothing in any of them naming the person. On screen the row
+                  above supplies that; to a screen reader, moving through the
+                  page by control, it is the same two words nineteen times and
+                  no way to tell which one revokes whose invite.
+
+                  The visible text is unchanged — the row still reads the way
+                  it did — and only the accessible name gains the address.
+                */}
                 {pending ? (
                   <div className="team-invite-row-actions">
                     {link ? (
                       <button
                         type="button"
+                        aria-label={`Copy the invite link for ${inviteRow.email}`}
                         onClick={() => void onCopyLink(inviteRow.id, link)}
                       >
                         {copiedInviteId === inviteRow.id ? "Copied" : "Copy link"}
@@ -126,6 +140,7 @@ export function TeamAdminInvitesPanel({
                     ) : null}
                     <button
                       type="button"
+                      aria-label={`Resend the invite to ${inviteRow.email}`}
                       disabled={actingInviteId === inviteRow.id}
                       onClick={() => void onAct(inviteRow.id, "resend")}
                     >
@@ -133,6 +148,7 @@ export function TeamAdminInvitesPanel({
                     </button>
                     <button
                       type="button"
+                      aria-label={`Revoke the invite to ${inviteRow.email}`}
                       disabled={actingInviteId === inviteRow.id}
                       onClick={() => void onAct(inviteRow.id, "revoke")}
                     >

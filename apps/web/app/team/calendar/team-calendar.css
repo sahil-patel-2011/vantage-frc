@@ -1059,18 +1059,39 @@
   height: calc(var(--tc-slot) * var(--tc-hours, 15));
   border-left: 1px solid var(--line);
 }
-.tc-timed-slot {
-  display: block;
+/*
+  The hour lines are painted, not built.
+
+  They used to be the bottom borders of 105 slot buttons — one per hour per
+  day — which put all 105 in the tab order for a visual effect. A repeating
+  gradient draws the same lines and is not a control.
+*/
+.tc-timed-col {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent calc(var(--tc-slot) - 1px),
+    color-mix(in srgb, var(--line) 65%, transparent) calc(var(--tc-slot) - 1px),
+    color-mix(in srgb, var(--line) 65%, transparent) var(--tc-slot)
+  );
+}
+/* One press target for the day, behind the events that sit on it. */
+.tc-timed-surface {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
   width: 100%;
-  height: var(--tc-slot);
   padding: 0;
   border: 0;
-  border-bottom: 1px solid color-mix(in srgb, var(--line) 65%, transparent);
   background: transparent;
   cursor: pointer;
 }
-.tc-timed-slot:hover {
-  background: color-mix(in srgb, var(--accent) 8%, transparent);
+.tc-timed-surface:hover {
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+}
+.tc-timed-surface:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
 }
 .tc-timed-block {
   position: absolute;

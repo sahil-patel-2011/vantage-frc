@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { type EntryType, type FormResetBehavior, type SchemaDefinition, type ScoutSchema } from "@vantage/scouting";
 import "../scouting.css";
 import { OfflineBanner } from "../../../components/offline-banner";
-import { EmptyState, FormRow, PageHeader, Panel, ToolStrip, Button } from "../../../components/ui";
+import { ActionMenu, EmptyState, FormRow, PageHeader, Panel, ToolStrip, Button } from "../../../components/ui";
 import {
   ANSWER_KIND_OPTIONS,
   DRIVETRAIN_OPTIONS_TEXT,
@@ -572,41 +572,64 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
                           <span className="sfb-optional-badge">Optional</span>
                         )}
                       </strong>
+                      {/*
+                        Four buttons on every question became two and a menu.
+
+                        A seven-question form put twenty-eight controls down the
+                        side of the page — Move up, Move down, Duplicate, Remove,
+                        seven times over — and the words that told them apart were
+                        the same four words each time. Reordering is the one that
+                        wants to be immediate, so it stays as a pair of arrows with
+                        the sentence in its accessible name; duplicating and
+                        removing are occasional and go behind the overflow, where
+                        Remove also picks up the menu's confirmation step.
+                      */}
                       <div className="sfb-question-actions">
                         <button
                           type="button"
+                          className="sfb-move"
                           disabled={!payload.canManageSchemas || index === 0}
                           aria-label={`Move question ${index + 1} up`}
                           onClick={() => setQuestions((prev) => moveQuestion(prev, index, index - 1))}
                         >
-                          Move up
+                          ↑
                         </button>
                         <button
                           type="button"
+                          className="sfb-move"
                           disabled={!payload.canManageSchemas || index === questions.length - 1}
                           aria-label={`Move question ${index + 1} down`}
                           onClick={() => setQuestions((prev) => moveQuestion(prev, index, index + 1))}
                         >
-                          Move down
+                          ↓
                         </button>
-                        <button
-                          type="button"
-                          disabled={!payload.canManageSchemas}
-                          aria-label={`Duplicate question ${index + 1}`}
-                          onClick={() => setQuestions((prev) => duplicateQuestion(prev, index))}
-                        >
-                          Duplicate
-                        </button>
-                        <button
-                          type="button"
-                          disabled={!payload.canManageSchemas || questions.length <= 1}
-                          onClick={() => {
-                            setRemoved({ question, index });
-                            setQuestions((prev) => prev.filter((entry) => entry.id !== question.id));
-                          }}
-                        >
-                          Remove
-                        </button>
+                        <ActionMenu
+                          tone="row"
+                          label={`Question ${index + 1} actions`}
+                          maxSecondary={0}
+                          triggerTestId={`sfb-question-more:${question.id}`}
+                          actions={[
+                            {
+                              id: "duplicate",
+                              label: "Duplicate",
+                              intent: "primary",
+                              disabled: !payload.canManageSchemas,
+                              hint: "A copy directly below, ready to edit",
+                              onClick: () => setQuestions((prev) => duplicateQuestion(prev, index)),
+                            },
+                            {
+                              id: "remove",
+                              label: "Remove",
+                              intent: "destructive",
+                              disabled: !payload.canManageSchemas || questions.length <= 1,
+                              hint: "Undo is offered right after",
+                              onClick: () => {
+                                setRemoved({ question, index });
+                                setQuestions((prev) => prev.filter((entry) => entry.id !== question.id));
+                              },
+                            },
+                          ]}
+                        />
                       </div>
                     </div>
                     <div className="sfb-question-grid">

@@ -493,7 +493,18 @@ function CoverageGaps({
                   {cell.entryCount === 1 ? "y" : "ies"}
                 </small>
               </div>
-              <Button variant="secondary" type="button" disabled={busy} onClick={() => void mutate({ action: "send-nudge", matchKey: cell.matchKey, teamKey: cell.teamKey, message: `${cell.matchLabel}: Team ${cell.teamNumber} has ${cell.entryCount} scouting entr${cell.entryCount === 1 ? "y" : "ies"} — send a scout.`, }) }>
+              {/* Every gap's button said only "Nudge coordinator", so fifteen
+                  of them were indistinguishable to anyone not reading the row
+                  above — which, moving through a page by control, is everyone
+                  using a screen reader. The message each one sends already
+                  names the match and the team; now the button does too. */}
+              <Button
+                variant="secondary"
+                type="button"
+                aria-label={`Nudge the coordinator about ${cell.matchLabel}, Team ${cell.teamNumber}`}
+                disabled={busy}
+                onClick={() => void mutate({ action: "send-nudge", matchKey: cell.matchKey, teamKey: cell.teamKey, message: `${cell.matchLabel}: Team ${cell.teamNumber} has ${cell.entryCount} scouting entr${cell.entryCount === 1 ? "y" : "ies"} — send a scout.`, }) }
+              >
                 Nudge coordinator
               </Button>
             </li>
