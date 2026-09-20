@@ -8,6 +8,7 @@ import {
   type ScoutedTeamProfile,
 } from "@vantage/prediction-strategy";
 import { PickWeightSliders, usePickWeights } from "./scouting-pick-weights";
+import { COMPARE_LIMIT, ScoutingCompare, teamNumberLabel } from "./scouting-compare";
 import { EmptyState, Button } from "../../components/ui";
 import { apiErrorMessage, classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
@@ -50,6 +51,17 @@ export function ScoutingTeamProfiles({ orgId, eventKey }: { orgId: string; event
   const [sort, setSort] = useState<Sort>("fit");
   const { weights, update, reset, changed } = usePickWeights(orgId);
   const [open, setOpen] = useState<string | null>(null);
+  /** Up to three robots held side by side. Team keys, in the order they were picked. */
+  const [compare, setCompare] = useState<string[]>([]);
+
+  const toggleCompare = (teamKey: string) =>
+    setCompare((current) =>
+      current.includes(teamKey)
+        ? current.filter((key) => key !== teamKey)
+        : current.length >= COMPARE_LIMIT
+          ? current
+          : [...current, teamKey],
+    );
 
   useEffect(() => {
     let cancelled = false;
@@ -110,6 +122,14 @@ export function ScoutingTeamProfiles({ orgId, eventKey }: { orgId: string; event
     if (sort === "average") return copy.sort((a, b) => b.shrunkTotal - a.shrunkTotal);
     return copy.sort((a, b) => teamNumber(a.teamKey) - teamNumber(b.teamKey));
   }, [view, sort, weights]);
+
+  const compareProfiles = useMemo(
+    () =>
+      compare
+        .map((teamKey) => rows.find((profile) => profile.teamKey === teamKey))
+        .filter((profile): profile is ScoutedTeamProfile => Boolean(profile)),
+    [compare, rows],
+  );
 
   if (error) {
     const copy = loadFailureCopy(
@@ -188,6 +208,18 @@ export function ScoutingTeamProfiles({ orgId, eventKey }: { orgId: string; event
         <PickWeightSliders weights={weights} onChange={update} onReset={reset} changed={changed} />
       ) : null}
 
+      {compareProfiles.length >= 2 ? (
+        <ScoutingCompare
+          profiles={compareProfiles}
+          onRemove={(teamKey) => setCompare((current) => current.filter((key) => key !== teamKey))}
+          onClear={() => setCompare([])}
+        />
+      ) : compare.length === 1 ? (
+        <p className="stp-compare-hint">
+          {teamNumberLabel(compare[0]!)} held. Pick one or two more to compare them side by side.
+        </p>
+      ) : null}
+
       <ul className="stp-list">
         {rows.map((profile) => (
           <ProfileRow
@@ -195,6 +227,9 @@ export function ScoutingTeamProfiles({ orgId, eventKey }: { orgId: string; event
             profile={profile}
             expanded={open === profile.teamKey}
             onToggle={() => setOpen((current) => (current === profile.teamKey ? null : profile.teamKey))}
+            compared={compare.includes(profile.teamKey)}
+            compareFull={compare.length >= COMPARE_LIMIT}
+            onCompare={() => toggleCompare(profile.teamKey)}
           />
         ))}
       </ul>
@@ -227,10 +262,16 @@ function ProfileRow({
   profile,
   expanded,
   onToggle,
+  compared,
+  compareFull,
+  onCompare,
 }: {
   profile: ScoutedTeamProfile;
   expanded: boolean;
   onToggle: () => void;
+  compared: boolean;
+  compareFull: boolean;
+  onCompare: () => void;
 }) {
   const number = profile.teamKey.replace(/^frc/i, "");
   const consistency = profile.consistency?.consistency ?? "unknown";
@@ -264,7 +305,18 @@ function ProfileRow({
           ) : null}
         </span>
       </button>
-      <p className="stp-headline">{profile.headline}</p>
+      <div className="stp-row-foot">
+        <p className="stp-headline">{profile.headline}</p>
+        <button
+          type="button"
+          className="stp-compare"
+          aria-pressed={compared}
+          disabled={!compared && compareFull}
+          onClick={onCompare}
+        >
+          {compared ? "Comparing" : "Compare"}
+        </button>
+      </div>
       {expanded ? (
         <dl className="stp-detail">
           <div>

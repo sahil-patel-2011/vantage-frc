@@ -145,6 +145,47 @@
   line-height: 1.45;
 }
 
+/* The row's one action lives beside its sentence, so a card carries a single
+   button rather than a strip of them. */
+.stp-row-foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.stp-row-foot .stp-headline {
+  flex: 1 1 auto;
+}
+.stp-compare {
+  flex: 0 0 auto;
+  min-height: 28px;
+  margin: 0 14px 10px 0;
+  padding: 0 11px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--muted);
+  font: 700 11.5px var(--font-source-sans), ui-sans-serif;
+  cursor: pointer;
+  transition:
+    background-color var(--dur-tint) var(--ease-out),
+    border-color var(--dur-tint) var(--ease-out),
+    color var(--dur-tint) var(--ease-out);
+}
+.stp-compare[aria-pressed="true"] {
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.stp-compare:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.stp-compare-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .stp-detail {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));

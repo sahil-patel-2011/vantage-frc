@@ -1,0 +1,178 @@
+/* Side-by-side robot comparison. See scouting-compare.tsx. */
+.scmp {
+  display: grid;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+.scmp-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.scmp-head h3 {
+  margin: 0;
+  font: 700 13px/1.2 var(--font-source-sans), ui-sans-serif;
+}
+.scmp-clear {
+  padding: 2px 8px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--accent);
+  font: 700 11.5px var(--font-source-sans), ui-sans-serif;
+  cursor: pointer;
+}
+.scmp-clear:hover {
+  background: var(--accent-soft);
+}
+
+.scmp-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--scmp-cols, 2), minmax(0, 1fr));
+  gap: 10px;
+}
+.scmp-card {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+.scmp-card > header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.scmp-team {
+  font: 800 18px/1 var(--font-source-sans), ui-sans-serif;
+  letter-spacing: -0.02em;
+}
+.scmp-total {
+  display: grid;
+  margin-left: auto;
+  text-align: right;
+}
+.scmp-total strong {
+  font: 700 15px/1.1 var(--font-source-sans), ui-sans-serif;
+}
+.scmp-total small {
+  color: var(--muted);
+  font-size: 10px;
+}
+.scmp-remove {
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--muted);
+  font: 700 14px/1 var(--font-source-sans), ui-sans-serif;
+  cursor: pointer;
+}
+.scmp-remove:hover {
+  color: var(--critical);
+  border-color: color-mix(in srgb, var(--critical) 45%, var(--line));
+}
+.scmp-lead {
+  margin: 0;
+  color: var(--positive);
+  font: 700 10.5px var(--font-source-sans), ui-sans-serif;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.scmp-phases {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.scmp-phases li,
+.scmp-range {
+  display: grid;
+  grid-template-columns: 4.6rem 1fr 2.6rem;
+  align-items: center;
+  gap: 8px;
+}
+.scmp-phase-label {
+  color: var(--muted);
+  font: 700 10px var(--font-source-sans), ui-sans-serif;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.scmp-phase-value {
+  justify-self: end;
+  font: 700 12px var(--font-source-sans), ui-sans-serif;
+}
+.scmp-bar {
+  display: block;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.scmp-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  transition: width var(--dur-move) var(--ease-out);
+}
+.scmp-bar-fill[data-phase="auto"] {
+  background: color-mix(in srgb, var(--accent) 55%, var(--surface));
+}
+.scmp-bar-fill[data-phase="endgame"] {
+  background: color-mix(in srgb, var(--accent) 80%, var(--ink));
+}
+
+.scmp-range-track {
+  position: relative;
+  display: block;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+}
+.scmp-range-fill {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--positive) 55%, var(--surface));
+}
+
+.scmp-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 12px;
+  margin: 0;
+}
+.scmp-facts dt {
+  color: var(--muted);
+  font: 700 9.5px var(--font-source-sans), ui-sans-serif;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.scmp-facts dd {
+  margin: 1px 0 0;
+  font: 600 12px var(--font-source-sans), ui-sans-serif;
+}
+.scmp-headline {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+/* A phone compares one card under the other rather than squeezing three
+   columns into 390px. */
+@media (max-width: 720px) {
+  .scmp-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
