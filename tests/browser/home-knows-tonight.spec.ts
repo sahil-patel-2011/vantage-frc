@@ -23,6 +23,29 @@ test.beforeEach(async ({ context }) => {
 
 const TITLE_PREFIX = "Tonight spec";
 
+/**
+ * Make sure nothing outranks the calendar.
+ *
+ * The card is a priority list: a match starting, a duty, an open clock-in,
+ * then the calendar, then todos. Another spec in this suite clocks the owner
+ * in and does not clock them out, so this one failed on "You're in the shop"
+ * — which is the card being right, and this spec asking its question while
+ * the answer was legitimately something else.
+ *
+ * Clocking out is the precondition, so it is established rather than hoped
+ * for. Not clocked in is a fine outcome and not an error.
+ */
+async function clockOut(page: import("@playwright/test").Page) {
+  await page.evaluate(async () => {
+    const orgId = new URLSearchParams(location.search).get("orgId") ?? "";
+    await fetch(`/api/hours?orgId=${orgId}`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ action: "clock_out", orgId }),
+    }).catch(() => undefined);
+  });
+}
+
 async function clearProbes(page: import("@playwright/test").Page) {
   await page.evaluate(async (prefix) => {
     const orgId = new URLSearchParams(location.search).get("orgId") ?? "";
@@ -43,6 +66,7 @@ async function clearProbes(page: import("@playwright/test").Page) {
 test("an event later today shows on the card, and goes when it is removed", async ({ page }) => {
   await gotoAsTeam(page, "/dashboard");
   await expect(page.getByTestId("dash-now")).toBeVisible({ timeout: 25_000 });
+  await clockOut(page);
   await clearProbes(page);
 
   /*

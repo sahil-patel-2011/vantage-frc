@@ -186,6 +186,33 @@ export function trimAiHordeCompletion(raw: string): string {
   return cut.trim();
 }
 
+/**
+ * True when the "answer" is just the prompt read back.
+ *
+ * Measured on the live swarm: asked to say one word, the 1B model replied with
+ * the opening of the system prompt — "You are Vantage, an FRC (FIRST Robotics
+ * Competi…". Small models continue a document rather than answer it, and the
+ * prompt is the document. `trimAiHordeCompletion` cannot catch this because
+ * there is no transcript marker in front of it; the echo starts where the
+ * answer should.
+ *
+ * So the completion is compared against the prompt it came from. A model that
+ * copied has told us nothing, and showing a student their own system prompt is
+ * worse than saying the swarm could not answer — which is true, and which the
+ * caller already knows how to report.
+ *
+ * Whitespace is collapsed before comparing, because a model reproducing text
+ * rarely reproduces its line breaks.
+ */
+export function looksLikePromptEcho(prompt: string, completion: string): boolean {
+  const flat = (value: string) => value.replace(/\s+/g, " ").trim().toLowerCase();
+  const answer = flat(completion);
+  // Too short to judge: "Ready." is a fine answer and appears in all sorts of
+  // prompts. The risk here is a false positive eating a good reply.
+  if (answer.length < 40) return false;
+  return flat(prompt).includes(answer.slice(0, 60));
+}
+
 function estimateTokens(text: string): number {
   return Math.max(1, Math.ceil(text.length / 4));
 }
@@ -231,7 +258,10 @@ export function buildAiHordePrompt(input: {
  * difference matters on a competition day: waiting helps for one of them and
  * is wasted on the rest.
  */
-export function aiHordeFailureMessage(kind: "empty" | "faulted" | "timeout" | "rejected", detail?: string): string {
+export function aiHordeFailureMessage(
+  kind: "empty" | "faulted" | "timeout" | "rejected" | "echo",
+  detail?: string,
+): string {
   switch (kind) {
     case "empty":
       return "No volunteer on the AI Horde is hosting one of the models Vantage accepts right now. This is the swarm being empty rather than busy, so waiting will not help — add a provider key under Team → AI keys, or point Vantage at Ollama or LM Studio on your own machine.";
@@ -239,6 +269,8 @@ export function aiHordeFailureMessage(kind: "empty" | "faulted" | "timeout" | "r
       return "A volunteer picked up the request and then failed part way through. Asking again usually lands on a different machine.";
     case "timeout":
       return "No volunteer finished the request in time. The Horde serves anonymous requests last; a free AI Horde key raises the priority, and a provider key removes the queue entirely.";
+    case "echo":
+      return "The volunteer model repeated the question back instead of answering it, which the smallest models on the swarm do. Try again, pick a larger model under Team → AI keys, or add a provider key.";
     case "rejected":
       return `The AI Horde refused the request${detail ? `: ${detail}` : ""}.`;
   }
@@ -413,7 +445,9 @@ export class AiHordeAdapter implements ChatAdapter {
 
       const generation = status.generations?.[0];
       const text = trimAiHordeCompletion(generation?.text ?? "");
-      if (!text) throw new ProviderRateLimitError(aiHordeFailureMessage("faulted"), 503);
+      if (!text || looksLikePromptEcho(prompt, text)) {
+        throw new ProviderRateLimitError(aiHordeFailureMessage("echo"), 503);
+      }
       // What actually ran, before the receipt is taken.
       if (isAiHordeModel(generation?.model)) this.model = generation.model;
       return {

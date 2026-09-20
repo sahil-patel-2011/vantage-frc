@@ -14,6 +14,7 @@ import {
   tryCreateAiHordeAdapter,
   AI_HORDE_STOP_SEQUENCES,
   trimAiHordeCompletion,
+  looksLikePromptEcho,
 } from "../src/ai-horde-pool";
 import type { ContextItem } from "../src/index";
 
@@ -299,5 +300,52 @@ describe("the answer, and nothing the model copied from its prompt", () => {
     const result = await adapter(scripted.impl).complete({ message: "q", context: [] });
     expect(result.text).toBe("Answer here.");
     expect(result.text).not.toContain("private_edge");
+  });
+});
+
+describe("a model that reads the prompt back instead of answering", () => {
+  const PROMPT =
+    "You are Vantage, an FRC (FIRST Robotics Competition) assistant. Answer from the team's own recorded data and never invent a score.";
+
+  it("spots the system prompt coming back as an answer", () => {
+    // Measured live: asked to say one word, the 1B model replied with the
+    // opening of its own system prompt. There is no transcript marker in
+    // front of that, so trimming cannot catch it.
+    expect(looksLikePromptEcho(PROMPT, "You are Vantage, an FRC (FIRST Robotics Competition) assistant.")).toBe(
+      true,
+    );
+  });
+
+  it("does not mistake a real answer for an echo", () => {
+    expect(
+      looksLikePromptEcho(PROMPT, "Check the battery voltage and the tether before every match."),
+    ).toBe(false);
+  });
+
+  it("leaves short answers alone", () => {
+    // "Ready." is a fine answer and turns up inside all sorts of prompts. A
+    // false positive here eats a good reply, which is the worse mistake.
+    expect(looksLikePromptEcho(PROMPT, "Ready.")).toBe(false);
+    expect(looksLikePromptEcho(PROMPT, "You are Vantage")).toBe(false);
+  });
+
+  it("ignores how the model broke its lines", () => {
+    expect(looksLikePromptEcho(PROMPT, "You are Vantage, an FRC\n(FIRST Robotics Competition)\nassistant.")).toBe(
+      true,
+    );
+  });
+
+  it("reports an echo as something worth retrying, not as an answer", async () => {
+    // Echo the real prompt this adapter would build, not an invented string —
+    // the guard compares against what was actually sent, so a test that made
+    // its own text would pass without exercising anything.
+    const built = buildAiHordePrompt({ capability: "chat", message: "Say ready.", context: [] });
+    const scripted = scriptedFetch([
+      { body: { id: "job-1" } },
+      { body: { done: true, generations: [{ text: built.slice(0, 120) }] } },
+    ]);
+    await expect(adapter(scripted.impl).complete({ message: "Say ready.", context: [] })).rejects.toThrow(
+      /repeated the question back/i,
+    );
   });
 });
