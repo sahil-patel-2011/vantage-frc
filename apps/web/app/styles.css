@@ -402,3 +402,23 @@ body.has-app-shell{padding:64px 0 0 248px;background:var(--bg);overflow-x:hidden
 .strategy-live-grid .strategy-engineering-card{grid-column:1/-1}.strategy-engineering-card header,.strategy-engineering-card header>div,.strategy-engineering-list li>div{display:flex;align-items:center;justify-content:space-between;gap:12px}.strategy-engineering-card header>div{align-items:flex-start;flex-direction:column;gap:4px}.strategy-engineering-card h2{margin:0;font-size:var(--title-2)}.strategy-engineering-list{list-style:none;margin:14px 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}.strategy-engineering-list li{border:1px solid var(--line);background:var(--surface-2);border-radius:var(--radius-xs);padding:12px}.strategy-engineering-list p{font-size:12px;line-height:1.5}.strategy-engineering-list small{display:block;color:var(--muted);margin-bottom:8px}
 .app-page-header>.app-page-actions{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:8px}
 @media(max-width:650px){.app-page-header{align-items:flex-start;flex-direction:column}.app-page-header>.app-page-actions{width:100%;justify-content:flex-start}.app-page-header>.app-page-actions>.app-button{flex:1 1 auto}}
+
+/*
+  A form control shrinks with its column instead of pushing the page sideways.
+
+  `datetime-local` and `date` inputs carry a large intrinsic minimum width —
+  wide enough to draw a whole date and time — and a grid track of
+  `minmax(150px, 1fr)` cannot squeeze them below it. The track holds, the input
+  does not, and the page scrolls horizontally on a phone. Measured across 46
+  pages: Hours and Duties, both from a datetime field in a two-column form.
+
+  `min-width: 0` only matters when the container is already narrower than the
+  control wants to be, which is exactly the overflow case; a control in a
+  roomy layout keeps the width it chose.
+*/
+input,
+select,
+textarea {
+  min-width: 0;
+  max-width: 100%;
+}
