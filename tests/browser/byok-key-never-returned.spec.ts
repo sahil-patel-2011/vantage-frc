@@ -81,15 +81,36 @@ test("a stored provider key is not in any response the browser can read", async 
   );
   expect(status, "the key was stored but the page does not know it").toBe(true);
 
-  // Put the workspace back.
-  await page.evaluate(
+  /*
+    Put the workspace back — with the DELETE the page itself uses.
+
+    This used to POST `save_key` with an empty string, which that route
+    rejects with "API key is required". So the cleanup failed silently and
+    every run of this spec left a fake OpenAI key on the fixture team, which
+    then took priority over the free provider and quietly changed what the
+    rest of the suite was exercising.
+  */
+  const removed = await page.evaluate(
     async ([org]) => {
-      await fetch(`/api/organizations/ai-keys?orgId=${org}`, {
-        method: "POST",
+      const response = await fetch(`/api/organizations/ai-keys?orgId=${org}`, {
+        method: "DELETE",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ orgId: org, action: "save_key", provider: "openai", apiKey: "" }),
+        body: JSON.stringify({ orgId: org, provider: "openai" }),
       });
+      return response.ok;
     },
     [orgId] as const,
   );
+  expect(removed, "the spec could not remove the key it created").toBe(true);
+
+  // And the page agrees it is gone, which is the other half of a key's life.
+  const stillThere = await page.evaluate(
+    async ([org]) => {
+      const response = await fetch(`/api/organizations/ai-keys?orgId=${org}`, { cache: "no-store" });
+      const json = (await response.json()) as { keys?: Array<{ provider: string; configured: boolean }> };
+      return json.keys?.find((row) => row.provider === "openai")?.configured ?? false;
+    },
+    [orgId] as const,
+  );
+  expect(stillThere, "the key is still configured after removing it").toBe(false);
 });

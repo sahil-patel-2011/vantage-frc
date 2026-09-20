@@ -103,6 +103,32 @@ export const AI_HORDE_MAX_PROMPT_CHARS = 6_000;
 export const AI_HORDE_MAX_NEW_TOKENS = 300;
 export const AI_HORDE_MAX_CONTEXT = 4_096;
 
+/**
+ * Where the answer ends.
+ *
+ * The prompt is a transcript — context blocks as `[type:id] …`, then `User:`,
+ * then `Assistant:` — and a 3B model on volunteer hardware does not reliably
+ * stop after its turn. Measured against the live swarm: it answered the
+ * question in one sentence and then carried on, reproducing the context block
+ * verbatim, including a `strategy.private_edge` fact. A student would have
+ * seen their team's internal notes pasted under the reply.
+ *
+ * These are sent as stop sequences so generation ends at the boundary, and
+ * `trimAiHordeCompletion` cuts anything that arrives anyway — a volunteer's
+ * backend may not honour them, and "the worker was supposed to stop" is not a
+ * thing to rely on when the cost of being wrong is leaking context.
+ */
+export const AI_HORDE_STOP_SEQUENCES = [
+  "\nUser:",
+  "\nAssistant:",
+  "\n[module_",
+  "\n[private_",
+  "\n[team_",
+  "\n[chat_",
+  "\n[artifact:",
+  "\n[task:",
+];
+
 /** How long to wait for a volunteer before giving up. */
 export const AI_HORDE_POLL_INTERVAL_MS = 2_500;
 export const AI_HORDE_DEFAULT_WAIT_MS = 120_000;
@@ -139,6 +165,25 @@ export function aiHordeApiKey(env: NodeJS.ProcessEnv = process.env): string {
  */
 export function aiHordeRequestModels(chosen?: string | null): string[] {
   return isAiHordeModel(chosen) ? [chosen] : [...AI_HORDE_MODEL_IDS];
+}
+
+/**
+ * The answer, and nothing the model copied from its own prompt.
+ *
+ * Cuts at the first transcript or context marker. See the note on
+ * `AI_HORDE_STOP_SEQUENCES` for why this exists as well as them rather than
+ * instead of them.
+ */
+export function trimAiHordeCompletion(raw: string): string {
+  let cut = raw;
+  for (const marker of AI_HORDE_STOP_SEQUENCES) {
+    const at = cut.indexOf(marker);
+    if (at !== -1) cut = cut.slice(0, at);
+  }
+  // A completion that opens with a context block has no answer in it at all;
+  // an empty string reads as a fault, which is what it is.
+  if (/^\s*\[(?:module_|private_|team_|chat_|artifact:|task:)/.test(cut)) return "";
+  return cut.trim();
 }
 
 function estimateTokens(text: string): number {
@@ -317,6 +362,7 @@ export class AiHordeAdapter implements ChatAdapter {
             max_length: AI_HORDE_MAX_NEW_TOKENS,
             temperature: 0.6,
             top_p: 0.9,
+            stop_sequence: AI_HORDE_STOP_SEQUENCES,
           },
           models: this.requestModels,
         }),
@@ -366,7 +412,7 @@ export class AiHordeAdapter implements ChatAdapter {
       }
 
       const generation = status.generations?.[0];
-      const text = (generation?.text ?? "").trim();
+      const text = trimAiHordeCompletion(generation?.text ?? "");
       if (!text) throw new ProviderRateLimitError(aiHordeFailureMessage("faulted"), 503);
       // What actually ran, before the receipt is taken.
       if (isAiHordeModel(generation?.model)) this.model = generation.model;

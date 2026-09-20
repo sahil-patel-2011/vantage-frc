@@ -12,6 +12,8 @@ import {
   isAiHordeModel,
   sanitizeAiHordeContext,
   tryCreateAiHordeAdapter,
+  AI_HORDE_STOP_SEQUENCES,
+  trimAiHordeCompletion,
 } from "../src/ai-horde-pool";
 import type { ContextItem } from "../src/index";
 
@@ -232,5 +234,70 @@ describe("turning it on", () => {
     expect(aiHordeBaseUrl({ AI_HORDE_BASE_URL: "https://x.test/api/v2/" } as NodeJS.ProcessEnv)).toBe(
       "https://x.test/api/v2",
     );
+  });
+});
+
+describe("the answer, and nothing the model copied from its prompt", () => {
+  it("cuts a context block the model reproduced", () => {
+    // Measured against the live swarm: a 3B model answered the question and
+    // then carried on, reproducing the prompt's context verbatim — including
+    // a strategy.private_edge fact. A student would have seen their team's
+    // internal notes pasted under the reply.
+    const raw = [
+      "Make sure the pit crew is ready.",
+      "",
+      "[module_data:org-session] Workspace session context",
+      '[module_fact:strategy.private_edge:0] {"tool":"strategy.private"}',
+    ].join("\n");
+    expect(trimAiHordeCompletion(raw)).toBe("Make sure the pit crew is ready.");
+  });
+
+  it("cuts a transcript the model kept writing", () => {
+    expect(trimAiHordeCompletion("Short answer.\nUser: and then what\nAssistant: more")).toBe(
+      "Short answer.",
+    );
+  });
+
+  it("leaves an ordinary answer alone, including its own brackets", () => {
+    const answer = "Check the battery [it is the usual one], then the tether.";
+    expect(trimAiHordeCompletion(answer)).toBe(answer);
+  });
+
+  it("keeps a multi-line answer whole", () => {
+    const answer = "First, weigh in.\nThen check the bumpers.";
+    expect(trimAiHordeCompletion(answer)).toBe(answer);
+  });
+
+  it("returns nothing when the completion is only context", () => {
+    // No answer in it at all. Empty reads as a fault, which is what it is.
+    expect(trimAiHordeCompletion("[module_data:org-session] Workspace session")).toBe("");
+    expect(trimAiHordeCompletion("  \n [team_memory:1] something")).toBe("");
+  });
+
+  it("asks the swarm to stop at those boundaries too", async () => {
+    const scripted = scriptedFetch([
+      { body: { id: "job-1" } },
+      { body: { done: true, generations: [{ text: "ok" }] } },
+    ]);
+    await adapter(scripted.impl).complete({ message: "q", context: [] });
+    const params = (scripted.calls[0]!.body as { params: { stop_sequence?: string[] } }).params;
+    // Both halves: the stop sequence prevents it, the trim handles a worker
+    // whose backend ignores it.
+    expect(params.stop_sequence).toEqual(AI_HORDE_STOP_SEQUENCES);
+  });
+
+  it("does not return a leaked context block as the answer", async () => {
+    const scripted = scriptedFetch([
+      { body: { id: "job-1" } },
+      {
+        body: {
+          done: true,
+          generations: [{ text: "Answer here.\n[module_fact:strategy.private_edge:0] secret" }],
+        },
+      },
+    ]);
+    const result = await adapter(scripted.impl).complete({ message: "q", context: [] });
+    expect(result.text).toBe("Answer here.");
+    expect(result.text).not.toContain("private_edge");
   });
 });
