@@ -169,6 +169,74 @@
   line-height: 1.45;
 }
 
+/* ---------------------------------------------------------------- motion --
+   The panel is the one thing on this screen that appears in response to a tap,
+   so it is allowed the largest gesture: it settles down from above, its cards
+   follow one at a time, and the bars grow out of their left edge so the length
+   reads as a measurement being taken. Tokens only — reduced motion zeroes all
+   of it. */
+.scmp {
+  animation: scmp-in var(--dur-sheet) var(--ease-settle) both;
+}
+@keyframes scmp-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.scmp-card {
+  animation: scmp-card-in var(--dur-move) var(--ease-settle) both;
+  transition:
+    box-shadow var(--dur-move) var(--ease-out),
+    border-color var(--dur-tint) var(--ease-out);
+}
+.scmp-card:hover {
+  box-shadow: var(--shadow);
+}
+.scmp-card[data-slot="2"] { animation-delay: 45ms; }
+.scmp-card[data-slot="3"] { animation-delay: 90ms; }
+@keyframes scmp-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.scmp-bar-fill,
+.scmp-range-fill {
+  transform-origin: left center;
+  animation: scmp-grow var(--dur-sheet) var(--ease-settle) both;
+}
+.scmp-bar-fill { animation-delay: 60ms; }
+.scmp-range-fill { animation-delay: 140ms; }
+@keyframes scmp-grow {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: none;
+  }
+}
+.scmp-remove,
+.scmp-clear {
+  transition:
+    background-color var(--dur-tint) var(--ease-out),
+    border-color var(--dur-tint) var(--ease-out),
+    color var(--dur-tint) var(--ease-out),
+    transform var(--dur-press) var(--ease-spring);
+}
+.scmp-remove:active,
+.scmp-clear:active {
+  transform: scale(0.92);
+}
+
 /* A phone compares one card under the other rather than squeezing three
    columns into 390px. */
 @media (max-width: 720px) {

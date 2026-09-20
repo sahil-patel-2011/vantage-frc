@@ -267,6 +267,53 @@
   transform: scale(0.96);
   transition: transform var(--dur-press) var(--ease-out);
 }
+/* The list arrives rather than appears: each row lifts in a few pixels behind
+   the one above it. The stagger stops at eight so a fifty-robot event does not
+   spend two seconds assembling itself, and the durations are the shared tokens,
+   which zero out under reduced motion. */
+.stp-row {
+  animation: stp-row-in var(--dur-move) var(--ease-settle) both;
+}
+.stp-row:nth-child(1) { animation-delay: 0ms; }
+.stp-row:nth-child(2) { animation-delay: 24ms; }
+.stp-row:nth-child(3) { animation-delay: 48ms; }
+.stp-row:nth-child(4) { animation-delay: 72ms; }
+.stp-row:nth-child(5) { animation-delay: 96ms; }
+.stp-row:nth-child(6) { animation-delay: 120ms; }
+.stp-row:nth-child(7) { animation-delay: 144ms; }
+.stp-row:nth-child(n + 8) { animation-delay: 168ms; }
+@keyframes stp-row-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Pressing the one action on a card should feel like a physical switch: a
+   little give, then a spring back past centre rather than a linear return. */
+.stp-compare:active {
+  transform: scale(0.94);
+  transition: transform var(--dur-press) var(--ease-spring);
+}
+.stp-compare[aria-pressed="true"] {
+  animation: stp-chip-on var(--dur-press) var(--ease-spring) both;
+}
+@keyframes stp-chip-on {
+  from {
+    transform: scale(0.9);
+  }
+  to {
+    transform: none;
+  }
+}
+.stp-compare-hint {
+  animation: stp-unfold var(--dur-move) var(--ease-settle) both;
+}
+
 /* The detail panel unfolds from the row rather than appearing on top of it. */
 .stp-detail {
   animation: stp-unfold var(--dur-move) var(--ease-settle) both;
