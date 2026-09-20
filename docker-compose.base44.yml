@@ -42,7 +42,7 @@ services:
         condition: service_completed_successfully
     command: >
       sh -c "for r in app auth marketing worker; do
-        psql -h db -U postgres -d vantage -c \"CREATE ROLE vantage_$${r}_login LOGIN PASSWORD 'vantage_dev'\" || true;
+        psql -h db -U postgres -d vantage -c \"DO \\$$\\$$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'vantage_$${r}_login') THEN CREATE ROLE vantage_$${r}_login LOGIN PASSWORD 'vantage_dev'; END IF; END \\$$\\$$;\";
         psql -h db -U postgres -d vantage -c \"GRANT vantage_$${r} TO vantage_$${r}_login\";
       done"
 
