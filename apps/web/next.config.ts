@@ -2,6 +2,11 @@ import type { NextConfig } from "next";
 import { expandLegacyRedirects } from "./lib/nav/legacy-redirects";
 
 const config: NextConfig = {
+  // Allow the Base44 preview origin to fetch dev assets / HMR. The sandbox id
+  // rotates, so we reference the env suffix rather than a hardcoded host.
+  allowedDevOrigins: process.env.BASE44_PUBLIC_HOST_SUFFIX
+    ? ["3000-" + process.env.BASE44_PUBLIC_HOST_SUFFIX]
+    : [],
   // Vercel Preview Comments cannot patch Next 16.3 immutable static output
   // (IMMUTABLE_STATIC_PATCH_PREVIEW_COMMENTS). Restore the default after
   // Preview Comments are off on the project.

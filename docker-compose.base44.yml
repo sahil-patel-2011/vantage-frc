@@ -1,0 +1,49 @@
+# Base44 dev environment for Vantage (Next.js 16 monorepo).
+# Runs the web app from cloned source with live reload. The app is designed to
+# boot without a database — product screens show setup states when no Postgres
+# is configured (see README "npm run dev").
+services:
+  install:
+    image: node:22
+    working_dir: /app
+    volumes:
+      - ./:/app
+      - node_modules:/app/node_modules
+    command: npm install
+    # One-shot: install workspace deps, then exit so the web service can start.
+    restart: "no"
+
+  web:
+    image: node:22
+    working_dir: /app/apps/web
+    volumes:
+      - ./:/app
+      - node_modules:/app/node_modules
+      - next_cache:/app/apps/web/.next
+    # Run the Next.js dev server from source on port 3000, binding all interfaces
+    # so the preview proxy can reach it.
+    command: /app/node_modules/.bin/next dev --port 3000 --hostname 0.0.0.0
+    ports:
+      - "3000:3000"
+    environment:
+      # Passed to next.config.ts allowedDevOrigins so the preview origin can
+      # fetch dev assets / HMR. Never hardcode the resolved host.
+      - BASE44_PUBLIC_HOST_SUFFIX=${BASE44_PUBLIC_HOST_SUFFIX}
+      # Public-facing URLs the browser uses. The app canonicalizes these.
+      - NEXT_PUBLIC_APP_URL=https://3000-${BASE44_PUBLIC_HOST_SUFFIX}
+      - NEXT_PUBLIC_SITE_URL=https://3000-${BASE44_PUBLIC_HOST_SUFFIX}
+      - BETTER_AUTH_URL=https://3000-${BASE44_PUBLIC_HOST_SUFFIX}
+      - BETTER_AUTH_URL_LOCAL=https://3000-${BASE44_PUBLIC_HOST_SUFFIX}
+    depends_on:
+      install:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+
+volumes:
+  node_modules:
+  next_cache:
