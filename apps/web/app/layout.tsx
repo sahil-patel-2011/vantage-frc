@@ -54,7 +54,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       suppressHydrationWarning
     >
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeBootstrap }} />
+        <Script
+          id="vantage-theme-bootstrap"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{ __html: themeBootstrap }}
+        />
       </head>
       <body>
         <PwaRegister />

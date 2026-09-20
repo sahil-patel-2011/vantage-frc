@@ -886,7 +886,7 @@ export async function loadDashboardSnapshot(
     try {
       const cad = await client.query<{ count: string }>(
         `SELECT count(*)::text AS count FROM cad_jobs
-         WHERE org_id = $1 AND created_by = $2 AND kind = 'brief'`,
+         WHERE org_id = $1 AND created_by = $2`,
         [input.orgId, input.userId],
       );
       openedCadBrief = Number(cad.rows[0]?.count ?? 0) > 0;
