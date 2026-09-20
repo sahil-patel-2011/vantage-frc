@@ -1,0 +1,80 @@
+services:
+  db:
+    image: postgres:17
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=vantage_local
+      - POSTGRES_DB=vantage
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d vantage"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  deps:
+    image: node:22
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: sh -c "npm install --no-audit --fund=false"
+
+  migrate:
+    image: node:22
+    working_dir: /app
+    volumes:
+      - .:/app
+    environment:
+      - DATABASE_DRIVER=pg
+      - DATABASE_ADMIN_URL=postgresql://postgres:vantage_local@db:5432/vantage?sslmode=disable
+    command: sh -c "node scripts/run-migrations.mjs"
+    depends_on:
+      db:
+        condition: service_healthy
+      deps:
+        condition: service_completed_successfully
+
+  roles:
+    image: postgres:17
+    volumes:
+      - .:/app
+    environment:
+      - PGPASSWORD=vantage_local
+    command: psql -h db -U postgres -d vantage -v ON_ERROR_STOP=1 -f /app/.base44/dev-roles.sql
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  web:
+    image: node:22
+    working_dir: /app/apps/web
+    volumes:
+      - .:/app
+    env_file:
+      - ./.env.base44-defaults
+      - /run/base44/app.env
+    environment:
+      - BASE44_PUBLIC_HOST_SUFFIX=${BASE44_PUBLIC_HOST_SUFFIX}
+      - DATABASE_DRIVER=pg
+      - DATABASE_URL=postgresql://vantage_app_login:vantage_local@db:5432/vantage?sslmode=disable
+      - DATABASE_AUTH_URL=postgresql://vantage_auth_login:vantage_local@db:5432/vantage?sslmode=disable
+      - DATABASE_ADMIN_URL=postgresql://postgres:vantage_local@db:5432/vantage?sslmode=disable
+      - MARKETING_DATABASE_URL=postgresql://vantage_marketing_login:vantage_local@db:5432/vantage?sslmode=disable
+      - BETTER_AUTH_URL=https://3000-${BASE44_PUBLIC_HOST_SUFFIX}
+      - BETTER_AUTH_URL_LOCAL=https://3000-${BASE44_PUBLIC_HOST_SUFFIX}
+      - NEXT_PUBLIC_APP_URL=https://3000-${BASE44_PUBLIC_HOST_SUFFIX}
+      - NEXT_PUBLIC_SITE_URL=https://3000-${BASE44_PUBLIC_HOST_SUFFIX}
+      - AUTH_TRUSTED_ORIGINS=https://3000-${BASE44_PUBLIC_HOST_SUFFIX}
+      - WATCHPACK_POLLING=true
+    command: sh -c "npx next dev --port 3001 --hostname 0.0.0.0"
+    ports:
+      - "3000:3001"
+    depends_on:
+      roles:
+        condition: service_completed_successfully
+
+volumes:
+  db-data:

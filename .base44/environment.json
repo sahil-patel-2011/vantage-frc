@@ -1,0 +1,19 @@
+{
+  "previewPort": 3000,
+  "healthPath": "/",
+  "startCommand": "docker compose -f docker-compose.base44.yml up -d",
+  "secrets": [
+    { "name": "BETTER_AUTH_SECRET", "description": "Better Auth signing secret", "requiredAtBoot": true, "generatedForDevelopment": true },
+    { "name": "MFA_ENCRYPTION_KEY", "description": "MFA secret encryption key", "requiredAtBoot": true, "generatedForDevelopment": true },
+    { "name": "MFA_RECOVERY_PEPPER", "description": "MFA recovery code pepper", "requiredAtBoot": true, "generatedForDevelopment": true },
+    { "name": "EXPORT_ENCRYPTION_KEY", "description": "Export Center encryption key", "requiredAtBoot": true, "generatedForDevelopment": true },
+    { "name": "DEV_KMS_MASTER_KEY", "description": "Local KMS substitute key", "requiredAtBoot": true, "generatedForDevelopment": true },
+    { "name": "DEV_OTP_SECRET", "description": "Local dev OTP secret", "requiredAtBoot": true, "generatedForDevelopment": true },
+    { "name": "CRON_SECRET", "description": "Authorizes /api/cron/* jobs", "requiredAtBoot": true, "generatedForDevelopment": true },
+    { "name": "BOOTSTRAP_TOKEN", "description": "Platform owner bootstrap token", "requiredAtBoot": true, "generatedForDevelopment": true },
+    { "name": "RESEND_API_KEY", "description": "Resend API key for sign-in codes / email 2FA (resend.com dashboard)", "requiredAtBoot": false },
+    { "name": "TBA_AUTH_KEY", "description": "The Blue Alliance read API key (thebluealliance.com/account)", "requiredAtBoot": false },
+    { "name": "GOOGLE_CLIENT_ID", "description": "Google OAuth client id for Google sign-in", "requiredAtBoot": false },
+    { "name": "GOOGLE_CLIENT_SECRET", "description": "Google OAuth client secret", "requiredAtBoot": false }
+  ]
+}
