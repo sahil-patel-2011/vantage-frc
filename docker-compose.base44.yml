@@ -1,0 +1,80 @@
+services:
+  db:
+    image: postgres:17
+    environment:
+      - POSTGRES_PASSWORD=vantage_dev
+      - POSTGRES_DB=vantage
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d vantage"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+  install:
+    image: node:22-alpine
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: sh -c "npm install --no-audit --no-fund"
+
+  migrate:
+    image: node:22-alpine
+    working_dir: /app
+    volumes:
+      - .:/app
+    environment:
+      - DATABASE_ADMIN_URL=postgres://postgres:vantage_dev@db:5432/vantage?sslmode=disable
+    depends_on:
+      db:
+        condition: service_healthy
+      install:
+        condition: service_completed_successfully
+    command: sh -c "npm run db:migrate"
+
+  roles:
+    image: postgres:17
+    environment:
+      - PGPASSWORD=vantage_dev
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    command: >
+      sh -c "for r in app auth marketing worker; do
+        psql -h db -U postgres -d vantage -c \"CREATE ROLE vantage_$${r}_login LOGIN PASSWORD 'vantage_dev'\" || true;
+        psql -h db -U postgres -d vantage -c \"GRANT vantage_$${r} TO vantage_$${r}_login\";
+      done"
+
+  web:
+    image: node:22-alpine
+    working_dir: /app/apps/web
+    volumes:
+      - .:/app
+      - next-cache:/app/apps/web/.next
+      - swc-cache:/root/.cache/next-swc
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - WATCHPACK_POLLING=true
+      - CHOKIDAR_USEPOLLING=true
+      - BASE44_PUBLIC_HOST_SUFFIX=${BASE44_PUBLIC_HOST_SUFFIX}
+      - BETTER_AUTH_URL=https://3000-${BASE44_PUBLIC_HOST_SUFFIX}
+      - DATABASE_URL=postgres://vantage_app_login:vantage_dev@db:5432/vantage?sslmode=disable
+      - DATABASE_AUTH_URL=postgres://vantage_auth_login:vantage_dev@db:5432/vantage?sslmode=disable
+      - DATABASE_ADMIN_URL=postgres://postgres:vantage_dev@db:5432/vantage?sslmode=disable
+      - MARKETING_DATABASE_URL=postgres://vantage_marketing_login:vantage_dev@db:5432/vantage?sslmode=disable
+    env_file:
+      - /run/base44/app.env
+    depends_on:
+      roles:
+        condition: service_completed_successfully
+    tty: true
+    stdin_open: true
+    command: sh -c "/app/node_modules/.bin/next dev --port 3000 --hostname 0.0.0.0"
+
+volumes:
+  db-data:
+  next-cache:
+  swc-cache:

@@ -64,7 +64,8 @@ const files = readdirSync(dir)
 const pool = new pg.Pool({
   connectionString: url,
   max: 1,
-  ssl: ["localhost", "127.0.0.1", "::1"].includes(new URL(url).hostname)
+  ssl: /(^|[?&])sslmode=disable\b/i.test(url) ||
+  ["localhost", "127.0.0.1", "::1"].includes(new URL(url).hostname)
     ? false
     : { rejectUnauthorized: true },
 });

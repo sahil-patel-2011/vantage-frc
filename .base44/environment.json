@@ -1,0 +1,12 @@
+{
+  "previewPort": 3000,
+  "healthPath": "/",
+  "startCommand": "docker compose -f docker-compose.base44.yml up -d",
+  "secrets": [
+    { "name": "BETTER_AUTH_SECRET", "description": "Session signing secret for Better Auth", "requiredAtBoot": true, "generatedForDevelopment": true },
+    { "name": "CRON_SECRET", "description": "Shared secret the scheduled jobs require", "requiredAtBoot": true, "generatedForDevelopment": true },
+    { "name": "PLATFORM_OWNER_EMAIL", "description": "Email of the first administrator account", "requiredAtBoot": false },
+    { "name": "RESEND_API_KEY", "description": "Resend API key for sign-in codes and invites (resend.com dashboard)", "requiredAtBoot": false },
+    { "name": "AUTH_EMAIL_FROM", "description": "Verified Resend sender, e.g. 'Vantage <access@yourdomain.com>'", "requiredAtBoot": false }
+  ]
+}
