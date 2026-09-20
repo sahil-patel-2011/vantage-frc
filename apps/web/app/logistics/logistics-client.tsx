@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useBrowserValue } from "../../lib/use-browser-value";
 import { OfflineBanner } from "../../components/offline-banner";
 import { LogisticsRelated } from "../../components/logistics-related";
 import { PageHeader } from "../../components/ui";
@@ -123,8 +124,12 @@ export default function LogisticsClient() {
   );
 
   const orgIdParam = view?.status === "ready" ? view.context.orgId : view?.context?.orgId ?? null;
-  const urlOrg =
-    typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("orgId") : null;
+  /* Read after mount, not during render: on the server this is null and in the
+     browser it is the real id, and it reaches the shell's links. */
+  const urlOrg = useBrowserValue(
+    () => new URLSearchParams(window.location.search).get("orgId"),
+    null as string | null,
+  );
 
   if (error && !view) {
     return (

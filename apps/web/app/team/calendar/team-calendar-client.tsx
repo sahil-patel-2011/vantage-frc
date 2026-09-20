@@ -466,6 +466,7 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
       <EventCard
         key={event.id}
         event={event}
+        events={view.events}
         busy={busy}
         canDelete={canManage && !isReadonlyCalendarEvent(event)}
         scopePrompt={scopeEventId === event.id}
@@ -858,6 +859,7 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
                 <QuickAddForm
                   orgId={orgId}
                   subteams={view.subteams}
+                  events={view.events}
                   filterSubteamId={filterSubteamId}
                   initialStartsAt={quickStartsAt}
                   busy={busy}
@@ -900,6 +902,7 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
                 <CreateEventForm
                   orgId={orgId}
                   subteams={view.subteams}
+                  events={view.events}
                   attendanceEvents={view.attendanceEvents}
                   practiceSessions={view.practiceSessions}
                   filterSubteamId={filterSubteamId}

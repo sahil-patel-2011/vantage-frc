@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useBrowserValue, useReturnPath } from "../../lib/use-browser-value";
 import { CompetitionHubRelated } from "../../components/competition-hub-related";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
@@ -137,8 +138,13 @@ export default function MatchChecklistClient(_props: { embedded?: boolean } = {}
     [orgId, busy],
   );
 
-  const urlOrg =
-    typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("orgId");
+  /* Read after mount, not during render: on the server this is null and in the
+     browser it is the real id, and it lands in the related strip's hrefs. */
+  const urlOrg = useBrowserValue(
+    () => new URLSearchParams(window.location.search).get("orgId"),
+    null as string | null,
+  );
+  const returnPath = useReturnPath();
   const relatedOrg = orgId ?? urlOrg ?? undefined;
   const relatedStrip = (
     <CompetitionHubRelated
@@ -162,10 +168,7 @@ export default function MatchChecklistClient(_props: { embedded?: boolean } = {}
             online: typeof navigator === "undefined" ? true : navigator.onLine,
           }),
           {
-            nextPath:
-              typeof window === "undefined"
-                ? null
-                : `${window.location.pathname}${window.location.search}`,
+            nextPath: returnPath,
             message: error,
           },
         )

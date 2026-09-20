@@ -53,11 +53,19 @@
    there has to be drag-select, not a dead button. */
 .lab-command {
   display: grid;
+  /* Not the default implicit track. An `auto` track refuses to go below its
+     content's min-content width, and the install command is one long
+     unbreakable URL — so on a phone the track came out 443px inside a 366px
+     box and scrolled the whole page sideways. minmax(0, 1fr) lets the track
+     shrink, which hands the overflow to the `code` below, where `overflow-x:
+     auto` already knows what to do with it. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 6px;
   margin: 10px 0 12px;
 }
 .lab-command-row {
   display: flex;
+  min-width: 0;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;

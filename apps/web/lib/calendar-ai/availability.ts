@@ -16,6 +16,8 @@
  * passes `now`, so this is deterministic and testable.
  */
 
+import { occupiedRange } from "../calendar/conflicts";
+
 export type Weekday = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
 export const WEEKDAY_NAMES = [
@@ -164,19 +166,24 @@ export function slotEvidence(input: {
 
 export type BusyWindow = { startsAt: string; endsAt: string | null; title: string };
 
-/** True when [start,end) overlaps an existing event. Touching edges do not clash. */
+/**
+ * True when [start,end) overlaps an existing event. Touching edges do not clash.
+ *
+ * The "an entry with no end occupies an hour" rule started here and now lives
+ * in `lib/calendar/conflicts`, shared with the warning the create form shows,
+ * so the two can never answer the same question differently. See the note on
+ * `OPEN_ENDED_MS` for why that matters.
+ */
 export function conflictsWith(
   candidateStart: Date,
   candidateEnd: Date,
   busy: BusyWindow[],
 ): BusyWindow | null {
+  const candidate = { start: candidateStart.getTime(), end: candidateEnd.getTime() };
   for (const window of busy) {
-    const start = new Date(window.startsAt);
-    if (Number.isNaN(start.getTime())) continue;
-    // An event with no end is treated as one hour, which is the shortest thing
-    // worth protecting; assuming zero length would let us book straight over it.
-    const end = window.endsAt ? new Date(window.endsAt) : new Date(start.getTime() + 60 * 60 * 1000);
-    if (candidateStart < end && start < candidateEnd) return window;
+    const occupied = occupiedRange(window.startsAt, window.endsAt);
+    if (!occupied) continue;
+    if (candidate.start < occupied.end && occupied.start < candidate.end) return window;
   }
   return null;
 }

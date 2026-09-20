@@ -225,6 +225,7 @@ export function OccurrenceScopeChoice({
   actionLabel,
   destructive,
   busy,
+  disabled,
   onPick,
   onCancel,
 }: {
@@ -232,6 +233,13 @@ export function OccurrenceScopeChoice({
   actionLabel: string;
   destructive?: boolean;
   busy: boolean;
+  /**
+   * Blocks the action without blocking the way out — for a draft that is not
+   * valid yet, such as an end time before its start. Separate from `busy`,
+   * which disables Cancel too: that is right while a save is in flight and
+   * wrong for a draft, where it would trap someone in the editor.
+   */
+  disabled?: boolean;
   onPick: (scope: OccurrenceScope) => void;
   onCancel: () => void;
 }) {
@@ -248,7 +256,7 @@ export function OccurrenceScopeChoice({
                 ? "tc-scope-btn danger"
                 : "tc-scope-btn"
             }
-            disabled={busy}
+            disabled={busy || disabled}
             onClick={() => onPick(option.value)}
           >
             <strong>

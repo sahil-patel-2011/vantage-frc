@@ -1536,3 +1536,7 @@
   color: var(--accent-ink);
   background: var(--accent);
 }
+
+/* "That's on top of something else." A warning, not an error — the accent
+   border reads as information rather than the red of a rejected form. */
+.tc-conflict{margin:0;padding:8px 11px;color:var(--ink);background:color-mix(in srgb,var(--warning) 12%,var(--surface));border-left:3px solid var(--warning);border-radius:0 8px 8px 0;font-size:12.5px;line-height:1.5}
