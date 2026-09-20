@@ -57,7 +57,12 @@ export async function expectHubReadyOrGate(
   // h2 "Loading match video…"). Wait out Loading… then take the first ready card.
   await expect(combined.first()).toBeVisible({ timeout });
   if ((await ready.count()) === 0 || !(await ready.first().isVisible().catch(() => false))) {
-    await expect(recovery ? gate.or(recovery).first() : gate).toBeVisible();
+    // The same ceiling, for the same reason. This line was left on
+    // Playwright's 5s default, so a hub that had painted *something* within
+    // the generous budget above got five seconds to settle on which — and at
+    // the end of a full run that was the one assertion still timing out,
+    // reporting a missing team gate on a page that simply had not finished.
+    await expect(recovery ? gate.or(recovery).first() : gate).toBeVisible({ timeout });
     return false;
   }
   return true;

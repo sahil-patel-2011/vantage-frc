@@ -127,17 +127,35 @@ export function ItemRow({
             event.preventDefault();
             const amount = Number(delta);
             if (!Number.isFinite(amount) || amount === 0) return;
-            void adjust(amount, reason).then(() => {
+            /*
+              One adjustment, note or no note.
+
+              This used to post `adjust_stock` for the quantity and then, if a
+              note had been typed, post the whole adjustment a second time with
+              the note attached — so the stock moved twice. Taking five bolts
+              and writing "for the intake" removed ten, silently, and the
+              ledger grew two transactions for one event. The note is not a
+              second change; it is a field on this one.
+
+              It also meant the people documenting their work were the only
+              ones whose numbers went wrong.
+            */
+            const trimmedNote = note.trim();
+            void run(
+              {
+                action: "adjust_stock",
+                orgId,
+                itemId: item.id,
+                delta: amount,
+                reason,
+                ...(trimmedNote ? { note: trimmedNote } : {}),
+              },
+              `item:${item.id}`,
+            ).then(() => {
               setDelta("");
               setNote("");
               setMode("none");
             });
-            if (note.trim()) {
-              void run(
-                { action: "adjust_stock", orgId, itemId: item.id, delta: amount, reason, note: note.trim() },
-                `item:${item.id}`,
-              );
-            }
           }}
         >
           <input
@@ -322,7 +340,7 @@ export function AddItemForm({
       }}
     >
       <header>
-        <h2>Add item</h2>
+        <h2>Add a part</h2>
         <button type="button" className="inventory-link" onClick={onClose}>
           Cancel
         </button>
@@ -416,7 +434,7 @@ export function AddItemForm({
         </label>
       </div>
       <Button variant="primary" type="submit" disabled={busy || !name.trim()}>
-        {busy ? "Adding…" : "Add item"}
+        {busy ? "Adding…" : "Add a part"}
       </Button>
     </form>
   );

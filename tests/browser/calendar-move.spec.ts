@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { gotoAsTeam } from "./active-org";
-import { clearMilestones } from "./calendar-cleanup";
+import { clearMilestones, clearMilestonesAfter } from "./calendar-cleanup";
 import { signInAs } from "./session";
 
 /**
@@ -17,6 +17,10 @@ import { signInAs } from "./session";
  */
 test.beforeEach(async ({ context }) => {
   test.skip(!(await signInAs(context, "owner")), "no owner fixture on this box");
+});
+
+test.afterEach(async ({ page }) => {
+  await clearMilestonesAfter(page, ["Move "]);
 });
 
 async function openCalendar(page: import("@playwright/test").Page) {
@@ -202,9 +206,38 @@ test("dragging works with a finger, which is how it is used in the pit", async (
     .filter({ hasText: title });
   await expect(chip).toBeVisible({ timeout: 15_000 });
 
+  /*
+    Both cells have to be on screen before the coordinates are read.
+
+    The grid finds the day under the finger with `document.elementFromPoint`,
+    which answers null for a point outside the viewport. 2027-09-15 is one row
+    below 2027-09-08, and how far down the page the grid sits depends on what
+    is above it — which changed when the season calendar stopped carrying other
+    specs' leftover entries. Run alone the target happened to be in view; run
+    after the rest of the suite it was below the fold, `elementFromPoint`
+    returned null, and the drop silently resolved back to the original day.
+
+    Reading a bounding box does not scroll, so the scroll is explicit and both
+    boxes are read afterwards — a scroll between the two reads would
+    invalidate the first.
+  */
+  const target = page.locator(`.cal-grid-day[data-date="2027-09-15"]`);
+  await target.scrollIntoViewIfNeeded();
+  await chip.scrollIntoViewIfNeeded();
+
   const from = await chip.boundingBox();
-  const to = await page.locator(`.cal-grid-day[data-date="2027-09-15"]`).boundingBox();
+  const to = await target.boundingBox();
   expect(from && to).toBeTruthy();
+
+  // Fail here, saying why, rather than ten lines later as a drag that did not
+  // happen: a point off-screen cannot be hit-tested.
+  const viewport = page.viewportSize();
+  for (const [name, box] of [["chip", from!], ["target", to!]] as const) {
+    expect(
+      box.y >= 0 && box.y + box.height <= (viewport?.height ?? 0),
+      `the ${name} is outside the viewport, so elementFromPoint cannot see it`,
+    ).toBe(true);
+  }
 
   // A synthesized touch pointer: HTML5 drag-and-drop does not fire for these
   // at all, which is why this grid tracks pointer events instead.
@@ -214,14 +247,62 @@ test("dragging works with a finger, which is how it is used in the pit", async (
     type: "touchStart",
     touchPoints: [point(from!.x + from!.width / 2, from!.y + from!.height / 2)],
   });
-  await client.send("Input.dispatchTouchEvent", {
-    type: "touchMove",
-    touchPoints: [point(from!.x + from!.width / 2 + 24, from!.y + from!.height / 2 + 24)],
-  });
-  await client.send("Input.dispatchTouchEvent", {
-    type: "touchMove",
-    touchPoints: [point(to!.x + to!.width / 2, to!.y + to!.height / 2)],
-  });
+
+  /*
+    Wait for the drag to arm before aiming at the target.
+
+    The grid attaches its `pointermove` listener inside the pointerdown
+    handler, so a move dispatched before React has run that handler is simply
+    dropped — and then the release lands with nothing armed, the entry stays
+    put, and the failure reads as "the drag does not work". Sending all four
+    events back to back passed on an idle machine and failed whenever the box
+    was busy, which is the worst version of a test: green locally, red in CI.
+
+    `data-drop="yes"` is the grid's own answer to "a drag is in progress and
+    this is the cell under the finger", so it is the thing to wait on rather
+    than a sleep.
+  */
+  /*
+    Hold the finger there, rather than reporting the position once.
+
+    A single dispatched move that the app misses can never be recovered from:
+    the assertion below would then poll for fifteen seconds against a grid that
+    was never told where the finger went, and the release would compute the
+    drop from the last position it did see — the original day. That is the
+    2027-09-08 this test kept reporting.
+
+    A finger resting on a cell reports its position continuously, so each poll
+    re-sends the move. `data-drop="yes"` is the grid's own answer to "a drag is
+    in progress and this is the cell under it", which makes it the thing to
+    wait on instead of a sleep.
+  */
+  const holdAt = async (x: number, y: number) => {
+    await client.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [point(x, y)] });
+  };
+
+  // First a nudge past the 6px travel threshold, which is what arms the drag —
+  // below it a press stays a press, so that an entry can still be opened.
+  await expect
+    .poll(
+      async () => {
+        await holdAt(from!.x + from!.width / 2 + 24, from!.y + from!.height / 2 + 24);
+        return page.locator('.cal-grid-day[data-drop="yes"]').count();
+      },
+      { timeout: 15_000 },
+    )
+    .toBeGreaterThan(0);
+
+  // Then over the target, until the grid agrees that is where it would land.
+  await expect
+    .poll(
+      async () => {
+        await holdAt(to!.x + to!.width / 2, to!.y + to!.height / 2);
+        return page.locator('.cal-grid-day[data-date="2027-09-15"][data-drop="yes"]').count();
+      },
+      { timeout: 15_000 },
+    )
+    .toBeGreaterThan(0);
+
   await client.send("Input.dispatchTouchEvent", {
     type: "touchEnd",
     touchPoints: [],

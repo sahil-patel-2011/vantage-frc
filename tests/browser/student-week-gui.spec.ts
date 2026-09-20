@@ -171,9 +171,33 @@ test.describe("student-week GUI path", () => {
       await expect(page.getByRole("heading", { name: "Add a teammate" })).toBeVisible();
       const form = page.locator("#invite-form");
       await expect(form.getByRole("button", { name: "Send invite" })).toBeVisible();
-      await form.getByLabel("Email").fill(`gui-verify-${Date.now()}@example.com`);
+      const probeEmail = `gui-verify-${Date.now()}@example.com`;
+      await form.getByLabel("Email").fill(probeEmail);
       await form.getByRole("button", { name: "Send invite" }).click();
       await expect(page.locator("body")).not.toContainText("Application error");
+
+      /*
+        Take it back out. This sends a real invite, and without a revoke the
+        fixture team accrued one pending invite per run — 25 of them by the
+        time anyone looked, each contributing a Resend and a Revoke button, so
+        half of every control on Team admin was this spec's litter. It also
+        buries any genuine pending invite a person is trying to read.
+
+        Best-effort: a teardown that throws would mask the real assertion above.
+      */
+      await page.evaluate(async ([org, email]) => {
+        const listed = await fetch(`/api/organizations/invites?orgId=${org}`, { cache: "no-store" });
+        if (!listed.ok) return;
+        const body = (await listed.json()) as { invites?: Array<{ id: string; email: string }> };
+        for (const invite of body.invites ?? []) {
+          if (invite.email !== email) continue;
+          await fetch(`/api/organizations/invites`, {
+            method: "PATCH",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ action: "revoke", orgId: org, inviteId: invite.id }),
+          });
+        }
+      }, [orgId, probeEmail] as const).catch(() => undefined);
     } else {
       await expect(page.getByRole("link", { name: /Choose your team|Invite an exact email/i }).first()).toBeVisible();
     }

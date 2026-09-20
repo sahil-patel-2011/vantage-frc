@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { gotoAsTeam } from "./active-org";
-import { clearMilestones } from "./calendar-cleanup";
+import { clearMilestones, clearMilestonesAfter } from "./calendar-cleanup";
 import { signInAs } from "./session";
 
 /**
@@ -11,6 +11,10 @@ import { signInAs } from "./session";
  */
 test.beforeEach(async ({ context }) => {
   test.skip(!(await signInAs(context, "owner")), "no owner fixture on this box");
+});
+
+test.afterEach(async ({ page }) => {
+  await clearMilestonesAfter(page, ["Grid check ", "Occupied ", "Also "]);
 });
 
 type Page = import("@playwright/test").Page;

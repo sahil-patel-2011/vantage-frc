@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   LEGAL_CONTACT_EMAIL,
@@ -188,5 +190,49 @@ describe("legal documents", () => {
     const anchors = (doc: LegalDocument) => doc.sections.map((section) => `/${doc.slug}#${section.id}`);
     expect(anchors(PRIVACY_POLICY)).toContain("/privacy#what-we-collect");
     expect(anchors(TERMS_OF_SERVICE)).toContain("/terms#acceptable-use");
+  });
+
+  /*
+    The page's own prose links into the document, and that is not derived from
+    the ids — it is hand-written. The Terms page spent weeks telling readers to
+    read "the governing-law section", which did not exist: the link went
+    nowhere, and the table of contents, being generated from the sections, gave
+    no hint that anything was missing.
+
+    So this reads what the pages actually ship and checks every in-page anchor
+    against the real section ids. Nothing else would have caught it.
+  */
+  it("every in-page anchor on the legal pages resolves to a real section", () => {
+    const pages: Array<{ file: string; doc: LegalDocument }> = [
+      { file: "apps/web/app/terms/page.tsx", doc: TERMS_OF_SERVICE },
+      { file: "apps/web/app/privacy/page.tsx", doc: PRIVACY_POLICY },
+    ];
+    for (const { file, doc } of pages) {
+      const source = readFileSync(resolve(process.cwd(), file), "utf8");
+      const targets = new Set(doc.sections.map((section) => section.id));
+      // A page may also anchor to its own chrome — `#top` on a back-to-top
+      // link is a real destination and not a section of the document.
+      for (const match of source.matchAll(/\bid="([a-z0-9-]+)"/g)) targets.add(match[1]!);
+      // Literal `href="#…"` only — the table of contents interpolates and is
+      // covered by the test above.
+      const linked = [...source.matchAll(/href="#([a-z0-9-]+)"/g)].map((match) => match[1]!);
+      expect(linked.length, `${file} should link into the document`).toBeGreaterThan(0);
+      for (const anchor of linked) {
+        expect(
+          targets.has(anchor),
+          `${file} links #${anchor}, which is neither a section of ${doc.slug} nor an id on the page`,
+        ).toBe(true);
+      }
+    }
+  });
+
+  it("states the governing-law position instead of pointing at nothing", () => {
+    const section = TERMS_OF_SERVICE.sections.find((candidate) => candidate.id === "governing-law");
+    expect(section, "the Terms page links to #governing-law").toBeDefined();
+    const text = (section?.paragraphs ?? []).join(" ");
+    // It must not invent a jurisdiction nobody chose.
+    expect(text).toMatch(/not yet designated/i);
+    // And it must not read as a waiver of rights the reader already has.
+    expect(text).toMatch(/local consumer-protection law/i);
   });
 });

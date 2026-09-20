@@ -207,7 +207,13 @@ export function InventoryReadyHeader({
   if (shell !== "empty") {
     actions.push({
       id: "add-item",
-      label: showAdd ? "Close add item" : "Add item",
+      /* One name for one action. The empty state has always called this "Add
+         a part" — the word the rest of the page uses for a row — while the
+         toolbar called it "Add item" and the form heading called it something
+         else again. Three names for the same thing is learning curve for
+         nothing, and it made specs depend on which state the page happened to
+         be in. */
+      label: showAdd ? "Close the part form" : "Add a part",
       intent: "primary",
       onClick: onToggleAdd,
     });

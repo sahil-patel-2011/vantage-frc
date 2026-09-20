@@ -50,7 +50,8 @@ export default function PrivacyPage() {
           <strong>Written to be checked, not to reassure.</strong>
           This policy describes what the software actually does, including where its protections stop. It has not
           been reviewed by a lawyer yet. If you are a school administrator, start at{" "}
-          <a href="#minors">Students under 18</a>.
+          <a href="#schools">School-affiliated teams</a>, then{" "}
+          <a href="#children">Students under 13, and parental consent</a>.
         </p>
 
         <nav className="legal-toc" aria-label="Sections of this policy">

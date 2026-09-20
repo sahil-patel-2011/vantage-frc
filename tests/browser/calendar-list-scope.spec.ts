@@ -104,6 +104,18 @@ test("the whole season is still one press away, and comes back", async ({ page }
 
 test("a month with nothing in it says so instead of showing another month", async ({ page }) => {
   await openCalendar(page);
+  /*
+    Seed, for the reason given on `seedTwoMonths` above — which this test was
+    the one place not following. The scope strip only renders when the season
+    holds at least one entry, so this quietly depended on the fixture having
+    something in it, and passed for as long as other specs' uncleaned rows
+    supplied that. Once they were cleared it failed, reporting a missing strip
+    as though the feature had broken.
+
+    Both entries land in this month and the next; the walk below goes twenty
+    months out, so the month under test is still genuinely empty.
+  */
+  await seedTwoMonths(page, Date.now());
   await expect(page.locator(".cal-list-scope")).toBeVisible({ timeout: 20_000 });
 
   // Walk far enough forward that nothing is scheduled there.
@@ -122,4 +134,6 @@ test("a month with nothing in it says so instead of showing another month", asyn
     await expect(sections).toHaveCount(1);
     await expect(sections.locator("h2")).toContainText(heading);
   }
+
+  await clearMilestones(page, "Scope spec ");
 });

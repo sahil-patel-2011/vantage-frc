@@ -33,3 +33,25 @@ export async function clearMilestones(page: Page, prefix: string): Promise<numbe
     return removed;
   }, prefix);
 }
+
+/**
+ * Clear the same prefixes once the spec is finished with them.
+ *
+ * `clearMilestones` runs *before* the work on purpose, so a run that dies half
+ * way through still hands the next one a clean month. That is the right
+ * default and it is not enough on its own: the last run of the day always
+ * leaves its rows behind, and they are then real data on a real page. Four of
+ * them were sitting on `/calendar` — an "extremely long milestone title", an
+ * "Occupied", an "Also" and a "Move touch" — visible to anyone who opened the
+ * app, and counted by anything measuring the page.
+ *
+ * Best-effort and never throwing: a teardown that fails must not turn a
+ * passing run red.
+ */
+export async function clearMilestonesAfter(page: Page, prefixes: readonly string[]): Promise<void> {
+  try {
+    for (const prefix of prefixes) await clearMilestones(page, prefix);
+  } catch {
+    // The page may already be closing; the next run clears these anyway.
+  }
+}
