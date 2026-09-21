@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Icon } from "../components/icon";
-import { withOrgHref } from "../lib/nav/product-nav";
+import { withOrgHref } from "../../lib/nav/product-nav";
 import type { Me } from "../components/app-shell-model";
 import { DonutChart, BarChart, LineChart, ProgressRing } from "./dashboard-charts";
 import { ScoutingFilterBar, type ScoutingData } from "./scouting-filter";

@@ -75,7 +75,6 @@ body.has-app-shell {
   background: rgba(247, 248, 250, .82);
   border-bottom: 1px solid rgba(229, 231, 235, .6);
   backdrop-filter: saturate(1.4) blur(16px);
-  -webkit-backdrop-filter: saturate(1.4) blur(16px);
 }
 .soft-topbar-title { font: 600 15px/1.2 var(--vt-font); letter-spacing: -.01em; }
 .soft-icon-btn { width: 40px; height: 40px; border-radius: var(--vt-radius-sm); }
@@ -98,7 +97,6 @@ body.has-app-shell {
   border: 1px solid rgba(229, 231, 235, .5);
   border-radius: var(--vt-radius-pill);
   backdrop-filter: blur(20px) saturate(1.5);
-  -webkit-backdrop-filter: blur(20px) saturate(1.5);
   box-shadow: 0 8px 24px rgba(0, 0, 0, .08), 0 2px 6px rgba(0, 0, 0, .04);
 }
 .soft-island-tab {

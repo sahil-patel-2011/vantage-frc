@@ -3,26 +3,26 @@
 
 /* ── Marketing ─────────────────────────────────────────────────────────── */
 .marketing-lux {
-  --m-ink: #1d1d1f;
-  --m-muted: #6e6e73;
-  --m-canvas: #ffffff;
-  --m-paper: #f5f5f7;
-  --m-surface: #ffffff;
-  --m-surface-2: #f5f5f7;
-  --m-line: rgba(29, 29, 31, .12);
-  --m-line-soft: rgba(29, 29, 31, .08);
-  --m-line-strong: rgba(29, 29, 31, .18);
-  --m-blue: #2563eb;
-  --m-warm: #2563eb;
-  --m-warm-soft: rgba(37, 99, 235, .08);
-  --m-warm-line: rgba(37, 99, 235, .2);
-  --m-card-radius: 24px;
-  --m-card-shadow: 0 1px 2px rgba(0, 0, 0, .03), 0 12px 34px rgba(0, 0, 0, .05);
-  --m-card-shadow-lg: 0 2px 5px rgba(0, 0, 0, .04), 0 24px 64px rgba(0, 0, 0, .1);
-  --m-content: 1180px;
-  --m-pad-x: clamp(20px, 5vw, 72px);
-  color: var(--m-ink);
-  background: var(--m-canvas);
+  --ap-ink: #1d1d1f;
+  --ap-muted: #6e6e73;
+  --ap-canvas: #ffffff;
+  --ap-paper: #f5f5f7;
+  --ap-surface: #ffffff;
+  --ap-surface-2: #f5f5f7;
+  --ap-line: rgba(29, 29, 31, .12);
+  --ap-line-soft: rgba(29, 29, 31, .08);
+  --ap-line-strong: rgba(29, 29, 31, .18);
+  --ap-blue: #2563eb;
+  --ap-warm: #2563eb;
+  --ap-warm-soft: rgba(37, 99, 235, .08);
+  --ap-warm-line: rgba(37, 99, 235, .2);
+  --ap-card-radius: 24px;
+  --ap-card-shadow: 0 1px 2px rgba(0, 0, 0, .03), 0 12px 34px rgba(0, 0, 0, .05);
+  --ap-card-shadow-lg: 0 2px 5px rgba(0, 0, 0, .04), 0 24px 64px rgba(0, 0, 0, .1);
+  --ap-content: 1180px;
+  --ap-pad-x: clamp(20px, 5vw, 72px);
+  color: var(--ap-ink);
+  background: var(--ap-canvas);
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", var(--font-inter), sans-serif;
   font-size: 16px;
   line-height: 1.5;
@@ -31,11 +31,10 @@
 
 .marketing-lux .nav {
   min-height: 64px;
-  padding-inline: max(var(--m-pad-x), calc((100vw - 1320px) / 2));
+  padding-inline: max(var(--ap-pad-x), calc((100vw - 1320px) / 2));
   background: rgba(255, 255, 255, .82);
   border-bottom-color: rgba(29, 29, 31, .08);
   backdrop-filter: saturate(180%) blur(20px);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
 }
 
 .marketing-lux .nav nav a,
@@ -274,7 +273,7 @@
   .shx-stage,
   .mk-hub-detail
 ) > :where(p, span) {
-  color: var(--m-muted);
+  color: var(--ap-muted);
   line-height: 1.62;
 }
 
@@ -349,7 +348,6 @@ body.has-app-shell .soft-topbar {
   border-bottom-color: rgba(29, 29, 31, .08);
   box-shadow: none;
   backdrop-filter: saturate(180%) blur(22px);
-  -webkit-backdrop-filter: saturate(180%) blur(22px);
 }
 
 body.has-app-shell .soft-page-head h1,
@@ -379,7 +377,6 @@ body.has-app-shell .vrail {
   background: rgba(255, 255, 255, .78);
   border-right-color: rgba(29, 29, 31, .08);
   backdrop-filter: saturate(180%) blur(22px);
-  -webkit-backdrop-filter: saturate(180%) blur(22px);
 }
 
 body.has-app-shell .vrail-mark {
@@ -497,7 +494,6 @@ body.has-app-shell .soft-island {
   background: rgba(255, 255, 255, .76);
   box-shadow: 0 12px 34px rgba(0, 0, 0, .12), inset 0 1px rgba(255, 255, 255, .7);
   backdrop-filter: saturate(180%) blur(24px);
-  -webkit-backdrop-filter: saturate(180%) blur(24px);
 }
 
 body.has-app-shell .soft-island a[aria-current="page"],
@@ -512,7 +508,6 @@ body.has-app-shell .soft-island-editor > section {
   border-color: rgba(29, 29, 31, .1);
   background: rgba(255, 255, 255, .94);
   backdrop-filter: saturate(180%) blur(28px);
-  -webkit-backdrop-filter: saturate(180%) blur(28px);
 }
 
 body.has-app-shell .soft-badge,

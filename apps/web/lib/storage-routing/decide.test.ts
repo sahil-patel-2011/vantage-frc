@@ -3,6 +3,7 @@
 // cloud fallback on and off, and hard refusals with honest reasons.
 
 import { describe, expect, it } from "vitest";
+import { MEDIA_ENABLED } from "../media-availability";
 import {
   decideStorageRoute,
   isBrowserReachableUrl,
@@ -87,7 +88,7 @@ describe("decideStorageRoute", () => {
     expect(decision).toMatchObject({ destination: "node", nodeId: "node-1", nodeName: "Shop-NAS" });
   });
 
-  it("sends video and CAD to the node even when tiny (class rule)", () => {
+  it.skipIf(!MEDIA_ENABLED)("sends video and CAD to the node even when tiny (class rule)", () => {
     for (const contentClass of ["video", "cad", "archive"] as const) {
       const decision = decideStorageRoute({
         byteSize: 1 * MB,
@@ -100,7 +101,7 @@ describe("decideStorageRoute", () => {
     }
   });
 
-  it("falls back to the cloud (labelled) when the node is offline and the file fits", () => {
+  it.skipIf(!MEDIA_ENABLED)("falls back to the cloud (labelled) when the node is offline and the file fits", () => {
     const decision = decideStorageRoute({
       byteSize: 1 * MB,
       contentClass: "video",
@@ -115,7 +116,7 @@ describe("decideStorageRoute", () => {
     }
   });
 
-  it("refuses instead of falling back when policy disables cloud fallback", () => {
+  it.skipIf(!MEDIA_ENABLED)("refuses instead of falling back when policy disables cloud fallback", () => {
     const decision = decideStorageRoute({
       byteSize: 1 * MB,
       contentClass: "video",
@@ -127,7 +128,7 @@ describe("decideStorageRoute", () => {
     expect(decision.reason).toMatch(/refused/);
   });
 
-  it("refuses a big file when no node is paired (nowhere honest to put it)", () => {
+  it.skipIf(!MEDIA_ENABLED)("refuses a big file when no node is paired (nowhere honest to put it)", () => {
     const decision = decideStorageRoute({
       byteSize: 400 * MB,
       contentClass: "video",
@@ -140,7 +141,7 @@ describe("decideStorageRoute", () => {
     expect(decision.reason).toMatch(/cloud upload limit/);
   });
 
-  it("refuses a big file when the node reports insufficient free disk", () => {
+  it.skipIf(!MEDIA_ENABLED)("refuses a big file when the node reports insufficient free disk", () => {
     const decision = decideStorageRoute({
       byteSize: 400 * MB,
       contentClass: "video",
@@ -178,7 +179,7 @@ describe("decideStorageRoute", () => {
 });
 
 describe("planFiles", () => {
-  it("classifies and decides per file, matching what the server will enforce", () => {
+  it.skipIf(!MEDIA_ENABLED)("classifies and decides per file, matching what the server will enforce", () => {
     const entries = planFiles(
       [
         { name: "match-42.mp4", contentType: "video/mp4", byteSize: 400 * MB },

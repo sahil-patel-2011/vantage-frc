@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { MEDIA_ENABLED } from "../media-availability";
 import {
   breadcrumbForPath,
   cmdkNavCatalog,
@@ -27,12 +28,12 @@ describe("product-nav", () => {
     ]);
   });
 
-  it("keeps Soft-UI hubs in the primary island tabs", () => {
+  it("keeps the student's match-week tabs in the primary island", () => {
     expect(PRIMARY_TABS.map((tab) => tab.href)).toEqual([
       "/dashboard",
       "/competition",
-      "/team",
-      "/build",
+      "/competition?tab=scouting",
+      "/analytics",
     ]);
   });
 
@@ -145,8 +146,10 @@ describe("product-nav", () => {
     expect(breadcrumbForPath("/competition")).toBe("Competition");
     expect(breadcrumbForPath("/alliance-selection-desk")).toBe("Competition / Alliance desk");
     expect(breadcrumbForPath("/season-planning-workspace")).toBe("Team / Season plan");
-    expect(breadcrumbForPath("/media")).toBe("Media");
-    expect(breadcrumbForPath("/media-kit")).toBe("Media / Kit");
+    if (MEDIA_ENABLED) {
+      expect(breadcrumbForPath("/media")).toBe("Media");
+      expect(breadcrumbForPath("/media-kit")).toBe("Media / Kit");
+    }
     expect(breadcrumbForPath("/chat")).toBe("AI / Chat");
   });
 

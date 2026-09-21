@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { MEDIA_ENABLED } from "../media-availability";
 import {
   hubById,
   hubFeaturedMoreTabs,
@@ -26,7 +27,7 @@ describe("product hubs", () => {
     expect(NAV_HUBS.map((hub) => hub.id)).toEqual(["competition", "team", "business", "build"]);
   });
 
-  it("keeps every tool of a hidden hub reachable from a visible one or from Settings", () => {
+  it.skipIf(!MEDIA_ENABLED)("keeps every tool of a hidden hub reachable from a visible one or from Settings", () => {
     // Media → Business › Outreach. Each former Media workbench has a tool entry
     // under a visible hub pointing at the same route.
     const business = hubById("business");
@@ -50,7 +51,8 @@ describe("product hubs", () => {
   });
 
   it("keeps a short workbench TabBar with inner tools instead of a More-tools dump", () => {
-    for (const hub of PRODUCT_HUBS) {
+    // A paused hub (media while MEDIA_ENABLED is false) has no tabs to check.
+    for (const hub of PRODUCT_HUBS.filter((entry) => entry.tabs.length > 0)) {
       const workbenches = hubPrimaryTabs(hub);
       expect(workbenches.length).toBeGreaterThanOrEqual(3);
       expect(workbenches.length).toBeLessThanOrEqual(6);
@@ -75,7 +77,7 @@ describe("product hubs", () => {
     expect(hubMoreTabs(business).map((tab) => tab.id)).not.toContain("media");
   });
 
-  it("surfaces Media hub tabs for calendar, drafts, reminders, kit, and impact", () => {
+  it.skipIf(!MEDIA_ENABLED)("surfaces Media hub tabs for calendar, drafts, reminders, kit, and impact", () => {
     const media = hubById("media");
     expect(hubPrimaryTabs(media).map((tab) => tab.id)).toEqual([
       "calendar",
@@ -155,7 +157,7 @@ describe("product hubs", () => {
     );
   });
 
-  it("pins Alliance desk, Season planning, and AI keys as featured inner tools", () => {
+  it.skipIf(!MEDIA_ENABLED)("pins Alliance desk, Season planning, and AI keys as featured inner tools", () => {
     expect(hubFeaturedMoreTabs(hubById("competition")).map((tab) => tab.id)).toEqual([
       // The one pre-match briefing is the drive team's front door on event day.
       "briefing",
@@ -200,7 +202,7 @@ describe("product hubs", () => {
   });
 
   it("points every nested tab at a real workbench root", () => {
-    for (const hub of PRODUCT_HUBS) {
+    for (const hub of PRODUCT_HUBS.filter((entry) => entry.tabs.length > 0)) {
       const roots = new Set(hubPrimaryTabs(hub).map((tab) => tab.id));
       expect(roots.has(hub.defaultTab), `${hub.id} defaultTab is not a workbench`).toBe(true);
       for (const tab of hub.tabs.filter((entry) => entry.group)) {
@@ -210,7 +212,7 @@ describe("product hubs", () => {
     }
   });
 
-  it("registers the previously unreachable routes so search and menus can find them", () => {
+  it.skipIf(!MEDIA_ENABLED)("registers the previously unreachable routes so search and menus can find them", () => {
     const competition = hubById("competition");
     expect(hubNestedTabs(competition, "command").map((tab) => tab.id)).toEqual(
       expect.arrayContaining(["rankings", "schedule", "briefing"]),

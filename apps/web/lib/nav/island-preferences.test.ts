@@ -9,9 +9,9 @@ import {
 } from "./island-preferences";
 
 describe("island preferences", () => {
-  it("defaults to Home, Compete, Team, Build — the student's week, not the mentor's", () => {
-    expect(defaultIslandHrefs()).toEqual(["/dashboard", "/competition", "/team", "/build"]);
-    expect(resolveIslandTabs(null).map((item) => item.label)).toEqual(["Home", "Compete", "Team", "Build"]);
+  it("defaults to Home, Matches, Scout, Stats — a scouter's match week", () => {
+    expect(defaultIslandHrefs()).toEqual(["/dashboard", "/competition", "/competition?tab=scouting", "/analytics"]);
+    expect(resolveIslandTabs(null).map((item) => item.label)).toEqual(["Home", "Matches", "Scout", "Stats"]);
   });
 
   it("preserves a valid custom order", () => {

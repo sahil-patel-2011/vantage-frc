@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { MEDIA_ENABLED } from "../media-availability";
 import { decideStorageRoute, planFiles } from "./decide";
 import { defaultRoutingPolicy } from "./policy";
 import { objectStoreStatus, driveObjectKey, presignObjectGet } from "./object-store";
@@ -34,7 +35,7 @@ describe("object storage as a third routing destination", () => {
     expect(decision.destination).toBe("refused");
   });
 
-  it("still prefers the team's own node when the node can take the file", () => {
+  it.skipIf(!MEDIA_ENABLED)("still prefers the team's own node when the node can take the file", () => {
     const decision = decideStorageRoute({
       byteSize: 300 * 1024 * 1024,
       contentClass: "video",
@@ -46,7 +47,7 @@ describe("object storage as a third routing destination", () => {
     expect(decision.destination).toBe("node");
   });
 
-  it("takes a big file object storage can hold but nothing else can", () => {
+  it.skipIf(!MEDIA_ENABLED)("takes a big file object storage can hold but nothing else can", () => {
     const decision = decideStorageRoute({
       byteSize: 300 * 1024 * 1024,
       contentClass: "video",
@@ -88,7 +89,7 @@ describe("object storage as a third routing destination", () => {
     expect(decision.destination).toBe("cloud");
   });
 
-  it("says WHY object storage was unavailable when it refuses", () => {
+  it.skipIf(!MEDIA_ENABLED)("says WHY object storage was unavailable when it refuses", () => {
     const decision = decideStorageRoute({
       byteSize: 300 * 1024 * 1024,
       contentClass: "video",
@@ -101,7 +102,7 @@ describe("object storage as a third routing destination", () => {
     expect(decision.reason).toContain("Object storage is not configured");
   });
 
-  it("plans a whole selection with the object destination in play", () => {
+  it.skipIf(!MEDIA_ENABLED)("plans a whole selection with the object destination in play", () => {
     const entries = planFiles(
       [
         { name: "notes.txt", contentType: "text/plain", byteSize: 900 },
