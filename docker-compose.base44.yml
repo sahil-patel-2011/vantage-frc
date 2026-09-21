@@ -61,6 +61,8 @@ services:
       - CHOKIDAR_USEPOLLING=true
       - BASE44_PUBLIC_HOST_SUFFIX=${BASE44_PUBLIC_HOST_SUFFIX}
       - BETTER_AUTH_URL=https://3000-${BASE44_PUBLIC_HOST_SUFFIX}
+      - NEXT_PUBLIC_APP_URL=https://3000-${BASE44_PUBLIC_HOST_SUFFIX}
+      - AUTH_TRUSTED_ORIGINS=https://3000-${BASE44_PUBLIC_HOST_SUFFIX}
       - DATABASE_URL=postgres://vantage_app_login:vantage_dev@db:5432/vantage?sslmode=disable
       - DATABASE_AUTH_URL=postgres://vantage_auth_login:vantage_dev@db:5432/vantage?sslmode=disable
       - DATABASE_ADMIN_URL=postgres://postgres:vantage_dev@db:5432/vantage?sslmode=disable
