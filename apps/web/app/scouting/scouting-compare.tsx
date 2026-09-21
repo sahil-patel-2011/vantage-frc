@@ -14,6 +14,7 @@
 
 import type { ScoutedTeamProfile } from "@vantage/prediction-strategy";
 import { CONSISTENCY_LABEL } from "@vantage/prediction-strategy";
+import { allianceMath } from "./compare-alliance";
 import "./scouting-compare.css";
 
 export const COMPARE_LIMIT = 3;
@@ -54,6 +55,7 @@ export function ScoutingCompare({
     ...profiles.map((profile) => profile.consistency?.ceiling ?? profile.shrunkTotal),
   );
   const best = profiles.reduce((top, profile) => (profile.shrunkTotal > top.shrunkTotal ? profile : top));
+  const alliance = allianceMath(profiles);
 
   return (
     <section className="scmp" aria-label="Compare robots">
@@ -155,6 +157,42 @@ export function ScoutingCompare({
           );
         })}
       </div>
+
+      {alliance ? (
+        <footer className="scmp-alliance">
+          <div className="scmp-alliance-figures">
+            <span>
+              <strong>{alliance.total.toFixed(0)}</strong>
+              <small>together, per match</small>
+            </span>
+            {alliance.floor != null && alliance.ceiling != null ? (
+              <span>
+                <strong>
+                  {alliance.floor.toFixed(0)}–{alliance.ceiling.toFixed(0)}
+                </strong>
+                <small>bad day → good day</small>
+              </span>
+            ) : null}
+            <span>
+              <strong>
+                {alliance.auto.toFixed(0)} · {alliance.teleop.toFixed(0)} · {alliance.endgame.toFixed(0)}
+              </strong>
+              <small>auto · teleop · endgame</small>
+            </span>
+            <span data-tone={alliance.deadRisk > 0.2 ? "risk" : undefined}>
+              <strong>{Math.round(alliance.deadRisk * 100)}%</strong>
+              <small>chance one dies</small>
+            </span>
+            <span>
+              <strong>
+                {alliance.climbers}/{profiles.length}
+              </strong>
+              <small>reliable climbs</small>
+            </span>
+          </div>
+          <p className="scmp-alliance-note">{alliance.note}</p>
+        </footer>
+      ) : null}
     </section>
   );
 }

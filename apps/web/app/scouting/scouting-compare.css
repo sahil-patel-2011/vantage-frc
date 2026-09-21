@@ -169,6 +169,42 @@
   line-height: 1.45;
 }
 
+/* What the pairing is worth together — the line a captain reads out loud. */
+.scmp-alliance {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--accent) 25%, var(--line));
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+.scmp-alliance-figures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 22px;
+}
+.scmp-alliance-figures span {
+  display: grid;
+}
+.scmp-alliance-figures strong {
+  font: 700 15px/1.1 var(--font-source-sans), ui-sans-serif;
+}
+.scmp-alliance-figures span[data-tone="risk"] strong {
+  color: var(--critical);
+}
+.scmp-alliance-figures small {
+  color: var(--muted);
+  font: 600 10px var(--font-source-sans), ui-sans-serif;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.scmp-alliance-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 /* ---------------------------------------------------------------- motion --
    The panel is the one thing on this screen that appears in response to a tap,
    so it is allowed the largest gesture: it settles down from above, its cards
@@ -196,6 +232,10 @@
 }
 .scmp-card:hover {
   box-shadow: var(--shadow);
+}
+.scmp-alliance {
+  animation: scmp-card-in var(--dur-move) var(--ease-settle) both;
+  animation-delay: 120ms;
 }
 .scmp-card[data-slot="2"] { animation-delay: 45ms; }
 .scmp-card[data-slot="3"] { animation-delay: 90ms; }
