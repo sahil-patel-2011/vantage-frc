@@ -36,6 +36,7 @@ import { ScoutReportViewer } from "./scout-report-viewer";
 import ScoutHandoffPanel from "./scout-handoff-panel";
 import ScoutVoiceNotesPanel from "./scout-voice-notes-panel";
 import ScoutingTrustPanel from "./scouting-trust-panel";
+import { ScoutingReportTemplatePicker } from "./scouting-report-template-picker";
 
 type MatchOption = {
   matchKey: string;
@@ -534,6 +535,13 @@ return (
             </FormRow>
           )}
 
+          {type === "match" && formFields.length ? (
+            <ScoutingReportTemplatePicker
+              key={`${matchKey}-${teamKey}`}
+              fields={formFields}
+            />
+          ) : null}
+
           {liveConflicts.length ? (
             <div className="scout-official-flags" role="status">
               <strong>Live official checks</strong>
@@ -560,6 +568,7 @@ return (
           {formFields.filter((field) => MEDIA_ENABLED || (field.type !== "robot_image" && field.widget !== "robot_image")).map((field) => (
             <Field
               key={field.key}
+              anchorId={`scout-field-${encodeURIComponent(field.key)}`}
               field={field}
               value={payload[field.key]}
               flags={flagsByField.get(field.key) ?? []}
