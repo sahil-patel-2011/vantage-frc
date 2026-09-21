@@ -191,23 +191,6 @@ body.has-app-shell {
   color: var(--vt-muted-light); padding: 8px 0;
 }
 
-/* ===== FAB ===== */
-.soft-fab {
-  position: fixed;
-  bottom: calc(76px + var(--safe-bottom, 0px));
-  right: 16px;
-  z-index: 79;
-  width: 52px; height: 52px;
-  border-radius: var(--vt-radius-pill);
-  background: var(--vt-blue); color: #fff;
-  display: grid; place-items: center;
-  border: none; cursor: pointer;
-  box-shadow: 0 6px 16px rgba(37, 99, 235, .3);
-  transition: transform .15s ease, box-shadow .15s ease;
-}
-.soft-fab:hover { transform: scale(1.05); box-shadow: 0 8px 20px rgba(37, 99, 235, .4); }
-.soft-fab svg { width: 24px; height: 24px; }
-
 /* ===== Card System ===== */
 .vt-card { background: var(--vt-surface); border-radius: var(--vt-radius); box-shadow: var(--vt-shadow); padding: 20px; }
 .vt-card-flat { background: var(--vt-surface); border: 1px solid var(--vt-line); border-radius: var(--vt-radius); padding: 20px; }

@@ -324,11 +324,6 @@ export function DashboardHomeView(props: {
           ) : null}
         </div>
         <div className="dash-home-actions">
-          {!editing && !previewing ? (
-            <button type="button" className="dash-customize-primary" onClick={enterEditMode}>
-              Customize widgets
-            </button>
-          ) : null}
           {nextMatchData && !editing && !viewLayout.some((item) => item.type === "next_match") ? (
             <a className="dash-next-glance" href={withOrgHref("/my-day", orgId || null)}>
               <span>Next</span>
