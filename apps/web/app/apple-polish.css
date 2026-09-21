@@ -23,7 +23,10 @@
   --m-pad-x: clamp(20px, 5vw, 72px);
   color: var(--m-ink);
   background: var(--m-canvas);
-  font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", var(--font-inter), sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  letter-spacing: -.006em;
 }
 
 .marketing-lux .nav {
@@ -91,7 +94,7 @@
 .marketing-lux .lux-kicker,
 .marketing-lux .lux-eyebrow {
   color: #2563eb;
-  font-family: var(--font-inter), -apple-system, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", var(--font-inter), sans-serif;
   font-weight: 700;
   letter-spacing: .08em;
 }
@@ -102,6 +105,7 @@
   max-width: 10.5ch;
   margin: 14px 0 22px;
   color: #1d1d1f;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", var(--font-inter), sans-serif;
   font-size: clamp(48px, 5.8vw, 76px);
   font-weight: 750;
   line-height: .98;
@@ -179,6 +183,7 @@
 .marketing-lux .lux-waitlist h2 {
   max-width: 17ch;
   color: #1d1d1f;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", var(--font-inter), sans-serif;
   font-size: clamp(34px, 4.2vw, 56px);
   font-weight: 720;
   line-height: 1.05;
@@ -216,7 +221,61 @@
 .marketing-lux .lux-feature-grid li,
 .marketing-lux .mk-pillar-link,
 .marketing-lux .mk-price-grid li {
-  padding: 28px;
+  padding: clamp(26px, 3vw, 34px);
+}
+
+.marketing-lux :where(
+  .lux-feature-grid li,
+  .lux-loop-steps li,
+  .mk-pillars li,
+  .mk-app-gallery-grid > li,
+  .mk-price-grid li,
+  .shx-trust-grid li,
+  .shx-hub-card,
+  .shx-season-grid li,
+  .shx-menu-grid li,
+  .shx-depth-card,
+  .shx-stage,
+  .mk-hub-detail,
+  .faq-item
+) {
+  line-height: 1.55;
+}
+
+.marketing-lux :where(
+  .lux-feature-grid li,
+  .lux-loop-steps li,
+  .mk-pillars li,
+  .mk-price-grid li,
+  .shx-trust-grid li,
+  .shx-hub-card,
+  .shx-season-grid li,
+  .shx-menu-grid li,
+  .shx-depth-card,
+  .shx-stage,
+  .mk-hub-detail
+) > :where(strong, h2, h3) {
+  margin-bottom: 10px;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", var(--font-inter), sans-serif;
+  font-weight: 650;
+  letter-spacing: -.025em;
+}
+
+.marketing-lux :where(
+  .lux-feature-grid li,
+  .lux-loop-steps li,
+  .mk-pillars li,
+  .mk-price-grid li,
+  .shx-trust-grid li,
+  .shx-hub-card,
+  .shx-season-grid li,
+  .shx-menu-grid li,
+  .shx-depth-card,
+  .shx-stage,
+  .mk-hub-detail
+) > :where(p, span) {
+  color: var(--m-muted);
+  line-height: 1.62;
 }
 
 .marketing-lux .lux-feature-grid li:hover,
@@ -272,10 +331,15 @@ body.has-app-shell {
   --shadow-lift: 0 2px 4px rgba(0, 0, 0, .035), 0 16px 38px rgba(0, 0, 0, .075);
   --shadow-pop: 0 8px 22px rgba(0, 0, 0, .08), 0 24px 60px rgba(0, 0, 0, .12);
   --glow: none;
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", var(--font-inter), sans-serif;
+  --vt-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", var(--font-inter), sans-serif;
   background-color: #f5f5f7 !important;
   background-image: none !important;
   color: #1d1d1f;
-  font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+  font-family: var(--font-sans) !important;
+  font-size: 15px;
+  line-height: 1.5;
+  letter-spacing: -.006em;
 }
 
 body.has-app-shell .soft-topbar {
@@ -290,7 +354,7 @@ body.has-app-shell .soft-topbar {
 
 body.has-app-shell .soft-page-head h1,
 body.has-app-shell .soft-topbar-title {
-  font-family: var(--font-inter), -apple-system, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", var(--font-inter), sans-serif;
   font-weight: 650;
   letter-spacing: -.025em;
 }
@@ -356,6 +420,33 @@ body.has-app-shell :where(.app-card, .soft-panel, .soft-card, .dash-widget, .vt-
   border-radius: 20px;
   background: #fff;
   box-shadow: var(--shadow);
+  line-height: 1.55;
+}
+
+body.has-app-shell :where(.app-card, .soft-panel, .soft-card, .vt-card, .vt-stat-card) {
+  padding: clamp(20px, 2.4vw, 28px);
+}
+
+body.has-app-shell :where(.app-card, .soft-panel, .soft-card, .dash-widget, .vt-card, .vt-stat-card)
+  :where(h2, h3, h4) {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", var(--font-inter), sans-serif;
+  color: #1d1d1f;
+  font-weight: 650;
+  letter-spacing: -.025em;
+  text-wrap: balance;
+}
+
+body.has-app-shell :where(.app-card, .soft-panel, .soft-card, .dash-widget, .vt-card, .vt-stat-card)
+  :where(p, li, small) {
+  line-height: 1.58;
+}
+
+body.has-app-shell :where(.app-card, .soft-panel, .soft-card, .vt-card, .vt-stat-card) > :where(h2, h3) {
+  margin-bottom: 12px;
+}
+
+body.has-app-shell :where(.app-card, .soft-panel, .soft-card, .vt-card, .vt-stat-card) > :where(p, ul, ol) {
+  margin-block: 0 16px;
 }
 
 body.has-app-shell :where(.app-card, .soft-panel, .soft-card, .dash-widget, .vt-card, .vt-stat-card):hover {
