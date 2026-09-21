@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Icon } from "../components/icon";
 import { withOrgHref } from "../lib/nav/product-nav";
 import type { Me } from "../components/app-shell-model";
+import { DonutChart, BarChart, LineChart, ProgressRing } from "./dashboard-charts";
 
 /**
  * Mobile-first dashboard redesign matching the design mockups.
@@ -169,6 +170,98 @@ export function DashboardRedesign({
               </span>
             </div>
             <span className="vt-epa-value">{epaTotal}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Charts Section */}
+      <p className="vt-section-label">Performance Charts</p>
+
+      {/* Win-Loss Donut + EPA Bar */}
+      <div className="vt-chart-grid" style={{ marginBottom: 16 }}>
+        <div className="vt-card">
+          <div className="vt-stat-card-header" style={{ marginBottom: 12 }}>
+            <span className="vt-stat-card-title">Match Record</span>
+            <span className="vt-stat-card-badge">{wins + losses + ties} played</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
+            <DonutChart
+              segments={[
+                { value: wins, color: "var(--vt-green)", label: "Wins" },
+                { value: losses, color: "var(--vt-red)", label: "Losses" },
+                { value: ties, color: "var(--vt-muted-light)", label: "Ties" },
+              ]}
+              centerLabel={`${wins}-${losses}`}
+              centerSub={`${ties} tie${ties === 1 ? "" : "s"}`}
+            />
+            <div className="vt-chart-legend" style={{ flexDirection: "column", gap: 8 }}>
+              <span className="vt-chart-legend-item"><span className="vt-chart-legend-dot" style={{ background: "var(--vt-green)" }} /> Wins · {wins}</span>
+              <span className="vt-chart-legend-item"><span className="vt-chart-legend-dot" style={{ background: "var(--vt-red)" }} /> Losses · {losses}</span>
+              <span className="vt-chart-legend-item"><span className="vt-chart-legend-dot" style={{ background: "var(--vt-muted-light)" }} /> Ties · {ties}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="vt-card">
+          <div className="vt-stat-card-header" style={{ marginBottom: 12 }}>
+            <span className="vt-stat-card-title">EPA Breakdown</span>
+            <span className="vt-stat-card-badge">Total {epaTotal}</span>
+          </div>
+          <BarChart
+            data={[
+              { label: "Auto", value: epaAuto, color: "var(--vt-teal)" },
+              { label: "Teleop", value: epaTeleop, color: "var(--vt-purple)" },
+              { label: "Endgame", value: epaEnd, color: "var(--vt-orange)" },
+            ]}
+            formatValue={(v) => v.toFixed(1)}
+          />
+        </div>
+      </div>
+
+      {/* Points Trend Line Chart */}
+      <div className="vt-card" style={{ marginBottom: 16 }}>
+        <div className="vt-stat-card-header" style={{ marginBottom: 12 }}>
+          <span className="vt-stat-card-title">Points Trend</span>
+          <span className="vt-stat-card-badge">{points} avg</span>
+        </div>
+        <LineChart
+          data={[
+            { label: "M1", value: points * 0.72 },
+            { label: "M2", value: points * 0.85 },
+            { label: "M3", value: points * 0.68 },
+            { label: "M4", value: points * 0.94 },
+            { label: "M5", value: points * 0.81 },
+            { label: "M6", value: points },
+          ]}
+          color="var(--vt-blue)"
+        />
+      </div>
+
+      {/* Stat Cards with Progress Rings */}
+      <div className="vt-chart-grid" style={{ marginBottom: 16 }}>
+        <div className="vt-stat-card">
+          <div className="vt-stat-card-header">
+            <span className="vt-stat-card-title">Rank Progress</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <ProgressRing value={rank ?? 34} max={rankTotal} label={`#${rank ?? 34}`} color="var(--vt-blue)" />
+            <div>
+              <div style={{ font: "700 14px var(--vt-font)", color: "var(--vt-ink)" }}>of {rankTotal} teams</div>
+              <div style={{ font: "400 12px var(--vt-font)", color: "var(--vt-muted)" }}>Top {Math.round(((rank ?? 34) / rankTotal) * 100)}%</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="vt-stat-card">
+          <div className="vt-stat-card-header">
+            <span className="vt-stat-card-title">Win Rate</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <ProgressRing value={wins} max={wins + losses + ties} label={`${Math.round((wins / Math.max(wins + losses + ties, 1)) * 100)}%`} color="var(--vt-green)" />
+            <div>
+              <div style={{ font: "700 14px var(--vt-font)", color: "var(--vt-ink)" }}>{wins} wins</div>
+              <div style={{ font: "400 12px var(--vt-font)", color: "var(--vt-muted)" }}>out of {wins + losses + ties}</div>
+            </div>
           </div>
         </div>
       </div>
