@@ -167,15 +167,6 @@ export function AppShellTopbar({
         </div>
       </div>
       <div className="soft-topbar-actions">
-        {/* The wordmark doubles as the way home — the convention everywhere
-            else on the web, so nobody has to learn it. */}
-        <a
-          className="soft-brand-link"
-          href={withOrgHref("/dashboard", orgId || null)}
-          aria-label="VantageFRC — go to Home"
-        >
-          VantageFRC
-        </a>
         <ShellOutboxStatus orgId={orgId || null} />
         <a
           className="soft-icon-btn soft-ask-ai"
@@ -185,7 +176,6 @@ export function AppShellTopbar({
           title="Ask AI — strategy, match predictions, design help"
         >
           <Icon name="bolt" />
-          <span className="soft-ask-ai-label">Ask AI</span>
         </a>
         <a
           className="soft-icon-btn soft-notif"

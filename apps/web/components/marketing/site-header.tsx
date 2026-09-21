@@ -7,9 +7,7 @@ import "./marketing-styles";
 const links = [
   ["/features", "Product"],
   ["/workflow", "How it works"],
-  ["/for-teams", "For teams"],
-  ["/desktop", "Desktop"],
-  ["/pricing", "What it costs"],
+  ["/pricing", "Pricing"],
 ] as const;
 
 export function BrandLink({ href = "/" }: { href?: string }) {

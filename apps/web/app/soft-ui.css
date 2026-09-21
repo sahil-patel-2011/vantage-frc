@@ -2877,17 +2877,7 @@ html[data-motion="reduced"] *::after{
 /* Ask AI — the one AI control in the chrome. Icon-only on phones, labelled on
    a laptop; sits before Search so the two helpers read as a pair. */
 body.has-app-shell .soft-ask-ai{position:relative}
-body.has-app-shell .soft-ask-ai-label{display:none}
-@media (min-width:900px){
-  body.has-app-shell .soft-ask-ai{
-    display:flex;align-items:center;gap:6px;width:auto;height:40px;padding:0 10px;
-    border-radius:var(--radius-xs);background:var(--surface);border:1px solid var(--line);
-    color:var(--ink);text-decoration:none;
-  }
-  body.has-app-shell .soft-ask-ai-label{display:inline;font:600 13px var(--font-source-sans),ui-sans-serif;color:var(--muted)}
-  body.has-app-shell .soft-ask-ai:hover{border-color:var(--accent)}
-  body.has-app-shell .soft-ask-ai:hover .soft-ask-ai-label{color:var(--ink)}
-}
+body.has-app-shell .soft-ask-ai:hover{color:var(--accent);border-color:var(--accent)}
 
 /* Felt, not flashy: short fade + a few pixels of rise. Reduce = none. */
 :root{
@@ -2947,25 +2937,9 @@ body.has-app-shell .soft-ask-ai-label{display:none}
   }
 }
 
-/* Wordmark in the top bar. It is the way back to Home, which is what a logo
-   does everywhere else, so it needs no explaining. Hidden on the narrowest
-   phones where the row has to belong to the actions. */
-.soft-brand-link{
-  display:none;
-  align-items:center;
-  padding:0 10px;
-  min-height:40px;
-  border-radius:var(--radius-sm);
-  color:var(--ink);
-  text-decoration:none;
-  font:700 13px/1 var(--font-source-sans),ui-sans-serif;
-  letter-spacing:-0.01em;
-  white-space:nowrap;
-  transition:background .15s ease,color .15s ease;
-}
-.soft-brand-link:hover{background:color-mix(in srgb,var(--surface) 88%,var(--line))}
-.soft-brand-link:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-@media(min-width:560px){.soft-brand-link{display:inline-flex}}
+/* Wordmark in the top bar removed — the sidebar rail already carries the
+   brand, so the topbar no longer needs a redundant home link. */
+.soft-brand-link{display:none!important}
 
 /* Competition snapshot: auto / teleop / endgame as one bar.
    Each segment also appears in the legend with its own number, so colour is a

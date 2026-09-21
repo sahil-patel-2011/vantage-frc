@@ -10,13 +10,13 @@
     position: fixed;
     z-index: 72;
     inset: 0 auto 0 0;
-    width: 244px;
+    width: 232px;
     display: flex;
     flex-direction: column;
-    gap: var(--space-4);
-    padding: 18px 14px calc(16px + var(--safe-bottom));
-    background: color-mix(in srgb, var(--surface) 88%, transparent);
-    backdrop-filter: saturate(140%) blur(18px);
+    gap: var(--space-3);
+    padding: 16px 12px calc(12px + var(--safe-bottom));
+    background: color-mix(in srgb, var(--surface) 92%, transparent);
+    backdrop-filter: saturate(140%) blur(20px);
     border-right: 1px solid var(--line-soft);
     overflow-y: auto;
     overscroll-behavior: contain;
@@ -29,8 +29,8 @@
   }
   .vrail-mark {
     font-size: var(--text-lg);
-    font-weight: 650;
-    letter-spacing: var(--tracking-tight);
+    font-weight: 700;
+    letter-spacing: -.03em;
     color: var(--ink);
   }
   .vrail-org {
@@ -91,12 +91,13 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    min-height: 38px;
+    min-height: 36px;
     padding: 0 10px;
     color: var(--muted);
     border-radius: var(--radius-sm);
     text-decoration: none;
-    font-size: var(--text-md);
+    font-size: var(--text-sm);
+    font-weight: 550;
     /* Apple-ish: the row itself is the affordance, so only fill and ink move. */
     transition: background-color .16s ease, color .16s ease;
   }
@@ -119,14 +120,16 @@
 
   .vrail-foot {
     margin-top: auto;
+    border-top: 1px solid var(--line-soft);
+    padding-top: 8px;
   }
 
   /* Give every product page room for the rail without touching page sheets. */
   body.has-app-shell {
-    padding-left: 244px !important;
+    padding-left: 232px !important;
   }
   body.has-app-shell .soft-topbar {
-    left: 244px;
+    left: 232px;
   }
 }
 
