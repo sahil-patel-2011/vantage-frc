@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Icon } from "../components/icon";
+import { useState } from "react";
+import { Icon } from "../../components/icon";
 import { withOrgHref } from "../../lib/nav/product-nav";
-import type { Me } from "../components/app-shell-model";
+import type { Me } from "../../components/app-shell-model";
 import { DonutChart, BarChart, LineChart, ProgressRing } from "./dashboard-charts";
 import { ScoutingFilterBar, type ScoutingData } from "./scouting-filter";
 
@@ -22,37 +22,22 @@ function greeting() {
 function formatName(me: Me): string {
   const first = me.firstName || me.name?.split(" ")[0];
   if (first) return first;
-  if (me.email) return me.email.split("@")[0];
-  return "there";
-}
-
-function formatInitial(me: Me): string {
-  const name = formatName(me);
-  return name.charAt(0).toUpperCase();
+  return me.email?.split("@")[0] || "there";
 }
 
 export function DashboardRedesign({
   me,
-  meLoaded,
   orgId,
   eventName,
   widgets,
-  dashShell,
-  tbaConfigured,
-  setupRequired,
 }: {
   me: Me;
-  meLoaded: boolean;
   orgId: string;
   eventName: unknown;
   widgets: Record<string, unknown>;
-  dashShell: string;
-  tbaConfigured: boolean | undefined;
-  setupRequired: boolean;
 }) {
   const [syncing, setSyncing] = useState(false);
   const name = formatName(me);
-  const initial = formatInitial(me);
   const event = typeof eventName === "string" && eventName ? eventName : null;
 
   // Extract widget data safely

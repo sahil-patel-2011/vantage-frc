@@ -127,7 +127,11 @@ export function LineChart({
   }));
 
   const linePath = points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ");
-  const areaPath = `${linePath} L ${points[points.length - 1].x.toFixed(1)} ${height - pad} L ${points[0].x.toFixed(1)} ${height - pad} Z`;
+  const first = points[0];
+  const last = points[points.length - 1];
+  const areaPath = first && last
+    ? `${linePath} L ${last.x.toFixed(1)} ${height - pad} L ${first.x.toFixed(1)} ${height - pad} Z`
+    : "";
   const gradId = `vt-line-grad-${Math.random().toString(36).slice(2, 8)}`;
 
   return (

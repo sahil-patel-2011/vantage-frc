@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Icon } from "../../components/icon";
-import { withOrgHref } from "../../lib/nav/product-nav";
 import { signOutAndRedirect } from "../../lib/sign-out";
 import type { Me } from "../../components/app-shell-model";
 
@@ -11,7 +10,7 @@ import type { Me } from "../../components/app-shell-model";
  * Shows profile hero, segmented tabs, and notification settings.
  */
 
-export function AccountRedesign({ me, orgId }: { me: Me; orgId: string }) {
+export function AccountRedesign({ me }: { me: Me }) {
   const [tab, setTab] = useState<"general" | "integrations">("general");
   const [prefs, setPrefs] = useState({
     dailyEmails: false,
@@ -19,7 +18,7 @@ export function AccountRedesign({ me, orgId }: { me: Me; orgId: string }) {
     muteNotifications: false,
   });
 
-  const name = me.firstName || me.name?.split(" ")[0] || (me.email ? me.email.split("@")[0] : "User");
+  const name = me.firstName || me.name?.split(" ")[0] || me.email?.split("@")[0] || "User";
   const fullName = me.name || `${name} Patel`;
   const email = me.email || "user@example.com";
   const initial = name.charAt(0).toUpperCase();

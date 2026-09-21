@@ -63,7 +63,7 @@ export function ScoutingFilterBar({
   const [member, setMember] = useState("All Members");
 
   const filtered = useMemo<ScoutingData>(() => {
-    const scale = DATE_SCALE[dateRange] * MEMBER_SCALE[member];
+    const scale = DATE_SCALE[dateRange] * (MEMBER_SCALE[member] ?? 1);
     return {
       assignments: Math.round(data.assignments * scale),
       reports: Math.round(data.reports * scale),

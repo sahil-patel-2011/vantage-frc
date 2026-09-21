@@ -142,7 +142,6 @@ function TrendChart({ profile }: { profile: ScoutedTeamProfile }) {
 
 const DONUT_R = 38;
 const DONUT_STROKE = 14;
-const DONUT_CIRC = 2 * Math.PI * DONUT_R;
 
 function polarArc(start: number, end: number): string {
   // Convert percentage [0,1] to SVG arc path on a circle centered at (50,50).

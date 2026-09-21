@@ -7,12 +7,10 @@ import type { Me } from "../../components/app-shell-model";
 
 export default function AccountPageClient() {
   const [me, setMe] = useState<Me>({});
-  const [orgId, setOrgId] = useState("");
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     const id = new URLSearchParams(window.location.search).get("orgId") ?? "";
-    setOrgId(id);
     void fetchProductSession(id || null).then((data) => {
       if (data) setMe(data as Me);
       setLoaded(true);
@@ -29,5 +27,5 @@ export default function AccountPageClient() {
     );
   }
 
-  return <AccountRedesign me={me} orgId={orgId} />;
+  return <AccountRedesign me={me} />;
 }
