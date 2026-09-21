@@ -41,7 +41,8 @@
   --vt-font: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
-body.has-app-shell {
+/* Light palette only. Dark mode keeps the tokens in system.css. */
+html[data-theme="light"] body.has-app-shell {
   --bg: var(--vt-bg);
   --surface: var(--vt-surface);
   --ink: var(--vt-ink);
@@ -57,14 +58,27 @@ body.has-app-shell {
   --shadow: var(--vt-shadow);
   --shadow-lift: var(--vt-shadow-md);
   --shadow-pop: var(--vt-shadow-lg);
-}
-
-body.has-app-shell {
   background-color: var(--vt-bg) !important;
   background-image: none !important;
   font-family: var(--vt-font) !important;
-  padding: 52px 0 calc(84px + var(--safe-bottom, 0px)) 0 !important;
+}
+
+body.has-app-shell {
+  /* Longhands on purpose. A padding shorthand here wiped the desktop rail inset. */
+  padding-top: 60px !important;
+  padding-bottom: calc(96px + var(--safe-bottom, 0px)) !important;
   overflow-x: hidden;
+}
+
+@media (min-width: 1024px) {
+  body.has-app-shell {
+    padding-bottom: 28px !important;
+  }
+  /* The left rail is the way you move on a wide screen. The floating dock
+     would sit on top of the page and repeat the same destinations. */
+  body.has-app-shell .soft-island {
+    display: none !important;
+  }
 }
 
 /* ===== Topbar ===== */
@@ -117,7 +131,6 @@ body.has-app-shell {
 .soft-island-tab:hover { color: var(--vt-ink); }
 .soft-island-tab[data-active="true"] { color: var(--vt-blue); background: var(--vt-blue-soft); }
 .soft-island-tab .soft-island-dot { display: none; }
-.soft-island-edit { display: none !important; }
 
 /* ===== Drawer ===== */
 .soft-drawer {
@@ -250,7 +263,19 @@ body.has-app-shell {
 .vt-quick-action-icon { width: 44px; height: 44px; border-radius: var(--vt-radius-sm); background: rgba(255, 255, 255, .15); display: grid; place-items: center; }
 .vt-quick-action-icon svg { width: 24px; height: 24px; }
 .vt-quick-action-text { flex: 1; }
-.vt-quick-action-title { font: 700 15px var(--vt-font); }
+.vt-quick-action-title { font: 700 15px var(--vt-font); display: block; }
+.vt-quick-action-sub { display: block; margin-top: 2px; font: 500 12px/1.35 var(--vt-font); opacity: .78; }
+.vt-quick-grid { display: grid; gap: 8px; }
+@media (min-width: 640px) { .vt-quick-grid { grid-template-columns: 1fr 1fr; } }
+.vt-quick-action.quiet {
+  margin-bottom: 0;
+  background: var(--vt-surface);
+  color: var(--vt-ink);
+  border: 1px solid var(--vt-line);
+  box-shadow: var(--vt-shadow);
+}
+.vt-quick-action.quiet .vt-quick-action-icon { background: var(--vt-blue-soft); color: var(--vt-blue); }
+.vt-quick-action.quiet .vt-quick-action-arrow { color: var(--vt-muted); }
 .vt-quick-action-arrow { opacity: .7; }
 .vt-quick-action-arrow svg { width: 20px; height: 20px; }
 
@@ -383,6 +408,7 @@ body.has-app-shell {
 @media (min-width: 640px) { .vt-chart-grid { grid-template-columns: 1fr 1fr; } }
 
 /* ===== Scouting Filter Bar ===== */
+.vt-scout-filter-note { margin: 0 0 12px; font: 500 12px/1.45 var(--vt-font); color: var(--vt-muted); }
 .vt-scout-filter { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
 .vt-scout-filter-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .vt-scout-filter-label { font: 700 10px var(--vt-font); text-transform: uppercase; letter-spacing: .04em; color: var(--vt-muted-light); white-space: nowrap; }

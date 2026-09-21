@@ -507,6 +507,8 @@ export default function AppShell() {
         navHrefAllowed={navHrefAllowed}
         onOpenSearch={() => openNav({ focusSearch: true })}
         shortcutHint={shortcutHint}
+        islandTabs={islandTabs}
+        onEditApps={openIslandEditor}
       />
       <AppShellTopbar
         showBack={showBack}

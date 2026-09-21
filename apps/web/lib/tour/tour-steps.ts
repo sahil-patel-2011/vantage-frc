@@ -27,15 +27,15 @@ export const TOUR_STEPS: readonly TourStep[] = [
   {
     id: "menu",
     target: "menu",
-    title: "Everything lives here",
-    body: "Open the menu for every page, and to search. Ctrl or ⌘ + K opens it from anywhere.",
+    title: "Find any page",
+    body: "Search opens every page. Ctrl or ⌘ + K does the same from anywhere.",
     prefer: "bottom",
   },
   {
     id: "island",
     target: "island",
-    title: "The four places you go most",
-    body: "Home, Compete, Team and Build. Hold this bar to swap which four it shows.",
+    title: "Your shortcuts",
+    body: "These are the apps you pinned. Edit apps, or the gear on the phone bar, changes them.",
     prefer: "top",
   },
   {

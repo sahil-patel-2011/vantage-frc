@@ -560,7 +560,17 @@ export default function SignInClient({
   }
 
   return (
-    <SignInCard titleId="signin-title" title={stepCopy.title} subtitle={stepCopy.sub}>
+    <SignInCard
+      titleId="signin-title"
+      title={stepCopy.title}
+      subtitle={
+        passwordPanel === "password"
+          ? "Use the email and password for your team account."
+          : passwordPanel === "reset"
+            ? "We’ll email a link so you can choose a new password."
+            : stepCopy.sub
+      }
+    >
       <InviteBanner token={inviteToken} headline={inviteHeadline} preview={invitePreview} />
       {unavailable ? <SetupShell copy={unavailable} /> : null}
 

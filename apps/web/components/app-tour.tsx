@@ -40,6 +40,16 @@ function markDismissed() {
   }
 }
 
+function visibleTourTarget(name: string): HTMLElement | null {
+  const nodes = document.querySelectorAll(`[data-tour="${name}"]`);
+  for (const node of nodes) {
+    if (!(node instanceof HTMLElement)) continue;
+    const box = node.getBoundingClientRect();
+    if (box.width > 0 && box.height > 0) return node;
+  }
+  return null;
+}
+
 function rectOf(element: Element): Rect {
   const box = element.getBoundingClientRect();
   return { top: box.top, left: box.left, width: box.width, height: box.height };
@@ -77,8 +87,7 @@ export function AppTour() {
         return;
       }
       window.clearInterval(id);
-      const present = (name: string) =>
-        document.querySelector(`[data-tour="${name}"]`) != null;
+      const present = (name: string) => visibleTourTarget(name) != null;
       const usable = availableSteps(TOUR_STEPS, present);
       // One lonely step is not a tour worth interrupting anyone for.
       if (usable.length >= 2) setSteps(usable);
@@ -93,7 +102,7 @@ export function AppTour() {
   useLayoutEffect(() => {
     if (!step) return;
     const measure = () => {
-      const element = document.querySelector(`[data-tour="${step.target}"]`);
+      const element = visibleTourTarget(step.target);
       if (!element) {
         setTarget(null);
         return;

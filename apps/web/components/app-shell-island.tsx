@@ -110,7 +110,7 @@ export function AppShellIsland({
       data-testid="soft-island"
       data-tour="island"
       aria-label="Primary apps"
-      title="Press and hold or right-click to change these four apps"
+      title="Press and hold to change these four apps, or use the gear"
       onContextMenu={(event) => {
         event.preventDefault();
         onOpenEditor();
@@ -141,6 +141,22 @@ export function AppShellIsland({
           ) : null}
         </a>
       ))}
+      <button
+        className="soft-island-edit"
+        type="button"
+        aria-label="Edit these apps"
+        title="Choose which four apps stay in this bar"
+        onPointerDown={(event) => {
+          event.stopPropagation();
+          clearIslandPress();
+        }}
+        onClick={(event) => {
+          event.stopPropagation();
+          onOpenEditor();
+        }}
+      >
+        <Icon name="gear" />
+      </button>
       {/*
         No fifth "All" button.
 
