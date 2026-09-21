@@ -8,8 +8,9 @@ import "./vantage-scan/hubs.css";
 import "./vantage-chrome.css";
 // Rail comes after chrome: it owns the body inset and the topbar offset.
 import "./app-rail.css";
-// Final visual pass shared with marketing: calm spacing, soft depth, cobalt actions.
-import "./apple-polish.css";
+// Final visual pass: calm spacing, soft depth, cobalt actions. Product half only —
+// its marketing twin lives in marketing-styles.ts so neither sheet is in two chunk groups.
+import "./apple-polish-product.css";
 
 /** Side-effect module: product shells import this so marketing routes do not. */
 export {};
