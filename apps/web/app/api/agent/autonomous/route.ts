@@ -99,7 +99,7 @@ export async function POST(request: Request) {
         adapter,
         requestId: crypto.randomUUID(),
         maxSteps: body.maxSteps,
-        registry: createVantageToolRegistry(),
+        registry: createVantageToolRegistry({ requestText: goal }),
         promptCachingEnabled,
       });
 

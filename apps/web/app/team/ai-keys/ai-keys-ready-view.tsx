@@ -32,6 +32,7 @@ import {
   type RoutingPrefs,
 } from "./ai-keys-model";
 import { ProviderCard } from "./ai-keys-provider-card";
+import { WebResearchCard } from "./ai-keys-web-research";
 
 export type AiKeysReadyViewProps = {
   orgId: string | null;
@@ -288,6 +289,10 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
               );
             })}
           </section>
+
+          {/* Web research sits with the keys a team brings, straight after the
+              model providers: it is the other key that changes what the AI can do. */}
+          {orgId ? <WebResearchCard orgId={orgId} /> : null}
 
           <section className="app-card soft-panel ai-keys-local" aria-label="Local OpenAI-compatible connector">
             <span className="eyebrow">LOCAL / OPENAI-COMPATIBLE</span>

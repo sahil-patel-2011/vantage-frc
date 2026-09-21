@@ -278,6 +278,8 @@ export * from "./chat-system-prompt";
 export * from "./org-session-context";
 export * from "./safe-web-fetch";
 export * from "./web-tools";
+export * from "./tinyfish";
+export * from "./tinyfish-keys";
 export * from "./autonomous-agent-store";
 export * from "./autonomous-loop";
 export * from "./org-agent-rules";

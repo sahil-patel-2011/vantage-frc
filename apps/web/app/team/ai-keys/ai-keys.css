@@ -391,3 +391,12 @@
   font-weight: 700;
   padding-inline: 4px;
 }
+
+/* Web research (TinyFish). Spans the grid's width: it is one team-wide switch,
+   not one provider among several. */
+.ai-keys-web{display:grid;gap:10px}
+.ai-keys-web h2{margin:0;font-size:17px}
+.ai-keys-web p{margin:0;line-height:1.55}
+.ai-keys-status.warn{color:var(--warning);border-color:var(--warning)}
+.ai-keys-link{align-self:center;color:var(--accent);font-weight:700;text-decoration:none}
+.ai-keys-link:hover{text-decoration:underline}
