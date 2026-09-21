@@ -30,7 +30,7 @@ import {
   dashboardBoardLists,
   dashboardPaletteRows,
 } from "./dashboard-home-model";
-import { DashboardHomeView } from "./dashboard-home-view";
+import { DashboardRedesign } from "./dashboard-redesign";
 import "./dashboard-dnd.css";
 import "./dash-layout.css";
 
@@ -223,96 +223,15 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
       : null;
 
   return (
-    <DashboardHomeView
+    <DashboardRedesign
       me={home.me}
       meLoaded={home.meLoaded}
       orgId={home.orgId}
-      board={home.board}
-      scope={home.scope}
-      switcherBoards={switcherBoards}
-      personalBoards={personalBoards}
-      orgBoards={orgBoards}
-      layout={home.layout}
-      viewLayout={viewLayout}
-      displayLayout={displayLayout}
+      eventName={home.context.eventName}
       widgets={home.widgets}
-      // Whether the widgets have arrived, so the "what to do now" card can
-      // say it is still working it out rather than saying there is nothing.
-      widgetsLoaded={dashShell !== "loading"}
-      paletteEntries={paletteEntries}
-      addableEntries={addableEntries}
-      homeStripItems={homeStripItems}
-      homeAudience={homeAudience}
-      nextMatchData={nextMatchData}
       dashShell={dashShell}
-      nextActions={nextActions}
-      setupSteps={setupSteps}
-      dataSourceHealth={dataSourceHealth}
       tbaConfigured={tbaConfigured}
       setupRequired={setupRequired}
-      eventName={home.context.eventName}
-      editing={home.editing}
-      previewing={home.previewing}
-      libraryOpen={home.libraryOpen}
-      pendingPlaceType={home.pendingPlaceType}
-      saving={home.saving}
-      canShareOrg={home.canShareOrg}
-      boardsOpen={home.boardsOpen}
-      renameId={home.renameId}
-      renameDraft={home.renameDraft}
-      grabbedId={home.grabbedId}
-      message={home.message}
-      messageKind={home.messageKind}
-      announce={home.announce}
-      updatedAt={home.updatedAt}
-      fromCache={home.fromCache}
-      cachedAt={home.cachedAt}
-      mounted={mounted}
-      measured={measured}
-      width={width}
-      canvasWidth={canvasWidth}
-      cols={cols}
-      gap={gap}
-      grid={grid}
-      gridHeight={gridHeight}
-      dragging={dragging}
-      drag={drag}
-      snapFeedback={snapFeedback}
-      dropBox={dropBox}
-      cheatOpen={cheatOpen}
-      shortcuts={shortcuts}
-      proxyRef={proxyRef}
-      suppressClickRef={suppressClickRef}
-      setCanvasNode={setCanvasNode}
-      setCheatOpen={setCheatOpen}
-      setBoardsOpen={home.setBoardsOpen}
-      setRenameId={home.setRenameId}
-      setRenameDraft={home.setRenameDraft}
-      setEditing={home.setEditing}
-      setPreviewing={home.setPreviewing}
-      setLibraryOpen={home.setLibraryOpen}
-      enterEditMode={enterEditMode}
-      cancelEditing={cancelEditing}
-      tidyLayout={tidyLayout}
-      save={save}
-      resetDefault={resetDefault}
-      switchBoard={switchBoard}
-      createBoard={createBoard}
-      duplicateBoard={duplicateBoard}
-      renameBoard={renameBoard}
-      deleteBoard={deleteBoard}
-      addWidget={addWidget}
-      requestPlaceWidget={requestPlaceWidget}
-      placePendingAtPoint={placePendingAtPoint}
-      removeWidget={removeWidget}
-      setWidgetSize={setWidgetSize}
-      resetWidgetSize={resetWidgetSize}
-      onHandleKeyDown={onHandleKeyDown}
-      beginCardDrag={beginCardDrag}
-      beginPaletteDrag={beginPaletteDrag}
-      onDragPointerMove={onDragPointerMove}
-      onDragPointerUp={onDragPointerUp}
-      onDragPointerCancel={onDragPointerCancel}
     />
   );
 }

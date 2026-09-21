@@ -1,4 +1,4 @@
-import AdminClient from "./admin-client";
+import AdminRedesign from "./admin-redesign";
 
 export const metadata = {
   title: "Global Team Manager",
@@ -7,5 +7,5 @@ export const metadata = {
 export const dynamic = "force-dynamic";
 
 export default function AdminPage() {
-  return <AdminClient />;
+  return <AdminRedesign />;
 }

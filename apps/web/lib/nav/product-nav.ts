@@ -190,11 +190,9 @@ export type IslandTabDefinition = { href: string; label: string; icon: ProductNa
 
 export const PRIMARY_TABS: IslandTabDefinition[] = [
   { href: "/dashboard", label: "Home", icon: "home" },
-  { href: "/competition", label: "Compete", icon: "swords" },
-  { href: "/team", label: "Team", icon: "users" },
-  // Build over Business by default: most people on a team are students, and a
-  // student's week is CAD, code and the shop. Mentors put Business back in one tap.
-  { href: "/build", label: "Build", icon: "cube" },
+  { href: "/competition", label: "Matches", icon: "swords" },
+  { href: "/competition?tab=scouting", label: "Scout", icon: "scout" },
+  { href: "/analytics", label: "Stats", icon: "stats" },
 ];
 
 /** Allowlisted destinations for the four personal island slots. */

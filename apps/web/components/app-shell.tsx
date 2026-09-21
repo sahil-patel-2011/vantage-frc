@@ -618,6 +618,14 @@ export default function AppShell() {
         onReset={() => setIslandDraft(defaultIslandHrefs())}
         onSave={() => void saveIsland()}
       />
+      <a
+        className="soft-fab"
+        href={withOrgHref("/ai?tab=chat", orgId)}
+        aria-label="Chat with AI"
+        title="Ask AI — strategy, match predictions, design help"
+      >
+        <Icon name="chat" />
+      </a>
     </>
   );
 }
