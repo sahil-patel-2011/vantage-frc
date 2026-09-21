@@ -53,6 +53,30 @@ async function withReleaseClient<T>(work: (client: PoolClient) => Promise<T>): P
   }
 }
 
+/**
+ * Write path: one transaction, with `app.user_id` bound to the attributed
+ * platform admin so the same RLS policies the admin console runs under apply
+ * here too. All-or-nothing — a failed notification never leaves a half-published
+ * release behind.
+ */
+async function withReleaseTransaction<T>(
+  actorUserId: string,
+  work: (client: PoolClient) => Promise<T>,
+): Promise<T> {
+  return withReleaseClient(async (client) => {
+    await client.query("BEGIN");
+    try {
+      await client.query("SELECT set_config('app.user_id', $1, true)", [actorUserId]);
+      const result = await work(client);
+      await client.query("COMMIT");
+      return result;
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    }
+  });
+}
+
 /** Releases are attributed to the founding platform admin, never to the token. */
 async function resolveActor(client: PoolClient): Promise<string | null> {
   const result = await client.query<{ userId: string }>(
@@ -105,10 +129,10 @@ export async function publishReleaseFromAgent(
 ): Promise<AgentPublishResult> {
   const composed = composeReleaseNotes(input);
 
-  return withReleaseClient(async (client) => {
-    const actorUserId = await resolveActor(client);
-    if (!actorUserId) throw new Error("No platform admin exists yet to attribute the release to");
+  const actorUserId = await withReleaseClient(resolveActor);
+  if (!actorUserId) throw new Error("No platform admin exists yet to attribute the release to");
 
+  return withReleaseTransaction(actorUserId, async (client) => {
     const existing = await getProductRelease(client, composed.slug);
     const payload = {
       slug: composed.slug,
