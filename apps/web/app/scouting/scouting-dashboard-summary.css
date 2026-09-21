@@ -7,15 +7,20 @@
   padding: 0;
   background: var(--line-soft);
   border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md, 14px);
   overflow: hidden;
+  box-shadow: 0 1px 3px -2px color-mix(in srgb, var(--ink) 15%, transparent);
 }
 .sds-cell {
   display: grid;
   gap: 4px;
-  padding: 12px 14px;
+  padding: 14px 16px;
   background: var(--surface);
   animation: sds-settle var(--dur-move) var(--ease-settle) both;
+  transition: background-color var(--dur-tint) var(--ease-out);
+}
+.sds-cell:hover {
+  background: color-mix(in srgb, var(--accent) 3%, var(--surface));
 }
 .sds dt {
   color: var(--muted);
@@ -29,7 +34,7 @@
   margin: 0;
 }
 .sds dd strong {
-  font: 650 24px/1.05 var(--font-sans);
+  font: 650 26px/1.05 var(--font-sans);
   letter-spacing: var(--tracking-display);
   color: var(--ink);
   font-variant-numeric: tabular-nums;

@@ -4,11 +4,12 @@
   top: 12px;
   display: grid;
   align-content: start;
-  gap: 12px;
-  padding: 16px;
-  border: 1px solid var(--line);
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid color-mix(in srgb, var(--accent) 15%, var(--line));
   border-radius: var(--radius-md, 14px);
   background: var(--surface);
+  box-shadow: 0 2px 8px -4px color-mix(in srgb, var(--ink) 18%, transparent);
   animation: std-settle var(--dur-move) var(--ease-settle) both;
 }
 .std-head {

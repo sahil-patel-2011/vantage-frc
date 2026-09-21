@@ -11,6 +11,7 @@ import { PickWeightSliders, usePickWeights } from "./scouting-pick-weights";
 import { COMPARE_LIMIT, ScoutingCompare, teamNumberLabel } from "./scouting-compare";
 import { ScoutingDashboardSummary } from "./scouting-dashboard-summary";
 import { ScoutingFieldChart } from "./scouting-field-chart";
+import { ScoutingSplitCompare } from "./scouting-split-compare";
 import { ScoutingTeamDetail } from "./scouting-team-detail";
 import { EmptyState, Button } from "../../components/ui";
 import { apiErrorMessage, classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
@@ -58,6 +59,8 @@ export function ScoutingTeamProfiles({ orgId, eventKey }: { orgId: string; event
   const [query, setQuery] = useState("");
   /** Up to three robots held side by side. Team keys, in the order they were picked. */
   const [compare, setCompare] = useState<string[]>([]);
+  /** When true and exactly two teams are selected, show the split-view deep dive. */
+  const [splitView, setSplitView] = useState(false);
 
   const toggleCompare = (teamKey: string) =>
     setCompare((current) =>
@@ -233,12 +236,31 @@ export function ScoutingTeamProfiles({ orgId, eventKey }: { orgId: string; event
         <PickWeightSliders weights={weights} onChange={update} onReset={reset} changed={changed} />
       ) : null}
 
-      {compareProfiles.length >= 2 ? (
-        <ScoutingCompare
-          profiles={compareProfiles}
-          onRemove={(teamKey) => setCompare((current) => current.filter((key) => key !== teamKey))}
-          onClear={() => setCompare([])}
+      {splitView && compareProfiles.length === 2 ? (
+        <ScoutingSplitCompare
+          left={compareProfiles[0]!}
+          right={compareProfiles[1]!}
+          onClose={() => setSplitView(false)}
         />
+      ) : compareProfiles.length >= 2 ? (
+        <>
+          {compareProfiles.length === 2 ? (
+            <div className="stp-split-toggle-wrap">
+              <button
+                type="button"
+                className="stp-split-toggle"
+                onClick={() => setSplitView(true)}
+              >
+                ⊞ Split view
+              </button>
+            </div>
+          ) : null}
+          <ScoutingCompare
+            profiles={compareProfiles}
+            onRemove={(teamKey) => setCompare((current) => current.filter((key) => key !== teamKey))}
+            onClear={() => setCompare([])}
+          />
+        </>
       ) : compare.length === 1 ? (
         <p className="stp-compare-hint">
           {teamNumberLabel(compare[0]!)} held. Pick one or two more to compare them side by side.
