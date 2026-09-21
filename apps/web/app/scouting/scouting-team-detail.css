@@ -1,0 +1,143 @@
+/* Detail pane of the scouting dashboard. See scouting-team-detail.tsx. */
+.std {
+  position: sticky;
+  top: 12px;
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md, 14px);
+  background: var(--surface);
+  animation: std-settle .28s cubic-bezier(.22, .61, .36, 1) both;
+}
+.std-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+.std-kicker {
+  display: block;
+  color: var(--muted);
+  font: 700 10px var(--font-source-sans), ui-sans-serif;
+  letter-spacing: var(--tracking-kicker, .08em);
+  text-transform: uppercase;
+}
+.std-head h3 {
+  margin: 2px 0 0;
+  font: 750 30px/1 var(--font-source-sans), ui-sans-serif;
+  letter-spacing: -0.03em;
+}
+.std-score {
+  display: grid;
+  justify-items: end;
+}
+.std-score strong {
+  font: 700 22px/1 var(--font-source-sans), ui-sans-serif;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+}
+.std-score small {
+  color: var(--muted);
+  font-size: 10.5px;
+}
+.std-headline {
+  margin: 0;
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.std-phases {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+.std-phase {
+  display: grid;
+  gap: 4px;
+}
+.std-phase-label {
+  display: flex;
+  justify-content: space-between;
+  color: var(--muted);
+  font: 600 11px var(--font-source-sans), ui-sans-serif;
+}
+.std-phase-label b {
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.std-phase-track {
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+  overflow: hidden;
+}
+.std-phase-fill {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  animation: std-grow .42s cubic-bezier(.22, .61, .36, 1) both;
+}
+
+.std-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px 16px;
+  margin: 0;
+}
+.std-stats dt {
+  color: var(--muted);
+  font: 700 10px var(--font-source-sans), ui-sans-serif;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.std-stats dd {
+  margin: 2px 0 0;
+  font: 600 13px var(--font-source-sans), ui-sans-serif;
+}
+.std-sample {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11.5px;
+}
+.std-compare {
+  justify-self: start;
+  min-height: 32px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--muted);
+  font: 700 12px var(--font-source-sans), ui-sans-serif;
+  cursor: pointer;
+  transition:
+    background-color var(--dur-tint) var(--ease-out),
+    border-color var(--dur-tint) var(--ease-out),
+    color var(--dur-tint) var(--ease-out);
+}
+.std-compare[aria-pressed="true"] {
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.std-compare:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+@keyframes std-settle {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes std-grow {
+  from { transform: scaleX(0); transform-origin: left; }
+  to { transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .std, .std-phase-fill { animation: none; }
+}

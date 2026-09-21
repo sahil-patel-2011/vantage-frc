@@ -429,3 +429,53 @@
   accent-color: var(--accent);
   cursor: pointer;
 }
+
+/* Master–detail: the list of robots beside the one you are reading. On a phone
+   the detail card sits above the list, so a tap never scrolls you anywhere. */
+.stp-shell {
+  display: grid;
+  gap: 12px;
+}
+.stp-browse {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.stp-search input {
+  width: 100%;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  color: var(--ink);
+  font: 500 13px var(--font-source-sans), ui-sans-serif;
+}
+.stp-search input:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline-offset: 1px;
+}
+.stp-row {
+  transition:
+    border-color var(--dur-tint) var(--ease-out),
+    box-shadow var(--dur-tint) var(--ease-out),
+    transform var(--dur-tint) var(--ease-out);
+}
+.stp-row[data-active="true"] {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--accent) 22%, transparent),
+    0 6px 18px -14px color-mix(in srgb, var(--ink) 55%, transparent);
+}
+@media (min-width: 960px) {
+  .stp-shell {
+    grid-template-columns: minmax(0, 1.55fr) minmax(280px, 0.95fr);
+    align-items: start;
+  }
+}
+@media (max-width: 959px) {
+  .stp-browse { order: 2; }
+  .std { position: static; order: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .stp-row { transition: none; }
+}
