@@ -54,7 +54,7 @@ export default function GlobalError({
           <p style={{ margin: "0 0 16px", lineHeight: 1.5, color: "#475467" }}>
             Nothing you entered was lost on the server. Try again; if it happens twice, reload the page. If it keeps
             happening, write to{" "}
-            <a href="mailto:sahiljpatel2011@gmail.com" style={{ color: "#17457f" }}>
+            <a href="mailto:sahiljpatel2011@gmail.com" style={{ color: "#0e5a66" }}>
               sahiljpatel2011@gmail.com
             </a>
             {error.digest ? (
@@ -73,7 +73,7 @@ export default function GlobalError({
                 padding: "10px 16px",
                 borderRadius: 10,
                 border: 0,
-                background: "#17457f",
+                background: "#0e5a66",
                 color: "#fff",
                 font: "inherit",
                 fontWeight: 700,

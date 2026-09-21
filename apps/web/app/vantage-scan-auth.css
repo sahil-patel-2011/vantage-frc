@@ -16,7 +16,7 @@
 }
 
 .signin-setup-shell > span {
-  color: var(--scan-gold-ink, #14243a);
+  color: var(--scan-gold-ink, #10202c);
   background: var(--scan-gold, #e8b923);
   border-color: transparent;
   letter-spacing: 0.06em;
@@ -50,7 +50,7 @@
 }
 
 .onboarding-load-badge.setup {
-  color: var(--scan-gold-ink, #14243a);
+  color: var(--scan-gold-ink, #10202c);
   background: var(--scan-gold, #e8b923);
 }
 

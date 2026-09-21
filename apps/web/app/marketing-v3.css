@@ -721,7 +721,7 @@ html.reveal-armed .marketing-lux [data-reveal].is-in{opacity:1;transform:none}
   }
   .marketing-lux .mobile-menu nav a:hover,
   .marketing-lux .mobile-menu nav a[aria-current="page"]{
-    background:var(--m-surface-2,#f2f3f5);
+    background:var(--m-surface-2,#f5f6f8);
   }
 }
 
@@ -822,7 +822,7 @@ html:has(.marketing-lux){scroll-padding-top:76px}
 .marketing-lux .pricing-access-note{
   margin:14px 0 0;
   padding:12px 14px;
-  border-left:3px solid var(--m-accent, #17457f);
+  border-left:3px solid var(--m-accent, #0e5a66);
   background:var(--m-soft, #f4f6f9);
   font-size:14px;
   line-height:1.55;

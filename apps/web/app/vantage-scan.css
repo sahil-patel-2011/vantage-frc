@@ -17,7 +17,7 @@
   --scan-navy-deep: #092848;
   --scan-navy-soft: #e7eef6;
   --scan-gold: #e8b923;
-  --scan-gold-ink: #14243a;
+  --scan-gold-ink: #10202c;
   --scan-rail: #0d3560;
   --scan-rail-ink: #e8eef6;
   --scan-rail-muted: #9db3cb;
@@ -575,7 +575,7 @@ body.has-app-shell .data-source-degraded-banner {
 .auth-page {
   --scan-navy: #0d3560;
   --scan-gold: #e8b923;
-  --scan-gold-ink: #14243a;
+  --scan-gold-ink: #10202c;
 }
 .onboarding-flow-header > span,
 .onboarding-progress-label {
@@ -601,7 +601,7 @@ body.has-app-shell .data-source-degraded-banner {
   box-shadow: none;
 }
 .onboarding-load-badge.setup {
-  color: var(--scan-gold-ink, #14243a);
+  color: var(--scan-gold-ink, #10202c);
   background: var(--scan-gold, #e8b923);
 }
 .onboarding-load-shell {
