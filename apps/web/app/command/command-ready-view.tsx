@@ -309,7 +309,7 @@ export function CommandReadyView({
                 <p>
                   {snap?.prediction.status === "live"
                     ? "Win chance from this event's ratings"
-                    : "Labeled win/loss when schedule + metrics exist"}
+                    : "A win chance, once the schedule and ratings are in"}
                 </p>
               </div>
             </div>
@@ -387,7 +387,7 @@ export function CommandReadyView({
                 <p>
                   {snap?.coverage.liveBoard?.length
                     ? `${snap.coverage.missingRows} uncovered · ${snap.coverage.doubleCovered} double-scouted on now/next`
-                    : "Double-scouted vs unscouted rows for now/next matches"}
+                    : "Which robots still need a scout for the next matches"}
                 </p>
               </div>
             </div>
@@ -424,8 +424,7 @@ export function CommandReadyView({
             <div className="dash-empty calm">
               <strong>No live match rows yet</strong>
               <p>
-                When your next matches are on the board, uncovered vs double-scouted robots appear here — never
-                coverage zeros.
+                When the next matches are posted, this shows which robots still need a scout.
               </p>
               <a className="dash-empty-cta" href={scoutingHref}>
                 Open Scouting

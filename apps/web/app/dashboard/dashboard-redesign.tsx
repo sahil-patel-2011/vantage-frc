@@ -4,12 +4,12 @@ import { useState } from "react";
 import { Icon } from "../../components/icon";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import type { Me } from "../../components/app-shell-model";
-import { DonutChart, BarChart, LineChart, ProgressRing } from "./dashboard-charts";
+import { DonutChart, BarChart, ProgressRing } from "./dashboard-charts";
 import { ScoutingFilterBar, type ScoutingData } from "./scouting-filter";
 
 /**
- * Mobile-first dashboard redesign matching the design mockups.
- * Replaces the complex widget board with a clean, card-based layout.
+ * Card layout for event status. Numbers render only when a widget
+ * actually supplied them — a missing rank stays blank.
  */
 
 function greeting() {
@@ -47,34 +47,47 @@ export function DashboardRedesign({
   const epaWidget = widgets?.epa as { auto?: number; teleop?: number; end?: number; total?: number } | undefined;
   const streakWidget = widgets?.streak as { count?: number; type?: string } | undefined;
   const scoutingWidget = widgets?.scouting_coverage as { assignments?: number; reports?: number; openDisagreements?: number } | undefined;
-  const teamNumber = me.teamNumber || "6925";
+  const teamNumber = me.teamNumber || null;
 
-  const rank = rankWidget?.rank;
-  const rankTotal = rankWidget?.total ?? 78;
-  const wins = recordWidget?.wins ?? 4;
-  const losses = recordWidget?.losses ?? 8;
-  const ties = recordWidget?.ties ?? 0;
-  const points = pointsWidget?.value ?? 211.4;
-  const epaAuto = epaWidget?.auto ?? 8.5;
-  const epaTeleop = epaWidget?.teleop ?? 31.8;
-  const epaEnd = epaWidget?.end ?? 14.6;
-  const epaTotal = epaWidget?.total ?? 54.9;
-  const streakCount = streakWidget?.count ?? 8;
-  const streakType = streakWidget?.type ?? "losing";
-  const scoutingData: ScoutingData = {
-    assignments: scoutingWidget?.assignments ?? 24,
-    reports: scoutingWidget?.reports ?? 18,
-    openDisagreements: scoutingWidget?.openDisagreements ?? 3,
-  };
+  const rank = typeof rankWidget?.rank === "number" ? rankWidget.rank : null;
+  const rankTotal = typeof rankWidget?.total === "number" ? rankWidget.total : null;
+  const wins = typeof recordWidget?.wins === "number" ? recordWidget.wins : null;
+  const losses = typeof recordWidget?.losses === "number" ? recordWidget.losses : null;
+  const ties = typeof recordWidget?.ties === "number" ? recordWidget.ties : 0;
+  const points = typeof pointsWidget?.value === "number" ? pointsWidget.value : null;
+  const epaAuto = typeof epaWidget?.auto === "number" ? epaWidget.auto : null;
+  const epaTeleop = typeof epaWidget?.teleop === "number" ? epaWidget.teleop : null;
+  const epaEnd = typeof epaWidget?.end === "number" ? epaWidget.end : null;
+  const epaTotal = typeof epaWidget?.total === "number" ? epaWidget.total : null;
+  const streakCount = typeof streakWidget?.count === "number" ? streakWidget.count : 0;
+  const streakType = typeof streakWidget?.type === "string" ? streakWidget.type : "";
+  const scoutingData: ScoutingData | null = scoutingWidget
+    ? {
+        assignments: scoutingWidget.assignments ?? 0,
+        reports: scoutingWidget.reports ?? 0,
+        openDisagreements: scoutingWidget.openDisagreements ?? 0,
+      }
+    : null;
+  const hasRecord = wins != null && losses != null;
 
-  const epaSum = epaAuto + epaTeleop + epaEnd || 1;
-  const autoPct = (epaAuto / epaSum) * 100;
-  const teleopPct = (epaTeleop / epaSum) * 100;
-  const endPct = (epaEnd / epaSum) * 100;
+  const epa = (() => {
+    if (epaAuto == null || epaTeleop == null || epaEnd == null) return null;
+    const sum = epaAuto + epaTeleop + epaEnd || 1;
+    return {
+      autoPct: (epaAuto / sum) * 100,
+      teleopPct: (epaTeleop / sum) * 100,
+      endPct: (epaEnd / sum) * 100,
+      auto: epaAuto,
+      teleop: epaTeleop,
+      end: epaEnd,
+      total: epaTotal ?? epaAuto + epaTeleop + epaEnd,
+    };
+  })();
+  const hasSnapshot = rank != null || hasRecord || points != null;
 
-  function handleSync() {
+  function handleRefresh() {
     setSyncing(true);
-    setTimeout(() => setSyncing(false), 2000);
+    window.location.reload();
   }
 
   return (
@@ -85,12 +98,11 @@ export function DashboardRedesign({
           <div>
             <h1 className="vt-welcome-greeting">{greeting()}, {name}</h1>
           </div>
-          <button className="vt-sync-btn" onClick={handleSync} aria-label="Sync status">
-            <Icon name="back" />
-            {syncing ? "Syncing" : "Synced"}
+          <button className="vt-sync-btn" type="button" onClick={handleRefresh} disabled={syncing}>
+            {syncing ? "Refreshing" : "Refresh"}
           </button>
         </div>
-        <div className="vt-welcome-number">{teamNumber}</div>
+        {teamNumber ? <div className="vt-welcome-number">{teamNumber}</div> : null}
         {streakCount > 0 ? (
           <span className="vt-welcome-badge">
             <Icon name="target" /> {streakCount} match {streakType} streak
@@ -120,57 +132,69 @@ export function DashboardRedesign({
         )}
       </div>
 
-      {/* Competition Snapshot */}
       <p className="vt-section-label">Competition Snapshot</p>
+      {hasSnapshot ? (
       <div className="vt-card" style={{ marginBottom: 24 }}>
         <div className="vt-snapshot">
           <div className="vt-snapshot-col">
-            <div className="vt-snapshot-value">#{rank ?? 34}</div>
-            <div className="vt-snapshot-label">Official Rank · {rank ?? 34} of {rankTotal}</div>
+            <div className="vt-snapshot-value">{rank != null ? `#${rank}` : "—"}</div>
+            <div className="vt-snapshot-label">{rank != null && rankTotal != null ? `Rank · ${rank} of ${rankTotal}` : "Rank"}</div>
           </div>
           <div className="vt-snapshot-col">
-            <div className="vt-snapshot-value">{wins}-{losses}{ties > 0 ? `-${ties}` : ""}</div>
-            <div className="vt-snapshot-label">Official Current Event W-L-T Record</div>
+            <div className="vt-snapshot-value">{hasRecord ? `${wins}-${losses}${ties > 0 ? `-${ties}` : ""}` : "—"}</div>
+            <div className="vt-snapshot-label">Current event record</div>
           </div>
           <div className="vt-snapshot-col">
-            <div className="vt-snapshot-value blue">{points}</div>
-            <div className="vt-snapshot-label">Points Scored Per Played Match</div>
+            <div className="vt-snapshot-value blue">{points ?? "—"}</div>
+            <div className="vt-snapshot-label">Points per match</div>
           </div>
         </div>
 
-        {/* EPA Rating Bar */}
+        {epa ? (
         <div className="vt-epa-bar">
           <div className="vt-epa-header">
             <span className="vt-epa-label">EPA Rating</span>
             <span className="vt-epa-tag">Statbotics Event</span>
           </div>
           <div className="vt-epa-track">
-            <div className="vt-epa-segment" style={{ width: `${autoPct}%`, background: "var(--vt-teal)" }} />
-            <div className="vt-epa-segment" style={{ width: `${teleopPct}%`, background: "var(--vt-purple)" }} />
-            <div className="vt-epa-segment" style={{ width: `${endPct}%`, background: "var(--vt-orange)" }} />
+            <div className="vt-epa-segment" style={{ width: `${epa.autoPct}%`, background: "var(--vt-teal)" }} />
+            <div className="vt-epa-segment" style={{ width: `${epa.teleopPct}%`, background: "var(--vt-purple)" }} />
+            <div className="vt-epa-segment" style={{ width: `${epa.endPct}%`, background: "var(--vt-orange)" }} />
           </div>
           <div className="vt-epa-legend">
             <div className="vt-epa-legend-items">
               <span className="vt-epa-legend-item">
-                <span className="vt-epa-legend-dot" style={{ background: "var(--vt-teal)" }} /> Auto {epaAuto}
+                <span className="vt-epa-legend-dot" style={{ background: "var(--vt-teal)" }} /> Auto {epa.auto}
               </span>
               <span className="vt-epa-legend-item">
-                <span className="vt-epa-legend-dot" style={{ background: "var(--vt-purple)" }} /> Teleop {epaTeleop}
+                <span className="vt-epa-legend-dot" style={{ background: "var(--vt-purple)" }} /> Teleop {epa.teleop}
               </span>
               <span className="vt-epa-legend-item">
-                <span className="vt-epa-legend-dot" style={{ background: "var(--vt-orange)" }} /> End {epaEnd}
+                <span className="vt-epa-legend-dot" style={{ background: "var(--vt-orange)" }} /> End {epa.end}
               </span>
             </div>
-            <span className="vt-epa-value">{epaTotal}</span>
+            <span className="vt-epa-value">{epa.total}</span>
           </div>
         </div>
+        ) : null}
       </div>
+      ) : (
+        <div className="vt-card" style={{ marginBottom: 24 }}>
+          <p className="vt-welcome-helper">Rank, record, and points show up here once this event is connected.</p>
+          <a className="vt-welcome-event" href={withOrgHref("/competition", orgId)}>
+            <span>Open competition</span>
+            <Icon name="chevron" />
+          </a>
+        </div>
+      )}
 
-      {/* Charts Section */}
-      <p className="vt-section-label">Performance Charts</p>
+      {(hasRecord || epa) ? (
+      <>
+      <p className="vt-section-label">Performance</p>
 
       {/* Win-Loss Donut + EPA Bar */}
       <div className="vt-chart-grid" style={{ marginBottom: 16 }}>
+        {wins != null && losses != null ? (
         <div className="vt-card">
           <div className="vt-stat-card-header" style={{ marginBottom: 12 }}>
             <span className="vt-stat-card-title">Match Record</span>
@@ -193,72 +217,62 @@ export function DashboardRedesign({
             </div>
           </div>
         </div>
+        ) : null}
 
+        {epa ? (
         <div className="vt-card">
           <div className="vt-stat-card-header" style={{ marginBottom: 12 }}>
             <span className="vt-stat-card-title">EPA Breakdown</span>
-            <span className="vt-stat-card-badge">Total {epaTotal}</span>
+            <span className="vt-stat-card-badge">Total {epa.total}</span>
           </div>
           <BarChart
             data={[
-              { label: "Auto", value: epaAuto, color: "var(--vt-teal)" },
-              { label: "Teleop", value: epaTeleop, color: "var(--vt-purple)" },
-              { label: "Endgame", value: epaEnd, color: "var(--vt-orange)" },
+              { label: "Auto", value: epa.auto, color: "var(--vt-teal)" },
+              { label: "Teleop", value: epa.teleop, color: "var(--vt-purple)" },
+              { label: "Endgame", value: epa.end, color: "var(--vt-orange)" },
             ]}
             formatValue={(v) => v.toFixed(1)}
           />
         </div>
+        ) : null}
       </div>
 
-      {/* Points Trend Line Chart */}
-      <div className="vt-card" style={{ marginBottom: 16 }}>
-        <div className="vt-stat-card-header" style={{ marginBottom: 12 }}>
-          <span className="vt-stat-card-title">Points Trend</span>
-          <span className="vt-stat-card-badge">{points} avg</span>
-        </div>
-        <LineChart
-          data={[
-            { label: "M1", value: points * 0.72 },
-            { label: "M2", value: points * 0.85 },
-            { label: "M3", value: points * 0.68 },
-            { label: "M4", value: points * 0.94 },
-            { label: "M5", value: points * 0.81 },
-            { label: "M6", value: points },
-          ]}
-          color="var(--vt-blue)"
-        />
-      </div>
-
-      {/* Stat Cards with Progress Rings */}
       <div className="vt-chart-grid" style={{ marginBottom: 16 }}>
+        {rank != null && rankTotal != null && rankTotal > 0 ? (
         <div className="vt-stat-card">
           <div className="vt-stat-card-header">
-            <span className="vt-stat-card-title">Rank Progress</span>
+            <span className="vt-stat-card-title">Place in the field</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-            <ProgressRing value={rank ?? 34} max={rankTotal} label={`#${rank ?? 34}`} color="var(--vt-blue)" />
+            <ProgressRing value={rankTotal - rank + 1} max={rankTotal} label={`#${rank}`} color="var(--vt-blue)" />
             <div>
               <div style={{ font: "700 14px var(--vt-font)", color: "var(--vt-ink)" }}>of {rankTotal} teams</div>
-              <div style={{ font: "400 12px var(--vt-font)", color: "var(--vt-muted)" }}>Top {Math.round(((rank ?? 34) / rankTotal) * 100)}%</div>
+              <div style={{ font: "400 12px var(--vt-font)", color: "var(--vt-muted)" }}>Top {Math.max(1, Math.round((rank / rankTotal) * 100))}%</div>
             </div>
           </div>
         </div>
+        ) : null}
 
+        {wins != null && losses != null ? (
         <div className="vt-stat-card">
           <div className="vt-stat-card-header">
             <span className="vt-stat-card-title">Win Rate</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-            <ProgressRing value={wins} max={wins + losses + ties} label={`${Math.round((wins / Math.max(wins + losses + ties, 1)) * 100)}%`} color="var(--vt-green)" />
+            <ProgressRing value={wins} max={Math.max(wins + losses + ties, 1)} label={`${Math.round((wins / Math.max(wins + losses + ties, 1)) * 100)}%`} color="var(--vt-green)" />
             <div>
               <div style={{ font: "700 14px var(--vt-font)", color: "var(--vt-ink)" }}>{wins} wins</div>
               <div style={{ font: "400 12px var(--vt-font)", color: "var(--vt-muted)" }}>out of {wins + losses + ties}</div>
             </div>
           </div>
         </div>
+        ) : null}
       </div>
+      </>
+      ) : null}
 
-      {/* Scouting Metrics with Filters */}
+      {scoutingData ? (
+      <>
       <p className="vt-section-label">Scouting Coverage</p>
       <div className="vt-card" style={{ marginBottom: 16 }}>
         <ScoutingFilterBar data={scoutingData}>
@@ -280,56 +294,47 @@ export function DashboardRedesign({
           )}
         </ScoutingFilterBar>
       </div>
+      </>
+      ) : null}
 
-      {/* Quick Actions */}
       <p className="vt-section-label">Quick Actions</p>
       <h2 style={{ font: "700 18px var(--vt-font)", color: "var(--vt-ink)", marginBottom: 12 }}>
         Start with what matters
       </h2>
-      <a className="vt-quick-action" href={withOrgHref("/ai?tab=chat", orgId)}>
-        <span className="vt-quick-action-icon">
-          <Icon name="bolt" />
-        </span>
-        <span className="vt-quick-action-text">
-          <span className="vt-quick-action-title">AI Strategy</span>
-        </span>
-        <span className="vt-quick-action-arrow">
-          <Icon name="chevron" />
-        </span>
-      </a>
-      <a className="vt-quick-action" href={withOrgHref("/competition?tab=scouting", orgId)} style={{ background: "var(--vt-ink)" }}>
-        <span className="vt-quick-action-icon">
-          <Icon name="scout" />
-        </span>
-        <span className="vt-quick-action-text">
-          <span className="vt-quick-action-title">Scouting Hub</span>
-        </span>
-        <span className="vt-quick-action-arrow">
-          <Icon name="chevron" />
-        </span>
-      </a>
-      <a className="vt-quick-action" href={withOrgHref("/competition?tab=matches", orgId)} style={{ background: "var(--vt-purple)" }}>
-        <span className="vt-quick-action-icon">
-          <Icon name="swords" />
-        </span>
-        <span className="vt-quick-action-text">
-          <span className="vt-quick-action-title">Match Strategy</span>
-        </span>
-        <span className="vt-quick-action-arrow">
-          <Icon name="chevron" />
-        </span>
-      </a>
-      <a className="vt-quick-action" href={withOrgHref("/analytics", orgId)} style={{ background: "var(--vt-teal)" }}>
-        <span className="vt-quick-action-icon">
-          <Icon name="stats" />
-        </span>
-        <span className="vt-quick-action-text">
-          <span className="vt-quick-action-title">Analytics</span>
-        </span>
-        <span className="vt-quick-action-arrow">
-          <Icon name="chevron" />
-        </span>
-      </a>
+      <div className="vt-quick-grid">
+        <a className="vt-quick-action quiet" href={withOrgHref("/ai?tab=chat", orgId)}>
+          <span className="vt-quick-action-icon"><Icon name="bolt" /></span>
+          <span className="vt-quick-action-text">
+            <span className="vt-quick-action-title">Ask AI</span>
+            <span className="vt-quick-action-sub">A match, a robot, or a rule</span>
+          </span>
+          <span className="vt-quick-action-arrow"><Icon name="chevron" /></span>
+        </a>
+        <a className="vt-quick-action quiet" href={withOrgHref("/competition?tab=scouting", orgId)}>
+          <span className="vt-quick-action-icon"><Icon name="scout" /></span>
+          <span className="vt-quick-action-text">
+            <span className="vt-quick-action-title">Scout</span>
+            <span className="vt-quick-action-sub">Log a report or check coverage</span>
+          </span>
+          <span className="vt-quick-action-arrow"><Icon name="chevron" /></span>
+        </a>
+        <a className="vt-quick-action quiet" href={withOrgHref("/competition?tab=matches", orgId)}>
+          <span className="vt-quick-action-icon"><Icon name="swords" /></span>
+          <span className="vt-quick-action-text">
+            <span className="vt-quick-action-title">Matches</span>
+            <span className="vt-quick-action-sub">Lineup and notes for the next one</span>
+          </span>
+          <span className="vt-quick-action-arrow"><Icon name="chevron" /></span>
+        </a>
+        <a className="vt-quick-action quiet" href={withOrgHref("/analytics", orgId)}>
+          <span className="vt-quick-action-icon"><Icon name="stats" /></span>
+          <span className="vt-quick-action-text">
+            <span className="vt-quick-action-title">Analytics</span>
+            <span className="vt-quick-action-sub">Rank, EPA, and trends</span>
+          </span>
+          <span className="vt-quick-action-arrow"><Icon name="chevron" /></span>
+        </a>
+      </div>
     </main>
   );
 }

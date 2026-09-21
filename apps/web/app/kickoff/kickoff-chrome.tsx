@@ -41,7 +41,7 @@ export function NextActionsPanel({
   });
   if (!actions.length) return null;
   return (
-    <section className="kick-next-actions app-card soft-panel" aria-label="Next actions">
+    <section className="kick-next-actions edc-next-actions app-card soft-panel" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
         <p>Each one opens the page where you finish the work.</p>

@@ -3,8 +3,8 @@
    from exactly one style bundle (a sheet in two chunk groups loses its
    <link> on hot reload). */
 
-/* ── Signed-in product ─────────────────────────────────────────────────── */
-body.has-app-shell {
+/* ── Signed-in product, light theme ────────────────────────────────────── */
+html[data-theme="light"] body.has-app-shell {
   --bg: #f5f5f7;
   --surface: #ffffff;
   --surface-2: #f2f2f7;
@@ -217,4 +217,71 @@ body.has-app-shell .app-badge {
 
 @media (max-width: 680px) {
   body.has-app-shell .soft-topbar { height: 56px; }
+}
+
+/* Dark mode keeps system.css tokens. The rules above lock ink, cards, and
+   chrome to a light palette; this block puts them back on the theme. */
+html[data-theme="dark"] body.has-app-shell {
+  background-color: var(--bg) !important;
+  background-image: var(--glow) !important;
+  color: var(--ink);
+}
+
+html[data-theme="dark"] body.has-app-shell .soft-topbar {
+  background-color: color-mix(in srgb, var(--bg) 78%, transparent);
+  border-bottom-color: var(--line);
+}
+
+html[data-theme="dark"] body.has-app-shell .soft-page-head h1,
+html[data-theme="dark"] body.has-app-shell .soft-topbar-title,
+html[data-theme="dark"] body.has-app-shell :where(.app-page-header, .dash-home-header) h1,
+html[data-theme="dark"] body.has-app-shell :where(.app-card, .soft-panel, .soft-card, .dash-widget, .vt-card, .vt-stat-card) :where(h2, h3, h4) {
+  color: var(--ink);
+}
+
+html[data-theme="dark"] body.has-app-shell :where(.app-page-header, .dash-home-header) p {
+  color: var(--muted);
+}
+
+html[data-theme="dark"] body.has-app-shell .soft-icon-btn:hover {
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+}
+
+html[data-theme="dark"] body.has-app-shell .vrail {
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  border-right-color: var(--line);
+}
+
+html[data-theme="dark"] body.has-app-shell .vrail-search {
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+  box-shadow: none;
+}
+
+html[data-theme="dark"] body.has-app-shell .vrail-nav a[aria-current="page"] {
+  color: var(--ink);
+  background: var(--accent-soft);
+}
+
+html[data-theme="dark"] body.has-app-shell :where(.app-card, .soft-panel, .soft-card, .dash-widget, .vt-card, .vt-stat-card) {
+  border-color: var(--line);
+  background: var(--surface);
+}
+
+html[data-theme="dark"] body.has-app-shell :where(input, select, textarea) {
+  border-color: var(--line);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+html[data-theme="dark"] body.has-app-shell .soft-island {
+  border-color: var(--line);
+  background: var(--island);
+  box-shadow: var(--shadow-pop);
+}
+
+html[data-theme="dark"] body.has-app-shell .soft-drawer,
+html[data-theme="dark"] body.has-app-shell .soft-account-pop,
+html[data-theme="dark"] body.has-app-shell .soft-island-editor > section {
+  border-color: var(--line);
+  background: var(--surface);
 }

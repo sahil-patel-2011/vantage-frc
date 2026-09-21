@@ -40,12 +40,22 @@ export function DashboardActionsProvider({ orgId, refresh, children }: {
   );
 }
 
+const TASK_CARDS = new Set<DashboardWidgetType>(["team_todos"]);
+const SCOUT_CARDS = new Set<DashboardWidgetType>([
+  "scouting_coverage",
+  "next_match",
+  "match_schedule",
+  "alliance_desk",
+]);
+
 export function DashboardCardActions({ type, label }: { type: DashboardWidgetType; label: string }) {
   const actions = useContext(ActionsContext);
   const menu = useRef<HTMLDetailsElement>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
-  if (!actions) return null;
+  const offerTask = TASK_CARDS.has(type);
+  const offerScout = SCOUT_CARDS.has(type);
+  if (!actions || (!offerTask && !offerScout)) return null;
   function open(action: Action) {
     if (menu.current) {
       menu.current.open = false;
@@ -78,9 +88,9 @@ export function DashboardCardActions({ type, label }: { type: DashboardWidgetTyp
       }}>
         <summary aria-label={`Quick actions for ${label}`}>•••</summary>
         <div className="dash-card-action-options">
-          <button type="button" disabled={!actions.orgId} onClick={() => open("task")}>Create team task</button>
-          <button type="button" disabled={!actions.orgId} onClick={() => open("scouting")}>Log scouting report</button>
-          <button type="button" disabled={!actions.orgId || busy} onClick={() => void refresh()}>Refresh card data</button>
+          {offerTask ? <button type="button" disabled={!actions.orgId} onClick={() => open("task")}>Add a task</button> : null}
+          {offerScout ? <button type="button" disabled={!actions.orgId} onClick={() => open("scouting")}>Log a scouting report</button> : null}
+          <button type="button" disabled={!actions.orgId || busy} onClick={() => void refresh()}>Refresh</button>
         </div>
       </details>
     </div>

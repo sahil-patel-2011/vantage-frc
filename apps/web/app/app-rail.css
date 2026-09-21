@@ -117,6 +117,22 @@
     background: var(--accent-soft);
     font-weight: 600;
   }
+  .vrail-edit {
+    justify-self: start;
+    text-align: left;
+    margin: 4px 10px 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--muted);
+    font: inherit;
+    font-size: var(--text-xs);
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .vrail-edit:hover {
+    color: var(--accent);
+  }
 
   .vrail-foot {
     margin-top: auto;
@@ -124,12 +140,22 @@
     padding-top: 8px;
   }
 
-  /* Give every product page room for the rail without touching page sheets. */
+  /* Give every product page room for the rail without touching page sheets.
+     Drop the phone dock's bottom inset — the rail replaces it. */
   body.has-app-shell {
     padding-left: 232px !important;
+    padding-bottom: 28px !important;
   }
   body.has-app-shell .soft-topbar {
     left: 232px;
+  }
+  body.has-app-shell .soft-island {
+    display: none !important;
+  }
+  /* The rail already has Search and Ask AI. The top-bar copies are for phones. */
+  body.has-app-shell .soft-menu-btn,
+  body.has-app-shell .soft-ask-ai {
+    display: none;
   }
 }
 
