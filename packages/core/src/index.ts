@@ -230,6 +230,7 @@ export const auth: AuthInstance = new Proxy({} as AuthInstance, {
 export * from "./email";
 export * from "./email-notifications";
 export * from "./product-releases";
+export * from "./release-notes-compose";
 export * from "./mfa";
 export * from "./access-policy";
 export * from "./auth-access";
