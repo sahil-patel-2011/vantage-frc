@@ -167,6 +167,28 @@ body.has-app-shell .app-topbar{display:none}
 .soft-profile-actions button:disabled{opacity:.65;cursor:wait}
 .soft-profile-compact{padding:2px;margin-bottom:10px}
 .soft-profile-compact .soft-profile-link{padding:8px 10px}
+/* Two settings doors at the bottom of the drawer: yours, and the team's.
+   Same inset as the workspace chip so the drawer keeps one left edge. */
+.soft-drawer-settings{
+  display:grid;gap:6px;margin:12px 8px 0;padding-top:12px;border-top:1px solid var(--line);
+}
+.soft-drawer-settings a{
+  display:grid;grid-template-columns:auto 1fr;align-items:center;gap:10px;
+  padding:9px 11px;border:1px solid var(--line);border-radius:var(--radius-sm);
+  background:var(--bg);color:var(--ink);text-decoration:none;
+  transition:border-color var(--dur-tint) var(--ease-out),transform var(--dur-press) var(--ease-spring),
+    background-color var(--dur-tint) var(--ease-out);
+}
+.soft-drawer-settings a:hover{
+  border-color:color-mix(in srgb,var(--accent) 35%,var(--line));
+  background:color-mix(in srgb,var(--accent) 5%,var(--bg));
+}
+.soft-drawer-settings a:active{transform:scale(.985)}
+.soft-drawer-settings svg{width:16px;height:16px;color:var(--accent)}
+.soft-drawer-settings span{display:grid;gap:1px}
+.soft-drawer-settings strong{font:600 13px var(--font-source-sans),ui-sans-serif}
+.soft-drawer-settings small{color:var(--muted);font:500 11.5px/1.35 var(--font-source-sans),ui-sans-serif}
+
 .soft-drawer-foot{
   display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;margin-top:auto;padding:14px 8px 4px;
   border-top:1px solid var(--line);

@@ -112,6 +112,9 @@ export function AppShellNavPanel({
   signingOut: boolean;
   onSignOut: () => void;
 }) {
+  const activeMembershipRole = orgId
+    ? (memberships.find((row) => row.orgId === orgId)?.role ?? null)
+    : null;
   return (
     <>
       {navOpen ? (
@@ -391,6 +394,29 @@ export function AppShellNavPanel({
             ) : null}
           </nav>
         )}
+        {/* Settings, split the way people ask for them: "my stuff" and "the
+            team's stuff". Both used to be somewhere inside the hub lists, which
+            meant hunting through Team for a sign-in preference. The team link
+            only appears for an owner or admin, because for everyone else it is a
+            door that opens onto an error. */}
+        <div className="soft-drawer-settings">
+          <a href="/account" onClick={closeNav}>
+            <Icon name="gear" />
+            <span>
+              <strong>Personal settings</strong>
+              <small>Your profile, sign-in and notifications</small>
+            </span>
+          </a>
+          {orgId && ["owner", "admin"].includes(activeMembershipRole ?? "") ? (
+            <a href={withOrgHref("/team/admin", orgId)} onClick={closeNav}>
+              <Icon name="users" />
+              <span>
+                <strong>Team settings</strong>
+                <small>Members, role profiles and team preferences</small>
+              </span>
+            </a>
+          ) : null}
+        </div>
         <footer className="soft-drawer-foot">
           <button type="button" onClick={openIslandEditor}>
             Customize island

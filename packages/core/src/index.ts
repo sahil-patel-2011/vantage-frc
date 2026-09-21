@@ -326,6 +326,7 @@ export * from "./claim-workspace";
 export * from "./capabilities";
 export * from "./admin-tenure";
 export * from "./hub-access";
+export * from "./role-profiles";
 export * from "./platform-admin";
 export * from "./platform-partners";
 
