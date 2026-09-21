@@ -55,6 +55,12 @@ const PUBLIC_PREFIXES = [
   "/api/desktop/link",
   // Unsigned desktop updater: version + download URLs. No secrets, no session.
   "/api/desktop/release",
+  // Public release-notes feed for the desktop updater and marketing changelog:
+  // published, everyone-audience releases only.
+  "/api/desktop/updates",
+  // Release-note publishing for coding agents/CI — bearer RELEASE_AGENT_TOKEN,
+  // enforced by the route itself (no session cookie).
+  "/api/agent/release-notes",
   // Pi relay pairing: the worker prints a code and polls; approval stays session-gated.
   "/api/relay/pair/start",
   "/api/relay/pair/poll",

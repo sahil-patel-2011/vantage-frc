@@ -28,7 +28,9 @@ describe("marketing chrome", () => {
   it("does not dump dashboard routes or fake metrics on the public story", () => {
     const showcase = src("components/marketing/home-showcase.tsx");
     expect(showcase).not.toMatch(/mk-tag/);
-    expect(showcase).toMatch(/MARKETING_STUDENT_PATH/);
+    // The day-one path moved to /for-teams when the homepage was simplified;
+    // the home story now carries the four-step loop instead.
+    expect(showcase).toMatch(/MARKETING_LEARN/);
     expect(showcase).toMatch(/ProductFrame/);
     expect(showcase).toMatch(/MARKETING_APP_FRAMES/);
     expect(showcase).not.toMatch(/\b\d{2,}%\b|\b\d{3,}\s+teams\b/i);

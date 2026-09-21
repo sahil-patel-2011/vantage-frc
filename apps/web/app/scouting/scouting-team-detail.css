@@ -1,0 +1,120 @@
+/* Detail pane of the scouting dashboard. See scouting-team-detail.tsx. */
+.std {
+  position: sticky;
+  top: 12px;
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid color-mix(in srgb, var(--accent) 15%, var(--line));
+  border-radius: var(--radius-md, 14px);
+  background: var(--surface);
+  box-shadow: 0 2px 8px -4px color-mix(in srgb, var(--ink) 18%, transparent);
+  animation: std-settle var(--dur-move) var(--ease-settle) both;
+}
+.std-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px;
+}
+.std-head-main {
+  display: grid;
+}
+.std-head-right {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+.std-kicker {
+  display: block;
+  color: var(--muted);
+  font: 700 10px var(--font-source-sans), ui-sans-serif;
+  letter-spacing: var(--tracking-kicker, .08em);
+  text-transform: uppercase;
+}
+.std-head h3 {
+  margin: 2px 0 0;
+  font: 750 30px/1 var(--font-source-sans), ui-sans-serif;
+  letter-spacing: -0.03em;
+}
+.std-score {
+  display: grid;
+  justify-items: end;
+}
+.std-score strong {
+  font: 700 22px/1 var(--font-source-sans), ui-sans-serif;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+}
+.std-score small {
+  color: var(--muted);
+  font-size: 10.5px;
+}
+.std-headline {
+  margin: 0;
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* Compact compare toggle in the header — icon only, keeps the pane clean. */
+.std-compare {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--muted);
+  font: 700 16px/1 var(--font-source-sans), ui-sans-serif;
+  cursor: pointer;
+  transition:
+    background-color var(--dur-tint) var(--ease-out),
+    border-color var(--dur-tint) var(--ease-out),
+    color var(--dur-tint) var(--ease-out),
+    transform var(--dur-press) var(--ease-spring);
+}
+.std-compare:hover {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
+  color: var(--accent);
+}
+.std-compare[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+.std-compare:disabled {
+  opacity: .35;
+  cursor: not-allowed;
+}
+.std-compare:active {
+  transform: scale(0.9);
+}
+
+.std-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px 16px;
+  margin: 0;
+}
+.std-stats dt {
+  color: var(--muted);
+  font: 700 10px var(--font-source-sans), ui-sans-serif;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.std-stats dd {
+  margin: 2px 0 0;
+  font: 600 13px var(--font-source-sans), ui-sans-serif;
+}
+
+@keyframes std-settle {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .std { animation: none; }
+}

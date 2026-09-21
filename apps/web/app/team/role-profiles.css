@@ -1,0 +1,213 @@
+/* Role profiles panel. Uses the product tokens so it sits inside Team admin
+   without a second visual language, and the motion tokens so it matches the
+   rest of the app's quiet entrances. */
+
+.rpf {
+  margin-top: 1.25rem;
+}
+
+.rpf-error,
+.rpf-notice {
+  margin: 0 0 0.75rem;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm, 8px);
+  font-size: 13px;
+}
+.rpf-error {
+  border: 1px solid color-mix(in srgb, var(--critical, #b42318) 30%, transparent);
+  color: var(--critical, #b42318);
+}
+.rpf-notice {
+  border: 1px solid color-mix(in srgb, var(--accent, #2563eb) 30%, transparent);
+  color: var(--accent, #2563eb);
+}
+
+.rpf-hint {
+  margin: 0.4rem 0 0;
+  color: var(--muted, #667085);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.rpf-form {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 1.1rem;
+  padding: 0.9rem;
+  border: 1px solid var(--line, #e4e7ec);
+  border-radius: var(--radius-md, 12px);
+  animation: rpf-in var(--dur-move, 260ms) var(--ease-settle) both;
+}
+@keyframes rpf-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.rpf-row {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: 2fr 1fr;
+}
+.rpf-form label {
+  display: grid;
+  gap: 4px;
+  font-size: 12.5px;
+}
+.rpf-form label > span {
+  color: var(--muted, #667085);
+  font-weight: 600;
+}
+.rpf-form input[type="text"],
+.rpf-form input:not([type]),
+.rpf-form select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--line, #e4e7ec);
+  border-radius: var(--radius-sm, 8px);
+  background: var(--surface, #fff);
+  color: inherit;
+  font: inherit;
+  transition:
+    border-color var(--dur-tint, 120ms) var(--ease-out, ease),
+    box-shadow var(--dur-tint, 120ms) var(--ease-out, ease);
+}
+.rpf-form input:focus-visible,
+.rpf-form select:focus-visible {
+  outline: none;
+  border-color: var(--accent, #2563eb);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent, #2563eb) 18%, transparent);
+}
+
+.rpf-set {
+  margin: 0;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--line, #e4e7ec);
+  border-radius: var(--radius-sm, 8px);
+}
+.rpf-set legend {
+  padding: 0 6px;
+  color: var(--muted, #667085);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.rpf-checks {
+  display: grid;
+  gap: 6px;
+  margin-top: 6px;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+}
+.rpf-checks label {
+  display: grid;
+  align-items: start;
+  gap: 8px;
+  grid-template-columns: auto 1fr;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm, 8px);
+  cursor: pointer;
+  transition: background-color var(--dur-tint, 120ms) var(--ease-out, ease);
+}
+.rpf-checks label:hover {
+  background: color-mix(in srgb, var(--accent, #2563eb) 6%, transparent);
+}
+.rpf-checks label span {
+  display: grid;
+  gap: 1px;
+}
+.rpf-checks strong {
+  font-size: 13px;
+  font-weight: 600;
+}
+.rpf-checks small {
+  color: var(--muted, #667085);
+  font-size: 11.5px;
+  line-height: 1.4;
+}
+
+.rpf-actions,
+.rpf-item-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.rpf-list {
+  display: grid;
+  gap: 10px;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+.rpf-list > li {
+  display: grid;
+  gap: 6px;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid var(--line, #e4e7ec);
+  border-radius: var(--radius-md, 12px);
+  transition:
+    border-color var(--dur-tint, 120ms) var(--ease-out, ease),
+    box-shadow var(--dur-move, 260ms) var(--ease-out, ease);
+}
+.rpf-list > li:hover {
+  border-color: color-mix(in srgb, var(--accent, #2563eb) 30%, var(--line, #e4e7ec));
+}
+.rpf-item-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.rpf-badge {
+  padding: 2px 8px;
+  border: 1px solid var(--line, #e4e7ec);
+  border-radius: 999px;
+  color: var(--muted, #667085);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.rpf-desc {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.rpf-grants {
+  margin: 0;
+  color: var(--muted, #667085);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.rpf-apply select {
+  padding: 6px 8px;
+  border: 1px solid var(--line, #e4e7ec);
+  border-radius: var(--radius-sm, 8px);
+  background: var(--surface, #fff);
+  color: inherit;
+  font: inherit;
+  font-size: 12.5px;
+}
+.rpf-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (max-width: 560px) {
+  .rpf-row {
+    grid-template-columns: 1fr;
+  }
+  .rpf-item-actions > * {
+    flex: 1 1 auto;
+  }
+}

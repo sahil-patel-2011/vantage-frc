@@ -6,6 +6,9 @@ const config: NextConfig = {
   // (IMMUTABLE_STATIC_PATCH_PREVIEW_COMMENTS). Restore the default after
   // Preview Comments are off on the project.
   supportsImmutableAssets: false,
+  allowedDevOrigins: process.env.BASE44_PUBLIC_HOST_SUFFIX
+    ? [`3000-${process.env.BASE44_PUBLIC_HOST_SUFFIX}`]
+    : [],
   serverExternalPackages: ["pg"],
   transpilePackages: [
     "@vantage/agent",

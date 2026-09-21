@@ -61,6 +61,10 @@
 .stp-row[data-consistency="streaky"] { border-left: 3px solid var(--warning); }
 .stp-row[data-consistency="boom-or-bust"] { border-left: 3px solid var(--critical); }
 .stp-row[data-consistency="unknown"] { border-left: 3px solid var(--line); }
+.stp-row[data-compared="true"] {
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--line));
+  background: color-mix(in srgb, var(--accent) 3%, var(--surface));
+}
 
 .stp-row-main {
   display: flex;
@@ -144,6 +148,11 @@
   font-size: 12.5px;
   line-height: 1.45;
 }
+.stp-compare-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
 
 .stp-detail {
   display: grid;
@@ -187,6 +196,36 @@
     padding: 0 12px 10px;
   }
 }
+/* Split-view toggle — appears when exactly two teams are held for comparison. */
+.stp-split-toggle-wrap {
+  display: flex;
+  justify-content: flex-end;
+}
+.stp-split-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+  border-radius: var(--radius-pill);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font: 700 12px var(--font-source-sans), ui-sans-serif;
+  cursor: pointer;
+  transition:
+    background-color var(--dur-tint) var(--ease-out),
+    border-color var(--dur-tint) var(--ease-out),
+    transform var(--dur-press) var(--ease-spring);
+}
+.stp-split-toggle:hover {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+}
+.stp-split-toggle:active {
+  transform: scale(0.96);
+}
+
+/* Remove stale compare-button animation rules — the button lives in the detail pane now. */
 
 /* ---------------------------------------------------------------- motion --
    Everything here uses the shared tokens in vantage-fluid.css, which zero
@@ -226,8 +265,33 @@
   transform: scale(0.96);
   transition: transform var(--dur-press) var(--ease-out);
 }
-/* The detail panel unfolds from the row rather than appearing on top of it. */
-.stp-detail {
+/* The list arrives rather than appears: each row lifts in a few pixels behind
+   the one above it. The stagger stops at eight so a fifty-robot event does not
+   spend two seconds assembling itself, and the durations are the shared tokens,
+   which zero out under reduced motion. */
+.stp-row {
+  animation: stp-row-in var(--dur-move) var(--ease-settle) both;
+}
+.stp-row:nth-child(1) { animation-delay: 0ms; }
+.stp-row:nth-child(2) { animation-delay: 24ms; }
+.stp-row:nth-child(3) { animation-delay: 48ms; }
+.stp-row:nth-child(4) { animation-delay: 72ms; }
+.stp-row:nth-child(5) { animation-delay: 96ms; }
+.stp-row:nth-child(6) { animation-delay: 120ms; }
+.stp-row:nth-child(7) { animation-delay: 144ms; }
+.stp-row:nth-child(n + 8) { animation-delay: 168ms; }
+@keyframes stp-row-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.stp-compare-hint {
   animation: stp-unfold var(--dur-move) var(--ease-settle) both;
 }
 @keyframes stp-unfold {
@@ -340,4 +404,54 @@
   min-height: 24px;
   accent-color: var(--accent);
   cursor: pointer;
+}
+
+/* Master–detail: the list of robots beside the one you are reading. On a phone
+   the detail card sits above the list, so a tap never scrolls you anywhere. */
+.stp-shell {
+  display: grid;
+  gap: 12px;
+}
+.stp-browse {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.stp-search input {
+  width: 100%;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  color: var(--ink);
+  font: 500 13px var(--font-source-sans), ui-sans-serif;
+}
+.stp-search input:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline-offset: 1px;
+}
+.stp-row {
+  transition:
+    border-color var(--dur-tint) var(--ease-out),
+    box-shadow var(--dur-tint) var(--ease-out),
+    transform var(--dur-tint) var(--ease-out);
+}
+.stp-row[data-active="true"] {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--accent) 22%, transparent),
+    0 6px 18px -14px color-mix(in srgb, var(--ink) 55%, transparent);
+}
+@media (min-width: 960px) {
+  .stp-shell {
+    grid-template-columns: minmax(0, 1.55fr) minmax(280px, 0.95fr);
+    align-items: start;
+  }
+}
+@media (max-width: 959px) {
+  .stp-browse { order: 2; }
+  .std { position: static; order: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .stp-row { transition: none; }
 }

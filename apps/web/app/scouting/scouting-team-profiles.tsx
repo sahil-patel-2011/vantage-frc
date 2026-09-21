@@ -8,6 +8,11 @@ import {
   type ScoutedTeamProfile,
 } from "@vantage/prediction-strategy";
 import { PickWeightSliders, usePickWeights } from "./scouting-pick-weights";
+import { COMPARE_LIMIT, ScoutingCompare, teamNumberLabel } from "./scouting-compare";
+import { ScoutingDashboardSummary } from "./scouting-dashboard-summary";
+import { ScoutingFieldChart } from "./scouting-field-chart";
+import { ScoutingSplitCompare } from "./scouting-split-compare";
+import { ScoutingTeamDetail } from "./scouting-team-detail";
 import { EmptyState, Button } from "../../components/ui";
 import { apiErrorMessage, classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
@@ -49,7 +54,22 @@ export function ScoutingTeamProfiles({ orgId, eventKey }: { orgId: string; event
   const [error, setError] = useState<{ message: string; status: number | null } | null>(null);
   const [sort, setSort] = useState<Sort>("fit");
   const { weights, update, reset, changed } = usePickWeights(orgId);
-  const [open, setOpen] = useState<string | null>(null);
+  /** The robot whose numbers fill the detail pane. */
+  const [selected, setSelected] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  /** Up to three robots held side by side. Team keys, in the order they were picked. */
+  const [compare, setCompare] = useState<string[]>([]);
+  /** When true and exactly two teams are selected, show the split-view deep dive. */
+  const [splitView, setSplitView] = useState(false);
+
+  const toggleCompare = (teamKey: string) =>
+    setCompare((current) =>
+      current.includes(teamKey)
+        ? current.filter((key) => key !== teamKey)
+        : current.length >= COMPARE_LIMIT
+          ? current
+          : [...current, teamKey],
+    );
 
   useEffect(() => {
     let cancelled = false;
@@ -110,6 +130,25 @@ export function ScoutingTeamProfiles({ orgId, eventKey }: { orgId: string; event
     if (sort === "average") return copy.sort((a, b) => b.shrunkTotal - a.shrunkTotal);
     return copy.sort((a, b) => teamNumber(a.teamKey) - teamNumber(b.teamKey));
   }, [view, sort, weights]);
+
+  const visibleRows = useMemo(() => {
+    const term = query.trim().replace(/^frc/i, "");
+    if (!term) return rows;
+    return rows.filter((profile) => profile.teamKey.replace(/^frc/i, "").includes(term));
+  }, [rows, query]);
+
+  const detail = useMemo(
+    () => visibleRows.find((profile) => profile.teamKey === selected) ?? visibleRows[0] ?? null,
+    [visibleRows, selected],
+  );
+
+  const compareProfiles = useMemo(
+    () =>
+      compare
+        .map((teamKey) => rows.find((profile) => profile.teamKey === teamKey))
+        .filter((profile): profile is ScoutedTeamProfile => Boolean(profile)),
+    [compare, rows],
+  );
 
   if (error) {
     const copy = loadFailureCopy(
@@ -184,20 +223,88 @@ export function ScoutingTeamProfiles({ orgId, eventKey }: { orgId: string; event
         </div>
       </header>
 
+      <ScoutingDashboardSummary profiles={view.profiles} />
+
+      <ScoutingFieldChart
+        profiles={view.profiles}
+        selectedKey={detail?.teamKey ?? null}
+        compareKeys={compare}
+        onSelect={setSelected}
+      />
+
       {sort === "fit" ? (
         <PickWeightSliders weights={weights} onChange={update} onReset={reset} changed={changed} />
       ) : null}
 
-      <ul className="stp-list">
-        {rows.map((profile) => (
-          <ProfileRow
-            key={profile.teamKey}
-            profile={profile}
-            expanded={open === profile.teamKey}
-            onToggle={() => setOpen((current) => (current === profile.teamKey ? null : profile.teamKey))}
+      {splitView && compareProfiles.length === 2 ? (
+        <ScoutingSplitCompare
+          left={compareProfiles[0]!}
+          right={compareProfiles[1]!}
+          onClose={() => setSplitView(false)}
+        />
+      ) : compareProfiles.length >= 2 ? (
+        <>
+          {compareProfiles.length === 2 ? (
+            <div className="stp-split-toggle-wrap">
+              <button
+                type="button"
+                className="stp-split-toggle"
+                onClick={() => setSplitView(true)}
+              >
+                ⊞ Split view
+              </button>
+            </div>
+          ) : null}
+          <ScoutingCompare
+            profiles={compareProfiles}
+            onRemove={(teamKey) => setCompare((current) => current.filter((key) => key !== teamKey))}
+            onClear={() => setCompare([])}
           />
-        ))}
-      </ul>
+        </>
+      ) : compare.length === 1 ? (
+        <p className="stp-compare-hint">
+          {teamNumberLabel(compare[0]!)} held. Pick one or two more to compare them side by side.
+        </p>
+      ) : null}
+
+      <div className="stp-shell">
+        <div className="stp-browse">
+          <label className="stp-search">
+            <span className="sr-only">Find a team</span>
+            <input
+              type="search"
+              inputMode="numeric"
+              placeholder="Find a team number"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+            />
+          </label>
+          {visibleRows.length ? (
+            <ul className="stp-list">
+              {visibleRows.map((profile) => (
+                <ProfileRow
+                  key={profile.teamKey}
+                  profile={profile}
+                  active={detail?.teamKey === profile.teamKey}
+                  compared={compare.includes(profile.teamKey)}
+                  onSelect={() => setSelected(profile.teamKey)}
+                />
+              ))}
+            </ul>
+          ) : (
+            <p className="stp-compare-hint">No robot at this event matches “{query.trim()}”.</p>
+          )}
+        </div>
+
+        {detail ? (
+          <ScoutingTeamDetail
+            profile={detail}
+            compared={compare.includes(detail.teamKey)}
+            compareFull={compare.length >= COMPARE_LIMIT}
+            onCompare={() => toggleCompare(detail.teamKey)}
+          />
+        ) : null}
+      </div>
     </section>
   );
 }
@@ -225,18 +332,20 @@ function teamNumber(teamKey: string): number {
 
 function ProfileRow({
   profile,
-  expanded,
-  onToggle,
+  active,
+  compared,
+  onSelect,
 }: {
   profile: ScoutedTeamProfile;
-  expanded: boolean;
-  onToggle: () => void;
+  active: boolean;
+  compared: boolean;
+  onSelect: () => void;
 }) {
   const number = profile.teamKey.replace(/^frc/i, "");
   const consistency = profile.consistency?.consistency ?? "unknown";
   return (
-    <li className="stp-row" data-consistency={consistency}>
-      <button type="button" className="stp-row-main" aria-expanded={expanded} onClick={onToggle}>
+    <li className="stp-row" data-consistency={consistency} data-active={active ? "true" : undefined} data-compared={compared ? "true" : undefined}>
+      <button type="button" className="stp-row-main" aria-pressed={active} onClick={onSelect}>
         <span className="stp-team">{number}</span>
         <span className="stp-score">
           <strong>{profile.shrunkTotal.toFixed(1)}</strong>
@@ -265,44 +374,6 @@ function ProfileRow({
         </span>
       </button>
       <p className="stp-headline">{profile.headline}</p>
-      {expanded ? (
-        <dl className="stp-detail">
-          <div>
-            <dt>Matches watched</dt>
-            <dd>{profile.matches}</dd>
-          </div>
-          <div>
-            <dt>Auto / Teleop / Endgame</dt>
-            <dd>
-              {profile.meanAuto.toFixed(1)} · {profile.meanTeleop.toFixed(1)} · {profile.meanEndgame.toFixed(1)}
-            </dd>
-          </div>
-          {profile.consistency?.floor != null && profile.consistency.ceiling != null ? (
-            <div>
-              <dt>Bad day / good day</dt>
-              <dd>
-                {profile.consistency.floor.toFixed(0)} to {profile.consistency.ceiling.toFixed(0)}
-              </dd>
-            </div>
-          ) : null}
-          {profile.climbRate != null ? (
-            <div>
-              <dt>Climbs</dt>
-              <dd>{Math.round(profile.climbRate * 100)}% of matches</dd>
-            </div>
-          ) : null}
-          {profile.defenseRate > 0 ? (
-            <div>
-              <dt>Plays defense</dt>
-              <dd>{Math.round(profile.defenseRate * 100)}% of matches</dd>
-            </div>
-          ) : null}
-          <div>
-            <dt>Sample</dt>
-            <dd>{profile.sampleNote}</dd>
-          </div>
-        </dl>
-      ) : null}
     </li>
   );
 }

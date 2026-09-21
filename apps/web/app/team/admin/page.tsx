@@ -8,6 +8,7 @@ import {
 } from "../../../lib/team/team-admin-related";
 import { withOrgHref } from "../../../lib/nav/product-nav";
 import TeamAdminClient from "../team-admin-client";
+import { RoleProfilesPanel } from "../role-profiles-panel";
 import "../team-admin.css";
 
 export const metadata = {
@@ -60,5 +61,14 @@ export default async function TeamAdminPage({
       </main>
     );
   }
-  return <TeamAdminClient orgId={orgId} />;
+  return (
+    <>
+      <TeamAdminClient orgId={orgId} />
+      {/* The named jobs sit under the member editor: you read "who is on the
+          team" first, then hand out a role. */}
+      <div className="module-page team-admin-page">
+        <RoleProfilesPanel orgId={orgId} />
+      </div>
+    </>
+  );
 }

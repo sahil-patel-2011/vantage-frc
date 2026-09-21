@@ -4,6 +4,7 @@ import "../app/product-styles";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppShellNavPanel } from "./app-shell-nav-panel";
+import { AppShellSidebar } from "./app-shell-sidebar";
 import { AppShellEventFocus, AppShellIsland, AppShellIslandEditor } from "./app-shell-island";
 import { AppTour } from "./app-tour";
 import { AppShellTopbar } from "./app-shell-topbar";
@@ -497,6 +498,16 @@ export default function AppShell() {
       <a className="soft-skip-link" href="#main-content">
         Skip to main content
       </a>
+      <AppShellSidebar
+        orgId={orgId}
+        pathname={pathname}
+        pathSearch={pathSearch}
+        orgLabel={orgLabel}
+        visibleNavGroups={visibleNavGroups}
+        navHrefAllowed={navHrefAllowed}
+        onOpenSearch={() => openNav({ focusSearch: true })}
+        shortcutHint={shortcutHint}
+      />
       <AppShellTopbar
         showBack={showBack}
         onBack={() => router.push(backHref)}
