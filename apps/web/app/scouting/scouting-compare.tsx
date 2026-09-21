@@ -15,6 +15,7 @@
 import type { ScoutedTeamProfile } from "@vantage/prediction-strategy";
 import { CONSISTENCY_LABEL } from "@vantage/prediction-strategy";
 import { allianceMath } from "./compare-alliance";
+import { ScoutingCompareCharts } from "./scouting-compare-charts";
 import "./scouting-compare.css";
 
 export const COMPARE_LIMIT = 3;
@@ -157,6 +158,8 @@ export function ScoutingCompare({
           );
         })}
       </div>
+
+      <ScoutingCompareCharts profiles={profiles} />
 
       {alliance ? (
         <footer className="scmp-alliance">

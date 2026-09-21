@@ -1,0 +1,139 @@
+/* Persistent left rail (wide screens only).
+   Component rules only — every colour, radius and space comes from system.css. */
+
+.vrail {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .vrail {
+    position: fixed;
+    z-index: 72;
+    inset: 0 auto 0 0;
+    width: 244px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    padding: 18px 14px calc(16px + var(--safe-bottom));
+    background: color-mix(in srgb, var(--surface) 88%, transparent);
+    backdrop-filter: saturate(140%) blur(18px);
+    border-right: 1px solid var(--line-soft);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .vrail-head {
+    display: grid;
+    gap: 2px;
+    padding: 4px 10px 0;
+  }
+  .vrail-mark {
+    font-size: var(--text-lg);
+    font-weight: 650;
+    letter-spacing: var(--tracking-tight);
+    color: var(--ink);
+  }
+  .vrail-org {
+    font-size: var(--text-xs);
+    color: var(--muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .vrail-search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: var(--control-h-sm);
+    padding: 0 10px;
+    color: var(--muted);
+    background: var(--surface-2);
+    border: 1px solid var(--line-soft);
+    border-radius: var(--radius-sm);
+    font: inherit;
+    font-size: var(--text-sm);
+    cursor: pointer;
+    transition: border-color .16s ease, color .16s ease;
+  }
+  .vrail-search:hover {
+    color: var(--ink);
+    border-color: var(--line);
+  }
+  .vrail-search svg {
+    width: 15px;
+    height: 15px;
+  }
+  .vrail-search span {
+    flex: 1;
+    text-align: left;
+  }
+  .vrail-search kbd {
+    font: 600 10px var(--font-mono);
+    color: var(--muted);
+    opacity: .8;
+  }
+
+  .vrail-nav {
+    display: grid;
+    gap: 2px;
+  }
+  .vrail-label {
+    padding: 8px 10px 4px;
+    color: var(--muted);
+    font-size: var(--text-2xs);
+    font-weight: 650;
+    letter-spacing: var(--tracking-kicker);
+    text-transform: uppercase;
+  }
+  .vrail-nav a,
+  .vrail-foot {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 38px;
+    padding: 0 10px;
+    color: var(--muted);
+    border-radius: var(--radius-sm);
+    text-decoration: none;
+    font-size: var(--text-md);
+    /* Apple-ish: the row itself is the affordance, so only fill and ink move. */
+    transition: background-color .16s ease, color .16s ease;
+  }
+  .vrail-nav a svg,
+  .vrail-foot svg {
+    width: 17px;
+    height: 17px;
+    flex: none;
+  }
+  .vrail-nav a:hover,
+  .vrail-foot:hover {
+    color: var(--ink);
+    background: color-mix(in srgb, var(--ink) 5%, transparent);
+  }
+  .vrail-nav a[aria-current="page"] {
+    color: var(--accent);
+    background: var(--accent-soft);
+    font-weight: 600;
+  }
+
+  .vrail-foot {
+    margin-top: auto;
+  }
+
+  /* Give every product page room for the rail without touching page sheets. */
+  body.has-app-shell {
+    padding-left: 244px !important;
+  }
+  body.has-app-shell .soft-topbar {
+    left: 244px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vrail-nav a,
+  .vrail-foot,
+  .vrail-search {
+    transition: none;
+  }
+}

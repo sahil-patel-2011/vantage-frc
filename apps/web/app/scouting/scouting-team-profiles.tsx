@@ -9,6 +9,7 @@ import {
 } from "@vantage/prediction-strategy";
 import { PickWeightSliders, usePickWeights } from "./scouting-pick-weights";
 import { COMPARE_LIMIT, ScoutingCompare, teamNumberLabel } from "./scouting-compare";
+import { ScoutingDashboardSummary } from "./scouting-dashboard-summary";
 import { EmptyState, Button } from "../../components/ui";
 import { apiErrorMessage, classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
@@ -203,6 +204,8 @@ export function ScoutingTeamProfiles({ orgId, eventKey }: { orgId: string; event
           ))}
         </div>
       </header>
+
+      <ScoutingDashboardSummary profiles={view.profiles} />
 
       {sort === "fit" ? (
         <PickWeightSliders weights={weights} onChange={update} onReset={reset} changed={changed} />

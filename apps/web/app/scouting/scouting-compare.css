@@ -284,3 +284,122 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* ---- Charts (see scouting-compare-charts.tsx) -----------------------------
+   One colour per comparison slot, shared by bars, lines and the legend, so a
+   colour always means the same robot. */
+.scmp-charts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 10px;
+}
+.scmp-chart {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 12px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+.scmp-chart figcaption {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  font: 650 12px var(--font-sans);
+  color: var(--ink);
+}
+.scmp-chart figcaption span {
+  color: var(--muted);
+  font-weight: 400;
+  font-size: 11px;
+}
+.scmp-chart-bars {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 12px;
+  height: 132px;
+}
+.scmp-chart-group {
+  display: grid;
+  grid-template-rows: 1fr auto;
+  gap: 6px;
+  min-width: 0;
+}
+.scmp-chart-columns {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 5px;
+  border-bottom: 1px solid var(--line);
+}
+.scmp-chart-column {
+  width: 14px;
+  min-height: 2px;
+  border-radius: 3px 3px 0 0;
+  background: var(--scmp-slot, var(--accent));
+  transition: height .28s cubic-bezier(.22, .61, .36, 1);
+}
+.scmp-chart-tick {
+  color: var(--muted);
+  font: 500 11px var(--font-sans);
+  text-align: center;
+}
+.scmp-chart svg {
+  width: 100%;
+  height: 132px;
+  overflow: visible;
+}
+.scmp-chart-grid {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+.scmp-chart-line {
+  fill: none;
+  stroke: var(--scmp-slot, var(--accent));
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.scmp-chart-axis {
+  display: flex;
+  justify-content: space-between;
+  color: var(--muted);
+  font: 500 11px var(--font-sans);
+}
+.scmp-chart-empty {
+  margin: 0;
+  padding: 34px 0;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+}
+.scmp-chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font: 600 12px var(--font-sans);
+}
+.scmp-chart-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+}
+.scmp-chart-legend span {
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+  background: var(--scmp-slot, var(--accent));
+}
+.scmp-charts [data-slot="1"] { --scmp-slot: var(--accent); }
+.scmp-charts [data-slot="2"] { --scmp-slot: var(--tone-amber); }
+.scmp-charts [data-slot="3"] { --scmp-slot: var(--tone-green); }
+@media (prefers-reduced-motion: reduce) {
+  .scmp-chart-column { transition: none; }
+}
