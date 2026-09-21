@@ -375,7 +375,9 @@ test.describe("marketing waitlist and sign-in", () => {
     await expect(page.getByRole("heading", { level: 1, name: "Sign in" })).toBeVisible();
     await expect(page.locator("body")).not.toContainText("Application error");
     await expect(page.getByRole("button", { name: "Email me a sign-in code" })).toHaveCount(1);
-    const waitlist = page.getByRole("link", { name: "Join the waitlist" });
+    // By destination, not label — see signin-shell.spec.ts. It is "Request
+    // access" today and was "Join the waitlist" before.
+    const waitlist = page.locator('a[href*="waitlist"]').first();
     await expect(waitlist).toBeVisible();
     await expect(page.getByText("Setup required")).toHaveCount(0);
     await waitlist.click();

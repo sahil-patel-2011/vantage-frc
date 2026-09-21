@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import { loadFailureHeading } from "./hub-org-gate";
 import { expectReadyOr, waitForLoadingGone } from "./ready";
 import { signInAs, signInFixture } from "./session";
+import { expectPausedPage, mediaPaused } from "./media-paused";
 
 test.beforeEach(async ({ context }) => {
   const signed = await signInAs(context, "owner");
@@ -117,19 +118,26 @@ test("student this week can walk Home → My Day/Scout → Video paste → CAD l
   }
 
   await page.goto("/video-analysis");
-  await waitForLoadingGone(page);
-  for (const phrase of BANNED_VIDEO) {
-    await expect(page.locator("body"), `Video still shows ${phrase}`).not.toContainText(phrase);
-  }
-  const paste = page.getByRole("region", { name: "Paste a video" });
-  const chooseTeam = page.getByRole("link", { name: "Choose your team" });
-  const onPaste = await expectReadyOr(page, paste, chooseTeam);
-  if (onPaste) {
-    await expect(page.getByRole("button", { name: "Analyze this video" })).toBeVisible();
-    const field = paste.getByLabel("Video link");
-    if (await field.count()) {
-      await field.fill("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+  if (mediaPaused) {
+    // Video is a media tool, switched off to save storage. The walk carries on
+    // past it — the step after this one has nothing to do with media — so this
+    // checks the paused page and moves on rather than ending the walk here.
+    await expectPausedPage(page, "Video analysis");
+  } else {
+    await waitForLoadingGone(page);
+    for (const phrase of BANNED_VIDEO) {
+      await expect(page.locator("body"), `Video still shows ${phrase}`).not.toContainText(phrase);
+    }
+    const paste = page.getByRole("region", { name: "Paste a video" });
+    const chooseTeam = page.getByRole("link", { name: "Choose your team" });
+    const onPaste = await expectReadyOr(page, paste, chooseTeam);
+    if (onPaste) {
       await expect(page.getByRole("button", { name: "Analyze this video" })).toBeVisible();
+      const field = paste.getByLabel("Video link");
+      if (await field.count()) {
+        await field.fill("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+        await expect(page.getByRole("button", { name: "Analyze this video" })).toBeVisible();
+      }
     }
   }
 

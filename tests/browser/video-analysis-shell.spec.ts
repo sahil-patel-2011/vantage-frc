@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { expectReadyOr, waitForLoadingGone } from "./ready";
 import { signInAs, signInFixture } from "./session";
+import { expectPausedPage, mediaPaused } from "./media-paused";
 
 test.beforeEach(async ({ context }) => {
   const signed = await signInAs(context, "owner");
@@ -10,6 +11,7 @@ test.beforeEach(async ({ context }) => {
 test("Video is a student paste page, not an engineering wall", async ({ page }) => {
   test.setTimeout(90_000);
   await page.goto("/video-analysis", { waitUntil: "domcontentloaded" });
+  if (mediaPaused) return expectPausedPage(page, "Video analysis");
   await waitForLoadingGone(page);
   await expect(page.getByRole("heading", { level: 1, name: "Video" })).toBeVisible();
 

@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { expectHubReadyOrGate, loadFailureHeading } from "./hub-org-gate";
 import { signInAs, signInFixture } from "./session";
+import { expectPausedPage, mediaPaused } from "./media-paused";
 
 test.beforeEach(async ({ context }) => {
   const signed = await signInAs(context, "owner");
@@ -10,6 +11,7 @@ test.beforeEach(async ({ context }) => {
 test("Match video still loads after the Saturday shell pass", async ({ page }) => {
   await page.goto("/video");
   await expect(page.locator("body")).not.toContainText("Application error");
+  if (mediaPaused) return expectPausedPage(page, "Match video");
 
   const title = page.getByRole("heading", { level: 1, name: "Match video" });
   const setup = page.getByRole("heading", { name: /Choose your team|Choose your team/i });

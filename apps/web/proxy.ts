@@ -219,6 +219,20 @@ export async function proxy(request: NextRequest) {
         pathname === "/api/business/assets" || pathname === "/api/branding/logo" ||
         /^\/api\/reimbursements\/[^/]+\/receipt$/.test(pathname)
       ))) {
+    /*
+      A page gets a page. This used to answer page requests with the same JSON
+      as the API, so a student tapping "Match video" in the menu saw a raw
+      `{"error":…,"code":"media_paused"}` object where the page should be. The
+      menu still links these tools — the pause is one boolean away from being
+      lifted, and hiding them would mean re-listing every one on the way back —
+      so the page they land on has to explain itself. Rewritten, not
+      redirected: the address stays the one they asked for.
+    */
+    if (!pathname.startsWith("/api/") && (request.method === "GET" || request.method === "HEAD")) {
+      const paused = new URL("/media-paused", request.url);
+      paused.searchParams.set("from", `${pathname}${request.nextUrl.search}`);
+      return NextResponse.rewrite(paused);
+    }
     return NextResponse.json({ error: MEDIA_PAUSED_MESSAGE, code: "media_paused" }, { status: 403 });
   }
   const fixtureSession =

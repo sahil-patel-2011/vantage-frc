@@ -55,6 +55,9 @@ const INTENTIONALLY_UNLISTED = new Map<string, string>([
   // A shared snapshot. The page itself says the link only opens the board for
   // the team that created it, so a menu entry would point at nothing.
   ["/strategy/board", "opened from a shared board link, scoped to one team"],
+  // Never navigated to directly: the proxy rewrites a paused media tool's own
+  // address to this page, so a menu entry would be a link to "this is paused".
+  ["/media-paused", "shown in place of a paused media tool, by the proxy's rewrite"],
 ]);
 
 /** Directory names that are not user-facing routes. */

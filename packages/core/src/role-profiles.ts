@@ -147,13 +147,34 @@ type Row = {
   updatedAt: Date;
 };
 
+/**
+ * `capabilities` is an `org_capability[]` — an array of a custom Postgres enum —
+ * and node-postgres only parses arrays of types it knows. A custom enum array
+ * arrives as the literal string "{manage_api_keys,view_billing}", and `?? []`
+ * lets a string straight through. The admin page then called `.map` on it and
+ * the whole Team admin screen crashed for every team with a profile — which is
+ * the screen owners invite teammates from.
+ *
+ * The queries cast to `text[]`, which the driver does parse. This is the second
+ * line: whatever shape arrives, a list of known capabilities leaves.
+ */
+export function asCapabilities(value: unknown): OrgCapability[] {
+  let items: unknown[] = [];
+  if (Array.isArray(value)) items = value;
+  else if (typeof value === "string") {
+    const inner = value.trim().replace(/^\{|\}$/g, "");
+    items = inner ? inner.split(",").map((part) => part.trim().replace(/^"|"$/g, "")) : [];
+  }
+  return items.filter((item): item is OrgCapability => typeof item === "string" && isCapability(item));
+}
+
 const toProfile = (row: Row): RoleProfile => ({
   id: row.id,
   key: row.key,
   name: row.name,
   description: row.description,
   baseRole: row.baseRole,
-  capabilities: row.capabilities ?? [],
+  capabilities: asCapabilities(row.capabilities),
   hubAccess: row.hubAccess ?? {},
   updatedAt: row.updatedAt.toISOString(),
 });
@@ -161,7 +182,7 @@ const toProfile = (row: Row): RoleProfile => ({
 export async function listRoleProfiles(client: PoolClient, orgId: string): Promise<RoleProfile[]> {
   const result = await client.query<Row>(
     `SELECT id, key, name, description, base_role AS "baseRole",
-            capabilities, hub_access AS "hubAccess", updated_at AS "updatedAt"
+            capabilities::text[] AS capabilities, hub_access AS "hubAccess", updated_at AS "updatedAt"
      FROM org_role_profiles
      WHERE org_id = $1
      ORDER BY CASE base_role WHEN 'admin' THEN 0 WHEN 'scout' THEN 1 ELSE 2 END, name ASC`,
@@ -205,7 +226,7 @@ export async function saveRoleProfile(
        hub_access = EXCLUDED.hub_access,
        updated_at = now()
      RETURNING id, key, name, description, base_role AS "baseRole",
-               capabilities, hub_access AS "hubAccess", updated_at AS "updatedAt"`,
+               capabilities::text[] AS capabilities, hub_access AS "hubAccess", updated_at AS "updatedAt"`,
     [
       orgId,
       profile.key,
@@ -240,7 +261,7 @@ export async function applyRoleProfile(
 ): Promise<RoleProfile> {
   const found = await client.query<Row>(
     `SELECT id, key, name, description, base_role AS "baseRole",
-            capabilities, hub_access AS "hubAccess", updated_at AS "updatedAt"
+            capabilities::text[] AS capabilities, hub_access AS "hubAccess", updated_at AS "updatedAt"
      FROM org_role_profiles WHERE org_id = $1 AND key = $2`,
     [input.orgId, input.key],
   );

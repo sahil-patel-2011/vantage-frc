@@ -929,6 +929,12 @@ body.has-app-shell .dash-widget.is-empty{box-shadow:none}
    hand-rolled markup, without doubling the widget's own card border/shadow. */
 .soft-empty-compact{display:grid;gap:6px;flex:1;align-content:center;min-height:96px;padding:4px 2px;text-align:left;background:transparent;border:0}
 .soft-empty-compact h2{margin:0;font:700 var(--title-4)/1.3 var(--font-source-sans),ui-sans-serif;letter-spacing:-.01em;color:var(--ink)}
+/* An empty widget's own heading must not vanish. `.dash-widget h2` clips to one
+   line with overflow:hidden — right for the widget's title — but it also caught
+   this heading, and overflow:hidden lets a grid item shrink to zero height. So
+   a short card kept its title and description and silently lost the sentence
+   saying why it was empty ("No venue weather"). Wrap it instead. */
+.dash-widget .soft-empty-compact h2{overflow:visible;white-space:normal;text-overflow:clip}
 .soft-empty-compact p{margin:0;color:var(--muted);font-size:13px;line-height:1.4;max-width:44ch}
 .soft-empty-compact .app-badge{margin-bottom:2px}
 .dash-empty-board{

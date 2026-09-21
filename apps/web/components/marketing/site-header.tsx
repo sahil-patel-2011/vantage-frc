@@ -7,7 +7,10 @@ import "./marketing-styles";
 const links = [
   ["/features", "Product"],
   ["/workflow", "How it works"],
-  ["/pricing", "Pricing"],
+  // "What it costs", not "Pricing". The page leads with the software being
+  // free; a link reading "Pricing" tells a mentor the opposite before they have
+  // read a word. The footer already says this — the header now agrees with it.
+  ["/pricing", "What it costs"],
 ] as const;
 
 export function BrandLink({ href = "/" }: { href?: string }) {

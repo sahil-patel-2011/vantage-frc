@@ -6,7 +6,20 @@ test("public site uses a restrained light palette", async ({ page }) => {
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
   await expect(page.getByRole("heading", { name: "Your season stops living in spreadsheets." })).toBeVisible();
   await expect(page.locator("#waitlist").getByLabel("Email")).toBeVisible();
-  await expect(page.locator(".marketing-site")).toHaveCSS("background-color", "rgb(250, 249, 246)");
+  /*
+    "Restrained light palette" is the claim, so that is what is checked: light
+    (every channel high) and restrained (close to neutral — no loud tint). This
+    used to pin one exact colour, the warm off-white rgb(250, 249, 246), and so
+    failed the moment the Apple-style polish deliberately moved the canvas to
+    pure white — while the palette was every bit as restrained as before. A
+    dark page or a saturated one still fails, which is the regression worth
+    catching.
+  */
+  const [r, g, b] = await page
+    .locator(".marketing-site")
+    .evaluate((el) => (getComputedStyle(el).backgroundColor.match(/\d+(\.\d+)?/g) ?? []).slice(0, 3).map(Number));
+  expect(Math.min(r!, g!, b!), "the public site's background should be light").toBeGreaterThanOrEqual(235);
+  expect(Math.max(r!, g!, b!) - Math.min(r!, g!, b!), "and close to neutral, not a loud tint").toBeLessThanOrEqual(14);
 });
 
 /**

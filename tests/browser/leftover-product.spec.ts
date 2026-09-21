@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { waitForLoadingGone } from "./ready";
 import { signInAs, signInFixture } from "./session";
+import { expectPausedPage, mediaPaused } from "./media-paused";
 
 test.beforeEach(async ({ context }) => {
   const signed = await signInAs(context, "owner");
@@ -24,7 +25,8 @@ const LEAVES = [
   */
   { path: "/team/budgets", heading: /This tab · hard limits|Chat limits|Choose your team/ },
   { path: "/files", heading: "Files" },
-  { path: "/media", heading: "Media" },
+  // A media tool: the paused page while media is switched off.
+  { path: "/media", heading: "Media", pausedAs: "Media" },
   { path: "/help", heading: "Help centre" },
   { path: "/whats-new", heading: "What’s new" },
   { path: "/print-farm", heading: "Print farm" },
@@ -39,6 +41,10 @@ test("leftover-product boards speak student chrome", async ({ page }) => {
     await page.goto(leaf.path);
     await waitForLoadingGone(page);
     await expect(page.locator("body")).not.toContainText("Application error");
+    if (mediaPaused && "pausedAs" in leaf) {
+      await expectPausedPage(page, leaf.pausedAs);
+      continue;
+    }
     await expect(page.getByRole("heading", { name: leaf.heading }).first()).toBeVisible();
     for (const phrase of BANNED) {
       await expect(page.locator("body"), `${leaf.path} still shows ${phrase}`).not.toContainText(phrase);

@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { hubById, hubPrimaryTabs } from "../../apps/web/lib/nav/hubs";
 import { gotoAsTeam } from "./active-org";
 import { signInAs, signInFixture } from "./session";
+import { expectPausedPage, mediaPaused } from "./media-paused";
 
 test.beforeEach(async ({ context }) => {
   // A real session when the box has one. The fixture cookie walks the proxy
@@ -126,6 +127,8 @@ test.describe("one control per destination", () => {
    */
   test("media header links only to destinations the page does not own", async ({ page }) => {
     await page.goto("/media");
+    // No header strip to check while media is paused — only the paused page.
+    if (mediaPaused) return expectPausedPage(page, "Media");
     await expect(page.getByRole("heading", { level: 1, name: "Media" })).toBeVisible();
     const strip = page.locator('nav[aria-label="Related media tools"]');
     await expect(strip.getByRole("link")).toHaveCount(2);
