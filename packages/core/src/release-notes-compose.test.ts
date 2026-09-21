@@ -37,11 +37,11 @@ describe("composeReleaseNotes", () => {
       ],
     });
 
-    const items = composed.sections[0].items;
+    const items = composed.sections[0]?.items ?? [];
     expect(composed.headline).toBe("Polish");
     expect(items[0]).toBe("Cleanup");
     expect(items).toHaveLength(2);
-    expect(items[1].length).toBeLessThanOrEqual(110);
+    expect((items[1] ?? "").length).toBeLessThanOrEqual(110);
   });
 
   it("rejects empty or unusable input", () => {

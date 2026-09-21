@@ -394,6 +394,33 @@ async function ensureRecipientPrefs(client: PoolClient, userId: string) {
   return ensureUserEmailPreferences(client, userId);
 }
 
+type EmailRecipient = { userId: string; email: string; unsubscribeToken: string };
+
+/**
+ * The recipient list is platform-admin only. When the caller has no admin
+ * session bound (scheduled publishes run as the worker), skip email instead of
+ * aborting the surrounding publish transaction.
+ */
+async function listEmailRecipients(
+  client: PoolClient,
+  releaseId: string,
+): Promise<{ rows: EmailRecipient[] }> {
+  await client.query("SAVEPOINT release_recipients");
+  try {
+    const result = await client.query<EmailRecipient>(
+      `SELECT user_id AS "userId", email, unsubscribe_token AS "unsubscribeToken"
+       FROM list_product_release_notify_recipients($1::uuid)`,
+      [releaseId],
+    );
+    await client.query("RELEASE SAVEPOINT release_recipients");
+    return { rows: result.rows };
+  } catch {
+    await client.query("ROLLBACK TO SAVEPOINT release_recipients");
+    await client.query("RELEASE SAVEPOINT release_recipients");
+    return { rows: [] };
+  }
+}
+
 export async function notifyProductRelease(
   client: PoolClient,
   releaseId: string,
@@ -429,15 +456,12 @@ export async function notifyProductRelease(
     };
   }
 
-  const recipients = await client.query<{
-    userId: string;
-    email: string;
-    unsubscribeToken: string;
-  }>(
-    `SELECT user_id AS "userId", email, unsubscribe_token AS "unsubscribeToken"
-     FROM list_product_release_notify_recipients($1::uuid)`,
-    [releaseId],
-  );
+  // The email recipient list is platform-admin only (SECURITY DEFINER guard), so
+  // only ask for it when we actually intend to send email. In-app-only notifies
+  // (the agent publishing path) must not fail on that check.
+  const recipients = wantEmail
+    ? await listEmailRecipients(client, releaseId)
+    : { rows: [] as EmailRecipient[] };
 
   // Also notify in-app for targeted members even when email pref is off.
   const inAppTargets = wantInApp
