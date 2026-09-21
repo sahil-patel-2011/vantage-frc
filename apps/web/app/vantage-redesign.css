@@ -401,6 +401,22 @@ body.has-app-shell {
 .vt-chart-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
 @media (min-width: 640px) { .vt-chart-grid { grid-template-columns: 1fr 1fr; } }
 
+/* ===== Scouting Filter Bar ===== */
+.vt-scout-filter { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+.vt-scout-filter-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.vt-scout-filter-label { font: 700 10px var(--vt-font); text-transform: uppercase; letter-spacing: .04em; color: var(--vt-muted-light); white-space: nowrap; }
+.vt-scout-filter-pills { display: flex; gap: 4px; flex-wrap: wrap; }
+.vt-scout-pill {
+  padding: 5px 12px; border-radius: var(--vt-radius-pill); border: 1px solid var(--vt-line);
+  background: var(--vt-surface); font: 600 11px var(--vt-font); color: var(--vt-muted);
+  cursor: pointer; transition: all .12s ease; white-space: nowrap;
+}
+.vt-scout-pill[data-active="true"] { background: var(--vt-blue); color: #fff; border-color: var(--vt-blue); }
+.vt-scout-select {
+  padding: 5px 10px; border-radius: var(--vt-radius-xs); border: 1px solid var(--vt-line);
+  background: var(--vt-surface); font: 600 12px var(--vt-font); color: var(--vt-ink); cursor: pointer;
+}
+
 /* ===== Utility ===== */
 .vt-hidden { display: none !important; }
 .vt-flex { display: flex; }

@@ -5,6 +5,7 @@ import { Icon } from "../components/icon";
 import { withOrgHref } from "../lib/nav/product-nav";
 import type { Me } from "../components/app-shell-model";
 import { DonutChart, BarChart, LineChart, ProgressRing } from "./dashboard-charts";
+import { ScoutingFilterBar, type ScoutingData } from "./scouting-filter";
 
 /**
  * Mobile-first dashboard redesign matching the design mockups.
@@ -60,6 +61,7 @@ export function DashboardRedesign({
   const pointsWidget = widgets?.points as { value?: number } | undefined;
   const epaWidget = widgets?.epa as { auto?: number; teleop?: number; end?: number; total?: number } | undefined;
   const streakWidget = widgets?.streak as { count?: number; type?: string } | undefined;
+  const scoutingWidget = widgets?.scouting_coverage as { assignments?: number; reports?: number; openDisagreements?: number } | undefined;
   const teamNumber = me.teamNumber || "6925";
 
   const rank = rankWidget?.rank;
@@ -74,6 +76,11 @@ export function DashboardRedesign({
   const epaTotal = epaWidget?.total ?? 54.9;
   const streakCount = streakWidget?.count ?? 8;
   const streakType = streakWidget?.type ?? "losing";
+  const scoutingData: ScoutingData = {
+    assignments: scoutingWidget?.assignments ?? 24,
+    reports: scoutingWidget?.reports ?? 18,
+    openDisagreements: scoutingWidget?.openDisagreements ?? 3,
+  };
 
   const epaSum = epaAuto + epaTeleop + epaEnd || 1;
   const autoPct = (epaAuto / epaSum) * 100;
@@ -264,6 +271,29 @@ export function DashboardRedesign({
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Scouting Metrics with Filters */}
+      <p className="vt-section-label">Scouting Coverage</p>
+      <div className="vt-card" style={{ marginBottom: 16 }}>
+        <ScoutingFilterBar data={scoutingData}>
+          {(filtered) => (
+            <div className="vt-snapshot" style={{ marginTop: 4 }}>
+              <div className="vt-snapshot-col">
+                <div className="vt-snapshot-value">{filtered.assignments}</div>
+                <div className="vt-snapshot-label">Assignments</div>
+              </div>
+              <div className="vt-snapshot-col">
+                <div className="vt-snapshot-value blue">{filtered.reports}</div>
+                <div className="vt-snapshot-label">Reports Filed</div>
+              </div>
+              <div className="vt-snapshot-col">
+                <div className="vt-snapshot-value" style={{ color: filtered.openDisagreements > 0 ? "var(--vt-amber)" : "var(--vt-green)" }}>{filtered.openDisagreements}</div>
+                <div className="vt-snapshot-label">Open Disputes</div>
+              </div>
+            </div>
+          )}
+        </ScoutingFilterBar>
       </div>
 
       {/* Quick Actions */}
