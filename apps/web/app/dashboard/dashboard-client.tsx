@@ -31,6 +31,7 @@ import {
   dashboardPaletteRows,
 } from "./dashboard-home-model";
 import { DashboardHomeView } from "./dashboard-home-view";
+import { DashboardActionsProvider } from "./dashboard-quick-actions";
 import "./dashboard-dnd.css";
 import "./dash-layout.css";
 
@@ -223,6 +224,7 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
       : null;
 
   return (
+    <DashboardActionsProvider orgId={home.orgId} refresh={(type) => home.loadSnapshot(home.orgId, [type])}>
     <DashboardHomeView
       me={home.me}
       meLoaded={home.meLoaded}
@@ -314,5 +316,6 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
       onDragPointerUp={onDragPointerUp}
       onDragPointerCancel={onDragPointerCancel}
     />
+    </DashboardActionsProvider>
   );
 }

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { MEDIA_ENABLED } from "../media-availability";
 import { commandCatalog, searchCommands, type CommandEntry } from "./command-search";
 
 const catalog = commandCatalog();
@@ -28,7 +29,7 @@ describe("commandCatalog", () => {
     expect(coverage?.context).toBe("Competition › Scouting");
   });
 
-  it("lists Media library so search opens a real destination", () => {
+  it.skipIf(!MEDIA_ENABLED)("lists Media library so search opens a real destination", () => {
     const library = catalog.find((entry) => entry.id === "media:media-library");
     expect(library?.href).toBe("/media?tab=media-library");
     expect(hrefs("media library")).toContain("/media?tab=media-library");

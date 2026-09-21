@@ -4,6 +4,7 @@ import type { Dispatch, SetStateAction } from "react";
 import { applyVoiceTranscriptToForm, isLayoutOnlyField, type ScoutSchema } from "@vantage/scouting";
 import { SCOUT_IDENTITY_LOCK_COPY } from "@vantage/scouting/identity";
 import { fieldConfidenceHint, type FieldTrustSummary, type SchemaBudget } from "@vantage/scouting/trust";
+import { MEDIA_ENABLED } from "../../lib/media-availability";
 import { EmptyState, FormRow, PageHeader, Panel, ToolStrip, Button } from "../../components/ui";
 import { ScoutingTeamProfiles } from "./scouting-team-profiles";
 import { ExportButton } from "../../components/ui/export-button";
@@ -35,6 +36,7 @@ import { ScoutReportViewer } from "./scout-report-viewer";
 import ScoutHandoffPanel from "./scout-handoff-panel";
 import ScoutVoiceNotesPanel from "./scout-voice-notes-panel";
 import ScoutingTrustPanel from "./scouting-trust-panel";
+import { ScoutingReportTemplatePicker } from "./scouting-report-template-picker";
 
 type MatchOption = {
   matchKey: string;
@@ -533,6 +535,13 @@ return (
             </FormRow>
           )}
 
+          {type === "match" && formFields.length ? (
+            <ScoutingReportTemplatePicker
+              key={`${matchKey}-${teamKey}`}
+              fields={formFields}
+            />
+          ) : null}
+
           {liveConflicts.length ? (
             <div className="scout-official-flags" role="status">
               <strong>Live official checks</strong>
@@ -556,9 +565,10 @@ return (
             </div>
           ) : null}
 
-          {formFields.map((field) => (
+          {formFields.filter((field) => MEDIA_ENABLED || (field.type !== "robot_image" && field.widget !== "robot_image")).map((field) => (
             <Field
               key={field.key}
+              anchorId={`scout-field-${encodeURIComponent(field.key)}`}
               field={field}
               value={payload[field.key]}
               flags={flagsByField.get(field.key) ?? []}
@@ -585,7 +595,7 @@ return (
             </select>
           </FormRow>
 
-          <ScoutVoiceNotesPanel
+          {MEDIA_ENABLED ? <ScoutVoiceNotesPanel
             orgId={orgId}
             eventKey={data?.eventKey ?? ""}
             matchKey={matchKey}
@@ -615,9 +625,9 @@ return (
               void refreshCounts();
               void sync();
             }}
-          />
+          /> : null}
 
-          {type === "pit" ? (
+          {MEDIA_ENABLED && type === "pit" ? (
             <label className="scout-media">
               Queue pit photo/video
               <input

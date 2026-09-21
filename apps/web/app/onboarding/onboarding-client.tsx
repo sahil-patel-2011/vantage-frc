@@ -411,8 +411,8 @@ export default function OnboardingClient() {
           }
         : {
             eyebrow: "WELCOME TO VANTAGE",
-            title: "Set up Vantage around your role.",
-            sub: "Name, team, and role — three short steps. Nothing is shared with a team until they approve you.",
+            title: "Make Vantage work for you.",
+            sub: "Three short steps personalize your workspace. Your team approves access before anything is shared.",
           };
 
   return (

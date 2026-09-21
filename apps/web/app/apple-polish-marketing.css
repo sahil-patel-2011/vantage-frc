@@ -1,0 +1,341 @@
+/* Apple-inspired polish. Visual treatment only: no layout semantics or
+   product behavior live here. Split per surface so each sheet is imported
+   from exactly one style bundle (a sheet in two chunk groups loses its
+   <link> on hot reload). */
+
+/* ── Marketing ─────────────────────────────────────────────────────────── */
+.marketing-lux {
+  --ap-ink: #1d1d1f;
+  --ap-muted: #6e6e73;
+  --ap-canvas: #ffffff;
+  --ap-paper: #f5f5f7;
+  --ap-surface: #ffffff;
+  --ap-surface-2: #f5f5f7;
+  --ap-line: rgba(29, 29, 31, .12);
+  --ap-line-soft: rgba(29, 29, 31, .08);
+  --ap-line-strong: rgba(29, 29, 31, .18);
+  --ap-blue: #2563eb;
+  --ap-warm: #2563eb;
+  --ap-warm-soft: rgba(37, 99, 235, .08);
+  --ap-warm-line: rgba(37, 99, 235, .2);
+  --ap-card-radius: 24px;
+  --ap-card-shadow: 0 1px 2px rgba(0, 0, 0, .03), 0 12px 34px rgba(0, 0, 0, .05);
+  --ap-card-shadow-lg: 0 2px 5px rgba(0, 0, 0, .04), 0 24px 64px rgba(0, 0, 0, .1);
+  --ap-content: 1180px;
+  --ap-pad-x: clamp(20px, 5vw, 72px);
+  color: var(--ap-ink);
+  background: var(--ap-canvas);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", var(--font-inter), sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  letter-spacing: -.006em;
+}
+
+.marketing-lux .nav {
+  min-height: 64px;
+  padding-inline: max(var(--ap-pad-x), calc((100vw - 1320px) / 2));
+  background: rgba(255, 255, 255, .82);
+  border-bottom-color: rgba(29, 29, 31, .08);
+  backdrop-filter: saturate(180%) blur(20px);
+}
+
+.marketing-lux .nav nav a,
+.marketing-lux .sign-in-link {
+  color: #424245;
+  font-weight: 500;
+}
+
+.marketing-lux .button {
+  border-radius: 999px;
+  font-weight: 650;
+  letter-spacing: -.01em;
+}
+
+.marketing-lux .button.primary,
+.marketing-lux .nav .button {
+  color: #fff;
+  background: #2563eb;
+  border-color: #2563eb;
+  box-shadow: none;
+}
+
+.marketing-lux .button.primary:hover,
+.marketing-lux .nav .button:hover {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+.marketing-lux .lux-hero {
+  background: #fff;
+}
+
+.marketing-lux .lux-hero-backdrop {
+  background: none;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+.marketing-lux .lux-hero-backdrop::before {
+  top: 8%;
+  right: 2%;
+  width: 44%;
+  height: 70%;
+  border-radius: 50%;
+  background: rgba(37, 99, 235, .055);
+  filter: blur(80px);
+}
+
+.marketing-lux .lux-hero-inner {
+  max-width: 1320px;
+  min-height: min(820px, calc(100svh - 64px));
+  gap: clamp(40px, 6vw, 90px);
+  padding-block: clamp(64px, 9vw, 120px);
+}
+
+.marketing-lux .lux-kicker,
+.marketing-lux .lux-eyebrow {
+  color: #2563eb;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", var(--font-inter), sans-serif;
+  font-weight: 700;
+  letter-spacing: .08em;
+}
+
+.marketing-lux .lux-eyebrow::before { display: none; }
+
+.marketing-lux .lux-hero h1 {
+  max-width: 10.5ch;
+  margin: 14px 0 22px;
+  color: #1d1d1f;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", var(--font-inter), sans-serif;
+  font-size: clamp(48px, 5.8vw, 76px);
+  font-weight: 750;
+  line-height: .98;
+  letter-spacing: -.055em;
+}
+
+.marketing-lux .lux-hero-copy > p:not(.lux-wordmark):not(.lux-kicker):not(.lux-hero-note) {
+  max-width: 31rem;
+  color: #6e6e73;
+  font-size: clamp(18px, 1.7vw, 22px);
+  line-height: 1.5;
+  letter-spacing: -.015em;
+}
+
+.marketing-lux .mk-hero-proof {
+  display: grid;
+  gap: 9px;
+}
+
+.marketing-lux .mk-hero-proof li {
+  color: #424245;
+  font-weight: 550;
+}
+
+.marketing-lux .mk-hero-proof li::before {
+  width: 18px;
+  height: 18px;
+  background: #e8f0ff;
+  box-shadow: inset 0 0 0 5px #2563eb;
+}
+
+.marketing-lux .mk-mock,
+.marketing-lux .hero-teach {
+  border-color: rgba(29, 29, 31, .1);
+  border-radius: 28px;
+  box-shadow: 0 32px 80px rgba(17, 24, 39, .14), 0 2px 6px rgba(17, 24, 39, .05);
+}
+
+.marketing-lux .mk-mock-chrome {
+  padding: 14px 18px;
+  background: #f5f5f7;
+}
+
+.marketing-lux .mk-mock-card {
+  border-color: rgba(29, 29, 31, .08);
+  border-radius: 18px;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, .045);
+}
+
+.marketing-lux .lux-problem,
+.marketing-lux .lux-runs,
+.marketing-lux .lux-fit,
+.marketing-lux .lux-loop,
+.marketing-lux .lux-pillars,
+.marketing-lux .mk-price,
+.marketing-lux .faq-section,
+.marketing-lux .lux-waitlist {
+  padding-block: clamp(76px, 9vw, 128px);
+}
+
+.marketing-lux .lux-loop,
+.marketing-lux .lux-fit,
+.marketing-lux .mk-price,
+.marketing-lux .lux-waitlist {
+  background: #f5f5f7;
+  background-image: none;
+}
+
+.marketing-lux .lux-section-head {
+  max-width: 760px;
+  margin-bottom: clamp(34px, 5vw, 58px);
+}
+
+.marketing-lux .lux-section-head h2,
+.marketing-lux .lux-waitlist h2 {
+  max-width: 17ch;
+  color: #1d1d1f;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", var(--font-inter), sans-serif;
+  font-size: clamp(34px, 4.2vw, 56px);
+  font-weight: 720;
+  line-height: 1.05;
+  letter-spacing: -.045em;
+}
+
+.marketing-lux .lux-section-head > p:not(.lux-eyebrow) {
+  max-width: 58ch;
+  color: #6e6e73;
+  font-size: clamp(17px, 1.5vw, 20px);
+  line-height: 1.55;
+}
+
+.marketing-lux .lux-feature-grid,
+.marketing-lux .mk-pillars,
+.marketing-lux .mk-app-gallery-grid,
+.marketing-lux .mk-price-grid {
+  gap: 18px;
+}
+
+.marketing-lux .lux-feature-grid li,
+.marketing-lux .lux-loop-steps li,
+.marketing-lux .mk-pillars li,
+.marketing-lux .mk-app-gallery-grid > li,
+.marketing-lux .mk-price-grid li,
+.marketing-lux .faq-item,
+.marketing-lux .soft-waitlist-form,
+.marketing-lux .waitlist-form {
+  border-color: rgba(29, 29, 31, .08);
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .02), 0 10px 30px rgba(0, 0, 0, .04);
+}
+
+.marketing-lux .lux-feature-grid li,
+.marketing-lux .mk-pillar-link,
+.marketing-lux .mk-price-grid li {
+  padding: clamp(26px, 3vw, 34px);
+}
+
+.marketing-lux :where(
+  .lux-feature-grid li,
+  .lux-loop-steps li,
+  .mk-pillars li,
+  .mk-app-gallery-grid > li,
+  .mk-price-grid li,
+  .shx-trust-grid li,
+  .shx-hub-card,
+  .shx-season-grid li,
+  .shx-menu-grid li,
+  .shx-depth-card,
+  .shx-stage,
+  .mk-hub-detail,
+  .faq-item
+) {
+  line-height: 1.55;
+}
+
+.marketing-lux :where(
+  .lux-feature-grid li,
+  .lux-loop-steps li,
+  .mk-pillars li,
+  .mk-price-grid li,
+  .shx-trust-grid li,
+  .shx-hub-card,
+  .shx-season-grid li,
+  .shx-menu-grid li,
+  .shx-depth-card,
+  .shx-stage,
+  .mk-hub-detail
+) > :where(strong, h2, h3) {
+  margin-bottom: 10px;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", var(--font-inter), sans-serif;
+  font-weight: 650;
+  letter-spacing: -.025em;
+}
+
+.marketing-lux :where(
+  .lux-feature-grid li,
+  .lux-loop-steps li,
+  .mk-pillars li,
+  .mk-price-grid li,
+  .shx-trust-grid li,
+  .shx-hub-card,
+  .shx-season-grid li,
+  .shx-menu-grid li,
+  .shx-depth-card,
+  .shx-stage,
+  .mk-hub-detail
+) > :where(p, span) {
+  color: var(--ap-muted);
+  line-height: 1.62;
+}
+
+.marketing-lux .lux-feature-grid li:hover,
+.marketing-lux .lux-loop-steps li:hover,
+.marketing-lux .mk-pillars li:hover,
+.marketing-lux .mk-app-gallery-grid > li:hover,
+.marketing-lux .mk-price-grid li:hover {
+  transform: translateY(-2px);
+  border-color: rgba(37, 99, 235, .18);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, .08);
+}
+
+.marketing-lux .lux-card-icon {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 13px;
+  color: #2563eb;
+  background: #eef4ff;
+}
+
+.marketing-lux .lux-waitlist {
+  max-width: none;
+}
+
+.marketing-lux .lux-waitlist > div:first-child {
+  max-width: 620px;
+}
+
+.marketing-lux .marketing-footer {
+  background: #f5f5f7;
+  border-top-color: rgba(29, 29, 31, .08);
+}
+
+
+@media (max-width: 999px) {
+  .marketing-lux .lux-hero-inner {
+    min-height: 0;
+    padding-top: 64px;
+  }
+  .marketing-lux .lux-hero-copy { max-width: 720px; }
+  .marketing-lux .lux-hero h1 { max-width: 12ch; }
+}
+
+@media (max-width: 680px) {
+  .marketing-lux .nav { min-height: 56px; }
+  .marketing-lux .lux-hero-inner { padding-top: 46px; }
+  .marketing-lux .lux-hero h1 { font-size: clamp(40px, 12vw, 54px); }
+  .marketing-lux .lux-section-head h2,
+  .marketing-lux .lux-waitlist h2 { font-size: clamp(32px, 9vw, 42px); }
+  .marketing-lux .lux-feature-grid li,
+  .marketing-lux .mk-pillar-link,
+  .marketing-lux .mk-price-grid li { padding: 22px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marketing-lux .lux-feature-grid li:hover,
+  .marketing-lux .lux-loop-steps li:hover,
+  .marketing-lux .mk-pillars li:hover,
+  .marketing-lux .mk-app-gallery-grid > li:hover,
+  .marketing-lux .mk-price-grid li:hover { transform: none; }
+}

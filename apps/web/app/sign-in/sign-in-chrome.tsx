@@ -51,9 +51,7 @@ export function SetupShell({ copy }: { copy: SignInSetupCopy }) {
 export function AccessFooter() {
   return (
     <p className="signin-waitlist">
-      Need access? <a href="/#waitlist">Join the waitlist</a>
-      <span aria-hidden="true"> · </span>
-      <a href="/pricing">What it costs</a>
+      New to Vantage? <a href="/#waitlist">Request access</a>
     </p>
   );
 }

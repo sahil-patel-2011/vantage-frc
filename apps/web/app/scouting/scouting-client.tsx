@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { MEDIA_ENABLED, MEDIA_PAUSED_MESSAGE } from "../../lib/media-availability";
 import { useSearchParams } from "next/navigation";
 import type { SyncEntry } from "@vantage/scouting";
 import { applyFormResetBehavior } from "@vantage/scouting";
@@ -408,6 +409,7 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
   }
 
   async function attachMedia(file: File, options?: { fieldKey?: string; tags?: string[] }) {
+    if (!MEDIA_ENABLED) { setMessage(MEDIA_PAUSED_MESSAGE); return null; }
     const eventKey = data?.eventKey;
     const tags = ["pit", ...(options?.tags ?? [])];
     const kind = scoutMediaKind(file);

@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { MEDIA_ENABLED } from "../media-availability";
 import { eventDayRelatedLinks, eventDayShellCopy, EVENT_DAY_RELATED_INCLUDE } from "../command/event-day-related";
 import { hoursSelfViewNextActions, hoursSelfViewShellCopy } from "../hours-self-view/hours-self-view-related";
 import { hoursShellCopy } from "../hours/hours-related";
@@ -47,7 +48,7 @@ describe("student-week Event day / Hours / Pick desk slice", () => {
     expectPlainCopy(eventDayShellCopy("setup").description);
   });
 
-  it("features Packing and Pick desk on the Competition hub", () => {
+  it.skipIf(!MEDIA_ENABLED)("features Packing and Pick desk on the Competition hub", () => {
     expect(hubFeaturedMoreTabs(hubById("competition")).map((tab) => tab.id)).toEqual([
       "briefing",
       "video-analysis",

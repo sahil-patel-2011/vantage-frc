@@ -89,24 +89,31 @@ export function ProfileForm({
         ))}
       </fieldset>
 
-      <fieldset className="onboarding-cards onboarding-cards-crew">
-        <legend>
-          What do you actually do? <small>Optional — tap again to clear</small>
-        </legend>
-        {CREW_ROLES.map((option) => (
-          <label key={option.value} className={draft.crewRole === option.value ? "selected" : undefined}>
-            <input
-              type="checkbox"
-              name="crewRole"
-              value={option.value}
-              checked={draft.crewRole === option.value}
-              onChange={() => pickCrew(option.value)}
-            />
-            <strong>{option.label}</strong>
-            <span>{option.detail}</span>
-          </label>
-        ))}
-      </fieldset>
+      <details className="onboarding-specialty">
+        <summary>
+          <span>
+            <strong>Team specialty</strong>
+            <small>{draft.crewRole ? CREW_ROLES.find((option) => option.value === draft.crewRole)?.label : "Optional"}</small>
+          </span>
+          <b aria-hidden="true">+</b>
+        </summary>
+        <fieldset className="onboarding-cards onboarding-cards-crew">
+          <legend className="sr-only">Choose your team specialty</legend>
+          {CREW_ROLES.map((option) => (
+            <label key={option.value} className={draft.crewRole === option.value ? "selected" : undefined}>
+              <input
+                type="checkbox"
+                name="crewRole"
+                value={option.value}
+                checked={draft.crewRole === option.value}
+                onChange={() => pickCrew(option.value)}
+              />
+              <strong>{option.label}</strong>
+              <span>{option.detail}</span>
+            </label>
+          ))}
+        </fieldset>
+      </details>
 
       <fieldset className="onboarding-account-fields">
         <legend>Account record</legend>

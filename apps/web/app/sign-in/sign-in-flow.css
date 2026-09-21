@@ -14,6 +14,16 @@
   box-shadow: var(--shadow-pop);
   border: 1px solid var(--line);
   background: var(--surface);
+  text-align: left;
+}
+
+.signin-card > h1,
+.signin-card > .signin-sub {
+  text-align: left;
+}
+
+.signin-card > h1 {
+  max-width: 12ch;
 }
 
 .signin-brand {
@@ -61,14 +71,20 @@
 }
 
 .signin-waitlist {
-  margin: 18px 0 0;
+  margin: 14px 0 0;
   text-align: center;
   color: var(--muted);
   font-size: 13px;
 }
 
 .signin-waitlist a {
-  color: inherit;
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.signin-waitlist a:hover {
+  text-decoration: underline;
 }
 
 /* One container height for identity + code, so the card never jumps. */

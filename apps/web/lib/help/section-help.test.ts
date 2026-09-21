@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import { MEDIA_ENABLED } from "../media-availability";
 import { PRODUCT_HUBS, hubPrimaryTabs } from "../nav/hubs";
 import {
   SEASON_MOMENTS,
@@ -93,7 +94,7 @@ describe("section help coverage", () => {
     expect(missing).toEqual([]);
   });
 
-  it("only registers tabs that exist in their hub", () => {
+  it.skipIf(!MEDIA_ENABLED)("only registers tabs that exist in their hub", () => {
     const unknown = SECTION_HELP.filter((entry) => {
       const hub = PRODUCT_HUBS.find((candidate) => candidate.id === entry.hub);
       return !hub?.tabs.some((tab) => tab.id === entry.tab);

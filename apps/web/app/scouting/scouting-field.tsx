@@ -73,6 +73,7 @@ export function Field({
   historyHint,
   disagreementRate,
   orgId,
+  anchorId,
   onChange,
   onAttachRobotImage,
 }: {
@@ -82,6 +83,7 @@ export function Field({
   historyHint: string | null;
   disagreementRate: number | null;
   orgId?: string;
+  anchorId?: string;
   onChange(value: unknown): void;
   onAttachRobotImage?: (file: File) => Promise<string | null>;
 }) {
@@ -283,7 +285,7 @@ export function Field({
     );
   })();
   return (
-    <div className={`scout-field-wrap${tone ? ` is-${tone}` : ""}`}>
+    <div id={anchorId} className={`scout-field-wrap${tone ? ` is-${tone}` : ""}`}>
       {body}
       {liveHint ? (
         <p className={`scout-field-flag ${tone ?? ""}`} role="status">

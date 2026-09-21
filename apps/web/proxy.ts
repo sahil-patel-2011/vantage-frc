@@ -3,6 +3,7 @@ import { withRls } from "@vantage/db";
 import { getSessionCookie } from "better-auth/cookies";
 import { NextResponse, type NextRequest } from "next/server";
 import { safeAppPath } from "./lib/security/safe-navigation";
+import { isPausedMediaRoute, MEDIA_ENABLED, MEDIA_PAUSED_MESSAGE } from "./lib/media-availability";
 
 const PUBLIC_PAGES = new Set([
   "/",
@@ -212,6 +213,14 @@ function approvalPendingRedirect(request: NextRequest) {
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  // Run before public routes and auth: nobody can use paused media endpoints.
+  if (isPausedMediaRoute(pathname, request.nextUrl.searchParams.get("tab")) ||
+      (!MEDIA_ENABLED && request.method === "POST" && (
+        pathname === "/api/business/assets" || pathname === "/api/branding/logo" ||
+        /^\/api\/reimbursements\/[^/]+\/receipt$/.test(pathname)
+      ))) {
+    return NextResponse.json({ error: MEDIA_PAUSED_MESSAGE, code: "media_paused" }, { status: 403 });
+  }
   const fixtureSession =
     process.env.NODE_ENV !== "production" &&
     process.env.E2E_AUTH_FIXTURE === "1" &&

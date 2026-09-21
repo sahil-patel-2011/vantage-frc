@@ -512,7 +512,7 @@ export function DashboardHomeView(props: {
         />
       ) : null}
 
-      {dashShell === "ready" || editing ? (
+      {orgId || editing ? (
         <section
           className={`dash-grid-wrap${editing ? " editing" : ""}${dragging ? " dragging" : ""}${
             drag?.kind === "add" ? " receiving-widget" : ""
@@ -572,10 +572,8 @@ export function DashboardHomeView(props: {
             </button>
           ) : mounted && viewLayout.length === 0 && !editing ? (
             <div className="dash-quiet-home" role="status">
-              <strong>Nothing live yet</strong>
-              <span>
-                Home stays quiet until match, files, or chat data exists. Edit Home to pin cards anyway.
-              </span>
+              <strong>No widgets on this board</strong>
+              <span>Use Customize widgets to add the cards you want to see.</span>
             </div>
           ) : (
             <div

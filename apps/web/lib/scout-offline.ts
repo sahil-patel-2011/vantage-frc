@@ -1,5 +1,6 @@
 "use client";
 
+import { MEDIA_ENABLED, MEDIA_PAUSED_MESSAGE } from "./media-availability";
 import type { SyncEntry } from "@vantage/scouting";
 import { partitionByOrgId, wouldCrossOrgLeak } from "@vantage/scouting";
 import { lockScoutPayload } from "@vantage/scouting/identity";
@@ -92,6 +93,7 @@ export async function queueMedia(input: {
   metadata: Record<string, unknown>;
   blob: Blob;
 }): Promise<void> {
+  if (!MEDIA_ENABLED) throw new Error(MEDIA_PAUSED_MESSAGE);
   if (!input.orgId) throw new Error("orgId is required to queue media");
   const objectStore = await store("readwrite", MEDIA);
   await requestValue(
@@ -559,7 +561,8 @@ export async function syncMediaOutbox(
   orgId: string,
   options?: { signal?: AbortSignal; maxAttempts?: number },
 ): Promise<SyncMediaResult> {
-  if (!navigator.onLine) return { synced: 0, quarantined: 0 };
+  // Keep existing queued media intact, without retrying paused uploads.
+  if (!MEDIA_ENABLED || !navigator.onLine) return { synced: 0, quarantined: 0 };
   const objectStore = await store("readonly", MEDIA);
   const items = await requestValue<MediaOutboxItem[]>(objectStore.getAll());
   const scoped = items.filter(

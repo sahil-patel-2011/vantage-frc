@@ -1,4 +1,5 @@
 "use client";
+import { MEDIA_ENABLED, MEDIA_PAUSED_MESSAGE } from "../media-availability";
 import { Button } from "../../components/ui";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -325,7 +326,8 @@ export function TeamBrandingPanel({ orgId }: { orgId: string }) {
                 </small>
               </div>
             </div>
-            {view.canEdit ? (
+            {!MEDIA_ENABLED ? <p className="app-muted">{MEDIA_PAUSED_MESSAGE}</p> : null}
+            {view.canEdit && MEDIA_ENABLED ? (
               <div className="brand-logo-actions">
                 <input
                   ref={fileRef}

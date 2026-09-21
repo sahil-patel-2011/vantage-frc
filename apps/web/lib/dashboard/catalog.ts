@@ -1,3 +1,5 @@
+import { MEDIA_ENABLED } from "../media-availability";
+
 export const DASHBOARD_WIDGET_TYPES = [
   "onboarding_checklist",
   "next_match",
@@ -250,7 +252,7 @@ const SETUP_ONLY_WIDGETS = new Set<DashboardWidgetType>(["onboarding_checklist",
 /**
  * View-mode Home keeps every user-placed widget, including honest empty
  * states with a destination CTA. Setup-only cards hide once the team
- * is ready. Next match stays a full-width hero.
+ * is ready. Every card respects the user's saved size.
  */
 export function homeViewLayout(
   layout: DashboardWidgetLayout[],
@@ -260,22 +262,12 @@ export function homeViewLayout(
     widgets?: Record<string, { status?: string } | undefined>;
   },
 ): DashboardWidgetLayout[] {
+  layout = layout.filter((item) => MEDIA_ENABLED || item.type !== "pit_youtube");
   if (input.editing) return layout.map((item) => ({ ...item }));
   const ready = input.shell === "ready";
-  const snapshot = input.widgets;
-  const visible = layout.filter((item) => {
-    if (ready && SETUP_ONLY_WIDGETS.has(item.type)) return false;
-    if (HOME_ALWAYS_VISIBLE.has(item.type)) return true;
-    if (!snapshot) return true;
-    const status = snapshot[item.type]?.status;
-    if (status === "empty" || status === "setup_required") return false;
-    return true;
-  });
-  return packDashboardLayout(
-    visible.map((item) =>
-      item.type === "next_match" ? { ...item, x: 0, w: DASHBOARD_COLUMNS } : item,
-    ),
-  );
+  const visible = layout.filter((item) => !(ready && SETUP_ONLY_WIDGETS.has(item.type)));
+  // A pinned card stays visible even when empty; keep the user's saved size.
+  return packDashboardLayout(visible);
 }
 
 export const WIDGET_CATALOG: WidgetCatalogEntry[] = [
@@ -749,14 +741,14 @@ export function defaultDashboardLayoutForAudience(
 }
 
 /**
- * Empty stored layout → student/mentor Home. Unknown audience is a student.
+ * Missing layout → student/mentor Home; an explicitly empty saved board stays empty.
  * The competition-focus board stays `DEFAULT_DASHBOARD_LAYOUT` / focus=competition.
  */
 export function layoutOrAudienceDefault(
   layout: DashboardWidgetLayout[] | null | undefined,
   audience: HomeAudienceKind | null | undefined,
 ): DashboardWidgetLayout[] {
-  return layout?.length ? layout : defaultDashboardLayoutForAudience(audience);
+  return Array.isArray(layout) ? layout : defaultDashboardLayoutForAudience(audience);
 }
 
 export const SECONDARY_WIDGET_TYPES: DashboardWidgetType[] = [
@@ -780,6 +772,7 @@ export function catalogEntry(type: DashboardWidgetType) {
 }
 
 export function canAccessWidget(type: DashboardWidgetType, role: string | null | undefined) {
+  if (!MEDIA_ENABLED && type === "pit_youtube") return false;
   const entry = catalogEntry(type);
   if (!entry?.roles?.length) return true;
   if (!role) return false;

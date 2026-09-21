@@ -190,20 +190,19 @@ export type IslandTabDefinition = { href: string; label: string; icon: ProductNa
 
 export const PRIMARY_TABS: IslandTabDefinition[] = [
   { href: "/dashboard", label: "Home", icon: "home" },
-  { href: "/competition", label: "Compete", icon: "swords" },
-  { href: "/team", label: "Team", icon: "users" },
-  // Build over Business by default: most people on a team are students, and a
-  // student's week is CAD, code and the shop. Mentors put Business back in one tap.
-  { href: "/build", label: "Build", icon: "cube" },
+  { href: "/competition", label: "Matches", icon: "swords" },
+  { href: "/competition?tab=scouting", label: "Scout", icon: "scout" },
+  { href: "/analytics", label: "Stats", icon: "stats" },
 ];
 
 /** Allowlisted destinations for the four personal island slots. */
 export const ISLAND_TAB_CATALOG: IslandTabDefinition[] = [
   ...PRIMARY_TABS,
+  { href: "/team", label: "Team", icon: "users" },
+  { href: "/build", label: "Build", icon: "cube" },
   { href: "/business", label: "Business", icon: "clipboard" },
   { href: "/ai?tab=chat", label: "Ask AI", icon: "bolt" },
   { href: "/files", label: "Files", icon: "grid" },
-  { href: "/competition?tab=scouting", label: "Scout", icon: "scout" },
   { href: "/competition?tab=my-day", label: "My Day", icon: "calendar" },
   { href: "/logistics", label: "Logistics", icon: "pin" },
   { href: "/team?tab=messages", label: "Team chat", icon: "chat" },

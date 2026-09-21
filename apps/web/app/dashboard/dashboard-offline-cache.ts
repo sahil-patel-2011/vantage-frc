@@ -37,12 +37,12 @@ function homeAudienceFromContext(context: Record<string, unknown>): "mentor" | "
   return "student";
 }
 
-/** Fill an empty cached layout with the audience default so Home is never blank. */
+/** Normalize missing layouts, preserving a board the user deliberately cleared. */
 export function normalizeDashboardCache(cache: DashboardOfflineCache): DashboardOfflineCache {
   const audience = homeAudienceFromContext(cache.context);
   return {
     ...cache,
-    layout: layoutOrAudienceDefault(cache.layout, audience),
+    layout: layoutOrAudienceDefault(!cache.board?.id && !cache.layout.length ? undefined : cache.layout, audience),
   };
 }
 
@@ -63,7 +63,7 @@ export function dashboardCacheFromHomePayload(data: {
     boards: Array.isArray(data.boards) ? (data.boards as BoardMeta[]) : [],
     board: data.active ?? null,
     scope: data.active?.scope === "org" ? "org" : "personal",
-    layout: layoutOrAudienceDefault(data.active?.layout, audience),
+    layout: layoutOrAudienceDefault(!data.active?.id && !data.active?.layout?.length ? undefined : data.active?.layout, audience),
     widgets: data.widgets ?? {},
     context,
   };
