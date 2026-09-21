@@ -4,6 +4,7 @@
  * model. Server-only: imported by API routes, never by client components.
  */
 
+import { MEDIA_ENABLED, isPausedMediaFile, MEDIA_PAUSED_MESSAGE } from "../media-availability";
 import type { PoolClient } from "@neondatabase/serverless";
 import { nodeLiveness } from "../storage-node";
 import { normalizeRoutingPolicy } from "./policy";
@@ -342,11 +343,12 @@ export async function finalizeUploadGrant(
     nodeId: string;
     purpose: "library" | "media";
     targetId: string;
+    contentType: string;
     sha256: string;
     consumedAt: string | null;
   }>(
     `SELECT id, node_id AS "nodeId", purpose, target_id AS "targetId", sha256,
-            consumed_at AS "consumedAt"
+            content_type AS "contentType", consumed_at AS "consumedAt"
      FROM storage_upload_grants
      WHERE id = $1::uuid AND org_id = $2::uuid AND created_by = $3::uuid
      LIMIT 1`,
@@ -354,6 +356,9 @@ export async function finalizeUploadGrant(
   );
   const grant = grantResult.rows[0];
   if (!grant) return { ok: false, error: "Upload grant not found", status: 404 };
+  if ((!MEDIA_ENABLED && grant.purpose === "media") || isPausedMediaFile("", grant.contentType)) {
+    return { ok: false, error: MEDIA_PAUSED_MESSAGE, status: 403 };
+  }
   if (grant.consumedAt) {
     // Idempotent: a retried finalize after a network blip is fine.
     return { ok: true, purpose: grant.purpose, targetId: grant.targetId };

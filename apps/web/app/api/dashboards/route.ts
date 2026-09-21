@@ -188,11 +188,9 @@ export async function GET(request: Request) {
       });
 
       const layout = filterLayoutForRole(
-        ensureOnboardingChecklist(
-          active?.layout?.length
-            ? active.layout
-            : await defaultLayoutForMember(client, session.user.id, role),
-        ),
+        Array.isArray(active?.layout)
+          ? active.layout
+          : await defaultLayoutForMember(client, session.user.id, role),
         role,
       );
 
@@ -344,9 +342,9 @@ export async function POST(request: Request) {
         }
 
         const validated = validateDashboardLayout(
-          board.layout?.length
+          filterLayoutForRole(Array.isArray(board.layout)
             ? board.layout
-            : await defaultLayoutForMember(client, session.user.id, role),
+            : await defaultLayoutForMember(client, session.user.id, role), role),
           role,
         );
         if (!validated.ok) throw new Error(validated.error);
@@ -415,8 +413,8 @@ export async function POST(request: Request) {
         }
 
         const layout = filterLayoutForRole(
-          board.layout?.length
-            ? ensureOnboardingChecklist(board.layout)
+          Array.isArray(board.layout)
+            ? board.layout
             : await defaultLayoutForMember(client, session.user.id, role),
           role,
         );

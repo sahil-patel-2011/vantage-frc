@@ -112,7 +112,8 @@ describe("homeNowAction", () => {
 describe("dashboardPaletteRows", () => {
   it("marks placed widgets and leaves the rest addable for an owner", () => {
     const rows = dashboardPaletteRows(DEFAULT_DASHBOARD_LAYOUT, "owner");
-    expect(rows).toHaveLength(WIDGET_CATALOG.length);
+    expect(rows).toHaveLength(WIDGET_CATALOG.filter((entry) => entry.type !== "pit_youtube").length);
+    expect(rows.some((row) => row.entry.type === "pit_youtube")).toBe(false);
     const placed = new Set(DEFAULT_DASHBOARD_LAYOUT.map((item) => item.type));
     for (const row of rows) {
       if (placed.has(row.entry.type)) {

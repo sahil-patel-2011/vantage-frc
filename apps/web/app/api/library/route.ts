@@ -1,3 +1,4 @@
+import { isPausedMediaFile, MEDIA_PAUSED_MESSAGE } from "../../../lib/media-availability";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
@@ -118,6 +119,7 @@ export async function POST(request: Request) {
         case "create-file": {
           const validated = validateFileMetadata(body);
           if (!validated.ok) throw new Error(validated.error);
+          if (isPausedMediaFile(validated.value.fileName, validated.value.contentType)) throw new Error(MEDIA_PAUSED_MESSAGE);
           const created = await createFileResource(client, {
             orgId,
             userId,

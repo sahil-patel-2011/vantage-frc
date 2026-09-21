@@ -42,7 +42,13 @@ describe("dashboard offline cache", () => {
     expect(cache.scope).toBe("personal");
   });
 
-  it("fills an empty cached layout from the audience default", () => {
+  it("preserves a deliberately cleared saved board online and offline", () => {
+    const board = { id: "saved-board", name: "Mine", scope: "personal" as const, layout: [] };
+    expect(dashboardCacheFromHomePayload({ active: board }).layout).toEqual([]);
+    expect(normalizeDashboardCache({ ...valid, board, layout: [] }).layout).toEqual([]);
+  });
+
+  it("fills an empty unsaved cached layout from the audience default", () => {
     const cache = normalizeDashboardCache({
       role: null,
       canShareOrg: false,

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { MEDIA_ENABLED } from "../../lib/media-availability";
 import PartnerPlacement from "../../components/partner-placement";
 import { EmptyState, Button } from "../../components/ui";
 import { OfflineBanner } from "../../components/offline-banner";
@@ -510,7 +511,7 @@ export function PartnerPlacementsPanel({
           <article className="app-card">
             <span className="biz-overline">Creative approval</span>
             <h2>Artwork library</h2>
-            <form className="biz-inline-form" onSubmit={(event) => void upload(event)}>
+            {MEDIA_ENABLED ? <form className="biz-inline-form" onSubmit={(event) => void upload(event)}>
               <select name="sponsorId" required defaultValue="">
                 <option value="" disabled>
                   Select sponsor
@@ -523,7 +524,7 @@ export function PartnerPlacementsPanel({
               </select>
               <input name="file" type="file" accept="image/png,image/jpeg,image/webp" required />
               <button disabled={busy}>Upload logo</button>
-            </form>
+            </form> : <p className="app-muted">New artwork uploads are temporarily paused.</p>}
             <p className="app-muted">PNG, JPEG, or WebP only. We strip metadata, resize, and re-encode every logo before review.</p>
             <div className="placement-assets">
               {program.assets.map((asset) => (

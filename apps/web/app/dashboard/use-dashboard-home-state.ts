@@ -97,7 +97,7 @@ export function useDashboardHomeState(initialOrgId = "") {
     const timeout = AbortSignal.timeout(FEATURE_API_TIMEOUT_MS);
     const signal = opts?.signal ? AbortSignal.any([opts.signal, timeout]) : timeout;
     const response = await fetch(`/api/dashboards?${qs.toString()}`, { signal });
-    if (!response.ok) return;
+    if (!response.ok) throw new Error("Could not refresh dashboard data.");
     const data = await response.json();
     const nextWidgets = mergeDashboardWidgets(widgetsRef.current, data.widgets);
     const nextContext = mergeDashboardContext(contextRef.current, data.context);

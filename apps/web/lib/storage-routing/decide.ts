@@ -15,6 +15,7 @@
  * - Refusals name the real numbers. Nothing is silently dropped.
  */
 
+import { MEDIA_ENABLED, MEDIA_PAUSED_MESSAGE } from "../media-availability";
 import { formatBytes } from "../storage-node";
 import { contentClassFor } from "./classify";
 import type {
@@ -123,6 +124,9 @@ function objectUnavailableNote(objectStore: ObjectStoreAvailability | undefined)
 
 export function decideStorageRoute(input: DecideInput): StorageRouteDecision {
   const { byteSize, contentClass, policy, node, cloudCapBytes, objectStore } = input;
+  if (!MEDIA_ENABLED && (contentClass === "photo" || contentClass === "video")) {
+    return { destination: "refused", reason: MEDIA_PAUSED_MESSAGE };
+  }
   const objectReady = objectStore?.configured === true;
 
   const overThreshold = byteSize > policy.nodeThresholdBytes;

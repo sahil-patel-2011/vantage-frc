@@ -168,7 +168,7 @@ describe("dashboard tenant and role isolation rules", () => {
 });
 
 describe("home view layout", () => {
-  it("hides empty cards in view mode and keeps next match as the hero", () => {
+  it("keeps pinned empty cards in view mode and hides completed setup cards", () => {
     const viewed = homeViewLayout(
       [
         ...DEFAULT_DASHBOARD_LAYOUT,
@@ -187,9 +187,16 @@ describe("home view layout", () => {
         },
       },
     );
-    expect(viewed.map((item) => item.type)).toEqual(["next_match", "alerts"]);
+    expect(viewed.map((item) => item.type)).toEqual(DEFAULT_DASHBOARD_LAYOUT.map((item) => item.type));
     expect(viewed.find((item) => item.type === "next_match")?.w).toBe(12);
     expect(viewed.some((item) => item.type === "onboarding_checklist")).toBe(false);
+  });
+
+  it("keeps custom next-match sizes after leaving edit mode", () => {
+    const resized = applyWidgetSize(DEFAULT_DASHBOARD_LAYOUT[0]!, "m");
+    const viewed = homeViewLayout([resized], { editing: false, shell: "ready" });
+    expect(viewed[0]?.w).toBe(resized.w);
+    expect(viewed[0]?.h).toBe(resized.h);
   });
 
   it("leaves the saved board untouched in edit mode", () => {
@@ -242,8 +249,9 @@ describe("widget registry", () => {
     expect(validateDashboardLayout(mentor, "scout").ok).toBe(false);
   });
 
-  it("empty Home fallback is the audience board, not the competition set", () => {
-    const student = layoutOrAudienceDefault([], "student");
+  it("missing Home uses the audience board while deliberately empty boards stay empty", () => {
+    expect(layoutOrAudienceDefault([], "student")).toEqual([]);
+    const student = layoutOrAudienceDefault(undefined, "student");
     const mentor = layoutOrAudienceDefault(undefined, "mentor");
     expect(student.map((item) => item.type)).toContain("my_day");
     expect(student.map((item) => item.type)).not.toContain("competition_snapshot");

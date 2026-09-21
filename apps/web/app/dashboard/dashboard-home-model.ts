@@ -1,3 +1,4 @@
+import { MEDIA_ENABLED } from "../../lib/media-availability";
 import {
   WIDGET_CATALOG,
   canAccessWidget,
@@ -11,7 +12,7 @@ export function dashboardPaletteRows(
   layout: DashboardWidgetLayout[],
   role: string | null,
 ): PaletteRow[] {
-  return WIDGET_CATALOG.map((entry) => {
+  return WIDGET_CATALOG.filter((entry) => MEDIA_ENABLED || entry.type !== "pit_youtube").map((entry) => {
     if (layout.some((item) => item.type === entry.type)) {
       return { entry, status: "placed" as const, reason: null };
     }

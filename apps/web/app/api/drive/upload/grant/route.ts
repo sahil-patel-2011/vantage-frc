@@ -16,6 +16,7 @@
 // content PUT), so a file that never finished uploading shows as pending
 // rather than as a download that 404s.
 
+import { isPausedMediaFile, MEDIA_PAUSED_MESSAGE } from "../../../../../lib/media-availability";
 import { createHash } from "node:crypto";
 import { createKms, decryptSecret, type EncryptedSecret } from "@vantage/billing";
 import { withRls } from "@vantage/db";
@@ -74,6 +75,7 @@ export async function POST(request: Request) {
     const name = sanitizeDriveName(body.name, 255);
     if (!name) throw new DriveHttpError(400, "A file needs a name.");
     const contentType = normalizeDriveContentType(body.contentType);
+    if (isPausedMediaFile(name, contentType)) throw new DriveHttpError(403, MEDIA_PAUSED_MESSAGE);
     const sha256 = typeof body.sha256 === "string" ? body.sha256.toLowerCase() : "";
     if (!/^[0-9a-f]{64}$/.test(sha256)) {
       throw new DriveHttpError(400, "sha256 must be a 64-character lowercase hex digest");

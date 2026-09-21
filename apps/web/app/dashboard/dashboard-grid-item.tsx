@@ -10,6 +10,7 @@ import {
 import type { WidgetPayload } from "../../lib/dashboard/snapshot";
 import { Icon } from "../../components/icon";
 import { DashboardWidgetView } from "./widgets";
+import { DashboardCardActions } from "./dashboard-quick-actions";
 
 type Box = { left: number; top: number; width: number; height: number };
 
@@ -153,6 +154,7 @@ export const DashboardGridItem = memo(function DashboardGridItem({
           </div>
         </>
       ) : null}
+      {!editing ? <DashboardCardActions type={item.type} label={label} /> : null}
       <div className="dash-widget-hit">
         <DashboardWidgetView type={item.type} payload={payload} orgId={orgId} tbaConfigured={tbaConfigured} />
       </div>
