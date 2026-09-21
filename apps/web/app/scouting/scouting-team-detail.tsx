@@ -11,6 +11,7 @@
  */
 
 import { CONSISTENCY_LABEL, type ScoutedTeamProfile } from "@vantage/prediction-strategy";
+import { ScoutingDetailCharts } from "./scouting-detail-charts";
 import "./scouting-team-detail.css";
 
 function phaseSplit(profile: ScoutedTeamProfile) {
@@ -84,6 +85,8 @@ export function ScoutingTeamDetail({
           </div>
         ))}
       </div>
+
+      <ScoutingDetailCharts profile={profile} />
 
       <dl className="std-stats">
         {stats.map((stat) => (
