@@ -15,7 +15,7 @@
   gap: 4px;
   padding: 12px 14px;
   background: var(--surface);
-  animation: sds-settle .32s cubic-bezier(.22, .61, .36, 1) both;
+  animation: sds-settle var(--dur-move) var(--ease-settle) both;
 }
 .sds dt {
   color: var(--muted);

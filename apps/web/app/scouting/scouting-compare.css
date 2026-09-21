@@ -340,7 +340,7 @@
   min-height: 2px;
   border-radius: 3px 3px 0 0;
   background: var(--scmp-slot, var(--accent));
-  transition: height .28s cubic-bezier(.22, .61, .36, 1);
+  transition: height var(--dur-move) var(--ease-settle);
 }
 .scmp-chart-tick {
   color: var(--muted);

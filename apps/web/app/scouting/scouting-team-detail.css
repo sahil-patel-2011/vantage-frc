@@ -9,7 +9,7 @@
   border: 1px solid var(--line);
   border-radius: var(--radius-md, 14px);
   background: var(--surface);
-  animation: std-settle .28s cubic-bezier(.22, .61, .36, 1) both;
+  animation: std-settle var(--dur-move) var(--ease-settle) both;
 }
 .std-head {
   display: flex;
@@ -81,7 +81,7 @@
   height: 100%;
   border-radius: var(--radius-pill);
   background: var(--accent);
-  animation: std-grow .42s cubic-bezier(.22, .61, .36, 1) both;
+  animation: std-grow var(--dur-sheet) var(--ease-settle) both;
 }
 
 .std-stats {

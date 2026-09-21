@@ -36,7 +36,7 @@
   padding: 0.9rem;
   border: 1px solid var(--line, #e4e7ec);
   border-radius: var(--radius-md, 12px);
-  animation: rpf-in var(--dur-move, 260ms) var(--ease-settle, cubic-bezier(0.22, 1, 0.36, 1)) both;
+  animation: rpf-in var(--dur-move, 260ms) var(--ease-settle) both;
 }
 @keyframes rpf-in {
   from {
