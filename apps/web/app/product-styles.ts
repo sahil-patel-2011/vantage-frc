@@ -8,6 +8,8 @@ import "./vantage-scan/hubs.css";
 import "./vantage-chrome.css";
 // Rail comes after chrome: it owns the body inset and the topbar offset.
 import "./app-rail.css";
+// Final visual pass shared with marketing: calm spacing, soft depth, cobalt actions.
+import "./apple-polish.css";
 
 /** Side-effect module: product shells import this so marketing routes do not. */
 export {};

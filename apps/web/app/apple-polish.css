@@ -1,0 +1,464 @@
+/* Apple-inspired polish for public marketing and signed-in product surfaces.
+   Visual treatment only: no layout semantics or product behavior live here. */
+
+/* ── Marketing ─────────────────────────────────────────────────────────── */
+.marketing-lux {
+  --m-ink: #1d1d1f;
+  --m-muted: #6e6e73;
+  --m-canvas: #ffffff;
+  --m-paper: #f5f5f7;
+  --m-surface: #ffffff;
+  --m-surface-2: #f5f5f7;
+  --m-line: rgba(29, 29, 31, .12);
+  --m-line-soft: rgba(29, 29, 31, .08);
+  --m-line-strong: rgba(29, 29, 31, .18);
+  --m-blue: #2563eb;
+  --m-warm: #2563eb;
+  --m-warm-soft: rgba(37, 99, 235, .08);
+  --m-warm-line: rgba(37, 99, 235, .2);
+  --m-card-radius: 24px;
+  --m-card-shadow: 0 1px 2px rgba(0, 0, 0, .03), 0 12px 34px rgba(0, 0, 0, .05);
+  --m-card-shadow-lg: 0 2px 5px rgba(0, 0, 0, .04), 0 24px 64px rgba(0, 0, 0, .1);
+  --m-content: 1180px;
+  --m-pad-x: clamp(20px, 5vw, 72px);
+  color: var(--m-ink);
+  background: var(--m-canvas);
+  font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.marketing-lux .nav {
+  min-height: 64px;
+  padding-inline: max(var(--m-pad-x), calc((100vw - 1320px) / 2));
+  background: rgba(255, 255, 255, .82);
+  border-bottom-color: rgba(29, 29, 31, .08);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+}
+
+.marketing-lux .nav nav a,
+.marketing-lux .sign-in-link {
+  color: #424245;
+  font-weight: 500;
+}
+
+.marketing-lux .button {
+  border-radius: 999px;
+  font-weight: 650;
+  letter-spacing: -.01em;
+}
+
+.marketing-lux .button.primary,
+.marketing-lux .nav .button {
+  color: #fff;
+  background: #2563eb;
+  border-color: #2563eb;
+  box-shadow: none;
+}
+
+.marketing-lux .button.primary:hover,
+.marketing-lux .nav .button:hover {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+.marketing-lux .lux-hero {
+  background: #fff;
+}
+
+.marketing-lux .lux-hero-backdrop {
+  background: none;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+.marketing-lux .lux-hero-backdrop::before {
+  top: 8%;
+  right: 2%;
+  width: 44%;
+  height: 70%;
+  border-radius: 50%;
+  background: rgba(37, 99, 235, .055);
+  filter: blur(80px);
+}
+
+.marketing-lux .lux-hero-inner {
+  max-width: 1320px;
+  min-height: min(820px, calc(100svh - 64px));
+  gap: clamp(40px, 6vw, 90px);
+  padding-block: clamp(64px, 9vw, 120px);
+}
+
+.marketing-lux .lux-kicker,
+.marketing-lux .lux-eyebrow {
+  color: #2563eb;
+  font-family: var(--font-inter), -apple-system, sans-serif;
+  font-weight: 700;
+  letter-spacing: .08em;
+}
+
+.marketing-lux .lux-eyebrow::before { display: none; }
+
+.marketing-lux .lux-hero h1 {
+  max-width: 10.5ch;
+  margin: 14px 0 22px;
+  color: #1d1d1f;
+  font-size: clamp(48px, 5.8vw, 76px);
+  font-weight: 750;
+  line-height: .98;
+  letter-spacing: -.055em;
+}
+
+.marketing-lux .lux-hero-copy > p:not(.lux-wordmark):not(.lux-kicker):not(.lux-hero-note) {
+  max-width: 31rem;
+  color: #6e6e73;
+  font-size: clamp(18px, 1.7vw, 22px);
+  line-height: 1.5;
+  letter-spacing: -.015em;
+}
+
+.marketing-lux .mk-hero-proof {
+  display: grid;
+  gap: 9px;
+}
+
+.marketing-lux .mk-hero-proof li {
+  color: #424245;
+  font-weight: 550;
+}
+
+.marketing-lux .mk-hero-proof li::before {
+  width: 18px;
+  height: 18px;
+  background: #e8f0ff;
+  box-shadow: inset 0 0 0 5px #2563eb;
+}
+
+.marketing-lux .mk-mock,
+.marketing-lux .hero-teach {
+  border-color: rgba(29, 29, 31, .1);
+  border-radius: 28px;
+  box-shadow: 0 32px 80px rgba(17, 24, 39, .14), 0 2px 6px rgba(17, 24, 39, .05);
+}
+
+.marketing-lux .mk-mock-chrome {
+  padding: 14px 18px;
+  background: #f5f5f7;
+}
+
+.marketing-lux .mk-mock-card {
+  border-color: rgba(29, 29, 31, .08);
+  border-radius: 18px;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, .045);
+}
+
+.marketing-lux .lux-problem,
+.marketing-lux .lux-runs,
+.marketing-lux .lux-fit,
+.marketing-lux .lux-loop,
+.marketing-lux .lux-pillars,
+.marketing-lux .mk-price,
+.marketing-lux .faq-section,
+.marketing-lux .lux-waitlist {
+  padding-block: clamp(76px, 9vw, 128px);
+}
+
+.marketing-lux .lux-loop,
+.marketing-lux .lux-fit,
+.marketing-lux .mk-price,
+.marketing-lux .lux-waitlist {
+  background: #f5f5f7;
+  background-image: none;
+}
+
+.marketing-lux .lux-section-head {
+  max-width: 760px;
+  margin-bottom: clamp(34px, 5vw, 58px);
+}
+
+.marketing-lux .lux-section-head h2,
+.marketing-lux .lux-waitlist h2 {
+  max-width: 17ch;
+  color: #1d1d1f;
+  font-size: clamp(34px, 4.2vw, 56px);
+  font-weight: 720;
+  line-height: 1.05;
+  letter-spacing: -.045em;
+}
+
+.marketing-lux .lux-section-head > p:not(.lux-eyebrow) {
+  max-width: 58ch;
+  color: #6e6e73;
+  font-size: clamp(17px, 1.5vw, 20px);
+  line-height: 1.55;
+}
+
+.marketing-lux .lux-feature-grid,
+.marketing-lux .mk-pillars,
+.marketing-lux .mk-app-gallery-grid,
+.marketing-lux .mk-price-grid {
+  gap: 18px;
+}
+
+.marketing-lux .lux-feature-grid li,
+.marketing-lux .lux-loop-steps li,
+.marketing-lux .mk-pillars li,
+.marketing-lux .mk-app-gallery-grid > li,
+.marketing-lux .mk-price-grid li,
+.marketing-lux .faq-item,
+.marketing-lux .soft-waitlist-form,
+.marketing-lux .waitlist-form {
+  border-color: rgba(29, 29, 31, .08);
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .02), 0 10px 30px rgba(0, 0, 0, .04);
+}
+
+.marketing-lux .lux-feature-grid li,
+.marketing-lux .mk-pillar-link,
+.marketing-lux .mk-price-grid li {
+  padding: 28px;
+}
+
+.marketing-lux .lux-feature-grid li:hover,
+.marketing-lux .lux-loop-steps li:hover,
+.marketing-lux .mk-pillars li:hover,
+.marketing-lux .mk-app-gallery-grid > li:hover,
+.marketing-lux .mk-price-grid li:hover {
+  transform: translateY(-2px);
+  border-color: rgba(37, 99, 235, .18);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, .08);
+}
+
+.marketing-lux .lux-card-icon {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 13px;
+  color: #2563eb;
+  background: #eef4ff;
+}
+
+.marketing-lux .lux-waitlist {
+  max-width: none;
+}
+
+.marketing-lux .lux-waitlist > div:first-child {
+  max-width: 620px;
+}
+
+.marketing-lux .marketing-footer {
+  background: #f5f5f7;
+  border-top-color: rgba(29, 29, 31, .08);
+}
+
+/* ── Signed-in product ─────────────────────────────────────────────────── */
+body.has-app-shell {
+  --bg: #f5f5f7;
+  --surface: #ffffff;
+  --surface-2: #f2f2f7;
+  --ink: #1d1d1f;
+  --muted: #6e6e73;
+  --line: #dedee3;
+  --line-soft: rgba(29, 29, 31, .08);
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-soft: #eaf1ff;
+  --accent-ink: #ffffff;
+  --radius-xs: 10px;
+  --radius-sm: 14px;
+  --radius: 20px;
+  --radius-lg: 26px;
+  --shadow: 0 1px 2px rgba(0, 0, 0, .025), 0 8px 24px rgba(0, 0, 0, .045);
+  --shadow-lift: 0 2px 4px rgba(0, 0, 0, .035), 0 16px 38px rgba(0, 0, 0, .075);
+  --shadow-pop: 0 8px 22px rgba(0, 0, 0, .08), 0 24px 60px rgba(0, 0, 0, .12);
+  --glow: none;
+  background-color: #f5f5f7 !important;
+  background-image: none !important;
+  color: #1d1d1f;
+  font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+}
+
+body.has-app-shell .soft-topbar {
+  height: 60px;
+  padding-inline: 18px;
+  background-color: rgba(245, 245, 247, .78);
+  border-bottom-color: rgba(29, 29, 31, .08);
+  box-shadow: none;
+  backdrop-filter: saturate(180%) blur(22px);
+  -webkit-backdrop-filter: saturate(180%) blur(22px);
+}
+
+body.has-app-shell .soft-page-head h1,
+body.has-app-shell .soft-topbar-title {
+  font-family: var(--font-inter), -apple-system, sans-serif;
+  font-weight: 650;
+  letter-spacing: -.025em;
+}
+
+body.has-app-shell .soft-icon-btn {
+  border-radius: 50%;
+}
+
+body.has-app-shell .soft-icon-btn:hover {
+  border-color: transparent;
+  background: rgba(29, 29, 31, .065);
+}
+
+body.has-app-shell .soft-avatar {
+  background: #2563eb;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .25);
+}
+
+body.has-app-shell .vrail {
+  width: 244px;
+  padding: 18px 14px;
+  background: rgba(255, 255, 255, .78);
+  border-right-color: rgba(29, 29, 31, .08);
+  backdrop-filter: saturate(180%) blur(22px);
+  -webkit-backdrop-filter: saturate(180%) blur(22px);
+}
+
+body.has-app-shell .vrail-mark {
+  font-size: 18px;
+  font-weight: 720;
+  letter-spacing: -.04em;
+}
+
+body.has-app-shell .vrail-search {
+  min-height: 40px;
+  border: 0;
+  border-radius: 12px;
+  background: rgba(118, 118, 128, .12);
+  box-shadow: inset 0 0 0 1px rgba(29, 29, 31, .035);
+}
+
+body.has-app-shell .vrail-nav a,
+body.has-app-shell .vrail-foot {
+  min-height: 42px;
+  padding-inline: 12px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 520;
+}
+
+body.has-app-shell .vrail-nav a[aria-current="page"] {
+  color: #1d1d1f;
+  background: #e8e8ed;
+  font-weight: 650;
+}
+
+body.has-app-shell .vrail-nav a[aria-current="page"] svg {
+  color: #2563eb;
+}
+
+body.has-app-shell :where(.app-card, .soft-panel, .soft-card, .dash-widget, .vt-card, .vt-stat-card) {
+  border-color: rgba(29, 29, 31, .08);
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: var(--shadow);
+}
+
+body.has-app-shell :where(.app-card, .soft-panel, .soft-card, .dash-widget, .vt-card, .vt-stat-card):hover {
+  border-color: rgba(29, 29, 31, .11);
+}
+
+body.has-app-shell :where(.app-page-header, .dash-home-header) h1 {
+  color: #1d1d1f;
+  font-weight: 720;
+  letter-spacing: -.045em;
+}
+
+body.has-app-shell :where(.app-page-header, .dash-home-header) p {
+  color: #6e6e73;
+}
+
+body.has-app-shell :where(.app-button, .soft-btn, .primary-action) {
+  border-radius: 999px;
+  font-weight: 650;
+  box-shadow: none;
+}
+
+body.has-app-shell :where(.app-button.primary, .soft-btn.primary, .primary-action, .is-primary) {
+  color: #fff;
+  background: #2563eb;
+  border-color: #2563eb;
+}
+
+body.has-app-shell :where(.app-button.primary, .soft-btn.primary, .primary-action, .is-primary):hover {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+body.has-app-shell :where(input, select, textarea) {
+  border-color: rgba(29, 29, 31, .14);
+  background: #fff;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, .02);
+}
+
+body.has-app-shell :where(input, select, textarea):focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, .12);
+  outline: 0;
+}
+
+body.has-app-shell .soft-island {
+  border-color: rgba(29, 29, 31, .1);
+  background: rgba(255, 255, 255, .76);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, .12), inset 0 1px rgba(255, 255, 255, .7);
+  backdrop-filter: saturate(180%) blur(24px);
+  -webkit-backdrop-filter: saturate(180%) blur(24px);
+}
+
+body.has-app-shell .soft-island a[aria-current="page"],
+body.has-app-shell .soft-island-more.is-open {
+  color: #2563eb;
+  background: rgba(37, 99, 235, .1);
+}
+
+body.has-app-shell .soft-drawer,
+body.has-app-shell .soft-account-pop,
+body.has-app-shell .soft-island-editor > section {
+  border-color: rgba(29, 29, 31, .1);
+  background: rgba(255, 255, 255, .94);
+  backdrop-filter: saturate(180%) blur(28px);
+  -webkit-backdrop-filter: saturate(180%) blur(28px);
+}
+
+body.has-app-shell .soft-badge,
+body.has-app-shell .app-badge {
+  letter-spacing: .03em;
+}
+
+@media (min-width: 1024px) {
+  body.has-app-shell { padding-left: 244px !important; }
+  body.has-app-shell .soft-topbar { left: 244px; }
+}
+
+@media (max-width: 999px) {
+  .marketing-lux .lux-hero-inner {
+    min-height: 0;
+    padding-top: 64px;
+  }
+  .marketing-lux .lux-hero-copy { max-width: 720px; }
+  .marketing-lux .lux-hero h1 { max-width: 12ch; }
+}
+
+@media (max-width: 680px) {
+  .marketing-lux .nav { min-height: 56px; }
+  .marketing-lux .lux-hero-inner { padding-top: 46px; }
+  .marketing-lux .lux-hero h1 { font-size: clamp(40px, 12vw, 54px); }
+  .marketing-lux .lux-section-head h2,
+  .marketing-lux .lux-waitlist h2 { font-size: clamp(32px, 9vw, 42px); }
+  .marketing-lux .lux-feature-grid li,
+  .marketing-lux .mk-pillar-link,
+  .marketing-lux .mk-price-grid li { padding: 22px; }
+  body.has-app-shell .soft-topbar { height: 56px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marketing-lux .lux-feature-grid li:hover,
+  .marketing-lux .lux-loop-steps li:hover,
+  .marketing-lux .mk-pillars li:hover,
+  .marketing-lux .mk-app-gallery-grid > li:hover,
+  .marketing-lux .mk-price-grid li:hover { transform: none; }
+}
