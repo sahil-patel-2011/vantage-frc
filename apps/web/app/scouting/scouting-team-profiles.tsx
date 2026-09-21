@@ -10,6 +10,7 @@ import {
 import { PickWeightSliders, usePickWeights } from "./scouting-pick-weights";
 import { COMPARE_LIMIT, ScoutingCompare, teamNumberLabel } from "./scouting-compare";
 import { ScoutingDashboardSummary } from "./scouting-dashboard-summary";
+import { ScoutingFieldChart } from "./scouting-field-chart";
 import { ScoutingTeamDetail } from "./scouting-team-detail";
 import { EmptyState, Button } from "../../components/ui";
 import { apiErrorMessage, classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
@@ -221,6 +222,13 @@ export function ScoutingTeamProfiles({ orgId, eventKey }: { orgId: string; event
 
       <ScoutingDashboardSummary profiles={view.profiles} />
 
+      <ScoutingFieldChart
+        profiles={view.profiles}
+        selectedKey={detail?.teamKey ?? null}
+        compareKeys={compare}
+        onSelect={setSelected}
+      />
+
       {sort === "fit" ? (
         <PickWeightSliders weights={weights} onChange={update} onReset={reset} changed={changed} />
       ) : null}
@@ -256,10 +264,8 @@ export function ScoutingTeamProfiles({ orgId, eventKey }: { orgId: string; event
                   key={profile.teamKey}
                   profile={profile}
                   active={detail?.teamKey === profile.teamKey}
-                  onSelect={() => setSelected(profile.teamKey)}
                   compared={compare.includes(profile.teamKey)}
-                  compareFull={compare.length >= COMPARE_LIMIT}
-                  onCompare={() => toggleCompare(profile.teamKey)}
+                  onSelect={() => setSelected(profile.teamKey)}
                 />
               ))}
             </ul>
@@ -305,22 +311,18 @@ function teamNumber(teamKey: string): number {
 function ProfileRow({
   profile,
   active,
-  onSelect,
   compared,
-  compareFull,
-  onCompare,
+  onSelect,
 }: {
   profile: ScoutedTeamProfile;
   active: boolean;
-  onSelect: () => void;
   compared: boolean;
-  compareFull: boolean;
-  onCompare: () => void;
+  onSelect: () => void;
 }) {
   const number = profile.teamKey.replace(/^frc/i, "");
   const consistency = profile.consistency?.consistency ?? "unknown";
   return (
-    <li className="stp-row" data-consistency={consistency} data-active={active ? "true" : undefined}>
+    <li className="stp-row" data-consistency={consistency} data-active={active ? "true" : undefined} data-compared={compared ? "true" : undefined}>
       <button type="button" className="stp-row-main" aria-pressed={active} onClick={onSelect}>
         <span className="stp-team">{number}</span>
         <span className="stp-score">
@@ -349,18 +351,7 @@ function ProfileRow({
           ) : null}
         </span>
       </button>
-      <div className="stp-row-foot">
-        <p className="stp-headline">{profile.headline}</p>
-        <button
-          type="button"
-          className="stp-compare"
-          aria-pressed={compared}
-          disabled={!compared && compareFull}
-          onClick={onCompare}
-        >
-          {compared ? "Comparing" : "Compare"}
-        </button>
-      </div>
+      <p className="stp-headline">{profile.headline}</p>
     </li>
   );
 }

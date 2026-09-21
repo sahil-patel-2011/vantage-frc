@@ -14,16 +14,6 @@ import { CONSISTENCY_LABEL, type ScoutedTeamProfile } from "@vantage/prediction-
 import { ScoutingDetailCharts } from "./scouting-detail-charts";
 import "./scouting-team-detail.css";
 
-function phaseSplit(profile: ScoutedTeamProfile) {
-  const parts = [
-    { label: "Auto", value: profile.meanAuto },
-    { label: "Teleop", value: profile.meanTeleop },
-    { label: "Endgame", value: profile.meanEndgame },
-  ];
-  const total = parts.reduce((sum, part) => sum + Math.max(0, part.value), 0) || 1;
-  return parts.map((part) => ({ ...part, share: Math.max(0, part.value) / total }));
-}
-
 export function ScoutingTeamDetail({
   profile,
   compared,
@@ -60,31 +50,29 @@ export function ScoutingTeamDetail({
   return (
     <aside className="std" aria-label={`Team ${number} detail`} key={profile.teamKey}>
       <header className="std-head">
-        <div>
+        <div className="std-head-main">
           <span className="std-kicker">Team</span>
           <h3>{number}</h3>
         </div>
-        <div className="std-score">
-          <strong>{profile.shrunkTotal.toFixed(1)}</strong>
-          <small>points per match</small>
+        <div className="std-head-right">
+          <div className="std-score">
+            <strong>{profile.shrunkTotal.toFixed(1)}</strong>
+            <small>points per match</small>
+          </div>
+          <button
+            type="button"
+            className="std-compare"
+            aria-pressed={compared}
+            aria-label={compared ? "Remove from comparison" : "Add to comparison"}
+            disabled={!compared && compareFull}
+            onClick={onCompare}
+          >
+            {compared ? "✓" : "+"}
+          </button>
         </div>
       </header>
 
       <p className="std-headline">{profile.headline}</p>
-
-      <div className="std-phases" aria-label="Where the points come from">
-        {phaseSplit(profile).map((part) => (
-          <div className="std-phase" key={part.label}>
-            <span className="std-phase-label">
-              {part.label}
-              <b>{part.value.toFixed(1)}</b>
-            </span>
-            <span className="std-phase-track">
-              <span className="std-phase-fill" style={{ width: `${(part.share * 100).toFixed(1)}%` }} />
-            </span>
-          </div>
-        ))}
-      </div>
 
       <ScoutingDetailCharts profile={profile} />
 
@@ -96,18 +84,6 @@ export function ScoutingTeamDetail({
           </div>
         ))}
       </dl>
-
-      <p className="std-sample">{profile.sampleNote}</p>
-
-      <button
-        type="button"
-        className="std-compare"
-        aria-pressed={compared}
-        disabled={!compared && compareFull}
-        onClick={onCompare}
-      >
-        {compared ? "Comparing" : "Add to compare"}
-      </button>
     </aside>
   );
 }

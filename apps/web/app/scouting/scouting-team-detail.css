@@ -15,7 +15,15 @@
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
+}
+.std-head-main {
+  display: grid;
+}
+.std-head-right {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
 }
 .std-kicker {
   display: block;
@@ -49,39 +57,40 @@
   line-height: 1.5;
 }
 
-.std-phases {
+/* Compact compare toggle in the header — icon only, keeps the pane clean. */
+.std-compare {
+  flex: none;
   display: grid;
-  gap: 8px;
-  padding: 12px;
-  border-radius: var(--radius-sm);
-  background: var(--surface-2);
-}
-.std-phase {
-  display: grid;
-  gap: 4px;
-}
-.std-phase-label {
-  display: flex;
-  justify-content: space-between;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
   color: var(--muted);
-  font: 600 11px var(--font-source-sans), ui-sans-serif;
+  font: 700 16px/1 var(--font-source-sans), ui-sans-serif;
+  cursor: pointer;
+  transition:
+    background-color var(--dur-tint) var(--ease-out),
+    border-color var(--dur-tint) var(--ease-out),
+    color var(--dur-tint) var(--ease-out),
+    transform var(--dur-press) var(--ease-spring);
 }
-.std-phase-label b {
-  color: var(--ink);
-  font-variant-numeric: tabular-nums;
+.std-compare:hover {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
+  color: var(--accent);
 }
-.std-phase-track {
-  height: 6px;
-  border-radius: var(--radius-pill);
-  background: color-mix(in srgb, var(--ink) 8%, transparent);
-  overflow: hidden;
-}
-.std-phase-fill {
-  display: block;
-  height: 100%;
-  border-radius: var(--radius-pill);
+.std-compare[aria-pressed="true"] {
+  border-color: var(--accent);
   background: var(--accent);
-  animation: std-grow var(--dur-sheet) var(--ease-settle) both;
+  color: var(--accent-ink);
+}
+.std-compare:disabled {
+  opacity: .35;
+  cursor: not-allowed;
+}
+.std-compare:active {
+  transform: scale(0.9);
 }
 
 .std-stats {
@@ -100,44 +109,11 @@
   margin: 2px 0 0;
   font: 600 13px var(--font-source-sans), ui-sans-serif;
 }
-.std-sample {
-  margin: 0;
-  color: var(--muted);
-  font-size: 11.5px;
-}
-.std-compare {
-  justify-self: start;
-  min-height: 32px;
-  padding: 0 14px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-pill);
-  background: var(--surface);
-  color: var(--muted);
-  font: 700 12px var(--font-source-sans), ui-sans-serif;
-  cursor: pointer;
-  transition:
-    background-color var(--dur-tint) var(--ease-out),
-    border-color var(--dur-tint) var(--ease-out),
-    color var(--dur-tint) var(--ease-out);
-}
-.std-compare[aria-pressed="true"] {
-  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
-  background: var(--accent-soft);
-  color: var(--accent);
-}
-.std-compare:disabled {
-  opacity: .45;
-  cursor: not-allowed;
-}
 
 @keyframes std-settle {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: none; }
 }
-@keyframes std-grow {
-  from { transform: scaleX(0); transform-origin: left; }
-  to { transform: none; }
-}
 @media (prefers-reduced-motion: reduce) {
-  .std, .std-phase-fill { animation: none; }
+  .std { animation: none; }
 }

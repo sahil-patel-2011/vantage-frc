@@ -61,6 +61,10 @@
 .stp-row[data-consistency="streaky"] { border-left: 3px solid var(--warning); }
 .stp-row[data-consistency="boom-or-bust"] { border-left: 3px solid var(--critical); }
 .stp-row[data-consistency="unknown"] { border-left: 3px solid var(--line); }
+.stp-row[data-compared="true"] {
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--line));
+  background: color-mix(in srgb, var(--accent) 3%, var(--surface));
+}
 
 .stp-row-main {
   display: flex;
@@ -144,42 +148,6 @@
   font-size: 12.5px;
   line-height: 1.45;
 }
-
-/* The row's one action lives beside its sentence, so a card carries a single
-   button rather than a strip of them. */
-.stp-row-foot {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.stp-row-foot .stp-headline {
-  flex: 1 1 auto;
-}
-.stp-compare {
-  flex: 0 0 auto;
-  min-height: 28px;
-  margin: 0 14px 10px 0;
-  padding: 0 11px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-pill);
-  background: var(--surface);
-  color: var(--muted);
-  font: 700 11.5px var(--font-source-sans), ui-sans-serif;
-  cursor: pointer;
-  transition:
-    background-color var(--dur-tint) var(--ease-out),
-    border-color var(--dur-tint) var(--ease-out),
-    color var(--dur-tint) var(--ease-out);
-}
-.stp-compare[aria-pressed="true"] {
-  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
-  background: var(--accent-soft);
-  color: var(--accent);
-}
-.stp-compare:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
 .stp-compare-hint {
   margin: 0;
   color: var(--muted);
@@ -228,6 +196,7 @@
     padding: 0 12px 10px;
   }
 }
+/* Remove stale compare-button animation rules — the button lives in the detail pane now. */
 
 /* ---------------------------------------------------------------- motion --
    Everything here uses the shared tokens in vantage-fluid.css, which zero
@@ -293,29 +262,7 @@
   }
 }
 
-/* Pressing the one action on a card should feel like a physical switch: a
-   little give, then a spring back past centre rather than a linear return. */
-.stp-compare:active {
-  transform: scale(0.94);
-  transition: transform var(--dur-press) var(--ease-spring);
-}
-.stp-compare[aria-pressed="true"] {
-  animation: stp-chip-on var(--dur-press) var(--ease-spring) both;
-}
-@keyframes stp-chip-on {
-  from {
-    transform: scale(0.9);
-  }
-  to {
-    transform: none;
-  }
-}
 .stp-compare-hint {
-  animation: stp-unfold var(--dur-move) var(--ease-settle) both;
-}
-
-/* The detail panel unfolds from the row rather than appearing on top of it. */
-.stp-detail {
   animation: stp-unfold var(--dur-move) var(--ease-settle) both;
 }
 @keyframes stp-unfold {
