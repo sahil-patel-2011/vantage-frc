@@ -10,6 +10,7 @@ import {
   isDisplayPreset,
   isDisplayWidgetType,
   matchLabel,
+  nexusVenueGapMessage,
   ourBumperColor,
   pitChromiumKioskCommand,
   queueCue,
@@ -172,5 +173,33 @@ describe("display helpers", () => {
         scouting: { assignments: 0, reports: 0, openDisagreements: 0 },
       }),
     ).toBe(true);
+  });
+
+  it("names the active event when Nexus has no venue yet", () => {
+    expect(
+      nexusVenueGapMessage({
+        eventName: "Pacific Practice",
+        eventKey: "2026custom-47003f5c-pacific-practice",
+        reason: "no-cache",
+      }),
+    ).toBe(
+      "No Nexus payload is cached for Pacific Practice yet. Nexus data appears once the event-day sync runs with a Nexus API key configured.",
+    );
+    expect(
+      nexusVenueGapMessage({
+        eventName: null,
+        eventKey: "2026custom-47003f5c-pacific-practice",
+        reason: "no-geometry",
+      }),
+    ).toBe(
+      "Nexus has not published venue geometry for Your event. Your own pit layout below is unaffected.",
+    );
+    expect(
+      nexusVenueGapMessage({
+        eventName: null,
+        eventKey: "2026txho",
+        reason: "no-cache",
+      }),
+    ).toContain("2026txho");
   });
 });
