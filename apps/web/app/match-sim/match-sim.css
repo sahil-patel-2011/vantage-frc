@@ -7,3 +7,28 @@
 .match-sim-win-bar .is-blue{background:var(--alliance-blue,#2f6fd6)}
 .match-sim-win-labels{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
 .match-sim-win-labels small{flex:1;text-align:center;font-size:11px}
+
+/* Pick a match: the next unplayed matches as one-tap rows (red teams vs blue teams,
+   with the schedule's own estimate). Your team's matches carry the accent edge. */
+.msim-upcoming{display:grid;gap:8px}
+.msim-upcoming h2{margin:0;font-size:var(--title-3,17px)}
+.msim-upcoming ul{display:grid;gap:6px;margin:0;padding:0;list-style:none}
+.msim-upcoming button{
+  display:grid;grid-template-columns:auto minmax(0,1fr) auto minmax(0,1fr) auto;align-items:center;gap:10px;
+  width:100%;min-height:48px;padding:8px 14px;border:1px solid var(--line);border-radius:var(--radius-sm,12px);
+  background:var(--surface);color:var(--ink);font:inherit;font-size:14px;text-align:left;cursor:pointer;
+  font-variant-numeric:tabular-nums;
+}
+.msim-upcoming button:hover:not(:disabled){border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+.msim-upcoming button.is-ours{box-shadow:inset 3px 0 0 var(--accent)}
+.msim-upcoming b{min-width:3.2em}
+.msim-upcoming-red{color:var(--alliance-red,#c0392b);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.msim-upcoming-blue{color:var(--alliance-blue,#1f5fbf);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.msim-upcoming-vs{color:var(--muted);font-size:12px}
+.msim-upcoming small{color:var(--muted);font-size:12px;white-space:nowrap}
+@media (max-width:520px){
+  .msim-upcoming button{grid-template-columns:auto minmax(0,1fr) auto;row-gap:2px}
+  .msim-upcoming-vs{display:none}
+  .msim-upcoming-blue{grid-column:2}
+  .msim-upcoming small{grid-column:3;grid-row:1}
+}

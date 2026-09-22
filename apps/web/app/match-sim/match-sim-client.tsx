@@ -6,6 +6,8 @@ import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { flipMatchSimResult, matchSimHasNoData, phaseLabel } from "../../lib/match-sim";
 import type { MatchSimView } from "../../lib/match-sim/compute-match-sim";
+import { eventKeyOfMatch } from "../../lib/match-sim/upcoming";
+import { UpcomingMatchPicker } from "./upcoming-match-picker";
 import type { AllianceColor, MatchSimRun } from "../../lib/match-sim/types";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
@@ -48,6 +50,16 @@ export default function MatchSimClient() {
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
   const viewRef = useRef<MatchSimView | null>(null);
+  // A match picked from the list shows its result right under the list, scrolled to —
+  // on a phone it would otherwise land below the typed form, off screen.
+  const resultRef = useRef<HTMLDivElement | null>(null);
+  const [revealRun, setRevealRun] = useState(false);
+  const activeRunId = view && "active" in view ? (view.active?.id ?? null) : null;
+  useEffect(() => {
+    if (!revealRun || !activeRunId) return;
+    resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setRevealRun(false);
+  }, [revealRun, activeRunId]);
   viewRef.current = view;
 
   const orgId = view && "orgId" in view ? view.orgId : null;
@@ -219,8 +231,27 @@ export default function MatchSimClient() {
         </EmptyState>
       ) : (
         <div style={{ display: "grid", gap: 16 }}>
+          <UpcomingMatchPicker
+            orgId={orgId}
+            busy={busy}
+            onPick={(pick) => {
+              setRevealRun(true);
+              mutate({
+                action: "simulate",
+                label: pick.label,
+                eventKey: eventKeyOfMatch(pick.matchKey) ?? undefined,
+                matchKey: pick.matchKey,
+                redTeamKeys: pick.red,
+                blueTeamKeys: pick.blue,
+              });
+            }}
+          />
+          {view.active ? (
+            <div ref={resultRef} style={{ scrollMarginTop: 72 }}>
+              <ActiveRunResult key={view.active.id} view={view} run={view.active} />
+            </div>
+          ) : null}
           <SimulateForm busy={busy} mutate={mutate} />
-          {view.active ? <ActiveRunResult key={view.active.id} view={view} run={view.active} /> : null}
           <SavedRuns view={view} busy={busy} load={load} mutate={mutate} />
         </div>
       )}
