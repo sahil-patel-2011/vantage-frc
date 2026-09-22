@@ -11,6 +11,7 @@ import { cloudUploadCapBytes } from "../../../../lib/storage-routing/caps";
 import { planFiles } from "../../../../lib/storage-routing/decide";
 import { loadCandidateNode, loadRoutingPolicy } from "../../../../lib/storage-routing/store";
 import type { StoragePlanFile, StoragePlanResult } from "../../../../lib/storage-routing/types";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 const MAX_PLAN_FILES = 200;
 
@@ -66,7 +67,7 @@ export async function POST(request: Request) {
     });
     return Response.json(result);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Storage plan failed";
+    const message = publicErrorMessage(error, "Storage plan failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json({ error: message === "forbidden" ? "Organization access denied" : message }, { status });
   }

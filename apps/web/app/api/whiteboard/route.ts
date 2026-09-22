@@ -9,6 +9,7 @@ import {
   type WhiteboardPlay,
   type WhiteboardView,
 } from "../../../lib/whiteboard";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 class HttpError extends Error {
   constructor(
@@ -32,7 +33,7 @@ async function requireMembership(client: PoolClient, orgId: string, userId: stri
 
 function fail(error: unknown) {
   const status = error instanceof HttpError ? error.status : 400;
-  return Response.json({ error: error instanceof Error ? error.message : "Whiteboard request failed" }, { status });
+  return Response.json({ error: publicErrorMessage(error, "Whiteboard request failed") }, { status });
 }
 
 export async function GET(request: Request) {

@@ -37,6 +37,7 @@ import {
   type Closeness,
   type PastCall,
 } from "../../../../lib/learning/predictions";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 /** How far back the rollup looks. Windowed, and the response says so. */
 const ROLLUP_WINDOW_ROWS = 400;
@@ -56,7 +57,7 @@ class HttpError extends Error {
 function fail(error: unknown) {
   const status = error instanceof HttpError ? error.status : 400;
   return Response.json(
-    { error: error instanceof Error ? error.message : "Learning overview request failed" },
+    { error: publicErrorMessage(error, "Learning overview request failed") },
     { status },
   );
 }

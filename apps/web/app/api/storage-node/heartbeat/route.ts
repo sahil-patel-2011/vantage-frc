@@ -6,6 +6,7 @@
 
 import { createHash } from "node:crypto";
 import { getCadRelayPool } from "@vantage/db/cad-relay";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 function bigintOrNull(value: unknown): string | null {
   if (typeof value !== "number" || !Number.isFinite(value) || value < 0) return null;
@@ -65,7 +66,7 @@ export async function POST(request: Request) {
       serverTime: new Date().toISOString(),
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Heartbeat failed";
+    const message = publicErrorMessage(error, "Heartbeat failed");
     const status = /invalid or revoked/i.test(message) ? 401 : 400;
     return Response.json({ error: message }, { status });
   }

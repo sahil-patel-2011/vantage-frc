@@ -19,6 +19,7 @@ import {
   requireOrgMember,
   upsertGitHubConnection,
 } from "../../../lib/github";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 async function current() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -35,7 +36,7 @@ async function current() {
  * from a typo in a repo name.
  */
 const fail = (error: unknown, status = 400) => {
-  const message = error instanceof Error ? error.message : "GitHub request failed";
+  const message = publicErrorMessage(error, "GitHub request failed");
   if (/authentication required/i.test(message)) {
     return Response.json({ error: message }, { status: 401 });
   }

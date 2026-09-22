@@ -3,6 +3,7 @@ import { requestPool, withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { inviteLegalRequired } from "../../../../lib/invite";
 import { anonymizeIp, clientIp, createRateLimiter, rateLimitedResponse } from "../../../../lib/rate-limit";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 const limiter = createRateLimiter({ limit: 30, windowMs: 10 * 60_000, namespace: "invite-preview" });
 
@@ -96,7 +97,7 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Could not load invite preview" },
+      { error: publicErrorMessage(error, "Could not load invite preview") },
       { status: 400 },
     );
   }

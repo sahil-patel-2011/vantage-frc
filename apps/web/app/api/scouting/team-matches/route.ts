@@ -3,6 +3,7 @@ import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { loadTeamMatchLog } from "../../../../lib/scouting/team-match-log-load";
 import { isScoutForbidden, resolveScoutOrg, scoutForbiddenResponse } from "../../../../lib/scout-org-access";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 /**
  * One robot at one event, match by match: alliance, partners, opponents, the
@@ -45,7 +46,7 @@ export async function GET(request: Request) {
     return noStore(view);
   } catch (error) {
     if (isScoutForbidden(error)) return scoutForbiddenResponse();
-    const message = error instanceof Error ? error.message : "Could not load this robot's matches";
+    const message = publicErrorMessage(error, "Could not load this robot's matches");
     return Response.json({ error: message }, { status: 500 });
   }
 }

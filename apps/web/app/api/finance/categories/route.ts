@@ -1,6 +1,7 @@
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 async function session() {
   const value = await auth.api.getSession({ headers: await headers() });
@@ -8,7 +9,7 @@ async function session() {
   return value;
 }
 const fail = (error: unknown) =>
-  Response.json({ error: error instanceof Error ? error.message : "Category request failed" }, { status: 400 });
+  Response.json({ error: publicErrorMessage(error, "Category request failed") }, { status: 400 });
 
 export async function GET(request: Request) {
   try {

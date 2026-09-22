@@ -10,6 +10,7 @@ import {
   type ScoutAccuracyView,
 } from "../../../lib/scout-accuracy/compute-scout-accuracy";
 import { scoutAccuracySetupSteps } from "../../../lib/scout-accuracy/scout-accuracy-related";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { ScoutAccuracyView };
 
@@ -99,7 +100,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Scout accuracy request failed";
+    const message = publicErrorMessage(error, "Scout accuracy request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

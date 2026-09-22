@@ -3,6 +3,7 @@ import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { computeFreeSpeedFps, motorFreeRpm, parseSubsystemAction, type SubsystemCategory } from "../../../lib/subsystems";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 class HttpError extends Error {
   constructor(readonly status: number, message: string) {
@@ -23,7 +24,7 @@ async function requireMembership(client: PoolClient, orgId: string, userId: stri
 
 function fail(error: unknown) {
   const status = error instanceof HttpError ? error.status : 400;
-  return Response.json({ error: error instanceof Error ? error.message : "Subsystem request failed" }, { status });
+  return Response.json({ error: publicErrorMessage(error, "Subsystem request failed") }, { status });
 }
 
 type SubsystemRow = {

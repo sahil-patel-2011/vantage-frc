@@ -5,6 +5,7 @@ import { headers } from "next/headers";
 import { upsertGearbox } from "../../../lib/gearbox/service";
 import { parseGearboxWrite } from "../../../lib/gearbox/upsert";
 import { compoundReduction, outputRpm, type Stage } from "../../../lib/gearbox";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 class HttpError extends Error {
   constructor(readonly status: number, message: string) {
@@ -25,7 +26,7 @@ async function requireMembership(client: PoolClient, orgId: string, userId: stri
 
 function fail(error: unknown) {
   const status = error instanceof HttpError ? error.status : 400;
-  return Response.json({ error: error instanceof Error ? error.message : "Gearbox request failed" }, { status });
+  return Response.json({ error: publicErrorMessage(error, "Gearbox request failed") }, { status });
 }
 
 type GearboxRow = { id: string; name: string; subsystem: string; stages: Stage[]; motorFreeRpm: number | null; notes: string; byName: string | null };

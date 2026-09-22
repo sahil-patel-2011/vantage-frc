@@ -8,6 +8,7 @@ import {
   simulateMatch,
   type MatchSimView,
 } from "../../../lib/match-sim/compute-match-sim";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { MatchSimView };
 
@@ -142,7 +143,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Match simulator request failed";
+    const message = publicErrorMessage(error, "Match simulator request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json({ error: message === "forbidden" ? "Organization access denied" : message }, { status });
   }

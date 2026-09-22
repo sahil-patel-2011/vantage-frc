@@ -2,6 +2,7 @@ import { notificationBody, notificationHref, notificationTitle } from "../../../
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 type NotificationRow = {
   id: string;
@@ -14,7 +15,7 @@ type NotificationRow = {
 
 function fail(error: unknown, status = 400) {
   return Response.json(
-    { error: error instanceof Error ? error.message : "Notification request failed" },
+    { error: publicErrorMessage(error, "Notification request failed") },
     { status },
   );
 }

@@ -18,6 +18,7 @@ import {
   type VisitRsvp,
   type VisitStatus,
 } from "../../../lib/visit-invites";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 class HttpError extends Error {
   constructor(
@@ -35,7 +36,7 @@ async function requireSession() {
 }
 
 function fail(error: unknown) {
-  const message = error instanceof Error ? error.message : "Visit invites request failed";
+  const message = publicErrorMessage(error, "Visit invites request failed");
   if (/visit_invite|relation .* does not exist/i.test(message)) {
     return Response.json(
       {

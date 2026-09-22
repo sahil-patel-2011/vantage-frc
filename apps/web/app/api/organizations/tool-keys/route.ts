@@ -10,6 +10,7 @@ import { withRls, withSavepointOrThrow } from "@vantage/db";
 import { headers } from "next/headers";
 import { aiKeysEncryptionStatus } from "../../../../lib/ai-keys/kms-status";
 import { createRateLimiter, rateLimitedResponse } from "../../../../lib/rate-limit";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 /**
  * A team's keys for the tools its AI agent calls — today, TinyFish (web search
@@ -71,7 +72,7 @@ function fail(error: unknown) {
   if (isMissingTable(error)) {
     return Response.json({ error: NOT_MIGRATED_MESSAGE, setupRequired: true }, { status: 503 });
   }
-  const message = error instanceof Error ? error.message : "Request failed";
+  const message = publicErrorMessage(error, "Request failed");
   // A capability refusal from assertOrgCapability.
   if (/capabilit|permission|not allowed|forbidden/i.test(message)) {
     return Response.json({ error: "Only a member who manages this team's API keys can change them." }, { status: 403 });

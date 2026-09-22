@@ -10,6 +10,7 @@ import {
   type FailurePatternsView,
 } from "../../../lib/failure-patterns/compute-failure-patterns";
 import type { FailurePatternNoteStatus } from "../../../lib/failure-patterns/types";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { FailurePatternsView };
 
@@ -114,7 +115,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failure patterns request failed";
+    const message = publicErrorMessage(error, "Failure patterns request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

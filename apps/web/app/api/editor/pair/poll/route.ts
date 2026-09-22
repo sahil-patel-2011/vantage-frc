@@ -1,6 +1,7 @@
 import { createKms, decryptSecret, type EncryptedSecret } from "@vantage/billing";
 import { getEditorRelayPool } from "@vantage/db/editor-relay";
 import { hashToken } from "../../../../../lib/editor/device-auth";
+import { publicErrorMessage } from "../../../../../lib/security/public-error";
 
 export async function POST(request: Request) {
   const client = await getEditorRelayPool().connect();
@@ -67,7 +68,7 @@ export async function POST(request: Request) {
   } catch (error) {
     await client.query("ROLLBACK");
     return Response.json(
-      { error: error instanceof Error ? error.message : "Pairing poll failed" },
+      { error: publicErrorMessage(error, "Pairing poll failed") },
       { status: 400 },
     );
   } finally {

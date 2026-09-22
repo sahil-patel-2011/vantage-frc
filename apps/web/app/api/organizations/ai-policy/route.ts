@@ -10,6 +10,7 @@ import {
   parseOptionalUsd,
 } from "@vantage/billing";
 import { headers } from "next/headers";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 async function session() {
   const value = await auth.api.getSession({ headers: await headers() });
@@ -19,7 +20,7 @@ async function session() {
 
 const fail = (error: unknown) =>
   Response.json(
-    { error: error instanceof Error ? error.message : "AI policy request failed" },
+    { error: publicErrorMessage(error, "AI policy request failed") },
     { status: 400 },
   );
 

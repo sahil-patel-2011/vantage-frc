@@ -8,6 +8,7 @@ import {
   generateSponsorRoiReport,
   type SponsorRenewalRoiView,
 } from "../../../lib/sponsor-renewal-roi/compute-sponsor-renewal-roi";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { SponsorRenewalRoiView };
 
@@ -100,7 +101,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Sponsor renewal ROI request failed";
+    const message = publicErrorMessage(error, "Sponsor renewal ROI request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

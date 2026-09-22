@@ -15,6 +15,7 @@ import {
   parseCreatePairingInput,
 } from "../../../lib/onboarding-buddy/roster";
 import type { OnboardingBuddyPairingStatus } from "../../../lib/onboarding-buddy/types";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { OnboardingBuddyView };
 
@@ -75,7 +76,7 @@ export async function POST(request: Request) {
     try {
       createInput = parseCreatePairingInput(body);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Invalid pairing";
+      const message = publicErrorMessage(error, "Invalid pairing");
       const status = error instanceof OnboardingBuddyError ? error.status : 400;
       return Response.json({ error: message }, { status });
     }
@@ -134,7 +135,7 @@ export async function POST(request: Request) {
     if (error instanceof OnboardingBuddyError) {
       return Response.json({ error: error.message }, { status: error.status });
     }
-    const message = error instanceof Error ? error.message : "Onboarding Buddy request failed";
+    const message = publicErrorMessage(error, "Onboarding Buddy request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

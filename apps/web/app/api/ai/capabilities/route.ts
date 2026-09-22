@@ -2,6 +2,7 @@ import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { resolveAiCapabilities } from "../../../../lib/ai/capabilities";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 /**
  * GET /api/ai/capabilities?orgId=
@@ -27,7 +28,7 @@ export async function GET(request: Request) {
       { headers: { "cache-control": "private, no-store" } },
     );
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Could not check AI status.";
+    const message = publicErrorMessage(error, "Could not check AI status.");
     if (/access denied/i.test(message)) {
       return Response.json({ error: "You are not a member of this team." }, { status: 403 });
     }

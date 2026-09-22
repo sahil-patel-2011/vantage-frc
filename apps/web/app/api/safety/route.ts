@@ -4,6 +4,7 @@ import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { certExpiryStatus, parseSafetyAction, summarizeSafety, type CertType, type IncidentSeverity, type IncidentStatus, type Treatment } from "../../../lib/safety";
 import { deleteSafetyIncident, SafetyAuthError } from "../../../lib/safety/authorization";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 class HttpError extends Error {
   constructor(readonly status: number, message: string) {
@@ -25,7 +26,7 @@ async function requireMembership(client: PoolClient, orgId: string, userId: stri
 function fail(error: unknown) {
   const status =
     error instanceof HttpError || error instanceof SafetyAuthError ? error.status : 400;
-  return Response.json({ error: error instanceof Error ? error.message : "Safety request failed" }, { status });
+  return Response.json({ error: publicErrorMessage(error, "Safety request failed") }, { status });
 }
 
 type IncidentRow = {

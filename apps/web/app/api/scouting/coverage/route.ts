@@ -21,6 +21,7 @@ import {
   type AssignmentConflictContext,
 } from "../../../../lib/scouting/assignment-conflicts";
 import { loadAssignmentConflictContext } from "../../../../lib/scouting/assignment-conflicts-load";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 /** A refused assignment: the coordinator gets the reason, nothing is written. */
 function conflictError(message: string) {
@@ -89,7 +90,7 @@ export async function GET(request: Request) {
     return noStore(view);
   } catch (error) {
     if (isScoutForbidden(error)) return scoutForbiddenResponse();
-    return Response.json({ error: error instanceof Error ? error.message : "Coverage request failed" }, { status: 400 });
+    return Response.json({ error: publicErrorMessage(error, "Coverage request failed") }, { status: 400 });
   }
 }
 
@@ -244,7 +245,7 @@ export async function POST(request: Request) {
       error instanceof Error && "status" in error && (error.status === 403 || error.status === 409)
         ? (error.status as number)
         : 400;
-    const message = error instanceof Error ? error.message : "Coverage request failed";
+    const message = publicErrorMessage(error, "Coverage request failed");
     if (status === 403) return scoutForbiddenResponse();
     return Response.json({ error: message }, { status });
   }

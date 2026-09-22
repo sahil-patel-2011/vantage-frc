@@ -10,6 +10,7 @@ import {
   retireBattery,
   type BatteryHealthForecastView,
 } from "../../../lib/battery-health-forecast/compute-battery-health-forecast";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { BatteryHealthForecastView };
 
@@ -148,7 +149,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Battery Health Forecast request failed";
+    const message = publicErrorMessage(error, "Battery Health Forecast request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

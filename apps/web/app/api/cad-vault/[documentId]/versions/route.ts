@@ -8,6 +8,7 @@ import { cadStorageKey, safeCadFilename } from "../../../../../lib/cad-vault/fil
 import { evaluateCadQuota, fetchCadUsage, MAX_CAD_FILE_BYTES } from "../../../../../lib/cad-vault/quota";
 import { StlTooLargeError, computeStlGeometry, type StlGeometrySummary } from "../../../../../lib/cad-vault/stl-geometry";
 import { renderStlThumbnail } from "../../../../../lib/cad-vault/stl-thumbnail";
+import { publicErrorMessage } from "../../../../../lib/security/public-error";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -147,7 +148,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ doc
       });
       return Response.json(result, { status: 201 });
     } catch (error) {
-      return Response.json({ error: error instanceof Error ? error.message : "Could not restore that version" }, { status: 400 });
+      return Response.json({ error: publicErrorMessage(error, "Could not restore that version") }, { status: 400 });
     }
   }
 
@@ -228,6 +229,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ doc
     });
     return Response.json(result, { status: result.duplicate ? 200 : 201 });
   } catch (error) {
-    return Response.json({ error: error instanceof Error ? error.message : "Could not store the file" }, { status: 400 });
+    return Response.json({ error: publicErrorMessage(error, "Could not store the file") }, { status: 400 });
   }
 }

@@ -12,6 +12,7 @@ import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { isLearningSurface, type LearningSurface } from "../../../../lib/learning/learning-mode";
 import { foldModePrefRows, type ModePrefs } from "../../../../lib/learning/mode-store";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 class HttpError extends Error {
   constructor(
@@ -31,7 +32,7 @@ async function requireSession() {
 function fail(error: unknown) {
   const status = error instanceof HttpError ? error.status : 400;
   return Response.json(
-    { error: error instanceof Error ? error.message : "Learning mode request failed" },
+    { error: publicErrorMessage(error, "Learning mode request failed") },
     { status },
   );
 }

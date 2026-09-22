@@ -8,6 +8,7 @@ import {
   logCheck,
   type DataQualityScorecardView,
 } from "../../../lib/data-quality-scorecard/compute-data-quality-scorecard";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { DataQualityScorecardView };
 
@@ -142,7 +143,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Data Quality Scorecard request failed";
+    const message = publicErrorMessage(error, "Data Quality Scorecard request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

@@ -10,6 +10,7 @@ import {
 import { createKms, encryptSecret } from "@vantage/billing";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { publicErrorMessage } from "../../../../../../lib/security/public-error";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -82,7 +83,7 @@ export async function GET(request: Request) {
       `${base}/cad/connections?orgId=${encodeURIComponent(claims.orgId)}&onshape=connected`,
     );
   } catch (error) {
-    const message = error instanceof Error ? error.message : "oauth_failed";
+    const message = publicErrorMessage(error, "oauth_failed");
     return Response.redirect(
       `${base}/cad/connections?onshape=error&error=${encodeURIComponent(message)}`,
     );

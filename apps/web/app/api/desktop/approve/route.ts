@@ -3,6 +3,7 @@ import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { createRateLimiter, rateLimitedResponse } from "../../../../lib/rate-limit";
 import { normalizeUserCode, sha256Hex } from "../../../../lib/desktop-link/codes";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 const limiter = createRateLimiter({ limit: 10, windowMs: 60_000, namespace: "desktop-link-approve" });
 
@@ -49,7 +50,7 @@ export async function POST(request: Request) {
     return Response.json({ success: true, machineName });
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Approval failed" },
+      { error: publicErrorMessage(error, "Approval failed") },
       { status: 400 },
     );
   }

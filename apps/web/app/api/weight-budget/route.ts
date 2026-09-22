@@ -4,6 +4,7 @@ import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { DEFAULT_WEIGHT_LIMIT_LBS, summarizeWeight } from "../../../lib/weight-budget";
 import { parseWeightWrite, plannedLineSaveFromWrite, upsertPlannedLine } from "../../../lib/weight-budget/upsert";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 class HttpError extends Error {
   constructor(readonly status: number, message: string) {
@@ -24,7 +25,7 @@ async function requireMembership(client: PoolClient, orgId: string, userId: stri
 
 function fail(error: unknown) {
   const status = error instanceof HttpError ? error.status : 400;
-  return Response.json({ error: error instanceof Error ? error.message : "Weight budget request failed" }, { status });
+  return Response.json({ error: publicErrorMessage(error, "Weight budget request failed") }, { status });
 }
 
 type ComponentRow = { id: string; name: string; subsystem: string; weightLbs: number; quantity: number; notes: string; byName: string | null };

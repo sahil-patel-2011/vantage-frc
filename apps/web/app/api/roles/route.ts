@@ -12,6 +12,7 @@ import {
 } from "../../../lib/roles/compute-roles";
 import { assertOrgManager, orgRole } from "../../../lib/team-admin/permissions";
 import type { Subteam } from "../../../lib/roles/types";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { RolesView };
 
@@ -139,7 +140,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Roles request failed";
+    const message = publicErrorMessage(error, "Roles request failed");
     const status =
       message === "forbidden" || message.startsWith("Only an owner or admin can") ? 403 : 400;
     return Response.json(

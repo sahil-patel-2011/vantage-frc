@@ -14,6 +14,7 @@ import {
   type NotebookImageAttachment,
 } from "../../../lib/notebook/attachments";
 import { promoteNotebookEntry } from "../../../lib/notebook-wiki";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 class HttpError extends Error {
   constructor(readonly status: number, message: string) {
@@ -34,7 +35,7 @@ async function requireMembership(client: PoolClient, orgId: string, userId: stri
 
 function fail(error: unknown) {
   const status = error instanceof HttpError ? error.status : 400;
-  return Response.json({ error: error instanceof Error ? error.message : "Notebook request failed" }, { status });
+  return Response.json({ error: publicErrorMessage(error, "Notebook request failed") }, { status });
 }
 
 type EntryRow = {

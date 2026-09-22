@@ -10,6 +10,7 @@ import {
   type DreamRunStatus,
 } from "../../../lib/dreaming/journal";
 import { runTeamDream } from "../../../lib/dreaming/run-dream";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 /**
  * Team journal — the readable face of nightly dreaming (docs/DREAMING.md).
@@ -43,7 +44,7 @@ async function session() {
 }
 
 function fail(error: unknown) {
-  const message = error instanceof Error ? error.message : "Team journal request failed";
+  const message = publicErrorMessage(error, "Team journal request failed");
   const status =
     typeof error === "object" && error && "status" in error &&
     typeof (error as { status?: unknown }).status === "number"

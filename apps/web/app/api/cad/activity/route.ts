@@ -2,6 +2,7 @@ import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { cadActivityFilters, cadActivityDetailFrom } from "../../../../lib/cad/cad-activity";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 export type CadActivityRow = {
   id: string;
@@ -103,7 +104,7 @@ export async function GET(request: Request) {
     return Response.json({ activity, filters });
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Could not load CAD activity" },
+      { error: publicErrorMessage(error, "Could not load CAD activity") },
       { status: 400 },
     );
   }

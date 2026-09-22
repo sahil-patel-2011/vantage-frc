@@ -16,6 +16,7 @@ import {
   visibleLogs,
   type ExportableHourLog,
 } from "../../../../lib/hours/export";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 const dateParam = (value: string | null) => (value && ISO_DATE.test(value) ? value : null);
@@ -86,7 +87,7 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Hours export failed";
+    const message = publicErrorMessage(error, "Hours export failed");
     if (message === "forbidden") {
       return Response.json({ error: "Organization access denied" }, { status: 403 });
     }

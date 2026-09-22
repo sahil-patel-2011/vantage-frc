@@ -10,6 +10,7 @@ import {
   type InspectionView,
   type RobotWeight,
 } from "../../../lib/inspection";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 class HttpError extends Error {
   constructor(
@@ -39,7 +40,7 @@ const isAdmin = (role: string) => role === "owner" || role === "admin";
 
 function fail(error: unknown) {
   const status = error instanceof HttpError ? error.status : 400;
-  return Response.json({ error: error instanceof Error ? error.message : "Inspection request failed" }, { status });
+  return Response.json({ error: publicErrorMessage(error, "Inspection request failed") }, { status });
 }
 
 export async function GET(request: Request) {

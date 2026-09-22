@@ -1,5 +1,6 @@
 import { assertCronAuthorized } from "../../../../lib/reference/run-ingest";
 import { runSponsorReminders } from "../../../../lib/run-sponsor-reminders";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -29,7 +30,7 @@ async function run() {
     return Response.json(
       {
         ok: false,
-        error: error instanceof Error ? error.message : "Sponsor reminders failed",
+        error: publicErrorMessage(error, "Sponsor reminders failed"),
       },
       { status: 500 },
     );

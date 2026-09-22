@@ -19,6 +19,7 @@ import {
   startRun,
 } from "../../../lib/assembly-manual/store";
 import { deterministicSentence, sentenceIsGrounded, type StepWriteFacts } from "../../../lib/assembly-manual/write";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export const runtime = "nodejs";
 
@@ -136,7 +137,7 @@ async function startFromUrl(userId: string, body: StartBody): Promise<Response> 
     try {
       parsed = parseOnshapeDocumentUrl(url);
     } catch (error) {
-      throw new HttpError(400, error instanceof Error ? error.message : "That is not an Onshape document URL.");
+      throw new HttpError(400, publicErrorMessage(error, "That is not an Onshape document URL."));
     }
     if (!parsed.workspaceId) {
       throw new HttpError(

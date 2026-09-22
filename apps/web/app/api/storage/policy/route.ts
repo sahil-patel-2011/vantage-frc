@@ -14,6 +14,7 @@ import {
   saveRoutingPolicy,
 } from "../../../../lib/storage-routing/store";
 import type { StoragePolicyView } from "../../../../lib/storage-routing/types";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 async function buildView(
   client: Parameters<typeof loadRoutingPolicy>[0],
@@ -58,7 +59,7 @@ export async function GET(request: Request) {
     });
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Could not load the storage policy";
+    const message = publicErrorMessage(error, "Could not load the storage policy");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json({ error: message === "forbidden" ? "Organization access denied" : message }, { status });
   }
@@ -94,7 +95,7 @@ export async function POST(request: Request) {
     });
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Could not save the storage policy";
+    const message = publicErrorMessage(error, "Could not save the storage policy");
     if (message === "forbidden") return Response.json({ error: "Organization access denied" }, { status: 403 });
     if (message === "manage-denied") {
       return Response.json({ error: "Only team owners/admins can change the storage policy" }, { status: 403 });

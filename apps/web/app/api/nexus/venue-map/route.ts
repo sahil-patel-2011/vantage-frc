@@ -12,6 +12,7 @@ import { withRls } from "@vantage/db";
 import { nexusAttributionHref, parseNexusEvent, parseNexusMap } from "@vantage/reference";
 import { headers } from "next/headers";
 import { buildVenueMap, type NexusVenueMapView } from "../../../../lib/display";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 export type { NexusVenueMapView };
 
@@ -106,7 +107,7 @@ export async function GET(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Venue map unavailable";
+    const message = publicErrorMessage(error, "Venue map unavailable");
     if (message === "forbidden") {
       return Response.json({ error: "Organization access denied" }, { status: 403 });
     }

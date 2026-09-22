@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { getCadRelayPool } from "@vantage/db/cad-relay";
 import { parseCadCliSyncPayload } from "../../../../lib/cad/cli-sync";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 /**
  * Terminal (vantage-cad) session sync. Authenticated exactly like the other
@@ -27,7 +28,7 @@ export async function POST(request: Request) {
     );
     return Response.json({ ok: true, jobId: result.rows[0]?.id ?? null });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "CAD sync failed";
+    const message = publicErrorMessage(error, "CAD sync failed");
     return Response.json({ error: message }, { status: /invalid or revoked/i.test(message) ? 401 : 400 });
   }
 }

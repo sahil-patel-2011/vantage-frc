@@ -5,6 +5,7 @@
 import { createHash } from "node:crypto";
 import { createKms, decryptSecret, type EncryptedSecret } from "@vantage/billing";
 import { getCadRelayPool } from "@vantage/db/cad-relay";
+import { publicErrorMessage } from "../../../../../lib/security/public-error";
 
 export async function POST(request: Request) {
   const client = await getCadRelayPool().connect();
@@ -47,7 +48,7 @@ export async function POST(request: Request) {
   } catch (error) {
     await client.query("ROLLBACK").catch(() => {});
     return Response.json(
-      { error: error instanceof Error ? error.message : "Pairing poll failed" },
+      { error: publicErrorMessage(error, "Pairing poll failed") },
       { status: 400 },
     );
   } finally {

@@ -34,6 +34,7 @@ import {
   type BudgetView,
 } from "../../../lib/budget/compute-budget";
 import { addCost } from "../../../lib/costs/compute-costs";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 const BUDGET_DENIED =
   "The season budget is limited to mentors. In Vantage that means the team Owner and Admins, " +
@@ -67,7 +68,7 @@ function fail(error: unknown): Response {
   if (error instanceof CapabilityError) {
     return Response.json({ error: error.message, reason: error.reason }, { status: error.status });
   }
-  const message = error instanceof Error ? error.message : "Budget request failed";
+  const message = publicErrorMessage(error, "Budget request failed");
   // A raw policy violation is not a sentence anyone can act on.
   if (/row-level security/i.test(message)) {
     return Response.json({ error: BUDGET_DENIED, reason: "not_budget_manager" }, { status: 403 });

@@ -26,6 +26,7 @@ import {
   type FormStatus,
   type QuestionConfig,
 } from "../../../lib/forms/types";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 // Sending dues reminders to a whole squad is a bounded set of provider round
 // trips, which is more than the default budget allows for.
@@ -113,7 +114,7 @@ function parseQuestionConfig(raw: unknown): QuestionConfig | undefined {
 
 function fail(error: unknown) {
   const status = error instanceof HttpError ? error.status : 400;
-  return Response.json({ error: error instanceof Error ? error.message : "Form request failed" }, { status });
+  return Response.json({ error: publicErrorMessage(error, "Form request failed") }, { status });
 }
 
 export async function GET(request: Request) {

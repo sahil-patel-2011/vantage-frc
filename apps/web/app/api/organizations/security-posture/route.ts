@@ -1,6 +1,7 @@
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 // Read-only security posture summary for org admins: an at-a-glance roll-up of
 // the access controls that already exist (auth policy, roles, delegated
@@ -81,7 +82,7 @@ export async function GET(request: Request) {
     return Response.json(data);
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Security posture request failed" },
+      { error: publicErrorMessage(error, "Security posture request failed") },
       { status: 403 },
     );
   }

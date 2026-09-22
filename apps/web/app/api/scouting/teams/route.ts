@@ -3,6 +3,7 @@ import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { loadTeamProfiles } from "../../../../lib/scouting/team-profiles";
 import { isScoutForbidden, scoutForbiddenResponse } from "../../../../lib/scout-org-access";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 /**
  * What this team's scouting says about the robots it watched.
@@ -36,7 +37,7 @@ export async function GET(request: Request) {
     return noStore(view);
   } catch (error) {
     if (isScoutForbidden(error)) return scoutForbiddenResponse();
-    const message = error instanceof Error ? error.message : "Could not load team profiles";
+    const message = publicErrorMessage(error, "Could not load team profiles");
     return Response.json({ error: message }, { status: 500 });
   }
 }

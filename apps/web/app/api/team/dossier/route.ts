@@ -9,6 +9,7 @@ import {
   saveDossier,
   type TeamDossierView,
 } from "../../../../lib/team-dossier/store";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 /**
  * The team dossier — what The Blue Alliance and Statbotics know about this
@@ -24,7 +25,7 @@ import {
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function fail(error: unknown) {
-  const message = error instanceof Error ? error.message : "Team dossier request failed";
+  const message = publicErrorMessage(error, "Team dossier request failed");
   if (message === "forbidden") return Response.json({ error: "You are not a member of that team." }, { status: 403 });
   return Response.json({ error: message }, { status: 400 });
 }
@@ -79,7 +80,7 @@ export async function POST(request: Request) {
       // the platform key otherwise — the coordinator decides.
       payload = await createProductionReferenceJobs({ preferOrgIds: [orgId] }).teamDossier.run(teamNumber);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Dossier build failed";
+      const message = publicErrorMessage(error, "Dossier build failed");
       await withRls({ userId, orgId }, (client) => failDossier(client, orgId, message));
       const view = await withRls({ userId, orgId }, (client) => loadTeamDossier(client, { orgId, userId }));
       return Response.json(view);

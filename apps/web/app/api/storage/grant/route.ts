@@ -48,6 +48,7 @@ import {
   upsertNodeItem,
 } from "../../../../lib/storage-routing/store";
 import type { StorageRouteDecision, StorageUploadTicket } from "../../../../lib/storage-routing/types";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 export type StorageGrantResponse =
   | { destination: "cloud"; fallback: boolean; reason: string }
@@ -323,7 +324,7 @@ export async function POST(request: Request) {
     });
     return Response.json(result);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Upload authorization failed";
+    const message = publicErrorMessage(error, "Upload authorization failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json({ error: message === "forbidden" ? "Organization access denied" : message }, { status });
   }

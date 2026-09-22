@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { notifyNextMatchReady } from "../../../../lib/notify-match";
 import { loadDataSourceHealth } from "../../../../lib/reference-health";
 import { runTbaEventDaySync } from "../../../../lib/reference/run-ingest";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 async function current() {
   const value = await auth.api.getSession({ headers: await headers() });
@@ -12,7 +13,7 @@ async function current() {
 }
 
 function responseError(error: unknown) {
-  const message = error instanceof Error ? error.message : "Team data request failed";
+  const message = publicErrorMessage(error, "Team data request failed");
   if (/authentication required/i.test(message)) {
     return Response.json({ error: "Authentication required" }, { status: 401 });
   }

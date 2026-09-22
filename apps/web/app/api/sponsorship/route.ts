@@ -17,6 +17,7 @@ import {
   type SponsorshipView,
 } from "../../../lib/sponsorship-value-prop";
 import { coerceAchievementList } from "../../../lib/team-background";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 class HttpError extends Error {
   constructor(
@@ -36,7 +37,7 @@ async function requireSession() {
 
 function fail(error: unknown) {
   const status = error instanceof HttpError ? error.status : 400;
-  return Response.json({ error: error instanceof Error ? error.message : "Sponsorship request failed" }, { status });
+  return Response.json({ error: publicErrorMessage(error, "Sponsorship request failed") }, { status });
 }
 
 function seasonFrom(value: string | null): number {

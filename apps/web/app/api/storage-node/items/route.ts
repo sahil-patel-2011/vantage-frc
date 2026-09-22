@@ -14,6 +14,7 @@ import { createKms, decryptSecret, type EncryptedSecret } from "@vantage/billing
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { isValidSha256, nodeLiveness, type NodeLiveness } from "../../../../lib/storage-node";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 export type ResolveItemResult =
   | {
@@ -175,7 +176,7 @@ export async function POST(request: Request) {
     });
     return Response.json(result);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Storage item request failed";
+    const message = publicErrorMessage(error, "Storage item request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json({ error: message === "forbidden" ? "Organization access denied" : message }, { status });
   }

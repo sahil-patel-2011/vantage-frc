@@ -12,6 +12,7 @@ import {
 import { recordMoney, removeMoney } from "../../../../lib/finance/ledger";
 import { sanitizeFinanceWriteBody } from "../../../../lib/finance/sanitize-write";
 import { receiveToInventory } from "../../../../lib/orders/receive-to-inventory";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 async function session() {
   const value = await auth.api.getSession({ headers: await headers() });
@@ -19,7 +20,7 @@ async function session() {
   return value;
 }
 const fail = (error: unknown) =>
-  Response.json({ error: error instanceof Error ? error.message : "Purchase request failed" }, { status: 400 });
+  Response.json({ error: publicErrorMessage(error, "Purchase request failed") }, { status: 400 });
 
 const LIST_FIELDS = `pr.id, pr.season_year AS "seasonYear", pr.category_id AS "categoryId", c.name AS "categoryName",
   pr.requested_by AS "requestedBy",

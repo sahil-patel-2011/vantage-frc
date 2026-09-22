@@ -12,6 +12,7 @@ import {
   type LeadershipView,
 } from "../../../lib/leadership/compute-leadership";
 import type { LeadershipCategory, LeadershipHandoffStatus } from "../../../lib/leadership/types";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { LeadershipView };
 
@@ -141,7 +142,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Leadership Continuity request failed";
+    const message = publicErrorMessage(error, "Leadership Continuity request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

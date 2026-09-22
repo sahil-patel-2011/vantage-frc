@@ -3,6 +3,7 @@ import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { parseRecognitionAction, tallyAward, type RecognitionStage } from "../../../lib/recognition";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 class HttpError extends Error {
   constructor(readonly status: number, message: string) {
@@ -29,7 +30,7 @@ async function awardStage(client: PoolClient, awardId: string, orgId: string): P
 
 function fail(error: unknown) {
   const status = error instanceof HttpError ? error.status : 400;
-  return Response.json({ error: error instanceof Error ? error.message : "Recognition request failed" }, { status });
+  return Response.json({ error: publicErrorMessage(error, "Recognition request failed") }, { status });
 }
 
 type AwardRow = { id: string; seasonYear: number; name: string; description: string; stage: RecognitionStage; byName: string | null };

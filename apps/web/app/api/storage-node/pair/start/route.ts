@@ -7,6 +7,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { createKms, encryptSecret } from "@vantage/billing";
 import { getCadRelayPool } from "@vantage/db/cad-relay";
 import { isRelayDatabaseUnconfigured, relaySetupResponse } from "../../../../../lib/connectors/pairing-setup";
+import { publicErrorMessage } from "../../../../../lib/security/public-error";
 
 /** Ambiguous alphabet (no I/O/0/1) for human entry. */
 function code() {
@@ -73,7 +74,7 @@ export async function POST(request: Request) {
     // problem on the deployment, so it is 503 and names the variable.
     if (isRelayDatabaseUnconfigured(error)) return relaySetupResponse();
     return Response.json(
-      { error: error instanceof Error ? error.message : "Pairing could not start" },
+      { error: publicErrorMessage(error, "Pairing could not start") },
       { status: 400 },
     );
   }

@@ -3,6 +3,7 @@ import { withRls } from "@vantage/db";
 import { getDisplayPool } from "@vantage/db/display";
 import { headers } from "next/headers";
 import { DISPLAY_SNAPSHOT_SELECT } from "../../../../lib/display";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 export async function GET(request: Request) {
   try {
@@ -44,7 +45,7 @@ export async function GET(request: Request) {
     return Response.json(snapshot);
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Display unavailable" },
+      { error: publicErrorMessage(error, "Display unavailable") },
       { status: 400 },
     );
   }

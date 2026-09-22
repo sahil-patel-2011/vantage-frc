@@ -12,6 +12,7 @@ import {
 } from "@vantage/export-center";
 import { after } from "next/server";
 import { headers } from "next/headers";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 async function current() {
   const value = await auth.api.getSession({ headers: await headers() });
@@ -20,7 +21,7 @@ async function current() {
 }
 
 const errorResponse = (error: unknown) =>
-  Response.json({ error: error instanceof Error ? error.message : "Export request failed" }, { status: 400 });
+  Response.json({ error: publicErrorMessage(error, "Export request failed") }, { status: 400 });
 
 export async function GET(request: Request) {
   try {

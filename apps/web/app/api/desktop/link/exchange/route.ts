@@ -4,6 +4,7 @@ import { isAuthCodeShape, isVerifierShape, sha256Hex } from "../../../../../lib/
 import { decideExchange, type DesktopLinkRow } from "../../../../../lib/desktop-link/link-state";
 import { getDesktopLinkPool } from "../../../../../lib/desktop-link/pool";
 import { extractSessionCookie } from "../../../../../lib/desktop-link/session-cookie";
+import { publicErrorMessage } from "../../../../../lib/security/public-error";
 
 const limiter = createRateLimiter({ limit: 10, windowMs: 60_000, namespace: "desktop-link-exchange" });
 
@@ -47,7 +48,7 @@ async function consumeAuthCode(request: Request): Promise<{ userId: string } | R
   } catch (error) {
     await client.query("ROLLBACK");
     return Response.json(
-      { error: error instanceof Error ? error.message : "Sign-in could not be completed" },
+      { error: publicErrorMessage(error, "Sign-in could not be completed") },
       { status: 400 },
     );
   } finally {

@@ -2,6 +2,7 @@ import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { loadMyKit } from "../../../lib/my-kit/load-my-kit";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 /** Session + per-user rows: never statically collected at build time. */
 export const dynamic = "force-dynamic";
@@ -35,7 +36,7 @@ export async function GET(request: Request) {
   } catch (error) {
     const status = error instanceof HttpError ? error.status : 400;
     return Response.json(
-      { error: error instanceof Error ? error.message : "My Kit request failed" },
+      { error: publicErrorMessage(error, "My Kit request failed") },
       { status },
     );
   }

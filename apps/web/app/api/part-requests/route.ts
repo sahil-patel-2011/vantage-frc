@@ -22,6 +22,7 @@ import { CapabilityError, resolveMembership } from "../../../lib/capabilities/or
 import { computePartRequestsView } from "../../../lib/part-requests/compute-part-requests";
 import { currentSeasonYear } from "../../../lib/budget/compute-budget";
 import { progressOrder, reviewOrder, submitOrder } from "../../../lib/orders/compute-orders";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 const DECIDE_DENIED =
   "Approving a part request is limited to the team Owner and Admins. Budget access alone " +
@@ -52,7 +53,7 @@ function fail(error: unknown): Response {
   if (error instanceof CapabilityError) {
     return Response.json({ error: error.message, reason: error.reason }, { status: error.status });
   }
-  const message = error instanceof Error ? error.message : "Part request failed";
+  const message = publicErrorMessage(error, "Part request failed");
   if (/row-level security/i.test(message)) {
     return Response.json({ error: DECIDE_DENIED, reason: "not_allowed" }, { status: 403 });
   }

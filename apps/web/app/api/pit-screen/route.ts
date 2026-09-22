@@ -2,6 +2,7 @@ import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { parseYouTubeEmbed } from "../../../lib/youtube";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 async function sessionOrg(orgId: string | null) {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -31,7 +32,7 @@ export async function GET(request: Request) {
       source: parsed ? "org" : "empty",
     });
   } catch (error) {
-    return Response.json({ error: error instanceof Error ? error.message : "Failed" }, { status: 400 });
+    return Response.json({ error: publicErrorMessage(error, "Failed") }, { status: 400 });
   }
 }
 
@@ -66,6 +67,6 @@ export async function PUT(request: Request) {
       embedUrl: parsed?.embedUrl ?? null,
     });
   } catch (error) {
-    return Response.json({ error: error instanceof Error ? error.message : "Failed" }, { status: 400 });
+    return Response.json({ error: publicErrorMessage(error, "Failed") }, { status: 400 });
   }
 }

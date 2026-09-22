@@ -9,6 +9,7 @@ import {
   type AttendanceEvent,
   type AttendanceView,
 } from "../../../lib/attendance";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 class HttpError extends Error {
   constructor(
@@ -37,7 +38,7 @@ async function membershipRole(client: PoolClient, orgId: string, userId: string)
 const isAdmin = (role: string) => role === "owner" || role === "admin";
 
 function fail(error: unknown) {
-  const message = error instanceof Error ? error.message : "Attendance request failed";
+  const message = publicErrorMessage(error, "Attendance request failed");
   if (/attendance_|relation .* does not exist/i.test(message)) {
     return Response.json(
       { error: "Apply the Team Attendance migration first (0047_attendance)." },

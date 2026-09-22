@@ -4,6 +4,7 @@ import { withRls } from "@vantage/db";
 import { getCadRelayPool } from "@vantage/db/cad-relay";
 import { headers } from "next/headers";
 import { hashSha256Hex, newToken, normalizePairingCode } from "../../../../../lib/storage-node/pairing";
+import { publicErrorMessage } from "../../../../../lib/security/public-error";
 
 export async function POST(request: Request) {
   const relay = await getCadRelayPool().connect();
@@ -60,7 +61,7 @@ export async function POST(request: Request) {
   } catch (error) {
     await relay.query("ROLLBACK").catch(() => {});
     return Response.json(
-      { error: error instanceof Error ? error.message : "Pairing approval failed" },
+      { error: publicErrorMessage(error, "Pairing approval failed") },
       { status: 400 },
     );
   } finally {

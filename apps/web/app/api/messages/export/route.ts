@@ -27,6 +27,7 @@ import {
 } from "../../../../lib/messages/dm-export";
 import { isOrgChatAdmin, supportsYouthProtection } from "../../../../lib/messages/supervision";
 import { createRateLimiter, rateLimitedResponse } from "../../../../lib/rate-limit";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 export const maxDuration = 30;
 
@@ -46,7 +47,7 @@ async function requireSession() {
 }
 
 function fail(error: unknown) {
-  const message = error instanceof Error ? error.message : "Export failed";
+  const message = publicErrorMessage(error, "Export failed");
   return Response.json({ error: message }, { status: message.includes("Authentication") ? 401 : 400 });
 }
 

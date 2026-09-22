@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { loadEventDayCommand } from "../../../lib/command/load-command";
 import { hydrateOrgActiveEvent } from "../../../lib/reference/hydrate-active-event";
 import { loadDataSourceHealth } from "../../../lib/reference-health";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export async function GET(request: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -25,7 +26,7 @@ export async function GET(request: Request) {
   } catch (error) {
     return Response.json(
       {
-        error: error instanceof Error ? error.message : "Could not load Event Day Command",
+        error: publicErrorMessage(error, "Could not load Event Day Command"),
       },
       { status: 400 },
     );

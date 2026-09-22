@@ -17,6 +17,7 @@ import { snapshotWantsFullContext } from "../../../lib/dashboard/refresh";
 import { loadDashboardSnapshot } from "../../../lib/dashboard/snapshot";
 import { homeAudienceFromTeamRole } from "../../../lib/home-workflows";
 import { hydrateOrgActiveEvent } from "../../../lib/reference/hydrate-active-event";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 const MAX_BOARDS_PER_SCOPE = 12;
 
@@ -36,7 +37,7 @@ async function membership(client: import("@neondatabase/serverless").PoolClient,
 }
 
 function fail(error: unknown, status = 400) {
-  return Response.json({ error: error instanceof Error ? error.message : "Dashboard request failed" }, { status });
+  return Response.json({ error: publicErrorMessage(error, "Dashboard request failed") }, { status });
 }
 
 function requestedWidgetTypes(url: URL): DashboardWidgetType[] | undefined {

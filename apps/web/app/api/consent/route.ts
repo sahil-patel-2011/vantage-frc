@@ -3,6 +3,7 @@ import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { parseConsentAction, summarizeConsent, type FormType, type RecordStatus } from "../../../lib/consent";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 class HttpError extends Error {
   constructor(readonly status: number, message: string) {
@@ -23,7 +24,7 @@ async function requireMembership(client: PoolClient, orgId: string, userId: stri
 
 function fail(error: unknown) {
   const status = error instanceof HttpError ? error.status : 400;
-  return Response.json({ error: error instanceof Error ? error.message : "Consent request failed" }, { status });
+  return Response.json({ error: publicErrorMessage(error, "Consent request failed") }, { status });
 }
 
 type FormRow = { id: string; seasonYear: number; name: string; formType: FormType; required: boolean; documentUrl: string | null; notes: string };

@@ -8,6 +8,7 @@ import {
 import { assertOrgCapability, auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 export async function POST(request: Request) {
   try {
@@ -64,6 +65,6 @@ export async function POST(request: Request) {
     if (isStripeNotConfigured(error)) {
       return Response.json({ error: error.message, missingEnv: error.missingEnv }, { status: 503 });
     }
-    return Response.json({ error: error instanceof Error ? error.message : "Checkout unavailable" }, { status: 400 });
+    return Response.json({ error: publicErrorMessage(error, "Checkout unavailable") }, { status: 400 });
   }
 }

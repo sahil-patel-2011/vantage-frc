@@ -24,6 +24,7 @@ import type {
   PartsRelayListingType,
   PartsRelayLoanDirection,
 } from "../../../lib/parts-relay/types";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { PartsRelayView };
 
@@ -185,7 +186,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Parts Relay request failed";
+    const message = publicErrorMessage(error, "Parts Relay request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

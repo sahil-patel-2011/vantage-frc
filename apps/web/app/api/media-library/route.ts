@@ -16,6 +16,7 @@ import {
   trimmedOrNull,
   validateUploadMetadata,
 } from "../../../lib/media-library/validation";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { MediaLibraryView };
 
@@ -167,7 +168,7 @@ export async function POST(request: Request) {
 
     return Response.json(payload);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Media library request failed";
+    const message = publicErrorMessage(error, "Media library request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

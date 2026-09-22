@@ -14,6 +14,7 @@ import {
   shooterExportFileName,
   type LoggedShooterRow,
 } from "../../../../lib/shooter-table";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 class HttpError extends Error {
   constructor(readonly status: number, message: string) {
@@ -65,7 +66,7 @@ export async function GET(request: Request) {
   } catch (error) {
     const status = error instanceof HttpError ? error.status : 400;
     return Response.json(
-      { error: error instanceof Error ? error.message : "Shooter table export failed" },
+      { error: publicErrorMessage(error, "Shooter table export failed") },
       { status },
     );
   }

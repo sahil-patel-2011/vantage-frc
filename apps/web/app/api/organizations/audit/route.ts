@@ -1,6 +1,7 @@
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 // Org-facing security audit trail. Merges the two org-scoped audit streams that
 // already record accountable actions — membership/invite/capability changes
@@ -52,7 +53,7 @@ export async function GET(request: Request) {
     return Response.json(data);
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Audit request failed" },
+      { error: publicErrorMessage(error, "Audit request failed") },
       { status: 403 },
     );
   }

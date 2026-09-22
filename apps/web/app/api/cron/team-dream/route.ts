@@ -1,5 +1,6 @@
 import { assertCronAuthorized } from "../../../../lib/reference/run-ingest";
 import { runTeamDream } from "../../../../lib/dreaming/run-dream";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -39,7 +40,7 @@ async function run(request: Request) {
     return Response.json(summary);
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Team dream run failed" },
+      { error: publicErrorMessage(error, "Team dream run failed") },
       { status: 500 },
     );
   }

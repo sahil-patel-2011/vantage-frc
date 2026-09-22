@@ -9,6 +9,7 @@ import {
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 /**
  * AI write actions waiting for a person (migration 0673).
@@ -25,7 +26,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
 function isMissingTable(error: unknown): boolean {
   const code = (error as { code?: string } | null)?.code;
-  return code === "42P01" || /relation "ai_action_proposal/i.test(error instanceof Error ? error.message : "");
+  return code === "42P01" || /relation "ai_action_proposal/i.test(publicErrorMessage(error, ""));
 }
 
 function fail(error: unknown) {
@@ -38,7 +39,7 @@ function fail(error: unknown) {
       { status: 503 },
     );
   }
-  const message = error instanceof Error ? error.message : "Request failed";
+  const message = publicErrorMessage(error, "Request failed");
   if (/access denied|not a member/i.test(message)) {
     return Response.json({ error: "You are not a member of this team." }, { status: 403 });
   }

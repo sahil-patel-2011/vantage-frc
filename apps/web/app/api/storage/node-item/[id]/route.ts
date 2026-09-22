@@ -16,6 +16,7 @@ import { headers } from "next/headers";
 import { nodeLiveness } from "../../../../../lib/storage-node";
 import { isBrowserReachableUrl } from "../../../../../lib/storage-routing/decide";
 import { DOWNLOAD_GRANT_TTL_SECONDS, mintGrantToken } from "../../../../../lib/storage-routing/grants";
+import { publicErrorMessage } from "../../../../../lib/security/public-error";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -134,7 +135,7 @@ export async function GET(request: Request, context: RouteContext) {
     }
     return Response.redirect(outcome.location, 307);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Item unavailable";
+    const message = publicErrorMessage(error, "Item unavailable");
     return Response.json({ error: message }, { status: 400 });
   }
 }

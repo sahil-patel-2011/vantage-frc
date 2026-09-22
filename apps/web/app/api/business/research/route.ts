@@ -3,6 +3,7 @@ import { assertHubTabAccess, assertSponsorsAllowed, auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { rankSponsorFit } from "../../../../lib/business-portal";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 function cleanName(result: SearchResult): string {
   const title = result.title.split(/\s+[|–—-]\s+/)[0]?.trim();
@@ -135,7 +136,7 @@ export async function POST(request: Request) {
   } catch (error) {
     const message = error instanceof Error && error.name === "AbortError"
       ? "Sponsor research timed out. Please try again."
-      : error instanceof Error ? error.message : "Sponsor research failed";
+      : publicErrorMessage(error, "Sponsor research failed");
     const status =
       /access denied|do not have access|membership required|Sponsor tools are disabled/i.test(message)
         ? 403

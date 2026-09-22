@@ -17,6 +17,7 @@ import {
   type ScoutVoiceView,
 } from "../../../lib/scout-voice/compute-scout-voice";
 import type { ScoutVoiceSttSource } from "../../../lib/scout-voice/types";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { ScoutVoiceView };
 
@@ -202,7 +203,7 @@ export async function POST(request: Request) {
     return Response.json(view);
   } catch (error) {
     if (isScoutForbidden(error)) return scoutForbiddenResponse();
-    const message = error instanceof Error ? error.message : "Scout voice request failed";
+    const message = publicErrorMessage(error, "Scout voice request failed");
     if (message.startsWith("setup_required:")) {
       return Response.json(setupRequiredFallback(orgId, message.replace(/^setup_required:\s*/, "")), {
         status: 200,

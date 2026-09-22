@@ -1,5 +1,6 @@
 import { getEditorRelayPool } from "@vantage/db/editor-relay";
 import { requireEditorDevice } from "../../../../lib/editor/device-auth";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 const MAX_CONTENT_CHARS = 48_000;
 const MAX_DIAGNOSTICS = 40;
@@ -127,7 +128,7 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Context submit failed" },
+      { error: publicErrorMessage(error, "Context submit failed") },
       { status: 400 },
     );
   }

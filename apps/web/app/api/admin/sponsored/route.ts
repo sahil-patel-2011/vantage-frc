@@ -1,6 +1,7 @@
 import { assertPlatformAdmin, auth, platformAdminDeniedResponse, writeAdminAction } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 // Platform governance for sponsored / free-tier AI: the economics roll-up
 // (free_ai_economics), recent sponsored calls including denied/failed rows with
@@ -95,7 +96,7 @@ export async function POST(request: Request) {
       return platformAdminDeniedResponse(error);
     }
     return Response.json(
-      { error: error instanceof Error ? error.message : "Sponsored policy update failed" },
+      { error: publicErrorMessage(error, "Sponsored policy update failed") },
       { status: 400 },
     );
   }

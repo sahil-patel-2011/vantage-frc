@@ -1,5 +1,6 @@
 import { assertCronAuthorized } from "../../../../lib/reference/run-ingest";
 import { tickAssemblyManualQueue } from "../../../../lib/assembly-manual/worker";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -32,7 +33,7 @@ async function run(request: Request): Promise<Response> {
     return Response.json(result);
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "The assembly manual tick failed." },
+      { error: publicErrorMessage(error, "The assembly manual tick failed.") },
       { status: 500 },
     );
   }

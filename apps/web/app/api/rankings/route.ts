@@ -5,6 +5,7 @@ import type { RankingsContext } from "../../../lib/rankings";
 import { buildRankingsView, type TbaRankCacheRow } from "../../../lib/rankings/tba-cache";
 import type { TbaMatchCacheRow } from "../../../lib/schedule/tba-cache";
 import { hydrateOrgActiveEvent } from "../../../lib/reference/hydrate-active-event";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 class HttpError extends Error {
   constructor(
@@ -23,7 +24,7 @@ async function requireSession() {
 
 function fail(error: unknown) {
   const status = error instanceof HttpError ? error.status : 400;
-  return Response.json({ error: error instanceof Error ? error.message : "Rankings request failed" }, { status });
+  return Response.json({ error: publicErrorMessage(error, "Rankings request failed") }, { status });
 }
 
 export async function GET(request: Request) {

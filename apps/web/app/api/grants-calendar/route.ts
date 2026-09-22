@@ -13,6 +13,7 @@ import {
   setEligibilityFacts,
   setWatch,
 } from "../../../lib/grants-calendar/compute-grants-calendar";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export const runtime = "nodejs";
 
@@ -186,7 +187,7 @@ export async function POST(request: Request) {
     });
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "";
+    const message = publicErrorMessage(error, "");
     if (message.startsWith("bad_request:")) {
       return Response.json({ error: message.slice("bad_request:".length) }, { status: 400 });
     }

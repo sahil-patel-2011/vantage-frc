@@ -42,6 +42,7 @@ import {
 } from "../../../lib/messages/supervision";
 import { supervisionBadge, type DmMode } from "../../../lib/messages/youth-protection";
 import { createRateLimiter, rateLimitedResponse } from "../../../lib/rate-limit";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export const maxDuration = 10;
 
@@ -459,7 +460,7 @@ async function requireMembership(client: PoolClient, orgId: string, userId: stri
 }
 
 function fail(error: unknown, status = 400) {
-  const message = error instanceof Error ? error.message : "Messages request failed";
+  const message = publicErrorMessage(error, "Messages request failed");
   // A refused channel mutation is an authorization answer, not a malformed request.
   const resolved =
     status === 400 && /^Only an owner or admin can/.test(message) ? 403 : status;

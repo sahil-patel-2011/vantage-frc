@@ -16,6 +16,7 @@ import {
   type LinkedDeadline,
   type Milestone,
 } from "../../../lib/season-calendar";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 class HttpError extends Error {
   constructor(
@@ -39,7 +40,7 @@ async function requireMembership(client: PoolClient, orgId: string, userId: stri
 
 function fail(error: unknown) {
   const status = error instanceof HttpError ? error.status : 400;
-  return Response.json({ error: error instanceof Error ? error.message : "Calendar request failed" }, { status });
+  return Response.json({ error: publicErrorMessage(error, "Calendar request failed") }, { status });
 }
 
 /** Upcoming grant / purchase dates from business — read-only markers, never invented. */

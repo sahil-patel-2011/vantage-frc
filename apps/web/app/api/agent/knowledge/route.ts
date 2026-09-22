@@ -1,6 +1,7 @@
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 // Team Knowledge Base: one markdown doc per team that the assistant reads on
 // every team-scope chat (injected by AgentRepository.retrieveContext). Any member
@@ -16,7 +17,7 @@ async function session() {
 
 const fail = (error: unknown) =>
   Response.json(
-    { error: error instanceof Error ? error.message : "Team knowledge request failed" },
+    { error: publicErrorMessage(error, "Team knowledge request failed") },
     { status: 400 },
   );
 

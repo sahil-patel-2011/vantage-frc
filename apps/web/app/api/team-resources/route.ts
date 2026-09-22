@@ -2,6 +2,7 @@ import type { PoolClient } from "@neondatabase/serverless";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 /**
  * A team's own material for the programming onboarding guide.
@@ -48,7 +49,7 @@ async function resolveMembership(client: PoolClient, userId: string): Promise<Me
 function fail(error: unknown) {
   const status = error instanceof HttpError ? error.status : 400;
   return Response.json(
-    { error: error instanceof Error ? error.message : "Resource request failed" },
+    { error: publicErrorMessage(error, "Resource request failed") },
     { status },
   );
 }

@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { getEditorRelayPool } from "@vantage/db/editor-relay";
 import { hashToken, pairingUserCode } from "../../../../../lib/editor/device-auth";
+import { publicErrorMessage } from "../../../../../lib/security/public-error";
 
 export async function POST(request: Request) {
   try {
@@ -56,7 +57,7 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Pairing could not start" },
+      { error: publicErrorMessage(error, "Pairing could not start") },
       { status: 400 },
     );
   }

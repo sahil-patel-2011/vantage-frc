@@ -1,6 +1,7 @@
 import { assertOrgCapability, auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 async function session() {
   const value = await auth.api.getSession({ headers: await headers() });
@@ -8,7 +9,7 @@ async function session() {
   return value;
 }
 const fail = (error: unknown) =>
-  Response.json({ error: error instanceof Error ? error.message : "Budget request failed" }, { status: 400 });
+  Response.json({ error: publicErrorMessage(error, "Budget request failed") }, { status: 400 });
 const limits = (body: Record<string, unknown>) => [
   body.dailySpendLimitUsd ?? null, body.monthlySpendLimitUsd ?? null,
   body.dailyTokenLimit ?? null, body.monthlyTokenLimit ?? null,

@@ -8,6 +8,7 @@ import {
   logSnapshot,
   type ScoutFieldBudgetView,
 } from "../../../lib/scout-field-budget/compute-scout-field-budget";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { ScoutFieldBudgetView };
 
@@ -107,7 +108,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Field-count budget request failed";
+    const message = publicErrorMessage(error, "Field-count budget request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

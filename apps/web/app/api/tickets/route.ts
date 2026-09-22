@@ -10,6 +10,7 @@ import {
   submitSupportTicket,
   type SupportTicketMemberView,
 } from "../../../lib/support-tickets";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 function uuidOrNull(value: unknown): string | null {
   if (typeof value !== "string") return null;
@@ -144,7 +145,7 @@ export async function POST(request: Request) {
     );
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Could not submit ticket";
+    const message = publicErrorMessage(error, "Could not submit ticket");
     return Response.json({ error: message }, { status: 400 });
   }
 }

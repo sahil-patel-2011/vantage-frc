@@ -13,6 +13,7 @@ import {
   type ScoringActionPatch,
 } from "../../../lib/kickoff";
 import type { NextSeasonSignal } from "../../../lib/kickoff/next-season";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 class HttpError extends Error {
   constructor(
@@ -36,7 +37,7 @@ async function requireMembership(client: PoolClient, orgId: string, userId: stri
 
 function fail(error: unknown) {
   const status = error instanceof HttpError ? error.status : 400;
-  return Response.json({ error: error instanceof Error ? error.message : "Kickoff request failed" }, { status });
+  return Response.json({ error: publicErrorMessage(error, "Kickoff request failed") }, { status });
 }
 
 export async function GET(request: Request) {

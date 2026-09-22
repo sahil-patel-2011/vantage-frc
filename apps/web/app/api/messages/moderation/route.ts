@@ -14,6 +14,7 @@ import {
   reportMessage,
   requireChatMember,
 } from "../../../../lib/messages/moderation";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 /**
  * Team chat moderation (migration 0674).
@@ -31,7 +32,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 function fail(error: unknown) {
   if (error instanceof ModerationError) return Response.json({ error: error.message }, { status: error.status });
   const code = (error as { code?: string } | null)?.code;
-  const message = error instanceof Error ? error.message : "";
+  const message = publicErrorMessage(error, "");
   if (code === "42P01" || code === "42883" || /org_message_reports|moderate_remove_org_message/.test(message)) {
     return Response.json(
       { error: "Chat moderation needs a database update (migration 0674).", status: "setup_required" },

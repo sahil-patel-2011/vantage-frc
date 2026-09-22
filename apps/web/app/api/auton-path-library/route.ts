@@ -16,6 +16,7 @@ import {
   type AutonPathLibraryView,
 } from "../../../lib/auton-path-library/compute-auton-path-library";
 import type { AutonPathRunOutcome, AutonPathStartPosition } from "../../../lib/auton-path-library/types";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { AutonPathLibraryView };
 
@@ -161,7 +162,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Autonomous Path Library request failed";
+    const message = publicErrorMessage(error, "Autonomous Path Library request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

@@ -6,6 +6,7 @@ import {
   customEventProblemCopy,
   validateCustomEvent,
 } from "../../../../lib/events/custom-event";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 async function requireSession() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -77,7 +78,7 @@ export async function GET(request: Request) {
     return Response.json(data, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Could not list events" },
+      { error: publicErrorMessage(error, "Could not list events") },
       { status: 400 },
     );
   }
@@ -203,7 +204,7 @@ export async function POST(request: Request) {
     return Response.json({ ok: true, ...result });
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Could not set active event" },
+      { error: publicErrorMessage(error, "Could not set active event") },
       { status: 400 },
     );
   }

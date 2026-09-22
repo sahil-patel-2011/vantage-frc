@@ -11,6 +11,7 @@ import {
   type DriveTeamSignalsView,
 } from "../../../lib/drive-team-signals/compute-drive-team-signals";
 import type { SignalKind, SignalPriority, SignalRole } from "../../../lib/drive-team-signals/types";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { DriveTeamSignalsView };
 
@@ -131,7 +132,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Drive-team signal board request failed";
+    const message = publicErrorMessage(error, "Drive-team signal board request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

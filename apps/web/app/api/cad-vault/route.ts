@@ -11,6 +11,7 @@ import {
   type CadDocumentStatus,
   type CadVaultView,
 } from "../../../lib/cad-vault/view";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { CadVaultView };
 
@@ -116,7 +117,7 @@ export async function POST(request: Request) {
     });
     return Response.json(result, { status: 201 });
   } catch (error) {
-    return Response.json({ error: error instanceof Error ? error.message : "Could not create the document" }, { status: 400 });
+    return Response.json({ error: publicErrorMessage(error, "Could not create the document") }, { status: 400 });
   }
 }
 
@@ -187,6 +188,6 @@ export async function PATCH(request: Request) {
     });
     return Response.json(view);
   } catch (error) {
-    return Response.json({ error: error instanceof Error ? error.message : "Could not update the document" }, { status: 400 });
+    return Response.json({ error: publicErrorMessage(error, "Could not update the document") }, { status: 400 });
   }
 }

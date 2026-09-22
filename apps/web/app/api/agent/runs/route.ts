@@ -1,6 +1,7 @@
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 // AI governance transparency: a run-level history of the AI orchestrator. Unlike
 // the metered usage ledger (ai_usage_events, successes only) this includes runs
@@ -80,7 +81,7 @@ export async function GET(request: Request) {
     return Response.json(data);
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Run history request failed" },
+      { error: publicErrorMessage(error, "Run history request failed") },
       { status: 403 },
     );
   }

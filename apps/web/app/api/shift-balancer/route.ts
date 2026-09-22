@@ -13,6 +13,7 @@ import {
   type ShiftBalancerView,
 } from "../../../lib/shift-balancer/compute-shift-balancer";
 import { DEFAULT_STATIONS, describePublish } from "../../../lib/shift-balancer";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { ShiftBalancerView };
 
@@ -158,7 +159,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Shift balancer request failed";
+    const message = publicErrorMessage(error, "Shift balancer request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

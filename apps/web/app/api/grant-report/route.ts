@@ -8,6 +8,7 @@ import {
   generateGrantReport,
   type GrantReportView,
 } from "../../../lib/grant-report/compute-grant-report";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { GrantReportView };
 
@@ -100,7 +101,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Grant Report request failed";
+    const message = publicErrorMessage(error, "Grant Report request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

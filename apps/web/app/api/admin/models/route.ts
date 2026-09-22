@@ -3,6 +3,7 @@ import { assertPlatformAdmin, assertPlatformPrivilegeMfa, auth, platformAdminDen
 import { withRls } from "@vantage/db";
 import { HttpBase44BridgeTransport } from "@vantage/agent";
 import { headers } from "next/headers";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 async function adminWork<T>(work: Parameters<typeof withRls<T>>[1], requireMfa = false) {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -21,7 +22,7 @@ const errorResponse = (error: unknown) => {
   ) {
     return platformAdminDeniedResponse(error);
   }
-  return Response.json({ error: error instanceof Error ? error.message : "Request failed" }, { status: 400 });
+  return Response.json({ error: publicErrorMessage(error, "Request failed") }, { status: 400 });
 };
 
 export async function GET() {

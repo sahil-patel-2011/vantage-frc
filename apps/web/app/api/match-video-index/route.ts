@@ -10,6 +10,7 @@ import {
 } from "../../../lib/match-video-index/compute-match-video-index";
 import type { MatchVideoSource } from "../../../lib/match-video-index/types";
 import { detectSourceFromUrl } from "../../../lib/match-video-index";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { MatchVideoIndexView };
 
@@ -124,7 +125,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Match Video Index request failed";
+    const message = publicErrorMessage(error, "Match Video Index request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

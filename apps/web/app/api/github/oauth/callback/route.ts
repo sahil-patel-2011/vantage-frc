@@ -8,6 +8,7 @@ import {
   upsertGitHubConnection,
   verifyGitHubOAuthState,
 } from "../../../../../lib/github";
+import { publicErrorMessage } from "../../../../../lib/security/public-error";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -53,7 +54,7 @@ export async function GET(request: Request) {
       `${base}/team/admin?orgId=${encodeURIComponent(claims.orgId)}&github=connected#github-connection`,
     );
   } catch (error) {
-    const message = error instanceof Error ? error.message : "oauth_failed";
+    const message = publicErrorMessage(error, "oauth_failed");
     return Response.redirect(
       `${base}/team/admin?github=error&error=${encodeURIComponent(message)}#github-connection`,
     );

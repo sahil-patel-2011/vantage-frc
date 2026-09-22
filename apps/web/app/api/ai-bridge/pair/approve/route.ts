@@ -4,6 +4,7 @@ import { createKms, encryptSecret } from "@vantage/billing";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { getAiBridgePool } from "../../../../../lib/ai-bridge/pool";
+import { publicErrorMessage } from "../../../../../lib/security/public-error";
 
 /**
  * Session-authenticated approval of a bridge pairing code — mirrors /api/cad/pair/approve.
@@ -53,7 +54,7 @@ export async function POST(request: Request) {
   } catch (error) {
     await relay.query("ROLLBACK");
     return Response.json(
-      { error: error instanceof Error ? error.message : "Pairing approval failed" },
+      { error: publicErrorMessage(error, "Pairing approval failed") },
       { status: 400 },
     );
   } finally {

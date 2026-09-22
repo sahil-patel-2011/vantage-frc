@@ -6,6 +6,7 @@ import {
   createRateLimiter,
   rateLimitedResponse,
 } from "../../../../lib/rate-limit";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 function tokensEqual(a: string, b: string) {
   const left = Buffer.from(a);
@@ -60,7 +61,7 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Bootstrap failed" },
+      { error: publicErrorMessage(error, "Bootstrap failed") },
       { status: 400 },
     );
   }

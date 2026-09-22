@@ -12,6 +12,7 @@ import {
   type AllianceSelectionDeskView,
 } from "../../../lib/alliance-selection-desk";
 import type { DeskEvidenceKind, DeskSessionStatus } from "../../../lib/alliance-selection-desk/types";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { AllianceSelectionDeskView };
 
@@ -175,7 +176,7 @@ export async function POST(request: Request) {
 
     return Response.json(result);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Request failed";
+    const message = publicErrorMessage(error, "Request failed");
     if (message === "forbidden") return Response.json({ error: "Forbidden" }, { status: 403 });
     return Response.json({ error: message }, { status: 400 });
   }

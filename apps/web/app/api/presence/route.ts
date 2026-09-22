@@ -35,6 +35,7 @@ import {
   PresenceAuthError,
   requirePresenceRole,
 } from "../../../lib/presence/authorization";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { PresenceView };
 
@@ -240,7 +241,7 @@ export async function POST(request: Request) {
     if (error instanceof PresenceAuthError) {
       return Response.json({ error: error.message }, { status: error.status });
     }
-    const message = error instanceof Error ? error.message : "Presence request failed";
+    const message = publicErrorMessage(error, "Presence request failed");
     return Response.json({ error: message }, { status: 400 });
   }
 }

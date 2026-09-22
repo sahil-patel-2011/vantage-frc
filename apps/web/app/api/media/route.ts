@@ -25,6 +25,7 @@ import {
   MEDIA_CONTENT_STATUSES,
   MEDIA_HUB_TABS,
 } from "../../../lib/media/types";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { MediaView };
 
@@ -187,7 +188,7 @@ async function runMutation(
 }
 
 function mutationErrorResponse(error: unknown) {
-  const message = error instanceof Error ? error.message : "Media request failed";
+  const message = publicErrorMessage(error, "Media request failed");
   const forbidden =
     message === "forbidden" ||
     message.includes("do not have access") ||
@@ -233,7 +234,7 @@ export async function GET(request: Request) {
     });
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "";
+    const message = publicErrorMessage(error, "");
     if (message.includes("do not have access") || message.includes("Organization membership")) {
       return Response.json({ error: message }, { status: 403 });
     }

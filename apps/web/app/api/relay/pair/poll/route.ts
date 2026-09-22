@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { createKms, decryptSecret, type EncryptedSecret } from "@vantage/billing";
 import { getCadRelayPool } from "@vantage/db/cad-relay";
 import { isRelayDatabaseUnconfigured, relaySetupResponse } from "../../../../../lib/connectors/pairing-setup";
+import { publicErrorMessage } from "../../../../../lib/security/public-error";
 
 export async function POST(request: Request) {
   const relay = await getCadRelayPool().connect();
@@ -45,7 +46,7 @@ export async function POST(request: Request) {
     await relay.query("ROLLBACK").catch(() => {});
     if (isRelayDatabaseUnconfigured(error)) return relaySetupResponse();
     return Response.json(
-      { error: error instanceof Error ? error.message : "Pairing poll failed" },
+      { error: publicErrorMessage(error, "Pairing poll failed") },
       { status: 400 },
     );
   } finally {

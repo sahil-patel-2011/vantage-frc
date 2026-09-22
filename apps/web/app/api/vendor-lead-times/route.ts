@@ -11,6 +11,7 @@ import {
   type VendorLeadTimesView,
 } from "../../../lib/vendor-lead-times/compute-vendor-lead-times";
 import type { ReorderStatus } from "../../../lib/vendor-lead-times/types";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { VendorLeadTimesView };
 
@@ -148,7 +149,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Vendor lead times request failed";
+    const message = publicErrorMessage(error, "Vendor lead times request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

@@ -29,6 +29,7 @@ import {
   isPipelineStage,
   statusForPipelineStage,
 } from "../../../lib/sponsor-pipeline";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 type JsonBody = Record<string, unknown>;
 
@@ -750,7 +751,7 @@ export async function POST(request: Request) {
     });
     return Response.json(result, { status: 201 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Business portal request failed";
+    const message = publicErrorMessage(error, "Business portal request failed");
     const status =
       /access denied|owner or admin|do not have access|membership required|Sponsor tools are disabled/i.test(
         message,

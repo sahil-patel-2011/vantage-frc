@@ -8,6 +8,7 @@ import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { parseClaimAttestation, recordTeamClaimAttestation } from "../../../../lib/claim/attestation";
 import { anonymizeIp, clientIp } from "../../../../lib/rate-limit";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 export async function POST(request: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -39,7 +40,7 @@ export async function POST(request: Request) {
       privacyAccepted: body.privacyAccepted,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Consent is required.";
+    const message = publicErrorMessage(error, "Consent is required.");
     return Response.json({ error: message }, { status: 400 });
   }
 
@@ -89,7 +90,7 @@ export async function POST(request: Request) {
         { status: 503 },
       );
     }
-    const message = error instanceof Error ? error.message : "Could not claim team";
+    const message = publicErrorMessage(error, "Could not claim team");
     return Response.json({ error: message }, { status: 400 });
   }
 }

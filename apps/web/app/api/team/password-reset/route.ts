@@ -9,6 +9,7 @@ import { headers } from "next/headers";
 import { z } from "zod";
 import { createRateLimiter, rateLimitedResponse } from "../../../../lib/rate-limit";
 import { parseSecureJson, securityErrorResponse } from "../../../../lib/security/request";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 // 5 resets per 10 minutes per admin — keyed by the acting admin, not by IP.
 const resetLimiter = createRateLimiter({ limit: 5, windowMs: 10 * 60_000, namespace: "team-password-reset" });
@@ -67,7 +68,7 @@ export async function POST(request: Request) {
       await auth.api.requestPasswordResetEmailOTP({ body: { email: target.email } });
       delivered = true;
     } catch (error) {
-      deliveryError = error instanceof Error ? error.message : "Reset email could not be sent";
+      deliveryError = publicErrorMessage(error, "Reset email could not be sent");
     }
 
     // Traceable even when delivery failed.

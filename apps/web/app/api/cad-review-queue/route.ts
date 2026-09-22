@@ -19,6 +19,7 @@ import type {
   CadReviewPriority,
   CadReviewStatus,
 } from "../../../lib/cad-review-queue/types";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { CadReviewQueueView };
 
@@ -168,7 +169,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "CAD review queue request failed";
+    const message = publicErrorMessage(error, "CAD review queue request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

@@ -34,6 +34,7 @@ import {
 } from "../../../lib/migrate/compute-migrate";
 import type { ColumnGuess } from "@vantage/import";
 import type { OrgRole } from "@vantage/core";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 const INVITABLE_ROLES: OrgRole[] = ["admin", "scout", "viewer"];
 
@@ -108,7 +109,7 @@ export async function POST(request: Request) {
     try {
       return Response.json({ drafts: previewNotionJson(content) });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Invalid Notion JSON";
+      const message = publicErrorMessage(error, "Invalid Notion JSON");
       return Response.json({ error: message }, { status: 400 });
     }
   }
@@ -151,7 +152,7 @@ export async function POST(request: Request) {
       if (error instanceof ImportShapeError) {
         return Response.json({ error: error.message, expected: error.expected }, { status: 400 });
       }
-      const message = error instanceof Error ? error.message : "That file could not be read";
+      const message = publicErrorMessage(error, "That file could not be read");
       return Response.json({ error: message }, { status: 400 });
     }
   }
@@ -300,7 +301,7 @@ export async function POST(request: Request) {
     });
     return Response.json({ ...view, ...extra });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Could not save import";
+    const message = publicErrorMessage(error, "Could not save import");
     if (message === "forbidden") return Response.json({ error: "Forbidden" }, { status: 403 });
     if (error instanceof ImportShapeError) {
       return Response.json({ error: message, expected: error.expected }, { status: 400 });

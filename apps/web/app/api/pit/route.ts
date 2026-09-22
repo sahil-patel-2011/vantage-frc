@@ -6,6 +6,7 @@ import { ensureBatteryRetireFailure } from "../../../lib/battery-fmea";
 import { pitStatusToPack } from "../../../lib/battery-reliability";
 import { loadPitBoard } from "../../../lib/pit/load-board";
 import { parsePitAction } from "../../../lib/pit-operations";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export const dynamic = "force-dynamic";
 class PitHttpError extends Error {
@@ -18,7 +19,7 @@ class PitHttpError extends Error {
 }
 const failure = (error: unknown) =>
   Response.json(
-    { error: error instanceof Error ? error.message : "Pit Command request failed" },
+    { error: publicErrorMessage(error, "Pit Command request failed") },
     { status: error instanceof PitHttpError ? error.status : 400 },
   );
 
@@ -48,7 +49,7 @@ async function access(
       rememberedDeviceToken: (await cookies()).get("vantage_mfa_device")?.value,
     });
   } catch (error) {
-    throw new PitHttpError(403, error instanceof Error ? error.message : "Organization authentication policy denied access");
+    throw new PitHttpError(403, publicErrorMessage(error, "Organization authentication policy denied access"));
   }
   return member;
 }

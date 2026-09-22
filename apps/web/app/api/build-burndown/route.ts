@@ -11,6 +11,7 @@ import {
   type BuildBurndownView,
 } from "../../../lib/build-burndown/compute-build-burndown";
 import type { BuildTaskCategory, BuildTaskStatus } from "../../../lib/build-burndown/types";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { BuildBurndownView };
 
@@ -139,7 +140,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Build burndown request failed";
+    const message = publicErrorMessage(error, "Build burndown request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

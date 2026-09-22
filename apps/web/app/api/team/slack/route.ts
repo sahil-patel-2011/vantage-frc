@@ -9,6 +9,7 @@ import {
   slackSetupStatus,
 } from "../../../../lib/slack";
 import { formatSlackBridgePostCount } from "../../../../lib/slack-related";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 async function session() {
   const value = await auth.api.getSession({ headers: await headers() });
@@ -22,7 +23,7 @@ async function session() {
  * which reads as "you typed something wrong" rather than "ask an admin".
  */
 const fail = (error: unknown, status = 400) => {
-  const message = error instanceof Error ? error.message : "Slack request failed";
+  const message = publicErrorMessage(error, "Slack request failed");
   if (/authentication required/i.test(message)) return Response.json({ error: message }, { status: 401 });
   if (/administrator access required/i.test(message)) return Response.json({ error: message }, { status: 403 });
   return Response.json({ error: message }, { status });

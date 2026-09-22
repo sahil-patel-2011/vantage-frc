@@ -3,6 +3,7 @@ import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { requestHasAnalyticsConsent } from "../../../../lib/product-analytics/consent";
 import { MAX_BATCH_EVENTS, validateBatch } from "../../../../lib/product-analytics/events";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 export const runtime = "nodejs";
 
@@ -106,7 +107,7 @@ export async function POST(request: Request) {
 
     return Response.json({ ...result, rejected }, { status: 202 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Analytics write failed";
+    const message = publicErrorMessage(error, "Analytics write failed");
     // Missing table / unconfigured database degrades to a clear setup state
     // instead of a crash, in line with the rest of the product.
     if (/product_events|does not exist|DATABASE_/i.test(message)) {

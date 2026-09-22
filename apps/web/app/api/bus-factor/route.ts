@@ -10,6 +10,7 @@ import {
   type BusFactorView,
 } from "../../../lib/bus-factor/compute-bus-factor";
 import type { BusFactorArea } from "../../../lib/bus-factor/types";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { BusFactorView };
 
@@ -127,7 +128,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Bus-factor request failed";
+    const message = publicErrorMessage(error, "Bus-factor request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

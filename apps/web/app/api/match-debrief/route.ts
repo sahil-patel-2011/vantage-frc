@@ -16,6 +16,7 @@ import {
   type MatchResult,
 } from "../../../lib/match-debrief";
 import { failMeteredAi } from "../../../lib/metered-ai-fail";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 /**
  * The optional "coach" action reaches a real upstream model. A bridged turn (a paired device with
@@ -49,7 +50,7 @@ async function requireMembership(client: PoolClient, orgId: string, userId: stri
 
 function fail(error: unknown) {
   const status = error instanceof HttpError ? error.status : 400;
-  return Response.json({ error: error instanceof Error ? error.message : "Match debrief request failed" }, { status });
+  return Response.json({ error: publicErrorMessage(error, "Match debrief request failed") }, { status });
 }
 
 type DebriefRow = {

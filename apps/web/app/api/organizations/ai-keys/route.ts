@@ -20,6 +20,7 @@ import {
   parseByokProvider,
   type ByokProvider,
 } from "../../../../lib/ai-keys/byok-providers";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 async function context(orgId: string | undefined) {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -29,7 +30,7 @@ async function context(orgId: string | undefined) {
 
 const fail = (error: unknown, status = 400) =>
   Response.json(
-    { error: error instanceof Error ? error.message : "AI keys request failed" },
+    { error: publicErrorMessage(error, "AI keys request failed") },
     { status },
   );
 

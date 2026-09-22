@@ -8,6 +8,7 @@ import {
   runTbaEventDaySync,
   runTbaSeasonSync,
 } from "../../../../lib/reference/run-ingest";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 async function current() {
   const value = await auth.api.getSession({ headers: await headers() });
@@ -31,7 +32,7 @@ function responseError(error: unknown) {
   if (error instanceof PlatformAdminRequiredError) {
     return Response.json({ error: "Not found" }, { status: 404 });
   }
-  const message = error instanceof Error ? error.message : "Connector action failed";
+  const message = publicErrorMessage(error, "Connector action failed");
   if (/authentication required/i.test(message)) {
     return Response.json({ error: "Authentication required" }, { status: 401 });
   }

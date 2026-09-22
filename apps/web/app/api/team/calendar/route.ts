@@ -46,6 +46,7 @@ import {
   githubItemsToIcsEvents,
   tbaMatchesToCalendarEvents,
 } from "../../../../lib/subteam-calendar";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 function newFeedToken() {
   return randomBytes(32).toString("base64url");
@@ -164,7 +165,7 @@ async function loadTbaMatchCalendar(client: PoolClient, orgId: string, teamNumbe
 }
 
 function fail(error: unknown) {
-  const message = error instanceof Error ? error.message : "Calendar request failed";
+  const message = publicErrorMessage(error, "Calendar request failed");
   if (/team_subteams|subteam_calendar_events|relation .* does not exist/i.test(message)) {
     return Response.json(
       { error: "Apply the subteam calendars migration first (0111_subteam_calendars)." },
@@ -255,7 +256,7 @@ async function loadStoredEventRows(
     );
     return { rows: result.rows, recurrenceReady: true };
   } catch (error) {
-    const message = error instanceof Error ? error.message : "";
+    const message = publicErrorMessage(error, "");
     if (!/rrule|recurrence_end|series_id|recurrence_timezone|column .* does not exist/i.test(message)) {
       throw error;
     }
@@ -1001,7 +1002,7 @@ async function forkSeries(
 }
 
 function recurrenceUnavailable(error: unknown): boolean {
-  const message = error instanceof Error ? error.message : "";
+  const message = publicErrorMessage(error, "");
   return /calendar_event_exceptions|rrule|recurrence_end|series_id|recurrence_timezone/i.test(
     message,
   ) && /does not exist/i.test(message);
@@ -1553,7 +1554,7 @@ export async function POST(request: Request) {
               );
             }
           } catch (error) {
-            const message = error instanceof Error ? error.message : "";
+            const message = publicErrorMessage(error, "");
             if (/subteam_calendar_rsvps|does not exist/i.test(message)) {
               throw new HttpError(503, "Apply the RSVP migration first (0147_subteam_calendar_rsvps).");
             }
@@ -1596,7 +1597,7 @@ export async function POST(request: Request) {
             );
             return { token, scope: action.scope };
           } catch (error) {
-            const message = error instanceof Error ? error.message : "";
+            const message = publicErrorMessage(error, "");
             if (/calendar_feed_tokens|does not exist/i.test(message)) {
               throw new HttpError(503, "Apply the calendar feed migration first (0144_calendar_feed).");
             }
@@ -1613,7 +1614,7 @@ export async function POST(request: Request) {
               [action.orgId, userId, action.scope, action.subteamId],
             );
           } catch (error) {
-            const message = error instanceof Error ? error.message : "";
+            const message = publicErrorMessage(error, "");
             if (/calendar_feed_tokens|does not exist/i.test(message)) {
               throw new HttpError(503, "Apply the calendar feed migration first (0144_calendar_feed).");
             }

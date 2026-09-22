@@ -10,6 +10,7 @@ import {
   type RoadmapView,
 } from "../../../lib/roadmap/load-roadmap";
 import { isTaskStatus, parseIsoDate, taskById } from "../../../lib/roadmap/season-roadmap";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { RoadmapView };
 
@@ -138,7 +139,7 @@ export async function POST(request: Request) {
     });
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "";
+    const message = publicErrorMessage(error, "");
     if (message === "forbidden") return Response.json({ error: "Forbidden" }, { status: 403 });
     if (message === "bad-action") return Response.json({ error: "Unknown action" }, { status: 400 });
     if (message === "bad-task") return Response.json({ error: "Unknown task" }, { status: 400 });

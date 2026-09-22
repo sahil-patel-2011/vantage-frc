@@ -1,6 +1,7 @@
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 // AI governance transparency: a read-only per-call activity log over the metered
 // usage ledger (ai_usage_events). Aggregate spend already lives at /api/billing/usage;
@@ -81,7 +82,7 @@ export async function GET(request: Request) {
     return Response.json(data);
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Activity request failed" },
+      { error: publicErrorMessage(error, "Activity request failed") },
       { status: 403 },
     );
   }

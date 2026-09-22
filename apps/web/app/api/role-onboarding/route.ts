@@ -10,6 +10,7 @@ import {
   setCheckCompleted,
   setTrackDismissed,
 } from "../../../lib/role-onboarding";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 class HttpError extends Error {
   constructor(
@@ -43,7 +44,7 @@ function fail(error: unknown) {
   if (!(error instanceof HttpError)) return securityErrorResponse(error, "Role onboarding request failed");
   const status = error instanceof HttpError ? error.status : 400;
   return Response.json(
-    { error: error instanceof Error ? error.message : "Role onboarding request failed" },
+    { error: publicErrorMessage(error, "Role onboarding request failed") },
     { status },
   );
 }

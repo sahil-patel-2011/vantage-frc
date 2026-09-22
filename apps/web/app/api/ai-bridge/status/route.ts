@@ -6,6 +6,7 @@ import {
   BRIDGE_ONLINE_WINDOW_MS,
   BRIDGE_CHAT_FEATURES,
 } from "@vantage/agent";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 export type BridgeDeviceStatus = {
   id: string;
@@ -106,7 +107,7 @@ export async function GET(request: Request) {
       return Response.json({ devices: [], jobStats: [], bridgeFeatures: [...BRIDGE_CHAT_FEATURES], setupRequired: true });
     }
     return Response.json(
-      { error: error instanceof Error ? error.message : "Bridge status failed" },
+      { error: publicErrorMessage(error, "Bridge status failed") },
       { status: 400 },
     );
   }
@@ -210,7 +211,7 @@ export async function PATCH(request: Request) {
     });
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Bridge update failed" },
+      { error: publicErrorMessage(error, "Bridge update failed") },
       { status: 400 },
     );
   }

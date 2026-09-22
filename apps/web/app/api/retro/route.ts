@@ -18,6 +18,7 @@ import {
 import { handoffLearnedItems } from "../../../lib/retro/handoff";
 import { RETRO_ITEM_KINDS } from "../../../lib/retro";
 import type { RetroActionStatus, RetroItemKind } from "../../../lib/retro/types";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { RetroView };
 
@@ -195,7 +196,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Retro request failed";
+    const message = publicErrorMessage(error, "Retro request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

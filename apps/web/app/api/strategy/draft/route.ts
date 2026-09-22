@@ -10,6 +10,7 @@ import {
   type AllianceBoardState,
   type AllianceSlot,
 } from "../../../../lib/strategy/pick-desk";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 function takenFromAlliances(alliances: AllianceSlot[]): string[] {
   const keys: string[] = [];
@@ -364,7 +365,7 @@ export async function POST(request: Request) {
   } catch (error) {
     if (error instanceof Response) return error;
     return Response.json(
-      { error: error instanceof Error ? error.message : "Could not update alliance board" },
+      { error: publicErrorMessage(error, "Could not update alliance board") },
       { status: 400 },
     );
   }

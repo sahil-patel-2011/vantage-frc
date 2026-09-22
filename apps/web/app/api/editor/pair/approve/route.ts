@@ -5,6 +5,7 @@ import { withRls } from "@vantage/db";
 import { getEditorRelayPool } from "@vantage/db/editor-relay";
 import { headers } from "next/headers";
 import { hashToken } from "../../../../../lib/editor/device-auth";
+import { publicErrorMessage } from "../../../../../lib/security/public-error";
 
 export async function POST(request: Request) {
   const relay = await getEditorRelayPool().connect();
@@ -76,7 +77,7 @@ export async function POST(request: Request) {
   } catch (error) {
     await relay.query("ROLLBACK");
     return Response.json(
-      { error: error instanceof Error ? error.message : "Pairing approval failed" },
+      { error: publicErrorMessage(error, "Pairing approval failed") },
       { status: 400 },
     );
   } finally {

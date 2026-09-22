@@ -12,6 +12,7 @@ import { toDataURL as qrDataUrl } from "qrcode";
 import { z } from "zod";
 import { anonymizeIp, clientIp, createRateLimiter, rateLimitedResponse } from "../../../../lib/rate-limit";
 import { parseSecureJson, securityErrorResponse } from "../../../../lib/security/request";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 const mutationLimiter = createRateLimiter({ limit: 12, windowMs: 5 * 60_000, namespace: "account-mfa" });
 const verificationCode = z.string().trim().min(6).max(32).regex(/^[0-9A-Za-z-]+$/);
@@ -74,7 +75,7 @@ export async function GET() {
     return privateJson(result);
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Security settings unavailable" },
+      { error: publicErrorMessage(error, "Security settings unavailable") },
       { status: 400 },
     );
   }

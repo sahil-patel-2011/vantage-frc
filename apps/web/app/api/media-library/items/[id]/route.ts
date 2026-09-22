@@ -15,6 +15,7 @@ import {
 import type { MediaStorageLocation } from "../../../../../lib/media-library/types";
 import { dbCapForKind, formatMediaBytes } from "../../../../../lib/media-library/validation";
 import { cloudUploadCapBytes } from "../../../../../lib/storage-routing/caps";
+import { publicErrorMessage } from "../../../../../lib/security/public-error";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -100,7 +101,7 @@ export async function PUT(request: Request, context: RouteContext) {
     }
     return new Response(null, { status: 204 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Upload failed";
+    const message = publicErrorMessage(error, "Upload failed");
     return Response.json({ error: message }, { status: 400 });
   }
 }
@@ -213,7 +214,7 @@ export async function GET(request: Request, context: RouteContext) {
       },
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Media unavailable";
+    const message = publicErrorMessage(error, "Media unavailable");
     return Response.json({ error: message }, { status: 400 });
   }
 }

@@ -9,6 +9,7 @@ import {
   type FundingModel,
   type FundingProfileView,
 } from "../../../../lib/funding-profile";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 async function session() {
   const value = await auth.api.getSession({ headers: await headers() });
@@ -72,7 +73,7 @@ export async function GET(request: Request) {
     return Response.json(view);
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Funding profile unavailable" },
+      { error: publicErrorMessage(error, "Funding profile unavailable") },
       { status: 400 },
     );
   }
@@ -125,7 +126,7 @@ export async function POST(request: Request) {
     return Response.json({ success: true });
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Funding profile update failed" },
+      { error: publicErrorMessage(error, "Funding profile update failed") },
       { status: 400 },
     );
   }

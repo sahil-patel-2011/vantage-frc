@@ -9,6 +9,7 @@ import {
   type OfflineShellView,
 } from "../../../lib/offline-shell/compute-offline-shell";
 import type { OfflineShellNetworkStatus } from "../../../lib/offline-shell/types";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { OfflineShellView };
 
@@ -120,7 +121,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Could not check this phone";
+    const message = publicErrorMessage(error, "Could not check this phone");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

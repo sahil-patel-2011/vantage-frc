@@ -1,6 +1,7 @@
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 // History of the Team Knowledge doc — admin-only. Lists recent saved revisions so
 // admins can see who changed the shared AI context and copy an older version back.
@@ -34,7 +35,7 @@ export async function GET(request: Request) {
     return Response.json(data);
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Knowledge history request failed" },
+      { error: publicErrorMessage(error, "Knowledge history request failed") },
       { status: 403 },
     );
   }

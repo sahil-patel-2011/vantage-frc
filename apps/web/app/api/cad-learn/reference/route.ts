@@ -12,6 +12,7 @@ import {
   upsertReferencePart,
 } from "../../../../lib/cad-learn/store";
 import { gradableLessons } from "../../../../lib/cad-learn/track";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 /**
  * The reference part for a lesson — the thing a student's part is graded
@@ -83,7 +84,7 @@ export async function POST(request: Request) {
       try {
         bound = await resolveOnshapeBind(url, access.http);
       } catch (error) {
-        throw new HttpError(400, error instanceof Error ? error.message : "That is not an Onshape document URL");
+        throw new HttpError(400, publicErrorMessage(error, "That is not an Onshape document URL"));
       }
 
       const read = await readOnshapeMassProperties(access.http, {

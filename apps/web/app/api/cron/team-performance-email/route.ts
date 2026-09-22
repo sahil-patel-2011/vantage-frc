@@ -1,5 +1,6 @@
 import { assertCronAuthorized } from "../../../../lib/reference/run-ingest";
 import { runPerformanceEmail } from "../../../../lib/performance-email/run-performance-email";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -39,7 +40,7 @@ async function run(request: Request) {
     return Response.json(
       {
         ok: false,
-        error: error instanceof Error ? error.message : "Performance email run failed",
+        error: publicErrorMessage(error, "Performance email run failed"),
       },
       { status: 500 },
     );

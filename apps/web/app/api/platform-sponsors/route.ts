@@ -1,6 +1,7 @@
 import { auth, listActiveSponsorBrands } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 /** Soft-UI AI branding — active sponsors only; never notes or secrets. */
 export async function GET() {
@@ -18,7 +19,7 @@ export async function GET() {
     );
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Could not load sponsors", sponsors: [] },
+      { error: publicErrorMessage(error, "Could not load sponsors"), sponsors: [] },
       { status: 200 },
     );
   }

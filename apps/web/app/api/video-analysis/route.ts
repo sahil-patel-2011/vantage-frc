@@ -1,6 +1,7 @@
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 async function requireSession() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -49,7 +50,7 @@ export async function GET(request: Request) {
     return Response.json({ jobs: rows });
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Could not load videos" },
+      { error: publicErrorMessage(error, "Could not load videos") },
       { status: error instanceof Error && error.message.includes("Authentication") ? 401 : 400 },
     );
   }
@@ -88,7 +89,7 @@ export async function POST(request: Request) {
     return Response.json({ id: row?.id, queued: true }, { status: 201 });
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Could not start that video" },
+      { error: publicErrorMessage(error, "Could not start that video") },
       { status: error instanceof Error && error.message.includes("Authentication") ? 401 : 400 },
     );
   }
@@ -123,7 +124,7 @@ export async function PATCH(request: Request) {
     return Response.json({ id: updated.id, confirmed: true, mergedIntoScouting: false });
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Could not confirm that timeline" },
+      { error: publicErrorMessage(error, "Could not confirm that timeline") },
       { status: error instanceof Error && error.message.includes("Authentication") ? 401 : 400 },
     );
   }

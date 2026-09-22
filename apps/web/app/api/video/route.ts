@@ -9,6 +9,7 @@ import {
   type VideoReview,
   type VideoView,
 } from "../../../lib/video-review";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 class HttpError extends Error {
   constructor(
@@ -40,7 +41,7 @@ async function bumpReview(client: PoolClient, reviewId: string, orgId: string) {
 
 function fail(error: unknown) {
   const status = error instanceof HttpError ? error.status : 400;
-  return Response.json({ error: error instanceof Error ? error.message : "Video request failed" }, { status });
+  return Response.json({ error: publicErrorMessage(error, "Video request failed") }, { status });
 }
 
 export async function GET(request: Request) {

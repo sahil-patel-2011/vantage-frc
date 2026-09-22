@@ -9,6 +9,7 @@ import {
   teamTagsPickReasonsPayload,
   type TeamTagsView,
 } from "../../../lib/team-tags/compute-team-tags";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 const FALLBACK: TeamTagsView = {
   status: "setup_required",
@@ -84,7 +85,7 @@ export async function POST(request: Request) {
     });
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Team tag write failed";
+    const message = publicErrorMessage(error, "Team tag write failed");
     if (message === "Organization access denied") return Response.json({ error: message }, { status: 403 });
     if (/required|tag|team number|vocabulary|Unknown team-tags/i.test(message)) {
       return Response.json({ error: message }, { status: 400 });

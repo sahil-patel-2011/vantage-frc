@@ -9,6 +9,7 @@ import {
 import { createKms, encryptSecret } from "@vantage/billing";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 export async function GET(request: Request) {
   try {
@@ -39,7 +40,7 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Onshape status failed" },
+      { error: publicErrorMessage(error, "Onshape status failed") },
       { status: 400 },
     );
   }
@@ -99,7 +100,7 @@ export async function POST(request: Request) {
     throw new Error("Invalid Onshape action");
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Onshape request failed" },
+      { error: publicErrorMessage(error, "Onshape request failed") },
       { status: 400 },
     );
   }

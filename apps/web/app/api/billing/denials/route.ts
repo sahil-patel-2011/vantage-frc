@@ -1,6 +1,7 @@
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 // AI governance transparency: surface the AI calls the budget engine BLOCKED.
 // Every denied request is already recorded to api_usage_denials with a machine
@@ -66,7 +67,7 @@ export async function GET(request: Request) {
     return Response.json(data);
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Denials request failed" },
+      { error: publicErrorMessage(error, "Denials request failed") },
       { status: 403 },
     );
   }

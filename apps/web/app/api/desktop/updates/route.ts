@@ -1,4 +1,5 @@
 import { listPublicReleases } from "../../../../lib/release-notes/agent-publish";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 export const runtime = "nodejs";
 
@@ -22,7 +23,7 @@ export async function GET(request: Request) {
     );
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Update feed unavailable" },
+      { error: publicErrorMessage(error, "Update feed unavailable") },
       { status: 503 },
     );
   }

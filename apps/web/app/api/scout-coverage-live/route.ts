@@ -9,6 +9,7 @@ import {
   setThinThreshold,
   type ScoutCoverageLiveView,
 } from "../../../lib/scout-coverage-live/compute-scout-coverage-live";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { ScoutCoverageLiveView };
 
@@ -113,7 +114,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Scout coverage live request failed";
+    const message = publicErrorMessage(error, "Scout coverage live request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

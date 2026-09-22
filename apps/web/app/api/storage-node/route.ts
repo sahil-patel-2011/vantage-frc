@@ -7,6 +7,7 @@ import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { normalizeBaseUrl } from "../../../lib/storage-node";
 import { computeStorageNodeView, type StorageNodeViewData } from "../../../lib/storage-node/compute-storage-view";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { StorageNodeViewData };
 
@@ -116,7 +117,7 @@ export async function POST(request: Request) {
     });
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Storage node request failed";
+    const message = publicErrorMessage(error, "Storage node request failed");
     if (message === "forbidden") return Response.json({ error: "Organization access denied" }, { status: 403 });
     if (message === "manage-denied") {
       // RLS update policy: owner/admin or the member who paired the node.

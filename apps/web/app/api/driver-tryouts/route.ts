@@ -18,6 +18,7 @@ import {
 } from "../../../lib/driver-tryouts/compute-driver-tryouts";
 import { promoteSelectedCandidateToSeasonRole } from "../../../lib/driver-tryouts/promote-role";
 import type { DriverTryoutsRole, DriverTryoutsStatus } from "../../../lib/driver-tryouts/types";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { DriverTryoutsView };
 
@@ -182,7 +183,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Driver Tryouts request failed";
+    const message = publicErrorMessage(error, "Driver Tryouts request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

@@ -13,6 +13,7 @@ import {
   validFinanceSeason,
   type SeasonFinanceView,
 } from "../../../../lib/business/compute-season-finance";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 const FALLBACK: SeasonFinanceView = {
   status: "setup_required",
@@ -240,7 +241,7 @@ export async function POST(request: Request) {
     });
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Season finance write failed";
+    const message = publicErrorMessage(error, "Season finance write failed");
     if (message === "Organization access denied") {
       return Response.json({ error: message }, { status: 403 });
     }

@@ -12,6 +12,7 @@ import {
   type LinkableBuildTask,
   type SessionPatch,
 } from "../../../lib/driver-practice";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 class HttpError extends Error {
   constructor(
@@ -39,7 +40,7 @@ async function optionalQuery<T extends QueryResultRow>(client: PoolClient, sql: 
     const result = await client.query<T>(sql, params);
     return result.rows;
   } catch (error) {
-    const message = error instanceof Error ? error.message : "";
+    const message = publicErrorMessage(error, "");
     if (/does not exist|undefined_table/i.test(message)) return [];
     throw error;
   }
@@ -47,7 +48,7 @@ async function optionalQuery<T extends QueryResultRow>(client: PoolClient, sql: 
 
 function fail(error: unknown) {
   const status = error instanceof HttpError ? error.status : 400;
-  return Response.json({ error: error instanceof Error ? error.message : "Practice request failed" }, { status });
+  return Response.json({ error: publicErrorMessage(error, "Practice request failed") }, { status });
 }
 
 export async function GET(request: Request) {
