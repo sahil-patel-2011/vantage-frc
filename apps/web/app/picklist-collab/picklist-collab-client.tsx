@@ -270,6 +270,7 @@ export default function PicklistCollabClient() {
     status: view?.status ?? null,
     orgId,
     listCount,
+    setupStepIds: view?.status === "setup_required" ? view.steps.map((step) => step.id) : [],
   });
   const shellCopy = picklistCollabShellCopy(shell);
   const nextActions = picklistCollabNextActions({

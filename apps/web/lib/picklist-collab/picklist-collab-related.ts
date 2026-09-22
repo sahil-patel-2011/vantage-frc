@@ -130,10 +130,19 @@ export function classifyPicklistCollabShell(input: {
   status?: "setup_required" | "live" | null;
   orgId?: string | null;
   listCount?: number;
+  /** Ids of the setup steps the server sent with a setup_required view. */
+  setupStepIds?: string[];
 }): PicklistCollabShellKind {
   if (input.loading) return "loading";
   if (input.fetchFailed) return "error";
-  if (input.status === "setup_required" || !input.orgId) return "setup";
+  if (!input.orgId) return "setup";
+  // The server says "setup_required" for two different things: no team yet,
+  // and a team with no pick lists yet. The second is the empty state with the
+  // create form — sending it to "Choose your team" left every new team with no
+  // way to make their first list.
+  if (input.status === "setup_required") {
+    return input.setupStepIds?.includes("create-list") ? "empty" : "setup";
+  }
   if ((input.listCount ?? 0) === 0) return "empty";
   return "ready";
 }

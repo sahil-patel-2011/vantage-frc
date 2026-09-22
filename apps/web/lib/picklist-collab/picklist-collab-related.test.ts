@@ -87,6 +87,16 @@ describe("classifyPicklistCollabShell", () => {
       classifyPicklistCollabShell({ status: "live", orgId: "o", listCount: 1 }),
     ).toBe("ready");
   });
+
+  it("sends a team with no lists to the create form, not to Choose your team", () => {
+    expect(
+      classifyPicklistCollabShell({ status: "setup_required", orgId: "o", setupStepIds: ["create-list"] }),
+    ).toBe("empty");
+    expect(classifyPicklistCollabShell({ status: "setup_required", orgId: "o", setupStepIds: ["workspace"] })).toBe(
+      "setup",
+    );
+    expect(classifyPicklistCollabShell({ status: "setup_required", orgId: null })).toBe("setup");
+  });
 });
 
 describe("formatPicklistCollabMetric", () => {

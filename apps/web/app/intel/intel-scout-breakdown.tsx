@@ -46,8 +46,10 @@ function MatchBars({ field }: { field: NumericBreakdown }) {
 
 function Tile({ field, open, onToggle }: { field: FieldBreakdown; open: boolean; onToggle: () => void }) {
   if (field.kind === "number") {
+    // An accordion in flow, not a floating panel: it widens to the full row.
+    const tileClass = open ? "intel-sb-tile is-expanded" : "intel-sb-tile";
     return (
-      <Panel className={`intel-sb-tile${open ? " is-open" : ""}`} style={{ minHeight: "auto" }}>
+      <Panel className={tileClass} style={{ minHeight: "auto" }}>
         <button type="button" className="intel-sb-head" aria-expanded={open} onClick={onToggle}>
           <span className="app-muted">{field.label}</span>
           <strong>{field.mean}</strong>

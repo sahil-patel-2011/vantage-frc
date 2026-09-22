@@ -144,7 +144,7 @@
    match-by-match view; the bars are decoration, the list under them carries
    the numbers. */
 .intel-sb-tile{display:grid;gap:8px;padding:12px}
-.intel-sb-tile.is-open{grid-column:1/-1}
+.intel-sb-tile.is-expanded{grid-column:1/-1}
 .intel-sb-head{
   display:grid;gap:4px;justify-items:start;
   width:100%;padding:0;border:0;background:none;color:inherit;font:inherit;text-align:left;
