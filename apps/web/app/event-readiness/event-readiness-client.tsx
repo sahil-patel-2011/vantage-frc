@@ -19,6 +19,7 @@ import type {
   EventCandidate,
   EventReadinessView,
 } from "../../lib/event-readiness/compute-event-readiness";
+import { scoutEventLabel } from "../../lib/scouting/scouting-related";
 import type { ReadinessFlag, ScheduledItem } from "../../lib/event-readiness/schedule";
 import {
   READINESS_CATEGORIES,
@@ -373,7 +374,7 @@ function CreatePlanForm({
           >
             {candidates.map((candidate) => (
               <option key={candidate.eventKey} value={candidate.eventKey}>
-                {candidate.eventName ? `${candidate.eventName} (${candidate.eventKey})` : candidate.eventKey}
+                {scoutEventLabel({ eventName: candidate.eventName, eventKey: candidate.eventKey }) ?? candidate.eventKey}
               </option>
             ))}
             <option value="__manual__">Enter an event key by hand…</option>
@@ -485,6 +486,7 @@ function LivePlan({
     const today = new Date(`${view.today}T00:00:00Z`).getTime();
     return Math.round((start - today) / 86_400_000);
   }, [plan.eventStartDate, view.today]);
+  const eventLabel = scoutEventLabel({ eventName: plan.eventName, eventKey: plan.eventKey }) ?? plan.eventKey;
 
   return (
     <main className="module-page evr-page">
@@ -495,13 +497,13 @@ function LivePlan({
             {" / Event Readiness"}
           </>
         }
-        title={plan.eventName || plan.eventKey}
+        title={eventLabel}
         description={
           daysToEvent > 0
-            ? `${plan.eventKey} starts ${formatGroupDate(plan.eventStartDate)} — ${daysToEvent} day${daysToEvent === 1 ? "" : "s"} out.`
+            ? `${eventLabel} starts ${formatGroupDate(plan.eventStartDate)} — ${daysToEvent} day${daysToEvent === 1 ? "" : "s"} out.`
             : daysToEvent === 0
-              ? `${plan.eventKey} starts today.`
-              : `${plan.eventKey} started ${formatGroupDate(plan.eventStartDate)}.`
+              ? `${eventLabel} starts today.`
+              : `${eventLabel} started ${formatGroupDate(plan.eventStartDate)}.`
         }
       >
         {view.plans.length > 1 ? (
@@ -510,7 +512,7 @@ function LivePlan({
             <select value={plan.eventKey} onChange={(event) => onPickEvent(event.target.value)}>
               {view.plans.map((ref) => (
                 <option key={ref.id} value={ref.eventKey}>
-                  {ref.eventName || ref.eventKey}
+                  {scoutEventLabel({ eventName: ref.eventName, eventKey: ref.eventKey }) ?? ref.eventKey}
                 </option>
               ))}
             </select>

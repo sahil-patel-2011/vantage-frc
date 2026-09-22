@@ -160,6 +160,21 @@ export function scoutingOfflineBannerDetail(input: {
  * A district key is already the name people say. A team-made key embeds the
  * org id, so it is not a label — use the saved name, or a plain fallback.
  */
+export type NamedEventKey = { eventKey: string; eventName: string | null };
+
+/** Accept a cached event key string or a `{ eventKey, eventName }` row. */
+export function namedEventOption(value: unknown): NamedEventKey | null {
+  if (typeof value === "string") {
+    const eventKey = value.trim();
+    return eventKey ? { eventKey, eventName: null } : null;
+  }
+  if (!value || typeof value !== "object" || !("eventKey" in value)) return null;
+  const eventKey = (value as { eventKey?: unknown }).eventKey;
+  if (typeof eventKey !== "string" || !eventKey.trim()) return null;
+  const eventName = (value as { eventName?: unknown }).eventName;
+  return { eventKey, eventName: typeof eventName === "string" ? eventName : null };
+}
+
 export function scoutEventLabel(input: {
   eventName?: string | null;
   eventKey?: string | null;

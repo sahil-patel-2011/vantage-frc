@@ -8,6 +8,7 @@ import {
   scoutingRelatedLinks,
   scoutingSetupSteps,
   scoutingShellCopy,
+  namedEventOption,
   scoutEventLabel,
   shouldShowScoutingRecentEntries,
 } from "./scouting-related";
@@ -97,6 +98,17 @@ describe("scoutingOfflineBannerDetail", () => {
       }),
     );
     expect(blob).not.toMatch(/DEMO/i);
+  });
+});
+
+describe("namedEventOption", () => {
+  it("keeps a saved name and still accepts a plain key from an older cache", () => {
+    expect(namedEventOption({ eventKey: "2026custom-org", eventName: "Pacific Practice" })).toEqual({
+      eventKey: "2026custom-org",
+      eventName: "Pacific Practice",
+    });
+    expect(namedEventOption("2026orwil")).toEqual({ eventKey: "2026orwil", eventName: null });
+    expect(namedEventOption("  ")).toBeNull();
   });
 });
 

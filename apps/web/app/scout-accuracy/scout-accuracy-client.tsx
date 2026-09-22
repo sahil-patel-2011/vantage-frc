@@ -22,6 +22,7 @@ import {
   type ScoutAccuracyShellKind,
 } from "../../lib/scout-accuracy/scout-accuracy-related";
 import { hubHref } from "../../lib/nav/hubs";
+import { namedEventOption, scoutEventLabel } from "../../lib/scouting/scouting-related";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
@@ -427,14 +428,20 @@ export default function ScoutAccuracyClient({ orgId: initialOrgId }: { orgId?: s
               value={view.eventKey ?? ""}
               onChange={(event) => load(event.target.value)}
             >
-              {view.events.map((key) => (
-                <option key={key} value={key}>
-                  {key}
-                </option>
-              ))}
+              {view.events.map((entry) => {
+                const event = namedEventOption(entry);
+                if (!event) return null;
+                return (
+                  <option key={event.eventKey} value={event.eventKey}>
+                    {scoutEventLabel(event) ?? event.eventKey}
+                  </option>
+                );
+              })}
             </select>
           </label>
-          <span className="app-muted">{view.eventKey}</span>
+          <span className="app-muted">
+            {scoutEventLabel({ eventName: view.eventName, eventKey: view.eventKey }) ?? "Not set"}
+          </span>
         </section>
       ) : null}
 

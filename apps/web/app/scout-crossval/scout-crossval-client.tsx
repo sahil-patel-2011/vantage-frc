@@ -28,6 +28,8 @@ import {
   type ScoutCrossvalShellKind,
 } from "../../lib/scout-crossval/scout-crossval-related";
 import { hubHref } from "../../lib/nav/hubs";
+import { describeMatchKey } from "../../lib/scouting/scout-target";
+import { namedEventOption, scoutEventLabel } from "../../lib/scouting/scouting-related";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
@@ -402,14 +404,20 @@ export default function ScoutCrossvalClient({ orgId: initialOrgId }: { orgId?: s
                 load(next);
               }}
             >
-              {view.events.map((key) => (
-                <option key={key} value={key}>
-                  {key}
-                </option>
-              ))}
+              {view.events.map((entry) => {
+                const event = namedEventOption(entry);
+                if (!event) return null;
+                return (
+                  <option key={event.eventKey} value={event.eventKey}>
+                    {scoutEventLabel(event) ?? event.eventKey}
+                  </option>
+                );
+              })}
             </select>
           </label>
-          <span className="app-muted">{view.eventKey}</span>
+          <span className="app-muted">
+            {scoutEventLabel({ eventName: view.eventName, eventKey: view.eventKey }) ?? "Not set"}
+          </span>
         </section>
       ) : null}
 
@@ -516,7 +524,7 @@ function EntryRow({
       <div className="scout-crossval-row-head">
         <div>
           <strong>
-            {entry.teamNumber != null ? `Team ${entry.teamNumber}` : entry.teamKey} · {entry.matchKey}
+            {entry.teamNumber != null ? `Team ${entry.teamNumber}` : entry.teamKey} · {describeMatchKey(entry.matchKey)}
           </strong>
           <small>
             {entry.allianceColor ? `${entry.allianceColor} alliance` : "Alliance unknown"}
