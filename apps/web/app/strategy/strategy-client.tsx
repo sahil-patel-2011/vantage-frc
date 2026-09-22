@@ -259,9 +259,11 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
               >
                 Export
               </Button>
-              <Button as="a" variant="secondary" href={withOrgHref("/team/data", orgId)}>
-                Team data
-              </Button>
+              {actorRole != null && strategyCanSync(actorRole) ? (
+                <Button as="a" variant="secondary" href={withOrgHref("/team/data", orgId)}>
+                  Team data
+                </Button>
+              ) : null}
             </>
           ) : null}
           {view?.status === "live" ? (

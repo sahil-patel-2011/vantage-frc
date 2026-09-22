@@ -2,6 +2,8 @@
 import { Button } from "../../components/ui";
 
 import { useEffect, useMemo, useState } from "react";
+import { fetchProductSession } from "../../lib/nav/product-session";
+import { strategyCanSync } from "../../lib/strategy/strategy-related";
 
 type Domain = {
   id: string;
@@ -83,6 +85,7 @@ export default function ExportCenter({ orgId }: { orgId: string }) {
   const [message, setMessage] = useState("");
   const [ok, setOk] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [canSync, setCanSync] = useState(false);
 
   async function load() {
     const response = await fetch(`/api/exports?orgId=${encodeURIComponent(orgId)}`);
@@ -95,6 +98,18 @@ export default function ExportCenter({ orgId }: { orgId: string }) {
       setMessage(data.error ?? "Unable to load exports");
     }
   }
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetchProductSession(orgId).then((session) => {
+      if (cancelled) return;
+      const membership = session?.memberships?.find((entry) => entry.orgId === orgId);
+      setCanSync(strategyCanSync(membership?.role ?? session?.role));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [orgId]);
 
   useEffect(() => {
     setScope(scopeFromUrl());
@@ -241,9 +256,11 @@ export default function ExportCenter({ orgId }: { orgId: string }) {
           <Button variant="secondary" type="button" disabled={busy} onClick={() => void downloadPdf()}>
             PDF inventory
           </Button>
-          <Button as="a" variant="secondary" href={`/team/data?orgId=${encodeURIComponent(orgId)}`}>
-            Data analytics
-          </Button>
+          {canSync ? (
+            <Button as="a" variant="secondary" href={`/team/data?orgId=${encodeURIComponent(orgId)}`}>
+              Data analytics
+            </Button>
+          ) : null}
         </div>
       </header>
 
@@ -252,7 +269,7 @@ export default function ExportCenter({ orgId }: { orgId: string }) {
         <a href={`/strategy?orgId=${encodeURIComponent(orgId)}`}>Strategy</a>
         <a href={`/business?orgId=${encodeURIComponent(orgId)}`}>Business</a>
         <a href={`/team/usage?orgId=${encodeURIComponent(orgId)}`}>AI usage</a>
-        <a href={`/team/data?orgId=${encodeURIComponent(orgId)}`}>Live TBA data</a>
+        {canSync ? <a href={`/team/data?orgId=${encodeURIComponent(orgId)}`}>Live TBA data</a> : null}
       </nav>
 
       {message ? (
