@@ -121,6 +121,32 @@ export function shouldShowPickClockSummaryTiles(availableCount: number): boolean
   return availableCount > 0;
 }
 
+/** Where an empty clock should send this person. Owners sync; everyone else scouts. */
+export function pickClockEmptyAction(input: {
+  orgId?: string | null;
+  canEdit?: boolean | null;
+}): { label: string; href: string } {
+  if (input.canEdit === false) {
+    return {
+      label: "Open Scouting",
+      href: hubHref("/competition", "scouting", input.orgId),
+    };
+  }
+  return {
+    label: "Sync Team Data",
+    href: withOrgHref("/team/data", input.orgId),
+  };
+}
+
+/** Name the event whose team list has not synced, without inventing a pick. */
+export function pickClockWaitingCopy(eventName?: string | null): string {
+  const base =
+    "Recommendations stay blank until this event has a team list and free draft slots. Cross-check Strategy, Pick desk, and Chemistry.";
+  const name = eventName?.trim();
+  if (!name) return base;
+  return `${name} has no synced team list yet. ${base}`;
+}
+
 /** True when there is no recommendation left — Soft-UI empty until real pool exists. */
 export function isPickClockQueueEmpty(input: {
   hasRecommendation: boolean;
@@ -184,8 +210,7 @@ export function pickClockShellCopy(kind: PickClockShellKind): PickClockEmptyCopy
         kind,
         badge: "No teams left to recommend",
         title: "Waiting on a real pick pool",
-        description:
-          "Recommendations stay blank until this event has a team list and free draft slots. Cross-check Strategy, Pick desk, and Chemistry.",
+        description: pickClockWaitingCopy(undefined),
       };
     case "ready":
       return {

@@ -211,6 +211,7 @@ export function chemistryNextActions(input: {
   eventKey?: string | null;
   seatCount?: number;
   hasScore?: boolean;
+  canEdit?: boolean | null;
 }): ChemistryNextAction[] {
   const orgId = input.orgId ?? null;
 
@@ -252,13 +253,21 @@ export function chemistryNextActions(input: {
       ]);
     case "empty":
       return dropRelatedStripDuplicates(orgId, [
-        {
-          id: "team-data",
-          label: "Sync Team Data",
-          detail: "Load match and ranking rows for this event. Partner-fit stays blank until then.",
-          href: withOrgHref("/team/data", orgId),
-          primary: true,
-        },
+        input.canEdit === false
+          ? {
+              id: "scouting",
+              label: "Open Scouting",
+              detail: "Partner-fit stays blank until an owner or admin syncs this event. You can still scout.",
+              href: hubHref("/competition", "scouting", orgId),
+              primary: true,
+            }
+          : {
+              id: "team-data",
+              label: "Sync Team Data",
+              detail: "Load match and ranking rows for this event. Partner-fit stays blank until then.",
+              href: withOrgHref("/team/data", orgId),
+              primary: true,
+            },
         {
           id: "strategy",
           label: "Open Strategy",

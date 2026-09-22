@@ -133,6 +133,7 @@ export async function GET(request: Request) {
               }
             : null,
           draftedCount: board?.draftedTeamKeys.length ?? 0,
+          canEdit: desk.canEdit,
           ...clock,
         };
       },

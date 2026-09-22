@@ -404,6 +404,7 @@ export default function ChemistryClient({
     eventKey: view?.eventKey,
     seatCount,
     hasScore,
+    canEdit: view?.canEdit,
   });
   const emptyCopy = chemistryShellCopy("empty");
 
@@ -634,8 +635,8 @@ export default function ChemistryClient({
               : emptyCopy.description
           }
         >
-          <Button as="a" variant="primary" href={withOrgHref("/team/data", orgId)}>
-            Sync Team Data
+          <Button as="a" variant="primary" href={readyActions[0]?.href ?? withOrgHref("/team/data", orgId)}>
+            {readyActions[0]?.label ?? "Sync Team Data"}
           </Button>
         </EmptyState>
       )}

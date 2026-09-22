@@ -7,7 +7,9 @@ import {
   pickClockNextActions,
   pickClockRelatedLinks,
   pickClockSetupSteps,
+  pickClockEmptyAction,
   pickClockShellCopy,
+  pickClockWaitingCopy,
   shouldShowPickClockSummaryTiles,
 } from "./pick-clock-related";
 import { expectPlainCopy } from "../ui/copy-assertions";
@@ -109,6 +111,22 @@ describe("pickClockShellCopy", () => {
     expect(pickClockShellCopy("setup").badge).toBe("Needs setup");
     expectPlainCopy(pickClockShellCopy("setup").description);
     expectPlainCopy(pickClockShellCopy("ready").description);
+  });
+});
+
+describe("pickClockEmptyAction", () => {
+  it("sends an editor to Team Data and a scout to Scouting", () => {
+    const editor = pickClockEmptyAction({ orgId: "org-1", canEdit: true });
+    expect(editor.label).toBe("Sync Team Data");
+    expect(editor.href).toContain("/team/data");
+    expect(editor.href).toContain("orgId=org-1");
+    const scout = pickClockEmptyAction({ orgId: "org-1", canEdit: false });
+    expect(scout.label).toBe("Open Scouting");
+    expect(scout.href).toContain("tab=scouting");
+    expect(scout.href).not.toContain("/team/data");
+    expect(pickClockWaitingCopy("Pacific Practice")).toMatch(/^Pacific Practice has no synced team list yet\./);
+    expect(pickClockWaitingCopy(null)).toBe(pickClockShellCopy("empty").description);
+    expect(pickClockWaitingCopy("Pacific Practice")).not.toMatch(/\d+%/);
   });
 });
 

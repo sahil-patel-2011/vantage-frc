@@ -8,10 +8,12 @@ import {
   PICK_CLOCK_RELATED_INCLUDE,
   classifyPickClockShell,
   formatPickClockMetric,
+  pickClockEmptyAction,
   pickClockNextActions,
   pickClockRelatedLinks,
   pickClockSetupSteps,
   pickClockShellCopy,
+  pickClockWaitingCopy,
   shouldShowPickClockSummaryTiles,
   type PickClockNextAction,
   type PickClockShellKind,
@@ -58,6 +60,7 @@ type PickClockView =
         draftedAt: string | null;
       } | null;
       draftedCount: number;
+      canEdit?: boolean;
     }
   | {
       status: "setup_required";
@@ -136,6 +139,8 @@ function PickClockShell({
   onRetry,
   fromCache = false,
   cachedAt = null,
+  canSync = true,
+  eventName = null,
   children,
 }: {
   orgId?: string | null;
@@ -146,9 +151,14 @@ function PickClockShell({
   onRetry?: () => void;
   fromCache?: boolean;
   cachedAt?: string | null;
+  /** False for a scout or viewer — Team Data is owner/admin only. */
+  canSync?: boolean;
+  eventName?: string | null;
   children?: ReactNode;
 }) {
   const copy = pickClockShellCopy(shell);
+  const description = shell === "empty" ? pickClockWaitingCopy(eventName) : copy.description;
+  const emptyAction = pickClockEmptyAction({ orgId, canEdit: canSync });
   const setup = shell === "setup" ? pickClockSetupSteps(orgId)[0] : null;
   // A failed load names its own recovery — Retry cannot fix an expired session.
   const failure =
@@ -168,7 +178,6 @@ function PickClockShell({
           },
         )
       : null;
-  const teamDataHref = withOrgHref("/team/data", orgId);
 
   return (
     <main className="module-page app-shell-page pck-page pck-workbench soft-gate">
@@ -187,7 +196,7 @@ function PickClockShell({
         badge={failure ? undefined : copy.badge}
         badgeTone="setup"
         title={failure ? failure.title : copy.title}
-        description={failure ? failure.description : error ?? copy.description}
+        description={failure ? failure.description : error ?? description}
         aria-busy={shell === "loading"}
       >
         {failure?.primary ? (
@@ -206,8 +215,8 @@ function PickClockShell({
           </Button>
         ) : null}
         {shell === "empty" ? (
-          <Button as="a" variant="primary" href={teamDataHref}>
-            Sync Team Data
+          <Button as="a" variant="primary" href={emptyAction.href}>
+            {emptyAction.label}
           </Button>
         ) : null}
       </EmptyState>
@@ -475,6 +484,8 @@ export default function PickClockClient({
         shell="empty"
         fromCache={fromCache}
         cachedAt={cachedAt}
+        canSync={readyView ? readyView.canEdit !== false : true}
+        eventName={readyView?.eventName ?? null}
         error={
           excludedCount > 0
             ? `${excludedCount} already taken on the draft board. Clear slots or refresh after updates.`

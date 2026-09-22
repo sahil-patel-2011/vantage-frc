@@ -117,6 +117,32 @@ export function shouldShowDraftSummaryTiles(teamCount: number): boolean {
   return teamCount > 0;
 }
 
+/** Where an empty draft board should send this person. Owners sync; everyone else scouts. */
+export function draftEmptyAction(input: {
+  orgId?: string | null;
+  canEdit?: boolean | null;
+}): { label: string; href: string } {
+  if (input.canEdit === false) {
+    return {
+      label: "Open Scouting",
+      href: hubHref("/competition", "scouting", input.orgId),
+    };
+  }
+  return {
+    label: "Sync Team Data",
+    href: withOrgHref("/team/data", input.orgId),
+  };
+}
+
+/** Name the event that has no board yet, without inventing alliance slots. */
+export function draftWaitingCopy(eventName?: string | null): string {
+  const base =
+    "Alliance slots stay blank until an owner/admin opens Draft day with this event’s team list. Cross-check Strategy, Pick desk, and Scouting.";
+  const name = eventName?.trim();
+  if (!name) return base;
+  return `${name} has no synced team list yet. ${base}`;
+}
+
 /** True when there is no board or no synced event pool — Soft-UI empty until rows exist. */
 export function isDraftBoardEmpty(input: { hasBoard: boolean; teamCount: number }): boolean {
   return !input.hasBoard || input.teamCount === 0;
@@ -183,8 +209,7 @@ export function draftShellCopy(kind: DraftShellKind): DraftEmptyCopy {
         kind,
         badge: "No draft board yet",
         title: "Waiting on a real event board",
-        description:
-          "Alliance slots stay blank until an owner/admin opens Draft day with this event’s team list. Cross-check Strategy, Pick desk, and Scouting."
+        description: draftWaitingCopy(undefined),
       };
     default:
       return {

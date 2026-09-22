@@ -8,7 +8,9 @@ import {
   draftNextActions,
   draftRelatedLinks,
   draftSetupSteps,
+  draftEmptyAction,
   draftShellCopy,
+  draftWaitingCopy,
   shouldShowDraftSummaryTiles,
 } from "./draft-related";
 import { expectPlainCopy } from "../ui/copy-assertions";
@@ -127,6 +129,22 @@ describe("draftShellCopy", () => {
     expect(draftShellCopy("setup").badge).toBe("Needs setup");
     expectPlainCopy(draftShellCopy("ready").description);
     expect(draftShellCopy("ready").description).toMatch(/this team/i);
+  });
+});
+
+describe("draftEmptyAction", () => {
+  it("sends an editor to Team Data and a scout to Scouting", () => {
+    const editor = draftEmptyAction({ orgId: "org-1", canEdit: true });
+    expect(editor.label).toBe("Sync Team Data");
+    expect(editor.href).toContain("/team/data");
+    expect(editor.href).toContain("orgId=org-1");
+    const scout = draftEmptyAction({ orgId: "org-1", canEdit: false });
+    expect(scout.label).toBe("Open Scouting");
+    expect(scout.href).toContain("tab=scouting");
+    expect(scout.href).not.toContain("/team/data");
+    expect(draftWaitingCopy("Pacific Practice")).toMatch(/^Pacific Practice has no synced team list yet\./);
+    expect(draftWaitingCopy(undefined)).toBe(draftShellCopy("empty").description);
+    expect(draftWaitingCopy("Pacific Practice")).not.toMatch(/\d+%/);
   });
 });
 

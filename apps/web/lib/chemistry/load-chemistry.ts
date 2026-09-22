@@ -18,6 +18,8 @@ export type ChemistryView = {
   teamNumber: number | null;
   teamKey: string | null;
   tbaConfigured: boolean;
+  /** Owner or admin can open Team Data. Scouts still score seats they type. */
+  canEdit?: boolean;
   teamKeys: string[];
   chemistry: AllianceChemistryResult | null;
   teams: Array<{
@@ -57,8 +59,10 @@ export async function loadAllianceChemistry(
     teamNumber: number | null;
     eventKey: string | null;
     eventName: string | null;
+    role: string;
   }>(
-    `SELECT o.team_number AS "teamNumber", c.active_event_key AS "eventKey", e.name AS "eventName"
+    `SELECT o.team_number AS "teamNumber", c.active_event_key AS "eventKey", e.name AS "eventName",
+            m.role::text AS role
      FROM memberships m
      JOIN organizations o ON o.id = m.org_id
      LEFT JOIN org_active_context c ON c.org_id = o.id
@@ -78,6 +82,7 @@ export async function loadAllianceChemistry(
       teamNumber: null,
       teamKey: null,
       tbaConfigured: false,
+      canEdit: false,
       teamKeys: [],
       chemistry: null,
       teams: [],
@@ -86,6 +91,7 @@ export async function loadAllianceChemistry(
     };
   }
 
+  const canEdit = row.role === "owner" || row.role === "admin";
   const teamKey = row.teamNumber ? `frc${row.teamNumber}` : null;
   const tbaAccess = await resolveTbaAccess(client, input.orgId);
   let selected = (input.teamKeys ?? [])
@@ -123,6 +129,7 @@ export async function loadAllianceChemistry(
       teamNumber: row.teamNumber,
       teamKey,
       tbaConfigured: tbaAccess.tbaConfigured,
+      canEdit,
       teamKeys: selected,
       chemistry: null,
       teams: [],
@@ -142,6 +149,7 @@ export async function loadAllianceChemistry(
       teamNumber: row.teamNumber,
       teamKey,
       tbaConfigured: tbaAccess.tbaConfigured,
+      canEdit,
       teamKeys: selected,
       chemistry: null,
       teams: [],
@@ -266,6 +274,7 @@ export async function loadAllianceChemistry(
     teamNumber: row.teamNumber,
     teamKey,
     tbaConfigured: tbaAccess.tbaConfigured,
+    canEdit,
     teamKeys: selected,
     chemistry,
     teams: teamInputs.map((t) => ({
