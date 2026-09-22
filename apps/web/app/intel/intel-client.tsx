@@ -148,7 +148,6 @@ function IntelLive({ orgId }: { orgId: string }) {
     const team = Number(new URLSearchParams(window.location.search).get("team"));
     if (Number.isInteger(team) && team > 0) void select(team);
     // Once, on arrival.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // The event's teams, so the page opens on something to tap. Best effort:

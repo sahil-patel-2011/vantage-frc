@@ -53,7 +53,6 @@ export function ScoutingShell({ children }: { children: ReactNode }) {
       cancelled = true;
     };
     // Re-resolve only when the team in the URL changes.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orgId]);
 
   const team = me?.teamNumber ? `Team ${me.teamNumber}` : me?.orgName ?? null;

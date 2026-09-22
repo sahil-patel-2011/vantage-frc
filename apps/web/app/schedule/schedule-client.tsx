@@ -599,7 +599,10 @@ export default function ScheduleClient() {
       await load();
     };
 
-    void poll();
+    // The first load always runs. Pausing while hidden is for the 30s refresh;
+    // applied to the first load, a schedule opened in a background tab (a link
+    // middle-clicked from chat) sat on "Loading…" until someone looked at it.
+    void load();
 
     const arm = () => {
       timer = window.setTimeout(() => {

@@ -30,7 +30,7 @@ export async function deviceStorageSummary(): Promise<DeviceStorage> {
   } catch {
     // Some private windows reject estimate(); the card shows "—".
   }
-  let persisted: boolean | null = null;
+  let persisted: boolean | null;
   try {
     persisted = typeof storage?.persisted === "function" ? await storage.persisted() : null;
   } catch {
