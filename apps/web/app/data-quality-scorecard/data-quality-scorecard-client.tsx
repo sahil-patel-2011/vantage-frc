@@ -10,6 +10,7 @@ import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { scoutEventLabel } from "../../lib/scouting/scouting-related";
+import { describeMatchKey } from "../../lib/scouting/scout-target";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 function gradeTone(grade: DataQualityGrade): string {
@@ -373,7 +374,7 @@ export default function DataQualityScorecardClient() {
       <div style={{ display: "grid", gap: 16 }}>
         <ScorecardPanel view={view} />
         <SummaryTiles view={view} />
-        <LogCheckForm busy={busy} mutate={mutate} />
+        <LogCheckForm busy={busy} mutate={mutate} eventKey={view.eventKey} eventName={view.eventName} />
         {view.summary.totalChecks > 0 ? <Breakdowns view={view} /> : null}
         <RecentChecks view={view} busy={busy} mutate={mutate} />
       </div>
@@ -456,7 +457,7 @@ function Breakdowns({ view }: { view: LiveView }) {
         <ul className="factor-table" style={{ listStyle: "none", padding: 0, display: "grid", gap: 6 }}>
           {summary.byEvent.map((row) => (
             <li key={row.eventKey} style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-              <span>{row.eventKey}</span>
+              <span>{scoutEventLabel({ eventName: row.eventName, eventKey: row.eventKey }) ?? row.eventKey}</span>
               <small className="app-muted">
                 {row.checks} · cov {pct(row.coverage)} · dis {pct(row.disagreementRate)}
               </small>
@@ -524,8 +525,8 @@ function RecentChecks({
           >
             <div>
               <strong>
-                {item.eventKey}
-                {item.matchKey ? ` · ${item.matchKey}` : ""}
+                {scoutEventLabel({ eventName: item.eventName, eventKey: item.eventKey }) ?? item.eventKey}
+                {item.matchKey ? ` · ${describeMatchKey(item.matchKey)}` : ""}
               </strong>
               <small className="app-muted" style={{ display: "block" }}>
                 {item.checkDate} · {item.scoutName} · {item.capturedDataPoints}/{item.expectedDataPoints} fields
@@ -546,7 +547,9 @@ function RecentChecks({
               className="text-button"
               disabled={busy}
               onClick={() => {
-                if (window.confirm(`Delete check for ${item.eventKey}${item.matchKey ? ` ${item.matchKey}` : ""}?`)) {
+                const eventLabel = scoutEventLabel({ eventName: item.eventName, eventKey: item.eventKey }) ?? item.eventKey;
+                const matchLabel = item.matchKey ? ` ${describeMatchKey(item.matchKey)}` : "";
+                if (window.confirm(`Delete check for ${eventLabel}${matchLabel}?`)) {
                   mutate({ action: "delete-check", checkId: item.id });
                 }
               }}

@@ -6,6 +6,7 @@
 export type DataQualityCheck = {
   id: string;
   eventKey: string;
+  eventName: string | null;
   matchKey: string | null;
   scoutName: string;
   checkDate: string;
@@ -20,6 +21,7 @@ export type DataQualityCheck = {
 
 export type DataQualityByEvent = {
   eventKey: string;
+  eventName: string | null;
   checks: number;
   coverage: number;
   disagreementRate: number;

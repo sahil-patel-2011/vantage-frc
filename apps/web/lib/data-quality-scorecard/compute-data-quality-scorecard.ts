@@ -29,6 +29,8 @@ export type DataQualityScorecardView =
       checks: DataQualityCheck[];
       summary: DataQualityScorecardSummary;
       scorecard: DataQualityScorecard;
+      eventKey: string | null;
+      eventName: string | null;
       computedAt: string;
     };
 
@@ -39,6 +41,7 @@ export function currentSeasonYear(now: Date = new Date()): number {
 type CheckRow = {
   id: string;
   eventKey: string;
+  eventName: string | null;
   matchKey: string | null;
   scoutName: string;
   checkDate: string;
@@ -55,6 +58,7 @@ function mapCheck(row: CheckRow): DataQualityCheck {
   return {
     id: row.id,
     eventKey: row.eventKey,
+    eventName: row.eventName ?? null,
     matchKey: row.matchKey,
     scoutName: row.scoutName,
     checkDate: row.checkDate,
@@ -109,13 +113,15 @@ export async function computeDataQualityScorecardView(
 
   const [checkResult, seasonResult] = await Promise.all([
     client.query<CheckRow>(
-      `SELECT id, event_key AS "eventKey", match_key AS "matchKey", scout_name AS "scoutName",
-              check_date::text AS "checkDate", expected_data_points AS "expectedDataPoints",
-              captured_data_points AS "capturedDataPoints", cross_checked AS "crossChecked",
-              agreement, deviation_score AS "deviationScore", season_year AS "seasonYear", notes
-       FROM data_quality_scorecard_checks
-       WHERE org_id = $1 AND season_year = $2
-       ORDER BY check_date DESC, created_at DESC`,
+      `SELECT c.id, c.event_key AS "eventKey", e.name AS "eventName", c.match_key AS "matchKey",
+              c.scout_name AS "scoutName", c.check_date::text AS "checkDate",
+              c.expected_data_points AS "expectedDataPoints",
+              c.captured_data_points AS "capturedDataPoints", c.cross_checked AS "crossChecked",
+              c.agreement, c.deviation_score AS "deviationScore", c.season_year AS "seasonYear", c.notes
+       FROM data_quality_scorecard_checks c
+       LEFT JOIN events_ref e ON e.event_key = c.event_key
+       WHERE c.org_id = $1 AND c.season_year = $2
+       ORDER BY c.check_date DESC, c.created_at DESC`,
       [org.orgId, seasonYear],
     ),
     client.query<{ seasonYear: number }>(
@@ -168,6 +174,15 @@ export async function computeDataQualityScorecardView(
   const seasons = seasonResult.rows.map((r) => r.seasonYear);
   if (!seasons.includes(seasonYear)) seasons.unshift(seasonYear);
 
+  const active = await client.query<{ eventKey: string | null; eventName: string | null }>(
+    `SELECT c.active_event_key AS "eventKey", e.name AS "eventName"
+     FROM org_active_context c
+     LEFT JOIN events_ref e ON e.event_key = c.active_event_key
+     WHERE c.org_id = $1::uuid`,
+    [org.orgId],
+  );
+  const activeEvent = active.rows[0] ?? { eventKey: null, eventName: null };
+
   return {
     status: "live",
     orgId: org.orgId,
@@ -177,6 +192,8 @@ export async function computeDataQualityScorecardView(
     checks,
     summary,
     scorecard,
+    eventKey: activeEvent.eventKey,
+    eventName: activeEvent.eventName,
     computedAt: new Date().toISOString(),
   };
 }
