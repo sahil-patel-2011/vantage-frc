@@ -8,6 +8,8 @@ import { flipMatchSimResult, phaseLabel } from "../../lib/match-sim";
 import type { MatchSimView } from "../../lib/match-sim/compute-match-sim";
 import type { AllianceColor, MatchSimRun } from "../../lib/match-sim/types";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { scoutEventLabel } from "../../lib/scouting/scouting-related";
+import { describeMatchKey } from "../../lib/scouting/scout-target";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 
 function isMatchSimView(value: unknown): value is MatchSimView {
@@ -219,7 +221,12 @@ export default function MatchSimClient() {
         </EmptyState>
       ) : (
         <div style={{ display: "grid", gap: 16 }}>
-          <SimulateForm busy={busy} mutate={mutate} />
+          <SimulateForm
+            busy={busy}
+            mutate={mutate}
+            eventKey={view.eventKey}
+            eventName={view.eventName}
+          />
           {view.active ? <ActiveRunResult key={view.active.id} view={view} run={view.active} /> : null}
           <SavedRuns view={view} busy={busy} load={load} mutate={mutate} />
         </div>
@@ -231,20 +238,25 @@ export default function MatchSimClient() {
 function SimulateForm({
   busy,
   mutate,
+  eventKey,
+  eventName,
 }: {
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => void;
+  eventKey: string | null;
+  eventName: string | null;
 }) {
+  const activeEventKey = eventKey?.trim() ?? "";
   const empty = useMemo(() => {
     const params = typeof window === "undefined" ? null : new URLSearchParams(window.location.search);
     return {
       label: "",
-      eventKey: params?.get("eventKey") ?? "",
+      eventKey: params?.get("eventKey")?.trim() || activeEventKey,
       matchKey: params?.get("matchKey") ?? "",
       redTeamKeys: params?.get("red") ?? "",
       blueTeamKeys: params?.get("blue") ?? "",
     };
-  }, []);
+  }, [activeEventKey]);
   const [form, setForm] = useState(empty);
   const set = (key: keyof typeof form) => (event: { target: { value: string } }) =>
     setForm((prev) => ({ ...prev, [key]: event.target.value }));
@@ -284,8 +296,21 @@ function SimulateForm({
         <FormRow label="Blue alliance (team numbers, comma-separated)">
           <input value={form.blueTeamKeys} onChange={set("blueTeamKeys")} placeholder="118, 2056, 33" required />
         </FormRow>
-        <FormRow label="Event key (optional)">
-          <input value={form.eventKey} onChange={set("eventKey")} placeholder="2026casj" />
+        <FormRow label={form.eventKey.trim() ? "Event" : "Event key (optional)"}>
+          {form.eventKey.trim() ? (
+            <input
+              readOnly
+              aria-label="Event"
+              value={
+                scoutEventLabel({
+                  eventName: form.eventKey === activeEventKey ? eventName : null,
+                  eventKey: form.eventKey,
+                }) ?? ""
+              }
+            />
+          ) : (
+            <input value={form.eventKey} onChange={set("eventKey")} placeholder="2026casj" />
+          )}
         </FormRow>
         <FormRow label="Match key (optional)">
           <input value={form.matchKey} onChange={set("matchKey")} placeholder="2026casj_qm12" />
@@ -316,7 +341,11 @@ function ActiveRunResult({ view, run }: { view: LiveView; run: MatchSimRun }) {
           </span>
           <h2 style={{ margin: "6px 0 0" }}>{run.label}</h2>
           <small className="app-muted">
-            {run.eventKey ?? "No event"} {run.matchKey ? `· ${run.matchKey}` : ""} · margin{" "}
+            {scoutEventLabel({
+              eventName: run.eventKey && run.eventKey === view.eventKey ? view.eventName : null,
+              eventKey: run.eventKey,
+            }) ?? "No event"}
+            {run.matchKey ? ` · ${describeMatchKey(run.matchKey)}` : ""} · margin{" "}
             {result.finalMargin > 0 ? `Red +${result.finalMargin}` : result.finalMargin < 0 ? `Blue +${Math.abs(result.finalMargin)}` : "Even"}
           </small>
         </div>

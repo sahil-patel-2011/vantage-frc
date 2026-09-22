@@ -170,6 +170,16 @@ export async function computeMatchSimView(
     return setupView("Choose your team to run the match simulator.", null);
   }
 
+  const context = await client.query<{ eventKey: string | null; eventName: string | null }>(
+    `SELECT c.active_event_key AS "eventKey", e.name AS "eventName"
+     FROM org_active_context c
+     LEFT JOIN events_ref e ON e.event_key = c.active_event_key
+     WHERE c.org_id = $1::uuid`,
+    [org.orgId],
+  );
+  const eventKey = context.rows[0]?.eventKey ?? null;
+  const eventName = context.rows[0]?.eventName ?? null;
+
   const runsResult = await client.query<RunRow>(
     `SELECT id, label, event_key AS "eventKey", match_key AS "matchKey",
             red_team_keys AS "redTeamKeys", blue_team_keys AS "blueTeamKeys",
@@ -190,6 +200,8 @@ export async function computeMatchSimView(
     status: "live",
     orgId: org.orgId,
     teamNumber: org.teamNumber,
+    eventKey,
+    eventName,
     runs,
     active,
     computedAt: new Date().toISOString(),

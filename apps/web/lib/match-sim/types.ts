@@ -92,6 +92,8 @@ export type MatchSimView =
       status: "live";
       orgId: string;
       teamNumber: number | null;
+      eventKey: string | null;
+      eventName: string | null;
       runs: MatchSimRun[];
       active: MatchSimRun | null;
       computedAt: string;
