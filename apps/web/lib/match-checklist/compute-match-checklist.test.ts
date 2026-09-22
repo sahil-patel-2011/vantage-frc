@@ -101,6 +101,8 @@ describe("computeMatchChecklistView", () => {
     expect(view.summary.fastestElapsedSeconds).toBe(60);
     expect(open?.bumperColor).toBeNull();
     expect(view.upcomingMatches).toEqual([]);
+    expect(view.activeEventKey).toBe("2026miket");
+    expect(view.activeEventName).toBeNull();
   });
 
   it("overlays TBA bumper color when the team is on a cached alliance list", async () => {

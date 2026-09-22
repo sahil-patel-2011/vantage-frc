@@ -34,6 +34,7 @@ import {
   type DriveTeamSignalsShellKind,
 } from "../../lib/drive-team-signals/drive-team-signals-related";
 import { hubWorkbenchHref } from "../../lib/nav/hubs";
+import { scoutEventLabel } from "../../lib/scouting/scouting-related";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./drive-team-signals.css";
@@ -347,7 +348,7 @@ export default function DriveTeamSignalsClient() {
         </div>
       ) : null}
 
-      <CreateSheetForm busy={busy} mutate={mutate} />
+      <CreateSheetForm busy={busy} mutate={mutate} eventKey={view.eventKey} eventName={view.eventName} />
       <SheetList view={view} busy={busy} mutate={mutate} />
       <NextActionsPanel actions={nextActions} />
     </main>
@@ -357,14 +358,22 @@ export default function DriveTeamSignalsClient() {
 function CreateSheetForm({
   busy,
   mutate,
+  eventKey,
+  eventName,
 }: {
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => void;
+  eventKey: string | null;
+  eventName: string | null;
 }) {
   const empty = useMemo(() => ({ title: "", gameYear: "", eventKey: "", notes: "" }), []);
   const [form, setForm] = useState(empty);
+  const [skipEvent, setSkipEvent] = useState(false);
   const set = (key: keyof typeof form) => (event: { target: { value: string } }) =>
     setForm((prev) => ({ ...prev, [key]: event.target.value }));
+  const lockedEvent = eventKey?.trim() ?? "";
+  const lockedLabel = lockedEvent ? scoutEventLabel({ eventName, eventKey: lockedEvent }) : null;
+  const submittedEvent = skipEvent ? form.eventKey.trim() : lockedEvent || form.eventKey.trim();
 
   return (
     <Panel
@@ -378,7 +387,7 @@ function CreateSheetForm({
           action: "create-sheet",
           title: form.title,
           gameYear: form.gameYear ? Number(form.gameYear) : undefined,
-          eventKey: form.eventKey || undefined,
+          eventKey: submittedEvent || undefined,
           notes: form.notes || undefined,
         });
         setForm(empty);
@@ -393,9 +402,15 @@ function CreateSheetForm({
         <FormRow label="Game year (optional)">
           <input type="number" min={2000} max={2999} value={form.gameYear} onChange={set("gameYear")} />
         </FormRow>
-        <FormRow label="Event (optional)">
-          <input value={form.eventKey} onChange={set("eventKey")} placeholder="2026miket" />
-        </FormRow>
+        {lockedLabel && !skipEvent ? (
+          <FormRow label="Event">
+            <input readOnly aria-label="Event" value={lockedLabel} />
+          </FormRow>
+        ) : (
+          <FormRow label="Event (optional)">
+            <input value={form.eventKey} onChange={set("eventKey")} placeholder="2026miket" />
+          </FormRow>
+        )}
       </FormGrid>
       <FormRow label="Notes (optional)">
         <textarea value={form.notes} onChange={set("notes")} rows={2} />
@@ -404,6 +419,11 @@ function CreateSheetForm({
         <Button variant="primary" type="submit" disabled={busy || !form.title.trim()}>
           Create sheet
         </Button>
+        {lockedLabel ? (
+          <Button variant="secondary" type="button" onClick={() => setSkipEvent((current) => !current)}>
+            {skipEvent ? lockedLabel : "Not for one event"}
+          </Button>
+        ) : null}
       </div>
     </Panel>
   );
@@ -454,7 +474,10 @@ function SheetCard({
           <h2>{sheet.title}</h2>
           <small className="app-muted">
             {sheet.gameYear}
-            {sheet.eventKey ? ` · ${sheet.eventKey}` : ""} · {sheet.signals.length} signal(s)
+            {sheet.eventKey
+              ? ` · ${scoutEventLabel({ eventName: sheet.eventName, eventKey: sheet.eventKey })}`
+              : ""}{" "}
+            · {sheet.signals.length} signal{sheet.signals.length === 1 ? "" : "s"}
           </small>
           {sheet.notes ? <p className="app-muted dts-tip">{sheet.notes}</p> : null}
         </div>

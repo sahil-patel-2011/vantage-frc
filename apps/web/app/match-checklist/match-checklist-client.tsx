@@ -25,6 +25,7 @@ import {
 } from "../../lib/match-checklist/match-checklist-related";
 import type { ChecklistItem, MatchChecklistRun } from "../../lib/match-checklist/types";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { scoutEventLabel } from "../../lib/scouting/scouting-related";
 import "./match-checklist.css";
 
 type LiveView = Extract<MatchChecklistView, { status: "live" }>;
@@ -250,6 +251,7 @@ export default function MatchChecklistClient(_props: { embedded?: boolean } = {}
             teamNumber={view.teamNumber}
             upcomingMatches={view.upcomingMatches}
             activeEventKey={view.activeEventKey}
+            activeEventName={view.activeEventName}
           />
           <RunList view={view} busy={busy} mutate={mutate} />
         </div>
@@ -320,18 +322,24 @@ function StartRunForm({
   teamNumber,
   upcomingMatches,
   activeEventKey,
+  activeEventName,
 }: {
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => void;
   teamNumber: number | null;
   upcomingMatches: LiveView["upcomingMatches"];
   activeEventKey: string | null;
+  activeEventName: string | null;
 }) {
   const empty = useMemo(() => ({ matchLabel: "", eventKey: "", teamNumber: "" }), []);
   const [form, setForm] = useState(empty);
   const set = (key: keyof typeof form) => (event: { target: { value: string } }) =>
     setForm((prev) => ({ ...prev, [key]: event.target.value }));
   const next = upcomingMatches[0] ?? null;
+  const lockedEvent = activeEventKey?.trim() ?? "";
+  const lockedLabel = lockedEvent
+    ? scoutEventLabel({ eventName: activeEventName, eventKey: lockedEvent })
+    : null;
 
   return (
     <Panel
@@ -343,7 +351,7 @@ function StartRunForm({
         mutate({
           action: "start-run",
           matchLabel: form.matchLabel,
-          eventKey: form.eventKey || undefined,
+          eventKey: lockedEvent || form.eventKey || undefined,
           teamNumber: form.teamNumber ? Number(form.teamNumber) : teamNumber ?? undefined,
         });
         setForm(empty);
@@ -401,13 +409,19 @@ function StartRunForm({
             ))}
           </datalist>
         </FormRow>
-        <FormRow label="Event (optional)">
-          <input
-            value={form.eventKey}
-            onChange={set("eventKey")}
-            placeholder={activeEventKey ?? "2026miket"}
-          />
-        </FormRow>
+        {lockedLabel ? (
+          <FormRow label="Event">
+            <input readOnly aria-label="Event" value={lockedLabel} />
+          </FormRow>
+        ) : (
+          <FormRow label="Event (optional)">
+            <input
+              value={form.eventKey}
+              onChange={set("eventKey")}
+              placeholder="2026miket"
+            />
+          </FormRow>
+        )}
         <FormRow label="Team # (optional)">
           <input
             type="number"
@@ -462,7 +476,14 @@ function RunList({
         </p>
       </header>
       {view.runs.map((run) => (
-        <RunCard key={run.id} run={run} busy={busy} mutate={mutate} />
+        <RunCard
+          key={run.id}
+          run={run}
+          busy={busy}
+          mutate={mutate}
+          activeEventKey={view.activeEventKey}
+          activeEventName={view.activeEventName}
+        />
       ))}
     </section>
   );
@@ -479,10 +500,14 @@ function RunCard({
   run,
   busy,
   mutate,
+  activeEventKey,
+  activeEventName,
 }: {
   run: MatchChecklistRun;
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => void;
+  activeEventKey: string | null;
+  activeEventName: string | null;
 }) {
   const elapsed =
     run.startedAt != null
@@ -518,7 +543,12 @@ function RunCard({
           </div>
           <h3>{run.matchLabel}</h3>
           <span className="mcl-run-meta">
-            {run.eventKey ? `${run.eventKey} · ` : ""}
+            {run.eventKey
+              ? `${scoutEventLabel({
+                  eventName: run.eventKey === activeEventKey ? activeEventName : null,
+                  eventKey: run.eventKey,
+                })} · `
+              : ""}
             {run.teamNumber ? `Team ${run.teamNumber} · ` : ""}
             Started{" "}
             {new Date(run.startedAt).toLocaleString(undefined, {

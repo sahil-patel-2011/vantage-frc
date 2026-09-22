@@ -40,6 +40,7 @@ describe("drive-team-signals pure helpers", () => {
         title: "2026 Reefscape",
         gameYear: 2026,
         eventKey: null,
+        eventName: null,
         notes: null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -104,6 +105,25 @@ describe("computeDriveTeamSignalsView", () => {
       expect(view.sheets[0]!.signals[0]!.code).toBe("Fist pump");
       expect(view.summary.totalSignals).toBe(1);
       expect(view.summary.criticalSignals).toBe(1);
+      expect(view.eventKey).toBeNull();
+      expect(view.sheets[0]!.eventName).toBeNull();
     }
+  });
+
+  it("names the active event on a live signal board", async () => {
+    const client = mockClient((sql) => {
+      if (sql.includes("FROM memberships")) {
+        return { rows: [{ orgId: ORG, teamNumber: 100 }], rowCount: 1 };
+      }
+      if (sql.includes("FROM org_active_context")) {
+        return { rows: [{ eventKey: "2026custom-org-pacific", eventName: "Pacific Practice" }], rowCount: 1 };
+      }
+      return { rows: [], rowCount: 0 };
+    });
+    const view = await computeDriveTeamSignalsView(client, { userId: USER, requestedOrg: ORG });
+    expect(view.status).toBe("live");
+    if (view.status !== "live") throw new Error("expected live view");
+    expect(view.eventName).toBe("Pacific Practice");
+    expect(view.eventKey).toBe("2026custom-org-pacific");
   });
 });
