@@ -453,12 +453,11 @@ export default function ScoutDataImpactClient({ orgId: initialOrgId }: { orgId?:
             >
               {view.events.map((e) => (
                 <option key={e.eventKey} value={e.eventKey}>
-                  {e.name ?? e.eventKey}
+                  {scoutEventLabel({ eventName: e.name, eventKey: e.eventKey }) ?? e.eventKey}
                 </option>
               ))}
             </select>
           </label>
-          <span className="app-muted">{view.eventKey}</span>
         </section>
       ) : null}
 

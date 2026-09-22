@@ -119,6 +119,7 @@ describe("computeScoutCoverageLiveView", () => {
         };
       }
       if (sql.includes("FROM scout_coverage_live_nudges")) return { rows: [] };
+      if (sql.includes("FROM events_ref")) return { rows: [{ eventName: "Houston" }] };
       return { rows: [] };
     });
 
@@ -127,6 +128,7 @@ describe("computeScoutCoverageLiveView", () => {
     expect(view.status).toBe("live");
     if (view.status !== "live") throw new Error("expected live view");
     expect(view.eventKey).toBe(EVENT);
+    expect(view.eventName).toBe("Houston");
     expect(view.cells).toHaveLength(4);
     expect(view.summary.zeroCount).toBe(3);
     expect(view.summary.coveredCount).toBe(1);

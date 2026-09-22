@@ -26,6 +26,7 @@ export type ScoutCoverageLiveView =
       orgId: string;
       teamNumber: number | null;
       eventKey: string;
+      eventName: string | null;
       thinThreshold: number;
       cells: CoverageCell[];
       summary: CoverageSummary;
@@ -162,6 +163,7 @@ export async function computeScoutCoverageLiveView(
     orgId: coverage.orgId,
     teamNumber: coverage.teamNumber,
     eventKey: coverage.eventKey,
+    eventName: coverage.eventName,
     thinThreshold,
     cells,
     summary,

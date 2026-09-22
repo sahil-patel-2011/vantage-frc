@@ -28,6 +28,7 @@ import {
   type ScoutCoverageLiveShellKind,
 } from "../../lib/scout-coverage-live/scout-coverage-live-related";
 import { hubHref } from "../../lib/nav/hubs";
+import { scoutEventLabel } from "../../lib/scouting/scouting-related";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
@@ -399,7 +400,9 @@ export default function ScoutCoverageLiveClient({ orgId: initialOrgId }: { orgId
       <section className="scout-coverage-live-event" aria-label="Event and thin threshold">
         <div>
           <span className="app-muted">Event</span>
-          <strong style={{ display: "block" }}>{view.eventKey}</strong>
+          <strong style={{ display: "block" }}>
+            {scoutEventLabel({ eventName: view.eventName, eventKey: view.eventKey }) ?? "Your event"}
+          </strong>
         </div>
         <form
           onSubmit={(event) => {

@@ -123,7 +123,7 @@ describe("computeMatchDeltaWatcherView", () => {
         };
       }
       if (sql.includes("SELECT DISTINCT m.event_key")) {
-        return { rows: [{ eventKey: EVENT }], rowCount: 1 };
+        return { rows: [{ eventKey: EVENT, eventName: "Silicon Valley" }], rowCount: 1 };
       }
       if (sql.includes("FROM match_delta_watcher_alerts")) {
         return {
@@ -159,6 +159,8 @@ describe("computeMatchDeltaWatcherView", () => {
     if (view.status === "live") {
       expect(view.orgId).toBe(ORG);
       expect(view.eventKey).toBe(EVENT);
+      expect(view.eventName).toBe("Silicon Valley");
+      expect(view.events).toEqual([{ eventKey: EVENT, eventName: "Silicon Valley" }]);
       expect(view.alerts).toHaveLength(1);
       expect(view.alerts[0].severity).toBe("critical");
       expect(view.summary.totalWatchedMatches).toBe(5);

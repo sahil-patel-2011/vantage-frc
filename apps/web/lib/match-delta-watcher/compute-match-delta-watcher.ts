@@ -32,7 +32,8 @@ export type MatchDeltaWatcherView =
       orgId: string;
       teamNumber: number | null;
       eventKey: string;
-      events: string[];
+      eventName: string | null;
+      events: Array<{ eventKey: string; eventName: string | null }>;
       config: MatchDeltaConfig | null;
       alerts: MatchDeltaAlert[];
       summary: MatchDeltaSummary;
@@ -170,9 +171,11 @@ export async function computeMatchDeltaWatcherView(
        FROM match_delta_watcher_configs WHERE org_id = $1 AND event_key = $2 LIMIT 1`,
       [org.orgId, eventKey],
     ),
-    client.query<{ eventKey: string }>(
-      `SELECT DISTINCT m.event_key AS "eventKey"
-       FROM predictions p JOIN matches_ref m ON m.match_key = p.match_key
+    client.query<{ eventKey: string; eventName: string | null }>(
+      `SELECT DISTINCT m.event_key AS "eventKey", e.name AS "eventName"
+       FROM predictions p
+       JOIN matches_ref m ON m.match_key = p.match_key
+       LEFT JOIN events_ref e ON e.event_key = m.event_key
        WHERE p.org_id = $1
          AND COALESCE(p.model_version, '') !~* 'demo'
          AND COALESCE(p.caveats::text, '') !~* 'demo'
@@ -219,8 +222,14 @@ export async function computeMatchDeltaWatcherView(
   const totalScored = Number(accuracyResult.rows[0]?.totalScored ?? 0);
   const correct = Number(accuracyResult.rows[0]?.correct ?? 0);
   const summary = summarizeAlerts(alerts, totalScored, correct);
-  const events = eventsResult.rows.map((r) => r.eventKey);
-  if (!events.includes(eventKey)) events.unshift(eventKey);
+  const events = eventsResult.rows.map((row) => ({
+    eventKey: row.eventKey,
+    eventName: row.eventName ?? null,
+  }));
+  if (!events.some((event) => event.eventKey === eventKey)) {
+    events.unshift({ eventKey, eventName: null });
+  }
+  const eventName = events.find((event) => event.eventKey === eventKey)?.eventName ?? null;
 
   const configRow = configResult.rows[0];
   const config: MatchDeltaConfig | null = configRow
@@ -239,6 +248,7 @@ export async function computeMatchDeltaWatcherView(
     orgId: org.orgId,
     teamNumber: org.teamNumber,
     eventKey,
+    eventName,
     events,
     config,
     alerts,
