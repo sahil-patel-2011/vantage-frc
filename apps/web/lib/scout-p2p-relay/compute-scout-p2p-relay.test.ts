@@ -42,7 +42,23 @@ describe("computeScoutP2pRelayView", () => {
       expect(view.sessions).toEqual([]);
       expect(view.summary.totalSessions).toBe(0);
       expect(view.summary.uplinkRate).toBe(0);
+      expect(view.eventKey).toBeNull();
+      expect(view.eventName).toBeNull();
     }
+  });
+
+  it("returns the active event name when the org has one and no relay sessions", async () => {
+    const client = queueClient([
+      { rows: [{ orgId: ORG, teamNumber: 118 }] },
+      { rows: [] },
+      { rows: [] },
+      { rows: [{ eventKey: "2026custom-org-pacific", eventName: "Pacific Practice" }] },
+    ]);
+    const view = await computeScoutP2pRelayView(client, { userId: USER, requestedOrg: ORG });
+    expect(view.status).toBe("live");
+    if (view.status !== "live") throw new Error("expected live");
+    expect(view.eventKey).toBe("2026custom-org-pacific");
+    expect(view.eventName).toBe("Pacific Practice");
   });
 
   it("aggregates device merge entries into session rollups and an org summary", async () => {

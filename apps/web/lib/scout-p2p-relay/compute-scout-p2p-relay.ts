@@ -31,12 +31,15 @@ export type ScoutP2pRelayView =
       sessions: RelaySession[];
       entries: RelayEntry[];
       summary: RelaySummary;
+      eventKey: string | null;
+      eventName: string | null;
       computedAt: string;
     };
 
 type SessionRow = {
   id: string;
   eventKey: string;
+  eventName: string | null;
   seasonYear: number;
   captainDeviceLabel: string;
   status: RelaySessionStatus;
@@ -73,6 +76,7 @@ function mapSession(row: SessionRow, entries: RelayEntry[]): RelaySession {
   return {
     id: row.id,
     eventKey: row.eventKey,
+    eventName: row.eventName ?? null,
     seasonYear: row.seasonYear,
     captainDeviceLabel: row.captainDeviceLabel,
     status: row.status,
@@ -114,12 +118,13 @@ export async function computeScoutP2pRelayView(
 
   const [sessionResult, seasonResult] = await Promise.all([
     client.query<SessionRow>(
-      `SELECT id, event_key AS "eventKey", season_year AS "seasonYear",
-              captain_device_label AS "captainDeviceLabel", status,
-              started_at::text AS "startedAt", closed_at::text AS "closedAt"
-       FROM scout_p2p_relay_sessions
-       WHERE org_id = $1 AND season_year = $2
-       ORDER BY started_at DESC`,
+      `SELECT s.id, s.event_key AS "eventKey", e.name AS "eventName", s.season_year AS "seasonYear",
+              s.captain_device_label AS "captainDeviceLabel", s.status,
+              s.started_at::text AS "startedAt", s.closed_at::text AS "closedAt"
+       FROM scout_p2p_relay_sessions s
+       LEFT JOIN events_ref e ON e.event_key = s.event_key
+       WHERE s.org_id = $1 AND s.season_year = $2
+       ORDER BY s.started_at DESC`,
       [org.orgId, seasonYear],
     ),
     client.query<{ seasonYear: number }>(
@@ -154,6 +159,15 @@ export async function computeScoutP2pRelayView(
   const seasons = seasonResult.rows.map((r) => r.seasonYear);
   if (!seasons.includes(seasonYear)) seasons.unshift(seasonYear);
 
+  const active = await client.query<{ eventKey: string | null; eventName: string | null }>(
+    `SELECT c.active_event_key AS "eventKey", e.name AS "eventName"
+     FROM org_active_context c
+     LEFT JOIN events_ref e ON e.event_key = c.active_event_key
+     WHERE c.org_id = $1::uuid`,
+    [org.orgId],
+  );
+  const activeEvent = active.rows[0] ?? { eventKey: null, eventName: null };
+
   return {
     status: "live",
     orgId: org.orgId,
@@ -163,6 +177,8 @@ export async function computeScoutP2pRelayView(
     sessions,
     entries,
     summary,
+    eventKey: activeEvent.eventKey,
+    eventName: activeEvent.eventName,
     computedAt: new Date().toISOString(),
   };
 }
