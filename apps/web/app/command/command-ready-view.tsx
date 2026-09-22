@@ -101,6 +101,7 @@ export function CommandReadyView({
         orgName={snap.orgName ?? me.orgName ?? null}
         teamNumber={snap.teamNumber ?? me.teamNumber ?? null}
         eventKey={snap.eventKey ?? null}
+        eventName={snap.eventName ?? null}
         loading={loading && !snap}
         computedAt={snap.computedAt ?? null}
         canSetEvent={Boolean(snap.canSetEvent)}

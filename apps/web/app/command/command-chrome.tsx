@@ -14,6 +14,7 @@ import {
 } from "../../lib/command/event-day-related";
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { scoutEventLabel } from "../../lib/scouting/scouting-related";
 
 export function EventDayRelatedStrip({ orgId }: { orgId?: string | null }) {
   const links = eventDayRelatedLinks(orgId, {
@@ -162,6 +163,7 @@ export function CommandReadyHeader({
   orgName,
   teamNumber,
   eventKey,
+  eventName,
   loading,
   computedAt,
   canSetEvent,
@@ -175,6 +177,7 @@ export function CommandReadyHeader({
   orgName: string | null;
   teamNumber: number | null;
   eventKey: string | null;
+  eventName?: string | null;
   loading: boolean;
   computedAt: string | null;
   canSetEvent: boolean;
@@ -182,6 +185,7 @@ export function CommandReadyHeader({
   onRefresh: () => void;
   headerActions?: ReactNode;
 }) {
+  const eventLabel = scoutEventLabel({ eventName, eventKey });
   const actions = headerActions ?? (
     <div className="edc-header-actions">
       <span className="edc-live" aria-live="polite">
@@ -216,7 +220,7 @@ export function CommandReadyHeader({
         <>
           {orgName ?? "Your team"}
           {teamNumber ? ` · Team ${teamNumber}` : ""}
-          {eventKey ? ` · ${eventKey}` : ""}
+          {eventLabel ? ` · ${eventLabel}` : ""}
           {" — "}
           Next match, scout gaps, and briefs.
         </>

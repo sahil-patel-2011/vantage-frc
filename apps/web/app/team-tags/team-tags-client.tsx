@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
+import { scoutEventLabel } from "../../lib/scouting/scouting-related";
 import type { TeamTagsView } from "../../lib/team-tags/compute-team-tags";
 import { hubHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
@@ -247,7 +248,7 @@ function LiveTags({
 
       <Panel>
         <p className="app-muted">
-          Tag robots as you watch. Event {view.eventKey ?? "not set"} — teams in the picker come from the synced event
+          Tag robots as you watch. Event {scoutEventLabel({ eventName: view.eventName, eventKey: view.eventKey }) ?? "not set"} — teams in the picker come from the synced event
           schedule.
         </p>
         <form className="team-tags-form" onSubmit={onSubmit}>

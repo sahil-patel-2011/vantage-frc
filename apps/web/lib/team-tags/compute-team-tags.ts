@@ -37,6 +37,7 @@ export type TeamTagsView =
       teamNumber: number | null;
       seasonYear: number;
       eventKey: string | null;
+      eventName: string | null;
       eventTeams: number[];
       defs: TeamTagDef[];
       assignments: TeamTagAssignment[];
@@ -197,8 +198,11 @@ export async function computeTeamTagsView(
          LIMIT 500`,
         [org.orgId, seasonYear],
       ),
-      client.query<{ eventKey: string | null }>(
-        `SELECT active_event_key AS "eventKey" FROM org_active_context WHERE org_id = $1`,
+      client.query<{ eventKey: string | null; eventName: string | null }>(
+        `SELECT c.active_event_key AS "eventKey", e.name AS "eventName"
+         FROM org_active_context c
+         LEFT JOIN events_ref e ON e.event_key = c.active_event_key
+         WHERE c.org_id = $1`,
         [org.orgId],
       ),
       client.query<{ teamKey: string }>(
@@ -212,6 +216,7 @@ export async function computeTeamTagsView(
     ]);
 
     const eventKey = context.rows[0]?.eventKey ?? null;
+    const eventName = context.rows[0]?.eventName ?? null;
     const eventAssignments = assignmentsForEvent(assignments.rows, eventKey);
     return {
       status: "live",
@@ -219,6 +224,7 @@ export async function computeTeamTagsView(
       teamNumber: org.teamNumber,
       seasonYear,
       eventKey,
+      eventName,
       eventTeams: eventTeams.rows
         .map((row) => teamKeyNumber(row.teamKey))
         .filter((value): value is number => value != null),

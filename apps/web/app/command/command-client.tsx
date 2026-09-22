@@ -6,6 +6,7 @@ import { useVenueShortcuts } from "../../hooks/use-venue-shortcuts";
 import { countdownLabel } from "../dashboard/widgets";
 import { eventDayNextActions } from "../../lib/command/event-day-actions";
 import { formatEventDayMatchCount } from "../../lib/command/event-day-related";
+import { scoutEventLabel } from "../../lib/scouting/scouting-related";
 import type { CommandSnapshot } from "../../lib/command/types";
 import { FEATURE_API_TIMEOUT_MS, fetchActiveOrgId, readOrgIdFromSearch } from "../../lib/nav/resolve-org";
 import { requestMe } from "../../lib/nav/me-request";
@@ -318,7 +319,7 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
       <>
         <EventDayShell embedded={embedded} orgId={orgId || null} shell="empty" hasActiveEvent={Boolean(snap?.eventKey)}>
           <p className="edc-freshness" role="status">
-            {snap?.eventName ?? snap?.eventKey ?? "Active event"}
+            {scoutEventLabel({ eventName: snap?.eventName, eventKey: snap?.eventKey }) ?? "Active event"}
             {" · "}
             {formatEventDayMatchCount(snap?.matches.length ?? 0, Boolean(snap))} upcoming matches
           </p>

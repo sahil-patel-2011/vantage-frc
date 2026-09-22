@@ -30,8 +30,11 @@ export async function GET(request: Request) {
 
     const data = await withRls({ userId: session.user.id, orgId }, async (client) => {
       await assertOrgCapability(client, orgId, "manage_api_keys");
-      const active = await client.query<{ eventKey: string | null }>(
-        `SELECT active_event_key AS "eventKey" FROM org_active_context WHERE org_id=$1::uuid`,
+      const active = await client.query<{ eventKey: string | null; eventName: string | null }>(
+        `SELECT c.active_event_key AS "eventKey", e.name AS "eventName"
+         FROM org_active_context c
+         LEFT JOIN events_ref e ON e.event_key = c.active_event_key
+         WHERE c.org_id = $1::uuid`,
         [orgId],
       );
       const inventory = (
@@ -60,6 +63,7 @@ export async function GET(request: Request) {
       ).rows;
       return {
         activeEventKey: active.rows[0]?.eventKey ?? null,
+        activeEventName: active.rows[0]?.eventName ?? null,
         inventory,
         reference,
         credentials: (

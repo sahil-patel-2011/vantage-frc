@@ -10,6 +10,7 @@ import { withOrgHref } from "../../../lib/nav/product-nav";
 import { loadFailureCopy } from "../../../lib/ui/load-failure";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
 import type { DataSourceHealthView } from "../../../lib/reference-health";
+import { scoutEventLabel } from "../../../lib/scouting/scouting-related";
 import {
   TEAM_DATA_RELATED_INCLUDE,
   classifyTeamDataShell,
@@ -33,6 +34,7 @@ type TeamDataSnapshot = {
   inventory: InventoryRow[];
   reference: InventoryRow[];
   activeEventKey: string | null;
+  activeEventName?: string | null;
   credentials: Credential[];
   health: Record<string, unknown> | null;
   dataSourceHealth: DataSourceHealthView | null;
@@ -252,6 +254,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
   const [inventory, setInventory] = useState<InventoryRow[]>([]);
   const [reference, setReference] = useState<InventoryRow[]>([]);
   const [activeEventKey, setActiveEventKey] = useState<string | null>(null);
+  const [activeEventName, setActiveEventName] = useState<string | null>(null);
   const [credentials, setCredentials] = useState<Credential[]>([]);
   const [health, setHealth] = useState<Record<string, unknown> | null>(null);
   const [dataSourceHealth, setDataSourceHealth] = useState<DataSourceHealthView | null>(null);
@@ -274,6 +277,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
     setInventory(data.inventory);
     setReference(data.reference);
     setActiveEventKey(data.activeEventKey ?? null);
+    setActiveEventName(data.activeEventName ?? null);
     setCredentials(data.credentials ?? []);
     setHealth(data.health ?? null);
     setDataSourceHealth(data.dataSourceHealth ?? null);
@@ -309,6 +313,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
         setInventory([]);
         setReference([]);
         setActiveEventKey(null);
+        setActiveEventName(null);
         setCredentials([]);
         setHealth(null);
         setDataSourceHealth(null);
@@ -340,6 +345,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
         inventory: data.inventory,
         reference: data.reference,
         activeEventKey: data.activeEventKey ?? null,
+        activeEventName: data.activeEventName ?? null,
         credentials: data.credentials ?? [],
         health: data.health ?? null,
         dataSourceHealth: data.dataSourceHealth ?? null,
@@ -352,6 +358,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
         inventory: data.inventory,
         reference: data.reference,
         activeEventKey: data.activeEventKey ?? null,
+        activeEventName: data.activeEventName ?? null,
         credentials: data.credentials ?? [],
         health: data.health ?? null,
         dataSourceHealth: data.dataSourceHealth ?? null,
@@ -440,6 +447,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
   }
 
   const hasActiveEvent = Boolean(activeEventKey);
+  const activeEventLabel = scoutEventLabel({ eventName: activeEventName, eventKey: activeEventKey }) ?? "Not set";
   const tbaConfigured = isTbaConfigured({
     credentialCount: credentials.length,
     dataSourceMode: dataSourceHealth?.mode ?? null,
@@ -590,7 +598,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
             badge="No cache yet"
             badgeTone="setup"
             title="Sync the active event"
-            description={`Event ${activeEventKey} is selected, but there are no match or ranking rows yet. Sync pulls the official event numbers.`}
+            description={`${activeEventLabel} is selected, but there are no match or ranking rows yet. Sync pulls the official event numbers.`}
           >
             <Button variant="primary" type="button" disabled={busy} onClick={() => void syncActiveEvent()}>
               {busy ? "Working…" : "Sync active event"}
@@ -603,7 +611,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
         <section className="app-card soft-panel team-data-panel">
           <h2>Team inventory</h2>
           <p className="app-muted">
-            Active event: <strong>{activeEventKey ?? "Not set"}</strong>
+            Active event: <strong>{activeEventLabel}</strong>
           </p>
           {inventory.length === 0 ? (
             <p className="app-muted">Nothing on this team yet — counts appear once your team adds data.</p>
