@@ -53,6 +53,7 @@ export async function GET(request: Request) {
         ],
         orgId: null,
         eventKey: null,
+        eventName: null,
       } satisfies ScoutDataImpactView,
       { status: 200 },
     );

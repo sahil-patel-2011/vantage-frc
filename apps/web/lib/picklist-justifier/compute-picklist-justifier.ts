@@ -98,15 +98,18 @@ async function loadPickLists(client: PoolClient, orgId: string): Promise<PickLis
     id: string;
     name: string;
     eventKey: string;
+    eventName: string | null;
     entryCount: string;
     updatedAt: string;
   }>(
-    `SELECT pl.id, pl.name, pl.event_key AS "eventKey", pl.updated_at::text AS "updatedAt",
+    `SELECT pl.id, pl.name, pl.event_key AS "eventKey", e.name AS "eventName",
+            pl.updated_at::text AS "updatedAt",
             COUNT(pe.id)::text AS "entryCount"
      FROM pick_lists pl
      LEFT JOIN pick_list_entries pe ON pe.pick_list_id = pl.id
+     LEFT JOIN events_ref e ON e.event_key = pl.event_key
      WHERE pl.org_id = $1
-     GROUP BY pl.id
+     GROUP BY pl.id, e.name
      ORDER BY pl.updated_at DESC`,
     [orgId],
   );
@@ -114,6 +117,7 @@ async function loadPickLists(client: PoolClient, orgId: string): Promise<PickLis
     id: row.id,
     name: row.name,
     eventKey: row.eventKey,
+    eventName: row.eventName ?? null,
     entryCount: Number(row.entryCount) || 0,
     updatedAt: row.updatedAt,
   }));

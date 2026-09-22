@@ -20,6 +20,7 @@ import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { scoutEventLabel } from "../../lib/scouting/scouting-related";
 import "./picklist-justifier.css";
 
 function isPicklistJustifierView(value: unknown): value is PicklistJustifierView {
@@ -51,6 +52,15 @@ async function persistPicklistJustifierSnapshot(
 }
 
 type LiveView = Extract<PicklistJustifierView, { status: "live" }>;
+
+function justifierEventLabel(view: LiveView): string {
+  const selected =
+    view.pickLists.find((list) => list.id === view.selectedPickListId) ?? view.pickLists[0];
+  return (
+    scoutEventLabel({ eventName: selected?.eventName, eventKey: view.eventKey ?? selected?.eventKey }) ??
+    "No event"
+  );
+}
 
 function JustifierRelatedStrip({ orgId }: { orgId?: string | null }) {
   const links = picklistJustifierRelatedLinks(orgId, {
@@ -353,7 +363,7 @@ export default function PicklistJustifierClient() {
               >
                 {view.pickLists.map((pl) => (
                   <option key={pl.id} value={pl.id}>
-                    {pl.name} ({pl.eventKey}) · {pl.entryCount} teams
+                    {pl.name} · {scoutEventLabel(pl) ?? "Your event"} · {pl.entryCount} teams
                   </option>
                 ))}
               </select>
@@ -444,7 +454,7 @@ function SummaryPanel({
     <Panel id="picklist-justifier-summary" className="picklist-justifier-panel" aria-label="Pick-list justifier summary">
       <header className="picklist-justifier-card-header">
         <div>
-          <h2 style={{ margin: 0 }}>{view.eventKey ?? "No event"}</h2>
+          <h2 style={{ margin: 0 }}>{justifierEventLabel(view)}</h2>
           <small className="app-muted">
             {view.entries.length} slot{view.entries.length === 1 ? "" : "s"}
             {view.contradictionCount > 0 ? (

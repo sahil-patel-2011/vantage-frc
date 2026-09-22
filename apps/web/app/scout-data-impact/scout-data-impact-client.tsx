@@ -26,6 +26,7 @@ import {
 } from "../../lib/scout-data-impact/scout-data-impact-related";
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { scoutEventLabel } from "../../lib/scouting/scouting-related";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./scout-data-impact.css";
@@ -106,6 +107,9 @@ function ScoutDataImpactShell({
   onRetry,
   children,
   logPick,
+  emptyTitle,
+  emptyDescription,
+  action,
 }: {
   description: string;
   orgId?: string | null;
@@ -116,11 +120,15 @@ function ScoutDataImpactShell({
   onRetry?: () => void;
   children?: ReactNode;
   logPick?: ReactNode;
+  emptyTitle?: string;
+  emptyDescription?: string;
+  action?: { href: string; label: string };
 }) {
   const actions = scoutDataImpactNextActions({ orgId, shell });
   const copy = scoutDataImpactShellCopy(shell);
   const competitionHref = hubHref("/competition", "scouting", orgId);
-  const setup = shell === "setup" ? scoutDataImpactSetupSteps(orgId)[0] : null;
+  const setup =
+    shell === "setup" ? (action ?? scoutDataImpactSetupSteps(orgId)[0]) : null;
   const failure =
     shell === "error"
       ? loadFailureCopy(
@@ -166,8 +174,8 @@ function ScoutDataImpactShell({
                 : copy.badge
         }
         badgeTone="setup"
-        title={failure ? failure.title : copy.title}
-        description={failure ? failure.description : (error ?? copy.description)}
+        title={failure ? failure.title : (emptyTitle ?? copy.title)}
+        description={failure ? failure.description : (emptyDescription ?? error ?? copy.description)}
         aria-busy={shell === "loading"}
       >
         {failure?.primary ? (
@@ -349,7 +357,11 @@ export default function ScoutDataImpactClient({ orgId: initialOrgId }: { orgId?:
       totalEntries: view.totalEntries,
     });
   const loaded = view?.status === "live";
-  const logPickForm = <LogPickForm busy={busy} mutate={mutate} />;
+  const lockedEvent = view?.status === "setup_required" ? view.eventKey : null;
+  const lockedName = view?.status === "setup_required" ? view.eventName : null;
+  const logPickForm = (
+    <LogPickForm busy={busy} mutate={mutate} eventKey={lockedEvent} eventName={lockedName} />
+  );
 
   if (shell === "loading") {
     return (
@@ -373,9 +385,14 @@ export default function ScoutDataImpactClient({ orgId: initialOrgId }: { orgId?:
     );
   }
   if (shell === "setup") {
+    const step = view?.status === "setup_required" ? view.steps[0] : null;
+    const hasTeam = Boolean(view?.orgId);
     return (
       <ScoutDataImpactShell
         description={view?.status === "setup_required" ? view.message : shellCopy.description}
+        emptyTitle={hasTeam && step ? "No alliance picks yet" : undefined}
+        emptyDescription={hasTeam && step ? step.detail : undefined}
+        action={hasTeam && step ? { href: step.href, label: step.label } : undefined}
         orgId={orgId}
         shell="setup"
         logPick={orgId ? logPickForm : null}
@@ -596,10 +613,15 @@ function PicksList({
 function LogPickForm({
   busy,
   mutate,
+  eventKey,
+  eventName,
 }: {
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => void;
+  eventKey?: string | null;
+  eventName?: string | null;
 }) {
+  const lockedEvent = eventKey?.trim() ?? "";
   const empty = useMemo(
     () => ({
       eventKey: "",
@@ -613,6 +635,7 @@ function LogPickForm({
   const [form, setForm] = useState(empty);
   const set = (key: keyof typeof form) => (event: { target: { value: string } }) =>
     setForm((prev) => ({ ...prev, [key]: event.target.value }));
+  const submittedEvent = lockedEvent || form.eventKey.trim();
 
   return (
     <Panel
@@ -621,10 +644,10 @@ function LogPickForm({
       className="scout-data-impact-panel scout-data-impact-form"
       onSubmit={(event) => {
         event.preventDefault();
-        if (!form.eventKey.trim() || !form.teamKey.trim()) return;
+        if (!submittedEvent || !form.teamKey.trim()) return;
         void mutate({
           action: "log-pick",
-          eventKey: form.eventKey.trim(),
+          eventKey: submittedEvent,
           teamKey: form.teamKey.trim(),
           allianceNumber: Number(form.allianceNumber) || 1,
           pickOrder: Number(form.pickOrder) || 1,
@@ -638,9 +661,19 @@ function LogPickForm({
         <p className="app-muted">Real picks only — credit attaches when matching scout rows exist.</p>
       </header>
       <FormGrid min={160}>
-        <FormRow label="Event key">
-          <input value={form.eventKey} onChange={set("eventKey")} placeholder="2026txho" required />
-        </FormRow>
+        {lockedEvent ? (
+          <FormRow label="Event">
+            <input
+              readOnly
+              aria-label="Event"
+              value={scoutEventLabel({ eventName, eventKey: lockedEvent }) ?? ""}
+            />
+          </FormRow>
+        ) : (
+          <FormRow label="Event key">
+            <input value={form.eventKey} onChange={set("eventKey")} placeholder="2026txho" required />
+          </FormRow>
+        )}
         <FormRow label="Team key">
           <input value={form.teamKey} onChange={set("teamKey")} placeholder="frc254" required />
         </FormRow>
@@ -655,7 +688,7 @@ function LogPickForm({
         <textarea value={form.notes} onChange={set("notes")} rows={2} />
       </FormRow>
       <div>
-        <Button variant="primary" type="submit" disabled={busy || !form.eventKey.trim() || !form.teamKey.trim()}>
+        <Button variant="primary" type="submit" disabled={busy || !submittedEvent || !form.teamKey.trim()}>
           Log pick
         </Button>
       </div>

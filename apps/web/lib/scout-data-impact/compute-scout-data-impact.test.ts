@@ -45,7 +45,31 @@ describe("computeScoutDataImpactView", () => {
     if (view.status === "setup_required") {
       expect(view.orgId).toBe(ORG);
       expect(view.steps[0]?.id).toBe("log-picks");
+      expect(view.steps[0]?.href).toBe("#log-alliance-pick");
+      expect(view.eventKey).toBeNull();
+      expect(view.message).not.toMatch(/Choose your team/);
     }
+  });
+
+  it("names the active event when no alliance picks are logged", async () => {
+    const client = makeClient((sql) => {
+      if (sql.includes("FROM memberships")) return { rows: [{ orgId: ORG, teamNumber: 1234 }] };
+      if (sql.includes("FROM scout_data_impact_picks p")) return { rows: [] };
+      if (sql.includes("FROM org_active_context")) {
+        return { rows: [{ eventKey: "2026custom-org-pacific", eventName: "Pacific Practice" }] };
+      }
+      return { rows: [] };
+    });
+
+    const view = await computeScoutDataImpactView(client, { userId: USER, requestedOrg: ORG });
+
+    expect(view.status).toBe("setup_required");
+    if (view.status !== "setup_required") throw new Error("expected setup");
+    expect(view.message).toBe("No alliance picks have been logged for Pacific Practice yet.");
+    expect(view.message).not.toContain("2026custom-");
+    expect(view.steps[0]?.label).toBe("Log alliance picks");
+    expect(view.eventKey).toBe("2026custom-org-pacific");
+    expect(view.eventName).toBe("Pacific Practice");
   });
 
   it("returns a live view correlating logged picks against scout entries", async () => {
