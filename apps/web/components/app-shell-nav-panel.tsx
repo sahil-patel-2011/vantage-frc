@@ -200,7 +200,7 @@ export function AppShellNavPanel({
                     Manage teams
                   </a>
                   <a href="/invite" onClick={closeNav}>
-                    Invite
+                    Have an invite?
                   </a>
                 </div>
               </div>

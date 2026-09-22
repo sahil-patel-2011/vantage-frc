@@ -26,6 +26,8 @@ describe("Team security last snapshot stays on the phone", () => {
     expect(src).not.toMatch(/API keys/);
     expect(src).toMatch(/rosterReady && !editable.length/);
     expect(src).toMatch(/Owners and admins grant extra powers/);
+    expect(src).toMatch(/\/team\/admin\?orgId=/);
+    expect(src).not.toMatch(/href=\{`\/team\?orgId=/);
   });
 
   it("sign-in policy reads and writes the auth-policy IndexedDB feature cache", () => {

@@ -285,7 +285,7 @@ export default function CapabilitiesClient({ orgId }: { orgId: string }) {
               title="No scouts or viewers to delegate"
               description="Invite members from Team admin, then grant the team's keys, budgets, or settings powers here."
             >
-              <Button as="a" variant="secondary" href={`/team?orgId=${orgId}`}>
+              <Button as="a" variant="secondary" href={`/team/admin?orgId=${encodeURIComponent(orgId)}`}>
                 Open Team admin
               </Button>
             </EmptyState>
