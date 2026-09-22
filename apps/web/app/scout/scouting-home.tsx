@@ -5,6 +5,13 @@ import { useCallback, useEffect, useState } from "react";
 import { Button } from "../../components/ui";
 import { pendingCounts } from "../../lib/scout-offline";
 import { deviceStorageSummary, formatBytes, type DeviceStorage } from "../../lib/scouting/device-storage";
+import {
+  type DutyAssignment,
+  type DutyEntry,
+  type DutyMatch,
+  type NextDuty,
+  nextScoutingDuty,
+} from "../../lib/scouting/next-duty";
 
 type Roster = {
   activeEvent?: { eventKey?: string | null; eventName?: string | null } | null;
@@ -15,6 +22,16 @@ type Roster = {
 function chipName(team: { teamNumber: number; nickname: string | null }): string {
   const name = team.nickname?.trim() ?? "";
   return name && name.toLowerCase() !== `team ${team.teamNumber}` ? name : "";
+}
+
+function formatDutyTime(iso: string): string {
+  const at = new Date(iso);
+  if (Number.isNaN(at.getTime())) return "";
+  const minutes = Math.round((at.getTime() - Date.now()) / 60_000);
+  const clock = at.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  if (minutes > 0 && minutes < 90) return `${clock} · in ${minutes} min`;
+  if (minutes <= 0 && minutes > -15) return `${clock} · now`;
+  return clock;
 }
 
 function useOnline(): boolean {
@@ -46,6 +63,29 @@ export function ScoutingHome() {
   const [queue, setQueue] = useState<{ entries: number; media: number; quarantined: number } | null>(null);
   const [storage, setStorage] = useState<DeviceStorage | null>(null);
   const [persisting, setPersisting] = useState(false);
+  const [duty, setDuty] = useState<NextDuty | null>(null);
+
+  // The person's own next robot, from the same bootstrap the entry form loads.
+  useEffect(() => {
+    if (!orgId) return;
+    let cancelled = false;
+    void fetch(`/api/scouting/bootstrap?orgId=${encodeURIComponent(orgId)}`)
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data: { assignments?: DutyAssignment[]; matches?: DutyMatch[]; recentEntries?: DutyEntry[] } | null) => {
+        if (cancelled || !data) return;
+        setDuty(
+          nextScoutingDuty({
+            assignments: data.assignments ?? [],
+            matches: data.matches ?? [],
+            entries: data.recentEntries ?? [],
+          }),
+        );
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [orgId]);
 
   useEffect(() => {
     if (!orgId) return;
@@ -110,9 +150,28 @@ export function ScoutingHome() {
               ? "The team list for this event has not synced yet."
               : "Set the event you are at in Vantage and the team list appears here."}
         </p>
+        {duty ? (
+          <p className="scout-home-duty">
+            <span>Your next robot</span>
+            <strong>
+              {duty.teamNumber} · {duty.matchLabel}
+              {duty.station ? ` · ${duty.station}` : ""}
+            </strong>
+            {duty.startsAt ? <small>{formatDutyTime(duty.startsAt)}</small> : null}
+          </p>
+        ) : null}
         <div className="scout-home-actions">
-          <Button as="a" variant="primary" className="scout-home-start" href={withOrg("/scout/entry")}>
-            Start scouting
+          <Button
+            as="a"
+            variant="primary"
+            className="scout-home-start"
+            href={
+              duty
+                ? `${withOrg("/scout/entry")}${orgId ? "&" : "?"}matchKey=${encodeURIComponent(duty.matchKey)}&teamKey=${encodeURIComponent(duty.teamKey)}`
+                : withOrg("/scout/entry")
+            }
+          >
+            {duty ? `Scout ${duty.teamNumber} in ${duty.matchLabel}` : "Start scouting"}
           </Button>
           <Button as="a" variant="secondary" href={withOrg("/scout/teams")}>
             Look up a team

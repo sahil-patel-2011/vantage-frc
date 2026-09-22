@@ -140,3 +140,9 @@
 /* Pick list inside Scouting: the list picker and CSV stay; the buttons out to Vantage's
    Strategy, Justifier and Pick clock go (they are one tap away in Vantage). */
 .scouting-main .picklist-collab-header-actions > a.app-button{display:none}
+
+/* Your next robot: the assignment the primary button opens, stated before it. */
+.scout-home-duty{display:grid;gap:2px;margin:4px 0 0;padding:12px 14px;border-radius:14px;background:var(--accent-soft,color-mix(in srgb,var(--accent) 10%,transparent));max-width:28rem}
+.scout-home-duty span{color:var(--muted);font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+.scout-home-duty strong{font-size:20px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.scout-home-duty small{color:var(--muted);font-size:13px}
