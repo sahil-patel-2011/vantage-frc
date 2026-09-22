@@ -10,7 +10,7 @@ function faqAnchor(question: string) {
 const faqs = [
   {
     q: "What is Vantage?",
-    a: "Invite-only software for an FRC team: scouting, CAD from a pasteable link, match video, pit and shop ops, money and outreach. One Google or email-code login for every student and mentor.",
+    a: "Free software that runs an FRC team's season in one place: offline scouting, team lookup, match predictions and pick lists, CAD and build books, the calendar, chat, money and outreach. One Google or email-code login for every student and mentor.",
   },
   {
     q: "What does a new student see first?",
@@ -21,8 +21,12 @@ const faqs = [
     a: "Four places: Team (calendar, chat, people, work, playbook), Build (kickoff, CAD, code, robot), Competition (event day, scouting, strategy, pit) and Business (money, sponsors, grants, outreach). Search finds any tool by name.",
   },
   {
-    q: "What does the AI actually do?",
-    a: "It is a helper, not the product. Ask AI on any page answers from your team's data and the public FRC record — match predictions, strategy questions, design help, writing — and says when it does not know.",
+    q: "Do we have to use AI?",
+    a: "No. Scouting, predictions, pick lists, the calendar, the budget and every other tool work without it. If you turn it on, Ask AI answers from your team's own data and the public FRC record, cites what it used, and says when it does not know.",
+  },
+  {
+    q: "We already scout with an app or a spreadsheet. Why switch?",
+    a: "Scouting is where the season's decisions start, not where they end. In Vantage the same scout rows feed team lookup, match predictions, the pick list and the drive team's briefing — next to the calendar, the build and the budget, so nothing gets copied between apps.",
   },
   {
     q: "Does scouting work offline?",
@@ -34,7 +38,7 @@ const faqs = [
   },
   {
     q: "How much does it cost?",
-    a: "Everything is included on every plan. Free uses a small hosted allowance or the team's own AI; Pro, Pro+ and Max add more hosted AI. Usage stops when the allowance is used — no surprise bill. Full prices are on the pricing page.",
+    a: "Nothing, unless you want AI we run for you. Every feature is free for every team. Pro, Pro+ and Max only add hosted AI, and each stops when its allowance is used — no surprise bill. You can also use your own AI key, or no AI at all.",
   },
   {
     q: "Is team data private?",

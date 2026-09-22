@@ -213,3 +213,44 @@
 @media (max-width:999px){
   .marketing-lux .mk-app-gallery-grid{grid-template-columns:1fr}
 }
+
+/* -- Data-shape frames (team lookup, match prediction, pick list) -----------
+   Drawings of the real screens with no numbers in them: any figure here would
+   be one we made up. Colour comes from the warm marketing accent; red/blue are
+   the alliance colours and always sit next to the words "Red" / "Blue". */
+.marketing-lux .mk-shape-roster{display:grid;gap:6px;margin:0;padding:10px 13px 12px;list-style:none}
+.marketing-lux .mk-shape-roster li{display:grid;grid-template-columns:14px minmax(0,1fr) auto;align-items:center;gap:8px;font-size:10.5px}
+.marketing-lux .mk-shape-roster b{color:var(--m-muted);font:600 10px/1 var(--m-mono);text-align:right}
+.marketing-lux .mk-shape-roster em{font-style:normal;color:var(--m-muted);font:500 10px/1 var(--m-mono)}
+.marketing-lux .mk-shape-bar,.marketing-lux .mk-shape-bars i,.marketing-lux .mk-shape-win{
+  display:block;height:6px;border-radius:999px;background:var(--m-line-soft);overflow:hidden;
+}
+.marketing-lux .mk-shape-bar i{display:block;height:100%;border-radius:inherit;background:var(--m-warm)}
+.marketing-lux .mk-shape-bars{display:grid;gap:4px;width:100%}
+.marketing-lux .mk-shape-bars i{background:var(--m-warm);opacity:.85}
+.marketing-lux .mk-shape-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:10px 13px 12px}
+.marketing-lux .mk-shape-tiles>span{
+  display:grid;gap:6px;padding:8px;border:1px solid var(--m-line-soft);border-radius:10px;
+  color:var(--m-muted);font:600 10px/1.2 var(--m-sans);
+}
+.marketing-lux .mk-shape-spark{width:100%;height:22px;color:var(--m-warm)}
+.marketing-lux .mk-shape-win{display:flex;height:10px;margin:12px 13px 8px}
+.marketing-lux .mk-shape-win i{display:block;height:100%}
+.marketing-lux .mk-shape-win .is-red{width:64%;background:#d64545}
+.marketing-lux .mk-shape-win .is-blue{flex:1;background:#2f6fd6}
+.marketing-lux .mk-shape-alliances{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:4px 13px 12px}
+.marketing-lux .mk-shape-alliances>span{display:grid;gap:6px;font:600 10.5px/1.2 var(--m-sans)}
+.marketing-lux .mk-shape-alliances .is-red .mk-shape-bars i{background:#d64545}
+.marketing-lux .mk-shape-alliances .is-blue .mk-shape-bars i{background:#2f6fd6}
+.marketing-lux .mk-shape-sliders{display:grid;gap:9px;margin:0;padding:12px 13px;list-style:none}
+.marketing-lux .mk-shape-sliders li{display:grid;grid-template-columns:5.5rem minmax(0,1fr);align-items:center;gap:10px;font-size:10.5px}
+.marketing-lux .mk-shape-slider{position:relative;height:4px;border-radius:999px;background:var(--m-line-soft)}
+.marketing-lux .mk-shape-slider i{
+  position:absolute;top:50%;width:12px;height:12px;border-radius:50%;
+  background:var(--m-surface);border:2px solid var(--m-warm);transform:translate(-50%,-50%);
+}
+.marketing-lux .mk-shape-tiers{display:grid;gap:6px;padding:10px 13px 12px}
+.marketing-lux .mk-shape-tiers span{
+  padding:7px 10px;border:1px dashed var(--m-line-soft);border-radius:10px;
+  color:var(--m-muted);font:600 10.5px/1.2 var(--m-sans);
+}

@@ -73,7 +73,8 @@ export const MARKETING_HUBS = [
     tools: [
       "Match and pit forms that work with no Wi-Fi and sync later",
       "Event day and My Day from the real match schedule",
-      "Match prediction from your scouting plus public stats, with a measured error band — not a promised ±3",
+      "Team lookup: every team at the event, with averages and a per-match trend for each stat your form collects",
+      "Match prediction with a chance to win, from your scouting plus public stats — flip red and blue in a tap",
       "Alliance selection desk, pick list, pairwise ranking",
       "Pit checklist, repair triage, battery rotation",
     ],
@@ -98,12 +99,12 @@ export const MARKETING_HUBS = [
 /** The two helpers that used to be their own pillars. */
 export const MARKETING_HELPERS = [
   {
-    title: "Claude Code",
-    copy: "Ask the team questions from your own scouting, calendar, and files. Pair Claude Code so students do not paste an API key. It says when it does not know.",
+    title: "Works without AI",
+    copy: "Scouting, predictions, pick lists, the calendar, the budget — every tool runs on its own. Ask AI is there when you want it: it answers from your team's own data and says when it does not know.",
   },
   {
-    title: "Honest scores",
-    copy: "Next-match totals show a typical error from the last measured set. Missing ratings skip the match rather than filling a number.",
+    title: "Predictions that show their range",
+    copy: "A predicted score comes with how far off predictions have typically been. A robot with no rating is left out, not filled in with a guess.",
   },
 ] as const;
 
@@ -129,7 +130,7 @@ export const MARKETING_LEARN = [
   {
     step: "1",
     title: "Learn",
-    copy: "A new member gets paced weeks, not a wiki dump: laptop setup, CAD Video Tutor, Onshape from the first sketch to a graded part, Limelight and Git — with Claude Code when they get stuck.",
+    copy: "A new member gets paced weeks, not a wiki dump — a programming track (WPILib, PathPlanner, Limelight, Git) and a mechanical track (shop safety, Onshape, gearing, drawings). Every week ends in something a lead can check.",
   },
   {
     step: "2",
@@ -144,7 +145,7 @@ export const MARKETING_LEARN = [
   {
     step: "4",
     title: "Compete",
-    copy: "Scout with no Wi-Fi, see the next match with a measured error band, pick the alliance from evidence you collected, run the pit.",
+    copy: "Scout with no Wi-Fi, look up any team at the event, see who is likely to win the next match, build the pick list together, run the pit.",
   },
 ] as const;
 
@@ -161,8 +162,8 @@ export const MARKETING_TRUST = [
   },
   {
     icon: "shield" as const,
-    title: "AI that helps, and shows its work",
-    copy: "Claude Code answers from your team's data, cites what it used, and says when there is not enough to answer. CAD and code changes always wait for a person. Match scores show a measured band, not a promise.",
+    title: "Honest about what it knows",
+    copy: "Numbers come from your scouts and public FRC stats — nothing is filled in. When you use AI it cites what it used, and CAD or code changes always wait for a person to approve them.",
   },
 ] as const;
 

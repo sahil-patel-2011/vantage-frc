@@ -34,9 +34,9 @@ export default function Home() {
               <p className="lux-kicker">Free software for FRC teams</p>
               <h1 id="lux-hero-title">Your season stops living in spreadsheets.</h1>
               <p>
-                Scouting, the schedule, the build, the budget and the shop — one place that already knows how an FRC
-                season works. Your scouts fill in tablets and you get back which robot to pick, not a percentage of
-                rows completed.
+                Scouting, strategy, the build, the budget and the team calendar — in one login. Scouts fill in forms on
+                any tablet, even with no Wi-Fi, and the strategy side turns those rows into who to pick and who is
+                likely to win.
               </p>
               <div className="actions">
                 <a className="button primary" href="#waitlist">
@@ -53,10 +53,7 @@ export default function Home() {
                 <li>Match predictions that say how sure they are</li>
                 <li>Free, and your team&rsquo;s data stays your team&rsquo;s</li>
               </ul>
-              <p className="lux-hero-note">
-                We bring teams on one at a time. Questions?{" "}
-                <a href="mailto:sahiljpatel2011@gmail.com">sahiljpatel2011@gmail.com</a>
-              </p>
+              <p className="lux-hero-note">Free for every FRC team. We bring teams on one at a time.</p>
             </div>
             <HeroProductPanel />
           </div>

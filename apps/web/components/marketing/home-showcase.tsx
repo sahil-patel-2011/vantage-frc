@@ -70,8 +70,11 @@ export function HomeShowcase() {
         <div className="lux-content">
           <header className="lux-section-head" data-reveal>
             <p className="lux-eyebrow">Inside the app</p>
-            <h2 id="lux-app-frames">The windows a student opens after they sign in.</h2>
-            <p>Scouting, Learn CAD and Ask AI — exactly these three screens, and scores stay blank until real data exists.</p>
+            <h2 id="lux-app-frames">What your scouting turns into.</h2>
+            <p>
+              Look up a team, plan a match, build the pick list. These are drawings of the real screens — your
+              event&rsquo;s numbers fill them in, and anything nobody scouted stays blank instead of guessed.
+            </p>
           </header>
           <ul className="mk-app-gallery-grid" data-reveal>
             {MARKETING_APP_FRAMES.map((frame) => (
@@ -89,8 +92,8 @@ export function HomeShowcase() {
         <div className="lux-content">
           <header className="lux-section-head" data-reveal>
             <p className="lux-eyebrow">One workspace</p>
-            <h2 id="lux-runs-title">Four places. Everything is inside one of them.</h2>
-            <p>Team, Build, Competition and Business — plus Home. Search finds the rest.</p>
+            <h2 id="lux-runs-title">Four workspaces. Everything lives in one of them.</h2>
+            <p>Team, Build, Competition and Business, with Home for what to do today. Search finds any tool by name.</p>
           </header>
           <ul className="mk-pillars" data-reveal>
             {MARKETING_HUBS.map((hub) => (
@@ -137,7 +140,7 @@ export function HomeShowcase() {
           <header className="lux-section-head" data-reveal>
             <p className="lux-eyebrow">How we work</p>
             <h2 id="lux-trust-title">Yours, offline-ready, and honest about what it knows.</h2>
-            <p>Built by an FRC student for FRC teams. Free to start, and we may open the source for other teams.</p>
+            <p>Built by an FRC student, for FRC teams.</p>
           </header>
           <ul className="lux-feature-grid" data-reveal>
             {MARKETING_TRUST.map((item) => (

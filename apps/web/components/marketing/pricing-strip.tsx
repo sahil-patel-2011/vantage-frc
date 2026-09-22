@@ -25,17 +25,17 @@ export function PricingStrip({ headingId }: { headingId: string }) {
         */}
         <header className="lux-section-head" data-reveal>
           <p className="lux-eyebrow">What it costs</p>
-          <h2 id={headingId}>The software is free. All of it.</h2>
+          <h2 id={headingId}>Every feature is free, for every team.</h2>
           <p>
-            Every feature, for every team, at no cost — scouting, strategy, the build, the budget, the shop. The only
-            thing below is hosted AI, and you can skip it: point Vantage at your own API key, or at a model running on
-            a machine in your shop, and pay nothing at all. {pricingTeaserLede()} Hosted usage stops when the
-            allowance is used — there is no silent overage on a booster club&rsquo;s card.
+            Scouting, strategy, the build, the budget, the shop — no plan unlocks a feature. The plans below only buy AI
+            that runs on our servers, and AI is optional: use your own key, a model on a shop computer, or none at
+            all, and pay nothing. {pricingTeaserLede()} A plan stops when its allowance is used — there is no
+            surprise bill on a booster club&rsquo;s card.
           </p>
         </header>
 
         <p className="mk-price-kicker" data-reveal>
-          Hosted AI allowances — not feature tiers
+          Optional: AI we run for you
         </p>
         <ul className="mk-price-grid" data-reveal>
           {tiers.map((tier) => (

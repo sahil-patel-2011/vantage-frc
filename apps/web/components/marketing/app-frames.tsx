@@ -106,77 +106,159 @@ export function HeroProductPanel() {
   );
 }
 
-export type ProductFrameId = "scouting" | "cad" | "ask-ai";
+export type ProductFrameId = "lookup" | "predict" | "picklist";
+
+/**
+ * The three data screens, drawn as shapes. Bars and lines show how Vantage lays
+ * scouting out; no frame carries a number, because any number here would be
+ * one we made up. The caption under each frame says so.
+ */
+function Bars({ widths }: { widths: number[] }) {
+  return (
+    <span className="mk-shape-bars">
+      {widths.map((width, index) => (
+        <i key={index} style={{ width: `${width}%` }} />
+      ))}
+    </span>
+  );
+}
+
+function Spark({ d }: { d: string }) {
+  return (
+    <svg className="mk-shape-spark" viewBox="0 0 72 24">
+      <path d={d} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 export function ProductFrame({ id }: { id: ProductFrameId }) {
   switch (id) {
-    case "scouting":
+    case "lookup":
       return (
         <div className="mk-mock mk-app-frame" aria-hidden="true">
-          <AppChrome title="Scouting" crumbs="Competition / Scouting" />
+          <AppChrome title="Research" crumbs="Competition / Team lookup" />
           <div className="mk-mock-body">
             <div className="mk-mock-main">
               <article className="mk-mock-card">
                 <header>
-                  <strong>Choose your team</strong>
-                  <span>Needs setup</span>
+                  <strong>Teams at your event</strong>
+                  <span>Best first</span>
                 </header>
-                <p className="mk-mock-empty">
-                  Match and pit forms stay on this tablet when venue Wi-Fi dies. They stay blank until you pick a
-                  team.
-                </p>
-                <p className="mk-mock-shot">
-                  <span className="mk-app-primary">Choose your team</span>
-                </p>
+                <ul className="mk-shape-roster">
+                  {[92, 81, 74, 63, 55].map((width, index) => (
+                    <li key={width}>
+                      <b>{index + 1}</b>
+                      <span className="mk-shape-bar">
+                        <i style={{ width: `${width}%` }} />
+                      </span>
+                      <em>{index === 3 ? "not scouted" : "scouted"}</em>
+                    </li>
+                  ))}
+                </ul>
+              </article>
+              <article className="mk-mock-card">
+                <header>
+                  <strong>From our scouting</strong>
+                  <span>By match</span>
+                </header>
+                <div className="mk-shape-tiles">
+                  <span>
+                    Total points
+                    <Spark d="M0 18 L12 14 L24 16 L36 9 L48 11 L60 5 L72 6" />
+                  </span>
+                  <span>
+                    Auto
+                    <Spark d="M0 12 L12 12 L24 10 L36 11 L48 8 L60 9 L72 7" />
+                  </span>
+                  <span>
+                    Endgame
+                    <Bars widths={[66, 26, 8]} />
+                  </span>
+                </div>
               </article>
             </div>
             <AppIsland island="Compete" />
           </div>
         </div>
       );
-    case "cad":
+    case "predict":
       return (
         <div className="mk-mock mk-app-frame" aria-hidden="true">
-          <AppChrome title="Learn CAD" crumbs="Build / Learn CAD" />
+          <AppChrome title="Match Simulator" crumbs="Competition / Strategy" />
           <div className="mk-mock-body">
             <div className="mk-mock-main">
               <article className="mk-mock-card">
                 <header>
-                  <strong>CAD Video Tutor</strong>
-                  <span>Cast iron</span>
+                  <strong>Chance to win</strong>
+                  <span>Flip red / blue</span>
                 </header>
-                <p className="mk-mock-empty">
-                  Saddle Bracket on Onshape. Mass and spin come from the document — you never type them.
-                </p>
-                <p className="mk-mock-shot">
-                  <span className="mk-app-primary">Open the lesson</span>
-                </p>
+                <span className="mk-shape-win">
+                  <i className="is-red" />
+                  <i className="is-blue" />
+                </span>
+                <div className="mk-shape-alliances">
+                  <span className="is-red">
+                    Red
+                    <Bars widths={[88, 80, 76]} />
+                  </span>
+                  <span className="is-blue">
+                    Blue
+                    <Bars widths={[72, 68, 64]} />
+                  </span>
+                </div>
+              </article>
+              <article className="mk-mock-card">
+                <header>
+                  <strong>Where blue can close the gap</strong>
+                  <span>Teleop</span>
+                </header>
+                <p className="mk-mock-empty">One lever, named by team and phase — from ratings, not a guess.</p>
               </article>
             </div>
-            <AppIsland island="Build" />
+            <AppIsland island="Compete" />
           </div>
         </div>
       );
-    case "ask-ai":
+    case "picklist":
       return (
         <div className="mk-mock mk-app-frame" aria-hidden="true">
-          <AppChrome title="Chat" crumbs="Ask AI" />
+          <AppChrome title="Pick list" crumbs="Competition / Pick list" />
           <div className="mk-mock-body">
             <div className="mk-mock-main">
               <article className="mk-mock-card">
                 <header>
-                  <strong>Connect Claude Code</strong>
-                  <span>Needs setup</span>
+                  <strong>What matters to us</strong>
+                  <span>Drag to weigh</span>
                 </header>
-                <p className="mk-mock-empty">
-                  A mentor signs in on one computer and pairs it here. Ask AI then runs on that plan — no API key.
-                </p>
-                <p className="mk-mock-shot">
-                  <span className="mk-app-primary">Connect Claude Code</span>
-                </p>
+                <ul className="mk-shape-sliders">
+                  {[
+                    ["Total points", 80],
+                    ["Auto", 55],
+                    ["Endgame", 70],
+                    ["Reliability", 90],
+                  ].map(([label, value]) => (
+                    <li key={label as string}>
+                      <span>{label}</span>
+                      <span className="mk-shape-slider">
+                        <i style={{ left: `${value}%` }} />
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </article>
+              <article className="mk-mock-card">
+                <header>
+                  <strong>Tiers</strong>
+                  <span>Whole team votes</span>
+                </header>
+                <div className="mk-shape-tiers">
+                  <span>First pick</span>
+                  <span>Second pick</span>
+                  <span>Do not pick</span>
+                </div>
               </article>
             </div>
-            <AppIsland island="Home" />
+            <AppIsland island="Compete" />
           </div>
         </div>
       );
@@ -189,18 +271,18 @@ export function ProductFrame({ id }: { id: ProductFrameId }) {
 
 export const MARKETING_APP_FRAMES: { id: ProductFrameId; title: string; copy: string }[] = [
   {
-    id: "scouting",
-    title: "Scouting",
-    copy: "Offline match and pit forms. Needs setup until you choose a team. Coverage stays blank until you scout.",
+    id: "lookup",
+    title: "Team lookup",
+    copy: "Every team at the event, best first, with who your scouts have not watched yet. Tap one for its averages, a trend line per stat, and every scout note by match.",
   },
   {
-    id: "cad",
-    title: "Learn CAD",
-    copy: "CAD Video Tutor, then a grade from the real Onshape part.",
+    id: "predict",
+    title: "Match prediction",
+    copy: "Put any six robots on the field and see who is likely to win, each robot's share, and the one phase that would swing it. Flip red and blue in a tap.",
   },
   {
-    id: "ask-ai",
-    title: "Ask AI",
-    copy: "Claude Code is the path that does not ask a student for an API key.",
+    id: "picklist",
+    title: "Pick list",
+    copy: "Slide what your alliance needs — scoring, auto, endgame, reliability — and the list re-ranks against this event. Then the whole team sorts it into tiers together.",
   },
 ];
