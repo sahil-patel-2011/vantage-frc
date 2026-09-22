@@ -196,6 +196,28 @@ export function dossierShellCopy(kind: DossierShellKind): DossierEmptyCopy {
  * Soft-UI next actions for Team Dossier empty/setup shells.
  * Points at Strategy / Scouting / Pick desk — never invents DEMO stats.
  */
+/** What to say when the team is saved and season ratings are not. */
+export function dossierMissingRatingsMessage(teamNumber: number, canSync: boolean): string {
+  const lead = `Team ${teamNumber} is saved, but season ratings for this team are missing.`;
+  return canSync ? `${lead} Sync under Team Data.` : `${lead} An owner or admin syncs them.`;
+}
+
+/** What to say when the public team row is not saved yet. */
+export function dossierMissingIdentityMessage(
+  teamNumber: number,
+  canSync: boolean,
+  tbaConfigured: boolean,
+): string {
+  if (!tbaConfigured) {
+    return canSync
+      ? "This team's public page is not saved yet. Sync Team Data, then open the profile."
+      : "This team's public page is not saved yet. An owner or admin syncs Team Data.";
+  }
+  return canSync
+    ? `Team ${teamNumber} is not in the saved public list yet. Sync under Team Data, then retry.`
+    : `Team ${teamNumber} is not in the saved public list yet. An owner or admin syncs Team Data.`;
+}
+
 export function dossierNextActions(input: {
   orgId?: string | null;
   shell: DossierShellKind;

@@ -4,6 +4,8 @@ import {
   classifyDossierShell,
   formatDossierMetric,
   isDossierFactsEmpty,
+  dossierMissingIdentityMessage,
+  dossierMissingRatingsMessage,
   dossierNextActions,
   dossierRelatedLinks,
   dossierSetupSteps,
@@ -121,6 +123,19 @@ describe("dossierShellCopy", () => {
     expectPlainCopy(dossierShellCopy("empty").description);
     expect(dossierShellCopy("setup").badge).toBe("Needs setup");
     expectPlainCopy(dossierShellCopy("ready").description);
+  });
+});
+
+describe("dossier role copy", () => {
+  it("keeps the Team Data step for an owner and sends everyone else to an admin", () => {
+    expect(dossierMissingRatingsMessage(9999, true)).toBe(
+      "Team 9999 is saved, but season ratings for this team are missing. Sync under Team Data.",
+    );
+    expect(dossierMissingRatingsMessage(9999, false)).toBe(
+      "Team 9999 is saved, but season ratings for this team are missing. An owner or admin syncs them.",
+    );
+    expect(dossierMissingIdentityMessage(9999, false, true)).toContain("An owner or admin syncs Team Data.");
+    expect(dossierMissingIdentityMessage(9999, true, false)).toContain("Sync Team Data, then open the profile.");
   });
 });
 

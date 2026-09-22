@@ -97,6 +97,7 @@ function DossierNextActionsPanel({ actions }: { actions: DossierNextAction[] }) 
 
 function DossierShell({
   orgId,
+  canSync,
   shell,
   error,
   errorStatus,
@@ -104,6 +105,7 @@ function DossierShell({
   children,
 }: {
   orgId?: string | null;
+  canSync?: boolean;
   shell: DossierShellKind;
   error?: string;
   errorStatus?: number | null;
@@ -175,13 +177,21 @@ function DossierShell({
           </Button>
         ) : null}
         {!failure?.primary && setup ? (
-          <Button as="a" variant="primary" href={setup.href}>
-            {setup.label}
+          <Button
+            as="a"
+            variant="primary"
+            href={canSync === false ? hubHref("/competition", "scouting", orgId) : setup.href}
+          >
+            {canSync === false ? "Open Scouting" : setup.label}
           </Button>
         ) : null}
         {shell === "empty" ? (
-          <Button as="a" variant="primary" href={teamDataHref}>
-            Sync season metrics
+          <Button
+            as="a"
+            variant="primary"
+            href={canSync === false ? hubHref("/competition", "scouting", orgId) : teamDataHref}
+          >
+            {canSync === false ? "Open Scouting" : "Sync season metrics"}
           </Button>
         ) : null}
       </EmptyState>
@@ -322,6 +332,7 @@ export default function DossierClient() {
     return (
       <DossierShell
         orgId={view?.orgId ?? orgId}
+        canSync={view && view.status !== "live" ? view.canSync : undefined}
         shell={shell}
         error={
           shell === "error"
@@ -431,8 +442,16 @@ export default function DossierClient() {
                 : emptyCopy.description
             }
           >
-            <Button as="a" variant="primary" href={withOrgHref("/team/data", resolvedOrgId)}>
-              Sync season metrics
+            <Button
+              as="a"
+              variant="primary"
+              href={
+                view?.status === "empty" && view.canSync
+                  ? withOrgHref("/team/data", resolvedOrgId)
+                  : scoutingHref
+              }
+            >
+              {view?.status === "empty" && view.canSync ? "Sync season metrics" : "Open Scouting"}
             </Button>
           </EmptyState>
         </>

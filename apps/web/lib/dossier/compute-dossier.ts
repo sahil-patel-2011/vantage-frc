@@ -11,8 +11,13 @@ import {
 import { resolveReferenceAccess } from "../strategy/compute-strategy";
 import type { DataSourceHealthView } from "../reference-health";
 import type { ReferenceAccessInfo } from "../strategy/types";
-import { dossierSetupSteps } from "./dossier-related";
+import {
+  dossierMissingIdentityMessage,
+  dossierMissingRatingsMessage,
+  dossierSetupSteps,
+} from "./dossier-related";
 import { withOrgHref } from "../nav/product-nav";
+import { strategyCanSync } from "../strategy/strategy-related";
 
 export type DossierSetupStep = {
   id: string;
@@ -29,6 +34,8 @@ export type DossierView =
       steps: DossierSetupStep[];
       orgId: string | null;
       teamNumber: number | null;
+      /** Owner or admin can open Team Data. Everyone else is sent to Scouting. */
+      canSync: boolean;
       referenceAccess: ReferenceAccessInfo;
       dataSourceHealth?: DataSourceHealthView;
     }
@@ -93,9 +100,10 @@ export async function computeTeamDossier(
 ): Promise<DossierView> {
   const membership = await client.query<{
     orgId: string;
+    role: string;
     teamNumber: number | null;
   }>(
-    `SELECT m.org_id AS "orgId", o.team_number AS "teamNumber"
+    `SELECT m.org_id AS "orgId", m.role AS "role", o.team_number AS "teamNumber"
      FROM memberships m
      JOIN organizations o ON o.id = m.org_id
      WHERE m.user_id = $1
@@ -106,6 +114,7 @@ export async function computeTeamDossier(
   );
 
   const row = membership.rows[0];
+  const canSync = strategyCanSync(row?.role);
   const access = await resolveReferenceAccess(client, row?.orgId ?? null);
   const orgId = row?.orgId ?? null;
   const teamNumber = input.teamNumber ?? row?.teamNumber ?? null;
@@ -156,6 +165,7 @@ export async function computeTeamDossier(
       steps,
       orgId: null,
       teamNumber,
+      canSync,
       referenceAccess: access,
     };
   }
@@ -167,6 +177,7 @@ export async function computeTeamDossier(
       steps,
       orgId: row.orgId,
       teamNumber: null,
+      canSync,
       referenceAccess: access,
     };
   }
@@ -196,12 +207,11 @@ export async function computeTeamDossier(
   if (!team) {
     return {
       status: access.tbaConfigured ? "empty" : "setup_required",
-      message: access.tbaConfigured
-        ? `Team ${teamNumber} is not in the saved public list yet. Sync under Team Data, then retry.`
-        : "This team's public page is not saved yet. Sync Team Data, then open the profile.",
+      message: dossierMissingIdentityMessage(teamNumber, canSync, access.tbaConfigured),
       steps,
       orgId: row.orgId,
       teamNumber,
+      canSync,
       referenceAccess: access,
     };
   }
@@ -312,11 +322,13 @@ export async function computeTeamDossier(
   if (!hasReferenceFacts && !access.statbotics.cacheHasMetrics && !access.cacheHasSync) {
     return {
       status: "setup_required",
-      message:
-        "No cited facts yet. Sync Team Data, then add scout notes.",
+      message: canSync
+        ? "No cited facts yet. Sync Team Data, then add scout notes."
+        : "No cited facts yet. An owner or admin syncs Team Data. Scout notes can still be added.",
       steps,
       orgId: row.orgId,
       teamNumber: team.teamNumber,
+      canSync,
       referenceAccess: access,
     };
   }
@@ -326,10 +338,11 @@ export async function computeTeamDossier(
       status: "empty",
       message: access.statbotics.cacheHasMetrics
         ? `Team ${team.teamNumber} is in cache, but this team has no season rating, event records, or scout notes to cite yet.`
-        : `Team ${team.teamNumber} is saved, but season ratings for this team are missing. Sync under Team Data.`,
+        : dossierMissingRatingsMessage(team.teamNumber, canSync),
       steps,
       orgId: row.orgId,
       teamNumber: team.teamNumber,
+      canSync,
       referenceAccess: access,
     };
   }
