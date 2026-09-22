@@ -1539,6 +1539,13 @@ body.has-app-shell .intel-actions>button{
 body.has-app-shell .app-button.secondary{
   color:var(--ink)!important;background:var(--surface)!important;border:1px solid var(--line)!important;box-shadow:none!important;
 }
+/* R4 on an empty screen. While a page's empty state offers the primary action ("New
+   attendance event"), a primary in the page's header, nearly always the same "New",
+   steps down to secondary: two blue buttons that do one thing is not a choice. Only
+   header-ish containers are demoted, never a form's own Save. */
+body.has-app-shell main:has(.scan-empty :is(.is-primary,.app-button.primary)) :is(header,.app-page-actions,[class*="header-actions"],[class*="-toolbar"]) :is(.is-primary,.app-button.primary):not(.scan-empty *){
+  color:var(--ink)!important;background:var(--surface)!important;border:1px solid var(--line)!important;box-shadow:none!important;
+}
 body.has-app-shell .app-button.ghost{
   color:var(--ink)!important;background:transparent!important;border-color:transparent!important;box-shadow:none!important;
 }
