@@ -1,13 +1,42 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { TEAM_6925_RESOURCES, TEAM_6925_WEEKS, allTeam6925Links, totalLabMinutes } from "./frc6925";
+import { expectPlainCopy } from "../ui/copy-assertions";
+import {
+  LAB_TRACKS,
+  TEAM_6925_RESOURCES,
+  TEAM_6925_WEEKS,
+  allTeam6925Links,
+  resourcesForTrack,
+  totalLabMinutes,
+  trackMinutes,
+  weeksForTrack,
+} from "./frc6925";
 
 describe("Team 6925 lab", () => {
   it("is a real lab, not a stub", () => {
     expect(TEAM_6925_RESOURCES.length).toBeGreaterThanOrEqual(4);
     expect(TEAM_6925_WEEKS.length).toBeGreaterThanOrEqual(5);
     expect(totalLabMinutes()).toBeGreaterThan(300);
+  });
+
+  it("has a full programming track and a full mechanical track", () => {
+    expect(LAB_TRACKS.map((track) => track.id)).toEqual(["programming", "mechanical"]);
+    for (const { id } of LAB_TRACKS) {
+      const weeks = weeksForTrack(id);
+      expect(weeks.length, id).toBeGreaterThanOrEqual(8);
+      expect(weeks.map((week) => week.week), id).toEqual(weeks.map((_, index) => index + 1));
+      expect(resourcesForTrack(id).length, id).toBeGreaterThanOrEqual(3);
+      expect(trackMinutes(id), id).toBeGreaterThan(600);
+    }
+    expect(trackMinutes("programming") + trackMinutes("mechanical")).toBe(totalLabMinutes());
+    // The CopyCommand block renders under this group.
+    expect(TEAM_6925_RESOURCES.find((group) => group.id === "laptop-setup")?.track).toBe("programming");
+  });
+
+  it("uses unique ids so the jump links land", () => {
+    const ids = [...TEAM_6925_RESOURCES.map((group) => group.id), ...TEAM_6925_WEEKS.map((week) => week.id)];
+    expect(new Set(ids).size).toBe(ids.length);
   });
 
   it("uses https official docs and never the dead CAD Video Tutor host", () => {
@@ -20,6 +49,15 @@ describe("Team 6925 lab", () => {
     expect(hrefs.some((href) => href.includes("docs.wpilib.org"))).toBe(true);
     expect(hrefs.some((href) => href.includes("education.github.com"))).toBe(true);
     expect(hrefs.some((href) => href.includes("www.cadvideotutor.com"))).toBe(true);
+  });
+
+  it("only links to in-app routes that exist", () => {
+    const appDir = join(__dirname, "../../app");
+    for (const link of allTeam6925Links()) {
+      if (!link.href.startsWith("/")) continue;
+      const route = link.href.split("#")[0]!.slice(1);
+      expect(existsSync(join(appDir, route, "page.tsx")), link.href).toBe(true);
+    }
   });
 
   it("passes orgId into withOrgHref so the lab typechecks", () => {
@@ -37,5 +75,17 @@ describe("Team 6925 lab", () => {
       expect(week.why.trim().length).toBeGreaterThan(40);
       expect(week.steps.length).toBeGreaterThan(2);
     }
+  });
+
+  it("writes weeks a student can act on and check", () => {
+    for (const week of TEAM_6925_WEEKS) {
+      expect(week.steps.length, week.id).toBeLessThanOrEqual(6);
+      expect(week.minutes, week.id).toBeGreaterThanOrEqual(45);
+      expect(week.minutes, week.id).toBeLessThanOrEqual(240);
+      expect(week.verify, week.id).not.toMatch(/\bunderstand/i);
+      expectPlainCopy(week.why);
+      expectPlainCopy(week.verify);
+    }
+    for (const group of TEAM_6925_RESOURCES) expectPlainCopy(group.blurb);
   });
 });

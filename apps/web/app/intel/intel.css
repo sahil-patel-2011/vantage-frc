@@ -138,3 +138,39 @@
 .intel-note-body{margin:0;white-space:pre-wrap}
 .lovat-source-picker{display:grid;gap:10px}
 .lovat-source-modes{display:flex;flex-wrap:wrap;gap:8px}
+
+/* --- From our scouting ------------------------------------------------------
+   Built from whatever the team's form collects. Numeric tiles open to a
+   match-by-match view; the bars are decoration, the list under them carries
+   the numbers. */
+.intel-sb-tile{display:grid;gap:8px;padding:12px}
+.intel-sb-tile.is-open{grid-column:1/-1}
+.intel-sb-head{
+  display:grid;gap:4px;justify-items:start;
+  width:100%;padding:0;border:0;background:none;color:inherit;font:inherit;text-align:left;
+}
+button.intel-sb-head{cursor:pointer}
+button.intel-sb-head:focus-visible{outline:2px solid var(--accent);outline-offset:4px;border-radius:6px}
+.intel-sb-head strong{font-size:1.35rem;letter-spacing:-0.03em;text-transform:capitalize}
+.intel-sb-head small{font-size:11px}
+.intel-sb-meter{
+  position:relative;display:block;width:100%;height:6px;border-radius:999px;
+  background:color-mix(in srgb,var(--line) 70%,transparent);overflow:hidden;
+}
+.intel-sb-meter i{position:absolute;inset:0 auto 0 0;border-radius:999px;background:var(--accent)}
+.intel-sb-meter i.is-bad{background:var(--warn,#9a5b12)}
+.intel-sb-split{display:grid;gap:4px;width:100%;margin:4px 0 0;padding:0;list-style:none;font-size:12px}
+.intel-sb-split li{display:grid;grid-template-columns:minmax(3.5rem,auto) minmax(0,1fr) auto;gap:8px;align-items:center}
+.intel-sb-split li span:first-child{text-transform:capitalize}
+.intel-sb-detail{display:grid;gap:10px}
+.intel-sb-bars{display:flex;align-items:flex-end;gap:3px;height:64px}
+.intel-sb-bars span{flex:1;min-width:3px;border-radius:3px 3px 0 0;background:color-mix(in srgb,var(--accent) 70%,transparent)}
+.intel-sb-series{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(4.2rem,1fr));gap:6px;
+  margin:0;padding:0;list-style:none;font-size:12px;
+}
+.intel-sb-series li{display:flex;justify-content:space-between;gap:6px;padding:4px 8px;border:1px solid var(--line);border-radius:8px}
+.intel-sb-series li span{color:var(--muted)}
+.intel-sb-notes{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.intel-sb-notes li{display:flex;gap:10px;align-items:baseline}
+.intel-sb-notes p{margin:0}

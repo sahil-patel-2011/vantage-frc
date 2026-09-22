@@ -824,9 +824,9 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "team-6925-lab",
     slug: "team-6925-lab",
-    title: "Team 6925 lab — Limelight, coding, and CAD weeks",
+    title: "Team 6925 lab — programming and mechanical tracks",
     summary:
-      "Official Limelight, WPILib, PathPlanner, and GitHub links, then five paced weeks. Learn CAD grades the CAD Video Tutor part from Onshape — you never type mass.",
+      "Two paced tracks with official docs only: programming (WPILib, command-based, swerve, PathPlanner, Limelight, AdvantageScope) and mechanical (shop safety, Onshape, fasteners, gearing, drawings, mechanisms, weight and inspection). Every week ends in something you can check.",
     category: "build",
     keywords: ["6925", "limelight", "wpilib", "pathplanner", "github", "cad video tutor", "learn cad"],
     relatedHref: "/learn/6925",

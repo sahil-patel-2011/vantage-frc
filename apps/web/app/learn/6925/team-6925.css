@@ -14,9 +14,77 @@
   border-bottom: 1px solid var(--line);
 }
 
-.lab-unit h2 {
+.lab-unit h4 {
   margin: 0 0 8px;
-  font-size: 20px;
+  font-size: 18px;
+}
+
+/* Jump nav between the two tracks. */
+.lab-track-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0 0 28px;
+  font-size: 16px;
+  font-weight: 700;
+}
+.lab-track-nav a {
+  color: var(--ink);
+}
+
+.lab-track {
+  margin: 0 0 48px;
+  scroll-margin-top: 16px;
+}
+.lab-track-head {
+  margin: 0 0 20px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm, 12px);
+}
+.lab-track-head h2 {
+  margin: 0 0 8px;
+  font-size: 24px;
+}
+.lab-track-head p {
+  margin: 0 0 8px;
+  line-height: 1.55;
+}
+.lab-track-head .lab-lead {
+  margin: 0 0 8px;
+}
+.lab-week-index {
+  margin: 0;
+  padding-left: 1.4em;
+  columns: 2 16rem;
+  column-gap: 24px;
+}
+.lab-week-index li {
+  break-inside: avoid;
+  line-height: 1.6;
+}
+.lab-week-index a {
+  color: var(--ink);
+}
+
+.lab-subhead {
+  margin: 24px 0 12px;
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.lab-unit {
+  scroll-margin-top: 16px;
+}
+
+.lab-back {
+  margin: 0;
+  font-size: 13px;
+}
+.lab-back a {
+  color: var(--muted);
 }
 
 .lab-unit p,

@@ -3,7 +3,6 @@
 import { type FormEvent } from "react";
 import { FormRow, Panel, Button } from "../../components/ui";
 import {
-  intelScoutNoteLines,
   intelSourceTypeLabel,
   type IntelActiveEvent,
   type IntelNextAction,
@@ -12,6 +11,8 @@ import {
 import { IntelNextActionsPanel } from "./intel-chrome";
 import { IntelLookupBoard } from "./intel-lookup-board";
 import { IntelLookupNotes } from "./intel-lookup-notes";
+import { IntelScoutBreakdown } from "./intel-scout-breakdown";
+import { buildScoutBreakdown } from "../../lib/scouting/scout-breakdown";
 import {
   fieldStatsFromEventRows,
   scoutAveragesFromPayloads,
@@ -189,7 +190,12 @@ export function IntelReadyView({
         }
       : null);
   const findingCount = intel.findings.length;
-  const noteLines = intelScoutNoteLines(scoutNotes);
+  // Match rows only — a pit note has no match to plot against.
+  const breakdown = buildScoutBreakdown(
+    scoutNotes
+      .filter((note) => note.matchKey)
+      .map((note) => ({ matchKey: note.matchKey, payload: note.payload })),
+  );
   const eventLabel = activeEvent?.eventName?.trim() || activeEvent?.eventKey || null;
 
   return (
@@ -233,29 +239,11 @@ export function IntelReadyView({
         history={intel.trajectory.map((point) => point.epa)}
       />
 
+      <IntelScoutBreakdown breakdown={breakdown} />
+
       {lookupNote && onSaveNote ? (
         <IntelLookupNotes note={lookupNote} busy={submitting} onSave={onSaveNote} />
       ) : null}
-
-      <section className="intel-metric-grid" aria-label="Season scores">
-        {(
-          [
-            ["Season rating", metric?.epaTotal],
-            ["Auto", metric?.epaAuto],
-            ["Teleop", metric?.epaTeleop],
-            ["Endgame", metric?.epaEndgame],
-            ["Reliability", intel.reliability.score],
-            ["Consistency", intel.reliability.consistency],
-          ] as const
-        ).map(([label, value]) => (
-          <Panel key={label} style={{ minHeight: "auto", textAlign: "center" }}>
-            <span className="app-muted">{label}</span>
-            <strong style={{ display: "block", fontSize: "1.6rem", letterSpacing: "-0.03em" }}>
-              {fmt(value)}
-            </strong>
-          </Panel>
-        ))}
-      </section>
 
       <div className="intel-panels">
         <Panel>
@@ -271,7 +259,12 @@ export function IntelReadyView({
               <p className="app-muted">Not enough scores yet to describe this robot.</p>
             )}
           </div>
-          <h4>Reliability</h4>
+          <h4>
+            Reliability {fmt(intel.reliability.score)}
+            {intel.reliability.consistency != null
+              ? ` · consistency ${fmt(intel.reliability.consistency)}`
+              : ""}
+          </h4>
           <p className="app-muted">{intel.reliability.evidence}</p>
           <h4>Foul risk: {intel.foulRisk.level}</h4>
           <p className="app-muted">{intel.foulRisk.evidence}</p>
@@ -313,24 +306,6 @@ export function IntelReadyView({
           )}
         </Panel>
       </div>
-
-      <Panel>
-        <h3 style={{ marginTop: 0 }}>From our scouting</h3>
-        {noteLines.length ? (
-          <ul className="intel-findings">
-            {noteLines.map((line) => (
-              <li key={line.id}>
-                <div>
-                  <strong>{line.title}</strong>
-                </div>
-                <p>{line.detail}</p>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="app-muted">No match or pit notes on this team yet. Log them in Scouting.</p>
-        )}
-      </Panel>
 
       <Panel>
         <h3 style={{ marginTop: 0 }}>Public notes</h3>

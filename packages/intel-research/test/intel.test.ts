@@ -70,6 +70,22 @@ describe("Intel analytics", () => {
     expect(result.score).toBe(50);
     expect(result.sampleSize).toBe(2);
   });
+
+  it("reads yes/no breakdown answers the way scouts type them", () => {
+    // "no" is truthy; a form that answered every match "no" used to score 0%.
+    const clean = deriveReliability([
+      { payload: { totalPoints: 50, brokeDown: "no" }, confidence: "high" },
+      { payload: { totalPoints: 55, breakdown: "no" }, confidence: "high" },
+    ]);
+    expect(clean.score).toBe(100);
+    // `brokeDown` was never read, so a robot that died mid-match stayed 100%.
+    const broke = deriveReliability([
+      { payload: { totalPoints: 50, brokeDown: "no" }, confidence: "high" },
+      { payload: { totalPoints: 12, brokeDown: "yes" }, confidence: "high" },
+    ]);
+    expect(broke.score).toBe(50);
+    expect(broke.evidence).toMatch(/^1 /);
+  });
 });
 
 describe("deterministic providers and provenance", () => {

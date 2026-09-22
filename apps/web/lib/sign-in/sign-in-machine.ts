@@ -355,6 +355,17 @@ export function classifyOtpFailure(input: FailureInput): OtpFailure {
     return { kind: "wrong_code", message: WRONG_CODE_MESSAGE, keepDigits: true, needsNewCode: false };
   }
 
+  // A 5xx is Vantage failing, not the person typing. "That didn't work" made
+  // them re-check an email address that was fine; say whose problem it is.
+  if (input.status >= 500) {
+    return {
+      kind: "unknown",
+      message: "Vantage had a problem on its side — your email is fine. Wait a minute and try again.",
+      keepDigits: true,
+      needsNewCode: false,
+    };
+  }
+
   return {
     kind: "unknown",
     message: input.message?.trim() || "That didn’t work. Try again.",

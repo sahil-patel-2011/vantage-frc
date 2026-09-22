@@ -56,7 +56,7 @@ export const MARKETING_HUBS = [
     modules: ["Kickoff", "CAD", "Code", "Robot"],
     tools: [
       "Learn CAD: Onshape from the first sketch, CAD Video Tutor on cast iron, Explore Onshape progress, then a graded part",
-      "Team 6925 lab: paced Limelight, WPILib, PathPlanner and GitHub weeks with official docs only",
+      "Team 6925 lab: a programming track and a mechanical track, paced week by week, official docs only",
       "Programming setup: Git, VS Code, WPILib and PathPlanner with real download links, plus the GitHub Student Pack walk-through",
       "CAD vault with Onshape links, change radar, and design reviews",
       "The assembly manual: your Onshape assembly turned into a step-by-step build book with parts, cuts and drill sizes",

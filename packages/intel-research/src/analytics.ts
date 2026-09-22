@@ -34,6 +34,40 @@ export function robotArchetypes(metrics: Metric[], observations: ScoutObservatio
   return [...labels].slice(0, 4);
 }
 
+/**
+ * Keys a scouting form uses for "this robot stopped working". Forms name it
+ * differently — `brokeDown` on one, `breakdown` or `broke_down` on another.
+ */
+const FAILURE_KEYS = [
+  "disabled",
+  "breakdown",
+  "brokeDown",
+  "broke_down",
+  "brokedown",
+  "noShow",
+  "no_show",
+  "died",
+  "tipped",
+  "tippedOver",
+];
+
+/**
+ * Whether an answer means yes. `Boolean("no")` is true, so reading the answer
+ * with `Boolean` counted every "no" as a failure; and a key it did not know
+ * (`brokeDown`) was never read at all, which showed a robot that broke down
+ * as 100% reliable.
+ */
+export function flagAnswer(value: unknown): boolean {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") return Number.isFinite(value) && value > 0;
+  if (typeof value === "string") return /^(y|yes|true|1)$/i.test(value.trim());
+  return false;
+}
+
+export function observationFailed(payload: Record<string, unknown>): boolean {
+  return FAILURE_KEYS.some((key) => flagAnswer(payload[key]));
+}
+
 export function deriveReliability(observations: ScoutObservation[]) {
   const values = observations
     .map(({ payload }) =>
@@ -42,9 +76,7 @@ export function deriveReliability(observations: ScoutObservation[]) {
         .find(finite),
     )
     .filter(finite);
-  const failures = observations.filter(({ payload }) =>
-    [payload.disabled, payload.breakdown, payload.noShow].some(Boolean),
-  ).length;
+  const failures = observations.filter(({ payload }) => observationFailed(payload)).length;
   if (!observations.length)
     return { score: null, consistency: null, sampleSize: 0, evidence: "No scouting sample" };
   const mean = values.length

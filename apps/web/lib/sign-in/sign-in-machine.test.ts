@@ -214,6 +214,12 @@ describe("expired vs wrong code", () => {
     // Never leak the env var names into the browser.
     expect(failure.message).not.toMatch(/RESEND|AUTH_EMAIL_FROM/);
   });
+
+  it("says a server failure is Vantage's, not the email's", () => {
+    const failure = classifyOtpFailure({ channel: "email-otp", status: 500, message: "" });
+    expect(failure.message).toMatch(/your email is fine/i);
+    expect(failure.message).not.toMatch(/That didn.t work/);
+  });
 });
 
 describe("invite context preservation", () => {

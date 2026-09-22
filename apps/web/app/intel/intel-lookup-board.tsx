@@ -3,6 +3,7 @@
 import { Panel } from "../../components/ui";
 import {
   buildLookupCards,
+  lookupCardsWithValues,
   ordinalPercentile,
   type EventRatingRow,
   type LookupCard,
@@ -79,14 +80,28 @@ export function IntelLookupBoard({
   scout?: ScoutAverageRow | null;
   history?: Array<number | null>;
 }) {
-  const cards = buildLookupCards({ teamKey, event, field, scout, history });
+  const all = buildLookupCards({ teamKey, event, field, scout, history });
+  // A wall of "—" tiles buried the six numbers that existed. Show what is on
+  // file; say in one line how many were left out and why.
+  const cards = lookupCardsWithValues(all);
+  const hidden = all.length - cards.length;
+  if (cards.length === 0) {
+    return (
+      <section className="intel-lookup-board" aria-label="Compared to this event">
+        <header>
+          <h3>Compared to this event</h3>
+          <p className="app-muted">No event ratings synced for this team yet.</p>
+        </header>
+      </section>
+    );
+  }
   return (
     <section className="intel-lookup-board" aria-label="Compared to this event">
       <header>
         <h3>Compared to this event</h3>
         <p className="app-muted">
-          Event ratings use synced numbers. Scout ratings stay blank until this team has real
-          scout rows.
+          Synced event ratings, placed against every team at this event.
+          {hidden > 0 ? ` ${hidden} more stay hidden until there is data for them.` : ""}
         </p>
       </header>
       <div className="intel-lookup-grid">

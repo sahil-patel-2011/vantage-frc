@@ -36,7 +36,8 @@ export const LEARN_RESOURCE_CARDS: LearnResourceCard[] = [
   {
     id: "team-6925",
     title: "Team 6925 lab",
-    description: "Paced Limelight, WPILib, GitHub, and CAD Video Tutor weeks. Official docs only.",
+    description:
+      "Two paced tracks: programming (WPILib to vision and autos) and mechanical (Onshape to pit repair). Official docs only.",
     href: "/learn/6925",
     primary: "Open Team 6925 lab",
   },
