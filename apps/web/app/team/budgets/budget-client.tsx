@@ -376,7 +376,9 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
             <NextActions orgId={orgId} shell={shell} canManage={canManage} />
           )}
 
-          {snapshot ? <UsageCutoffBanner orgId={orgId} snapshot={snapshot} /> : null}
+          {snapshot ? (
+            <UsageCutoffBanner orgId={orgId} snapshot={snapshot} canCheckout={canManage} />
+          ) : null}
 
           {shouldShowAiBudgetsSummaryTiles(shell) ? (
           <section className="metric-grid" aria-label="Usage snapshot">
@@ -413,8 +415,11 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
             <span className="eyebrow">When hosted Chat runs out</span>
             <h2 style={{ margin: "4px 0 8px", fontSize: 18 }}>After hosted AI runs out</h2>
             <p className="app-muted" style={{ marginTop: 0 }}>
-              Plan{cutoff?.planCode ? ` (${cutoff.planCode})` : ""} hosted Chat stops at 100%. Resume with credits,
-              pay-as-you-go with a spend cap, or a higher plan. Your own keys and local models do not use hosted allowance.
+              Plan{cutoff?.planCode ? ` (${cutoff.planCode})` : ""} hosted Chat stops at 100%.{" "}
+              {canManage
+                ? "Resume with credits, pay-as-you-go with a spend cap, or a higher plan."
+                : "An owner or admin buys credits or changes the plan."}{" "}
+              Your own keys and local models do not use hosted allowance.
             </p>
             <div className="usage-cutoff-banner-ctas" style={{ marginTop: 4 }}>
               <UsageCutoffQuickActions
@@ -422,6 +427,7 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
                 paygEnabled={Boolean(cutoff?.paygEnabled)}
                 pricingHref={pricingHref}
                 accountHref={accountHref}
+                canCheckout={canManage}
               />
             </div>
           </section>
@@ -631,11 +637,14 @@ function UsageCutoffQuickActions({
   paygEnabled,
   pricingHref,
   accountHref,
+  canCheckout,
 }: {
   orgId: string;
   paygEnabled: boolean;
   pricingHref: string;
   accountHref: string;
+  /** When false, checkout stays with an owner or admin. Omitted keeps the checkout buttons. */
+  canCheckout?: boolean;
 }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [hint, setHint] = useState("");
@@ -667,20 +676,24 @@ function UsageCutoffQuickActions({
 
   return (
     <>
-      <button
-        type="button"
-        className="primary-action"
-        disabled={busy != null}
-        onClick={() => void checkout("credits", { packCode: "credits_100" })}
-      >
-        {busy === "credits" ? "Opening…" : "Buy AI credits"}
-      </button>
-      <Button variant="secondary" type="button" disabled={busy != null || paygEnabled} onClick={() => void checkout("payg")}>
-        {paygEnabled ? "Pay-as-you-go is on" : busy === "payg" ? "Opening…" : "Turn on pay-as-you-go"}
-      </Button>
-      <Button variant="secondary" type="button" disabled={busy != null} onClick={() => void checkout("subscription", { planCode: "pro" })}>
-        {busy === "subscription" ? "Opening…" : "Upgrade plan"}
-      </Button>
+      {canCheckout !== false ? (
+        <>
+          <button
+            type="button"
+            className="primary-action"
+            disabled={busy != null}
+            onClick={() => void checkout("credits", { packCode: "credits_100" })}
+          >
+            {busy === "credits" ? "Opening…" : "Buy AI credits"}
+          </button>
+          <Button variant="secondary" type="button" disabled={busy != null || paygEnabled} onClick={() => void checkout("payg")}>
+            {paygEnabled ? "Pay-as-you-go is on" : busy === "payg" ? "Opening…" : "Turn on pay-as-you-go"}
+          </Button>
+          <Button variant="secondary" type="button" disabled={busy != null} onClick={() => void checkout("subscription", { planCode: "pro" })}>
+            {busy === "subscription" ? "Opening…" : "Upgrade plan"}
+          </Button>
+        </>
+      ) : null}
       <Button as="a" variant="secondary" href={pricingHref}>
         View pricing
       </Button>

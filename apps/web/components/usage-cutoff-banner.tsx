@@ -22,7 +22,14 @@ type BannerProps = {
   errorCode?: string | null;
   className?: string;
   compact?: boolean;
+  /** When false, checkout stays with an owner or admin. Omitted keeps checkout actions. */
+  canCheckout?: boolean;
 };
+
+function visibleCtas(ctas: CutoffCta[], canCheckout: boolean | undefined): CutoffCta[] {
+  if (canCheckout !== false) return ctas;
+  return ctas.filter((cta) => !cta.checkoutAction);
+}
 
 async function startCheckout(orgId: string, cta: CutoffCta): Promise<string | null> {
   if (!cta.checkoutAction) return cta.href ?? null;
@@ -122,7 +129,7 @@ function BannerShell({
 }
 
 /** Banner for near/at plan allowance, credits, pay-as-you-go, or team budget limits. */
-export function UsageCutoffBanner({ orgId, snapshot, errorCode, className, compact }: BannerProps) {
+export function UsageCutoffBanner({ orgId, snapshot, errorCode, className, compact, canCheckout }: BannerProps) {
   let alert: UsageCutoffAlert | null = null;
   if (errorCode) {
     const mapped = messageForCutoffError(errorCode, orgId);
@@ -132,7 +139,7 @@ export function UsageCutoffBanner({ orgId, snapshot, errorCode, className, compa
         title={mapped.title}
         body={mapped.body}
         percent={null}
-        ctas={mapped.ctas}
+        ctas={visibleCtas(mapped.ctas, canCheckout)}
         orgId={orgId}
         className={className}
         compact={compact}
@@ -147,7 +154,7 @@ export function UsageCutoffBanner({ orgId, snapshot, errorCode, className, compa
       title={alert.title}
       body={alert.body}
       percent={alert.percent}
-      ctas={cutoffCtas(alert, orgId)}
+      ctas={visibleCtas(cutoffCtas(alert, orgId), canCheckout)}
       orgId={orgId}
       className={className}
       compact={compact}
