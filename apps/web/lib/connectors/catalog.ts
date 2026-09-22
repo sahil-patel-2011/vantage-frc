@@ -223,7 +223,7 @@ export const CONNECTORS: readonly ConnectorDefinition[] = [
     callbackLabel: "Endpoint URL (Developers → Webhooks)",
     providerConsole: "dashboard.stripe.com → Developers → Webhooks → Add endpoint",
     permissions: ["checkout.session.completed", "customer.subscription.*", "invoice.payment_failed"],
-    managePath: "/billing",
+    managePath: "/team/budgets",
     hasConnectAction: false,
     hasDisconnectAction: false,
   },

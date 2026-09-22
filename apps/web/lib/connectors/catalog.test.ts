@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   CONNECTORS,
@@ -27,6 +29,9 @@ describe("connector catalog shape", () => {
       expect(entry.label.length, entry.id).toBeGreaterThan(2);
       expect(entry.powers.length, `${entry.id} must say what breaks without it`).toBeGreaterThan(20);
       expect(entry.managePath.startsWith("/"), entry.id).toBe(true);
+      const pagePath = entry.managePath.split(/[?#]/)[0] ?? entry.managePath;
+      const page = join(__dirname, "..", "..", "app", ...pagePath.split("/").filter(Boolean), "page.tsx");
+      expect(existsSync(page), `${entry.id} settings ${entry.managePath}`).toBe(true);
       expect(entry.providerConsole.length, `${entry.id} must name the provider console`).toBeGreaterThan(10);
     }
   });
