@@ -70,6 +70,8 @@ export async function GET(request: Request) {
         ],
         orgId: null,
         seasonYear: seasonYear ?? currentSeasonYear(),
+        eventKey: null,
+        eventName: null,
       } satisfies DataQualityScorecardView,
       { status: 200 },
     );

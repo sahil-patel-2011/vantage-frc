@@ -198,12 +198,20 @@ export type PackingList = {
   canManageMaster: boolean;
 };
 
+/** Default list title. A typed name wins; otherwise the event name, never the raw key. */
+export function packingListTitle(customTitle: string, eventLabel: string | null): string {
+  const custom = customTitle.trim();
+  if (custom) return custom;
+  return eventLabel ? `Load-out · ${eventLabel}` : "Competition load-out";
+}
+
 export type PackingContext = {
   orgId: string | null;
   orgName: string | null;
   teamNumber: number | null;
   role: string | null;
   eventKey: string | null;
+  eventName: string | null;
 };
 
 export type PackingView =

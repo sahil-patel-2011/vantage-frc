@@ -18,9 +18,11 @@ import {
   groupPacking,
   isPackingQueueableAction,
   packProgress,
+  packingListTitle,
   type PackingList,
   type PackingView,
 } from "../../lib/packing";
+import { scoutEventLabel } from "../../lib/scouting/scouting-related";
 import { PACKING_RELATED_INCLUDE, packingRelatedLinks } from "../../lib/packing-related";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { teamProseLabel } from "../../components/app-shell-model";
@@ -91,7 +93,9 @@ function ListDetail({
           <h2>{list.title}</h2>
           <p className="app-muted">
             {progress.packed}/{progress.total} packed
-            {list.eventKey ? ` · ${list.eventKey}` : ""}
+            {list.eventKey
+              ? ` · ${scoutEventLabel({ eventKey: list.eventKey }) ?? ""}`
+              : ""}
             {list.createdByName ? ` · by ${list.createdByName}` : ""}
           </p>
         </div>
@@ -549,8 +553,12 @@ export default function PackingClient() {
   const lists = view.lists;
   const selected = lists.find((list) => list.id === selectedId) ?? lists[0] ?? null;
 
+  const eventLabel = scoutEventLabel({
+    eventName: view.context.eventName,
+    eventKey: view.context.eventKey,
+  });
   const createList = () => {
-    const title = newTitle.trim() || (view.context.eventKey ? `Load-out · ${view.context.eventKey}` : "Competition load-out");
+    const title = packingListTitle(newTitle, eventLabel);
     void run(
       { action: "create_list", orgId, title, eventKey: view.context.eventKey, seedTemplate: true },
       "create",
@@ -596,7 +604,7 @@ export default function PackingClient() {
 
       {lists.length === 0 ? (
         <div className="app-card pack-empty">
-          <strong>No packing lists yet</strong>
+          <strong>{eventLabel ? `No packing lists yet for ${eventLabel}` : "No packing lists yet"}</strong>
           <p className="app-muted">Create one — it seeds the standard competition load-out (batteries, tools, spares, drive station, safety).</p>
           <Button variant="primary" type="button" disabled={busyKey === "create"} onClick={createList}>
             Create competition load-out

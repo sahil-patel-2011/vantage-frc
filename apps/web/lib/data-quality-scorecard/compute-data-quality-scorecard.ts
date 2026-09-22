@@ -1,5 +1,6 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { computeDataQualityScorecard, summarizeDataQuality } from ".";
+import { scoutEventLabel } from "../scouting/scouting-related";
 import type { DataQualityCheck, DataQualityScorecard, DataQualityScorecardSummary } from "./types";
 
 export type DataQualitySetupStep = {
@@ -16,6 +17,8 @@ export type DataQualityScorecardView =
       steps: DataQualitySetupStep[];
       orgId: string | null;
       seasonYear: number;
+      eventKey: string | null;
+      eventName: string | null;
     }
   | {
       status: "live";
@@ -99,6 +102,8 @@ export async function computeDataQualityScorecardView(
       ],
       orgId: null,
       seasonYear,
+      eventKey: null,
+      eventName: null,
     };
   }
 
@@ -122,19 +127,37 @@ export async function computeDataQualityScorecardView(
   if (checkResult.rows.length === 0) {
     const seasons = seasonResult.rows.map((r) => r.seasonYear);
     if (seasons.length === 0) {
+      const active = await client.query<{ eventKey: string | null; eventName: string | null }>(
+        `SELECT c.active_event_key AS "eventKey", e.name AS "eventName"
+         FROM org_active_context c
+         LEFT JOIN events_ref e ON e.event_key = c.active_event_key
+         WHERE c.org_id = $1::uuid`,
+        [org.orgId],
+      );
+      const activeEvent = active.rows[0] ?? { eventKey: null, eventName: null };
+      const named = scoutEventLabel({
+        eventName: activeEvent.eventName,
+        eventKey: activeEvent.eventKey,
+      });
       return {
         status: "setup_required",
-        message: "No data-quality checks logged yet for this team. Log a check to start the scorecard.",
+        message: named
+          ? `No data-quality checks logged yet for ${named}.`
+          : "No data-quality checks logged yet for this team. Log a check to start the scorecard.",
         steps: [
           {
             id: "log-check",
             label: "Log a quality check",
-            detail: "Record coverage/agreement for a scouted match",
-            href: "/data-quality-scorecard",
+            detail: named
+              ? `Record coverage and agreement for a match at ${named}.`
+              : "Record coverage/agreement for a scouted match",
+            href: "#data-quality-log",
           },
         ],
         orgId: org.orgId,
         seasonYear,
+        eventKey: activeEvent.eventKey,
+        eventName: activeEvent.eventName,
       };
     }
   }

@@ -73,12 +73,14 @@ export async function GET(request: Request) {
         teamNumber: number | null;
         role: string;
         eventKey: string | null;
+        eventName: string | null;
       }>(
         `SELECT m.org_id AS "orgId", o.name AS "orgName", o.team_number AS "teamNumber", m.role,
-                c.active_event_key AS "eventKey"
+                c.active_event_key AS "eventKey", e.name AS "eventName"
          FROM memberships m
          JOIN organizations o ON o.id = m.org_id
          LEFT JOIN org_active_context c ON c.org_id = o.id
+         LEFT JOIN events_ref e ON e.event_key = c.active_event_key
          WHERE m.user_id = $1 AND ($2::uuid IS NULL OR m.org_id = $2::uuid)
          ORDER BY CASE m.role WHEN 'owner' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END, o.team_number
          LIMIT 1`,
@@ -90,7 +92,7 @@ export async function GET(request: Request) {
         return {
           status: "setup_required",
           message: "Choose your team to build packing lists.",
-          context: { orgId: null, orgName: null, teamNumber: null, role: null, eventKey: null },
+          context: { orgId: null, orgName: null, teamNumber: null, role: null, eventKey: null, eventName: null },
         } satisfies PackingView;
       }
 
@@ -168,6 +170,7 @@ export async function GET(request: Request) {
           teamNumber: row.teamNumber,
           role: row.role,
           eventKey: row.eventKey,
+          eventName: row.eventName,
         },
         lists: lists.rows.map((list) => ({
           ...list,

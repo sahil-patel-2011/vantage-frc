@@ -6,6 +6,7 @@ import {
   groupPacking,
   packProgress,
   PACKING_TEMPLATE,
+  packingListTitle,
   parsePackingAction,
   pendingPackingRequests,
   type PackingItem,
@@ -143,6 +144,15 @@ describe("groupPacking", () => {
   });
 });
 
+describe("packingListTitle", () => {
+  it("uses the event name and hides a custom key", () => {
+    expect(packingListTitle("", "Pacific Practice")).toBe("Load-out · Pacific Practice");
+    expect(packingListTitle("  Week 1  ", "Pacific Practice")).toBe("Week 1");
+    expect(packingListTitle("", null)).toBe("Competition load-out");
+    expect(packingListTitle("", "Pacific Practice")).not.toContain("2026custom-");
+  });
+});
+
 describe("parsePackingAction", () => {
   it("creates a list with template seeding on by default", () => {
     expect(parsePackingAction({ action: "create_list", orgId: ORG, title: "Week 1 Regional" })).toMatchObject({
@@ -239,6 +249,7 @@ describe("packing request inbox", () => {
         teamNumber: 6925,
         role: "member",
         eventKey: null,
+        eventName: null,
       },
       lists: [
         {
