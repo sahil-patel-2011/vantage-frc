@@ -393,15 +393,17 @@
   color: var(--accent);
 }
 
+/* The lesson's main reference is outlined in the accent, not filled: every lesson has
+   one, and twenty-four solid blue buttons on one page drowned out "Grade my part". */
 .cl-link-primary {
-  border-color: var(--accent);
-  background: var(--accent);
-  color: var(--accent-ink, #fff);
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
+  background: color-mix(in srgb, var(--accent) 7%, var(--surface));
+  color: var(--accent);
 }
 
 .cl-link-primary:hover {
-  color: var(--accent-ink, #fff);
-  filter: brightness(0.96);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 /* ---------- the grader ---------- */
