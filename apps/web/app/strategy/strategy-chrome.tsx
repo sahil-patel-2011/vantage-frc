@@ -8,6 +8,7 @@ import { withOrgHref } from "../../lib/nav/product-nav";
 import {
   STRATEGY_RELATED_INCLUDE,
   strategyRelatedLinks,
+  strategyCanSync,
   strategyShellCopy,
   strategyWaitingCopy,
   type StrategyShellKind,
@@ -54,18 +55,22 @@ export function TbaKeyHint({ view }: { view: StrategyView }) {
   const access = view.tbaAccess;
   const stat = view.referenceAccess?.statbotics;
   if (access?.tbaConfigured && (stat?.cacheHasMetrics ?? true)) return null;
+  const canSync = "actorRole" in view && view.actorRole != null ? strategyCanSync(view.actorRole) : true;
   return (
     <div className="strategy-reference-hints">
       {access && !access.tbaConfigured ? (
         <p className="telemetry-status" role="status">
-          Match results are not connected. Open Team → Data, connect match results, and pick this event.
-          Strategy stays empty until that schedule is in.
+          {canSync
+            ? "Match results are not connected. Open Team → Data, connect match results, and pick this event. Strategy stays empty until that schedule is in."
+            : "Match results are not connected. An owner or admin syncs them. You can still scout."}
         </p>
       ) : null}
       {stat && !stat.cacheHasMetrics ? (
         <p className="telemetry-status" role="status">
-          Team ratings have not synced yet ({stat.eventMetricRows} event / {stat.yearMetricRows} year rows). Open
-          Team → Data and sync. Strategy stays empty until those ratings exist.
+          Team ratings have not synced yet ({stat.eventMetricRows} event / {stat.yearMetricRows} year rows).{" "}
+          {canSync
+            ? "Open Team → Data and sync. Strategy stays empty until those ratings exist."
+            : "An owner or admin syncs Team Data. You can still scout."}
         </p>
       ) : null}
     </div>

@@ -29,6 +29,7 @@ export type ShiftBalancerView =
       orgId: string;
       teamNumber: number | null;
       eventKey: string | null;
+      eventName: string | null;
       qualMatchCount: number;
       scouts: ShiftBalancerScout[];
       /** Team members a scout row can be linked to, so a plan can reach them. */
@@ -127,8 +128,11 @@ export async function computeShiftBalancerView(
        LIMIT 20`,
       [org.orgId],
     ),
-    client.query<{ eventKey: string | null }>(
-      `SELECT active_event_key AS "eventKey" FROM org_active_context WHERE org_id = $1`,
+    client.query<{ eventKey: string | null; eventName: string | null }>(
+      `SELECT c.active_event_key AS "eventKey", e.name AS "eventName"
+       FROM org_active_context c
+       LEFT JOIN events_ref e ON e.event_key = c.active_event_key
+       WHERE c.org_id = $1`,
       [org.orgId],
     ),
     client.query<{ qualCount: number }>(
@@ -166,6 +170,7 @@ export async function computeShiftBalancerView(
     orgId: org.orgId,
     teamNumber: org.teamNumber,
     eventKey: eventResult.rows[0]?.eventKey ?? null,
+    eventName: eventResult.rows[0]?.eventName ?? null,
     qualMatchCount: Number(qualResult.rows[0]?.qualCount) || 0,
     scouts,
     // Email is the fallback label, not a second field: a member who has not set

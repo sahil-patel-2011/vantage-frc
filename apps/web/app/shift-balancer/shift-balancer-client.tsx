@@ -5,6 +5,7 @@ import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { DEFAULT_STATIONS, planToCsv, tabletSheetsByScout } from "../../lib/shift-balancer";
+import { scoutEventLabel } from "../../lib/scouting/scouting-related";
 import type { ShiftBalancerView } from "../../lib/shift-balancer/compute-shift-balancer";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
@@ -332,6 +333,7 @@ function GeneratePlanForm({
     [],
   );
   const [form, setForm] = useState(empty);
+  const eventLabel = scoutEventLabel({ eventName: view.eventName, eventKey: view.eventKey });
   const set = (key: keyof typeof form) => (event: { target: { value: string } }) =>
     setForm((prev) => ({ ...prev, [key]: event.target.value }));
 
@@ -356,13 +358,13 @@ function GeneratePlanForm({
   return (
     <Panel as="form" onSubmit={(event) => { event.preventDefault(); submit(false); }} style={{ display: "grid", gap: 10 }}>
       <h2 style={{ margin: 0 }}>Generate rotation</h2>
-      {view.eventKey && view.qualMatchCount > 0 ? (
+      {eventLabel && view.qualMatchCount > 0 ? (
         <p className="app-muted" style={{ margin: 0 }}>
-          Active event {view.eventKey} has {view.qualMatchCount} cached qualification matches.
+          Active event {eventLabel} has {view.qualMatchCount} cached qualification {view.qualMatchCount === 1 ? "match" : "matches"}.
         </p>
-      ) : view.eventKey ? (
+      ) : eventLabel ? (
         <p className="app-muted" style={{ margin: 0 }}>
-          Active event {view.eventKey} has no qualification matches cached yet. Sync Team Data or generate a numeric plan below.
+          Active event {eventLabel} has no qualification matches cached yet. Sync Team Data or generate a numeric plan below.
         </p>
       ) : (
         <p className="app-muted" style={{ margin: 0 }}>

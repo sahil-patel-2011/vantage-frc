@@ -60,7 +60,7 @@ describe("computeShiftBalancerView", () => {
           },
         ],
       },
-      { rows: [{ eventKey: "2026casj" }] },
+      { rows: [{ eventKey: "2026casj", eventName: "San Jose" }] },
       { rows: [{ qualCount: 12 }] },
     ]);
 
@@ -77,6 +77,7 @@ describe("computeShiftBalancerView", () => {
     expect(view.latestSummary?.totalShifts).toBe(4);
     expect(view.latestSummary?.scoutsUsed).toBe(3);
     expect(view.eventKey).toBe("2026casj");
+    expect(view.eventName).toBe("San Jose");
     expect(view.qualMatchCount).toBe(12);
   });
 });
