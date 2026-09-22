@@ -42,7 +42,8 @@ export type DesktopRelease = {
 export const DEFAULT_DESKTOP_RELEASE_URL =
   "https://github.com/sahil-patel-2011/vantage-frc/releases/latest/download/latest.json";
 
-const NO_RELEASE = "No desktop release published yet.";
+export const DESKTOP_RELEASE_MISSING = "No desktop release published yet.";
+const NO_RELEASE = DESKTOP_RELEASE_MISSING;
 const FEED_DOWN = "Desktop release feed is unavailable.";
 const FEED_UNUSABLE = "Desktop release feed was not usable.";
 

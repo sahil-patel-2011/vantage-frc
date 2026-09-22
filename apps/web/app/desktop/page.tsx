@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { SiteFooter, SiteHeader } from "../../components/marketing/site-header";
+import { DESKTOP_RELEASE_MISSING, loadPublishedDesktopRelease } from "../../lib/desktop/release";
 import { marketingPageMetadata } from "../../lib/marketing/seo";
 
 export const metadata: Metadata = marketingPageMetadata({
@@ -24,7 +25,7 @@ const facts = [
   },
   {
     title: "Windows may warn",
-    copy: "Download from GitHub Releases. Windows SmartScreen may warn that the publisher is unknown. That is expected until a signing certificate exists — not a virus.",
+    copy: "When a Windows build is published, SmartScreen may warn that the publisher is unknown. That is expected until a signing certificate exists — not a virus.",
   },
   {
     title: "Fusion stays on this computer",
@@ -32,7 +33,12 @@ const facts = [
   },
 ] as const;
 
-export default function DesktopPage() {
+export default async function DesktopPage() {
+  const published = await loadPublishedDesktopRelease();
+  const windowsUrl = published.ok ? published.release.downloads.win_nsis : null;
+  const version = published.ok ? published.release.version : null;
+  const missing = !published.ok && published.body.error === DESKTOP_RELEASE_MISSING;
+
   return (
     <div className="marketing-site marketing-lux">
       <SiteHeader />
@@ -45,11 +51,13 @@ export default function DesktopPage() {
             owner invites your exact email.
           </p>
           <div className="actions">
-            <a className="button primary" href="/signin">
+            {windowsUrl ? (
+              <a className="button primary" href={windowsUrl}>
+                Download for Windows
+              </a>
+            ) : null}
+            <a className={`button ${windowsUrl ? "secondary" : "primary"}`} href="/signin">
               Sign in on the web
-            </a>
-            <a className="button secondary" href="https://github.com/sahil-patel-2011/vantage-frc/releases">
-              Windows downloads
             </a>
           </div>
         </header>
@@ -59,8 +67,12 @@ export default function DesktopPage() {
             <header className="lux-section-head">
               <h2>What you install</h2>
               <p>
-                Download the Windows app from GitHub Releases. Windows may warn that the publisher is unknown —
-                that is expected. Mentors who build from the repo can follow{" "}
+                {windowsUrl && version
+                  ? `Windows ${version} is ready to download. Windows may warn that the publisher is unknown — that is expected. `
+                  : missing
+                    ? "No Windows build is published yet. Sign in on the web until one is. "
+                    : "The Windows download could not be checked just now. Sign in on the web and open this page again. "}
+                Mentors who build from the repo can follow{" "}
                 <a href="https://github.com/sahil-patel-2011/vantage-frc/blob/main/docs/DESKTOP.md">the desktop notes</a>.
                 Signing a release is optional and not required to run.
               </p>
