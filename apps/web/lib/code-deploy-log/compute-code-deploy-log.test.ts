@@ -82,5 +82,22 @@ describe("computeCodeDeployLogView", () => {
     expect(view.summary.matchLinkedDeploys).toBe(1);
     expect(view.summary.lastDeployedOn).toBe("2026-02-10");
     expect(view.summary.rollbackRate).toBeCloseTo(0.5);
+    expect(view.eventKey).toBeNull();
+    expect(view.eventName).toBeNull();
+  });
+
+  it("names the active event on a live deploy log", async () => {
+    const client = makeClient((sql) => {
+      if (sql.includes("FROM memberships")) return { rows: [{ orgId: ORG, teamNumber: 254 }] };
+      if (sql.includes("FROM org_active_context")) {
+        return { rows: [{ eventKey: "2026custom-org-pacific", eventName: "Pacific Practice" }] };
+      }
+      return { rows: [] };
+    });
+    const view = await computeCodeDeployLogView(client, { userId: USER, requestedOrg: ORG, seasonYear: 2026 });
+    expect(view.status).toBe("live");
+    if (view.status !== "live") throw new Error("expected live view");
+    expect(view.eventName).toBe("Pacific Practice");
+    expect(view.eventKey).toBe("2026custom-org-pacific");
   });
 });

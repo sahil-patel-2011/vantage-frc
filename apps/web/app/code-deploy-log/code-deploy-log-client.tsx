@@ -16,6 +16,7 @@ import {
   type BadgeTone,
 } from "../../components/ui";
 import { deployStatusLabel, deployTypeLabel } from "../../lib/code-deploy-log";
+import { scoutEventLabel } from "../../lib/scouting/scouting-related";
 import {
   DEPLOY_STATUSES,
   DEPLOY_TYPES,
@@ -426,7 +427,7 @@ export default function CodeDeployLogClient() {
       ) : null}
 
       <div id="code-deploy-log-form">
-        <LogDeployForm busy={busy} mutate={mutate} />
+        <LogDeployForm busy={busy} mutate={mutate} eventKey={view.eventKey} eventName={view.eventName} />
       </div>
       <RecentDeploys view={view} busy={busy} mutate={mutate} />
     </main>
@@ -497,9 +498,13 @@ function RecentDeploys({
 function LogDeployForm({
   busy,
   mutate,
+  eventKey,
+  eventName,
 }: {
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => void;
+  eventKey: string | null;
+  eventName: string | null;
 }) {
   const empty = useMemo(
     () => ({
@@ -518,6 +523,8 @@ function LogDeployForm({
   const [form, setForm] = useState(empty);
   const set = (key: keyof typeof form) => (event: { target: { value: string } }) =>
     setForm((prev) => ({ ...prev, [key]: event.target.value }));
+  const lockedEvent = eventKey?.trim() ?? "";
+  const submittedEvent = lockedEvent || form.eventKey.trim();
 
   return (
     <Panel
@@ -531,7 +538,7 @@ function LogDeployForm({
           deployedOn: form.deployedOn,
           firmwareVersion: form.firmwareVersion,
           matchKey: form.matchKey || undefined,
-          eventKey: form.eventKey || undefined,
+          eventKey: submittedEvent || undefined,
           commitSha: form.commitSha || undefined,
           branch: form.branch || undefined,
           deployType: form.deployType,
@@ -552,9 +559,19 @@ function LogDeployForm({
         <FormRow label="Match key (optional)">
           <input value={form.matchKey} onChange={set("matchKey")} placeholder="2026miket_qm10" />
         </FormRow>
-        <FormRow label="Event key (optional)">
-          <input value={form.eventKey} onChange={set("eventKey")} placeholder="2026miket" />
-        </FormRow>
+        {lockedEvent ? (
+          <FormRow label="Event">
+            <input
+              readOnly
+              aria-label="Event"
+              value={scoutEventLabel({ eventName, eventKey: lockedEvent }) ?? ""}
+            />
+          </FormRow>
+        ) : (
+          <FormRow label="Event key (optional)">
+            <input value={form.eventKey} onChange={set("eventKey")} placeholder="2026miket" />
+          </FormRow>
+        )}
         <FormRow label="Commit SHA (optional)">
           <input value={form.commitSha} onChange={set("commitSha")} placeholder="abc1234" />
         </FormRow>

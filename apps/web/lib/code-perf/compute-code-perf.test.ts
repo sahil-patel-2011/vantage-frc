@@ -92,6 +92,23 @@ describe("computeCodePerfView", () => {
     expect(view.matches[0]?.totalPoints).toBe(29);
     expect(view.summary.improved).toBe(1);
     expect(view.summary.totalChanges).toBe(1);
+    expect(view.eventKey).toBeNull();
+    expect(view.eventName).toBeNull();
+  });
+
+  it("names the active event on a live code-vs-match board", async () => {
+    const client = makeClient((sql) => {
+      if (sql.includes("FROM memberships")) return { rows: [{ orgId: ORG, teamNumber: 254 }] };
+      if (sql.includes("FROM org_active_context")) {
+        return { rows: [{ eventKey: "2026custom-org-pacific", eventName: "Pacific Practice" }] };
+      }
+      return { rows: [] };
+    });
+    const view = await computeCodePerfView(client, { userId: USER, requestedOrg: ORG, seasonYear: 2026 });
+    expect(view.status).toBe("live");
+    if (view.status !== "live") throw new Error("expected live view");
+    expect(view.eventName).toBe("Pacific Practice");
+    expect(view.eventKey).toBe("2026custom-org-pacific");
   });
 });
 
