@@ -8,7 +8,7 @@ import { applyFormResetBehavior } from "@vantage/scouting";
 import { isScoutIdentityField } from "@vantage/scouting/identity";
 import { lintSchemaBudget, type FieldTrustSummary } from "@vantage/scouting/trust";
 import { stripHiddenAnswers, visibleFields, withInferredPhaseRules } from "../../lib/scouting/context-visible";
-import { buildScoutTargets } from "../../lib/scouting/scout-target";
+import { buildScoutTargets, normalizeTeamKey } from "../../lib/scouting/scout-target";
 import { apiErrorMessage } from "../../lib/ui/load-failure";
 import { OfflineBanner } from "../../components/offline-banner";
 import { useVenueShortcuts } from "../../hooks/use-venue-shortcuts";
@@ -362,8 +362,13 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
   }, [draftKey, payload, confidence, matchKey, teamKey]);
 
   async function submit() {
-    if (!data?.eventKey || !schema || !teamKey || (type === "match" && !matchKey)) {
-      setMessage("Choose the event assignment, team, and form");
+    const storedTeam = normalizeTeamKey(teamKey);
+    if (!data?.eventKey || !schema || !storedTeam || (type === "match" && !matchKey)) {
+      setMessage(
+        teamKey.trim() && !storedTeam
+          ? "That is not a team number."
+          : "Choose the event assignment, team, and form",
+      );
       return;
     }
     const entry: SyncEntry = {
@@ -372,7 +377,7 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
       type,
       eventKey: data.eventKey,
       matchKey: type === "match" ? matchKey : undefined,
-      teamKey,
+      teamKey: storedTeam,
       schemaId: schema.id,
       payload: stripHiddenAnswers(withInferredPhaseRules(schema.definition.fields), payload),
       confidence,
@@ -394,7 +399,7 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
     setDraftSavedAt(null);
     setDraftDirty(false);
     setSaveReceipt({
-      teamKey,
+      teamKey: storedTeam,
       matchKey: type === "match" ? matchKey : undefined,
       entryType: type,
       offline: !online,

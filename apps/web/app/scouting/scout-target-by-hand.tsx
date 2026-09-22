@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "../../components/ui";
 import {
   COMP_LEVELS,
@@ -17,6 +17,55 @@ const COMP_LABEL: Record<CompLevel, string> = {
   sf: "Semifinal",
   f: "Final",
 };
+
+/**
+ * Pit scouting asks for a team number, the same way match scouting does.
+ *
+ * The reference table stores `frc254`. Leaving the typed digits as the key
+ * makes the save fail the team reference, after the scout already thinks it
+ * was recorded.
+ */
+export function PitTeamField({
+  teamKey,
+  onTeamKey,
+}: {
+  teamKey: string;
+  onTeamKey: (teamKey: string) => void;
+}) {
+  const [draft, setDraft] = useState(() => teamKey.replace(/^frc/i, ""));
+  const normalized = normalizeTeamKey(draft);
+  const problem = draft.trim() && !normalized ? "That is not a team number." : null;
+
+  useEffect(() => {
+    if (!teamKey) return;
+    if (normalizeTeamKey(draft) === teamKey) return;
+    setDraft(teamKey.replace(/^frc/i, ""));
+  }, [teamKey, draft]);
+
+  return (
+    <div className="scout-by-hand">
+      <label>
+        Team number
+        <input
+          inputMode="numeric"
+          value={draft}
+          onChange={(event) => {
+            const next = event.target.value;
+            setDraft(next);
+            onTeamKey(normalizeTeamKey(next) ?? "");
+          }}
+          placeholder="254"
+          aria-invalid={Boolean(problem)}
+        />
+      </label>
+      {problem ? (
+        <p className="scout-by-hand-problem" role="alert">
+          {problem}
+        </p>
+      ) : null}
+    </div>
+  );
+}
 
 /**
  * Scouting a robot by typing its number.

@@ -11,7 +11,7 @@ import { ExportButton } from "../../components/ui/export-button";
 import { CopyShareLink } from "../../components/copy-share-link";
 import { OfflineBanner } from "../../components/offline-banner";
 import { ASSIGNMENTS_ARE_SUGGESTIONS_COPY, describeMatchKey, groupScoutTargets } from "../../lib/scouting/scout-target";
-import { ScoutTargetByHand } from "./scout-target-by-hand";
+import { PitTeamField, ScoutTargetByHand } from "./scout-target-by-hand";
 import { VenueShortcutCheatsheet, type VenueShortcut } from "../../hooks/use-venue-shortcuts";
 import { formatDraftSavedAgo, payloadHasDraftContent } from "../../lib/scouting/draft-autosave";
 import { scoutingPostSaveNextSteps } from "../../lib/scouting/form-builder";
@@ -531,13 +531,7 @@ return (
               />
             </>
           ) : (
-            <FormRow label="Team key">
-              <input
-                value={teamKey}
-                onChange={(event) => setTeamKey(event.target.value)}
-                placeholder="254"
-              />
-            </FormRow>
+            <PitTeamField teamKey={teamKey} onTeamKey={setTeamKey} />
           )}
 
           {type === "match" && formFields.length ? (
