@@ -40,9 +40,24 @@ describe("computeScoutTrainingView", () => {
     const view = await computeScoutTrainingView(client as never, { userId: "u1", requestedOrg: "org-1" });
 
     expect(view.status).toBe("setup_required");
-    if (view.status === "setup_required") {
-      expect(view.orgId).toBe("org-1");
-    }
+    if (view.status !== "setup_required") throw new Error("expected setup_required");
+    expect(view.orgId).toBe("org-1");
+    expect(view.steps[0]?.label).toBe("Open Scouting");
+    expect(view.steps[0]?.href).toBe("/competition?tab=scouting&orgId=org-1");
+    expect(view.message).toMatch(/owner or admin/);
+    expect(view.steps.some((step) => step.label === "Sync Team Data")).toBe(false);
+  });
+
+  it("sends an owner to Team Data when no historical matches are synced", async () => {
+    const client = makeClient([
+      { rows: [{ orgId: "org-1", teamNumber: 118, role: "owner" }] },
+      { rows: [] },
+      { rows: [] },
+    ]);
+    const view = await computeScoutTrainingView(client as never, { userId: "u1", requestedOrg: "org-1" });
+    if (view.status !== "setup_required") throw new Error("expected setup_required");
+    expect(view.steps[0]?.label).toBe("Sync Team Data");
+    expect(view.steps[0]?.href).toBe("/team/data?orgId=org-1");
   });
 
   it("returns a live view with summarized attempts when data is present", async () => {
