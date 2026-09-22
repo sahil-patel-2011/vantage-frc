@@ -70,7 +70,7 @@ export function ScoutingShell({
   embedded?: boolean;
   children?: ReactNode;
 }) {
-  const copy = scoutingShellCopy(shell);
+  const copy = scoutingShellCopy(shell, { orgId });
   const failure =
     shell === "error"
       ? loadFailureCopy(

@@ -37,6 +37,15 @@ describe("classifyLoadFailure", () => {
     expect(classifyLoadFailure({ message: "Insufficient role: permission denied" })).toBe("forbidden");
   });
 
+  it("reads an admin-only 400 as a role denial, not a crash", () => {
+    const message = "Organization administrator access required";
+    expect(classifyLoadFailure({ status: 400, message })).toBe("forbidden");
+    const copy = loadFailureCopy("forbidden", { message });
+    expect(copy.title).toBe("You don't have access to this");
+    expect(copy.showRetry).toBe(false);
+    expect(copy.badge).toBe("No access");
+  });
+
   it("falls back to unknown for a generic failure", () => {
     expect(classifyLoadFailure({ status: 500, message: "Internal error" })).toBe("unknown");
     expect(classifyLoadFailure({})).toBe("unknown");

@@ -44,6 +44,9 @@ const FORBIDDEN_PATTERNS = [
   "access denied",
   "insufficient role",
   "permission",
+  // assertOrgCapability and requireOrgAdmin say this, and several routes
+  // still answer 400 for it. The words are the role check.
+  "administrator access",
 ];
 
 /**

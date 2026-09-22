@@ -19,6 +19,7 @@ import {
   PROFILE_CAPABILITIES,
   PROFILE_HUBS,
   type ProfileBaseRole,
+  isRoleProfileDenied,
 } from "../../lib/team/role-profile-copy";
 import "./role-profiles.css";
 
@@ -80,6 +81,7 @@ function toggle(list: string[], value: string): string[] {
 
 export function RoleProfilesPanel({ orgId }: { orgId: string }) {
   const [profiles, setProfiles] = useState<Profile[] | null>(null);
+  const [actorRole, setActorRole] = useState<string | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [applyTo, setApplyTo] = useState<Record<string, string>>({});
@@ -96,6 +98,7 @@ export function RoleProfilesPanel({ orgId }: { orgId: string }) {
       ]);
       const profileData = await profileResponse.json();
       if (!profileResponse.ok) throw new Error(profileData.error ?? "Could not load role profiles");
+      setActorRole(typeof profileData.actorRole === "string" ? profileData.actorRole : null);
       setProfiles(profileData.profiles ?? []);
       if (memberResponse.ok) {
         const memberData = await memberResponse.json();
@@ -160,14 +163,21 @@ export function RoleProfilesPanel({ orgId }: { orgId: string }) {
   }, [draft, post]);
 
   const sorted = useMemo(() => profiles ?? [], [profiles]);
+  const canEdit = actorRole === "owner" || actorRole === "admin";
+
+  if (error && isRoleProfileDenied(error)) return null;
 
   return (
     <Card
       className="rpf"
       title="Role profiles"
-      subtitle="Name the jobs on your team once, then give someone that job in one click. Applying a profile sets the same role, permissions and sections you could set by hand."
+      subtitle={
+        canEdit
+          ? "Name the jobs on your team once, then give someone that job in one click. Applying a profile sets the same role, permissions and sections you could set by hand."
+          : "These are the named jobs on your team. An owner or admin is the one who applies them."
+      }
       actions={
-        draft ? null : (
+        draft || error || profiles === null || !canEdit ? null : (
           <Button variant="primary" onClick={() => setDraft(emptyDraft())}>
             New profile
           </Button>
@@ -286,7 +296,9 @@ export function RoleProfilesPanel({ orgId }: { orgId: string }) {
       {profiles === null ? (
         <p className="rpf-hint">Loading profiles…</p>
       ) : sorted.length === 0 ? (
-        <p className="rpf-hint">No profiles yet. Create one and it becomes a one-click job.</p>
+        <p className="rpf-hint">
+          {canEdit ? "No profiles yet. Create one and it becomes a one-click job." : "No named jobs yet."}
+        </p>
       ) : (
         <ul className="rpf-list">
           {sorted.map((profile) => (
@@ -297,6 +309,7 @@ export function RoleProfilesPanel({ orgId }: { orgId: string }) {
               </div>
               {profile.description ? <p className="rpf-desc">{profile.description}</p> : null}
               <p className="rpf-grants">{profileSummary(profile)}</p>
+              {canEdit ? (
               <div className="rpf-item-actions">
                 <label className="rpf-apply">
                   <span className="rpf-sr">Apply {profile.name} to</span>
@@ -343,14 +356,17 @@ export function RoleProfilesPanel({ orgId }: { orgId: string }) {
                   Delete
                 </Button>
               </div>
+              ) : null}
             </li>
           ))}
         </ul>
       )}
-      <p className="rpf-hint">
-        A profile is a preset. Editing it later does not change anyone already set up — apply it
-        again to move them.
-      </p>
+      {canEdit ? (
+        <p className="rpf-hint">
+          A profile is a preset. Editing it later does not change anyone already set up — apply it
+          again to move them.
+        </p>
+      ) : null}
     </Card>
   );
 }

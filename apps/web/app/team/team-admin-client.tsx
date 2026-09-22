@@ -626,7 +626,13 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         <OfflineBanner feature="Team admin" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
-          badge={membershipFetchFailed ? "Unavailable" : undefined}
+          badge={
+            membershipFailure
+              ? membershipFailure.badge
+              : membershipFetchFailed
+                ? "Unavailable"
+                : undefined
+          }
           badgeTone="setup"
           title={copy.title}
           description={copy.description}
@@ -752,7 +758,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         {membershipShell === "loading" || membershipShell === "error" ? (
           <EmptyState
             soft
-            badge={membershipFailure ? "Unavailable" : undefined}
+            badge={membershipFailure ? membershipFailure.badge : undefined}
             badgeTone="setup"
             title={membershipFailure ? membershipFailure.title : membershipCopy.title}
             description={

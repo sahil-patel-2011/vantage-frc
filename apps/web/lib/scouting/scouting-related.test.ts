@@ -123,7 +123,15 @@ describe("scoutingShellCopy", () => {
     expect(scoutingShellCopy("empty").badge).toBe("Forms required");
     expect(scoutingShellCopy("empty").description).not.toMatch(/DEMO/i);
     expect(scoutingShellCopy("setup").badge).toBe("Needs setup");
+    expect(scoutingShellCopy("setup").title).toBe("Choose your team");
     expect(scoutingShellCopy("ready").description).not.toMatch(/DEMO/i);
+  });
+
+  it("asks for an event once the team is already chosen", () => {
+    const copy = scoutingShellCopy("setup", { orgId: "org-1" });
+    expect(copy.title).toBe("Set the event you're at");
+    expect(copy.description).toMatch(/already chosen/);
+    expect(copy.title).not.toMatch(/Choose your team/);
   });
 });
 

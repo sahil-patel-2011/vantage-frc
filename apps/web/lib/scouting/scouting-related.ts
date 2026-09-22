@@ -170,7 +170,10 @@ export function classifyScoutingShell(input: {
 }
 
 /** Soft-UI empty / setup / error copy — never DEMO entries. */
-export function scoutingShellCopy(kind: ScoutingShellKind): ScoutingEmptyCopy {
+export function scoutingShellCopy(
+  kind: ScoutingShellKind,
+  context?: { orgId?: string | null },
+): ScoutingEmptyCopy {
   switch (kind) {
     case "loading":
       return {
@@ -186,6 +189,15 @@ export function scoutingShellCopy(kind: ScoutingShellKind): ScoutingEmptyCopy {
         description: "Could not load scouting. Retry, or open forms while it reloads.",
       };
     case "setup":
+      if (context?.orgId) {
+        return {
+          kind,
+          badge: "Needs setup",
+          title: "Set the event you're at",
+          description:
+            "This team is already chosen. Match and pit forms load after you set the event you are attending.",
+        };
+      }
       return {
         kind,
         badge: "Needs setup",

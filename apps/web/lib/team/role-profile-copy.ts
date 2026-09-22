@@ -52,3 +52,8 @@ export const BASE_ROLE_COPY = {
 } as const;
 
 export type ProfileBaseRole = keyof typeof BASE_ROLE_COPY;
+
+/** True when the profiles API refused this person for their role. */
+export function isRoleProfileDenied(message: string): boolean {
+  return /administrator access|access denied|not a member|forbidden/i.test(message);
+}
