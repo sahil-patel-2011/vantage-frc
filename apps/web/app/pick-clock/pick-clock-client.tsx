@@ -15,6 +15,7 @@ import {
   pickClockShellCopy,
   pickClockWaitingCopy,
   shouldShowPickClockSummaryTiles,
+  shouldStayOnPickClockBoard,
   type PickClockNextAction,
   type PickClockShellKind,
 } from "../../lib/strategy/pick-clock-related";
@@ -474,8 +475,15 @@ export default function PickClockClient({
   });
 
   const readyView = view?.status === "ready" ? view : null;
-  // A full board still has to undo from this page — leaving for the desk is the bug this clock closes.
-  const stayOnBoard = Boolean(readyView && (readyView.lastPick || readyView.nextSlot));
+  // Undo stays on this page. An open slot with nobody left to pick is the waiting state.
+  const stayOnBoard = Boolean(
+    readyView &&
+      shouldStayOnPickClockBoard({
+        lastPick: Boolean(readyView.lastPick),
+        hasRecommendation,
+        availableCount,
+      }),
+  );
 
   if (!readyView || (shell === "empty" && !stayOnBoard)) {
     return (

@@ -10,6 +10,7 @@ import {
   pickClockEmptyAction,
   pickClockShellCopy,
   pickClockWaitingCopy,
+  shouldStayOnPickClockBoard,
   shouldShowPickClockSummaryTiles,
 } from "./pick-clock-related";
 import { expectPlainCopy } from "../ui/copy-assertions";
@@ -111,6 +112,20 @@ describe("pickClockShellCopy", () => {
     expect(pickClockShellCopy("setup").badge).toBe("Needs setup");
     expectPlainCopy(pickClockShellCopy("setup").description);
     expectPlainCopy(pickClockShellCopy("ready").description);
+  });
+});
+
+describe("shouldStayOnPickClockBoard", () => {
+  it("leaves an empty pool for the waiting state, and keeps a pick that can be undone", () => {
+    expect(
+      shouldStayOnPickClockBoard({ lastPick: false, hasRecommendation: false, availableCount: 0 }),
+    ).toBe(false);
+    expect(
+      shouldStayOnPickClockBoard({ lastPick: true, hasRecommendation: false, availableCount: 0 }),
+    ).toBe(true);
+    expect(
+      shouldStayOnPickClockBoard({ lastPick: false, hasRecommendation: true, availableCount: 3 }),
+    ).toBe(true);
   });
 });
 

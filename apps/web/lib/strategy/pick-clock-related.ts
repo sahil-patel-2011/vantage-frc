@@ -147,6 +147,19 @@ export function pickClockWaitingCopy(eventName?: string | null): string {
   return `${name} has no synced team list yet. ${base}`;
 }
 
+/**
+ * Stay on the clock only when there is a pick to undo or a team to record.
+ * An open draft slot with an empty pool is not a clock — it is the waiting state.
+ */
+export function shouldStayOnPickClockBoard(input: {
+  lastPick: boolean;
+  hasRecommendation: boolean;
+  availableCount: number;
+}): boolean {
+  if (input.lastPick) return true;
+  return input.hasRecommendation && input.availableCount > 0;
+}
+
 /** True when there is no recommendation left — Soft-UI empty until real pool exists. */
 export function isPickClockQueueEmpty(input: {
   hasRecommendation: boolean;
