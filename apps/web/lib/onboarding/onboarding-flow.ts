@@ -33,7 +33,7 @@ export const ONBOARDING_STEP_COPY: Record<
   team: {
     label: "Your team",
     shortLabel: "Team",
-    description: "A team number asks that team to let you in. It does not join you on its own.",
+    description: "Your FRC team number. From an invite it is already set; otherwise it asks that team to let you in.",
   },
   preferences: {
     label: "Finish",

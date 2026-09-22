@@ -51,6 +51,8 @@ export type TeamLookupResult = {
   /** False blocks "Continue" — the field needs fixing first. */
   ok: boolean;
   action: { href: string; label: string } | null;
+  /** Locked because this account is already a member (accepted invite / approved). */
+  joined?: boolean;
 };
 
 export type TeamLookupInput = {
@@ -140,14 +142,22 @@ export function lookupTeamNumber(input: TeamLookupInput): TeamLookupResult {
   }
 
   if (input.locked && input.lockedTeamNumber === parsed) {
+    const joined = input.accessStatus === "approved";
+    const orgName = input.lockedOrgName?.trim();
+    // Most teams are named "Team 6925"; "Team 6925 · Team 6925" read as a stutter.
+    const title =
+      orgName && orgName.toLowerCase() !== `team ${parsed}` ? `${orgName} · Team ${parsed}` : `Team ${parsed}`;
     return {
       kind: "locked",
       tone: "good",
       teamNumber: parsed,
-      title: `${input.lockedOrgName ?? "That team"} · Team ${parsed}`,
-      body: "This account is already tied to that team through an invitation or an open request, so the number can't change here.",
+      title,
+      body: joined
+        ? "You are on this team already — you joined through your invite, so the number is set."
+        : "This account is already tied to that team through an invitation or an open request, so the number can't change here.",
       ok: true,
       action: null,
+      joined,
     };
   }
 

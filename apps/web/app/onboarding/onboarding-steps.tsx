@@ -406,11 +406,19 @@ export function PreferencesForm({
       <div className="onboarding-security-note">
         <b aria-hidden="true">✓</b>
         <p>
-          <strong>{lookup.teamNumber ? "Submit sends a request — not access." : "Finish without a team"}</strong>
+          <strong>
+            {lookup.joined
+              ? "You are already on this team."
+              : lookup.teamNumber
+                ? "Submit sends a request — not access."
+                : "Finish without a team"}
+          </strong>
           <span>
-            {lookup.teamNumber
-              ? " That team's owners must approve. You cannot join an existing team just by knowing the number."
-              : " You are not joining anyone. An invite or a later team-number request still needs that team's approval."}
+            {lookup.joined
+              ? " Finishing saves your profile and opens Home on what to do first."
+              : lookup.teamNumber
+                ? " That team's owners must approve. You cannot join an existing team just by knowing the number."
+                : " You are not joining anyone. An invite or a later team-number request still needs that team's approval."}
           </span>
         </p>
       </div>
@@ -418,7 +426,13 @@ export function PreferencesForm({
       <div className="onboarding-actions">
         <button type="button" className="signin-link" onClick={onBack}>Back</button>
         <button className="signin-submit" type="submit" disabled={busy || !canSubmit}>
-          {busy ? "Submitting…" : lookup.teamNumber ? "Submit access request" : "Finish without a team"}
+          {busy
+            ? "Submitting…"
+            : lookup.joined
+              ? "Finish and open Home"
+              : lookup.teamNumber
+                ? "Submit access request"
+                : "Finish without a team"}
         </button>
       </div>
     </form>

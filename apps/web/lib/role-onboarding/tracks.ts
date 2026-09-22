@@ -19,7 +19,10 @@ export const ONBOARDING_TRACKS: OnboardingTrackTemplate[] = [
     summary: "Orient yourself before diving into a subteam path.",
     source: "welcome",
     checks: checks([
-      ["open_workspace", "Choose your team", "Confirm the right team is active.", "/workspace"],
+      // "Choose your team" was step one for everyone — including a student who
+      // had just joined that team from an invite. The team switcher is in the
+      // top bar for the few people on two teams; a first day starts with the week.
+      ["see_week", "See this week", "Meetings, build nights and deadlines you are expected at.", "/team/calendar"],
       ["join_calendar", "Join a subteam calendar", "Pick the crew you practice with so events show up.", "/team/calendar"],
       ["read_knowledge", "Skim Team Knowledge", "Robot conventions and season notes the AI already reads.", "/team/knowledge"],
       ["try_chat", "Ask the team assistant one real question", "Strategy, packing, or what you should do first.", "/chat"],
@@ -31,10 +34,10 @@ export const ONBOARDING_TRACKS: OnboardingTrackTemplate[] = [
     summary: "Fabrication, mechanisms, and bring-up with the build crew.",
     source: "subteam",
     checks: checks([
+      ["mech_track", "Start the mechanical track", "Week one is shop safety and tools — paced weeks from Team 6925.", "/learn/6925#mechanical"],
       ["read_blueprint", "Review the robot blueprint", "Understand current mechanism priorities.", "/robot"],
       ["check_inventory", "Check inventory / BOM", "Know what parts you already have before ordering.", "/inventory"],
       ["log_fmea", "Log a failure or risk", "Capture what breaks so the next iteration is safer.", "/fmea"],
-      ["open_cad", "Open AI CAD", "Pull the latest design context when Onshape/Fusion is connected.", "/cad"],
     ]),
   },
   {
@@ -55,8 +58,9 @@ export const ONBOARDING_TRACKS: OnboardingTrackTemplate[] = [
     summary: "Robot code, versions, and software bring-up.",
     source: "subteam",
     checks: checks([
+      ["prog_track", "Start the programming track", "Week one is your laptop and a first deploy — paced weeks from Team 6925.", "/learn/6925#programming"],
       ["open_code", "Open Code", "Find the team repo and current season branch context.", "/code"],
-      ["software_versions", "Check software versions", "WPIlib / vendordep alignment before you flash.", "/software-versions"],
+      ["software_versions", "Check software versions", "WPILib / vendordep alignment before you flash.", "/software-versions"],
       ["github_link", "Confirm GitHub is connected", "AI code context needs an org GitHub link.", "/team"],
       ["control_map_sw", "Cross-check the control map", "Buttons and subsystems should match what drivers expect.", "/control-map"],
     ]),
@@ -67,7 +71,8 @@ export const ONBOARDING_TRACKS: OnboardingTrackTemplate[] = [
     summary: "Design reviews, part studios, and manufacture handoff.",
     source: "subteam",
     checks: checks([
-      ["cad_setup", "Connect CAD", "Onshape or Fusion pairing so the agent can see live models.", "/cad"],
+      ["learn_cad", "Learn Onshape", "From the first sketch to a graded part, then shop drawings.", "/cad-learn"],
+      ["cad_setup", "Connect CAD", "Link Onshape or Fusion so the team's models show up here.", "/cad"],
       ["robot_blueprint", "Align on the robot blueprint", "Design priorities before you spend CAD hours.", "/robot"],
       ["decisions", "Read recent design decisions", "Avoid re-litigating closed choices.", "/decisions"],
       ["vendors", "Know vendor lead times", "Order long-lead parts early.", "/vendors"],

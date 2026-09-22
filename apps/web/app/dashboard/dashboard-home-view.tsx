@@ -48,6 +48,7 @@ import { DashboardSetupBanner } from "./dashboard-setup-banner";
 import { CopyShareLink } from "../../components/copy-share-link";
 import { VenueShortcutCheatsheet, type VenueShortcut } from "../../hooks/use-venue-shortcuts";
 import { homeHeaderDetail, homeNowFromWidgets } from "./dashboard-home-model";
+import { FirstWeekCard } from "./first-week-card";
 
 const DashboardBoardsModal = dynamic(
   () => import("./dashboard-boards-modal").then((mod) => mod.DashboardBoardsModal),
@@ -395,6 +396,7 @@ export function DashboardHomeView(props: {
           </Button>
         </section>
       ) : null}
+      {orgId && !editing ? <FirstWeekCard orgId={orgId} /> : null}
       <VenueShortcutCheatsheet open={cheatOpen} onClose={() => setCheatOpen(false)} shortcuts={shortcuts} />
 
       {orgId && !editing && homeStripItems.length > 0 ? (
