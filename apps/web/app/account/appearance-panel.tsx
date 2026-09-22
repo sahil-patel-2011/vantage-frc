@@ -17,6 +17,7 @@ import { buildAccentPlan } from "../../lib/branding/colors";
 import {
   ISLAND_SLOT_COUNT,
   defaultIslandHrefs,
+  defaultIslandLabelList,
   isDefaultIslandSelection,
   isValidIslandSelection,
   toggleIslandDraft,
@@ -557,7 +558,7 @@ export default function AppearancePanel() {
             onClick={() =>
               void saveIsland(
                 defaultIslandHrefs(),
-                "Island reset to Home, Compete, Team, Business. It appears on your next page load.",
+                `Island reset to ${defaultIslandLabelList()}. It appears on your next page load.`,
               )
             }
           >

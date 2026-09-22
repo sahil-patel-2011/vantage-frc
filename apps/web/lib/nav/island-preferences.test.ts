@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   ISLAND_SLOT_COUNT,
   defaultIslandHrefs,
+  defaultIslandLabelList,
+  islandCatalogLabelList,
   isDefaultIslandSelection,
   isValidIslandSelection,
   resolveIslandTabs,
@@ -12,6 +14,9 @@ describe("island preferences", () => {
   it("defaults to Home, Matches, Scout, Stats — a scouter's match week", () => {
     expect(defaultIslandHrefs()).toEqual(["/dashboard", "/competition", "/competition?tab=scouting", "/rankings"]);
     expect(resolveIslandTabs(null).map((item) => item.label)).toEqual(["Home", "Matches", "Scout", "Stats"]);
+    expect(defaultIslandLabelList()).toBe("Home, Matches, Scout, and Stats");
+    expect(islandCatalogLabelList()).toContain("Team chat");
+    expect(islandCatalogLabelList()).not.toMatch(/Compete|Media/);
   });
 
   it("preserves a valid custom order", () => {

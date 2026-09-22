@@ -34,7 +34,7 @@ const roles = [
   },
   {
     title: "Every member",
-    copy: "Home island is four apps: Home, Compete, Team, Build. Menu and search for the rest. Chat stays inside your team.",
+    copy: "Home island is four apps: Home, Matches, Scout, and Stats. Menu and search for the rest. Chat stays inside your team.",
   },
 ] as const;
 

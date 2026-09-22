@@ -20,7 +20,22 @@ export function defaultIslandHrefs(): string[] {
   return PRIMARY_TABS.map((item) => item.href);
 }
 
-/** True when this member is still on the stock Home / Compete / Team / Business four. */
+/** "Home, Matches, Scout, and Stats" — the labels people actually see. */
+export function joinIslandLabels(labels: readonly string[]): string {
+  if (labels.length <= 1) return labels[0] ?? "";
+  if (labels.length === 2) return `${labels[0]} and ${labels[1]}`;
+  return `${labels.slice(0, -1).join(", ")}, and ${labels[labels.length - 1]}`;
+}
+
+export function defaultIslandLabelList(): string {
+  return joinIslandLabels(PRIMARY_TABS.map((item) => item.label));
+}
+
+export function islandCatalogLabelList(): string {
+  return joinIslandLabels(ISLAND_TAB_CATALOG.map((item) => item.label));
+}
+
+/** True when this member is still on the stock four (Home, Matches, Scout, Stats). */
 export function isDefaultIslandSelection(value: unknown): boolean {
   const defaults = defaultIslandHrefs();
   if (!isValidIslandSelection(value)) return true;

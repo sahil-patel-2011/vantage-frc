@@ -2,6 +2,7 @@
 
 import type { PointerEvent } from "react";
 import { Icon } from "./icon";
+import { defaultIslandLabelList } from "../lib/nav/island-preferences";
 import { ISLAND_TAB_CATALOG, withOrgHref, type IslandTabDefinition } from "../lib/nav/product-nav";
 
 export function AppShellEventFocus({
@@ -200,7 +201,7 @@ export function AppShellIslandEditor({
           <div>
             <span>BOTTOM ISLAND</span>
             <h2 id="island-editor-title">Four apps</h2>
-            <p>Home, Compete, Team, and Build by default. Long-press the island or use the menu to change them.</p>
+            <p>{defaultIslandLabelList()} by default. Long-press the island or use the menu to change them.</p>
           </div>
           <button className="soft-icon-btn" type="button" aria-label="Close" onClick={onClose}><Icon name="x" /></button>
         </header>

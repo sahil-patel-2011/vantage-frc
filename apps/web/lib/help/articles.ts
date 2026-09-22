@@ -16,6 +16,7 @@ import {
   PRICING_CATALOG,
   TEAM_TRIAL_DAYS,
 } from "@vantage/billing/catalog";
+import { defaultIslandLabelList, islandCatalogLabelList } from "../nav/island-preferences";
 
 export type HelpCategoryId =
   | "getting-started"
@@ -244,7 +245,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
     slug: "bottom-island",
     title: "Customize the bottom island",
     summary:
-      "Four apps sit in a floating island at the bottom — Home, Compete, Team, and Build by default.",
+      `Four apps sit in a floating island at the bottom — ${defaultIslandLabelList()} by default.`,
     category: "getting-started",
     keywords: [
       "island",
@@ -268,14 +269,14 @@ export const HELP_ARTICLES: HelpArticle[] = [
         body: [
           "Long-press or right-click the island, or open the menu and tap Customize island.",
           "Tap apps in the order you want them. A selected app shows its slot number. You need exactly four before Save is enabled.",
-          "The island can open Home, Compete, Team, Business, Media, Build, Ask AI, Scout, My Day, Logistics, and Messages.",
+          `The island can open ${islandCatalogLabelList()}.`,
         ],
       },
       {
         heading: "Save or reset",
         body: [
           "Save 4/4 writes your preference for this account.",
-          "Reset restores Home, Compete, Team, and Build.",
+          `Reset restores ${defaultIslandLabelList()}.`,
         ],
       },
     ],

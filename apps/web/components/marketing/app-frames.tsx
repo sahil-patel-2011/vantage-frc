@@ -19,10 +19,12 @@ function AppChrome({ title, crumbs }: { title: string; crumbs: string }) {
   );
 }
 
-function AppIsland({ island }: { island: "Home" | "Compete" | "Team" | "Build" }) {
+const PREVIEW_ISLAND = ["Home", "Matches", "Scout", "Stats"] as const;
+
+function AppIsland({ island }: { island: (typeof PREVIEW_ISLAND)[number] }) {
   return (
     <nav className="mk-mock-rail" aria-hidden="true">
-      {(["Home", "Compete", "Team", "Build"] as const).map((item) => (
+      {PREVIEW_ISLAND.map((item) => (
         <span key={item} className={item === island ? "is-active" : undefined}>
           {item}
         </span>
@@ -91,8 +93,8 @@ export function HeroProductPanel() {
           </article>
         </div>
         <div className="mk-mock-rail">
-          {(["Home", "Compete", "Team", "Build"] as const).map((item) => (
-            <span key={item} className={item === "Build" ? "is-active" : undefined}>
+          {PREVIEW_ISLAND.map((item) => (
+            <span key={item} className={item === "Home" ? "is-active" : undefined}>
               {item}
             </span>
           ))}
@@ -130,7 +132,7 @@ export function ProductFrame({ id }: { id: ProductFrameId }) {
                 </p>
               </article>
             </div>
-            <AppIsland island="Compete" />
+            <AppIsland island="Scout" />
           </div>
         </div>
       );
@@ -153,7 +155,7 @@ export function ProductFrame({ id }: { id: ProductFrameId }) {
                 </p>
               </article>
             </div>
-            <AppIsland island="Build" />
+            <AppIsland island="Home" />
           </div>
         </div>
       );
