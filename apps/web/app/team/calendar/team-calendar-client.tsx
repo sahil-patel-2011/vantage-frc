@@ -564,6 +564,7 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
           scope={syncScope}
           subteamId={syncSubteamId ?? ""}
           github={view.githubCalendar}
+          canManage={canManage}
           onScopeChange={(next) => {
             setSyncScope(next);
             if (next !== "subteam") setSyncSubteamId(null);
@@ -592,7 +593,7 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
             </label>
           ) : null}
 
-          <GitHubCalendarHint overlay={view.githubCalendar} orgId={orgId} />
+          <GitHubCalendarHint overlay={view.githubCalendar} orgId={orgId} canManage={canManage} />
 
           <div className="tc-toolbar">
             <div className="tc-mode" role="group" aria-label="Calendar view">
