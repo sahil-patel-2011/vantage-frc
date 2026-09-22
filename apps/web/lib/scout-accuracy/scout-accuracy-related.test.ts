@@ -168,4 +168,19 @@ describe("scoutAccuracyNextActions", () => {
     expect(actions.some((a) => a.id === "strategy")).toBe(true);
     expect(actions.every((a) => !/\bDEMO\b/.test(a.label))).toBe(true);
   });
+
+  it("hides rotation writes from members who cannot manage the team", () => {
+    const actions = scoutAccuracyNextActions({
+      orgId: "org-1",
+      shell: "ready",
+      totalEntries: 12,
+      suggestedPromotions: 2,
+      canManage: false,
+    });
+    expect(actions[0]?.id).toBe("leaderboard");
+    expect(actions[0]?.label).toBe("Read the leaderboard");
+    expect(actions[0]?.href).toBe("#accuracy-leaderboard");
+    expect(actions.some((a) => a.id === "rotation")).toBe(false);
+    expect(actions.some((a) => /promote|confirm/i.test(a.label))).toBe(false);
+  });
 });

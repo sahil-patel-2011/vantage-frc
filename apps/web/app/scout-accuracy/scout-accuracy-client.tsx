@@ -22,7 +22,9 @@ import {
   type ScoutAccuracyShellKind,
 } from "../../lib/scout-accuracy/scout-accuracy-related";
 import { hubHref } from "../../lib/nav/hubs";
+import { fetchProductSession } from "../../lib/nav/product-session";
 import { namedEventOption, scoutEventLabel } from "../../lib/scouting/scouting-related";
+import { strategyCanSync } from "../../lib/strategy/strategy-related";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
@@ -204,6 +206,7 @@ export default function ScoutAccuracyClient({ orgId: initialOrgId }: { orgId?: s
   // Kept so an expired session offers sign-in instead of a Retry that cannot work.
   const [failureStatus, setFailureStatus] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
+  const [canManage, setCanManage] = useState(false);
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
   const viewRef = useRef<ScoutAccuracyView | null>(null);
@@ -289,6 +292,18 @@ export default function ScoutAccuracyClient({ orgId: initialOrgId }: { orgId?: s
     load();
   }, [load]);
 
+  useEffect(() => {
+    let cancelled = false;
+    void fetchProductSession(orgId).then((session) => {
+      if (cancelled) return;
+      const membership = session?.memberships?.find((entry) => entry.orgId === orgId);
+      setCanManage(strategyCanSync(membership?.role ?? session?.role));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [orgId]);
+
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
       if (!orgId || busy) return;
@@ -335,6 +350,7 @@ export default function ScoutAccuracyClient({ orgId: initialOrgId }: { orgId?: s
     shell,
     totalEntries,
     suggestedPromotions,
+    canManage,
   });
   const competitionHref = hubHref("/competition", "scouting", orgId);
   const showTiles =
@@ -404,7 +420,7 @@ export default function ScoutAccuracyClient({ orgId: initialOrgId }: { orgId?: s
       >
         <div className="scout-accuracy-header-meta">
           <ScoutAccuracyRelatedStrip orgId={orgId} />
-          {view.eventKey ? (
+          {canManage && view.eventKey ? (
             <Button variant="secondary" type="button" disabled={busy} onClick={() => void mutate({ action: "record-snapshot", eventKey: view.eventKey })}>
               Record snapshot
             </Button>
@@ -446,7 +462,7 @@ export default function ScoutAccuracyClient({ orgId: initialOrgId }: { orgId?: s
       ) : null}
 
       {showTiles ? <SummaryTiles view={view} loaded={loaded} /> : null}
-      <Leaderboard view={view} busy={busy} mutate={mutate} loaded={loaded} />
+      <Leaderboard view={view} busy={busy} mutate={mutate} loaded={loaded} canManage={canManage} />
       <ScoutAccuracyNextActionsPanel actions={nextActions} />
       <p className="app-muted scout-accuracy-footer-links">
         Also see{" "}
@@ -515,11 +531,13 @@ function Leaderboard({
   busy,
   mutate,
   loaded,
+  canManage,
 }: {
   view: LiveView;
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => void;
   loaded: boolean;
+  canManage: boolean;
 }) {
   if (view.stats.length === 0) {
     return (
@@ -542,6 +560,7 @@ function Leaderboard({
         <h2>Leaderboard &amp; pick-desk rotation</h2>
         <p className="app-muted">
           Quality before volume — ranks use TBA-verified totals only.
+          {canManage ? "" : " An owner or admin sets the pick-desk rotation."}
         </p>
       </header>
       <ul className="scout-accuracy-list">
@@ -553,6 +572,7 @@ function Leaderboard({
             eventKey={view.eventKey}
             mutate={mutate}
             loaded={loaded}
+            canManage={canManage}
           />
         ))}
       </ul>
@@ -566,12 +586,14 @@ function LeaderboardRow({
   eventKey,
   mutate,
   loaded,
+  canManage,
 }: {
   stat: ScoutAccuracyScoutStat;
   busy: boolean;
   eventKey: string | null;
   mutate: (payload: Record<string, unknown>) => void;
   loaded: boolean;
+  canManage: boolean;
 }) {
   const hasVerifiable = stat.verifiableEntries > 0;
   return (
@@ -600,7 +622,7 @@ function LeaderboardRow({
           {stat.suggestedPromote ? " · suggested for pick-desk rotation" : ""}
         </small>
       </div>
-      {eventKey ? (
+      {canManage && eventKey ? (
         <Button variant="secondary" type="button" disabled={busy} onClick={() => void mutate({ action: "set-promotion", eventKey, scoutUserId: stat.scoutUserId, promoted: !stat.promoted, }) }>
           {stat.promoted ? "Remove from rotation" : "Promote to rotation"}
         </Button>

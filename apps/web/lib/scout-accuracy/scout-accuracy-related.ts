@@ -235,6 +235,8 @@ export function scoutAccuracyNextActions(input: {
   shell: ScoutAccuracyShellKind;
   totalEntries?: number;
   suggestedPromotions?: number;
+  /** Omitted keeps the owner review action. Explicit false is a member who cannot set rotation. */
+  canManage?: boolean;
 }): ScoutAccuracyNextAction[] {
   const orgId = input.orgId ?? null;
   const suggestedPromotions = input.suggestedPromotions ?? 0;
@@ -354,6 +356,36 @@ export function scoutAccuracyNextActions(input: {
         label: "Sync event results",
         detail: "Official score breakdowns must be cached before totals verify.",
         href: hubHref("/competition", "command", orgId),
+      },
+    ];
+  }
+
+  if (input.canManage === false) {
+    return [
+      {
+        id: "leaderboard",
+        label: "Read the leaderboard",
+        detail: "An owner or admin sets the pick-desk rotation. Ranks stay visible.",
+        href: "#accuracy-leaderboard",
+        primary: true,
+      },
+      {
+        id: "scouting",
+        label: "Open Scouting",
+        detail: "Keep logging signed-in scout match rows for fresher ranks.",
+        href: hubHref("/competition", "scouting", orgId),
+      },
+      {
+        id: "coverage",
+        label: "Open Coverage",
+        detail: "Cross-check lineup gaps against who is being scored here.",
+        href: withOrgHref("/scouting/lineup", orgId),
+      },
+      {
+        id: "strategy",
+        label: "Open Strategy",
+        detail: "Pick desk stays available while you read these ranks.",
+        href: hubHref("/competition", "strategy", orgId),
       },
     ];
   }
