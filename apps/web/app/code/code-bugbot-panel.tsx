@@ -13,6 +13,7 @@ export type CodeBugbotPanelProps = Pick<
   | "busy"
   | "hasSource"
   | "githubHref"
+  | "canConnect"
   | "bugbotMode"
   | "setBugbotMode"
   | "bugbotMeta"
@@ -61,6 +62,7 @@ export function CodeBugbotPanel({
   busy,
   hasSource,
   githubHref,
+  canConnect,
   bugbotMode,
   setBugbotMode,
   bugbotMeta,
@@ -210,9 +212,15 @@ export function CodeBugbotPanel({
               title="Connect a GitHub repo to scan"
               description="Owners and admins link a PAT or OAuth app under Team admin. You can still paste a file below without GitHub."
             >
-              <Button as="a" variant="primary" href={githubHref}>
-                Connect GitHub
-              </Button>
+              {canConnect ? (
+                <Button as="a" variant="primary" href={githubHref}>
+                  Connect GitHub
+                </Button>
+              ) : (
+                <Button as="a" variant="primary" href="#cdc-source">
+                  Paste a file
+                </Button>
+              )}
             </EmptyState>
           ) : (
             <div className="cdc-github-scan">
@@ -614,9 +622,15 @@ export function CodeBugbotPanel({
               title="No Bugbot pass yet"
               description="Scan a connected repo or this file. Subscription uses your key. Ultra is the published hosted SKU. Findings stay empty until evidence is in the source."
             >
-              <Button as="a" variant="secondary" href={githubHref}>
-                GitHub connection
-              </Button>
+              {canConnect ? (
+                <Button as="a" variant="secondary" href={githubHref}>
+                  GitHub connection
+                </Button>
+              ) : (
+                <Button as="a" variant="secondary" href="#cdc-source">
+                  Paste a file
+                </Button>
+              )}
             </EmptyState>
           ) : null}
           {bugbotNarrations.length ? (

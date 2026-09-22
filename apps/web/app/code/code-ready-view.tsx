@@ -22,6 +22,7 @@ export function CodeReadyView(props: CodeReadyViewProps) {
     budgetsHref,
     keysHref,
     githubHref,
+    canConnect,
     showMeteredBanner,
     cutoffCode,
     nextActions,
@@ -121,9 +122,15 @@ export function CodeReadyView(props: CodeReadyViewProps) {
             <Button as="a" variant="secondary" href="#bugbot">
               Ultra prices
             </Button>
-            <Button as="a" variant="secondary" href={githubHref}>
-              Connect GitHub
-            </Button>
+            {canConnect ? (
+              <Button as="a" variant="secondary" href={githubHref}>
+                Connect GitHub
+              </Button>
+            ) : (
+              <Button as="a" variant="secondary" href="#cdc-source">
+                Paste a file
+              </Button>
+            )}
           </div>
         </article>
       </section>
